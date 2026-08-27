@@ -7,8 +7,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const PIN = process.env.STAFF_PIN || '1234';
-const PUBLIC_DIR = process.env.PUBLIC_DIR || path.join(__dirname, '..', 'public');
-
+const PUBLIC_DIR = process.env.PUBLIC_DIR || path.join(__dirname, 'public');
 const db = new Database(process.env.DB_PATH || path.join(__dirname, 'zerno.db'));
 db.pragma('journal_mode = WAL');
 db.exec(`
