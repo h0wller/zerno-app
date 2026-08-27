@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS customers(id TEXT PRIMARY KEY, name TEXT, phone TEXT 
  qr TEXT UNIQUE, created_at TEXT);
 CREATE TABLE IF NOT EXISTS history(id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, ts TEXT, a TEXT, by TEXT);
 CREATE TABLE IF NOT EXISTS menu(id TEXT PRIMARY KEY, cat TEXT, e TEXT, name TEXT, desc TEXT,
- comp TEXT, vol TEXT, price INTEGER, tag TEXT, coffee INTEGER, on INTEGER, img TEXT);
+ comp TEXT, vol TEXT, price INTEGER, tag TEXT, coffee INTEGER, "on" INTEGER, img TEXT);
 CREATE TABLE IF NOT EXISTS tokens(token TEXT PRIMARY KEY, kind TEXT, ref TEXT, ts TEXT);
 CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, t TEXT, w TEXT, a TEXT);
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);`);
@@ -134,7 +134,7 @@ app.use(express.json({ limit: '10mb' }));
 
 /* ── меню ── */
 app.get('/api/menu', (req, res) => res.json({
-  items: db.prepare('SELECT * FROM menu WHERE on=1').all().map(item), updatedAt: getMeta() }));
+  items: db.prepare('SELECT * FROM menu WHERE "on"=1').all().map(item), updatedAt: getMeta() }));
 app.get('/api/menu/all', staffGuard, (req, res) => res.json({
   items: db.prepare('SELECT * FROM menu').all().map(item), updatedAt: getMeta() }));
 app.post('/api/menu', staffGuard, (req, res) => {
@@ -146,9 +146,9 @@ app.post('/api/menu', staffGuard, (req, res) => {
 });
 app.put('/api/menu/:id', staffGuard, (req, res) => {
   const p = req.body;
-  db.prepare('UPDATE menu SET cat=?,e=?,name=?,desc=?,comp=?,vol=?,price=?,tag=?,coffee=?,on=?,img=? WHERE id=?').run(
-    p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
-    p.vol || '', Math.max(0, +p.price || 0), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null, req.params.id);
+  db.prepare('UPDATE menu SET cat=?,e=?,name=?,desc=?,comp=?,vol=?,price=?,tag=?,coffee=?,"on"=?,img=? WHERE id=?').run(
+  p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
+  p.vol || '', Math.max(0, +p.price || 0), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null, req.params.id);
   touch(); res.json({ ok: true });
 });
 app.delete('/api/menu/:id', staffGuard, (req, res) => {
