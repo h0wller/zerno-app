@@ -653,6 +653,7 @@ function bindMask(inp){inp.addEventListener('input',()=>{inp.value=fmtPhone(inp.
  try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(e){}})}
 
 /* ── API-клиент ── */
+const API_BASE = 'zerno-app-production.up.railway.app';
 const T_USER='zt_user',T_STAFF='zt_staff',T_ONB='zt_onb';
 let USER_TOKEN=localStorage.getItem(T_USER)||null;
 let STAFF_TOKEN=localStorage.getItem(T_STAFF)||null;
@@ -662,7 +663,7 @@ async function api(path,opts={}){
  const h={'Content-Type':'application/json'};
  if(USER_TOKEN)h['Authorization']='Bearer '+USER_TOKEN;
  if(STAFF_TOKEN)h['X-Staff']=STAFF_TOKEN;
- let r;try{r=await fetch('/api'+path,{method:opts.method||'GET',headers:h,
+ let r;try{r=await fetch(API_BASE + '/api'+path,{method:opts.method||'GET',headers:h,
    body:opts.body?JSON.stringify(opts.body):undefined})}
  catch(e){throw new Error('Сервер недоступен — проверьте подключение')}
  const j=await r.json().catch(()=>({}));
