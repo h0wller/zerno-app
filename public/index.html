@@ -514,6 +514,7 @@ body.editing .card:hover{transform:none}
           <div style="flex:1"><input id="nameInput" maxlength="24"><div class="ph" id="phoneLbl"></div><div class="ph" id="roleLbl"></div></div>
         </div>
         <button class="demoBtn" id="activateBtn" hidden>🔑 У меня код доступа сотрудника</button>
+        <button class="demoBtn" id="deactivateBtn" hidden>🚪 Снять роль сотрудника</button>
         <div class="stats">
           <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
           <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
@@ -914,6 +915,19 @@ function openPanel(tab){setTab(tab);$('#panel').classList.add('open');syncOverla
 function closePanel(){$('#panel').classList.remove('open');syncOverlay()}
 $('#mbonusBtn').onclick=()=>me?openPanel('bonus'):openAuth();
 const cupWord=n=>n===1?'чашка':(n>0&&n<5?'чашки':'чашек');
+$('#deactivateBtn').onclick = async () => {
+  if (!confirm('Снять права сотрудника? Вы вернётесь в режим гостя.')) return;
+  try {
+    const r = await api('/auth/deactivate', { method: 'POST' });
+    me = r.customer;
+    mode = 'guest';
+    renderModes();
+    renderProfile();
+    toast('Права сотрудника отключены', '👋');
+  } catch (e) {
+    toast(e.message, '⛔');
+  }
+};
 function renderBonus(){$('#bonusNoUser').hidden=!!me;$('#bonusBox').hidden=!me;if(!me)return;
  let h='';
  for(let i=0;i<10;i++)h+= i<me.stamps?`<div class="stamp f ${i===me.stamps-1?'last':''}">☕</div>`
@@ -937,7 +951,10 @@ function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden
  const r=me.role||'guest';
  $('#roleLbl').textContent=r==='admin'?'🔑 роль: администратор':r==='cashier'?'🧾 роль: кассир':'роль: гость';
  $('#roleLbl').className='ph roleBadge '+r;
- $('#activateBtn').hidden=r!=='guest';
+ $('#activateBtn').hidden = !(r === 'guest' || r === 'cashier');
+ $('#activateBtn').textContent = r === 'guest' ? '🔑 У меня код доступа сотрудника' : '🔑 Повысить до администратора';
+ $('#deactivateBtn').hidden = !(r === 'cashier' || r === 'admin');
+ $('#deactivateBtn').textContent = r === 'admin' ? '🚪 Снять роль администратора' : '🚪 Снять роль кассира';
  $('#stCups').textContent=me.cups;$('#stStamps').textContent=me.stamps+'/10';$('#stFree').textContent=me.free;
  $('#histList').innerHTML=(me.history||[]).slice(0,8).map(h=>
   `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`).join('')

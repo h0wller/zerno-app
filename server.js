@@ -210,6 +210,19 @@ app.post('/api/auth/activate', userGuard, (req, res) => {
   logEv(req.user.name, role === 'admin' ? 'активирован админ' : 'активирован кассир');
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
+/* отключение прав сотрудника */
+app.post('/api/auth/deactivate', userGuard, (req, res) => {
+  if (req.user.role === 'admin') {
+    const adminsCount = db.prepare("SELECT COUNT(*) as c FROM customers WHERE role='admin'").get().c;
+    if (adminsCount <= 1) {
+      return res.status(403).json({ error: 'Нельзя отключить последнего администратора' });
+    }
+  }
+  db.prepare('UPDATE customers SET role=? WHERE id=?').run('guest', req.user.id);
+  addHist(req.user.id, 'Права сотрудника отключены', 'Система');
+  logEv(req.user.name, 'права сотрудника отключены');
+  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
+});
 app.get('/api/me', userGuard, (req, res) => res.json({ customer: cust(req.user) }));
 app.put('/api/me', userGuard, (req, res) => {
   const name = String(req.body.name || '').trim() || 'Гость';
