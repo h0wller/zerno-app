@@ -201,10 +201,10 @@ app.put('/api/me', userGuard, (req, res) => {
   db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
-app.post('/api/stamp', userGuard, (req, res) => {
-  const r = grant(req.user.id, 'Демо-покупка');
-  r ? res.json(r) : res.status(404).json({ error: 'Гость не найден' });
-});
+//app.post('/api/stamp', userGuard, (req, res) => {
+  //const r = grant(req.user.id, 'Демо-покупка');
+  //r ? res.json(r) : res.status(404).json({ error: 'Гость не найден' });
+//});
 app.post('/api/redeem', userGuard, (req, res) => {
   const r = redeem(req.user.id, 'Гость');
   r ? res.json(r) : res.status(400).json({ error: 'Нет доступных подарков' });

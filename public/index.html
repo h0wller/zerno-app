@@ -144,6 +144,8 @@ body.editing .card:hover{transform:none}
 .panel{position:sticky;top:118px;max-height:calc(100vh - 140px);background:var(--panel);border:1px solid var(--line);
   border-radius:22px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--sh)}
 .tabs{display:flex;gap:4px;padding:12px 12px 0}
+.tabs .btn-back{flex:0 0 auto;padding:9px 12px;color:var(--flame)}
+@media(min-width:1181px){.tabs .btn-back{display:none}}
 .tabs button{flex:1;padding:9px 4px;border-radius:12px;font-size:13px;font-weight:700;color:var(--soft);transition:.2s}
 .tabs button:hover{background:#F1E8D8}
 .tabs button.on{background:var(--esp);color:var(--cream)}
@@ -472,6 +474,7 @@ body.editing .card:hover{transform:none}
   <!-- ПАНЕЛЬ ГОСТЯ -->
   <aside class="panel" id="panel">
     <div class="tabs">
+      <button onclick="closePanel()" class="btn-back">← Назад</button>
       <button data-tab="bonus" class="on">Бонусы</button>
       <button data-tab="profile">Профиль</button>
     </div>
@@ -489,7 +492,6 @@ body.editing .card:hover{transform:none}
         <div class="stamps" id="stampGrid"></div>
         <div class="prog" id="bonusProg"></div>
         <div id="freeSlot"></div>
-        <button class="demoBtn" id="demoStampBtn">＋1 штамп (демо: покупка кофе)</button>
         <div class="qrbox"><canvas id="qrMini" width="196" height="196" style="width:112px;height:112px"></canvas>
           <small>Покажите кассиру — он начислит штамп по вашему профилю</small>
         </div>
@@ -913,9 +915,9 @@ function renderBonus(){$('#bonusNoUser').hidden=!!me;$('#bonusBox').hidden=!me;i
    toast('Бесплатный кофе погашен. Вкусного!','☕')}catch(e){toast(e.message,'⚠️')}};
  $('#mbonusSt').textContent=me.free>0?'🎁 есть!':`${me.stamps}/10`;
 }
-$('#demoStampBtn').onclick=async()=>{if(!me)return;
- try{const r=await api('/stamp',{method:'POST'});me=r.customer;renderBonus();renderProfile();
-  if(r.ten)confetti();toast(r.msg,r.ten?'🎉':'☕')}catch(e){toast(e.message,'⚠️')}};
+//$('#demoStampBtn').onclick=async()=>{if(!me)return;
+//try{const r=await api('/stamp',{method:'POST'});me=r.customer;renderBonus();renderProfile();
+//if(r.ten)confetti();toast(r.msg,r.ten?'🎉':'☕')}catch(e){toast(e.message,'⚠️')}};
 function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden=!me;
  if(!me){$('#avInit').textContent='?';$('#profileTopBtn').textContent='?';return}
  $('#avInit').textContent=(me.name[0]||'Г').toUpperCase();
