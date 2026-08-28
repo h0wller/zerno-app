@@ -8,18 +8,33 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const PIN = process.env.STAFF_PIN || '1234';
 const PUBLIC_DIR = process.env.PUBLIC_DIR || path.join(__dirname, 'public');
+
 const db = new Database(process.env.DB_PATH || path.join(__dirname, 'zerno.db'));
 db.pragma('journal_mode = WAL');
+
+/* ── схема: без зарезервированных слов SQL (is_on вместо on, descr вместо desc) ── */
 db.exec(`
-CREATE TABLE IF NOT EXISTS customers(id TEXT PRIMARY KEY, name TEXT, phone TEXT UNIQUE,
- stamps INTEGER DEFAULT 0, free INTEGER DEFAULT 0, cups INTEGER DEFAULT 0,
- qr TEXT UNIQUE, created_at TEXT);
-CREATE TABLE IF NOT EXISTS history(id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, ts TEXT, a TEXT, by TEXT);
-CREATE TABLE IF NOT EXISTS menu(id TEXT PRIMARY KEY, cat TEXT, e TEXT, name TEXT, desc TEXT,
- comp TEXT, vol TEXT, price INTEGER, tag TEXT, coffee INTEGER, "on" INTEGER, img TEXT);
-CREATE TABLE IF NOT EXISTS tokens(token TEXT PRIMARY KEY, kind TEXT, ref TEXT, ts TEXT);
-CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, t TEXT, w TEXT, a TEXT);
-CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);`);
+CREATE TABLE IF NOT EXISTS customers(
+  id TEXT PRIMARY KEY, name TEXT, phone TEXT UNIQUE,
+  stamps INTEGER DEFAULT 0, free INTEGER DEFAULT 0, cups INTEGER DEFAULT 0,
+  qr TEXT UNIQUE, created_at TEXT);
+CREATE TABLE IF NOT EXISTS history(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, ts TEXT, a TEXT, by TEXT);
+CREATE TABLE IF NOT EXISTS menu(
+  id TEXT PRIMARY KEY, cat TEXT, e TEXT, name TEXT, descr TEXT,
+  comp TEXT, vol TEXT, price INTEGER, tag TEXT, coffee INTEGER,
+  is_on INTEGER DEFAULT 1, img TEXT);
+CREATE TABLE IF NOT EXISTS tokens(
+  token TEXT PRIMARY KEY, kind TEXT, ref TEXT, ts TEXT);
+CREATE TABLE IF NOT EXISTS events(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, t TEXT, w TEXT, a TEXT);
+CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
+`);
+/* миграция, если в старом volume осталась таблица menu без is_on */
+const menuCols = db.prepare('PRAGMA table_info(menu)').all().map(c => c.name);
+if (menuCols.length && !menuCols.includes('is_on')) {
+  db.exec('ALTER TABLE menu ADD COLUMN is_on INTEGER DEFAULT 1;');
+}
 
 /* ── утилиты ── */
 const ph10 = v => { let d = String(v || '').replace(/\D/g, '');
@@ -30,69 +45,65 @@ const fmtPhone = v => { const d = ph10(v); if (!d) return '';
   if (d.length > 6) r += '-' + d.slice(6, 8); if (d.length > 8) r += '-' + d.slice(8, 10); return r; };
 const nowISO = () => new Date().toISOString();
 const uid = p => p + crypto.randomBytes(5).toString('hex');
-const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.desc,
+const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
   comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
-  coffee: r.coffee, on: r.on, img: r.img });
+  coffee: r.coffee, on: r.is_on, img: r.img });
 const cust = c => ({ id: c.id, name: c.name, phone: c.phone, stamps: c.stamps, free: c.free,
   cups: c.cups, qr: c.qr, history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) });
 const addHist = (cid, a, by) => db.prepare('INSERT INTO history(cid,ts,a,by) VALUES(?,?,?,?)').run(cid, nowISO(), a, by);
 const logEv = (w, a) => db.prepare('INSERT INTO events(t,w,a) VALUES(?,?,?)')
   .run(new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }), w, a);
-const getMeta = () => db.prepare('SELECT value FROM meta WHERE key=\'updatedAt\'').get()?.value || nowISO();
-const touch = () => db.prepare('INSERT INTO meta(key,value) VALUES(\'updatedAt\',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(nowISO());
+const getMeta = () => db.prepare("SELECT value FROM meta WHERE key='updatedAt'").get()?.value || nowISO();
+const touch = () => db.prepare("INSERT INTO meta(key,value) VALUES('updatedAt',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(nowISO());
 const issueToken = (kind, ref) => { const t = crypto.randomUUID();
   db.prepare('INSERT INTO tokens(token,kind,ref,ts) VALUES(?,?,?,?)').run(t, kind, ref, nowISO()); return t; };
 
-/* ── сид данных ── */
+/* ── сид ── */
 if (!db.prepare('SELECT 1 FROM menu LIMIT 1').get()) {
   const seed = [
-    { id: 'c1', cat: 'coffee', e: '☕', name: 'Капучино', desc: 'Эспрессо, молоко и плотная пенка', comp: ['эспрессо','молоко','молочная пенка'], vol: '300 мл', price: 210, tag: 'Хит', coffee: 1 },
-    { id: 'c2', cat: 'coffee', e: '🥛', name: 'Латте', desc: 'Мягкий, много молока', comp: ['эспрессо','молоко'], vol: '400 мл', price: 230, tag: '', coffee: 1 },
-    { id: 'c3', cat: 'coffee', e: '☕', name: 'Флэт уайт', desc: 'Двойной эспрессо, шёлковое молоко', comp: ['двойной эспрессо','молоко'], vol: '200 мл', price: 240, tag: '', coffee: 1 },
-    { id: 'c4', cat: 'coffee', e: '⚡', name: 'Эспрессо', desc: 'Смесь дня, тёмная обжарка', comp: ['арабика','робуста'], vol: '40 мл', price: 120, tag: '', coffee: 1 },
-    { id: 'c5', cat: 'coffee', e: '🍦', name: 'Раф ванильный', desc: 'Сливочный, на сливках', comp: ['эспрессо','сливки','ванильный сахар'], vol: '300 мл', price: 280, tag: 'New', coffee: 1 },
-    { id: 'c6', cat: 'coffee', e: '🫘', name: 'Американо', desc: 'Классика без сахара', comp: ['эспрессо','вода'], vol: '250 мл', price: 150, tag: '', coffee: 1 },
-    { id: 'd1', cat: 'drinks', e: '🍵', name: 'Матча латте', desc: 'Японский чай на молоке', comp: ['матча','молоко','сироп топинамбура'], vol: '350 мл', price: 290, tag: 'New', coffee: 0 },
-    { id: 'd2', cat: 'drinks', e: '🍫', name: 'Какао', desc: 'С домашним маршмеллоу', comp: ['какао','молоко','маршмеллоу'], vol: '300 мл', price: 250, tag: '', coffee: 0 },
-    { id: 'd3', cat: 'drinks', e: '🫖', name: 'Облепиховый чай', desc: 'С мёдом и имбирём', comp: ['облепиха','чёрный чай','мёд','имбирь'], vol: '500 мл', price: 220, tag: '', coffee: 0 },
-    { id: 'd4', cat: 'drinks', e: '🍒', name: 'Вишнёвый лимонад', desc: 'Газированный, освежающий', comp: ['вишня','содовая','лайм'], vol: '400 мл', price: 190, tag: '', coffee: 0 },
-    { id: 'f1', cat: 'food', e: '🥐', name: 'Круассан с лососем', desc: 'Творожный сыр, каперсы', comp: ['круассан','лосось','творожный сыр','каперсы'], vol: '180 г', price: 320, tag: 'Хит', coffee: 0 },
-    { id: 'f2', cat: 'food', e: '🥧', name: 'Киш с курицей', desc: 'Открытый пирог, жюльен', comp: ['тесто','курица','сливки','сыр'], vol: '220 г', price: 280, tag: '', coffee: 0 },
-    { id: 'f3', cat: 'food', e: '🥗', name: 'Фалафель-боул', desc: 'Хумус, овощи, пита', comp: ['фалафель','хумус','овощи','пита'], vol: '300 г', price: 340, tag: 'Vegan', coffee: 0 },
-    { id: 'f4', cat: 'food', e: '🍜', name: 'Том ям', desc: 'С креветками и рисом', comp: ['бульон','креветки','кокосовое молоко','рис'], vol: '350 г', price: 390, tag: '', coffee: 0 },
-    { id: 's1', cat: 'desserts', e: '🍰', name: 'Сан-Себастьян', desc: 'Обожжённый баскский чизкейк', comp: ['крем-чиз','сливки','яйцо'], vol: '130 г', price: 290, tag: 'Хит', coffee: 0 },
-    { id: 's2', cat: 'desserts', e: '🥕', name: 'Морковный торт', desc: 'С крем-чизом и орехом', comp: ['морковь','крем-чиз','грецкий орех'], vol: '140 г', price: 260, tag: '', coffee: 0 },
-    { id: 's3', cat: 'desserts', e: '🍪', name: 'Макарон фисташка', desc: 'Миндальная мука, ганаш', comp: ['миндальная мука','фисташка','ганаш'], vol: '2 шт', price: 150, tag: '', coffee: 0 },
-    { id: 's4', cat: 'desserts', e: '🥞', name: 'Сырники', desc: 'Со сметаной и ягодами', comp: ['творог','сметана','ягоды'], vol: '180 г', price: 240, tag: '', coffee: 0 },
+    ['c1','coffee','☕','Капучино','Эспрессо, молоко и плотная пенка',['эспрессо','молоко','молочная пенка'],'300 мл',210,'Хит',1],
+    ['c2','coffee','🥛','Латте','Мягкий, много молока',['эспрессо','молоко'],'400 мл',230,'',1],
+    ['c3','coffee','☕','Флэт уайт','Двойной эспрессо, шёлковое молоко',['двойной эспрессо','молоко'],'200 мл',240,'',1],
+    ['c4','coffee','⚡','Эспрессо','Смесь дня, тёмная обжарка',['арабика','робуста'],'40 мл',120,'',1],
+    ['c5','coffee','🍦','Раф ванильный','Сливочный, на сливках',['эспрессо','сливки','ванильный сахар'],'300 мл',280,'New',1],
+    ['c6','coffee','🫘','Американо','Классика без сахара',['эспрессо','вода'],'250 мл',150,'',1],
+    ['d1','drinks','🍵','Матча латте','Японский чай на молоке',['матча','молоко','сироп топинамбура'],'350 мл',290,'New',0],
+    ['d2','drinks','🍫','Какао','С домашним маршмеллоу',['какао','молоко','маршмеллоу'],'300 мл',250,'',0],
+    ['d3','drinks','🫖','Облепиховый чай','С мёдом и имбирём',['облепиха','чёрный чай','мёд','имбирь'],'500 мл',220,'',0],
+    ['d4','drinks','🍒','Вишнёвый лимонад','Газированный, освежающий',['вишня','содовая','лайм'],'400 мл',190,'',0],
+    ['f1','food','🥐','Круассан с лососем','Творожный сыр, каперсы',['круассан','лосось','творожный сыр','каперсы'],'180 г',320,'Хит',0],
+    ['f2','food','🥧','Киш с курицей','Открытый пирог, жюльен',['тесто','курица','сливки','сыр'],'220 г',280,'',0],
+    ['f3','food','🥗','Фалафель-боул','Хумус, овощи, пита',['фалафель','хумус','овощи','пита'],'300 г',340,'Vegan',0],
+    ['f4','food','🍜','Том ям','С креветками и рисом',['бульон','креветки','кокосовое молоко','рис'],'350 г',390,'',0],
+    ['s1','desserts','🍰','Сан-Себастьян','Обожжённый баскский чизкейк',['крем-чиз','сливки','яйцо'],'130 г',290,'Хит',0],
+    ['s2','desserts','🥕','Морковный торт','С крем-чизом и орехом',['морковь','крем-чиз','грецкий орех'],'140 г',260,'',0],
+    ['s3','desserts','🍪','Макарон фисташка','Миндальная мука, ганаш',['миндальная мука','фисташка','ганаш'],'2 шт',150,'',0],
+    ['s4','desserts','🥞','Сырники','Со сметаной и ягодами',['творог','сметана','ягоды'],'180 г',240,'',0],
   ];
   const ins = db.prepare('INSERT INTO menu VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
-  for (const p of seed) ins.run(p.id, p.cat, p.e, p.name, p.desc, JSON.stringify(p.comp), p.vol, p.price, p.tag, p.coffee, 1, null);
+  for (const p of seed) ins.run(p[0], p[1], p[2], p[3], p[4], JSON.stringify(p[5]), p[6], p[7], p[8], p[9], 1, null);
   touch();
 }
 if (!db.prepare('SELECT 1 FROM customers LIMIT 1').get()) {
-  const ins = db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?)');
-  ins.run('u1', 'Анна Ким', '+7 912 480-88-12', 7, 0, 23, 'Z-K4F7A2', nowISO());
-  ins.run('u2', 'Дмитрий Соколов', '+7 903 214-77-45', 9, 1, 64, 'Z-M9B3X1', nowISO());
-  ins.run('u3', 'Мария Лебедева', '+7 926 118-30-09', 3, 0, 11, 'Z-P2T8Q6', nowISO());
-  addHist('u1', 'Штамп 7 из 10', 'Кассир');
-  addHist('u2', '🎉 10-й кофе — подарок начислен', 'Система');
-  addHist('u3', 'Штамп 3 из 10', 'Кассир');
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?)').run('u1','Анна Ким','+7 912 480-88-12',7,0,23,'Z-K4F7A2',nowISO());
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?)').run('u2','Дмитрий Соколов','+7 903 214-77-45',9,1,64,'Z-M9B3X1',nowISO());
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?)').run('u3','Мария Лебедева','+7 926 118-30-09',3,0,11,'Z-P2T8Q6',nowISO());
+  addHist('u1','Штамп 7 из 10','Кассир'); addHist('u2','🎉 10-й кофе — подарок начислен','Система'); addHist('u3','Штамп 3 из 10','Кассир');
 }
 
 /* ── auth ── */
 function authUser(req) {
   const t = (req.header('Authorization') || '').replace('Bearer ', '');
-  const row = db.prepare('SELECT * FROM tokens WHERE token=? AND kind=\'user\'').get(t);
+  const row = db.prepare("SELECT * FROM tokens WHERE token=? AND kind='user'").get(t);
   return row ? db.prepare('SELECT * FROM customers WHERE id=?').get(row.ref) : null;
 }
-function authStaff(req) {
-  const t = req.header('X-Staff');
-  return !!t && !!db.prepare('SELECT 1 FROM tokens WHERE token=? AND kind=\'staff\'').get(t);
-}
+const authStaff = req => { const t = req.header('X-Staff');
+  return !!t && !!db.prepare("SELECT 1 FROM tokens WHERE token=? AND kind='staff'").get(t); };
 const staffGuard = (req, res, next) => authStaff(req) ? next() : res.status(401).json({ error: 'Нужен вход стаффа' });
-const userGuard = (req, res, next) => { req.user = authUser(req); req.user ? next() : res.status(401).json({ error: 'Нужен вход по номеру' }); };
+const userGuard = (req, res, next) => { req.user = authUser(req);
+  req.user ? next() : res.status(401).json({ error: 'Нужен вход по номеру' }); };
 
-/* ── лояльность (серверная логика) ── */
+/* ── лояльность ── */
 function grant(cid, by) {
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
   if (!c) return null;
@@ -119,7 +130,7 @@ function redeem(cid, by) {
 }
 function createCustomer(name, phone, by) {
   const p = fmtPhone(phone);
-  if (name.trim().length < 2) return { err: 'Введите имя', code: 400 };
+  if (String(name).trim().length < 2) return { err: 'Введите имя', code: 400 };
   if (ph10(p).length < 10) return { err: 'Введите номер полностью', code: 400 };
   if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return { err: 'exists', code: 409 };
   const id = uid('u'), qr = 'Z-' + crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -130,24 +141,19 @@ function createCustomer(name, phone, by) {
 }
 
 const app = express();
-
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Staff');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
-
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
-
 app.use(express.json({ limit: '10mb' }));
 
 /* ── меню ── */
+app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.get('/api/menu', (req, res) => res.json({
-  items: db.prepare('SELECT * FROM menu WHERE "on"=1').all().map(item), updatedAt: getMeta() }));
+  items: db.prepare('SELECT * FROM menu WHERE is_on=1').all().map(item), updatedAt: getMeta() }));
 app.get('/api/menu/all', staffGuard, (req, res) => res.json({
   items: db.prepare('SELECT * FROM menu').all().map(item), updatedAt: getMeta() }));
 app.post('/api/menu', staffGuard, (req, res) => {
@@ -159,9 +165,9 @@ app.post('/api/menu', staffGuard, (req, res) => {
 });
 app.put('/api/menu/:id', staffGuard, (req, res) => {
   const p = req.body;
-  db.prepare('UPDATE menu SET cat=?,e=?,name=?,desc=?,comp=?,vol=?,price=?,tag=?,coffee=?,"on"=?,img=? WHERE id=?').run(
-  p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
-  p.vol || '', Math.max(0, +p.price || 0), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null, req.params.id);
+  db.prepare('UPDATE menu SET cat=?,e=?,name=?,descr=?,comp=?,vol=?,price=?,tag=?,coffee=?,is_on=?,img=? WHERE id=?').run(
+    p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
+    p.vol || '', Math.max(0, +p.price || 0), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null, req.params.id);
   touch(); res.json({ ok: true });
 });
 app.delete('/api/menu/:id', staffGuard, (req, res) => {
@@ -172,8 +178,7 @@ app.delete('/api/menu/:id', staffGuard, (req, res) => {
 app.post('/api/auth/register', (req, res) => {
   const r = createCustomer(req.body.name || '', req.body.phone || '', 'Приложение');
   if (r.err) return res.status(r.code).json({ error: r.err });
-  const token = issueToken('user', r.customer.id);
-  res.json({ token, customer: r.customer });
+  res.json({ token: issueToken('user', r.customer.id), customer: r.customer });
 });
 app.post('/api/auth/login', (req, res) => {
   const p = fmtPhone(req.body.phone || '');
@@ -205,7 +210,7 @@ app.post('/api/redeem', userGuard, (req, res) => {
   r ? res.json(r) : res.status(400).json({ error: 'Нет доступных подарков' });
 });
 
-/* ── кассир / стафф ── */
+/* ── кассир ── */
 app.get('/api/staff/customers', staffGuard, (req, res) => {
   const q = String(req.query.search || ''); const d = ph10(q); const t = q.trim().toLowerCase();
   const rows = db.prepare('SELECT * FROM customers ORDER BY created_at DESC LIMIT 50').all()
@@ -241,4 +246,4 @@ app.get('/api/staff/log', staffGuard, (req, res) =>
 /* ── статика (фронтенд) ── */
 app.use(express.static(PUBLIC_DIR));
 
-app.listen(PORT, () => console.log(`☕ ЗЕРНО API: http://localhost:${PORT} · PIN стаффа: ${PIN === '1234' ? '1234 (смените через STAFF_PIN!)' : '***'}`));
+app.listen(PORT, () => console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`));
