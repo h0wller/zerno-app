@@ -86,9 +86,9 @@ if (!db.prepare('SELECT 1 FROM menu LIMIT 1').get()) {
   touch();
 }
 if (!db.prepare('SELECT 1 FROM customers LIMIT 1').get()) {
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?,?)').run('u1','Анна Ким','+7 912 480-88-12',7,0,23,'Z-K4F7A2',nowISO(),'admin');
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?,?)').run('u2','Дмитрий Соколов','+7 903 214-77-45',9,1,64,'Z-M9B3X1',nowISO(),'cashier');
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?,?)').run('u3','Мария Лебедева','+7 926 118-30-09',3,0,11,'Z-P2T8Q6',nowISO(),'guest');
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?)').run('u1','Анна Ким','+7 912 480-88-12',7,0,23,'Z-K4F7A2',nowISO(),'admin');
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?)').run('u2','Дмитрий Соколов','+7 903 214-77-45',9,1,64,'Z-M9B3X1',nowISO(),'cashier');
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?)').run('u3','Мария Лебедева','+7 926 118-30-09',3,0,11,'Z-P2T8Q6',nowISO(),'guest');
   addHist('u1','Штамп 7 из 10','Кассир'); addHist('u2','🎉 10-й кофе — подарок начислен','Система'); addHist('u3','Штамп 3 из 10','Кассир');
 }
 
@@ -142,7 +142,7 @@ function createCustomer(name, phone) {
   if (ph10(p).length < 10) return { err: 'Введите номер полностью', code: 400 };
   if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return { err: 'exists', code: 409 };
   const id = uid('u'), qr = 'Z-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?,?)').run(id, name.trim(), p, 0, 0, 0, qr, nowISO(), 'guest');
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?)').run(id, name.trim(), p, 0, 0, 0, qr, nowISO(), 'guest');
   addHist(id, 'Профиль создан', 'Приложение');
   return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(id)) };
 }
