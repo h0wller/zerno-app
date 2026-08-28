@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ЗЕРНО — меню и бонусы</title>
-<meta name="description" content="Актуальное меню кофейни «ЗЕРНО» и бонусы: каждый 10-й кофе бесплатно.">
+<title>И кофе... — меню и бонусы</title>
+<meta name="description" content="Меню кофейни «И кофе...» и бонусы: каждый 10-й кофе бесплатно.">
 <meta name="theme-color" content="#171009">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ЗЕРНО">
+<meta name="apple-mobile-web-app-title" content="И кофе...">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -144,11 +144,11 @@ body.editing .card:hover{transform:none}
 .panel{position:sticky;top:118px;max-height:calc(100vh - 140px);background:var(--panel);border:1px solid var(--line);
   border-radius:22px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--sh)}
 .tabs{display:flex;gap:4px;padding:12px 12px 0}
-.tabs .btn-back{flex:0 0 auto;padding:9px 12px;color:var(--flame)}
-@media(min-width:1181px){.tabs .btn-back{display:none}}
 .tabs button{flex:1;padding:9px 4px;border-radius:12px;font-size:13px;font-weight:700;color:var(--soft);transition:.2s}
 .tabs button:hover{background:#F1E8D8}
 .tabs button.on{background:var(--esp);color:var(--cream)}
+.tabs .btn-back{flex:0 0 auto;padding:9px 12px;color:var(--flame);font-weight:800}
+@media(min-width:1181px){.tabs .btn-back{display:none}}
 .pv{overflow-y:auto;padding:14px;flex:1;scrollbar-width:thin}
 .pv::-webkit-scrollbar{width:6px}.pv::-webkit-scrollbar-thumb{background:#D8C8B0;border-radius:3px}
 .pv h4{font:700 12px "Unbounded";letter-spacing:.08em;text-transform:uppercase;color:#A2937F;margin:14px 2px 9px}
@@ -199,6 +199,10 @@ body.editing .card:hover{transform:none}
 .hmini{font-size:11.5px;color:var(--soft);padding:6px 2px;border-bottom:1px dashed var(--line);animation:rise .3s both}
 .hmini b{color:var(--ink);font-variant-numeric:tabular-nums}
 .hmini i{font-style:normal;opacity:.75}
+.roleBadge{margin-top:10px;padding:8px 12px;border-radius:12px;font-size:12px;font-weight:700;text-align:center}
+.roleBadge.guest{background:#F1E8D8;color:#7A6A56}
+.roleBadge.cashier{background:#E8F5E9;color:var(--green)}
+.roleBadge.admin{background:#FFF3D6;color:#8A5B00}
 
 /* ══ кассир ══ */
 .cashier{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:18px;animation:rise .4s both}
@@ -379,7 +383,7 @@ body.editing .card:hover{transform:none}
 <body>
 
 <header class="topbar">
-  <div class="brand"><div class="mark">☕</div><div><b>ЗЕРНО</b><small>меню · бонусы</small></div></div>
+  <div class="brand"><div class="mark">☕</div><div><b>И кофе...</b><small>меню · бонусы</small></div></div>
   <div class="clock" id="clock">--:--</div>
   <div class="modeSeg" id="modeSeg" hidden></div>
   <button class="ava" id="profileTopBtn" title="Профиль">?</button>
@@ -413,7 +417,7 @@ body.editing .card:hover{transform:none}
       <div class="cashier">
         <div class="cash-top">
           <h2>Режим <em>кассира</em></h2>
-          <div class="chip"><span class="dot"></span>Смена открыта · касса «ЗЕРНО»</div>
+          <div class="chip"><span class="dot"></span>Смена открыта · касса «И кофе...»</div>
           <button class="btn fire" id="newGuestBtn">＋ Новый гость</button>
         </div>
 
@@ -434,7 +438,7 @@ body.editing .card:hover{transform:none}
             </div>
             <div class="hint">
               <b>Гость показал QR-код профиля?</b>
-              <p>Отсканируйте код или найдите по номеру телефона — начислите штамп «1 из 10». Профиль привязан к номеру: история штампов не потеряется.</p>
+              <p>Найдите по номеру телефона или имени — начислите штамп «1 из 10». Профиль привязан к номеру: история штампов не потеряется.</p>
               <div class="findrow">
                 <input id="findInput" placeholder="Номер или имя гостя…" autocomplete="off">
                 <button class="btn dark" id="findBtn">Найти</button>
@@ -507,16 +511,14 @@ body.editing .card:hover{transform:none}
         <h4>Профиль</h4>
         <div class="phead">
           <div class="ava" id="avInit">А</div>
-          <div style="flex:1"><input id="nameInput" maxlength="24"><div class="ph" id="phoneLbl">
-            <div class="ph" id="roleLbl"></div>
-          </div></div>
+          <div style="flex:1"><input id="nameInput" maxlength="24"><div class="ph" id="phoneLbl"></div><div class="ph" id="roleLbl"></div></div>
         </div>
+        <button class="demoBtn" id="activateBtn" hidden>🔑 У меня код доступа сотрудника</button>
         <div class="stats">
           <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
           <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
           <div class="stat"><b id="stFree">0</b><span>подарков</span></div>
         </div>
-        <button class="demoBtn" id="activateBtn" hidden>🔑 У меня код доступа сотрудника</button>
         <div class="qrbox" style="margin-top:14px"><canvas id="qrMain" width="220" height="220" style="width:158px;height:158px"></canvas>
           <small>Ваш QR для штампов и бонусов</small>
           <button class="demoBtn" id="qrOpenProfile" style="margin-top:10px">⛶ На весь экран для кассира</button>
@@ -524,7 +526,7 @@ body.editing .card:hover{transform:none}
         <h4>История</h4>
         <div id="histList"></div>
         <button class="demoBtn" id="logoutBtn">⇄ Сменить аккаунт (выйти)</button>
-        <button class="resetBtn" id="resetBtn">↺ Сбросить демо-данные</button>
+        <button class="resetBtn" id="resetBtn">↺ Сбросить локальные данные</button>
       </div>
     </div>
   </aside>
@@ -540,7 +542,7 @@ body.editing .card:hover{transform:none}
 <section class="chat" id="chatPanel" aria-label="Чат поддержки">
   <div class="chat-h">
     <div class="op">🎧</div>
-    <div><b>Ника · поддержка ЗЕРНО</b><small><i></i>онлайн, отвечает ~1 мин</small></div>
+    <div><b>Ника · поддержка</b><small><i></i>онлайн, отвечает ~1 мин</small></div>
     <button id="chatClose" aria-label="Закрыть">✕</button>
   </div>
   <div class="chat-m" id="chatMsgs"></div>
@@ -610,15 +612,15 @@ body.editing .card:hover{transform:none}
   </div>
 </div>
 
-<!-- PIN АДМИНА -->
+<!-- АКТИВАЦИЯ РОЛИ -->
 <div class="modal" id="pinModal">
   <div class="modal-card" style="width:min(360px,100%);text-align:center">
     <button class="mclose" id="pinClose">✕</button>
     <h3>Код доступа</h3>
-<div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только для своих аккаунтов.</div>
-...
-<button class="cta" id="pinGo">Активировать</button>
-<div class="pinhint">Коды задаёт владелец в Railway: ADMIN_CODE / CASHIER_CODE</div>
+    <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только для сотрудников.</div>
+    <input class="pin" id="pinInput" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
+    <button class="cta" id="pinGo">Активировать</button>
+    <div class="pinhint">Коды задаёт владелец в Railway: ADMIN_CODE / CASHIER_CODE</div>
   </div>
 </div>
 
@@ -652,7 +654,7 @@ function fmtPhone(v){const d=ph10(v);if(!d)return'';let r='+7';
 function bindMask(inp){inp.addEventListener('input',()=>{inp.value=fmtPhone(inp.value);
  try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(e){}})}
 
-/* ── API-клиент (только пользовательский токен) ── */
+/* ── API-клиент ── */
 const API_BASE = 'https://app.andcoffee.online';
 const T_USER='zt_user',T_ONB='zt_onb';
 let USER_TOKEN=localStorage.getItem(T_USER)||null;
@@ -706,7 +708,7 @@ $('#qrClose').addEventListener('click',e=>{e.stopPropagation();closeQRFull()});
 $('#qrOpenBonus').onclick=openQRFull;
 $('#qrOpenProfile').onclick=openQRFull;
 
-/* ── меню ── */
+/* ── меню: загрузка ── */
 const CATS=[{id:'coffee',e:'☕',l:'Кофе',t:'#F3E2CE'},{id:'drinks',e:'🧋',l:'Напитки',t:'#E4EFE2'},
             {id:'food',e:'🥐',l:'Еда',t:'#F9ECC7'},{id:'desserts',e:'🍰',l:'Десерты',t:'#F8E1E4'}];
 const TINT=Object.fromEntries(CATS.map(c=>[c.id,c.t]));
@@ -744,13 +746,14 @@ function setMode(m){
  if(m==='admin')loadMenu();
  renderModes();
  toast(m==='admin'?'Режим администратора активен':m==='cashier'?'Смена кассира активна':'Режим гостя',
-       m==='admin'?'🔓':m==='cashier'?'🧾':'')}
+       m==='admin'?'🔓':m==='cashier'?'🧾':'☕')}
 
 /* ── активация роли кодом ── */
 function openPin(){$('#pinModal').classList.add('show');syncOverlay();setTimeout(()=>$('#pinInput').focus(),150)}
 function closePin(){$('#pinModal').classList.remove('show');$('#pinInput').value='';syncOverlay()}
 $('#pinClose').onclick=closePin;
 async function tryActivate(){const v=$('#pinInput').value.trim();
+ if(!v)return toast('Введите код','✍️');
  try{const r=await api('/auth/activate',{method:'POST',body:{code:v}});
   me=r.customer;closePin();renderModes();renderProfile();
   toast(me.role==='admin'?'🔓 Вы теперь администратор':'🧾 Вы теперь кассир','✅')}
@@ -760,7 +763,7 @@ $('#pinGo').onclick=tryActivate;
 $('#pinInput').addEventListener('keydown',e=>{if(e.key==='Enter')tryActivate()});
 $('#activateBtn').onclick=openPin;
 
-/* ── онбординг ── */
+/* ── онбординг / аккаунты ── */
 function openAuth(login=false){$('#authModal').classList.add('show');
  $('#regForm').style.display=login?'none':'flex';$('#loginForm').style.display=login?'flex':'none';
  $('#authTitle').textContent=login?'Вход по номеру':'Создайте профиль';
@@ -775,7 +778,11 @@ $('#skipAuth').onclick=()=>{onboarded=true;localStorage.setItem(T_ONB,'1');close
  toast('Можно смотреть меню. Профиль — по кнопке с аватаром','👀')};
 function setUser(token,customer){USER_TOKEN=token;localStorage.setItem(T_USER,token);
  me=customer;onboarded=true;localStorage.setItem(T_ONB,'1');
- drawQR($('#qrMini'),me.qr);drawQR($('#qrMain'),me.qr)}
+ drawQR($('#qrMini'),me.qr);drawQR($('#qrMain'),me.qr);
+ if(mode!=='guest'){
+   if(customer.role!=='cashier'&&customer.role!=='admin')mode='guest';
+   else if(customer.role==='cashier'&&mode==='admin')mode='cashier';
+ }}
 $('#regBtn').onclick=async()=>{
  const name=$('#regName').value.trim(),phone=$('#regPhone').value;
  if(name.length<2)return toast('Введите имя','✍️');
@@ -900,7 +907,7 @@ $('#emDel').onclick=async()=>{if(!confirm('Удалить позицию из м
   toast('Позиция удалена','🗑')}catch(e){toast(e.message,'⚠️')}};
 
 /* ── панель гостя ── */
-function setTab(t){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+function setTab(t){document.querySelectorAll('.tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
  $('#pvBonus').hidden=t!=='bonus';$('#pvProfile').hidden=t!=='profile'}
 document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab)});
 function openPanel(tab){setTab(tab);$('#panel').classList.add('open');syncOverlay()}
@@ -923,12 +930,14 @@ function renderBonus(){$('#bonusNoUser').hidden=!!me;$('#bonusBox').hidden=!me;i
  $('#mbonusSt').textContent=me.free>0?'🎁 есть!':`${me.stamps}/10`;
 }
 function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden=!me;
- if(!me){$('#avInit').textContent='?';$('#profileTopBtn').textContent='?';return}
+ if(!me){$('#avInit').textContent='?';$('#profileTopBtn').textContent='?';$('#roleLbl').textContent='';return}
  $('#avInit').textContent=(me.name[0]||'Г').toUpperCase();
  $('#profileTopBtn').textContent=(me.name[0]||'Г').toUpperCase();
  $('#nameInput').value=me.name;$('#phoneLbl').textContent=me.phone+' · вход по номеру';
- $('#roleLbl').textContent=me.role==='admin'?'🔑 роль: администратор':me.role==='cashier'?'🧾 роль: кассир':'роль: гость';
- $('#activateBtn').hidden=me.role!=='guest';
+ const r=me.role||'guest';
+ $('#roleLbl').textContent=r==='admin'?'🔑 роль: администратор':r==='cashier'?'🧾 роль: кассир':'роль: гость';
+ $('#roleLbl').className='ph roleBadge '+r;
+ $('#activateBtn').hidden=r!=='guest';
  $('#stCups').textContent=me.cups;$('#stStamps').textContent=me.stamps+'/10';$('#stFree').textContent=me.free;
  $('#histList').innerHTML=(me.history||[]).slice(0,8).map(h=>
   `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`).join('')
@@ -971,7 +980,7 @@ $('#demoScan').onclick=async()=>{$('#custCard').classList.remove('show');
 $('#giveStampBtn').onclick=async()=>{if(!found)return;
  try{const r=await api('/staff/stamp',{method:'POST',body:{id:found.id}});
   found=r.customer;showCust(found,r.ten?-1:found.stamps-1);renderLog();
-  if(r.ten)confetti();toast(r.msg,r.ten?'🎉':'')}catch(e){toast(e.message,'⚠️')}};
+  if(r.ten)confetti();toast(r.msg,r.ten?'🎉':'☕')}catch(e){toast(e.message,'⚠️')}};
 $('#redeemBtn').onclick=async()=>{if(!found)return;
  try{const r=await api('/staff/redeem',{method:'POST',body:{id:found.id}});
   found=r.customer;showCust(found);renderLog();renderProfile();
@@ -996,7 +1005,7 @@ async function renderLog(){try{const r=await api('/staff/log');
   `<div class="logrow"><span class="lt">${esc(l.t)}</span><span>${esc(l.w)} — ${esc(l.a)}</span></div>`).join('')
   ||'<div class="hmini">Журнал пуст</div>'}catch(e){$('#cashLog').innerHTML=''}}
 
-/* ── чат ── */
+/* ── чат (локально) ── */
 let chatOpened=false,unread=0;
 const now=()=>new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 function addMsg(who,text){const m=document.createElement('div');m.className='msg '+who;
@@ -1029,7 +1038,7 @@ $('#chatSend').onclick=()=>sendChat($('#chatInput').value);
 $('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat($('#chatInput').value)});
 $('#chatFab').onclick=()=>{const p=$('#chatPanel');p.classList.toggle('open');
  if(p.classList.contains('open')){unread=0;$('#chatBadge').hidden=true;
-  if(!chatOpened){chatOpened=true;setTimeout(()=>addMsg('bot','Привет! Я Ника, поддержка «ЗЕРНО» 👋 Подскажу по меню, бонусам и профилю.'),350)}}};
+  if(!chatOpened){chatOpened=true;setTimeout(()=>addMsg('bot','Привет! Я Ника, поддержка 👋 Подскажу по меню, бонусам и профилю.'),350)}}};
 $('#chatClose').onclick=()=>$('#chatPanel').classList.remove('open');
 
 /* ── конфетти ── */
@@ -1059,9 +1068,9 @@ if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.App) {
     if ($('#qrModal').classList.contains('show')) return closeQRFull();
     if ($('#emModal').classList.contains('show')) return closeEditor();
     if ($('#pinModal').classList.contains('show')) return closePin();
+    if ($('#authModal').classList.contains('show')) { if (onboarded || me) closeAuth(); return; }
     if ($('#chatPanel').classList.contains('open')) return $('#chatPanel').classList.remove('open');
     if ($('#panel').classList.contains('open')) return closePanel();
-    if ($('#authModal').classList.contains('show')) { if (onboarded || me) closeAuth(); return; }
     Capacitor.Plugins.App.exitApp();
   });
 }
@@ -1079,7 +1088,7 @@ function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();ren
  await loadMenu();renderAll();
  if(!onboarded)setTimeout(()=>openAuth(false),600);
 })();
-console.info('%c☕ ЗЕРНО · роли: guest/cashier/admin','font-weight:bold;font-size:14px','| коды: ADMIN_CODE / CASHIER_CODE в Railway');
+console.info('%c☕ И кофе... · роли: guest/cashier/admin','font-weight:bold;font-size:14px','| API: /api/*');
 </script>
 </body>
 </html>

@@ -1,17 +1,14 @@
 {
-  "name": "ЗЕРНО — меню и бонусы",
-  "short_name": "ЗЕРНО",
-  "description": "Актуальное меню кофейни и бонусы: каждый 10-й кофе бесплатно",
-  "start_url": "./index.html",
-  "scope": "./",
+  "name": "И кофе...",
+  "short_name": "И кофе",
+  "start_url": ".",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F4EFE6",
   "theme_color": "#171009",
-  "lang": "ru",
+  "description": "Меню и бонусы кофейни — каждый 10-й кофе бесплатно",
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
