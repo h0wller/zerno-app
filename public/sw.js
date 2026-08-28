@@ -1,4 +1,4 @@
-const CACHE = 'zerno-v3';
+const CACHE = 'zerno-v5';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', e => {
