@@ -6,18 +6,18 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
-const PIN = process.env.STAFF_PIN || '1234';
+const ADMIN_CODE = process.env.ADMIN_CODE || '1234';
+const CASHIER_CODE = process.env.CASHIER_CODE || '2468';
 const PUBLIC_DIR = process.env.PUBLIC_DIR || path.join(__dirname, 'public');
 
 const db = new Database(process.env.DB_PATH || path.join(__dirname, 'zerno.db'));
 db.pragma('journal_mode = WAL');
 
-/* ── схема: без зарезервированных слов SQL (is_on вместо on, descr вместо desc) ── */
 db.exec(`
 CREATE TABLE IF NOT EXISTS customers(
   id TEXT PRIMARY KEY, name TEXT, phone TEXT UNIQUE,
   stamps INTEGER DEFAULT 0, free INTEGER DEFAULT 0, cups INTEGER DEFAULT 0,
-  qr TEXT UNIQUE, created_at TEXT);
+  qr TEXT UNIQUE, created_at TEXT, role TEXT DEFAULT 'guest');
 CREATE TABLE IF NOT EXISTS history(
   id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, ts TEXT, a TEXT, by TEXT);
 CREATE TABLE IF NOT EXISTS menu(
@@ -30,10 +30,10 @@ CREATE TABLE IF NOT EXISTS events(
   id INTEGER PRIMARY KEY AUTOINCREMENT, t TEXT, w TEXT, a TEXT);
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
 `);
-/* миграция, если в старом volume осталась таблица menu без is_on */
-const menuCols = db.prepare('PRAGMA table_info(menu)').all().map(c => c.name);
-if (menuCols.length && !menuCols.includes('is_on')) {
-  db.exec('ALTER TABLE menu ADD COLUMN is_on INTEGER DEFAULT 1;');
+/* миграция: добавляем role, если база старая */
+const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
+if (ccols.length && !ccols.includes('role')) {
+  db.exec(`ALTER TABLE customers ADD COLUMN role TEXT DEFAULT 'guest'`);
 }
 
 /* ── утилиты ── */
@@ -49,14 +49,15 @@ const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
   comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
   coffee: r.coffee, on: r.is_on, img: r.img });
 const cust = c => ({ id: c.id, name: c.name, phone: c.phone, stamps: c.stamps, free: c.free,
-  cups: c.cups, qr: c.qr, history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) });
+  cups: c.cups, qr: c.qr, role: c.role || 'guest',
+  history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) });
 const addHist = (cid, a, by) => db.prepare('INSERT INTO history(cid,ts,a,by) VALUES(?,?,?,?)').run(cid, nowISO(), a, by);
 const logEv = (w, a) => db.prepare('INSERT INTO events(t,w,a) VALUES(?,?,?)')
   .run(new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }), w, a);
 const getMeta = () => db.prepare("SELECT value FROM meta WHERE key='updatedAt'").get()?.value || nowISO();
 const touch = () => db.prepare("INSERT INTO meta(key,value) VALUES('updatedAt',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(nowISO());
-const issueToken = (kind, ref) => { const t = crypto.randomUUID();
-  db.prepare('INSERT INTO tokens(token,kind,ref,ts) VALUES(?,?,?,?)').run(t, kind, ref, nowISO()); return t; };
+const issueToken = ref => { const t = crypto.randomUUID();
+  db.prepare('INSERT INTO tokens(token,kind,ref,ts) VALUES(?,?,?,?)').run(t, 'user', ref, nowISO()); return t; };
 
 /* ── сид ── */
 if (!db.prepare('SELECT 1 FROM menu LIMIT 1').get()) {
@@ -85,23 +86,30 @@ if (!db.prepare('SELECT 1 FROM menu LIMIT 1').get()) {
   touch();
 }
 if (!db.prepare('SELECT 1 FROM customers LIMIT 1').get()) {
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?)').run('u1','Анна Ким','+7 912 480-88-12',7,0,23,'Z-K4F7A2',nowISO());
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?)').run('u2','Дмитрий Соколов','+7 903 214-77-45',9,1,64,'Z-M9B3X1',nowISO());
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?)').run('u3','Мария Лебедева','+7 926 118-30-09',3,0,11,'Z-P2T8Q6',nowISO());
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?,?)').run('u1','Анна Ким','+7 912 480-88-12',7,0,23,'Z-K4F7A2',nowISO(),'admin');
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?,?)').run('u2','Дмитрий Соколов','+7 903 214-77-45',9,1,64,'Z-M9B3X1',nowISO(),'cashier');
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?,?)').run('u3','Мария Лебедева','+7 926 118-30-09',3,0,11,'Z-P2T8Q6',nowISO(),'guest');
   addHist('u1','Штамп 7 из 10','Кассир'); addHist('u2','🎉 10-й кофе — подарок начислен','Система'); addHist('u3','Штамп 3 из 10','Кассир');
 }
 
-/* ── auth ── */
+/* ── guards по ролям ── */
 function authUser(req) {
   const t = (req.header('Authorization') || '').replace('Bearer ', '');
   const row = db.prepare("SELECT * FROM tokens WHERE token=? AND kind='user'").get(t);
   return row ? db.prepare('SELECT * FROM customers WHERE id=?').get(row.ref) : null;
 }
-const authStaff = req => { const t = req.header('X-Staff');
-  return !!t && !!db.prepare("SELECT 1 FROM tokens WHERE token=? AND kind='staff'").get(t); };
-const staffGuard = (req, res, next) => authStaff(req) ? next() : res.status(401).json({ error: 'Нужен вход стаффа' });
 const userGuard = (req, res, next) => { req.user = authUser(req);
   req.user ? next() : res.status(401).json({ error: 'Нужен вход по номеру' }); };
+const staffGuard = (req, res, next) => { req.user = authUser(req);
+  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
+  if (req.user.role !== 'cashier' && req.user.role !== 'admin')
+    return res.status(403).json({ error: 'Недостаточно прав: нужна роль кассира' });
+  next(); };
+const adminGuard = (req, res, next) => { req.user = authUser(req);
+  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
+  if (req.user.role !== 'admin')
+    return res.status(403).json({ error: 'Недостаточно прав: нужна роль администратора' });
+  next(); };
 
 /* ── лояльность ── */
 function grant(cid, by) {
@@ -128,72 +136,79 @@ function redeem(cid, by) {
   logEv(c.name, 'Списан бесплатный кофе');
   return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) };
 }
-function createCustomer(name, phone, by) {
+function createCustomer(name, phone) {
   const p = fmtPhone(phone);
   if (String(name).trim().length < 2) return { err: 'Введите имя', code: 400 };
   if (ph10(p).length < 10) return { err: 'Введите номер полностью', code: 400 };
   if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return { err: 'exists', code: 409 };
   const id = uid('u'), qr = 'Z-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?)').run(id, name.trim(), p, 0, 0, 0, qr, nowISO());
-  addHist(id, 'Профиль создан', by);
-  if (by === 'Кассир') logEv(name.trim(), 'Создан профиль');
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?,?)').run(id, name.trim(), p, 0, 0, 0, qr, nowISO(), 'guest');
+  addHist(id, 'Профиль создан', 'Приложение');
   return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(id)) };
 }
 
 const app = express();
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Staff');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 app.use(express.json({ limit: '10mb' }));
 
-/* ── меню ── */
+/* ── меню ─ */
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.get('/api/menu', (req, res) => res.json({
   items: db.prepare('SELECT * FROM menu WHERE is_on=1').all().map(item), updatedAt: getMeta() }));
-app.get('/api/menu/all', staffGuard, (req, res) => res.json({
+app.get('/api/menu/all', adminGuard, (req, res) => res.json({
   items: db.prepare('SELECT * FROM menu').all().map(item), updatedAt: getMeta() }));
-app.post('/api/menu', staffGuard, (req, res) => {
+app.post('/api/menu', adminGuard, (req, res) => {
   const p = req.body; p.id = p.id || uid('p');
   db.prepare('INSERT INTO menu VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(
     p.id, p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
     p.vol || '', Math.max(0, +p.price || 0), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null);
   touch(); res.json({ ok: true, id: p.id });
 });
-app.put('/api/menu/:id', staffGuard, (req, res) => {
+app.put('/api/menu/:id', adminGuard, (req, res) => {
   const p = req.body;
   db.prepare('UPDATE menu SET cat=?,e=?,name=?,descr=?,comp=?,vol=?,price=?,tag=?,coffee=?,is_on=?,img=? WHERE id=?').run(
     p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
     p.vol || '', Math.max(0, +p.price || 0), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null, req.params.id);
   touch(); res.json({ ok: true });
 });
-app.delete('/api/menu/:id', staffGuard, (req, res) => {
+app.delete('/api/menu/:id', adminGuard, (req, res) => {
   db.prepare('DELETE FROM menu WHERE id=?').run(req.params.id); touch(); res.json({ ok: true });
 });
 
 /* ── аккаунты ── */
 app.post('/api/auth/register', (req, res) => {
-  const r = createCustomer(req.body.name || '', req.body.phone || '', 'Приложение');
+  const r = createCustomer(req.body.name || '', req.body.phone || '');
   if (r.err) return res.status(r.code).json({ error: r.err });
-  res.json({ token: issueToken('user', r.customer.id), customer: r.customer });
+  res.json({ token: issueToken(r.customer.id), customer: r.customer });
 });
 app.post('/api/auth/login', (req, res) => {
   const p = fmtPhone(req.body.phone || '');
   const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (!c) return res.status(404).json({ error: 'Профиль не найден — создайте новый' });
   addHist(c.id, 'Вход по номеру', 'Приложение');
-  res.json({ token: issueToken('user', c.id), customer: cust(c) });
+  res.json({ token: issueToken(c.id), customer: cust(c) });
 });
-app.post('/api/auth/staff', (req, res) => {
-  if (req.body.pin !== PIN) return res.status(403).json({ error: 'Неверный PIN' });
-  res.json({ token: issueToken('staff', 'staff') });
-});
-app.post('/api/exit', (req, res) => {
+app.post('/api/exit', userGuard, (req, res) => {
   const t = (req.header('Authorization') || '').replace('Bearer ', '');
   db.prepare('DELETE FROM tokens WHERE token=?').run(t); res.json({ ok: true });
+});
+/* активация роли кодом */
+app.post('/api/auth/activate', userGuard, (req, res) => {
+  const code = String(req.body.code || '').trim();
+  let role = null;
+  if (code === ADMIN_CODE) role = 'admin';
+  else if (code === CASHIER_CODE) role = 'cashier';
+  if (!role) return res.status(403).json({ error: 'Неверный код доступа' });
+  db.prepare('UPDATE customers SET role=? WHERE id=?').run(role, req.user.id);
+  addHist(req.user.id, role === 'admin' ? '🔓 Выдан доступ администратора' : '🧾 Выдан доступ кассира', 'Система');
+  logEv(req.user.name, role === 'admin' ? 'активирован админ' : 'активирован кассир');
+  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
 app.get('/api/me', userGuard, (req, res) => res.json({ customer: cust(req.user) }));
 app.put('/api/me', userGuard, (req, res) => {
@@ -201,16 +216,12 @@ app.put('/api/me', userGuard, (req, res) => {
   db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
-//app.post('/api/stamp', userGuard, (req, res) => {
-  //const r = grant(req.user.id, 'Демо-покупка');
-  //r ? res.json(r) : res.status(404).json({ error: 'Гость не найден' });
-//});
 app.post('/api/redeem', userGuard, (req, res) => {
   const r = redeem(req.user.id, 'Гость');
   r ? res.json(r) : res.status(400).json({ error: 'Нет доступных подарков' });
 });
 
-/* ── кассир ── */
+/* ── кассир (роль cashier/admin) ── */
 app.get('/api/staff/customers', staffGuard, (req, res) => {
   const q = String(req.query.search || ''); const d = ph10(q); const t = q.trim().toLowerCase();
   const rows = db.prepare('SELECT * FROM customers ORDER BY created_at DESC LIMIT 50').all()
@@ -219,8 +230,10 @@ app.get('/api/staff/customers', staffGuard, (req, res) => {
   res.json({ customers: rows.map(cust) });
 });
 app.post('/api/staff/customers', staffGuard, (req, res) => {
-  const r = createCustomer(req.body.name || '', req.body.phone || '', 'Кассир');
-  r.err ? res.status(r.code).json({ error: r.err }) : res.json(r);
+  const r = createCustomer(req.body.name || '', req.body.phone || '');
+  if (r.err) return res.status(r.code).json({ error: r.err });
+  addHist(r.customer.id, 'Профиль создан', 'Кассир'); logEv(r.customer.name, 'Создан профиль');
+  res.json(r);
 });
 app.post('/api/staff/stamp', staffGuard, (req, res) => {
   const r = grant(req.body.id, 'Кассир');
@@ -243,7 +256,7 @@ app.get('/api/staff/demo', staffGuard, (req, res) => {
 app.get('/api/staff/log', staffGuard, (req, res) =>
   res.json({ log: db.prepare('SELECT t,w,a FROM events ORDER BY id DESC LIMIT 20').all() }));
 
-/* ── статика (фронтенд) ── */
+/* ── статика ── */
 app.use(express.static(PUBLIC_DIR));
 
 app.listen(PORT, () => console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`));

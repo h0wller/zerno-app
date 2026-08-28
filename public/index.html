@@ -381,11 +381,7 @@ body.editing .card:hover{transform:none}
 <header class="topbar">
   <div class="brand"><div class="mark">☕</div><div><b>ЗЕРНО</b><small>меню · бонусы</small></div></div>
   <div class="clock" id="clock">--:--</div>
-  <div class="modeSeg" id="modeSeg">
-    <button class="on" data-mode="guest">Гость</button>
-    <button data-mode="cashier">Кассир</button>
-    <button data-mode="admin">Админ</button>
-  </div>
+  <div class="modeSeg" id="modeSeg" hidden></div>
   <button class="ava" id="profileTopBtn" title="Профиль">?</button>
 </header>
 
@@ -511,13 +507,16 @@ body.editing .card:hover{transform:none}
         <h4>Профиль</h4>
         <div class="phead">
           <div class="ava" id="avInit">А</div>
-          <div style="flex:1"><input id="nameInput" maxlength="24"><div class="ph" id="phoneLbl"></div></div>
+          <div style="flex:1"><input id="nameInput" maxlength="24"><div class="ph" id="phoneLbl">
+            <div class="ph" id="roleLbl"></div>
+          </div></div>
         </div>
         <div class="stats">
           <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
           <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
           <div class="stat"><b id="stFree">0</b><span>подарков</span></div>
         </div>
+        <button class="demoBtn" id="activateBtn" hidden>🔑 У меня код доступа сотрудника</button>
         <div class="qrbox" style="margin-top:14px"><canvas id="qrMain" width="220" height="220" style="width:158px;height:158px"></canvas>
           <small>Ваш QR для штампов и бонусов</small>
           <button class="demoBtn" id="qrOpenProfile" style="margin-top:10px">⛶ На весь экран для кассира</button>
@@ -615,11 +614,11 @@ body.editing .card:hover{transform:none}
 <div class="modal" id="pinModal">
   <div class="modal-card" style="width:min(360px,100%);text-align:center">
     <button class="mclose" id="pinClose">✕</button>
-    <h3>Вход администратора</h3>
-    <div class="msub">Редактирование меню доступно только админ-аккаунту.<br><br>Интеграции Эвотор / iiko отключены — план подключения в заметках к релизу.</div>
-    <input class="pin" id="pinInput" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
-    <button class="cta" id="pinGo">Войти</button>
-    <div class="pinhint">PIN по умолчанию: 1234 · смените перед релизом</div>
+    <h3>Код доступа</h3>
+<div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только для своих аккаунтов.</div>
+...
+<button class="cta" id="pinGo">Активировать</button>
+<div class="pinhint">Коды задаёт владелец в Railway: ADMIN_CODE / CASHIER_CODE</div>
   </div>
 </div>
 
@@ -640,7 +639,6 @@ body.editing .card:hover{transform:none}
 
 <script>
 'use strict';
-/* ЗЕРНО · клиент серверного API (server.js) */
 const $=s=>document.querySelector(s);
 const clone=o=>JSON.parse(JSON.stringify(o));
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -654,23 +652,20 @@ function fmtPhone(v){const d=ph10(v);if(!d)return'';let r='+7';
 function bindMask(inp){inp.addEventListener('input',()=>{inp.value=fmtPhone(inp.value);
  try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(e){}})}
 
-/* ── API-клиент ── */
+/* ── API-клиент (только пользовательский токен) ── */
 const API_BASE = 'https://app.andcoffee.online';
-const T_USER='zt_user',T_STAFF='zt_staff',T_ONB='zt_onb';
+const T_USER='zt_user',T_ONB='zt_onb';
 let USER_TOKEN=localStorage.getItem(T_USER)||null;
-let STAFF_TOKEN=localStorage.getItem(T_STAFF)||null;
 let onboarded=localStorage.getItem(T_ONB)==='1';
-let MENU=[],meta={updatedAt:Date.now()},me=null,adminUnlocked=!!STAFF_TOKEN;
+let MENU=[],meta={updatedAt:Date.now()},me=null,mode='guest',editMode=false;
 async function api(path,opts={}){
  const h={'Content-Type':'application/json'};
  if(USER_TOKEN)h['Authorization']='Bearer '+USER_TOKEN;
- if(STAFF_TOKEN)h['X-Staff']=STAFF_TOKEN;
  let r;try{r=await fetch(API_BASE + '/api'+path,{method:opts.method||'GET',headers:h,
    body:opts.body?JSON.stringify(opts.body):undefined})}
  catch(e){throw new Error('Сервер недоступен — проверьте подключение')}
  const j=await r.json().catch(()=>({}));
- if(r.status===401){if(path.startsWith('/staff')){STAFF_TOKEN=null;localStorage.removeItem(T_STAFF);adminUnlocked=false}
-  else if(!path.startsWith('/auth')){USER_TOKEN=null;localStorage.removeItem(T_USER);me=null}}
+ if(r.status===401&&!path.startsWith('/auth')){USER_TOKEN=null;localStorage.removeItem(T_USER);me=null}
  if(!r.ok){const err=new Error(j.error||('Ошибка '+r.status));err.code=r.status;throw err}
  return j}
 function toast(msg,icon='✨'){const t=document.createElement('div');t.className='toast';
@@ -711,23 +706,33 @@ $('#qrClose').addEventListener('click',e=>{e.stopPropagation();closeQRFull()});
 $('#qrOpenBonus').onclick=openQRFull;
 $('#qrOpenProfile').onclick=openQRFull;
 
-/* ── меню: загрузка ── */
+/* ── меню ── */
 const CATS=[{id:'coffee',e:'☕',l:'Кофе',t:'#F3E2CE'},{id:'drinks',e:'🧋',l:'Напитки',t:'#E4EFE2'},
             {id:'food',e:'🥐',l:'Еда',t:'#F9ECC7'},{id:'desserts',e:'🍰',l:'Десерты',t:'#F8E1E4'}];
 const TINT=Object.fromEntries(CATS.map(c=>[c.id,c.t]));
 async function loadMenu(){try{
- const r=await api(adminUnlocked?'/menu/all':'/menu');
+ const r=await api((me&&me.role==='admin')?'/menu/all':'/menu');
  MENU=r.items;meta.updatedAt=r.updatedAt;renderUpd();renderMenu()}
 catch(e){toast(e.message,'⚠️')}}
 
-/* ── режимы ── */
-let mode='guest',editMode=false;
+/* ── режимы по ролям ── */
+function renderModes(){
+ const role=me?me.role:'guest';
+ const btns=[{m:'guest',l:'Гость'}];
+ if(role==='cashier'||role==='admin')btns.push({m:'cashier',l:'Кассир'});
+ if(role==='admin')btns.push({m:'admin',l:'Админ'});
+ const seg=$('#modeSeg');
+ seg.innerHTML=btns.map(b=>`<button data-mode="${b.m}" class="${mode===b.m?'on':''}">${b.l}</button>`).join('');
+ seg.hidden=btns.length<2;
+ seg.querySelectorAll('button').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+}
 function exitEdit(){if(!editMode)return;editMode=false;document.body.classList.remove('editing');
  $('#editToggle').textContent='✏️ Редактировать';$('#editToggle').classList.remove('on');renderMenu()}
 function setMode(m){
- if(m==='admin'&&!adminUnlocked){openPin();return}
+ const role=me?me.role:'guest';
+ if(m==='cashier'&&role!=='cashier'&&role!=='admin')return;
+ if(m==='admin'&&role!=='admin')return;
  mode=m;
- document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode===m));
  $('#cashierView').hidden=m!=='cashier';
  $('#menuView').hidden=m==='cashier';
  $('#rail').style.display=m==='cashier'?'none':'';
@@ -737,24 +742,25 @@ function setMode(m){
  $('#mbonusBtn').style.display=m==='cashier'?'none':'';
  if(m==='cashier')renderLog();
  if(m==='admin')loadMenu();
+ renderModes();
  toast(m==='admin'?'Режим администратора активен':m==='cashier'?'Смена кассира активна':'Режим гостя',
-       m==='admin'?'🔓':m==='cashier'?'🧾':'☕')}
-document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+       m==='admin'?'🔓':m==='cashier'?'🧾':'')}
 
-/* PIN стаффа */
+/* ── активация роли кодом ── */
 function openPin(){$('#pinModal').classList.add('show');syncOverlay();setTimeout(()=>$('#pinInput').focus(),150)}
 function closePin(){$('#pinModal').classList.remove('show');$('#pinInput').value='';syncOverlay()}
 $('#pinClose').onclick=closePin;
-async function tryPin(){const v=$('#pinInput').value;
- try{const r=await api('/auth/staff',{method:'POST',body:{pin:v}});
-  STAFF_TOKEN=r.token;localStorage.setItem(T_STAFF,r.token);adminUnlocked=true;
-  closePin();setMode('admin')}
+async function tryActivate(){const v=$('#pinInput').value.trim();
+ try{const r=await api('/auth/activate',{method:'POST',body:{code:v}});
+  me=r.customer;closePin();renderModes();renderProfile();
+  toast(me.role==='admin'?'🔓 Вы теперь администратор':'🧾 Вы теперь кассир','✅')}
  catch(e){const p=$('#pinInput');p.classList.remove('err');void p.offsetWidth;p.classList.add('err');
   toast(e.message,'⛔');p.value=''}}
-$('#pinGo').onclick=tryPin;
-$('#pinInput').addEventListener('keydown',e=>{if(e.key==='Enter')tryPin()});
+$('#pinGo').onclick=tryActivate;
+$('#pinInput').addEventListener('keydown',e=>{if(e.key==='Enter')tryActivate()});
+$('#activateBtn').onclick=openPin;
 
-/* ── онбординг / аккаунты ── */
+/* ── онбординг ── */
 function openAuth(login=false){$('#authModal').classList.add('show');
  $('#regForm').style.display=login?'none':'flex';$('#loginForm').style.display=login?'flex':'none';
  $('#authTitle').textContent=login?'Вход по номеру':'Создайте профиль';
@@ -789,7 +795,8 @@ $('#logBtn').onclick=async()=>{
 document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>openAuth());
 $('#profileTopBtn').onclick=()=>me?openPanel('profile'):openAuth();
 $('#logoutBtn').onclick=async()=>{try{await api('/exit',{method:'POST'})}catch(e){}
- USER_TOKEN=null;localStorage.removeItem(T_USER);me=null;closePanel();renderAll();openAuth()};
+ USER_TOKEN=null;localStorage.removeItem(T_USER);me=null;mode='guest';
+ closePanel();renderAll();openAuth()};
 
 /* ── витрина ── */
 let cat='coffee',query='';
@@ -843,7 +850,7 @@ function renderZone(){const z=$('#emZone');
   :`<div class="zempty"><span>📷</span><b>Загрузить фото</b><small>JPG/PNG · перетащите или кликните</small></div>`;
  const d=$('#emImgDel');if(d)d.onclick=e=>{e.stopPropagation();edit.img=null;renderZone()}}
 function openEditor(id){
- if(mode!=='admin')return;
+ if(mode!=='admin'||!me||me.role!=='admin')return;
  const src=id?MENU.find(x=>x.id===id):null;
  edit=src?clone(src):{cat,e:'☕',name:'',desc:'',comp:[],vol:'',price:0,tag:'',coffee:0,on:1,img:null};
  $('#emTitle').textContent=src?'Редактировать позицию':'Новая позиция';
@@ -915,14 +922,13 @@ function renderBonus(){$('#bonusNoUser').hidden=!!me;$('#bonusBox').hidden=!me;i
    toast('Бесплатный кофе погашен. Вкусного!','☕')}catch(e){toast(e.message,'⚠️')}};
  $('#mbonusSt').textContent=me.free>0?'🎁 есть!':`${me.stamps}/10`;
 }
-//$('#demoStampBtn').onclick=async()=>{if(!me)return;
-//try{const r=await api('/stamp',{method:'POST'});me=r.customer;renderBonus();renderProfile();
-//if(r.ten)confetti();toast(r.msg,r.ten?'🎉':'☕')}catch(e){toast(e.message,'⚠️')}};
 function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden=!me;
  if(!me){$('#avInit').textContent='?';$('#profileTopBtn').textContent='?';return}
  $('#avInit').textContent=(me.name[0]||'Г').toUpperCase();
  $('#profileTopBtn').textContent=(me.name[0]||'Г').toUpperCase();
  $('#nameInput').value=me.name;$('#phoneLbl').textContent=me.phone+' · вход по номеру';
+ $('#roleLbl').textContent=me.role==='admin'?'🔑 роль: администратор':me.role==='cashier'?'🧾 роль: кассир':'роль: гость';
+ $('#activateBtn').hidden=me.role!=='guest';
  $('#stCups').textContent=me.cups;$('#stStamps').textContent=me.stamps+'/10';$('#stFree').textContent=me.free;
  $('#histList').innerHTML=(me.history||[]).slice(0,8).map(h=>
   `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`).join('')
@@ -965,7 +971,7 @@ $('#demoScan').onclick=async()=>{$('#custCard').classList.remove('show');
 $('#giveStampBtn').onclick=async()=>{if(!found)return;
  try{const r=await api('/staff/stamp',{method:'POST',body:{id:found.id}});
   found=r.customer;showCust(found,r.ten?-1:found.stamps-1);renderLog();
-  if(r.ten)confetti();toast(r.msg,r.ten?'🎉':'☕')}catch(e){toast(e.message,'⚠️')}};
+  if(r.ten)confetti();toast(r.msg,r.ten?'🎉':'')}catch(e){toast(e.message,'⚠️')}};
 $('#redeemBtn').onclick=async()=>{if(!found)return;
  try{const r=await api('/staff/redeem',{method:'POST',body:{id:found.id}});
   found=r.customer;showCust(found);renderLog();renderProfile();
@@ -990,7 +996,7 @@ async function renderLog(){try{const r=await api('/staff/log');
   `<div class="logrow"><span class="lt">${esc(l.t)}</span><span>${esc(l.w)} — ${esc(l.a)}</span></div>`).join('')
   ||'<div class="hmini">Журнал пуст</div>'}catch(e){$('#cashLog').innerHTML=''}}
 
-/* ── чат (локально) ── */
+/* ── чат ── */
 let chatOpened=false,unread=0;
 const now=()=>new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 function addMsg(who,text){const m=document.createElement('div');m.className='msg '+who;
@@ -1047,21 +1053,33 @@ $('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeQRFull();
 addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeQRFull();
  $('#chatPanel').classList.remove('open');if(onboarded||me)closeAuth()}});
 
+/* ── Android: аппаратная кнопка «назад» ── */
+if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.App) {
+  Capacitor.Plugins.App.addListener('backButton', () => {
+    if ($('#qrModal').classList.contains('show')) return closeQRFull();
+    if ($('#emModal').classList.contains('show')) return closeEditor();
+    if ($('#pinModal').classList.contains('show')) return closePin();
+    if ($('#chatPanel').classList.contains('open')) return $('#chatPanel').classList.remove('open');
+    if ($('#panel').classList.contains('open')) return closePanel();
+    if ($('#authModal').classList.contains('show')) { if (onboarded || me) closeAuth(); return; }
+    Capacitor.Plugins.App.exitApp();
+  });
+}
+
 /* ── PWA ── */
 if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
 
 /* ── старт ── */
 bindMask($('#regPhone'));bindMask($('#logPhone'));bindMask($('#ngPhone'));
-function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();
+function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();renderModes();
  const s=(me&&me.qr)||'guest';drawQR($('#qrMini'),s);drawQR($('#qrMain'),s);
  if(mode==='cashier')renderLog()}
 (async function boot(){
  if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
- if(STAFF_TOKEN){try{await api('/menu/all')}catch(e){STAFF_TOKEN=null;localStorage.removeItem(T_STAFF);adminUnlocked=false}}
  await loadMenu();renderAll();
  if(!onboarded)setTimeout(()=>openAuth(false),600);
 })();
-console.info('%c☕ ЗЕРНО · server build','font-weight:bold;font-size:14px','| API: /api/* | PIN стаффа: задаётся переменной STAFF_PIN');
+console.info('%c☕ ЗЕРНО · роли: guest/cashier/admin','font-weight:bold;font-size:14px','| коды: ADMIN_CODE / CASHIER_CODE в Railway');
 </script>
 </body>
 </html>
