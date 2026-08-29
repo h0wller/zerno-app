@@ -58,7 +58,31 @@ const getMeta = () => db.prepare("SELECT value FROM meta WHERE key='updatedAt'")
 const touch = () => db.prepare("INSERT INTO meta(key,value) VALUES('updatedAt',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(nowISO());
 const issueToken = ref => { const t = crypto.randomUUID();
   db.prepare('INSERT INTO tokens(token,kind,ref,ts) VALUES(?,?,?,?)').run(t, 'user', ref, nowISO()); return t; };
-
+/* ── защита кодов сотрудника от брутфорса ── */
+const MAX_FAILS = 5;
+const pinLocks = new Map(); // key -> { fails, streak, lockedUntil }
+const lockKey = req => (req.headers['x-forwarded-for'] || req.ip || 'local') + ':staff';
+function lockedSeconds(req) {
+  const e = pinLocks.get(lockKey(req));
+  return e && e.lockedUntil > Date.now() ? Math.ceil((e.lockedUntil - Date.now()) / 1000) : 0;
+}
+function registerFail(req) {
+  const k = lockKey(req);
+  const e = pinLocks.get(k) || { fails: 0, streak: 0, lockedUntil: 0 };
+  e.fails++;
+  if (e.fails >= MAX_FAILS) {
+    e.streak++;
+    e.lockedUntil = Date.now() + 60_000 * Math.pow(2, Math.min(e.streak - 1, 6));
+    e.fails = 0;
+  }
+  pinLocks.set(k, e);
+  logEv('—', 'неудачная попытка кода сотрудника');
+}
+function safeEqual(a, b) {
+  const ha = crypto.createHash('sha256').update(String(a)).digest();
+  const hb = crypto.createHash('sha256').update(String(b)).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
 /* ── сид ── */
 if (!db.prepare('SELECT 1 FROM menu LIMIT 1').get()) {
   const seed = [
@@ -200,11 +224,14 @@ app.post('/api/exit', userGuard, (req, res) => {
 });
 /* активация роли кодом */
 app.post('/api/auth/activate', userGuard, (req, res) => {
+  const wait = lockedSeconds(req);
+  if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
   const code = String(req.body.code || '').trim();
   let role = null;
-  if (code === ADMIN_CODE) role = 'admin';
-  else if (code === CASHIER_CODE) role = 'cashier';
-  if (!role) return res.status(403).json({ error: 'Неверный код доступа' });
+  if (safeEqual(code, ADMIN_CODE)) role = 'admin';
+  else if (safeEqual(code, CASHIER_CODE)) role = 'cashier';
+  if (!role) { registerFail(req); return res.status(403).json({ error: 'Неверный код доступа' }); }
+  pinLocks.delete(lockKey(req));
   db.prepare('UPDATE customers SET role=? WHERE id=?').run(role, req.user.id);
   addHist(req.user.id, role === 'admin' ? '🔓 Выдан доступ администратора' : '🧾 Выдан доступ кассира', 'Система');
   logEv(req.user.name, role === 'admin' ? 'активирован админ' : 'активирован кассир');
