@@ -660,7 +660,7 @@ function fmtPhone(v){const d=ph10(v);if(!d)return'';let r='+7';
 function bindMask(inp){inp.addEventListener('input',()=>{inp.value=fmtPhone(inp.value);
  try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(e){}})}
 /* штампы-зёрна: 9 зёрен + 10-й — чашка, как на бумажной карте */
-const BEAN='<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.6" ry="9.6" fill="currentColor"/><path d="M12 3.2c-2.8 3.6-2.8 14 0 17.6" fill="none" stroke="#F7F3EA" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
+const BEAN='<svg viewBox="0 0 24 24" width="50" height="50" aria-hidden="true"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.6" ry="9.6" fill="currentColor"/><path d="M12 3.2c-2.8 3.6-2.8 14 0 17.6" fill="none" stroke="#F7F3EA" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
 const stampIcon=i=>i===9?'☕':BEAN;
 /* сезонные часы */
 function hoursNow(){const m=new Date().getMonth()+1;return (m>=5&&m<=9)?'8:00–21:00':'8:00–20:00'}
