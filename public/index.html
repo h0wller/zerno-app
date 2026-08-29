@@ -363,14 +363,13 @@ body.editing .card:hover{transform:none}
 .mbonus{display:none;position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:94;
   background:var(--esp);color:var(--cream);border-radius:999px;padding:13px 24px;font:700 14px "Unbounded";align-items:center;gap:10px;
   box-shadow:0 16px 40px -10px rgba(16,20,24,.6)}
-/* кассир: прячем правую панель и расширяем контент */
+/* кассир на десктопе: во всю ширину, без правой панели */
 body.is-cashier .panel{display:none}
+body.is-cashier .wrap{grid-template-columns:1fr}
 body.is-cashier .cashier{max-width:1100px}
-body.is-cashier .cash-top{justify-content:center}
 body.is-cashier .scan{gap:40px}
 body.is-cashier .cust .info{min-width:280px}
 body.is-cashier .cust .acts{min-width:260px}
-
 @media(max-width:1180px){
   .wrap{grid-template-columns:1fr;gap:14px}
   .rail{position:static;flex-direction:row;overflow-x:auto;padding-bottom:4px}
@@ -761,10 +760,10 @@ function setMode(m){
  if(m==='cashier'&&role!=='cashier'&&role!=='admin')return;
  if(m==='admin'&&role!=='admin')return;
  mode=m;
+ document.body.classList.toggle('is-cashier', m==='cashier');
  $('#cashierView').hidden=m!=='cashier';
  $('#menuView').hidden=m==='cashier';
  $('#rail').style.display=m==='cashier'?'none':'';
- document.body.classList.toggle('is-cashier', m==='cashier');
  $('#editToggle').hidden=m!=='admin';
  $('#adminBadge').hidden=m!=='admin';
  if(m!=='admin')exitEdit();
@@ -773,8 +772,8 @@ function setMode(m){
  if(m==='admin')loadMenu();
  renderModes();
  toast(m==='admin'?'Режим администратора активен':m==='cashier'?'Смена кассира активна':'Режим гостя',
-       m==='admin'?'🔓':m==='cashier'?'🧾':'')}
-
+       m==='admin'?'🔓':m==='cashier'?'🧾':'')
+      }
 function openPin(){$('#pinModal').classList.add('show');syncOverlay();setTimeout(()=>$('#pinInput').focus(),150)}
 function closePin(){$('#pinModal').classList.remove('show');$('#pinInput').value='';syncOverlay()}
 $('#pinClose').onclick=closePin;
@@ -844,17 +843,11 @@ function renderMenu(){
   ?MENU.filter(p=>(p.name+' '+p.desc+' '+(p.comp||[]).join(' ')).toLowerCase().includes(query))
   :MENU.filter(p=>p.cat===cat);
  if(!editMode)list=list.filter(p=>p.on);
-
- const fmtMulti=p=>{
-  const parts=String(p).split('/');
+ const fmtMulti=p=>{const parts=String(p).split('/');
   if(parts.length===1)return fmt(Number(p)||0);
-  return parts.map(x=>fmt(Number(x.trim()))).join(' / ');
- };
- const fmtVol=v=>{
-  if(!v)return '';
-  return String(v).replace(/(\d+)\s*\/\s*(\d+)\s*(мл|л|г|кг)?/i,'$1 / $2 $3').trim();
- };
-
+  return parts.map(x=>fmt(Number(x.trim()))).join(' / ');};
+ const fmtVol=v=>{if(!v)return '';
+  return String(v).replace(/(\d+)\s*\/\s*(\d+)\s*(мл|л|г|кг)?/i,'$1 / $2 $3').trim();};
  $('#grid').innerHTML=list.map((p,i)=>{
   const tg=p.tag?`<span class="tag ${p.tag==='Хит'?'hit':p.tag==='New'?'new':'vegan'}">${esc(p.tag)}</span>`:'';
   const priceStr=fmtMulti(p.price);

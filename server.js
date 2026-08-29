@@ -22,18 +22,51 @@ CREATE TABLE IF NOT EXISTS history(
   id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, ts TEXT, a TEXT, by TEXT);
 CREATE TABLE IF NOT EXISTS menu(
   id TEXT PRIMARY KEY, cat TEXT, e TEXT, name TEXT, descr TEXT,
-  comp TEXT, vol TEXT, price INTEGER, tag TEXT, coffee INTEGER,
-  is_on INTEGER DEFAULT 1, img TEXT);
+  comp TEXT, vol TEXT, price TEXT, tag TEXT, coffee INTEGER, is_on INTEGER DEFAULT 1, img TEXT);
 CREATE TABLE IF NOT EXISTS tokens(
   token TEXT PRIMARY KEY, kind TEXT, ref TEXT, ts TEXT);
 CREATE TABLE IF NOT EXISTS events(
   id INTEGER PRIMARY KEY AUTOINCREMENT, t TEXT, w TEXT, a TEXT);
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
 `);
-/* миграция: добавляем role, если база старая */
+/* миграции */
 const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
-if (ccols.length && !ccols.includes('role')) {
-  db.exec(`ALTER TABLE customers ADD COLUMN role TEXT DEFAULT 'guest'`);
+if (ccols.length && !ccols.includes('role')) db.exec(`ALTER TABLE customers ADD COLUMN role TEXT DEFAULT 'guest'`);
+const MENU_V = '4';
+if (db.prepare("SELECT value FROM meta WHERE key='menu_v'").get()?.value !== MENU_V) {
+  db.exec('DELETE FROM menu');
+  const seed = [
+    ['esp','coffee','⚡','Эспрессо','40 мл чистой честности. Без молока и компромиссов',['эспрессо'],'40 мл','200','',1],
+    ['amer','coffee','☕','Американо','Для тех, кто любит «просто кофе». Держит до вечера',['эспрессо','вода'],'200 мл','240','',1],
+    ['batch','coffee','🫖','Батч брю','Заварили с любовью. Кислит, сладит, живёт',['фильтр-кофе'],'200/300 мл','220/260','',1],
+    ['flat','coffee','☕','Флэт уайт','Двойной эспрессо в бархатной накидке',['двойной эспрессо','молоко'],'180 мл','280','',1],
+    ['cap','coffee','☕','Капучино','Классика, за которой возвращаются. Пенка — хоть рисуй',['эспрессо','молоко'],'200/300 мл','250/340','Хит',1],
+    ['lat','coffee','🥛','Латте','Мягкий и тёплый, как объятие. Только вкуснее',['эспрессо','молоко'],'300/400 мл','310/360','',1],
+    ['raf','coffee','🍦','Раф','Сливочный, сладкий, затягивает. Мы никому не расскажем',['эспрессо','сливки','ванильный сахар'],'300/400 мл','360/400','',1],
+    ['matcha','drinks','🍵','Матча','Зелёный, полезный, фотогеничный. Энергия без кофе',['маття','молоко'],'300/400 мл','290/360','',0],
+    ['cocoa','drinks','🍫','Какао','Из детства, с маршмеллоу и без сожалений',['какао','молоко','маршмеллоу'],'300/400 мл','290/370','',0],
+    ['tea','drinks','🫖','Чай','Семь характеров: от ассама до каркаде. Выбирай настроение',['ассам','эрл грей','сенча','молочный улун','горные травы','ройбуш с малиной','каркаде с цукатами'],'400 мл','210','',0],
+    ['monblan','seasonal','🏔','Монблан','Такой красивый, что улетает сразу в соцсети',['каштан','сливки','эспрессо'],'—','400','New',0],
+    ['lemonade','seasonal','🍋','Кофейный лимонад','Сложный, как твой выбор',['эспрессо','лимон','сироп'],'—','400','',0],
+    ['diet','seasonal','🍨','Я не на диете','Когда решил позволить себе все и даже больше!',['эспрессо','сливки','сироп'],'—','400','',0],
+    ['mtonic','seasonal','🌴','Тропическая матча-тоник','Сделали вкусно для тех, кто любит матчу',['матча','тоник','тропический сироп'],'—','420','New',0],
+    ['panini-ham','food','🥪','Панини ветчина','Горячий, хрустящий, сытный. Как надо',['ветчина','сыр','соус'],'—','320','',0],
+    ['panini-pep','food','🥪','Панини пепперони','Горячий, хрустящий, сытный. Как надо',['пепперони','сыр','томаты'],'—','320','',0],
+    ['panini-tuna','food','🥪','Панини тунец','Горячий, хрустящий, сытный. Как надо',['тунец','сыр','овощи'],'—','350','',0],
+    ['granola','food','🥣','Гранола','Миска утра: гранола, йогурт, ягоды. Даже если уже вечер',['гранола','йогурт','ягоды'],'—','360','',0],
+    ['syrniki','food','🥞','Сырники','Как у бабушки, только со сметаной и нашим вайбом',['творог','сметана','ягоды'],'—','350','',0],
+    ['carrot','desserts','🥕','Морковный торт','Орех хрустит, крем тает. Овощ, а праздник',['морковь','крем-чиз','грецкий орех'],'—','360','Хит',0],
+    ['moti','desserts','🍡','Моти','4 вкуса: клубника-пломбир, финик-дорблю, манго-пломбир, вишня-латте',['клубника-пломбир','финик-дорблю','манго-пломбир','вишня-латте'],'—','275','',0],
+    ['pie','desserts','🥧','Пирог','Вишнёвый или грушевый — что сегодня решил духовой шкаф',['вишня/груша','песочное тесто'],'—','300','',0],
+    ['shu','desserts','🧁','Шу','Хрустящее снаружи, кремовое внутри. Тает быстрее, чем кажется',['шу','крем'],'—','250','',0],
+    ['eclair','desserts','🍫','Эклер','Классика, которой не нужно представляться',['шу','шоколад','крем'],'—','230','',0],
+    ['bars','desserts','⚡','Батончики','Kick и R.A.W. Life — когда нужна энергия прямо сейчас',['Kick','R.A.W. Life'],'—','300','',0],
+    ['drip','shop','☕','Дрип','Кофе в кармане. Завари где угодно',['Tasty Coffee'],'1 шт','150','',0],
+    ['candy','shop','🍬','Леденцы','Scandic: арктическая мята, пряное яблоко и другие',['Scandic'],'1 шт','150','',0],
+  ];
+  const ins = db.prepare('INSERT INTO menu VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
+  for (const p of seed) ins.run(p[0],p[1],p[2],p[3],p[4],JSON.stringify(p[5]),p[6],p[7],p[8],p[9],1,null);
+  db.prepare("INSERT INTO meta(key,value) VALUES('menu_v',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(MENU_V);
 }
 
 /* ── утилиты ── */
@@ -58,85 +91,24 @@ const getMeta = () => db.prepare("SELECT value FROM meta WHERE key='updatedAt'")
 const touch = () => db.prepare("INSERT INTO meta(key,value) VALUES('updatedAt',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(nowISO());
 const issueToken = ref => { const t = crypto.randomUUID();
   db.prepare('INSERT INTO tokens(token,kind,ref,ts) VALUES(?,?,?,?)').run(t, 'user', ref, nowISO()); return t; };
-/* ── защита кодов сотрудника от брутфорса ── */
-const MAX_FAILS = 5;
-const pinLocks = new Map(); // key -> { fails, streak, lockedUntil }
+
+/* ── защита кодов от брутфорса ── */
+const pinLocks = new Map();
 const lockKey = req => (req.headers['x-forwarded-for'] || req.ip || 'local') + ':staff';
-function lockedSeconds(req) {
-  const e = pinLocks.get(lockKey(req));
-  return e && e.lockedUntil > Date.now() ? Math.ceil((e.lockedUntil - Date.now()) / 1000) : 0;
-}
-function registerFail(req) {
-  const k = lockKey(req);
+function lockedSeconds(req) { const e = pinLocks.get(lockKey(req));
+  return e && e.lockedUntil > Date.now() ? Math.ceil((e.lockedUntil - Date.now()) / 1000) : 0; }
+function registerFail(req) { const k = lockKey(req);
   const e = pinLocks.get(k) || { fails: 0, streak: 0, lockedUntil: 0 };
   e.fails++;
-  if (e.fails >= MAX_FAILS) {
-    e.streak++;
-    e.lockedUntil = Date.now() + 60_000 * Math.pow(2, Math.min(e.streak - 1, 6));
-    e.fails = 0;
-  }
-  pinLocks.set(k, e);
-  logEv('—', 'неудачная попытка кода сотрудника');
-}
-function safeEqual(a, b) {
-  const ha = crypto.createHash('sha256').update(String(a)).digest();
-  const hb = crypto.createHash('sha256').update(String(b)).digest();
-  return crypto.timingSafeEqual(ha, hb);
-}
-/* ── меню: сид + разовое обновление при ребрендинге ── */
-const MENU_V = '3';
-const currentMenuV = db.prepare("SELECT value FROM meta WHERE key='menu_v'").get()?.value;
-if (currentMenuV !== MENU_V) {
-  db.exec('DELETE FROM menu');
-  const seed = [
-  ['esp','coffee','⚡','Эспрессо','40 мл чистой честности. Без молока и компромиссов',['эспрессо'],'40 мл',200,'',1],
-  ['amer','coffee','☕','Американо','Для тех, кто любит «просто кофе». Держит до вечера',['эспрессо','вода'],'200 мл',240,'',1],
-  ['batch','coffee','🫖','Батч брю','Заварили с любовью. Кислит, сладит, живёт',['фильтр-кофе'],'200/300 мл','220/260','',1],
-  ['flat','coffee','☕','Флэт уайт','Двойной эспрессо в бархатной накидке',['двойной эспрессо','молоко'],'180 мл',280,'',1],
-  ['cap','coffee','☕','Капучино','Классика, за которой возвращаются. Пенка — хоть рисуй',['эспрессо','молоко'],'200/300 мл','250/340','Хит',1],
-  ['lat','coffee','🥛','Латте','Мягкий и тёплый, как объятие. Только вкуснее',['эспрессо','молоко'],'300/400 мл','310/360','',1],
-  ['raf','coffee','🍦','Раф','Сливочный, сладкий, затягивает. Мы никому не расскажем',['эспрессо','сливки','ванильный сахар'],'300/400 мл','360/400','',1],
-  ['matcha','drinks','🍵','Матча','Зелёный, полезный, фотогеничный. Энергия без кофе',['маття','молоко'],'300/400 мл','290/360','',0],
-  ['cocoa','drinks','🍫','Какао','Из детства, с маршмеллоу и без сожалений',['какао','молоко','маршмеллоу'],'300/400 мл','290/370','',0],
-  ['tea','drinks','🫖','Чай','Семь характеров: от ассама до каркаде. Выбирай настроение',['ассам','эрл грей','сенча','молочный улун','горные травы','ройбуш с малиной','каркаде с цукатами'],'400 мл',210,'',0],
-  ['monblan','seasonal','🏔','Монблан','Такой красивый, что улетает сразу в соцсети',['каштан','сливки','эспрессо'],'—',400,'New',0],
-  ['lemonade','seasonal','🍋','Кофейный лимонад','Сложный, как твой выбор',['эспрессо','лимон','сироп'],'—',400,'',0],
-  ['diet','seasonal','🍨','Я не на диете','Когда решил позволить себе все и даже больше!',['эспрессо','сливки','сироп'],'—',400,'',0],
-  ['mtonic','seasonal','🌴','Тропическая матча-тоник','Сделали вкусно для тех, кто любит матчу',['матча','тоник','тропический сироп'],'—',420,'New',0],
-  ['panini-ham','food','🥪','Панини ветчина','Горячий, хрустящий, сытный. Как надо',['ветчина','сыр','соус'],'—',320,'',0],
-  ['panini-pep','food','🥪','Панини пепперони','Горячий, хрустящий, сытный. Как надо',['пепперони','сыр','томаты'],'—',320,'',0],
-  ['panini-tuna','food','🥪','Панини тунец','Горячий, хрустящий, сытный. Как надо',['тунец','сыр','овощи'],'—',350,'',0],
-  ['granola','food','🥣','Гранола','Миска утра: гранола, йогурт, ягоды. Даже если уже вечер',['гранола','йогурт','ягоды'],'—',360,'',0],
-  ['syrniki','food','🥞','Сырники','Как у бабушки, только со сметаной и нашим вайбом',['творог','сметана','ягоды'],'—',350,'',0],
-  ['carrot','desserts','🥕','Морковный торт','Орех хрустит, крем тает. Овощ, а праздник',['морковь','крем-чиз','грецкий орех'],'—',360,'Хит',0],
-  ['moti','desserts','🍡','Моти','4 вкуса: клубника-пломбир, финик-дорблю, манго-пломбир, вишня-латте',['клубника-пломбир','финик-дорблю','манго-пломбир','вишня-латте'],'—',275,'',0],
-  ['pie','desserts','🥧','Пирог','Вишнёвый или грушевый — что сегодня решил духовой шкаф',['вишня/груша','песочное тесто'],'—',300,'',0],
-  ['shu','desserts','🧁','Шу','Хрустящее снаружи, кремовое внутри. Тает быстрее, чем кажется',['шу','крем'],'—',250,'',0],
-  ['eclair','desserts','🍫','Эклер','Классика, которой не нужно представляться',['шу','шоколад','крем'],'—',230,'',0],
-  ['bars','desserts','⚡','Батончики','Kick и R.A.W. Life — когда нужна энергия прямо сейчас',['Kick','R.A.W. Life'],'—',300,'',0],
-  ['drip','shop','☕','Дрип','Кофе в кармане. Завари где угодно',['Tasty Coffee'],'1 шт',150,'',0],
-  ['candy','shop','🍬','Леденцы','Scandic: арктическая мята, пряное яблоко и другие',['Scandic'],'1 шт',150,'',0],
-];
-  const ins = db.prepare('INSERT INTO menu VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
-  for (const p of seed) {
-    ins.run(p[0], p[1], p[2], p[3], p[4], JSON.stringify(p[5]), p[6], p[7], p[8], p[9], 1, null);
-  }
-  db.prepare("INSERT INTO meta(key,value) VALUES('menu_v',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(MENU_V);
-  if (typeof touch === 'function') touch();
-}
-if (!db.prepare('SELECT 1 FROM customers LIMIT 1').get()) {
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?)').run('u1','Анна Ким','+7 912 480-88-12',7,0,23,'Z-K4F7A2',nowISO(),'admin');
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?)').run('u2','Дмитрий Соколов','+7 903 214-77-45',9,1,64,'Z-M9B3X1',nowISO(),'cashier');
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?)').run('u3','Мария Лебедева','+7 926 118-30-09',3,0,11,'Z-P2T8Q6',nowISO(),'guest');
-  addHist('u1','Штамп 7 из 10','Кассир'); addHist('u2','🎉 10-й кофе — подарок начислен','Система'); addHist('u3','Штамп 3 из 10','Кассир');
-}
+  if (e.fails >= 5) { e.streak++; e.lockedUntil = Date.now() + 60000 * Math.pow(2, Math.min(e.streak - 1, 6)); e.fails = 0; }
+  pinLocks.set(k, e); }
+function safeEqual(a, b) { const ha = crypto.createHash('sha256').update(String(a)).digest();
+  const hb = crypto.createHash('sha256').update(String(b)).digest(); return crypto.timingSafeEqual(ha, hb); }
 
 /* ── guards по ролям ── */
-function authUser(req) {
-  const t = (req.header('Authorization') || '').replace('Bearer ', '');
+function authUser(req) { const t = (req.header('Authorization') || '').replace('Bearer ', '');
   const row = db.prepare("SELECT * FROM tokens WHERE token=? AND kind='user'").get(t);
-  return row ? db.prepare('SELECT * FROM customers WHERE id=?').get(row.ref) : null;
-}
+  return row ? db.prepare('SELECT * FROM customers WHERE id=?').get(row.ref) : null; }
 const userGuard = (req, res, next) => { req.user = authUser(req);
   req.user ? next() : res.status(401).json({ error: 'Нужен вход по номеру' }); };
 const staffGuard = (req, res, next) => { req.user = authUser(req);
@@ -151,45 +123,37 @@ const adminGuard = (req, res, next) => { req.user = authUser(req);
   next(); };
 
 /* ── лояльность ── */
-function grant(cid, by) {
-  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
+function grant(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
   if (!c) return null;
   c.stamps++; c.cups++;
   db.prepare('UPDATE customers SET stamps=?,cups=? WHERE id=?').run(c.stamps, c.cups, cid);
   addHist(cid, `Штамп ${c.stamps} из 10`, by);
   let ten = false;
-  if (c.stamps >= 10) {
-    c.stamps = 0; c.free++; ten = true;
+  if (c.stamps >= 10) { c.stamps = 0; c.free++; ten = true;
     db.prepare('UPDATE customers SET stamps=?,free=? WHERE id=?').run(0, c.free, cid);
-    addHist(cid, '🎉 10-й кофе — подарок начислен', 'Система');
-  }
+    addHist(cid, '🎉 10-й кофе — подарок начислен', 'Система'); }
   logEv(c.name, ten ? '10-й кофе — подарок начислен' : `+1 штамп → ${c.stamps} из 10`);
-  const fresh = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
-  return { customer: cust(fresh), ten, msg: ten ? '10-й штамп! Начислен бесплатный кофе' : `+1 штамп → ${fresh.stamps} из 10` };
-}
-function redeem(cid, by) {
-  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
+  const f = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
+  return { customer: cust(f), ten, msg: ten ? '10-й штамп! Начислен бесплатный кофе' : `+1 штамп → ${f.stamps} из 10` }; }
+function redeem(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
   if (!c || c.free < 1) return null;
   db.prepare('UPDATE customers SET free=? WHERE id=?').run(c.free - 1, cid);
   addHist(cid, `🎁 Списан бесплатный кофе (осталось ${c.free - 1})`, by);
   logEv(c.name, 'Списан бесплатный кофе');
-  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) };
-}
-function createCustomer(name, phone) {
-  const p = fmtPhone(phone);
+  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) }; }
+function createCustomer(name, phone) { const p = fmtPhone(phone);
   if (String(name).trim().length < 2) return { err: 'Введите имя', code: 400 };
   if (ph10(p).length < 10) return { err: 'Введите номер полностью', code: 400 };
   if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return { err: 'exists', code: 409 };
   const id = uid('u'), qr = 'Z-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?)').run(id, name.trim(), p, 0, 0, 0, qr, nowISO(), 'guest');
+  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?,?)').run(id, name.trim(), p, 0, 0, 0, qr, nowISO(), 'guest');
   addHist(id, 'Профиль создан', 'Приложение');
-  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(id)) };
-}
+  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(id)) }; }
 
 const app = express();
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Staff');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
@@ -206,14 +170,14 @@ app.post('/api/menu', adminGuard, (req, res) => {
   const p = req.body; p.id = p.id || uid('p');
   db.prepare('INSERT INTO menu VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(
     p.id, p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
-    p.vol || '', Math.max(0, +p.price || 0), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null);
+    p.vol || '', String(p.price ?? '0'), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null);
   touch(); res.json({ ok: true, id: p.id });
 });
 app.put('/api/menu/:id', adminGuard, (req, res) => {
   const p = req.body;
   db.prepare('UPDATE menu SET cat=?,e=?,name=?,descr=?,comp=?,vol=?,price=?,tag=?,coffee=?,is_on=?,img=? WHERE id=?').run(
     p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
-    p.vol || '', Math.max(0, +p.price || 0), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null, req.params.id);
+    p.vol || '', String(p.price ?? '0'), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null, req.params.id);
   touch(); res.json({ ok: true });
 });
 app.delete('/api/menu/:id', adminGuard, (req, res) => {
@@ -233,11 +197,6 @@ app.post('/api/auth/login', (req, res) => {
   addHist(c.id, 'Вход по номеру', 'Приложение');
   res.json({ token: issueToken(c.id), customer: cust(c) });
 });
-app.post('/api/exit', userGuard, (req, res) => {
-  const t = (req.header('Authorization') || '').replace('Bearer ', '');
-  db.prepare('DELETE FROM tokens WHERE token=?').run(t); res.json({ ok: true });
-});
-/* активация роли кодом */
 app.post('/api/auth/activate', userGuard, (req, res) => {
   const wait = lockedSeconds(req);
   if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
@@ -252,18 +211,18 @@ app.post('/api/auth/activate', userGuard, (req, res) => {
   logEv(req.user.name, role === 'admin' ? 'активирован админ' : 'активирован кассир');
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
-/* отключение прав сотрудника */
 app.post('/api/auth/deactivate', userGuard, (req, res) => {
   if (req.user.role === 'admin') {
-    const adminsCount = db.prepare("SELECT COUNT(*) as c FROM customers WHERE role='admin'").get().c;
-    if (adminsCount <= 1) {
-      return res.status(403).json({ error: 'Нельзя отключить последнего администратора' });
-    }
+    const n = db.prepare("SELECT COUNT(*) as c FROM customers WHERE role='admin'").get().c;
+    if (n <= 1) return res.status(403).json({ error: 'Нельзя отключить последнего администратора' });
   }
-  db.prepare('UPDATE customers SET role=? WHERE id=?').run('guest', req.user.id);
+  db.prepare("UPDATE customers SET role='guest' WHERE id=?").run(req.user.id);
   addHist(req.user.id, 'Права сотрудника отключены', 'Система');
-  logEv(req.user.name, 'права сотрудника отключены');
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
+});
+app.post('/api/exit', userGuard, (req, res) => {
+  const t = (req.header('Authorization') || '').replace('Bearer ', '');
+  db.prepare('DELETE FROM tokens WHERE token=?').run(t); res.json({ ok: true });
 });
 app.get('/api/me', userGuard, (req, res) => res.json({ customer: cust(req.user) }));
 app.put('/api/me', userGuard, (req, res) => {
@@ -276,7 +235,7 @@ app.post('/api/redeem', userGuard, (req, res) => {
   r ? res.json(r) : res.status(400).json({ error: 'Нет доступных подарков' });
 });
 
-/* ── кассир (роль cashier/admin) ── */
+/* ── кассир ── */
 app.get('/api/staff/customers', staffGuard, (req, res) => {
   const q = String(req.query.search || ''); const d = ph10(q); const t = q.trim().toLowerCase();
   const rows = db.prepare('SELECT * FROM customers ORDER BY created_at DESC LIMIT 50').all()
@@ -313,5 +272,4 @@ app.get('/api/staff/log', staffGuard, (req, res) =>
 
 /* ── статика ── */
 app.use(express.static(PUBLIC_DIR));
-
 app.listen(PORT, () => console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`));
