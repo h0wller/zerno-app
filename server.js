@@ -84,8 +84,10 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(ha, hb);
 }
 /* ── меню: сид + разовое обновление при ребрендинге ── */
+/* ── меню: сид + разовое обновление при ребрендинге ── */
 const MENU_V = '2';
-if (db.prepare("SELECT value FROM meta WHERE key='menu_v'").get()?.value !== MENU_V) {
+const currentMenuV = db.prepare("SELECT value FROM meta WHERE key='menu_v'").get()?.value;
+if (currentMenuV !== MENU_V) {
   db.exec('DELETE FROM menu');
   const seed = [
     ['esp','coffee','⚡','Эспрессо','40 мл чистой честности. Без молока и компромиссов',['эспрессо'],'40 мл',200,'',1],
@@ -123,13 +125,12 @@ if (db.prepare("SELECT value FROM meta WHERE key='menu_v'").get()?.value !== MEN
     ['candy','shop','🍬','Леденцы','Scandic: арктическая мята, пряное яблоко и другие',['Scandic'],'1 шт',150,'',0],
   ];
   const ins = db.prepare('INSERT INTO menu VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
-  for (const p of seed) ins.run(p[0],p[1],p[2],p[3],p[4],JSON.stringify(p[5]),p[6],p[7],p[8],p[9],1,null);
+  for (const p of seed) {
+    ins.run(p[0], p[1], p[2], p[3], p[4], JSON.stringify(p[5]), p[6], p[7], p[8], p[9], 1, null);
+  }
   db.prepare("INSERT INTO meta(key,value) VALUES('menu_v',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(MENU_V);
-  touch();
-};
-  const ins = db.prepare('INSERT INTO menu VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
-  for (const p of seed) ins.run(p[0], p[1], p[2], p[3], p[4], JSON.stringify(p[5]), p[6], p[7], p[8], p[9], 1, null);
-  touch();
+  if (typeof touch === 'function') touch();
+}
 if (!db.prepare('SELECT 1 FROM customers LIMIT 1').get()) {
   db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?)').run('u1','Анна Ким','+7 912 480-88-12',7,0,23,'Z-K4F7A2',nowISO(),'admin');
   db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?)').run('u2','Дмитрий Соколов','+7 903 214-77-45',9,1,64,'Z-M9B3X1',nowISO(),'cashier');
