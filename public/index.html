@@ -155,6 +155,15 @@ body.editing .card:hover{transform:none}
 .pv h4:first-child{margin-top:2px}
 
 .stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}
+/* зерно всегда = 72% своего кружка, где бы ни стояло */
+.stamp svg,.cdot svg{width:72%;height:72%;display:block}
+
+/* адаптивность на узких экранах */
+@media(max-width:420px){
+  .stamps{gap:6px;padding:12px}
+  .cdot{width:18px;height:18px}
+  .cust .big{width:52px;height:52px;font-size:18px}
+}
 .stamp{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:15px;transition:.3s}
 .stamp.f{background:transparent;color:#6B4A2F}
 .stamp.f.last{animation:stampin .5s cubic-bezier(.2,1.6,.4,1)}
@@ -354,6 +363,13 @@ body.editing .card:hover{transform:none}
 .mbonus{display:none;position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:94;
   background:var(--esp);color:var(--cream);border-radius:999px;padding:13px 24px;font:700 14px "Unbounded";align-items:center;gap:10px;
   box-shadow:0 16px 40px -10px rgba(16,20,24,.6)}
+/* кассир: прячем правую панель и расширяем контент */
+body.is-cashier .panel{display:none}
+body.is-cashier .cashier{max-width:1100px}
+body.is-cashier .cash-top{justify-content:center}
+body.is-cashier .scan{gap:40px}
+body.is-cashier .cust .info{min-width:280px}
+body.is-cashier .cust .acts{min-width:260px}
 
 @media(max-width:1180px){
   .wrap{grid-template-columns:1fr;gap:14px}
@@ -660,8 +676,7 @@ function fmtPhone(v){const d=ph10(v);if(!d)return'';let r='+7';
 function bindMask(inp){inp.addEventListener('input',()=>{inp.value=fmtPhone(inp.value);
  try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(e){}})}
 /* штампы-зёрна: 9 зёрен + 10-й — чашка, как на бумажной карте */
-const BEAN='<svg viewBox="0 0 24 24" width="50" height="50" aria-hidden="true"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.6" ry="9.6" fill="currentColor"/><path d="M12 3.2c-2.8 3.6-2.8 14 0 17.6" fill="none" stroke="#F7F3EA" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
-const stampIcon=i=>i===9?'☕':BEAN;
+const BEAN='<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.6" ry="9.6" fill="currentColor"/><path d="M12 3.2c-2.8 3.6-2.8 14 0 17.6" fill="none" stroke="#F7F3EA" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
 /* сезонные часы */
 function hoursNow(){const m=new Date().getMonth()+1;return (m>=5&&m<=9)?'8:00–21:00':'8:00–20:00'}
 
@@ -749,6 +764,7 @@ function setMode(m){
  $('#cashierView').hidden=m!=='cashier';
  $('#menuView').hidden=m==='cashier';
  $('#rail').style.display=m==='cashier'?'none':'';
+ document.body.classList.toggle('is-cashier', m==='cashier');
  $('#editToggle').hidden=m!=='admin';
  $('#adminBadge').hidden=m!=='admin';
  if(m!=='admin')exitEdit();
@@ -828,8 +844,21 @@ function renderMenu(){
   ?MENU.filter(p=>(p.name+' '+p.desc+' '+(p.comp||[]).join(' ')).toLowerCase().includes(query))
   :MENU.filter(p=>p.cat===cat);
  if(!editMode)list=list.filter(p=>p.on);
+
+ const fmtMulti=p=>{
+  const parts=String(p).split('/');
+  if(parts.length===1)return fmt(Number(p)||0);
+  return parts.map(x=>fmt(Number(x.trim()))).join(' / ');
+ };
+ const fmtVol=v=>{
+  if(!v)return '';
+  return String(v).replace(/(\d+)\s*\/\s*(\d+)\s*(мл|л|г|кг)?/i,'$1 / $2 $3').trim();
+ };
+
  $('#grid').innerHTML=list.map((p,i)=>{
   const tg=p.tag?`<span class="tag ${p.tag==='Хит'?'hit':p.tag==='New'?'new':'vegan'}">${esc(p.tag)}</span>`:'';
+  const priceStr=fmtMulti(p.price);
+  const volStr=fmtVol(p.vol);
   return `<article class="card ${p.on?'':'stopped'}" style="--d:${Math.min(i,10)*35}ms">
    <div class="media" style="--tint:${TINT[p.cat]||'#E7ECF0'}">
      ${p.img?`<img src="${p.img}" alt="${esc(p.name)}">`:`<span class="em">${p.e||'☕'}</span>`}
@@ -840,8 +869,8 @@ function renderMenu(){
      <h3>${esc(p.name)}</h3>
      ${p.desc?`<div class="desc">${esc(p.desc)}</div>`:''}
      ${p.comp&&p.comp.length?`<div class="comp">${p.comp.map(c=>`<i>${esc(c)}</i>`).join('')}</div>`:''}
-     <span class="vol">${esc(p.vol||'')}</span>
-     <div class="cfoot"><span class="price">${fmt(p.price)}</span>
+     ${volStr?`<span class="vol">${esc(volStr)}</span>`:''}
+     <div class="cfoot"><span class="price">${priceStr}</span>
       ${editMode?`<label class="qswitch"><input type="checkbox" data-onoff="${p.id}" ${p.on?'checked':''}>в меню</label>`:''}
      </div></div></article>`}).join('')
  +(editMode?`<button class="addcard" id="addCard"><span>＋</span>Добавить позицию</button>`:'')
@@ -875,6 +904,9 @@ function openEditor(id){
  $('#emName').value=edit.name;$('#emCat').value=edit.cat;$('#emPrice').value=edit.price;
  $('#emVol').value=edit.vol||'';$('#emDesc').value=edit.desc||'';$('#emComp').value=(edit.comp||[]).join(', ');
  $('#emTag').value=edit.tag||'';$('#emEmoji').value=edit.e||'';
+ $('#emVol').placeholder='200/300 мл или 180 г';
+ $('#emPrice').type='text';
+ $('#emPrice').placeholder='250/340 или 320';
  $('#emCoffee').checked=!!edit.coffee;$('#emOn').checked=!!edit.on;
  $('#emDel').style.display=src?'':'none';$('#emDup').style.display=src?'':'none';
  renderZone();
@@ -898,7 +930,8 @@ function loadImg(file){const u=URL.createObjectURL(file),img=new Image();
  img.src=u}
 $('#emSave').onclick=async()=>{
  edit.name=$('#emName').value.trim()||'Без названия';
- edit.cat=$('#emCat').value;edit.price=Math.max(0,Math.round(Number($('#emPrice').value)||0));
+ const priceRaw=$('#emPrice').value.trim();
+ edit.price=priceRaw.includes('/')?priceRaw:Math.max(0,Math.round(Number(priceRaw)||0));
  edit.vol=$('#emVol').value.trim();edit.desc=$('#emDesc').value.trim();
  edit.comp=$('#emComp').value.split(',').map(s=>s.trim()).filter(Boolean);
  edit.tag=$('#emTag').value;edit.e=$('#emEmoji').value.trim()||'☕';
