@@ -156,7 +156,7 @@ body.editing .card:hover{transform:none}
 
 .stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}
 .stamp{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:15px;transition:.3s}
-.stamp.f{background:var(--esp);color:var(--cream);box-shadow:inset 0 -3px 0 rgba(0,0,0,.35)}
+.stamp.f{background:transparent;color:#6B4A2F}
 .stamp.f.last{animation:stampin .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes stampin{0%{transform:scale(0) rotate(-90deg)}100%{transform:none}}
 .stamp.n{border:2px dashed var(--amber);animation:nextp 1.6s infinite}
@@ -238,7 +238,7 @@ body.editing .card:hover{transform:none}
 .cust .info .cp{color:var(--soft);font-size:13px;margin:3px 0 11px}
 .cdots{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .cdot{width:22px;height:22px;border-radius:50%;border:2px dashed var(--line);font-size:11px;display:grid;place-items:center}
-.cdot.f{background:var(--esp);border:none;color:var(--cream)}
+.cdot.f{background:transparent;border:none;color:#6B4A2F}
 .cdot.last{animation:stampin .5s cubic-bezier(.2,1.6,.4,1)}
 .cust .acts{display:flex;flex-direction:column;gap:8px}
 .cust .note{font-size:12px;color:var(--soft);margin-bottom:8px}
@@ -660,7 +660,8 @@ function fmtPhone(v){const d=ph10(v);if(!d)return'';let r='+7';
 function bindMask(inp){inp.addEventListener('input',()=>{inp.value=fmtPhone(inp.value);
  try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(e){}})}
 /* штампы-зёрна: 9 зёрен + 10-й — чашка, как на бумажной карте */
-const stampIcon=i=>i===9?'☕':'';
+const BEAN='<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.6" ry="9.6" fill="currentColor"/><path d="M12 3.2c-2.8 3.6-2.8 14 0 17.6" fill="none" stroke="#F7F3EA" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
+const stampIcon=i=>i===9?'☕':BEAN;
 /* сезонные часы */
 function hoursNow(){const m=new Date().getMonth()+1;return (m>=5&&m<=9)?'8:00–21:00':'8:00–20:00'}
 
@@ -1028,25 +1029,23 @@ $('#chatChips').innerHTML=['Как работает 10-й кофе?','Где в�
  .map(t=>`<button>${t}</button>`).join('');
 $('#chatChips').addEventListener('click',e=>{const b=e.target.closest('button');if(b)sendChat(b.textContent)});
 function botReply(q){q=q.toLowerCase();
- if(/привет|здравств|добр/.test(q))return'Здравствуйте! 👋 Это Ника из «…и кофе». Подскажу по меню, бонусам и где нас найти.';
- if(/где|адрес|наход|как добраться|мор/.test(q))return'Мы у моря: п. Янтарный, Советская ул., 70г. Белый домик с вывеской «…и кофе» — не пройдёте мимо 🌊';
- if(/час|время|график|работ/.test(q))return'Ежедневно: май–сентябрь 8:00–21:00, октябрь–апрель 8:00–20:00. Сейчас работаем с '+hoursNow().split('–')[0]+' до '+hoursNow().split('–')[1]+' 😊';
+ if(/привет|здравств|добр/.test(q))return'Здравствуйте! 👋 Это Ника из «…и кофе». Подскажу по меню, бонусам и чаю.';
+ if(/10|десят|штамп|бонус|лояльн|бесплат|накоп/.test(q))return'Работает так: покупаете кофе — кассир сканирует ваш QR и ставит штамп-зерно 🫘 Собрали 9 — десятый кофе бесплатно! Подарок появится в «Бонусах» и будет ждать, пока вы его не выпьете 😄';
+ if(/ча[йи]|чаев|ассам|эрл|сенча|улун|ройбуш|каркаде|трав/.test(q))return'У нас семь чаёв: ассам, эрл грей, сенча, молочный улун, горные травы, ройбуш с малиной и каркаде с цукатами. 400 мл — 210 ₽. Какой под настроение?';
+ if(/моти/.test(q))return'Моти — 4 вкуса: клубника-пломбир, финик-дорблю, манго-пломбир и вишня-латте. 275 ₽ за штучку счастья.';
+ if(/во сколько|до скольк|время работы|часы работы|график|режим работы|когда открыт|работаете/.test(q))return'Ежедневно: май–сентябрь 8:00–21:00, октябрь–апрель 8:00–20:00. Мы в Янтарном, Советская 70г 🌊';
+ if(/адрес|где вы|найти вас|на карте/.test(q))return'Мы у моря: п. Янтарный, Советская ул., 70г. Белый домик с вывеской «…и кофе» 🌊';
  if(/телеграм|связ|написать|контакт/.test(q))return'Пишите в Telegram: t.me/and_coffee39 — отвечаем быстро и с удовольствием.';
- if(/профил|номер|войти|аккаунт/.test(q))return'Профиль создаётся по номеру телефона: нажмите на аватар в шапке → «Создать профиль». Кассир найдёт вас по номеру и начислит штампы. Смените телефон — профиль всё равно ваш 🔗';
- if(/qr|кьюар|куар/.test(q))return'Откройте «Бонусы» → «⛶ Открыть QR на весь экран» и покажите экран кассиру — он начислит штамп 🤳';
- if(/10|штамп|бонус|лояльн|бесплат/.test(q))return'Всё просто: 9 кофе — 10-й бесплатно 🫘 Кассир ставит штампы по вашему QR. После 10-го подарок появится в «Бонусах».';
- if(/чай|ассам|эрл|сенча|улун|ройбуш|каркаде|трав/.test(q))return'У нас 7 чаёв: ассам, эрл грей, сенча, молочный улун, горные травы, ройбуш с малиной и каркаде с цукатами. 400 мл — 210 ₽. Выбирайте настроение!';
- if(/моти/.test(q))return'Моти — 4 вкуса: клубника-пломбир, финик-дорблю (да, с сыром!), манго-пломбир и вишня-латте. 275 ₽ за штучку счастья.';
- if(/пирог/.test(q))return'Пирог сегодня какой получится: вишнёвый или грушевый. Оба по 300 ₽, оба разлетаются.';
  if(/молоко|овсян|кокос|миндал|альтернатив|банан/.test(q))return'Альтернативное молоко (овсяное, кокосовое, миндальное, банановое) — +70 ₽. Банановое, кстати, слаще обычного!';
  if(/состав|капучино|из чего|входит/.test(q)){
   const hit=MENU.find(p=>p.name.toLowerCase().includes('капучино'));
   return hit&&hit.comp&&hit.comp.length?`Состав: ${hit.comp.join(', ')}. Полный состав любой позиции виден прямо в меню 📋`
    :'Состав каждой позиции указан в карточке меню 📋'}
- if(/меню|новинк|сезон/.test(q))return'Загляните в категорию «🌊 Сезонное»: Монблан, кофейный лимонад, «Я не на диете» и тропический матча-тоник. Всё по 400–420 ₽ и очень фотогеничное ✨';
+ if(/меню|новинк|сезон/.test(q))return'Загляните в категорию «🌊 Сезонное»: Монблан, кофейный лимонад, «Я не на диете» и тропическая матча-тоник. Всё по 400–420 ₽ и очень фотогеничное ✨';
  if(/возврат|вернуть/.test(q))return'Возврат оформим на кассе по чеку — мгновенно. Деньги вернутся на карту за 3–5 дней.';
  if(/спасибо|благодар/.test(q))return'Всегда рады! Приходите ещё — море рядом, кофе горячий 💙';
  return'Приняла! Передаю человеку — обычно отвечаем за 2–3 минуты. А пока могу рассказать про: чаи, моти, бонусы, адрес и часы работы.'}
+ 
 function sendChat(text){if(!text.trim())return;addMsg('me',text);$('#chatInput').value='';
  showTyping();setTimeout(()=>{hideTyping();addMsg('bot',botReply(text));
   if(!$('#chatPanel').classList.contains('open')){unread++;const b=$('#chatBadge');b.hidden=false;b.textContent=unread}},900+Math.random()*700)}
