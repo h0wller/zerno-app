@@ -619,7 +619,7 @@ body.editing .card:hover{transform:none}
     <button class="mclose" id="pinClose">✕</button>
     <h3>Код доступа</h3>
     <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только для сотрудников.</div>
-    <input class="pin" id="pinInput" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
+    <input class="pin" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="off">
     <button class="cta" id="pinGo">Активировать</button>
     <div class="pinhint">Код выдаёт владелец · после 5 ошибок — пауза, растущая вдвое</div>
   </div>
@@ -753,22 +753,44 @@ function setMode(m){
 function openPin(){$('#pinModal').classList.add('show');syncOverlay();setTimeout(()=>$('#pinInput').focus(),150)}
 function closePin(){$('#pinModal').classList.remove('show');$('#pinInput').value='';syncOverlay()}
 $('#pinClose').onclick=closePin;
-async function tryActivate(){const v=$('#pinInput').value.trim();
- if(!v)return toast('Введите код','✍️');
- try{const r=await api('/auth/activate',{method:'POST',body:{code:v}});
-  me=r.customer;closePin();renderModes();renderProfile();
-  toast(me.role==='admin'?'🔓 Вы теперь администратор':'🧾 Вы теперь кассир','✅')}
- catch(e){
-  if(e.code===429){
-    const sec=parseInt((e.message.match(/\d+/)||['60'])[0],10);
-    const btn=$('#pinGo'); btn.disabled=true; btn.textContent=`Подождите ${sec}…`;
-    toast(e.message,'⏳');
-    const t=setInterval(()=>{sec--; if(sec<=0){clearInterval(t);btn.disabled=false;btn.textContent='Активировать';} else btn.textContent=`Подождите ${sec}…`;},1000);
-  } else {
-    const p=$('#pinInput');p.classList.remove('err');void p.offsetWidth;p.classList.add('err');
-    toast(e.message,'⛔');p.value='';
+async function tryActivate(){
+  const v=$('#pinInput').value.trim();
+  if(!v)return toast('Введите код','✍️');
+  try{
+    const r=await api('/auth/activate',{method:'POST',body:{code:v}});
+    me=r.customer;
+    closePin();
+    renderModes();
+    renderProfile();
+    toast(me.role==='admin'?'🔓 Вы теперь администратор':'🧾 Вы теперь кассир','✅');
+  } catch(e){
+    if(e.code===429){
+      const sec=parseInt((e.message.match(/\d+/)||['60'])[0],10);
+      const btn=$('#pinGo');
+      if(!btn)return;
+      btn.disabled=true;
+      btn.textContent=`Подождите ${sec}…`;
+      toast(e.message,'⏳');
+      let remaining=sec;  // ← было const, стало let
+      const t=setInterval(()=>{
+        remaining--;
+        if(remaining<=0){
+          clearInterval(t);
+          btn.disabled=false;
+          btn.textContent='Активировать';
+        } else {
+          btn.textContent=`Подождите ${remaining}…`;
+        }
+      },1000);
+    } else {
+      const p=$('#pinInput');
+      p.classList.remove('err');
+      void p.offsetWidth;
+      p.classList.add('err');
+      toast(e.message,'⛔');
+      p.value='';
+    }
   }
-}
 }
 $('#pinGo').onclick=tryActivate;
 $('#pinInput').addEventListener('keydown',e=>{if(e.key==='Enter')tryActivate()});
