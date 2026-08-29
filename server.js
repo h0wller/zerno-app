@@ -146,7 +146,7 @@ function createCustomer(name, phone) { const p = fmtPhone(phone);
   if (ph10(p).length < 10) return { err: 'Введите номер полностью', code: 400 };
   if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return { err: 'exists', code: 409 };
   const id = uid('u'), qr = 'Z-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-  db.prepare('INSERT INTO customers VALUES(?,?,?,?,?,?,?,?,?,?)').run(id, name.trim(), p, 0, 0, 0, qr, nowISO(), 'guest');
+  db.prepare('INSERT INTO customers (id,name,phone,stamps,free,cups,qr,created_at,role) VALUES (?,?,?,?,?,?,?,?,?)').run(id, name.trim(), p, 0, 0, 0, qr, nowISO(), 'guest');
   addHist(id, 'Профиль создан', 'Приложение');
   return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(id)) }; }
 
