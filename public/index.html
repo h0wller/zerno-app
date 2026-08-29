@@ -838,6 +838,8 @@ $('#rail').innerHTML=CATS.map(c=>`<button data-cat="${c.id}"><span class="re">${
 function renderRail(){document.querySelectorAll('#rail button').forEach(b=>b.classList.toggle('on',b.dataset.cat===cat))}
 $('#rail').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;cat=b.dataset.cat;renderRail();renderMenu()});
 $('#searchInput').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();renderMenu()});
+const fmtMulti=p=>{const s=String(p??'');if(!s.includes('/'))return fmt(Number(s)||0);
+ return s.split('/').map(x=>fmt(Number(x.trim()))).join(' / ');};
 function renderMenu(){
  let list=query
   ?MENU.filter(p=>(p.name+' '+p.desc+' '+(p.comp||[]).join(' ')).toLowerCase().includes(query))
@@ -863,7 +865,7 @@ function renderMenu(){
      ${p.desc?`<div class="desc">${esc(p.desc)}</div>`:''}
      ${p.comp&&p.comp.length?`<div class="comp">${p.comp.map(c=>`<i>${esc(c)}</i>`).join('')}</div>`:''}
      ${volStr?`<span class="vol">${esc(volStr)}</span>`:''}
-     <div class="cfoot"><span class="price">${priceStr}</span>
+     <div class="cfoot"><span class="price">${fmtMulti(p.price)}</span>
       ${editMode?`<label class="qswitch"><input type="checkbox" data-onoff="${p.id}" ${p.on?'checked':''}>в меню</label>`:''}
      </div></div></article>`}).join('')
  +(editMode?`<button class="addcard" id="addCard"><span>＋</span>Добавить позицию</button>`:'')
