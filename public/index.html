@@ -450,36 +450,28 @@ body.is-cashier .cust .acts{min-width:260px}
         </div>
 
         <div class="cash-card">
-          <div class="scan">
-            <div class="scanbox"><i class="corn c1"></i><i class="corn c2"></i><i class="corn c3"></i><i class="corn c4"></i>
-              <div class="qrph">📱</div><div class="line"></div>
-            </div>
-            <div class="hint">
-              <b>Гость показал QR-код профиля?</b>
-              <p>Найдите по номеру или имени — начислите штамп «1 из 10». Профиль привязан к номеру: история не потеряется.</p>
-              <div class="findrow">
-                <input id="findInput" placeholder="Номер или имя гостя…" autocomplete="off">
-                <button class="btn dark" id="findBtn">Найти</button>
-                <button class="btn ghost" id="demoScan">▶ Демо: сканировать QR</button>
-              </div>
-            </div>
-          </div>
-          <hr style="border:none;border-top:1px dashed var(--line);margin:18px 0">
-          <div class="cust" id="custCard">
-            <div class="big" id="custInit">А</div>
-            <div class="info">
-              <b id="custName">—</b>
-              <div class="cp" id="custPhone">—</div>
-              <div class="cdots" id="custDots"></div>
-              <div class="note" id="custNote"></div>
-              <div class="chist" id="custHist"></div>
-            </div>
-            <div class="acts">
-              <button class="btn fire" id="giveStampBtn">☕ Пробить штамп</button>
-              <button class="btn ghost" id="redeemBtn" hidden>🎁 Списать бесплатный кофе</button>
-            </div>
-          </div>
-        </div>
+  <h4 style="font:700 12px 'Unbounded';letter-spacing:.08em;text-transform:uppercase;color:#8B98A5;margin-bottom:14px">Найти гостя</h4>
+  <div class="findrow" style="gap:12px">
+    <input id="findInput" placeholder="Номер телефона или имя…" autocomplete="off" style="flex:2;min-width:200px;font-size:15px;padding:14px 16px">
+    <button class="btn fire" id="findBtn" style="flex:1;min-width:140px;font-size:14px;padding:14px 20px">Найти</button>
+    <button class="btn dark" id="newGuestBtn" style="flex:1;min-width:140px;font-size:14px;padding:14px 20px">＋ Новый гость</button>
+  </div>
+  <hr style="border:none;border-top:1px dashed var(--line);margin:18px 0">
+  <div class="cust" id="custCard">
+    <div class="big" id="custInit">А</div>
+    <div class="info">
+      <b id="custName">—</b>
+      <div class="cp" id="custPhone">—</div>
+      <div class="cdots" id="custDots"></div>
+      <div class="note" id="custNote"></div>
+      <div class="chist" id="custHist"></div>
+    </div>
+    <div class="acts">
+      <button class="btn fire" id="giveStampBtn">☕ Пробить штамп</button>
+      <button class="btn ghost" id="redeemBtn" hidden>🎁 Списать бесплатный кофе</button>
+    </div>
+  </div>
+</div>
 
         <div class="cash-card">
           <h4 style="font:700 12px 'Unbounded';letter-spacing:.08em;text-transform:uppercase;color:#8B98A5;margin-bottom:10px">Журнал смены</h4>
@@ -509,7 +501,6 @@ body.is-cashier .cust .acts{min-width:260px}
         <div class="stamps" id="stampGrid"></div>
         <div class="prog" id="bonusProg"></div>
         <div id="freeSlot"></div>
-        <button class="demoBtn" id="demoStampBtn">＋1 штамп (демо: покупка кофе)</button>
         <div class="qrbox" style="margin-top:12px">
   <small style="display:block;margin:0 0 8px">Есть промокод?</small>
   <div class="findrow"><input id="promoInput" placeholder="Например MORE10" style="text-transform:uppercase">
@@ -547,8 +538,8 @@ body.is-cashier .cust .acts{min-width:260px}
           <button class="demoBtn" id="qrOpenProfile" style="margin-top:10px">⛶ На весь экран для кассира</button>
         </div>
         <div class="placebox"><b>Мы у моря</b>п. Янтарный, Советская ул., 70г<br>
-          Ежедневно: май–сен 8:00–21:00 · окт–апр 8:00–20:00<br>
-          ✈️ <a href="https://t.me/and_coffee39"></a></div>
+  Ежедневно: май–сен 8:00–21:00 · окт–апр 8:00–20:00<br>
+  ✈️ <a href="https://t.me/and_coffee39" target="_blank" style="color:var(--flame)">t.me/and_coffee39</a></div>
           <div class="placebox" style="background:#FFF6E5;border-color:#F2D9A5;color:#6B4E0E">
   <b>Понравилось у нас?</b>
   Ваш отзыв на Яндекс Картах помогает нам расти 🌊<br>
@@ -979,8 +970,19 @@ $('#emDel').onclick=async()=>{if(!confirm('Удалить позицию из м
 function setTab(t){document.querySelectorAll('.tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
  $('#pvBonus').hidden=t!=='bonus';$('#pvProfile').hidden=t!=='profile'}
 document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab)});
-function openPanel(tab){setTab(tab);$('#panel').classList.add('open');syncOverlay()}
-function closePanel(){$('#panel').classList.remove('open');syncOverlay()}
+function openPanel(tab){
+  setTab(tab);
+  if(window.innerWidth<=1180){
+    $('#panel').classList.add('open');
+    syncOverlay();
+  }
+}
+function closePanel(){
+  if(window.innerWidth<=1180){
+    $('#panel').classList.remove('open');
+    syncOverlay();
+  }
+}
 $('#mbonusBtn').onclick=()=>me?openPanel('bonus'):openAuth();
 const cupWord=n=>n===1?'чашка':(n>0&&n<5?'чашки':'чашек');
 const BEAN='<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.6" ry="9.6" fill="currentColor"/><path d="M12 3.2c-2.8 3.6-2.8 14 0 17.6" fill="none" stroke="#F7F3EA" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
@@ -1000,9 +1002,6 @@ function renderBonus(){$('#bonusNoUser').hidden=!!me;$('#bonusBox').hidden=!me;i
    toast('Бесплатный кофе погашен. Вкусного!','☕')}catch(e){toast(e.message,'⚠️')}};
  $('#mbonusSt').textContent=me.free>0?'🎁 есть!':`${me.stamps}/10`;
 }
-$('#demoStampBtn').onclick=async()=>{if(!me)return;
- try{const r=await api('/stamp',{method:'POST'});me=r.customer;renderBonus();renderProfile();
-  if(r.ten)confetti();toast(r.msg,r.ten?'🎉':'')}catch(e){toast(e.message,'⚠️')}};
 function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden=!me;
  if(!me){$('#avInit').textContent='?';$('#profileTopBtn').textContent='?';return}
  $('#avInit').textContent=(me.name[0]||'Г').toUpperCase();
@@ -1085,11 +1084,6 @@ $('#findBtn').onclick=async()=>{const q=$('#findInput').value;
   if(r.customers.length>1)toast('Найдено несколько — показан первый','ℹ️');
   showCust(r.customers[0])}catch(e){toast(e.message,'⚠️')}};
 $('#findInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('#findBtn').click()});
-$('#demoScan').onclick=async()=>{$('#custCard').classList.remove('show');
- toast('Сканирую QR-код…','📷');
- try{const r=await api('/staff/demo');
-  setTimeout(()=>{showCust(r.customer);toast(`QR распознан: ${esc(r.customer.name)}`,'✅')},700)}
- catch(e){toast(e.message,'⚠️')}};
 $('#giveStampBtn').onclick=async()=>{if(!found)return;
  try{const r=await api('/staff/stamp',{method:'POST',body:{id:found.id}});
   found=r.customer;showCust(found,r.ten?-1:found.stamps-1);renderLog();
@@ -1122,7 +1116,8 @@ async function renderLog(){try{const r=await api('/staff/log');
 let chatOpened=false,unread=0;
 const now=()=>new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 function addMsg(who,text){const m=document.createElement('div');m.className='msg '+who;
- m.innerHTML=`${esc(text)}<time>${now()}</time>`;$('#chatMsgs').append(m);$('#chatMsgs').scrollTop=1e6}
+  const safe=esc(text).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" style="color:var(--flame)">$1</a>');
+  m.innerHTML=`${safe}<time>${now()}</time>`;$('#chatMsgs').append(m);$('#chatMsgs').scrollTop=1e6}
 function showTyping(){const t=document.createElement('div');t.className='typing';t.id='tp';t.innerHTML='<i></i><i></i><i></i>';
  $('#chatMsgs').append(t);$('#chatMsgs').scrollTop=1e6}
 function hideTyping(){const t=$('#tp');t&&t.remove()}
