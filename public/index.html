@@ -92,7 +92,7 @@ input,select,textarea{font-family:inherit}
 .search{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:9px 16px;transition:.2s;min-width:210px}
 .search:focus-within{border-color:var(--flame);box-shadow:0 0 0 4px rgba(31,78,140,.12)}
 .search input{border:none;outline:none;flex:1;font-size:13.5px;background:transparent;min-width:0}
-#editToggle{border-radius:999px;padding:10px 18px;font-size:13px;font-weight:800;border:1.5px solid var(--esp);transition:.25s;background:#fff}
+#editToggle,#promoToggle{border-radius:999px;padding:10px 18px;font-size:13px;font-weight:800;border:1.5px solid var(--esp);transition:.25s;background:#fff}
 #editToggle:hover{transform:translateY(-1px);box-shadow:var(--sh)}
 #editToggle.on{background:var(--esp);color:var(--cream)}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -424,6 +424,7 @@ body.is-cashier .cust .acts{min-width:260px}
           <div class="mh-right">
             <div class="search">🔍 <input id="searchInput" placeholder="Найти в меню…"></div>
             <button id="editToggle" hidden>✏️ Редактировать</button>
+            <button id="promoToggle" hidden>🎟 Промокоды</button>
           </div>
         </div>
       </div>
@@ -509,6 +510,11 @@ body.is-cashier .cust .acts{min-width:260px}
         <div class="prog" id="bonusProg"></div>
         <div id="freeSlot"></div>
         <button class="demoBtn" id="demoStampBtn">＋1 штамп (демо: покупка кофе)</button>
+        <div class="qrbox" style="margin-top:12px">
+  <small style="display:block;margin:0 0 8px">Есть промокод?</small>
+  <div class="findrow"><input id="promoInput" placeholder="Например MORE10" style="text-transform:uppercase">
+  <button class="btn fire" id="promoBtn">OK</button></div>
+</div>
         <div class="qrbox"><canvas id="qrMini" width="196" height="196" style="width:112px;height:112px"></canvas>
           <small>Покажите кассиру — он начислит штамп по вашему профилю</small>
         </div>
@@ -542,7 +548,12 @@ body.is-cashier .cust .acts{min-width:260px}
         </div>
         <div class="placebox"><b>Мы у моря</b>п. Янтарный, Советская ул., 70г<br>
           Ежедневно: май–сен 8:00–21:00 · окт–апр 8:00–20:00<br>
-          ✈️ t.me/and_coffee39</div>
+          ✈️ <a href="https://t.me/and_coffee39"></a></div>
+          <div class="placebox" style="background:#FFF6E5;border-color:#F2D9A5;color:#6B4E0E">
+  <b>Понравилось у нас?</b>
+  Ваш отзыв на Яндекс Картах помогает нам расти 🌊<br>
+  <button class="btn fire" id="reviewBtn" style="margin-top:10px;width:100%">⭐ Оставить отзыв</button>
+</div>
         <h4>История</h4>
         <div id="histList"></div>
         <button class="demoBtn" id="logoutBtn">⇄ Сменить аккаунт (выйти)</button>
@@ -656,7 +667,27 @@ body.is-cashier .cust .acts{min-width:260px}
     <div class="qrhint">Нажмите в любом месте, чтобы закрыть</div>
   </div>
 </div>
-
+<div class="modal" id="promoModal">
+  <div class="modal-card">
+    <button class="mclose" id="promoClose">✕</button>
+    <h3>Промокоды и акции</h3>
+    <div class="msub">Код даёт гостю штампы или бесплатный кофе</div>
+    <div class="form">
+      <div class="frow">
+        <label class="f2">Код<input id="pmCode" placeholder="MORE10" style="text-transform:uppercase"></label>
+        <label class="f1">Тип<select id="pmKind"><option value="stamp">Штампы</option><option value="free">Бесплатный кофе</option></select></label>
+      </div>
+      <div class="frow">
+        <label class="f1">Кол-во<input id="pmValue" type="number" min="1" value="1"></label>
+        <label class="f1">Дней (0=∞)<input id="pmDays" type="number" min="0" value="0"></label>
+        <label class="f1">Лимит (0=∞)<input id="pmMax" type="number" min="0" value="0"></label>
+      </div>
+      <button class="btn fire" id="pmCreate">Создать промокод</button>
+    </div>
+    <h4 style="margin-top:16px">Список кодов</h4>
+    <div id="pmList"></div>
+  </div>
+</div>
 <div class="toasts" id="toasts"></div>
 <canvas id="fx"></canvas>
 
@@ -695,9 +726,10 @@ async function api(path,opts={}){
  if(r.status===401&&!path.startsWith('/auth')){USER_TOKEN=null;localStorage.removeItem(T_USER);me=null}
  if(!r.ok){const err=new Error(j.error||('Ошибка '+r.status));err.code=r.status;throw err}
  return j}
-function toast(msg,icon='✨'){const t=document.createElement('div');t.className='toast';
+function toast(msg,icon='✨',onclick=null){const t=document.createElement('div');t.className='toast';
+ if(onclick){t.style.cursor='pointer';t.onclick=()=>{onclick();t.classList.add('out');setTimeout(()=>t.remove(),300)}}
  t.innerHTML=`<span>${icon}</span><span>${msg}</span>`;$('#toasts').append(t);
- setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),320)},3400)}
+ setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),320)},onclick?7000:3400)}
 
 function tickClock(){$('#clock').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
 tickClock();setInterval(tickClock,20000);
@@ -765,6 +797,7 @@ function setMode(m){
  $('#menuView').hidden=m==='cashier';
  $('#rail').style.display=m==='cashier'?'none':'';
  $('#editToggle').hidden=m!=='admin';
+ $('#promoToggle').hidden=!(me&&me.role==='admin');
  $('#adminBadge').hidden=m!=='admin';
  if(m!=='admin')exitEdit();
  $('#mbonusBtn').style.display=m==='cashier'?'none':'';
@@ -990,6 +1023,46 @@ $('#nameInput').addEventListener('change',async e=>{if(!me)return;
   toast('Профиль обновлён','✅')}catch(err){toast(err.message,'⚠️')}});
 $('#resetBtn').onclick=()=>{if(!confirm('Выйти и очистить локальные данные (токены)?'))return;
  localStorage.clear();location.reload()};
+ /* ── отзывы ── */
+const REVIEW_URL='https://yandex.ru/maps/-/CTHxjIyq';
+const SOCIAL_URL='https://t.me/and_coffee39';
+$('#reviewBtn').onclick=()=>{window.open(REVIEW_URL,'_blank');toast('Спасибо! Вы лучшие 💙','⭐')};
+function maybeAskReview(){
+ if(!me)return;
+ if(!localStorage.getItem('zt_first'))localStorage.setItem('zt_first',String(Date.now()));
+ const first=+localStorage.getItem('zt_first');
+ if(localStorage.getItem('zt_asked'))return;
+ if((me.stamps||0)<3&&(me.cups||0)<3)return;
+ if(Date.now()-first<3*86400000)return;
+ localStorage.setItem('zt_asked','1');
+ setTimeout(()=>toast('Понравилось у нас? Пара секунд — и отзыв на Картах 🌟','⭐',()=>window.open(REVIEW_URL,'_blank')),4000);
+}
+/* ── промокоды ── */
+$('#promoBtn').onclick=async()=>{
+ const code=$('#promoInput').value.trim();
+ if(!code)return toast('Введите промокод','🎟');
+ try{const r=await api('/promo/redeem',{method:'POST',body:{code}});
+  me=r.customer;renderBonus();renderProfile();confetti();toast(r.msg,'🎉');$('#promoInput').value='';}
+ catch(e){toast(e.message,'⚠️')}};
+$('#promoToggle').onclick=()=>{$('#promoModal').classList.add('show');syncOverlay();loadPromos()};
+function closePromo(){$('#promoModal').classList.remove('show');syncOverlay()}
+$('#promoClose').onclick=closePromo;
+async function loadPromos(){try{const r=await api('/promos');
+ $('#pmList').innerHTML=r.promos.map(p=>`<div class="logrow" style="align-items:center;gap:8px">
+  <span class="lt">${esc(p.code)}</span>
+  <span style="flex:1">${p.kind==='stamp'?'+'+p.value+' штамп(а)':'+'+p.value+' кофе'} · исп. ${p.uses}${p.maxuses?'/'+p.maxuses:''}${p.expires&&new Date(p.expires)<new Date()?' · истёк':''}</span>
+  <button class="btn ghost" data-pt="${p.id}">${p.active?'Выкл':'Вкл'}</button>
+  <button class="btn ghost danger" data-pd="${p.id}">🗑</button></div>`).join('')
+ ||'<div class="hmini">Пока пусто — создайте первый код</div>';}catch(e){}}
+$('#pmList').addEventListener('click',async e=>{
+ const t=e.target.closest('[data-pt]'),d=e.target.closest('[data-pd]');
+ if(t){await api('/promos/'+t.dataset.pt+'/toggle',{method:'POST'});loadPromos()}
+ if(d){if(confirm('Удалить промокод?')){await api('/promos/'+d.dataset.pd,{method:'DELETE'});loadPromos()}}});
+$('#pmCreate').onclick=async()=>{
+ const body={code:$('#pmCode').value,kind:$('#pmKind').value,value:+$('#pmValue').value||1,
+  days:+$('#pmDays').value||0,maxuses:+$('#pmMax').value||0};
+ try{await api('/promos',{method:'POST',body});$('#pmCode').value='';loadPromos();toast('Промокод создан — делитесь кодом!','🎟')}
+ catch(e){toast(e.message,'⚠️')}};
 
 let found=null;
 function dotsHTML(u,last){let h='';for(let i=0;i<10;i++)
@@ -1063,7 +1136,7 @@ function botReply(q){q=q.toLowerCase();
  if(/моти/.test(q))return'Моти — 4 вкуса: клубника-пломбир, финик-дорблю, манго-пломбир и вишня-латте. 275 ₽ за штучку счастья.';
  if(/во сколько|до скольк|время работы|часы работы|график|режим работы|когда открыт|работаете/.test(q))return'Ежедневно: май–сентябрь 8:00–21:00, октябрь–апрель 8:00–20:00. Мы в Янтарном, Советская 70г 🌊';
  if(/адрес|где вы|найти вас|на карте/.test(q))return'Мы у моря: п. Янтарный, Советская ул., 70г. Белый домик с вывеской «…и кофе» 🌊';
- if(/телеграм|связ|написать|контакт/.test(q))return'Пишите в Telegram: t.me/and_coffee39 — отвечаем быстро и с удовольствием.';
+ if(/телеграм|связ|написать|контакт/.test(q))return'Пишите в Telegram: '+SOCIAL_URL+' — отвечаем быстро и с удовольствием.';
  if(/молоко|овсян|кокос|миндал|альтернатив|банан/.test(q))return'Альтернативное молоко (овсяное, кокосовое, миндальное, банановое) — +70 ₽. Банановое, кстати, слаще обычного!';
  if(/состав|капучино|из чего|входит/.test(q)){
   const hit=MENU.find(p=>p.name.toLowerCase().includes('капучино'));
@@ -1072,6 +1145,7 @@ function botReply(q){q=q.toLowerCase();
  if(/меню|новинк|сезон/.test(q))return'Загляните в категорию «🌊 Сезонное»: Монблан, кофейный лимонад, «Я не на диете» и тропическая матча-тоник. Всё по 400–420 ₽ и очень фотогеничное ✨';
  if(/возврат|вернуть/.test(q))return'Возврат оформим на кассе по чеку — мгновенно. Деньги вернутся на карту за 3–5 дней.';
  if(/спасибо|благодар/.test(q))return'Всегда рады! Приходите ещё — море рядом, кофе горячий 💙';
+ if(/отзыв|рейтинг|оценить|яндекс/.test(q))return'Будем рады вашему отзыву! 🌟 Ссылка: '+REVIEW_URL+' — это правда помогает маленькой кофейне у моря.';
  return'Приняла! Передаю человеку — обычно отвечаем за 2–3 минуты. А пока могу рассказать про: чаи, моти, бонусы, адрес и часы работы.'}
  
 function sendChat(text){if(!text.trim())return;addMsg('me',text);$('#chatInput').value='';
@@ -1095,13 +1169,18 @@ function loop(){fxx.clearRect(0,0,fx.width,fx.height);pieces=pieces.filter(p=>p.
   fxx.fillStyle=p.c;fxx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.62);fxx.restore()});
  pieces.length?requestAnimationFrame(loop):(fxOn=false,fxx.clearRect(0,0,fx.width,fx.height))}
 
-function syncOverlay(){const on=$('#panel').classList.contains('open')||$('#emModal').classList.contains('show')
- ||$('#authModal').classList.contains('show')||$('#pinModal').classList.contains('show')||$('#qrModal').classList.contains('show');
+function syncOverlay()
+{const on=$('#panel').classList.contains('open')
+||$('#emModal').classList.contains('show')
+||$('#authModal').classList.contains('show')
+||$('#pinModal').classList.contains('show')
+||$('#promoModal').classList.contains('show')
+||$('#qrModal').classList.contains('show');
  $('#overlay').classList.toggle('show',on)}
-$('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeQRFull();
- if(onboarded||me)closeAuth()};
-addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeQRFull();
- $('#chatPanel').classList.remove('open');if(onboarded||me)closeAuth()}});
+$('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeQRFull();closePromo();
+  if(onboarded||me)closeAuth()};
+addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeQRFull();closePromo();
+  $('#chatPanel').classList.remove('open');if(onboarded||me)closeAuth()}});
 
 if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
 
@@ -1111,7 +1190,7 @@ function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();ren
  if(mode==='cashier')renderLog()}
 (async function boot(){
  if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
- await loadMenu();renderAll();
+ await loadMenu();renderAll();maybeAskReview();
  if(!onboarded)setTimeout(()=>openAuth(false),600);
 })();
 console.info('%c🌊 …и кофе · ребрендинг','font-weight:bold;font-size:14px','| меню v2 | штампы-зёрна');

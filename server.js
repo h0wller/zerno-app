@@ -28,6 +28,11 @@ CREATE TABLE IF NOT EXISTS tokens(
 CREATE TABLE IF NOT EXISTS events(
   id INTEGER PRIMARY KEY AUTOINCREMENT, t TEXT, w TEXT, a TEXT);
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS promos(
+  id TEXT PRIMARY KEY, code TEXT UNIQUE, kind TEXT, value INTEGER DEFAULT 1,
+  active INTEGER DEFAULT 1, expires TEXT, maxuses INTEGER DEFAULT 0, uses INTEGER DEFAULT 0, created TEXT);
+CREATE TABLE IF NOT EXISTS promo_use(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, promo TEXT, cid TEXT, ts TEXT);
 `);
 /* миграции */
 const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
@@ -269,7 +274,43 @@ app.get('/api/staff/demo', staffGuard, (req, res) => {
 });
 app.get('/api/staff/log', staffGuard, (req, res) =>
   res.json({ log: db.prepare('SELECT t,w,a FROM events ORDER BY id DESC LIMIT 20').all() }));
-
+/* ── промокоды ── */
+app.post('/api/promo/redeem', userGuard, (req, res) => {
+  const code = String(req.body.code || '').trim().toUpperCase();
+  if (!code) return res.status(400).json({ error: 'Введите промокод' });
+  const p = db.prepare('SELECT * FROM promos WHERE code=?').get(code);
+  if (!p || !p.active) return res.status(404).json({ error: 'Такого промокода нет' });
+  if (p.expires && new Date(p.expires) < new Date()) return res.status(410).json({ error: 'Промокод истёк' });
+  if (p.maxuses > 0 && p.uses >= p.maxuses) return res.status(410).json({ error: 'Промокод закончился' });
+  if (db.prepare('SELECT 1 FROM promo_use WHERE promo=? AND cid=?').get(p.id, req.user.id))
+    return res.status(409).json({ error: 'Вы уже использовали этот промокод' });
+  db.prepare('INSERT INTO promo_use(promo,cid,ts) VALUES(?,?,?)').run(p.id, req.user.id, nowISO());
+  db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(p.id);
+  if (p.kind === 'stamp') { for (let i = 0; i < (p.value || 1); i++) grant(req.user.id, 'Промокод ' + p.code); }
+  else { db.prepare('UPDATE customers SET free=free+? WHERE id=?').run(p.value || 1, req.user.id);
+    addHist(req.user.id, `🎁 Промокод ${p.code}: +${p.value || 1} бесплатный кофе`, 'Система'); }
+  logEv(req.user.name, `промокод ${p.code}`);
+  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)),
+    msg: p.kind === 'stamp' ? `Промокод дал +${p.value || 1} штамп(а)` : 'Промокод дал бесплатный кофе' });
+});
+app.get('/api/promos', adminGuard, (req, res) =>
+  res.json({ promos: db.prepare('SELECT * FROM promos ORDER BY created DESC').all() }));
+app.post('/api/promos', adminGuard, (req, res) => {
+  const b = req.body;
+  const code = String(b.code || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (code.length < 3) return res.status(400).json({ error: 'Код слишком короткий' });
+  if (db.prepare('SELECT 1 FROM promos WHERE code=?').get(code)) return res.status(409).json({ error: 'Такой код уже есть' });
+  const expires = b.days ? new Date(Date.now() + b.days * 86400000).toISOString() : null;
+  db.prepare('INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created) VALUES(?,?,?,?,1,?,?,0,?)')
+    .run(uid('pr'), code, b.kind || 'stamp', Math.max(1, +(b.value || 1)), expires, +(b.maxuses || 0), nowISO());
+  res.json({ ok: true });
+});
+app.post('/api/promos/:id/toggle', adminGuard, (req, res) => {
+  db.prepare('UPDATE promos SET active=1-active WHERE id=?').run(req.params.id); res.json({ ok: true });
+});
+app.delete('/api/promos/:id', adminGuard, (req, res) => {
+  db.prepare('DELETE FROM promos WHERE id=?').run(req.params.id); res.json({ ok: true });
+});
 /* ── статика ── */
 app.use(express.static(PUBLIC_DIR));
 app.listen(PORT, () => console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`));
