@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">И кофе...</string>
-    <string name="title_activity_main">И кофе...</string>
-    <string name="package_name">online.andcoffee.app</string>
-    <string name="custom_url_scheme">online.andcoffee.app</string>
+    <string name="app_name" translatable="false">…и кофе.</string>
+    <string name="title_activity_main" translatable="false">…и кофе</string>
+    <string name="package_name" translatable="false">online.andcoffee.app</string>
+    <string name="custom_url_scheme" translatable="false">online.andcoffee.app</string>
 </resources>
