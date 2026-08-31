@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS promo_use(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   key TEXT, who TEXT, text TEXT, ts TEXT,
   human INTEGER DEFAULT 0, read_g INTEGER DEFAULT 0, read_s INTEGER DEFAULT 0);
+  CREATE TABLE IF NOT EXISTS chat_meta(
+  key TEXT PRIMARY KEY, closed INTEGER DEFAULT 0);
 `);
 /* миграции */
 const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
@@ -388,6 +390,11 @@ app.post('/api/chat/send', (req, res) => {
   if (!key || !text) return res.status(400).json({ error: 'bad request' });
   db.prepare('INSERT INTO chat(key,who,text,ts,human,read_s) VALUES(?,?,?,?,?,0)')
     .run(key, 'guest', text, nowISO(), req.body.human ? 1 : 0);
+  db.prepare('INSERT INTO chat_meta(key,closed) VALUES(?,0) ON CONFLICT(key) DO UPDATE SET closed=0').run(key);
+  if (req.body.human) {
+    const staff = db.prepare("SELECT id FROM customers WHERE role IN ('cashier','admin')").all();
+    for (const s of staff) sendPush(s.id, '💬 Новый вопрос гостя', text.slice(0, 80));
+  }
   res.json({ ok: true });
 });
 app.post('/api/chat/botlog', (req, res) => {
@@ -403,9 +410,14 @@ app.get('/api/chat/thread', (req, res) => {
   res.json({ msgs: db.prepare('SELECT id,who,text,ts FROM chat WHERE key=? AND id>? ORDER BY id').all(key, after) });
 });
 app.get('/api/chat/list', staffGuard, (req, res) => {
-  const rows = db.prepare(`SELECT key, MAX(id) mid, SUM(CASE WHEN who='guest' AND read_s=0 THEN 1 ELSE 0 END) unread, MAX(human) human
-    FROM chat GROUP BY key ORDER BY mid DESC LIMIT 30`).all();
-  res.json({ threads: rows.map(r => {
+  const showClosed = req.query.closed === '1';
+  const rows = db.prepare(`SELECT c.key, MAX(c.id) mid,
+    SUM(CASE WHEN c.who='guest' AND c.read_s=0 THEN 1 ELSE 0 END) unread,
+    MAX(CASE WHEN c.who='guest' THEN c.human ELSE 0 END) human,
+    IFNULL(m.closed,0) closed
+    FROM chat c LEFT JOIN chat_meta m ON m.key=c.key
+    GROUP BY c.key ORDER BY mid DESC LIMIT 50`).all();
+  res.json({ threads: rows.filter(r => showClosed ? r.closed : !r.closed).map(r => {
     const c = db.prepare('SELECT name FROM customers WHERE id=?').get(r.key);
     return { key: r.key, name: c ? c.name : 'Гость', unread: r.unread, human: r.human };
   }) });
@@ -420,6 +432,14 @@ app.post('/api/chat/reply', staffGuard, (req, res) => {
   const text = String(req.body.text || '').slice(0, 2000);
   if (!key || !text) return res.status(400).json({ error: 'bad request' });
   db.prepare('INSERT INTO chat(key,who,text,ts,read_g) VALUES(?,?,?,?,0)').run(key, 'staff', text, nowISO());
+  res.json({ ok: true });
+});
+app.post('/api/chat/close', staffGuard, (req, res) => {
+  db.prepare('INSERT INTO chat_meta(key,closed) VALUES(?,1) ON CONFLICT(key) DO UPDATE SET closed=1').run(String(req.body.key || '').slice(0, 64));
+  res.json({ ok: true });
+});
+app.post('/api/chat/open', staffGuard, (req, res) => {
+  db.prepare('INSERT INTO chat_meta(key,closed) VALUES(?,0) ON CONFLICT(key) DO UPDATE SET closed=0').run(String(req.body.key || '').slice(0, 64));
   res.json({ ok: true });
 });
 /* ── статика ── */

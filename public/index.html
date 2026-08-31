@@ -707,9 +707,11 @@ body.is-cashier .cust .acts{min-width:260px}
     <button class="mclose" id="scClose">✕</button>
     <h3>Чаты гостей</h3>
     <div class="msub">Если бот не смог помочь — ответьте лично</div>
+    <button class="btn ghost" id="scShowClosed" style="margin-bottom:8px">Показать закрытые</button>
     <div id="scList" style="max-height:200px;overflow-y:auto"></div>
     <div id="scDialogWrap" hidden>
       <button class="btn ghost" id="scBack" style="margin:10px 0">← К списку</button>
+      <button class="btn ghost" id="scCloseThread" style="margin:10px 0 10px 8px">✓ Закрыть чат</button>
       <div id="scDialog" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
       <div class="findrow" style="margin-top:10px">
         <input id="scInput" placeholder="Ответ гостю…">
@@ -1287,13 +1289,23 @@ function closeStaffChat(){$('#staffChatModal').classList.remove('show');syncOver
 $('#chatsToggle').onclick=openStaffChat;
 $('#chatsToggle2').onclick=openStaffChat;
 $('#scClose').onclick=closeStaffChat;
-async function loadScList(){try{const r=await api('/chat/list');
+let scClosedView=false;
+async function loadScList(){try{const r=await api('/chat/list'+(scClosedView?'?closed=1':''));
+ $('#scShowClosed').textContent=scClosedView?'← Активные чаты':'Показать закрытые';
  $('#scList').innerHTML=r.threads.map(t=>`<div class="hmini" style="cursor:pointer" data-sck="${esc(t.key)}">
-  <b>${esc(t.name)}</b>${t.human?'<span class="tag hit" style="position:static;margin-left:6px">нужен ответ</span>':''}
+  <b>${esc(t.name)}</b>${t.human&&!scClosedView?'<span class="tag hit" style="position:static;margin-left:6px">нужен ответ</span>':''}
   <span style="float:right">${t.unread?'новое: '+t.unread:''}</span></div>`).join('')
- ||'<div class="hmini">Пока тихо</div>';}catch(e){}}
+ ||`<div class="hmini">${scClosedView?'Закрытых чатов нет':'Пока тихо'}</div>`;}catch(e){}}
+$('#scShowClosed').onclick=()=>{scClosedView=!scClosedView;loadScList();};
+$('#scCloseThread').onclick=async()=>{if(!scKey)return;
+ try{
+  if(scClosedView){await api('/chat/open',{method:'POST',body:{key:scKey}});toast('Чат снова активен','↺');}
+  else{await api('/chat/close',{method:'POST',body:{key:scKey}});toast('Чат закрыт','✅');}
+  $('#scDialogWrap').hidden=true;scKey=null;loadScList();
+ }catch(e){toast(e.message,'⚠️')}};
 $('#scList').addEventListener('click',e=>{const el=e.target.closest('[data-sck]');if(!el)return;scKey=el.dataset.sck;openScDialog();});
 async function openScDialog(){$('#scDialogWrap').hidden=false;
+$('#scCloseThread').textContent=scClosedView?'↺ Открыть чат':'✓ Закрыть чат';
  try{const r=await api('/chat/dialog?key='+encodeURIComponent(scKey));
  $('#scDialog').innerHTML=r.msgs.map(m=>`<div class="msg ${m.who==='guest'?'me':(m.who==='staff'?'staff':'bot')}" style="max-width:92%">${esc(m.text)}</div>`).join('');
  $('#scDialog').scrollTop=1e6;}catch(e){}}
@@ -1302,6 +1314,16 @@ async function scSend(){const t=$('#scInput').value.trim();if(!t||!scKey)return;
  try{await api('/chat/reply',{method:'POST',body:{key:scKey,text:t}});$('#scInput').value='';openScDialog();}catch(e){toast(e.message,'⚠️')}}
 $('#scSend').onclick=scSend;
 $('#scInput').addEventListener('keydown',e=>{if(e.key==='Enter')scSend()});
+/* счётчик новых вопросов гостей на кнопках 💬 */
+setInterval(async()=>{
+ if(!me||(me.role!=='admin'&&me.role!=='cashier'))return;
+ if(document.visibilityState!=='visible')return;
+ try{const r=await api('/chat/list');
+  const un=r.threads.reduce((a,t)=>a+(+t.unread||0),0);
+  $('#chatsToggle').textContent=un?`💬 Чаты гостей · ${un}`:'💬 Чаты гостей';
+  $('#chatsToggle2').textContent=un?`💬 ${un}`:'💬';
+ }catch(e){}
+},20000);
 
 const fx=$('#fx'),fxx=fx.getContext('2d');let pieces=[],fxOn=false;
 function fitFx(){fx.width=innerWidth;fx.height=innerHeight}fitFx();addEventListener('resize',fitFx);
