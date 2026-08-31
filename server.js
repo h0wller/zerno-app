@@ -374,7 +374,7 @@ async function sendPush(cid, title, body) {
   }
 }
 app.get('/api/push/subs', adminGuard, (req, res) => {
-  res.json({ subs: db.prepare(`SELECT s.created, c.name, c.phone FROM subs s LEFT JOIN customers c ON c.id=s.cid ORDER BY s.id DESC`).all() });
+  res.json({ subs: db.prepare(`SELECT s.created, s.cid, c.name, c.phone FROM subs s LEFT JOIN customers c ON c.id=s.cid ORDER BY s.id DESC`).all() });
 });
 app.post('/api/push/send', adminGuard, async (req, res) => {
   const body = req.body.body || '';
@@ -440,6 +440,14 @@ app.post('/api/chat/close', staffGuard, (req, res) => {
 });
 app.post('/api/chat/open', staffGuard, (req, res) => {
   db.prepare('INSERT INTO chat_meta(key,closed) VALUES(?,0) ON CONFLICT(key) DO UPDATE SET closed=0').run(String(req.body.key || '').slice(0, 64));
+  res.json({ ok: true });
+});
+app.post('/api/push/unsubscribe', userGuard, (req, res) => {
+  db.prepare('DELETE FROM subs WHERE cid=?').run(req.user.id);
+  res.json({ ok: true });
+});
+app.post('/api/push/del', adminGuard, (req, res) => {
+  db.prepare('DELETE FROM subs WHERE cid=?').run(String(req.body.cid || ''));
   res.json({ ok: true });
 });
 /* ── статика ── */

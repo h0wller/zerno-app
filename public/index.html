@@ -893,9 +893,15 @@ $('#logBtn').onclick=async()=>{
  catch(e){toast(e.message,'🔍');if(e.code===404){$('#regPhone').value=fmtPhone(phone);authSwap(false)}}};
 document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>openAuth());
 $('#profileTopBtn').onclick=()=>me?openPanel('profile'):openAuth();
-$('#logoutBtn').onclick=async()=>{try{await api('/exit',{method:'POST'})}catch(e){}
+$('#logoutBtn').onclick=async()=>{
+ try{
+  const reg=await navigator.serviceWorker.ready;
+  const sub=await reg.pushManager.getSubscription();
+  if(sub){await api('/push/unsubscribe',{method:'POST'});await sub.unsubscribe();}
+ }catch(e){}
+ try{await api('/exit',{method:'POST'})}catch(e){}
  USER_TOKEN=null;localStorage.removeItem(T_USER);me=null;mode='guest';
- closePanel();renderAll();openAuth()};
+ closePanel();renderAll();openAuth();};
 
 let cat='coffee',query='';
 $('#rail').innerHTML=CATS.map(c=>`<button data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`).join('');
@@ -1054,8 +1060,7 @@ function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden
  $('#roleLbl').textContent=r==='admin'?'🔑 роль: администратор':r==='cashier'?'🧾 роль: кассир':'роль: гость';
  $('#activateBtn').hidden=!(r==='guest'||r==='cashier');
  $('#activateBtn').textContent=r==='guest'?'🔑 У меня код доступа сотрудника':'🔑 Повысить до администратора';
- const pb=$('#pushBtn');
-pb.hidden=!me||!('Notification' in window)||Notification.permission==='granted';
+ refreshPushBtn();
 $('#dashToggle').hidden=!(me&&me.role==='admin');
  $('#stCups').textContent=me.cups;$('#stStamps').textContent=me.stamps+'/10';$('#stFree').textContent=me.free;
  $('#histList').innerHTML=(me.history||[]).slice(0,8).map(h=>
@@ -1126,12 +1131,14 @@ $('#dashToggle').onclick=async()=>{
      <div class="hmini">Бесплатных кофе списано за 30 дн: <b>${s.redeemed}</b> · новых гостей за 30 дн: <b>${s.newMonth}</b></div>
      <div class="hmini">Средняя чашек на гостя: <b>${s.avgCups}</b> · активаций промокодов: <b>${s.promoUses}</b></div>`;
   }catch(e){toast(e.message,'⚠️')}
-  try{
-    const ps=await api('/push/subs');
-    $('#pushSubs').innerHTML=ps.subs.map(x=>`<div class="hmini"><b>${esc(x.name||'—')}</b> · ${esc(x.phone||'')} · ${new Date(x.created).toLocaleDateString('ru-RU')}</div>`).join('')
-     ||'<div class="hmini">Пока никто не подписан</div>';
-  }catch(e){}
-};
+}
+ async function loadSubs(){try{const ps=await api('/push/subs');
+ $('#pushSubs').innerHTML=ps.subs.map(s=>`<div class="hmini" style="display:flex;align-items:center;gap:8px"><b>${esc(s.name||'—')}</b> · ${esc(s.phone||'')} · ${new Date(s.created).toLocaleDateString('ru-RU')}<button class="btn ghost danger" data-pdel="${esc(s.cid)}" style="margin-left:auto;padding:4px 10px">✕</button></div>`).join('')
+ ||'<div class="hmini">Пока никто не подписан</div>';}catch(e){}}
+$('#pushSubs').addEventListener('click',async e=>{const b=e.target.closest('[data-pdel]');if(!b)return;
+ if(!confirm('Удалить подписку этого устройства?'))return;
+ try{await api('/push/del',{method:'POST',body:{cid:b.dataset.pdel}});loadSubs();toast('Подписка удалена','🗑')}catch(err){toast(err.message,'⚠️')}});
+ 
 function closeDash(){$('#dashModal').classList.remove('show');syncOverlay()}
 $('#dashClose').onclick=closeDash;
 /* ── пуши ── */
@@ -1157,11 +1164,18 @@ async function enablePush(){
     const v=await (await fetch(API_BASE+'/api/vapid')).json();
     const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(v.publicKey)});
     await api('/push/subscribe',{method:'POST',body:{sub:sub.toJSON()}});
-    renderProfile();
+    refreshPushBtn();
     toast('Готово! Проверочный пуш уже летит','🔔');
   }catch(e){toast(e.message,'⚠️')}
 }
 $('#pushBtn').onclick=enablePush;
+ function refreshPushBtn(){
+  const pb=$('#pushBtn');if(!pb)return;
+  if(!me||!('Notification' in window)){pb.hidden=true;return;}
+  if(Notification.permission!=='granted'){pb.hidden=false;return;}
+  navigator.serviceWorker.ready.then(reg=>reg.pushManager.getSubscription())
+    .then(s=>{pb.hidden=!!s;}).catch(()=>{pb.hidden=false;});
+}
 $('#pushSend').onclick=async()=>{
   const body=$('#pushText').value.trim();
   if(!body)return toast('Введите текст пуша','✍️');
