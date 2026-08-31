@@ -92,7 +92,7 @@ input,select,textarea{font-family:inherit}
 .search{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:9px 16px;transition:.2s;min-width:210px}
 .search:focus-within{border-color:var(--flame);box-shadow:0 0 0 4px rgba(31,78,140,.12)}
 .search input{border:none;outline:none;flex:1;font-size:13.5px;background:transparent;min-width:0}
-#editToggle,#promoToggle{border-radius:999px;padding:10px 18px;font-size:13px;font-weight:800;border:1.5px solid var(--esp);transition:.25s;background:#fff}
+#editToggle,#promoToggle,#dashToggle{border-radius:999px;padding:10px 18px;font-size:13px;font-weight:800;border:1.5px solid var(--esp);transition:.25s;background:#fff}
 #editToggle:hover{transform:translateY(-1px);box-shadow:var(--sh)}
 #editToggle.on{background:var(--esp);color:var(--cream)}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -425,6 +425,7 @@ body.is-cashier .cust .acts{min-width:260px}
             <div class="search">🔍 <input id="searchInput" placeholder="Найти в меню…"></div>
             <button id="editToggle" hidden>✏️ Редактировать</button>
             <button id="promoToggle" hidden>🎟 Промокоды</button>
+            <button id="dashToggle" hidden>📊 Дашборд</button>
           </div>
         </div>
       </div>
@@ -679,6 +680,17 @@ body.is-cashier .cust .acts{min-width:260px}
     <div id="pmList"></div>
   </div>
 </div>
+<div class="modal" id="dashModal">
+  <div class="modal-card" style="width:min(560px,100%)">
+    <button class="mclose" id="dashClose">✕</button>
+    <h3>Дашборд владельца</h3>
+    <div class="msub">Живая статистика лояльности · …и кофе</div>
+    <div class="stats" id="dashTop"></div>
+    <h4 style="margin-top:16px">Штампы за 14 дней</h4>
+    <div id="dashChart" style="display:flex;align-items:flex-end;gap:4px;height:130px"></div>
+    <div id="dashMore" style="margin-top:14px"></div>
+  </div>
+</div>
 <div class="toasts" id="toasts"></div>
 <canvas id="fx"></canvas>
 
@@ -787,6 +799,7 @@ function setMode(m){
  $('#rail').style.display=m==='cashier'?'none':'';
  $('#editToggle').hidden=m!=='admin';
  $('#promoToggle').hidden=!(me&&me.role==='admin');
+ $('#dashToggle').hidden=!(me&&me.role==='admin');
  $('#adminBadge').hidden=m!=='admin';
  if(m!=='admin')exitEdit();
  $('#mbonusBtn').style.display=m==='cashier'?'none':'';
@@ -1062,7 +1075,24 @@ $('#pmCreate').onclick=async()=>{
   days:+$('#pmDays').value||0,maxuses:+$('#pmMax').value||0};
  try{await api('/promos',{method:'POST',body});$('#pmCode').value='';loadPromos();toast('Промокод создан — делитесь кодом!','🎟')}
  catch(e){toast(e.message,'⚠️')}};
-
+/* ── дашборд ── */
+$('#dashToggle').onclick=async()=>{$('#dashModal').classList.add('show');syncOverlay();
+ try{const s=await api('/stats');
+  $('#dashTop').innerHTML=`
+   <div class="stat"><b>${s.total}</b><span>всего гостей</span></div>
+   <div class="stat"><b>${s.newWeek}</b><span>новых за 7 дн</span></div>
+   <div class="stat"><b>${s.returning}</b><span>возвращаются</span></div>`;
+  const max=Math.max(1,...s.days.map(d=>d.c));
+  $('#dashChart').innerHTML=s.days.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0">
+    <div style="width:100%;background:${d.c?'var(--flame)':'#E7ECF0'};border-radius:6px;height:${Math.round(6+104*d.c/max)}px" title="${d.label}: ${d.c}"></div>
+    <small style="font-size:9px;color:#8B98A5">${d.label}</small></div>`).join('');
+  $('#dashMore').innerHTML=`
+   <div class="hmini">Штампы: сегодня <b>${s.stampsToday}</b> · за 7 дн <b>${s.stampsWeek}</b> · за 30 дн <b>${s.stampsMonth}</b></div>
+   <div class="hmini">Бесплатных кофе списано за 30 дн: <b>${s.redeemed}</b> · новых гостей за 30 дн: <b>${s.newMonth}</b></div>
+   <div class="hmini">Средняя чашек на гостя: <b>${s.avgCups}</b> · активаций промокодов: <b>${s.promoUses}</b></div>`;
+ }catch(e){toast(e.message,'⚠️')}};
+function closeDash(){$('#dashModal').classList.remove('show');syncOverlay()}
+$('#dashClose').onclick=closeDash;
 let found=null;
 function dotsHTML(u,last){let h='';for(let i=0;i<10;i++)
  h+=`<span class="cdot ${i<u.stamps?'f':''} ${i===last?'last':''}">${i<u.stamps?stampIcon(i):''}</span>`;return h}
@@ -1170,11 +1200,12 @@ function syncOverlay()
 ||$('#authModal').classList.contains('show')
 ||$('#pinModal').classList.contains('show')
 ||$('#promoModal').classList.contains('show')
+||$('#dashModal').classList.contains('show')
 ||$('#qrModal').classList.contains('show');
  $('#overlay').classList.toggle('show',on)}
-$('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeQRFull();closePromo();
+$('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeQRFull();closePromo();closeDash();
   if(onboarded||me)closeAuth()};
-addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeQRFull();closePromo();
+addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeQRFull();closePromo();closeDash();
   $('#chatPanel').classList.remove('open');if(onboarded||me)closeAuth()}});
 
 if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}

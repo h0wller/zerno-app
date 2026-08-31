@@ -311,6 +311,32 @@ app.post('/api/promos/:id/toggle', adminGuard, (req, res) => {
 app.delete('/api/promos/:id', adminGuard, (req, res) => {
   db.prepare('DELETE FROM promos WHERE id=?').run(req.params.id); res.json({ ok: true });
 });
+/* ── дашборд владельца ── */
+app.get('/api/stats', adminGuard, (req, res) => {
+  const dayStart = new Date(); dayStart.setHours(0,0,0,0);
+  const ds = dayStart.toISOString();
+  const weekAgo = new Date(Date.now()-7*86400000).toISOString();
+  const monthAgo = new Date(Date.now()-30*86400000).toISOString();
+  const total = db.prepare('SELECT COUNT(*) c FROM customers').get().c;
+  const newWeek = db.prepare('SELECT COUNT(*) c FROM customers WHERE created_at>?').get(weekAgo).c;
+  const newMonth = db.prepare('SELECT COUNT(*) c FROM customers WHERE created_at>?').get(monthAgo).c;
+  const stampsToday = db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE 'Штамп%' AND ts>?").get(ds).c;
+  const stampsWeek = db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE 'Штамп%' AND ts>?").get(weekAgo).c;
+  const stampsMonth = db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE 'Штамп%' AND ts>?").get(monthAgo).c;
+  const redeemed = db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE '🎁 Списан%' AND ts>?").get(monthAgo).c;
+  const returning = db.prepare('SELECT COUNT(*) c FROM customers WHERE cups>=2').get().c;
+  const avgCups = Math.round((db.prepare('SELECT AVG(cups) a FROM customers').get().a||0)*10)/10;
+  const promoUses = db.prepare('SELECT COUNT(*) c FROM promo_use').get().c;
+  const days = [];
+  for (let i=13;i>=0;i--) {
+    const d = new Date(Date.now()-i*86400000);
+    const start = new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString();
+    const end = new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).toISOString();
+    days.push({ label: d.getDate()+'.'+(d.getMonth()+1),
+      c: db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE 'Штамп%' AND ts>=? AND ts<?").get(start,end).c });
+  }
+  res.json({ total,newWeek,newMonth,stampsToday,stampsWeek,stampsMonth,redeemed,returning,avgCups,promoUses,days });
+});
 /* ── статика ── */
 app.use(express.static(PUBLIC_DIR));
 app.listen(PORT, () => console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`));
