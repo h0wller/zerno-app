@@ -1,4 +1,4 @@
-const CACHE = 'zerno-v10';
+const CACHE = 'zerno-v11';
 const PRECACHE = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -25,7 +25,13 @@ self.addEventListener('push', e => {
   let data = {};
   try { data = e.data.json(); } catch (_) {}
   e.waitUntil(self.registration.showNotification(data.title || '…и кофе', {
-    body: data.body || '☕', icon: './icon.svg', badge: './icon.svg'
+    body: data.body || '☕',
+    icon: './icon.svg',
+    badge: './icon.svg',
+    vibrate: [200, 100, 200],
+    requireInteraction: true,
+    silent: false,
+    tag: 'zerno-push'
   }));
 });
 self.addEventListener('notificationclick', e => {
