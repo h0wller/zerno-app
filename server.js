@@ -432,6 +432,7 @@ app.post('/api/chat/reply', staffGuard, (req, res) => {
   const text = String(req.body.text || '').slice(0, 2000);
   if (!key || !text) return res.status(400).json({ error: 'bad request' });
   db.prepare('INSERT INTO chat(key,who,text,ts,read_g) VALUES(?,?,?,?,0)').run(key, 'staff', text, nowISO());
+  if (!key.startsWith('anon-')) sendPush(key, '💬 Вам ответили из «…и кофе»', text.slice(0, 80));
   res.json({ ok: true });
 });
 app.post('/api/chat/close', staffGuard, (req, res) => {
