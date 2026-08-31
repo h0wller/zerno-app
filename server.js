@@ -357,8 +357,16 @@ app.post('/api/push/subscribe', userGuard, (req, res) => {
   const sub = req.body.sub;
   if (!sub || !sub.endpoint) return res.status(400).json({ error: 'bad sub' });
   db.prepare('INSERT OR IGNORE INTO subs(cid,sub,created) VALUES(?,?,?)').run(req.user.id, JSON.stringify(sub), nowISO());
+  sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
   res.json({ ok: true });
 });
+app.get('/api/push/subs', adminGuard, (req, res) => {
+  res.json({ subs: db.prepare(`SELECT s.created, c.name, c.phone FROM subs s LEFT JOIN customers c ON c.id=s.cid ORDER BY s.id DESC`).all() });
+});
+  const sub = req.body.sub;
+  if (!sub || !sub.endpoint) return res.status(400).json({ error: 'bad sub' });
+  db.prepare('INSERT OR IGNORE INTO subs(cid,sub,created) VALUES(?,?,?)').run(req.user.id, JSON.stringify(sub), nowISO());
+  res.json({ ok: true });
 async function sendPush(cid, title, body) {
   const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
   for (const r of rows) {

@@ -691,6 +691,8 @@ body.is-cashier .cust .acts{min-width:260px}
     <div id="dashChart" style="display:flex;align-items:flex-end;gap:4px;height:130px"></div>
     <div id="dashMore" style="margin-top:14px"></div>
     <h4 style="margin-top:16px">Пуш всем гостям</h4>
+    <h4 style="margin-top:16px">Кто подписан на пуши</h4>
+<div id="pushSubs"></div>
 <div class="form">
   <label>Текст акции<input id="pushText" maxlength="120" placeholder="Например: сегодня до 12:00 капучино −20%"></label>
   <button class="btn fire" id="pushSend">🔔 Отправить</button>
@@ -1100,6 +1102,9 @@ $('#dashToggle').onclick=async()=>{$('#dashModal').classList.add('show');syncOve
    <div class="hmini">Бесплатных кофе списано за 30 дн: <b>${s.redeemed}</b> · новых гостей за 30 дн: <b>${s.newMonth}</b></div>
    <div class="hmini">Средняя чашек на гостя: <b>${s.avgCups}</b> · активаций промокодов: <b>${s.promoUses}</b></div>`;
  }catch(e){toast(e.message,'⚠️')}};
+ try{const ps=await api('/push/subs');
+ $('#pushSubs').innerHTML=ps.subs.map(s=>`<div class="hmini"><b>${esc(s.name||'—')}</b> · ${esc(s.phone||'')} · ${new Date(s.created).toLocaleDateString('ru-RU')}</div>`).join('')
+ ||'<div class="hmini">Пока никто не подписан</div>';}catch(e){}
 function closeDash(){$('#dashModal').classList.remove('show');syncOverlay()}
 $('#dashClose').onclick=closeDash;
 /* ── пуши ── */
@@ -1111,7 +1116,13 @@ function urlBase64ToUint8Array(s){
   return out;
 }
 async function enablePush(){
-  if(!('Notification' in window))return toast('Браузер не поддерживает уведомления','⚠️');
+  const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(isIOS&&!standalone){
+    toast('На iPhone пуши работают после установки: Поделиться → «На экран “Домой”», затем включите уведомления в профиле','📲',null);
+    return;
+  }
+  if(!('Notification' in window)||!('PushManager' in window))return toast('Браузер не поддерживает уведомления','⚠️');
   const perm=await Notification.requestPermission();
   if(perm!=='granted')return toast('Уведомления не включены','😔');
   try{
@@ -1120,7 +1131,7 @@ async function enablePush(){
     const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(v.publicKey)});
     await api('/push/subscribe',{method:'POST',body:{sub:sub.toJSON()}});
     renderProfile();
-    toast('Уведомления включены! Сообщим о бесплатном кофе','🔔');
+    toast('Готово! Проверочный пуш уже летит','🔔');
   }catch(e){toast(e.message,'⚠️')}
 }
 $('#pushBtn').onclick=enablePush;
