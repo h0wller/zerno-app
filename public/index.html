@@ -92,7 +92,7 @@ input,select,textarea{font-family:inherit}
 .search{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:9px 16px;transition:.2s;min-width:210px}
 .search:focus-within{border-color:var(--flame);box-shadow:0 0 0 4px rgba(31,78,140,.12)}
 .search input{border:none;outline:none;flex:1;font-size:13.5px;background:transparent;min-width:0}
-#editToggle,#promoToggle,#dashToggle{border-radius:999px;padding:10px 18px;font-size:13px;font-weight:800;border:1.5px solid var(--esp);transition:.25s;background:#fff}
+#editToggle,#promoToggle,#dashToggle,#chatsToggle2{border-radius:999px;padding:10px 18px;font-size:13px;font-weight:800;border:1.5px solid var(--esp);transition:.25s;background:#fff}
 #editToggle:hover{transform:translateY(-1px);box-shadow:var(--sh)}
 #editToggle.on{background:var(--esp);color:var(--cream)}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -363,6 +363,7 @@ body.editing .card:hover{transform:none}
 .mbonus{display:none;position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:94;
   background:var(--esp);color:var(--cream);border-radius:999px;padding:13px 24px;font:700 14px "Unbounded";align-items:center;gap:10px;
   box-shadow:0 16px 40px -10px rgba(16,20,24,.6)}
+  .msg.staff{align-self:flex-start;background:#EAF1F9;border:1px solid #B9CDE4;border-bottom-left-radius:5px}
 /* кассир на десктопе: во всю ширину, без правой панели */
 body.is-cashier .panel{display:none}
 body.is-cashier .wrap{grid-template-columns:1fr}
@@ -426,6 +427,7 @@ body.is-cashier .cust .acts{min-width:260px}
             <button id="editToggle" hidden>✏️ Редактировать</button>
             <button id="promoToggle" hidden>🎟 Промокоды</button>
             <button id="dashToggle" hidden>📊 Дашборд</button>
+            <button id="chatsToggle2" hidden>💬</button>
           </div>
         </div>
       </div>
@@ -438,6 +440,7 @@ body.is-cashier .cust .acts{min-width:260px}
           <h2>Режим <em>кассира</em></h2>
           <div class="chip"><span class="dot"></span>Смена открыта · …и кофе</div>
           <button class="btn fire" id="newGuestBtn">＋ Новый гость</button>
+          <button class="btn dark" id="chatsToggle">💬 Чаты гостей</button>
         </div>
 
         <div class="cash-card" id="ngCard" hidden>
@@ -699,6 +702,22 @@ body.is-cashier .cust .acts{min-width:260px}
 </div>
   </div>
 </div>
+<div class="modal" id="staffChatModal">
+  <div class="modal-card" style="width:min(560px,100%)">
+    <button class="mclose" id="scClose">✕</button>
+    <h3>Чаты гостей</h3>
+    <div class="msub">Если бот не смог помочь — ответьте лично</div>
+    <div id="scList" style="max-height:200px;overflow-y:auto"></div>
+    <div id="scDialogWrap" hidden>
+      <button class="btn ghost" id="scBack" style="margin:10px 0">← К списку</button>
+      <div id="scDialog" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+      <div class="findrow" style="margin-top:10px">
+        <input id="scInput" placeholder="Ответ гостю…">
+        <button class="btn fire" id="scSend">Отправить</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="toasts" id="toasts"></div>
 <canvas id="fx"></canvas>
 
@@ -852,7 +871,7 @@ $('#toReg').onclick=()=>authSwap(false);
 $('#skipAuth').onclick=()=>{onboarded=true;localStorage.setItem(T_ONB,'1');closeAuth();
  toast('Можно смотреть меню. Профиль — по кнопке с аватаром','👀')};
 function setUser(token,customer){USER_TOKEN=token;localStorage.setItem(T_USER,token);
- me=customer;onboarded=true;localStorage.setItem(T_ONB,'1');
+ me=customer;historyLoaded=false;lastChatId=0;onboarded=true;localStorage.setItem(T_ONB,'1');
  drawQR($('#qrMini'),me.qr);drawQR($('#qrMain'),me.qr)}
 $('#regBtn').onclick=async()=>{
  const name=$('#regName').value.trim(),phone=$('#regPhone').value;
@@ -1028,6 +1047,7 @@ function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden
  $('#avInit').textContent=(me.name[0]||'Г').toUpperCase();
  $('#profileTopBtn').textContent=(me.name[0]||'Г').toUpperCase();
  $('#nameInput').value=me.name;$('#phoneLbl').textContent=me.phone+' · вход по номеру';
+ $('#chatsToggle2').hidden=!(me&&(me.role==='admin'||me.role==='cashier'));
  const r=me.role||'guest';
  $('#roleLbl').textContent=r==='admin'?'🔑 роль: администратор':r==='cashier'?'🧾 роль: кассир':'роль: гость';
  $('#activateBtn').hidden=!(r==='guest'||r==='cashier');
@@ -1227,15 +1247,61 @@ function botReply(q){q=q.toLowerCase();
  if(/отзыв|рейтинг|оценить|яндекс/.test(q))return'Будем рады вашему отзыву! 🌟 Ссылка: '+REVIEW_URL+' — это правда помогает маленькой кофейне у моря.';
  return'Приняла! Передаю человеку — обычно отвечаем за 2–3 минуты. А пока могу рассказать про: чаи, моти, бонусы, адрес и часы работы.'}
  
+function chatKey(){
+ if(me)return me.id;
+ let k=localStorage.getItem('zt_chatkey');
+ if(!k){k='anon-'+Math.random().toString(36).slice(2,10);localStorage.setItem('zt_chatkey',k);}
+ return k;}
 function sendChat(text){if(!text.trim())return;addMsg('me',text);$('#chatInput').value='';
- showTyping();setTimeout(()=>{hideTyping();addMsg('bot',botReply(text));
+ const key=chatKey();const reply=botReply(text);const human=reply.startsWith('Приняла!')?1:0;
+ fetch(API_BASE+'/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text,human})}).catch(()=>{});
+ showTyping();
+ setTimeout(()=>{hideTyping();addMsg('bot',reply);
+  fetch(API_BASE+'/api/chat/botlog',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text:reply})}).catch(()=>{});
   if(!$('#chatPanel').classList.contains('open')){unread++;const b=$('#chatBadge');b.hidden=false;b.textContent=unread}},900+Math.random()*700)}
 $('#chatSend').onclick=()=>sendChat($('#chatInput').value);
 $('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat($('#chatInput').value)});
-$('#chatFab').onclick=()=>{const p=$('#chatPanel');p.classList.toggle('open');
+let lastChatId=0,historyLoaded=false;
+async function loadHistory(){try{
+ const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
+ $('#chatMsgs').innerHTML='';
+ for(const m of r.msgs){lastChatId=Math.max(lastChatId,m.id);
+  if(m.who==='guest')addMsg('me',m.text);else if(m.who==='staff')addMsg('staff',m.text);else addMsg('bot',m.text);}
+ historyLoaded=true;}catch(e){historyLoaded=true}}
+setInterval(async()=>{if(document.visibilityState!=='visible')return;
+ try{const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after='+lastChatId)).json();
+  for(const m of r.msgs){lastChatId=Math.max(lastChatId,m.id);
+   if(m.who==='staff'){addMsg('staff',m.text);
+    if(!$('#chatPanel').classList.contains('open')){unread++;const b=$('#chatBadge');b.hidden=false;b.textContent=unread}}}}
+ catch(e){}},7000);
+$('#chatFab').onclick=async()=>{const p=$('#chatPanel');p.classList.toggle('open');
  if(p.classList.contains('open')){unread=0;$('#chatBadge').hidden=true;
-  if(!chatOpened){chatOpened=true;setTimeout(()=>addMsg('bot','Привет! Я Ника из «…и кофе» 🌊 Подскажу по меню, бонусам и где нас найти.'),350)}}};
+  if(!historyLoaded)await loadHistory();
+  if(!chatOpened){chatOpened=true;
+   if(!$('#chatMsgs').children.length)setTimeout(()=>addMsg('bot','Привет! Я Ника, поддержка «…и кофе» 🌊 Если я не смогу ответить — к чату подключится сотрудник.'),350)}}};
 $('#chatClose').onclick=()=>$('#chatPanel').classList.remove('open');
+/* ── стафф: чаты гостей ── */
+let scKey=null;
+function openStaffChat(){$('#staffChatModal').classList.add('show');syncOverlay();$('#scDialogWrap').hidden=true;scKey=null;loadScList();}
+function closeStaffChat(){$('#staffChatModal').classList.remove('show');syncOverlay()}
+$('#chatsToggle').onclick=openStaffChat;
+$('#chatsToggle2').onclick=openStaffChat;
+$('#scClose').onclick=closeStaffChat;
+async function loadScList(){try{const r=await api('/chat/list');
+ $('#scList').innerHTML=r.threads.map(t=>`<div class="hmini" style="cursor:pointer" data-sck="${esc(t.key)}">
+  <b>${esc(t.name)}</b>${t.human?'<span class="tag hit" style="position:static;margin-left:6px">нужен ответ</span>':''}
+  <span style="float:right">${t.unread?'новое: '+t.unread:''}</span></div>`).join('')
+ ||'<div class="hmini">Пока тихо</div>';}catch(e){}}
+$('#scList').addEventListener('click',e=>{const el=e.target.closest('[data-sck]');if(!el)return;scKey=el.dataset.sck;openScDialog();});
+async function openScDialog(){$('#scDialogWrap').hidden=false;
+ try{const r=await api('/chat/dialog?key='+encodeURIComponent(scKey));
+ $('#scDialog').innerHTML=r.msgs.map(m=>`<div class="msg ${m.who==='guest'?'me':(m.who==='staff'?'staff':'bot')}" style="max-width:92%">${esc(m.text)}</div>`).join('');
+ $('#scDialog').scrollTop=1e6;}catch(e){}}
+$('#scBack').onclick=()=>{$('#scDialogWrap').hidden=true;scKey=null;loadScList();};
+async function scSend(){const t=$('#scInput').value.trim();if(!t||!scKey)return;
+ try{await api('/chat/reply',{method:'POST',body:{key:scKey,text:t}});$('#scInput').value='';openScDialog();}catch(e){toast(e.message,'⚠️')}}
+$('#scSend').onclick=scSend;
+$('#scInput').addEventListener('keydown',e=>{if(e.key==='Enter')scSend()});
 
 const fx=$('#fx'),fxx=fx.getContext('2d');let pieces=[],fxOn=false;
 function fitFx(){fx.width=innerWidth;fx.height=innerHeight}fitFx();addEventListener('resize',fitFx);
