@@ -1087,24 +1087,29 @@ $('#pmCreate').onclick=async()=>{
  try{await api('/promos',{method:'POST',body});$('#pmCode').value='';loadPromos();toast('Промокод создан — делитесь кодом!','🎟')}
  catch(e){toast(e.message,'⚠️')}};
 /* ── дашборд ── */
-$('#dashToggle').onclick=async()=>{$('#dashModal').classList.add('show');syncOverlay();
- try{const s=await api('/stats');
-  $('#dashTop').innerHTML=`
-   <div class="stat"><b>${s.total}</b><span>всего гостей</span></div>
-   <div class="stat"><b>${s.newWeek}</b><span>новых за 7 дн</span></div>
-   <div class="stat"><b>${s.returning}</b><span>возвращаются</span></div>`;
-  const max=Math.max(1,...s.days.map(d=>d.c));
-  $('#dashChart').innerHTML=s.days.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0">
-    <div style="width:100%;background:${d.c?'var(--flame)':'#E7ECF0'};border-radius:6px;height:${Math.round(6+104*d.c/max)}px" title="${d.label}: ${d.c}"></div>
-    <small style="font-size:9px;color:#8B98A5">${d.label}</small></div>`).join('');
-  $('#dashMore').innerHTML=`
-   <div class="hmini">Штампы: сегодня <b>${s.stampsToday}</b> · за 7 дн <b>${s.stampsWeek}</b> · за 30 дн <b>${s.stampsMonth}</b></div>
-   <div class="hmini">Бесплатных кофе списано за 30 дн: <b>${s.redeemed}</b> · новых гостей за 30 дн: <b>${s.newMonth}</b></div>
-   <div class="hmini">Средняя чашек на гостя: <b>${s.avgCups}</b> · активаций промокодов: <b>${s.promoUses}</b></div>`;
- }catch(e){toast(e.message,'⚠️')}};
- try{const ps=await api('/push/subs');
- $('#pushSubs').innerHTML=ps.subs.map(s=>`<div class="hmini"><b>${esc(s.name||'—')}</b> · ${esc(s.phone||'')} · ${new Date(s.created).toLocaleDateString('ru-RU')}</div>`).join('')
- ||'<div class="hmini">Пока никто не подписан</div>';}catch(e){}
+$('#dashToggle').onclick=async()=>{
+  $('#dashModal').classList.add('show');syncOverlay();
+  try{
+    const s=await api('/stats');
+    $('#dashTop').innerHTML=`
+     <div class="stat"><b>${s.total}</b><span>всего гостей</span></div>
+     <div class="stat"><b>${s.newWeek}</b><span>новых за 7 дн</span></div>
+     <div class="stat"><b>${s.returning}</b><span>возвращаются</span></div>`;
+    const max=Math.max(1,...s.days.map(d=>d.c));
+    $('#dashChart').innerHTML=s.days.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0">
+      <div style="width:100%;background:${d.c?'var(--flame)':'#E7ECF0'};border-radius:6px;height:${Math.round(6+104*d.c/max)}px" title="${d.label}: ${d.c}"></div>
+      <small style="font-size:9px;color:#8B98A5">${d.label}</small></div>`).join('');
+    $('#dashMore').innerHTML=`
+     <div class="hmini">Штампы: сегодня <b>${s.stampsToday}</b> · за 7 дн <b>${s.stampsWeek}</b> · за 30 дн <b>${s.stampsMonth}</b></div>
+     <div class="hmini">Бесплатных кофе списано за 30 дн: <b>${s.redeemed}</b> · новых гостей за 30 дн: <b>${s.newMonth}</b></div>
+     <div class="hmini">Средняя чашек на гостя: <b>${s.avgCups}</b> · активаций промокодов: <b>${s.promoUses}</b></div>`;
+  }catch(e){toast(e.message,'⚠️')}
+  try{
+    const ps=await api('/push/subs');
+    $('#pushSubs').innerHTML=ps.subs.map(x=>`<div class="hmini"><b>${esc(x.name||'—')}</b> · ${esc(x.phone||'')} · ${new Date(x.created).toLocaleDateString('ru-RU')}</div>`).join('')
+     ||'<div class="hmini">Пока никто не подписан</div>';
+  }catch(e){}
+};
 function closeDash(){$('#dashModal').classList.remove('show');syncOverlay()}
 $('#dashClose').onclick=closeDash;
 /* ── пуши ── */
