@@ -3,6 +3,7 @@ import Database from 'better-sqlite3';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import webpush from 'web-push';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -33,6 +34,8 @@ CREATE TABLE IF NOT EXISTS promos(
   active INTEGER DEFAULT 1, expires TEXT, maxuses INTEGER DEFAULT 0, uses INTEGER DEFAULT 0, created TEXT);
 CREATE TABLE IF NOT EXISTS promo_use(
   id INTEGER PRIMARY KEY AUTOINCREMENT, promo TEXT, cid TEXT, ts TEXT);
+  CREATE TABLE IF NOT EXISTS subs(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, sub TEXT UNIQUE, created TEXT);
 `);
 /* миграции */
 const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
@@ -73,6 +76,15 @@ if (db.prepare("SELECT value FROM meta WHERE key='menu_v'").get()?.value !== MEN
   for (const p of seed) ins.run(p[0],p[1],p[2],p[3],p[4],JSON.stringify(p[5]),p[6],p[7],p[8],p[9],1,null);
   db.prepare("INSERT INTO meta(key,value) VALUES('menu_v',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(MENU_V);
 }
+/* ── VAPID-ключи для пушей (создаются один раз) ── */
+let vapidRow = db.prepare("SELECT value FROM meta WHERE key='vapid'").get();
+if (!vapidRow) {
+  const keys = webpush.generateVAPIDKeys();
+  db.prepare("INSERT INTO meta(key,value) VALUES('vapid',?)").run(JSON.stringify(keys));
+  vapidRow = { value: JSON.stringify(keys) };
+}
+const VAPID = JSON.parse(vapidRow.value);
+webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
 
 /* ── утилиты ── */
 const ph10 = v => { let d = String(v || '').replace(/\D/g, '');
@@ -139,6 +151,8 @@ function grant(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE id
     addHist(cid, '🎉 10-й кофе — подарок начислен', 'Система'); }
   logEv(c.name, ten ? '10-й кофе — подарок начислен' : `+1 штамп → ${c.stamps} из 10`);
   const f = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
+  if (ten) sendPush(cid, '🎁 Бесплатный кофе ждёт вас!', 'Вы собрали 10 штампов. Заходите — кофе за наш счёт.');
+  else if (f.stamps === 9) sendPush(cid, '☕ Осталась одна чашка!', 'У вас 9 из 10 штампов. Следующий кофе — бесплатно 😉');
   return { customer: cust(f), ten, msg: ten ? '10-й штамп! Начислен бесплатный кофе' : `+1 штамп → ${f.stamps} из 10` }; }
 function redeem(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
   if (!c || c.free < 1) return null;
@@ -336,6 +350,28 @@ app.get('/api/stats', adminGuard, (req, res) => {
       c: db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE 'Штамп%' AND ts>=? AND ts<?").get(start,end).c });
   }
   res.json({ total,newWeek,newMonth,stampsToday,stampsWeek,stampsMonth,redeemed,returning,avgCups,promoUses,days });
+});
+/* ── пуш-уведомления ── */
+app.get('/api/vapid', (req, res) => res.json({ publicKey: VAPID.publicKey }));
+app.post('/api/push/subscribe', userGuard, (req, res) => {
+  const sub = req.body.sub;
+  if (!sub || !sub.endpoint) return res.status(400).json({ error: 'bad sub' });
+  db.prepare('INSERT OR IGNORE INTO subs(cid,sub,created) VALUES(?,?,?)').run(req.user.id, JSON.stringify(sub), nowISO());
+  res.json({ ok: true });
+});
+async function sendPush(cid, title, body) {
+  const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
+  for (const r of rows) {
+    try { await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body })); }
+    catch (e) { if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub); }
+  }
+}
+app.post('/api/push/send', adminGuard, async (req, res) => {
+  const body = req.body.body || '';
+  const cids = db.prepare('SELECT DISTINCT cid FROM subs').all();
+  for (const c of cids) await sendPush(c.cid, '…и кофе 🌊', body);
+  logEv(req.user.name, `пуш всем (${cids.length})`);
+  res.json({ ok: true, sent: cids.length });
 });
 /* ── статика ── */
 app.use(express.static(PUBLIC_DIR));

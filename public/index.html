@@ -529,6 +529,7 @@ body.is-cashier .cust .acts{min-width:260px}
           <div style="flex:1"><input id="nameInput" maxlength="24"><div class="ph" id="phoneLbl"></div><div class="ph" id="roleLbl"></div></div>
         </div>
         <button class="demoBtn" id="activateBtn" hidden>🔑 У меня код доступа сотрудника</button>
+        <button class="demoBtn" id="pushBtn" hidden>🔔 Включить уведомления</button>
         <div class="stats">
           <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
           <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
@@ -689,6 +690,11 @@ body.is-cashier .cust .acts{min-width:260px}
     <h4 style="margin-top:16px">Штампы за 14 дней</h4>
     <div id="dashChart" style="display:flex;align-items:flex-end;gap:4px;height:130px"></div>
     <div id="dashMore" style="margin-top:14px"></div>
+    <h4 style="margin-top:16px">Пуш всем гостям</h4>
+<div class="form">
+  <label>Текст акции<input id="pushText" maxlength="120" placeholder="Например: сегодня до 12:00 капучино −20%"></label>
+  <button class="btn fire" id="pushSend">🔔 Отправить</button>
+</div>
   </div>
 </div>
 <div class="toasts" id="toasts"></div>
@@ -1024,6 +1030,9 @@ function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden
  $('#roleLbl').textContent=r==='admin'?'🔑 роль: администратор':r==='cashier'?'🧾 роль: кассир':'роль: гость';
  $('#activateBtn').hidden=!(r==='guest'||r==='cashier');
  $('#activateBtn').textContent=r==='guest'?'🔑 У меня код доступа сотрудника':'🔑 Повысить до администратора';
+ const pb=$('#pushBtn');
+pb.hidden=!me||!('Notification' in window)||Notification.permission==='granted';
+$('#dashToggle').hidden=!(me&&me.role==='admin');
  $('#stCups').textContent=me.cups;$('#stStamps').textContent=me.stamps+'/10';$('#stFree').textContent=me.free;
  $('#histList').innerHTML=(me.history||[]).slice(0,8).map(h=>
   `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`).join('')
@@ -1093,6 +1102,35 @@ $('#dashToggle').onclick=async()=>{$('#dashModal').classList.add('show');syncOve
  }catch(e){toast(e.message,'⚠️')}};
 function closeDash(){$('#dashModal').classList.remove('show');syncOverlay()}
 $('#dashClose').onclick=closeDash;
+/* ── пуши ── */
+function urlBase64ToUint8Array(s){
+  const padding='='.repeat((4-s.length%4)%4);
+  const b64=(s+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(b64);const out=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;++i)out[i]=raw.charCodeAt(i);
+  return out;
+}
+async function enablePush(){
+  if(!('Notification' in window))return toast('Браузер не поддерживает уведомления','⚠️');
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted')return toast('Уведомления не включены','😔');
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const v=await (await fetch(API_BASE+'/api/vapid')).json();
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(v.publicKey)});
+    await api('/push/subscribe',{method:'POST',body:{sub:sub.toJSON()}});
+    renderProfile();
+    toast('Уведомления включены! Сообщим о бесплатном кофе','🔔');
+  }catch(e){toast(e.message,'⚠️')}
+}
+$('#pushBtn').onclick=enablePush;
+$('#pushSend').onclick=async()=>{
+  const body=$('#pushText').value.trim();
+  if(!body)return toast('Введите текст пуша','✍️');
+  if(!confirm('Отправить пуш всем подписчикам?'))return;
+  try{const r=await api('/push/send',{method:'POST',body:{body}});
+    toast(`Отправлено гостям: ${r.sent}`,'🔔');$('#pushText').value='';}
+  catch(e){toast(e.message,'⚠️')}};
 let found=null;
 function dotsHTML(u,last){let h='';for(let i=0;i<10;i++)
  h+=`<span class="cdot ${i<u.stamps?'f':''} ${i===last?'last':''}">${i<u.stamps?stampIcon(i):''}</span>`;return h}
