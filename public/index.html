@@ -813,14 +813,17 @@ $('#tickerTrack').innerHTML=TK.concat(TK).map(x=>`<span>${x}</span>`).join('');
 /* ── QR ── */
 function hashStr(s){let h=9;for(const c of String(s))h=Math.imul(h^c.charCodeAt(0),387420489)>>>0;return h}
 function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function drawQR(cv,seed){const M=25,pad=2,T=M+pad*2,px=cv.width,cell=px/T,x=cv.getContext('2d');
- x.fillStyle='#FFFDF7';x.fillRect(0,0,px,px);x.fillStyle='#101418';
- const R=rng(hashStr(seed)),rc=(i,j)=>x.fillRect((i+pad)*cell+cell*.06,(j+pad)*cell+cell*.06,cell*.88,cell*.88);
- const fin=(fx,fy)=>{for(let j=0;j<7;j++)for(let i=0;i<7;i++){const e=i===0||i===6||j===0||j===6,c=i>=2&&i<=4&&j>=2&&j<=4;if(e||c)rc(fx+i,fy+j)}};
- fin(0,0);fin(M-7,0);fin(0,M-7);
- for(let i=8;i<M-8;i++)if(i%2===0){rc(i,6);rc(6,i)}
- for(let j=0;j<M;j++)for(let i=0;i<M;i++){const f1=i<9&&j<9,f2=i>M-10&&j<9,f3=i<9&&j>M-10;
-  if(f1||f2||f3||i===6||j===6)continue;if(R()>.5)rc(i,j)}}
+function drawQR(cv,seed){
+ const s=String(seed||'guest');
+ let q;
+ try{q=qrcode(0,'M');q.addData(s);q.make();}
+ catch(e){q=qrcode(4,'M');q.addData(s);q.make();}
+ const M=q.getModuleCount(),pad=2,T=M+pad*2,cell=cv.width/T,x=cv.getContext('2d');
+ x.fillStyle='#FFFDF7';x.fillRect(0,0,cv.width,cv.height);
+ x.fillStyle='#101418';
+ for(let j=0;j<M;j++)for(let i=0;i<M;i++)if(q.isDark(j,i))
+  x.fillRect(Math.floor((i+pad)*cell),Math.floor((j+pad)*cell),Math.ceil(cell),Math.ceil(cell));
+}
 
 let wakeLock=null;
 function openQRFull(){if(!me){toast('Сначала создайте профиль','👤');openAuth();return}
@@ -1545,6 +1548,7 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localSt
 </div>
 
 <script src="./jsqr.js"></script>
+<script src="./qrcode.js"></script>
 <script>
 (function(){
 let scanStream=null,scanTimer=null,curGuest=null,busy=false,frames=0;
