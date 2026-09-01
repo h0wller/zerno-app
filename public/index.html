@@ -1589,7 +1589,7 @@ async function startCam(){
   },250);
  }catch(e){$('#scanStatus').textContent='Камера недоступна — введите код вручную';}
 }
-function found(raw){stopCam();$('#scanModal').hidden=true;onScanned(raw);}
+function found(raw){busy=false;stopCam();$('#scanModal').hidden=true;onScanned(raw);}
 async function onScanned(raw){
  const m=String(raw).match(/Z-[0-9A-F]{6}/i);
  const code=(m?m[0]:String(raw).trim()).toUpperCase();
@@ -1615,6 +1615,7 @@ if(typeof renderProfile==='function'){
     d.style.cssText='text-align:center;font-weight:800;letter-spacing:.14em;margin:6px 0 2px;color:inherit;font-size:18px';
     d.textContent=me.qr;
     lab.parentNode.insertBefore(d,lab.nextSibling);
+    document.querySelectorAll('button').forEach(b=>{if(/Погасить/.test(b.textContent))b.style.display=(me.role==='guest'?'none':'');});
    }
   }catch(e){}},60);
   return r;};
