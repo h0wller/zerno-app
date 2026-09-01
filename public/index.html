@@ -56,7 +56,14 @@ input,select,textarea{font-family:inherit}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--green);position:relative}
 .dot::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid currentColor;color:var(--green);opacity:.6;animation:ping 2s infinite}
 @keyframes ping{0%{transform:scale(.6);opacity:.8}80%,100%{transform:scale(1.5);opacity:0}}
-.clock{font:700 13px "Unbounded";color:#B9C6D2;font-variant-numeric:tabular-nums}
+.clock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+ display:flex !important;align-items:center;
+ padding:6px 12px;border-radius:999px;background:#1B232B;color:#B9C7D6;
+ font:700 13px/1 'Manrope',sans-serif;letter-spacing:.08em;
+ font-variant-numeric:tabular-nums;z-index:1}
+@media(max-width:1180px){
+ .clock{padding:5px 9px;font-size:11px}
+}
 .modeSeg{display:flex;background:var(--esp2);border:1px solid #2A3540;border-radius:999px;padding:3px}
 .modeSeg button{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;color:#9FB4C8;transition:.25s}
 .modeSeg button.on{background:var(--flame);color:#fff;box-shadow:0 3px 10px -3px rgba(31,78,140,.8)}
@@ -392,7 +399,6 @@ body.is-cashier .cust .acts{min-width:260px}
 }
 @media(max-width:640px){
   .topbar{flex-wrap:wrap;gap:9px;padding-left:14px;padding-right:14px}
-  .clock{display:none}
   .wrap{padding:14px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:11px}
   .media{height:120px}
@@ -883,7 +889,7 @@ $('#toReg').onclick=()=>authSwap(false);
 $('#skipAuth').onclick=()=>{onboarded=true;localStorage.setItem(T_ONB,'1');closeAuth();
  toast('Можно смотреть меню. Профиль — по кнопке с аватаром','👀')};
 function setUser(token,customer){USER_TOKEN=token;localStorage.setItem(T_USER,token);
- me=customer;historyLoaded=false;lastChatId=0;onboarded=true;localStorage.setItem(T_ONB,'1');
+ me=customer;historyLoaded=false;lastChatId=0;initChatPointer();showBadge();onboarded=true;localStorage.setItem(T_ONB,'1');
  drawQR($('#qrMini'),me.qr);drawQR($('#qrMain'),me.qr)}
 $('#regBtn').onclick=async()=>{
  const name=$('#regName').value.trim(),phone=$('#regPhone').value;
@@ -1294,6 +1300,12 @@ $('#chatSend').onclick=()=>sendChat($('#chatInput').value);
 $('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat($('#chatInput').value)});
 let lastChatId=0,historyLoaded=false;
 let staffIn=false;
+const unreadKey=()=>'zt_unread_'+chatKey();
+function showBadge(){const u=+localStorage.getItem(unreadKey())||0;const b=$('#chatBadge');b.hidden=!u;b.textContent=u||'';}
+async function initChatPointer(){try{
+ const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
+ for(const m of r.msgs)lastChatId=Math.max(lastChatId,m.id);
+}catch(e){}}
 async function loadHistory(){try{
  const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
  $('#chatMsgs').innerHTML='';staffIn=false;
@@ -1308,11 +1320,13 @@ setInterval(async()=>{if(document.visibilityState!=='visible')return;
  try{const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after='+lastChatId)).json();
   for(const m of r.msgs){lastChatId=Math.max(lastChatId,m.id);
    if(m.who==='staff'){addMsg('staff',m.text);
-    if(!$('#chatPanel').classList.contains('open')){unread++;const b=$('#chatBadge');b.hidden=false;b.textContent=unread}}
-   else if(m.who==='system'){staffIn=m.text.includes('подключился');addMsg('sys',m.text);}}
+    if(!$('#chatPanel').classList.contains('open')){
+     localStorage.setItem(unreadKey(),(+localStorage.getItem(unreadKey())||0)+1);showBadge();}}
+   if(m.who==='system'){staffIn=m.text.includes('подключился');addMsg('sys',m.text);$('#chatFab').classList.toggle('live',staffIn);}
+  }
  }catch(e){}},7000);
 $('#chatFab').onclick=async()=>{const p=$('#chatPanel');p.classList.toggle('open');
- if(p.classList.contains('open')){unread=0;$('#chatBadge').hidden=true;
+ if(p.classList.contains('open')){localStorage.setItem(unreadKey(),'0');showBadge();
   if(!historyLoaded)await loadHistory();
   if(!chatOpened){chatOpened=true;
    if(!$('#chatMsgs').children.length)setTimeout(()=>addMsg('bot','Привет! Я Ника, поддержка «…и кофе» 🌊 Если я не смогу ответить — к чату подключится сотрудник.'),350)}}};
@@ -1405,7 +1419,7 @@ function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();ren
  if(mode==='cashier')renderLog()}
 (async function boot(){
  if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
- await loadMenu();renderAll();maybeAskReview();
+ await loadMenu();renderAll();showBadge();initChatPointer();maybeAskReview();
  if(!onboarded)setTimeout(()=>openAuth(false),600);
 })();
 console.info('%c🌊 …и кофе · ребрендинг','font-weight:bold;font-size:14px','| меню v2 | штампы-зёрна');
