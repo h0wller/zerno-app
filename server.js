@@ -100,7 +100,7 @@ webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.
 if (process.env.FIREBASE_SA) {
   try { admin.initializeApp({ credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SA)) }); }
   catch (e) { console.log('FCM init error', e.message); }
-}а
+}
 
 /* ── утилиты ── */
 const ph10 = v => { let d = String(v || '').replace(/\D/g, '');
