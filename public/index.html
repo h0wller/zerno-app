@@ -1515,6 +1515,11 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localSt
  #scanFab{position:fixed;right:14px;bottom:140px;z-index:110;width:56px;height:56px;border-radius:50%;border:none;background:#12303E;color:#fff;font-size:22px;box-shadow:0 6px 18px rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
  body.is-cashier #scanFab{display:flex}
 </style>
+<!-- ── сканирование QR кассиром ── -->
+<style>
+ #scanFab{position:fixed;right:14px;bottom:140px;z-index:110;width:56px;height:56px;border-radius:50%;border:none;background:#12303E;color:#fff;font-size:22px;box-shadow:0 6px 18px rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
+ body.is-cashier #scanFab{display:flex}
+</style>
 <button id="scanFab">📷</button>
 
 <div id="scanModal" hidden style="position:fixed;inset:0;z-index:120;background:rgba(10,14,18,.75);display:flex;align-items:center;justify-content:center;padding:16px">
