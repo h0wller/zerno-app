@@ -1539,6 +1539,7 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localSt
  </div>
 </div>
 
+<script src="./jsqr.js"></script>
 <script>
 let scanStream=null,scanTimer=null,curGuest=null;
 $('#scanFab').onclick=()=>{$('#scanModal').hidden=false;startCam();};
@@ -1547,31 +1548,59 @@ function closeScan(){$('#scanModal').hidden=true;stopCam();}
 function stopCam(){if(scanTimer){clearInterval(scanTimer);scanTimer=null;}if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}}
 async function startCam(){
  const v=$('#scanVideo');
- if(!('BarcodeDetector' in window)){$('#scanStatus').textContent='Автоскан недоступен на этом устройстве — введите код вручную ниже';return;}
+ $('#scanStatus').textContent='Наведите камеру на QR на экране гостя';
  try{
   scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-  v.srcObject=scanStream;
-  const det=new BarcodeDetector({formats:['qr_code']});
+  v.srcObject=scanStream;await v.play();
+  const det=('BarcodeDetector' in window)?new BarcodeDetector({formats:['qr_code']}):null;
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  if(!det&&!window.jsQR)$('#scanStatus').textContent='Сканер не поддерживается — введите код или найдите гостя по имени';
   scanTimer=setInterval(async()=>{
-   try{const codes=await det.detect(v);
-    if(codes.length){onScanned(codes[0].rawValue);} }catch(e){}
-  },400);
- }catch(e){$('#scanStatus').textContent='Камера недоступна — введите код вручную';}
+   if(!v.videoWidth)return;
+   try{
+    if(det){const c=await det.detect(v);if(c.length)return found(c[0].rawValue);}
+    else if(window.jsQR){
+     canvas.width=v.videoWidth;canvas.height=v.videoHeight;
+     ctx.drawImage(v,0,0,canvas.width,canvas.height);
+     const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+     const q=jsQR(img.data,img.width,img.height);
+     if(q&&q.data)return found(q.data);
+    }
+   }catch(e){}
+  },350);
+ }catch(e){$('#scanStatus').textContent='Камера недоступна — введите код или найдите гостя по имени';}
 }
+function found(raw){stopCam();$('#scanModal').hidden=true;onScanned(raw);}
 async function onScanned(raw){
  const m=String(raw).match(/Z-[0-9A-F]{6}/i);
  const code=(m?m[0]:String(raw).trim()).toUpperCase();
  if(!code)return;
- stopCam();$('#scanModal').hidden=true;
  try{const r=await api('/staff/scan',{method:'POST',body:{code}});showGuest(r.customer);}
  catch(e){toast('QR не найден 😔','');}
 }
 $('#scanManualBtn').onclick=()=>onScanned($('#scanManual').value);
 function showGuest(c){curGuest=c;$('#guestCard').hidden=false;$('#gcName').textContent=c.name;$('#gcPhone').textContent=c.phone;renderGuest();}
 function renderGuest(){$('#gcStamps').textContent='☕ Штамп(а): '+curGuest.stamps+' из 10 · 🎁 Бесплатных: '+curGuest.free;$('#gcRedeem').style.opacity=curGuest.free>0?'1':'.4';}
-$('#gcStamp').onclick=async()=>{try{const r=await api('/staff/stamp',{method:'POST',body:{id:curGuest.id}});curGuest=r.customer;renderGuest();toast(r.msg,r.ten?'🎁':'☕');}catch(e){toast('Ошибка','❌');}};
+$('#gcStamp').onclick=async()=>{try{const r=await api('/staff/stamp',{method:'POST',body:{id:curGuest.id}});curGuest=r.customer;renderGuest();toast(r.msg,r.ten?'🎁':'');}catch(e){toast('Ошибка','❌');}};
 $('#gcRedeem').onclick=async()=>{try{const r=await api('/staff/redeem',{method:'POST',body:{id:curGuest.id}});curGuest=r.customer;renderGuest();toast('Бесплатный кофе списан 🎁');}catch(e){toast('Нет доступных подарков','❌');}};
 $('#gcClose').onclick=()=>{$('#guestCard').hidden=true;curGuest=null;};
+/* код гостя текстом под QR — чтобы можно было продиктовать */
+if(typeof renderProfile==='function'){
+ const _rp=renderProfile;
+ renderProfile=function(){const r=_rp.apply(this,arguments);
+  setTimeout(()=>{try{
+   if(!me||!me.qr)return;
+   const lab=[...document.querySelectorAll('*')].find(n=>!n.children.length&&/Ваш QR для штампов/.test(n.textContent));
+   if(lab&&!lab.parentNode.querySelector('.qrCodeText')){
+    const d=document.createElement('div');d.className='qrCodeText';
+    d.style.cssText='text-align:center;font-weight:800;letter-spacing:.14em;margin:6px 0 2px;color:#12303E';
+    d.textContent=me.qr;
+    lab.parentNode.insertBefore(d,lab.nextSibling);
+   }
+  }catch(e){}},60);
+  return r;};
+}
 </script>
 </body>
 </html>
