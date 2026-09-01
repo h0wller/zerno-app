@@ -89,6 +89,8 @@ if (db.prepare("SELECT value FROM meta WHERE key='menu_v'").get()?.value !== MEN
 }
 const mcols = db.prepare('PRAGMA table_info(chat_meta)').all().map(c => c.name);
 if (mcols.length && !mcols.includes('staff_in')) db.exec('ALTER TABLE chat_meta ADD COLUMN staff_in INTEGER DEFAULT 0');
+const tcols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
+if (tcols.length && !tcols.includes('tg')) db.exec('ALTER TABLE customers ADD COLUMN tg TEXT');
 /* ── VAPID-ключи для пушей (создаются один раз) ── */
 let vapidRow = db.prepare("SELECT value FROM meta WHERE key='vapid'").get();
 if (!vapidRow) {
@@ -98,6 +100,17 @@ if (!vapidRow) {
 }
 const VAPID = JSON.parse(vapidRow.value);
 webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
+const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+async function tgSend(chatId, text) {
+  if (!TG_TOKEN) return;
+  try { await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text }) }); } catch (e) {}
+}
+async function sendTg(cid, title, body) {
+  const c = db.prepare('SELECT tg FROM customers WHERE id=?').get(cid);
+  if (c && c.tg) await tgSend(c.tg, `${title}\n${body}`);
+}
 /* ── FCM для нативного приложения ── */
 if (process.env.FIREBASE_SA) {
   try { initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_SA)) }); fcmReady = true; }
@@ -390,6 +403,7 @@ async function sendFcm(cid, title, body) {
 }
 async function sendPush(cid, title, body) {
   sendFcm(cid, title, body).catch(() => {});
+  sendTg(cid, title, body).catch(() => {});
   const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
   for (const r of rows) {
     try { await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body })); }
@@ -486,6 +500,28 @@ app.post('/api/push/unsubscribe', userGuard, (req, res) => {
 app.post('/api/push/del', adminGuard, (req, res) => {
   db.prepare('DELETE FROM subs WHERE cid=?').run(String(req.body.cid || ''));
   res.json({ ok: true });
+});
+/* ── telegram-бот ── */
+app.post('/api/tg/webhook', (req, res) => {
+  const u = req.body; res.json({ ok: true });
+  if (!u || !u.message) return;
+  const chatId = String(u.message.chat.id);
+  const text = String(u.message.text || '').trim();
+  if (text === '/start') {
+    tgSend(chatId, 'Привет! Я бот кофейни «…и кофе» 🌊\n\nПривяжите профиль — и штампы, подарки и акции будут приходить прямо сюда.\n\nНажмите кнопку «Поделиться номером» 👇');
+    fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '📱', reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true } }) }).catch(() => {});
+    return;
+  }
+  const phone = u.message.contact ? u.message.contact.phone_number : text;
+  const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(fmtPhone(phone));
+  if (c) {
+    db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);
+    tgSend(chatId, `✅ Готово, ${c.name}! Профиль привязан.\nТеперь о штампах и бесплатном кофе я напишу сюда ☕`);
+  } else if (u.message.contact) {
+    tgSend(chatId, 'Профиль с таким номером не найден 😔 Создайте его в приложении и нажмите «Поделиться номером» ещё раз.');
+  } else {
+    tgSend(chatId, 'Я бот кофейни «…и кофе» 🌊 Нажмите /start, чтобы привязать профиль и получать бонусы.');
+  }
 });
 /* ── статика ── */
 app.use(express.static(PUBLIC_DIR));
