@@ -32,14 +32,23 @@
   </ol>
  </div>
 
- <div class="card hide" id="ios">
+ <div class="card hide" id="inapp" style="border:2px solid #E8A13A">
+  <h2>⚠️ Страница открылась внутри Telegram/Instagram</h2>
+  <ol>
+   <li>Нажмите <b class="hl">⋯</b> или значок «Поделиться» сверху</li>
+   <li>Выберите <b class="hl">Открыть в Safari</b></li>
+   <li>Дальше — инструкция для iPhone ниже 👇</li>
+  </ol>
+</div>
+
+<div class="card hide" id="ios">
   <h2>🍏 iPhone (Safari)</h2>
   <ol>
-   <li>Нажмите кнопку <b class="hl">Поделиться</b> (квадрат со стрелкой вверх)</li>
+   <li>Нажмите кнопку <b class="hl">Поделиться</b> (квадрат со стрелкой)</li>
    <li>Пролистайте и нажмите <b class="hl">На экран «Домой»</b></li>
-   <li>Нажмите <b class="hl">Добавить</b> — приложение на рабочем столе</li>
+   <li>Нажмите <b class="hl">Добавить</b> — иконка на рабочем столе</li>
   </ol>
- </div>
+</div>
 
  <div class="card">
   <h2>🎁 Зачем устанавливать</h2>
@@ -51,9 +60,13 @@
  </div>
 </div>
 <script>
- if(/iPhone|iPad|iPod/.test(navigator.userAgent)){
+ const ua=navigator.userAgent;
+ const isIOS=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+ const inApp=isIOS&&/(Telegram|Instagram|FBAN|FBAV|VK|WhatsApp|Twitter)/.test(ua);
+ if(isIOS){
   document.getElementById('ios').classList.remove('hide');
   document.getElementById('android').classList.add('hide');
+  if(inApp)document.getElementById('inapp').classList.remove('hide');
  }
 </script>
 </body>
