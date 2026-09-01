@@ -1510,5 +1510,68 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localSt
   document.getElementById('iosHint').hidden=true;localStorage.setItem('zt_ios_hide','1');};
 })();
 </script>
+<!-- ── сканирование QR кассиром ── -->
+<style>
+ #scanFab{position:fixed;right:14px;bottom:140px;z-index:110;width:56px;height:56px;border-radius:50%;border:none;background:#12303E;color:#fff;font-size:22px;box-shadow:0 6px 18px rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
+ body.is-cashier #scanFab{display:flex}
+</style>
+<button id="scanFab">📷</button>
+
+<div id="scanModal" hidden style="position:fixed;inset:0;z-index:120;background:rgba(10,14,18,.75);display:flex;align-items:center;justify-content:center;padding:16px">
+ <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;padding:18px;position:relative">
+  <button id="scanClose" style="position:absolute;right:10px;top:8px;border:none;background:none;font-size:18px;color:#8B98A5">✕</button>
+  <h3 style="margin:0 0 10px">📷 Скан QR гостя</h3>
+  <video id="scanVideo" style="width:100%;border-radius:12px;background:#000" autoplay playsinline muted></video>
+  <div id="scanStatus" style="color:#5A6B7A;font-size:13px;margin:8px 0">Наведите камеру на QR на экране гостя</div>
+  <input id="scanManual" placeholder="Или введите код, напр. Z-1A2B3C" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #D5DDE4">
+  <button id="scanManualBtn" style="margin-top:8px;width:100%;padding:12px;border:none;border-radius:10px;background:#2E6F8E;color:#fff;font-weight:700">Найти</button>
+ </div>
+</div>
+
+<div id="guestCard" hidden style="position:fixed;inset:0;z-index:121;background:rgba(10,14,18,.75);display:flex;align-items:center;justify-content:center;padding:16px">
+ <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;padding:18px;position:relative">
+  <button id="gcClose" style="position:absolute;right:10px;top:8px;border:none;background:none;font-size:18px;color:#8B98A5">✕</button>
+  <h3 id="gcName" style="margin:0"></h3>
+  <div id="gcPhone" style="color:#5A6B7A"></div>
+  <div id="gcStamps" style="font-size:20px;font-weight:800;margin:12px 0"></div>
+  <button id="gcStamp" style="width:100%;padding:14px;border:none;border-radius:12px;background:#2FA36B;color:#fff;font-weight:800;font-size:16px">☕ Пробить штамп</button>
+  <button id="gcRedeem" style="width:100%;margin-top:8px;padding:14px;border:none;border-radius:12px;background:#E8A13A;color:#fff;font-weight:800;font-size:16px">🎁 Списать бесплатный кофе</button>
+ </div>
+</div>
+
+<script>
+let scanStream=null,scanTimer=null,curGuest=null;
+$('#scanFab').onclick=()=>{$('#scanModal').hidden=false;startCam();};
+$('#scanClose').onclick=closeScan;
+function closeScan(){$('#scanModal').hidden=true;stopCam();}
+function stopCam(){if(scanTimer){clearInterval(scanTimer);scanTimer=null;}if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}}
+async function startCam(){
+ const v=$('#scanVideo');
+ if(!('BarcodeDetector' in window)){$('#scanStatus').textContent='Автоскан недоступен на этом устройстве — введите код вручную ниже';return;}
+ try{
+  scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  v.srcObject=scanStream;
+  const det=new BarcodeDetector({formats:['qr_code']});
+  scanTimer=setInterval(async()=>{
+   try{const codes=await det.detect(v);
+    if(codes.length){onScanned(codes[0].rawValue);} }catch(e){}
+  },400);
+ }catch(e){$('#scanStatus').textContent='Камера недоступна — введите код вручную';}
+}
+async function onScanned(raw){
+ const m=String(raw).match(/Z-[0-9A-F]{6}/i);
+ const code=(m?m[0]:String(raw).trim()).toUpperCase();
+ if(!code)return;
+ stopCam();$('#scanModal').hidden=true;
+ try{const r=await api('/staff/scan',{method:'POST',body:{code}});showGuest(r.customer);}
+ catch(e){toast('QR не найден 😔','');}
+}
+$('#scanManualBtn').onclick=()=>onScanned($('#scanManual').value);
+function showGuest(c){curGuest=c;$('#guestCard').hidden=false;$('#gcName').textContent=c.name;$('#gcPhone').textContent=c.phone;renderGuest();}
+function renderGuest(){$('#gcStamps').textContent='☕ Штамп(а): '+curGuest.stamps+' из 10 · 🎁 Бесплатных: '+curGuest.free;$('#gcRedeem').style.opacity=curGuest.free>0?'1':'.4';}
+$('#gcStamp').onclick=async()=>{try{const r=await api('/staff/stamp',{method:'POST',body:{id:curGuest.id}});curGuest=r.customer;renderGuest();toast(r.msg,r.ten?'🎁':'☕');}catch(e){toast('Ошибка','❌');}};
+$('#gcRedeem').onclick=async()=>{try{const r=await api('/staff/redeem',{method:'POST',body:{id:curGuest.id}});curGuest=r.customer;renderGuest();toast('Бесплатный кофе списан 🎁');}catch(e){toast('Нет доступных подарков','❌');}};
+$('#gcClose').onclick=()=>{$('#guestCard').hidden=true;curGuest=null;};
+</script>
 </body>
 </html>
