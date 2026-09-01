@@ -4,8 +4,9 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import webpush from 'web-push';
-import * as adminNs from 'firebase-admin';
-const admin = adminNs.default || adminNs;
+import { initializeApp, credential } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
+let fcmReady = false;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -99,7 +100,7 @@ const VAPID = JSON.parse(vapidRow.value);
 webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
 /* ── FCM для нативного приложения ── */
 if (process.env.FIREBASE_SA) {
-  try { admin.initializeApp({ credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SA)) }); }
+  try { initializeApp({ credential: credential.cert(JSON.parse(process.env.FIREBASE_SA)) }); fcmReady = true; }
   catch (e) { console.log('FCM init error', e.message); }
 }
 
@@ -379,10 +380,11 @@ app.post('/api/push/subscribe', userGuard, (req, res) => {
 });
 async function sendFcm(cid, title, body) {
   try {
-    if (!admin.apps || !admin.apps.length) return;
+    if (!fcmReady) return;
+    const messaging = getMessaging();
     const rows = db.prepare('SELECT token FROM fcm WHERE cid=?').all(cid);
     for (const r of rows) {
-      try { await admin.messaging().send({ token: r.token, notification: { title, body } }); }
+      try { await messaging.send({ token: r.token, notification: { title, body } }); }
       catch (e) { if (String(e.code || '').includes('registration-token')) db.prepare('DELETE FROM fcm WHERE token=?').run(r.token); }
     }
   } catch (e) { console.log('FCM send error', e.message); }
