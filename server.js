@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import webpush from 'web-push';
-import admin from 'firebase-admin';а
+import admin from 'firebase-admin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
