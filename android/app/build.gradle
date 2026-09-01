@@ -17,12 +17,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
+    signingConfigs {
+    release {
+        storeFile file('../release-key.jks')
+        storePassword 'D-RXKeNNO7'
+        keyAlias 'zerno'
+        keyPassword 'D-RXKeNNO7'
     }
+}
+    buildTypes {
+    release {
+        signingConfig signingConfigs.release
+        minifyEnabled false
+        proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+    }
+}
 }
 
 repositories {
