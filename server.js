@@ -4,7 +4,8 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import webpush from 'web-push';
-import admin from 'firebase-admin';
+import * as adminNs from 'firebase-admin';
+const admin = adminNs.default || adminNs;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -377,15 +378,17 @@ app.post('/api/push/subscribe', userGuard, (req, res) => {
   res.json({ ok: true });
 });
 async function sendFcm(cid, title, body) {
-  if (!admin.apps.length) return;
-  const rows = db.prepare('SELECT token FROM fcm WHERE cid=?').all(cid);
-  for (const r of rows) {
-    try { await admin.messaging().send({ token: r.token, notification: { title, body } }); }
-    catch (e) { if (String(e.code || '').includes('registration-token')) db.prepare('DELETE FROM fcm WHERE token=?').run(r.token); }
-  }
+  try {
+    if (!admin.apps || !admin.apps.length) return;
+    const rows = db.prepare('SELECT token FROM fcm WHERE cid=?').all(cid);
+    for (const r of rows) {
+      try { await admin.messaging().send({ token: r.token, notification: { title, body } }); }
+      catch (e) { if (String(e.code || '').includes('registration-token')) db.prepare('DELETE FROM fcm WHERE token=?').run(r.token); }
+    }
+  } catch (e) { console.log('FCM send error', e.message); }
 }
 async function sendPush(cid, title, body) {
-  sendFcm(cid, title, body);
+  sendFcm(cid, title, body).catch(() => {});
   const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
   for (const r of rows) {
     try { await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body })); }
