@@ -280,6 +280,8 @@ body.editing .card:hover{transform:none}
 .msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px}
 .msg.me{align-self:flex-end;background:var(--esp);color:var(--cream);border-bottom-right-radius:5px}
 .msg time{display:block;font-size:10px;opacity:.55;margin-top:3px}
+.msg.sys{align-self:center;background:transparent;border:none;color:#8B98A5;font-size:12px;text-align:center}
+#chatFab.live::after{content:'';position:absolute;top:10px;right:10px;width:10px;height:10px;background:#2FA36B;border-radius:50%;border:2px solid #fff}
 .typing{align-self:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;border-bottom-left-radius:5px;padding:12px 15px;display:flex;gap:4px}
 .typing i{width:7px;height:7px;border-radius:50%;background:#9FB4C8;animation:tp 1s infinite}
 .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
@@ -365,8 +367,11 @@ body.editing .card:hover{transform:none}
   box-shadow:0 16px 40px -10px rgba(16,20,24,.6)}
   .msg.staff{align-self:flex-start;background:#EAF1F9;border:1px solid #B9CDE4;border-bottom-left-radius:5px}
 /* кассир на десктопе: во всю ширину, без правой панели */
+@media(min-width:1181px){
 body.is-cashier .panel{display:none}
 body.is-cashier .wrap{grid-template-columns:1fr}
+#profileTopBtn{margin-left:auto;width:46px;height:46px;font-size:18px}
+}
 body.is-cashier .cashier{max-width:1100px}
 body.is-cashier .scan{gap:40px}
 body.is-cashier .cust .info{min-width:280px}
@@ -549,6 +554,7 @@ body.is-cashier .cust .acts{min-width:260px}
         <div class="placebox"><b>Мы у моря</b>п. Янтарный, Советская ул., 70г<br>
   Ежедневно: май–сен 8:00–21:00 · окт–апр 8:00–20:00<br>
   ✈️ <a href="https://t.me/and_coffee39" target="_blank" style="color:var(--flame)">t.me/and_coffee39</a></div>
+  📸 <a href="https://www.instagram.com/and_coffee39/" target="_blank" style="color:var(--flame)">instagram.com/and_coffee39</a><br>
           <div class="placebox" style="background:#FFF6E5;border-color:#F2D9A5;color:#6B4E0E">
   <b>Понравилось у нас?</b>
   Ваш отзыв на Яндекс Картах помогает нам расти 🌊<br>
@@ -1250,6 +1256,7 @@ $('#chatChips').innerHTML=['Как работает 10-й кофе?','Где в�
 $('#chatChips').addEventListener('click',e=>{const b=e.target.closest('button');if(b)sendChat(b.textContent)});
 function botReply(q){q=q.toLowerCase();
  if(/привет|здравств|добр/.test(q))return'Здравствуйте! 👋 Это Ника из «…и кофе». Подскажу по меню, бонусам и чаю.';
+ if(/инст|insta/.test(q))return'Мы в Инстаграм! 📸 https://www.instagram.com/and_coffee39/ — подписывайтесь.';
  if(/10|десят|штамп|бонус|лояльн|бесплат|накоп/.test(q))return'Работает так: покупаете кофе — кассир сканирует ваш QR и ставит штамп-зерно 🫘 Собрали 9 — десятый кофе бесплатно! Подарок появится в «Бонусах» и будет ждать, пока вы его не выпьете 😄';
  if(/ча[йи]|чаев|ассам|эрл|сенча|улун|ройбуш|каркаде|трав/.test(q))return'У нас семь чаёв: ассам, эрл грей, сенча, молочный улун, горные травы, ройбуш с малиной и каркаде с цукатами. 400 мл — 210 ₽. Какой под настроение?';
  if(/моти/.test(q))return'Моти — 4 вкуса: клубника-пломбир, финик-дорблю, манго-пломбир и вишня-латте. 275 ₽ за штучку счастья.';
@@ -1273,7 +1280,11 @@ function chatKey(){
  if(!k){k='anon-'+Math.random().toString(36).slice(2,10);localStorage.setItem('zt_chatkey',k);}
  return k;}
 function sendChat(text){if(!text.trim())return;addMsg('me',text);$('#chatInput').value='';
- const key=chatKey();const reply=botReply(text);const human=reply.startsWith('Приняла!')?1:0;
+ const key=chatKey();
+ if(staffIn){
+  fetch(API_BASE+'/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text,human:0})}).catch(()=>{});
+  return;}
+ const reply=botReply(text);const human=reply.startsWith('Приняла!')?1:0;
  fetch(API_BASE+'/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text,human})}).catch(()=>{});
  showTyping();
  setTimeout(()=>{hideTyping();addMsg('bot',reply);
@@ -1282,18 +1293,24 @@ function sendChat(text){if(!text.trim())return;addMsg('me',text);$('#chatInput')
 $('#chatSend').onclick=()=>sendChat($('#chatInput').value);
 $('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat($('#chatInput').value)});
 let lastChatId=0,historyLoaded=false;
+let staffIn=false;
 async function loadHistory(){try{
  const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
- $('#chatMsgs').innerHTML='';
+ $('#chatMsgs').innerHTML='';staffIn=false;
  for(const m of r.msgs){lastChatId=Math.max(lastChatId,m.id);
-  if(m.who==='guest')addMsg('me',m.text);else if(m.who==='staff')addMsg('staff',m.text);else addMsg('bot',m.text);}
+  if(m.who==='guest')addMsg('me',m.text);
+  else if(m.who==='staff')addMsg('staff',m.text);
+  else if(m.who==='system'){staffIn=true;addMsg('sys',m.text);}
+  else addMsg('bot',m.text);}
+ $('#chatFab').classList.toggle('live',staffIn);
  historyLoaded=true;}catch(e){historyLoaded=true}}
 setInterval(async()=>{if(document.visibilityState!=='visible')return;
  try{const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after='+lastChatId)).json();
   for(const m of r.msgs){lastChatId=Math.max(lastChatId,m.id);
    if(m.who==='staff'){addMsg('staff',m.text);
-    if(!$('#chatPanel').classList.contains('open')){unread++;const b=$('#chatBadge');b.hidden=false;b.textContent=unread}}}}
- catch(e){}},7000);
+    if(!$('#chatPanel').classList.contains('open')){unread++;const b=$('#chatBadge');b.hidden=false;b.textContent=unread}}
+   if(m.who==='system'){staffIn=true;addMsg('sys',m.text);$('#chatFab').classList.add('live');}}
+ }catch(e){}},7000);
 $('#chatFab').onclick=async()=>{const p=$('#chatPanel');p.classList.toggle('open');
  if(p.classList.contains('open')){unread=0;$('#chatBadge').hidden=true;
   if(!historyLoaded)await loadHistory();
@@ -1341,7 +1358,7 @@ setInterval(async()=>{
   $('#chatsToggle').textContent=un?`💬 Чаты гостей · ${un}`:'💬 Чаты гостей';
   $('#chatsToggle2').textContent=un?`💬 ${un}`:'💬';
  }catch(e){}
-},20000);
+},10000);
 
 const fx=$('#fx'),fxx=fx.getContext('2d');let pieces=[],fxOn=false;
 function fitFx(){fx.width=innerWidth;fx.height=innerHeight}fitFx();addEventListener('resize',fitFx);

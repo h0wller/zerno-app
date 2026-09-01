@@ -40,8 +40,8 @@ CREATE TABLE IF NOT EXISTS promo_use(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   key TEXT, who TEXT, text TEXT, ts TEXT,
   human INTEGER DEFAULT 0, read_g INTEGER DEFAULT 0, read_s INTEGER DEFAULT 0);
-  CREATE TABLE IF NOT EXISTS chat_meta(
-  key TEXT PRIMARY KEY, closed INTEGER DEFAULT 0);
+ CREATE TABLE IF NOT EXISTS chat_meta(
+  key TEXT PRIMARY KEY, closed INTEGER DEFAULT 0, staff_in INTEGER DEFAULT 0);
 `);
 /* миграции */
 const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
@@ -82,6 +82,8 @@ if (db.prepare("SELECT value FROM meta WHERE key='menu_v'").get()?.value !== MEN
   for (const p of seed) ins.run(p[0],p[1],p[2],p[3],p[4],JSON.stringify(p[5]),p[6],p[7],p[8],p[9],1,null);
   db.prepare("INSERT INTO meta(key,value) VALUES('menu_v',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(MENU_V);
 }
+const mcols = db.prepare('PRAGMA table_info(chat_meta)').all().map(c => c.name);
+if (mcols.length && !mcols.includes('staff_in')) db.exec('ALTER TABLE chat_meta ADD COLUMN staff_in INTEGER DEFAULT 0');
 /* ── VAPID-ключи для пушей (создаются один раз) ── */
 let vapidRow = db.prepare("SELECT value FROM meta WHERE key='vapid'").get();
 if (!vapidRow) {
@@ -425,6 +427,11 @@ app.get('/api/chat/list', staffGuard, (req, res) => {
 app.get('/api/chat/dialog', staffGuard, (req, res) => {
   const key = String(req.query.key || '').slice(0, 64);
   db.prepare("UPDATE chat SET read_s=1 WHERE key=? AND who='guest'").run(key);
+  const meta = db.prepare('SELECT staff_in FROM chat_meta WHERE key=?').get(key);
+if (!meta || !meta.staff_in) {
+  db.prepare('INSERT INTO chat_meta(key,closed,staff_in) VALUES(?,0,1) ON CONFLICT(key) DO UPDATE SET staff_in=1').run(key);
+  db.prepare('INSERT INTO chat(key,who,text,ts,read_g) VALUES(?,?,?,?,0)').run(key, 'system', '👋 Сотрудник подключился к чату — бот Ника отдыхает', nowISO());
+} 
   res.json({ msgs: db.prepare('SELECT id,who,text,ts FROM chat WHERE key=? ORDER BY id').all(key) });
 });
 app.post('/api/chat/reply', staffGuard, (req, res) => {
