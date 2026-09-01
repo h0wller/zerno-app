@@ -421,7 +421,7 @@ app.get('/api/push/subs', adminGuard, (req, res) => {
 });
 app.post('/api/push/send', adminGuard, async (req, res) => {
   const body = req.body.body || '';
-  const cids = db.prepare('SELECT DISTINCT cid FROM subs').all();
+  const cids = db.prepare("SELECT cid FROM subs UNION SELECT id FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
   for (const c of cids) await sendPush(c.cid, '…и кофе 🌊', body);
   logEv(req.user.name, `пуш всем (${cids.length})`);
   res.json({ ok: true, sent: cids.length });
