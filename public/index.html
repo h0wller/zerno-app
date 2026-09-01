@@ -1562,19 +1562,24 @@ async function startCam(){
   const canvas=document.createElement('canvas');
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
   if(!det&&!window.jsQR)$('#scanStatus').textContent='Сканер не поддерживается — введите код или найдите гостя по имени';
+    $('#scanStatus').textContent='Поднесите камеру близко, QR — на центр экрана';
   scanTimer=setInterval(async()=>{
    if(!v.videoWidth)return;
    try{
     if(det){const c=await det.detect(v);if(c.length)return found(c[0].rawValue);}
     else if(window.jsQR){
-     canvas.width=v.videoWidth;canvas.height=v.videoHeight;
-     ctx.drawImage(v,0,0,canvas.width,canvas.height);
-     const img=ctx.getImageData(0,0,canvas.width,canvas.height);
-     const q=jsQR(img.data,img.width,img.height);
-     if(q&&q.data)return found(q.data);
+     const widths=[Math.min(480,v.videoWidth),Math.min(800,v.videoWidth)];
+     for(const W of widths){
+      const H=Math.max(2,Math.round(v.videoHeight*(W/v.videoWidth)));
+      canvas.width=W;canvas.height=H;
+      ctx.drawImage(v,0,0,W,H);
+      const img=ctx.getImageData(0,0,W,H);
+      const q=jsQR(img.data,W,H,{inversionAttempts:'attemptBoth'});
+      if(q&&q.data)return found(q.data);
+     }
     }
    }catch(e){}
-  },350);
+  },300);
  }catch(e){$('#scanStatus').textContent='Камера недоступна — введите код или найдите гостя по имени';}
 }
 function found(raw){stopCam();$('#scanModal').hidden=true;onScanned(raw);}
@@ -1595,12 +1600,13 @@ $('#gcClose').onclick=()=>{$('#guestCard').hidden=true;curGuest=null;};
 if(typeof renderProfile==='function'){
  const _rp=renderProfile;
  renderProfile=function(){const r=_rp.apply(this,arguments);
-  setTimeout(()=>{try{
+   setTimeout(()=>{try{
    if(!me||!me.qr)return;
-   const lab=[...document.querySelectorAll('*')].find(n=>!n.children.length&&/Ваш QR для штампов/.test(n.textContent));
-   if(lab&&!lab.parentNode.querySelector('.qrCodeText')){
+   const labs=[...document.querySelectorAll('*')].filter(n=>!n.children.length&&(/Ваш QR для штампов/.test(n.textContent)||/Покажите кассиру/.test(n.textContent)));
+   for(const lab of labs){
+    if(lab.parentNode.querySelector('.qrCodeText'))continue;
     const d=document.createElement('div');d.className='qrCodeText';
-    d.style.cssText='text-align:center;font-weight:800;letter-spacing:.14em;margin:6px 0 2px;color:#12303E';
+    d.style.cssText='text-align:center;font-weight:800;letter-spacing:.14em;margin:6px 0 2px;color:inherit;font-size:18px';
     d.textContent=me.qr;
     lab.parentNode.insertBefore(d,lab.nextSibling);
    }
