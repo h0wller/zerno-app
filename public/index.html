@@ -1546,6 +1546,7 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localSt
 
 <script src="./jsqr.js"></script>
 <script>
+(function(){
 let scanStream=null,scanTimer=null,curGuest=null;
 $('#scanFab').onclick=()=>{$('#scanModal').hidden=false;startCam();};
 $('#scanClose').onclick=closeScan;
@@ -1604,8 +1605,9 @@ if(typeof renderProfile==='function'){
     lab.parentNode.insertBefore(d,lab.nextSibling);
    }
   }catch(e){}},60);
-  return r;};
+    return r;};
 }
+})();
 </script>
 </body>
 </html>
