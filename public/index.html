@@ -1300,7 +1300,7 @@ async function loadHistory(){try{
  for(const m of r.msgs){lastChatId=Math.max(lastChatId,m.id);
   if(m.who==='guest')addMsg('me',m.text);
   else if(m.who==='staff')addMsg('staff',m.text);
-  else if(m.who==='system'){staffIn=true;addMsg('sys',m.text);}
+  else if(m.who==='system'){staffIn=m.text.includes('подключился');addMsg('sys',m.text);}
   else addMsg('bot',m.text);}
  $('#chatFab').classList.toggle('live',staffIn);
  historyLoaded=true;}catch(e){historyLoaded=true}}
@@ -1309,7 +1309,7 @@ setInterval(async()=>{if(document.visibilityState!=='visible')return;
   for(const m of r.msgs){lastChatId=Math.max(lastChatId,m.id);
    if(m.who==='staff'){addMsg('staff',m.text);
     if(!$('#chatPanel').classList.contains('open')){unread++;const b=$('#chatBadge');b.hidden=false;b.textContent=unread}}
-   if(m.who==='system'){staffIn=true;addMsg('sys',m.text);$('#chatFab').classList.add('live');}}
+   else if(m.who==='system'){staffIn=m.text.includes('подключился');addMsg('sys',m.text);}}
  }catch(e){}},7000);
 $('#chatFab').onclick=async()=>{const p=$('#chatPanel');p.classList.toggle('open');
  if(p.classList.contains('open')){unread=0;$('#chatBadge').hidden=true;
@@ -1319,8 +1319,14 @@ $('#chatFab').onclick=async()=>{const p=$('#chatPanel');p.classList.toggle('open
 $('#chatClose').onclick=()=>$('#chatPanel').classList.remove('open');
 /* ── стафф: чаты гостей ── */
 let scKey=null;
-function openStaffChat(){$('#staffChatModal').classList.add('show');syncOverlay();$('#scDialogWrap').hidden=true;scKey=null;loadScList();}
-function closeStaffChat(){$('#staffChatModal').classList.remove('show');syncOverlay()}
+function openStaffChat(){
+ if(me&&('Notification' in window)){
+ if(Notification.permission!=='granted')toast('Включите уведомления в профиле — иначе не узнаете о вопросах гостей','🔔');
+ else navigator.serviceWorker.ready.then(r=>r.pushManager.getSubscription()).then(s=>{
+ if(!s)toast('Включите уведомления в профиле (🔔), чтобы получать вопросы гостей','🔔');});
+}
+$('#staffChatModal').classList.add('show');syncOverlay();$('#scDialogWrap').hidden=true;scKey=null;loadScList();}
+function closeStaffChat(){$('#staffChatModal').classList.remove('show');syncOverlay(),updateStaffBadge();}
 $('#chatsToggle').onclick=openStaffChat;
 $('#chatsToggle2').onclick=openStaffChat;
 $('#scClose').onclick=closeStaffChat;
@@ -1343,22 +1349,23 @@ async function openScDialog(){$('#scDialogWrap').hidden=false;
 $('#scCloseThread').textContent=scClosedView?'↺ Открыть чат':'✓ Закрыть чат';
  try{const r=await api('/chat/dialog?key='+encodeURIComponent(scKey));
  $('#scDialog').innerHTML=r.msgs.map(m=>`<div class="msg ${m.who==='guest'?'me':(m.who==='staff'?'staff':'bot')}" style="max-width:92%">${esc(m.text)}</div>`).join('');
- $('#scDialog').scrollTop=1e6;}catch(e){}}
-$('#scBack').onclick=()=>{$('#scDialogWrap').hidden=true;scKey=null;loadScList();};
+ $('#scDialog').scrollTop=1e6;}catch(e){}
+updateStaffBadge();}
+$('#scBack').onclick=()=>{$('#scDialogWrap').hidden=true;scKey=null;loadScList(),updateStaffBadge();};
 async function scSend(){const t=$('#scInput').value.trim();if(!t||!scKey)return;
  try{await api('/chat/reply',{method:'POST',body:{key:scKey,text:t}});$('#scInput').value='';openScDialog();}catch(e){toast(e.message,'⚠️')}}
 $('#scSend').onclick=scSend;
 $('#scInput').addEventListener('keydown',e=>{if(e.key==='Enter')scSend()});
 /* счётчик новых вопросов гостей на кнопках 💬 */
-setInterval(async()=>{
+async function updateStaffBadge(){
  if(!me||(me.role!=='admin'&&me.role!=='cashier'))return;
- if(document.visibilityState!=='visible')return;
  try{const r=await api('/chat/list');
   const un=r.threads.reduce((a,t)=>a+(+t.unread||0),0);
   $('#chatsToggle').textContent=un?`💬 Чаты гостей · ${un}`:'💬 Чаты гостей';
   $('#chatsToggle2').textContent=un?`💬 ${un}`:'💬';
  }catch(e){}
-},10000);
+}
+setInterval(()=>{if(document.visibilityState==='visible')updateStaffBadge();},10000);
 
 const fx=$('#fx'),fxx=fx.getContext('2d');let pieces=[],fxOn=false;
 function fitFx(){fx.width=innerWidth;fx.height=innerHeight}fitFx();addEventListener('resize',fitFx);

@@ -443,7 +443,9 @@ app.post('/api/chat/reply', staffGuard, (req, res) => {
   res.json({ ok: true });
 });
 app.post('/api/chat/close', staffGuard, (req, res) => {
-  db.prepare('INSERT INTO chat_meta(key,closed) VALUES(?,1) ON CONFLICT(key) DO UPDATE SET closed=1').run(String(req.body.key || '').slice(0, 64));
+  const key = String(req.body.key || '').slice(0, 64);
+  db.prepare('INSERT INTO chat_meta(key,closed,staff_in) VALUES(?,1,0) ON CONFLICT(key) DO UPDATE SET closed=1, staff_in=0').run(key);
+  db.prepare('INSERT INTO chat(key,who,text,ts,read_g) VALUES(?,?,?,?,0)').run(key, 'system', '✅ Чат закрыт. Бот Ника снова на связи.', nowISO());
   res.json({ ok: true });
 });
 app.post('/api/chat/open', staffGuard, (req, res) => {
