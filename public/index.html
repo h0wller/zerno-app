@@ -1191,7 +1191,7 @@ async function enablePush(){
  if(perm.receive!=='granted')return toast('Уведомления не включены','😔');
  PN.register();
  return toast('Уведомления включены!','🔔');
-}а
+}
   const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
   if(isIOS&&!standalone){
