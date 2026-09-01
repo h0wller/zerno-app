@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "645197546245",
+    "project_id": "andcoffee-d927f",
+    "storage_bucket": "andcoffee-d927f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:645197546245:android:9b72e7cef34126df75ad6c",
+        "android_client_info": {
+          "package_name": "online.andcoffee.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwQxUTWMti0h60gJ_Gs4xfo_C_GlfBiW8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import webpush from 'web-push';
+import admin from 'firebase-admin';а
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -42,6 +43,8 @@ CREATE TABLE IF NOT EXISTS promo_use(
   human INTEGER DEFAULT 0, read_g INTEGER DEFAULT 0, read_s INTEGER DEFAULT 0);
  CREATE TABLE IF NOT EXISTS chat_meta(
   key TEXT PRIMARY KEY, closed INTEGER DEFAULT 0, staff_in INTEGER DEFAULT 0);
+  CREATE TABLE IF NOT EXISTS fcm(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, token TEXT UNIQUE, created TEXT);
 `);
 /* миграции */
 const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
@@ -93,6 +96,11 @@ if (!vapidRow) {
 }
 const VAPID = JSON.parse(vapidRow.value);
 webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
+/* ── FCM для нативного приложения ── */
+if (process.env.FIREBASE_SA) {
+  try { admin.initializeApp({ credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SA)) }); }
+  catch (e) { console.log('FCM init error', e.message); }
+}а
 
 /* ── утилиты ── */
 const ph10 = v => { let d = String(v || '').replace(/\D/g, '');
@@ -368,13 +376,28 @@ app.post('/api/push/subscribe', userGuard, (req, res) => {
   sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
   res.json({ ok: true });
 });
+async function sendFcm(cid, title, body) {
+  if (!admin.apps.length) return;
+  const rows = db.prepare('SELECT token FROM fcm WHERE cid=?').all(cid);
+  for (const r of rows) {
+    try { await admin.messaging().send({ token: r.token, notification: { title, body } }); }
+    catch (e) { if (String(e.code || '').includes('registration-token')) db.prepare('DELETE FROM fcm WHERE token=?').run(r.token); }
+  }
+}
 async function sendPush(cid, title, body) {
+  sendFcm(cid, title, body);
   const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
   for (const r of rows) {
     try { await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body })); }
     catch (e) { if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub); }
   }
 }
+app.post('/api/push/fcm', userGuard, (req, res) => {
+  const token = String(req.body.token || '');
+  if (!token) return res.status(400).json({ error: 'bad token' });
+  db.prepare('INSERT OR IGNORE INTO fcm(cid,token,created) VALUES(?,?,?)').run(req.user.id, token, nowISO());
+  res.json({ ok: true });
+});
 app.get('/api/push/subs', adminGuard, (req, res) => {
   res.json({ subs: db.prepare(`SELECT s.created, s.cid, c.name, c.phone FROM subs s LEFT JOIN customers c ON c.id=s.cid ORDER BY s.id DESC`).all() });
 });

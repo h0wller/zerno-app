@@ -907,7 +907,9 @@ $('#skipAuth').onclick=()=>{onboarded=true;localStorage.setItem(T_ONB,'1');close
  toast('Можно смотреть меню. Профиль — по кнопке с аватаром','👀')};
 function setUser(token,customer){USER_TOKEN=token;localStorage.setItem(T_USER,token);
  me=customer;historyLoaded=false;lastChatId=0;initChatPointer();showBadge();onboarded=true;localStorage.setItem(T_ONB,'1');
- drawQR($('#qrMini'),me.qr);drawQR($('#qrMain'),me.qr)}
+ drawQR($('#qrMini'),me.qr);drawQR($('#qrMain'),me.qr)
+const fcmT=localStorage.getItem('zt_fcm_token');
+if(fcmT&&me)api('/push/fcm',{method:'POST',body:{token:fcmT}}).catch(()=>{});}
 $('#regBtn').onclick=async()=>{
  const name=$('#regName').value.trim(),phone=$('#regPhone').value;
  if(name.length<2)return toast('Введите имя','✍️');
@@ -1183,6 +1185,13 @@ function urlBase64ToUint8Array(s){
   return out;
 }
 async function enablePush(){
+  if(isCap){
+ const PN=Capacitor.Plugins.PushNotifications;
+ const perm=await PN.requestPermissions();
+ if(perm.receive!=='granted')return toast('Уведомления не включены','😔');
+ PN.register();
+ return toast('Уведомления включены!','🔔');
+}а
   const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
   if(isIOS&&!standalone){
@@ -1203,11 +1212,23 @@ async function enablePush(){
 }
 $('#pushBtn').onclick=enablePush;
  function refreshPushBtn(){
+  if(isCap){const pb=$('#pushBtn');if(!pb)return;pb.hidden=!me||localStorage.getItem('zt_fcm')==='1';return;}
   const pb=$('#pushBtn');if(!pb)return;
   if(!me||!('Notification' in window)){pb.hidden=true;return;}
   if(Notification.permission!=='granted'){pb.hidden=false;return;}
   navigator.serviceWorker.ready.then(reg=>reg.pushManager.getSubscription())
     .then(s=>{pb.hidden=!!s;}).catch(()=>{pb.hidden=false;});
+}
+/* ── FCM (нативное приложение) ── */
+const isCap=!!(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.PushNotifications);
+if(isCap){
+ const PN=Capacitor.Plugins.PushNotifications;
+ PN.addListener('registration',t=>{
+  localStorage.setItem('zt_fcm','1');localStorage.setItem('zt_fcm_token',t.value);
+  if(me)api('/push/fcm',{method:'POST',body:{token:t.value}}).catch(()=>{});
+  refreshPushBtn();
+ });
+ try{PN.register();}catch(e){}
 }
 $('#pushSend').onclick=async()=>{
   const body=$('#pushText').value.trim();
