@@ -1471,5 +1471,22 @@ function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();ren
 })();
 console.info('%c🌊 …и кофе · ребрендинг','font-weight:bold;font-size:14px','| меню v2 | штампы-зёрна');
 </script>
+<div id="installBanner" hidden style="position:fixed;left:12px;right:12px;bottom:86px;z-index:90;background:#12303E;color:#fff;border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.3)">
+ <span style="flex:1;font-size:14px">📲 Установите приложение — карта всегда под рукой</span>
+ <button id="installBtn" style="background:#2E6F8E;border:none;color:#fff;border-radius:10px;padding:8px 12px;font-weight:700">OK</button>
+ <button id="installClose" style="background:none;border:none;color:#9FB2C6;font-size:16px">✕</button>
+</div>
+<script>
+let _defPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_defPrompt=e;
+ if(!localStorage.getItem('zt_inst_hide'))$('#installBanner').hidden=false;});
+document.getElementById('installBtn').onclick=async()=>{if(_defPrompt){_defPrompt.prompt();await _defPrompt.userChoice;_defPrompt=null;}$('#installBanner').hidden=true;};
+document.getElementById('installClose').onclick=()=>{$('#installBanner').hidden=true;localStorage.setItem('zt_inst_hide','1');};
+if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localStorage.getItem('zt_inst_hide')){
+ const b=$('#installBanner');b.hidden=false;
+ b.querySelector('span').innerHTML='🍏 Нажмите <b>Поделиться</b> → <b>На экран «Домой»</b> — и приложение на рабочем столе';
+ b.querySelector('#installBtn').style.display='none';
+}
+</script>
 </body>
 </html>
