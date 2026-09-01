@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import webpush from 'web-push';
-import { initializeApp, credential } from 'firebase-admin/app';
+import { initializeApp, cert } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 let fcmReady = false;
 
@@ -100,10 +100,9 @@ const VAPID = JSON.parse(vapidRow.value);
 webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
 /* ── FCM для нативного приложения ── */
 if (process.env.FIREBASE_SA) {
-  try { initializeApp({ credential: credential.cert(JSON.parse(process.env.FIREBASE_SA)) }); fcmReady = true; }
+  try { initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_SA)) }); fcmReady = true; }
   catch (e) { console.log('FCM init error', e.message); }
 }
-
 /* ── утилиты ── */
 const ph10 = v => { let d = String(v || '').replace(/\D/g, '');
   if (d.startsWith('8')) d = '7' + d.slice(1);
