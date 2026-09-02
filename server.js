@@ -254,7 +254,6 @@ const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin
 if (r.err) return res.status(r.code).json({ error: r.err });
 res.json({ token: issueToken(r.customer.id), customer: r.customer });
 });
-
 app.post('/api/auth/login', (req, res) => {
 const p = fmtPhone(req.body.phone || '');
 const pin = String(req.body.pin || '').trim();
@@ -263,8 +262,6 @@ const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
 if (!c) return res.status(404).json({ error: 'Профиль не найден — создайте новый' });
 const wait = lockedSeconds(req, 'login');
 if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
-
-/* вход по коду из Telegram */
 if (otp) {
  const st = otpStore.get(p);
  if (!st || Date.now() > st.expires) return res.status(403).json({ error: 'Код просрочен — запросите новый' });
@@ -273,20 +270,19 @@ if (otp) {
  addHist(c.id, 'Вход по коду из Telegram', 'Приложение');
  return res.json({ token: issueToken(c.id), customer: cust(c), needPin: !c.pin });
 }
-
-/* вход по PIN */
-if (pin) {
- if (!c.pin) return res.status(409).json({ error: 'PIN ещё не задан — придумайте его', setup: true });
- if (hashPin(pin) !== c.pin) { registerFail(req, 'login'); return res.status(403).json({ error: 'Неверный PIN' }); }
- pinLocks.delete(lockKey(req, 'login'));
- addHist(c.id, 'Вход по PIN', 'Приложение');
- return res.json({ token: issueToken(c.id), customer: cust(c) });
+if (!c.pin) {
+ if (!pin) return res.status(409).json({ error: 'PIN ещё не задан — придумайте его', setup: true });
+ if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
+ db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), c.id);
+ addHist(c.id, 'Задан PIN (первый вход)', 'Приложение');
+ return res.json({ token: issueToken(c.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
 }
-
-return res.status(400).json({ error: 'Введите PIN или запросите код в Telegram' });
+if (!pin) return res.status(400).json({ error: 'Введите PIN' });
+if (hashPin(pin) !== c.pin) { registerFail(req, 'login'); return res.status(403).json({ error: 'Неверный PIN' }); }
+pinLocks.delete(lockKey(req, 'login'));
+addHist(c.id, 'Вход по PIN', 'Приложение');
+res.json({ token: issueToken(c.id), customer: cust(c) });
 });
-
-/* первый вход старого аккаунта: задать PIN (одноразово, пока pin пуст) */
 app.post('/api/auth/setup-pin', (req, res) => {
 const p = fmtPhone(req.body.phone || '');
 const pin = String(req.body.pin || '').trim();
@@ -298,8 +294,6 @@ db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), c.id);
 addHist(c.id, 'Задан PIN (первый вход)', 'Приложение');
 res.json({ token: issueToken(c.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
 });
-
-/* смена/установка PIN для вошедшего пользователя */
 app.post('/api/auth/set-pin', userGuard, (req, res) => {
 const pin = String(req.body.pin || '').trim();
 if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
@@ -307,21 +301,18 @@ db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), req.user.i
 addHist(req.user.id, 'Задан новый PIN', 'Приложение');
 res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
-
-/* запрос OTP в Telegram */
 app.post('/api/auth/request-otp', (req, res) => {
 const p = fmtPhone(req.body.phone || '');
 const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
 if (!c) return res.status(404).json({ error: 'Профиль не найден' });
 if (!c.tg) return res.status(400).json({ error: 'Telegram не привязан — войдите по PIN' });
 const wait = lockedSeconds(req, 'login');
-if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
+if (wait > 0) return res.status(429).json({ error: 'Слишком часто. Пауза ${wait} сек.' });
 const code = String(Math.floor(1000 + Math.random() * 9000));
 otpStore.set(p, { code, expires: Date.now() + 5 * 60 * 1000 });
 tgSend(c.tg, `🔑 Код для входа в приложение: ${code}\nДействует 5 минут. Никому не сообщайте!`);
 res.json({ ok: true });
 });
-
 app.post('/api/auth/activate', userGuard, (req, res) => {
   const wait = lockedSeconds(req);
   if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
@@ -493,7 +484,9 @@ app.post('/api/push/fcm', userGuard, (req, res) => {
   res.json({ ok: true });
 });
 app.get('/api/push/subs', adminGuard, (req, res) => {
-  res.json({ subs: db.prepare(`SELECT s.created, s.cid, c.name, c.phone FROM subs s LEFT JOIN customers c ON c.id=s.cid ORDER BY s.id DESC`).all() });
+  const subs = db.prepare(`SELECT s.created, s.cid, c.name, c.phone FROM subs s LEFT JOIN customers c ON c.id=s.cid ORDER BY s.id DESC`).all();
+  const tg = db.prepare(`SELECT created_at AS created, id AS cid, name, phone FROM customers WHERE tg IS NOT NULL AND tg != '' ORDER BY created_at DESC`).all();
+  res.json({ subs, tg });
 });
 app.post('/api/push/send', adminGuard, async (req, res) => {
   const body = req.body.body || '';

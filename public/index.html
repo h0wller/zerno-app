@@ -457,6 +457,7 @@ body.is-cashier .cust .acts{min-width:260px}
 .rail button{color:#475462}
 /* контраст для доступности */
 .cbody .vol,.form label,.authcard small,.pinhint,.phead .ph{color:#5B6874}
+.brand{cursor:pointer}
 </style>
 </head>
 <body>
@@ -1055,6 +1056,8 @@ $('#setPinGo').onclick=async()=>{
  }catch(e){toast(e.message,'⚠️')}};
 
 $('#profileTopBtn').onclick=()=>me?openPanel('profile'):openAuth();
+const brand=document.querySelector('.brand');
+if(brand)brand.onclick=()=>{ if(mode!=='guest')setMode('guest'); else window.scrollTo({top:0,behavior:'smooth'}); };
 $('#logoutBtn').onclick=async()=>{
  try{
   const reg=await navigator.serviceWorker.ready;
@@ -1311,7 +1314,7 @@ $('#pmCreate').onclick=async()=>{
  catch(e){toast(e.message,'⚠️')}};
 /* ── дашборд ── */
 $('#dashToggle').onclick=async()=>{
-  $('#dashModal').classList.add('show');syncOverlay();
+  $('#dashModal').classList.add('show');syncOverlay();loadSubs();
   try{
     const s=await api('/stats');
     $('#dashTop').innerHTML=`
@@ -1329,8 +1332,9 @@ $('#dashToggle').onclick=async()=>{
   }catch(e){toast(e.message,'⚠️')}
 }
  async function loadSubs(){try{const ps=await api('/push/subs');
- $('#pushSubs').innerHTML=ps.subs.map(s=>`<div class="hmini" style="display:flex;align-items:center;gap:8px"><b>${esc(s.name||'—')}</b> · ${esc(s.phone||'')} · ${new Date(s.created).toLocaleDateString('ru-RU')}<button class="btn ghost danger" data-pdel="${esc(s.cid)}" style="margin-left:auto;padding:4px 10px">✕</button></div>`).join('')
- ||'<div class="hmini">Пока никто не подписан</div>';}catch(e){}}
+ const row=(s,tag)=>`<div class="hmini"><b>${esc(s.name||'—')}</b> · ${esc(s.phone||'')} · ${tag} · ${new Date(s.created).toLocaleDateString('ru-RU')}</div>`;
+ $('#pushSubs').innerHTML=(ps.subs.map(s=>row(s,'🔔 пуш')).join('')+(ps.tg||[]).map(s=>row(s,'🤖 TG')).join(''))
+  ||'<div class="hmini">Пока никто не подписан</div>';}catch(e){}}
 $('#pushSubs').addEventListener('click',async e=>{const b=e.target.closest('[data-pdel]');if(!b)return;
  if(!confirm('Удалить подписку этого устройства?'))return;
  try{await api('/push/del',{method:'POST',body:{cid:b.dataset.pdel}});loadSubs();toast('Подписка удалена','🗑')}catch(err){toast(err.message,'⚠️')}});
@@ -1550,7 +1554,13 @@ let lastChatId=0,historyLoaded=false;
 let staffIn=false;
 const unreadKey=()=>'zt_unread_'+chatKey();
 function showBadge(){const u=+localStorage.getItem(unreadKey())||0;const b=$('#chatBadge');b.hidden=!u;b.textContent=u||'';}
-async function initChatPointer(){/* отложено до первого открытия чата */}
+async function initChatPointer(){try{
+ const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
+ for(const m of r.msgs)lastChatId=Math.max(lastChatId,m.id);
+ const readId=+localStorage.getItem('zt_read_'+chatKey())||0;
+ localStorage.setItem(unreadKey(),r.msgs.filter(m=>m.who==='staff'&&m.id>readId).length);
+ showBadge();
+}catch(e){}}
 async function loadHistory(){try{
  const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
  $('#chatMsgs').innerHTML='';staffIn=false;
@@ -1571,7 +1581,7 @@ setInterval(async()=>{if(document.visibilityState!=='visible')return;
   }
  }catch(e){}},7000);
 $('#chatFab').onclick=async()=>{const p=$('#chatPanel');p.classList.toggle('open');
- if(p.classList.contains('open')){   if(!lastChatId){try{const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();for(const m of r.msgs)lastChatId=Math.max(lastChatId,m.id);}catch(e){}}localStorage.setItem(unreadKey(),'0');showBadge();
+ if(p.classList.contains('open')){   if(!lastChatId){try{const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();for(const m of r.msgs)lastChatId=Math.max(lastChatId,m.id);}catch(e){}}localStorage.setItem(unreadKey(),'0');showBadge();localStorage.setItem('zt_read_'+chatKey(),lastChatId);
   if(!historyLoaded)await loadHistory();
   if(!chatOpened){chatOpened=true;
    if(!$('#chatMsgs').children.length)setTimeout(()=>addMsg('bot','Привет! Я Ника, поддержка «…и кофе» 🌊 Если я не смогу ответить — к чату подключится сотрудник.'),350)}}};
