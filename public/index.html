@@ -406,7 +406,7 @@ body.is-cashier .cust .acts{min-width:260px}
   .topbar{flex-wrap:wrap;gap:9px;padding-left:14px;padding-right:14px}
   .wrap{padding:14px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:11px}
-  .media{height:120px}
+  .media{position:relative;overflow:hidden;height:120px}
   .chat{right:8px}
   .mh-right{margin-left:0;width:100%}
 }
@@ -983,7 +983,7 @@ function renderMenu(){
   const volStr=fmtVol(p.vol);
   return `<article class="card ${p.on?'':'stopped'}" style="--d:${Math.min(i,10)*35}ms">
    <div class="media" style="--tint:${TINT[p.cat]||'#E7ECF0'}">
-     ${p.img?`<img src="${p.img}" alt="${esc(p.name)}">`:`<span class="em">${p.e||'☕'}</span>`}
+     ${p.img?`<img src="${p.img}" alt="${esc(p.name)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block">`:`<span class="em">${p.e||'☕'}</span>`}
      ${tg}${p.on?'':'<span class="stopbadge">СТОП</span>'}
      ${editMode?`<button class="editbtn" data-ed="${p.id}" title="Редактировать">✏️</button>`:''}
    </div>
