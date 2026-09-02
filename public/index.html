@@ -995,7 +995,7 @@ function renderMenu(){
   const volStr=fmtVol(p.vol);
   return `<article class="card ${p.on?'':'stopped'}" style="--d:${Math.min(i,10)*35}ms">
    <div class="media" style="--tint:${TINT[p.cat]||'#E7ECF0'}">
-     <img src="${p.img}" alt="${esc(p.name)}" data-zoom="${p.img}" style="cursor:zoom-in;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block">
+         ${p.img?`<img src="${p.img}" alt="${esc(p.name)}" data-zoom="${p.img}" style="cursor:zoom-in">`:`<span class="em">${p.e||'☕'}</span>`}
      ${tg}${p.on?'':'<span class="stopbadge">СТОП</span>'}
      ${editMode?`<button class="editbtn" data-ed="${p.id}" title="Редактировать">✏️</button>`:''}
    </div>
@@ -1012,15 +1012,29 @@ function renderMenu(){
  const a=$('#addCard');if(a)a.onclick=()=>openEditor(null);
 }
 $('#grid').addEventListener('click',e=>{const b=e.target.closest('[data-ed]');if(b)openEditor(b.dataset.ed)});
-$('#grid').addEventListener('click', e=>{
+$('#grid').addEventListener('click',e=>{
+ if(editMode)return;
  const img=e.target.closest('[data-zoom]');
  if(!img)return;
- const m=document.createElement('div');
- m.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(10,14,18,.92);display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out';
- m.innerHTML=`<img src="${img.dataset.zoom}" style="max-width:92%;max-height:92%;border-radius:14px;box-shadow:0 30px 60px rgba(0,0,0,.5)">`;
- m.onclick=()=>m.remove();
- document.body.appendChild(m);
+ openZoom(img.src,img.alt);
 });
+function openZoom(src,alt){
+ const w=document.createElement('div');
+ w.style.cssText='position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .25s';
+ const im=document.createElement('img');
+ im.src=src;im.alt=alt||'';
+ im.style.cssText='max-width:94vw;max-height:86vh;border-radius:12px;transform:scale(.92);transition:transform .25s;box-shadow:0 20px 60px rgba(0,0,0,.6)';
+ w.appendChild(im);
+ if(alt){
+  const cap=document.createElement('div');
+  cap.textContent=alt;
+  cap.style.cssText='position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:rgba(255,255,255,.85);font:600 14px -apple-system,"Segoe UI",Roboto,sans-serif';
+  w.appendChild(cap);
+ }
+ w.onclick=()=>{w.style.opacity='0';im.style.transform='scale(.92)';setTimeout(()=>w.remove(),250)};
+ document.body.appendChild(w);
+ requestAnimationFrame(()=>{w.style.opacity='1';im.style.transform='scale(1)'});
+}
 $('#grid').addEventListener('change',async e=>{const t=e.target.closest('[data-onoff]');if(!t)return;
  const p=MENU.find(x=>x.id===t.dataset.onoff);if(!p)return;
  const on=t.checked?1:0;p.on=on;renderMenu();
