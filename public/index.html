@@ -685,28 +685,30 @@ body.is-cashier .cust .acts{min-width:260px}
     <div id="regForm" style="display:flex;flex-direction:column;gap:11px">
       <label>Имя<input id="regName" maxlength="24" placeholder="Как к вам обращаться?"></label>
       <label>Телефон<input id="regPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
+      <label>PIN-код (4 цифры)<input id="regPin" inputmode="numeric" maxlength="4" placeholder="Например 2580"></label>
+<small style="color:#8B98A5;font-size:11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная номер</small>
       <button class="cta" id="regBtn">Создать профиль</button>
       <div class="alt">Уже есть профиль? <button id="toLogin">Войти по номеру</button></div>
     </div>
     <div id="loginForm" style="display:none;flex-direction:column;gap:11px">
-      <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
-      <button class="cta" id="logBtn">Войти · привязать по номеру</button>
-      <div class="alt"><button id="toReg">← Создать новый профиль</button></div>
-    </div>
-    <div class="alt"><button id="skipAuth">Просто посмотреть меню →</button></div>
-  </div>
+ <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
+ <label>PIN-код<input id="logPin" inputmode="numeric" maxlength="4" placeholder="••••"></label>
+ <div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" inputmode="numeric" maxlength="4" placeholder="4 цифры"></label></div>
+ <button class="cta" id="logBtn">Войти</button>
+ <div class="alt"><button id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
+ <div class="alt"><button id="toReg">← Создать новый профиль</button></div>
 </div>
 
-<div class="modal" id="pinModal">
-  <div class="modal-card" style="width:min(360px,100%);text-align:center">
-    <button class="mclose" id="pinClose">✕</button>
-    <h3>Код доступа</h3>
-    <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только сотрудникам.</div>
-    <input class="pin" id="pinInput" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
-    <button class="cta" id="pinGo">Активировать</button>
-    <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
-  </div>
+<div class="modal" id="setPinModal">
+ <div class="modal-card" style="width:min(360px,100%);text-align:center">
+  <button class="mclose" id="setPinClose">✕</button>
+  <h3>Придумайте PIN</h3>
+  <div class="msub">4 цифры — вы будете вводить их при входе.<br>Без PIN никто не сможет войти в ваш профиль.</div>
+  <input class="pin" id="setPinInput" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+  <button class="cta" id="setPinGo">Сохранить PIN</button>
+ </div>
 </div>
+
 
 <div class="modal" id="qrModal">
   <div class="modal-card qrcard" id="qrCard">
@@ -945,22 +947,61 @@ function setUser(token,customer){USER_TOKEN=token;localStorage.setItem(T_USER,to
 const fcmT=localStorage.getItem('zt_fcm_token');
 if(fcmT&&me)api('/push/fcm',{method:'POST',body:{token:fcmT}}).catch(()=>{});}
 $('#regBtn').onclick=async()=>{
- const name=$('#regName').value.trim(),phone=$('#regPhone').value;
+ const name=$('#regName').value.trim(),phone=$('#regPhone').value,pin=$('#regPin').value.trim();
  if(name.length<2)return toast('Введите имя','✍️');
  if(ph10(phone).length<10)return toast('Введите номер полностью','📵');
- try{const r=await api('/auth/register',{method:'POST',body:{name,phone}});
+ if(!/^\d{4}$/.test(pin))return toast('PIN — ровно 4 цифры','🔐');
+ try{const r=await api('/auth/register',{method:'POST',body:{name,phone,pin}});
   setUser(r.token,r.customer);closeAuth();renderAll();
   toast('Профиль создан! Покажите QR кассиру за штампами','🎉')}
  catch(e){if(e.code===409){toast('Этот номер уже зарегистрирован — входим','🔗');
-   $('#logPhone').value=fmtPhone(phone);authSwap(true)}else toast(e.message,'⚠️')}};
+  $('#logPhone').value=fmtPhone(phone);authSwap(true)}else toast(e.message,'⚠️')}};
+let loginMode='pin';
 $('#logBtn').onclick=async()=>{
  const phone=$('#logPhone').value;
  if(ph10(phone).length<10)return toast('Введите номер полностью','📵');
- try{const r=await api('/auth/login',{method:'POST',body:{phone}});
-  setUser(r.token,r.customer);closeAuth();renderAll();
-  toast(`Аккаунт привязан: ${me.name}. С возвращением!`,'🔗')}
- catch(e){toast(e.message,'🔍');if(e.code===404){$('#regPhone').value=fmtPhone(phone);authSwap(false)}}};
-document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>openAuth());
+ try{
+  if(loginMode==='otp'){
+   const r=await api('/auth/login',{method:'POST',body:{phone,otp:$('#logOtp').value.trim()}});
+   setUser(r.token,r.customer);closeAuth();renderAll();
+   toast(`С возвращением, ${r.customer.name}!`,'🔗');
+   if(r.needPin)openSetPin('authed');
+  }else{
+   const r=await api('/auth/login',{method:'POST',body:{phone,pin:$('#logPin').value.trim()}});
+   setUser(r.token,r.customer);closeAuth();renderAll();
+   toast(`С возвращением, ${r.customer.name}!`,'🔗');
+  }
+ }catch(e){
+  if(e.code===409){openSetPin('claim',phone);}
+  else toast(e.message,'⚠️');
+ }};
+$('#otpBtn').onclick=async()=>{
+ const phone=$('#logPhone').value;
+ if(ph10(phone).length<10)return toast('Введите номер полностью','📵');
+ try{await api('/auth/request-otp',{method:'POST',body:{phone}});
+  loginMode='otp';$('#logOtpWrap').style.display='';$('#logBtn').textContent='Войти по коду';
+  toast('Код отправлен в Telegram','🔑');
+ }catch(e){toast(e.message,'⚠️')}};
+let setPinCtx=null;
+function openSetPin(mode,phone){setPinCtx={mode,phone:phone||''};$('#setPinInput').value='';
+ $('#setPinModal').classList.add('show');syncOverlay();setTimeout(()=>$('#setPinInput').focus(),150)}
+function closeSetPin(){setPinCtx=null;$('#setPinModal').classList.remove('show');syncOverlay();}
+$('#setPinClose').onclick=closeSetPin;
+$('#setPinGo').onclick=async()=>{
+ const pin=$('#setPinInput').value.trim();
+ if(!/^\d{4}$/.test(pin))return toast('PIN — ровно 4 цифры','🔐');
+ try{
+  if(setPinCtx&&setPinCtx.mode==='claim'){
+   const r=await api('/auth/setup-pin',{method:'POST',body:{phone:setPinCtx.phone,pin}});
+   setUser(r.token,r.customer);closeSetPin();closeAuth();renderAll();
+   toast('PIN задан — добро пожаловать!','🔐');
+  }else{
+   const r=await api('/auth/set-pin',{method:'POST',body:{pin}});
+   me=r.customer;renderProfile();closeSetPin();
+   toast('PIN сохранён','🔐');
+  }
+ }catch(e){toast(e.message,'⚠️')}};
+
 $('#profileTopBtn').onclick=()=>me?openPanel('profile'):openAuth();
 $('#logoutBtn').onclick=async()=>{
  try{
@@ -1549,6 +1590,7 @@ let histPushed=false;
 function syncOverlay(){const on=$('#panel').classList.contains('open')||$('#emModal').classList.contains('show')
  ||$('#authModal').classList.contains('show')||$('#pinModal').classList.contains('show')
  ||$('#qrModal').classList.contains('show')||$('#promoModal').classList.contains('show')
+ ||$('#setPinModal').classList.contains('show') 
  ||$('#dashModal').classList.contains('show')||$('#staffChatModal').classList.contains('show');
  $('#overlay').classList.toggle('show',on);
  if(on&&!histPushed){histPushed=true;history.pushState({zerno:1},'');}
@@ -1559,9 +1601,9 @@ addEventListener('popstate',()=>{
  histPushed=false;
  closePanel();closeEditor();closeAuth();closePin();closeQRFull();closePromo();closeDash();closeStaffChat();
 });
-$('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeQRFull();closePromo();closeDash();
+$('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeSetPin();closeQRFull();closePromo();closeDash();
   if(onboarded||me)closeAuth()};
-addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeQRFull();closePromo();closeDash();
+addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeSetPin();closeQRFull();closePromo();closeDash();
   $('#chatPanel').classList.remove('open');if(onboarded||me)closeAuth()}});
 
 if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
