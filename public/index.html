@@ -995,7 +995,7 @@ function renderMenu(){
   const volStr=fmtVol(p.vol);
   return `<article class="card ${p.on?'':'stopped'}" style="--d:${Math.min(i,10)*35}ms">
    <div class="media" style="--tint:${TINT[p.cat]||'#E7ECF0'}">
-     ${p.img?`<img src="${p.img}" alt="${esc(p.name)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block">`:`<span class="em">${p.e||'☕'}</span>`}
+     <img src="${p.img}" alt="${esc(p.name)}" data-zoom="${p.img}" style="cursor:zoom-in;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block">
      ${tg}${p.on?'':'<span class="stopbadge">СТОП</span>'}
      ${editMode?`<button class="editbtn" data-ed="${p.id}" title="Редактировать">✏️</button>`:''}
    </div>
@@ -1012,6 +1012,15 @@ function renderMenu(){
  const a=$('#addCard');if(a)a.onclick=()=>openEditor(null);
 }
 $('#grid').addEventListener('click',e=>{const b=e.target.closest('[data-ed]');if(b)openEditor(b.dataset.ed)});
+$('#grid').addEventListener('click', e=>{
+ const img=e.target.closest('[data-zoom]');
+ if(!img)return;
+ const m=document.createElement('div');
+ m.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(10,14,18,.92);display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out';
+ m.innerHTML=`<img src="${img.dataset.zoom}" style="max-width:92%;max-height:92%;border-radius:14px;box-shadow:0 30px 60px rgba(0,0,0,.5)">`;
+ m.onclick=()=>m.remove();
+ document.body.appendChild(m);
+});
 $('#grid').addEventListener('change',async e=>{const t=e.target.closest('[data-onoff]');if(!t)return;
  const p=MENU.find(x=>x.id===t.dataset.onoff);if(!p)return;
  const on=t.checked?1:0;p.on=on;renderMenu();
