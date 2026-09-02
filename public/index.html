@@ -1012,29 +1012,39 @@ function renderMenu(){
  const a=$('#addCard');if(a)a.onclick=()=>openEditor(null);
 }
 $('#grid').addEventListener('click',e=>{const b=e.target.closest('[data-ed]');if(b)openEditor(b.dataset.ed)});
+/* ── превью фото: карточка на матовом фоне ── */
+function openZoom(src,name,price){
+ const w=document.createElement('div');
+ w.style.cssText='position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(16,24,32,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);opacity:0;transition:opacity .25s';
+ const card=document.createElement('div');
+ card.style.cssText='width:min(430px,94vw);background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.45);transform:scale(.92) translateY(14px);transition:transform .3s cubic-bezier(.2,1.25,.35,1)';
+ const im=new Image();
+ im.src=src;im.alt=name||'';
+ im.style.cssText='display:block;width:100%;height:min(62vh,430px);object-fit:cover;background:#E7ECF0';
+ const cap=document.createElement('div');
+ cap.style.cssText='display:flex;align-items:baseline;gap:10px;padding:14px 18px calc(14px + env(safe-area-inset-bottom))';
+ cap.innerHTML='<b style="flex:1;font:700 16px -apple-system,\'Segoe UI\',Roboto,sans-serif;color:#12303E">'+(name||'')+'</b>'+(price?'<span style="font:800 15px -apple-system,\'Segoe UI\',Roboto,sans-serif;color:#2E6F8E">'+price+'</span>':'');
+ card.appendChild(im);card.appendChild(cap);
+ const x=document.createElement('button');
+ x.setAttribute('aria-label','Закрыть');
+ x.textContent='✕';
+ x.style.cssText='position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px;width:42px;height:42px;border:none;border-radius:50%;background:rgba(255,255,255,.95);color:#12303E;font-size:17px;box-shadow:0 6px 18px rgba(0,0,0,.28)';
+ w.appendChild(card);w.appendChild(x);
+ const close=()=>{w.style.opacity='0';card.style.transform='scale(.92) translateY(14px)';document.body.style.overflow='';setTimeout(()=>w.remove(),260)};
+ w.addEventListener('click',e=>{if(e.target===w||e.target===x)close()});
+ document.body.style.overflow='hidden';
+ document.body.appendChild(w);
+ requestAnimationFrame(()=>{w.style.opacity='1';card.style.transform='none'});
+}
 $('#grid').addEventListener('click',e=>{
  if(editMode)return;
  const img=e.target.closest('[data-zoom]');
  if(!img)return;
- openZoom(img.src,img.alt);
+ const art=img.closest('article');
+ openZoom(img.dataset.zoom,
+  art&&art.querySelector('h3')?art.querySelector('h3').textContent:'',
+  art&&art.querySelector('.price')?art.querySelector('.price').textContent:'');
 });
-function openZoom(src,alt){
- const w=document.createElement('div');
- w.style.cssText='position:fixed;inset:0;z-index:400;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .22s';
- const im=new Image();
- im.src=src;im.alt=alt||'';
- im.style.cssText='max-width:100vw;max-height:100vh;object-fit:contain;transform:scale(.94);transition:transform .22s;user-select:none;-webkit-user-drag:none';
- w.appendChild(im);
- if(alt){
-  const cap=document.createElement('div');
-  cap.textContent=alt;
-  cap.style.cssText='position:absolute;bottom:calc(10px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:rgba(255,255,255,.75);font:600 13px -apple-system,"Segoe UI",Roboto,sans-serif';
-  w.appendChild(cap);
- }
- w.onclick=()=>{w.style.opacity='0';im.style.transform='scale(.94)';setTimeout(()=>w.remove(),220)};
- document.body.appendChild(w);
- requestAnimationFrame(()=>{w.style.opacity='1';im.style.transform='scale(1)'});
-}
 $('#grid').addEventListener('change',async e=>{const t=e.target.closest('[data-onoff]');if(!t)return;
  const p=MENU.find(x=>x.id===t.dataset.onoff);if(!p)return;
  const on=t.checked?1:0;p.on=on;renderMenu();
