@@ -408,7 +408,7 @@ body.is-cashier .cust .acts{min-width:260px}
   .topbar{flex-wrap:wrap;gap:9px;padding-left:14px;padding-right:14px}
   .wrap{padding:14px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:11px}
-  .media{height:120px}
+  .media{position:relative;overflow:hidden;height:120px}
   .chat{right:8px}
   .mh-right{margin-left:0;width:100%}
 }
@@ -424,6 +424,27 @@ body.is-cashier .cust .acts{min-width:260px}
   #modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}
   #profileTopBtn{width:38px;height:38px;min-width:38px;flex:0 0 38px;font-size:15px}
 }
+/* фото меню заполняют карточку целиком */
+.card img, .ci img, .cimg img, [class*="card"] img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  object-position:center !important;
+  display:block;
+}
+/* Пульсация аватарки и подсказка для пушей */
+@keyframes pulse-hint {
+  0% { box-shadow: 0 0 0 0 rgba(232,161,58,.7); }
+  70% { box-shadow: 0 0 0 14px rgba(232,161,58,0); }
+  100% { box-shadow: 0 0 0 0 rgba(232,161,58,0); }
+}
+.ava.pulse-hint {
+  animation: pulse-hint 2s infinite;
+  border: 2px solid #E8A13A !important;
+  background: #E8A13A !important;
+  color: #fff !important;
+}
+
 .rail button{color:#475462}
 </style>
 </head>
@@ -568,6 +589,8 @@ body.is-cashier .cust .acts{min-width:260px}
         </div>
         <button class="demoBtn" id="activateBtn" hidden>🔑 У меня код доступа сотрудника</button>
         <button class="demoBtn" id="pushBtn" hidden>🔔 Включить уведомления</button>
+        <button class="demoBtn" id="setPinBtn" hidden>🔐 Задать / сменить PIN</button>
+
         <div class="stats">
           <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
           <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
@@ -667,28 +690,47 @@ body.is-cashier .cust .acts{min-width:260px}
     <div id="regForm" style="display:flex;flex-direction:column;gap:11px">
       <label>Имя<input id="regName" maxlength="24" placeholder="Как к вам обращаться?"></label>
       <label>Телефон<input id="regPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
+      <label>PIN-код (4 цифры)<input id="regPin" inputmode="numeric" maxlength="4" placeholder="Например 2580"></label>
+<small style="color:#8B98A5;font-size:11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная номер</small>
       <button class="cta" id="regBtn">Создать профиль</button>
       <div class="alt">Уже есть профиль? <button id="toLogin">Войти по номеру</button></div>
     </div>
-    <div id="loginForm" style="display:none;flex-direction:column;gap:11px">
-      <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
-      <button class="cta" id="logBtn">Войти · привязать по номеру</button>
-      <div class="alt"><button id="toReg">← Создать новый профиль</button></div>
-    </div>
-    <div class="alt"><button id="skipAuth">Просто посмотреть меню →</button></div>
-  </div>
+        <div id="loginForm" style="display:none;flex-direction:column;gap:11px">
+ <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
+ <label id="logPinRow">PIN-код<input id="logPin" inputmode="numeric" maxlength="4" placeholder="••••"></label>
+ <div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" inputmode="numeric" maxlength="4" placeholder="4 цифры"></label></div>
+ <button class="cta" id="logBtn">Войти</button>
+ <div class="alt" id="otpBackRow" style="display:none"><button id="otpBack">← Вернуться ко входу по PIN</button></div>
+ <div class="alt"><button id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
+ <div class="alt"><button id="toReg">← Создать новый профиль</button></div>
+ <div class="alt"><button id="skipAuth">Просто посмотреть меню →</button></div>
 </div>
 
-<div class="modal" id="pinModal">
-  <div class="modal-card" style="width:min(360px,100%);text-align:center">
-    <button class="mclose" id="pinClose">✕</button>
-    <h3>Код доступа</h3>
-    <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только сотрудникам.</div>
-    <input class="pin" id="pinInput" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
-    <button class="cta" id="pinGo">Активировать</button>
-    <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
-  </div>
 </div>
+</div>
+</div>
+<div class="modal" id="pinModal">
+ <div class="modal-card" style="width:min(360px,100%);text-align:center">
+  <button class="mclose" id="pinClose">✕</button>
+  <h3>Код доступа</h3>
+  <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только сотрудникам.</div>
+  <input class="pin" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+  <button class="cta" id="pinGo">Активировать</button>
+  <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
+ </div>
+</div>
+<div class="modal" id="setPinModal">
+ <div class="modal-card" style="width:min(360px,100%);text-align:center">
+  <button class="mclose" id="setPinClose">✕</button>
+  <h3>Придумайте PIN</h3>
+  <div class="msub">4 цифры — вы будете вводить их при входе.<br>Без PIN никто не сможет войти в ваш профиль.</div>
+  <input class="pin" id="setPinInput" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+  <button class="cta" id="setPinGo">Сохранить PIN</button>
+    <div class="alt"><button id="setPinOtp">🔑 Не помню PIN — код в Telegram</button></div>
+
+ </div>
+</div>
+
 
 <div class="modal" id="qrModal">
   <div class="modal-card qrcard" id="qrCard">
@@ -916,10 +958,13 @@ function openAuth(login=false){$('#authModal').classList.add('show');
 function closeAuth(){$('#authModal').classList.remove('show');syncOverlay()}
 function authSwap(login){$('#regForm').style.display=login?'none':'flex';
  $('#loginForm').style.display=login?'flex':'none';
- $('#authTitle').textContent=login?'Вход по номеру':'Создайте профиль'}
+ $('#authTitle').textContent=login?'Вход по номеру':'Создайте профиль';
+ if(login){loginMode='pin';const pr=$('#logPinRow');if(pr)pr.style.display='';
+  $('#logOtpWrap').style.display='none';const bk=$('#otpBackRow');if(bk)bk.style.display='none';
+  $('#logBtn').textContent='Войти';}}
 $('#toLogin').onclick=()=>authSwap(true);
 $('#toReg').onclick=()=>authSwap(false);
-$('#skipAuth').onclick=()=>{onboarded=true;localStorage.setItem(T_ONB,'1');closeAuth();
+const _skip=$('#skipAuth');if(_skip)_skip.onclick=()=>{onboarded=true;localStorage.setItem(T_ONB,'1');closeAuth();
  toast('Можно смотреть меню. Профиль — по кнопке с аватаром','👀')};
 function setUser(token,customer){USER_TOKEN=token;localStorage.setItem(T_USER,token);
  me=customer;historyLoaded=false;lastChatId=0;initChatPointer();showBadge();onboarded=true;localStorage.setItem(T_ONB,'1');
@@ -927,22 +972,77 @@ function setUser(token,customer){USER_TOKEN=token;localStorage.setItem(T_USER,to
 const fcmT=localStorage.getItem('zt_fcm_token');
 if(fcmT&&me)api('/push/fcm',{method:'POST',body:{token:fcmT}}).catch(()=>{});}
 $('#regBtn').onclick=async()=>{
- const name=$('#regName').value.trim(),phone=$('#regPhone').value;
+ const name=$('#regName').value.trim(),phone=$('#regPhone').value,pin=$('#regPin').value.trim();
  if(name.length<2)return toast('Введите имя','✍️');
  if(ph10(phone).length<10)return toast('Введите номер полностью','📵');
- try{const r=await api('/auth/register',{method:'POST',body:{name,phone}});
+ if(!/^\d{4}$/.test(pin))return toast('PIN — ровно 4 цифры','🔐');
+ try{const r=await api('/auth/register',{method:'POST',body:{name,phone,pin}});
   setUser(r.token,r.customer);closeAuth();renderAll();
   toast('Профиль создан! Покажите QR кассиру за штампами','🎉')}
  catch(e){if(e.code===409){toast('Этот номер уже зарегистрирован — входим','🔗');
-   $('#logPhone').value=fmtPhone(phone);authSwap(true)}else toast(e.message,'⚠️')}};
+  $('#logPhone').value=fmtPhone(phone);authSwap(true)}else toast(e.message,'⚠️')}};
+let loginMode='pin';
 $('#logBtn').onclick=async()=>{
  const phone=$('#logPhone').value;
  if(ph10(phone).length<10)return toast('Введите номер полностью','📵');
- try{const r=await api('/auth/login',{method:'POST',body:{phone}});
-  setUser(r.token,r.customer);closeAuth();renderAll();
-  toast(`Аккаунт привязан: ${me.name}. С возвращением!`,'🔗')}
- catch(e){toast(e.message,'🔍');if(e.code===404){$('#regPhone').value=fmtPhone(phone);authSwap(false)}}};
-document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>openAuth());
+ try{
+  if(loginMode==='otp'){
+   const r=await api('/auth/login',{method:'POST',body:{phone,otp:$('#logOtp').value.trim()}});
+   setUser(r.token,r.customer);closeAuth();renderAll();
+   toast(`С возвращением, ${r.customer.name}!`,'🔗');
+      if(r.needPin)toast('PIN не задан. Хотите вход без Telegram? Задайте PIN в профиле — кнопка 🔐','🔐');
+  }else{
+   const r=await api('/auth/login',{method:'POST',body:{phone,pin:$('#logPin').value.trim()}});
+   setUser(r.token,r.customer);closeAuth();renderAll();
+   toast(`С возвращением, ${r.customer.name}!`,'🔗');
+  }
+ }catch(e){
+  if(e.code===409){openSetPin('claim',phone);}
+  else toast(e.message,'⚠️');
+ }};
+$('#otpBtn').onclick=async()=>{
+ const phone=$('#logPhone').value;
+ if(ph10(phone).length<10)return toast('Введите номер полностью','📵');
+ try{await api('/auth/request-otp',{method:'POST',body:{phone}});
+  loginMode='otp';
+  const pr=$('#logPinRow');if(pr)pr.style.display='none';
+  $('#logOtpWrap').style.display='';
+  const bk=$('#otpBackRow');if(bk)bk.style.display='';
+  $('#logBtn').textContent='Войти по коду';
+  toast('Код отправлен в Telegram','🔑');
+ }catch(e){toast(e.message,'⚠️')}};
+const _ob=$('#otpBack');if(_ob)_ob.onclick=()=>{loginMode='pin';
+ const pr=$('#logPinRow');if(pr)pr.style.display='';
+ $('#logOtpWrap').style.display='none';
+ const bk=$('#otpBackRow');if(bk)bk.style.display='none';
+ $('#logBtn').textContent='Войти';};
+
+let setPinCtx=null;
+function openSetPin(mode,phone){setPinCtx={mode,phone:phone||''};$('#setPinInput').value='';
+ const msub=$('#setPinModal').querySelector('.msub');
+ if(msub)msub.innerHTML=mode==='claim'
+  ?'Этот профиль создан до введения PIN.<br>Придумайте 4 цифры — это ваш ключ для входа.<br>Или запросите код в Telegram ниже.'
+  :'Придумайте или смените PIN (4 цифры).<br>Понадобится, если Telegram будет недоступен.';
+ const alt=$('#setPinOtp');if(alt)alt.style.display=mode==='claim'?'':'none';
+ $('#setPinModal').classList.add('show');syncOverlay();setTimeout(()=>$('#setPinInput').focus(),150)}
+const _spo=$('#setPinOtp');if(_spo)_spo.onclick=()=>{const ph=setPinCtx?setPinCtx.phone:'';closeSetPin();authSwap(true);if(ph)$('#logPhone').value=fmtPhone(ph);$('#otpBtn').click();};
+function closeSetPin(){setPinCtx=null;$('#setPinModal').classList.remove('show');syncOverlay();}
+$('#setPinClose').onclick=closeSetPin;
+$('#setPinGo').onclick=async()=>{
+ const pin=$('#setPinInput').value.trim();
+ if(!/^\d{4}$/.test(pin))return toast('PIN — ровно 4 цифры','🔐');
+ try{
+  if(setPinCtx&&setPinCtx.mode==='claim'){
+   const r=await api('/auth/setup-pin',{method:'POST',body:{phone:setPinCtx.phone,pin}});
+   setUser(r.token,r.customer);closeSetPin();closeAuth();renderAll();
+   toast('PIN задан — добро пожаловать!','🔐');
+  }else{
+   const r=await api('/auth/set-pin',{method:'POST',body:{pin}});
+   me=r.customer;renderProfile();closeSetPin();
+   toast('PIN сохранён','🔐');
+  }
+ }catch(e){toast(e.message,'⚠️')}};
+
 $('#profileTopBtn').onclick=()=>me?openPanel('profile'):openAuth();
 $('#logoutBtn').onclick=async()=>{
  try{
@@ -977,7 +1077,7 @@ function renderMenu(){
   const volStr=fmtVol(p.vol);
   return `<article class="card ${p.on?'':'stopped'}" style="--d:${Math.min(i,10)*35}ms">
    <div class="media" style="--tint:${TINT[p.cat]||'#E7ECF0'}">
-     ${p.img?`<img src="${p.img}" alt="${esc(p.name)}">`:`<span class="em">${p.e||'☕'}</span>`}
+              ${p.img?`<img src="${p.img}" alt="${esc(p.name)}" data-zoom="${p.img}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in">`:`<span class="em">${p.e||'☕'}</span>`}
      ${tg}${p.on?'':'<span class="stopbadge">СТОП</span>'}
      ${editMode?`<button class="editbtn" data-ed="${p.id}" title="Редактировать">✏️</button>`:''}
    </div>
@@ -994,6 +1094,39 @@ function renderMenu(){
  const a=$('#addCard');if(a)a.onclick=()=>openEditor(null);
 }
 $('#grid').addEventListener('click',e=>{const b=e.target.closest('[data-ed]');if(b)openEditor(b.dataset.ed)});
+/* ── превью фото: карточка на матовом фоне ── */
+function openZoom(src,name,price){
+ const w=document.createElement('div');
+ w.style.cssText='position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(16,24,32,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);opacity:0;transition:opacity .25s';
+ const card=document.createElement('div');
+ card.style.cssText='width:min(430px,94vw);background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.45);transform:scale(.92) translateY(14px);transition:transform .3s cubic-bezier(.2,1.25,.35,1)';
+ const im=new Image();
+ im.src=src;im.alt=name||'';
+ im.style.cssText='display:block;width:100%;height:min(62vh,430px);object-fit:cover;background:#E7ECF0';
+ const cap=document.createElement('div');
+ cap.style.cssText='display:flex;align-items:baseline;gap:10px;padding:14px 18px calc(14px + env(safe-area-inset-bottom))';
+ cap.innerHTML='<b style="flex:1;font:700 16px -apple-system,\'Segoe UI\',Roboto,sans-serif;color:#12303E">'+(name||'')+'</b>'+(price?'<span style="font:800 15px -apple-system,\'Segoe UI\',Roboto,sans-serif;color:#2E6F8E">'+price+'</span>':'');
+ card.appendChild(im);card.appendChild(cap);
+ const x=document.createElement('button');
+ x.setAttribute('aria-label','Закрыть');
+ x.textContent='✕';
+ x.style.cssText='position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px;width:42px;height:42px;border:none;border-radius:50%;background:rgba(255,255,255,.95);color:#12303E;font-size:17px;box-shadow:0 6px 18px rgba(0,0,0,.28)';
+ w.appendChild(card);w.appendChild(x);
+ const close=()=>{w.style.opacity='0';card.style.transform='scale(.92) translateY(14px)';document.body.style.overflow='';setTimeout(()=>w.remove(),260)};
+ w.addEventListener('click',e=>{if(e.target===w||e.target===x)close()});
+ document.body.style.overflow='hidden';
+ document.body.appendChild(w);
+ requestAnimationFrame(()=>{w.style.opacity='1';card.style.transform='none'});
+}
+$('#grid').addEventListener('click',e=>{
+ if(editMode)return;
+ const img=e.target.closest('[data-zoom]');
+ if(!img)return;
+ const art=img.closest('article');
+ openZoom(img.dataset.zoom,
+  art&&art.querySelector('h3')?art.querySelector('h3').textContent:'',
+  art&&art.querySelector('.price')?art.querySelector('.price').textContent:'');
+});
 $('#grid').addEventListener('change',async e=>{const t=e.target.closest('[data-onoff]');if(!t)return;
  const p=MENU.find(x=>x.id===t.dataset.onoff);if(!p)return;
  const on=t.checked?1:0;p.on=on;renderMenu();
@@ -1112,6 +1245,7 @@ function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden
  $('#activateBtn').hidden=!(r==='guest'||r==='cashier');
  $('#activateBtn').textContent=r==='guest'?'🔑 У меня код доступа сотрудника':'🔑 Повысить до администратора';
  refreshPushBtn();
+ const spb2=$('#setPinBtn');if(spb2)spb2.hidden=!me;
 $('#dashToggle').hidden=!(me&&me.role==='admin');
  $('#stCups').textContent=me.cups;$('#stStamps').textContent=me.stamps+'/10';$('#stFree').textContent=me.free;
  $('#histList').innerHTML=(me.history||[]).slice(0,8).map(h=>
@@ -1227,13 +1361,62 @@ async function enablePush(){
   }catch(e){toast(e.message,'⚠️')}
 }
 $('#pushBtn').onclick=enablePush;
- function refreshPushBtn(){
-  if(isCap){const pb=$('#pushBtn');if(!pb)return;pb.hidden=!me||localStorage.getItem('zt_fcm')==='1';return;}
-  const pb=$('#pushBtn');if(!pb)return;
-  if(!me||!('Notification' in window)){pb.hidden=true;return;}
-  if(Notification.permission!=='granted'){pb.hidden=false;return;}
-  navigator.serviceWorker.ready.then(reg=>reg.pushManager.getSubscription())
-    .then(s=>{pb.hidden=!!s;}).catch(()=>{pb.hidden=false;});
+const _spb=$('#setPinBtn');if(_spb)_spb.onclick=()=>openSetPin('authed');
+function togglePushHint(show){
+ let h = document.getElementById('pushHint');
+ if(show && !h){
+  h = document.createElement('div');
+  h.id = 'pushHint';
+  h.style.cssText = 'position:fixed;top:65px;right:14px;background:#E8A13A;color:#fff;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:700;z-index:150;animation:tin .4s;box-shadow:0 4px 12px rgba(0,0,0,.15);cursor:pointer';
+  h.innerHTML = '🔔 Включите пуши тут →';
+  h.onclick = () => { const av=$('#profileTopBtn'); if(av) av.click(); h.remove(); };
+  document.body.appendChild(h);
+ } else if(!show && h){
+  h.remove();
+ }
+}
+
+function refreshPushBtn(){
+ const pb=$('#pushBtn');
+ const av=$('#profileTopBtn');
+ 
+ // Для нативного приложения (Capacitor)
+ if(isCap){
+  if(!pb)return;
+  const needPush = me && localStorage.getItem('zt_fcm')!=='1';
+  pb.hidden = !needPush;
+  if(av) av.classList.toggle('pulse-hint', !!needPush);
+  togglePushHint(!!needPush);
+  return;
+ }
+ 
+ // Для браузера / PWA
+ if(!pb)return;
+ if(!me || !('Notification' in window)){
+  pb.hidden=true;
+  if(av) av.classList.remove('pulse-hint');
+  togglePushHint(false);
+  return;
+ }
+ 
+ if(Notification.permission !== 'granted'){
+  pb.hidden=false;
+  if(av) av.classList.add('pulse-hint');
+  togglePushHint(true);
+  return;
+ }
+ 
+ navigator.serviceWorker.ready.then(reg=>reg.pushManager.getSubscription())
+  .then(s=>{
+   const needPush = !s;
+   pb.hidden = !needPush;
+   if(av) av.classList.toggle('pulse-hint', needPush);
+   togglePushHint(needPush);
+  }).catch(()=>{
+   pb.hidden=false;
+   if(av) av.classList.add('pulse-hint');
+   togglePushHint(true);
+  });
 }
 /* ── FCM (нативное приложение) ── */
 const isCap=!!(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.PushNotifications);
@@ -1450,6 +1633,7 @@ let histPushed=false;
 function syncOverlay(){const on=$('#panel').classList.contains('open')||$('#emModal').classList.contains('show')
  ||$('#authModal').classList.contains('show')||$('#pinModal').classList.contains('show')
  ||$('#qrModal').classList.contains('show')||$('#promoModal').classList.contains('show')
+ ||$('#setPinModal').classList.contains('show') 
  ||$('#dashModal').classList.contains('show')||$('#staffChatModal').classList.contains('show');
  $('#overlay').classList.toggle('show',on);
  if(on&&!histPushed){histPushed=true;history.pushState({zerno:1},'');}
@@ -1460,9 +1644,9 @@ addEventListener('popstate',()=>{
  histPushed=false;
  closePanel();closeEditor();closeAuth();closePin();closeQRFull();closePromo();closeDash();closeStaffChat();
 });
-$('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeQRFull();closePromo();closeDash();
+$('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeSetPin();closeQRFull();closePromo();closeDash();
   if(onboarded||me)closeAuth()};
-addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeQRFull();closePromo();closeDash();
+addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeSetPin();closeQRFull();closePromo();closeDash();
   $('#chatPanel').classList.remove('open');if(onboarded||me)closeAuth()}});
 
 if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
