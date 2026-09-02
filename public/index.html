@@ -446,6 +446,8 @@ body.is-cashier .cust .acts{min-width:260px}
 }
 
 .rail button{color:#475462}
+/* контраст для доступности */
+.cbody .vol,.form label,.authcard small,.pinhint,.phead .ph{color:#5B6874}
 </style>
 </head>
 <body>
@@ -1731,7 +1733,7 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localSt
  </div>
 </div>
 
-<script src="./qrcode.js" async></script>
+<script src="./qrcode.min.js" async></script>
 <script>
 (function(){
 let scanStream=null,scanTimer=null,curGuest=null,busy=false,frames=0;
