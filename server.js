@@ -91,6 +91,7 @@ const mcols = db.prepare('PRAGMA table_info(chat_meta)').all().map(c => c.name);
 if (mcols.length && !mcols.includes('staff_in')) db.exec('ALTER TABLE chat_meta ADD COLUMN staff_in INTEGER DEFAULT 0');
 const tcols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
 if (tcols.length && !tcols.includes('tg')) db.exec('ALTER TABLE customers ADD COLUMN tg TEXT');
+if (tcols.length && !tcols.includes('pin')) db.exec("ALTER TABLE customers ADD COLUMN pin TEXT DEFAULT ''");
 /* ── VAPID-ключи для пушей (создаются один раз) ── */
 let vapidRow = db.prepare("SELECT value FROM meta WHERE key='vapid'").get();
 if (!vapidRow) {
@@ -125,6 +126,8 @@ const fmtPhone = v => { const d = ph10(v); if (!d) return '';
   if (d.length > 6) r += '-' + d.slice(6, 8); if (d.length > 8) r += '-' + d.slice(8, 10); return r; };
 const nowISO = () => new Date().toISOString();
 const uid = p => p + crypto.randomBytes(5).toString('hex');
+const hashPin = p => crypto.createHash('sha256').update('pin:' + String(p)).digest('hex');
+const otpStore = new Map(); // phone -> {code, expires}
 const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
   comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
   coffee: r.coffee, on: r.is_on, img: r.img });
@@ -141,10 +144,10 @@ const issueToken = ref => { const t = crypto.randomUUID();
 
 /* ── защита кодов от брутфорса ── */
 const pinLocks = new Map();
-const lockKey = req => (req.headers['x-forwarded-for'] || req.ip || 'local') + ':staff';
-function lockedSeconds(req) { const e = pinLocks.get(lockKey(req));
-  return e && e.lockedUntil > Date.now() ? Math.ceil((e.lockedUntil - Date.now()) / 1000) : 0; }
-function registerFail(req) { const k = lockKey(req);
+const lockKey = (req, tag = 'staff') => (req.headers['x-forwarded-for'] || req.ip || 'local') + ':' + tag;
+function lockedSeconds(req, tag = 'staff') { const e = pinLocks.get(lockKey(req, tag));
+return e && e.lockedUntil > Date.now() ? Math.ceil((e.lockedUntil - Date.now()) / 1000) : 0; }
+function registerFail(req, tag = 'staff') { const k = lockKey(req, tag);
   const e = pinLocks.get(k) || { fails: 0, streak: 0, lockedUntil: 0 };
   e.fails++;
   if (e.fails >= 5) { e.streak++; e.lockedUntil = Date.now() + 60000 * Math.pow(2, Math.min(e.streak - 1, 6)); e.fails = 0; }
@@ -190,14 +193,16 @@ function redeem(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE i
   addHist(cid, `🎁 Списан бесплатный кофе (осталось ${c.free - 1})`, by);
   logEv(c.name, 'Списан бесплатный кофе');
   return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) }; }
-function createCustomer(name, phone) { const p = fmtPhone(phone);
-  if (String(name).trim().length < 2) return { err: 'Введите имя', code: 400 };
-  if (ph10(p).length < 10) return { err: 'Введите номер полностью', code: 400 };
-  if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return { err: 'exists', code: 409 };
-  const id = uid('u'), qr = 'Z-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-  db.prepare('INSERT INTO customers (id,name,phone,stamps,free,cups,qr,created_at,role) VALUES (?,?,?,?,?,?,?,?,?)').run(id, name.trim(), p, 0, 0, 0, qr, nowISO(), 'guest');
-  addHist(id, 'Профиль создан', 'Приложение');
-  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(id)) }; }
+function createCustomer(name, phone, pin) { const p = fmtPhone(phone);
+if (String(name).trim().length < 2) return { err: 'Введите имя', code: 400 };
+if (ph10(p).length < 10) return { err: 'Введите номер полностью', code: 400 };
+if (pin !== undefined && !/^\d{4}$/.test(String(pin))) return { err: 'PIN — ровно 4 цифры', code: 400 };
+if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return { err: 'exists', code: 409 };
+const id = uid('u'), qr = 'Z-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+db.prepare('INSERT INTO customers (id,name,phone,stamps,free,cups,qr,created_at,role,pin) VALUES (?,?,?,?,?,?,?,?,?,?)')
+.run(id, name.trim(), p, 0, 0, 0, qr, nowISO(), 'guest', pin ? hashPin(pin) : '');
+addHist(id, 'Профиль создан', 'Приложение');
+return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(id)) }; }
 
 const app = express();
 app.use((req, res, next) => {
@@ -235,17 +240,78 @@ app.delete('/api/menu/:id', adminGuard, (req, res) => {
 
 /* ── аккаунты ── */
 app.post('/api/auth/register', (req, res) => {
-  const r = createCustomer(req.body.name || '', req.body.phone || '');
-  if (r.err) return res.status(r.code).json({ error: r.err });
-  res.json({ token: issueToken(r.customer.id), customer: r.customer });
+const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
+if (r.err) return res.status(r.code).json({ error: r.err });
+res.json({ token: issueToken(r.customer.id), customer: r.customer });
 });
+
 app.post('/api/auth/login', (req, res) => {
-  const p = fmtPhone(req.body.phone || '');
-  const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
-  if (!c) return res.status(404).json({ error: 'Профиль не найден — создайте новый' });
-  addHist(c.id, 'Вход по номеру', 'Приложение');
-  res.json({ token: issueToken(c.id), customer: cust(c) });
+const p = fmtPhone(req.body.phone || '');
+const pin = String(req.body.pin || '').trim();
+const otp = String(req.body.otp || '').trim();
+const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
+if (!c) return res.status(404).json({ error: 'Профиль не найден — создайте новый' });
+const wait = lockedSeconds(req, 'login');
+if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
+
+/* вход по коду из Telegram */
+if (otp) {
+ const st = otpStore.get(p);
+ if (!st || Date.now() > st.expires) return res.status(403).json({ error: 'Код просрочен — запросите новый' });
+ if (st.code !== otp) { registerFail(req, 'login'); return res.status(403).json({ error: 'Неверный код' }); }
+ otpStore.delete(p); pinLocks.delete(lockKey(req, 'login'));
+ addHist(c.id, 'Вход по коду из Telegram', 'Приложение');
+ return res.json({ token: issueToken(c.id), customer: cust(c), needPin: !c.pin });
+}
+
+/* вход по PIN */
+if (pin) {
+ if (!c.pin) return res.status(409).json({ error: 'PIN ещё не задан — придумайте его', setup: true });
+ if (hashPin(pin) !== c.pin) { registerFail(req, 'login'); return res.status(403).json({ error: 'Неверный PIN' }); }
+ pinLocks.delete(lockKey(req, 'login'));
+ addHist(c.id, 'Вход по PIN', 'Приложение');
+ return res.json({ token: issueToken(c.id), customer: cust(c) });
+}
+
+return res.status(400).json({ error: 'Введите PIN или запросите код в Telegram' });
 });
+
+/* первый вход старого аккаунта: задать PIN (одноразово, пока pin пуст) */
+app.post('/api/auth/setup-pin', (req, res) => {
+const p = fmtPhone(req.body.phone || '');
+const pin = String(req.body.pin || '').trim();
+if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
+const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
+if (!c) return res.status(404).json({ error: 'Профиль не найден' });
+if (c.pin) return res.status(403).json({ error: 'PIN уже задан — входите с ним' });
+db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), c.id);
+addHist(c.id, 'Задан PIN (первый вход)', 'Приложение');
+res.json({ token: issueToken(c.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
+});
+
+/* смена/установка PIN для вошедшего пользователя */
+app.post('/api/auth/set-pin', userGuard, (req, res) => {
+const pin = String(req.body.pin || '').trim();
+if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
+db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), req.user.id);
+addHist(req.user.id, 'Задан новый PIN', 'Приложение');
+res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
+});
+
+/* запрос OTP в Telegram */
+app.post('/api/auth/request-otp', (req, res) => {
+const p = fmtPhone(req.body.phone || '');
+const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
+if (!c) return res.status(404).json({ error: 'Профиль не найден' });
+if (!c.tg) return res.status(400).json({ error: 'Telegram не привязан — войдите по PIN' });
+const wait = lockedSeconds(req, 'login');
+if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
+const code = String(Math.floor(1000 + Math.random() * 9000));
+otpStore.set(p, { code, expires: Date.now() + 5 * 60 * 1000 });
+tgSend(c.tg, `🔑 Код для входа в приложение: ${code}\nДействует 5 минут. Никому не сообщайте!`);
+res.json({ ok: true });
+});
+
 app.post('/api/auth/activate', userGuard, (req, res) => {
   const wait = lockedSeconds(req);
   if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
