@@ -698,7 +698,18 @@ body.is-cashier .cust .acts{min-width:260px}
  <div class="alt"><button id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
  <div class="alt"><button id="toReg">← Создать новый профиль</button></div>
 </div>
-
+</div>
+</div>
+<div class="modal" id="pinModal">
+ <div class="modal-card" style="width:min(360px,100%);text-align:center">
+  <button class="mclose" id="pinClose">✕</button>
+  <h3>Код доступа</h3>
+  <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только сотрудникам.</div>
+  <input class="pin" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+  <button class="cta" id="pinGo">Активировать</button>
+  <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
+ </div>
+</div>
 <div class="modal" id="setPinModal">
  <div class="modal-card" style="width:min(360px,100%);text-align:center">
   <button class="mclose" id="setPinClose">✕</button>
