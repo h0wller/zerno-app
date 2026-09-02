@@ -586,6 +586,8 @@ body.is-cashier .cust .acts{min-width:260px}
         </div>
         <button class="demoBtn" id="activateBtn" hidden>🔑 У меня код доступа сотрудника</button>
         <button class="demoBtn" id="pushBtn" hidden>🔔 Включить уведомления</button>
+        <button class="demoBtn" id="setPinBtn" hidden>🔐 Задать / сменить PIN</button>
+
         <div class="stats">
           <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
           <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
@@ -690,14 +692,16 @@ body.is-cashier .cust .acts{min-width:260px}
       <button class="cta" id="regBtn">Создать профиль</button>
       <div class="alt">Уже есть профиль? <button id="toLogin">Войти по номеру</button></div>
     </div>
-    <div id="loginForm" style="display:none;flex-direction:column;gap:11px">
+        <div id="loginForm" style="display:none;flex-direction:column;gap:11px">
  <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
- <label>PIN-код<input id="logPin" inputmode="numeric" maxlength="4" placeholder="••••"></label>
+ <label id="logPinRow">PIN-код<input id="logPin" inputmode="numeric" maxlength="4" placeholder="••••"></label>
  <div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" inputmode="numeric" maxlength="4" placeholder="4 цифры"></label></div>
  <button class="cta" id="logBtn">Войти</button>
+ <div class="alt" id="otpBackRow" style="display:none"><button id="otpBack">← Вернуться ко входу по PIN</button></div>
  <div class="alt"><button id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
  <div class="alt"><button id="toReg">← Создать новый профиль</button></div>
-<div class="alt"><button id="skipAuth">Просто посмотреть меню →</button></div>
+ <div class="alt"><button id="skipAuth">Просто посмотреть меню →</button></div>
+</div>
 
 </div>
 </div>
@@ -719,6 +723,8 @@ body.is-cashier .cust .acts{min-width:260px}
   <div class="msub">4 цифры — вы будете вводить их при входе.<br>Без PIN никто не сможет войти в ваш профиль.</div>
   <input class="pin" id="setPinInput" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
   <button class="cta" id="setPinGo">Сохранить PIN</button>
+    <div class="alt"><button id="setPinOtp">🔑 Не помню PIN — код в Telegram</button></div>
+
  </div>
 </div>
 
@@ -949,7 +955,10 @@ function openAuth(login=false){$('#authModal').classList.add('show');
 function closeAuth(){$('#authModal').classList.remove('show');syncOverlay()}
 function authSwap(login){$('#regForm').style.display=login?'none':'flex';
  $('#loginForm').style.display=login?'flex':'none';
- $('#authTitle').textContent=login?'Вход по номеру':'Создайте профиль'}
+ $('#authTitle').textContent=login?'Вход по номеру':'Создайте профиль';
+ if(login){loginMode='pin';const pr=$('#logPinRow');if(pr)pr.style.display='';
+  $('#logOtpWrap').style.display='none';const bk=$('#otpBackRow');if(bk)bk.style.display='none';
+  $('#logBtn').textContent='Войти';}}
 $('#toLogin').onclick=()=>authSwap(true);
 $('#toReg').onclick=()=>authSwap(false);
 const _skip=$('#skipAuth');if(_skip)_skip.onclick=()=>{onboarded=true;localStorage.setItem(T_ONB,'1');closeAuth();
@@ -978,7 +987,7 @@ $('#logBtn').onclick=async()=>{
    const r=await api('/auth/login',{method:'POST',body:{phone,otp:$('#logOtp').value.trim()}});
    setUser(r.token,r.customer);closeAuth();renderAll();
    toast(`С возвращением, ${r.customer.name}!`,'🔗');
-   if(r.needPin)openSetPin('authed');
+      if(r.needPin)toast('PIN не задан. Хотите вход без Telegram? Задайте PIN в профиле — кнопка 🔐','🔐');
   }else{
    const r=await api('/auth/login',{method:'POST',body:{phone,pin:$('#logPin').value.trim()}});
    setUser(r.token,r.customer);closeAuth();renderAll();
@@ -992,12 +1001,28 @@ $('#otpBtn').onclick=async()=>{
  const phone=$('#logPhone').value;
  if(ph10(phone).length<10)return toast('Введите номер полностью','📵');
  try{await api('/auth/request-otp',{method:'POST',body:{phone}});
-  loginMode='otp';$('#logOtpWrap').style.display='';$('#logBtn').textContent='Войти по коду';
+  loginMode='otp';
+  const pr=$('#logPinRow');if(pr)pr.style.display='none';
+  $('#logOtpWrap').style.display='';
+  const bk=$('#otpBackRow');if(bk)bk.style.display='';
+  $('#logBtn').textContent='Войти по коду';
   toast('Код отправлен в Telegram','🔑');
  }catch(e){toast(e.message,'⚠️')}};
+const _ob=$('#otpBack');if(_ob)_ob.onclick=()=>{loginMode='pin';
+ const pr=$('#logPinRow');if(pr)pr.style.display='';
+ $('#logOtpWrap').style.display='none';
+ const bk=$('#otpBackRow');if(bk)bk.style.display='none';
+ $('#logBtn').textContent='Войти';};
+
 let setPinCtx=null;
 function openSetPin(mode,phone){setPinCtx={mode,phone:phone||''};$('#setPinInput').value='';
+ const msub=$('#setPinModal').querySelector('.msub');
+ if(msub)msub.innerHTML=mode==='claim'
+  ?'Этот профиль создан до введения PIN.<br>Придумайте 4 цифры — это ваш ключ для входа.<br>Или запросите код в Telegram ниже.'
+  :'Придумайте или смените PIN (4 цифры).<br>Понадобится, если Telegram будет недоступен.';
+ const alt=$('#setPinOtp');if(alt)alt.style.display=mode==='claim'?'':'none';
  $('#setPinModal').classList.add('show');syncOverlay();setTimeout(()=>$('#setPinInput').focus(),150)}
+const _spo=$('#setPinOtp');if(_spo)_spo.onclick=()=>{const ph=setPinCtx?setPinCtx.phone:'';closeSetPin();authSwap(true);if(ph)$('#logPhone').value=fmtPhone(ph);$('#otpBtn').click();};
 function closeSetPin(){setPinCtx=null;$('#setPinModal').classList.remove('show');syncOverlay();}
 $('#setPinClose').onclick=closeSetPin;
 $('#setPinGo').onclick=async()=>{
@@ -1217,6 +1242,7 @@ function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden
  $('#activateBtn').hidden=!(r==='guest'||r==='cashier');
  $('#activateBtn').textContent=r==='guest'?'🔑 У меня код доступа сотрудника':'🔑 Повысить до администратора';
  refreshPushBtn();
+ const spb2=$('#setPinBtn');if(spb2)spb2.hidden=!me;
 $('#dashToggle').hidden=!(me&&me.role==='admin');
  $('#stCups').textContent=me.cups;$('#stStamps').textContent=me.stamps+'/10';$('#stFree').textContent=me.free;
  $('#histList').innerHTML=(me.history||[]).slice(0,8).map(h=>
@@ -1332,6 +1358,7 @@ async function enablePush(){
   }catch(e){toast(e.message,'⚠️')}
 }
 $('#pushBtn').onclick=enablePush;
+const _spb=$('#setPinBtn');if(_spb)_spb.onclick=()=>openSetPin('authed');
 function togglePushHint(show){
  let h = document.getElementById('pushHint');
  if(show && !h){
