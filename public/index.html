@@ -15,7 +15,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap">
+<link rel="preload" as="style" fetchpriority="high" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap" rel="stylesheet"></noscript>
 <style>
@@ -1539,10 +1539,7 @@ let lastChatId=0,historyLoaded=false;
 let staffIn=false;
 const unreadKey=()=>'zt_unread_'+chatKey();
 function showBadge(){const u=+localStorage.getItem(unreadKey())||0;const b=$('#chatBadge');b.hidden=!u;b.textContent=u||'';}
-async function initChatPointer(){try{
- const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
- for(const m of r.msgs)lastChatId=Math.max(lastChatId,m.id);
-}catch(e){}}
+async function initChatPointer(){/* отложено до первого открытия чата */}
 async function loadHistory(){try{
  const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
  $('#chatMsgs').innerHTML='';staffIn=false;
@@ -1563,7 +1560,7 @@ setInterval(async()=>{if(document.visibilityState!=='visible')return;
   }
  }catch(e){}},7000);
 $('#chatFab').onclick=async()=>{const p=$('#chatPanel');p.classList.toggle('open');
- if(p.classList.contains('open')){localStorage.setItem(unreadKey(),'0');showBadge();
+ if(p.classList.contains('open')){   if(!lastChatId){try{const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();for(const m of r.msgs)lastChatId=Math.max(lastChatId,m.id);}catch(e){}}localStorage.setItem(unreadKey(),'0');showBadge();
   if(!historyLoaded)await loadHistory();
   if(!chatOpened){chatOpened=true;
    if(!$('#chatMsgs').children.length)setTimeout(()=>addMsg('bot','Привет! Я Ника, поддержка «…и кофе» 🌊 Если я не смогу ответить — к чату подключится сотрудник.'),350)}}};
@@ -1734,7 +1731,7 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localSt
  </div>
 </div>
 
-<script src="./qrcode.js"></script>
+<script src="./qrcode.js" async></script>
 <script>
 (function(){
 let scanStream=null,scanTimer=null,curGuest=null,busy=false,frames=0;
