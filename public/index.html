@@ -15,7 +15,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{
   --paper:#F5F2EC; --card:#FFFFFF; --panel:#FFFCF5; --ink:#101418; --soft:#63707C;
@@ -422,6 +424,7 @@ body.is-cashier .cust .acts{min-width:260px}
   #modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}
   #profileTopBtn{width:38px;height:38px;min-width:38px;flex:0 0 38px;font-size:15px}
 }
+.rail button{color:#475462}
 </style>
 </head>
 <body>
@@ -1547,7 +1550,6 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localSt
  </div>
 </div>
 
-<script src="./jsqr.js"></script>
 <script src="./qrcode.js"></script>
 <script>
 (function(){
@@ -1556,9 +1558,11 @@ $('#scanFab').onclick=()=>{$('#scanModal').hidden=false;startCam();};
 $('#scanClose').onclick=closeScan;
 function closeScan(){$('#scanModal').hidden=true;stopCam();}
 function stopCam(){if(scanTimer){clearInterval(scanTimer);scanTimer=null;}if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}}
+function loadJsqr(){if(window.jsQR)return Promise.resolve();return new Promise(res=>{const s=document.createElement('script');s.src='./jsqr.js';s.onload=res;s.onerror=res;document.head.appendChild(s);});}
 async function startCam(){
  const v=$('#scanVideo');frames=0;
  $('#scanStatus').textContent='Включаю камеру…';
+   await loadJsqr();
  try{
   scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
   v.srcObject=scanStream;await v.play();
