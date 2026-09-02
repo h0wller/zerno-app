@@ -697,6 +697,8 @@ body.is-cashier .cust .acts{min-width:260px}
  <button class="cta" id="logBtn">Войти</button>
  <div class="alt"><button id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
  <div class="alt"><button id="toReg">← Создать новый профиль</button></div>
+<div class="alt"><button id="skipAuth">Просто посмотреть меню →</button></div>
+
 </div>
 </div>
 </div>
@@ -950,7 +952,7 @@ function authSwap(login){$('#regForm').style.display=login?'none':'flex';
  $('#authTitle').textContent=login?'Вход по номеру':'Создайте профиль'}
 $('#toLogin').onclick=()=>authSwap(true);
 $('#toReg').onclick=()=>authSwap(false);
-$('#skipAuth').onclick=()=>{onboarded=true;localStorage.setItem(T_ONB,'1');closeAuth();
+const _skip=$('#skipAuth');if(_skip)_skip.onclick=()=>{onboarded=true;localStorage.setItem(T_ONB,'1');closeAuth();
  toast('Можно смотреть меню. Профиль — по кнопке с аватаром','👀')};
 function setUser(token,customer){USER_TOKEN=token;localStorage.setItem(T_USER,token);
  me=customer;historyLoaded=false;lastChatId=0;initChatPointer();showBadge();onboarded=true;localStorage.setItem(T_ONB,'1');
