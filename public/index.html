@@ -1453,8 +1453,9 @@ function togglePushHint(show){
  let h=document.getElementById('pushHint');
  if(!show&&h){h.remove();return;}
  if(show&&!h){
-  setTimeout(()=>{
+    setTimeout(()=>{
    if(document.getElementById('pushHint'))return;
+   const pb2=$('#pushBtn');if(pb2&&pb2.hidden)return;   // пуши уже включены — не дёргаем
    const nh=document.createElement('div');
    nh.id='pushHint';nh.className='pushHint';
    nh.innerHTML='🔔 Включите пуши тут →';
@@ -1493,7 +1494,9 @@ function refreshPushBtn(){
  if(Notification.permission!=='granted'){
   pb.hidden=false; if(av)av.classList.add('pulse-hint'); togglePushHint(true); return;
  }
- const apply=need=>{pb.hidden=!need; if(av)av.classList.toggle('pulse-hint',need); togglePushHint(need);};
+  let done=false;
+ const apply=need=>{if(done)return;done=true;
+  pb.hidden=!need; if(av)av.classList.toggle('pulse-hint',need); togglePushHint(need);};
  Promise.race([
   navigator.serviceWorker.ready.then(r=>r.pushManager.getSubscription()).then(s=>apply(!s)),
   new Promise(res=>setTimeout(()=>{apply(true);res();},5000))
