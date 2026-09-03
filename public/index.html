@@ -506,7 +506,6 @@ body.is-cashier .cust .acts{min-width:260px}
       <div class="cashier">
         <div class="cash-top">
           <h2>Режим <em>кассира</em></h2>
-          <div class="chip"><span class="dot"></span>Смена открыта · …и кофе</div>
           <button class="btn fire" id="newGuestBtn">＋ Новый гость</button>
           <button class="btn dark" id="chatsToggle">💬 Чаты гостей</button>
         </div>
@@ -546,7 +545,7 @@ body.is-cashier .cust .acts{min-width:260px}
 </div>
 
         <div class="cash-card">
-          <h4 style="font:700 12px 'Unbounded';letter-spacing:.08em;text-transform:uppercase;color:#8B98A5;margin-bottom:10px">Журнал смены</h4>
+         <h4 style="font:700 12px 'Unbounded';letter-spacing:.08em;text-transform:uppercase;color:#8B98A5;margin-bottom:10px">Последние события</h4>
           <div id="cashLog"></div>
         </div>
       </div>
@@ -1240,9 +1239,9 @@ function renderBonus(){$('#bonusNoUser').hidden=!!me;$('#bonusBox').hidden=!me;i
  $('#stampGrid').innerHTML=h;
  $('#bonusProg').innerHTML=me.free>0?`У вас <b>${me.free} бесплатный(х) кофе</b> 🎉`
   :`До бесплатного кофе: <b>${10-me.stamps} ${cupWord(10-me.stamps)}</b> из 10`;
- $('#freeSlot').innerHTML=me.free>0?`<div class="freeCard"><span class="fe">🎁</span>
+  $('#freeSlot').innerHTML=me.free>0?`<div class="freeCard"><span class="fe">🎁</span>
    <div><b>Кофе за наш счёт ×${me.free}</b><small>Покажите этот экран кассиру</small></div>
-   <button id="burnFree">Погасить (демо)</button></div>`:'';
+   ${me.role==='guest'?'':'<button id="burnFree">Погасить (демо)</button>'}</div>`:'';
  const b=$('#burnFree');if(b)b.onclick=async()=>{try{
    const r=await api('/redeem',{method:'POST'});me=r.customer;renderBonus();renderProfile();
    toast('Бесплатный кофе погашен. Вкусного!','☕')}catch(e){toast(e.message,'⚠️')}};
