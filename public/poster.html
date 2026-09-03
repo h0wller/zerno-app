@@ -5,24 +5,48 @@
 <title>…и кофе — табличка</title>
 <style>
  @page{size:A5 portrait;margin:0}
- body{margin:0;font-family:-apple-system,'Segoe UI',Roboto,sans-serif}
- .sheet{width:148mm;min-height:210mm;margin:0 auto;background:#F7F4EE;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10mm;box-sizing:border-box}
- h1{font-size:26pt;margin:0;color:#12303E}
- .sea{color:#2E6F8E;font-size:11pt;margin:4px 0 8mm}
- .big{font-size:15pt;font-weight:800;color:#12303E;margin-bottom:6mm}
- img.qr{width:52mm;height:52mm;border-radius:5mm;background:#fff;padding:3mm;box-sizing:border-box}
- .steps{font-size:11pt;color:#41505E;margin-top:6mm;line-height:1.5}
- .gift{margin-top:6mm;font-size:12pt;font-weight:700;color:#2E6F8E}
+ *{box-sizing:border-box}
+ body{margin:0;font-family:'Golos Text',-apple-system,'Segoe UI',Roboto,sans-serif}
+ .sheet{width:148mm;min-height:210mm;margin:0 auto;background:#F5F2EC;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:8mm 10mm 8mm 12mm;position:relative;overflow:hidden}
+ .sheet::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2.5mm;background:#1F4E8C}
+ .logo{width:64mm;height:auto;margin-bottom:3mm}
+ .badge{background:#EAF1F9;border:1px solid #B9CDE4;color:#163B6B;border-radius:999px;padding:2mm 5mm;
+  font-size:10pt;font-weight:700;margin-bottom:4mm}
+ h1{font-family:'Prata',Georgia,serif;font-size:20pt;line-height:1.15;margin:0 0 3mm;color:#101418}
+ .sub{font-size:11pt;color:#63707C;margin:0 0 5mm;line-height:1.45}
+ .qrwrap{background:#fff;border-radius:6mm;padding:3mm;box-shadow:0 4mm 10mm -4mm rgba(16,20,24,.25)}
+ img.qr{width:50mm;height:50mm;display:block}
+ .url{font-size:9pt;color:#8B98A5;margin-top:2mm;letter-spacing:.06em}
+ .steps{font-size:10.5pt;color:#41505E;margin-top:5mm;line-height:1.5}
+ .gift{margin-top:4mm;font-size:11.5pt;font-weight:700;color:#1F4E8C}
+ .cta{margin-top:5mm;background:#1F4E8C;color:#fff;border-radius:999px;padding:2.5mm 7mm;font-size:11pt;font-weight:800}
 </style>
 </head>
 <body>
 <div class="sheet">
- <h1>…и кофе</h1>
- <div class="sea">кофейня на берегу моря · п. Янтарный</div>
- <div class="big">Каждый 10-й кофе —<br>за наш счёт 🎁</div>
- <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=https%3A%2F%2Fapp.andcoffee.online%2Finstall.html" alt="QR">
+ <svg class="logo" viewBox="220 175 560 650" xmlns="http://www.w3.org/2000/svg">
+  <g font-family="Futura,'Century Gothic',Montserrat,Arial,sans-serif" fill="#101418" text-anchor="middle">
+   <text x="500" y="252" font-size="70" letter-spacing="26">КОФЕЙНЯ</text>
+   <text x="500" y="318" font-size="36" letter-spacing="14">НА БЕРЕГУ МОРЯ</text>
+   <text x="500" y="408" font-size="62" letter-spacing="24">...И КОФЕ</text>
+  </g>
+  <clipPath id="cup"><path d="M230 315 V550 A270 270 0 0 0 770 550 V315 Z"/></clipPath>
+  <g clip-path="url(#cup)">
+   <path d="M230 500 C 320 517, 400 470, 490 468 C 570 466, 650 502, 770 478 L770 830 L230 830 Z" fill="#6699CE"/>
+   <path d="M230 545 C 320 562, 390 592, 480 586 C 570 580, 650 522, 770 516 L770 830 L230 830 Z" fill="#4B77B8"/>
+   <path d="M230 642 C 320 662, 400 656, 480 620 C 560 588, 660 642, 770 630 L770 830 L230 830 Z" fill="#3F5EA6"/>
+  </g>
+  <path d="M230 315 V550 A270 270 0 0 0 770 550 V315" fill="none" stroke="#101418" stroke-width="11" stroke-linecap="round"/>
+ </svg>
+ <div class="badge">п. Янтарный, ул. Советская 70Г</div>
+ <h1>…и кофе — кофейня<br>на берегу моря</h1>
+ <div class="sub">Каждый 10-й кофе — бесплатно.<br>Меню, штампы и бонусы в один тап.</div>
+ <div class="qrwrap"><img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=https%3A%2F%2Fapp.andcoffee.online%2Finstall.html%3Fref%3Dqr" alt="QR"></div>
+ <div class="url">app.andcoffee.online</div>
  <div class="steps">1. Отсканируйте QR камерой телефона<br>2. Установите приложение за 10 секунд<br>3. Покажите свой QR кассиру — штампы копятся</div>
- <div class="gift">Штампы, подарки и промокоды — в приложении</div>
+ <div class="gift">Штампы, подарки и промокоды — в приложении 🎁</div>
+ <div class="cta">Ждём вас →</div>
 </div>
 </body>
 </html>
