@@ -739,17 +739,16 @@ body.is-cashier .cust .acts{min-width:260px}
       <button class="cta" id="regBtn">Создать профиль</button>
       <div class="alt">Уже есть профиль? <button id="toLogin">Войти по номеру</button></div>
     </div>
-        <div id="loginForm" style="display:none;flex-direction:column;gap:11px">
-<label id="logPinRow">PIN-код<input id="logPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"></label>
-<div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" type="password" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="off"></label></div>
- <button class="cta" id="logBtn">Войти</button>
- <div class="alt" id="otpBackRow" style="display:none"><button id="otpBack">← Вернуться ко входу по PIN</button></div>
- <div class="alt"><button id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
- <div class="alt"><button id="toReg">← Создать новый профиль</button></div>
- <div class="alt"><button id="skipAuth">Просто посмотреть меню →</button></div>
-</div>
-
-</div>
+    <div id="loginForm" style="display:none;flex-direction:column;gap:11px">
+      <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
+      <label id="logPinRow">PIN-код<input id="logPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"></label>
+      <div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" type="password" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="off"></label></div>
+      <button class="cta" id="logBtn">Войти</button>
+      <div class="alt" id="otpBackRow" style="display:none"><button id="otpBack">← Вернуться ко входу по PIN</button></div>
+      <div class="alt"><button id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
+      <div class="alt"><button id="toReg">← Создать новый профиль</button></div>
+      <div class="alt"><button id="skipAuth">Просто посмотреть меню →</button></div>
+    </div>
 </div>
 </div>
 <div class="modal" id="pinModal">
