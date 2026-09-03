@@ -279,6 +279,9 @@ body.editing .card:hover{transform:none}
 .chist{border-top:1px dashed var(--line);margin-top:8px;padding-top:4px}
 .logrow{display:flex;gap:10px;font-size:13px;padding:8px 2px;border-bottom:1px dashed var(--line);animation:rise .3s both}
 .logrow .lt{font:700 10.5px "Unbounded";color:#8B98A5;min-width:0;white-space:nowrap}
+.cashlog{flex-direction:column;gap:3px;align-items:flex-start}
+.cashlog .la{font-size:13.5px}
+
 
 /* ══ чат ══ */
 .chat-fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:95;width:58px;height:58px;border-radius:50%;background:var(--esp);
@@ -466,6 +469,10 @@ body.is-cashier .cust .acts{min-width:260px}
 }
 #promoModal .form label small{margin-top:4px}
 #pmList .logrow{flex-wrap:wrap}
+/* iOS не зумит поля от 16px */
+@media(max-width:640px){
+ input,select,textarea{font-size:16px}
+}
 
 </style>
 </head>
@@ -1264,9 +1271,8 @@ function renderBonus(){$('#bonusNoUser').hidden=!!me;$('#bonusBox').hidden=!me;i
  $('#stampGrid').innerHTML=h;
  $('#bonusProg').innerHTML=me.free>0?`У вас <b>${me.free} бесплатный(х) кофе</b> 🎉`
   :`До бесплатного кофе: <b>${10-me.stamps} ${cupWord(10-me.stamps)}</b> из 10`;
-  $('#freeSlot').innerHTML=me.free>0?`<div class="freeCard"><span class="fe">🎁</span>
-   <div><b>Кофе за наш счёт ×${me.free}</b><small>Покажите этот экран кассиру</small></div>
-   ${me.role==='guest'?'':'<button id="burnFree">Погасить (демо)</button>'}</div>`:'';
+ $('#freeSlot').innerHTML=me.free>0?`<div class="freeCard"><span class="fe">🎁</span>
+   <div><b>Кофе за наш счёт ×${me.free}</b><small>Покажите этот экран кассиру</small></div></div>`:'';
  const b=$('#burnFree');if(b)b.onclick=async()=>{try{
    const r=await api('/redeem',{method:'POST'});me=r.customer;renderBonus();renderProfile();
    toast('Бесплатный кофе погашен. Вкусного!','☕')}catch(e){toast(e.message,'⚠️')}};
@@ -1525,8 +1531,9 @@ $('#ngSave').onclick=async()=>{
   toast(e.message,'⚠️')}};
 async function renderLog(){try{const r=await api('/staff/log');
  $('#cashLog').innerHTML=r.log.map(l=>
-  `<div class="logrow"><span class="lt">${esc(l.t)}</span><span>${esc(l.w)} — ${esc(l.a)}</span></div>`).join('')
+  `<div class="logrow cashlog"><span class="lt">${esc(l.t)}</span><span class="la">${esc(l.w)} — ${esc(l.a)}</span></div>`).join('')
   ||'<div class="hmini">Журнал пуст</div>'}catch(e){$('#cashLog').innerHTML=''}}
+
 
 /* ── чат-бот с характером «…и кофе» ── */
 let chatOpened=false,unread=0;
