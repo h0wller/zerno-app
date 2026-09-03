@@ -740,16 +740,16 @@ body.is-cashier .cust .acts{min-width:260px}
     <div class="msub">Штампы и бесплатные кофе — по номеру телефона.<br>Никаких карт и анкет.</div>
     <div id="regForm" style="display:flex;flex-direction:column;gap:11px">
       <label>Имя<input id="regName" maxlength="24" placeholder="Как к вам обращаться?"></label>
-      <label>Телефон<input id="regPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
-<label>PIN-код (4 цифры)<input id="regPin" type="password" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="off"></label>
+<label>Телефон<input id="regPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
+<label>PIN-код (4 цифры)<input id="regPin" type="password" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password"></label>
 <small style="color:#8B98A5;font-size:11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная номер</small>
       <button class="cta" id="regBtn">Создать профиль</button>
       <div class="alt">Уже есть профиль? <button id="toLogin">Войти по номеру</button></div>
     </div>
     <div id="loginForm" style="display:none;flex-direction:column;gap:11px">
-      <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
-      <label id="logPinRow">PIN-код<input id="logPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"></label>
-      <div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" type="password" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="off"></label></div>
+    <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
+    <label id="logPinRow">PIN-код<input id="logPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="current-password"></label>
+    <div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" type="password" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label></div>
       <button class="cta" id="logBtn">Войти</button>
       <div class="alt" id="otpBackRow" style="display:none"><button id="otpBack">← Вернуться ко входу по PIN</button></div>
       <div class="alt"><button id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
@@ -763,7 +763,7 @@ body.is-cashier .cust .acts{min-width:260px}
   <button class="mclose" id="pinClose">✕</button>
   <h3>Код доступа</h3>
   <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только сотрудникам.</div>
-  <input class="pin" id="pinInput" inputmode="password" maxlength="6" placeholder="••••••" autocomplete="off">
+  <input class="pin" id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
   <button class="cta" id="pinGo">Активировать</button>
   <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
  </div>
@@ -773,7 +773,7 @@ body.is-cashier .cust .acts{min-width:260px}
   <button class="mclose" id="setPinClose">✕</button>
   <h3>Придумайте PIN</h3>
   <div class="msub">4 цифры — вы будете вводить их при входе.<br>Без PIN никто не сможет войти в ваш профиль.</div>
-  <input class="pin" id="setPinInput" inputmode="password" maxlength="4" placeholder="••••" autocomplete="off">
+<input class="pin" id="setPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="new-password">
   <button class="cta" id="setPinGo">Сохранить PIN</button>
     <div class="alt"><button id="setPinOtp">🔑 Не помню PIN — код в Telegram</button></div>
 
