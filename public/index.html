@@ -1499,6 +1499,8 @@ function refreshPushBtn(){
   new Promise(res=>setTimeout(()=>{apply(true);res();},5000))
  ]).catch(()=>apply(true));
 }
+$('#pushBtn').onclick=enablePush;
+
 /* ── FCM (нативное приложение) ── */
 const isCap=!!(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.PushNotifications);
 if(isCap){
