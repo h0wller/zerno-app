@@ -288,6 +288,7 @@ body.editing .card:hover{transform:none}
   display:grid;place-items:center;box-shadow:0 12px 30px -8px rgba(16,20,24,.6);transition:.25s}
 @media(hover:hover){.chat-fab:hover{transform:scale(1.08) rotate(-6deg);background:var(--flame)}}
 .chat-fab:active{transform:scale(.95);background:var(--flame)}
+.chat-fab.open{background:var(--flame)}
 .chat-fab::before{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--flame);opacity:.6;animation:ping 2.4s infinite}
 .chat-fab svg{width:26px;height:26px;fill:var(--cream)}
 .chat-fab .ub{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;border-radius:999px;background:var(--flame);color:#fff;
@@ -1604,7 +1605,9 @@ function showBadge(){const u=+localStorage.getItem(unreadKey())||0;const b=$('#c
 async function initChatPointer(){try{
  const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
  for(const m of r.msgs)lastChatId=Math.max(lastChatId,m.id);
- const readId=+localStorage.getItem('zt_read_'+chatKey())||0;
+ const rk='zt_read_'+chatKey();
+ let readId=+localStorage.getItem(rk)||0;
+ if(!localStorage.getItem(rk)){readId=lastChatId;localStorage.setItem(rk,String(readId));}
  localStorage.setItem(unreadKey(),r.msgs.filter(m=>m.who==='staff'&&m.id>readId).length);
  showBadge();
 }catch(e){}}
@@ -1628,11 +1631,12 @@ setInterval(async()=>{if(document.visibilityState!=='visible')return;
   }
  }catch(e){}},7000);
 $('#chatFab').onclick=async()=>{const p=$('#chatPanel');p.classList.toggle('open');
+   $('#chatFab').classList.toggle('open',p.classList.contains('open'));
  if(p.classList.contains('open')){   if(!lastChatId){try{const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();for(const m of r.msgs)lastChatId=Math.max(lastChatId,m.id);}catch(e){}}localStorage.setItem(unreadKey(),'0');showBadge();localStorage.setItem('zt_read_'+chatKey(),lastChatId);
   if(!historyLoaded)await loadHistory();
   if(!chatOpened){chatOpened=true;
    if(!$('#chatMsgs').children.length)setTimeout(()=>addMsg('bot','Привет! Я Ника, поддержка «…и кофе» 🌊 Если я не смогу ответить — к чату подключится сотрудник.'),350)}}};
-$('#chatClose').onclick=()=>$('#chatPanel').classList.remove('open');
+$('#chatClose').onclick=()=>{$('#chatPanel').classList.remove('open');$('#chatFab').classList.remove('open');};
 /* ── стафф: чаты гостей ── */
 let scKey=null;
 function openStaffChat(){
