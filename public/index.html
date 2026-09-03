@@ -1444,20 +1444,24 @@ $('#pushBtn').onclick=enablePush;
 const _spb=$('#setPinBtn');if(_spb)_spb.onclick=()=>openSetPin('authed');
 function togglePushHint(show){
  let h=document.getElementById('pushHint');
+ if(!show&&h){h.remove();return;}
  if(show&&!h){
-  h=document.createElement('div');
-  h.id='pushHint';h.className='pushHint';
-  h.innerHTML='🔔 Включите пуши тут →';
-  const av=$('#profileTopBtn');
-  if(av){const r=av.getBoundingClientRect();
-   h.style.right=Math.max(8,Math.round(innerWidth-r.right))+'px';
-   h.style.top=(Math.round(r.bottom)+8)+'px';
-   h.style.setProperty('--ax',Math.max(6,Math.round(r.width/2)-6)+'px');}
-  h.onclick=()=>{const a2=$('#profileTopBtn');if(a2)a2.click();h.remove();
-   setTimeout(()=>{const pb=$('#pushBtn');if(pb&&!pb.hidden){pb.classList.add('glow');
-    setTimeout(()=>pb.classList.remove('glow'),6000);}},450);};
-  document.body.appendChild(h);
- } else if(!show&&h){h.remove();}
+  setTimeout(()=>{                       // ждём, пока тост «С возвращением» уйдёт
+   if(document.getElementById('pushHint'))return;
+   const nh=document.createElement('div');
+   nh.id='pushHint';nh.className='pushHint';
+   nh.innerHTML='🔔 Включите пуши тут →';
+   const av=$('#profileTopBtn');
+   if(av){const r=av.getBoundingClientRect();
+    nh.style.right=Math.max(8,Math.round(innerWidth-r.right))+'px';
+    nh.style.top=(Math.round(r.bottom)+8)+'px';
+    nh.style.setProperty('--ax',Math.max(6,Math.round(r.width/2)-6)+'px');}
+   nh.onclick=()=>{const a2=$('#profileTopBtn');if(a2)a2.click();nh.remove();
+    setTimeout(()=>{const pb=$('#pushBtn');if(pb&&!pb.hidden){pb.classList.add('glow');
+     setTimeout(()=>pb.classList.remove('glow'),6000);}},450);};
+   document.body.appendChild(nh);
+  },4000);
+ }
 }
 
 function refreshPushBtn(){
