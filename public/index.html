@@ -1015,6 +1015,7 @@ async function tryActivate(){const v=$('#pinInput').value.trim();
 $('#pinGo').onclick=tryActivate;
 $('#pinInput').addEventListener('keydown',e=>{if(e.key==='Enter')tryActivate()});
 $('#activateBtn').onclick=openPin;
+$('#setPinBtn').onclick=()=>openSetPin('change');
 
 function openAuth(login=false){$('#authModal').classList.add('show');
  $('#regForm').style.display=login?'none':'flex';$('#loginForm').style.display=login?'flex':'none';
