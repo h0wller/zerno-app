@@ -1719,10 +1719,12 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localSt
   document.getElementById('iosHint').hidden=true;localStorage.setItem('zt_ios_hide','1');};
 })();
 </script>
+<style>
 #scanFab{position:fixed;right:20px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:95;width:58px;height:58px;border-radius:50%;border:none;background:var(--esp);display:none;align-items:center;justify-content:center;box-shadow:0 12px 30px -8px rgba(16,20,24,.6);transition:.25s}
 body.is-cashier #scanFab{display:flex}
 #scanFab svg{width:26px;height:26px;fill:var(--cream)}
 #scanFab:hover{transform:scale(1.08) rotate(-6deg);background:var(--flame)}
+</style>
 
 <button id="scanFab" aria-label="Скан QR гостя">
  <svg viewBox="0 0 24 24"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/><path d="M20 6h-3.2L15 4H9L7.2 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm0 12H4V8h16v10z"/></svg>
