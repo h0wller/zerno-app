@@ -479,6 +479,10 @@ body.is-cashier .cust .acts{min-width:260px}
  #emModal .modal-card{padding:18px}
 }
 .frow>.f1,.frow>.f2{min-width:0}
+/* золотой чип подарка на кнопке бонусов */
+.mbonus .mb-free{background:linear-gradient(120deg,#F3E3CE,#E4C9A5);color:#4A3100;border-radius:999px;
+ padding:5px 11px;font-size:12px;font-weight:800;box-shadow:0 0 0 2px rgba(228,201,165,.4);animation:freePulse 2.2s infinite}
+@keyframes freePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
 
 </style>
 </head>
@@ -652,7 +656,7 @@ body.is-cashier .cust .acts{min-width:260px}
   </aside>
 </div>
 
-<button class="mbonus" id="mbonusBtn">🎁 Мои бонусы · <span id="mbonusSt">0/10</span></button>
+<button class="mbonus" id="mbonusBtn"><span>🎁 Мои бонусы · <span id="mbonusSt">0/10</span></span><span class="mb-free" id="mbonusFree" hidden>🎁 подарок: 1</span></button>
 
 <button class="chat-fab" id="chatFab" aria-label="Чат поддержки">
   <svg viewBox="0 0 24 24"><path d="M12 3C6.5 3 2 6.9 2 11.7c0 2.6 1.3 4.9 3.4 6.5-.1 1-.5 2.4-1.6 3.8 2-.3 3.6-1 4.7-1.7 1.1.3 2.3.5 3.5.5 5.5 0 10-3.9 10-8.7S17.5 3 12 3z"/></svg>
@@ -1282,7 +1286,8 @@ function renderBonus(){$('#bonusNoUser').hidden=!!me;$('#bonusBox').hidden=!me;i
  const b=$('#burnFree');if(b)b.onclick=async()=>{try{
    const r=await api('/redeem',{method:'POST'});me=r.customer;renderBonus();renderProfile();
    toast('Бесплатный кофе погашен. Вкусного!','☕')}catch(e){toast(e.message,'⚠️')}};
- $('#mbonusSt').textContent=me.free>0?'🎁 есть!':`${me.stamps}/10`;
+ $('#mbonusSt').textContent=`${me.stamps}/10`;
+ const mbf=$('#mbonusFree');if(mbf){mbf.hidden=me.free<1;mbf.textContent=`🎁 подарок: ${me.free}`;}
 }
 function renderProfile(){$('#profileNoUser').hidden=!!me;$('#profileBox').hidden=!me;
  if(!me){$('#avInit').textContent='?';$('#profileTopBtn').textContent='?';return}
