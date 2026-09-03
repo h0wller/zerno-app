@@ -489,7 +489,8 @@ body.is-cashier .cust .acts{min-width:260px}
 .pushHint{position:fixed;top:calc(env(safe-area-inset-top) + 70px);right:14px;background:#E8A13A;color:#fff;
  padding:10px 16px;border-radius:14px;font-size:13px;font-weight:700;z-index:95;animation:tin .4s;
  box-shadow:0 10px 24px rgba(0,0,0,.28);cursor:pointer;max-width:calc(100vw - 28px)}
-.pushHint::before{content:"";position:absolute;top:-5px;right:32px;width:12px;height:12px;background:#E8A13A;transform:rotate(45deg);border-radius:3px}
+.pushHint::before{content:"";position:absolute;top:-5px;right:var(--ax,32px);width:12px;height:12px;
+ background:#E8A13A;transform:rotate(45deg);border-radius:3px}
 .demoBtn.glow{border:2px dashed #E8A13A;color:#B26A05;background:#FFF6E5;animation:glowPulse 1.5s infinite}
 @keyframes glowPulse{0%,100%{box-shadow:0 0 0 0 rgba(232,161,58,.5)}50%{box-shadow:0 0 0 10px rgba(232,161,58,0)}}
 
@@ -1434,19 +1435,21 @@ async function enablePush(){
 $('#pushBtn').onclick=enablePush;
 const _spb=$('#setPinBtn');if(_spb)_spb.onclick=()=>openSetPin('authed');
 function togglePushHint(show){
- let h = document.getElementById('pushHint');
- if(show && !h){
-  h = document.createElement('div');
-  h.id = 'pushHint';
-  h = document.createElement('div');
-  h.id = 'pushHint'; h.className = 'pushHint';
-  h.innerHTML = '🔔 Включите пуши тут →';
-  h.onclick = () => { const av=$('#profileTopBtn'); if(av) av.click(); h.remove();
-    setTimeout(()=>{const pb=$('#pushBtn');if(pb&&!pb.hidden){pb.classList.add('glow');setTimeout(()=>pb.classList.remove('glow'),6000);}},400); };
+ let h=document.getElementById('pushHint');
+ if(show&&!h){
+  h=document.createElement('div');
+  h.id='pushHint';h.className='pushHint';
+  h.innerHTML='🔔 Включите пуши тут →';
+  const av=$('#profileTopBtn');
+  if(av){const r=av.getBoundingClientRect();
+   h.style.right=Math.max(8,Math.round(innerWidth-r.right))+'px';
+   h.style.top=(Math.round(r.bottom)+8)+'px';
+   h.style.setProperty('--ax',Math.max(6,Math.round(r.width/2)-6)+'px');}
+  h.onclick=()=>{const a2=$('#profileTopBtn');if(a2)a2.click();h.remove();
+   setTimeout(()=>{const pb=$('#pushBtn');if(pb&&!pb.hidden){pb.classList.add('glow');
+    setTimeout(()=>pb.classList.remove('glow'),6000);}},450);};
   document.body.appendChild(h);
- } else if(!show && h){
-  h.remove();
- }
+ } else if(!show&&h){h.remove();}
 }
 
 function refreshPushBtn(){
