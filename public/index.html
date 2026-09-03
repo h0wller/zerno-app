@@ -1406,32 +1406,40 @@ function urlBase64ToUint8Array(s){
   for(let i=0;i<raw.length;++i)out[i]=raw.charCodeAt(i);
   return out;
 }
+let pushBusy=false;
 async function enablePush(){
-  if(isCap){
- const PN=Capacitor.Plugins.PushNotifications;
- const perm=await PN.requestPermissions();
- if(perm.receive!=='granted')return toast('Уведомления не включены','😔');
- PN.register();
- return toast('Уведомления включены!','🔔');
-}
-  const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-  const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
-  if(isIOS&&!standalone){
-    toast('На iPhone пуши работают после установки: Поделиться → «На экран “Домой”», затем включите уведомления в профиле','📲',null);
-    return;
-  }
-  if(!('Notification' in window)||!('PushManager' in window))return toast('Браузер не поддерживает уведомления','⚠️');
-  const perm=await Notification.requestPermission();
-  if(perm!=='granted')return toast('Уведомления не включены','😔');
+  if(pushBusy)return toast('Секунду, включаю…','⏳');
+  pushBusy=true;
   try{
-    const reg=await navigator.serviceWorker.ready;
+    if(isCap){
+      const PN=Capacitor.Plugins.PushNotifications;
+      const perm=await PN.requestPermissions();
+      if(perm.receive!=='granted')return toast('Уведомления не включены','😔');
+      PN.register();
+      return toast('Уведомления включены!','🔔');
+    }
+    const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+    if(isIOS&&!standalone){
+      toast('На iPhone пуши работают после установки: Поделиться → «На экран "Домой"», затем включите уведомления в профиле','📲',null);
+      return;
+    }
+    if(!('Notification' in window)||!('PushManager' in window))return toast('Браузер не поддерживает уведомления','⚠️');
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted')return toast('Уведомления не включены','😔');
+    const reg=await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('SW не готов — обнови страницу')),8000))
+    ]);
     const v=await (await fetch(API_BASE+'/api/vapid')).json();
     const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(v.publicKey)});
     await api('/push/subscribe',{method:'POST',body:{sub:sub.toJSON()}});
     refreshPushBtn();
     toast('Готово! Проверочный пуш уже летит','🔔');
   }catch(e){toast(e.message,'⚠️')}
+  finally{pushBusy=false;}
 }
+
 $('#pushBtn').onclick=enablePush;
 const _spb=$('#setPinBtn');if(_spb)_spb.onclick=()=>openSetPin('authed');
 function togglePushHint(show){
