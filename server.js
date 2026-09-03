@@ -454,8 +454,11 @@ app.get('/api/vapid', (req, res) => res.json({ publicKey: VAPID.publicKey }));
 app.post('/api/push/subscribe', userGuard, (req, res) => {
   const sub = req.body.sub;
   if (!sub || !sub.endpoint) return res.status(400).json({ error: 'bad sub' });
-  db.prepare('INSERT OR IGNORE INTO subs(cid,sub,created) VALUES(?,?,?)').run(req.user.id, JSON.stringify(sub), nowISO());
-  sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
+  const s = JSON.stringify(sub);
+  const existed = db.prepare('SELECT 1 FROM subs WHERE cid=? AND sub=?').get(req.user.id, s);
+  db.prepare('DELETE FROM subs WHERE cid=? AND sub!=?').run(req.user.id, s);
+  db.prepare('INSERT OR IGNORE INTO subs(cid,sub,created) VALUES(?,?,?)').run(req.user.id, s, nowISO());
+  if (!existed) sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
   res.json({ ok: true });
 });
 async function sendFcm(cid, title, body) {
