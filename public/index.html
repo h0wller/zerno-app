@@ -1499,34 +1499,6 @@ function refreshPushBtn(){
   new Promise(res=>setTimeout(()=>{apply(true);res();},5000))
  ]).catch(()=>apply(true));
 }
- // Для браузера / PWA
- if(!pb)return;
- if(!me || !('Notification' in window)){
-  pb.hidden=true;
-  if(av) av.classList.remove('pulse-hint');
-  togglePushHint(false);
-  return;
- }
- 
- if(Notification.permission !== 'granted'){
-  pb.hidden=false;
-  if(av) av.classList.add('pulse-hint');
-  togglePushHint(true);
-  return;
- }
- 
- navigator.serviceWorker.ready.then(reg=>reg.pushManager.getSubscription())
-  .then(s=>{
-   const needPush = !s;
-   pb.hidden = !needPush;
-   if(av) av.classList.toggle('pulse-hint', needPush);
-   togglePushHint(needPush);
-  }).catch(()=>{
-   pb.hidden=false;
-   if(av) av.classList.add('pulse-hint');
-   togglePushHint(true);
-  });
-}
 /* ── FCM (нативное приложение) ── */
 const isCap=!!(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.PushNotifications);
 if(isCap){
