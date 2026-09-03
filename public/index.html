@@ -486,6 +486,11 @@ body.is-cashier .cust .acts{min-width:260px}
  padding:5px 11px;font-size:12px;font-weight:800;box-shadow:0 0 0 2px rgba(228,201,165,.4);animation:freePulse 2.2s infinite}
 @keyframes freePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
 
+.pushHint{position:fixed;top:calc(env(safe-area-inset-top) + 66px);right:12px;background:#E8A13A;color:#fff;
+ padding:9px 14px;border-radius:12px;font-size:13px;font-weight:700;z-index:95;animation:tin .4s;
+ box-shadow:0 8px 20px rgba(0,0,0,.25);cursor:pointer;max-width:calc(100vw - 24px)}
+.pushHint::before{content:"";position:absolute;top:-5px;right:24px;width:10px;height:10px;background:#E8A13A;transform:rotate(45deg);border-radius:2px}
+
 </style>
 </head>
 <body>
@@ -729,15 +734,14 @@ body.is-cashier .cust .acts{min-width:260px}
     <div id="regForm" style="display:flex;flex-direction:column;gap:11px">
       <label>Имя<input id="regName" maxlength="24" placeholder="Как к вам обращаться?"></label>
       <label>Телефон<input id="regPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
-      <label>PIN-код (4 цифры)<input id="regPin" inputmode="numeric" maxlength="4" placeholder="Например 2580"></label>
+<label>PIN-код (4 цифры)<input id="regPin" type="password" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="off"></label>
 <small style="color:#8B98A5;font-size:11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная номер</small>
       <button class="cta" id="regBtn">Создать профиль</button>
       <div class="alt">Уже есть профиль? <button id="toLogin">Войти по номеру</button></div>
     </div>
         <div id="loginForm" style="display:none;flex-direction:column;gap:11px">
- <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00"></label>
- <label id="logPinRow">PIN-код<input id="logPin" inputmode="numeric" maxlength="4" placeholder="••••"></label>
- <div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" inputmode="numeric" maxlength="4" placeholder="4 цифры"></label></div>
+<label id="logPinRow">PIN-код<input id="logPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"></label>
+<div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" type="password" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="off"></label></div>
  <button class="cta" id="logBtn">Войти</button>
  <div class="alt" id="otpBackRow" style="display:none"><button id="otpBack">← Вернуться ко входу по PIN</button></div>
  <div class="alt"><button id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
@@ -753,7 +757,7 @@ body.is-cashier .cust .acts{min-width:260px}
   <button class="mclose" id="pinClose">✕</button>
   <h3>Код доступа</h3>
   <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только сотрудникам.</div>
-  <input class="pin" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+  <input class="pin" id="pinInput" inputmode="password" maxlength="6" placeholder="••••••" autocomplete="off">
   <button class="cta" id="pinGo">Активировать</button>
   <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
  </div>
@@ -763,7 +767,7 @@ body.is-cashier .cust .acts{min-width:260px}
   <button class="mclose" id="setPinClose">✕</button>
   <h3>Придумайте PIN</h3>
   <div class="msub">4 цифры — вы будете вводить их при входе.<br>Без PIN никто не сможет войти в ваш профиль.</div>
-  <input class="pin" id="setPinInput" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+  <input class="pin" id="setPinInput" inputmode="password" maxlength="4" placeholder="••••" autocomplete="off">
   <button class="cta" id="setPinGo">Сохранить PIN</button>
     <div class="alt"><button id="setPinOtp">🔑 Не помню PIN — код в Telegram</button></div>
 
@@ -1429,7 +1433,8 @@ function togglePushHint(show){
  if(show && !h){
   h = document.createElement('div');
   h.id = 'pushHint';
-  h.style.cssText = 'position:fixed;top:65px;right:14px;background:#E8A13A;color:#fff;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:700;z-index:150;animation:tin .4s;box-shadow:0 4px 12px rgba(0,0,0,.15);cursor:pointer';
+  h = document.createElement('div');
+  h.id = 'pushHint'; h.className = 'pushHint';
   h.innerHTML = '🔔 Включите пуши тут →';
   h.onclick = () => { const av=$('#profileTopBtn'); if(av) av.click(); h.remove(); };
   document.body.appendChild(h);
