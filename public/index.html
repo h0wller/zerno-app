@@ -1440,13 +1440,11 @@ async function enablePush(){
   finally{pushBusy=false;}
 }
 
-$('#pushBtn').onclick=enablePush;
-const _spb=$('#setPinBtn');if(_spb)_spb.onclick=()=>openSetPin('authed');
 function togglePushHint(show){
  let h=document.getElementById('pushHint');
  if(!show&&h){h.remove();return;}
  if(show&&!h){
-  setTimeout(()=>{                       // ждём, пока тост «С возвращением» уйдёт
+  setTimeout(()=>{
    if(document.getElementById('pushHint'))return;
    const nh=document.createElement('div');
    nh.id='pushHint';nh.className='pushHint';
@@ -1457,12 +1455,18 @@ function togglePushHint(show){
     nh.style.top=(Math.round(r.bottom)+8)+'px';
     nh.style.setProperty('--ax',Math.max(6,Math.round(r.width/2)-6)+'px');}
    nh.onclick=()=>{const a2=$('#profileTopBtn');if(a2)a2.click();nh.remove();
-    setTimeout(()=>{const pb=$('#pushBtn');if(pb&&!pb.hidden){pb.classList.add('glow');
-     setTimeout(()=>pb.classList.remove('glow'),6000);}},450);};
+    setTimeout(()=>{const pb=$('#pushBtn');if(pb&&!pb.hidden){
+     pb.style.border='2px dashed #E8A13A';
+     pb.style.color='#B26A05';
+     pb.style.background='#FFF6E5';
+     pb.classList.add('glow');
+     setTimeout(()=>{pb.style.border='';pb.style.color='';pb.style.background='';pb.classList.remove('glow');},6000);
+    }},450);};
    document.body.appendChild(nh);
   },4000);
  }
 }
+
 
 function refreshPushBtn(){
  const pb=$('#pushBtn');
