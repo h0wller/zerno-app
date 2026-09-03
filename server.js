@@ -135,8 +135,9 @@ const cust = c => ({ id: c.id, name: c.name, phone: c.phone, stamps: c.stamps, f
   cups: c.cups, qr: c.qr, role: c.role || 'guest',
   history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) });
 const addHist = (cid, a, by) => db.prepare('INSERT INTO history(cid,ts,a,by) VALUES(?,?,?,?)').run(cid, nowISO(), a, by);
-const logEv = (w, a) => db.prepare('INSERT INTO events(t,w,a) VALUES(?,?,?)')
-  .run(new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }), w, a);
+const logEv = (w, a) => { const d = new Date(); const pad = n => String(n).padStart(2, '0');
+  db.prepare('INSERT INTO events(t,w,a) VALUES(?,?,?)')
+  .run(`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`, w, a); };
 const getMeta = () => db.prepare("SELECT value FROM meta WHERE key='updatedAt'").get()?.value || nowISO();
 const touch = () => db.prepare("INSERT INTO meta(key,value) VALUES('updatedAt',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(nowISO());
 const issueToken = ref => { const t = crypto.randomUUID();
