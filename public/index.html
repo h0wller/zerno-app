@@ -1408,37 +1408,46 @@ function urlBase64ToUint8Array(s){
 }
 let pushBusy=false;
 async function enablePush(){
-  if(pushBusy)return toast('Секунду, включаю…','⏳');
-  pushBusy=true;
+ if(pushBusy)return toast('Секунду, включаю…','⏳');
+ pushBusy=true;
+ try{
+  if(isCap){
+   const PN=Capacitor.Plugins.PushNotifications;
+   const perm=await PN.requestPermissions();
+   if(perm.receive!=='granted')return toast('Уведомления не включены','😔');
+   PN.register();
+   return toast('Уведомления включены!','🔔');
+  }
+  const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(isIOS&&!standalone){
+   toast('На iPhone пуши работают после установки: Поделиться → «На экран "Домой"», затем включите уведомления в профиле','📲',null);
+   return;
+  }
+  if(!('Notification' in window)||!('PushManager' in window))return toast('Браузер не поддерживает уведомления','⚠️');
+  let perm=Notification.permission;
+  if(perm==='default')perm=await Notification.requestPermission();
+  if(perm!=='granted')return toast('Разрешение не выдано — включи уведомления для сайта в настройках iPhone','😔');
+  const reg=await Promise.race([
+   navigator.serviceWorker.ready,
+   new Promise((_,rej)=>setTimeout(()=>rej(new Error('SW не готов — обнови страницу')),8000))
+  ]);
+  const v=await (await fetch(API_BASE+'/api/vapid')).json();
+  let sub=null;
   try{
-    if(isCap){
-      const PN=Capacitor.Plugins.PushNotifications;
-      const perm=await PN.requestPermissions();
-      if(perm.receive!=='granted')return toast('Уведомления не включены','😔');
-      PN.register();
-      return toast('Уведомления включены!','🔔');
-    }
-    const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-    const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
-    if(isIOS&&!standalone){
-      toast('На iPhone пуши работают после установки: Поделиться → «На экран "Домой"», затем включите уведомления в профиле','📲',null);
-      return;
-    }
-    if(!('Notification' in window)||!('PushManager' in window))return toast('Браузер не поддерживает уведомления','⚠️');
-    const perm=await Notification.requestPermission();
-    if(perm!=='granted')return toast('Уведомления не включены','😔');
-    const reg=await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('SW не готов — обнови страницу')),8000))
-    ]);
-    const v=await (await fetch(API_BASE+'/api/vapid')).json();
-    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(v.publicKey)});
-    await api('/push/subscribe',{method:'POST',body:{sub:sub.toJSON()}});
-    refreshPushBtn();
-    toast('Готово! Проверочный пуш уже летит','🔔');
-  }catch(e){toast(e.message,'⚠️')}
-  finally{pushBusy=false;}
+   sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(v.publicKey)});
+  }catch(e){
+   sub=await reg.pushManager.getSubscription();   // уже была подписка — берём её
+   if(!sub)throw e;
+  }
+  await api('/push/subscribe',{method:'POST',body:{sub:sub.toJSON()}});
+  refreshPushBtn();
+  toast('Готово! Проверочный пуш уже летит','🔔');
+ }catch(e){
+  toast((e&&e.message)||'Не удалось включить пуши — обнови страницу и попробуй ещё раз','⚠️');
+ }finally{pushBusy=false;}
 }
+
 
 function togglePushHint(show){
  let h=document.getElementById('pushHint');
@@ -1469,19 +1478,27 @@ function togglePushHint(show){
 
 
 function refreshPushBtn(){
- const pb=$('#pushBtn');
- const av=$('#profileTopBtn');
- 
- // Для нативного приложения (Capacitor)
+ const pb=$('#pushBtn'); const av=$('#profileTopBtn');
+ if(!pb)return;
  if(isCap){
-  if(!pb)return;
   const needPush = me && localStorage.getItem('zt_fcm')!=='1';
-  pb.hidden = !needPush;
-  if(av) av.classList.toggle('pulse-hint', !!needPush);
+  pb.hidden=!needPush;
+  if(av)av.classList.toggle('pulse-hint',!!needPush);
   togglePushHint(!!needPush);
   return;
  }
- 
+ if(!me||!('Notification' in window)){
+  pb.hidden=true; if(av)av.classList.remove('pulse-hint'); togglePushHint(false); return;
+ }
+ if(Notification.permission!=='granted'){
+  pb.hidden=false; if(av)av.classList.add('pulse-hint'); togglePushHint(true); return;
+ }
+ const apply=need=>{pb.hidden=!need; if(av)av.classList.toggle('pulse-hint',need); togglePushHint(need);};
+ Promise.race([
+  navigator.serviceWorker.ready.then(r=>r.pushManager.getSubscription()).then(s=>apply(!s)),
+  new Promise(res=>setTimeout(()=>{apply(true);res();},5000))
+ ]).catch(()=>apply(true));
+}
  // Для браузера / PWA
  if(!pb)return;
  if(!me || !('Notification' in window)){
