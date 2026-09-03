@@ -286,7 +286,8 @@ body.editing .card:hover{transform:none}
 /* ══ чат ══ */
 .chat-fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:95;width:58px;height:58px;border-radius:50%;background:var(--esp);
   display:grid;place-items:center;box-shadow:0 12px 30px -8px rgba(16,20,24,.6);transition:.25s}
-.chat-fab:hover{transform:scale(1.08) rotate(-6deg);background:var(--flame)}
+@media(hover:hover){.chat-fab:hover{transform:scale(1.08) rotate(-6deg);background:var(--flame)}}
+.chat-fab:active{transform:scale(.95);background:var(--flame)}
 .chat-fab::before{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--flame);opacity:.6;animation:ping 2.4s infinite}
 .chat-fab svg{width:26px;height:26px;fill:var(--cream)}
 .chat-fab .ub{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;border-radius:999px;background:var(--flame);color:#fff;
