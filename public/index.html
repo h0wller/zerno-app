@@ -460,6 +460,13 @@ body.is-cashier .cust .acts{min-width:260px}
 /* контраст для доступности */
 .cbody .vol,.form label,.authcard small,.pinhint,.phead .ph{color:#5B6874}
 .brand{cursor:pointer}
+/* промокоды: мобильная раскладка */
+@media(max-width:560px){
+ #promoModal .frow{flex-direction:column;gap:11px}
+}
+#promoModal .form label small{margin-top:4px}
+#pmList .logrow{flex-wrap:wrap}
+
 </style>
 </head>
 <body>
@@ -756,26 +763,42 @@ body.is-cashier .cust .acts{min-width:260px}
   </div>
 </div>
 <div class="modal" id="promoModal">
-  <div class="modal-card">
-    <button class="mclose" id="promoClose">✕</button>
-    <h3>Промокоды и акции</h3>
-    <div class="msub">Код даёт гостю штампы или бесплатный кофе</div>
-    <div class="form">
-      <div class="frow">
-        <label class="f2">Код<input id="pmCode" placeholder="MORE10" style="text-transform:uppercase"></label>
-        <label class="f1">Тип<select id="pmKind"><option value="stamp">Штампы</option><option value="free">Бесплатный кофе</option></select></label>
-      </div>
-      <div class="frow">
-        <label class="f1">Кол-во<input id="pmValue" type="number" min="1" value="1"></label>
-        <label class="f1">Дней (0=∞)<input id="pmDays" type="number" min="0" value="0"></label>
-        <label class="f1">Лимит (0=∞)<input id="pmMax" type="number" min="0" value="0"></label>
-      </div>
-      <button class="btn fire" id="pmCreate">Создать промокод</button>
-    </div>
-    <h4 style="margin-top:16px">Список кодов</h4>
-    <div id="pmList"></div>
+ <div class="modal-card">
+  <button class="mclose" id="promoClose">✕</button>
+  <h3>Промокоды и акции</h3>
+  <div class="msub">Гость активирует код в «Бонусах» → «Есть промокод?»</div>
+  <div class="form">
+   <label>Код
+    <input id="pmCode" placeholder="MORE10" style="text-transform:uppercase">
+    <small>Латиницей, без пробелов. Например: MORE10, SEA5</small>
+   </label>
+   <div class="frow">
+    <label class="f1">Тип
+     <select id="pmKind"><option value="stamp">Штампы</option><option value="free">Бесплатный кофе</option></select>
+     <small>«Штампы» — начислит N штампов. «Кофе» — сразу даст подарок</small>
+    </label>
+    <label class="f1">Кол-во
+     <input id="pmValue" type="number" min="1" value="1">
+     <small>Сколько даст код: штампов или бесплатных кофе</small>
+    </label>
+   </div>
+   <div class="frow">
+    <label class="f1">Дней
+     <input id="pmDays" type="number" min="0" value="0">
+     <small>0 — бессрочно. Иначе сгорит через N дней</small>
+    </label>
+    <label class="f1">Лимит
+     <input id="pmMax" type="number" min="0" value="0">
+     <small>0 — без лимита. Иначе — всего N активаций на всех</small>
+    </label>
+   </div>
+   <button class="btn fire" id="pmCreate">Создать промокод</button>
   </div>
+  <h4 style="margin-top:16px">Список кодов</h4>
+  <div id="pmList"></div>
+ </div>
 </div>
+
 <div class="modal" id="dashModal">
   <div class="modal-card" style="width:min(560px,100%)">
     <button class="mclose" id="dashClose">✕</button>
@@ -1298,12 +1321,16 @@ $('#promoToggle').onclick=()=>{$('#promoModal').classList.add('show');syncOverla
 function closePromo(){$('#promoModal').classList.remove('show');syncOverlay()}
 $('#promoClose').onclick=closePromo;
 async function loadPromos(){try{const r=await api('/promos');
- $('#pmList').innerHTML=r.promos.map(p=>`<div class="logrow" style="align-items:center;gap:8px">
-  <span class="lt">${esc(p.code)}</span>
-  <span style="flex:1">${p.kind==='stamp'?'+'+p.value+' штамп(а)':'+'+p.value+' кофе'} · исп. ${p.uses}${p.maxuses?'/'+p.maxuses:''}${p.expires&&new Date(p.expires)<new Date()?' · истёк':''}</span>
-  <button class="btn ghost" data-pt="${p.id}">${p.active?'Выкл':'Вкл'}</button>
-  <button class="btn ghost danger" data-pd="${p.id}">🗑</button></div>`).join('')
+ $('#pmList').innerHTML=r.promos.map(p=>{
+  const exp=p.expires?new Date(p.expires).toLocaleDateString('ru-RU'):'бессрочно';
+  const dead=p.expires&&new Date(p.expires)<new Date();
+  return `<div class="logrow" style="align-items:center;gap:8px;flex-wrap:wrap">
+   <span class="lt">${esc(p.code)}</span>
+   <span style="flex:1;min-width:150px">${p.kind==='stamp'?'+'+p.value+' штамп(а)':'+'+p.value+' кофе'} · ${dead?'истёк':'до '+exp} · лимит ${p.maxuses||'∞'} · исп. ${p.uses}</span>
+   <button class="btn ghost" data-pt="${p.id}">${p.active?'Выкл':'Вкл'}</button>
+   <button class="btn ghost danger" data-pd="${p.id}">🗑</button></div>`;}).join('')
  ||'<div class="hmini">Пока пусто — создайте первый код</div>';}catch(e){}}
+
 $('#pmList').addEventListener('click',async e=>{
  const t=e.target.closest('[data-pt]'),d=e.target.closest('[data-pd]');
  if(t){await api('/promos/'+t.dataset.pt+'/toggle',{method:'POST'});loadPromos()}
