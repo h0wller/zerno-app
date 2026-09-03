@@ -486,10 +486,15 @@ body.is-cashier .cust .acts{min-width:260px}
  padding:5px 11px;font-size:12px;font-weight:800;box-shadow:0 0 0 2px rgba(228,201,165,.4);animation:freePulse 2.2s infinite}
 @keyframes freePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
 
-.pushHint{position:fixed;top:calc(env(safe-area-inset-top) + 66px);right:12px;background:#E8A13A;color:#fff;
- padding:9px 14px;border-radius:12px;font-size:13px;font-weight:700;z-index:95;animation:tin .4s;
- box-shadow:0 8px 20px rgba(0,0,0,.25);cursor:pointer;max-width:calc(100vw - 24px)}
-.pushHint::before{content:"";position:absolute;top:-5px;right:24px;width:10px;height:10px;background:#E8A13A;transform:rotate(45deg);border-radius:2px}
+.pushHint{position:fixed;top:calc(env(safe-area-inset-top) + 70px);right:14px;background:#E8A13A;color:#fff;
+ padding:10px 16px;border-radius:14px;font-size:13px;font-weight:700;z-index:95;animation:tin .4s;
+ box-shadow:0 10px 24px rgba(0,0,0,.28);cursor:pointer;max-width:calc(100vw - 28px)}
+.pushHint::before{content:"";position:absolute;top:-5px;right:32px;width:12px;height:12px;background:#E8A13A;transform:rotate(45deg);border-radius:3px}
+.demoBtn.glow{border:2px dashed #E8A13A;color:#B26A05;background:#FFF6E5;animation:glowPulse 1.5s infinite}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 0 0 rgba(232,161,58,.5)}50%{box-shadow:0 0 0 10px rgba(232,161,58,0)}}
+
+.freeBanner{margin:8px 0 2px;background:linear-gradient(120deg,#F3E3CE,#E4C9A5);color:#4A3100;border-radius:14px;
+ padding:10px 14px;font-size:13px;font-weight:800;box-shadow:0 6px 16px -6px rgba(200,155,106,.7);animation:rise .3s both}
 
 </style>
 </head>
@@ -566,6 +571,7 @@ body.is-cashier .cust .acts{min-width:260px}
     <div class="info">
       <b id="custName">—</b>
       <div class="cp" id="custPhone">—</div>
+      <div class="freeBanner" id="custFree" hidden>🎁 Бесплатных кофе: <b id="custFreeN">1</b> — предложи списать!</div>
       <div class="cdots" id="custDots"></div>
       <div class="note" id="custNote"></div>
       <div class="chist" id="custHist"></div>
@@ -1435,7 +1441,8 @@ function togglePushHint(show){
   h = document.createElement('div');
   h.id = 'pushHint'; h.className = 'pushHint';
   h.innerHTML = '🔔 Включите пуши тут →';
-  h.onclick = () => { const av=$('#profileTopBtn'); if(av) av.click(); h.remove(); };
+  h.onclick = () => { const av=$('#profileTopBtn'); if(av) av.click(); h.remove();
+    setTimeout(()=>{const pb=$('#pushBtn');if(pb&&!pb.hidden){pb.classList.add('glow');setTimeout(()=>pb.classList.remove('glow'),6000);}},400); };
   document.body.appendChild(h);
  } else if(!show && h){
   h.remove();
@@ -1512,6 +1519,7 @@ function showCust(u,last=null){found=u;
  $('#custName').textContent=u.name;$('#custPhone').textContent=u.phone+' · профиль по номеру';
  $('#custDots').innerHTML=dotsHTML(u,last);
  $('#custNote').textContent=`Штампов: ${u.stamps} из 10`+(u.free?` · бесплатных кофе: ${u.free}`:'');
+ const fb=$('#custFree');if(fb){fb.hidden=u.free<1;const fn=$('#custFreeN');if(fn)fn.textContent=u.free;}
  $('#custHist').innerHTML=(u.history||[]).slice(0,4).map(hrow).join('')||'<div class="hmini">История пуста</div>';
  $('#giveStampBtn').textContent=u.stamps===9?'☕ Пробить 10-й штамп → кофе в подарок'
   :`🫘 Пробить штамп · будет ${u.stamps+1} из 10`;
