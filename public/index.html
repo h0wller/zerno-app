@@ -764,6 +764,7 @@ body.is-cashier .cust .acts{min-width:260px}
   <h3>Код доступа</h3>
   <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только сотрудникам.</div>
   <form id="pinForm">
+   <input type="text" autocomplete="username" hidden>
    <input class="pin" id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
    <button class="cta" id="pinGo">Активировать</button>
   </form>
@@ -776,6 +777,7 @@ body.is-cashier .cust .acts{min-width:260px}
   <h3>Придумайте PIN</h3>
   <div class="msub">4 цифры — вы будете вводить их при входе.<br>Без PIN никто не сможет войти в ваш профиль.</div>
   <form id="setPinForm">
+   <input type="text" autocomplete="username" hidden>
    <input class="pin" id="setPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="new-password">
    <button class="cta" id="setPinGo">Сохранить PIN</button>
   </form>
@@ -1500,27 +1502,27 @@ function refreshPushBtn(){
   togglePushHint(!!needPush);
   return;
  }
- const ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+ const ua=navigator.userAgent;
+ const ios=/iP(hone|ad|od)/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
  const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+ const inApp=/(Telegram|Instagram|FBAN|FBAV|VK|WhatsApp|Twitter)/.test(ua);
  if(!me||!('Notification' in window)||!('PushManager' in window)||!('serviceWorker' in navigator))return hide();
- if(ios&&!standalone)return hide();
- if(Notification.permission!=='granted'){
-  pb.hidden=false;if(av)av.classList.add('pulse-hint');togglePushHint(true);return;
- }
+ if((ios&&!standalone)||inApp)return hide();
  let done=false;
  const apply=need=>{if(done)return;done=true;
   pb.hidden=!need;if(av)av.classList.toggle('pulse-hint',need);togglePushHint(need);};
- const t=setTimeout(()=>apply(true),8000);
- (async()=>{try{
-  const reg=await navigator.serviceWorker.ready;
-  let s=await reg.pushManager.getSubscription();
-  if(!s){
-   const v=await (await fetch(API_BASE+'/api/vapid')).json();
-   s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(v.publicKey)});
-   await api('/push/subscribe',{method:'POST',body:{sub:s.toJSON()}});
-  }
-  clearTimeout(t);apply(!s);
- }catch(e){clearTimeout(t);apply(true);}})();
+ const t=setTimeout(()=>apply(false),3000); // SW не стартовал (Telegram Desktop) — прячем
+ navigator.serviceWorker.ready.then(async reg=>{
+  try{
+   let s=await reg.pushManager.getSubscription();
+   if(!s&&Notification.permission==='granted'){
+    const v=await (await fetch(API_BASE+'/api/vapid')).json();
+    s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(v.publicKey)});
+    await api('/push/subscribe',{method:'POST',body:{sub:s.toJSON()}});
+   }
+   clearTimeout(t);apply(!s);
+  }catch(e){clearTimeout(t);apply(false);}
+ }).catch(()=>{clearTimeout(t);apply(false);});
 }
 
 /* ── FCM (нативное приложение) ── */
