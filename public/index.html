@@ -1027,6 +1027,11 @@ document.addEventListener('submit',e=>{e.preventDefault();
  else if(e.target.id==='pinForm')$('#pinGo').click();
  else if(e.target.id==='setPinForm')$('#setPinGo').click();
 });
+/* клавиатура не должна открываться над скрытыми полями */
+document.addEventListener('focusin',e=>{const t=e.target;
+ if(t&&t.tagName==='INPUT'&&t.closest('[hidden], .modal:not(.show)'))t.blur();});
+addEventListener('load',()=>{const a=document.activeElement;
+ if(a&&a.tagName==='INPUT'&&a.closest('[hidden], .modal:not(.show)'))a.blur();});
 $('#activateBtn').onclick=openPin;
 $('#setPinBtn').onclick=()=>openSetPin('change');
 function armPw(){['regPin','logPin','logOtp','setPinInput','pinInput'].forEach(id=>{const el=document.getElementById(id);if(el)el.type='password';});}
