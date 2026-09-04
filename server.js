@@ -308,7 +308,7 @@ const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
 if (!c) return res.status(404).json({ error: 'Профиль не найден' });
 if (!c.tg) return res.status(400).json({ error: 'Telegram не привязан — войдите по PIN' });
 const wait = lockedSeconds(req, 'login');
-if (wait > 0) return res.status(429).json({ error: 'Слишком часто. Пауза ${wait} сек.' });
+if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
 const code = String(Math.floor(1000 + Math.random() * 9000));
 otpStore.set(p, { code, expires: Date.now() + 5 * 60 * 1000 });
 tgSend(c.tg, `🔑 Код для входа в приложение: ${code}\nДействует 5 минут. Никому не сообщайте!`);
@@ -456,7 +456,6 @@ app.post('/api/push/subscribe', userGuard, (req, res) => {
   if (!sub || !sub.endpoint) return res.status(400).json({ error: 'bad sub' });
   const s = JSON.stringify(sub);
   const existed = db.prepare('SELECT 1 FROM subs WHERE cid=? AND sub=?').get(req.user.id, s);
-  db.prepare('DELETE FROM subs WHERE cid=? AND sub!=?').run(req.user.id, s);
   db.prepare('INSERT OR IGNORE INTO subs(cid,sub,created) VALUES(?,?,?)').run(req.user.id, s, nowISO());
   if (!existed) sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
   res.json({ ok: true });

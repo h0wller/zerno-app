@@ -738,33 +738,35 @@ body.is-cashier .cust .acts{min-width:260px}
     </svg></div>
     <h3 id="authTitle">Создайте профиль</h3>
     <div class="msub">Штампы и бесплатные кофе — по номеру телефона.<br>Никаких карт и анкет.</div>
-    <div id="regForm" style="display:flex;flex-direction:column;gap:11px">
-      <label>Имя<input id="regName" maxlength="24" placeholder="Как к вам обращаться?"></label>
+    <form id="regForm" style="display:flex;flex-direction:column;gap:11px">      <label>Имя<input id="regName" maxlength="24" placeholder="Как к вам обращаться?"></label>
 <label>Телефон<input id="regPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
 <label>PIN-код (4 цифры)<input id="regPin" type="password" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password"></label>
 <small style="color:#8B98A5;font-size:11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная номер</small>
       <button class="cta" id="regBtn">Создать профиль</button>
-      <div class="alt">Уже есть профиль? <button id="toLogin">Войти по номеру</button></div>
-    </div>
-    <div id="loginForm" style="display:none;flex-direction:column;gap:11px">
+      <div class="alt">Уже есть профиль? <button type="button" id="toLogin">Войти по номеру</button></div>
+    </form>
+    <form id="loginForm" style="display:none;flex-direction:column;gap:11px">
     <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
     <label id="logPinRow">PIN-код<input id="logPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="current-password"></label>
     <div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" type="password" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label></div>
       <button class="cta" id="logBtn">Войти</button>
-      <div class="alt" id="otpBackRow" style="display:none"><button id="otpBack">← Вернуться ко входу по PIN</button></div>
-      <div class="alt"><button id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
-      <div class="alt"><button id="toReg">← Создать новый профиль</button></div>
-      <div class="alt"><button id="skipAuth">Просто посмотреть меню →</button></div>
+      <div class="alt" id="otpBackRow" style="display:none"><button type="button" id="otpBack">← Вернуться ко входу по PIN</button></div>
+      <div class="alt"><button type="button" id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
+      <div class="alt"><button type="button" id="toReg">← Создать новый профиль</button></div>
+      <div class="alt"><button type="button" id="skipAuth">Просто посмотреть меню →</button></div>
+    </form>
     </div>
-</div>
-</div>
+    </div>
+
 <div class="modal" id="pinModal">
  <div class="modal-card" style="width:min(360px,100%);text-align:center">
   <button class="mclose" id="pinClose">✕</button>
   <h3>Код доступа</h3>
   <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только сотрудникам.</div>
-  <input class="pin" id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
-  <button class="cta" id="pinGo">Активировать</button>
+  <form id="pinForm">
+   <input class="pin" id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+   <button class="cta" id="pinGo">Активировать</button>
+  </form>
   <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
  </div>
 </div>
@@ -773,10 +775,11 @@ body.is-cashier .cust .acts{min-width:260px}
   <button class="mclose" id="setPinClose">✕</button>
   <h3>Придумайте PIN</h3>
   <div class="msub">4 цифры — вы будете вводить их при входе.<br>Без PIN никто не сможет войти в ваш профиль.</div>
-<input class="pin" id="setPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="new-password">
-  <button class="cta" id="setPinGo">Сохранить PIN</button>
-    <div class="alt"><button id="setPinOtp">🔑 Не помню PIN — код в Telegram</button></div>
-
+  <form id="setPinForm">
+   <input class="pin" id="setPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="new-password">
+   <button class="cta" id="setPinGo">Сохранить PIN</button>
+  </form>
+  <div class="alt"><button type="button" id="setPinOtp">🔑 Не помню PIN — код в Telegram</button></div>
  </div>
 </div>
 
@@ -1013,7 +1016,13 @@ async function tryActivate(){const v=$('#pinInput').value.trim();
    toast(e.message,'⛔');p.value='';
   }}}
 $('#pinGo').onclick=tryActivate;
-$('#pinInput').addEventListener('keydown',e=>{if(e.key==='Enter')tryActivate()});
+document.addEventListener('submit',e=>{e.preventDefault();
+ if(e.submitter)return; // клик по кнопке — её onclick уже сработал
+ if(e.target.id==='regForm')$('#regBtn').click();
+ else if(e.target.id==='loginForm')$('#logBtn').click();
+ else if(e.target.id==='pinForm')$('#pinGo').click();
+ else if(e.target.id==='setPinForm')$('#setPinGo').click();
+});
 $('#activateBtn').onclick=openPin;
 $('#setPinBtn').onclick=()=>openSetPin('change');
 
@@ -1390,12 +1399,13 @@ $('#dashToggle').onclick=async()=>{
   }catch(e){toast(e.message,'⚠️')}
 }
  async function loadSubs(){try{const ps=await api('/push/subs');
+ const groups={};
+ ps.subs.forEach(s=>{const k=(s.name||'—')+'|'+(s.phone||'');
+  (groups[k]=groups[k]||{name:s.name,phone:s.phone,created:s.created,n:0}).n++;});
  const row=(s,tag)=>`<div class="hmini"><b>${esc(s.name||'—')}</b> · ${esc(s.phone||'')} · ${tag} · ${new Date(s.created).toLocaleDateString('ru-RU')}</div>`;
- $('#pushSubs').innerHTML=(ps.subs.map(s=>row(s,'🔔 пуш')).join('')+(ps.tg||[]).map(s=>row(s,'🤖 TG')).join(''))
+ const web=Object.values(groups).map(g=>row(g,'🔔 пуш'+(g.n>1?` · устройств: ${g.n}`:'')));
+ $('#pushSubs').innerHTML=(web.join('')+(ps.tg||[]).map(s=>row(s,'🤖 TG')).join(''))
   ||'<div class="hmini">Пока никто не подписан</div>';}catch(e){}}
-$('#pushSubs').addEventListener('click',async e=>{const b=e.target.closest('[data-pdel]');if(!b)return;
- if(!confirm('Удалить подписку этого устройства?'))return;
- try{await api('/push/del',{method:'POST',body:{cid:b.dataset.pdel}});loadSubs();toast('Подписка удалена','🗑')}catch(err){toast(err.message,'⚠️')}});
  
 function closeDash(){$('#dashModal').classList.remove('show');syncOverlay()}
 $('#dashClose').onclick=closeDash;
@@ -1482,28 +1492,36 @@ function togglePushHint(show){
 function refreshPushBtn(){
  const pb=$('#pushBtn'); const av=$('#profileTopBtn');
  if(!pb)return;
+ const hide=()=>{pb.hidden=true;if(av)av.classList.remove('pulse-hint');togglePushHint(false);};
  if(isCap){
-  const needPush = me && localStorage.getItem('zt_fcm')!=='1';
+  const needPush=me&&localStorage.getItem('zt_fcm')!=='1';
   pb.hidden=!needPush;
   if(av)av.classList.toggle('pulse-hint',!!needPush);
   togglePushHint(!!needPush);
   return;
  }
- if(!me||!('Notification' in window)){
-  pb.hidden=true; if(av)av.classList.remove('pulse-hint'); togglePushHint(false); return;
- }
+ const ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+ const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+ if(!me||!('Notification' in window)||!('PushManager' in window)||!('serviceWorker' in navigator))return hide();
+ if(ios&&!standalone)return hide();
  if(Notification.permission!=='granted'){
-  pb.hidden=false; if(av)av.classList.add('pulse-hint'); togglePushHint(true); return;
+  pb.hidden=false;if(av)av.classList.add('pulse-hint');togglePushHint(true);return;
  }
-  let done=false;
+ let done=false;
  const apply=need=>{if(done)return;done=true;
-  pb.hidden=!need; if(av)av.classList.toggle('pulse-hint',need); togglePushHint(need);};
- Promise.race([
-  navigator.serviceWorker.ready.then(r=>r.pushManager.getSubscription()).then(s=>apply(!s)),
-  new Promise(res=>setTimeout(()=>{apply(true);res();},5000))
- ]).catch(()=>apply(true));
+  pb.hidden=!need;if(av)av.classList.toggle('pulse-hint',need);togglePushHint(need);};
+ const t=setTimeout(()=>apply(true),8000);
+ (async()=>{try{
+  const reg=await navigator.serviceWorker.ready;
+  let s=await reg.pushManager.getSubscription();
+  if(!s){
+   const v=await (await fetch(API_BASE+'/api/vapid')).json();
+   s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(v.publicKey)});
+   await api('/push/subscribe',{method:'POST',body:{sub:s.toJSON()}});
+  }
+  clearTimeout(t);apply(!s);
+ }catch(e){clearTimeout(t);apply(true);}})();
 }
-$('#pushBtn').onclick=enablePush;
 
 /* ── FCM (нативное приложение) ── */
 const isCap=!!(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.PushNotifications);
