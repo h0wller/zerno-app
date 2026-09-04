@@ -529,10 +529,10 @@ app.get('/api/chat/list', staffGuard, (req, res) => {
   const rows = db.prepare(`SELECT c.key, MAX(c.id) mid,
     SUM(CASE WHEN c.who='guest' AND c.read_s=0 THEN 1 ELSE 0 END) unread,
     MAX(CASE WHEN c.who='guest' THEN c.human ELSE 0 END) human,
-    IFNULL(m.closed,0) closed
+    IFNULL(m.closed,0) closed, IFNULL(m.staff_in,0) staff_in
     FROM chat c LEFT JOIN chat_meta m ON m.key=c.key
     GROUP BY c.key ORDER BY mid DESC LIMIT 50`).all();
-  res.json({ threads: rows.filter(r => showClosed ? r.closed : !r.closed).map(r => {
+  res.json({ threads: rows.filter(r => showClosed ? r.closed : (!r.closed && (r.human || r.staff_in))).map(r => {
     const c = db.prepare('SELECT name FROM customers WHERE id=?').get(r.key);
     return { key: r.key, name: c ? c.name : 'Гость', unread: r.unread, human: r.human };
   }) });

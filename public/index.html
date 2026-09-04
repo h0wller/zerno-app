@@ -497,6 +497,8 @@ body.is-cashier .cust .acts{min-width:260px}
 .freeBanner{margin:8px 0 2px;background:linear-gradient(120deg,#F3E3CE,#E4C9A5);color:#4A3100;border-radius:14px;
  padding:10px 14px;font-size:13px;font-weight:800;box-shadow:0 6px 16px -6px rgba(200,155,106,.7);animation:rise .3s both}
 
+.chips button[data-armed="1"]{border-color:#B3372B;color:#B3372B;font-weight:800}
+
 </style>
 </head>
 <body>
@@ -1603,9 +1605,23 @@ function addMsg(who,text){const m=document.createElement('div');m.className='msg
 function showTyping(){const t=document.createElement('div');t.className='typing';t.id='tp';t.innerHTML='<i></i><i></i><i></i>';
  $('#chatMsgs').append(t);$('#chatMsgs').scrollTop=1e6}
 function hideTyping(){const t=$('#tp');t&&t.remove()}
-$('#chatChips').innerHTML=['Как работает 10-й кофе?','Где вы?','Какие чаи есть?','Моти — какие вкусы?']
+const CALL_LABEL='🙋 Позвать сотрудника';
+$('#chatChips').innerHTML=['Как работает 10-й кофе?','Где вы?','Какие чаи есть?','Моти — какие вкусы?',CALL_LABEL]
  .map(t=>`<button>${t}</button>`).join('');
-$('#chatChips').addEventListener('click',e=>{const b=e.target.closest('button');if(b)sendChat(b.textContent)});
+let callTimer=null;
+$('#chatChips').addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.armed==='1'){ // второй тап — осознанно
+  clearTimeout(callTimer);b.dataset.armed='';b.textContent=CALL_LABEL;
+  return sendChat('🙋 Позовите, пожалуйста, сотрудника');
+ }
+ if(b.textContent===CALL_LABEL){ // первый тап — взводим
+  b.dataset.armed='1';b.textContent='❗ Точно позвать? Нажмите ещё раз';
+  callTimer=setTimeout(()=>{b.dataset.armed='';b.textContent=CALL_LABEL;},4000);
+  return;
+ }
+ sendChat(b.textContent);
+});
 function botReply(q){q=q.toLowerCase();
  if(/привет|здравств|добр/.test(q))return'Здравствуйте! 👋 Это Ника из «…и кофе». Подскажу по меню, бонусам и чаю.';
  if(/инст|insta/.test(q))return'Мы в Инстаграм! 📸 https://www.instagram.com/and_coffee39/ — подписывайтесь.';
@@ -1624,6 +1640,7 @@ function botReply(q){q=q.toLowerCase();
  if(/возврат|вернуть/.test(q))return'Возврат оформим на кассе по чеку — мгновенно. Деньги вернутся на карту за 3–5 дней.';
  if(/спасибо|благодар/.test(q))return'Всегда рады! Приходите ещё — море рядом, кофе горячий 💙';
  if(/отзыв|рейтинг|оценить|яндекс/.test(q))return'Будем рады вашему отзыву! 🌟 Ссылка: '+REVIEW_URL+' — это правда помогает маленькой кофейне у моря.';
+ if(/позов|сотруд|человек|менедж|оператор|живой/.test(q))return'Приняла! Зову сотрудника — обычно отвечаем за 2–3 минуты 🙋';
  return'Приняла! Передаю человеку — обычно отвечаем за 2–3 минуты. А пока могу рассказать про: чаи, моти, бонусы, адрес и часы работы.'}
  
 function chatKey(){
