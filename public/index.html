@@ -1606,8 +1606,12 @@ function showTyping(){const t=document.createElement('div');t.className='typing'
  $('#chatMsgs').append(t);$('#chatMsgs').scrollTop=1e6}
 function hideTyping(){const t=$('#tp');t&&t.remove()}
 const CALL_LABEL='🙋 Позвать сотрудника';
-$('#chatChips').innerHTML=['Как работает 10-й кофе?','Где вы?','Какие чаи есть?','Моти — какие вкусы?',CALL_LABEL]
- .map(t=>`<button>${t}</button>`).join('');
+function renderChips(){
+ const list=['Как работает 10-й кофе?','Где вы?','Какие чаи есть?','Моти — какие вкусы?'];
+ if(me)list.push(CALL_LABEL);
+ $('#chatChips').innerHTML=list.map(t=>`<button>${t}</button>`).join('');
+}
+renderChips();
 let callTimer=null;
 $('#chatChips').addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
@@ -1653,11 +1657,14 @@ function sendChat(text){if(!text.trim())return;addMsg('me',text);$('#chatInput')
  if(staffIn){
   fetch(API_BASE+'/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text,human:0})}).catch(()=>{});
   return;}
- const reply=botReply(text);const human=reply.startsWith('Приняла!')?1:0;
+ const reply=botReply(text);
+ const needHuman=reply.startsWith('Приняла!');
+ const human=needHuman&&me?1:0;
+ const out=needHuman&&!me?'Передала бы вопрос сотруднику, но они отвечают только гостям с профилем 🙂 Создайте его за 10 секунд — тапните на аватарку сверху. А я подскажу по меню, бонусам и чаю!':reply;
  fetch(API_BASE+'/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text,human})}).catch(()=>{});
  showTyping();
- setTimeout(()=>{hideTyping();addMsg('bot',reply);
-  fetch(API_BASE+'/api/chat/botlog',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text:reply})}).catch(()=>{});
+ setTimeout(()=>{hideTyping();addMsg('bot',out);
+  fetch(API_BASE+'/api/chat/botlog',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text:out})}).catch(()=>{});
   if(!$('#chatPanel').classList.contains('open')){unread++;const b=$('#chatBadge');b.hidden=false;b.textContent=unread}},900+Math.random()*700)}
 $('#chatSend').onclick=()=>sendChat($('#chatInput').value);
 $('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat($('#chatInput').value)});
@@ -1784,7 +1791,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();c
 if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
 
 bindMask($('#regPhone'));bindMask($('#logPhone'));bindMask($('#ngPhone'));
-function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();renderModes();
+function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();renderModes();renderChips();
  const s=(me&&me.qr)||'guest';drawQR($('#qrMini'),s);drawQR($('#qrMain'),s);
  if(mode==='cashier')renderLog()}
 (async function boot(){

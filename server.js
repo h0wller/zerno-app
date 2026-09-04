@@ -503,10 +503,12 @@ app.post('/api/chat/send', (req, res) => {
   const key = String(req.body.key || '').slice(0, 64);
   const text = String(req.body.text || '').slice(0, 2000);
   if (!key || !text) return res.status(400).json({ error: 'bad request' });
-  db.prepare('INSERT INTO chat(key,who,text,ts,human,read_s) VALUES(?,?,?,?,?,0)')
-    .run(key, 'guest', text, nowISO(), req.body.human ? 1 : 0);
-  db.prepare('INSERT INTO chat_meta(key,closed) VALUES(?,0) ON CONFLICT(key) DO UPDATE SET closed=0').run(key);
-  if (req.body.human) {
+  const isUser = !!db.prepare('SELECT 1 FROM customers WHERE id=?').get(key);
+const human = req.body.human && isUser ? 1 : 0;
+db.prepare('INSERT INTO chat(key,who,text,ts,human,read_s) VALUES(?,?,?,?,?,0)')
+.run(key, 'guest', text, nowISO(), human);
+db.prepare('INSERT INTO chat_meta(key,closed) VALUES(?,0) ON CONFLICT(key) DO UPDATE SET closed=0').run(key);
+if (human) {
     const staff = db.prepare("SELECT id FROM customers WHERE role IN ('cashier','admin')").all();
     for (const s of staff) sendPush(s.id, '💬 Новый вопрос гостя', text.slice(0, 80));
   }
