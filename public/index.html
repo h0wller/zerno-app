@@ -742,9 +742,11 @@ body.is-cashier .cust .acts{min-width:260px}
     <div class="msub">Штампы и бесплатные кофе — по номеру телефона.<br>Никаких карт и анкет.</div>
     <form id="regForm" style="display:flex;flex-direction:column;gap:11px">      <label>Имя<input id="regName" maxlength="24" placeholder="Как к вам обращаться?"></label>
 <label>Телефон<input id="regPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
-<button type="button" class="btn fire" id="regOtpBtn" style="width:100%">📨 Получить код по SMS</button>
+<button type="button" class="btn fire" id="regTgBtn" style="width:100%">🤖 Подтвердить в Telegram · бесплатно</button>
+<div id="regTgRow" hidden style="font-size:11.5px;color:#1E7A4E;text-align:center;font-weight:700">✅ Номер подтверждён — завершите регистрацию</div>
+<button type="button" class="btn ghost" id="regOtpBtn" style="width:100%;margin-top:8px">📨 Код по SMS (платная опция)</button>
 <label id="regOtpRow" hidden>Код из SMS<input id="regOtp" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label>
-<label>PIN-код (4 цифры)<input id="regPin" type="text" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password"></label>
+<label id="regPinRow">PIN-код (4 цифры)<input id="regPin" type="text" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password"></label>
 <small style="color:#8B98A5;font-size:11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная номер</small>
       <button class="cta" id="regBtn">Создать профиль</button>
       <div class="alt">Уже есть профиль? <button type="button" id="toLogin">Войти по номеру</button></div>
@@ -1066,6 +1068,21 @@ $('#regBtn').onclick=async()=>{
   toast('Профиль создан! Покажите QR кассиру за штампами','🎉')}
  catch(e){if(e.code===409){toast('Этот номер уже зарегистрирован — входим','🔗');
   $('#logPhone').value=fmtPhone(phone);authSwap(true)}else toast(e.message,'⚠️')}};
+  let regPoll=null;
+$('#regTgBtn').onclick=async()=>{
+ const ph=$('#regPhone').value;
+ if(ph10(ph).length<10)return toast('Введите номер полностью','📵');
+ try{
+  const r=await api('/auth/request-reg-otp',{method:'POST',body:{phone:ph,via:'tg'}});
+  window.open(r.tgUrl,'_blank');
+  toast('Подтвердите номер в Telegram','🤖');
+  if(regPoll)clearInterval(regPoll);
+  regPoll=setInterval(async()=>{
+   try{const c=await api('/auth/check-reg?phone='+encodeURIComponent(ph));
+    if(c.confirmed){clearInterval(regPoll);regPoll=null;$('#regTgRow').hidden=false;toast('Номер подтверждён через Telegram','🎉');}
+   }catch(e){}
+  },3000);
+ }catch(e){toast(e.message,'⚠️')}};
   $('#regOtpBtn').onclick=async()=>{
  const ph=$('#regPhone').value;
  if(ph10(ph).length<10)return toast('Введите номер полностью','📵');

@@ -255,10 +255,17 @@ app.delete('/api/menu/:id', adminGuard, (req, res) => {
 });
 app.post('/api/auth/request-reg-otp', (req, res) => {
   const p = fmtPhone(req.body.phone || '');
+  const via = req.body.via === 'tg' ? 'tg' : 'sms';
   if (ph10(p).length < 10) return res.status(400).json({ error: 'Введите номер полностью' });
   if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return res.status(409).json({ error: 'Номер уже зарегистрирован — войдите' });
   const wait = lockedSeconds(req, 'reg');
   if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
+  if (via === 'tg') {
+    const token = crypto.randomBytes(6).toString('hex');
+    otpStore.set('regtg:' + token, { phone: p, expires: Date.now() + 10 * 60 * 1000 });
+    otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
+    return res.json({ ok: true, tgUrl: `https://t.me/and_coffee_bot?start=reg_${token}` });
+  }
   const st = otpStore.get('reg:' + p);
   if (st && Date.now() - (st.lastSent || 0) < 60000) return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
   if (st && st.sent >= 5) return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
@@ -267,20 +274,29 @@ app.post('/api/auth/request-reg-otp', (req, res) => {
   sendSms(p, `…и кофе 🌊 Код регистрации: ${code}`);
   res.json({ ok: true });
 });
+app.get('/api/auth/check-reg', (req, res) => {
+  const p = fmtPhone(req.query.phone || '');
+  const st = otpStore.get('reg:' + p);
+  res.json({ confirmed: !!(st && st.confirmed && Date.now() < st.expires) });
+});
 /* ── аккаунты ── */
 app.post('/api/auth/register', (req, res) => {
 const p = fmtPhone(req.body.phone || '');
-if (SMS_API) {
- const code = String(req.body.code || '').trim();
- const st = otpStore.get('reg:' + p);
- if (!st || Date.now() > st.expires) return res.status(403).json({ error: 'Код из SMS просрочен — запросите новый' });
- if (st.code !== code) { registerFail(req, 'reg'); return res.status(403).json({ error: 'Неверный код из SMS' }); }
- otpStore.delete('reg:' + p); pinLocks.delete(lockKey(req, 'reg'));
-}
+const code = String(req.body.code || '').trim();
+const st = otpStore.get('reg:' + p);
+const okTg = !!(st && st.confirmed && Date.now() < st.expires);
+const okSms = !!(st && st.code && code && st.code === code && Date.now() < st.expires);
+if (!okTg && !okSms && SMS_API) return res.status(403).json({ error: 'Подтвердите номер через Telegram или кодом из SMS' });
+if (okSms) pinLocks.delete(lockKey(req, 'reg'));
+const tgChat = okTg ? (st.tgChat || null) : null;
+if (okTg || okSms) otpStore.delete('reg:' + p);
 const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
 if (r.err) return res.status(r.code).json({ error: r.err });
-res.json({ token: issueToken(r.customer.id), customer: r.customer });
+if (tgChat) { db.prepare('UPDATE customers SET tg=? WHERE id=?').run(tgChat, r.customer.id);
+  addHist(r.customer.id, 'Telegram привязан при регистрации', 'Система'); }
+res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
 });
+
 app.post('/api/auth/login', (req, res) => {
 const p = fmtPhone(req.body.phone || '');
 const pin = String(req.body.pin || '').trim();
@@ -607,11 +623,32 @@ app.post('/api/tg/webhook', (req, res) => {
   if (!u || !u.message) return;
   const chatId = String(u.message.chat.id);
   const text = String(u.message.text || '').trim();
+  if (text.startsWith('/start reg_')) {
+  const token = text.slice(11).trim();
+  const st = otpStore.get('regtg:' + token);
+  if (!st || Date.now() > st.expires) { tgSend(chatId, 'Ссылка для подтверждения устарела 😔 Нажми «Подтвердить в Telegram» в приложении ещё раз.'); return; }
+  otpStore.set('regchat:' + chatId, { token, phone: st.phone, expires: Date.now() + 10 * 60 * 1000 });
+  fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: `Подтверждаю номер ${fmtPhone(st.phone)} — нажмите кнопку ниже 👇`, reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true } }) }).catch(() => {});
+  return;
+}
   if (text === '/start') {
     tgSend(chatId, 'Привет! Я бот кофейни «…и кофе» 🌊\n\nПривяжите профиль — и штампы, подарки и акции будут приходить прямо сюда.\n\nНажмите кнопку «Поделиться номером» 👇');
     fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '📱', reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true } }) }).catch(() => {});
     return;
   }
+  if (u.message.contact) {
+  const pend = otpStore.get('regchat:' + chatId);
+  if (pend && Date.now() < pend.expires) {
+    if (fmtPhone(u.message.contact.phone_number) === fmtPhone(pend.phone)) {
+      otpStore.set('reg:' + fmtPhone(pend.phone), { code: null, confirmed: true, tgChat: chatId, expires: Date.now() + 10 * 60 * 1000 });
+      otpStore.delete('regchat:' + chatId); otpStore.delete('regtg:' + pend.token);
+      tgSend(chatId, '✅ Номер подтверждён! Вернитесь в приложение и завершите регистрацию.');
+    } else {
+      tgSend(chatId, 'Номер не совпадает с указанным в приложении 😕 Нажмите кнопку ещё раз.');
+    }
+    return;
+  }
+}
   const phone = u.message.contact ? u.message.contact.phone_number : text;
   const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(fmtPhone(phone));
   if (c) {
