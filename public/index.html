@@ -498,7 +498,7 @@ body.is-cashier .cust .acts{min-width:260px}
  padding:10px 14px;font-size:13px;font-weight:800;box-shadow:0 6px 16px -6px rgba(200,155,106,.7);animation:rise .3s both}
 
 .chips button[data-armed="1"]{border-color:#B3372B;color:#B3372B;font-weight:800}
-
+#profileView img,#profileView canvas{cursor:pointer}
 </style>
 </head>
 <body>
@@ -1030,6 +1030,15 @@ document.addEventListener('submit',e=>{e.preventDefault();
  else if(e.target.id==='loginForm')$('#logBtn').click();
  else if(e.target.id==='pinForm')$('#pinGo').click();
  else if(e.target.id==='setPinForm')$('#setPinGo').click();
+});
+/* тап по самому QR = «на весь экран для кассира» */
+document.addEventListener('click',e=>{
+ const t=e.target, pv=$('#profileView');
+ if(!pv||!pv.contains(t))return;
+ if(t.tagName==='IMG'||t.tagName==='CANVAS'||t.closest('svg')){
+  const b=[...document.querySelectorAll('button')].find(x=>x.textContent.includes('На весь экран'));
+  if(b)b.click();
+ }
 });
 /* клавиатура не должна открываться над скрытыми полями */
 document.addEventListener('focusin',e=>{const t=e.target;
