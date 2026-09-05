@@ -742,6 +742,8 @@ body.is-cashier .cust .acts{min-width:260px}
     <div class="msub">Штампы и бесплатные кофе — по номеру телефона.<br>Никаких карт и анкет.</div>
     <form id="regForm" style="display:flex;flex-direction:column;gap:11px">      <label>Имя<input id="regName" maxlength="24" placeholder="Как к вам обращаться?"></label>
 <label>Телефон<input id="regPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
+<button type="button" class="btn fire" id="regOtpBtn" style="width:100%">📨 Получить код по SMS</button>
+<label id="regOtpRow" hidden>Код из SMS<input id="regOtp" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label>
 <label>PIN-код (4 цифры)<input id="regPin" type="text" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password"></label>
 <small style="color:#8B98A5;font-size:11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная номер</small>
       <button class="cta" id="regBtn">Создать профиль</button>
@@ -1056,15 +1058,20 @@ function setUser(token,customer){USER_TOKEN=token;localStorage.setItem(T_USER,to
 const fcmT=localStorage.getItem('zt_fcm_token');
 if(fcmT&&me)api('/push/fcm',{method:'POST',body:{token:fcmT}}).catch(()=>{});}
 $('#regBtn').onclick=async()=>{
- const name=$('#regName').value.trim(),phone=$('#regPhone').value,pin=$('#regPin').value.trim();
+ const name=$('#regName').value.trim(),phone=$('#regPhone').value,pin=$('#regPin').value.trim(),code=$('#regOtp').value.trim();
  if(name.length<2)return toast('Введите имя','✍️');
  if(ph10(phone).length<10)return toast('Введите номер полностью','📵');
  if(!/^\d{4}$/.test(pin))return toast('PIN — ровно 4 цифры','🔐');
- try{const r=await api('/auth/register',{method:'POST',body:{name,phone,pin}});
-  setUser(r.token,r.customer);closeAuth();renderAll();
+ try{const r=await api('/auth/register',{method:'POST',body:{name,phone,pin,code}});  setUser(r.token,r.customer);closeAuth();renderAll();
   toast('Профиль создан! Покажите QR кассиру за штампами','🎉')}
  catch(e){if(e.code===409){toast('Этот номер уже зарегистрирован — входим','🔗');
   $('#logPhone').value=fmtPhone(phone);authSwap(true)}else toast(e.message,'⚠️')}};
+  $('#regOtpBtn').onclick=async()=>{
+ const ph=$('#regPhone').value;
+ if(ph10(ph).length<10)return toast('Введите номер полностью','📵');
+ try{await api('/auth/request-reg-otp',{method:'POST',body:{phone:ph}});
+  $('#regOtpRow').hidden=false;toast('Код отправлен по SMS','📨');}
+ catch(e){toast(e.message,'⚠️')}};
 let loginMode='pin';
 $('#logBtn').onclick=async()=>{
  const phone=$('#logPhone').value;
