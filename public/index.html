@@ -1038,7 +1038,7 @@ document.addEventListener('click',e=>{
  if(!media)return;
  let n=media;
  for(let i=0;i<6&&n&&n!==document.body;n=n.parentElement,i++){
-  const b=[...n.querySelectorAll('button')].find(x=>x.textContent.includes('На весь экран')&&x.offsetParent!==null);
+  const b=[...n.querySelectorAll('button')].find(x=>x.textContent.toLowerCase().includes('на весь экран')&&x.offsetParent!==null);
   if(b){b.click();return;}
  }
 });
