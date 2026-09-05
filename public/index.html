@@ -1031,13 +1031,15 @@ document.addEventListener('submit',e=>{e.preventDefault();
  else if(e.target.id==='pinForm')$('#pinGo').click();
  else if(e.target.id==='setPinForm')$('#setPinGo').click();
 });
-/* тап по самому QR = «на весь экран для кассира» */
+/* тап по самому QR = «на весь экран» (профиль и бонусы) */
 document.addEventListener('click',e=>{
- const t=e.target, pv=$('#profileView');
- if(!pv||!pv.contains(t))return;
- if(t.tagName==='IMG'||t.tagName==='CANVAS'||t.closest('svg')){
-  const b=[...document.querySelectorAll('button')].find(x=>x.textContent.includes('На весь экран'));
-  if(b)b.click();
+ const t=e.target;
+ const media=t.closest&&t.closest('canvas,img,svg,table');
+ if(!media)return;
+ let n=media;
+ for(let i=0;i<6&&n&&n!==document.body;n=n.parentElement,i++){
+  const b=[...n.querySelectorAll('button')].find(x=>x.textContent.includes('На весь экран')&&x.offsetParent!==null);
+  if(b){b.click();return;}
  }
 });
 /* клавиатура не должна открываться над скрытыми полями */
