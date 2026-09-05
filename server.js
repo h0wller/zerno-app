@@ -112,6 +112,11 @@ async function sendTg(cid, title, body) {
   const c = db.prepare('SELECT tg FROM customers WHERE id=?').get(cid);
   if (c && c.tg) await tgSend(c.tg, `${title}\n${body}`);
 }
+const SMS_API = process.env.SMSRU_API_ID || '';
+async function sendSms(phone, text) {
+  if (!SMS_API) { console.log('[DEV SMS]', phone, text); return; }
+  try { await fetch(`https://sms.ru/sms/send?api_id=${SMS_API}&to=7${ph10(phone)}&text=${encodeURIComponent(text)}&json=1`); } catch (e) {}
+}
 /* ── FCM для нативного приложения ── */
 if (process.env.FIREBASE_SA) {
   try { initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_SA)) }); fcmReady = true; }
@@ -248,9 +253,30 @@ app.put('/api/menu/:id', adminGuard, (req, res) => {
 app.delete('/api/menu/:id', adminGuard, (req, res) => {
   db.prepare('DELETE FROM menu WHERE id=?').run(req.params.id); touch(); res.json({ ok: true });
 });
-
+app.post('/api/auth/request-reg-otp', (req, res) => {
+  const p = fmtPhone(req.body.phone || '');
+  if (ph10(p).length < 10) return res.status(400).json({ error: 'Введите номер полностью' });
+  if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return res.status(409).json({ error: 'Номер уже зарегистрирован — войдите' });
+  const wait = lockedSeconds(req, 'reg');
+  if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
+  const st = otpStore.get('reg:' + p);
+  if (st && Date.now() - (st.lastSent || 0) < 60000) return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
+  if (st && st.sent >= 5) return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  otpStore.set('reg:' + p, { code, expires: Date.now() + 5 * 60 * 1000, sent: (st ? st.sent : 0) + 1, lastSent: Date.now() });
+  sendSms(p, `…и кофе 🌊 Код регистрации: ${code}`);
+  res.json({ ok: true });
+});
 /* ── аккаунты ── */
 app.post('/api/auth/register', (req, res) => {
+const p = fmtPhone(req.body.phone || '');
+if (SMS_API) {
+ const code = String(req.body.code || '').trim();
+ const st = otpStore.get('reg:' + p);
+ if (!st || Date.now() > st.expires) return res.status(403).json({ error: 'Код из SMS просрочен — запросите новый' });
+ if (st.code !== code) { registerFail(req, 'reg'); return res.status(403).json({ error: 'Неверный код из SMS' }); }
+ otpStore.delete('reg:' + p); pinLocks.delete(lockKey(req, 'reg'));
+}
 const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
 if (r.err) return res.status(r.code).json({ error: r.err });
 res.json({ token: issueToken(r.customer.id), customer: r.customer });
