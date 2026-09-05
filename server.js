@@ -556,8 +556,8 @@ app.get('/api/chat/list', staffGuard, (req, res) => {
   const showClosed = req.query.closed === '1';
   const rows = db.prepare(`SELECT c.key, MAX(c.id) mid,
     SUM(CASE WHEN c.who='guest' AND c.read_s=0 THEN 1 ELSE 0 END) unread,
-    MAX(CASE WHEN c.who='guest' THEN c.human ELSE 0 END) human,
-    IFNULL(m.closed,0) closed, IFNULL(m.staff_in,0) staff_in
+    IFNULL(m.closed,0) closed, IFNULL(m.staff_in,0) staff_in,
+    (SELECT g.human FROM chat g WHERE g.key=c.key AND g.who='guest' ORDER BY g.id DESC LIMIT 1) human
     FROM chat c LEFT JOIN chat_meta m ON m.key=c.key
     GROUP BY c.key ORDER BY mid DESC LIMIT 50`).all();
   res.json({ threads: rows.filter(r => showClosed ? r.closed : (!r.closed && (r.human || r.staff_in))).map(r => {
