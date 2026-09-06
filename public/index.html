@@ -1633,21 +1633,16 @@ $('#ngSave').onclick=async()=>{
    if(f.customers.length){$('#ngCard').hidden=true;showCust(f.customers[0]);
     return toast(`Профиль уже есть по этому номеру: ${esc(f.customers[0].name)}`,'🔗')}}catch(_){}}
   toast(e.message,'⚠️')}};
- async function loadPending(){
+   async function loadPending(){
  const host=$('#pendingBox');if(!host)return;
  try{const r=await api('/staff/pending');
   host.innerHTML=r.pending.length?r.pending.map(p=>`<div class="hmini"><b>${esc(p.name)}</b> · ${esc(p.phone)} · код: <b style="font-size:15px">${p.actcode}</b></div>`).join(''):'<div class="hmini">Все гости активированы ✅</div>';}catch(e){}
 }
-async function renderLog(){try{
-  const r=await api('/staff/log');
-  loadPending();
-  $('#cashLog').innerHTML=r.log.map(l=>
+async function renderLog(){try{const r=await api('/staff/log');loadPending();
+ $('#cashLog').innerHTML=r.log.map(l=>
   `<div class="logrow cashlog"><span class="lt">${esc(l.t)}</span><span class="la">${esc(l.w)} — ${esc(l.a)}</span></div>`).join('')
-  ||'<div class="hmini">Журнал пуст</div>'
-    }catch(e){$('#cashLog').innerHTML=''}
+  ||'<div class="hmini">Журнал пуст</div>'}catch(e){$('#cashLog').innerHTML=''}
 }
-
-
 /* ── чат-бот с характером «…и кофе» ── */
 let chatOpened=false,unread=0;
 const now=()=>new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
@@ -1859,8 +1854,8 @@ function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();ren
 }
 function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();renderModes();renderChips();renderVerifyNote();
  const s=(me&&me.qr)||'guest';drawQR($('#qrMini'),s);drawQR($('#qrMain'),s);
- if(mode==='cashier')renderLog()
-}
+ if(mode==='cashier')renderLog()}
+};
 (async function boot(){
  if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
  await loadMenu();renderAll();showBadge();initChatPointer();maybeAskReview();
