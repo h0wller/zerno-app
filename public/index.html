@@ -566,7 +566,7 @@ body.is-cashier .cust .acts{min-width:260px}
   <div class="findrow" style="gap:12px">
     <input id="findInput" placeholder="Номер телефона или имя…" autocomplete="off" style="flex:2;min-width:200px;font-size:15px;padding:14px 16px">
     <button class="btn fire" id="findBtn" style="flex:1;min-width:140px;font-size:14px;padding:14px 20px">Найти</button>
-    <button class="btn dark" id="newGuestBtn" style="flex:1;min-width:140px;font-size:14px;padding:14px 20px">＋ Новый гость</button>
+    <button class="btn dark" id="newGuestBtn2" style="flex:1;min-width:140px;font-size:14px;padding:14px 20px">＋ Новый гость</button>
   </div>
   <hr style="border:none;border-top:1px dashed var(--line);margin:18px 0">
   <div class="cust" id="custCard">
@@ -1620,6 +1620,7 @@ $('#redeemBtn').onclick=async()=>{if(!found)return;
   toast('Бесплатный кофе списан','🎁')}catch(e){toast(e.message,'⚠️')}};
 $('#newGuestBtn').onclick=()=>{$('#ngCard').hidden=!$('#ngCard').hidden;
  if(!$('#ngCard').hidden)$('#ngName').focus()};
+ const ng2=$('#newGuestBtn2');if(ng2)ng2.onclick=()=>{$('#ngCard').hidden=!$('#ngCard').hidden;if(!$('#ngCard').hidden)$('#ngName').focus()};
 $('#ngCancel').onclick=()=>{$('#ngCard').hidden=true};
 $('#ngSave').onclick=async()=>{
  const name=$('#ngName').value.trim(),phone=$('#ngPhone').value;
@@ -1838,8 +1839,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();c
 if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
 
 bindMask($('#regPhone'));bindMask($('#logPhone'));bindMask($('#ngPhone'));
-function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();renderModes();renderChips();
- function renderVerifyNote(){
+function renderVerifyNote(){
  let n=$('#verifyNote');
  if(!n&&$('#setPinBtn')){n=document.createElement('div');n.id='verifyNote';$('#setPinBtn').parentNode.insertBefore(n,$('#setPinBtn'));}
  if(!n)return;
@@ -1852,10 +1852,12 @@ function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();ren
  if(ab)ab.onclick=async()=>{try{const r=await api('/auth/activate-guest',{method:'POST',body:{code:$('#actCode').value.trim()}});
   me=r.customer;toast('Профиль активирован! А +1 штамп ждёт в Telegram 🎁','');renderAll();}catch(e){toast(e.message,'⚠️')}};
 }
-function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();renderModes();renderChips();renderVerifyNote();
- const s=(me&&me.qr)||'guest';drawQR($('#qrMini'),s);drawQR($('#qrMain'),s);
- if(mode==='cashier')renderLog()}
-};
+function renderAll(){
+ renderRail();renderMenu();renderBonus();renderProfile();renderModes();renderChips();renderVerifyNote();
+ const s=(me&&me.qr)||'guest';
+ drawQR($('#qrMini'),s);drawQR($('#qrMain'),s);
+ if(mode==='cashier')renderLog();
+}
 (async function boot(){
  if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
  await loadMenu();renderAll();showBadge();initChatPointer();maybeAskReview();
