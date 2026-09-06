@@ -1633,15 +1633,19 @@ $('#ngSave').onclick=async()=>{
    if(f.customers.length){$('#ngCard').hidden=true;showCust(f.customers[0]);
     return toast(`Профиль уже есть по этому номеру: ${esc(f.customers[0].name)}`,'🔗')}}catch(_){}}
   toast(e.message,'⚠️')}};
-async function renderLog(){try{const r=await api('/staff/log');loadPending();
-async function loadPending(){
+ async function loadPending(){
  const host=$('#pendingBox');if(!host)return;
  try{const r=await api('/staff/pending');
   host.innerHTML=r.pending.length?r.pending.map(p=>`<div class="hmini"><b>${esc(p.name)}</b> · ${esc(p.phone)} · код: <b style="font-size:15px">${p.actcode}</b></div>`).join(''):'<div class="hmini">Все гости активированы ✅</div>';}catch(e){}
 }
- $('#cashLog').innerHTML=r.log.map(l=>
+async function renderLog(){try{
+  const r=await api('/staff/log');
+  loadPending();
+  $('#cashLog').innerHTML=r.log.map(l=>
   `<div class="logrow cashlog"><span class="lt">${esc(l.t)}</span><span class="la">${esc(l.w)} — ${esc(l.a)}</span></div>`).join('')
-  ||'<div class="hmini">Журнал пуст</div>'}catch(e){$('#cashLog').innerHTML=''}}
+  ||'<div class="hmini">Журнал пуст</div>'
+    }catch(e){$('#cashLog').innerHTML=''}
+}
 
 
 /* ── чат-бот с характером «…и кофе» ── */
@@ -1840,7 +1844,7 @@ if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceW
 
 bindMask($('#regPhone'));bindMask($('#logPhone'));bindMask($('#ngPhone'));
 function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();renderModes();renderChips();
-  function renderVerifyNote(){
+ function renderVerifyNote(){
  let n=$('#verifyNote');
  if(!n&&$('#setPinBtn')){n=document.createElement('div');n.id='verifyNote';$('#setPinBtn').parentNode.insertBefore(n,$('#setPinBtn'));}
  if(!n)return;
@@ -1853,8 +1857,10 @@ function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();ren
  if(ab)ab.onclick=async()=>{try{const r=await api('/auth/activate-guest',{method:'POST',body:{code:$('#actCode').value.trim()}});
   me=r.customer;toast('Профиль активирован! А +1 штамп ждёт в Telegram 🎁','');renderAll();}catch(e){toast(e.message,'⚠️')}};
 }
+function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();renderModes();renderChips();renderVerifyNote();
  const s=(me&&me.qr)||'guest';drawQR($('#qrMini'),s);drawQR($('#qrMain'),s);
- if(mode==='cashier')renderLog()}
+ if(mode==='cashier')renderLog()
+}
 (async function boot(){
  if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
  await loadMenu();renderAll();showBadge();initChatPointer();maybeAskReview();
