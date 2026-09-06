@@ -587,6 +587,7 @@ body.is-cashier .cust .acts{min-width:260px}
 </div>
 
         <div class="cash-card">
+          <div class="card" style="margin-bottom:12px"><h3 style="margin:0 0 8px">🆕 Активация гостей</h3><div id="pendingBox"></div></div>
          <h4 style="font:700 12px 'Unbounded';letter-spacing:.08em;text-transform:uppercase;color:#8B98A5;margin-bottom:10px">Последние события</h4>
           <div id="cashLog"></div>
         </div>
@@ -744,6 +745,7 @@ body.is-cashier .cust .acts{min-width:260px}
 <label>Телефон<input id="regPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
 <button type="button" class="btn fire" id="regTgBtn" style="width:100%">🤖 Подтвердить в Telegram · бесплатно</button>
 <div id="regTgRow" hidden style="font-size:11.5px;color:#1E7A4E;text-align:center;font-weight:700">✅ Номер подтверждён — завершите регистрацию</div>
+<small style="color:#8B98A5;font-size:11px">Нет Telegram? Создайте профиль — кассир назовёт код активации, а +1 штамп ждёт в Telegram 🎁</small>
 <button type="button" class="btn ghost" id="regOtpBtn" style="width:100%;margin-top:8px" hidden>📨 Код по SMS (платная опция)</button>
 <label id="regOtpRow" hidden>Код из SMS<input id="regOtp" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label>
 <label id="regPinRow">PIN-код (4 цифры)<input id="regPin" type="text" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password"></label>
@@ -1076,7 +1078,8 @@ $('#regBtn').onclick=async()=>{
  if(ph10(phone).length<10)return toast('Введите номер полностью','📵');
  if(!/^\d{4}$/.test(pin))return toast('PIN — ровно 4 цифры','🔐');
  try{const r=await api('/auth/register',{method:'POST',body:{name,phone,pin,code}});  setUser(r.token,r.customer);closeAuth();renderAll();
-  toast('Профиль создан! Покажите QR кассиру за штампами','🎉')}
+  toast(r.customer.verified?'Профиль создан! Приветственный бонус ваш 🎉':'Профиль создан! Код активации — у кассира, а +1 штамп — в Telegram 🎁','')
+}
  catch(e){if(e.code===409){toast('Этот номер уже зарегистрирован — входим','🔗');
   $('#logPhone').value=fmtPhone(phone);authSwap(true)}else toast(e.message,'⚠️')}};
   let regPoll=null;
@@ -1630,7 +1633,12 @@ $('#ngSave').onclick=async()=>{
    if(f.customers.length){$('#ngCard').hidden=true;showCust(f.customers[0]);
     return toast(`Профиль уже есть по этому номеру: ${esc(f.customers[0].name)}`,'🔗')}}catch(_){}}
   toast(e.message,'⚠️')}};
-async function renderLog(){try{const r=await api('/staff/log');
+async function renderLog(){try{const r=await api('/staff/log');loadPending();
+async function loadPending(){
+ const host=$('#pendingBox');if(!host)return;
+ try{const r=await api('/staff/pending');
+  host.innerHTML=r.pending.length?r.pending.map(p=>`<div class="hmini"><b>${esc(p.name)}</b> · ${esc(p.phone)} · код: <b style="font-size:15px">${p.actcode}</b></div>`).join(''):'<div class="hmini">Все гости активированы ✅</div>';}catch(e){}
+}
  $('#cashLog').innerHTML=r.log.map(l=>
   `<div class="logrow cashlog"><span class="lt">${esc(l.t)}</span><span class="la">${esc(l.w)} — ${esc(l.a)}</span></div>`).join('')
   ||'<div class="hmini">Журнал пуст</div>'}catch(e){$('#cashLog').innerHTML=''}}
@@ -1832,6 +1840,19 @@ if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceW
 
 bindMask($('#regPhone'));bindMask($('#logPhone'));bindMask($('#ngPhone'));
 function renderAll(){renderRail();renderMenu();renderBonus();renderProfile();renderModes();renderChips();
+  function renderVerifyNote(){
+ let n=$('#verifyNote');
+ if(!n&&$('#setPinBtn')){n=document.createElement('div');n.id='verifyNote';$('#setPinBtn').parentNode.insertBefore(n,$('#setPinBtn'));}
+ if(!n)return;
+ if(!me){n.hidden=true;return;}
+ let html='';
+ if(!me.verified)html+='<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small><div style="display:flex;gap:8px"><input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1"><button class="btn fire" id="actBtn">Активировать</button></div>';
+ if(!me.welcome)html+='<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>+1 штамп</b> за привязку в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
+ n.hidden=!html;n.innerHTML=html;
+ const ab=$('#actBtn');
+ if(ab)ab.onclick=async()=>{try{const r=await api('/auth/activate-guest',{method:'POST',body:{code:$('#actCode').value.trim()}});
+  me=r.customer;toast('Профиль активирован! А +1 штамп ждёт в Telegram 🎁','');renderAll();}catch(e){toast(e.message,'⚠️')}};
+}
  const s=(me&&me.qr)||'guest';drawQR($('#qrMini'),s);drawQR($('#qrMain'),s);
  if(mode==='cashier')renderLog()}
 (async function boot(){

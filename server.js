@@ -92,6 +92,13 @@ if (mcols.length && !mcols.includes('staff_in')) db.exec('ALTER TABLE chat_meta 
 const tcols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
 if (tcols.length && !tcols.includes('tg')) db.exec('ALTER TABLE customers ADD COLUMN tg TEXT');
 if (tcols.length && !tcols.includes('pin')) db.exec("ALTER TABLE customers ADD COLUMN pin TEXT DEFAULT ''");
+if (tcols.length && !tcols.includes('verified')) db.exec('ALTER TABLE customers ADD COLUMN verified INTEGER DEFAULT 0');
+if (tcols.length && !tcols.includes('welcome')) db.exec('ALTER TABLE customers ADD COLUMN welcome INTEGER DEFAULT 0');
+if (tcols.length && !tcols.includes('actcode')) db.exec('ALTER TABLE customers ADD COLUMN actcode TEXT');
+if (!db.prepare("SELECT 1 FROM meta WHERE key='verified_migrated'").get()) {
+  db.exec('UPDATE customers SET verified=1'); // старые профили — честные
+  db.prepare("INSERT INTO meta(key,value) VALUES('verified_migrated','1')").run();
+}
 /* ── VAPID-ключи для пушей (создаются один раз) ── */
 let vapidRow = db.prepare("SELECT value FROM meta WHERE key='vapid'").get();
 if (!vapidRow) {
@@ -137,8 +144,8 @@ const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
   comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
   coffee: r.coffee, on: r.is_on, img: r.img });
 const cust = c => ({ id: c.id, name: c.name, phone: c.phone, stamps: c.stamps, free: c.free,
-  cups: c.cups, qr: c.qr, role: c.role || 'guest',
-  history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) });
+cups: c.cups, qr: c.qr, role: c.role || 'guest', verified: c.verified ? 1 : 0, welcome: c.welcome ? 1 : 0,
+history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) });
 const addHist = (cid, a, by) => db.prepare('INSERT INTO history(cid,ts,a,by) VALUES(?,?,?,?)').run(cid, nowISO(), a, by);
 const logEv = (w, a) => { const d = new Date(); const pad = n => String(n).padStart(2, '0');
   db.prepare('INSERT INTO events(t,w,a) VALUES(?,?,?)')
@@ -198,7 +205,15 @@ function redeem(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE i
   db.prepare('UPDATE customers SET free=? WHERE id=?').run(c.free - 1, cid);
   addHist(cid, `🎁 Списан бесплатный кофе (осталось ${c.free - 1})`, by);
   logEv(c.name, 'Списан бесплатный кофе');
-  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) }; }
+  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) }; 
+}
+function grantWelcome(cid, by) {
+  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
+  if (!c || c.welcome) return null;
+  db.prepare('UPDATE customers SET welcome=1, verified=1 WHERE id=?').run(cid);
+  addHist(cid, '🎁 Приветственный бонус: +1 штамп', 'Система');
+  return grant(cid, by || 'Система');
+}
 function createCustomer(name, phone, pin) { const p = fmtPhone(phone);
 if (String(name).trim().length < 2) return { err: 'Введите имя', code: 400 };
 if (ph10(p).length < 10) return { err: 'Введите номер полностью', code: 400 };
@@ -286,15 +301,50 @@ const code = String(req.body.code || '').trim();
 const st = otpStore.get('reg:' + p);
 const okTg = !!(st && st.confirmed && Date.now() < st.expires);
 const okSms = !!(st && st.code && code && st.code === code && Date.now() < st.expires);
-if (!okTg && !okSms) return res.status(403).json({ error: 'Подтвердите номер: через Telegram (бесплатно) или кодом из SMS' });
 if (okSms) pinLocks.delete(lockKey(req, 'reg'));
 const tgChat = okTg ? (st.tgChat || null) : null;
-otpStore.delete('reg:' + p);
+if (okTg || okSms) otpStore.delete('reg:' + p);
+const ex = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
+if (ex) {
+  const age = Date.now() - new Date(ex.created_at).getTime();
+  if (!ex.verified && age > 7 * 86400000) { // сквот протух
+    db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
+    db.prepare('DELETE FROM customers WHERE id=?').run(ex.id);
+  } else if (okTg && !ex.verified) { // владелец с TG возвращает номер
+    db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
+    db.prepare('UPDATE customers SET name=?, tg=?, verified=1 WHERE id=?')
+      .run(String(req.body.name || '').trim() || ex.name, tgChat, ex.id);
+    addHist(ex.id, 'Профиль подтверждён через Telegram', 'Система');
+    grantWelcome(ex.id, 'Telegram');
+    return res.json({ token: issueToken(ex.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(ex.id)) });
+  } else return res.status(409).json({ error: 'exists' });
+}
 const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
 if (r.err) return res.status(r.code).json({ error: r.err });
-if (tgChat) { db.prepare('UPDATE customers SET tg=? WHERE id=?').run(tgChat, r.customer.id);
-  addHist(r.customer.id, 'Telegram привязан при регистрации', 'Система'); }
+if (okTg || okSms) {
+  if (tgChat) db.prepare('UPDATE customers SET tg=? WHERE id=?').run(tgChat, r.customer.id);
+  db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
+  if (okTg) grantWelcome(r.customer.id, 'Telegram'); // бонус ТОЛЬКО за «поделиться номером»
+  addHist(r.customer.id, okTg ? 'Telegram привязан при регистрации' : 'Подтверждение по SMS', 'Система');
+} else {
+  let ac; do { ac = String(Math.floor(1000 + Math.random() * 9000)); }
+  while (db.prepare('SELECT 1 FROM customers WHERE actcode=? AND verified=0').get(ac));
+  db.prepare('UPDATE customers SET actcode=? WHERE id=?').run(ac, r.customer.id);
+  const staff = db.prepare("SELECT id FROM customers WHERE role IN ('cashier','admin')").all();
+  for (const s of staff) sendPush(s.id, '🆕 Новый гость ждёт активации', `${r.customer.name}, ${r.customer.phone} — код ${ac}`);
+  logEv(r.customer.name, 'регистрация без TG, ждёт код кассира');
+}
 res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
+});
+app.post('/api/auth/activate-guest', userGuard, (req, res) => {
+  const code = String(req.body.code || '').trim();
+  if (!/^\d{4}$/.test(code)) return res.status(400).json({ error: 'Код — 4 цифры' });
+  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id);
+  if (c.verified) return res.status(409).json({ error: 'Профиль уже активирован' });
+  if (!c.actcode || c.actcode !== code) { registerFail(req, 'act'); return res.status(403).json({ error: 'Неверный код активации' }); }
+  db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
+  addHist(c.id, '✅ Профиль активирован на кассе', 'Кассир');
+  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
 });
 
 app.post('/api/auth/login', (req, res) => {
@@ -370,6 +420,9 @@ app.post('/api/auth/activate', userGuard, (req, res) => {
   logEv(req.user.name, role === 'admin' ? 'активирован админ' : 'активирован кассир');
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
+app.get('/api/staff/pending', staffGuard, (req, res) => {
+  res.json({ pending: db.prepare('SELECT id,name,phone,actcode,created_at FROM customers WHERE verified=0 AND actcode IS NOT NULL ORDER BY created_at DESC LIMIT 20').all() });
+});
 app.post('/api/auth/deactivate', userGuard, (req, res) => {
   if (req.user.role === 'admin') {
     const n = db.prepare("SELECT COUNT(*) as c FROM customers WHERE role='admin'").get().c;
@@ -405,6 +458,7 @@ app.get('/api/staff/customers', staffGuard, (req, res) => {
 app.post('/api/staff/customers', staffGuard, (req, res) => {
   const r = createCustomer(req.body.name || '', req.body.phone || '');
   if (r.err) return res.status(r.code).json({ error: r.err });
+  db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
   addHist(r.customer.id, 'Профиль создан', 'Кассир'); logEv(r.customer.name, 'Создан профиль');
   res.json(r);
 });
@@ -432,6 +486,7 @@ app.get('/api/staff/log', staffGuard, (req, res) =>
 app.post('/api/promo/redeem', userGuard, (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase();
   if (!code) return res.status(400).json({ error: 'Введите промокод' });
+  if (!req.user.verified) return res.status(403).json({ error: 'Промокоды открываются после активации профиля на кассе или в Telegram' });
   const p = db.prepare('SELECT * FROM promos WHERE code=?').get(code);
   if (!p || !p.active) return res.status(404).json({ error: 'Такого промокода нет' });
   if (p.expires && new Date(p.expires) < new Date()) return res.status(410).json({ error: 'Промокод истёк' });
@@ -642,7 +697,7 @@ app.post('/api/tg/webhook', (req, res) => {
     if (fmtPhone(u.message.contact.phone_number) === fmtPhone(pend.phone)) {
       otpStore.set('reg:' + fmtPhone(pend.phone), { code: null, confirmed: true, tgChat: chatId, expires: Date.now() + 10 * 60 * 1000 });
       otpStore.delete('regchat:' + chatId); otpStore.delete('regtg:' + pend.token);
-      tgSend(chatId, '✅ Номер подтверждён! Вернитесь в приложение и завершите регистрацию.');
+      tgSend(chatId, '✅ Номер подтверждён! Вернитесь в приложение и завершите регистрацию — +1 штамп уже ваш 🎁');
     } else {
       tgSend(chatId, 'Номер не совпадает с указанным в приложении 😕 Нажмите кнопку ещё раз.');
     }
@@ -650,15 +705,20 @@ app.post('/api/tg/webhook', (req, res) => {
   }
 }
   const phone = u.message.contact ? u.message.contact.phone_number : text;
-  const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(fmtPhone(phone));
-  if (c) {
-    db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);
-    tgSend(chatId, `✅ Готово, ${c.name}! Профиль привязан.\nТеперь о штампах и бесплатном кофе я напишу сюда ☕`);
-  } else if (u.message.contact) {
-    tgSend(chatId, 'Профиль с таким номером не найден 😔 Создайте его в приложении и нажмите «Поделиться номером» ещё раз.');
+const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(fmtPhone(phone));
+if (c) {
+  db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);
+  if (!c.welcome) {
+    grantWelcome(c.id, 'Telegram');
+    tgSend(chatId, `✅ Готово, ${c.name}! Профиль привязан.\n🎁 Приветственный бонус начислен: +1 штамп!`);
   } else {
-    tgSend(chatId, 'Я бот кофейни «…и кофе» 🌊 Нажмите /start, чтобы привязать профиль и получать бонусы.');
+    tgSend(chatId, `✅ Готово, ${c.name}! Профиль привязан.\nТеперь о штампах и бесплатном кофе я напишу сюда ☕`);
   }
+} else if (u.message.contact) {
+  tgSend(chatId, 'Профиль с таким номером не найден 😔 Создайте его в приложении и нажмите «Поделиться номером» ещё раз.');
+} else {
+  tgSend(chatId, 'Я бот кофейни «…и кофе» 🌊 Нажмите /start, чтобы привязать профиль и получать бонусы.');
+}
 });
 /* ── статика ── */
 app.use(express.static(PUBLIC_DIR));
