@@ -145,6 +145,7 @@ const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
   coffee: r.coffee, on: r.is_on, img: r.img });
 const cust = c => ({ id: c.id, name: c.name, phone: c.phone, stamps: c.stamps, free: c.free,
 cups: c.cups, qr: c.qr, role: c.role || 'guest', verified: c.verified ? 1 : 0, welcome: c.welcome ? 1 : 0,
+tg: c.tg ? 1 : 0,
 history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) });
 const addHist = (cid, a, by) => db.prepare('INSERT INTO history(cid,ts,a,by) VALUES(?,?,?,?)').run(cid, nowISO(), a, by);
 const logEv = (w, a) => { const d = new Date(); const pad = n => String(n).padStart(2, '0');
