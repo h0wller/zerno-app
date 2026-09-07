@@ -916,7 +916,52 @@ body.is-cashier .cust .acts{min-width:260px}
 </div>
 <div class="toasts" id="toasts"></div>
 <canvas id="fx"></canvas>
+<button class="cartFab" id="cartFab" hidden>🛒 <span id="cartSum">0</span> ₽</button>
 
+<div class="cartPanel" id="cartPanel">
+  <h3 style="margin-bottom:16px">Корзина</h3>
+  <div id="cartItems"></div>
+  <div style="margin-top:16px;padding-top:12px;border-top:2px solid var(--line)">
+    <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700">
+      <span>Итого:</span>
+      <span id="cartTotal">0 ₽</span>
+    </div>
+    <div id="cartDiscount" style="color:var(--green);font-size:13px;margin-top:4px"></div>
+    <div id="cartFee" style="color:var(--soft);font-size:13px;margin-top:2px"></div>
+  </div>
+  
+  <div class="checkoutForm">
+    <label>Способ получения
+      <select id="checkoutMethod">
+        <option value="delivery">Доставка</option>
+        <option value="pickup">Самовывоз (−10%)</option>
+      </select>
+    </label>
+    <label id="checkoutPlaceLabel">Населённый пункт
+      <select id="checkoutPlace"></select>
+    </label>
+    <label id="checkoutAddrLabel">Адрес (улица, дом, квартира)
+      <input id="checkoutAddr" placeholder="Советская 10, кв. 5">
+    </label>
+    <label>Когда привезти
+      <select id="checkoutSlot">
+        <option value="asap">Как можно скорее (~45 мин)</option>
+      </select>
+    </label>
+    <label>Оплата
+      <select id="checkoutPay">
+        <option value="cash">Наличные при получении</option>
+        <option value="card">Картой при получении</option>
+      </select>
+    </label>
+    <label>Комментарий
+      <textarea id="checkoutComment" placeholder="Домофон, подъезд, пожелания…"></textarea>
+    </label>
+  </div>
+  
+  <button class="cta" id="checkoutBtn" style="margin-top:16px">Оформить заказ</button>
+  <button class="btn ghost" id="cartClose" style="margin-top:8px;width:100%">Закрыть</button>
+</div>
 <script>
 'use strict';
 /* шапка: часы справа, одним рядом */
@@ -2206,51 +2251,5 @@ if(typeof renderProfile==='function'){
 }
 })();
 </script>
-<button class="cartFab" id="cartFab" hidden>🛒 <span id="cartSum">0</span> ₽</button>
-
-<div class="cartPanel" id="cartPanel">
-  <h3 style="margin-bottom:16px">Корзина</h3>
-  <div id="cartItems"></div>
-  <div style="margin-top:16px;padding-top:12px;border-top:2px solid var(--line)">
-    <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700">
-      <span>Итого:</span>
-      <span id="cartTotal">0 ₽</span>
-    </div>
-    <div id="cartDiscount" style="color:var(--green);font-size:13px;margin-top:4px"></div>
-    <div id="cartFee" style="color:var(--soft);font-size:13px;margin-top:2px"></div>
-  </div>
-  
-  <div class="checkoutForm">
-    <label>Способ получения
-      <select id="checkoutMethod">
-        <option value="delivery">Доставка</option>
-        <option value="pickup">Самовывоз (−10%)</option>
-      </select>
-    </label>
-    <label id="checkoutPlaceLabel">Населённый пункт
-      <select id="checkoutPlace"></select>
-    </label>
-    <label id="checkoutAddrLabel">Адрес (улица, дом, квартира)
-      <input id="checkoutAddr" placeholder="Советская 10, кв. 5">
-    </label>
-    <label>Когда привезти
-      <select id="checkoutSlot">
-        <option value="asap">Как можно скорее (~45 мин)</option>
-      </select>
-    </label>
-    <label>Оплата
-      <select id="checkoutPay">
-        <option value="cash">Наличные при получении</option>
-        <option value="card">Картой при получении</option>
-      </select>
-    </label>
-    <label>Комментарий
-      <textarea id="checkoutComment" placeholder="Домофон, подъезд, пожелания…"></textarea>
-    </label>
-  </div>
-  
-  <button class="cta" id="checkoutBtn" style="margin-top:16px">Оформить заказ</button>
-  <button class="btn ghost" id="cartClose" style="margin-top:8px;width:100%">Закрыть</button>
-</div>
 </body>
 </html>
