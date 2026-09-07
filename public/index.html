@@ -499,6 +499,26 @@ body.is-cashier .cust .acts{min-width:260px}
 
 .chips button[data-armed="1"]{border-color:#B3372B;color:#B3372B;font-weight:800}
 #profileView img,#profileView canvas{cursor:pointer}
+.brandSeg{display:flex;background:var(--esp2);border:1px solid #2A3540;border-radius:999px;padding:3px;margin-left:10px}
+.brandSeg button{padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:700;color:#9FB4C8;transition:.25s}
+.brandSeg button.on{background:var(--flame);color:#fff;box-shadow:0 3px 10px -3px rgba(31,78,140,.8)}
+.deliveryView{display:none}
+.deliveryView.active{display:block}
+.opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.opts button{padding:6px 10px;border:1.5px solid var(--line);border-radius:10px;font-size:11px;font-weight:600;background:#fff;transition:.2s}
+.opts button.sel{background:var(--flame);color:#fff;border-color:var(--flame)}
+.cartFab{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:95;background:var(--flame);color:#fff;border-radius:999px;padding:12px 24px;font:700 15px "Unbounded";box-shadow:0 12px 30px -8px rgba(31,78,140,.6);transition:.25s}
+.cartFab:hover{transform:translateX(-50%) translateY(-2px);background:var(--flame-d)}
+.cartPanel{position:fixed;bottom:0;left:0;right:0;z-index:120;background:#fff;border-radius:22px 22px 0 0;max-height:80vh;overflow-y:auto;padding:20px;box-shadow:0 -10px 40px rgba(0,0,0,.3);transform:translateY(100%);transition:.3s}
+.cartPanel.open{transform:none}
+.cartItem{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+.cartItem .qty{display:flex;gap:6px;align-items:center}
+.cartItem .qty button{width:28px;height:28px;border-radius:50%;background:#E7ECF0;font-weight:700}
+.checkoutForm{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.checkoutForm label{font-size:13px;font-weight:600;color:var(--soft)}
+.checkoutForm input,.checkoutForm select,.checkoutForm textarea{border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;font-size:14px}
+.checkoutForm textarea{resize:vertical;min-height:60px}
+.deliveryBanner{background:#FFF6E5;border:1.5px dashed #F2D9A5;border-radius:14px;padding:12px 16px;margin-bottom:16px;color:#6B4E0E;font-size:13px;font-weight:600}
 </style>
 </head>
 <body>
@@ -515,6 +535,10 @@ body.is-cashier .cust .acts{min-width:260px}
   </div>
   <div class="clock" id="clock">--:--</div>
   <div class="modeSeg" id="modeSeg" hidden></div>
+  <div class="brandSeg" id="brandSeg">
+  <button data-brand="coffee" class="on">🌊 Кофейня</button>
+  <button data-brand="delivery">🍕 Пятница</button>
+</div>
   <button class="ava" id="profileTopBtn" title="Профиль">?</button>
 </header>
 
@@ -524,6 +548,19 @@ body.is-cashier .cust .acts{min-width:260px}
   <nav class="rail" id="rail"></nav>
 
   <section>
+    <div id="deliveryView" class="deliveryView">
+  <div class="menu-head">
+    <div class="mh-top">
+      <div>
+        <h1>Пятница <em>— доставка пиццы и роллов</em></h1>
+        <div class="upd">Работаем ежедневно 11:00–22:00 · доставка ~45 мин</div>
+      </div>
+    </div>
+  </div>
+  <div id="deliveryBanner"></div>
+  <div class="rail" id="deliveryRail"></div>
+  <div class="grid" id="deliveryGrid"></div>
+</div>
     <div id="menuView">
       <div class="menu-head">
         <div class="mh-top">
@@ -1864,6 +1901,157 @@ function renderAll(){
  drawQR($('#qrMini'),s);drawQR($('#qrMain'),s);
  if(mode==='cashier')renderLog();
 }
+/* ── доставка: меню, корзина, чекаут ── */
+let DMENU=[], cart=JSON.parse(localStorage.getItem('zt_cart')||'[]'), deliveryInfo=null;
+const DCATS=[{id:'pizza',e:'🍕',l:'Пиццы'},{id:'rolls',e:'🍣',l:'Роллы'},{id:'sets',e:'🍱',l:'Сеты'},{id:'sauces',e:'🥫',l:'Соусы'}];
+let dcat='pizza';
+
+async function loadDelivery(){
+  try{
+    const r=await fetch(API_BASE+'/api/dmenu').then(r=>r.json());
+    DMENU=r.items||[];
+    deliveryInfo=await fetch(API_BASE+'/api/delivery/info').then(r=>r.json());
+    renderDeliveryRail();renderDeliveryMenu();updateCartFab();
+  }catch(e){console.log('delivery load err',e)}
+}
+
+function renderDeliveryRail(){
+  $('#deliveryRail').innerHTML=DCATS.map(c=>`<button data-dcat="${c.id}" class="${c.id===dcat?'on':''}"><span class="re">${c.e}</span>${c.l}</button>`).join('');
+}
+$('#deliveryRail').addEventListener('click',e=>{const b=e.target.closest('[data-dcat]');if(b){dcat=b.dataset.dcat;renderDeliveryRail();renderDeliveryMenu()}});
+
+function renderDeliveryMenu(){
+  const list=DMENU.filter(p=>p.cat===dcat);
+  $('#deliveryGrid').innerHTML=list.map(p=>{
+    const opts=p.opts||[];
+    const optsHTML=opts.length?`<div class="opts">${opts.map((o,i)=>`<button data-id="${p.id}" data-oi="${i}" class="${i===0?'sel':''}">${o.l} · ${o.w} · ${fmt(o.p)}</button>`).join('')}</div>`:'';
+    return `<article class="card" style="--d:0">
+      <div class="media" style="--tint:#F3E2CE"><span class="em">${p.e||'🍕'}</span></div>
+      <div class="cbody">
+        <h3>${esc(p.name)}</h3>
+        ${p.desc?`<div class="desc">${esc(p.desc)}</div>`:''}
+        ${optsHTML}
+        <button class="cta" data-add="${p.id}" style="margin-top:auto">Добавить</button>
+      </div>
+    </article>`}).join('')||'<div class="gempty">В этой категории пока пусто</div>';
+}
+
+$('#deliveryGrid').addEventListener('click',e=>{
+  const opt=e.target.closest('.opts button');
+  if(opt){
+    const group=opt.closest('.opts');
+    group.querySelectorAll('button').forEach(b=>b.classList.remove('sel'));
+    opt.classList.add('sel');
+    return;
+  }
+  const add=e.target.closest('[data-add]');
+  if(add){
+    const id=add.dataset.add;
+    const p=DMENU.find(x=>x.id===id);
+    const opts=p.opts||[];
+    const selOpt=add.closest('.cbody').querySelector('.opts button.sel');
+    const oi=selOpt?+selOpt.dataset.oi:-1;
+    const key=id+(oi>=0?'_'+oi:'');
+    const existing=cart.find(c=>c.key===key);
+    if(existing)existing.qty++;
+    else cart.push({key,id,oi,name:p.name,opt:oi>=0?opts[oi].l:null,price:oi>=0?opts[oi].p:(+p.price||0),qty:1});
+    localStorage.setItem('zt_cart',JSON.stringify(cart));
+    updateCartFab();
+    toast('Добавлено в корзину','🛒');
+  }
+});
+
+function updateCartFab(){
+  const sum=cart.reduce((a,c)=>a+c.price*c.qty,0);
+  $('#cartFab').hidden=!sum;
+  $('#cartSum').textContent=fmt(sum);
+}
+
+$('#cartFab').onclick=()=>{$('#cartPanel').classList.add('open')};
+$('#cartClose').onclick=()=>{$('#cartPanel').classList.remove('open')};
+
+function renderCart(){
+  $('#cartItems').innerHTML=cart.map((c,i)=>`<div class="cartItem">
+    <div style="flex:1"><b>${esc(c.name)}</b>${c.opt?`<div style="font-size:12px;color:var(--soft)">${esc(c.opt)}</div>`:''}</div>
+    <div class="qty"><button data-ci="${i}" data-act="-">−</button><span>${c.qty}</span><button data-ci="${i}" data-act="+">+</button></div>
+    <div style="font-weight:700">${fmt(c.price*c.qty)}</div>
+  </div>`).join('')||'<div style="color:var(--soft);text-align:center;padding:20px">Корзина пуста</div>';
+  const sum=cart.reduce((a,c)=>a+c.price*c.qty,0);
+  const method=$('#checkoutMethod').value;
+  const discount=method==='pickup'?Math.round(sum*0.10):0;
+  const fee=method==='delivery'&&deliveryInfo?deliveryInfo.zones.find(z=>z.places.includes($('#checkoutPlace').value))?.fee||0:0;
+  $('#cartTotal').textContent=fmt(sum-discount+fee);
+  $('#cartDiscount').textContent=discount?`−10% самовывоз: −${fmt(discount)}`:'';
+  $('#cartFee').textContent=fee?`Доставка: ${fmt(fee)}`:'';
+}
+
+$('#cartItems').addEventListener('click',e=>{
+  const b=e.target.closest('[data-ci]');
+  if(!b)return;
+  const i=+b.dataset.ci;
+  if(b.dataset.act==='+')cart[i].qty++;
+  else if(cart[i].qty>1)cart[i].qty--;
+  else cart.splice(i,1);
+  localStorage.setItem('zt_cart',JSON.stringify(cart));
+  updateCartFab();renderCart();
+});
+
+$('#checkoutMethod').onchange=()=>{
+  const pickup=$('#checkoutMethod').value==='pickup';
+  $('#checkoutPlaceLabel').hidden=pickup;$('#checkoutAddrLabel').hidden=pickup;
+  renderCart();
+};
+
+function populateSlots(){
+  const now=new Date();
+  const slots=[{v:'asap',l:'Как можно скорее (~45 мин)'}];
+  for(let d=0;d<2;d++){
+    for(let h=11;h<22;h+=0.5){
+      const t=new Date(now);t.setDate(t.getDate()+d);t.setHours(h,0,0,0);
+      if(t<=now)continue;
+      const label=`${t.getDate()}.${t.getMonth()+1} ${String(t.getHours()).padStart(2,'0')}:${t.getMinutes()===0?'00':'30'}`;
+      slots.push({v:t.toISOString(),l:label});
+    }
+  }
+  $('#checkoutSlot').innerHTML=slots.map(s=>`<option value="${s.v}">${s.l}</option>`).join('');
+}
+
+function populatePlaces(){
+  if(!deliveryInfo)return;
+  const places=deliveryInfo.zones.flatMap(z=>z.places);
+  $('#checkoutPlace').innerHTML=places.map(p=>`<option>${p}</option>`).join('');
+}
+
+$('#checkoutBtn').onclick=async()=>{
+  if(!me){toast('Сначала войдите в профиль','👤');openAuth();return}
+  const method=$('#checkoutMethod').value;
+  if(method==='delivery'){
+    if(!$('#checkoutPlace').value)return toast('Выберите населённый пункт','📍');
+    if(!$('#checkoutAddr').value.trim())return toast('Укажите адрес','🏠');
+  }
+  const body={
+    method,place:$('#checkoutPlace').value,addr:$('#checkoutAddr').value.trim(),
+    slot:$('#checkoutSlot').value,pay:$('#checkoutPay').value,
+    comment:$('#checkoutComment').value.trim(),
+    items:cart.map(c=>({id:c.id,oi:c.oi,qty:c.qty}))
+  };
+  try{
+    const r=await api('/orders',{method:'POST',body});
+    toast(`Заказ #${r.order.no} оформлен!`,'🎉');
+    cart=[];localStorage.setItem('zt_cart','[]');
+    updateCartFab();$('#cartPanel').classList.remove('open');
+  }catch(e){toast(e.message,'⚠️')}
+};
+
+$('#brandSeg').addEventListener('click',e=>{
+  const b=e.target.closest('[data-brand]');
+  if(!b)return;
+  const brand=b.dataset.brand;
+  $('#brandSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.brand===brand));
+  $('#menuView').hidden=brand!=='coffee';
+  $('#deliveryView').classList.toggle('active',brand==='delivery');
+  if(brand==='delivery')loadDelivery();
+});
 (async function boot(){
  if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
  await loadMenu();renderAll();showBadge();initChatPointer();maybeAskReview();
@@ -2018,5 +2206,51 @@ if(typeof renderProfile==='function'){
 }
 })();
 </script>
+<button class="cartFab" id="cartFab" hidden>🛒 <span id="cartSum">0</span> ₽</button>
+
+<div class="cartPanel" id="cartPanel">
+  <h3 style="margin-bottom:16px">Корзина</h3>
+  <div id="cartItems"></div>
+  <div style="margin-top:16px;padding-top:12px;border-top:2px solid var(--line)">
+    <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700">
+      <span>Итого:</span>
+      <span id="cartTotal">0 ₽</span>
+    </div>
+    <div id="cartDiscount" style="color:var(--green);font-size:13px;margin-top:4px"></div>
+    <div id="cartFee" style="color:var(--soft);font-size:13px;margin-top:2px"></div>
+  </div>
+  
+  <div class="checkoutForm">
+    <label>Способ получения
+      <select id="checkoutMethod">
+        <option value="delivery">Доставка</option>
+        <option value="pickup">Самовывоз (−10%)</option>
+      </select>
+    </label>
+    <label id="checkoutPlaceLabel">Населённый пункт
+      <select id="checkoutPlace"></select>
+    </label>
+    <label id="checkoutAddrLabel">Адрес (улица, дом, квартира)
+      <input id="checkoutAddr" placeholder="Советская 10, кв. 5">
+    </label>
+    <label>Когда привезти
+      <select id="checkoutSlot">
+        <option value="asap">Как можно скорее (~45 мин)</option>
+      </select>
+    </label>
+    <label>Оплата
+      <select id="checkoutPay">
+        <option value="cash">Наличные при получении</option>
+        <option value="card">Картой при получении</option>
+      </select>
+    </label>
+    <label>Комментарий
+      <textarea id="checkoutComment" placeholder="Домофон, подъезд, пожелания…"></textarea>
+    </label>
+  </div>
+  
+  <button class="cta" id="checkoutBtn" style="margin-top:16px">Оформить заказ</button>
+  <button class="btn ghost" id="cartClose" style="margin-top:8px;width:100%">Закрыть</button>
+</div>
 </body>
 </html>
