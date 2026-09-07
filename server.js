@@ -12,6 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const ADMIN_CODE = process.env.ADMIN_CODE || '1234';
 const CASHIER_CODE = process.env.CASHIER_CODE || '2468';
+const DISPATCH_CODE = process.env.DISPATCH_CODE || '5719';
 const PUBLIC_DIR = process.env.PUBLIC_DIR || path.join(__dirname, 'public');
 
 const db = new Database(process.env.DB_PATH || path.join(__dirname, 'zerno.db'));
@@ -83,7 +84,7 @@ if (db.prepare("SELECT value FROM meta WHERE key='menu_v'").get()?.value !== MEN
     ['drip','shop','☕','Дрип','Кофе в кармане. Завари где угодно',['Tasty Coffee'],'1 шт','150','',0],
     ['candy','shop','🍬','Леденцы','Scandic: арктическая мята, пряное яблоко и другие',['Scandic'],'1 шт','150','',0],
   ];
-  const ins = db.prepare('INSERT INTO menu VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
+  const ins = db.prepare('INSERT INTO menu(id,cat,e,name,descr,comp,vol,price,tag,coffee,is_on,img) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
   for (const p of seed) ins.run(p[0],p[1],p[2],p[3],p[4],JSON.stringify(p[5]),p[6],p[7],p[8],p[9],1,null);
   db.prepare("INSERT INTO meta(key,value) VALUES('menu_v',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(MENU_V);
 }
@@ -99,6 +100,19 @@ if (!db.prepare("SELECT 1 FROM meta WHERE key='verified_migrated'").get()) {
   db.exec('UPDATE customers SET verified=1'); // старые профили — честные
   db.prepare("INSERT INTO meta(key,value) VALUES('verified_migrated','1')").run();
 }
+/* ── доставка: колонки и таблицы ── */
+const menuCols = db.prepare('PRAGMA table_info(menu)').all().map(c => c.name);
+if (menuCols.length && !menuCols.includes('section')) db.exec(`ALTER TABLE menu ADD COLUMN section TEXT DEFAULT 'coffee'`);
+if (menuCols.length && !menuCols.includes('opts')) db.exec(`ALTER TABLE menu ADD COLUMN opts TEXT DEFAULT '[]'`);
+const prCols = db.prepare('PRAGMA table_info(promos)').all().map(c => c.name);
+if (prCols.length && !prCols.includes('scope')) db.exec(`ALTER TABLE promos ADD COLUMN scope TEXT DEFAULT 'coffee'`);
+db.exec(`CREATE TABLE IF NOT EXISTS orders(
+  id TEXT PRIMARY KEY, no INTEGER, cid TEXT, name TEXT, phone TEXT,
+  method TEXT, place TEXT, addr TEXT, slot TEXT, pay TEXT, comment TEXT,
+  items TEXT, total INTEGER, discount INTEGER, fee INTEGER, gifts TEXT,
+  status TEXT DEFAULT 'new', created TEXT, updated TEXT)`);
+
+  const ins = db.prepare('INSERT INTO menu(id,cat,e,name,descr,comp,vol,price,tag,coffee,is_on,img) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
 /* ── VAPID-ключи для пушей (создаются один раз) ── */
 let vapidRow = db.prepare("SELECT value FROM meta WHERE key='vapid'").get();
 if (!vapidRow) {
@@ -141,8 +155,8 @@ const uid = p => p + crypto.randomBytes(5).toString('hex');
 const hashPin = p => crypto.createHash('sha256').update('pin:' + String(p)).digest('hex');
 const otpStore = new Map(); // phone -> {code, expires}
 const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
-  comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
-  coffee: r.coffee, on: r.is_on, img: r.img });
+comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
+coffee: r.coffee, on: r.is_on, img: r.img, section: r.section || 'coffee', opts: JSON.parse(r.opts || '[]') });
 const cust = c => ({ id: c.id, name: c.name, phone: c.phone, stamps: c.stamps, free: c.free,
 cups: c.cups, qr: c.qr, role: c.role || 'guest', verified: c.verified ? 1 : 0, welcome: c.welcome ? 1 : 0,
 tg: c.tg ? 1 : 0,
@@ -249,9 +263,11 @@ app.use(express.json({ limit: '10mb' }));
 /* ── меню ─ */
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.get('/api/menu', (req, res) => res.json({
-  items: db.prepare('SELECT * FROM menu WHERE is_on=1').all().map(item), updatedAt: getMeta() }));
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee'").all().map(item), updatedAt: getMeta() }));
 app.get('/api/menu/all', adminGuard, (req, res) => res.json({
   items: db.prepare('SELECT * FROM menu').all().map(item), updatedAt: getMeta() }));
+  app.get('/api/dmenu', (req, res) => res.json({
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery'").all().map(item) }));
 app.post('/api/menu', adminGuard, (req, res) => {
   const p = req.body; p.id = p.id || uid('p');
   db.prepare('INSERT INTO menu VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(
@@ -414,6 +430,7 @@ app.post('/api/auth/activate', userGuard, (req, res) => {
   let role = null;
   if (safeEqual(code, ADMIN_CODE)) role = 'admin';
   else if (safeEqual(code, CASHIER_CODE)) role = 'cashier';
+  else if (safeEqual(code, DISPATCH_CODE)) role = 'dispatch';
   if (!role) { registerFail(req); return res.status(403).json({ error: 'Неверный код доступа' }); }
   pinLocks.delete(lockKey(req));
   db.prepare('UPDATE customers SET role=? WHERE id=?').run(role, req.user.id);
@@ -722,5 +739,110 @@ if (c) {
 }
 });
 /* ── статика ── */
+/* ── доставка: настройки, акции, заказы ── */
+const DELIVERY = {
+  hours: [11, 22], eta: 45, slotStep: 30, slotDays: 2,
+  pickupAddr: 'пгт Янтарный, ул. Советская, 38А', pickupDiscount: 0.10,
+  zones: [
+    { fee: 200, places: ['Янтарный','Покровское','Синявино'] },
+    { fee: 500, places: ['Кленовое','Охотное','Русское','Поваровка','Морозовка','Янтаровка','Красноторовка','Ягодное'] },
+    { fee: 1100, places: ['Донское','Прислово'] },
+  ],
+};
+const weekPromo = () => { const w = JSON.parse(db.prepare("SELECT value FROM meta WHERE key='week_promo'").get()?.value || 'null');
+  if (!w || !w.text) return null; if (w.until && new Date(w.until) < new Date()) return null; return w; };
+const pizzaMonth = () => { const m = JSON.parse(db.prepare("SELECT value FROM meta WHERE key='pizza_month'").get()?.value || 'null');
+  return (m && m.on && m.name) ? m : null; };
+app.get('/api/delivery/info', (req, res) => res.json({ ...DELIVERY, weekPromo: weekPromo(), pizzaMonth: pizzaMonth() }));
+app.put('/api/admin/weekpromo', adminGuard, (req, res) => {
+  const b = req.body || {};
+  db.prepare("INSERT INTO meta(key,value) VALUES('week_promo',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+    .run(JSON.stringify({ text: b.text || '', threshold: +b.threshold || 0, gift: b.gift || '', until: b.until || null }));
+  db.prepare("INSERT INTO meta(key,value) VALUES('pizza_month',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+    .run(JSON.stringify({ name: b.pmName || '', on: !!b.pmOn }));
+  if (b.push && b.text) {
+    const cids = db.prepare("SELECT cid FROM subs UNION SELECT id FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
+    for (const c of cids) sendPush(c.cid, '🍕 Пятничный подарок', b.text);
+    logEv(req.user.name, 'пуш: пятничный подарок');
+  }
+  res.json({ ok: true });
+});
+const dispatchGuard = (req, res, next) => { req.user = authUser(req);
+  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
+  if (!['cashier','admin','dispatch'].includes(req.user.role)) return res.status(403).json({ error: 'Недостаточно прав' });
+  next(); };
+const ORDER_STATUS = { new: '🆕 Заказ принят', accept: '✅ Подтверждён, готовим', cook: '👨🍳 Готовится', way: '🛵 Курьер выехал', done: '🏁 Выполнен', cancel: '❌ Отменён' };
+function orderNotifyStaff(o) {
+  const lines = o.items.map(i => `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${i.qty * i.price} ₽`);
+  const gifts = o.gifts.map(g => `🎁 ${g.name} ×${g.qty}`);
+  const txt = `${o.name} ${o.phone}\n${o.method === 'pickup' ? '🛍 Самовывоз, Советская 38А' : '🚗 ' + o.place + ', ' + o.addr}\n⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n${lines.concat(gifts).join('\n')}\nИтого: ${o.total} ₽ (скидка ${o.discount} ₽, доставка ${o.fee} ₽)${o.comment ? '\n💬 ' + o.comment : ''}`;
+  const staff = db.prepare("SELECT id FROM customers WHERE role IN ('cashier','admin','dispatch')").all();
+  for (const s of staff) sendPush(s.id, `🍕 Новый заказ #${o.no}`, txt);
+  logEv(o.name, `заказ #${o.no} на ${o.total} ₽`);
+}
+app.post('/api/orders', userGuard, (req, res) => {
+  const b = req.body || {};
+  const method = b.method === 'pickup' ? 'pickup' : 'delivery';
+  let fee = 0;
+  if (method === 'delivery') {
+    const z = DELIVERY.zones.find(z => z.places.includes(String(b.place || '').trim()));
+    if (!z) return res.status(400).json({ error: 'Выберите населённый пункт из списка' });
+    if (!String(b.addr || '').trim()) return res.status(400).json({ error: 'Укажите адрес' });
+    fee = z.fee;
+  }
+  const raw = Array.isArray(b.items) ? b.items.slice(0, 50) : [];
+  if (!raw.length) return res.status(400).json({ error: 'Корзина пуста' });
+  const items = []; let sum = 0;
+  for (const li of raw) {
+    const m = db.prepare("SELECT * FROM menu WHERE id=? AND section='delivery' AND is_on=1").get(String(li.id || ''));
+    if (!m) return res.status(400).json({ error: 'Позиция недоступна' });
+    const opts = JSON.parse(m.opts || '[]');
+    const oi = Number.isInteger(li.oi) ? li.oi : -1;
+    if (oi >= 0 && !opts[oi]) return res.status(400).json({ error: 'Вариант недоступен' });
+    const price = oi >= 0 ? opts[oi].p : (parseInt(m.price) || 0);
+    const qty = Math.max(1, Math.min(20, +li.qty || 1));
+    items.push({ id: m.id, name: m.name, opt: oi >= 0 ? opts[oi].l : null, sz: oi >= 0 ? (opts[oi].sz || 0) : 0, price, qty });
+    sum += price * qty;
+  }
+  const discount = method === 'pickup' ? Math.round(sum * DELIVERY.pickupDiscount) : 0;
+  const gifts = [];
+  const wp = weekPromo();
+  if (wp && wp.gift) { const q = wp.threshold > 0 ? Math.floor(sum / wp.threshold) : 1; if (q > 0) gifts.push({ name: wp.gift, qty: q }); }
+  const pm = pizzaMonth();
+  if (pm) { const big = items.reduce((a, i) => a + (i.sz === 35 ? i.qty : 0), 0); if (big >= 2) gifts.push({ name: pm.name + ' — подарок', qty: 1 }); }
+  const total = sum - discount + fee;
+  const no = ((db.prepare("SELECT value FROM meta WHERE key='order_no'").get()?.value | 0) + 1);
+  db.prepare("INSERT INTO meta(key,value) VALUES('order_no',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(String(no));
+  const o = { id: uid('o'), no, cid: req.user.id, name: req.user.name, phone: req.user.phone, method,
+    place: method === 'delivery' ? String(b.place).trim() : '', addr: method === 'delivery' ? String(b.addr).trim() : '',
+    slot: b.slot === 'asap' ? 'asap' : String(b.slot || 'asap').slice(0, 40), pay: b.pay === 'card' ? 'card' : 'cash',
+    comment: String(b.comment || '').slice(0, 300), items, total, discount, fee, gifts, status: 'new', created: nowISO(), updated: nowISO() };
+  db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,fee,gifts,status,created,updated)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(o.id, o.no, o.cid, o.name, o.phone, o.method, o.place, o.addr, o.slot, o.pay, o.comment,
+      JSON.stringify(o.items), o.total, o.discount, o.fee, JSON.stringify(o.gifts), o.status, o.created, o.updated);
+  orderNotifyStaff(o);
+  res.json({ order: o });
+});
+app.get('/api/orders/mine', userGuard, (req, res) => {
+  res.json({ orders: db.prepare('SELECT * FROM orders WHERE cid=? ORDER BY no DESC LIMIT 20').all(req.user.id)
+    .map(o => ({ ...o, items: JSON.parse(o.items || '[]'), gifts: JSON.parse(o.gifts || '[]') })) });
+});
+app.get('/api/orders', dispatchGuard, (req, res) => {
+  const st = req.query.status;
+  const rows = st ? db.prepare('SELECT * FROM orders WHERE status=? ORDER BY no DESC LIMIT 50').all(st)
+    : db.prepare("SELECT * FROM orders WHERE created>? ORDER BY no DESC LIMIT 50").all(new Date(Date.now() - 3 * 86400000).toISOString());
+  res.json({ orders: rows.map(o => ({ ...o, items: JSON.parse(o.items || '[]'), gifts: JSON.parse(o.gifts || '[]') })) });
+});
+app.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
+  const s = String(req.body.status || '');
+  if (!ORDER_STATUS[s]) return res.status(400).json({ error: 'Неизвестный статус' });
+  const o = db.prepare('SELECT * FROM orders WHERE id=?').get(req.params.id);
+  if (!o) return res.status(404).json({ error: 'Заказ не найден' });
+  db.prepare('UPDATE orders SET status=?, updated=? WHERE id=?').run(s, nowISO(), o.id);
+  sendPush(o.cid, `🍕 Заказ #${o.no}`, ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''));
+  logEv(req.user.name, `заказ #${o.no} → ${s}`);
+  res.json({ ok: true });
+});
 app.use(express.static(PUBLIC_DIR));
 app.listen(PORT, () => console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`));
