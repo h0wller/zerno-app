@@ -806,21 +806,20 @@ const DELIVERY = {
     { fee: 1100, places: ['Донское','Прислово'] },
   ],
 };
-const weekPromo = () => { const w = JSON.parse(db.prepare("SELECT value FROM meta WHERE key='week_promo'").get()?.value || 'null');
-  if (!w || !w.text) return null; if (w.until && new Date(w.until) < new Date()) return null; return w; };
-const pizzaMonth = () => { const m = JSON.parse(db.prepare("SELECT value FROM meta WHERE key='pizza_month'").get()?.value || 'null');
-  return (m && m.on && m.name) ? m : null; };
-app.get('/api/delivery/info', (req, res) => res.json({ ...DELIVERY, weekPromo: weekPromo(), pizzaMonth: pizzaMonth() }));
 app.put('/api/admin/weekpromo', adminGuard, (req, res) => {
   const b = req.body || {};
-  db.prepare("INSERT INTO meta(key,value) VALUES('week_promo',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
-    .run(JSON.stringify({ text: b.text || '', threshold: +b.threshold || 0, gift: b.gift || '', until: b.until || null }));
-  db.prepare("INSERT INTO meta(key,value) VALUES('pizza_month',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
-    .run(JSON.stringify({ name: b.pmName || '', on: !!b.pmOn }));
-  if (b.push && b.text) {
-    const cids = db.prepare("SELECT cid FROM subs UNION SELECT id FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
-    for (const c of cids) sendPush(c.cid, '🍕 Пятничный подарок', b.text);
-    logEv(req.user.name, 'пуш: пятничный подарок');
+  if ('text' in b) {
+    db.prepare("INSERT INTO meta(key,value) VALUES('week_promo',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+      .run(JSON.stringify({ text: b.text || '', threshold: +b.threshold || 0, gift: b.gift || '', until: b.until || null }));
+    if (b.push && b.text) {
+      const cids = db.prepare("SELECT cid FROM subs UNION SELECT id FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
+      for (const c of cids) sendPush(c.cid, '🍕 Пятничный подарок', b.text);
+      logEv(req.user.name, 'пуш: пятничный подарок');
+    }
+  }
+  if ('pmName' in b || 'pmOn' in b) {
+    db.prepare("INSERT INTO meta(key,value) VALUES('pizza_month',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+      .run(JSON.stringify({ name: b.pmName || '', on: !!b.pmOn }));
   }
   res.json({ ok: true });
 });

@@ -896,6 +896,23 @@ body.is-cashier .cust .acts{min-width:260px}
   </div>
   <h4 style="margin-top:16px">Список кодов</h4>
   <div id="pmList"></div>
+  <h4 style="margin-top:16px">🍕 Пятничный подарок (доставка)</h4>
+<div class="form">
+ <label>Текст акции для гостей<input id="wpText" placeholder="Каждые 2000 ₽ в чеке — бутылка пива в подарок 🍺"></label>
+ <div class="frow">
+  <label class="f1">Порог, ₽ (0 = подарок к каждому заказу)<input id="wpThreshold" type="number" min="0" value="0"></label>
+  <label class="f1">Подарок (пусто = только текст)<input id="wpGift" placeholder="Пиво 0.5"></label>
+ </div>
+ <label>Действует до<input id="wpUntil" type="date"></label>
+ <label class="chk"><input type="checkbox" id="wpPush"> Отправить пуш всем при сохранении</label>
+ <button class="btn fire" id="wpSave">Сохранить пятничный подарок</button>
+</div>
+<h4 style="margin-top:16px">🍕 Пицца месяца</h4>
+<div class="form">
+ <label>Название подарочной (30 см, тонкое)<input id="pmName" placeholder="Маргарита"></label>
+ <label class="chk"><input type="checkbox" id="pmOn"> Акция «2 пиццы 35 см → подарок» включена</label>
+ <button class="btn fire" id="pmSave">Сохранить пиццу месяца</button>
+</div>
  </div>
 </div>
 
@@ -949,6 +966,7 @@ body.is-cashier .cust .acts{min-width:260px}
     </div>
     <div id="cartDiscount" style="color:var(--green);font-size:13px;margin-top:4px"></div>
     <div id="cartFee" style="color:var(--soft);font-size:13px;margin-top:2px"></div>
+    <div id="cartGifts" style="color:var(--green);font-size:13px;margin-top:2px"></div>
   </div>
   
   <div class="checkoutForm">
@@ -1517,7 +1535,7 @@ $('#promoBtn').onclick=async()=>{
  try{const r=await api('/promo/redeem',{method:'POST',body:{code}});
   me=r.customer;renderBonus();renderProfile();confetti();toast(r.msg,'🎉');$('#promoInput').value='';}
  catch(e){toast(e.message,'⚠️')}};
-$('#promoToggle').onclick=()=>{$('#promoModal').classList.add('show');syncOverlay();loadPromos()};
+$('#promoToggle').onclick=()=>{$('#promoModal').classList.add('show');syncOverlay();loadPromos();loadWeekPromo()};
 function closePromo(){$('#promoModal').classList.remove('show');syncOverlay()}
 $('#promoClose').onclick=closePromo;
 async function loadPromos(){try{const r=await api('/promos');
@@ -1540,6 +1558,23 @@ $('#pmCreate').onclick=async()=>{
   days:+$('#pmDays').value||0,maxuses:+$('#pmMax').value||0};
  try{await api('/promos',{method:'POST',body});$('#pmCode').value='';loadPromos();toast('Промокод создан — делитесь кодом!','🎟')}
  catch(e){toast(e.message,'⚠️')}};
+ async function loadWeekPromo(){
+ try{const d=await fetch(API_BASE+'/api/delivery/info').then(r=>r.json());
+  const w=d.weekPromo||{};
+  $('#wpText').value=w.text||'';$('#wpThreshold').value=w.threshold||0;$('#wpGift').value=w.gift||'';
+  $('#wpUntil').value=w.until?w.until.slice(0,10):'';
+  $('#pmName').value=(d.pizzaMonth&&d.pizzaMonth.name)||'';$('#pmOn').checked=!!d.pizzaMonth;
+ }catch(e){}
+}
+$('#wpSave').onclick=async()=>{
+ try{await api('/admin/weekpromo',{method:'PUT',body:{text:$('#wpText').value.trim(),threshold:+$('#wpThreshold').value||0,
+  gift:$('#wpGift').value.trim(),until:$('#wpUntil').value?new Date($('#wpUntil').value+'T23:59:59').toISOString():null,push:$('#wpPush').checked}});
+  $('#wpPush').checked=false;toast('Пятничный подарок сохранён','🍕');loadDelivery();}catch(e){toast(e.message,'⚠️')}
+};
+$('#pmSave').onclick=async()=>{
+ try{await api('/admin/weekpromo',{method:'PUT',body:{pmName:$('#pmName').value.trim(),pmOn:$('#pmOn').checked}});
+  toast('Пица месяца сохранена','🍕');loadDelivery();}catch(e){toast(e.message,'⚠️')}
+};
 /* ── дашборд ── */
 $('#dashToggle').onclick=async()=>{
   $('#dashModal').classList.add('show');syncOverlay();loadSubs();
@@ -1989,6 +2024,8 @@ async function loadDelivery(){
     DMENU=r.items||[];
     deliveryInfo=await fetch(API_BASE+'/api/delivery/info').then(r=>r.json());
     populatePlaces();populateSlots();
+      const wp=deliveryInfo.weekPromo, pm=deliveryInfo.pizzaMonth;
+  $('#deliveryBanner').innerHTML=(wp?`<div class="deliveryBanner">🎁 ${esc(wp.text)}</div>`:'')+(pm?`<div class="deliveryBanner">🍕 2 пиццы 35 см → «${esc(pm.name)}» в подарок!</div>`:'');
     renderDeliveryRail();renderDeliveryMenu();updateCartFab();
   }catch(e){console.log('delivery load err',e)}
 }
@@ -2032,8 +2069,8 @@ $('#deliveryGrid').addEventListener('click',e=>{
     const key=id+(oi>=0?'_'+oi:'');
     const existing=cart.find(c=>c.key===key);
     if(existing)existing.qty++;
-    else cart.push({key,id,oi,name:p.name,opt:oi>=0?opts[oi].l:null,price:oi>=0?opts[oi].p:(+p.price||0),qty:1});
-    localStorage.setItem('zt_cart',JSON.stringify(cart));
+    else cart.push({key,id,oi,name:p.name,opt:oi>=0?opts[oi].l:null,price:oi>=0?opts[oi].p:(+p.price||0),sz:oi>=0?(opts[oi].sz||0):0,qty:1});
+      localStorage.setItem('zt_cart',JSON.stringify(cart));
     updateCartFab();
     toast('Добавлено в корзину','🛒');
   }
@@ -2061,6 +2098,12 @@ function renderCart(){
   $('#cartTotal').textContent=fmt(sum-discount+fee);
   $('#cartDiscount').textContent=discount?`−10% самовывоз: −${fmt(discount)}`:'';
   $('#cartFee').textContent=fee?`Доставка: ${fmt(fee)}`:'';
+  const gifts=[];
+  const wp2=deliveryInfo&&deliveryInfo.weekPromo;
+  if(wp2&&wp2.gift&&sum>0){const q=wp2.threshold>0?Math.floor(sum/wp2.threshold):1;if(q>0)gifts.push(`🎁 ${wp2.gift} ×${q}`);}
+  const pm2=deliveryInfo&&deliveryInfo.pizzaMonth;
+  if(pm2){const big=cart.reduce((a,c)=>a+((c.sz===35)?c.qty:0),0);if(big>=2)gifts.push(`🎁 ${pm2.name} — подарок`);}
+  $('#cartGifts').innerHTML=gifts.join('<br>');
 }
 
 $('#cartItems').addEventListener('click',e=>{
