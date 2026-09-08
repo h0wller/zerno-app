@@ -531,6 +531,7 @@ body.is-cashier .cust .acts{min-width:260px}
 .ocAddr,.ocItems,.ocComment{font-size:13px;color:var(--soft);margin-top:4px}
 .ocTotal{margin-top:8px;font-size:14px}
 .ocActs{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.adminBar{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end;margin:0 0 12px}
 </style>
 </head>
 <body>
@@ -559,7 +560,14 @@ body.is-cashier .cust .acts{min-width:260px}
 <div class="wrap">
   <nav class="rail" id="rail"></nav>
 
-  <section>
+    <section>
+    <div class="adminBar" id="adminBar" hidden>
+      <button id="editToggle" hidden>✏️ Редактировать</button>
+      <button id="promoToggle" hidden>🎟 Промокоды</button>
+      <button id="dashToggle" hidden>📊 Дашборд</button>
+      <button id="chatsToggle2" hidden>💬</button>
+    </div>
+    <div id="menuView">
     <div id="deliveryView" class="deliveryView">
   <div class="menu-head">
     <div class="mh-top">
@@ -582,10 +590,6 @@ body.is-cashier .cust .acts{min-width:260px}
           </div>
           <div class="mh-right">
             <div class="search">🔍 <input id="searchInput" placeholder="Найти в меню…"></div>
-            <button id="editToggle" hidden>✏️ Редактировать</button>
-            <button id="promoToggle" hidden>🎟 Промокоды</button>
-            <button id="dashToggle" hidden>📊 Дашборд</button>
-            <button id="chatsToggle2" hidden>💬</button>
           </div>
         </div>
       </div>
@@ -1028,7 +1032,7 @@ function bindMask(inp){inp.addEventListener('input',()=>{inp.value=fmtPhone(inp.
 function hoursNow(){const m=new Date().getMonth()+1;return (m>=5&&m<=9)?'8:00–21:00':'8:00–20:00'}
 
 /* ── API-клиент ── */
-const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+const API_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
   ? 'http://localhost:3000'
   : 'https://app.andcoffee.online';
 const T_USER='zt_user',T_ONB='zt_onb';
@@ -1120,22 +1124,29 @@ function setMode(m){
  document.body.classList.toggle('is-cashier', m==='cashier'||m==='orders');
  $('#cashierView').hidden=m!=='cashier';
  $('#ordersView').hidden=m!=='orders';
- const showGuest=(m==='guest');
- $('#menuView').hidden=!showGuest||brand!=='coffee';
- $('#deliveryView').classList.toggle('active', showGuest&&brand==='delivery');
- $('#rail').style.display=(showGuest&&brand==='coffee')?'':'none';
- $('#editToggle').hidden=m!=='admin';
- $('#promoToggle').hidden=!(me&&me.role==='admin');
- $('#dashToggle').hidden=!(me&&me.role==='admin');
+ syncBrandViews();
+ $('#adminBar').hidden=m!=='admin';
+ $('#promoToggle').hidden=m!=='admin';
+ $('#dashToggle').hidden=m!=='admin';
+ $('#chatsToggle2').hidden=!(me&&(me.role==='admin'||me.role==='cashier'));
  $('#adminBadge').hidden=m!=='admin';
  if(m!=='admin')exitEdit();
  $('#mbonusBtn').style.display=(m==='cashier'||m==='orders')?'none':'';
+ $('#cartFab').style.display=(m==='guest')?'':'none';
  if(m==='cashier')renderLog();
  if(m==='orders'){renderOrders();if(!ordersPoll)ordersPoll=setInterval(()=>{if(mode==='orders')renderOrders(true)},8000);}
  if(m==='admin')loadMenu();
+ if((m==='guest'||m==='admin')&&brand==='delivery'&&!DMENU.length)loadDelivery();
  renderModes();
  toast(m==='admin'?'Режим администратора активен':m==='cashier'?'Смена кассира активна':m==='orders'?'Панель диспетчера':'Режим гостя',
-       m==='admin'?'🔓':m==='cashier'?'🧾':m==='orders'?'🍕':'')
+       m==='admin'?'🔓':m==='cashier'?'🧾':m==='orders'?'🍕':'');
+}
+function syncBrandViews(){
+ const showGuest=(mode==='guest'||mode==='admin');
+ $('#menuView').hidden=!showGuest||brand!=='coffee';
+ $('#deliveryView').classList.toggle('active', showGuest&&brand==='delivery');
+ $('#rail').style.display=$('#menuView').hidden?'':'none';
+ $('#editToggle').hidden=!(mode==='admin'&&brand==='coffee');
 }
 function openPin(){armPw();$('#pinModal').classList.add('show');syncOverlay();setTimeout(()=>$('#pinInput').focus(),150)}
 function closePin(){$('#pinModal').classList.remove('show');$('#pinInput').value='';syncOverlay()}
@@ -2166,14 +2177,11 @@ $('#checkoutBtn').onclick=async()=>{
 };
 
 $('#brandSeg').addEventListener('click',e=>{
-  const b=e.target.closest('[data-brand]');
-  if(!b)return;
+  const b=e.target.closest('[data-brand]');if(!b)return;
   brand=b.dataset.brand;
-  if(mode!=='guest')setMode('guest');
+  if(mode==='cashier'||mode==='orders')setMode('guest');
   $('#brandSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.brand===brand));
-  $('#menuView').hidden=brand!=='coffee';
-  $('#rail').style.display=brand==='coffee'?'':'none';
-  $('#deliveryView').classList.toggle('active',brand==='delivery');
+  syncBrandViews();
   if(brand==='delivery'&&!DMENU.length)loadDelivery();
 });
 /* ── диспетчер: заказы ── */

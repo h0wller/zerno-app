@@ -806,6 +806,11 @@ const DELIVERY = {
     { fee: 1100, places: ['Донское','Прислово'] },
   ],
 };
+const weekPromo = () => { const w = JSON.parse(db.prepare("SELECT value FROM meta WHERE key='week_promo'").get()?.value || 'null');
+  if (!w || !w.text) return null; if (w.until && new Date(w.until) < new Date()) return null; return w; };
+const pizzaMonth = () => { const m = JSON.parse(db.prepare("SELECT value FROM meta WHERE key='pizza_month'").get()?.value || 'null');
+  return (m && m.on && m.name) ? m : null; };
+app.get('/api/delivery/info', (req, res) => res.json({ ...DELIVERY, weekPromo: weekPromo(), pizzaMonth: pizzaMonth() }));
 app.put('/api/admin/weekpromo', adminGuard, (req, res) => {
   const b = req.body || {};
   if ('text' in b) {
