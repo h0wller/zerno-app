@@ -2229,6 +2229,49 @@ async function loadMyOrders(){
    `<div class="hmini"><b>#${o.no}</b> · ${new Date(o.created).toLocaleDateString('ru-RU')} · ${fmt(o.total)} · ${orderLabel(o.status)}</div>`).join(''):'';
  }catch(e){host.innerHTML=''}
 }
+/* ── ФИНАЛЬНАЯ версия переключения режимов и брендов (перекрывает всё выше) ── */
+function syncBrandViews(){
+  const showGuest=(mode==='guest'||mode==='admin');
+  const mv=$('#menuView'), dv=$('#deliveryView'), rl=$('#rail');
+  if(mv)mv.hidden=!showGuest||brand!=='coffee';
+  if(dv)dv.classList.toggle('active', showGuest&&brand==='delivery');
+  if(rl)rl.style.display=(mv&&mv.hidden)?'none':'';
+  const et=$('#editToggle'); if(et)et.hidden=!(mode==='admin'&&brand==='coffee');
+}
+setMode=function(m){
+  const role=me?me.role:'guest';
+  if(m==='cashier'&&role!=='cashier'&&role!=='admin')return;
+  if(m==='orders'&&role!=='dispatch'&&role!=='cashier'&&role!=='admin')return;
+  if(m==='admin'&&role!=='admin')return;
+  mode=m;
+  document.body.classList.toggle('is-cashier', m==='cashier'||m==='orders');
+  const cv=$('#cashierView'); if(cv)cv.hidden=m!=='cashier';
+  const ov=$('#ordersView'); if(ov)ov.hidden=m!=='orders';
+  syncBrandViews();
+  const ab=$('#adminBar'); if(ab)ab.hidden=m!=='admin';
+  const pt=$('#promoToggle'); if(pt)pt.hidden=m!=='admin';
+  const dt=$('#dashToggle'); if(dt)dt.hidden=m!=='admin';
+  const ct=$('#chatsToggle2'); if(ct)ct.hidden=!(me&&(me.role==='admin'||me.role==='cashier'));
+  const bd=$('#adminBadge'); if(bd)bd.hidden=m!=='admin';
+  if(m!=='admin')exitEdit();
+  $('#mbonusBtn').style.display=(m==='cashier'||m==='orders')?'none':'';
+  const cf=$('#cartFab'); if(cf)cf.style.display=(m==='guest')?'':'none';
+  if(m==='cashier')renderLog();
+  if(m==='orders'){renderOrders();if(!ordersPoll)ordersPoll=setInterval(()=>{if(mode==='orders')renderOrders(true)},8000);}
+  if(m==='admin')loadMenu();
+  if((m==='guest'||m==='admin')&&brand==='delivery'&&!DMENU.length)loadDelivery();
+  renderModes();
+  toast(m==='admin'?'Режим администратора активен':m==='cashier'?'Смена кассира активна':m==='orders'?'Панель диспетчера':'Режим гостя',
+        m==='admin'?'🔓':m==='cashier'?'🧾':m==='orders'?'🍕':'');
+};
+$('#brandSeg').addEventListener('click',e=>{
+  const b=e.target.closest('[data-brand]');if(!b)return;
+  brand=b.dataset.brand;
+  if(mode==='cashier'||mode==='orders')setMode('guest');
+  $('#brandSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.brand===brand));
+  syncBrandViews();
+  if(brand==='delivery'&&!DMENU.length)loadDelivery();
+});
 (async function boot(){
  if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
  await loadMenu();renderAll();showBadge();initChatPointer();maybeAskReview();
@@ -2383,5 +2426,6 @@ if(typeof renderProfile==='function'){
 }
 })();
 </script>
+<script src="fix-views.js"></script>
 </body>
 </html>
