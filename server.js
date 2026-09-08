@@ -111,6 +111,9 @@ db.exec(`CREATE TABLE IF NOT EXISTS orders(
   method TEXT, place TEXT, addr TEXT, slot TEXT, pay TEXT, comment TEXT,
   items TEXT, total INTEGER, discount INTEGER, fee INTEGER, gifts TEXT,
   status TEXT DEFAULT 'new', created TEXT, updated TEXT)`);
+  const ocols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
+if (ocols.length && !ocols.includes('promo')) db.exec(`ALTER TABLE orders ADD COLUMN promo TEXT DEFAULT ''`);
+if (ocols.length && !ocols.includes('promodiscount')) db.exec(`ALTER TABLE orders ADD COLUMN promodiscount INTEGER DEFAULT 0`);
 
   const DMENU_V = '1';
 if (db.prepare("SELECT value FROM meta WHERE key='dmenu_v'").get()?.value !== DMENU_V) {
@@ -565,6 +568,7 @@ app.post('/api/promo/redeem', userGuard, (req, res) => {
   if (!req.user.verified) return res.status(403).json({ error: 'Промокоды открываются после активации профиля на кассе или в Telegram' });
   const p = db.prepare('SELECT * FROM promos WHERE code=?').get(code);
   if (!p || !p.active) return res.status(404).json({ error: 'Такого промокода нет' });
+    if ((p.scope || 'coffee') === 'delivery') return res.status(400).json({ error: 'Этот промокод работает только в корзине доставки' });
   if (p.expires && new Date(p.expires) < new Date()) return res.status(410).json({ error: 'Промокод истёк' });
   if (p.maxuses > 0 && p.uses >= p.maxuses) return res.status(410).json({ error: 'Промокод закончился' });
   if (db.prepare('SELECT 1 FROM promo_use WHERE promo=? AND cid=?').get(p.id, req.user.id))
@@ -578,6 +582,15 @@ app.post('/api/promo/redeem', userGuard, (req, res) => {
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)),
     msg: p.kind === 'stamp' ? `Промокод дал +${p.value || 1} штамп(а)` : 'Промокод дал бесплатный кофе' });
 });
+app.get('/api/promo/info', (req, res) => {
+  const code = String(req.query.code || '').trim().toUpperCase();
+  if (!code) return res.json({ ok: false, error: 'Введите код' });
+  const p = db.prepare('SELECT * FROM promos WHERE code=?').get(code);
+  if (!p || !p.active || (p.scope || 'coffee') !== 'delivery') return res.json({ ok: false, error: 'Такого кода для доставки нет' });
+  if (p.expires && new Date(p.expires) < new Date()) return res.json({ ok: false, error: 'Код истёк' });
+  if (p.maxuses > 0 && p.uses >= p.maxuses) return res.json({ ok: false, error: 'Код уже использован' });
+  res.json({ ok: true, kind: p.kind, value: p.value, code: p.code });
+});
 app.get('/api/promos', adminGuard, (req, res) =>
   res.json({ promos: db.prepare('SELECT * FROM promos ORDER BY created DESC').all() }));
 app.post('/api/promos', adminGuard, (req, res) => {
@@ -586,8 +599,9 @@ app.post('/api/promos', adminGuard, (req, res) => {
   if (code.length < 3) return res.status(400).json({ error: 'Код слишком короткий' });
   if (db.prepare('SELECT 1 FROM promos WHERE code=?').get(code)) return res.status(409).json({ error: 'Такой код уже есть' });
   const expires = b.days ? new Date(Date.now() + b.days * 86400000).toISOString() : null;
-  db.prepare('INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created) VALUES(?,?,?,?,1,?,?,0,?)')
-    .run(uid('pr'), code, b.kind || 'stamp', Math.max(1, +(b.value || 1)), expires, +(b.maxuses || 0), nowISO());
+  const scope = (b.kind === 'percent' || b.kind === 'money') ? 'delivery' : 'coffee';
+  db.prepare('INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope) VALUES(?,?,?,?,1,?,?,0,?,?)')
+    .run(uid('pr'), code, b.kind || 'stamp', Math.max(1, +(b.value || 1)), expires, +(b.maxuses || 0), nowISO(), scope);
   res.json({ ok: true });
 });
 app.post('/api/promos/:id/toggle', adminGuard, (req, res) => {
@@ -872,13 +886,27 @@ app.post('/api/orders', userGuard, (req, res) => {
   if (wp && wp.gift) { const q = wp.threshold > 0 ? Math.floor(sum / wp.threshold) : 1; if (q > 0) gifts.push({ name: wp.gift, qty: q }); }
   const pm = pizzaMonth();
   if (pm) { const big = items.reduce((a, i) => a + (i.sz === 35 ? i.qty : 0), 0); if (big >= 2) gifts.push({ name: pm.name + ' — подарок', qty: 1 }); }
-  const total = sum - discount + fee;
+    let promoCode = '', promoDiscount = 0;
+  const pc = String(b.promo || '').trim().toUpperCase();
+  if (pc) {
+    const p = db.prepare('SELECT * FROM promos WHERE code=?').get(pc);
+    if (!p || !p.active || (p.scope || 'coffee') !== 'delivery') return res.status(400).json({ error: 'Промокод не найден для доставки' });
+    if (p.expires && new Date(p.expires) < new Date()) return res.status(410).json({ error: 'Промокод истёк' });
+    if (p.maxuses > 0 && p.uses >= p.maxuses) return res.status(410).json({ error: 'Промокод использован' });
+    if (db.prepare('SELECT 1 FROM promo_use WHERE promo=? AND cid=?').get(p.id, req.user.id))
+      return res.status(409).json({ error: 'Вы уже использовали этот промокод' });
+    promoDiscount = p.kind === 'percent' ? Math.round(sum * Math.min(90, p.value) / 100) : Math.min(p.value || 0, sum);
+    promoCode = p.code;
+    db.prepare('INSERT INTO promo_use(promo,cid,ts) VALUES(?,?,?)').run(p.id, req.user.id, nowISO());
+    db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(p.id);
+  }
+  const total = sum - discount - promoDiscount + fee;
   const no = ((db.prepare("SELECT value FROM meta WHERE key='order_no'").get()?.value | 0) + 1);
   db.prepare("INSERT INTO meta(key,value) VALUES('order_no',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(String(no));
   const o = { id: uid('o'), no, cid: req.user.id, name: req.user.name, phone: req.user.phone, method,
     place: method === 'delivery' ? String(b.place).trim() : '', addr: method === 'delivery' ? String(b.addr).trim() : '',
     slot: b.slot === 'asap' ? 'asap' : String(b.slot || 'asap').slice(0, 40), pay: b.pay === 'card' ? 'card' : 'cash',
-    comment: String(b.comment || '').slice(0, 300), items, total, discount, fee, gifts, status: 'new', created: nowISO(), updated: nowISO() };
+    comment: String(b.comment || '').slice(0, 300), items, total, discount, fee, gifts, promo: promoCode, promodiscount: promoDiscount, status: 'new', created: nowISO(), updated: nowISO() };
   db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,fee,gifts,status,created,updated)
     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(o.id, o.no, o.cid, o.name, o.phone, o.method, o.place, o.addr, o.slot, o.pay, o.comment,

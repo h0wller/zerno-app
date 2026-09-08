@@ -885,8 +885,7 @@ body.is-cashier .cust .acts{min-width:260px}
    </label>
    <div class="frow">
     <label class="f1">Тип
-     <select id="pmKind"><option value="stamp">Штампы</option><option value="free">Бесплатный кофе</option></select>
-     <small>«Штампы» — начислит N штампов. «Кофе» — сразу даст подарок</small>
+  <select id="pmKind"><option value="stamp">Штампы (кофейня)</option><option value="free">Бесплатный кофе (кофейня)</option><option value="percent">Скидка % (доставка)</option><option value="money">Скидка ₽ (доставка)</option></select>     <small>«Штампы» — начислит N штампов. «Кофе» — сразу даст подарок</small>
     </label>
     <label class="f1">Кол-во
      <input id="pmValue" type="number" min="1" value="1">
@@ -978,6 +977,8 @@ body.is-cashier .cust .acts{min-width:260px}
     <div id="cartDiscount" style="color:var(--green);font-size:13px;margin-top:4px"></div>
     <div id="cartFee" style="color:var(--soft);font-size:13px;margin-top:2px"></div>
     <div id="cartGifts" style="color:var(--green);font-size:13px;margin-top:2px"></div>
+    <div class="findrow" style="margin-top:10px"><input id="cartPromo" placeholder="Промокод" style="text-transform:uppercase"><button class="btn ghost" id="cartPromoBtn">Применить</button></div>
+    <div id="cartPromoLine" style="color:var(--green);font-size:13px;margin-top:2px"></div>
   </div>
   
   <div class="checkoutForm">
