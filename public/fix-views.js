@@ -478,6 +478,111 @@
     if(sel)sel.innerHTML=slots.map(function(s){return '<option value="'+s.v+'">'+s.l+'</option>'}).join('');
   };
 
+    /* ── v10: профиль пятницы без кофейного QR, плюшки в бонусах, активация диспетчером, экран выбора ── */
+  renderVerifyNote=function(){
+    var host=document.getElementById('bonusBox');
+    var n=document.getElementById('verifyNote');
+    if(!n&&host){n=document.createElement('div');n.id='verifyNote';host.insertBefore(n,host.firstChild);}
+    if(!n)return;
+    if(!me){n.hidden=true;return;}
+    var html='<small style="color:#5B6B7A;background:#EDF2F6;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">Как устроены бонусы:<br>🫘 штампы — кассир начисляет по вашему QR<br>🎁 +1 штамп — привязка Telegram<br>🧾 активация профиля — код из 4 цифр на кассе</small>';
+    if(!me.verified)html+='<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small><div style="display:flex;gap:8px"><input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1"><button class="btn fire" id="actBtn">Активировать</button></div>';
+    if(!me.welcome&&!me.tg)html+='<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>+1 штамп</b> за привязку в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
+    n.hidden=false;n.innerHTML=html;
+    var ab=document.getElementById('actBtn');
+    if(ab)ab.onclick=async function(){try{var r=await api('/auth/activate-guest',{method:'POST',body:{code:document.getElementById('actCode').value.trim()}});me=r.customer;toast('Профиль активирован! А +1 штамп ждёт в Telegram 🎁','');renderAll();}catch(e){toast(e.message,'⚠️')}};
+  };
+  renderProfile=(function(_rp){return function(){var r=_rp();
+    var deliv=(brand==='delivery');
+    var q=document.getElementById('qrMain');var qb=q&&q.closest('.qrbox');
+    if(qb)qb.style.display=deliv?'none':'';
+    var st=document.querySelector('#profileBox .stats');
+    if(st)st.style.display=deliv?'none':'';
+    return r;};})(renderProfile);
+
+  /* активация гостей: блок и в кассе, и у диспетчера */
+  (function(){
+    var ov=document.getElementById('ordersView');
+    if(ov&&!document.getElementById('pendingBoxD')){
+      var d=document.createElement('div');d.className='cash-card';
+      d.innerHTML='<h3 style="margin:0 0 8px">🆕 Активация гостей</h3><div id="pendingBoxD"></div>';
+      var listCard=document.getElementById('ordersList').closest('.cash-card');
+      ov.querySelector('.cashier').insertBefore(d,listCard);
+    }
+  })();
+  loadPending=async function(){
+    try{
+      var r=await api('/staff/pending');
+      var html=r.pending.length?r.pending.map(function(p){
+        return '<div class="hmini"><b>'+esc(p.name)+'</b> · '+esc(p.phone)+' · код: <b style="font-size:15px">'+p.actcode+'</b> <button class="btn fire" data-actg="'+p.id+'" style="margin-left:6px;padding:4px 10px;font-size:11px">Активировать</button></div>';
+      }).join(''):'<div class="hmini">Все гости активированы ✅</div>';
+      var a=document.getElementById('pendingBox');if(a)a.innerHTML=html;
+      var b=document.getElementById('pendingBoxD');if(b)b.innerHTML=html;
+    }catch(e){}
+  };
+  renderOrders=(function(_ro){return async function(s){var r=await _ro(s);loadPending();return r;};})(renderOrders);
+  document.addEventListener('click',async function(e){
+    var b=e.target.closest('[data-actg]');if(!b)return;
+    try{await api('/staff/activate-guest',{method:'POST',body:{id:b.dataset.actg}});toast('Гость активирован','✅');loadPending();}
+    catch(e2){toast(e2.message,'⚠️')}
+  });
+
+  /* экран выбора при открытии приложения */
+  (function(){
+    if(sessionStorage.getItem('splashDone'))return;
+    var sp=document.createElement('div');sp.id='brandSplash';
+    sp.style.cssText='position:fixed;inset:0;z-index:400;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:20px';
+    sp.innerHTML='<div style="max-width:560px;width:100%;text-align:center">'+
+      '<div style="font:400 30px Prata,serif;margin-bottom:6px">…и кофе & «Пятница»</div>'+
+      '<div style="color:var(--soft);font-size:14px;margin-bottom:26px">Выберите, куда вы сегодня</div>'+
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">'+
+      '<button data-go="coffee" style="flex:1;min-width:200px;border:2px solid var(--line);border-radius:22px;background:#fff;padding:26px 18px;font:700 16px Unbounded,sans-serif;color:var(--ink);box-shadow:var(--sh)">🌊<br><br>Кофейня<br><span style="font:400 12px Golos Text,sans-serif;color:var(--soft)">меню, штампы и бонусы</span></button>'+
+      '<button data-go="delivery" style="flex:1;min-width:200px;border:2px solid #F2D9A5;border-radius:22px;background:#FFF6E5;padding:26px 18px;font:700 16px Unbounded,sans-serif;color:#6B4E0E;box-shadow:var(--sh)">🍕<br><br>«Пятница»<br><span style="font:400 12px Golos Text,sans-serif;color:#8A6D3B">доставка пиццы и роллов</span></button>'+
+      '</div></div>';
+    document.body.appendChild(sp);
+    sp.addEventListener('click',function(e){
+      var b=e.target.closest('[data-go]');if(!b)return;
+      brand=b.dataset.go;
+      sessionStorage.setItem('splashDone','1');
+      sp.remove();
+      if(mode==='cashier'||mode==='orders')setMode('guest');
+      document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand)});
+      sv();
+      if(brand==='delivery'&&!DMENU.length)loadDelivery();
+    });
+  })();
+
+    /* ── v11: профиль в пятнице открывается (без кофейных артефактов), вкладка бонусов там скрыта, сплэш: Пятница первой ── */
+  sv=(function(_sv){return function(){
+    _sv();
+    var pn=document.getElementById('panel');if(pn)pn.style.display='';
+    var deliv=(brand==='delivery');
+    var bt=document.querySelector('.tabs button[data-tab="bonus"]');
+    if(bt)bt.style.display=deliv?'none':'';
+    if(deliv)setTab('profile');
+  };})(sv);
+  renderProfile=(function(_rp){return function(){var r=_rp();
+    var rb=document.getElementById('reviewBtn');var box=rb&&rb.closest('.placebox');
+    if(box)box.style.display=(brand==='delivery')?'none':'';
+    return r;};})(renderProfile);
+  (function(){
+    var sp=document.getElementById('brandSplash');if(!sp)return;
+    var t=sp.querySelector('[style*="Prata"]');
+    if(t)t.textContent='«Пятница»  …и кофе';
+    var wrapBtns=sp.querySelector('div[style*="justify-content:center"]');
+    if(wrapBtns){
+      var d=wrapBtns.querySelector('[data-go="delivery"]'),c=wrapBtns.querySelector('[data-go="coffee"]');
+      if(d&&c)wrapBtns.insertBefore(d,c);
+    }
+  })();
+
+    /* ── v12: профиль перерисовывается при смене бренда; в пятнице прячем только QR, отзыв и ссылки остаются ── */
+  renderProfile=(function(_rp){return function(){var r=_rp();
+    var rb=document.getElementById('reviewBtn');var box=rb&&rb.closest('.placebox');
+    if(box)box.style.display='';
+    return r;};})(renderProfile);
+  sv=(function(_sv){return function(){_sv();if(me)renderProfile();};})(sv);
+
   sv();
-  console.log('fix-views v9 готов');
+  console.log('fix-views v12 готов');
 })();

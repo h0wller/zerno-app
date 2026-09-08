@@ -499,7 +499,20 @@ app.post('/api/auth/activate', userGuard, (req, res) => {
   logEv(req.user.name, role === 'admin' ? 'активирован админ' : 'активирован кассир');
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
-app.get('/api/staff/pending', staffGuard, (req, res) => {
+const pendingGuard = (req, res, next) => { req.user = authUser(req);
+  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
+  if (!['cashier','admin','dispatch'].includes(req.user.role)) return res.status(403).json({ error: 'Недостаточно прав' });
+  next(); };
+app.post('/api/staff/activate-guest', pendingGuard, (req, res) => {
+  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(String(req.body.id || ''));
+  if (!c) return res.status(404).json({ error: 'Гость не найден' });
+  if (c.verified) return res.status(409).json({ error: 'Уже активирован' });
+  db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
+  addHist(c.id, '✅ Профиль активирован сотрудником', 'Сотрудник');
+  logEv(req.user.name, `активировал гостя ${c.name}`);
+  res.json({ ok: true });
+});
+app.get('/api/staff/pending', pendingGuard, (req, res) => {
   res.json({ pending: db.prepare('SELECT id,name,phone,actcode,created_at FROM customers WHERE verified=0 AND actcode IS NOT NULL ORDER BY created_at DESC LIMIT 20').all() });
 });
 app.post('/api/auth/deactivate', userGuard, (req, res) => {
