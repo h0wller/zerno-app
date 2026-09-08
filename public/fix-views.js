@@ -583,6 +583,118 @@
     return r;};})(renderProfile);
   sv=(function(_sv){return function(){_sv();if(me)renderProfile();};})(sv);
 
+    /* ── v13: адаптивный сплэш (мобильные ≤560px — карточки столбиком) ── */
+  (function(){
+    var css=document.createElement('style');
+    css.textContent=
+      '#brandSplash{padding:16px!important;overflow:auto!important}'+
+      '#brandSplash .spInner{max-width:560px;width:100%}'+
+      '#brandSplash .spTitle{font-size:clamp(22px,6vw,30px)!important;line-height:1.25;overflow-wrap:break-word}'+
+      '#brandSplash .spBtns{flex-direction:column!important;gap:12px!important}'+
+      '#brandSplash .spBtns button{min-width:0!important;width:100%}'+
+      '@media(min-width:560px){'+
+        '#brandSplash .spBtns{flex-direction:row!important}'+
+        '#brandSplash .spBtns button{min-width:200px!important;width:auto}'+
+      '}';
+    document.head.appendChild(css);
+    var sp=document.getElementById('brandSplash');
+    if(sp&&sp.firstElementChild){
+      var inner=sp.firstElementChild;inner.classList.add('spInner');
+      var t=inner.querySelector('[style*="Prata"]');if(t)t.classList.add('spTitle');
+      var b=inner.querySelector('div[style*="justify-content:center"]');if(b)b.classList.add('spBtns');
+    }
+  })();
+
+    /* ── v14: сплэш переписан начисто — классы + grid + clamp, адаптив закрыт навсегда ── */
+  (function(){
+    var old=document.getElementById('brandSplash');if(old)old.remove();
+    var css=document.createElement('style');
+    css.textContent=
+      'html,body{overflow-x:hidden;max-width:100%}'+
+      'img,canvas,svg,video{max-width:100%}'+
+      '#brandSplash,.toast,.msg{overflow-wrap:break-word}'+
+      '#brandSplash{position:fixed;inset:0;z-index:400;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}'+
+      '#brandSplash .spInner{width:100%;max-width:560px;text-align:center}'+
+      '#brandSplash .spTitle{font:400 clamp(20px,5.5vw,30px)/1.25 Prata,serif;margin-bottom:6px}'+
+      '#brandSplash .spSub{color:var(--soft);font-size:14px;margin-bottom:22px}'+
+      '#brandSplash .spBtns{display:grid;grid-template-columns:1fr;gap:12px}'+
+      '#brandSplash .spBtn{border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;box-shadow:var(--sh);width:100%}'+
+      '#brandSplash .spBtn small{display:block;font:400 12px Golos Text,sans-serif;margin-top:6px}'+
+      '#brandSplash .spPizza{border:2px solid #F2D9A5;background:#FFF6E5;color:#6B4E0E}'+
+      '#brandSplash .spPizza small{color:#8A6D3B}'+
+      '#brandSplash .spCoffee{border:2px solid var(--line);background:#fff;color:var(--ink)}'+
+      '#brandSplash .spCoffee small{color:var(--soft)}'+
+      '@media(min-width:560px){#brandSplash .spBtns{grid-template-columns:1fr 1fr}}';
+    document.head.appendChild(css);
+    if(sessionStorage.getItem('splashDone'))return;
+    var sp=document.createElement('div');sp.id='brandSplash';
+    sp.innerHTML='<div class="spInner">'+
+      '<div class="spTitle">«Пятница» & …и кофе</div>'+
+      '<div class="spSub">Выберите, куда вы сегодня</div>'+
+      '<div class="spBtns">'+
+      '<button class="spBtn spPizza" data-go="delivery">🍕<br><br>«Пятница»<small>доставка пиццы и роллов</small></button>'+
+      '<button class="spBtn spCoffee" data-go="coffee">🌊<br><br>Кофейня<small>меню, штампы и бонусы</small></button>'+
+      '</div></div>';
+    document.body.appendChild(sp);
+    sp.addEventListener('click',function(e){
+      var b=e.target.closest('[data-go]');if(!b)return;
+      brand=b.dataset.go;
+      sessionStorage.setItem('splashDone','1');
+      sp.remove();
+      if(mode==='cashier'||mode==='orders')setMode('guest');
+      document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand)});
+      sv();
+      if(brand==='delivery'&&!DMENU.length)loadDelivery();
+    });
+  })();
+
+    /* ── v15: адаптивные карточки доставки — плитки размеров в две строки, сетка без обрезаний ── */
+  (function(){
+    var css=document.createElement('style');
+    css.textContent=
+      '#deliveryGrid{grid-template-columns:1fr!important}'+
+      '@media(min-width:560px){#deliveryGrid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important}}'+
+      '#deliveryGrid .opts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}'+
+      '@media(max-width:400px){#deliveryGrid .opts{grid-template-columns:1fr}}'+
+      '#deliveryGrid .opts button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;'+
+        'border:1.5px solid var(--line);border-radius:12px;font-size:11px;font-weight:600;background:#fff;'+
+        'line-height:1.3;white-space:normal;text-align:left;width:100%}'+
+      '#deliveryGrid .opts button .op{color:var(--soft);font-weight:700}'+
+      '#deliveryGrid .opts button.sel{background:#B4552D;border-color:#B4552D;color:#fff}'+
+      '#deliveryGrid .opts button.sel .op{color:#F3E2CE}'+
+      '#deliveryGrid .card .cta{margin-top:10px}';
+    document.head.appendChild(css);
+  })();
+  renderDeliveryMenu=(function(_r){return function(){_r();
+    document.querySelectorAll('#deliveryGrid .opts button').forEach(function(b){
+      if(b.querySelector('.ol'))return;
+      var parts=b.textContent.split(' · ');
+      if(parts.length<3)return;
+      b.innerHTML='<span class="ol">'+parts[0]+'</span><span class="op">'+parts[1]+' · '+parts[2]+'</span>';
+    });
+    document.querySelectorAll('#deliveryGrid .opts button.sel').forEach(function(b){b.classList.remove('sel')});
+  };})(renderDeliveryMenu);
+
+    /* ── v16: адаптивная шапка — режимы и бренды никогда не обрезаются ── */
+  (function(){
+    var css=document.createElement('style');
+    css.textContent=
+      '@media(max-width:820px){'+
+        '.topbar{flex-wrap:wrap;row-gap:8px;padding:8px 12px}'+
+        '.topbar .brand{order:1;min-width:0}'+
+        '#clock{order:2;margin-left:auto}'+
+        '#profileTopBtn{order:3}'+
+        '#brandSeg{order:10;flex:1 1 100%;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}'+
+        '#modeSeg{order:11;flex:1 1 100%;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}'+
+        '#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}'+
+        '#brandSeg button,#modeSeg button{flex:0 0 auto}'+
+      '}'+
+      '@media(max-width:400px){'+
+        '#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}'+
+      '}';
+    document.head.appendChild(css);
+  })();
+
   sv();
-  console.log('fix-views v12 готов');
+  console.log('fix-views v16 готов');
 })();
