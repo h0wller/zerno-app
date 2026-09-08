@@ -334,9 +334,10 @@ app.post('/api/menu', adminGuard, (req, res) => {
 });
 app.put('/api/menu/:id', adminGuard, (req, res) => {
   const p = req.body;
-  db.prepare('UPDATE menu SET cat=?,e=?,name=?,descr=?,comp=?,vol=?,price=?,tag=?,coffee=?,is_on=?,img=? WHERE id=?').run(
+  db.prepare('UPDATE menu SET cat=?,e=?,name=?,descr=?,comp=?,vol=?,price=?,tag=?,coffee=?,is_on=?,img=?,section=?,opts=? WHERE id=?').run(
     p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
-    p.vol || '', String(p.price ?? '0'), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null, req.params.id);
+    p.vol || '', String(p.price ?? '0'), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null,
+    p.section || 'coffee', JSON.stringify(p.opts || []), req.params.id);
   touch(); res.json({ ok: true });
 });
 app.delete('/api/menu/:id', adminGuard, (req, res) => {

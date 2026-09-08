@@ -775,6 +775,13 @@ body.is-cashier .cust .acts{min-width:260px}
         <label class="f1">Объём / выход<input id="emVol" maxlength="14" placeholder="300 мл"></label>
         <label class="f1">Эмодзи-фолбэк<input id="emEmoji" maxlength="4" placeholder="☕"></label>
       </div>
+      <div id="emOptsBox" hidden>
+  <label style="margin-top:6px">Размеры пиццы<small>— вес (г) и цена (₽) четырёх вариантов</small></label>
+  <div class="frow"><label class="f1">25 пышное<input id="emOpt0w" placeholder="415 г"></label><label class="f1">₽<input id="emOpt0p" type="number"></label></div>
+  <div class="frow"><label class="f1">35 пышное<input id="emOpt1w" placeholder="750 г"></label><label class="f1">₽<input id="emOpt1p" type="number"></label></div>
+  <div class="frow"><label class="f1">25 тонкое<input id="emOpt2w" placeholder="335 г"></label><label class="f1">₽<input id="emOpt2p" type="number"></label></div>
+  <div class="frow"><label class="f1">35 тонкое<input id="emOpt3w" placeholder="550 г"></label><label class="f1">₽<input id="emOpt3p" type="number"></label></div>
+</div>
       <label>Описание<textarea id="emDesc" rows="2" maxlength="140" placeholder="Коротко и с характером"></textarea></label>
       <label>Состав <small>— через запятую, покажем чипсами</small><textarea id="emComp" rows="2" placeholder="эспрессо, молоко"></textarea></label>
       <div class="frow">
