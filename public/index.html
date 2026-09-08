@@ -1278,8 +1278,9 @@ $('#setPinGo').onclick=async()=>{
  }catch(e){toast(e.message,'⚠️')}};
 
 $('#profileTopBtn').onclick=()=>me?openPanel('profile'):openAuth();
-const brand=document.querySelector('.brand');
-if(brand)brand.onclick=()=>{ if(mode!=='guest')setMode('guest'); else window.scrollTo({top:0,behavior:'smooth'}); };
+const brandLogo=document.querySelector('.brand');
+if(brandLogo)brandLogo.onclick=()=>{ if(mode!=='guest')setMode('guest');
+ else window.scrollTo({top:0,behavior:'smooth'}); };
 $('#logoutBtn').onclick=async()=>{
  try{
   const reg=await navigator.serviceWorker.ready;
