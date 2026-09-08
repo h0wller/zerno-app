@@ -519,6 +519,18 @@ body.is-cashier .cust .acts{min-width:260px}
 .checkoutForm input,.checkoutForm select,.checkoutForm textarea{border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;font-size:14px}
 .checkoutForm textarea{resize:vertical;min-height:60px}
 .deliveryBanner{background:#FFF6E5;border:1.5px dashed #F2D9A5;border-radius:14px;padding:12px 16px;margin-bottom:16px;color:#6B4E0E;font-size:13px;font-weight:600}
+
+.orderCard{border:1.5px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;background:#fff}
+.ocHead{display:flex;gap:10px;align-items:center;font-size:15px}
+.ocTime{margin-left:auto;color:var(--soft);font-size:12px}
+.ocStatus{font-size:11px;font-weight:800;border-radius:999px;padding:3px 10px}
+.st-new{background:#FDE8E8;color:#B3372B}.st-accept{background:#EAF1F9;color:#163B6B}
+.st-cook{background:#FFF6E5;color:#B26A05}.st-way{background:#E4EFE2;color:#1E7A4E}
+.st-done{background:#EDF2F6;color:#5B6B7A}.st-cancel{background:#FDE8E8;color:#B3372B}
+.ocWho{font-weight:700;margin-top:6px}
+.ocAddr,.ocItems,.ocComment{font-size:13px;color:var(--soft);margin-top:4px}
+.ocTotal{margin-top:8px;font-size:14px}
+.ocActs{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -630,6 +642,14 @@ body.is-cashier .cust .acts{min-width:260px}
         </div>
       </div>
     </div>
+    <div id="ordersView" hidden>
+  <div class="cashier">
+    <div class="cash-top"><h2>Заказы <em>доставки</em></h2>
+      <button class="btn ghost" id="ordersRefresh">⟳ Обновить</button>
+    </div>
+    <div class="cash-card" id="ordersList"></div>
+  </div>
+</div>
   </section>
 
   <aside class="panel" id="panel">
@@ -687,6 +707,7 @@ body.is-cashier .cust .acts{min-width:260px}
           <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
           <div class="stat"><b id="stFree">0</b><span>подарков</span></div>
         </div>
+        <div id="myOrders" style="margin-top:12px"></div>
         <div class="qrbox" style="margin-top:14px"><canvas id="qrMain" width="220" height="220" style="width:158px;height:158px"></canvas>
           <small>Ваш QR для штампов и бонусов</small>
           <button class="demoBtn" id="qrOpenProfile" style="margin-top:10px">⛶ На весь экран для кассира</button>
@@ -995,7 +1016,7 @@ const API_BASE = (location.hostname === 'localhost' || location.hostname === '12
 const T_USER='zt_user',T_ONB='zt_onb';
 let USER_TOKEN=localStorage.getItem(T_USER)||null;
 let onboarded=localStorage.getItem(T_ONB)==='1';
-let MENU=[],meta={updatedAt:Date.now()},me=null,mode='guest',editMode=false;
+let MENU=[],meta={updatedAt:Date.now()},me=null,mode='guest',editMode=false,brand='coffee';
 async function api(path,opts={}){
  const h={'Content-Type':'application/json'};
  if(USER_TOKEN)h['Authorization']='Bearer '+USER_TOKEN;
@@ -1060,8 +1081,9 @@ catch(e){toast(e.message,'⚠️')}}
 let modeSegBound=false;
 function renderModes(){
  const role=me?me.role:'guest';
- const btns=[{m:'guest',l:'Гость'}];
+  const btns=[{m:'guest',l:'Гость'}];
  if(role==='cashier'||role==='admin')btns.push({m:'cashier',l:'Кассир'});
+ if(role==='dispatch'||role==='cashier'||role==='admin')btns.push({m:'orders',l:'🍕 Заказы'});
  if(role==='admin')btns.push({m:'admin',l:'Админ'});
  const seg=$('#modeSeg');
  seg.innerHTML=btns.map(b=>`<button data-mode="${b.m}" class="${mode===b.m?'on':''}">${b.l}</button>`).join('');
@@ -1074,24 +1096,29 @@ function exitEdit(){if(!editMode)return;editMode=false;document.body.classList.r
 function setMode(m){
  const role=me?me.role:'guest';
  if(m==='cashier'&&role!=='cashier'&&role!=='admin')return;
+ if(m==='orders'&&role!=='dispatch'&&role!=='cashier'&&role!=='admin')return;
  if(m==='admin'&&role!=='admin')return;
  mode=m;
- document.body.classList.toggle('is-cashier', m==='cashier');
+ document.body.classList.toggle('is-cashier', m==='cashier'||m==='orders');
  $('#cashierView').hidden=m!=='cashier';
- $('#menuView').hidden=m==='cashier';
- $('#rail').style.display=m==='cashier'?'none':'';
+ $('#ordersView').hidden=m!=='orders';
+ const showGuest=(m==='guest');
+ $('#menuView').hidden=!showGuest||brand!=='coffee';
+ $('#deliveryView').classList.toggle('active', showGuest&&brand==='delivery');
+ $('#rail').style.display=(showGuest&&brand==='coffee')?'':'none';
  $('#editToggle').hidden=m!=='admin';
  $('#promoToggle').hidden=!(me&&me.role==='admin');
  $('#dashToggle').hidden=!(me&&me.role==='admin');
  $('#adminBadge').hidden=m!=='admin';
  if(m!=='admin')exitEdit();
- $('#mbonusBtn').style.display=m==='cashier'?'none':'';
+ $('#mbonusBtn').style.display=(m==='cashier'||m==='orders')?'none':'';
  if(m==='cashier')renderLog();
+ if(m==='orders'){renderOrders();if(!ordersPoll)ordersPoll=setInterval(()=>{if(mode==='orders')renderOrders(true)},8000);}
  if(m==='admin')loadMenu();
  renderModes();
- toast(m==='admin'?'Режим администратора активен':m==='cashier'?'Смена кассира активна':'Режим гостя',
-       m==='admin'?'🔓':m==='cashier'?'🧾':'')
-      }
+ toast(m==='admin'?'Режим администратора активен':m==='cashier'?'Смена кассира активна':m==='orders'?'Панель диспетчера':'Режим гостя',
+       m==='admin'?'🔓':m==='cashier'?'🧾':m==='orders'?'🍕':'')
+}
 function openPin(){armPw();$('#pinModal').classList.add('show');syncOverlay();setTimeout(()=>$('#pinInput').focus(),150)}
 function closePin(){$('#pinModal').classList.remove('show');$('#pinInput').value='';syncOverlay()}
 $('#pinClose').onclick=closePin;
@@ -1099,7 +1126,7 @@ async function tryActivate(){const v=$('#pinInput').value.trim();
  if(!v)return toast('Введите код','✍️');
  try{const r=await api('/auth/activate',{method:'POST',body:{code:v}});
   me=r.customer;closePin();renderModes();renderProfile();
-  toast(me.role==='admin'?'🔓 Вы теперь администратор':'🧾 Вы теперь кассир','✅')}
+  toast(me.role==='admin'?'🔓 Вы теперь администратор':me.role==='dispatch'?'🛵 Вы диспетчер доставки':'🧾 Вы теперь кассир','✅')}
  catch(e){
   if(e.code===429){
    let sec=parseInt((e.message.match(/\d+/)||['60'])[0],10);
@@ -1459,8 +1486,9 @@ $('#dashToggle').hidden=!(me&&me.role==='admin');
  $('#stCups').textContent=me.cups;$('#stStamps').textContent=me.stamps+'/10';$('#stFree').textContent=me.free;
  $('#histList').innerHTML=(me.history||[]).slice(0,8).map(h=>
   `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`).join('')
-  ||'<div class="hmini">История пока пуста</div>';
+  ||'<div class="hmini">История пока пуста</div>';loadMyOrders();
 }
+
 $('#nameInput').addEventListener('change',async e=>{if(!me)return;
  const name=e.target.value.trim()||'Гость';
  try{const r=await api('/me',{method:'PUT',body:{name}});me=r.customer;renderProfile();
@@ -2096,13 +2124,59 @@ $('#checkoutBtn').onclick=async()=>{
 $('#brandSeg').addEventListener('click',e=>{
   const b=e.target.closest('[data-brand]');
   if(!b)return;
-  const brand=b.dataset.brand;
+  brand=b.dataset.brand;
+  if(mode!=='guest')setMode('guest');
   $('#brandSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.brand===brand));
   $('#menuView').hidden=brand!=='coffee';
   $('#rail').style.display=brand==='coffee'?'':'none';
   $('#deliveryView').classList.toggle('active',brand==='delivery');
   if(brand==='delivery'&&!DMENU.length)loadDelivery();
 });
+/* ── диспетчер: заказы ── */
+function orderLabel(s){return ({new:'🆕 Новый',accept:'✅ Принят',cook:'👨‍🍳 Готовится',way:'🛵 В пути',done:'🏁 Выполнен',cancel:'❌ Отменён'})[s]||s}
+let ordersPoll=null,lastOrderNo=0;
+function beep(){try{const ctx=new (window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator();const g=ctx.createGain();
+ o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.value=0.15;o.start();setTimeout(()=>{o.stop();ctx.close()},300);}catch(e){}}
+function orderCard(o){
+ const next=o.status==='new'?['accept']:o.status==='accept'?['cook']:o.status==='cook'?(o.method==='pickup'?['done']:['way']):o.status==='way'?['done']:[];
+ const items=o.items.map(i=>`${i.qty}× ${esc(i.name)}${i.opt?' ('+esc(i.opt)+')':''}`).join('<br>');
+ const gifts=(o.gifts||[]).map(g=>`🎁 ${esc(g.name)} ×${g.qty}`).join('<br>');
+ return `<div class="orderCard" data-oid="${o.id}">
+  <div class="ocHead"><b>#${o.no}</b><span class="ocStatus st-${o.status}">${orderLabel(o.status)}</span>
+   <span class="ocTime">${new Date(o.created).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</span></div>
+  <div class="ocWho">${esc(o.name)} · ${esc(o.phone)}</div>
+  <div class="ocAddr">${o.method==='pickup'?'🛍 Самовывоз, Советская 38А':'🚗 '+esc(o.place)+', '+esc(o.addr)}<br>⏰ ${o.slot==='asap'?'как можно скорее':esc(o.slot)} · 💳 ${o.pay==='cash'?'наличные':'карта при получении'}</div>
+  <div class="ocItems">${items}${gifts?'<br>'+gifts:''}</div>
+  <div class="ocTotal">Итого: <b>${fmt(o.total)}</b>${o.discount?` · скидка ${fmt(o.discount)}`:''}${o.fee?` · доставка ${fmt(o.fee)}`:''}</div>
+  ${o.comment?`<div class="ocComment">💬 ${esc(o.comment)}</div>`:''}
+  <div class="ocActs">${next.map(s=>`<button class="btn fire" data-os="${s}">${orderLabel(s)}</button>`).join('')}
+   ${(o.status!=='done'&&o.status!=='cancel')?`<button class="btn ghost danger" data-os="cancel">❌ Отменить</button>`:''}</div>
+ </div>`;
+}
+async function renderOrders(silent){
+ try{
+  const r=await api('/orders');
+  const list=r.orders||[];
+  const maxNo=list.length?list[0].no:0;
+  if(!silent&&lastOrderNo&&maxNo>lastOrderNo){toast(`Новый заказ #${maxNo}!`,'🍕');beep();}
+  if(maxNo)lastOrderNo=maxNo;
+  $('#ordersList').innerHTML=list.map(orderCard).join('')||'<div class="hmini">Заказов за последние 3 дня нет</div>';
+ }catch(e){if(!silent)toast(e.message,'⚠️')}
+}
+$('#ordersList').addEventListener('click',async e=>{
+ const b=e.target.closest('[data-os]');if(!b)return;
+ const id=b.closest('.orderCard').dataset.oid;
+ try{await api('/orders/'+id+'/status',{method:'POST',body:{status:b.dataset.os}});renderOrders(true);}
+ catch(e2){toast(e2.message,'⚠️')}
+});
+$('#ordersRefresh').onclick=()=>renderOrders();
+async function loadMyOrders(){
+ const host=$('#myOrders');if(!host||!me)return;
+ try{const r=await api('/orders/mine');
+  host.innerHTML=(r.orders||[]).length?'<h4 style="margin:14px 2px 9px">Мои заказы</h4>'+r.orders.slice(0,5).map(o=>
+   `<div class="hmini"><b>#${o.no}</b> · ${new Date(o.created).toLocaleDateString('ru-RU')} · ${fmt(o.total)} · ${orderLabel(o.status)}</div>`).join(''):'';
+ }catch(e){host.innerHTML=''}
+}
 (async function boot(){
  if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
  await loadMenu();renderAll();showBadge();initChatPointer();maybeAskReview();
