@@ -1042,7 +1042,7 @@ function hoursNow(){const m=new Date().getMonth()+1;return (m>=5&&m<=9)?'8:00–
 /* ── API-клиент ── */
 const API_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
   ? 'http://localhost:3000'
-  : 'https://app.andcoffee.online';
+  : ''; // на боевых/тестовых доменах API живёт на том же домене (same-origin)
 const T_USER='zt_user',T_ONB='zt_onb';
 let USER_TOKEN=localStorage.getItem(T_USER)||null;
 let onboarded=localStorage.getItem(T_ONB)==='1';

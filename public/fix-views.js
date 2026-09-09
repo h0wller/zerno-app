@@ -1,700 +1,780 @@
-/* Внешний патч v4: виды, рельсы, корзина, редактор доставки */
+/* fix-views.js — ФИНАЛЬНАЯ сборка патча доставки. Грузится ПОСЛЕ основного скрипта. */
 (function(){
-  var fixCss=document.createElement('style');
-  fixCss.textContent='@media(min-width:1181px){'+
-    'body:not(.is-cashier) .wrap>.rail{grid-column:1}'+
-    'body:not(.is-cashier) .wrap>section{grid-column:2}'+
-    'body:not(.is-cashier) .wrap>.panel{grid-column:3}}';
-  document.head.appendChild(fixCss);
+'use strict';
+/* ========== 0. CSS ========== */
+var css=document.createElement('style');
+css.textContent=
+'@media(min-width:1181px){body:not(.is-cashier) .wrap>.rail{grid-column:1}body:not(.is-cashier) .wrap>section{grid-column:2}body:not(.is-cashier) .wrap>.panel{grid-column:3}}'+
+'html,body{overflow-x:hidden;max-width:100%}img,canvas,svg,video{max-width:100%}'+
+'#deliveryGrid{grid-template-columns:1fr!important;padding-bottom:120px}'+
+'@media(min-width:560px){#deliveryGrid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important}}'+
+'#deliveryGrid .opts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}'+
+'@media(max-width:400px){#deliveryGrid .opts{grid-template-columns:1fr}}'+
+'#deliveryGrid .opts button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:1.5px solid var(--line);border-radius:12px;font-size:11px;font-weight:600;background:#fff;line-height:1.3;white-space:normal;text-align:left;width:100%}'+
+'#deliveryGrid .opts button .op{color:var(--soft);font-weight:700}'+
+'#deliveryGrid .opts button.sel{background:#B4552D;border-color:#B4552D;color:#fff}'+
+'#deliveryGrid .opts button.sel .op{color:#F3E2CE}'+
+'#deliveryGrid .opts.shake{animation:shake .4s}'+
+'#cartFab{background:#B4552D!important;box-shadow:0 12px 30px -8px rgba(180,85,45,.75)!important;bottom:calc(84px + env(safe-area-inset-bottom))!important}'+
+'.addonChip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}.addonChip b{color:#B4552D}'+
+'@media(max-width:820px){.topbar{flex-wrap:wrap;row-gap:8px;padding:8px 12px}.topbar .brand{order:1;min-width:0}#clock{order:2;margin-left:auto}#profileTopBtn{order:3}#brandSeg{order:10;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}#modeSeg{order:11;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}'+
+'@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}'+
+'#brandSplash{position:fixed;inset:0;z-index:400;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}'+
+'#brandSplash .spInner{width:100%;max-width:560px;text-align:center}'+
+'#brandSplash .spTitle{font:400 clamp(20px,5.5vw,30px)/1.25 Prata,serif;margin-bottom:6px;overflow-wrap:break-word}'+
+'#brandSplash .spSub{color:var(--soft);font-size:14px;margin-bottom:22px}'+
+'#brandSplash .spBtns{display:grid;grid-template-columns:1fr;gap:12px}'+
+'#brandSplash .spBtn{border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;box-shadow:var(--sh);width:100%}'+
+'#brandSplash .spBtn small{display:block;font:400 12px Golos Text,sans-serif;margin-top:6px}'+
+'#brandSplash .spPizza{border:2px solid #F2D9A5;background:#FFF6E5;color:#6B4E0E}#brandSplash .spPizza small{color:#8A6D3B}'+
+'#brandSplash .spCoffee{border:2px solid var(--line);background:#fff;color:var(--ink)}#brandSplash .spCoffee small{color:var(--soft)}'+
+'@media(min-width:560px){#brandSplash .spBtns{grid-template-columns:1fr 1fr}}'+
+'#chatPanel [class*="chip"],#chatPanel #chips,#chatPanel .chips{display:none!important}'+
+'#ctxSwitch{color:#fff!important;border-color:rgba(255,255,255,.4)!important;background:rgba(255,255,255,.12)!important;font-size:12px!important;padding:4px 12px;border-radius:999px!important;margin-left:auto}'+
+'.chatHint{display:inline-block;background:#EDF2F6;border:1.5px solid var(--line);border-radius:16px 16px 16px 4px;padding:8px 14px;margin:3px 4px;font-size:13px;color:var(--ink);cursor:pointer}'+
+'.chatHint:active{background:#D6E4F0}'+
+'.ctxPick{display:flex;gap:8px;margin:8px 0}.ctxPick button{flex:1;padding:10px;border-radius:14px;font-size:13px;font-weight:700;border:1.5px solid var(--line);background:#fff;cursor:pointer}'+
+'.ctxPick .cpD{border-color:#F2D9A5;background:#FFF6E5;color:#6B4E0E}.ctxPick .cpC{color:var(--ink)}';
+document.head.appendChild(css);
 
-  /* DOM: раскладываем элементы по местам */
-  var wrap=document.querySelector('.wrap'), sec=wrap&&wrap.querySelector(':scope>section');
-  ['deliveryView','ordersView','cashierView'].forEach(function(id){
-    var el=document.getElementById(id);
-    if(sec&&el&&el.parentNode!==sec)sec.appendChild(el);
-  });
-  var dRail=document.getElementById('deliveryRail');
-  if(wrap&&dRail&&dRail.parentNode!==wrap){wrap.insertBefore(dRail,sec);dRail.classList.add('rail');}
-  var ab0=document.getElementById('adminBar');
-  if(sec&&ab0&&ab0.parentNode!==sec)sec.insertBefore(ab0,sec.firstChild);
-
-  function cartFabShow(){
-    var cf=document.getElementById('cartFab');
-    if(cf)cf.style.display=((mode==='guest'||mode==='admin')&&brand==='delivery')?'':'none';
+/* ========== 1. DOM ========== */
+var wrapEl=document.querySelector('.wrap');
+var sec=wrapEl?wrapEl.querySelector(':scope>section'):null;
+['deliveryView','ordersView','cashierView'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(sec&&el&&el.parentNode!==sec)sec.appendChild(el);
+});
+var dRail=document.getElementById('deliveryRail');
+if(wrapEl&&dRail&&dRail.parentNode!==wrapEl){wrapEl.insertBefore(dRail,sec);dRail.classList.add('rail');}
+var ab0=document.getElementById('adminBar');
+if(sec&&ab0&&ab0.parentNode!==sec)sec.insertBefore(ab0,sec.firstChild);
+(function(){
+  var ov=document.getElementById('ordersView');
+  if(ov&&!document.getElementById('pendingBoxD')){
+    var d=document.createElement('div');d.className='cash-card';
+    d.innerHTML='<h3 style="margin:0 0 8px">🆕 Активация гостей</h3><div id="pendingBoxD"></div>';
+    var lc=document.getElementById('ordersList');
+    if(lc)ov.querySelector('.cashier').insertBefore(d,lc.closest('.cash-card'));
   }
-  function sv(){
-    var showGuest=(mode==='guest'||mode==='admin');
-    var showCoffee=showGuest&&brand==='coffee';
-    var showDeliv=showGuest&&brand==='delivery';
-    var mv=document.getElementById('menuView'), dv=document.getElementById('deliveryView');
-    var rl=document.getElementById('rail'), dr=document.getElementById('deliveryRail');
-    if(mv){mv.hidden=!showCoffee; mv.style.display=showCoffee?'':'none';}
-    if(dv){dv.hidden=false; dv.style.display=showDeliv?'block':'none';}
-    if(rl)rl.style.display=showCoffee?'':'none';
-    if(dr)dr.style.display=showDeliv?'':'none';
-    var et=document.getElementById('editToggle'); if(et)et.hidden=(mode!=='admin');
-    var ab=document.getElementById('adminBar'); if(ab)ab.hidden=(mode!=='admin');
-    var pn=document.getElementById('panel'); if(pn)pn.style.display=(brand==='delivery'&&mode==='guest')?'none':'';
-    var mb=document.getElementById('mbonusBtn'); if(mb)mb.style.display=(mode==='guest'&&brand==='coffee')?'':'none';
-    cartFabShow();
+})();
+(function(){
+  var cp=document.getElementById('cartPanel'),ci=document.getElementById('cartItems');
+  if(cp&&ci&&!document.getElementById('cartAddons')){
+    var d=document.createElement('div');d.id='cartAddons';d.style.margin='0 0 10px';cp.insertBefore(d,ci);
   }
-  window.syncBrandViews=sv;
-  updateCartFab=function(){
-    var sum=cart.reduce(function(a,c){return a+c.price*c.qty},0);
-    var fab=document.getElementById('cartFab');
-    if(fab)fab.hidden=!sum;
-    var s=document.getElementById('cartSum'); if(s)s.textContent=Number(sum).toLocaleString('ru-RU');
-    cartFabShow();
-  };
-  setMode=function(m){
-    var role=me?me.role:'guest';
-    if(m==='cashier'&&role!=='cashier'&&role!=='admin')return;
-    if(m==='orders'&&role!=='dispatch'&&role!=='cashier'&&role!=='admin')return;
-    if(m==='admin'&&role!=='admin')return;
-    mode=m;
-    document.body.classList.toggle('is-cashier', m==='cashier'||m==='orders');
-    var cv=document.getElementById('cashierView'); if(cv){cv.hidden=(m!=='cashier'); cv.style.display='';}
-    var ov=document.getElementById('ordersView'); if(ov)ov.hidden=(m!=='orders');
-    sv();
-    var pt=document.getElementById('promoToggle'); if(pt)pt.hidden=(m!=='admin');
-    var dt=document.getElementById('dashToggle'); if(dt)dt.hidden=(m!=='admin');
-    var ct=document.getElementById('chatsToggle2'); if(ct)ct.hidden=!(me&&(me.role==='admin'||me.role==='cashier'));
-    var bd=document.getElementById('adminBadge'); if(bd)bd.hidden=(m!=='admin');
-    if(m!=='admin')exitEdit();
-    if(m==='cashier')renderLog();
-    if(m==='orders'){renderOrders();if(!ordersPoll)ordersPoll=setInterval(function(){if(mode==='orders')renderOrders(true)},8000);}
-    if(m==='admin')loadMenu();
-    if((m==='guest'||m==='admin')&&brand==='delivery'&&!DMENU.length)loadDelivery();
-    renderModes();
-    toast(m==='admin'?'Режим администратора активен':m==='cashier'?'Смена кассира активна':m==='orders'?'Панель диспетчера':'Режим гостя',
-          m==='admin'?'🔓':m==='cashier'?'🧾':m==='orders'?'🍕':'');
-  };
-  document.getElementById('brandSeg').addEventListener('click',function(e){
-    var b=e.target.closest('[data-brand]');if(!b)return;
-    brand=b.dataset.brand;
-    if(mode==='cashier'||mode==='orders')setMode('guest');
-    document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand)});
-    sv();
-    if(brand==='delivery'&&!DMENU.length)loadDelivery();
-  });
+})();
 
-  /* ── редактор доставки: как у кофейни ── */
-  var DCATSL=[{id:'pizza',e:'🍕',l:'Пиццы'},{id:'rolls',e:'🍣',l:'Роллы'},{id:'sets',e:'🍱',l:'Сеты'},{id:'sauces',e:'🥫',l:'Соусы'}];
-  renderDeliveryMenu=function(){
-    var list=DMENU.filter(function(p){return p.cat===dcat});
-    if(!editMode)list=list.filter(function(p){return p.on});
-    var html=list.map(function(p,i){
-      var opts=p.opts||[];
-      var optsHTML=opts.length?'<div class="opts">'+opts.map(function(o,oi){return '<button data-id="'+p.id+'" data-oi="'+oi+'" class="'+(oi===0?'sel':'')+'">'+o.l+' · '+o.w+' · '+fmt(o.p)+'</button>'}).join('')+'</div>':'';
-      var media=(p.img?'<img src="'+p.img+'" alt="'+esc(p.name)+'">':'<span class="em">'+(p.e||'🍕')+'</span>');
-      if(editMode)media+='<button class="editbtn" data-ed="'+p.id+'" title="Редактировать">✏️</button>';
-      if(!p.on)media+='<span class="stopbadge">СТОП</span>';
-      var foot=editMode?'<label class="qswitch"><input type="checkbox" data-onoff="'+p.id+'" '+(p.on?'checked':'')+'>в меню</label>':'';
-      return '<article class="card '+(p.on?'':'stopped')+'" style="--d:'+(Math.min(i,10)*35)+'ms">'+
-        '<div class="media" style="--tint:#F3E2CE">'+media+'</div>'+
-        '<div class="cbody"><h3>'+esc(p.name)+'</h3>'+
-        (p.desc?'<div class="desc">'+esc(p.desc)+'</div>':'')+
-        (editMode?'':optsHTML)+
-        (editMode?'':'<button class="cta" data-add="'+p.id+'" style="margin-top:auto">Добавить</button>')+
-        '<div class="cfoot"><span class="price">'+(opts.length?fmt(opts[0].p):fmtMulti(p.price))+'</span>'+foot+'</div>'+
-        '</div></article>';
+/* ========== 2. Виды и режимы ========== */
+function cartFabShow(){
+  var cf=document.getElementById('cartFab');
+  if(cf)cf.style.display=((mode==='guest'||mode==='admin')&&brand==='delivery')?'':'none';
+}
+function sv(){
+  var showGuest=(mode==='guest'||mode==='admin');
+  var showCoffee=showGuest&&brand==='coffee';
+  var showDeliv=showGuest&&brand==='delivery';
+  var mv=document.getElementById('menuView'),dv=document.getElementById('deliveryView');
+  var rl=document.getElementById('rail'),dr=document.getElementById('deliveryRail');
+  if(mv){mv.hidden=!showCoffee;mv.style.display=showCoffee?'':'none';}
+  if(dv){dv.hidden=false;dv.style.display=showDeliv?'block':'none';}
+  if(rl)rl.style.display=showCoffee?'':'none';
+  if(dr)dr.style.display=showDeliv?'':'none';
+  var et=document.getElementById('editToggle');if(et)et.hidden=(mode!=='admin');
+  var ab=document.getElementById('adminBar');if(ab)ab.hidden=(mode!=='admin');
+  var mb=document.getElementById('mbonusBtn');if(mb)mb.style.display=(mode==='guest'&&brand==='coffee')?'':'none';
+  var bt=document.querySelector('.tabs button[data-tab="bonus"]');
+  if(bt)bt.style.display=(brand==='delivery')?'none':'';
+  if(brand==='delivery')setTab('profile');
+  if(me)renderProfile();
+  cartFabShow();
+}
+window.syncBrandViews=sv;
+setMode=function(m){
+  var role=me?me.role:'guest';
+  if(m==='cashier'&&role!=='cashier'&&role!=='admin')return;
+  if(m==='orders'&&role!=='dispatch'&&role!=='cashier'&&role!=='admin')return;
+  if(m==='admin'&&role!=='admin')return;
+  mode=m;
+  document.body.classList.toggle('is-cashier',m==='cashier'||m==='orders');
+  var cv=document.getElementById('cashierView');if(cv){cv.hidden=(m!=='cashier');cv.style.display='';}
+  var ov=document.getElementById('ordersView');if(ov)ov.hidden=(m!=='orders');
+  sv();
+  var pt=document.getElementById('promoToggle');if(pt)pt.hidden=(m!=='admin');
+  var dt=document.getElementById('dashToggle');if(dt)dt.hidden=(m!=='admin');
+  var ct=document.getElementById('chatsToggle2');if(ct)ct.hidden=!(me&&(me.role==='admin'||me.role==='cashier'||me.role==='dispatch'));
+  var bd=document.getElementById('adminBadge');if(bd)bd.hidden=(m!=='admin');
+  if(m!=='admin')exitEdit();
+  if(m==='cashier')renderLog();
+  if(m==='orders'){renderOrders();if(!ordersPoll)ordersPoll=setInterval(function(){if(mode==='orders')renderOrders(true);},8000);}
+  if(m==='admin')loadMenu();
+  if((m==='guest'||m==='admin')&&brand==='delivery'&&!DMENU.length)loadDelivery();
+  renderModes();
+  toast(m==='admin'?'Режим администратора активен':m==='cashier'?'Смена кассира активна':m==='orders'?'Панель диспетчера':'Режим гостя',m==='admin'?'🔓':m==='cashier'?'🧾':m==='orders'?'🍕':'');
+};
+document.getElementById('brandSeg').addEventListener('click',function(e){
+  var b=e.target.closest('[data-brand]');if(!b)return;
+  brand=b.dataset.brand;
+  if(mode==='cashier'||mode==='orders')setMode('guest');
+  document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
+  sv();
+  if(brand==='delivery'&&!DMENU.length)loadDelivery();
+});
+
+/* ========== 3. Корзина ========== */
+var cartPromoCode=localStorage.getItem('zt_cartpromo')||'';
+var promoInfo=null;
+function promoDisc(sum,info){return info.kind==='percent'?Math.round(sum*Math.min(90,info.value)/100):Math.min(info.value||0,sum);}
+function totalsNow(){
+  var sum=cart.reduce(function(a,c){return a+c.price*c.qty;},0);
+  var method=document.getElementById('checkoutMethod').value;
+  var pickup=method==='pickup'?Math.round(sum*0.10):0;
+  var fee=0;
+  if(method==='delivery'&&deliveryInfo){
+    var z=deliveryInfo.zones.find(function(z){return z.places.includes(document.getElementById('checkoutPlace').value);});
+    fee=z?z.fee:0;
+  }
+  var pd=promoInfo?promoDisc(sum,promoInfo):0;
+  return {sum:sum,pickup:pickup,fee:fee,pd:pd,total:sum-pickup-pd+fee};
+}
+function paintTotals(){
+  var t=totalsNow();
+  var el=document.getElementById('cartTotal');if(el)el.textContent=fmt(t.total);
+  var s=document.getElementById('cartSum');
+  var cnt=cart.reduce(function(a,c){return a+c.qty;},0);
+  if(s)s.textContent=cnt+' поз · '+Number(t.total).toLocaleString('ru-RU');
+}
+updateCartFab=function(){
+  var t=totalsNow();
+  var fab=document.getElementById('cartFab');
+  if(fab)fab.hidden=(t.sum===0);
+  paintTotals();
+  cartFabShow();
+};
+async function refreshPromoLine(sum){
+  var line=document.getElementById('cartPromoLine');if(!line)return;
+  if(!cartPromoCode){promoInfo=null;line.textContent='';paintTotals();return;}
+  try{
+    var r=await fetch(API_BASE+'/api/promo/info?code='+encodeURIComponent(cartPromoCode)).then(function(x){return x.json();});
+    if(r.ok){promoInfo=r;localStorage.setItem('zt_cartpromo',cartPromoCode);
+      line.textContent='🎟 '+r.code+': −'+fmt(promoDisc(sum,r));line.style.color='var(--green)';}
+    else{promoInfo=null;localStorage.removeItem('zt_cartpromo');cartPromoCode='';
+      var typed=(document.getElementById('cartPromo')||{}).value||'';
+      if(typed.trim()){line.textContent='⚠️ '+(r.error||'Код не найден');line.style.color='#B3372B';}
+      else line.textContent='';}
+  }catch(e){}
+  paintTotals();
+}
+function renderAddons(){
+  var host=document.getElementById('cartAddons');if(!host)return;
+  var list=DMENU.filter(function(p){return p.cat==='sauces'&&p.on;});
+  if(!list.length){host.innerHTML='';return;}
+  host.innerHTML='<div style="font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8B98A5;margin:0 0 6px">Добавить к заказу</div>'+
+    list.map(function(p){
+      var inCart=cart.find(function(c){return c.id===p.id;});
+      return '<button class="addonChip" data-addon="'+p.id+'">'+(inCart?'<b>×'+inCart.qty+'</b> ':'')+esc(p.name)+' · '+fmt(parseInt(p.price)||0)+'</button>';
     }).join('');
-    if(editMode)html+='<button class="addcard" id="addCardD"><span>＋</span>Добавить позицию</button>';
-    if(!list.length&&!editMode)html='<div class="gempty" style="grid-column:1/-1">В этой категории пока пусто</div>';
-    document.getElementById('deliveryGrid').innerHTML=html;
-    var a=document.getElementById('addCardD'); if(a)a.onclick=function(){openEditor(null)};
-  };
-  document.getElementById('deliveryGrid').addEventListener('click',function(e){
-    var ed=e.target.closest('[data-ed]');
-    if(ed)openEditor(ed.dataset.ed);
+}
+renderCart=(function(_rc){return function(){
+  var r=_rc();renderAddons();paintTotals();
+  var sum=cart.reduce(function(a,c){return a+c.price*c.qty;},0);refreshPromoLine(sum);
+  return r;};})(renderCart);
+var promoTimer=null;
+function clearPromo(){
+  cartPromoCode='';promoInfo=null;localStorage.removeItem('zt_cartpromo');
+  var line=document.getElementById('cartPromoLine');if(line)line.textContent='';
+  paintTotals();
+}
+var promoInput=document.getElementById('cartPromo');
+if(promoInput){
+  promoInput.addEventListener('input',function(){
+    var v=promoInput.value.trim().toUpperCase();
+    if(!v){clearPromo();return;}
+    clearTimeout(promoTimer);
+    promoTimer=setTimeout(function(){cartPromoCode=v;refreshPromoLine(totalsNow().sum);},400);
   });
-  document.getElementById('deliveryGrid').addEventListener('change',async function(e){
-    var t=e.target.closest('[data-onoff]');if(!t)return;
-    var p=DMENU.find(function(x){return x.id===t.dataset.onoff});if(!p)return;
-    p.on=t.checked?1:0;renderDeliveryMenu();
-    try{await api('/menu/'+p.id,{method:'PUT',body:p});await loadDelivery();
-      toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');}
-    catch(err){toast(err.message,'⚠️');loadDelivery();}
+}
+var promoBtn=document.getElementById('cartPromoBtn');
+if(promoBtn)promoBtn.onclick=function(){
+  var v=(promoInput?promoInput.value:'').trim().toUpperCase();
+  if(!v){clearPromo();return;}
+  cartPromoCode=v;refreshPromoLine(totalsNow().sum);
+};
+document.getElementById('checkoutPlace').addEventListener('change',paintTotals);
+document.getElementById('cartPanel').addEventListener('click',function(e){
+  var ch=e.target.closest('[data-addon]');if(!ch)return;
+  var p=DMENU.find(function(x){return x.id===ch.dataset.addon;});if(!p)return;
+  var ex=cart.find(function(c){return c.id===p.id;});
+  if(ex)ex.qty++;else cart.push({key:p.id,id:p.id,oi:-1,name:p.name,opt:null,price:parseInt(p.price)||0,sz:0,qty:1});
+  localStorage.setItem('zt_cart',JSON.stringify(cart));
+  updateCartFab();renderCart();
+});
+document.getElementById('checkoutBtn').onclick=async function(){
+  if(!me){toast('Сначала войдите по номеру','👤');openAuth();return;}
+  var method=document.getElementById('checkoutMethod').value;
+  if(method==='delivery'){
+    if(!document.getElementById('checkoutPlace').value)return toast('Выберите населённый пункт','📍');
+    if(!document.getElementById('checkoutAddr').value.trim())return toast('Укажите адрес','🏠');
+  }
+  var body={method:method,place:document.getElementById('checkoutPlace').value,addr:document.getElementById('checkoutAddr').value.trim(),
+    slot:document.getElementById('checkoutSlot').value,pay:document.getElementById('checkoutPay').value,
+    comment:document.getElementById('checkoutComment').value.trim(),
+    items:cart.map(function(c){return {id:c.id,oi:c.oi,qty:c.qty};})};
+  if(cartPromoCode)body.promo=cartPromoCode;
+  try{
+    var r=await api('/orders',{method:'POST',body:body});
+    toast('Заказ #'+r.order.no+' оформлен!','🎉');
+    cart=[];localStorage.setItem('zt_cart','[]');
+    clearPromo();
+    var pi=document.getElementById('cartPromo');if(pi)pi.value='';
+    updateCartFab();renderCart();
+    document.getElementById('cartPanel').classList.remove('open');
+  }catch(e){toast(e.message,'⚠️');}
+};
+orderCard=(function(_oc){return function(o){
+  var h=_oc(o);
+  if(o.promo)h=h.replace('<div class="ocTotal">','<div class="ocItems">🎟 Промокод '+esc(o.promo)+': −'+fmt(o.promodiscount||0)+'</div><div class="ocTotal">');
+  return h;};})(orderCard);
+
+/* ========== 4. Доставка: меню, редактор, слоты ========== */
+loadDelivery=async function(){
+  try{
+    var r;
+    if(me&&me.role==='admin'){
+      var all=await api('/menu/all');
+      r={items:(all.items||[]).filter(function(p){return p.section==='delivery';})};
+    }else{
+      r=await api('/dmenu');
+    }
+    DMENU=r.items||[];
+    deliveryInfo=await fetch(API_BASE+'/api/delivery/info').then(function(x){return x.json();});
+    var wp=deliveryInfo.weekPromo,pm=deliveryInfo.pizzaMonth;
+    var bEl=document.getElementById('deliveryBanner');
+    if(bEl)bEl.innerHTML=(wp?'<div class="deliveryBanner">🎁 '+esc(wp.text)+'</div>':'')+
+      (pm?'<div class="deliveryBanner">🍕 2 пиццы 35 см → «'+esc(pm.name)+'» в подарок!</div>':'');
+    populatePlaces();populateSlots();
+    renderDeliveryRail();renderDeliveryMenu();updateCartFab();
+  }catch(e){console.log('delivery load err',e);}
+};
+populateSlots=function(){
+  var now=new Date();
+  var pad=function(n){return String(n).padStart(2,'0');};
+  var slots=[{v:'asap',l:'Как можно скорее (~45 мин)'}];
+  for(var d=0;d<2;d++){
+    for(var m=660;m<1320;m+=30){
+      var t=new Date(now);t.setDate(t.getDate()+d);t.setHours(Math.floor(m/60),m%60,0,0);
+      if(t<=now)continue;
+      var label=pad(t.getDate())+'-'+pad(t.getMonth()+1)+' | '+pad(t.getHours())+'-'+pad(t.getMinutes());
+      slots.push({v:label,l:label});
+    }
+  }
+  var sel=document.getElementById('checkoutSlot');
+  if(sel)sel.innerHTML=slots.map(function(s){return '<option value="'+s.v+'">'+s.l+'</option>';}).join('');
+};
+var DCATSL=[{id:'pizza',e:'🍕',l:'Пиццы'},{id:'rolls',e:'🍣',l:'Роллы'},{id:'sets',e:'🍱',l:'Сеты'},{id:'sauces',e:'🥫',l:'Соусы'}];
+renderDeliveryRail=(function(_rr){return function(){_rr();
+  var b=document.querySelector('#deliveryRail [data-dcat="sauces"]');if(b)b.remove();
+};})(renderDeliveryRail);
+renderDeliveryMenu=(function(_rm){return function(){_rm();
+  document.querySelectorAll('#deliveryGrid .opts button').forEach(function(b){
+    if(b.querySelector('.ol'))return;
+    var parts=b.textContent.split(' · ');
+    if(parts.length<3)return;
+    b.innerHTML='<span class="ol">'+parts[0]+'</span><span class="op">'+parts[1]+' · '+parts[2]+'</span>';
   });
-  openEditor=function(id){
-    if(mode!=='admin'||!me||me.role!=='admin')return;
-    var pool=(brand==='delivery')?DMENU:MENU;
-    var src=id?pool.find(function(x){return x.id===id}):null;
-    edit=src?clone(src):{cat:brand==='delivery'?'pizza':'coffee',e:brand==='delivery'?'🍕':'☕',name:'',desc:'',comp:[],vol:'',price:0,tag:'',coffee:0,on:1,img:null,section:brand==='delivery'?'delivery':'coffee',opts:[]};
-    document.getElementById('emTitle').textContent=src?'Редактировать позицию':'Новая позиция';
-    document.getElementById('emCat').innerHTML=(brand==='delivery'?DCATSL:CATS).map(function(c){return '<option value="'+c.id+'">'+c.e+' '+c.l+'</option>'}).join('');
-    document.getElementById('emName').value=edit.name;
-    document.getElementById('emCat').value=edit.cat;
-    document.getElementById('emPrice').value=edit.price||'';
-    document.getElementById('emVol').value=edit.vol||'';
-    document.getElementById('emDesc').value=edit.desc||'';
-    document.getElementById('emComp').value=(edit.comp||[]).join(', ');
-    document.getElementById('emTag').value=edit.tag||'';
-    document.getElementById('emEmoji').value=edit.e||'';
-    document.getElementById('emCoffee').checked=!!edit.coffee;
-    document.getElementById('emOn').checked=!!edit.on;
-    document.getElementById('emDel').style.display=src?'':'none';
-    document.getElementById('emDup').style.display=src?'':'none';
-    var ob=document.getElementById('emOptsBox');
-    var showOpts=(brand==='delivery')&&(edit.cat==='pizza');
-    if(ob)ob.hidden=!showOpts;
-    var os=edit.opts||[];
-    for(var i=0;i<4;i++){
-      var w=document.getElementById('emOpt'+i+'w'),pp=document.getElementById('emOpt'+i+'p');
-      if(w)w.value=os[i]?os[i].w.replace(' г',''):'';
-      if(pp)pp.value=os[i]?os[i].p:'';
+  document.querySelectorAll('#deliveryGrid .opts button.sel').forEach(function(b){b.classList.remove('sel');});
+};})(renderDeliveryMenu);
+document.getElementById('deliveryGrid').addEventListener('click',function(e){
+  var ed=e.target.closest('[data-ed]');
+  if(ed){openEditor(ed.dataset.ed);return;}
+  var ob=e.target.closest('.opts button');
+  if(ob&&ob.classList.contains('sel')){
+    e.stopPropagation();
+    ob.classList.remove('sel');
+    var id=ob.dataset.id,oi=+ob.dataset.oi;
+    var before=cart.length;
+    cart=cart.filter(function(c){return !(c.id===id&&c.oi===oi);});
+    if(cart.length!==before){
+      localStorage.setItem('zt_cart',JSON.stringify(cart));
+      updateCartFab();renderCart();
+      toast('Убрали из заказа','🗑');
     }
-    renderZone();
-    document.getElementById('emModal').classList.add('show');syncOverlay();
-    setTimeout(function(){document.getElementById('emName').focus()},150);
-  };
-  document.getElementById('emSave').onclick=async function(){
-    edit.name=document.getElementById('emName').value.trim()||'Без названия';
-    edit.vol=document.getElementById('emVol').value.trim();
-    edit.desc=document.getElementById('emDesc').value.trim();
-    edit.comp=document.getElementById('emComp').value.split(',').map(function(s){return s.trim()}).filter(Boolean);
-    edit.tag=document.getElementById('emTag').value;
-    edit.e=document.getElementById('emEmoji').value.trim()||(brand==='delivery'?'🍕':'☕');
-    edit.coffee=document.getElementById('emCoffee').checked?1:0;
-    edit.on=document.getElementById('emOn').checked?1:0;
-    edit.cat=document.getElementById('emCat').value;
-    if(brand==='delivery'){
-      edit.section='delivery';
-      if(edit.cat==='pizza'){
-        var defs=[['25 см, пышное',25],['35 см, пышное',35],['25 см, тонкое',25],['35 см, тонкое',35]];
-        edit.opts=defs.map(function(d,i){
-          var w=document.getElementById('emOpt'+i+'w').value.trim()||'0';
-          var p=+document.getElementById('emOpt'+i+'p').value||0;
-          return {l:d[0],w:w+' г',p:p,sz:d[1]};
-        });
-        edit.price='0';
-      } else { edit.opts=[]; edit.price=String(+document.getElementById('emPrice').value||0); }
-      try{
-        if(edit.id)await api('/menu/'+edit.id,{method:'PUT',body:edit});
-        else await api('/menu',{method:'POST',body:edit});
-        dcat=edit.cat;
-        await loadDelivery();closeEditor();
-        toast('«'+esc(edit.name)+'» сохранено · меню доставки обновлено','✅');
-      }catch(err){toast(err.message,'⚠️')}
-      return;
+    return;
+  }
+  var add=e.target.closest('[data-add]');
+  if(add){
+    var body=add.closest('.cbody');var optsBox=body&&body.querySelector('.opts');
+    if(optsBox&&!optsBox.querySelector('.sel')){
+      e.stopPropagation();
+      toast('Выберите размер пиццы 🍕','');
+      optsBox.classList.remove('shake');void optsBox.offsetWidth;optsBox.classList.add('shake');
     }
-    var priceRaw=document.getElementById('emPrice').value.trim();
-    edit.price=priceRaw.includes('/')?priceRaw:String(Math.max(0,Math.round(Number(priceRaw)||0)));
-    edit.section='coffee';
+  }
+},true);
+document.addEventListener('animationend',function(e){
+  if(e.target&&e.target.classList&&e.target.classList.contains('shake'))e.target.classList.remove('shake');
+},true);
+document.getElementById('deliveryGrid').addEventListener('change',async function(e){
+  var t=e.target.closest('[data-onoff]');if(!t)return;
+  var p=DMENU.find(function(x){return x.id===t.dataset.onoff;});if(!p)return;
+  p.on=t.checked?1:0;renderDeliveryMenu();
+  try{await api('/menu/'+p.id,{method:'PUT',body:p});await loadDelivery();
+    toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');}
+  catch(err){toast(err.message,'⚠️');loadDelivery();}
+});
+function editorFields(){
+  var isDeliv=(brand==='delivery');
+  var isPizza=isDeliv&&edit&&edit.cat==='pizza';
+  var pL=document.getElementById('emPrice').closest('label');
+  var vL=document.getElementById('emVol').closest('label');
+  var cL=document.getElementById('emCoffee').closest('label');
+  if(pL)pL.style.display=isPizza?'none':'';
+  if(vL)vL.style.display=isPizza?'none':'';
+  if(cL)cL.style.display=isDeliv?'none':'';
+  var ob=document.getElementById('emOptsBox');if(ob)ob.hidden=!isPizza;
+}
+openEditor=function(id){
+  if(mode!=='admin'||!me||me.role!=='admin')return;
+  var pool=(brand==='delivery')?DMENU:MENU;
+  var src=id?pool.find(function(x){return x.id===id;}):null;
+  edit=src?clone(src):{cat:brand==='delivery'?'pizza':'coffee',e:brand==='delivery'?'🍕':'☕',name:'',desc:'',comp:[],vol:'',price:0,tag:'',coffee:0,on:1,img:null,section:brand==='delivery'?'delivery':'coffee',opts:[]};
+  document.getElementById('emTitle').textContent=src?'Редактировать позицию':'Новая позиция';
+  document.getElementById('emCat').innerHTML=(brand==='delivery'?DCATSL:CATS).map(function(c){return '<option value="'+c.id+'">'+c.e+' '+c.l+'</option>';}).join('');
+  document.getElementById('emName').value=edit.name;
+  document.getElementById('emCat').value=edit.cat;
+  document.getElementById('emPrice').value=edit.price||'';
+  document.getElementById('emVol').value=edit.vol||'';
+  document.getElementById('emDesc').value=edit.desc||'';
+  document.getElementById('emComp').value=(edit.comp||[]).join(', ');
+  document.getElementById('emTag').value=edit.tag||'';
+  document.getElementById('emEmoji').value=edit.e||'';
+  document.getElementById('emCoffee').checked=!!edit.coffee;
+  document.getElementById('emOn').checked=!!edit.on;
+  document.getElementById('emDel').style.display=src?'':'none';
+  document.getElementById('emDup').style.display=src?'':'none';
+  var os=edit.opts||[];
+  for(var i=0;i<4;i++){
+    var w=document.getElementById('emOpt'+i+'w'),pp=document.getElementById('emOpt'+i+'p');
+    if(w)w.value=os[i]?os[i].w.replace(' г',''):'';
+    if(pp)pp.value=os[i]?os[i].p:'';
+  }
+  editorFields();
+  renderZone();
+  document.getElementById('emModal').classList.add('show');syncOverlay();
+  setTimeout(function(){document.getElementById('emName').focus();},150);
+};
+document.getElementById('emCat').addEventListener('change',function(){if(edit)edit.cat=this.value;editorFields();});
+document.getElementById('emSave').onclick=async function(){
+  edit.name=document.getElementById('emName').value.trim()||'Без названия';
+  edit.vol=document.getElementById('emVol').value.trim();
+  edit.desc=document.getElementById('emDesc').value.trim();
+  edit.comp=document.getElementById('emComp').value.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  edit.tag=document.getElementById('emTag').value;
+  edit.e=document.getElementById('emEmoji').value.trim()||(brand==='delivery'?'🍕':'☕');
+  edit.coffee=document.getElementById('emCoffee').checked?1:0;
+  edit.on=document.getElementById('emOn').checked?1:0;
+  edit.cat=document.getElementById('emCat').value;
+  if(brand==='delivery'){
+    edit.section='delivery';
+    if(edit.cat==='pizza'){
+      var defs=[['25 см, пышное',25],['35 см, пышное',35],['25 см, тонкое',25],['35 см, тонкое',35]];
+      edit.opts=defs.map(function(dd,i){
+        var w=document.getElementById('emOpt'+i+'w').value.trim()||'0';
+        var p=+document.getElementById('emOpt'+i+'p').value||0;
+        return {l:dd[0],w:w+' г',p:p,sz:dd[1]};
+      });
+      edit.price='0';
+    }else{edit.opts=[];edit.price=String(+document.getElementById('emPrice').value||0);}
     try{
       if(edit.id)await api('/menu/'+edit.id,{method:'PUT',body:edit});
       else await api('/menu',{method:'POST',body:edit});
-      cat=edit.cat;query='';document.getElementById('searchInput').value='';renderRail();
-      await loadMenu();closeEditor();
-      toast('«'+esc(edit.name)+'» сохранено · меню обновлено для гостей','✅');
-    }catch(err){toast(err.message,'⚠️')}
-  };
-  document.getElementById('editToggle').onclick=function(){
-    editMode=!editMode;
-    document.body.classList.toggle('editing',editMode);
-    var b=document.getElementById('editToggle');
-    b.textContent=editMode?'✔ Готово':'✏️ Редактировать';
-    b.classList.toggle('on',editMode);
-    if(brand==='delivery')renderDeliveryMenu();else renderMenu();
-    if(editMode)toast('Режим редактирования: ✏️ на карточке или тумблер «в меню»','✏️');
-  };
-  exitEdit=function(){
-    if(!editMode)return;
-    editMode=false;document.body.classList.remove('editing');
-    var b=document.getElementById('editToggle');
-    b.textContent='✏️ Редактировать';b.classList.remove('on');
-    if(brand==='delivery')renderDeliveryMenu();else renderMenu();
-  };
-  /* loadDelivery: админу — всё меню (со стоп-листом), гостю — только активное */
-  loadDelivery=async function(){
-    try{
-      var r;
-      if(me&&me.role==='admin'){
-        var all=await api('/menu/all');
-        r={items:(all.items||[]).filter(function(p){return p.section==='delivery'})};
-      } else {
-        r=await api('/dmenu');
-      }
-      DMENU=r.items||[];
-      deliveryInfo=await fetch(API_BASE+'/api/delivery/info').then(function(x){return x.json()});
-      var wp=deliveryInfo.weekPromo, pm=deliveryInfo.pizzaMonth;
-      var bEl=document.getElementById('deliveryBanner');
-      if(bEl)bEl.innerHTML=(wp?'<div class="deliveryBanner">🎁 '+esc(wp.text)+'</div>':'')+
-                           (pm?'<div class="deliveryBanner">🍕 2 пиццы 35 см → «'+esc(pm.name)+'» в подарок!</div>':'');
-      populatePlaces();populateSlots();
-      renderDeliveryRail();renderDeliveryMenu();updateCartFab();
-    }catch(e){console.log('delivery load err',e)}
-  };
-    /* ── v5: редактор без кофейных артефактов, осознанный выбор размера, корзина-терракота, соусы в корзине ── */
-  var css2=document.createElement('style');
-  css2.textContent=
-    '.opts button.sel{background:#B4552D;border-color:#B4552D;color:#fff}'+
-    '#cartFab{background:#B4552D!important;box-shadow:0 12px 30px -8px rgba(180,85,45,.75)!important;bottom:calc(84px + env(safe-area-inset-bottom))!important}'+
-    '#deliveryGrid{padding-bottom:120px}'+
-    '.addonChip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}'+
-    '.addonChip b{color:#B4552D}'+
-    '.opts.shake{animation:shake .4s}';
-  document.head.appendChild(css2);
-
-  /* редактор: скрыть кофейное и лишнее у пиццы */
-  function editorFields(){
-    var isDeliv=(brand==='delivery');
-    var isPizza=isDeliv&&edit&&edit.cat==='pizza';
-    var pL=document.getElementById('emPrice').closest('label');
-    var vL=document.getElementById('emVol').closest('label');
-    var cL=document.getElementById('emCoffee').closest('label');
-    if(pL)pL.style.display=isPizza?'none':'';
-    if(vL)vL.style.display=isPizza?'none':'';
-    if(cL)cL.style.display=isDeliv?'none':'';
-    var ob=document.getElementById('emOptsBox'); if(ob)ob.hidden=!isPizza;
+      dcat=edit.cat;
+      await loadDelivery();closeEditor();
+      toast('«'+esc(edit.name)+'» сохранено · меню доставки обновлено','✅');
+    }catch(err){toast(err.message,'⚠️');}
+    return;
   }
-  openEditor=(function(_oe){return function(id){var r=_oe(id);editorFields();return r;};})(openEditor);
-  document.getElementById('emCat').addEventListener('change',function(){if(edit)edit.cat=this.value;editorFields();});
+  var priceRaw=document.getElementById('emPrice').value.trim();
+  edit.price=priceRaw.includes('/')?priceRaw:String(Math.max(0,Math.round(Number(priceRaw)||0)));
+  edit.section='coffee';
+  try{
+    if(edit.id)await api('/menu/'+edit.id,{method:'PUT',body:edit});
+    else await api('/menu',{method:'POST',body:edit});
+    cat=edit.cat;query='';document.getElementById('searchInput').value='';renderRail();
+    await loadMenu();closeEditor();
+    toast('«'+esc(edit.name)+'» сохранено · меню обновлено для гостей','✅');
+  }catch(err){toast(err.message,'⚠️');}
+};
+document.getElementById('editToggle').onclick=function(){
+  editMode=!editMode;
+  document.body.classList.toggle('editing',editMode);
+  var b=document.getElementById('editToggle');
+  b.textContent=editMode?'✔ Готово':'✏️ Редактировать';
+  b.classList.toggle('on',editMode);
+  if(brand==='delivery')renderDeliveryMenu();else renderMenu();
+  if(editMode)toast('Режим редактирования: ✏️ на карточке или тумблер «в меню»','✏️');
+};
+exitEdit=function(){
+  if(!editMode)return;
+  editMode=false;document.body.classList.remove('editing');
+  var b=document.getElementById('editToggle');
+  b.textContent='✏️ Редактировать';b.classList.remove('on');
+  if(brand==='delivery')renderDeliveryMenu();else renderMenu();
+};
+loadPromos=async function(){try{var r=await api('/promos');
+  document.getElementById('pmList').innerHTML=r.promos.map(function(p){
+    var exp=p.expires?new Date(p.expires).toLocaleDateString('ru-RU'):'бессрочно';
+    var dead=p.expires&&new Date(p.expires)<new Date();
+    var kind=p.kind==='stamp'?'+'+p.value+' штамп(а) 🌊':p.kind==='free'?'+'+p.value+' кофе 🌊':p.kind==='percent'?'−'+p.value+'% 🍕':'−'+p.value+' ₽ 🍕';
+    return '<div class="logrow" style="align-items:center;gap:8px;flex-wrap:wrap">'+
+      '<span class="lt">'+esc(p.code)+'</span>'+
+      '<span style="flex:1;min-width:150px">'+kind+' · '+(dead?'истёк':'до '+exp)+' · лимит '+(p.maxuses||'∞')+' · исп. '+p.uses+'</span>'+
+      '<button class="btn ghost" data-pt="'+p.id+'">'+(p.active?'Выкл':'Вкл')+'</button>'+
+      '<button class="btn ghost danger" data-pd="'+p.id+'">🗑</button></div>';}).join('')
+  ||'<div class="hmini">Пока пусто — создайте первый код</div>';}catch(e){}};
 
-  /* без преселекта размера: гость выбирает осознанно */
-  renderDeliveryMenu=(function(_rm){return function(){_rm();
-    document.querySelectorAll('#deliveryGrid .opts button.sel').forEach(function(b){b.classList.remove('sel')});
-  };})(renderDeliveryMenu);
-  document.getElementById('deliveryGrid').addEventListener('click',function(e){
-    var add=e.target.closest('[data-add]');if(!add)return;
-    var body=add.closest('.cbody');var ob=body&&body.querySelector('.opts');
-    if(ob&&!ob.querySelector('.sel')){
-      e.stopPropagation();
-      toast('Выберите размер пиццы 🍕','');
-      ob.classList.remove('shake');void ob.offsetWidth;ob.classList.add('shake');
-    }
-  },true);
+/* ========== 5. Профиль и бонусы ========== */
+renderVerifyNote=function(){
+  var host=document.getElementById('bonusBox');
+  var n=document.getElementById('verifyNote');
+  if(!n&&host){n=document.createElement('div');n.id='verifyNote';host.insertBefore(n,host.firstChild);}
+  if(!n)return;
+  if(!me){n.hidden=true;return;}
+  var html='<small style="color:#5B6B7A;background:#EDF2F6;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">Как устроены бонусы:<br>🫘 штампы — кассир начисляет по вашему QR<br>🎁 +1 штамп — привязка Telegram<br>🧾 активация профиля — код из 4 цифр на кассе</small>';
+  if(!me.verified)html+='<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small><div style="display:flex;gap:8px"><input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1"><button class="btn fire" id="actBtn">Активировать</button></div>';
+  if(!me.welcome&&!me.tg)html+='<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>+1 штамп</b> за привязку в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
+  n.hidden=false;n.innerHTML=html;
+  var ab=document.getElementById('actBtn');
+  if(ab)ab.onclick=async function(){try{var r=await api('/auth/activate-guest',{method:'POST',body:{code:document.getElementById('actCode').value.trim()}});me=r.customer;toast('Профиль активирован! А +1 штамп ждёт в Telegram 🎁','');renderAll();}catch(e){toast(e.message,'⚠️');}};
+};
+renderProfile=(function(_rp){return function(){var r=_rp();
+  var deliv=(brand==='delivery');
+  var q=document.getElementById('qrMain');var qb=q&&q.closest('.qrbox');
+  if(qb)qb.style.display=deliv?'none':'';
+  var st=document.querySelector('#profileBox .stats');
+  if(st)st.style.display=deliv?'none':'';
+  return r;};})(renderProfile);
 
-  /* рельс доставки без соусов */
-  renderDeliveryRail=(function(_rr){return function(){_rr();
-    var b=document.querySelector('#deliveryRail [data-dcat="sauces"]');if(b)b.remove();
-  };})(renderDeliveryRail);
-
-  /* соусы — чипсами в корзине */
-  (function(){
-    var cp=document.getElementById('cartPanel'),ci=document.getElementById('cartItems');
-    if(cp&&ci&&!document.getElementById('cartAddons')){
-      var d=document.createElement('div');d.id='cartAddons';d.style.margin='0 0 10px';cp.insertBefore(d,ci);
-    }
-  })();
-  function renderAddons(){
-    var host=document.getElementById('cartAddons');if(!host)return;
-    var list=DMENU.filter(function(p){return p.cat==='sauces'&&p.on});
-    if(!list.length){host.innerHTML='';return;}
-    host.innerHTML='<div style="font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8B98A5;margin:0 0 6px">Добавить к заказу</div>'+
-      list.map(function(p){
-        var inCart=cart.find(function(c){return c.id===p.id});
-        return '<button class="addonChip" data-addon="'+p.id+'">'+(inCart?'<b>×'+inCart.qty+'</b> ':'')+esc(p.name)+' · '+fmt(parseInt(p.price)||0)+'</button>';
-      }).join('');
+/* ========== 6. Активация гостей + чаты в заказах ========== */
+loadPending=async function(){
+  try{
+    var r=await api('/staff/pending');
+    var html=r.pending.length?r.pending.map(function(p){
+      return '<div class="hmini"><b>'+esc(p.name)+'</b> · '+esc(p.phone)+' · код: <b style="font-size:15px">'+p.actcode+'</b> <button class="btn fire" data-actg="'+p.id+'" style="margin-left:6px;padding:4px 10px;font-size:11px">Активировать</button></div>';
+    }).join(''):'<div class="hmini">Все гости активированы ✅</div>';
+    var a=document.getElementById('pendingBox');if(a)a.innerHTML=html;
+    var b=document.getElementById('pendingBoxD');if(b)b.innerHTML=html;
+  }catch(e){}
+};
+renderOrders=(function(_ro){return async function(s){var r=await _ro(s);loadPending();return r;};})(renderOrders);
+document.addEventListener('click',async function(e){
+  var b=e.target.closest('[data-actg]');if(!b)return;
+  try{await api('/staff/activate-guest',{method:'POST',body:{id:b.dataset.actg}});toast('Гость активирован','✅');loadPending();}
+  catch(e2){toast(e2.message,'⚠️');}
+});
+(function(){
+  var ov=document.getElementById('ordersView');
+  if(ov&&!document.getElementById('chatsToggleD')){
+    var top=ov.querySelector('.cash-top');
+    var b=document.createElement('button');b.id='chatsToggleD';b.className='btn ghost';b.textContent='💬 Чаты гостей';
+    b.onclick=openStaffChat;
+    var ref=document.getElementById('ordersRefresh');
+    if(top&&ref)top.insertBefore(b,ref);
   }
-  document.getElementById('cartPanel').addEventListener('click',function(e){
-    var ch=e.target.closest('[data-addon]');if(!ch)return;
-    var p=DMENU.find(function(x){return x.id===ch.dataset.addon});if(!p)return;
-    var ex=cart.find(function(c){return c.id===p.id});
-    if(ex)ex.qty++;else cart.push({key:p.id,id:p.id,oi:-1,name:p.name,opt:null,price:parseInt(p.price)||0,sz:0,qty:1});
-    localStorage.setItem('zt_cart',JSON.stringify(cart));
-    updateCartFab();renderCart();
+})();
+
+/* ========== 7. Сплэш ========== */
+(function(){
+  if(sessionStorage.getItem('splashDone'))return;
+  var sp=document.createElement('div');sp.id='brandSplash';
+  sp.innerHTML='<div class="spInner">'+
+    '<div class="spTitle">«Пятница» & …и кофе</div>'+
+    '<div class="spSub">Выберите, куда вы сегодня</div>'+
+    '<div class="spBtns">'+
+    '<button class="spBtn spPizza" data-go="delivery">🍕<br><br>«Пятница»<small>доставка пиццы и роллов</small></button>'+
+    '<button class="spBtn spCoffee" data-go="coffee">🌊<br><br>Кофейня<small>меню, штампы и бонусы</small></button>'+
+    '</div></div>';
+  document.body.appendChild(sp);
+  sp.addEventListener('click',function(e){
+    var b=e.target.closest('[data-go]');if(!b)return;
+    brand=b.dataset.go;
+    sessionStorage.setItem('splashDone','1');
+    sp.remove();
+    if(mode==='cashier'||mode==='orders')setMode('guest');
+    document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
+    sv();
+    if(brand==='delivery'&&!DMENU.length)loadDelivery();
   });
-  renderCart=(function(_rc){return function(){var r=_rc();renderAddons();return r;};})(renderCart);
+})();
 
-  /* кнопка корзины: терракота + счётчик позиций */
-  updateCartFab=function(){
-    var sum=cart.reduce(function(a,c){return a+c.price*c.qty},0);
-    var cnt=cart.reduce(function(a,c){return a+c.qty},0);
-    var fab=document.getElementById('cartFab');
-    if(fab)fab.hidden=!sum;
-    var s=document.getElementById('cartSum');
-    if(s)s.textContent=cnt+' поз · '+Number(sum).toLocaleString('ru-RU');
-    if(fab)fab.style.display=((mode==='guest'||mode==='admin')&&brand==='delivery')?'':'none';
-  };
-
-    /* ── v6: тап по выбранному размеру убирает из заказа; shake не повторяется ── */
-  document.addEventListener('animationend',function(e){
-    if(e.target&&e.target.classList&&e.target.classList.contains('shake'))e.target.classList.remove('shake');
-  },true);
-  document.getElementById('deliveryGrid').addEventListener('click',function(e){
-    var ob=e.target.closest('.opts button');
-    if(ob&&ob.classList.contains('sel')){
-      e.stopPropagation();
-      ob.classList.remove('sel');
-      var id=ob.dataset.id, oi=+ob.dataset.oi;
-      var before=cart.length;
-      cart=cart.filter(function(c){return !(c.id===id&&c.oi===oi)});
-      if(cart.length!==before){
-        localStorage.setItem('zt_cart',JSON.stringify(cart));
-        updateCartFab();renderCart();
-        toast('Убрали из заказа','🗑');
-      }
-      return;
-    }
-  },true);
-
-    /* ── v7: промокоды доставки ── */
-  var cartPromoCode=localStorage.getItem('zt_cartpromo')||'';
-  function promoDisc(sum,info){return info.kind==='percent'?Math.round(sum*Math.min(90,info.value)/100):Math.min(info.value||0,sum);}
-  async function refreshPromoLine(sum){
-    var line=document.getElementById('cartPromoLine');if(!line)return;
-    if(!cartPromoCode){line.textContent='';return;}
-    try{
-      var r=await fetch(API_BASE+'/api/promo/info?code='+encodeURIComponent(cartPromoCode)).then(function(x){return x.json()});
-      if(r.ok){line.textContent='🎟 '+r.code+': −'+fmt(promoDisc(sum,r));}
-      else{cartPromoCode='';localStorage.removeItem('zt_cartpromo');line.textContent='';}
-    }catch(e){}
+/* ========== 8. Чат: два независимых треда на гостя (кофе и доставка) ========== */
+var chatCtx=localStorage.getItem('zt_chatctx')||'';
+chatKey=(function(_ck){return function(){return _ck()+(chatCtx==='delivery'?':d':':c');};})(chatKey);
+(function(){var _f=window.fetch;window.fetch=function(u,o){
+  try{if(o&&o.body&&typeof o.body==='string'&&String(u).indexOf('/api/chat/send')>-1){
+    var b=JSON.parse(o.body);b.ctx=chatCtx||'coffee';o=Object.assign({},o,{body:JSON.stringify(b)});
+  }}catch(e){}return _f.call(this,u,o);};})();
+function setBotName(){
+  var head=document.querySelector('#chatPanel .chatHead')||document.getElementById('chatPanel');
+  if(head){
+    var nodes=head.querySelectorAll('div,span,b');
+    for(var i=0;i<nodes.length;i++){var el=nodes[i];
+      if(el.children.length===0&&/Ника/.test(el.textContent||'')){
+        el.textContent=chatCtx==='delivery'?'Ника · 🍕 доставка':'Ника · ☕ кофейня';break;}}
   }
-  document.getElementById('cartPromoBtn').onclick=async function(){
-    var v=document.getElementById('cartPromo').value.trim().toUpperCase();
-    if(!v)return toast('Введите промокод','🎟');
-    var r=await fetch(API_BASE+'/api/promo/info?code='+encodeURIComponent(v)).then(function(x){return x.json()}).catch(function(){return null});
-    if(r&&r.ok){cartPromoCode=v;localStorage.setItem('zt_cartpromo',v);
-      var sum=cart.reduce(function(a,c){return a+c.price*c.qty},0);refreshPromoLine(sum);toast('Промокод применён','🎟');}
-    else toast(r&&r.error?r.error:'Такого кода для доставки нет','⚠️');
-  };
-  renderCart=(function(_rc){return function(){var r=_rc();var sum=cart.reduce(function(a,c){return a+c.price*c.qty},0);refreshPromoLine(sum);return r;};})(renderCart);
-  document.getElementById('checkoutBtn').onclick=async function(){
-    if(!me){toast('Сначала войдите по номеру','👤');openAuth();return;}
-    var method=document.getElementById('checkoutMethod').value;
-    if(method==='delivery'){
-      if(!document.getElementById('checkoutPlace').value)return toast('Выберите населённый пункт','📍');
-      if(!document.getElementById('checkoutAddr').value.trim())return toast('Укажите адрес','🏠');
-    }
-    var body={method:method,place:document.getElementById('checkoutPlace').value,addr:document.getElementById('checkoutAddr').value.trim(),
-      slot:document.getElementById('checkoutSlot').value,pay:document.getElementById('checkoutPay').value,
-      comment:document.getElementById('checkoutComment').value.trim(),
-      items:cart.map(function(c){return {id:c.id,oi:c.oi,qty:c.qty}})};
-    if(cartPromoCode)body.promo=cartPromoCode;
-    try{
-      var r=await api('/orders',{method:'POST',body:body});
-      toast('Заказ #'+r.order.no+' оформлен!','🎉');
-      cart=[];localStorage.setItem('zt_cart','[]');
-      cartPromoCode='';localStorage.removeItem('zt_cartpromo');
-      var pi=document.getElementById('cartPromo');if(pi)pi.value='';
-      var pl=document.getElementById('cartPromoLine');if(pl)pl.textContent='';
-      updateCartFab();renderCart();
-      document.getElementById('cartPanel').classList.remove('open');
-    }catch(e){toast(e.message,'⚠️')}
-  };
-  orderCard=(function(_oc){return function(o){
-    var h=_oc(o);
-    if(o.promo)h=h.replace('<div class="ocTotal">','<div class="ocItems">🎟 Промокод '+esc(o.promo)+': −'+fmt(o.promodiscount||0)+'</div><div class="ocTotal">');
-    return h;};})(orderCard);
-  loadPromos=async function(){try{const r=await api('/promos');
-    document.getElementById('pmList').innerHTML=r.promos.map(function(p){
-      const exp=p.expires?new Date(p.expires).toLocaleDateString('ru-RU'):'бессрочно';
-      const dead=p.expires&&new Date(p.expires)<new Date();
-      const kind=p.kind==='stamp'?'+'+p.value+' штамп(а) 🌊':p.kind==='free'?'+'+p.value+' кофе 🌊':p.kind==='percent'?'−'+p.value+'% 🍕':'−'+p.value+' ₽ 🍕';
-      return '<div class="logrow" style="align-items:center;gap:8px;flex-wrap:wrap">'+
-        '<span class="lt">'+esc(p.code)+'</span>'+
-        '<span style="flex:1;min-width:150px">'+kind+' · '+(dead?'истёк':'до '+exp)+' · лимит '+(p.maxuses||'∞')+' · исп. '+p.uses+'</span>'+
-        '<button class="btn ghost" data-pt="'+p.id+'">'+(p.active?'Выкл':'Вкл')+'</button>'+
-        '<button class="btn ghost danger" data-pd="'+p.id+'">🗑</button></div>';}).join('')
-      ||'<div class="hmini">Пока пусто — создайте первый код</div>';}catch(e){}};
-
-    /* ── v8: промокод меняет цену мгновенно; очистил поле — цена вернулась ── */
-  var promoInfo=null;
-  function promoDiscNow(sum){return promoInfo?promoDisc(sum,promoInfo):0;}
-  function totalsNow(){
-    var sum=cart.reduce(function(a,c){return a+c.price*c.qty},0);
-    var method=document.getElementById('checkoutMethod').value;
-    var pickup=method==='pickup'?Math.round(sum*0.10):0;
-    var fee=0;
-    if(method==='delivery'&&deliveryInfo){
-      var z=deliveryInfo.zones.find(function(z){return z.places.includes(document.getElementById('checkoutPlace').value)});
-      fee=z?z.fee:0;
-    }
-    return {sum:sum,pd:promoDiscNow(sum),total:sum-pickup-promoDiscNow(sum)+fee};
+  var b=document.getElementById('ctxSwitch');
+  if(b)b.textContent=(chatCtx==='delivery'?'🍕':'☕')+' ▾';
+}
+function dinfoP(){if(window.__dinfo)return Promise.resolve(window.__dinfo);
+  window.__dinfoP=window.__dinfoP||fetch(API_BASE+'/api/delivery/info').then(function(r){return r.json();}).then(function(x){window.__dinfo=x;return x;});
+  return window.__dinfoP;}
+async function kbAnswer(q,ctx){
+  q=(q||'').toLowerCase();
+  if(ctx==='delivery'){
+    var d=null;try{d=await dinfoP();}catch(e){}
+    if(/зон|стоимость достав|сколько стоит достав/.test(q)&&d)return 'Доставка: '+d.zones.map(function(z){return z.places.join(', ')+' — '+z.fee+' ₽';}).join('; ')+'. Самовывоз — бесплатно и −10%.';
+    if(/самовывоз/.test(q))return 'Самовывоз: пгт Янтарный, ул. Советская, 38А — и скидка −10% на весь заказ.';
+    if(/сколько ждать|время достав|когда привез|часы|до скольки/.test(q))return 'Работаем ежедневно 11:00–22:00, доставка в среднем ~45 минут. При оформлении можно выбрать слот «ко времени».';
+    if(/акци|подарок|пив|маргарит|бесплатн/.test(q)&&d){var s=[];if(d.weekPromo)s.push(d.weekPromo.text);if(d.pizzaMonth)s.push('2 пиццы 35 см → «'+d.pizzaMonth.name+'» в подарок');return s.length?'Сейчас у нас: '+s.join('; '):'Акции обновляются по пятницам — следите за баннером 🍕';}
+    if(/оплат|карт|наличн/.test(q))return 'Оплата при получении: наличными или картой. Предоплаты нет.';
+    if(/где.*заказ|статус.*заказ|мой заказ/.test(q))return 'Статус заказа виден в профиле → «Мои заказы». Если срочное — нажмите «💬 Позвать сотрудника».';
+    if(/промокод/.test(q))return 'Промокод доставки вводится в корзине в поле «Промокод» — скидка применится сразу.';
+    return null;
   }
-  function paintTotals(){
-    var t=totalsNow();
-    var el=document.getElementById('cartTotal');if(el)el.textContent=fmt(t.total);
-    var s=document.getElementById('cartSum');
-    var cnt=cart.reduce(function(a,c){return a+c.qty},0);
-    if(s)s.textContent=cnt+' поз · '+Number(t.total).toLocaleString('ru-RU');
-  }
-  refreshPromoLine=async function(sum){
-    var line=document.getElementById('cartPromoLine');if(!line)return;
-    if(!cartPromoCode){promoInfo=null;line.textContent='';paintTotals();return;}
-    try{
-      var r=await fetch(API_BASE+'/api/promo/info?code='+encodeURIComponent(cartPromoCode)).then(function(x){return x.json()});
-      if(r.ok){promoInfo=r;localStorage.setItem('zt_cartpromo',cartPromoCode);
-        line.textContent='🎟 '+r.code+': −'+fmt(promoDisc(sum,r));line.style.color='var(--green)';}
-      else{promoInfo=null;localStorage.removeItem('zt_cartpromo');cartPromoCode='';
-        var typed=(document.getElementById('cartPromo')||{}).value||'';
-        if(typed.trim()){line.textContent='⚠️ '+(r.error||'Код не найден');line.style.color='#B3372B';}
-        else line.textContent='';}
-    }catch(e){}
-    paintTotals();
-  };
-  renderCart=(function(_rc){return function(){var r=_rc();paintTotals();return r;};})(renderCart);
-  updateCartFab=(function(_uf){return function(){_uf();paintTotals();};})(updateCartFab);
-  var promoInput=document.getElementById('cartPromo'),promoTimer=null;
-  function clearPromo(){
-    cartPromoCode='';promoInfo=null;localStorage.removeItem('zt_cartpromo');
-    var line=document.getElementById('cartPromoLine');if(line)line.textContent='';
-    paintTotals();
-  }
-  if(promoInput){
-    promoInput.addEventListener('input',function(){
-      var v=promoInput.value.trim().toUpperCase();
-      if(!v){clearPromo();return;}
-      clearTimeout(promoTimer);
-      promoTimer=setTimeout(function(){
-        cartPromoCode=v;
-        var sum=cart.reduce(function(a,c){return a+c.price*c.qty},0);
-        refreshPromoLine(sum);
-      },400);
-    });
-  }
-  document.getElementById('cartPromoBtn').onclick=function(){
-    var v=(promoInput?promoInput.value:'').trim().toUpperCase();
-    if(!v){clearPromo();return;}
-    cartPromoCode=v;
-    var sum=cart.reduce(function(a,c){return a+c.price*c.qty},0);
-    refreshPromoLine(sum);
-  };
-  document.getElementById('checkoutPlace').addEventListener('change',paintTotals);
-  var _co=document.getElementById('checkoutBtn').onclick;
-  document.getElementById('checkoutBtn').onclick=async function(e){
-    var r=await _co.call(this,e);
-    promoInfo=null;paintTotals();
-    return r;
-  };
-
-    /* ── v9: слоты «ко времени» — шаг 30 мин, формат дд-мм | чч-мм ── */
-  populateSlots=function(){
-    var now=new Date();
-    var pad=function(n){return String(n).padStart(2,'0')};
-    var slots=[{v:'asap',l:'Как можно скорее (~45 мин)'}];
-    for(var d=0;d<2;d++){
-      for(var m=11*60;m<22*60;m+=30){
-        var t=new Date(now);
-        t.setDate(t.getDate()+d);
-        t.setHours(Math.floor(m/60), m%60, 0, 0);
-        if(t<=now)continue;
-        var label=pad(t.getDate())+'.'+pad(t.getMonth()+1)+' | '+pad(t.getHours())+':'+pad(t.getMinutes());
-        slots.push({v:label,l:label});
-      }
-    }
-    var sel=document.getElementById('checkoutSlot');
-    if(sel)sel.innerHTML=slots.map(function(s){return '<option value="'+s.v+'">'+s.l+'</option>'}).join('');
-  };
-
-    /* ── v10: профиль пятницы без кофейного QR, плюшки в бонусах, активация диспетчером, экран выбора ── */
-  renderVerifyNote=function(){
-    var host=document.getElementById('bonusBox');
-    var n=document.getElementById('verifyNote');
-    if(!n&&host){n=document.createElement('div');n.id='verifyNote';host.insertBefore(n,host.firstChild);}
-    if(!n)return;
-    if(!me){n.hidden=true;return;}
-    var html='<small style="color:#5B6B7A;background:#EDF2F6;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">Как устроены бонусы:<br>🫘 штампы — кассир начисляет по вашему QR<br>🎁 +1 штамп — привязка Telegram<br>🧾 активация профиля — код из 4 цифр на кассе</small>';
-    if(!me.verified)html+='<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small><div style="display:flex;gap:8px"><input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1"><button class="btn fire" id="actBtn">Активировать</button></div>';
-    if(!me.welcome&&!me.tg)html+='<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>+1 штамп</b> за привязку в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
-    n.hidden=false;n.innerHTML=html;
-    var ab=document.getElementById('actBtn');
-    if(ab)ab.onclick=async function(){try{var r=await api('/auth/activate-guest',{method:'POST',body:{code:document.getElementById('actCode').value.trim()}});me=r.customer;toast('Профиль активирован! А +1 штамп ждёт в Telegram 🎁','');renderAll();}catch(e){toast(e.message,'⚠️')}};
-  };
-  renderProfile=(function(_rp){return function(){var r=_rp();
-    var deliv=(brand==='delivery');
-    var q=document.getElementById('qrMain');var qb=q&&q.closest('.qrbox');
-    if(qb)qb.style.display=deliv?'none':'';
-    var st=document.querySelector('#profileBox .stats');
-    if(st)st.style.display=deliv?'none':'';
-    return r;};})(renderProfile);
-
-  /* активация гостей: блок и в кассе, и у диспетчера */
-  (function(){
-    var ov=document.getElementById('ordersView');
-    if(ov&&!document.getElementById('pendingBoxD')){
-      var d=document.createElement('div');d.className='cash-card';
-      d.innerHTML='<h3 style="margin:0 0 8px">🆕 Активация гостей</h3><div id="pendingBoxD"></div>';
-      var listCard=document.getElementById('ordersList').closest('.cash-card');
-      ov.querySelector('.cashier').insertBefore(d,listCard);
-    }
-  })();
-  loadPending=async function(){
-    try{
-      var r=await api('/staff/pending');
-      var html=r.pending.length?r.pending.map(function(p){
-        return '<div class="hmini"><b>'+esc(p.name)+'</b> · '+esc(p.phone)+' · код: <b style="font-size:15px">'+p.actcode+'</b> <button class="btn fire" data-actg="'+p.id+'" style="margin-left:6px;padding:4px 10px;font-size:11px">Активировать</button></div>';
-      }).join(''):'<div class="hmini">Все гости активированы ✅</div>';
-      var a=document.getElementById('pendingBox');if(a)a.innerHTML=html;
-      var b=document.getElementById('pendingBoxD');if(b)b.innerHTML=html;
-    }catch(e){}
-  };
-  renderOrders=(function(_ro){return async function(s){var r=await _ro(s);loadPending();return r;};})(renderOrders);
-  document.addEventListener('click',async function(e){
-    var b=e.target.closest('[data-actg]');if(!b)return;
-    try{await api('/staff/activate-guest',{method:'POST',body:{id:b.dataset.actg}});toast('Гость активирован','✅');loadPending();}
-    catch(e2){toast(e2.message,'⚠️')}
+  if(/где вы|адрес|до скольки|часы работы|во сколько/.test(q))return 'Мы у моря: п. Янтарный, Советская ул., 70г. Ежедневно май–сен 8:00–21:00, окт–апр 8:00–20:00 🌊';
+  if(/штамп|бонус|карта гостя|10-й|десят/.test(q))return 'Каждый 10-й кофе — бесплатно: покажите кассиру QR из профиля, он начислит штамп. На 10-м штампе кофе в подарок 🎁';
+  if(/промокод/.test(q))return 'Промокод вводится в «Бонусах» → «Есть промокод?» — штампы или подарок начислятся сразу.';
+  return null;
+}
+if(typeof botReply==='function'){var _br=botReply;botReply=async function(q){var a=await kbAnswer(q,chatCtx||'coffee');return a||_br(q);};}
+var DHINTS=['Зоны и стоимость доставки','Сколько ждать заказ?','Какие сейчас акции?','Где мой заказ?'];
+var CHINTS=['Где вы и часы работы?','Как копить штампы?','Куда ввести промокод?'];
+var CALL_HINT='💬 Позвать сотрудника';
+function showHints(){
+  var msgs=document.getElementById('chatMsgs');if(!msgs)return;
+  var old=msgs.querySelector('.hintsWrap');if(old)old.remove();
+  var wrap=document.createElement('div');wrap.className='hintsWrap';wrap.style.cssText='padding:4px 0 8px';
+  (chatCtx==='delivery'?DHINTS:CHINTS).concat([CALL_HINT]).forEach(function(h){
+    var b=document.createElement('button');b.className='chatHint';b.textContent=h;b.dataset.hint=h;wrap.appendChild(b);
   });
+  msgs.appendChild(wrap);msgs.scrollTop=1e6;
+}
+async function mySend(q){
+  var inp=document.getElementById('chatInput');if(inp)inp.value='';
+  var msgs=document.getElementById('chatMsgs');
+  var hw=msgs&&msgs.querySelector('.hintsWrap');if(hw)hw.remove();
+  addMsg('me',q);
+  var isHuman=/позвать/i.test(q);
+  try{
+    await fetch(API_BASE+'/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key:chatKey(),text:q,human:isHuman?1:0,ctx:chatCtx||'coffee'})});
+  }catch(e){console.log('chat send err',e);}
+  if(isHuman){
+    addMsg('bot',chatCtx==='delivery'?'Зову диспетчера доставки 🍕 Он получит уведомление и ответит прямо сюда.':'Зову сотрудника кофейни ☕ Он получит уведомление и ответит сюда.');
+    return;
+  }
+  var a=null;
+  try{a=await kbAnswer(q,chatCtx||'coffee');}catch(e){}
+  if(!a&&typeof _br==='function'){try{a=await _br(q);}catch(e){}}
+  addMsg('bot',a||'Хм, не знаю ответа 🤔 Попробуйте иначе или позовите сотрудника.');
+  try{fetch(API_BASE+'/api/chat/botlog',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:chatKey(),text:a||''})});}catch(e){}
+  showHints();
+}
+sendChat=function(text,human){return mySend(text,human);};
+async function reloadChatThread(){
+  var msgs=document.getElementById('chatMsgs');if(!msgs)return;
+  msgs.innerHTML='';lastChatId=0;historyLoaded=false;
+  try{if(typeof loadHistory==='function')await loadHistory();}catch(e){}
+  if(!msgs.children.length)addMsg('bot',chatCtx==='delivery'?'Привет! Я Ника, поддержка доставки «Пятница» 🍕 Спрашивайте — или позовите диспетчера.':'Привет! Я Ника, поддержка кофейни «…и кофе» 🌊 Спрашивайте — или позовите сотрудника.');
+  showHints();
+}
+document.getElementById('chatMsgs').addEventListener('click',function(e){
+  var h=e.target.closest('.chatHint');if(h){mySend(h.dataset.hint||h.textContent);return;}
+});
+document.getElementById('chatPanel').addEventListener('click',function(e){
+  if(e.target.closest('[data-ctx]')||e.target.closest('[data-ctxsw]'))setTimeout(function(){reloadChatThread();},80);
+});
+document.getElementById('brandSeg').addEventListener('click',function(){
+  if(chatCtx&&chatCtx!==brand){chatCtx=brand;localStorage.setItem('zt_chatctx',chatCtx);setBotName();}
+  if(document.getElementById('chatPanel').classList.contains('open'))setTimeout(function(){reloadChatThread();},80);
+});
+function ensureGate(){
+  var p=document.getElementById('chatPanel');if(!p)return;
+  if(document.getElementById('ctxGate'))return;
+  var g=document.createElement('div');g.id='ctxGate';
+  g.style.cssText='position:absolute;inset:0;z-index:5;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center';
+  g.innerHTML='<div style="font:400 22px Prata,serif">Чем помочь?</div>'+
+    '<div style="color:var(--soft);font-size:13px;margin-bottom:6px">Выберите заведение — подскажу и позову нужных людей</div>'+
+    '<div class="ctxPick"><button class="cpD" data-ctx="delivery">🍕<br>Пятница</button><button class="cpC" data-ctx="coffee">☕<br>Кофейня</button></div>';
+  p.appendChild(g);
+  g.addEventListener('click',function(e){
+    var b=e.target.closest('[data-ctx]');if(!b)return;
+    chatCtx=b.dataset.ctx;localStorage.setItem('zt_chatctx',chatCtx);
+    g.remove();setBotName();
+  });
+}
+function showCtxSwitch(){
+  var msgs=document.getElementById('chatMsgs');if(!msgs)return;
+  var old=msgs.querySelector('.ctxSwitchWrap');if(old)old.remove();
+  var wrap=document.createElement('div');wrap.className='ctxSwitchWrap msg bot';wrap.style.cssText='max-width:92%;padding:10px';
+  wrap.innerHTML='<div style="font-size:12px;color:var(--soft);margin-bottom:6px">Сменить заведение:</div>'+
+    '<div class="ctxPick"><button class="cpD" data-ctxsw="delivery">🍕 Пятница</button><button class="cpC" data-ctxsw="coffee">☕ Кофейня</button></div>';
+  msgs.appendChild(wrap);msgs.scrollTop=1e6;
+}
+(function(){
+  var head=document.querySelector('#chatPanel .chatHead');
+  if(head&&!document.getElementById('ctxSwitch')){
+    var b=document.createElement('button');b.id='ctxSwitch';b.textContent='☕ ▾';
+    b.onclick=showCtxSwitch;head.appendChild(b);
+  }
+})();
+(function(){
+  var f=document.getElementById('chatFab');if(!f||f.__wrappedFV)return;
+  var old=f.onclick;f.__wrappedFV=1;
+  f.onclick=async function(e){
+    if(typeof old==='function'){try{await old.call(this,e);}catch(err){}}
+    if(document.getElementById('chatPanel').classList.contains('open')){
+      if(chatCtx){setBotName();if(!document.querySelector('#chatMsgs .hintsWrap'))showHints();}
+      else ensureGate();
+    }
+  };
+})();
+loadScList=async function(){try{var r=await api('/chat/list'+(scClosedView?'?closed=1':''));
+  document.getElementById('scShowClosed').textContent=scClosedView?'← Активные чаты':'Показать закрытые';
+  document.getElementById('scList').innerHTML=r.threads.map(function(t){
+    return '<div class="hmini" style="cursor:pointer" data-sck="'+esc(t.key)+'">'+
+      '<b>'+esc(t.name)+'</b> '+(t.ctx==='delivery'?'🍕':'☕')+(t.human&&!scClosedView?'<span class="tag hit" style="position:static;margin-left:6px">нужен ответ</span>':'')+
+      '<span style="float:right">'+(t.unread?'новое: '+t.unread:'')+'</span></div>';}).join('')
+  ||'<div class="hmini">'+(scClosedView?'Закрытых чатов нет':'Пока тихо')+'</div>';}catch(e){}};
+updateStaffBadge=async function(){
+  if(!me||!['admin','cashier','dispatch'].includes(me.role))return;
+  try{var r=await api('/chat/list');
+    var un=r.threads.reduce(function(a,t){return a+(+t.unread||0);},0);
+    var c1=document.getElementById('chatsToggle'),c2=document.getElementById('chatsToggle2'),c3=document.getElementById('chatsToggleD');
+    if(c1)c1.textContent=un?'💬 Чаты гостей · '+un:'💬 Чаты гостей';
+    if(c2)c2.textContent=un?'💬 '+un:'💬';
+    if(c3)c3.textContent=un?'💬 Чаты гостей · '+un:'💬 Чаты гостей';
+  }catch(e){}
+};
 
-  /* экран выбора при открытии приложения */
+  /* ── v24: приветствие по заведению, видимая пилюля, раздельные треды, перезагрузка ленты ── */
+  (function(){var css=document.createElement('style');
+    css.textContent='#ctxSwitch{color:#fff!important;border-color:rgba(255,255,255,.4)!important;background:rgba(255,255,255,.12)!important;font-size:12px!important;padding:4px 12px;border-radius:999px!important;margin-left:auto}';
+    document.head.appendChild(css);})();
   (function(){
-    if(sessionStorage.getItem('splashDone'))return;
-    var sp=document.createElement('div');sp.id='brandSplash';
-    sp.style.cssText='position:fixed;inset:0;z-index:400;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:20px';
-    sp.innerHTML='<div style="max-width:560px;width:100%;text-align:center">'+
-      '<div style="font:400 30px Prata,serif;margin-bottom:6px">…и кофе & «Пятница»</div>'+
-      '<div style="color:var(--soft);font-size:14px;margin-bottom:26px">Выберите, куда вы сегодня</div>'+
-      '<div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">'+
-      '<button data-go="coffee" style="flex:1;min-width:200px;border:2px solid var(--line);border-radius:22px;background:#fff;padding:26px 18px;font:700 16px Unbounded,sans-serif;color:var(--ink);box-shadow:var(--sh)">🌊<br><br>Кофейня<br><span style="font:400 12px Golos Text,sans-serif;color:var(--soft)">меню, штампы и бонусы</span></button>'+
-      '<button data-go="delivery" style="flex:1;min-width:200px;border:2px solid #F2D9A5;border-radius:22px;background:#FFF6E5;padding:26px 18px;font:700 16px Unbounded,sans-serif;color:#6B4E0E;box-shadow:var(--sh)">🍕<br><br>«Пятница»<br><span style="font:400 12px Golos Text,sans-serif;color:#8A6D3B">доставка пиццы и роллов</span></button>'+
-      '</div></div>';
-    document.body.appendChild(sp);
-    sp.addEventListener('click',function(e){
-      var b=e.target.closest('[data-go]');if(!b)return;
-      brand=b.dataset.go;
-      sessionStorage.setItem('splashDone','1');
-      sp.remove();
-      if(mode==='cashier'||mode==='orders')setMode('guest');
-      document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand)});
-      sv();
-      if(brand==='delivery'&&!DMENU.length)loadDelivery();
-    });
+    var head=document.querySelector('#chatPanel .chatHead');
+    if(head&&!document.getElementById('ctxSwitch')){
+      var b=document.createElement('button');b.id='ctxSwitch';b.textContent=(chatCtx==='delivery'?'🍕':'☕')+' ▾';
+      b.onclick=showCtxSwitch;head.appendChild(b);
+    }
   })();
+  addMsg=(function(_am){return function(who,text){
+    if(who==='bot'&&typeof text==='string'){
+      if(chatCtx==='delivery'&&/поддержка «…и кофе»/.test(text))text='Привет! Я Ника, поддержка доставки «Пятница» 🍕 Спрашивайте — или позовите диспетчера.';
+      if(chatCtx==='coffee'&&/поддержка доставки/.test(text))text='Привет! Я Ника, поддержка кофейни «…и кофе» 🌊 Спрашивайте — или позовите сотрудника.';
+    }
+    return _am(who,text);};})(addMsg);
+    if(!mySend.__clr){mySend=(function(_ms){var f=async function(q,h){var i=document.getElementById('chatInput');if(i)i.value='';return _ms(q,h);};f.__clr=1;return f;})(mySend);sendChat=function(t,h){return mySend(t,h);};}
+  async function reloadChatThread(){
+    var msgs=document.getElementById('chatMsgs');if(!msgs)return;
+    msgs.innerHTML='';lastChatId=0;historyLoaded=false;
+    try{if(typeof loadHistory==='function')await loadHistory();}catch(e){}
+    if(!msgs.children.length)addMsg('bot',chatCtx==='delivery'?'Привет! Я Ника, поддержка доставки «Пятница» 🍕 Спрашивайте — или позовите диспетчера.':'Привет! Я Ника, поддержка кофейни «…и кофе» 🌊 Спрашивайте — или позовите сотрудника.');
+    showHints();
+  }
+  document.getElementById('chatPanel').addEventListener('click',function(e){
+    if(e.target.closest('[data-ctx]')||e.target.closest('[data-ctxsw]'))setTimeout(function(){reloadChatThread();},80);
+  });
+  document.getElementById('brandSeg').addEventListener('click',function(){
+    if(chatCtx&&chatCtx!==brand){chatCtx=brand;localStorage.setItem('zt_chatctx',chatCtx);setBotName();
+      var b=document.getElementById('ctxSwitch');if(b)b.textContent=(chatCtx==='delivery'?'🍕':'☕')+' ▾';}
+    if(document.getElementById('chatPanel').classList.contains('open'))setTimeout(function(){reloadChatThread();},80);
+  });
+  setBotName=(function(_sb){return function(){_sb();
+    var b=document.getElementById('ctxSwitch');if(b)b.textContent=(chatCtx==='delivery'?'🍕':'☕')+' ▾';};})(setBotName);
 
-    /* ── v11: профиль в пятнице открывается (без кофейных артефактов), вкладка бонусов там скрыта, сплэш: Пятница первой ── */
+    /* ── v25: гейт выбора раз за сессию; гостевой чат скрыт в служебных режимах ── */
+  (function(){var f=document.getElementById('chatFab');if(!f||f.__wrapped25)return;
+    var old=f.onclick;f.__wrapped25=1;
+    f.onclick=async function(e){
+      if(typeof old==='function'){await old.call(this,e);}
+      if(document.getElementById('chatPanel').classList.contains('open')&&!sessionStorage.getItem('chatGateDone'))ensureGate();
+    };})();
+  document.getElementById('chatPanel').addEventListener('click',function(e){
+    if(e.target.closest('[data-ctx]'))sessionStorage.setItem('chatGateDone','1');
+  });
   sv=(function(_sv){return function(){
     _sv();
-    var pn=document.getElementById('panel');if(pn)pn.style.display='';
-    var deliv=(brand==='delivery');
-    var bt=document.querySelector('.tabs button[data-tab="bonus"]');
-    if(bt)bt.style.display=deliv?'none':'';
-    if(deliv)setTab('profile');
+    var staff=(mode==='cashier'||mode==='orders');
+    var cfab=document.getElementById('chatFab');
+    if(cfab)cfab.style.display=staff?'none':'';
+    if(staff){var p=document.getElementById('chatPanel');if(p)p.classList.remove('open');}
   };})(sv);
-  renderProfile=(function(_rp){return function(){var r=_rp();
-    var rb=document.getElementById('reviewBtn');var box=rb&&rb.closest('.placebox');
-    if(box)box.style.display=(brand==='delivery')?'none':'';
-    return r;};})(renderProfile);
-  (function(){
-    var sp=document.getElementById('brandSplash');if(!sp)return;
-    var t=sp.querySelector('[style*="Prata"]');
-    if(t)t.textContent='«Пятница»  …и кофе';
-    var wrapBtns=sp.querySelector('div[style*="justify-content:center"]');
-    if(wrapBtns){
-      var d=wrapBtns.querySelector('[data-go="delivery"]'),c=wrapBtns.querySelector('[data-go="coffee"]');
-      if(d&&c)wrapBtns.insertBefore(d,c);
+
+    /* ── v26: без сплэша в чате (контекст = бренд), вызов с подтверждением, вызов пропадает после подключения сотрудника ── */
+  ensureGate=function(){};
+  chatCtx=brand||chatCtx;
+  localStorage.setItem('zt_chatctx',chatCtx);
+  showHints=function(){
+    var msgs=document.getElementById('chatMsgs');if(!msgs)return;
+    var old=msgs.querySelector('.hintsWrap');if(old)old.remove();
+    var wrap=document.createElement('div');wrap.className='hintsWrap';wrap.style.cssText='padding:4px 0 8px';
+    var list=(chatCtx==='delivery'?DHINTS:CHINTS).slice();
+    if(!(typeof staffIn!=='undefined'&&staffIn))list.push(CALL_HINT);
+    list.forEach(function(h){var b=document.createElement('button');b.className='chatHint';b.textContent=h;b.dataset.hint=h;wrap.appendChild(b);});
+    msgs.appendChild(wrap);msgs.scrollTop=1e6;
+  };
+  addMsg=(function(_am){return function(w,t){var r=_am(w,t);if(w==='system')setTimeout(showHints,60);return r;};})(addMsg);
+  /* подтверждение вызова: два тапа, защита от случайных нажатий */
+  document.getElementById('chatMsgs').addEventListener('click',function(e){
+    var h=e.target.closest('.chatHint');if(!h)return;
+    if(h.dataset.hint!==CALL_HINT&&h.dataset.arm!=='1')return;
+    e.stopPropagation();e.preventDefault();
+    if(h.dataset.arm==='1'){
+      h.dataset.arm='';h.textContent=CALL_HINT;h.style.background='';h.style.borderColor='';
+      mySend(CALL_HINT);
+    }else{
+      h.dataset.arm='1';h.textContent='✅ Точно позвать сотрудника? (нажмите ещё раз)';
+      h.style.background='#FDE8E8';h.style.borderColor='#B3372B';
+      setTimeout(function(){if(h.dataset.arm==='1'){h.dataset.arm='';h.textContent=CALL_HINT;h.style.background='';h.style.borderColor='';}},4000);
     }
-  })();
+  },true);
+  /* чат следует за брендом: на открытии и при смене вкладки */
+  (function(){var f=document.getElementById('chatFab');if(!f||f.__wrapped26)return;
+    var old=f.onclick;f.__wrapped26=1;
+    f.onclick=async function(e){
+      if(typeof old==='function'){try{await old.call(this,e);}catch(err){}}
+      if(document.getElementById('chatPanel').classList.contains('open')){
+        if(chatCtx!==brand){chatCtx=brand;localStorage.setItem('zt_chatctx',chatCtx);}
+        setBotName();
+        if(!document.querySelector('#chatMsgs .hintsWrap'))showHints();
+      }
+    };})();
+  document.addEventListener('click',function(e){
+    if(e.target.closest('[data-go]'))setTimeout(function(){chatCtx=brand;localStorage.setItem('zt_chatctx',chatCtx);setBotName();},0);
+  });
+  document.getElementById('brandSeg').addEventListener('click',function(){
+    if(chatCtx!==brand){chatCtx=brand;localStorage.setItem('zt_chatctx',chatCtx);setBotName();}
+    if(document.getElementById('chatPanel').classList.contains('open'))setTimeout(function(){reloadChatThread();},80);
+  });
+  /* гостевой чат не мешает сотрудникам */
+  sv=(function(_sv){return function(){_sv();
+    var staff=(mode==='cashier'||mode==='orders');
+    var cfab=document.getElementById('chatFab');if(cfab)cfab.style.display=staff?'none':'';
+    if(staff){var p=document.getElementById('chatPanel');if(p)p.classList.remove('open');}
+  };})(sv);
 
-    /* ── v12: профиль перерисовывается при смене бренда; в пятнице прячем только QR, отзыв и ссылки остаются ── */
-  renderProfile=(function(_rp){return function(){var r=_rp();
-    var rb=document.getElementById('reviewBtn');var box=rb&&rb.closest('.placebox');
-    if(box)box.style.display='';
-    return r;};})(renderProfile);
-  sv=(function(_sv){return function(){_sv();if(me)renderProfile();};})(sv);
-
-    /* ── v13: адаптивный сплэш (мобильные ≤560px — карточки столбиком) ── */
-  (function(){
-    var css=document.createElement('style');
-    css.textContent=
-      '#brandSplash{padding:16px!important;overflow:auto!important}'+
-      '#brandSplash .spInner{max-width:560px;width:100%}'+
-      '#brandSplash .spTitle{font-size:clamp(22px,6vw,30px)!important;line-height:1.25;overflow-wrap:break-word}'+
-      '#brandSplash .spBtns{flex-direction:column!important;gap:12px!important}'+
-      '#brandSplash .spBtns button{min-width:0!important;width:100%}'+
-      '@media(min-width:560px){'+
-        '#brandSplash .spBtns{flex-direction:row!important}'+
-        '#brandSplash .spBtns button{min-width:200px!important;width:auto}'+
-      '}';
-    document.head.appendChild(css);
-    var sp=document.getElementById('brandSplash');
-    if(sp&&sp.firstElementChild){
-      var inner=sp.firstElementChild;inner.classList.add('spInner');
-      var t=inner.querySelector('[style*="Prata"]');if(t)t.classList.add('spTitle');
-      var b=inner.querySelector('div[style*="justify-content:center"]');if(b)b.classList.add('spBtns');
-    }
-  })();
-
-    /* ── v14: сплэш переписан начисто — классы + grid + clamp, адаптив закрыт навсегда ── */
-  (function(){
-    var old=document.getElementById('brandSplash');if(old)old.remove();
-    var css=document.createElement('style');
-    css.textContent=
-      'html,body{overflow-x:hidden;max-width:100%}'+
-      'img,canvas,svg,video{max-width:100%}'+
-      '#brandSplash,.toast,.msg{overflow-wrap:break-word}'+
-      '#brandSplash{position:fixed;inset:0;z-index:400;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}'+
-      '#brandSplash .spInner{width:100%;max-width:560px;text-align:center}'+
-      '#brandSplash .spTitle{font:400 clamp(20px,5.5vw,30px)/1.25 Prata,serif;margin-bottom:6px}'+
-      '#brandSplash .spSub{color:var(--soft);font-size:14px;margin-bottom:22px}'+
-      '#brandSplash .spBtns{display:grid;grid-template-columns:1fr;gap:12px}'+
-      '#brandSplash .spBtn{border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;box-shadow:var(--sh);width:100%}'+
-      '#brandSplash .spBtn small{display:block;font:400 12px Golos Text,sans-serif;margin-top:6px}'+
-      '#brandSplash .spPizza{border:2px solid #F2D9A5;background:#FFF6E5;color:#6B4E0E}'+
-      '#brandSplash .spPizza small{color:#8A6D3B}'+
-      '#brandSplash .spCoffee{border:2px solid var(--line);background:#fff;color:var(--ink)}'+
-      '#brandSplash .spCoffee small{color:var(--soft)}'+
-      '@media(min-width:560px){#brandSplash .spBtns{grid-template-columns:1fr 1fr}}';
-    document.head.appendChild(css);
-    if(sessionStorage.getItem('splashDone'))return;
-    var sp=document.createElement('div');sp.id='brandSplash';
-    sp.innerHTML='<div class="spInner">'+
-      '<div class="spTitle">«Пятница» & …и кофе</div>'+
-      '<div class="spSub">Выберите, куда вы сегодня</div>'+
-      '<div class="spBtns">'+
-      '<button class="spBtn spPizza" data-go="delivery">🍕<br><br>«Пятница»<small>доставка пиццы и роллов</small></button>'+
-      '<button class="spBtn spCoffee" data-go="coffee">🌊<br><br>Кофейня<small>меню, штампы и бонусы</small></button>'+
-      '</div></div>';
-    document.body.appendChild(sp);
-    sp.addEventListener('click',function(e){
-      var b=e.target.closest('[data-go]');if(!b)return;
-      brand=b.dataset.go;
-      sessionStorage.setItem('splashDone','1');
-      sp.remove();
-      if(mode==='cashier'||mode==='orders')setMode('guest');
-      document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand)});
-      sv();
-      if(brand==='delivery'&&!DMENU.length)loadDelivery();
+    /* ── v27: сканер QR только в режиме кассира ── */
+  sv=(function(_sv){return function(){_sv();
+    var showScan=(mode==='cashier');
+    document.querySelectorAll('#scanBtn,#scanFab,#qrFab,#scanToggle,.fab-scan').forEach(function(b){
+      b.style.display=showScan?'':'none';
     });
-  })();
-
-    /* ── v15: адаптивные карточки доставки — плитки размеров в две строки, сетка без обрезаний ── */
-  (function(){
-    var css=document.createElement('style');
-    css.textContent=
-      '#deliveryGrid{grid-template-columns:1fr!important}'+
-      '@media(min-width:560px){#deliveryGrid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important}}'+
-      '#deliveryGrid .opts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}'+
-      '@media(max-width:400px){#deliveryGrid .opts{grid-template-columns:1fr}}'+
-      '#deliveryGrid .opts button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;'+
-        'border:1.5px solid var(--line);border-radius:12px;font-size:11px;font-weight:600;background:#fff;'+
-        'line-height:1.3;white-space:normal;text-align:left;width:100%}'+
-      '#deliveryGrid .opts button .op{color:var(--soft);font-weight:700}'+
-      '#deliveryGrid .opts button.sel{background:#B4552D;border-color:#B4552D;color:#fff}'+
-      '#deliveryGrid .opts button.sel .op{color:#F3E2CE}'+
-      '#deliveryGrid .card .cta{margin-top:10px}';
-    document.head.appendChild(css);
-  })();
-  renderDeliveryMenu=(function(_r){return function(){_r();
-    document.querySelectorAll('#deliveryGrid .opts button').forEach(function(b){
-      if(b.querySelector('.ol'))return;
-      var parts=b.textContent.split(' · ');
-      if(parts.length<3)return;
-      b.innerHTML='<span class="ol">'+parts[0]+'</span><span class="op">'+parts[1]+' · '+parts[2]+'</span>';
+    document.querySelectorAll('button').forEach(function(b){
+      var cs=getComputedStyle(b);
+      if((b.textContent||'').trim().indexOf('📷')===0&&cs.position==='fixed')b.style.display=showScan?'':'none';
     });
-    document.querySelectorAll('#deliveryGrid .opts button.sel').forEach(function(b){b.classList.remove('sel')});
-  };})(renderDeliveryMenu);
-
-    /* ── v16: адаптивная шапка — режимы и бренды никогда не обрезаются ── */
-  (function(){
-    var css=document.createElement('style');
-    css.textContent=
-      '@media(max-width:820px){'+
-        '.topbar{flex-wrap:wrap;row-gap:8px;padding:8px 12px}'+
-        '.topbar .brand{order:1;min-width:0}'+
-        '#clock{order:2;margin-left:auto}'+
-        '#profileTopBtn{order:3}'+
-        '#brandSeg{order:10;flex:1 1 100%;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}'+
-        '#modeSeg{order:11;flex:1 1 100%;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}'+
-        '#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}'+
-        '#brandSeg button,#modeSeg button{flex:0 0 auto}'+
-      '}'+
-      '@media(max-width:400px){'+
-        '#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}'+
-      '}';
-    document.head.appendChild(css);
-  })();
+  };})(sv);
 
   sv();
-  console.log('fix-views v16 готов');
+  console.log('fix-views v27 готов');
 })();
