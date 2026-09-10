@@ -1442,6 +1442,93 @@ window.__brandInfoSync=function(){
   window.__tickerSync=build;build();
 })();
 sv=(function(_sv){return function(){var r=_sv();try{window.__tickerSync&&window.__tickerSync();}catch(e){}return r;};})(sv);
+/* ── v54: СТАБИЛИЗАЦИЯ — профиль виден, топбар без налезаний, редактирование на Пятнице, заказы закрываются, тикер нормальный ── */
+(function(){
+var css=document.createElement('style');
+css.textContent=
+'.topbar{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:6px 10px!important;padding:8px 12px!important;padding-top:calc(env(safe-area-inset-top,0px) + 8px)!important}'+
+'.topbar .brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;order:1!important}'+
+'.topbar .brand img{height:26px!important;width:auto!important;border-radius:6px!important}'+
+'.topbar .brand span{font-size:14px!important;font-weight:800!important;white-space:nowrap!important}'+
+'.topbar .brand small{display:none!important}'+
+'#clock{order:2!important;margin-left:auto!important}#profileTopBtn{order:3!important}#brandSeg{order:4!important}#modeSeg{order:5!important}'+
+'@media(max-width:820px){#brandSeg,#modeSeg{order:10!important;flex:1 1 100%!important;overflow-x:auto!important;scrollbar-width:none!important}}'+
+'.ticker{padding:8px 0!important;background:#14161A!important;overflow:hidden!important}'+
+'.ticker *{font-size:11px!important;font-weight:600!important;letter-spacing:.06em!important;text-transform:uppercase!important;line-height:1.5!important;color:#F5F2EC!important}'+
+'.ticker .tkWrap{overflow:hidden;white-space:nowrap}'+
+'.ticker .tkTrack{display:inline-block;white-space:nowrap;animation:tkmv 46s linear infinite;will-change:transform}'+
+'.ticker .tkTrack span{padding-right:56px!important;display:inline-block!important}'+
+'#ordersModal{z-index:400!important}'+
+'#ordersModal .modalCard{padding-top:52px!important}'+
+'#omCloseBar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;background:var(--paper);padding:10px 12px;margin:-52px 0 10px;border-bottom:1.5px solid var(--line);border-radius:20px 20px 0 0;z-index:2}'+
+'#omCloseBar button{border:0;background:#EDF2F6;border-radius:12px;padding:8px 14px;font-weight:800;cursor:pointer}';
+document.head.appendChild(css);
+
+/* 1) Безопасное разделение брендов: прячем только мелкие блоки, большие контейнеры НЕ трогаем */
+function safeBrandInfo(){
+  var deliv=(brand==='delivery');
+  var pb=document.getElementById('profileBox');if(!pb)return;
+  Array.prototype.forEach.call(pb.children,function(ch){
+    if(ch.classList&&ch.classList.contains('stats'))return;
+    if(ch.querySelector&&ch.querySelector('#qrMain'))return;
+    if(ch.id==='fridayInfo'){ch.style.display=deliv?'':'none';return;}
+    var t=(ch.textContent||'');
+    if(t.length>400){if(ch.style.display==='none')ch.style.display='';return;}
+    var hit=/МЫ У МОРЯ|ПОНРАВИЛОСЬ У НАС|instagram\.com|and_coffee39|Telegram-бот с бонусами/i.test(t);
+    if(hit)ch.style.display=deliv?'none':'';
+  });
+}
+window.__brandInfoSync=safeBrandInfo;
+window.__brandInfoSync2=safeBrandInfo;
+
+/* 2) Тикер: детерминированная структура, пересборка только при смене бренда */
+var lastTkBrand='';
+function buildTicker(){
+  var t=document.querySelector('.ticker');if(!t)return;
+  if(lastTkBrand===brand&&t.querySelector('.tkTrack'))return;
+  lastTkBrand=brand;
+  var L=(brand==='delivery')?['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']:['Кофейня на берегу моря …и кофе','Каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','Ежедневно 8:00–21:00'];
+  var row=L.map(function(x){return x+' 〜';}).join(' ');
+  t.innerHTML='<div class="tkWrap"><div class="tkTrack"><span>'+row+'</span><span>'+row+'</span></div></div>';
+}
+window.__tickerSync=buildTicker;buildTicker();
+
+/* 3) Редактирование на Пятнице: adminBar видим в режиме админа на любом бренде */
+function fixAdminBar(){
+  if(mode!=='admin')return;
+  var ab=document.getElementById('adminBar');if(!ab)return;
+  ab.hidden=false;
+  if(!ab.offsetParent){
+    var host=(brand==='delivery'?document.getElementById('deliveryView'):null)||ab.parentNode;
+    if(host)host.insertBefore(ab,host.firstChild);
+  }
+  var et=document.getElementById('editToggle');if(et)et.hidden=false;
+}
+
+/* 4) «Мои заказы»: липкая кнопка закрытия + тап вне карточки закрывает */
+(function(){
+  var m=document.getElementById('ordersModal');if(!m)return;
+  var card=m.querySelector('.modalCard');
+  if(card&&!document.getElementById('omCloseBar')){
+    var bar=document.createElement('div');bar.id='omCloseBar';
+    bar.innerHTML='<b>📦 Мои заказы</b><button type="button" id="omCloseBtn">✕ Закрыть</button>';
+    card.insertBefore(bar,card.firstChild);
+    bar.querySelector('#omCloseBtn').addEventListener('click',function(){m.classList.remove('show');if(window.syncOverlay)syncOverlay();});
+  }
+  m.addEventListener('click',function(e){
+    if(!e.target.closest('.modalCard')){m.classList.remove('show');if(window.syncOverlay)syncOverlay();}
+  },true);
+})();
+
+/* 5) После каждого рендера применяем все фиксы */
+sv=(function(_sv){return function(){var r=_sv();
+  try{safeBrandInfo();}catch(e){}
+  try{buildTicker();}catch(e){}
+  try{fixAdminBar();}catch(e){}
+  return r;};})(sv);
+setTimeout(function(){try{safeBrandInfo();buildTicker();fixAdminBar();}catch(e){}},300);
+})();
+
 sv();
-console.log('fix-views v52 готов');
+console.log('fix-views v54 готов');
 })();
