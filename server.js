@@ -183,6 +183,11 @@ if (!vapidRow) {
 const VAPID = JSON.parse(vapidRow.value);
 webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const TG_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'and_coffee_bot';
+const TG_WEBHOOK_SECRET = process.env.TG_WEBHOOK_SECRET || '';
+const PUBLIC_URL = process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : '');
+const APP_URL = PUBLIC_URL || 'https://app.andcoffee.online';
+
 async function tgSend(chatId, text) {
   if (!TG_TOKEN) return;
   try { await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
@@ -326,6 +331,7 @@ app.use(express.json({ limit: '10mb' }));
 
 /* ── меню ─ */
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.get('/api/config', (req, res) => res.json({ tgUsername: TG_BOT_USERNAME }));
 app.get('/api/menu', (req, res) => res.json({
   items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee'").all().map(item), updatedAt: getMeta() }));
 app.get('/api/menu/all', adminGuard, (req, res) => res.json({
@@ -362,7 +368,7 @@ app.post('/api/auth/request-reg-otp', (req, res) => {
     const token = crypto.randomBytes(6).toString('hex');
     otpStore.set('regtg:' + token, { phone: p, expires: Date.now() + 10 * 60 * 1000 });
     otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
-    return res.json({ ok: true, tgUrl: `https://t.me/and_coffee_bot?start=reg_${token}` });
+    return res.json({ ok: true, tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}` });
   }
   const st = otpStore.get('reg:' + p);
   if (st && Date.now() - (st.lastSent || 0) < 60000) return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
@@ -811,6 +817,7 @@ app.post('/api/push/del', adminGuard, (req, res) => {
 });
 /* ── telegram-бот ── */
 app.post('/api/tg/webhook', (req, res) => {
+    if (TG_WEBHOOK_SECRET && req.header('x-telegram-bot-api-secret-token') !== TG_WEBHOOK_SECRET) return res.status(403).json({ error: 'bad secret' });
   const u = req.body; res.json({ ok: true });
   if (!u || !u.message) return;
   const chatId = String(u.message.chat.id);
