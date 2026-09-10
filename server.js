@@ -116,6 +116,11 @@ db.exec(`CREATE TABLE IF NOT EXISTS orders(
   const ocols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
 if (ocols.length && !ocols.includes('promo')) db.exec(`ALTER TABLE orders ADD COLUMN promo TEXT DEFAULT ''`);
 if (ocols.length && !ocols.includes('promodiscount')) db.exec(`ALTER TABLE orders ADD COLUMN promodiscount INTEGER DEFAULT 0`);
+if (ocols.length && !ocols.includes('eta')) db.exec(`ALTER TABLE orders ADD COLUMN eta TEXT DEFAULT ''`);
+const ncols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
+if (ncols.length && !ncols.includes('notify_tg')) db.exec(`ALTER TABLE customers ADD COLUMN notify_tg INTEGER DEFAULT 1`);
+if (ncols.length && !ncols.includes('notify_web')) db.exec(`ALTER TABLE customers ADD COLUMN notify_web INTEGER DEFAULT 1`);
+if (ncols.length && !ncols.includes('consent')) db.exec(`ALTER TABLE customers ADD COLUMN consent TEXT DEFAULT ''`);
 
   const DMENU_V = '1';
 if (db.prepare("SELECT value FROM meta WHERE key='dmenu_v'").get()?.value !== DMENU_V) {
@@ -213,19 +218,24 @@ async function sendTg(cid, title, body, markup) {
 }
 
 async function sendPush(cid, title, body, markup) {
-  try {
+  const c = db.prepare('SELECT tg, notify_tg, notify_web FROM customers WHERE id=?').get(cid);
+  const wantTg = !c || c.notify_tg !== 0;
+  const wantWeb = !c || c.notify_web !== 0;
+  
+  if (wantTg) sendTg(cid, title, body, markup).catch(() => {});
+  
+  if (wantWeb) {
     sendFcm(cid, title, body).catch(() => {});
-    sendTg(cid, title, body, markup).catch(() => {});
     const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
     for (const r of rows) {
-      try {
-        await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body }));
-      } catch (e) {
-        if (e.statusCode === 404 || e.statusCode === 410)
-          db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub);
+      try { 
+        await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body })); 
+      } catch (e) { 
+        if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub); 
       }
     }
-  } catch (e) { console.log('[push] err:', e.message); }
+  }
+  return { ok: true };
 }
 async function tgEnsureWebhook() {
   if (!TG_TOKEN || !PUBLIC_URL) { console.log('[tg] webhook пропущен: нет TOKEN или PUBLIC_URL'); return; }
@@ -265,10 +275,15 @@ const otpStore = new Map(); // phone -> {code, expires}
 const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
 comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
 coffee: r.coffee, on: r.is_on, img: r.img, section: r.section || 'coffee', opts: JSON.parse(r.opts || '[]') });
-const cust = c => ({ id: c.id, name: c.name, phone: c.phone, stamps: c.stamps, free: c.free,
-cups: c.cups, qr: c.qr, role: c.role || 'guest', verified: c.verified ? 1 : 0, welcome: c.welcome ? 1 : 0,
-tg: c.tg ? 1 : 0,
-history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) });
+const cust = c => ({ 
+  id: c.id, name: c.name, phone: c.phone, stamps: c.stamps, free: c.free,
+  cups: c.cups, qr: c.qr, role: c.role || 'guest', 
+  verified: c.verified ? 1 : 0, welcome: c.welcome ? 1 : 0,
+  tg: c.tg ? 1 : 0, 
+  notify_tg: c.notify_tg !== 0 ? 1 : 0, 
+  notify_web: c.notify_web !== 0 ? 1 : 0,
+  history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) 
+});
 const addHist = (cid, a, by) => db.prepare('INSERT INTO history(cid,ts,a,by) VALUES(?,?,?,?)').run(cid, nowISO(), a, by);
 const logEv = (w, a) => { const d = new Date(); const pad = n => String(n).padStart(2, '0');
   db.prepare('INSERT INTO events(t,w,a) VALUES(?,?,?)')
@@ -327,12 +342,13 @@ function grant(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE id
   if (ten) sendPush(cid, '🎁 Бесплатный кофе ждёт вас!', 'Вы собрали 10 штампов. Заходите — кофе за наш счёт.', { text: '☕ Мой профиль', url: APP_URL });
   else if (f.stamps === 9) sendPush(cid, '☕ Осталась одна чашка!', 'У вас 9 из 10 штампов. Следующий кофе — бесплатно 😉', { text: '☕ Мой профиль', url: APP_URL });
   return { customer: cust(f), ten, msg: ten ? '10-й штамп! Начислен бесплатный кофе' : `+1 штамп → ${f.stamps} из 10` }; }
-function redeem(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
+function redeem(cid, by, item) {
+  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
   if (!c || c.free < 1) return null;
   db.prepare('UPDATE customers SET free=? WHERE id=?').run(c.free - 1, cid);
-  addHist(cid, `🎁 Списан бесплатный кофе (осталось ${c.free - 1})`, by);
-  logEv(c.name, 'Списан бесплатный кофе');
-  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) }; 
+  addHist(cid, `🎁 Списан бесплатный кофе: ${item || 'классика'} (осталось ${c.free - 1})`, by);
+  logEv(c.name, 'списан бесплатный кофе: ' + (item || 'классика'));
+  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) };
 }
 function grantWelcome(cid, by) {
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
@@ -441,6 +457,8 @@ if (ex) {
   if (!ex.verified && age > 7 * 86400000) { // сквот протух
     db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
     db.prepare('DELETE FROM customers WHERE id=?').run(ex.id);
+    if (!req.body.consent) return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
+db.prepare('UPDATE customers SET consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id || ex.id);
   } else if (okTg && !ex.verified) { // владелец с TG возвращает номер
     db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
     db.prepare('UPDATE customers SET name=?, tg=?, verified=1 WHERE id=?')
@@ -457,6 +475,8 @@ if (okTg || okSms) {
   db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
   if (okTg) grantWelcome(r.customer.id, 'Telegram'); // бонус ТОЛЬКО за «поделиться номером»
   addHist(r.customer.id, okTg ? 'Telegram привязан при регистрации' : 'Подтверждение по SMS', 'Система');
+  if (!req.body.consent) return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
+db.prepare('UPDATE customers SET consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id || ex.id);
 } else {
   let ac; do { ac = String(Math.floor(1000 + Math.random() * 9000)); }
   while (db.prepare('SELECT 1 FROM customers WHERE actcode=? AND verified=0').get(ac));
@@ -587,6 +607,11 @@ app.put('/api/me', userGuard, (req, res) => {
   db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
+app.put('/api/me/notify', userGuard, (req, res) => {
+  db.prepare('UPDATE customers SET notify_tg=?, notify_web=? WHERE id=?')
+    .run(req.body.tg ? 1 : 0, req.body.web ? 1 : 0, req.user.id);
+  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
+});
 app.post('/api/redeem', userGuard, (req, res) => {
   const r = redeem(req.user.id, 'Гость');
   r ? res.json(r) : res.status(400).json({ error: 'Нет доступных подарков' });
@@ -612,7 +637,7 @@ app.post('/api/staff/stamp', staffGuard, (req, res) => {
   r ? res.json(r) : res.status(404).json({ error: 'Гость не найден' });
 });
 app.post('/api/staff/redeem', staffGuard, (req, res) => {
-  const r = redeem(req.body.id, 'Кассир');
+  const r = redeem(req.body.id, 'Кассир', String(req.body.item || '').slice(0, 40));
   r ? res.json(r) : res.status(400).json({ error: 'Нет доступных подарков' });
 });
 app.post('/api/staff/scan', staffGuard, (req, res) => {
@@ -1045,6 +1070,32 @@ app.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
 }); 
   logEv(req.user.name, `заказ #${o.no} → ${s}`);
   res.json({ ok: true });
+});
+app.post('/api/orders/:id/delay', dispatchGuard, (req, res) => {
+  const min = +req.body.min || 0;
+  const comment = String(req.body.comment || '').slice(0, 140);
+  const o = db.prepare('SELECT * FROM orders WHERE id=?').get(req.params.id)
+        || db.prepare('SELECT * FROM orders WHERE no=?').get(+req.params.id || 0);
+  if (!o) return res.status(404).json({ error: 'Заказ не найден' });
+  db.prepare('UPDATE orders SET eta=?, updated=? WHERE id=?').run(min ? `+${min} мин` : '', nowISO(), o.id);
+  sendPush(o.cid, '🛵 Время доставки обновлено',
+    `Заказ #${o.no}: задерживаем на +${min} мин.${comment ? ' Причина: ' + comment : ''} Спасибо, что ждёте!`,
+    { inline_keyboard: [[{ text: '📦 Открыть заказ', web_app: { url: WEBAPP_URL + '/?src=tg&tab=orders' } }]] });
+  logEv(req.user.name, `заказ #${o.no} задержка +${min} мин`);
+  res.json({ ok: true });
+});
+app.post('/api/orders/delay-all', dispatchGuard, (req, res) => {
+  const min = +req.body.min || 0;
+  const comment = String(req.body.comment || '').slice(0, 140);
+  const rows = db.prepare("SELECT * FROM orders WHERE status IN ('new','accept','cook','way')").all();
+  for (const o of rows) {
+    db.prepare('UPDATE orders SET eta=?, updated=? WHERE id=?').run(min ? `+${min} мин` : '', nowISO(), o.id);
+    sendPush(o.cid, '🛵 Время доставки обновлено',
+      `Заказ #${o.no}: задерживаем на +${min} мин.${comment ? ' Причина: ' + comment : ''} Спасибо, что ждёте!`,
+      { inline_keyboard: [[{ text: '📦 Открыть заказ', web_app: { url: WEBAPP_URL + '/?src=tg&tab=orders' } }]] });
+  }
+  logEv(req.user.name, `задержка всем +${min} мин (${rows.length})`);
+  res.json({ ok: true, count: rows.length });
 });
 app.use(express.static(PUBLIC_DIR));
 app.listen(PORT, () => { console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`); tgEnsureWebhook(); });

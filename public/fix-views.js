@@ -1037,6 +1037,208 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   norm();setTimeout(norm,300);setTimeout(norm,1200);
 })();
 
+/* ── v51: дата в шапке заказа, кнопка «Мои заказы», чистка кассира, профиль по бренду, тикер/логотип на 2 заведения, уведомления, списание с выбором, задержки ── */
+(function(){var css=document.createElement('style');
+css.textContent=
+'.myOrderCard .moDate{font-size:12px;color:var(--soft);font-weight:600;margin-left:6px}'+
+'#myOrdersBtn{width:100%;margin:10px 0 0}'+
+'.brand img{height:30px;width:auto;border-radius:8px;vertical-align:middle;margin-right:8px}'+
+'#ordersModal .modalCard{max-width:600px}'+
+'.delayBtns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}'+
+'.delayBtns button{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700}';
+document.head.appendChild(css);})();
+/* 1) карточка заказа: дата рядом с номером */
+loadMyOrders=async function(){
+  var host=document.getElementById('myOrders');if(!host||!me)return;
+  try{
+    var r=await api('/orders/mine');
+    var ST={new:['🆕','mo-new','Новый'],accept:['✅','mo-accept','Подтверждён'],cook:['👨🍳','mo-cook','Готовится'],way:['🛵','mo-way','Курьер в пути'],done:['🏁','mo-done','Выполнен'],cancel:['❌','mo-cancel','Отменён']};
+    host.innerHTML=r.orders.length?r.orders.slice(0,8).map(function(o){
+      var s=ST[o.status]||['•','mo-new',o.status];
+      var d=new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'});
+      var items=o.items.slice(0,3).map(function(i){return i.qty+'× '+i.name;}).join(', ')+(o.items.length>3?'…':'');
+      return '<div class="myOrderCard"><div class="moTop"><span>Заказ #'+o.no+'<span class="moDate">· '+d+'</span></span><span class="moSt '+s[1]+'">'+s[0]+' '+s[2]+'</span></div>'+
+        '<div class="moSum">'+fmt(o.total)+(o.eta?' · ⏰ '+esc(o.eta):'')+'</div>'+
+        (items?'<div class="moItems">'+esc(items)+'</div>':'')+
+        ((o.gifts&&o.gifts.length)?'<div class="moGifts">🎁 '+o.gifts.map(function(g){return esc(g.name)+' ×'+g.qty;}).join(', ')+'</div>':'')+'</div>';
+    }).join(''):'<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';
+  }catch(e){}
+};
+/* 2) модалка «Мои заказы» + кнопка */
+(function(){
+  if(document.getElementById('ordersModal'))return;
+  var m=document.createElement('div');m.id='ordersModal';m.className='modal';
+  m.innerHTML='<div class="modalCard"><button class="modalClose" data-omclose>✕</button><h3>📦 Мои заказы</h3><div id="ordersModalList"></div></div>';
+  document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target===m||e.target.closest('[data-omclose]')){m.classList.remove('show');syncOverlay();}});
+})();
+async function renderOrdersModal(){
+  var host=document.getElementById('ordersModalList');if(!host||!me)return;
+  host.innerHTML='<div class="hmini">Загрузка…</div>';
+  document.getElementById('ordersModal').classList.add('show');syncOverlay();
+  try{
+    var r=await api('/orders/mine');
+    var ST={new:'🆕 Новый',accept:'✅ Подтверждён',cook:'👨‍ Готовится',way:'🛵 Курьер в пути',done:'🏁 Выполнен',cancel:'❌ Отменён'};
+    host.innerHTML=r.orders.length?r.orders.map(function(o){
+      var d=new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'});
+      return '<div class="myOrderCard"><div class="moTop"><span>Заказ #'+o.no+'<span class="moDate">· '+d+'</span></span><span class="moSt">'+(ST[o.status]||o.status)+'</span></div>'+
+        '<div class="moSum">'+fmt(o.total)+(o.eta?' · ⏰ '+esc(o.eta):'')+'</div>'+
+        '<div class="moItems">'+esc(o.items.map(function(i){return i.qty+'× '+i.name;}).join(', '))+'</div></div>';
+    }).join(''):'<div class="hmini">Заказов пока нет 🍕</div>';
+  }catch(e){host.innerHTML='<div class="hmini">Не загрузилось</div>';}
+}
+renderProfile=(function(_rp){return function(){var r=_rp();
+  var box=document.getElementById('profileBox');
+  if(box&&!document.getElementById('myOrdersBtn')){
+    var b=document.createElement('button');b.id='myOrdersBtn';b.className='btn ghost';b.textContent='📦 Мои заказы';
+    b.onclick=renderOrdersModal;
+    var mo=document.getElementById('myOrders');
+    if(mo)box.insertBefore(b,mo);else box.appendChild(b);
+  }
+  if(box&&!me)return r;
+  if(box&&!document.getElementById('notifyBox')){
+    var d=document.createElement('div');d.id='notifyBox';d.className='cash-card';d.style.margin='10px 0';
+    d.innerHTML='<b>Уведомления</b><div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">'+
+      '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="ntTg"> 🤖 Telegram</label>'+
+      '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="ntWeb"> 🔔 Пуши браузера</label></div>';
+    box.insertBefore(d,box.firstChild);
+    d.addEventListener('change',async function(){
+      try{await api('/me/notify',{method:'PUT',body:{tg:document.getElementById('ntTg').checked?1:0,web:document.getElementById('ntWeb').checked?1:0}});toast('Настройки уведомлений сохранены','✅');}catch(e){toast(e.message,'⚠️');}
+    });
+  }
+  if(me){document.getElementById('ntTg').checked=me.notify_tg!==0;document.getElementById('ntWeb').checked=me.notify_web!==0;}
+  return r;};})(renderProfile);
+/* 3) кассир: убрать события, дубль «Новый гость», QR-кнопка к поиску */
+sv=(function(_sv){return function(){var r=_sv();
+  if(mode==='cashier'){
+    document.querySelectorAll('#cashierView div,#cashierView h3,#cashierView h4').forEach(function(el){
+      if(el.children.length===0&&/ПОСЛЕДНИЕ СОБЫТИЯ/i.test(el.textContent||'')){var card=el.closest('.cash-card')||el.parentElement;if(card)card.style.display='none';}
+    });
+    var seen=0;
+    document.querySelectorAll('#cashierView button').forEach(function(b){
+      if(/Новый гость/.test(b.textContent||'')){seen++;if(seen>1)b.style.display='none';}
+    });
+    var sc=document.querySelector('#scanBtn,#scanToggle,#qrFab,.fab-scan');
+    var findBtn=document.querySelector('#cashierView .cash-card .btn');
+    if(sc&&findBtn&&sc.parentNode!==findBtn.parentNode){findBtn.parentNode.insertBefore(sc,findBtn.nextSibling);sc.style.display='';}
+  }
+  try{window.__brandInfoSync&&window.__brandInfoSync();}catch(e){}
+  try{window.__tickerSync&&window.__tickerSync();}catch(e){}
+  try{window.__brandHeadSync&&window.__brandHeadSync();}catch(e){}
+  return r;};})(sv);
+/* 4) профиль: инфоблок по бренду + отзывы */
+(function(){
+  var COFFEE_REVIEW='https://yandex.ru/maps/?add-review=true&ll=19.938820,54.866356&mode=poi&poi%5Bpoint%5D=19.938484%2C54.866544&poi%5Buri%5D=ymapsbm1%3A%2F%2Forg%3Foid%3D40856646609&tab=reviews&z=19';
+  var FRI_REVIEW='https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/?add-review=true&ll=19.937344,54.872870&z=17';
+  var FRI_REVIEWS='https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/?ll=19.938820,54.866356&z=19';
+  var FRI_VK='https://vk.ru/fridaypizza39';
+  document.querySelectorAll('a,button').forEach(function(el){
+    if(/Оставить отзыв/.test(el.textContent||'')&&!el.dataset.revSet){el.dataset.revSet='1';el.dataset.revKind='coffee';if(el.tagName==='A')el.href=COFFEE_REVIEW;else el.onclick=function(){location.href=COFFEE_REVIEW;};}
+  });
+  if(!document.getElementById('fridayInfo')){
+    var pb=document.getElementById('profileBox');
+    var d=document.createElement('div');d.id='fridayInfo';d.className='placebox';d.style.display='none';
+    d.innerHTML='<b>ПЯТНИЦА — доставка пиццы и роллов</b><br>п. Янтарный, ул. Советская, 38А (самовывоз)<br>Ежедневно 11:00–22:00 · доставка ~45 мин<br>'+
+      '🌐 <a href="'+FRI_VK+'" style="color:#1F4E8C;font-weight:800">vk.ru/fridaypizza39</a><br>'+
+      '⭐ <a href="'+FRI_REVIEWS+'" style="color:#1F4E8C;font-weight:800">отзывы на Яндекс Картах</a>'+
+      '<div style="margin-top:10px"><a class="btn" href="'+FRI_REVIEW+'" style="display:block;text-align:center">⭐ Оставить отзыв</a></div>';
+    if(pb)pb.appendChild(d);
+  }
+  window.__brandInfoSync=function(){
+    var deliv=(brand==='delivery');
+    var f=document.getElementById('fridayInfo');if(f)f.style.display=deliv?'':'none';
+    var els=document.querySelectorAll('#profileBox div,#profileBox section');
+    for(var i=0;i<els.length;i++){if(/МЫ У МОРЯ/i.test(els[i].textContent||'')&&els[i].querySelector('a')){els[i].style.display=deliv?'none':'';break;}}
+    document.querySelectorAll('[data-rev-kind="coffee"]').forEach(function(el){el.style.display=deliv?'none':'';});
+  };
+})();
+/* 5) тикер и шапка под два заведения */
+window.__tickerSync=function(){
+  var t=document.querySelector('.ticker');if(!t)return;
+  var lines=brand==='delivery'
+    ?['Пятница — доставка пиццы и роллов','ежедневно 11:00–22:00','доставка ~45 мин','vk.ru/fridaypizza39','каждые 2000 ₽ в чеке — 0,5 пива в подарок']
+    :['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с 8:00–21:00'];
+  t.innerHTML=lines.concat(lines).map(function(l){return '<span>'+l+' 〜</span>';}).join('');
+};
+window.__brandHeadSync=function(){
+  var b=document.querySelector('.topbar .brand');if(!b)return;
+  if(brand==='delivery')b.innerHTML='<img src="friday-logo.png" alt="Пятница"><span>Пятница</span><small style="display:block;font-size:11px;color:var(--soft)">доставка пиццы и роллов</small>';
+  else b.innerHTML='<span>…и кофе</span><small style="display:block;font-size:11px;color:var(--soft)">кофейня на берегу моря</small>';
+};
+/* 6) списание свободного кофе с выбором (кассир) */
+document.addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b||!/Списать бесплатный кофе/.test(b.textContent||''))return;
+  var card=b.closest('[data-cid],[data-id]');var cid=card&&(card.dataset.cid||card.dataset.id);
+  if(!cid)return;
+  e.stopImmediatePropagation();e.preventDefault();
+  var items=['Эспрессо','Американо','Капучино','Латте','Флэт уайт','Батч брю'];
+  var m=document.getElementById('redeemPick');
+  if(!m){m=document.createElement('div');m.id='redeemPick';m.className='modal';
+    m.innerHTML='<div class="modalCard"><button class="modalClose" data-rpclose>✕</button><h3>🎁 Какой кофе списать?</h3><div id="redeemPickList" style="display:grid;gap:8px"></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click',function(ev){if(ev.target===m||ev.target.closest('[data-rpclose]')){m.classList.remove('show');syncOverlay();}});
+    m.querySelector('#redeemPickList').addEventListener('click',async function(ev){
+      var bb=ev.target.closest('button');if(!bb)return;
+      try{await api('/staff/redeem',{method:'POST',body:{id:cid,item:bb.textContent}});m.classList.remove('show');syncOverlay();toast('Списано: '+bb.textContent,'🎁');renderOrders(true);}catch(err){toast(err.message,'⚠️');}
+    });
+  }
+  m.querySelector('#redeemPickList').innerHTML=items.map(function(i){return '<button class="btn ghost" style="width:100%">'+i+'</button>';}).join('');
+  m.classList.add('show');syncOverlay();
+},true);
+/* 7) диспетчер/админ: задержка доставки + пуш */
+renderOrders=(function(_ro){return async function(s){var r=await _ro(s);
+  try{
+    var list=document.getElementById('ordersList');
+    if(list)list.querySelectorAll(':scope > .cash-card, :scope > div').forEach(function(card){
+      if(card.querySelector('.delayBtns'))return;
+      var m=(card.textContent||'').match(/#(\d+)/);if(!m)return;
+      if(/Выполнен|Отменён/.test(card.textContent||''))return;
+      var d=document.createElement('div');d.className='delayBtns';
+      d.innerHTML='<button data-dly="15" data-oid="'+m[1]+'">⏰ +15 мин</button><button data-dly="30" data-oid="'+m[1]+'">⏰ +30 мин</button>';
+      card.appendChild(d);
+    });
+    var top=document.querySelector('#ordersView .cash-top');
+    if(top&&!document.getElementById('delayAllBox')){
+      var b=document.createElement('div');b.id='delayAllBox';b.className='delayBtns';
+      b.innerHTML='<b style="margin-right:6px">Задержать все:</b><button data-dlyall="15">+15 мин</button><button data-dlyall="30">+30 мин</button>';
+      top.appendChild(b);
+    }
+  }catch(e){}
+  return r;};})(renderOrders);
+document.addEventListener('click',async function(e){
+  var b=e.target.closest('[data-dly],[data-dlyall]');if(!b)return;
+  var min=+(b.dataset.dly||b.dataset.dlyall);
+  var comment=prompt('Причина задержки (необязательно):','')||'';
+  try{
+    if(b.dataset.dly){await api('/orders/'+b.dataset.oid+'/delay',{method:'POST',body:{min:min,comment:comment}});}
+    else{var r=await api('/orders/delay-all',{method:'POST',body:{min:min,comment:comment}});toast('Уведомлено заказов: '+r.count,'⏰');}
+    renderOrders(true);
+  }catch(err){toast(err.message,'⚠️');}
+});
+/* 8) согласие с политикой при регистрации */
+(function(){
+  var inj=function(){
+    var m=document.getElementById('authModal');if(!m||document.getElementById('consentRow'))return;
+    var reg=[].slice.call(m.querySelectorAll('button')).filter(function(b){return /Создать профиль/.test(b.textContent||'');})[0];
+    if(!reg)return;
+    var l=document.createElement('label');l.id='consentRow';l.style.cssText='display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--soft);margin:10px 0';
+    l.innerHTML='<input type="checkbox" id="consentBox" style="margin-top:2px"><span>Согласен с <a href="/privacy.html" target="_blank" style="color:#1F4E8C;font-weight:700">политикой конфиденциальности</a> и обработкой персональных данных</span>';
+    reg.parentNode.insertBefore(l,reg);
+  };
+  inj();setTimeout(inj,800);setTimeout(inj,2000);
+  var _f=window.fetch;window.fetch=function(u,o){
+    try{if(o&&o.body&&typeof o.body==='string'&&String(u).indexOf('/api/auth/register')>-1){
+      var b=JSON.parse(o.body);var cb=document.getElementById('consentBox');b.consent=(cb&&cb.checked)?1:0;
+      o=Object.assign({},o,{body:JSON.stringify(b)});}}catch(e){}
+    return _f.call(this,u,o);
+  };
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b||!/Создать профиль/.test(b.textContent||''))return;
+    var cb=document.getElementById('consentBox');
+    if(cb&&!cb.checked){e.stopImmediatePropagation();e.preventDefault();toast('Отметь согласие с политикой конфиденциальности','⚠️');}
+  },true);
+})();
+
 sv();
-console.log('fix-views v50 готов');
+console.log('fix-views v51 готов');
 })();
