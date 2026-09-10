@@ -1095,7 +1095,40 @@ updateStaffBadge=async function(){
     renderVerifyNote=(function(_r){return function(){var r=_r();relink();return r;};})(renderVerifyNote);
   }).catch(function(){});
 
+  /* ── v37: живое обновление профиля (штампы/бонусы) + ссылка на бота из конфига ── */
+  var lastProfileSig='';
+  async function refreshProfileLive(){
+    if(!me||document.visibilityState!=='visible')return;
+    try{
+      var r=await api('/me');if(!r||!r.customer)return;
+      var sig=r.customer.stamps+':'+r.customer.free+':'+r.customer.welcome+':'+r.customer.tg;
+      if(sig!==lastProfileSig){
+        lastProfileSig=sig;
+        me=r.customer;
+        if(typeof renderProfile==='function')renderProfile();
+        if(typeof renderStamps==='function')renderStamps();
+        if(typeof renderVerifyNote==='function')renderVerifyNote();
+      }
+    }catch(e){}
+  }
+  setInterval(refreshProfileLive,5000);
+  document.addEventListener('visibilitychange',refreshProfileLive);
+  addEventListener('focus',refreshProfileLive);
+  if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('message',function(e){
+    if(e.data&&e.data.type==='zpush')refreshProfileLive();
+  });
+  /* ссылки на TG-бота из конфига сервера */
+  fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(cfg){
+    window.TG_USERNAME=cfg.tgUsername||'and_coffee_bot';
+    function relink(){document.querySelectorAll('a[href*="t.me/and_coffee_bot"]').forEach(function(a){
+      a.href='https://t.me/'+window.TG_USERNAME;
+    });}
+    relink();
+    renderVerifyNote=(function(_r){return function(){var r=_r();relink();return r;};})(renderVerifyNote);
+  }).catch(function(){});
+
   sv();
-  console.log('fix-views v35 готов');
+  console.log('fix-views v37 готов');
+
 
 })();
