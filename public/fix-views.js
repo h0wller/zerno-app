@@ -1189,7 +1189,44 @@ updateStaffBadge=async function(){
       }
     };})();
 
+  /* ── v41: вход в поддержку из бота — всегда начинается с выбора заведения ── */
+  ensureGate=(function(_eg){return function(){
+    var had=!!document.getElementById('ctxGate');
+    var r=_eg();
+    var g=document.getElementById('ctxGate');
+    if(g&&!had){
+      var t=g.children[0];if(t)t.textContent='У вас вопрос по кофе или доставке?';
+      var s=g.children[1];if(s)s.textContent='Выберите заведение — откроется нужная Ника и ответят свои сотрудники';
+    }
+    return r;};})(ensureGate);
+  (function(){
+    var q=new URLSearchParams(location.search);
+    if(q.get('tab')!=='chat')return;
+    var tries=0;
+    var iv=setInterval(function(){
+      tries++;
+      var p=document.getElementById('chatPanel');
+      if(p&&p.classList.contains('open')){
+        clearInterval(iv);
+        setTimeout(function(){ensureGate();},200);
+      }else if(tries>25){clearInterval(iv);}
+    },200);
+  })();
+  /* после выбора на гейте — перезагрузка ленты в тред нужного заведения */
+  document.getElementById('chatPanel').addEventListener('click',function(e){
+    if(!e.target.closest('[data-ctx]'))return;
+    setTimeout(function(){
+      var msgs=document.getElementById('chatMsgs');if(!msgs)return;
+      msgs.innerHTML='';lastChatId=0;historyLoaded=false;
+      try{if(typeof loadHistory==='function')loadHistory();}catch(err){}
+      setTimeout(function(){
+        if(!msgs.children.length)addMsg('bot',chatCtx==='delivery'?'Привет! Я Ника, поддержка доставки «Пятница» 🍕 Спрашивайте — или позовите диспетчера.':'Привет! Я Ника, поддержка кофейни «…и кофе» 🌊 Спрашивайте — или позовите сотрудника.');
+        showHints();
+      },300);
+    },120);
+  });
+
   sv();
-  console.log('fix-views v40 готов');
+  console.log('fix-views v41 готов');
 
 })();
