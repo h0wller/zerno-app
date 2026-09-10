@@ -1506,8 +1506,72 @@ updateStaffBadge=async function(){
     },true);
   })();
 
+  /* ── v46: детерминированный вход в поддержку: нейтраль и карточка только через «Поддержку» бота ── */
+  (function(){
+    var q=new URLSearchParams(location.search);
+    window.__supportEntry=(q.get('tab')==='chat'||q.get('support')==='choose');
+    window.__topicChosen=window.__supportEntry?(sessionStorage.getItem('zt_topic_chosen')==='1'):true;
+    if(window.__topicChosen)window.__supportPending=false;
+    var css=document.createElement('style');
+    css.textContent=
+      'body.support-pending .hintsWrap{display:none!important}'+
+      '.supportTopicCard .cpD{background:#fff!important;border-color:var(--line)!important;color:var(--ink)!important}';
+    document.head.appendChild(css);
+    if(window.__supportEntry&&!window.__topicChosen)document.body.classList.add('support-pending');
+    /* карточка выбора — только при входе через поддержку; кнопки равные, без «преселекта» */
+    if(typeof showSupportTopicCard==='function'){
+      showSupportTopicCard=function(){
+        if(!window.__supportEntry||window.__topicChosen)return;
+        var msgs=document.getElementById('chatMsgs');if(!msgs)return;
+        var old=msgs.querySelector('.supportTopicCard');if(old)old.remove();
+        var d=document.createElement('div');d.className='msg bot supportTopicCard';d.style.cssText='max-width:94%;padding:12px';
+        d.innerHTML='<div style="font-weight:800;margin-bottom:4px">У вас вопрос по кофе или доставке?</div>'+
+          '<div style="font-size:12px;color:var(--soft);margin-bottom:10px">Выберите тему обращения — откроется нужная Ника, а вызов уйдёт правильной команде.</div>'+
+          '<div class="ctxPick"><button class="cpD" data-support-topic="delivery">🍕 Доставка Пятница</button><button class="cpC" data-support-topic="coffee">☕ Кофейня …и кофе</button></div>';
+        msgs.appendChild(d);msgs.scrollTop=1e6;
+      };
+    }
+    /* до выбора темы: никаких приветствий и шапка нейтральная */
+    addMsg=(function(_am){return function(who,text){
+      if(window.__supportEntry&&!window.__topicChosen&&who==='bot'&&/Привет! Я Ника/.test(text||''))return;
+      return _am(who,text);};})(addMsg);
+    setBotName=(function(_sb){return function(){var r=_sb();
+      if(window.__supportEntry&&!window.__topicChosen){
+        var el=document.querySelector('#chatPanel .chatHead .chName');
+        if(el)el.textContent='Ника · поддержка';
+      }
+      return r;};})(setBotName);
+    /* выбор темы */
+    document.addEventListener('click',function(e){
+      var b=e.target.closest('[data-support-topic]');if(!b)return;
+      window.__topicChosen=true;sessionStorage.setItem('zt_topic_chosen','1');
+      window.__supportPending=false;
+      document.body.classList.remove('support-pending');
+      var ctx=b.getAttribute('data-support-topic')==='delivery'?'delivery':'coffee';
+      chatCtx=ctx;localStorage.setItem('zt_chatctx',ctx);
+      setTimeout(function(){
+        try{setBotName();}catch(e){}
+        var card=document.querySelector('#chatMsgs .supportTopicCard');if(card)card.remove();
+        try{
+          if(typeof reloadChatThread==='function'){reloadChatThread();}
+          else{var m=document.getElementById('chatMsgs');if(m){m.innerHTML='';lastChatId=0;historyLoaded=false;if(typeof loadHistory==='function')loadHistory();}}
+        }catch(e){}
+        setTimeout(function(){try{showHints();}catch(e){}},400);
+      },60);
+    },true);
+    /* в мини-аппе из «Поддержки»: карточка появляется сразу при открытом чате */
+    if(window.__supportEntry&&!window.__topicChosen){
+      var t=0;var iv=setInterval(function(){
+        t++;
+        var p=document.getElementById('chatPanel');
+        if(p&&p.classList.contains('open')){try{showSupportTopicCard(true);}catch(e){}}
+        if(window.__topicChosen||t>60)clearInterval(iv);
+      },400);
+    }
+  })();
+
   sv();
-  console.log('fix-views v45 готов');
+  console.log('fix-views v46 готов');
 
 
 })();
