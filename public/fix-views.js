@@ -1363,7 +1363,49 @@ updateStaffBadge=async function(){
     },true);
   })();
 
+  /* ── v43: поддержка не закрывает чат; чат всегда согласован с брендом ── */
+  (function(){
+    var q=new URLSearchParams(location.search);
+    var supportWin=(q.get('tab')==='chat')?Date.now()+6000:0;
+    var f=document.getElementById('chatFab');
+    if(!f)return;
+    /* программный клик не должен закрывать чат в окне входа из поддержки */
+    f.addEventListener('click',function(e){
+      if(!supportWin||Date.now()>supportWin)return;
+      var p=document.getElementById('chatPanel');
+      if(!e.isTrusted&&p&&!p.classList.contains('open')){
+        setTimeout(function(){p.classList.add('open');f.classList.add('open');},0);
+      }
+    });
+    /* обёртка открытия: синхронизируем контекст с брендом, убираем разнобой */
+    if(!f.__wrapped43){
+      var old=f.onclick;f.__wrapped43=1;
+      f.onclick=async function(e){
+        if(typeof old==='function'){try{await old.call(this,e);}catch(err){}}
+        var p=document.getElementById('chatPanel');
+        if(!p||!p.classList.contains('open'))return;
+        if(document.getElementById('ctxGate'))return;            // гейт сам решит
+        if(supportWin&&Date.now()<supportWin)return;             // вход из бота: тему выберет карточка
+        try{
+          if(chatCtx&&chatCtx!==brand){
+            chatCtx=brand;localStorage.setItem('zt_chatctx',chatCtx);
+            setBotName();
+            if(typeof reloadChatThread==='function'){reloadChatThread();}
+            else{
+              var m=document.getElementById('chatMsgs');
+              if(m){m.innerHTML='';lastChatId=0;historyLoaded=false;if(typeof loadHistory==='function')loadHistory();}
+              setTimeout(function(){try{showHints();}catch(err){}},300);
+            }
+          }else{
+            setBotName();
+            if(!document.querySelector('#chatMsgs .hintsWrap'))showHints();
+          }
+        }catch(err){}
+      };
+    }
+  })();
+
   sv();
-  console.log('fix-views v42 готов');
+  console.log('fix-views v43 готов');
 
 })();
