@@ -22,7 +22,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" fetchpriority="high" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -532,6 +532,10 @@ body.is-cashier .cust .acts{min-width:260px}
 .ocTotal{margin-top:8px;font-size:14px}
 .ocActs{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .adminBar{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end;margin:0 0 12px}
+  .ticker{min-height:64px;max-height:64px;overflow:hidden;contain:layout style paint}
+  @media(max-width:820px){.ticker{min-height:88px;max-height:88px}}
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
 </style>
 </head>
 <body>
