@@ -76,3 +76,7 @@ test-results/chat-support-поддержка-из--f0796-ей-появляетс
 tests
 tests/chat-support.spec.js
 *.spec.js
+# Playwright артефакты
+test-results/
+error-context.md
+playwright-report/
