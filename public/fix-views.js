@@ -1649,6 +1649,60 @@ updateStaffBadge=async function(){
     },true);
   })();
 
+  /* ── v48: вход в поддержку без преждевременной привязки: нейтральная шапка, чистая лента, нет утечек ── */
+  (function(){
+    var q=new URLSearchParams(location.search);
+    var SUPPORT_ENTRY=(q.get('tab')==='chat'||q.get('support')==='choose');
+    if(!SUPPORT_ENTRY)return;
+    var chosenCtx=sessionStorage.getItem('zt_support_ctx')||'';
+    if(chosenCtx){chatCtx=chosenCtx;try{localStorage.setItem('zt_chatctx',chatCtx);}catch(e){}}
+    function pending(){return !chosenCtx;}
+    function neutralHeader(){
+      var el=document.querySelector('#chatPanel .chatHead .chName');
+      if(el)el.textContent='Ника · поддержка';
+    }
+    function cardThere(){return !!document.querySelector('#chatMsgs .supportTopicCard');}
+    function showCard(){
+      var msgs=document.getElementById('chatMsgs');if(!msgs)return;
+      msgs.innerHTML='';
+      var d=document.createElement('div');d.className='msg bot supportTopicCard';d.style.cssText='max-width:94%;padding:12px';
+      d.innerHTML='<div style="font-weight:800;margin-bottom:4px">У вас вопрос по кофе или доставке?</div>'+
+        '<div style="font-size:12px;color:var(--soft);margin-bottom:10px">Выберите тему обращения — откроется нужная Ника, а вызов уйдёт правильной команде.</div>'+
+        '<div class="ctxPick"><button class="cpD" data-support-topic="delivery">🍕 Доставка Пятница</button><button class="cpC" data-support-topic="coffee">☕ Кофейня …и кофе</button></div>';
+      msgs.appendChild(d);
+    }
+    /* до выбора темы: ни приветствий, ни подсказок, шапка нейтральная */
+    addMsg=(function(_am){return function(w,t){if(pending()&&w==='bot')return;return _am(w,t);};})(addMsg);
+    showHints=(function(_sh){return function(){if(pending())return;return _sh();};})(showHints);
+    setBotName=(function(_sb){return function(){var r=_sb();if(pending())neutralHeader();return r;};})(setBotName);
+    /* чат открыт и тема не выбрана → чистая лента + карточка */
+    var t=0;var iv=setInterval(function(){
+      t++;
+      var p=document.getElementById('chatPanel');
+      if(p&&p.classList.contains('open')){
+        if(pending()){showCard();neutralHeader();}
+        clearInterval(iv);
+      }
+      if(t>50)clearInterval(iv);
+    },200);
+    /* выбор темы: запоминаем, открываем нужный тред, включаем подсказки */
+    document.addEventListener('click',function(e){
+      var b=e.target.closest('[data-support-topic]');if(!b)return;
+      chosenCtx=b.getAttribute('data-support-topic')==='delivery'?'delivery':'coffee';
+      sessionStorage.setItem('zt_support_ctx',chosenCtx);
+      chatCtx=chosenCtx;try{localStorage.setItem('zt_chatctx',chatCtx);}catch(err){}
+      setTimeout(function(){
+        var card=document.querySelector('#chatMsgs .supportTopicCard');if(card)card.remove();
+        try{setBotName();}catch(err){}
+        try{
+          if(typeof reloadChatThread==='function')reloadChatThread();
+          else{var m=document.getElementById('chatMsgs');if(m)m.innerHTML='';}
+        }catch(err){}
+        setTimeout(function(){try{showHints();}catch(err){}},350);
+      },60);
+    },true);
+  })();
+
   sv();
   console.log('fix-views v48 готов');
 
