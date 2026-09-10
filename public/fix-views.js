@@ -1087,8 +1087,15 @@ updateStaffBadge=async function(){
       '}';
     document.head.appendChild(css);})();
 
-  sv();
-  console.log('fix-views v36 готов');
+  /* ── v35: ссылки на TG-бота из конфига сервера (тест-бот на тесте, прод-бот на проде) ── */
+  fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(cfg){
+    window.TG_USERNAME=cfg.tgUsername||'and_coffee_bot';
+    function relink(){document.querySelectorAll('a[href*="t.me/and_coffee_bot"]').forEach(function(a){a.href='https://t.me/'+window.TG_USERNAME;});}
+    relink();
+    renderVerifyNote=(function(_r){return function(){var r=_r();relink();return r;};})(renderVerifyNote);
+  }).catch(function(){});
 
+  sv();
+  console.log('fix-views v35 готов');
 
 })();
