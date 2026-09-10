@@ -1127,8 +1127,28 @@ updateStaffBadge=async function(){
     renderVerifyNote=(function(_r){return function(){var r=_r();relink();return r;};})(renderVerifyNote);
   }).catch(function(){});
 
-  sv();
-  console.log('fix-views v37 готов');
+  /* ── v38: deep-link из Telegram + Mini App полировка ── */
+  (function(){
+    var q=new URLSearchParams(location.search);
+    var bP=q.get('brand'),tab=q.get('tab');
+    if(!bP&&!tab)return;
+    setTimeout(function(){
+      try{
+        if(bP&&bP!==brand){brand=bP;document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});sv();if(brand==='delivery'&&!DMENU.length)loadDelivery();}
+        if(tab==='bonus'||tab==='orders'){if(me){openPanel('profile');setTab(tab==='bonus'?'bonus':'profile');}else openAuth();}
+        if(tab==='chat'){var f=document.getElementById('chatFab');if(f)f.click();}
+        history.replaceState(null,'',location.pathname);
+      }catch(e){}
+    },700);
+  })();
+  (function(){
+    if(!/Telegram/i.test(navigator.userAgent))return;
+    var s=document.createElement('script');s.src='https://telegram.org/js/telegram-web-app.js';
+    s.onload=function(){try{var t=window.Telegram&&window.Telegram.WebApp;if(t){t.ready();t.expand();}}catch(e){}};
+    document.head.appendChild(s);
+  })();
 
+  sv();
+  console.log('fix-views v38 готов');
 
 })();
