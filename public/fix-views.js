@@ -1015,6 +1015,28 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   }, true);
 })();
 
+/* ── v50: нормализуем классы шапки чата (.chatHead/.chName) — тесты и нейтраль бьют точно ── */
+(function(){
+  function norm(){
+    var p=document.getElementById('chatPanel');if(!p)return;
+    var head=p.querySelector('.chatHead');
+    if(!head){
+      var kids=p.children;
+      for(var i=0;i<kids.length;i++){
+        if(/Ника/.test(kids[i].textContent||'')){head=kids[i];break;}
+      }
+      if(head)head.classList.add('chatHead');
+    }
+    if(head&&!head.querySelector('.chName')){
+      var nodes=head.querySelectorAll('div,span,b');
+      for(var j=0;j<nodes.length;j++){
+        if(nodes[j].children.length===0&&/Ника/.test(nodes[j].textContent||'')){nodes[j].classList.add('chName');break;}
+      }
+    }
+  }
+  norm();setTimeout(norm,300);setTimeout(norm,1200);
+})();
+
 sv();
-console.log('fix-views v49 готов');
+console.log('fix-views v50 готов');
 })();

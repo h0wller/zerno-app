@@ -73,3 +73,6 @@ test-results/chat-support-поддержка-из--f0796-ей-появляетс
 test-results
 test-results/chat-support-выбор-доставки-открывает-доставочную-Нику/error-context.md
 test-results/chat-support-поддержка-из--f0796-ей-появляется-и-НЕ-исчезает/error-context.md
+tests
+tests/chat-support.spec.js
+*.spec.js
