@@ -1061,8 +1061,22 @@ updateStaffBadge=async function(){
     setTimeout(mountPushTest,300);
   })();
 
-  sv();
-  console.log('fix-views v33 готов');
+  /* ── v34: кнопка тест-пуша удалена навсегда ── */
+  if(typeof mountPushTest==='function'){mountPushTest=function(){};}
+  (function(){
+    function kill(){
+      var b=document.getElementById('pushTestBtn');if(b)b.remove();
+      document.querySelectorAll('button').forEach(function(x){
+        if((x.textContent||'').indexOf('Тест-пуш')>-1)x.remove();
+      });
+    }
+    kill();setTimeout(kill,200);setTimeout(kill,600);setTimeout(kill,1500);
+    var mo=new MutationObserver(function(){kill();});
+    mo.observe(document.body,{childList:true,subtree:true});
+    document.addEventListener('click',function(){setTimeout(kill,50);},true);
+  })();
 
+  sv();
+  console.log('fix-views v34 готов');
 
 })();
