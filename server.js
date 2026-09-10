@@ -699,10 +699,16 @@ app.get('/api/push/subs', adminGuard, (req, res) => {
 app.post('/api/push/send', adminGuard, async (req, res) => {
   const body = req.body.body || '';
   const cids = db.prepare("SELECT cid FROM subs UNION SELECT id FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
-  for (const c of cids) await sendPush(c.cid, '…и кофе 🌊', body);
+  let ok = 0, fail = 0; const errs = [];
+  for (const c of cids) { const s = await sendPush(c.cid, '…и кофе 🌊', body); ok += s.ok; fail += s.fail; errs.push(...s.errors); }
   logEv(req.user.name, `пуш всем (${cids.length})`);
-  res.json({ ok: true, sent: cids.length });
+  res.json({ ok: true, sent: cids.length, delivered: ok, failed: fail, errors: errs.slice(0, 5) });
 });
+app.post('/api/push/test', userGuard, async (req, res) => {
+  const s = await sendPush(req.user.id, '🔔 Тестовый пуш', 'Если ты это видишь — пуши на этом устройстве работают');
+  res.json(s);
+});
+
 /* ── чат гость ↔ стафф ── */
 app.post('/api/chat/send', (req, res) => {
   const key = String(req.body.key || '').slice(0, 64);
