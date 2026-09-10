@@ -1405,7 +1405,43 @@ document.addEventListener('click',function(e){
   e.stopPropagation();
   openEditor(b.dataset.ed);
 },true);
-
+/* ── v53b: брендование инфоблоков без стрельбы по своему профилю ── */
+window.__brandInfoSync=function(){
+  var deliv=(brand==='delivery');
+  var pb=document.getElementById('profileBox');if(!pb)return;
+  var f=document.getElementById('fridayInfo');if(f)f.style.display=deliv?'':'none';
+  pb.querySelectorAll(':scope > *').forEach(function(ch){
+    var t=ch.textContent||'';
+    if(t.length>400)return;               // большие контейнеры не трогаем
+    if(/МЫ У МОРЯ|ПОНРАВИЛОСЬ У НАС|instagram\.com|and_coffee39|Telegram-бот с бонусами/i.test(t))ch.style.display=deliv?'none':'';
+  });
+};
+/* ── v53: тикер — самодостаточная бегущая строка для обоих брендов ── */
+(function(){
+  var css=document.createElement('style');
+  css.textContent=
+  '.ticker{overflow:hidden;background:#14161A;color:#F5F2EC;padding:9px 0!important}'+
+  '.ticker .tkWrap{overflow:hidden;white-space:nowrap}'+
+  '.ticker .tkTrack{display:inline-block;white-space:nowrap;animation:tkmv 46s linear infinite;will-change:transform}'+
+  '.ticker .tkTrack span{padding-right:56px;font-size:12px;letter-spacing:.06em;text-transform:uppercase}'+
+  '@keyframes tkmv{from{transform:translateX(0)}to{transform:translateX(-50%)}}'+
+  '@media (prefers-reduced-motion:reduce){.ticker .tkTrack{animation:none}}';
+  document.head.appendChild(css);
+  var LINES={
+    coffee:['Кофейня на берегу моря …и кофе','Каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','Ежедневно 8:00–21:00'],
+    delivery:['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']
+  };
+  var lastTk='';
+  function build(){
+    var t=document.querySelector('.ticker');if(!t||lastTk===brand)return;
+    lastTk=brand;
+    var lines=LINES[brand]||LINES.coffee;
+    var row=lines.map(function(l){return l+' 〜';}).join(' ');
+    t.innerHTML='<div class="tkWrap"><div class="tkTrack"><span>'+row+'</span><span>'+row+'</span></div></div>';
+  }
+  window.__tickerSync=build;build();
+})();
+sv=(function(_sv){return function(){var r=_sv();try{window.__tickerSync&&window.__tickerSync();}catch(e){}return r;};})(sv);
 sv();
 console.log('fix-views v52 готов');
 })();
