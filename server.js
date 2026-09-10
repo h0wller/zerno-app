@@ -855,9 +855,11 @@ app.post('/api/tg/webhook', async (req, res) => {
   return;
 }
 if (text === '/start') {
-  tgSend(chatId, '☕🍕 Привет! Я бот «…и кофе» и доставки «Пятница».\n\nШтампы, бонусы, статусы заказов и акции — всё здесь. Меню открывается прямо в Telegram.');
-  tgSend(chatId, 'Выберите, что нужно 👇', appKb());
-  fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '📱', reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true } }) }).catch(() => {});
+  (async () => {
+    await tgSend(chatId, '☕ Привет! Я бот «…и кофе» и доставки «Пятница».\n\nШтампы, бонусы, статусы заказов и акции — всё здесь. Меню открывается прямо в Telegram.');
+    await tgSend(chatId, 'Выберите, что нужно 👇', appKb());
+    try { await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '📱', reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true } }) }); } catch (e) {}
+  })();
   return;
 }
 if (text === '/menu') { tgSend(chatId, '🍕 Открываю меню доставки…', appKb()); return; }
