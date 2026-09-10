@@ -1226,7 +1226,144 @@ updateStaffBadge=async function(){
     },120);
   });
 
+  /* ── v42: тема обращения внутри чата — кофе или доставка ── */
+  (function(){
+    var q0 = new URLSearchParams(location.search);
+    var forceSupportChoose =
+      q0.get('support') === 'choose' ||
+      (q0.get('src') === 'tg' && q0.get('tab') === 'chat');
+
+    if(!document.getElementById('supportTopicCss')){
+      var css=document.createElement('style');
+      css.id='supportTopicCss';
+      css.textContent=
+        '.supportTopicCard{max-width:94%!important;padding:12px!important}'+
+        '.supportTopicTitle{font-weight:800;margin-bottom:4px}'+
+        '.supportTopicSub{font-size:12px;color:var(--soft);margin-bottom:10px;line-height:1.35}'+
+        '.supportTopicBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}'+
+        '.supportTopicBtns button{border:1.5px solid var(--line);background:#fff;border-radius:16px;padding:12px 8px;font-weight:800;color:var(--ink)}'+
+        '.supportTopicBtns button:active{transform:scale(.98)}';
+      document.head.appendChild(css);
+    }
+
+    function chatIsOpen(){
+      var p=document.getElementById('chatPanel');
+      return p && p.classList.contains('open');
+    }
+
+    function openChatIfNeeded(){
+      if(chatIsOpen())return;
+      var f=document.getElementById('chatFab');
+      if(f)f.click();
+    }
+
+    function showSupportTopicCard(force){
+      var msgs=document.getElementById('chatMsgs');
+      if(!msgs)return;
+
+      // Если это обычное открытие чата и тема уже выбрана — не мешаем.
+      // Если пришли из бота support=choose — показываем всегда.
+      if(!force && chatCtx)return;
+
+      var old=msgs.querySelector('.supportTopicCard');
+      if(old)old.remove();
+
+      var card=document.createElement('div');
+      card.className='msg bot supportTopicCard';
+      card.innerHTML=
+        '<div class="supportTopicTitle">У вас вопрос по кофе или доставке?</div>'+
+        '<div class="supportTopicSub">Выберите тему обращения — откроется нужная Ника, а при вызове сотрудника уведомление уйдёт правильной команде.</div>'+
+        '<div class="supportTopicBtns">'+
+          '<button type="button" data-support-topic="delivery">🍕<br>Доставка<br><small>Пятница</small></button>'+
+          '<button type="button" data-support-topic="coffee">☕<br>Кофейня<br><small>…и кофе</small></button>'+
+        '</div>';
+
+      msgs.appendChild(card);
+      msgs.scrollTop=1e6;
+    }
+
+    // Вход из Telegram по кнопке «Поддержка»:
+    // открываем чат и после открытия вставляем карточку выбора темы.
+    if(forceSupportChoose){
+      var tries=0;
+      var iv=setInterval(function(){
+        tries++;
+        openChatIfNeeded();
+
+        if(chatIsOpen() && document.getElementById('chatMsgs')){
+          clearInterval(iv);
+          setTimeout(function(){
+            showSupportTopicCard(true);
+          },250);
+        }
+
+        if(tries>35)clearInterval(iv);
+      },200);
+    }
+
+    // Обычное открытие чата на сайте:
+    // если тема ещё не выбрана — показываем карточку внутри чата.
+    (function(){
+      var f=document.getElementById('chatFab');
+      if(!f || f.__supportTopicWrapped)return;
+      var old=f.onclick;
+      f.__supportTopicWrapped=1;
+
+      f.onclick=async function(e){
+        if(typeof old==='function'){
+          try{await old.call(this,e);}catch(err){}
+        }
+
+        setTimeout(function(){
+          if(chatIsOpen())showSupportTopicCard(false);
+        },250);
+      };
+    })();
+
+    // Клик по теме обращения
+    document.addEventListener('click',function(e){
+      var b=e.target.closest('[data-support-topic]');
+      if(!b)return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      var ctx=b.getAttribute('data-support-topic') === 'delivery' ? 'delivery' : 'coffee';
+
+      chatCtx=ctx;
+      localStorage.setItem('zt_chatctx',chatCtx);
+
+      var old=document.querySelector('#chatMsgs .supportTopicCard');
+      if(old)old.remove();
+
+      try{if(typeof setBotName==='function')setBotName();}catch(err){}
+
+      // Перезагружаем именно нужный тред: coffee или delivery
+      try{
+        if(typeof reloadChatThread==='function'){
+          Promise.resolve(reloadChatThread()).then(function(){
+            try{if(typeof showHints==='function')showHints();}catch(e2){}
+          });
+          return;
+        }
+      }catch(err){}
+
+      // Фоллбэк, если reloadChatThread недоступен
+      try{
+        var msgs=document.getElementById('chatMsgs');
+        if(msgs)msgs.innerHTML='';
+        if(typeof addMsg==='function'){
+          addMsg('bot',ctx==='delivery'
+            ? 'Привет! Я Ника, поддержка доставки «Пятница» 🍕 Спрашивайте — или позовите диспетчера.'
+            : 'Привет! Я Ника, поддержка кофейни «…и кофе» 🌊 Спрашивайте — или позовите сотрудника.'
+          );
+        }
+        if(typeof showHints==='function')showHints();
+      }catch(err){}
+    },true);
+  })();
+
   sv();
-  console.log('fix-views v41 готов');
+  console.log('fix-views v42 готов');
 
 })();
