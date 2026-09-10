@@ -909,6 +909,48 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   if(typeof renderVerifyNote==='function')renderVerifyNote();
 }).catch(function(){});
 
+/* ── v49: выбор темы поддержки — оверлей, который лента не может стереть ── */
+(function(){
+  var q=new URLSearchParams(location.search);
+  var ENTRY=(q.get('tab')==='chat'||q.get('support')==='choose');
+  function panel(){return document.getElementById('chatPanel');}
+  function ov(){return document.getElementById('supportChooseOverlay');}
+  function show(){
+    var p=panel();if(!p||ov())return;
+    var head=p.querySelector('.chatHead');
+    var d=document.createElement('div');d.id='supportChooseOverlay';
+    d.style.cssText='position:absolute;left:0;right:0;bottom:0;top:'+(head?head.offsetHeight:0)+'px;z-index:6;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center';
+    d.innerHTML='<div style="font:400 22px Prata,serif">У вас вопрос по кофе или доставке?</div>'+
+      '<div style="color:var(--soft);font-size:13px">Выберите тему — откроется нужная Ника,<br>а вызов уйдёт правильной команде</div>'+
+      '<div class="ctxPick" style="width:100%;max-width:340px">'+
+      '<button class="cpD" data-support-topic="delivery">🍕<br>Доставка<br><small>Пятница</small></button>'+
+      '<button class="cpC" data-support-topic="coffee">☕<br>Кофейня<br><small>…и кофе</small></button></div>';
+    p.appendChild(d);
+    var el=p.querySelector('.chatHead .chName');if(el)el.textContent='Ника · поддержка';
+  }
+  function hide(){var o=ov();if(o)o.remove();}
+  window.__supportOverlay={show:show,hide:hide};
+  if(ENTRY&&!sessionStorage.getItem('zt_support_ctx')){
+    var t=0;var iv=setInterval(function(){
+      t++;var p=panel();
+      if(p&&p.classList.contains('open')){show();clearInterval(iv);}
+      if(t>60)clearInterval(iv);
+    },200);
+  }
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-support-topic]');if(!b)return;
+    var ctx=b.getAttribute('data-support-topic')==='delivery'?'delivery':'coffee';
+    sessionStorage.setItem('zt_support_ctx',ctx);
+    sessionStorage.setItem('zt_topic_chosen','1');
+    window.__topicChosen=true;window.__supportPending=false;
+    document.body.classList.remove('support-pending');
+    chatCtx=ctx;try{localStorage.setItem('zt_chatctx',ctx);}catch(err){}
+    hide();
+    try{setBotName();}catch(err){}
+    try{reloadChatThread();}catch(err){}
+  },true);
+})();
+
 sv();
-console.log('fix-views v50 готов');
+console.log('fix-views v49 готов');
 })();
