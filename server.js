@@ -848,8 +848,13 @@ app.post('/api/tg/webhook', (req, res) => {
   fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: `Подтверждаю номер ${fmtPhone(st.phone)} — нажмите кнопку ниже 👇`, reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true } }) }).catch(() => {});
   return;
 }
-  if (text === '/start') {
-    tgSend(chatId, 'Привет! Я бот кофейни «…и кофе» 🌊\n\nПривяжите профиль — и штампы, подарки и акции будут приходить прямо сюда.\n\nНажмите кнопку «Поделиться номером» 👇');
+ if (text === '/start' || (text && text.startsWith('/start') && !text.includes('reg_'))) {
+    const greeting = '☕🍕 Привет! Я бот «…и кофе» + доставка «Пятница»\n\n' +
+      '🫘 Штампы и бесплатный кофе\n' +
+      '🍕 Статусы заказов доставки\n' +
+      '🎁 Акции и подарки\n\n' +
+      'Привяжите профиль — нажмите «Поделиться номером» 👇';
+    tgSend(chatId, greeting);
     fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '📱', reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true } }) }).catch(() => {});
     return;
   }
@@ -872,14 +877,22 @@ if (c) {
   db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);
   if (!c.welcome) {
     grantWelcome(c.id, 'Telegram');
-    tgSend(chatId, `✅ Готово, ${c.name}! Профиль привязан.\n🎁 Приветственный бонус начислен: +1 штамп!`);
+    const linked = `✅ Готово, ${c.name}! Профиль привязан.\n🎁 Приветственный бонус начислен: +1 штамп!\n\nТеперь сюда будут приходить:`;
+    await tgSend(chatId, linked);
+    fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: 'Выберите, что интересно:',
+        reply_markup: { inline_keyboard: [
+          [{ text: '☕ Кофейня — штампы и бонусы', url: APP_URL }],
+          [{ text: '🍕 Доставка — заказать пиццу', url: APP_URL + '?brand=delivery' }]
+        ]} }) }).catch(() => {});
   } else {
-    tgSend(chatId, `✅ Готово, ${c.name}! Профиль привязан.\nТеперь о штампах и бесплатном кофе я напишу сюда ☕`);
+    tgSend(chatId, `✅ Готово, ${c.name}! Профиль привязан.\nТеперь штампы, статусы заказов и акции — сюда ☕🍕`);
   }
 } else if (u.message.contact) {
   tgSend(chatId, 'Профиль с таким номером не найден 😔 Создайте его в приложении и нажмите «Поделиться номером» ещё раз.');
 } else {
-  tgSend(chatId, 'Я бот кофейни «…и кофе» 🌊 Нажмите /start, чтобы привязать профиль и получать бонусы.');
+    tgSend(chatId, '☕🍕 Я бот «…и кофе» + «Пятница». Нажмите /start, чтобы привязать профиль и получать бонусы и статусы заказов.');
 }
 });
 /* ── статика ── */
