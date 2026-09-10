@@ -208,9 +208,9 @@ async function sendTg(cid, title, body, markup) {
   if (c && c.tg) await tgSend(c.tg, `${title}\n${body}`, markup);
 }
 
-async function sendPush(cid, title, body, button) {
+async function sendPush(cid, title, body, markup) {
   sendFcm(cid, title, body).catch(() => {});
-  sendTg(cid, title, body, button, markup).catch(() => {});
+  sendTg(cid, title, body, markup).catch(() => {});
   const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
   for (const r of rows) {
     try { await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body })); }
