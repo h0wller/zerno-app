@@ -1405,7 +1405,59 @@ updateStaffBadge=async function(){
     }
   })();
 
+  /* ── v44: без кофейного приветствия до выбора темы; защита MENU.filter при быстром_switch бренда ── */
+  window.__supportPending=false;
+  (function(){
+    var q=new URLSearchParams(location.search);
+    if(q.get('tab')==='chat'||q.get('support')==='choose'){
+      window.__supportPending=true;
+      document.body.classList.add('support-pending');
+      setTimeout(function(){window.__supportPending=false;document.body.classList.remove('support-pending');},30000);
+    }
+  })();
+  (function(){var css=document.createElement('style');
+    css.textContent='body.support-pending .hintsWrap{display:none!important}';
+    document.head.appendChild(css);})();
+  addMsg=(function(_am){return function(who,text){
+    if(window.__supportPending&&who==='bot'&&/Привет! Я Ника|поддержка «|поддержка доставки/.test(text||''))return;
+    return _am(who,text);};})(addMsg);
+  (function(){
+    if(!window.__supportPending)return;
+    var t=0;var iv=setInterval(function(){
+      t++;
+      if(!window.__supportPending||t>60){clearInterval(iv);return;}
+      var el=document.querySelector('#chatPanel .chatHead .chName');
+      if(el)el.textContent='Ника · поддержка';
+    },200);
+  })();
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('[data-support-topic]'))return;
+    window.__supportPending=false;
+    document.body.classList.remove('support-pending');
+  },true);
+  /* защита от гонки: не рисуем кофейное меню, пока MENU не загружен */
+  if(typeof renderMenu==='function'){
+    renderMenu=(function(_rm){return function(){
+      if(typeof MENU==='undefined'||!Array.isArray(MENU))return;
+      return _rm.apply(this,arguments);
+    };})(renderMenu);
+  }
+  if(typeof renderRail==='function'){
+    renderRail=(function(_rr){return function(){
+      if(typeof MENU==='undefined'||!Array.isArray(MENU))return;
+      return _rr.apply(this,arguments);
+    };})(renderRail);
+  }
+  if(typeof loadMenu==='function'){
+    loadMenu=(function(_lm){return async function(){
+      var r=await _lm.apply(this,arguments);
+      try{if(brand==='coffee'){renderRail();renderMenu();}}catch(e){}
+      return r;
+    };})(loadMenu);
+  }
+
   sv();
-  console.log('fix-views v43 готов');
+  console.log('fix-views v44 готов');
+
 
 })();
