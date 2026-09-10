@@ -24,6 +24,8 @@ self.addEventListener('fetch', e => {
 self.addEventListener('push', e => {
   let data = {};
   try { data = e.data.json(); } catch (_) {}
+    self.clients.matchAll({ type: 'windows', includeUncontrolled: true })
+    .then(cs => cs.forEach(c => c.postMessage({ type: 'zpush', title: (data && data.title) || '' })));
   e.waitUntil(self.registration.showNotification(data.title || '…и кофе', {
     body: data.body || '☕',
     icon: './icon.svg',
