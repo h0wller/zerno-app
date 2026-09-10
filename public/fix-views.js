@@ -1148,7 +1148,24 @@ updateStaffBadge=async function(){
     document.head.appendChild(s);
   })();
 
+  /* ── v39: в Telegram Mini App и по диплинкам сплэш не показываем, бренд применяем сразу ── */
+  (function(){
+    var q=new URLSearchParams(location.search);
+    var deep=!!(q.get('brand')||q.get('tab')||q.get('src'));
+    var inTg=/Telegram/i.test(navigator.userAgent);
+    if(!deep&&!inTg)return;
+    sessionStorage.setItem('splashDone','1');
+    var sp=document.getElementById('brandSplash');if(sp)sp.remove();
+    var b=q.get('brand');
+    if(b&&b!==brand){
+      brand=b;
+      document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
+      sv();
+      if(brand==='delivery'&&!DMENU.length)loadDelivery();
+    }
+  })();
+
   sv();
-  console.log('fix-views v38 готов');
+  console.log('fix-views v39 готов');
 
 })();
