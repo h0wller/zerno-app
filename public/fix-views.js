@@ -1076,7 +1076,19 @@ updateStaffBadge=async function(){
     document.addEventListener('click',function(){setTimeout(kill,50);},true);
   })();
 
+  /* ── v36: панель (профиль/бонусы) на мобильных — во весь экран, без заблюренной дырки ── */
+  (function(){var css=document.createElement('style');
+    css.textContent=
+      '@media(max-width:1180px){'+
+      '#panel.open{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;'+
+      'width:100%!important;height:100%!important;max-height:100%!important;border-radius:0!important;margin:0!important;'+
+      'transform:none!important;z-index:320!important}'+
+      '#panel .tabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}'+
+      '}';
+    document.head.appendChild(css);})();
+
   sv();
-  console.log('fix-views v34 готов');
+  console.log('fix-views v36 готов');
+
 
 })();
