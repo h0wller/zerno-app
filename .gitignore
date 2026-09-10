@@ -30,7 +30,8 @@ serviceAccount*.json
 # ═══ Логи ═══
 logs/
 *.log
-
+error-context.md
+.last-run.json
 # ═══ Мусор ОС и редакторов ═══
 .DS_Store
 Thumbs.db
@@ -67,3 +68,8 @@ ios/**/*.xcuserdata/
 # ═══ Прочие артефакты ═══
 .cache/
 .tmp/
+test-results/chat-support-выбор-доставки-открывает-доставочную-Нику/error-context.md
+test-results/chat-support-поддержка-из--f0796-ей-появляется-и-НЕ-исчезает/error-context.md
+test-results
+test-results/chat-support-выбор-доставки-открывает-доставочную-Нику/error-context.md
+test-results/chat-support-поддержка-из--f0796-ей-появляется-и-НЕ-исчезает/error-context.md

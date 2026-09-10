@@ -950,6 +950,70 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
     try{reloadChatThread();}catch(err){}
   },true);
 })();
+/* ── Чистый фикс выбора темы поддержки (Support Overlay) ── */
+(function(){
+  var q = new URLSearchParams(location.search);
+  var SUPPORT_ENTRY = (q.get('tab') === 'chat' || q.get('support') === 'choose');
+  
+  function showOverlay() {
+    if (document.getElementById('supportChooseOverlay')) return;
+    var d = document.createElement('div');
+    d.id = 'supportChooseOverlay';
+    // position: fixed и z-index: 9999 гарантируют, что глобальный #overlay не перехватит клик
+    d.style.cssText = 'position:fixed; inset:0; z-index:9999; background:var(--paper, #fff); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center;';
+    d.innerHTML = `
+      <div style="font:400 22px Prata,serif">У вас вопрос по кофе или доставке?</div>
+      <div style="color:var(--soft, #666); font-size:13px">Выберите тему — откроется нужная Ника,<br>а вызов уйдёт правильной команде</div>
+      <div class="ctxPick" style="width:100%; max-width:340px; display:flex; gap:8px;">
+        <button class="cpD" data-support-topic="delivery" style="flex:1; padding:10px; border-radius:14px; font-size:13px; font-weight:700; border:1.5px solid #F2D9A5; background:#FFF6E5; color:#6B4E0E; cursor:pointer;">🍕<br>Доставка<br><small>Пятница</small></button>
+        <button class="cpC" data-support-topic="coffee" style="flex:1; padding:10px; border-radius:14px; font-size:13px; font-weight:700; border:1.5px solid var(--line, #ccc); background:#fff; color:var(--ink, #000); cursor:pointer;">☕<br>Кофейня<br><small>…и кофе</small></button>
+      </div>
+    `;
+    document.body.appendChild(d);
+    
+    var el = document.querySelector('#chatPanel .chatHead .chName');
+    if (el) el.textContent = 'Ника · поддержка';
+  }
+
+  function hideOverlay() {
+    var o = document.getElementById('supportChooseOverlay');
+    if (o) o.remove();
+  }
+
+  // Показываем только при входе из бота/диплинка, если тема еще не выбрана
+  if (SUPPORT_ENTRY && !sessionStorage.getItem('zt_support_ctx')) {
+    var tries = 0;
+    var iv = setInterval(function() {
+      tries++;
+      var p = document.getElementById('chatPanel');
+      if (p && p.classList.contains('open')) {
+        showOverlay();
+        clearInterval(iv);
+      }
+      if (tries > 50) clearInterval(iv);
+    }, 200);
+  }
+
+  // Обработка клика по выбору темы
+  document.addEventListener('click', function(e) {
+    var b = e.target.closest('[data-support-topic]');
+    if (!b) return;
+    
+    var ctx = b.getAttribute('data-support-topic') === 'delivery' ? 'delivery' : 'coffee';
+    sessionStorage.setItem('zt_support_ctx', ctx);
+    
+    if (typeof chatCtx !== 'undefined') {
+      chatCtx = ctx;
+      try { localStorage.setItem('zt_chatctx', ctx); } catch(err){}
+    }
+    
+    hideOverlay();
+    
+    if (typeof setBotName === 'function') setBotName();
+    if (typeof reloadChatThread === 'function') reloadChatThread();
+    setTimeout(function(){ if (typeof showHints === 'function') showHints(); }, 300);
+  }, true);
+})();
 
 sv();
 console.log('fix-views v49 готов');
