@@ -1332,6 +1332,80 @@ setInterval(function(){
   })();
 })();
 
+/* ── v52: отмена задержки, дубли каналов, бренды в профиле, тикер, карандаши ── */
+/* 1) Задержка: своя реализация в capture — «Отмена» в диалоге реально отменяет */
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-dly],[data-dlyall]');if(!b)return;
+  e.stopPropagation();e.preventDefault();
+  var comment=prompt('Причина задержки (необязательно):','');
+  if(comment===null)return;               // ← отмена = выход
+  var min=+(b.dataset.dly||b.dataset.dlyall);
+  (async function(){
+    try{
+      if(b.dataset.dly){await api('/orders/'+b.dataset.oid+'/delay',{method:'POST',body:{min:min,comment:comment}});}
+      else{var r=await api('/orders/delay-all',{method:'POST',body:{min:min,comment:comment}});toast('Уведомлено заказов: '+r.count,'⏰');}
+      renderOrders(true);
+    }catch(err){toast(err.message,'⚠️');}
+  })();
+},true);
+/* 2) Каналы уведомлений: не копим дубли */
+renderProfile=(function(_rp){return function(){var r=_rp();
+  var slots=document.getElementById('notifySlots');
+  if(slots&&slots.children.length>2){while(slots.children.length>2)slots.removeChild(slots.lastChild);}
+  return r;};})(renderProfile);
+/* 3) Профиль: жёсткое разделение брендов по прямым детям profileBox */
+window.__brandInfoSync2=function(){
+  var deliv=(brand==='delivery');
+  var pb=document.getElementById('profileBox');if(!pb)return;
+  var f=document.getElementById('fridayInfo');if(f)f.style.display=deliv?'':'none';
+  pb.querySelectorAll(':scope > *').forEach(function(ch){
+    var t=ch.textContent||'';
+    if(/МЫ У МОРЯ|ПОНРАВИЛОСЬ У НАС|instagram\.com|and_coffee39|Telegram-бот с бонусами/i.test(t))ch.style.display=deliv?'none':'';
+    if(/ПЯТНИЦА — ДОСТАВКА/i.test(t)&&ch.id!=='fridayInfo')ch.style.display=deliv?'':'none';
+  });
+  pb.querySelectorAll('a').forEach(function(a){
+    var row=a.closest('div');
+    if(/instagram\.com|t\.me\/and_coffee_bot/i.test(a.href||'')&&row)row.style.display=deliv?'none':'';
+  });
+};
+sv=(function(_sv){return function(){var r=_sv();
+  try{window.__brandInfoSync2&&window.__brandInfoSync2();}catch(e){}
+  return r;};})(sv);
+/* 4) Тикер: восстанавливаем структуру детей и меняем только текст */
+(function(){
+  var tick=document.querySelector('.ticker');if(!tick)return;
+  var COF=['Кофейня на берегу моря …и кофе','Каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','Ежедневно с 8:00–21:00'];
+  var DEL=['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок'];
+  if(!tick.children.length||tick.querySelector('span')){
+    tick.innerHTML='';
+    for(var i=0;i<10;i++){var d=document.createElement('div');d.textContent=COF[i%5]+' 〜';tick.appendChild(d);}
+  }
+  window.__tickerSync=function(){
+    var lines=(brand==='delivery')?DEL:COF;
+    Array.from(tick.children).forEach(function(ch,i){ch.textContent=lines[i%lines.length]+' 〜';});
+  };
+  window.__tickerSync();
+})();
+/* 5) Редактирование: карандаши на карточках в режиме правки */
+function injectEdits(){
+  if(!window.editMode)return;
+  document.querySelectorAll('[data-add]').forEach(function(add){
+    var card=add.closest('article')||add.closest('.card')||add.closest('.cbody')||add.parentElement;
+    if(!card||card.querySelector('[data-ed]'))return;
+    card.style.position='relative';
+    var b=document.createElement('button');b.className='edBtn';b.dataset.ed=add.dataset.add;b.textContent='✏️';
+    b.style.cssText='position:absolute;top:8px;right:8px;z-index:3;border:0;background:rgba(255,255,255,.92);border-radius:10px;padding:6px 9px;cursor:pointer;box-shadow:var(--sh)';
+    card.appendChild(b);
+  });
+}
+renderDeliveryMenu=(function(_rm){return function(){var r=_rm();setTimeout(injectEdits,0);return r;};})(renderDeliveryMenu);
+if(typeof renderMenu==='function'){renderMenu=(function(_rm){return function(){var r=_rm();setTimeout(injectEdits,0);return r;};})(renderMenu);}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-ed]');if(!b)return;
+  e.stopPropagation();
+  openEditor(b.dataset.ed);
+},true);
+
 sv();
-console.log('fix-views v53 готов');
+console.log('fix-views v52 готов');
 })();
