@@ -807,7 +807,48 @@ updateStaffBadge=async function(){
   };
   renderProfile=(function(_rp){return function(){var r=_rp();if(me)loadMyOrders();return r;};})(renderProfile);
 
+  /* ── v29: бейджи заказов обновляются на лету (пуш мгновенно + опрос 6 сек с диффом) ── */
+  loadMyOrders=async function(){
+    var host=document.getElementById('myOrders');if(!host||!me)return;
+    try{
+      var r=await api('/orders/mine');
+      var ST={new:['🆕','mo-new','Новый'],accept:['✅','mo-accept','Подтверждён'],cook:['👨🍳','mo-cook','Готовится'],way:['🛵','mo-way','Курьер в пути'],done:['🏁','mo-done','Выполнен'],cancel:['❌','mo-cancel','Отменён']};
+      host.innerHTML=r.orders.length?r.orders.slice(0,8).map(function(o){
+        var s=ST[o.status]||['•','mo-new',o.status];
+        var items=o.items.slice(0,3).map(function(i){return i.qty+'× '+i.name;}).join(', ')+(o.items.length>3?'…':'');
+        return '<div class="myOrderCard"><div class="moTop"><span>Заказ #'+o.no+'</span><span class="moSt '+s[1]+'">'+s[0]+' '+s[2]+'</span></div>'+
+          '<div class="moSum">'+fmt(o.total)+' · '+new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</div>'+
+          (items?'<div class="moItems">'+esc(items)+'</div>':'')+
+          ((o.gifts&&o.gifts.length)?'<div class="moGifts">🎁 '+o.gifts.map(function(g){return esc(g.name)+' ×'+g.qty;}).join(', ')+'</div>':'')+
+          '</div>';
+      }).join(''):'<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';
+    }catch(e){}
+  };
+  var lastStaffSig='',lastMineSig='';
+  async function refreshOrdersLive(){
+    if(document.visibilityState!=='visible')return;
+    try{
+      if(mode==='orders'&&me&&['cashier','admin','dispatch'].includes(me.role)){
+        var r=await api('/orders');
+        var sig=r.orders.map(function(o){return o.no+':'+o.status;}).join(',');
+        if(sig!==lastStaffSig){lastStaffSig=sig;renderOrders(true);}
+      }
+      if(me&&mode!=='cashier'&&mode!=='orders'){
+        var m=await api('/orders/mine');
+        var msig=m.orders.map(function(o){return o.no+':'+o.status;}).join(',');
+        if(msig!==lastMineSig){lastMineSig=msig;loadMyOrders();}
+      }
+    }catch(e){}
+  }
+  if(window.ordersPoll){clearInterval(ordersPoll);ordersPoll=null;}
+  ordersPoll=setInterval(refreshOrdersLive,6000);
+  document.addEventListener('visibilitychange',refreshOrdersLive);
+  addEventListener('focus',refreshOrdersLive);
+  if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('message',function(e){
+    if(e.data&&e.data.type==='zpush')refreshOrdersLive();
+  });
+
   sv();
-  console.log('fix-views v28 готов');
+  console.log('fix-views v29 готов');
 
 })();
