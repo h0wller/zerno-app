@@ -1165,7 +1165,31 @@ updateStaffBadge=async function(){
     }
   })();
 
+  /* ── v40: из бота «Поддержка» — сначала выбор заведения, потом нужная Ника ── */
+  (function(){
+    var q=new URLSearchParams(location.search);
+    if(q.get('tab')==='chat')sessionStorage.setItem('chatForceGate','1');
+  })();
+  ensureGate=(function(_eg){return function(){
+    _eg();
+    var g=document.getElementById('ctxGate');
+    if(g){
+      var d=g.querySelectorAll('div');
+      if(d[0])d[0].textContent='Вопрос по кофе или по доставке?';
+      if(d[1])d[1].textContent='Подключу нужную поддержку и покажу свои подсказки';
+    }
+  };})(ensureGate);
+  (function(){var f=document.getElementById('chatFab');if(!f||f.__wrapped40)return;
+    var old=f.onclick;f.__wrapped40=1;
+    f.onclick=async function(e){
+      if(typeof old==='function'){try{await old.call(this,e);}catch(err){}}
+      if(sessionStorage.getItem('chatForceGate')&&document.getElementById('chatPanel').classList.contains('open')){
+        sessionStorage.removeItem('chatForceGate');
+        ensureGate();
+      }
+    };})();
+
   sv();
-  console.log('fix-views v39 готов');
+  console.log('fix-views v40 готов');
 
 })();
