@@ -1570,8 +1570,32 @@ updateStaffBadge=async function(){
     }
   })();
 
-  sv();
-  console.log('fix-views v46 готов');
+  /* ── v47: мини-апп спасение — надёжные кнопки темы, SDK Telegram, безопасные storage ── */
+  (function(){
+    var lastSwitch=0;
+    document.addEventListener('click',function(e){
+      var b=e.target.closest('[data-support-topic]');if(!b)return;
+      var now=Date.now();if(now-lastSwitch<600)return;lastSwitch=now;
+      var ctx=b.getAttribute('data-support-topic')==='delivery'?'delivery':'coffee';
+      try{
+        window.__topicChosen=true;
+        try{sessionStorage.setItem('zt_topic_chosen','1');}catch(err){}
+        chatCtx=ctx;try{localStorage.setItem('zt_chatctx',ctx);}catch(err){}
+        var card=document.querySelector('#chatMsgs .supportTopicCard');if(card)card.remove();
+        document.body.classList.remove('support-pending');
+        if(typeof setBotName==='function')setBotName();
+        if(typeof reloadChatThread==='function')reloadChatThread();
+        setTimeout(function(){try{showHints();}catch(err){}},400);
+      }catch(err){console.log('topic switch err',err);}
+    });
+    if(/Telegram/i.test(navigator.userAgent)&&!window.Telegram){
+      var s=document.createElement('script');s.src='https://telegram.org/js/telegram-web-app.js';
+      s.onload=function(){try{if(window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.ready)window.Telegram.WebApp.ready();}catch(e){}};
+      s.onerror=function(){};document.head.appendChild(s);
+    }
+  })();
 
+  sv();
+  console.log('fix-views v47 готов');
 
 })();
