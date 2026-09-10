@@ -184,7 +184,6 @@ if (!vapidRow) {
 const VAPID = JSON.parse(vapidRow.value);
 webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const WEBAPP_URL = (process.env.WEBAPP_URL || process.env.PUBLIC_URL || 'https://app.andcoffee.online').replace(/\/+$/, '');
 const TG_CHANNEL = process.env.TG_CHANNEL_ID || '';
 const appKb = () => ({ inline_keyboard: [
   [{ text: '🍕 Меню и заказ', web_app: { url: WEBAPP_URL + '/?src=tg&brand=delivery' } }],
