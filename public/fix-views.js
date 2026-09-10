@@ -1238,7 +1238,22 @@ document.addEventListener('click',async function(e){
     if(cb&&!cb.checked){e.stopImmediatePropagation();e.preventDefault();toast('Отметь согласие с политикой конфиденциальности','⚠️');}
   },true);
 })();
-
+(function(){
+  var css=document.createElement('style');
+  css.textContent=
+  '#ordersModal{position:fixed;inset:0;z-index:340;background:rgba(15,23,32,.45);display:none;align-items:center;justify-content:center;padding:16px}'+
+  '#ordersModal.show{display:flex}'+
+  '#ordersModal .modalCard{background:var(--paper);border-radius:20px;max-width:600px;width:100%;max-height:85vh;overflow:auto;padding:18px;position:relative;box-shadow:var(--sh)}'+
+  '#ordersModal .modalClose{position:absolute;top:10px;right:10px;border:0;background:transparent;font-size:18px;cursor:pointer}';
+  document.head.appendChild(css);
+  var m=document.getElementById('ordersModal');
+  if(m)m.classList.remove('show');
+})();
+/* ── v52: фолбэк логотипа + модалка заказов скрыта по умолчанию ── */
+setInterval(function(){
+  var img=document.querySelector('.topbar .brand img');
+  if(img&&!img.__bound){img.__bound=1;img.onerror=function(){img.remove();};}
+},1000);
 sv();
 console.log('fix-views v51 готов');
 })();
