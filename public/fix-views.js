@@ -1254,6 +1254,84 @@ setInterval(function(){
   var img=document.querySelector('.topbar .brand img');
   if(img&&!img.__bound){img.__bound=1;img.onerror=function(){img.remove();};}
 },1000);
+/* ── v53: модалка заказов закрывается надёжно; в профиле последний заказ; уведомления — внизу свёрнуто; иконка бренда на месте ── */
+(function(){
+  /* 1) Надёжное закрытие «Мои заказы»: ✕, клик по фону, Esc */
+  document.addEventListener('click',function(e){
+    var m=document.getElementById('ordersModal');if(!m)return;
+    if(e.target===m||e.target.closest('#ordersModal [data-omclose],#ordersModal .modalClose')){
+      m.classList.remove('show');
+      if(window.syncOverlay)syncOverlay();
+    }
+  },true);
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){var m=document.getElementById('ordersModal');
+      if(m&&m.classList.contains('show')){m.classList.remove('show');if(window.syncOverlay)syncOverlay();}}
+  });
+  /* 2) В профиле — только последний заказ; полная история — в кнопке «Мои заказы» */
+  loadMyOrders=async function(){
+    var host=document.getElementById('myOrders');if(!host||!me)return;
+    try{
+      var r=await api('/orders/mine');
+      var ST={new:['🆕','mo-new','Новый'],accept:['✅','mo-accept','Подтверждён'],cook:['👨‍🍳','mo-cook','Готовится'],way:['🛵','mo-way','Курьер в пути'],done:['🏁','mo-done','Выполнен'],cancel:['❌','mo-cancel','Отменён']};
+      var o=r.orders[0];
+      if(!o){host.innerHTML='<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';return;}
+      var s=ST[o.status]||['•','mo-new',o.status];
+      var d=new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'});
+      var items=o.items.slice(0,3).map(function(i){return i.qty+'× '+i.name;}).join(', ')+(o.items.length>3?'…':'');
+      host.innerHTML='<div class="myOrderCard"><div class="moTop"><span>Заказ #'+o.no+'<span class="moDate">· '+d+'</span></span><span class="moSt '+s[1]+'">'+s[0]+' '+s[2]+'</span></div>'+
+        '<div class="moSum">'+fmt(o.total)+(o.eta?' · ⏰ '+esc(o.eta):'')+'</div>'+
+        (items?'<div class="moItems">'+esc(items)+'</div>':'')+
+        ((o.gifts&&o.gifts.length)?'<div class="moGifts">🎁 '+o.gifts.map(function(g){return esc(g.name)+' ×'+g.qty;}).join(', ')+'</div>':'')+'</div>';
+    }catch(e){}
+  };
+  /* 3) Уведомления — свёрнутый блок «Каналы уведомлений» в самом низу профиля */
+  document.addEventListener('change',async function(e){
+    if(e.target.id==='ntTg'||e.target.id==='ntWeb'){
+      try{await api('/me/notify',{method:'PUT',body:{tg:document.getElementById('ntTg').checked?1:0,web:document.getElementById('ntWeb').checked?1:0}});toast('Каналы уведомлений сохранены','✅');}
+      catch(err){toast(err.message,'⚠️');}
+    }
+  });
+  renderProfile=(function(_rp){return function(){var r=_rp();
+    var box=document.getElementById('profileBox');
+    var nb=document.getElementById('notifyBox');
+    if(box&&nb){
+      var det=document.getElementById('notifySettings');
+      if(!det){
+        det=document.createElement('details');det.id='notifySettings';det.className='cash-card';det.style.margin='10px 0';
+        det.innerHTML='<summary style="cursor:pointer;font-weight:700">🔔 Каналы уведомлений</summary>'+
+          '<div id="notifySlots" style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap"></div>';
+        box.appendChild(det);
+      }
+      var slots=document.getElementById('notifySlots');
+      var row=nb.querySelector('div');
+      if(row)slots.appendChild(row);
+      nb.remove();
+    }
+    if(me){
+      var t=document.getElementById('ntTg'),w=document.getElementById('ntWeb');
+      if(t)t.checked=me.notify_tg!==0;
+      if(w)w.checked=me.notify_web!==0;
+    }
+    return r;};})(renderProfile);
+  /* 4) Иконка бренда: кофейне — родная, пятнице — логотип с фолбэком 🍕 */
+  (function(){
+    var b=document.querySelector('.topbar .brand');if(!b)return;
+    var orig=b.innerHTML;
+    window.__brandHeadSync=function(){
+      var el=document.querySelector('.topbar .brand');if(!el)return;
+      if(brand==='delivery'){
+        el.innerHTML='<img id="friLogo" src="friday-logo.png" alt="" style="height:30px;width:auto;border-radius:8px;vertical-align:middle;margin-right:8px">'+
+          '<span>Пятница</span><small style="display:block;font-size:11px;color:var(--soft)">доставка пиццы и роллов</small>';
+        var im=document.getElementById('friLogo');
+        if(im)im.onerror=function(){var s=document.createElement('span');s.textContent='🍕';s.style.cssText='font-size:22px;vertical-align:middle;margin-right:8px';im.replaceWith(s);};
+      }else{
+        el.innerHTML=orig;
+      }
+    };
+  })();
+})();
+
 sv();
-console.log('fix-views v51 готов');
+console.log('fix-views v53 готов');
 })();
