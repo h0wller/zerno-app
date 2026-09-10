@@ -1015,7 +1015,54 @@ updateStaffBadge=async function(){
     '}';
     document.head.appendChild(css);})();
 
+  /* ── v33: одна кнопка тест-пуша (внутри дашборда), без дублей-тостов, шапка вне статус-бара iOS ── */
+  (function(){var css=document.createElement('style');
+    css.textContent=
+      '.topbar{padding-top:calc(env(safe-area-inset-top,0px) + 10px)!important}'+
+      '#pushTestBtn{position:static!important;display:inline-block;margin:8px 0 0!important;float:none!important}';
+    document.head.appendChild(css);})();
+  /* снос всех блуждающих кнопок тест-пуша (в т.ч. вне дашборда) */
+  document.querySelectorAll('button').forEach(function(b){
+    if((b.textContent||'').trim()==='🔔 Тест-пуш на это устройство')b.remove();
+  });
+  /* тост-отчёт о доставке пушей — не чаще раза в 1.5 сек (лечит дубли) */
+  (function(){var _t=window.toast;var last=0;
+    window.toast=function(msg,icon){
+      if(typeof msg==='string'&&/Доставлено:/.test(msg)){var n=Date.now();if(n-last<1500)return;last=n;}
+      return _t(msg,icon);};})();
+  /* единственная кнопка тест-пуша, монтируется при открытии дашборда */
+  function mountPushTest(){
+    var host=document.getElementById('dashModal');if(!host)return;
+    if(document.getElementById('pushTestBtn'))return;
+    var anchor=null;
+    host.querySelectorAll('h3,h4,div,b').forEach(function(el){
+      if(!anchor&&/Кто подписан на пуши/.test(el.textContent||''))anchor=el;});
+    if(!anchor)return;
+    var b=document.createElement('button');b.id='pushTestBtn';b.className='btn ghost';
+    b.textContent='🔔 Тест-пуш на это устройство';
+    b.style.cssText='position:static;display:inline-block;margin:8px 0 0';
+    anchor.parentNode.insertBefore(b,anchor.nextSibling);
+    b.onclick=async function(){
+      try{
+        var r=await api('/push/test',{method:'POST'});
+        if(r.ok>0){toast('Пуш ушёл на это устройство ('+r.ok+')','✅');}
+        else{
+          toast('Не дошло: '+((r.errors&&r.errors.join(', '))||'нет подписки')+' — переподписываю…','⚠️');
+          if(window.ensurePush){await ensurePush(true);
+            var r2=await api('/push/test',{method:'POST'});
+            toast(r2.ok>0?'После переподписки пуш работает ✅':'Всё ещё не работает: '+((r2.errors||[]).join(', ')||'нет подписки'),'🔔');}
+        }
+      }catch(e){toast(e.message,'⚠️');}
+    };
+  }
+  (function(){
+    var d=document.getElementById('dashToggle');
+    if(d)d.addEventListener('click',function(){setTimeout(mountPushTest,120);setTimeout(mountPushTest,450);});
+    setTimeout(mountPushTest,300);
+  })();
+
   sv();
-  console.log('fix-views v32 готов');
+  console.log('fix-views v33 готов');
+
 
 })();
