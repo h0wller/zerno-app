@@ -775,6 +775,39 @@ updateStaffBadge=async function(){
     });
   };})(sv);
 
+    /* ── v28: «Мои заказы» в профиле — заметные карточки вместо тонких строк ── */
+  (function(){var css=document.createElement('style');
+    css.textContent=
+      '#myOrders{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}'+
+      '#myOrders .hmini{margin:0;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;font-weight:600}'+
+      '.myOrderCard{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--sh)}'+
+      '.myOrderCard .moTop{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;font-weight:800}'+
+      '.moSt{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;background:#EDF2F6;color:#33507A;white-space:nowrap}'+
+      '.mo-new,.mo-accept{background:#E8F1FF;color:#1F4E8C}.mo-cook{background:#FFF3D6;color:#8A6D3B}'+
+      '.mo-way{background:#E8F1FF;color:#1F4E8C}.mo-done{background:#E5F5E9;color:#2F7D4F}.mo-cancel{background:#FDE8E8;color:#B3372B}'+
+      '.myOrderCard .moSum{margin-top:6px;font-size:15px;font-weight:800}'+
+      '.myOrderCard .moItems{margin-top:2px;font-size:12px;color:var(--soft)}'+
+      '.myOrderCard .moGifts{margin-top:4px;font-size:12px;color:#2F7D4F;font-weight:700}';
+    document.head.appendChild(css);})();
+  loadMyOrders=async function(){
+    var host=document.getElementById('myOrders');if(!host||!me)return;
+    try{
+      var r=await api('/orders/mine');
+      var ST={new:['🆕','mo-new','Новый'],accept:['✅','mo-accept','Подтверждён'],cook:['👨🍳','mo-cook','Готовится'],way:['🛵','mo-way','Курьер в пути'],done:['🏁','mo-done','Выполнен'],cancel:['❌','mo-cancel','Отменён']};
+      host.innerHTML=r.orders.length?r.orders.slice(0,8).map(function(o){
+        var s=ST[o.status]||['•','mo-new',o.status];
+        var items=o.items.slice(0,3).map(function(i){return i.qty+'× '+i.name;}).join(', ')+(o.items.length>3?'…':'');
+        return '<div class="myOrderCard"><div class="moTop"><span>Заказ #'+o.no+'</span><span class="moSt '+s[1]+'">'+s[0]+' '+s[2]+'</span></div>'+
+          '<div class="moSum">'+fmt(o.total)+' ₽ · '+new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</div>'+
+          (items?'<div class="moItems">'+esc(items)+'</div>':'')+
+          ((o.gifts&&o.gifts.length)?'<div class="moGifts">🎁 '+o.gifts.map(function(g){return esc(g.name)+' ×'+g.qty;}).join(', ')+'</div>':'')+
+          '</div>';
+      }).join(''):'<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';
+    }catch(e){}
+  };
+  renderProfile=(function(_rp){return function(){var r=_rp();if(me)loadMyOrders();return r;};})(renderProfile);
+
   sv();
-  console.log('fix-views v27 готов');
+  console.log('fix-views v28 готов');
+
 })();
