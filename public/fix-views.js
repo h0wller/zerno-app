@@ -1456,8 +1456,58 @@ updateStaffBadge=async function(){
     };})(loadMenu);
   }
 
+  /* ── v45: детерминированный вход в поддержку: нейтральная шапка и приветствие только после выбора темы ── */
+  window.__topicChosen = sessionStorage.getItem('zt_topic_chosen')==='1';
+  if(window.__topicChosen){window.__supportPending=false;}
+  (function(){
+    function cardThere(){return !!document.querySelector('#chatMsgs .supportTopicCard');}
+    function panelOpen(){var p=document.getElementById('chatPanel');return p&&p.classList.contains('open');}
+    function neutral(){var el=document.querySelector('#chatPanel .chatHead .chName');if(el)el.textContent='Ника · поддержка';}
+    /* шапка нейтральная, пока тема не выбрана (независимо от URL и сохранённого ctx) */
+    setBotName=(function(_sb){return function(){var r=_sb();if(!window.__topicChosen&&panelOpen())neutral();return r;};})(setBotName);
+    var iv=setInterval(function(){
+      if(window.__topicChosen){clearInterval(iv);return;}
+      if(panelOpen())neutral();
+    },400);
+    setTimeout(function(){clearInterval(iv);},120000);
+    /* карточка выбора: показываем при каждом открытии, пока тема не выбрана */
+    var iv2=setInterval(function(){
+      if(window.__topicChosen){clearInterval(iv2);return;}
+      if(panelOpen()&&!cardThere()){
+        if(typeof showSupportTopicCard==='function'){try{showSupportTopicCard(true);}catch(e){}}
+        else{
+          var msgs=document.getElementById('chatMsgs');
+          if(msgs){
+            var d=document.createElement('div');d.className='msg bot supportTopicCard';d.style.cssText='max-width:94%;padding:12px';
+            d.innerHTML='<div style="font-weight:800;margin-bottom:4px">У вас вопрос по кофе или доставке?</div>'+
+              '<div style="font-size:12px;color:var(--soft);margin-bottom:10px">Выберите тему обращения — откроется нужная Ника, а вызов уйдёт правильной команде.</div>'+
+              '<div class="ctxPick"><button class="cpD" data-support-topic="delivery">🍕 Доставка Пятница</button><button class="cpC" data-support-topic="coffee">☕ Кофейня …и кофе</button></div>';
+            msgs.appendChild(d);msgs.scrollTop=1e6;
+          }
+        }
+      }
+    },500);
+    setTimeout(function(){clearInterval(iv2);},120000);
+    /* выбор темы: флаг, имя, приветствие ровно один раз, подсказки */
+    document.addEventListener('click',function(e){
+      var b=e.target.closest('[data-support-topic]');if(!b)return;
+      window.__topicChosen=true;sessionStorage.setItem('zt_topic_chosen','1');
+      window.__supportPending=false;
+      var ctx=b.getAttribute('data-support-topic')==='delivery'?'delivery':'coffee';
+      chatCtx=ctx;localStorage.setItem('zt_chatctx',ctx);
+      setTimeout(function(){
+        try{setBotName();}catch(e){}
+        var msgs=document.getElementById('chatMsgs');
+        if(msgs&&!msgs.querySelector('.msg.bot:not(.supportTopicCard):not(.ctxSwitchWrap)')){
+          try{addMsg('bot',ctx==='delivery'?'Привет! Я Ника, поддержка доставки «Пятница» 🍕 Спрашивайте — или позовите диспетчера.':'Привет! Я Ника, поддержка кофейни «…и кофе» 🌊 Спрашивайте — или позовите сотрудника.');}catch(e){}
+        }
+        try{showHints();}catch(e){}
+      },250);
+    },true);
+  })();
+
   sv();
-  console.log('fix-views v44 готов');
+  console.log('fix-views v45 готов');
 
 
 })();
