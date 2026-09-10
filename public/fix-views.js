@@ -921,9 +921,101 @@ updateStaffBadge=async function(){
     };
   })();
 
+   /* ── v32: самовосстановление пушей, честная отчётность, адаптив PWA, скрытие бонусов в пятнице ── */
+  
+  /* 1) «Как устроены бонусы» только в кофейне */
+  renderVerifyNote=(function(_rvn){return function(){
+    _rvn();
+    var n=document.getElementById('verifyNote');
+    if(n&&(brand==='delivery'))n.hidden=true;
+  };})(renderVerifyNote);
+  
+  /* 2) Самовосстановление подписки под текущий VAPID сервера */
+  function b64urlToU8(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var b=atob(s);var u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+  function u8ToB64url(u){var s='';for(var i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+  async function ensurePush(verbose){
+    try{
+      if(!('serviceWorker' in navigator)||!('PushManager' in window)){if(verbose)toast('Пуши не поддерживаются устройством','⚠️');return false;}
+      if(!me){if(verbose)toast('Сначала войдите по номеру','👤');return false;}
+      var perm=Notification.permission;
+      if(perm==='default')perm=await Notification.requestPermission();
+      if(perm!=='granted'){if(verbose)toast('Уведомления запрещены в настройках браузера','⚠️');return false;}
+      var reg=await navigator.serviceWorker.ready;
+      var vap=await fetch(API_BASE+'/api/vapid').then(function(r){return r.json();});
+      var sub=await reg.pushManager.getSubscription();
+      if(sub){
+        var cur=u8ToB64url(new Uint8Array(sub.options.applicationServerKey));
+        if(cur!==vap.publicKey){try{await sub.unsubscribe();}catch(e){}sub=null;}
+      }
+      if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64urlToU8(vap.publicKey)});
+      await api('/push/subscribe',{method:'POST',body:{sub:sub.toJSON()}});
+      if(verbose)toast('Уведомления подключены 🔔','✅');
+      return true;
+    }catch(e){if(verbose)toast('Не вышло подключить: '+e.message,'⚠️');return false;}
+  }
+  window.ensurePush=ensurePush;
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('button');
+    if(b&&/уведомлени/i.test(b.textContent||''))setTimeout(function(){ensurePush(true);},50);
+  });
+  (function(){
+    if(sessionStorage.getItem('pushHealed'))return;
+    setTimeout(async function(){
+      if(me&&('Notification' in window)&&Notification.permission==='granted'){
+        sessionStorage.setItem('pushHealed','1');
+        await ensurePush(false);
+      }
+    },4000);
+  })();
+  
+  /* 3) Честная отчётность пушей + тест-эндпоинт (только в дашборде, не поверх всех вкладок) */
+  (function(){var _f=window.fetch;window.fetch=async function(u,o){
+    var r=await _f.call(this,u,o);
+    try{
+      if(o&&o.method==='POST'&&String(u).indexOf('/api/push/send')>-1){
+        var j=await r.clone().json();
+        setTimeout(function(){toast('Доставлено: '+j.delivered+' · Ошибок: '+j.failed+((j.errors&&j.errors.length)?' ('+j.errors.join(', ')+')':''),'📬');},300);
+      }
+    }catch(e){}
+    return r;};})();
+  (function(){
+    var host=document.getElementById('dashModal');if(!host)return;
+    var anchor=null;
+    host.querySelectorAll('h3,h4,div,b').forEach(function(el){
+      if(!anchor&&/Кто подписан на пуши/.test(el.textContent||''))anchor=el;
+    });
+    if(!anchor)return;
+    var b=document.createElement('button');b.className='btn ghost';b.textContent='🔔 Тест-пуш на это устройство';b.style.margin='6px 0 12px';
+    anchor.parentNode.insertBefore(b,anchor.nextSibling);
+    b.onclick=async function(){
+      try{
+        var r=await api('/push/test',{method:'POST'});
+        if(r.ok>0){toast('Пуш ушёл на это устройство ('+r.ok+')','✅');}
+        else{
+          toast('Не дошло: '+((r.errors&&r.errors.join(', '))||'нет подписки')+' — переподписываю…','⚠️');
+          if(window.ensurePush){await ensurePush(true);
+            var r2=await api('/push/test',{method:'POST'});
+            toast(r2.ok>0?'После переподписки пуш работает ✅':'Всё ещё не работает: '+((r2.errors||[]).join(', ')||'нет подписки'),'🔔');}
+        }
+      }catch(e){toast(e.message,'⚠️');}
+    };
+  })();
+  
+  /* 4) Адаптивность PWA на мобильных */
+  (function(){var css=document.createElement('style');
+    css.textContent=
+    '@media(max-width:768px){'+
+    '.wrap{grid-template-columns:1fr!important}'+
+    '.panel{position:fixed;bottom:0;left:0;right:0;max-height:80vh;overflow-y:auto;border-radius:20px 20px 0 0;z-index:300}'+
+    '.topbar{flex-wrap:wrap;gap:6px}'+
+    '#brandSeg,#modeSeg{width:100%;overflow-x:auto;scrollbar-width:none}'+
+    '#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}'+
+    '.cartPanel{max-height:85vh;overflow-y:auto;border-radius:20px 20px 0 0}'+
+    '.modal{max-height:90vh;overflow-y:auto}'+
+    '}';
+    document.head.appendChild(css);})();
+
   sv();
-  console.log('fix-views v31 готов');
-
-
+  console.log('fix-views v32 готов');
 
 })();
