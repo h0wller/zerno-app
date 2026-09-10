@@ -834,7 +834,7 @@ app.post('/api/push/del', adminGuard, (req, res) => {
   res.json({ ok: true });
 });
 /* ── telegram-бот ── */
-app.post('/api/tg/webhook', (req, res) => {
+app.post('/api/tg/webhook', async (req, res) => {
     if (TG_WEBHOOK_SECRET && req.header('x-telegram-bot-api-secret-token') !== TG_WEBHOOK_SECRET) return res.status(403).json({ error: 'bad secret' });
   const u = req.body; res.json({ ok: true });
   if (!u || !u.message) return;
