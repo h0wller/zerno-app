@@ -183,28 +183,34 @@ if (!vapidRow) {
 const VAPID = JSON.parse(vapidRow.value);
 webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const WEBAPP_URL = (process.env.WEBAPP_URL || process.env.PUBLIC_URL || 'https://app.andcoffee.online').replace(/\/+$/, '');
+const TG_CHANNEL = process.env.TG_CHANNEL_ID || '';
+const appKb = () => ({ inline_keyboard: [
+  [{ text: '🍕 Меню и заказ', web_app: { url: WEBAPP_URL + '/?src=tg&brand=delivery' } }],
+  [{ text: '📦 Мои заказы', web_app: { url: WEBAPP_URL + '/?src=tg&tab=orders' } }, { text: '☕ Штампы', web_app: { url: WEBAPP_URL + '/?src=tg&tab=bonus' } }],
+  [{ text: '💬 Поддержка', web_app: { url: WEBAPP_URL + '/?src=tg&tab=chat' } }]
+]});
 const TG_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'and_coffee_bot';
 const TG_WEBHOOK_SECRET = process.env.TG_WEBHOOK_SECRET || '';
 const PUBLIC_URL = process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : '');
 const APP_URL = PUBLIC_URL || 'https://app.andcoffee.online';
 
-async function tgSend(chatId, text) {
+async function tgSend(chatId, text, markup) {
   if (!TG_TOKEN) return;
+  const body = { chat_id: chatId, text };
+  if (markup) body.reply_markup = markup;
   try { await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text }) }); } catch (e) {}
+    body: JSON.stringify(body) }); } catch (e) {}
 }
-async function sendTg(cid, title, body, button) {
+async function sendTg(cid, title, body, markup) {
   const c = db.prepare('SELECT tg FROM customers WHERE id=?').get(cid);
-  if (!c || !c.tg || !TG_TOKEN) return;
-  const payload = { chat_id: c.tg, text: `${title}\n${body}` };
-  if (button) payload.reply_markup = { inline_keyboard: [[{ text: button.text, url: button.url }]] };
-  try { await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } catch (e) {}
+  if (c && c.tg) await tgSend(c.tg, `${title}\n${body}`, markup);
 }
+
 async function sendPush(cid, title, body, button) {
   sendFcm(cid, title, body).catch(() => {});
-  sendTg(cid, title, body, button).catch(() => {});
+  sendTg(cid, title, body, button, markup).catch(() => {});
   const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
   for (const r of rows) {
     try { await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body })); }
@@ -848,16 +854,22 @@ app.post('/api/tg/webhook', async (req, res) => {
   fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: `Подтверждаю номер ${fmtPhone(st.phone)} — нажмите кнопку ниже 👇`, reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true } }) }).catch(() => {});
   return;
 }
- if (text === '/start' || (text && text.startsWith('/start') && !text.includes('reg_'))) {
-    const greeting = '☕🍕 Привет! Я бот «…и кофе» + доставка «Пятница»\n\n' +
-      '🫘 Штампы и бесплатный кофе\n' +
-      '🍕 Статусы заказов доставки\n' +
-      '🎁 Акции и подарки\n\n' +
-      'Привяжите профиль — нажмите «Поделиться номером» 👇';
-    tgSend(chatId, greeting);
-    fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '📱', reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true } }) }).catch(() => {});
-    return;
-  }
+if (text === '/start') {
+  tgSend(chatId, '☕🍕 Привет! Я бот «…и кофе» и доставки «Пятница».\n\nШтампы, бонусы, статусы заказов и акции — всё здесь. Меню открывается прямо в Telegram.');
+  tgSend(chatId, 'Выберите, что нужно 👇', appKb());
+  fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '📱', reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true } }) }).catch(() => {});
+  return;
+}
+if (text === '/menu') { tgSend(chatId, '🍕 Открываю меню доставки…', appKb()); return; }
+if (text === '/orders') {
+  const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
+  if (!c) { tgSend(chatId, 'Сначала привяжите профиль — нажмите «Поделиться номером» 👇', appKb()); return; }
+  const rows = db.prepare('SELECT no,status,total FROM orders WHERE cid=? ORDER BY no DESC LIMIT 3').all(c.id);
+  const txt = rows.length ? rows.map(o => `#${o.no} · ${ORDER_STATUS[o.status] || o.status} · ${o.total} ₽`).join('\n') : 'Заказов пока нет — самое время выбрать пиццу 🍕';
+  tgSend(chatId, `📦 Последние заказы:\n${txt}`, appKb());
+  return;
+}
+if (text === '/help') { tgSend(chatId, 'Команды:\n/menu — меню и заказ\n/orders — мои заказы\n/start — привязать профиль\n\nИли напишите вопрос словами — отвечу я или сотрудник.', appKb()); return; }
   if (u.message.contact) {
   const pend = otpStore.get('regchat:' + chatId);
   if (pend && Date.now() < pend.expires) {
@@ -926,6 +938,7 @@ app.put('/api/admin/weekpromo', adminGuard, (req, res) => {
     db.prepare("INSERT INTO meta(key,value) VALUES('pizza_month',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
       .run(JSON.stringify({ name: b.pmName || '', on: !!b.pmOn }));
   }
+        if (TG_CHANNEL) tgSend(TG_CHANNEL, `🍕 Пятничный подарок\n${b.text}`);
   res.json({ ok: true });
 });
 const dispatchGuard = (req, res, next) => { req.user = authUser(req);
@@ -1015,7 +1028,8 @@ app.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
   const o = db.prepare('SELECT * FROM orders WHERE id=?').get(req.params.id);
   if (!o) return res.status(404).json({ error: 'Заказ не найден' });
   db.prepare('UPDATE orders SET status=?, updated=? WHERE id=?').run(s, nowISO(), o.id);
-  sendPush(o.cid, `🍕 Заказ #${o.no}`, ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''), { text: '📦 Открыть заказ', url: APP_URL });
+  sendPush(o.cid, `🍕 Заказ #${o.no}`, ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''),
+    { inline_keyboard: [[{ text: '📦 Открыть заказ', web_app: { url: WEBAPP_URL + '/?src=tg&tab=orders' } }]] });
   logEv(req.user.name, `заказ #${o.no} → ${s}`);
   res.json({ ok: true });
 });
