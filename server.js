@@ -665,6 +665,10 @@ app.post('/api/push/subscribe', userGuard, (req, res) => {
   if (!existed) sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
   res.json({ ok: true });
 });
+app.post('/api/push/test', userGuard, async (req, res) => {
+  const s = await sendPush(req.user.id, '🔔 Тестовый пуш', 'Если ты это видишь — пуши на этом устройстве работают');
+  res.json(s);
+});
 async function sendFcm(cid, title, body) {
   try {
     if (!fcmReady) return;
@@ -700,14 +704,18 @@ app.post('/api/push/send', adminGuard, async (req, res) => {
   const body = req.body.body || '';
   const cids = db.prepare("SELECT cid FROM subs UNION SELECT id FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
   let ok = 0, fail = 0; const errs = [];
-  for (const c of cids) { const s = await sendPush(c.cid, '…и кофе 🌊', body); ok += s.ok; fail += s.fail; errs.push(...s.errors); }
+  for (const c of cids) {
+    const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(c.cid);
+    for (const r of rows) {
+      try { await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title: '…и кофе 🌊', body })); ok++; }
+      catch (e) { fail++; errs.push(e.statusCode || e.message);
+        if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub); }
+    }
+  }
   logEv(req.user.name, `пуш всем (${cids.length})`);
   res.json({ ok: true, sent: cids.length, delivered: ok, failed: fail, errors: errs.slice(0, 5) });
 });
-app.post('/api/push/test', userGuard, async (req, res) => {
-  const s = await sendPush(req.user.id, '🔔 Тестовый пуш', 'Если ты это видишь — пуши на этом устройстве работают');
-  res.json(s);
-});
+
 
 /* ── чат гость ↔ стафф ── */
 app.post('/api/chat/send', (req, res) => {
