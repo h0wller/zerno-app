@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [pizza, main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      test_url:
+        description: 'URL стенда для e2e (пусто = локальный сервер)'
+        required: false
+        default: ''
+
+jobs:
+  server-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Синтаксис server.js
+        run: node --check server.js
+      - name: API самотесты
+        run: node test-api.mjs
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: server-checks
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: e2e против локального сервера
+        if: ${{ github.event.inputs.test_url == '' }}
+        run: npx playwright test
+      - name: e2e против стенда
+        if: ${{ github.event.inputs.test_url != '' }}
+        env:
+          TEST_URL: ${{ github.event.inputs.test_url }}
+        run: npx playwright test
