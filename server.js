@@ -188,7 +188,7 @@ const TG_CHANNEL = process.env.TG_CHANNEL_ID || '';
 const appKb = () => ({ inline_keyboard: [
   [{ text: '🍕 Меню и заказ', web_app: { url: WEBAPP_URL + '/?src=tg&brand=delivery' } }],
   [{ text: '📦 Мои заказы', web_app: { url: WEBAPP_URL + '/?src=tg&tab=orders' } }, { text: '☕ Штампы', web_app: { url: WEBAPP_URL + '/?src=tg&tab=bonus' } }],
-  [{ text: '💬 Поддержка', web_app: { url: WEBAPP_URL + '/?src=tg&tab=chat' } }]
+[{ text: '💬 Поддержка', web_app: { url: WEBAPP_URL + '/?src=tg&tab=chat&support=choose' } }]
 ]});
 const TG_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'and_coffee_bot';
 const TG_WEBHOOK_SECRET = process.env.TG_WEBHOOK_SECRET || '';
