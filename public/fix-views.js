@@ -888,8 +888,42 @@ updateStaffBadge=async function(){
     },4000);
   })();
 
+  /* ── v31: честный отчёт пушей + кнопка «Тест-пуш на это устройство» ── */
+  (function(){var _f=window.fetch;window.fetch=async function(u,o){
+    var r=await _f.call(this,u,o);
+    try{
+      if(o&&o.method==='POST'&&String(u).indexOf('/api/push/send')>-1){
+        var j=await r.clone().json();
+        setTimeout(function(){toast('Доставлено: '+j.delivered+' · Ошибок: '+j.failed+((j.errors&&j.errors.length)?' ('+j.errors.join(', ')+')':''),'📬');},300);
+      }
+    }catch(e){}
+    return r;};})();
+  (function(){
+    var host=document.getElementById('dashModal');if(!host)return;
+    var anchor=null;
+    host.querySelectorAll('h3,h4,div,b').forEach(function(el){
+      if(!anchor&&/Кто подписан на пуши/.test(el.textContent||''))anchor=el;
+    });
+    if(!anchor)return;
+    var b=document.createElement('button');b.className='btn ghost';b.textContent='🔔 Тест-пуш на это устройство';b.style.margin='6px 0';
+    anchor.parentNode.insertBefore(b,anchor.nextSibling);
+    b.onclick=async function(){
+      try{
+        var r=await api('/push/test',{method:'POST'});
+        if(r.ok>0){toast('Пуш ушёл на это устройство ('+r.ok+')','✅');}
+        else{
+          toast('Не дошло: '+((r.errors&&r.errors.join(', '))||'нет подписки')+' — переподписываю…','⚠️');
+          if(window.ensurePush){await ensurePush(true);
+            var r2=await api('/push/test',{method:'POST'});
+            toast(r2.ok>0?'После переподписки пуш работает ✅':'Всё ещё не работает: '+((r2.errors||[]).join(', ')||'нет подписки'),'🔔');}
+        }
+      }catch(e){toast(e.message,'⚠️');}
+    };
+  })();
+
   sv();
-  console.log('fix-views v30 готов');
+  console.log('fix-views v31 готов');
+
 
 
 })();
