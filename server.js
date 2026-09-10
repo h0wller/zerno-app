@@ -194,10 +194,37 @@ async function tgSend(chatId, text) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, text }) }); } catch (e) {}
 }
-async function sendTg(cid, title, body) {
+async function sendTg(cid, title, body, button) {
   const c = db.prepare('SELECT tg FROM customers WHERE id=?').get(cid);
-  if (c && c.tg) await tgSend(c.tg, `${title}\n${body}`);
+  if (!c || !c.tg || !TG_TOKEN) return;
+  const payload = { chat_id: c.tg, text: `${title}\n${body}` };
+  if (button) payload.reply_markup = { inline_keyboard: [[{ text: button.text, url: button.url }]] };
+  try { await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } catch (e) {}
 }
+async function sendPush(cid, title, body, button) {
+  sendFcm(cid, title, body).catch(() => {});
+  sendTg(cid, title, body, button).catch(() => {});
+  const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
+  for (const r of rows) {
+    try { await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body })); }
+    catch (e) { if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub); }
+  }
+}
+async function tgEnsureWebhook() {
+  if (!TG_TOKEN || !PUBLIC_URL) { console.log('[tg] webhook пропущен: нет TOKEN или PUBLIC_URL'); return; }
+  const want = PUBLIC_URL + '/api/tg/webhook';
+  try {
+    const info = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/getWebhookInfo`).then(r => r.json());
+    if (info.ok && info.result && info.result.url === want) { console.log('[tg] webhook уже наш:', want); return; }
+    const body = { url: want, allowed_updates: ['message'] };
+    if (TG_WEBHOOK_SECRET) body.secret_token = TG_WEBHOOK_SECRET;
+    const set = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/setWebhook`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+    console.log('[tg] setWebhook:', set.ok ? 'ok → ' + want : set.description);
+  } catch (e) { console.log('[tg] webhook ensure error:', e.message); }
+}
+
 const SMS_API = process.env.SMSRU_API_ID || '';
 async function sendSms(phone, text) {
   if (!SMS_API) { console.log('[DEV SMS]', phone, text); return; }
@@ -281,8 +308,8 @@ function grant(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE id
     addHist(cid, '🎉 10-й кофе — подарок начислен', 'Система'); }
   logEv(c.name, ten ? '10-й кофе — подарок начислен' : `+1 штамп → ${c.stamps} из 10`);
   const f = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
-  if (ten) sendPush(cid, '🎁 Бесплатный кофе ждёт вас!', 'Вы собрали 10 штампов. Заходите — кофе за наш счёт.');
-  else if (f.stamps === 9) sendPush(cid, '☕ Осталась одна чашка!', 'У вас 9 из 10 штампов. Следующий кофе — бесплатно 😉');
+  if (ten) sendPush(cid, '🎁 Бесплатный кофе ждёт вас!', 'Вы собрали 10 штампов. Заходите — кофе за наш счёт.', { text: '☕ Мой профиль', url: APP_URL });
+  else if (f.stamps === 9) sendPush(cid, '☕ Осталась одна чашка!', 'У вас 9 из 10 штампов. Следующий кофе — бесплатно 😉', { text: '☕ Мой профиль', url: APP_URL });
   return { customer: cust(f), ten, msg: ten ? '10-й штамп! Начислен бесплатный кофе' : `+1 штамп → ${f.stamps} из 10` }; }
 function redeem(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
   if (!c || c.free < 1) return null;
@@ -686,15 +713,6 @@ async function sendFcm(cid, title, body) {
     }
   } catch (e) { console.log('FCM send error', e.message); }
 }
-async function sendPush(cid, title, body) {
-  sendFcm(cid, title, body).catch(() => {});
-  sendTg(cid, title, body).catch(() => {});
-  const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
-  for (const r of rows) {
-    try { await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body })); }
-    catch (e) { if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub); }
-  }
-}
 app.post('/api/push/fcm', userGuard, (req, res) => {
   const token = String(req.body.token || '');
   if (!token) return res.status(400).json({ error: 'bad token' });
@@ -984,9 +1002,9 @@ app.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
   const o = db.prepare('SELECT * FROM orders WHERE id=?').get(req.params.id);
   if (!o) return res.status(404).json({ error: 'Заказ не найден' });
   db.prepare('UPDATE orders SET status=?, updated=? WHERE id=?').run(s, nowISO(), o.id);
-  sendPush(o.cid, `🍕 Заказ #${o.no}`, ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''));
+  sendPush(o.cid, `🍕 Заказ #${o.no}`, ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''), { text: '📦 Открыть заказ', url: APP_URL });
   logEv(req.user.name, `заказ #${o.no} → ${s}`);
   res.json({ ok: true });
 });
 app.use(express.static(PUBLIC_DIR));
-app.listen(PORT, () => console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`));
+app.listen(PORT, () => { console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`); tgEnsureWebhook(); });
