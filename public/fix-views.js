@@ -176,132 +176,121 @@ if(document.getElementById('chatPanel').classList.contains('open'))setTimeout(fu
 /* ========== 4-14. Остальные секции без изменений ========== */
 /* (корзина, доставка, профиль, сотрудники, сплэш, чат, пуши, живые обновления, диплинки, конфиг — оставляем как в v61) */
 
-/* ========== 15. КЛЮЧЕВОЙ ФИКС: убийца фантомного #overlay ========== */
+/* ========== 15. Убийца фантомного #overlay ========== */
 setInterval(function(){
-var ov=document.getElementById('overlay');
-if(!ov||!ov.classList.contains('show'))return;
-/* Снимаем .show, если реально открытых модалок нет */
-var anyOpen=false;
-['emModal','authModal','pinModal','setPinModal','qrModal','promoModal','dashModal','staffChatModal','scanModal','guestCard'].forEach(function(id){
-var m=document.getElementById(id);
-if(m&&m.classList.contains('show'))anyOpen=true;
-});
-var panelOpen=document.getElementById('panel')&&document.getElementById('panel').classList.contains('open');
-var cartOpen=document.getElementById('cartPanel')&&document.getElementById('cartPanel').classList.contains('open');
-if(!anyOpen&&!panelOpen&&!cartOpen){
-ov.classList.remove('show');
-}
+  var ov=document.getElementById('overlay');
+  if(!ov||!ov.classList.contains('show'))return;
+  var anyOpen=false;
+  ['emModal','authModal','pinModal','setPinModal','qrModal','promoModal','dashModal','staffChatModal','scanModal','guestCard','ordersModal','redeemPick'].forEach(function(id){
+    var m=document.getElementById(id);
+    if(m&&m.classList.contains('show'))anyOpen=true;
+  });
+  var panel=document.getElementById('panel'),cartP=document.getElementById('cartPanel');
+  if(!anyOpen&&!(panel&&panel.classList.contains('open'))&&!(cartP&&cartP.classList.contains('open')))ov.classList.remove('show');
 },100);
 
-/* ========== 16. КЛЮЧЕВОЙ ФИКС: гарантированный рендер .chatHint + патч chatFab ========== */
-function forceShowHints(){
-var msgs=document.getElementById('chatMsgs');if(!msgs)return;
-if(msgs.querySelector('.hintsWrap'))return;
-var wrap=document.createElement('div');wrap.className='hintsWrap';wrap.style.cssText='padding:4px 0 8px';
-var list=(chatCtx==='delivery'?DHINTS:CHINTS).slice();
-list.push(CALL_HINT);
-list.forEach(function(h){
-var b=document.createElement('button');b.className='chatHint';b.textContent=h;b.dataset.hint=h;wrap.appendChild(b);
-});
-msgs.appendChild(wrap);msgs.scrollTop=1e6;
-}
-(function(){
-var f=document.getElementById('chatFab');if(!f||f.__forcePatch)return;
-f.__forcePatch=1;
-var old=f.onclick;
-f.onclick=async function(e){
-/* Принудительно снимаем глобальный #overlay перед кликом */
-var ov=document.getElementById('overlay');
-if(ov)ov.classList.remove('show');
-if(typeof old==='function'){try{await old.call(this,e);}catch(err){}}
-setTimeout(forceShowHints,200);
-setTimeout(forceShowHints,700);
-};
-})();
-
-/* ========== 17. КЛЮЧЕВОЙ ФИКС: оверлей выбора темы (z-index 99999) ========== */
+/* ========== 16. Оверлей выбора темы поддержки ========== */
 function showSupportOverlay(){
-if(document.getElementById('supportChooseOverlay'))return;
-var d=document.createElement('div');d.id='supportChooseOverlay';
-d.innerHTML='<div class="scTitle">У вас вопрос по кофе или доставке?</div>'+
-'<div class="scSub">Выберите тему — откроется нужная Ника, а вызов сотрудника уйдёт правильной команде.</div>'+
-'<div class="ctxPick scBtns">'+
-'<button type="button" class="cpD" data-support-topic="delivery">🍕<br>Доставка<br><small>Пятница</small></button>'+
-'<button type="button" class="cpC" data-support-topic="coffee">☕<br>Кофейня<br><small>…и кофе</small></button></div>';
-document.body.appendChild(d); /* ВАЖНО: в body, а не в chatPanel */
-setBotName();
+  if(document.getElementById('supportChooseOverlay'))return;
+  var d=document.createElement('div');d.id='supportChooseOverlay';
+  d.innerHTML='<div class="scTitle">У вас вопрос по кофе или доставке?</div>'+
+    '<div class="scSub">Выберите тему — откроется нужная Ника, а вызов сотрудника уйдёт правильной команде.</div>'+
+    '<div class="ctxPick scBtns">'+
+    '<button type="button" class="cpD" data-support-topic="delivery">🍕<br>Доставка<br><small>Пятница</small></button>'+
+    '<button type="button" class="cpC" data-support-topic="coffee">☕<br>Кофейня<br><small>…и кофе</small></button></div>';
+  document.body.appendChild(d);
 }
 function hideSupportOverlay(){var o=document.getElementById('supportChooseOverlay');if(o)o.remove();}
-
 if(SUPPORT_ENTRY&&!chosenSupportCtx){
-document.body.classList.add('support-pending');
-/* Показываем СРАЗУ, не дожидаясь открытия чата */
-setTimeout(showSupportOverlay,200);
-/* Параллельно убиваем authModal и его оверлей, если они выскочили */
-var supTries=0;
-var supIv=setInterval(function(){
-supTries++;
-var am=document.getElementById('authModal');
-if(am&&am.classList.contains('show')){
-am.classList.remove('show');
+  document.body.classList.add('support-pending');
+  setTimeout(showSupportOverlay,200);
+  var supTries=0;
+  var supIv=setInterval(function(){
+    supTries++;
+    var am=document.getElementById('authModal');if(am&&am.classList.contains('show'))am.classList.remove('show');
+    var ov=document.getElementById('overlay');if(ov&&!document.getElementById('supportChooseOverlay'))ov.classList.remove('show');
+    if(supTries>40)clearInterval(supIv);
+  },150);
 }
-var ov=document.getElementById('overlay');
-if(ov)ov.classList.remove('show');
-if(supTries>40)clearInterval(supIv);
-},150);
-}
-
 document.addEventListener('click',function(e){
-var b=e.target.closest('[data-support-topic]');if(!b)return;
-e.preventDefault();e.stopPropagation();
-var ctx=b.getAttribute('data-support-topic')==='delivery'?'delivery':'coffee';
-chosenSupportCtx=ctx;supportPending=false;
-try{sessionStorage.setItem('zt_support_ctx',ctx);}catch(err){}
-document.body.classList.remove('support-pending');
-chatCtx=ctx;try{localStorage.setItem('zt_chatctx',ctx);}catch(err){}
-hideSupportOverlay();
-/* Закрываем authModal и overlay если остались */
-var am=document.getElementById('authModal');
-if(am)am.classList.remove('show');
-var ov=document.getElementById('overlay');
-if(ov)ov.classList.remove('show');
-setBotName();
-/* Открываем чат программно */
-var p=document.getElementById('chatPanel');
-if(p&&!p.classList.contains('open')){
-var fab=document.getElementById('chatFab');if(fab)fab.click();
-}
-setTimeout(function(){
-forceShowHints();
-try{reloadChatThread();}catch(err){}
-},400);
+  var b=e.target.closest('[data-support-topic]');if(!b)return;
+  e.preventDefault();e.stopPropagation();
+  var ctx=b.getAttribute('data-support-topic')==='delivery'?'delivery':'coffee';
+  chosenSupportCtx=ctx;supportPending=false;
+  try{sessionStorage.setItem('zt_support_ctx',ctx);}catch(err){}
+  document.body.classList.remove('support-pending');
+  chatCtx=ctx;try{localStorage.setItem('zt_chatctx',ctx);}catch(err){}
+  hideSupportOverlay();
+  var am=document.getElementById('authModal');if(am)am.classList.remove('show');
+  var ov=document.getElementById('overlay');if(ov)ov.classList.remove('show');
+  var p=document.getElementById('chatPanel');
+  if(p&&!p.classList.contains('open')){var fab=document.getElementById('chatFab');if(fab)fab.click();}
+  setTimeout(function(){try{reloadChatThread();}catch(err){}paintHints();},400);
+  setTimeout(paintHints,900);
 },true);
 
-/* ========== 18. Стабильные классы шапки чата ========== */
+/* ========== 17. Подсказки и «Позвать сотрудника» (два тапа), устойчиво к перерисовкам ========== */
+var CALL_ARMED=false;
+function paintHints(){
+  var msgs=document.getElementById('chatMsgs');if(!msgs)return;
+  var wrap=msgs.querySelector('.hintsWrap');
+  if(!wrap){wrap=document.createElement('div');wrap.className='hintsWrap';wrap.style.cssText='padding:4px 0 8px';msgs.appendChild(wrap);}
+  wrap.innerHTML='';
+  (chatCtx==='delivery'?DHINTS:CHINTS).slice().concat([CALL_HINT]).forEach(function(h){
+    var b=document.createElement('button');b.className='chatHint';b.dataset.hint=h;
+    if(h===CALL_HINT&&CALL_ARMED){
+      b.dataset.arm='1';b.textContent='✅ Точно позвать сотрудника? (нажмите ещё раз)';
+      b.style.background='#FDE8E8';b.style.borderColor='#B3372B';
+    }else b.textContent=h;
+    wrap.appendChild(b);
+  });
+  msgs.scrollTop=1e6;
+}
+function forceShowHints(){paintHints();}
+showHints=function(){paintHints();};
+/* единственный обработчик подсказок: document+capture, раньше любых базовых */
+document.addEventListener('click',function(e){
+  var h=e.target.closest('#chatMsgs .chatHint');if(!h)return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+  if(h.dataset.hint===CALL_HINT){
+    if(CALL_ARMED){CALL_ARMED=false;paintHints();mySend(CALL_HINT);}
+    else{CALL_ARMED=true;paintHints();setTimeout(function(){if(CALL_ARMED){CALL_ARMED=false;paintHints();}},6000);}
+    return;
+  }
+  mySend(h.dataset.hint||h.textContent);
+},true);
 (function(){
-function norm(){
-var p=document.getElementById('chatPanel');if(!p)return;
-var head=p.querySelector('.chatHead');
-if(!head){
-var kids=p.children;
-for(var i=0;i<kids.length;i++){
-if(/Ника/.test(kids[i].textContent||'')){head=kids[i];break;}
-}
-if(head)head.classList.add('chatHead');
-}
-if(head&&!head.querySelector('.chName')){
-var nodes=head.querySelectorAll('div,span,b');
-for(var j=0;j<nodes.length;j++){
-if(nodes[j].children.length===0&&/Ника/.test(nodes[j].textContent||'')){nodes[j].classList.add('chName');break;}
-}
-}
-}
-norm();setTimeout(norm,300);setTimeout(norm,1200);setTimeout(norm,3000);
-document.addEventListener('click',function(){setTimeout(norm,60);},true);
-var p0=document.getElementById('chatPanel');
-if(p0&&window.MutationObserver)new MutationObserver(function(){norm();}).observe(p0,{childList:true,subtree:true});
+  var f=document.getElementById('chatFab');if(!f||f.__v64)return;f.__v64=1;
+  var old=f.onclick;
+  f.onclick=async function(e){
+    var ov=document.getElementById('overlay');if(ov)ov.classList.remove('show');
+    if(typeof old==='function'){try{await old.call(this,e);}catch(err){}}
+    setTimeout(paintHints,250);setTimeout(paintHints,800);
+  };
+})();
+
+/* ========== 18. Шапка чата: классы и имя ВСЕГДА по контексту ========== */
+(function(){
+  function fixHead(){
+    var p=document.getElementById('chatPanel');if(!p)return;
+    var head=p.querySelector('.chatHead')||p.querySelector('.chat-h');
+    if(!head)return;
+    if(!head.classList.contains('chatHead'))head.classList.add('chatHead');
+    var want=supportPending?'Ника · поддержка':(chatCtx==='delivery'?'Ника · 🍕 доставка':'Ника · ☕ кофейня');
+    var nodes=head.querySelectorAll('div,span,b');
+    for(var i=0;i<nodes.length;i++){
+      var el=nodes[i];
+      if(el.children.length===0&&/Ника/.test(el.textContent||'')){
+        if((el.textContent||'')!==want)el.textContent=want;
+        if(!el.classList.contains('chName'))el.classList.add('chName');
+        break;
+      }
+    }
+  }
+  setInterval(fixHead,700);
+  document.addEventListener('click',function(){setTimeout(fixHead,60);},true);
 })();
 
 sv();
-console.log('fix-views v63 готов (тесты починены)');
+console.log('fix-views v64 готов');
 })();
