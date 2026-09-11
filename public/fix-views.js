@@ -1259,6 +1259,46 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   },true);
 })();
 
+/* ── v65: доставка-редактор работает независимо от старых слушателей; чат открывается всегда ── */
+/* 1) Тумблер «в меню» на доставке: свой capture-обработчик, PUT и перечитка */
+document.addEventListener('change',function(e){
+  var t=e.target.closest('#deliveryGrid [data-onoff]');if(!t)return;
+  e.stopPropagation();
+  var id=t.getAttribute('data-onoff');
+  var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];if(!p)return;
+  p.on=t.checked?1:0;
+  (async function(){
+    try{
+      await api('/menu/'+p.id,{method:'PUT',body:p});
+      toast(t.checked?'«'+p.name+'» снова в меню':'«'+p.name+'» → стоп-лист',t.checked?'✅':'⛔');
+      await loadDelivery();
+    }catch(err){toast(err.message,'⚠️');}
+  })();
+},true);
+/* 2) Карандаш на доставке: свой capture-обработчик */
+document.addEventListener('click',function(e){
+  var b=e.target.closest('#deliveryGrid [data-ed]');if(!b)return;
+  e.stopPropagation();e.preventDefault();
+  try{openEditor(b.getAttribute('data-ed'));}catch(err){console.log('openEditor err:',err);}
+},true);
+/* 3) Чат: гарантированное открытие + лог настоящей ошибки базового обработчика */
+(function(){
+  var f=document.getElementById('chatFab');if(!f||f.__v65)return;f.__v65=1;
+  var old=f.onclick;
+  f.onclick=async function(e){
+    var err=null;
+    if(typeof old==='function'){try{await old.call(this,e);}catch(ex){err=ex;}}
+    var p=document.getElementById('chatPanel');
+    if(p&&!p.classList.contains('open')){
+      p.classList.add('open');
+      try{if(typeof syncOverlay==='function')syncOverlay();}catch(ex){}
+      try{if(typeof setBotName==='function')setBotName();}catch(ex){}
+      try{if(typeof showHints==='function')showHints();}catch(ex){}
+    }
+    if(err)console.log('chatFab old handler error:',err);
+  };
+})();
+
 sv();
-console.log('fix-views v64 готов');
+console.log('fix-views v65 готов');
 })();
