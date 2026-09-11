@@ -1,4 +1,4 @@
-const CACHE = 'zerno-v124';
+const CACHE = 'zerno-v125';
 const PRECACHE = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', e => {
