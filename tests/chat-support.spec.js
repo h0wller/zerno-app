@@ -4,6 +4,10 @@ async function skipSplash(page){
   const sp = page.locator('#brandSplash');
   if (await sp.count()) await sp.locator('[data-go="coffee"]').click();
 }
+async function dismissAuth(page){
+  const guest = page.getByText('Просто посмотреть меню');
+  if (await guest.isVisible().catch(() => false)) await guest.click();
+}
 
 test('поддержка из бота: оверлей появляется и НЕ исчезает', async ({ page }) => {
   await page.goto('/?src=tg&tab=chat&support=choose');
@@ -30,6 +34,7 @@ test('выбор кофейни открывает кофейную Нику', a
 test('обычное открытие чата — без оверлея', async ({ page }) => {
   await page.goto('/');
   await skipSplash(page);
+  await dismissAuth(page);
   await page.locator('#chatFab').click();
   await expect(page.locator('#supportChooseOverlay')).toHaveCount(0);
   await expect(page.locator('.chatHint').first()).toBeVisible({ timeout: 5000 });
@@ -38,6 +43,7 @@ test('обычное открытие чата — без оверлея', async
 test('вызов сотрудника требует подтверждения (два тапа)', async ({ page }) => {
   await page.goto('/');
   await skipSplash(page);
+  await dismissAuth(page);
   await page.locator('#chatFab').click();
   const call = page.locator('.chatHint', { hasText: 'Позвать сотрудника' });
   await call.click();
