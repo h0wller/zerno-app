@@ -1308,6 +1308,56 @@ document.addEventListener('click',function(e){
   };
 })();
 
+/* ── v66: FAB закрывает чат; чат оверлеем на мобильных; редактор сохраняет фото и стоп-лист ── */
+(function(){
+  /* 1) Кнопка чата = тумблер: открыто → закрыть, закрыто → открыть */
+  var f=document.getElementById('chatFab');
+  if(f&&!f.__fvToggle){
+    var old=f.onclick;f.__fvToggle=1;
+    f.onclick=function(e){
+      var p=document.getElementById('chatPanel');
+      if(p&&p.classList.contains('open')){
+        p.classList.remove('open');
+        try{if(typeof syncOverlay==='function')syncOverlay();}catch(err){}
+        return;
+      }
+      if(typeof old==='function')return old.call(this,e);
+    };
+  }
+  /* 2) На мобильных чат — оверлей снизу, а не блок в потоке страницы */
+  var css=document.createElement('style');
+  css.textContent=
+  '@media(max-width:1180px){'+
+  '#chatPanel{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:auto!important;max-height:80vh;z-index:330;border-radius:20px 20px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.28);display:none;flex-direction:column;margin:0!important;transform:none!important}'+
+  '#chatPanel.open{display:flex!important}'+
+  '#chatMsgs{flex:1;overflow-y:auto;min-height:0}'+
+  '}';
+  document.head.appendChild(css);
+  /* 3) Редактор: фото из file-input читается в edit.img ДО сохранения; стоп-лист явно */
+  var saveBtn=document.getElementById('emSave');
+  if(saveBtn&&!saveBtn.__fvImg){
+    saveBtn.__fvImg=1;
+    var oldSave=saveBtn.onclick;
+    saveBtn.onclick=async function(e){
+      try{
+        var fi=document.querySelector('#emModal input[type=file]');
+        if(fi&&fi.files&&fi.files[0]){
+          edit.img=await new Promise(function(res){
+            var r=new FileReader();
+            r.onload=function(){res(r.result);};
+            r.onerror=function(){res(null);};
+            r.readAsDataURL(fi.files[0]);
+          });
+        }
+        var emOn=document.getElementById('emOn');
+        if(emOn)edit.on=emOn.checked?1:0;
+        if(window.zdbg)zdbg('save img='+(edit.img?1:0)+' on='+edit.on+' id='+edit.id);
+      }catch(err){}
+      if(typeof oldSave==='function')return oldSave.call(this,e);
+    };
+  }
+})();
+
 sv();
-console.log('fix-views v65 готов');
+console.log('fix-views v66 готов');
 })();
