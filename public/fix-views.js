@@ -1529,6 +1529,119 @@ sv=(function(_sv){return function(){var r=_sv();
 setTimeout(function(){try{safeBrandInfo();buildTicker();fixAdminBar();}catch(e){}},300);
 })();
 
+/* ── v55: компактный тикер; профиль пятницы без сиротских эмодзи и с отзывами выше; закрываемые «Мои заказы»; карандаши на пятнице ── */
+(function(){
+var css=document.createElement('style');
+css.textContent=
+'.ticker{min-height:32px!important;max-height:32px!important;padding:5px 0!important;overflow:hidden!important;background:#14161A!important}'+
+'.ticker *{font-size:11px!important;font-weight:600!important;line-height:1.5!important;letter-spacing:.06em!important;text-transform:uppercase!important;color:#F5F2EC!important}'+
+'.ticker .tkWrap{overflow:hidden;white-space:nowrap;height:100%}'+
+'.ticker .tkTrack{display:inline-block;white-space:nowrap;animation:tkmv 46s linear infinite;will-change:transform}'+
+'.ticker .tkTrack span{padding-right:56px!important;display:inline-block!important}'+
+'@keyframes tkmv{from{transform:translateX(0)}to{transform:translateX(-50%)}}'+
+'#omWrap{position:fixed;inset:0;z-index:900;background:rgba(10,14,18,.5);display:flex;align-items:center;justify-content:center;padding:14px}'+
+'#omWrap .omCard{background:var(--paper);border-radius:20px;max-width:640px;width:100%;max-height:86vh;overflow:auto;padding:16px;position:relative;box-shadow:var(--sh)}'+
+'#omWrap .omHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}'+
+'#omWrap .omHead b{font-size:17px}'+
+'#omWrap .omClose{border:0;background:#EDF2F6;border-radius:12px;padding:8px 14px;font-weight:800;cursor:pointer}'+
+'.edBtn{position:absolute;top:8px;right:8px;z-index:3;border:0;background:rgba(255,255,255,.92);border-radius:10px;padding:6px 9px;cursor:pointer;box-shadow:var(--sh)}';
+document.head.appendChild(css);
+
+/* 1) Тикер: одна строка, бежит */
+(function(){
+  var t=document.querySelector('.ticker');if(!t||t.__tk55)return;t.__tk55=1;
+  function build(){
+    var L=(brand==='delivery')?['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']:['Кофейня на берегу моря …и кофе','Каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','Ежедневно 8:00–21:00'];
+    var row=L.map(function(x){return x+' 〜';}).join(' ');
+    t.innerHTML='<div class="tkWrap"><div class="tkTrack"><span>'+row+'</span><span>'+row+'</span></div></div>';
+  }
+  build();
+  window.__tickerSync=build;
+})();
+
+/* 2) Профиль пятницы: убираем сиротские эмодзи, блок отзывов поднимаем к заказам */
+function fixFridayProfile(){
+  var deliv=(brand==='delivery');
+  var pb=document.getElementById('profileBox');if(!pb)return;
+  pb.querySelectorAll('a').forEach(function(a){
+    var href=a.href||'';
+    if(/instagram\.com|t\.me\/and_coffee_bot|t\.me\/and_coffee39/i.test(href)){
+      var p=a.parentElement;
+      if(p&&p!==pb&&(p.textContent||'').length<80)p.style.display=deliv?'none':'';
+      else a.style.display=deliv?'none':'';
+    }
+  });
+  pb.querySelectorAll(':scope > *').forEach(function(ch){
+    var t=ch.textContent||'';
+    if(/ПОНРАВИЛОСЬ У НАС/i.test(t)&&t.length<300)ch.style.display=deliv?'none':'';
+  });
+  var f=document.getElementById('fridayInfo');
+  if(f){
+    f.style.display=deliv?'':'none';
+    if(deliv){
+      var mo=document.getElementById('myOrders');
+      if(mo&&f.previousSibling!==mo)mo.parentNode.insertBefore(f,mo.nextSibling);
+    }
+  }
+}
+renderProfile=(function(_rp){return function(){var r=_rp();try{fixFridayProfile();}catch(e){}return r;};})(renderProfile);
+sv=(function(_sv){return function(){var r=_sv();try{fixFridayProfile();}catch(e){}return r;};})(sv);
+
+/* 3) «Мои заказы»: самодостаточный оверлей — ловит клики, закрывается по ✕, фону и Esc */
+function closeOrdersModal(){var w=document.getElementById('omWrap');if(w)w.remove();}
+window.renderOrdersModal=async function(){
+  closeOrdersModal();
+  var wrap=document.createElement('div');wrap.id='omWrap';
+  wrap.innerHTML='<div class="omCard"><div class="omHead"><b>📦 Мои заказы</b><button type="button" class="omClose">× Закрыть</button></div><div id="omList"><div class="hmini">Загрузка…</div></div></div>';
+  document.body.appendChild(wrap);
+  wrap.addEventListener('click',function(e){if(e.target===wrap)closeOrdersModal();},true);
+  wrap.querySelector('.omClose').addEventListener('click',closeOrdersModal);
+  wrap.addEventListener('click',function(e){e.stopPropagation();},true);
+  try{
+    var r=await api('/orders/mine');
+    var ST={new:'🆕 Новый',accept:'✅ Подтверждён',cook:'👨‍🍳 Готовится',way:'🛵 Курьер в пути',done:'🏁 Выполнен',cancel:'❌ Отменён'};
+    var list=wrap.querySelector('#omList');
+    list.innerHTML=r.orders.length?r.orders.map(function(o){
+      var d=new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'});
+      return '<div class="myOrderCard" style="margin-bottom:8px"><div class="moTop"><span>Заказ #'+o.no+'<span class="moDate">· '+d+'</span></span><span class="moSt">'+(ST[o.status]||o.status)+'</span></div>'+
+      '<div class="moSum">'+fmt(o.total)+(o.eta?' · ⏰ '+esc(o.eta):'')+'</div>'+
+      '<div class="moItems">'+esc(o.items.map(function(i){return i.qty+'× '+i.name;}).join(', '))+'</div></div>';
+    }).join(''):'<div class="hmini">Заказов пока нет 🍕</div>';
+  }catch(e){var l=document.getElementById('omList');if(l)l.innerHTML='<div class="hmini">Не загрузилось</div>';}
+};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeOrdersModal();});
+(function(){var old=document.getElementById('ordersModal');if(old)old.remove();})();
+(function(){
+  var hook=function(){
+    var b=document.getElementById('myOrdersBtn');
+    if(b&&!b.__om55){b.__om55=1;b.onclick=function(){renderOrdersModal();};}
+  };
+  hook();setTimeout(hook,400);setTimeout(hook,1200);
+  new MutationObserver(hook).observe(document.body,{childList:true,subtree:true});
+})();
+
+/* 4) Карандаши на карточках пятницы в режиме правки */
+function injectEdits(){
+  if(!window.editMode)return;
+  document.querySelectorAll('#deliveryGrid [data-add]').forEach(function(add){
+    var card=add.closest('article')||add.closest('.card')||add.closest('.cbody');
+    if(card&&card.classList.contains('cbody'))card=card.parentElement;
+    if(!card)card=add.parentElement&&add.parentElement.parentElement;
+    if(!card||card.querySelector('.edBtn'))return;
+    card.style.position='relative';
+    var b=document.createElement('button');b.type='button';b.className='edBtn';b.dataset.ed=add.dataset.add;b.textContent='✏️';
+    card.appendChild(b);
+  });
+}
+renderDeliveryMenu=(function(_rm){return function(){var r=_rm();setTimeout(injectEdits,0);return r;};})(renderDeliveryMenu);
+document.getElementById('editToggle').addEventListener('click',function(){setTimeout(injectEdits,50);setTimeout(injectEdits,400);});
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.edBtn');if(!b)return;
+  e.stopPropagation();e.preventDefault();
+  openEditor(b.dataset.ed);
+},true);
+})();
+
 sv();
-console.log('fix-views v54 готов');
+console.log('fix-views v55 готов');
 })();
