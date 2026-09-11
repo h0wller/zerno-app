@@ -1,4 +1,8 @@
 import { test, expect } from '@playwright/test';
+// tests/chat-support.spec.js — в начало файла
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('zt_onb', '1')); // гость уже «онборднут»
+});
 
 async function skipSplash(page) {
   const sp = page.locator('#brandSplash');
