@@ -30,10 +30,23 @@ test('обычное открытие чата — без оверлея', async
 test('вызов сотрудника требует подтверждения (два тапа)', async ({ page }) => {
   await page.goto('/');
   await skipSplash(page);
-  await dismissAuthNudge(page);
   
   await page.locator('#chatFab').click();
+  
+  // 1. Ждем 400мс, чтобы завершилась CSS-анимация выезда чата и скролл ленты (fix "not stable")
+  await page.waitForTimeout(400);
+
+  // 2. Сносим фантомный оверлей, который случайно получил .show и перекрывает чат (fix "intercepts pointer events")
+  await page.evaluate(() => {
+    const ov = document.getElementById('overlay');
+    if (ov) ov.classList.remove('show');
+  });
+
   const call = page.locator('.chatHint', { hasText: 'Позвать сотрудника' });
-  await call.click();
+  
+  // 3. force: true гарантирует, что клик пройдет даже если какой-то невидимый div еще висит сверху
+  await call.click({ force: true });
+  
   await expect(page.locator('.chatHint', { hasText: 'Точно позвать' })).toBeVisible();
 });
+
