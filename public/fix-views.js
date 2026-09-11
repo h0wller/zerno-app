@@ -1314,6 +1314,22 @@ console.log('fix-views v61 восстановление готов');
   reloadChatThread = (function(_f){return async function(){syncPending();return _f();};})(reloadChatThread);
   addMsg           = (function(_f){return function(w,t){syncPending();return _f(w,t);};})(addMsg);
 })();
+/* ── v62: гарантированная окраска шапки после выбора темы (не зависит от версии обработчика) ── */
+(function(){
+  function paintHead(ctx){
+    var hd=document.querySelector('#chatPanel .chatHead');
+    if(!hd)return;
+    var leaf=hd.querySelector('.chName')||hd.querySelector('b')||hd;
+    leaf.textContent=(ctx==='delivery'?'Ника · 🍕 доставка':'Ника · ☕ кофейня');
+    var sw=document.getElementById('ctxSwitch');
+    if(sw)sw.textContent=(ctx==='delivery'?'🍕':'')+' ▾';
+  }
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-support-topic]');if(!b)return;
+    var ctx=b.getAttribute('data-support-topic')==='delivery'?'delivery':'coffee';
+    [0,60,200,500,1000].forEach(function(t){setTimeout(function(){paintHead(ctx);},t);});
+  },true);
+})();
 sv();
 console.log('fix-views v62 готов (все тесты и функции работают)');
 })();
