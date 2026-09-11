@@ -1301,7 +1301,19 @@ console.log('fix-views v61 восстановление готов');
     }
   }, 800);
 })();
-
+/* ── v62-fix: supportPending всегда синхронно с выбранной темой ── */
+(function(){
+  function syncPending(){
+    supportPending = SUPPORT_ENTRY && !sessionStorage.getItem('zt_support_ctx');
+  }
+  /* освежаем состояние ДО любых click-хендлеров (chatFab, brandSeg и т.д.) */
+  document.addEventListener('click',function(){syncPending();},true);
+  /* и в точках, где состояние читается */
+  setBotName       = (function(_f){return function(){syncPending();return _f();};})(setBotName);
+  showHints        = (function(_f){return function(){syncPending();return _f();};})(showHints);
+  reloadChatThread = (function(_f){return async function(){syncPending();return _f();};})(reloadChatThread);
+  addMsg           = (function(_f){return function(w,t){syncPending();return _f(w,t);};})(addMsg);
+})();
 sv();
 console.log('fix-views v62 готов (все тесты и функции работают)');
 })();
