@@ -1278,7 +1278,6 @@ console.log('fix-views v61 восстановление готов');
 (function(){
 var css=document.createElement('style');
 css.textContent=
-'.ticker{max-width:1480px;margin:0 auto;}'+
 '#deliveryGrid .card .media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}';
 document.head.appendChild(css);
 
