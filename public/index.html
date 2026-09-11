@@ -88,9 +88,9 @@ input,select,textarea{font-family:inherit}
 .ava:hover{transform:scale(1.08)}
 
 /* ══ тикер ══ */
-.ticker{background:#16202B;color:#C9D6E2;overflow:hidden;border-bottom:1px solid #2A3540}
-.ticker .track{display:inline-flex;white-space:nowrap;animation:tick 30s linear infinite;will-change:transform}
-.ticker span{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem 1.4rem;font:500 11px "Unbounded";letter-spacing:.1em;text-transform:uppercase}
+.ticker{background:#16202B;color:#C9D6E2;overflow:hidden;border-bottom:1px solid #2A3540;max-width:100%}
+.ticker .track{display:inline-flex;white-space:nowrap;animation:tick 30s linear infinite;will-change:transform;max-width:none}
+.ticker span{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem 1.4rem;font:500 11px "Unbounded";letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 .ticker span::after{content:"〜";color:#7FB2D9;margin-left:1.4rem}
 @keyframes tick{to{transform:translateX(-50%)}}
 

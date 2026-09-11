@@ -968,6 +968,11 @@ css.textContent=
 '.delayBtns button{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700}'+
 '#ctxDrop{position:absolute;right:10px;top:52px;z-index:5;background:#fff;border:1.5px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:6px;display:flex;flex-direction:column;gap:4px;min-width:180px}'+
 '#ctxDrop button{border:0;background:transparent;border-radius:10px;padding:10px 12px;font-weight:700;text-align:left;cursor:pointer}'+
+'#redeemStats{margin:12px 0;padding:14px;background:#fff;border:1.5px solid var(--line);border-radius:14px}'+
+'#redeemStats h4{margin:0 0 10px;font-size:14px}'+
+'#redeemStats .rsRow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px}'+
+'#redeemStats .rsRow:last-child{border-bottom:none}'+
+'#redeemStats b{color:var(--flame)}'+
 '#ctxDrop button.on{background:#FFF6E5}';
 document.head.appendChild(css);
 
@@ -1031,6 +1036,21 @@ async function renderOrdersModal(){
         ((o.gifts&&o.gifts.length)?'<div class="moGifts">🎁 '+o.gifts.map(function(g){return esc(g.name)+' ×'+g.qty;}).join(', ')+'</div>':'')+'</div>';
     }).join('')||'<div class="hmini">Заказов пока нет 🍕</div>';
   }catch(e){list.innerHTML='<div class="hmini">Не загрузилось</div>';}
+}
+async function loadRedeemStats(){
+  if(!me||me.role!=='admin')return;
+  var pb=$('#profileBox');if(!pb||$('#redeemStats'))return;
+  try{
+    var r=await api('/stats/redeems');
+    var d=document.createElement('div');d.id='redeemStats';
+    var items=Object.entries(r.byItem||{}).sort(function(a,b){return b[1]-a[1];});
+    d.innerHTML='<h4>📊 Статистика списаний кофе</h4>'+
+      '<div class="rsRow"><span>Всего списаний:</span><b>'+r.total+'</b></div>'+
+      (items.length?items.map(function(e){
+        return '<div class="rsRow"><span>'+esc(e[0])+'</span><b>'+e[1]+'</b></div>';
+      }).join(''):'<div class="rsRow" style="color:var(--soft)">Пока нет списаний</div>');
+    var mo=$('#myOrdersBtn');if(mo)pb.insertBefore(d,mo.nextSibling);else pb.appendChild(d);
+  }catch(e){}
 }
 (function(){
   var pb=$('#profileBox');if(!pb||$('#myOrdersBtn'))return;
@@ -1143,6 +1163,7 @@ function injectEdits(){
       var b=document.createElement('button');b.type='button';b.className='edBtn';b.dataset.ed=add.getAttribute('data-add');b.textContent='✏️';
       card.appendChild(b);
     }
+    
     if(!card.querySelector('.donoff')){
       var id=add.getAttribute('data-add');
       var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
@@ -1157,16 +1178,26 @@ document.getElementById('editToggle').addEventListener('click',function(){setTim
 document.addEventListener('click',function(e){
   var b=e.target.closest('#deliveryGrid .edBtn');if(!b)return;
   e.stopPropagation();e.preventDefault();
-  try{openEditor(b.dataset.ed);}catch(err){}
+  var id=b.getAttribute('data-ed');
+  if(id&&typeof openEditor==='function'){
+    openEditor(id);
+  }
 },true);
 document.getElementById('deliveryGrid').addEventListener('change',async function(e){
   var t=e.target.closest('.donoff [data-onoff]');if(!t)return;
   e.stopPropagation();
-  var p=(window.DMENU||[]).filter(function(x){return x.id===t.getAttribute('data-onoff');})[0];if(!p)return;
+  var id=t.getAttribute('data-onoff');
+  var p=(window.DMENU||[]).find(function(x){return x.id===id;});
+  if(!p)return;
   p.on=t.checked?1:0;
-  try{await api('/menu/'+p.id,{method:'PUT',body:p});await loadDelivery();
-    toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');}
-  catch(err){toast(err.message,'⚠️');loadDelivery();}
+  try{
+    await api('/menu/'+p.id,{method:'PUT',body:p});
+    await loadDelivery();
+    toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');
+  }catch(err){
+    toast(err.message,'⚠️');
+    loadDelivery();
+  }
 },true);
 
 /* R9. Списание свободного кофе с выбором напитка */
@@ -1230,5 +1261,8 @@ document.addEventListener('click',async function(e){
 setTimeout(function(){applyProfileBrand();applyBrandChrome();cashierClean();injectEdits();syncNotifyUI();},400);
 console.log('fix-views v61 восстановление готов');
 })();
+setTimeout(function(){
+  if(me&&me.role==='admin')loadRedeemStats();
+},1200);
 sv();
 })();

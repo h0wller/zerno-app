@@ -1102,4 +1102,26 @@ app.post('/api/orders/delay-all', dispatchGuard, (req, res) => {
   res.json({ ok: true, count: rows.length });
 });
 app.use(express.static(PUBLIC_DIR));
+app.get('/api/stats/redeems', adminGuard, (req, res) => {
+  const rows = db.prepare(`
+    SELECT a, by, ts FROM history 
+    WHERE a LIKE '%списан бесплатный кофе%' 
+    ORDER BY id DESC LIMIT 100
+  `).all();
+  const stats = {};
+  rows.forEach(r => {
+    const match = r.a.match(/списан бесплатный кофе: (.+?) \(/);
+    const item = match ? match[1] : 'неизвестно';
+    stats[item] = (stats[item] || 0) + 1;
+  });
+  res.json({ 
+    total: rows.length, 
+    byItem: stats,
+    recent: rows.slice(0, 20).map(r => ({
+      action: r.a,
+      by: r.by,
+      time: r.ts
+    }))
+  });
+});
 app.listen(PORT, () => { console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`); tgEnsureWebhook(); });
