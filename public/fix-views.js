@@ -1172,6 +1172,93 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
     return r;};})(renderDeliveryMenu);
 })();
 
+/* ── v64: пилюля = выпадающий список; тумблер «в меню» на доставке как в кофейне и рабочий ── */
+(function(){
+  var css=document.createElement('style');
+  css.textContent=
+  '#chatPanel{position:relative}'+
+  '#ctxDrop{position:absolute;right:10px;z-index:9;background:#fff;border:1.5px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;gap:4px;min-width:200px}'+
+  '#ctxDrop button{border:0;background:transparent;border-radius:10px;padding:10px 12px;font-weight:700;font-size:14px;color:var(--ink);text-align:left;cursor:pointer}'+
+  '#ctxDrop button.on{background:#FFF6E5}'+
+  '#deliveryGrid .donoff{position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:11px;font-weight:700;cursor:pointer}'+
+  '#deliveryGrid .donoff input{display:none}'+
+  '#deliveryGrid .donoff i{width:34px;height:20px;border-radius:999px;background:#D7DEE6;position:relative;transition:.15s}'+
+  '#deliveryGrid .donoff i:after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s}'+
+  '#deliveryGrid .donoff input:checked+i{background:#2F7D4F}'+
+  '#deliveryGrid .donoff input:checked+i:after{left:16px}';
+  document.head.appendChild(css);
+
+  /* A) Пилюля → настоящий выпадающий список под шапкой */
+  showCtxSwitch=function(){
+    var p=document.getElementById('chatPanel');if(!p)return;
+    var old=document.getElementById('ctxDrop');
+    if(old){old.remove();return;}
+    var head=p.querySelector('.chatHead');
+    var d=document.createElement('div');d.id='ctxDrop';
+    d.style.top=(head?head.offsetHeight+6:54)+'px';
+    d.innerHTML=
+      '<button type="button" data-ctxsw="coffee" class="'+(chatCtx==='coffee'?'on':'')+'">☕ Кофейня</button>'+
+      '<button type="button" data-ctxsw="delivery" class="'+(chatCtx==='delivery'?'on':'')+'">🍕 Пятница</button>';
+    p.appendChild(d);
+  };
+  /* перебрасываем onclick пилюли на новую функцию (старая ссылка мешала) */
+  var cs=document.getElementById('ctxSwitch');
+  if(cs)cs.onclick=function(){showCtxSwitch();};
+  /* клик мимо — закрыть список */
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('#ctxDrop')&&!e.target.closest('#ctxSwitch')){
+      var d=document.getElementById('ctxDrop');if(d)d.remove();
+    }
+  },true);
+  /* выбор из списка: контекст, шапка, тред, закрыть список */
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('#ctxDrop [data-ctxsw]');if(!b)return;
+    e.preventDefault();e.stopPropagation();
+    chatCtx=b.getAttribute('data-ctxsw');
+    try{localStorage.setItem('zt_chatctx',chatCtx);}catch(err){}
+    var d=document.getElementById('ctxDrop');if(d)d.remove();
+    var card=document.querySelector('#chatMsgs .ctxSwitchWrap');if(card)card.remove();
+    try{setBotName();}catch(err){}
+    try{reloadChatThread();}catch(err){}
+  },true);
+
+  /* B) Тумблер «в меню» на доставке: стиль как в кофейне + своя надёжная логика */
+  function injectSw(){
+    if(!document.body.classList.contains('editing'))return;
+    document.querySelectorAll('#deliveryGrid [data-onoff]').forEach(function(el){
+      var l=el.closest('label');if(l)l.remove();
+    });
+    document.querySelectorAll('#deliveryGrid [data-add]').forEach(function(add){
+      var card=add.closest('.cbody');card=card?card.parentElement:(add.closest('article')||add.parentElement);
+      if(!card||card.querySelector('.donoff'))return;
+      var id=add.getAttribute('data-add');
+      var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
+      card.style.position='relative';
+      var lab=document.createElement('label');lab.className='donoff';
+      lab.innerHTML='<input type="checkbox" data-onoff="'+id+'" '+((!p||p.on)?'checked':'')+'><i></i>в меню';
+      card.appendChild(lab);
+    });
+  }
+  renderDeliveryMenu=(function(_rm){return function(){var r=_rm();injectSw();return r;};})(renderDeliveryMenu);
+  var et=document.getElementById('editToggle');
+  if(et)et.addEventListener('click',function(){setTimeout(injectSw,60);setTimeout(injectSw,400);});
+  /* своя логика переключения (capture + stopPropagation — старый обработчик не мешает) */
+  document.addEventListener('change',function(e){
+    var t=e.target.closest('#deliveryGrid [data-onoff]');if(!t)return;
+    e.stopPropagation();
+    var p=(window.DMENU||[]).filter(function(x){return x.id===t.getAttribute('data-onoff');})[0];
+    if(!p)return;
+    p.on=t.checked?1:0;
+    (async function(){
+      try{
+        await api('/menu/'+p.id,{method:'PUT',body:p});
+        toast(t.checked?'«'+p.name+'» снова в меню':'«'+p.name+'» → стоп-лист',t.checked?'✅':'⛔');
+        await loadDelivery();
+      }catch(err){toast(err.message,'⚠️');}
+    })();
+  },true);
+})();
+
 sv();
-console.log('fix-views v62 готов');
+console.log('fix-views v64 готов');
 })();
