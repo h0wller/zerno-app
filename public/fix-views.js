@@ -329,6 +329,17 @@ renderDeliveryRail=(function(_rr){return function(){_rr();
   var b=document.querySelector('#deliveryRail [data-dcat="sauces"]');if(b)b.remove();
 };})(renderDeliveryRail);
 renderDeliveryMenu=(function(_rm){return function(){_rm();
+  var list=DMENU.filter(function(p){return p.cat===dcat;});
+  var cards=document.querySelectorAll('#deliveryGrid .card');
+  cards.forEach(function(card,i){
+    var p=list[i]; if(!p) return;
+    card.classList.toggle('stopped', !p.on);
+    var media=card.querySelector('.media');
+    if(!media) return;
+    var sb=media.querySelector('.stopbadge');
+    if(!p.on && !sb){ sb=document.createElement('span'); sb.className='stopbadge'; sb.textContent='СТОП'; media.appendChild(sb); }
+    if(p.on && sb) sb.remove();
+  });
   document.querySelectorAll('#deliveryGrid .opts button').forEach(function(b){
     if(b.querySelector('.ol'))return;
     var parts=b.textContent.split(' · ');
@@ -1037,27 +1048,14 @@ async function renderOrdersModal(){
     }).join('')||'<div class="hmini">Заказов пока нет 🍕</div>';
   }catch(e){list.innerHTML='<div class="hmini">Не загрузилось</div>';}
 }
-async function loadRedeemStats(){
-  if(!me||me.role!=='admin')return;
-  var pb=$('#profileBox');if(!pb||$('#redeemStats'))return;
-  try{
-    var r=await api('/stats/redeems');
-    var d=document.createElement('div');d.id='redeemStats';
-    var items=Object.entries(r.byItem||{}).sort(function(a,b){return b[1]-a[1];});
-    d.innerHTML='<h4>📊 Статистика списаний кофе</h4>'+
-      '<div class="rsRow"><span>Всего списаний:</span><b>'+r.total+'</b></div>'+
-      (items.length?items.map(function(e){
-        return '<div class="rsRow"><span>'+esc(e[0])+'</span><b>'+e[1]+'</b></div>';
-      }).join(''):'<div class="rsRow" style="color:var(--soft)">Пока нет списаний</div>');
-    var mo=$('#myOrdersBtn');if(mo)pb.insertBefore(d,mo.nextSibling);else pb.appendChild(d);
-  }catch(e){}
-}
 (function(){
   var pb=$('#profileBox');if(!pb||$('#myOrdersBtn'))return;
   var b=document.createElement('button');b.type='button';b.id='myOrdersBtn';b.className='demoBtn';b.textContent='📦 Мои заказы';
   var mo=$('#myOrders');if(mo)pb.insertBefore(b,mo);else pb.appendChild(b);
   b.onclick=renderOrdersModal;
-})();
+}
+)();
+
 
 /* R3. Каналы уведомлений */
 function syncNotifyUI(){
@@ -1232,6 +1230,21 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
     d.innerHTML='<b>Задержать все:</b><button type="button" data-dlyall="15">+15 мин</button><button type="button" data-dlyall="30">+30 мин</button>';
     top.appendChild(d);
   }
+  /* статистика списаний — в дашборде, разбивкой по напиткам */
+document.getElementById('dashToggle').addEventListener('click', function(){
+  setTimeout(async function(){
+    try{
+      var r = await api('/stats/redeems');
+      var host = $('#dashMore'); if(!host) return;
+      var old = document.getElementById('dashRedeems'); if(old) old.remove();
+      var items = Object.entries(r.byItem || {}).sort(function(a,b){return b[1]-a[1];});
+      var d = document.createElement('div'); d.id='dashRedeems';
+      d.innerHTML = '<div class="hmini" style="margin-top:8px">🎁 Списано бесплатных кофе за 30 дней: <b>'+r.total+'</b>'+
+        (items.length ? ' · '+items.map(function(e){return esc(e[0])+' ×'+e[1];}).join(', ') : '')+'</div>';
+      host.appendChild(d);
+    }catch(e){}
+  }, 700);
+});
 })();
 function injectDelay(){
   if(mode!=='orders')return;
@@ -1261,8 +1274,5 @@ document.addEventListener('click',async function(e){
 setTimeout(function(){applyProfileBrand();applyBrandChrome();cashierClean();injectEdits();syncNotifyUI();},400);
 console.log('fix-views v61 восстановление готов');
 })();
-setTimeout(function(){
-  if(me&&me.role==='admin')loadRedeemStats();
-},1200);
 sv();
 })();

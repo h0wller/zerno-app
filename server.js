@@ -1101,6 +1101,17 @@ app.post('/api/orders/delay-all', dispatchGuard, (req, res) => {
   logEv(req.user.name, `задержка всем +${min} мин (${rows.length})`);
   res.json({ ok: true, count: rows.length });
 });
+app.get('/api/stats/redeems', adminGuard, (req, res) => {
+  const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+  const rows = db.prepare("SELECT a FROM history WHERE a LIKE '🎁 Списан бесплатный кофе%' AND ts>?").all(monthAgo);
+  const byItem = {};
+  for (const r of rows) {
+    const m = r.a.match(/кофе:\s*(.+?)\s*\(/);
+    const k = m ? m[1] : 'классика';
+    byItem[k] = (byItem[k] || 0) + 1;
+  }
+  res.json({ total: rows.length, byItem });
+});
 app.use(express.static(PUBLIC_DIR));
 app.get('/api/stats/redeems', adminGuard, (req, res) => {
   const rows = db.prepare(`
