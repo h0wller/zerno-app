@@ -5,12 +5,25 @@ async function skipSplash(page){
   if (await sp.count()) await sp.locator('[data-go="coffee"]').click();
 }
 
-// Гостевой найджинг «Создайте профиль» всплывает через ~2–3 c после загрузки,
-// его подложка #overlay перехватывает клики. Ждём его и закрываем штатной кнопкой.
+// Гостевой онбординг («Создайте профиль») открывается с задержкой, и его подложка
+// #overlay.show перехватывает клики. Ждём кнопку «Просто посмотреть меню» и кликаем её;
+// если онбординг не появился — принудительно гасим модалки/оверлей, чтобы тесты
+// проверяли чат, а не онбординг.
 async function dismissAuthNudge(page){
-  await page.waitForTimeout(2500);
-  const g = page.getByText('Просто посмотреть меню');
-  if (await g.isVisible().catch(() => false)) await g.click();
+  const guest = page.getByText('Просто посмотреть меню');
+  await guest.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {});
+  if (await guest.isVisible().catch(() => false)) await guest.click();
+  await page.waitForTimeout(300);
+  await page.evaluate(() => {
+    document.querySelectorAll('.show').forEach(el => {
+      const isModal = (el.id && /Modal$/i.test(el.id)) || el.classList.contains('modal');
+      if (isModal) el.classList.remove('show');
+    });
+    if (typeof window.syncOverlay === 'function') window.syncOverlay();
+    const ov = document.getElementById('overlay');
+    if (ov) ov.classList.remove('show');
+  });
+  await page.locator('#overlay.show').waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
 }
 
 test('поддержка из бота: оверлей появляется и НЕ исчезает', async ({ page }) => {
