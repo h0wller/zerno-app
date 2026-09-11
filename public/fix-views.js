@@ -1125,11 +1125,12 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
     if(getComputedStyle(p).position==='static')p.style.position='relative';
     var head=p.querySelector('.chatHead');
     var d=document.createElement('div');d.id='ctxDrop';
-    d.style.cssText='position:absolute;left:10px;right:10px;top:'+(head?head.offsetHeight+6:54)+'px;z-index:8;background:#fff;border:1.5px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;gap:4px';
+d.style.cssText='position:fixed;inset:0;z-index:9999;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center';
+
     d.innerHTML=
       '<button data-ctxsw="delivery" style="display:flex;gap:8px;align-items:center;border:0;background:'+(chatCtx==='delivery'?'#FFF6E5':'transparent')+';border-radius:10px;padding:10px 12px;font-weight:700;font-size:14px;color:#14161A;cursor:pointer">🍕 Пятница — доставка</button>'+
       '<button data-ctxsw="coffee" style="display:flex;gap:8px;align-items:center;border:0;background:'+(chatCtx==='coffee'?'#EAF1F9':'transparent')+';border-radius:10px;padding:10px 12px;font-weight:700;font-size:14px;color:#14161A;cursor:pointer">☕ Кофейня</button>';
-    p.appendChild(d);
+    document.body.appendChild(d);
   };
   document.addEventListener('click',function(e){
     var d=document.getElementById('ctxDrop');if(!d)return;
@@ -1161,9 +1162,10 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
     document.querySelectorAll('#deliveryGrid [data-add]').forEach(function(add){
       var card=add.closest('.cbody');card=card?card.parentElement:(add.closest('article')||add.parentElement);
       if(!card||card.querySelector('[data-onoff]'))return;
-      var id=add.getAttribute('data-add');
-var r =(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
-      card.style.position='relative';
+    var id=add.getAttribute('data-add');
+    var list=(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
+    var p=list.filter(function(x){return x.id===id;})[0];
+    card.style.position='relative';
       var lab=document.createElement('label');
       lab.style.cssText='position:absolute;top:8px;left:8px;z-index:3;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;display:flex;gap:6px;align-items:center;cursor:pointer';
       lab.innerHTML='<input type="checkbox" data-onoff="'+id+'" '+((!p||p.on)?'checked':'')+'> в меню';
@@ -1395,7 +1397,8 @@ var p=(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
     if(!t)return;
     e.stopImmediatePropagation();e.stopPropagation();e.preventDefault();
     var id=t.getAttribute('data-onoff');
-var r=(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
+    var list=(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
+    var p=list.filter(function(x){return x.id===id;})[0];
     if(!p){z('toggle: позиция не найдена '+id);return;}
     p.on=t.checked?1:0;
     z('toggle PUT on='+p.on+' id='+id);
