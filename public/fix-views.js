@@ -1062,6 +1062,59 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   if(typeof renderVerifyNote==='function')renderVerifyNote();
 }).catch(function(){});
 
+/* ── v61: рабочее переключение заведения в чате, свап истории/отзывов в пятнице, карандаши в пятнице ── */
+(function(){
+  /* 1) кнопки «Сменить заведение» реально переключают контекст */
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-ctxsw]');if(!b)return;
+    var ctx=b.getAttribute('data-ctxsw');if(!ctx)return;
+    chatCtx=ctx;
+    try{localStorage.setItem('zt_chatctx',chatCtx);}catch(err){}
+    var wrap=b.closest('.ctxSwitchWrap');if(wrap)wrap.remove();
+    try{setBotName();}catch(err){}
+    try{reloadChatThread();}catch(err){}
+  },true);
+
+  /* 2) профиль пятницы: блок отзывов/инфо встаёт на место истории, история — вниз */
+  renderProfile=(function(_rp){return function(){var r=_rp();
+    try{
+      if(brand==='delivery'){
+        var pb=document.getElementById('profileBox');
+        var f=document.getElementById('fridayInfo');
+        if(pb&&f){
+          var kids=Array.prototype.slice.call(pb.children);
+          var hist=kids.filter(function(ch){return ch!==f&&/ИСТОРИЯ/i.test((ch.textContent||'').slice(0,400));})[0];
+          if(hist&&kids.indexOf(f)>kids.indexOf(hist)){
+            var fNext=f.nextSibling;
+            pb.insertBefore(f,hist);
+            pb.insertBefore(hist,fNext);
+          }
+        }
+      }
+    }catch(err){}
+    return r;};})(renderProfile);
+
+  /* 3) карандаши на карточках доставки в режиме правки */
+  function injectEdits(){
+    if(typeof editMode==='undefined'||!editMode)return;
+    document.querySelectorAll('#deliveryGrid [data-add]').forEach(function(add){
+      var card=add.closest('article')||add.closest('.card')||add.closest('.cbody');
+      if(card&&card.classList.contains('cbody'))card=card.parentElement;
+      if(!card)card=add.parentElement;
+      if(!card||card.querySelector('.edBtn'))return;
+      card.style.position='relative';
+      var b=document.createElement('button');
+      b.type='button';b.className='edBtn';b.dataset.ed=add.getAttribute('data-add');b.textContent='✏️';
+      b.style.cssText='position:absolute;top:8px;right:8px;z-index:3;border:0;background:rgba(255,255,255,.92);border-radius:10px;padding:6px 9px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)';
+      card.appendChild(b);
+    });
+  }
+  renderDeliveryMenu=(function(_rm){return function(){var r=_rm();try{injectEdits();}catch(e){}return r;};})(renderDeliveryMenu);
+  exitEdit=(function(_ee){return function(){var r=_ee();try{document.querySelectorAll('#deliveryGrid .edBtn').forEach(function(b){b.remove();});}catch(e){}return r;};})(exitEdit);
+  var et=document.getElementById('editToggle');
+  if(et)et.addEventListener('click',function(){setTimeout(injectEdits,60);setTimeout(injectEdits,300);});
+})();
+
 sv();
-console.log('fix-views МОНОЛИТ v60');
+console.log('fix-views v61 готов');
 })();
