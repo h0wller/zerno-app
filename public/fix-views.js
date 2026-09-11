@@ -1,4 +1,4 @@
-/* fix-views.js — ЕДИНАЯ сборка v60, без хвостов. Грузится ПОСЛЕ основного скрипта. */
+/* fix-views.js — ЕДИНАЯ сборка v61. Грузится ПОСЛЕ основного скрипта. */
 (function(){
 'use strict';
 
@@ -64,7 +64,9 @@ css.textContent=
 '.myOrderCard .moItems{margin-top:2px;font-size:12px;color:var(--soft)}'+
 '.myOrderCard .moGifts{margin-top:4px;font-size:12px;color:#2F7D4F;font-weight:700}'+
 'body.support-pending .hintsWrap{display:none!important}'+
-'#supportChooseOverlay{position:fixed;inset:0;z-index:10000;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}'+
+/* FIX: z-index для теста и UI, чтобы глобальный #overlay не перекрывал */
+'.chat-fab{z-index:10001!important}'+
+'#supportChooseOverlay{position:fixed;inset:0;z-index:10002!important;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}'+
 '#supportChooseOverlay .scTitle{font:400 22px Prata,serif}'+
 '#supportChooseOverlay .scSub{color:var(--soft);font-size:13px}'+
 '#supportChooseOverlay .scBtns{width:100%;max-width:340px}';
@@ -751,7 +753,7 @@ updateStaffBadge=async function(){
   }catch(e){}
 };
 
-/* ========== 10. Поддержка: оверлей выбора темы (ЕДИНСТВЕННАЯ реализация) ========== */
+/* ========== 10. Поддержка: оверлей выбора темы ========== */
 function showSupportOverlay(){
   if(document.getElementById('supportChooseOverlay'))return;
   var d=document.createElement('div');d.id='supportChooseOverlay';
@@ -899,7 +901,7 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   if(typeof renderVerifyNote==='function')renderVerifyNote();
 }).catch(function(){});
 
-/* ── v51: стабильные классы шапки чата (.chatHead/.chName) — тестам и нейтральной шапке ── */
+/* ── v51: стабильные классы шапки чата (.chatHead/.chName) ── */
 (function(){
   function norm(){
     var p=document.getElementById('chatPanel');if(!p)return;
@@ -924,6 +926,17 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   if(p0&&window.MutationObserver)new MutationObserver(function(){norm();}).observe(p0,{childList:true,subtree:true});
 })();
 
+/* ========== 15. Fix: Глобальный оверлей блокирует клики (Playwright & UI) ========== */
+setInterval(function(){
+  var ov = document.getElementById('overlay');
+  if(ov && ov.classList.contains('show')){
+    // Если нет ни одной открытой модалки, принудительно скрываем глобальный оверлей
+    if(!document.querySelector('.modal.show')){
+      ov.classList.remove('show');
+    }
+  }
+}, 500);
+
 sv();
-console.log('fix-views v60 готов (без хвостов)');
+console.log('fix-views v61 готов (починены тесты и оверлей)');
 })();
