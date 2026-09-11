@@ -568,6 +568,318 @@ renderOrders(true);
 setTimeout(function(){applyProfileBrand();applyBrandChrome();cashierClean();injectEdits();syncNotifyUI();},400);
 console.log('fix-views v65 восстановление готов');
 })();
+/* ══ v62 ФИНАЛ: все восстановленные фичи одним блоком. Вставить ПЕРЕД последним sv(); ══ */
+(function(){
+'use strict';
+var q1=function(s){return document.querySelector(s);};
+var qall=function(s){return Array.prototype.slice.call(document.querySelectorAll(s));};
+var css=document.createElement('style');
+css.textContent=
+'.myOrderCard .moDate{font-size:12px;color:var(--soft);font-weight:600;margin-left:6px}'+
+'#myOrdersBtn{width:100%;margin:10px 0 0}'+
+'.omCard{background:var(--paper);border-radius:20px;max-width:640px;width:100%;max-height:86vh;overflow:auto;padding:18px;position:relative;box-shadow:var(--sh)}'+
+'.omClose{position:absolute;top:10px;right:10px;border:0;background:#EDF2F6;border-radius:12px;padding:8px 14px;font-weight:800;cursor:pointer}'+
+'#ordersModal,#redeemPick{position:fixed;inset:0;z-index:340;background:rgba(15,23,32,.45);display:none;align-items:center;justify-content:center;padding:16px}'+
+'#ordersModal.show,#redeemPick.show{display:flex}'+
+'#notifyDetails{margin:10px 0;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;background:#fff}'+
+'#notifyDetails summary{cursor:pointer;font-weight:700}'+
+'#fridayInfo{background:#EAF1F9;border:1px solid #B9CDE4;border-radius:18px;padding:14px;margin:12px 0;font-size:12.5px;color:#33507A;line-height:1.6}'+
+'#fridayInfo b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}'+
+'.topbar .brand img{height:34px;width:auto;border-radius:10px}'+
+'.edBtn{position:absolute;top:8px;right:8px;z-index:3;border:0;background:rgba(255,255,255,.92);border-radius:10px;padding:6px 9px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}'+
+'.donoff{position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:11px;font-weight:700;cursor:pointer}'+
+'.donoff input{appearance:none;width:34px;height:19px;border-radius:999px;background:#C9D3DC;position:relative;transition:.25s;cursor:pointer}'+
+'.donoff input::after{content:"";position:absolute;top:2.5px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.25s}'+
+'.donoff input:checked{background:#1E7A4E}.donoff input:checked::after{left:17px}'+
+'.delayBtns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}'+
+'.delayBtns button{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700}'+
+'#ctxDrop{position:absolute;right:10px;top:52px;z-index:5;background:#fff;border:1.5px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:6px;display:flex;flex-direction:column;gap:4px;min-width:180px}'+
+'#ctxDrop button{border:0;background:transparent;border-radius:10px;padding:10px 12px;font-weight:700;text-align:left;cursor:pointer}'+
+'#ctxDrop button.on{background:#FFF6E5}';
+document.head.appendChild(css);
+/* R1. Пилюля = выпадающий список */
+showCtxSwitch=function(){
+var p=q1('#chatPanel');if(!p)return;
+var old=q1('#ctxDrop');if(old){old.remove();return;}
+var d=document.createElement('div');d.id='ctxDrop';
+d.innerHTML='<button type="button" data-ctxsw="coffee" class="'+(chatCtx==='coffee'?'on':'')+'">☕ Кофейня</button>'+
+'<button type="button" data-ctxsw="delivery" class="'+(chatCtx==='delivery'?'on':'')+'">🍕 Пятница</button>';
+p.appendChild(d);
+};
+var csBtn=q1('#ctxSwitch');if(csBtn)csBtn.onclick=function(){showCtxSwitch();};
+document.addEventListener('click',function(e){
+var b=e.target.closest('#ctxDrop [data-ctxsw]');if(!b)return;
+chatCtx=b.getAttribute('data-ctxsw');
+try{localStorage.setItem('zt_chatctx',chatCtx);}catch(err){}
+var d=q1('#ctxDrop');if(d)d.remove();
+try{setBotName();}catch(err){}
+try{reloadChatThread();}catch(err){}
+},true);
+document.addEventListener('click',function(e){
+if(!e.target.closest('#ctxDrop')&&!e.target.closest('#ctxSwitch')){var d=q1('#ctxDrop');if(d)d.remove();}
+},true);
+/* R2. Мои заказы: последняя в профиле + модалка полного списка */
+loadMyOrders=async function(){
+var host=q1('#myOrders');if(!host||!me)return;
+try{
+var r=await api('/orders/mine');
+var ST={new:['🆕','mo-new','Новый'],accept:['✅','mo-accept','Подтверждён'],cook:['👨‍🍳','mo-cook','Готовится'],way:['🛵','mo-way','Курьер в пути'],done:['🏁','mo-done','Выполнен'],cancel:['❌','mo-cancel','Отменён']};
+var o=(r.orders||[])[0];
+if(!o){host.innerHTML='<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';return;}
+var s=ST[o.status]||['•','mo-new',o.status];
+var d=new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'});
+var items=o.items.slice(0,3).map(function(i){return i.qty+'× '+i.name;}).join(', ')+(o.items.length>3?'…':'');
+host.innerHTML='<div class="myOrderCard"><div class="moTop"><span>Заказ #'+o.no+'<span class="moDate">· '+d+'</span></span><span class="moSt '+s[1]+'">'+s[0]+' '+s[2]+'</span></div>'+
+'<div class="moSum">'+fmt(o.total)+(o.eta?' · ⏰ '+esc(o.eta):'')+'</div>'+
+(items?'<div class="moItems">'+esc(items)+'</div>':'')+
+((o.gifts&&o.gifts.length)?'<div class="moGifts">🎁 '+o.gifts.map(function(g){return esc(g.name)+' ×'+g.qty;}).join(', ')+'</div>':'')+'</div>';
+}catch(e){}
+};
+(function(){
+if(q1('#ordersModal'))return;
+var m=document.createElement('div');m.id='ordersModal';
+m.innerHTML='<div class="omCard"><button type="button" class="omClose">✕ Закрыть</button><h3 style="margin:0 0 12px">📦 Мои заказы</h3><div id="omList"></div></div>';
+document.body.appendChild(m);
+m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.omClose')){m.classList.remove('show');}});
+})();
+async function renderOrdersModal(){
+var list=q1('#omList');if(!list||!me)return;
+list.innerHTML='<div class="hmini">Загрузка…</div>';
+q1('#ordersModal').classList.add('show');
+try{
+var r=await api('/orders/mine');
+var ST={new:'🆕 Новый',accept:'✅ Подтверждён',cook:'👨‍ Готовится',way:'🛵 Курьер в пути',done:'🏁 Выполнен',cancel:'❌ Отменён'};
+list.innerHTML=(r.orders||[]).map(function(o){
+var d=new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'});
+return '<div class="myOrderCard" style="margin-bottom:8px"><div class="moTop"><span>Заказ #'+o.no+'<span class="moDate">· '+d+'</span></span><span class="moSt">'+(ST[o.status]||o.status)+'</span></div>'+
+'<div class="moSum">'+fmt(o.total)+(o.eta?' · ⏰ '+esc(o.eta):'')+'</div>'+
+'<div class="moItems">'+esc(o.items.map(function(i){return i.qty+'× '+i.name;}).join(', '))+'</div>'+
+((o.gifts&&o.gifts.length)?'<div class="moGifts">🎁 '+o.gifts.map(function(g){return esc(g.name)+' ×'+g.qty;}).join(', ')+'</div>':'')+'</div>';
+}).join('')||'<div class="hmini">Заказов пока нет 🍕</div>';
+}catch(e){list.innerHTML='<div class="hmini">Не загрузилось</div>';}
+}
+(function(){
+var pb=q1('#profileBox');if(!pb||q1('#myOrdersBtn'))return;
+var b=document.createElement('button');b.type='button';b.id='myOrdersBtn';b.className='demoBtn';b.textContent='📦 Мои заказы';
+var mo=q1('#myOrders');if(mo)pb.insertBefore(b,mo);else pb.appendChild(b);
+b.onclick=renderOrdersModal;
+})();
+/* R3. Каналы уведомлений */
+function syncNotifyUI(){
+if(!me)return;
+var t=q1('#ntTg'),w=q1('#ntWeb');
+if(t)t.checked=me.notify_tg!==0;
+if(w)w.checked=me.notify_web!==0;
+}
+(function(){
+var pb=q1('#profileBox');if(!pb||q1('#notifyDetails'))return;
+var d=document.createElement('details');d.id='notifyDetails';
+d.innerHTML='<summary>🔔 Каналы уведомлений</summary>'+
+'<div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">'+
+'<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="ntTg"> 🤖 Telegram</label>'+
+'<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="ntWeb"> 🔔 Пуши браузера</label></div>';
+pb.appendChild(d);
+d.addEventListener('change',async function(){
+try{await api('/me/notify',{method:'PUT',body:{tg:q1('#ntTg').checked?1:0,web:q1('#ntWeb').checked?1:0}});toast('Каналы уведомлений сохранены','✅');}
+catch(e){toast(e.message,'⚠️');}
+});
+})();
+['profileTopBtn','mbonusBtn'].forEach(function(id){
+var b=q1('#'+id);if(b)b.addEventListener('click',function(){setTimeout(syncNotifyUI,120);});
+});
+/* R4. Инфо-блок пятницы + брендовые скрытия */
+(function(){
+var pb=q1('#profileBox');if(!pb||q1('#fridayInfo'))return;
+var d=document.createElement('div');d.id='fridayInfo';
+d.innerHTML='<b>Пятница — доставка пиццы и роллов</b>п. Янтарный, ул. Советская, 38А (самовывоз)<br>Ежедневно 11:00–22:00 · доставка ~45 мин<br>🌐 <a href="https://vk.ru/fridaypizza39" target="_blank" style="color:#1F4E8C;font-weight:800">vk.ru/fridaypizza39</a><br>⭐ <a href="https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/" target="_blank" style="color:#1F4E8C;font-weight:800">отзывы на Яндекс Картах</a><br><a href="https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/?add-review=true" target="_blank" class="btn fire" style="margin-top:10px;display:inline-block">⭐ Оставить отзыв</a>';
+var hist=qall('#profileBox h4').filter(function(h){return /История/.test(h.textContent);})[0];
+if(hist)pb.insertBefore(d,hist);else pb.appendChild(d);
+})();
+function applyProfileBrand(){
+var deliv=(brand==='delivery');
+var fi=q1('#fridayInfo');if(fi)fi.style.display=deliv?'':'none';
+qall('#profileBox .placebox').forEach(function(p){
+if(/Мы у моря|Понравилось у нас/.test(p.textContent))p.style.display=deliv?'none':'';
+});
+qall('#profileBox a').forEach(function(a){
+if(/instagram\.com|t\.me\/and_coffee39/.test(a.href||''))a.style.display=deliv?'none':'';
+});
+syncNotifyUI();
+}
+document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(applyProfileBrand,60);});
+/* R5. Тикер и логотип по бренду */
+var BRAND_ORIG_LOGO=null;
+function applyBrandChrome(){
+var deliv=(brand==='delivery');
+var track=q1('#tickerTrack');
+if(track){
+var L=deliv?['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']
+:['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с 8:00–21:00'];
+track.innerHTML=L.concat(L).map(function(x){return '<span>'+x+'</span>';}).join('');
+}
+var br=q1('.topbar .brand');
+if(br){
+if(BRAND_ORIG_LOGO===null)BRAND_ORIG_LOGO=br.innerHTML;
+if(deliv)br.innerHTML='<img src="friday-logo.png" alt="Пятница" onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>🍕</span>\'"><div><b>Пятница</b><small>доставка пиццы и роллов</small></div>';
+else br.innerHTML=BRAND_ORIG_LOGO;
+}
+}
+document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(applyBrandChrome,60);});
+/* R6. Согласие с политикой при регистрации */
+(function(){
+var form=q1('#regForm');if(!form||q1('#consentRow'))return;
+var lab=document.createElement('label');lab.id='consentRow';lab.className='chk';
+lab.innerHTML='<input type="checkbox" id="consentBox"><span>Согласен с <a href="/privacy.html" target="_blank" style="color:#1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных</span>';
+var btn=q1('#regBtn');if(btn)form.insertBefore(lab,btn);
+})();
+document.addEventListener('click',function(e){
+var b=e.target.closest('#regBtn');if(!b)return;
+var cb=q1('#consentBox');
+if(cb&&!cb.checked){e.stopImmediatePropagation();e.preventDefault();toast('Отметь согласие с политикой конфиденциальности','⚠️');}
+},true);
+(function(){var _f=window.fetch;window.fetch=function(u,o){
+try{
+if(o&&o.body&&typeof o.body==='string'&&String(u).indexOf('/api/auth/register')>-1){
+var b=JSON.parse(o.body);var cb=q1('#consentBox');b.consent=(cb&&cb.checked)?1:0;
+o=Object.assign({},o,{body:JSON.stringify(b)});
+}
+}catch(e){}
+return _f.call(this,u,o);};})();
+/* R7. Кассир: без «Последних событий» и дубля «Новый гость» */
+function cashierClean(){
+var cl=q1('#cashLog');if(cl){var card=cl.closest('.cash-card');if(card)card.style.display='none';}
+var ng2=q1('#newGuestBtn2');if(ng2)ng2.style.display='none';
+}
+new MutationObserver(function(){
+var cv=q1('#cashierView');if(cv&&!cv.hidden)cashierClean();
+}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+/* R8. Редактор пятницы: карандаши + тумблер «в меню» */
+function injectEdits(){
+if(!document.body.classList.contains('editing'))return;
+qall('#deliveryGrid [data-add]').forEach(function(add){
+var card=add.closest('.card');if(!card)return;
+card.style.position='relative';
+if(!card.querySelector('.edBtn')){
+var b=document.createElement('button');b.type='button';b.className='edBtn';b.dataset.ed=add.getAttribute('data-add');b.textContent='✏️';
+card.appendChild(b);
+}
+if(!card.querySelector('.donoff')){
+var id=add.getAttribute('data-add');
+var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
+var lab=document.createElement('label');lab.className='donoff';
+lab.innerHTML='<input type="checkbox" data-onoff="'+id+'" '+((!p||p.on)?'checked':'')+'>в меню';
+card.appendChild(lab);
+}
+});
+}
+new MutationObserver(function(){injectEdits();}).observe(q1('#deliveryGrid')||document.body,{childList:true,subtree:true});
+document.getElementById('editToggle').addEventListener('click',function(){setTimeout(injectEdits,80);setTimeout(injectEdits,400);});
+document.addEventListener('click',function(e){
+var b=e.target.closest('#deliveryGrid .edBtn');if(!b)return;
+e.stopPropagation();e.preventDefault();
+try{openEditor(b.dataset.ed);}catch(err){}
+},true);
+document.getElementById('deliveryGrid').addEventListener('change',async function(e){
+var t=e.target.closest('.donoff [data-onoff]');if(!t)return;
+e.stopPropagation();
+var p=(window.DMENU||[]).filter(function(x){return x.id===t.getAttribute('data-onoff');})[0];if(!p)return;
+p.on=t.checked?1:0;
+try{await api('/menu/'+p.id,{method:'PUT',body:p});await loadDelivery();
+toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');}
+catch(err){toast(err.message,'⚠️');loadDelivery();}
+},true);
+/* R9. Списание свободного кофе с выбором напитка */
+showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return _sc(u,last);};})(showCust);
+(function(){
+if(q1('#redeemPick'))return;
+var m=document.createElement('div');m.id='redeemPick';
+m.innerHTML='<div class="omCard" style="max-width:420px"><button type="button" class="omClose">✕</button><h3 style="margin:0 0 12px">🎁 Какой кофе списать?</h3><div id="rpList" style="display:grid;gap:8px"></div></div>';
+document.body.appendChild(m);
+m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.omClose')){m.classList.remove('show');}});
+q1('#rpList').innerHTML=['Эспрессо','Американо','Капучино','Латте','Флэт уайт','Батч брю'].map(function(n){return '<button type="button" class="btn ghost" data-rp="'+n+'" style="width:100%">'+n+'</button>';}).join('');
+m.addEventListener('click',async function(e){
+var b=e.target.closest('[data-rp]');if(!b)return;
+var id=window.__foundId;if(!id)return toast('Гость не найден','⚠️');
+try{var r=await api('/staff/redeem',{method:'POST',body:{id:id,item:b.dataset.rp}});
+m.classList.remove('show');toast('Списано: '+b.dataset.rp,'🎁');
+try{showCust(r.customer);}catch(e2){}
+}catch(err){toast(err.message,'⚠️');}
+});
+var rb=q1('#redeemBtn');
+if(rb)rb.addEventListener('click',function(e){
+e.stopImmediatePropagation();e.preventDefault();
+q1('#redeemPick').classList.add('show');
+},true);
+})();
+/* R10. Диспетчер: задержка доставки */
+(function(){
+var top=q1('#ordersView .cash-top');
+if(top&&!q1('#delayAllBox')){
+var d=document.createElement('div');d.id='delayAllBox';d.className='delayBtns';
+d.innerHTML='<b>Задержать все:</b><button type="button" data-dlyall="15">+15 мин</button><button type="button" data-dlyall="30">+30 мин</button>';
+top.appendChild(d);
+}
+})();
+function injectDelay(){
+if(mode!=='orders')return;
+qall('#ordersList .orderCard').forEach(function(card){
+if(card.querySelector('.delayBtns'))return;
+if(/Выполнен|Отменён/.test(card.textContent))return;
+var oid=card.dataset.oid;if(!oid)return;
+var d=document.createElement('div');d.className='delayBtns';
+d.innerHTML='<button type="button" data-dly="15" data-oid="'+oid+'">⏰ +15 мин</button><button type="button" data-dly="30" data-oid="'+oid+'">⏰ +30 мин</button>';
+card.appendChild(d);
+});
+}
+new MutationObserver(function(){injectDelay();}).observe(q1('#ordersList')||document.body,{childList:true,subtree:true});
+document.addEventListener('click',async function(e){
+var b=e.target.closest('[data-dly],[data-dlyall]');if(!b)return;
+e.stopPropagation();e.preventDefault();
+var comment=prompt('Причина задержки (необязательно):','');
+if(comment===null)return;
+var min=+(b.dataset.dly||b.dataset.dlyall);
+try{
+if(b.dataset.dly)await api('/orders/'+b.dataset.oid+'/delay',{method:'POST',body:{min:min,comment:comment}});
+else{var r=await api('/orders/delay-all',{method:'POST',body:{min:min,comment:comment}});toast('Уведомлено заказов: '+r.count,'⏰');}
+renderOrders(true);
+}catch(err){toast(err.message,'⚠️');}
+},true);
+/* Нормализация шапки чата (.chatHead/.chName) — идемпотентно */
+if(!window.__v62norm){window.__v62norm=1;
+(function(){
+function norm(){
+var p=document.getElementById('chatPanel');if(!p)return;
+var head=p.querySelector('.chatHead');
+if(!head){
+var kids=p.children;
+for(var i=0;i<kids.length;i++){
+if(/Ника/.test(kids[i].textContent||'')){head=kids[i];break;}
+}
+if(head)head.classList.add('chatHead');
+}
+if(head&&!head.querySelector('.chName')){
+var nodes=head.querySelectorAll('div,span,b');
+for(var j=0;j<nodes.length;j++){
+if(nodes[j].children.length===0&&/Ника/.test(nodes[j].textContent||'')){nodes[j].classList.add('chName');break;}
+}
+}
+}
+norm();setTimeout(norm,300);setTimeout(norm,1200);setTimeout(norm,3000);
+document.addEventListener('click',function(){setTimeout(norm,60);},true);
+var p0=document.getElementById('chatPanel');
+if(p0&&window.MutationObserver)new MutationObserver(function(){norm();}).observe(p0,{childList:true,subtree:true});
+})();
+}
+/* Страховка от фантомного #overlay */
+if(!window.__v62ov){window.__v62ov=1;
+setInterval(function(){
+var ov=document.getElementById('overlay');
+if(ov&&ov.classList.contains('show')&&!document.querySelector('.modal.show'))ov.classList.remove('show');
+},500);
+}
+setTimeout(function(){applyProfileBrand();applyBrandChrome();cashierClean();injectEdits();syncNotifyUI();},400);
+console.log('fix-views v62 финал готов');
+})();
 
 sv();
 console.log('fix-views v64 готов');
