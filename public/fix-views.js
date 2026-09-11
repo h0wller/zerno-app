@@ -1115,6 +1115,63 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   if(et)et.addEventListener('click',function(){setTimeout(injectEdits,60);setTimeout(injectEdits,300);});
 })();
 
+/* ── v62: пилюля = выпадающий список; заголовок истории со строками; тумблер «в меню» на пятнице ── */
+(function(){
+  /* A) Пилюля открывает компактный список под шапкой, а не карточку в ленте */
+  showCtxSwitch=function(){
+    var p=document.getElementById('chatPanel');if(!p)return;
+    var old=document.getElementById('ctxDrop');
+    if(old){old.remove();return;}
+    if(getComputedStyle(p).position==='static')p.style.position='relative';
+    var head=p.querySelector('.chatHead');
+    var d=document.createElement('div');d.id='ctxDrop';
+    d.style.cssText='position:absolute;left:10px;right:10px;top:'+(head?head.offsetHeight+6:54)+'px;z-index:8;background:#fff;border:1.5px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;gap:4px';
+    d.innerHTML=
+      '<button data-ctxsw="delivery" style="display:flex;gap:8px;align-items:center;border:0;background:'+(chatCtx==='delivery'?'#FFF6E5':'transparent')+';border-radius:10px;padding:10px 12px;font-weight:700;font-size:14px;color:#14161A;cursor:pointer">🍕 Пятница — доставка</button>'+
+      '<button data-ctxsw="coffee" style="display:flex;gap:8px;align-items:center;border:0;background:'+(chatCtx==='coffee'?'#EAF1F9':'transparent')+';border-radius:10px;padding:10px 12px;font-weight:700;font-size:14px;color:#14161A;cursor:pointer">☕ Кофейня</button>';
+    p.appendChild(d);
+  };
+  document.addEventListener('click',function(e){
+    var d=document.getElementById('ctxDrop');if(!d)return;
+    if(e.target.closest('[data-ctxsw]')){d.remove();return;}
+    if(!e.target.closest('#ctxDrop')&&!e.target.closest('#ctxSwitch'))d.remove();
+  },true);
+
+  /* B) Профиль: заголовок «ИСТОРИЯ» всегда непосредственно над строками истории */
+  function fixHist(){
+    var pb=document.getElementById('profileBox');if(!pb)return;
+    var kids=[].slice.call(pb.children),H=null,R=null;
+    kids.forEach(function(ch){
+      if(!H&&(ch.textContent||'').trim().toUpperCase().indexOf('ИСТОРИЯ')===0&&ch.children.length===0)H=ch;
+    });
+    if(!H)return;
+    kids.forEach(function(ch){
+      if(!R&&ch!==H&&ch.children.length>0&&/Вход по PIN|Штамп \d|Приветственный бонус/.test(ch.textContent||''))R=ch;
+    });
+    if(R&&H.nextElementSibling!==R)pb.insertBefore(H,R);
+  }
+  renderProfile=(function(_rp){return function(){var r=_rp();fixHist();return r;};})(renderProfile);
+  setTimeout(fixHist,300);
+
+  /* C) Режим правки на «Пятнице»: тумблер «в меню» на карточках, как в кофейне */
+  renderDeliveryMenu=(function(_rm){return function(){var r=_rm();
+    var editing=document.body.classList.contains('editing');
+    document.querySelectorAll('#deliveryGrid [data-onoff]').forEach(function(el){var l=el.closest('label');if(l)l.remove();});
+    if(!editing)return r;
+    document.querySelectorAll('#deliveryGrid [data-add]').forEach(function(add){
+      var card=add.closest('.cbody');card=card?card.parentElement:(add.closest('article')||add.parentElement);
+      if(!card||card.querySelector('[data-onoff]'))return;
+      var id=add.getAttribute('data-add');
+      var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
+      card.style.position='relative';
+      var lab=document.createElement('label');
+      lab.style.cssText='position:absolute;top:8px;left:8px;z-index:3;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;display:flex;gap:6px;align-items:center;cursor:pointer';
+      lab.innerHTML='<input type="checkbox" data-onoff="'+id+'" '+((!p||p.on)?'checked':'')+'> в меню';
+      card.appendChild(lab);
+    });
+    return r;};})(renderDeliveryMenu);
+})();
+
 sv();
-console.log('fix-views v61 готов');
+console.log('fix-views v62 готов');
 })();
