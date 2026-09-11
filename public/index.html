@@ -1994,15 +1994,19 @@ function loop(){fxx.clearRect(0,0,fx.width,fx.height);pieces=pieces.filter(p=>p.
   fxx.fillStyle=p.c;fxx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.62);fxx.restore()});
  pieces.length?requestAnimationFrame(loop):(fxOn=false,fxx.clearRect(0,0,fx.width,fx.height))}
 
-let histPushed=false;
-function syncOverlay(){const on=$('#panel').classList.contains('open')||$('#emModal').classList.contains('show')
- ||$('#authModal').classList.contains('show')||$('#pinModal').classList.contains('show')
- ||$('#qrModal').classList.contains('show')||$('#promoModal').classList.contains('show')
- ||$('#setPinModal').classList.contains('show') 
- ||$('#dashModal').classList.contains('show')||$('#staffChatModal').classList.contains('show');
- $('#overlay').classList.toggle('show',on);
- if(on&&!histPushed){histPushed=true;history.pushState({zerno:1},'');}
- else if(!on&&histPushed){histPushed=false;history.back();}
+/* ── оверлей: единый источник правды, безопасная версия ── */
+let histPushed = false;
+function syncOverlay(){
+  const ov = document.getElementById('overlay');
+  const panel = document.getElementById('panel');
+  if (!ov) return;                                   // нет оверлея — нечего синхронизировать
+  const on = !!document.querySelector('.modal.show') // любая видимая модалка (без списка ID)
+          || !!(panel && panel.classList.contains('open'));
+  ov.classList.toggle('show', on);
+  ov.style.pointerEvents = on ? 'auto' : 'none';     // явно снимаем перехват кликов
+  ov.setAttribute('aria-hidden', on ? 'false' : 'true');
+  if (on && !histPushed){ histPushed = true; try { history.pushState({zerno:1},''); } catch(e){} }
+  else if (!on && histPushed){ histPushed = false; try { history.back(); } catch(e){} }
 }
 addEventListener('popstate',()=>{
  if(!histPushed)return;
