@@ -1,56 +1,55 @@
+// tests/chat-support.spec.js
 import { test, expect } from '@playwright/test';
-// tests/chat-support.spec.js — в начало файла
-test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('zt_onb', '1')); // гость уже «онборднут»
+
+/**
+ * Подготовка страницы: эмулируем «вернувшегося» гостя, чтобы приложение
+ * НЕ открывало модал авторизации автоматически (иначе #overlay.show
+ * перекрывает чат и оверлей поддержки и перехватывает все клики).
+ */
+async function prepare(page, url = '/') {
+  await page.addInitScript(() => localStorage.setItem('zt_onb', '1'));
+  await page.goto(url);
+  const sp = page.locator('#brandSplash');
+  if (await sp.count()) {
+    await sp.locator('[data-go="coffee"]').click();
+  }
+}
+
+test('поддержка из бота: оверлей появляется и НЕ исчезает', async ({ page }) => {
+  await prepare(page, '/?src=tg&tab=chat&support=choose');
+  const ov = page.locator('#supportChooseOverlay');
+  await expect(ov).toBeVisible({ timeout: 6000 });
+  await page.waitForTimeout(2000); // регрессия «появилась на секунду»
+  await expect(ov).toBeVisible();
 });
 
-async function skipSplash(page) {
-  const sp = page.locator('#brandSplash');
-  if (await sp.count()) await sp.locator('[data-go="coffee"]').click();
-}
+test('выбор доставки открывает доставочную Нику', async ({ page }) => {
+  await prepare(page, '/?src=tg&tab=chat&support=choose');
+  await page.locator('#supportChooseOverlay [data-support-topic="delivery"]').click();
+  await expect(page.locator('#supportChooseOverlay')).toHaveCount(0);
+  await expect(page.locator('#chatPanel .chat-h')).toContainText('доставка');
+  await expect(page.locator('.chatHint').first()).toBeVisible({ timeout: 5000 });
+});
 
-async function dismissAuthNudge(page) {
-  // 1. Close the auth modal if it's visible
-  const skipAuthBtn = page.locator('#skipAuth');
-  if (await skipAuthBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await skipAuthBtn.click();
-  }
-  
-  // 2. Wait for the blocking overlay to be completely hidden
-  await expect(page.locator('#overlay.show')).toBeHidden({ timeout: 5000 });
-}
+test('выбор кофейни открывает кофейную Нику', async ({ page }) => {
+  await prepare(page, '/?src=tg&tab=chat&support=choose');
+  await page.locator('#supportChooseOverlay [data-support-topic="coffee"]').click();
+  await expect(page.locator('#supportChooseOverlay')).toHaveCount(0);
+  await expect(page.locator('#chatPanel .chat-h')).toContainText('кофейня');
+});
 
 test('обычное открытие чата — без оверлея', async ({ page }) => {
-  await page.goto('/');
-  await skipSplash(page);
-  await dismissAuthNudge(page);
-  
-  // Now the overlay is gone, and the click will succeed
+  await prepare(page);
   await page.locator('#chatFab').click();
   await expect(page.locator('#supportChooseOverlay')).toHaveCount(0);
   await expect(page.locator('.chatHint').first()).toBeVisible({ timeout: 5000 });
 });
 
 test('вызов сотрудника требует подтверждения (два тапа)', async ({ page }) => {
-  await page.goto('/');
-  await skipSplash(page);
-  
+  await prepare(page);
   await page.locator('#chatFab').click();
-  
-  // 1. Ждем 400мс, чтобы завершилась CSS-анимация выезда чата и скролл ленты (fix "not stable")
-  await page.waitForTimeout(400);
-
-  // 2. Сносим фантомный оверлей, который случайно получил .show и перекрывает чат (fix "intercepts pointer events")
-  await page.evaluate(() => {
-    const ov = document.getElementById('overlay');
-    if (ov) ov.classList.remove('show');
-  });
-
   const call = page.locator('.chatHint', { hasText: 'Позвать сотрудника' });
-  
-  // 3. force: true гарантирует, что клик пройдет даже если какой-то невидимый div еще висит сверху
-  await call.click({ force: true });
-  
+  await call.click();
+  // первый тап только взводит подтверждение, сообщение НЕ отправляется
   await expect(page.locator('.chatHint', { hasText: 'Точно позвать' })).toBeVisible();
 });
-
