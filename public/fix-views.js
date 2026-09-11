@@ -995,6 +995,15 @@ if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('message',fu
 
 /* 14. Диплинки, Mini App, конфиг */
 (function(){
+  if(SUPPORT_ENTRY){
+  var closeAuth=function(){
+    var am=document.getElementById('authModal');
+    if(am&&am.classList.contains('show')){am.classList.remove('show');if(typeof syncOverlay==='function')syncOverlay();}
+  };
+  closeAuth();
+  document.addEventListener('DOMContentLoaded',closeAuth);
+  setTimeout(closeAuth,300);
+}
   var bP=QS.get('brand'),tab=QS.get('tab');
   if(!bP&&!tab)return;
   setTimeout(function(){
