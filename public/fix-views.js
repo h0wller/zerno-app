@@ -1358,6 +1358,71 @@ document.addEventListener('click',function(e){
   }
 })();
 
+/* ── v67: доставка — надёжные сохранение/скрытие/редактор: единые обработчики + логи ── */
+(function(){
+  function z(m){try{if(window.zdbg)window.zdbg(m);}catch(e){}console.log('[v67] '+m);}
+  function injectControls(){
+    if(!document.body.classList.contains('editing'))return;
+    document.querySelectorAll('#deliveryGrid [data-add]').forEach(function(add){
+      var card=add.closest('.cbody');card=card?card.parentElement:(add.closest('article')||add.parentElement);
+      if(!card)return;
+      card.style.position='relative';
+      if(!card.querySelector('.edBtn')){
+        var b=document.createElement('button');b.type='button';b.className='edBtn';
+        b.dataset.ed=add.getAttribute('data-add');b.textContent='✏️';
+        b.style.cssText='position:absolute;top:8px;right:8px;z-index:3;border:0;background:rgba(255,255,255,.92);border-radius:10px;padding:6px 9px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)';
+        card.appendChild(b);
+      }
+      if(!card.querySelector('[data-onoff]')){
+        var id=add.getAttribute('data-add');
+        var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
+        var lab=document.createElement('label');
+        lab.style.cssText='position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:11px;font-weight:700;cursor:pointer';
+        lab.innerHTML='<input type="checkbox" data-onoff="'+id+'" '+((!p||p.on)?'checked':'')+' style="width:18px;height:18px"> в меню';
+        card.appendChild(lab);
+      }
+    });
+  }
+  window.__injectControls=injectControls;
+  renderDeliveryMenu=(function(_rm){return function(){var r=_rm();try{injectControls();}catch(e){z('inject ERR '+e.message);}return r;};})(renderDeliveryMenu);
+
+  /* Тумблер «в меню»: единственный обработчик, сохранение и скрытие без конкурентов */
+  document.addEventListener('change',function(e){
+    var t=e.target.closest('#deliveryGrid [data-onoff]');
+    if(!t)return;
+    e.stopImmediatePropagation();e.stopPropagation();e.preventDefault();
+    var id=t.getAttribute('data-onoff');
+    var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
+    if(!p){z('toggle: позиция не найдена '+id);return;}
+    p.on=t.checked?1:0;
+    z('toggle PUT on='+p.on+' id='+id);
+    api('/menu/'+p.id,{method:'PUT',body:p}).then(function(){
+      z('toggle PUT ok');
+      return loadDelivery();
+    }).then(function(){
+      toast(t.checked?'«'+p.name+'» снова в меню':'«'+p.name+'» → стоп-лист',t.checked?'✅':'⛔');
+    }).catch(function(err){
+      z('toggle PUT ERR '+err.message);
+      toast('Ошибка сохранения: '+err.message,'⚠️');
+      return loadDelivery();
+    });
+  },true);
+
+  /* Карандаш: единственный обработчик с логом ошибки открытия редактора */
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('#deliveryGrid [data-ed]');
+    if(!b)return;
+    e.stopImmediatePropagation();e.preventDefault();
+    z('pencil id='+b.getAttribute('data-ed'));
+    try{openEditor(b.getAttribute('data-ed'));z('editor open ok');}
+    catch(err){z('editor ERR '+err.message);toast('Ошибка редактора: '+err.message,'⚠️');}
+  },true);
+
+  /* Сохранение в редакторе: подсветка клика (обработчик базовый, мы лишь логируем) */
+  var sb=document.getElementById('emSave');
+  if(sb)sb.addEventListener('click',function(){z('emSave click');},true);
+})();
+
 sv();
-console.log('fix-views v66 готов');
+console.log('fix-views v67 готов');
 })();
