@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /** Готовим страницу: сплэш бренда + гостевая модалка авторизации сброшены. */
-async function prepare(page: Parameters<typeof test>[1] extends never ? never : any, url = '/') {
+async function prepare(page, url = '/') {
   await page.goto(url);
   const sp = page.locator('#brandSplash');
   if (await sp.isVisible().catch(() => false)) {
