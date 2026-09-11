@@ -1274,5 +1274,81 @@ document.addEventListener('click',async function(e){
 setTimeout(function(){applyProfileBrand();applyBrandChrome();cashierClean();injectEdits();syncNotifyUI();},400);
 console.log('fix-views v61 восстановление готов');
 })();
+/* ══ v62: стоп-лист/фото/тумблер/тикер/заказы в профиле — один блок ══ */
+(function(){
+var css=document.createElement('style');
+css.textContent=
+'.ticker{max-width:1480px;margin:0 auto;}'+
+'#deliveryGrid .card .media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}';
+document.head.appendChild(css);
+
+function patchCards(){
+var list=(typeof DMENU!=='undefined'?DMENU:[]).filter(function(p){return p.cat===(typeof dcat!=='undefined'?dcat:'pizza');});
+var cards=document.querySelectorAll('#deliveryGrid .card');
+var editing=document.body.classList.contains('editing');
+cards.forEach(function(card,i){
+var p=list[i];if(!p)return;
+/* вид СТОП */
+card.classList.toggle('stopped',!p.on);
+var media=card.querySelector('.media');
+if(media){
+var sb=media.querySelector('.stopbadge');
+if(!p.on&&!sb){sb=document.createElement('span');sb.className='stopbadge';sb.textContent='СТОП';media.appendChild(sb);}
+if(p.on&&sb)sb.remove();
+/* фото в карточке */
+if(p.img&&!media.querySelector('img')){var em=media.querySelector('.em');if(em)em.remove();
+var im=document.createElement('img');im.src=p.img;im.alt=p.name||'';media.appendChild(im);}
+}
+/* стоп не добавить в корзину */
+var add=card.querySelector('[data-add]');
+if(add){
+if(!p.on){add.disabled=true;add.style.opacity='.45';add.style.pointerEvents='none';add.textContent='СТОП — недоступно';}
+else if(add.disabled){add.disabled=false;add.style.opacity='';add.style.pointerEvents='';add.textContent='Добавить';}
+}
+/* карандаш + тумблер в режиме правки, с реальным состоянием */
+if(editing){
+card.style.position='relative';
+if(!card.querySelector('.edBtn')){var b=document.createElement('button');b.type='button';b.className='edBtn';b.dataset.ed=p.id;b.textContent='✏️';card.appendChild(b);}
+var lab=card.querySelector('.donoff');
+if(!lab){lab=document.createElement('label');lab.className='donoff';lab.innerHTML='<input type="checkbox" data-onoff="'+p.id+'">в меню';card.appendChild(lab);}
+lab.querySelector('input').checked=!!p.on;
+}else{
+var d2=card.querySelector('.donoff');if(d2)d2.remove();
+var e2=card.querySelector('.edBtn');if(e2)e2.remove();
+}
+});
+}
+renderDeliveryMenu=(function(_rm){return function(){var r=_rm();try{patchCards();}catch(e){}return r;};})(renderDeliveryMenu);
+
+/* тумблер: capture-обработчик на реальном DMENU (window.DMENU не существует) */
+document.getElementById('deliveryGrid').addEventListener('change',async function(e){
+var t=e.target.closest('.donoff [data-onoff]');if(!t)return;
+e.stopPropagation();
+var p=(typeof DMENU!=='undefined'?DMENU:[]).find(function(x){return x.id===t.getAttribute('data-onoff');});if(!p)return;
+p.on=t.checked?1:0;
+try{await api('/menu/'+p.id,{method:'PUT',body:p});await loadDelivery();
+toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');}
+catch(err){toast(err.message,'⚠️');loadDelivery();}
+},true);
+
+/* страховка: клик «Добавить» по стоп-позиции */
+document.getElementById('deliveryGrid').addEventListener('click',function(e){
+var add=e.target.closest('[data-add]');if(!add)return;
+var p=(typeof DMENU!=='undefined'?DMENU:[]).find(function(x){return x.id===add.getAttribute('data-add');});
+if(p&&!p.on){e.stopPropagation();e.preventDefault();toast('Позиция в стоп-листе — недоступна для заказа','⛔');}
+},true);
+
+/* профиль кофейни: без «Мои заказы» и последней карточки заказа */
+renderProfile=(function(_rp){return function(){var r=_rp();
+var show=(typeof brand!=='undefined'&&brand==='delivery');
+var mo=document.getElementById('myOrders');if(mo)mo.style.display=show?'':'none';
+var mb=document.getElementById('myOrdersBtn');if(mb)mb.style.display=show?'':'none';
+return r;};})(renderProfile);
+loadMyOrders=(function(_lm){return async function(){
+if(typeof brand!=='undefined'&&brand!=='delivery'){var h=document.getElementById('myOrders');if(h)h.innerHTML='';return;}
+return _lm.apply(this,arguments);};})(loadMyOrders);
+
+setTimeout(patchCards,300);
+})();
 sv();
 })();
