@@ -1162,7 +1162,7 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
       var card=add.closest('.cbody');card=card?card.parentElement:(add.closest('article')||add.parentElement);
       if(!card||card.querySelector('[data-onoff]'))return;
       var id=add.getAttribute('data-add');
-      var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
+var r =(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
       card.style.position='relative';
       var lab=document.createElement('label');
       lab.style.cssText='position:absolute;top:8px;left:8px;z-index:3;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;display:flex;gap:6px;align-items:center;cursor:pointer';
@@ -1232,7 +1232,7 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
       var card=add.closest('.cbody');card=card?card.parentElement:(add.closest('article')||add.parentElement);
       if(!card||card.querySelector('.donoff'))return;
       var id=add.getAttribute('data-add');
-      var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
+var p=(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
       card.style.position='relative';
       var lab=document.createElement('label');lab.className='donoff';
       lab.innerHTML='<input type="checkbox" data-onoff="'+id+'" '+((!p||p.on)?'checked':'')+' onchange="window.__donoff(this)"><i></i>в меню';
@@ -1241,7 +1241,8 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   }
   window.__donoff=function(t){
   var id=t.getAttribute('data-onoff');
-  var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];if(!p)return;
+var p=(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
+
   p.on=t.checked?1:0;
   api('/menu/'+p.id,{method:'PUT',body:p}).then(function(){
     toast(t.checked?'«'+p.name+'» снова в меню':'«'+p.name+'» → стоп-лист',t.checked?'✅':'⛔');
@@ -1255,7 +1256,8 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   document.addEventListener('change',function(e){
     var t=e.target.closest('#deliveryGrid [data-onoff]');if(!t)return;
     e.stopPropagation();
-    var p=(window.DMENU||[]).filter(function(x){return x.id===t.getAttribute('data-onoff');})[0];
+var p=(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
+
     if(!p)return;
     p.on=t.checked?1:0;
     (async function(){
@@ -1274,7 +1276,8 @@ document.addEventListener('change',function(e){
   var t=e.target.closest('#deliveryGrid [data-onoff]');if(!t)return;
   e.stopPropagation();
   var id=t.getAttribute('data-onoff');
-  var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];if(!p)return;
+var p=(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
+
   p.on=t.checked?1:0;
   (async function(){
     try{
@@ -1375,7 +1378,7 @@ document.addEventListener('click',function(e){
       }
       if(!card.querySelector('[data-onoff]')){
         var id=add.getAttribute('data-add');
-        var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
+var p=(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
         var lab=document.createElement('label');
         lab.style.cssText='position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:11px;font-weight:700;cursor:pointer';
         lab.innerHTML='<input type="checkbox" data-onoff="'+id+'" '+((!p||p.on)?'checked':'')+' style="width:18px;height:18px"> в меню';
@@ -1392,7 +1395,7 @@ document.addEventListener('click',function(e){
     if(!t)return;
     e.stopImmediatePropagation();e.stopPropagation();e.preventDefault();
     var id=t.getAttribute('data-onoff');
-    var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
+var r=(typeof DMENU!=='undefined'&&Array.isArray(DMENU))?DMENU:[];
     if(!p){z('toggle: позиция не найдена '+id);return;}
     p.on=t.checked?1:0;
     z('toggle PUT on='+p.on+' id='+id);
