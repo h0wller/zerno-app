@@ -1,14 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 /** Готовим страницу: сплэш бренда + гостевая модалка авторизации сброшены. */
-async function prepare(page, url = '/') {
-  await page.goto(url);
+async function skipSplash(page){
   const sp = page.locator('#brandSplash');
-  if (await sp.isVisible().catch(() => false)) {
-    await sp.locator('[data-go="coffee"]').click().catch(() => {});
-  }
-  const just = page.getByText('Просто посмотреть меню');
-  if (await just.isVisible().catch(() => false)) await just.click().catch(() => {});
+  if (await sp.count()) await sp.locator('[data-go="coffee"]').click();
+  const guest = page.getByText('Просто посмотреть меню');
+  if (await guest.isVisible().catch(() => false)) await guest.click();
 }
 
 test('поддержка из бота: оверлей появляется и НЕ исчезает', async ({ page }) => {
@@ -47,3 +44,5 @@ test('вызов сотрудника требует подтверждения 
   await call.click();
   await expect(page.locator('.chatHint', { hasText: 'Точно позвать' })).toBeVisible();
 });
+
+
