@@ -602,15 +602,24 @@ chatKey=(function(_ck){return function(){return _ck()+(chatCtx==='delivery'?':d'
     if(typeof msg==='string'&&/Доставлено:/.test(msg)){var n=Date.now();if(n-last<1500)return;last=n;}
     return _t(msg,icon);};})();
 function setBotName(){
-  var head=document.querySelector('#chatPanel .chatHead')||document.getElementById('chatPanel');
-  var name=supportPending?'Ника · поддержка':(chatCtx==='delivery'?'Ника · 🍕 доставка':'Ника · ☕ кофейня');
-  if(head){
-    var nodes=head.querySelectorAll('div,span,b');
-    for(var i=0;i<nodes.length;i++){var el=nodes[i];
-      if(el.children.length===0&&/Ника/.test(el.textContent||'')){el.textContent=name;break;}}
+  var head = document.querySelector('#chatPanel .chatHead') || document.getElementById('chatPanel');
+  // Если тема ещё не выбрана — "поддержка", иначе — по контексту
+  var name = !chosenSupportCtx 
+    ? 'Ника · поддержка' 
+    : (chatCtx === 'delivery' ? 'Ника · 🍕 доставка' : 'Ника · ☕ кофейня');
+  
+  if (head) {
+    var nodes = head.querySelectorAll('div,span,b');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (el.children.length === 0 && /Ника/.test(el.textContent || '')) {
+        el.textContent = name;
+        break;
+      }
+    }
   }
-  var b=document.getElementById('ctxSwitch');
-  if(b)b.textContent=(chatCtx==='delivery'?'🍕':'')+' ▾';
+  var b = document.getElementById('ctxSwitch');
+  if (b) b.textContent = (chatCtx === 'delivery' ? '🍕' : '') + ' ▾';
 }
 function dinfoP(){if(window.__dinfo)return Promise.resolve(window.__dinfo);
   window.__dinfoP=window.__dinfoP||fetch(API_BASE+'/api/delivery/info').then(function(r){return r.json();}).then(function(x){window.__dinfo=x;return x;});
