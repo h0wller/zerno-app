@@ -1235,10 +1235,19 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
       var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
       card.style.position='relative';
       var lab=document.createElement('label');lab.className='donoff';
-      lab.innerHTML='<input type="checkbox" data-onoff="'+id+'" '+((!p||p.on)?'checked':'')+'><i></i>в меню';
+      lab.innerHTML='<input type="checkbox" data-onoff="'+id+'" '+((!p||p.on)?'checked':'')+' onchange="window.__donoff(this)"><i></i>в меню';
       card.appendChild(lab);
     });
   }
+  window.__donoff=function(t){
+  var id=t.getAttribute('data-onoff');
+  var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];if(!p)return;
+  p.on=t.checked?1:0;
+  api('/menu/'+p.id,{method:'PUT',body:p}).then(function(){
+    toast(t.checked?'«'+p.name+'» снова в меню':'«'+p.name+'» → стоп-лист',t.checked?'✅':'⛔');
+    return loadDelivery();
+  }).catch(function(err){toast(err.message,'⚠️');});
+};
   renderDeliveryMenu=(function(_rm){return function(){var r=_rm();injectSw();return r;};})(renderDeliveryMenu);
   var et=document.getElementById('editToggle');
   if(et)et.addEventListener('click',function(){setTimeout(injectSw,60);setTimeout(injectSw,400);});
