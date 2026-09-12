@@ -370,6 +370,7 @@ return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(id)
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', true);
 app.use((req, res, next) => {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -1112,7 +1113,9 @@ app.get('/api/stats/redeems', adminGuard, (req, res) => {
   }
   res.json({ total: rows.length, byItem });
 });
-app.use(express.static(PUBLIC_DIR));
+app.use(express.static(PUBLIC_DIR, { setHeaders: (res, p) => {
+  if (p.endsWith('index.html') || p.endsWith('sw.js')) res.setHeader('Cache-Control', 'no-cache');
+} }));
 app.get('/api/stats/redeems', adminGuard, (req, res) => {
   const rows = db.prepare(`
     SELECT a, by, ts FROM history 
@@ -1135,4 +1138,5 @@ app.get('/api/stats/redeems', adminGuard, (req, res) => {
     }))
   });
 });
-app.listen(PORT, () => { console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`); tgEnsureWebhook(); });
+const server = app.listen(PORT, () => { console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`); tgEnsureWebhook(); });
+process.on('SIGTERM', () => { console.log('[srv] SIGTERM, корректно закрываюсь…'); server.close(() => process.exit(0)); setTimeout(() => process.exit(0), 3000); });

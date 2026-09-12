@@ -1594,7 +1594,6 @@ if(s.cartOpen&&!s.modal&&!s.panelOpen)document.getElementById('cartPanel').class
 if(typeof oldClick==='function')oldClick.call(this,e);
 apply();
 };}
-setInterval(apply,150);
 new MutationObserver(apply).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
 apply();
 })();
@@ -1712,6 +1711,17 @@ new MutationObserver(function(){if(p.classList.contains('open'))setTimeout(hint,
 (function(){var s=document.createElement('style');
 s.textContent='@media(max-width:1180px){#panel{touch-action:pan-y}}';
 document.head.appendChild(s);
+})();
+/* ══ v68: финальный полиш — a11y, reduced-motion, lazy-img ══ */
+(function(){
+var css=document.createElement('style');
+css.textContent='@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}';
+document.head.appendChild(css);
+document.querySelectorAll('.modal').forEach(function(m){m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');});
+document.querySelectorAll('.mclose').forEach(function(b){if(!b.getAttribute('aria-label'))b.setAttribute('aria-label','Закрыть');});
+function lazify(root){(root||document).querySelectorAll('img').forEach(function(img){if(!img.loading){img.loading='lazy';img.decoding='async';}});}
+lazify(document);
+new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes&&m.addedNodes.forEach(function(n){if(n.nodeType===1)lazify(n);});});}).observe(document.body,{childList:true,subtree:true});
 })();
 sv();
 })();
