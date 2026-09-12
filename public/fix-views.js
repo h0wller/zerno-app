@@ -1568,5 +1568,41 @@ new MutationObserver(function(){profileBrandRules();}).observe($('#myOrders')||d
 })();
 setTimeout(profileBrandRules,300);
 })();
+/* ══ v65: модалки выше шторки всегда; оверлей всегда блокирует фон; одна модалка за раз ══ */
+(function(){
+var css=document.createElement('style');
+css.textContent=
+'.modal{z-index:340!important}'+
+'#settingsModal,#ordersModal,#redeemPick{z-index:345!important}'+
+'.overlay{z-index:330!important}'+
+'.overlay.show{pointer-events:auto!important;opacity:1!important}'+
+'.overlay:not(.show){pointer-events:none!important;opacity:0!important}'+
+'@media(max-width:1180px){#panel.open{z-index:320!important}}';
+document.head.appendChild(css);
+
+function anyModal(){return !!document.querySelector('.modal.show,#ordersModal.show,#redeemPick.show');}
+function fixOverlay(){
+var ov=document.getElementById('overlay');if(!ov)return;
+var on=document.getElementById('panel').classList.contains('open')||anyModal();
+ov.classList.toggle('show',on);
+ov.style.pointerEvents=on?'auto':'none';   // сбивает старые inline-стили
+}
+var lastModal=null;
+new MutationObserver(function(muts){
+for(var i=0;i<muts.length;i++){
+var el=muts[i].target;
+if(muts[i].attributeName!=='class'||!el.classList)continue;
+var has=el.classList.contains('show');
+var had=muts[i].oldValue?/(^|\s)show(\s|$)/.test(muts[i].oldValue):false;
+if(has&&!had)lastModal=el;
+}
+var shown=[].slice.call(document.querySelectorAll('.modal.show'));
+if(shown.length>1&&lastModal){
+shown.forEach(function(m){if(m!==lastModal)m.classList.remove('show');});
+}
+fixOverlay();
+}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class'],attributeOldValue:true});
+setInterval(fixOverlay,400);
+})();
 sv();
 })();
