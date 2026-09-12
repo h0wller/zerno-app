@@ -1494,7 +1494,6 @@ function filterCashRows(){
 }
 new MutationObserver(function(){unhideCashLog();filterCashRows();}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
 setTimeout(function(){unhideCashLog();filterCashRows();},300);
-})();
 /* ══ v64: профиль окончательно — брендовые правила + шестерёнка/настройки на мобильных ══ */
 (function(){
 var $=function(s){return document.querySelector(s);};
@@ -1521,7 +1520,6 @@ function profileBrandRules(){
 renderProfile=(function(_rp){return function(){var r=_rp.apply(this,arguments);profileBrandRules();return r;};})(renderProfile);
 document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(profileBrandRules,80);});
 new MutationObserver(function(){profileBrandRules();}).observe($('#myOrders')||document.body,{childList:true,subtree:true});
-
 /* шестерёнка и «Настройки» поверх шторки на мобильных */
 (function(){
   var pb=$('#profileBox');if(!pb)return;
@@ -1558,6 +1556,7 @@ new MutationObserver(function(){profileBrandRules();}).observe($('#myOrders')||d
   },true);
 })();
 setTimeout(profileBrandRules,300);
+})();
 /* ══ v66: ЕДИНЫЙ контроллер оверлея (модалка 340 / корзина 120 / шторка 320) ══ */
 (function(){
 var css=document.createElement('style');
