@@ -1344,7 +1344,7 @@ var css=document.createElement('style');
 css.textContent=
 '.chat-fab{z-index:95!important}'+
 '@media(max-width:1180px){body.panel-open .chat-fab{display:none}}'+
-'@media(max-width:1180px){.overlay{z-index:330!important}.modal{z-index:340!important}}'+
+'.modal{z-index:340!important}'+
 '.phead .gear{margin-left:auto;width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:18px}'+
 '#settingsModal .set-row{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;background:#fff}'+
 '#deliveryView .search{min-width:180px;margin-left:auto}';
