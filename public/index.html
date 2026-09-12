@@ -541,9 +541,8 @@ body.is-cashier .cust .acts{min-width:260px}
 <script>
 (function(){
   var q=new URLSearchParams(location.search);
-  var need=!(sessionStorage.getItem('splashDone')||q.get('brand')||q.get('tab')||q.get('src')||/Telegram/i.test(navigator.userAgent));
+  var need=!(sessionStorage.getItem('splashDone')||q.get('brand')||q.get('tab')||q.get('src')||q.get('support')||/Telegram/i.test(navigator.userAgent));
   document.documentElement.classList.add(need?'need-splash':'no-splash');
-  // если сплэш не нужен — сразу скрываем статичный элемент
   if(!need){
     var ss=document.getElementById('brandSplashStatic');
     if(ss)ss.style.display='none';

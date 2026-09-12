@@ -5,28 +5,44 @@ async function skipSplash(page){
   if (await sp.count()) await sp.locator('[data-go="coffee"]').click();
 }
 
-/* ВАЖНО: эмулируем "вернувшегося" гостя, чтобы authModal не открывался автоматически */
 async function prepare(page, url = '/') {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
   });
   await page.goto(url);
 
-  // кликаем по тому сплэшу, который реально видим: статичный (#brandSplashStatic) или старый динамический
-  const coffeeBtn = page
-    .locator('#brandSplashStatic [data-go="coffee"], #brandSplash [data-go="coffee"]')
-    .first();
-  if (await coffeeBtn.isVisible().catch(() => false)) {
-    await coffeeBtn.click();
+  // Небольшая пауза, чтобы CSS и классы из <head> применились
+  await page.waitForTimeout(200);
+
+  // Если открыт оверлей выбора темы поддержки — сплэш не трогаем
+  const supportOverlay = page.locator('#supportChooseOverlay');
+  const isSupportOverlayVisible = await supportOverlay.isVisible().catch(() => false);
+
+  if (!isSupportOverlayVisible) {
+    const coffeeBtn = page
+      .locator('#brandSplashStatic [data-go="coffee"], #brandSplash [data-go="coffee"]')
+      .first();
+      
+    if (await coffeeBtn.isVisible().catch(() => false)) {
+      // Страховка: принудительно убираем перехватчики и кликаем
+      await page.evaluate(() => {
+        const ov = document.getElementById('supportChooseOverlay');
+        if (ov) ov.style.display = 'none';
+      });
+      await coffeeBtn.click({ force: true });
+    }
   }
 
-  // дожидаемся, пока сплэш исчезнет и с body снимется visibility:hidden
+  // Дожидаемся, пока сплэш точно исчезнет (или что он и не был показан)
   await page
     .waitForFunction(
-      () =>
-        !document.getElementById('brandSplashStatic') &&
-        !document.getElementById('brandSplash') &&
-        !document.documentElement.classList.contains('need-splash'),
+      () => {
+        const bs = document.getElementById('brandSplashStatic');
+        const bd = document.getElementById('brandSplash');
+        const bsHidden = !bs || getComputedStyle(bs).display === 'none';
+        const bdHidden = !bd || getComputedStyle(bd).display === 'none';
+        return bsHidden && bdHidden;
+      },
       null,
       { timeout: 5000 }
     )
