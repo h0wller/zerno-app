@@ -1558,7 +1558,6 @@ new MutationObserver(function(){profileBrandRules();}).observe($('#myOrders')||d
   },true);
 })();
 setTimeout(profileBrandRules,300);
-})();
 /* ══ v66: ЕДИНЫЙ контроллер оверлея (модалка 340 / корзина 120 / шторка 320) ══ */
 (function(){
 var css=document.createElement('style');
@@ -1587,7 +1586,7 @@ ov.style.zIndex=s.modal?330:(s.cartOpen?110:310);
 if(on&&!histPushed66){histPushed66=true;try{history.pushState({zerno:1},'');}catch(e){}}
 else if(!on&&histPushed66){histPushed66=false;try{history.back();}catch(e){}}
 }
-window.syncOverlay=apply;   // базовые openPanel/openAuth/… вызывают syncOverlay() → попадут сюда
+window.syncOverlay=apply;
 var ov=document.getElementById('overlay');
 if(ov){var oldClick=ov.onclick;
 ov.onclick=function(e){
@@ -1601,3 +1600,4 @@ new MutationObserver(apply).observe(document.body,{subtree:true,attributes:true,
 apply();
 })();
 sv();
+})();
