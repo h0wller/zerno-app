@@ -1598,5 +1598,60 @@ setInterval(apply,150);
 new MutationObserver(apply).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
 apply();
 })();
+/* ══ v67: тап по фону закрывает только верхнюю модалку; сброс только в шестерёнке; свайп вправо закрывает профиль ══ */
+(function(){
+/* 1) оверлей: закрываем только верхнюю модалку, профиль не трогаем */
+var ov=document.getElementById('overlay');
+if(ov){
+var prev=ov.onclick;
+var CLOSE={emModal:'closeEditor',authModal:'closeAuth',pinModal:'closePin',setPinModal:'closeSetPin',qrModal:'closeQRFull',promoModal:'closePromo',dashModal:'closeDash',staffChatModal:'closeStaffChat'};
+ov.onclick=function(e){
+var m=document.querySelector('.modal.show');
+if(m){
+if(m.id==='settingsModal'){m.classList.remove('show');}
+else{var fn=CLOSE[m.id];if(typeof window[fn]==='function')window[fn]();else m.classList.remove('show');}
+if(typeof window.syncOverlay==='function')window.syncOverlay();
+return;
+}
+if(typeof prev==='function')return prev.call(this,e);
+};
+}
+/* 2) сброс: убираем дубль внизу профиля, в шестерёнке — понятное имя */
+var rb=document.getElementById('resetBtn');
+if(rb){
+rb.style.display='none';
+rb.onclick=function(){
+if(!confirm('Выйти из профиля и очистить кэш на этом устройстве?\nШтампы, заказы и подарки останутся на сервере.'))return;
+localStorage.clear();location.reload();
+};
+}
+var rg=document.getElementById('resetGo2');
+if(rg){
+var row=rg.closest('.set-row');
+if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти и очистить данные этого устройства';}
+}
+/* 3) свайп вправо = закрыть профиль (мобильные) */
+var p=document.getElementById('panel');
+if(p){
+var sx=0,sy=0,dx=0,tracking=false;
+p.addEventListener('touchstart',function(e){
+if(window.innerWidth>1180||!p.classList.contains('open'))return;
+var t=e.touches[0];sx=t.clientX;sy=t.clientY;dx=0;tracking=true;
+p.style.transition='none';
+},{passive:true});
+p.addEventListener('touchmove',function(e){
+if(!tracking)return;
+var t=e.touches[0];dx=t.clientX-sx;var dy=t.clientY-sy;
+if(dx<0||Math.abs(dy)>60){tracking=false;p.style.transform='';p.style.transition='';return;}
+if(dx>0)p.style.transform='translateX('+dx+'px)';
+},{passive:true});
+p.addEventListener('touchend',function(){
+if(!tracking){p.style.transition='';p.style.transform='';return;}
+tracking=false;p.style.transition='';
+if(dx>80&&typeof closePanel==='function')closePanel();
+p.style.transform='';
+});
+}
+})();
 sv();
 })();
