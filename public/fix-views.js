@@ -865,10 +865,11 @@ async function refreshProfileLive(){
   if(!me||document.visibilityState!=='visible')return;
   try{
     var r=await api('/me');if(!r||!r.customer)return;
-    var sig=r.customer.stamps+':'+r.customer.free+':'+r.customer.welcome+':'+r.customer.tg;
+    var sig=r.customer.stamps+':'+r.customer.free+':'+r.customer.welcome+':'+r.customer.tg+':'+r.customer.notify_tg+':'+r.customer.notify_web;
     if(sig!==lastProfileSig){
       lastProfileSig=sig;
       me=r.customer;
+      if(typeof window.syncNotifyAll==='function')window.syncNotifyAll();
       if(typeof renderProfile==='function')renderProfile();
       if(typeof renderVerifyNote==='function')renderVerifyNote();
     }
@@ -1045,7 +1046,25 @@ async function renderOrdersModal(){
   b.onclick=renderOrdersModal;
 }
 )();
-
+/* ══ каналы уведомлений: единое применение без перезагрузок ══ */
+function syncNotifyAll(){
+if(!me)return;
+[['ntTg','ntWeb'],['ntTg2','ntWeb2']].forEach(function(pr){
+var t=document.getElementById(pr[0]),w=document.getElementById(pr[1]);
+if(t)t.checked=me.notify_tg!==0;
+if(w)w.checked=me.notify_web!==0;
+});
+}
+window.syncNotifyAll=syncNotifyAll;
+window.applyNotify=async function(tg,web){
+try{
+var r=await api('/me/notify',{method:'PUT',body:{tg:tg?1:0,web:web?1:0}});
+if(r&&r.customer&&me){me.notify_tg=r.customer.notify_tg;me.notify_web=r.customer.notify_web;}
+syncNotifyAll();
+var where=(tg&&web)?'Пуши придут в оба канала':(tg?'Пуши придут только в Telegram':(web?'Пуши придут только в браузер':'Пуши выключены — верни каналы в любой момент'));
+toast('✅ Сохранено: Telegram — '+(tg?'вкл':'выкл')+', браузер — '+(web?'вкл':'выкл')+'. '+where,'🔔');
+}catch(e){toast(e.message,'⚠️');syncNotifyAll();}
+};
 
 /* R3. Каналы уведомлений */
 function syncNotifyUI(){
@@ -1062,10 +1081,7 @@ function syncNotifyUI(){
     '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="ntTg"> 🤖 Telegram</label>'+
     '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="ntWeb"> 🔔 Пуши браузера</label></div>';
   pb.appendChild(d);
-  d.addEventListener('change',async function(){
-    try{await api('/me/notify',{method:'PUT',body:{tg:$('#ntTg').checked?1:0,web:$('#ntWeb').checked?1:0}});toast('Каналы уведомлений сохранены','✅');}
-    catch(e){toast(e.message,'⚠️');}
-  });
+  d.addEventListener('change',function(){window.applyNotify($('#ntTg').checked,$('#ntWeb').checked);});
 })();
 ['profileTopBtn','mbonusBtn'].forEach(function(id){
   var b=$('#'+id);if(b)b.addEventListener('click',function(){setTimeout(syncNotifyUI,120);});
@@ -1401,10 +1417,8 @@ document.getElementById('setClose').onclick=function(){m.classList.remove('show'
 document.getElementById('setPinGo2').onclick=function(){m.classList.remove('show');syncOverlay();var b=document.getElementById('setPinBtn');if(b)b.click();};
 document.getElementById('resetGo2').onclick=function(){var b=document.getElementById('resetBtn');if(b)b.click();};
 var t=document.getElementById('ntTg2'),w=document.getElementById('ntWeb2');
-function sync(){if(!me)return;t.checked=me.notify_tg!==0;w.checked=me.notify_web!==0;}
-[t,w].forEach(function(el){el.addEventListener('change',async function(){
-try{await api('/me/notify',{method:'PUT',body:{tg:t.checked?1:0,web:w.checked?1:0}});toast('Каналы уведомлений сохранены','✅');}
-catch(e){toast(e.message,'⚠️');}});});
+function sync(){syncNotifyAll();}
+[t,w].forEach(function(el){el.addEventListener('change',function(){window.applyNotify(t.checked,w.checked);});});
 window.__syncSettings=sync;
 })();
 (function(){

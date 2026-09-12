@@ -770,21 +770,26 @@ app.get('/api/push/subs', adminGuard, (req, res) => {
   res.json({ subs, tg });
 });
 app.post('/api/push/send', adminGuard, async (req, res) => {
-  const body = req.body.body || '';
-  const cids = db.prepare("SELECT cid FROM subs UNION SELECT id FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
-  let ok = 0, fail = 0; const errs = [];
-  for (const c of cids) {
-    const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(c.cid);
-    for (const r of rows) {
-      try { await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title: '…и кофе 🌊', body })); ok++; }
-      catch (e) { fail++; errs.push(e.statusCode || e.message);
-        if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub); }
-    }
-  }
-  logEv(req.user.name, `пуш всем (${cids.length})`);
-  res.json({ ok: true, sent: cids.length, delivered: ok, failed: fail, errors: errs.slice(0, 5) });
+const body = req.body.body || '';
+const rows = db.prepare(`SELECT c.id AS cid, c.tg, c.notify_tg, c.notify_web FROM customers c
+WHERE c.id IN (SELECT cid FROM subs) OR (c.tg IS NOT NULL AND c.tg != '')`).all();
+let ok = 0, fail = 0; const errs = [];
+for (const c of rows) {
+if (c.notify_web !== 0) {
+const subs = db.prepare('SELECT sub FROM subs WHERE cid=?').all(c.cid);
+for (const s of subs) {
+try { await webpush.sendNotification(JSON.parse(s.sub), JSON.stringify({ title: '…и кофе 🌊', body })); ok++; }
+catch (e) { fail++; errs.push(e.statusCode || e.message);
+if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(s.sub); }
+}
+}
+if (c.notify_tg !== 0 && c.tg) {
+try { await tgSend(c.tg, '…и кофе 🌊\n' + body); ok++; } catch (e) { fail++; }
+}
+}
+logEv(req.user.name, `пуш всем (${rows.length})`);
+res.json({ ok: true, sent: rows.length, delivered: ok, failed: fail, errors: errs.slice(0, 5) });
 });
-
 
 /* ── чат гость ↔ стафф ── */
 app.post('/api/chat/send', (req, res) => {
