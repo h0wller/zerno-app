@@ -1774,5 +1774,42 @@ function lazify(root){(root||document).querySelectorAll('img').forEach(function(
 lazify(document);
 new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes&&m.addedNodes.forEach(function(n){if(n.nodeType===1)lazify(n);});});}).observe(document.body,{childList:true,subtree:true});
 })();
+/* ══ v69: диплинк заказов: «мой заказ» → фокус на заказе, «мои заказы» → история ══ */
+(function(){
+var css=document.createElement('style');
+css.textContent='.myOrderCard.flash{outline:3px solid rgba(31,78,140,.55);outline-offset:2px;animation:oflash 2.4s}'+
+'@keyframes oflash{0%{background:#EAF1F9}100%{background:#fff}}';
+document.head.appendChild(css);
+if(QS.get('tab')!=='orders')return;
+var no=QS.get('no');
+var done=false;
+function focusCard(){
+var cards=document.querySelectorAll('#myOrders .myOrderCard');
+if(!cards.length)return false;
+var target=null;
+if(no){for(var i=0;i<cards.length;i++){if(cards[i].textContent.indexOf('#'+no)>-1){target=cards[i];break;}}}
+if(!target)target=cards[0];           /* нет номера — фокус на последнем */
+try{target.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}
+target.classList.add('flash');
+setTimeout(function(){target.classList.remove('flash');},2400);
+return true;
+}
+function apply(){
+if(done||!me)return;
+done=true;
+if(no){
+/* «мой заказ»: профиль + фокус на заказе (с повторами, пока карточки рендерятся) */
+setTimeout(function(){if(!focusCard()){setTimeout(focusCard,600);setTimeout(focusCard,1400);}},500);
+}else{
+/* «мои заказы»: модалка с историей */
+setTimeout(function(){if(typeof renderOrdersModal==='function')renderOrdersModal();},500);
+}
+}
+/* ждём: сессия + открытая шторка (в т.ч. после логина по диплинку) */
+var iv=setInterval(function(){
+if(me&&document.getElementById('panel').classList.contains('open')){clearInterval(iv);apply();}
+},250);
+setTimeout(function(){clearInterval(iv);},300000);
+})();
 sv();
 })();
