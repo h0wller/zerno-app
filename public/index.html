@@ -539,15 +539,17 @@ body.is-cashier .cust .acts{min-width:260px}
 
 </style>
 <script>
-(function(){var q=new URLSearchParams(location.search);
-var need=!(sessionStorage.getItem('splashDone')||q.get('brand')||q.get('tab')||q.get('src')||/Telegram/i.test(navigator.userAgent));
-document.documentElement.classList.add(need?'need-splash':'no-splash');})();
+(function(){
+  var q=new URLSearchParams(location.search);
+  var need=!(sessionStorage.getItem('splashDone')||q.get('brand')||q.get('tab')||q.get('src')||/Telegram/i.test(navigator.userAgent));
+  document.documentElement.classList.add(need?'need-splash':'no-splash');
+  // если сплэш не нужен — сразу скрываем статичный элемент
+  if(!need){
+    var ss=document.getElementById('brandSplashStatic');
+    if(ss)ss.style.display='none';
+  }
+})();
 </script>
-<style>
-html.no-splash #brandSplashStatic{display:none!important}
-html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
-#brandSplashStatic{position:fixed;inset:0;z-index:400;background:#F5F2EC;display:flex;align-items:center;justify-content:center;padding:16px}
-</style>
 </head>
 <body>
   <div id="brandSplashStatic">

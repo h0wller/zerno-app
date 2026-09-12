@@ -1355,21 +1355,33 @@ document.head.appendChild(css);
 new MutationObserver(function(){document.body.classList.toggle('panel-open',p.classList.contains('open'));})
 .observe(p,{attributes:true,attributeFilter:['class']});})();
 
-/* статичный сплэш: обработчик + убираем динамический дубль v61 */
+/* статичный сплэш: обработчик + удаление после выбора */
 (function(){
-var bs=document.getElementById('brandSplash');if(bs)bs.remove();
-var ss=document.getElementById('brandSplashStatic');if(!ss)return;
-ss.addEventListener('click',function(e){
-var b=e.target.closest('[data-go]');if(!b)return;
-brand=b.dataset.go;sessionStorage.setItem('splashDone','1');
-document.documentElement.classList.remove('need-splash');
-document.documentElement.classList.add('no-splash');
-ss.remove();
-if(mode==='cashier'||mode==='orders')setMode('guest');
-document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
-sv();if(brand==='delivery'&&!DMENU.length)loadDelivery();
-try{chatCtx=brand;localStorage.setItem('zt_chatctx',chatCtx);setBotName();}catch(e){}
-});})();
+  var bs=document.getElementById('brandSplash');if(bs)bs.remove();
+  var ss=document.getElementById('brandSplashStatic');if(!ss)return;
+  
+  // если сплэш уже пройден — убираем сразу
+  if(sessionStorage.getItem('splashDone')==='1'){
+    ss.remove();
+    document.documentElement.classList.remove('need-splash');
+    document.documentElement.classList.add('no-splash');
+    return;
+  }
+  
+  ss.addEventListener('click',function(e){
+    var b=e.target.closest('[data-go]');if(!b)return;
+    brand=b.dataset.go;
+    sessionStorage.setItem('splashDone','1');
+    document.documentElement.classList.remove('need-splash');
+    document.documentElement.classList.add('no-splash');
+    ss.remove();  // удаляем элемент из DOM
+    if(mode==='cashier'||mode==='orders')setMode('guest');
+    document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
+    sv();
+    if(brand==='delivery'&&!DMENU.length)loadDelivery();
+    try{chatCtx=brand;localStorage.setItem('zt_chatctx',chatCtx);setBotName();}catch(e){}
+  });
+})();
 
 /* шестерёнка: настройки (PIN + уведомления + сброс) */
 (function(){
