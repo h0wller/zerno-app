@@ -1672,7 +1672,7 @@ setOv(1-dx/w);                          // подложка гаснет за п
 var now=Date.now(),dt=now-lastT;
 if(dt>0)vel=0.8*vel+0.2*((t.clientX-lastX)/dt);
 lastX=t.clientX;lastT=now;
-e.preventDefault();
+if(e.cancelable)e.preventDefault();
 },{passive:false});
 p.addEventListener('touchend',function(){
 if(!tracking)return;
@@ -1708,6 +1708,10 @@ p.addEventListener('animationend',function h(){p.classList.remove('swipe-hint');
 }
 new MutationObserver(function(){if(p.classList.contains('open'))setTimeout(hint,350);})
 .observe(p,{attributes:true,attributeFilter:['class']});
+})();
+(function(){var s=document.createElement('style');
+s.textContent='@media(max-width:1180px){#panel{touch-action:pan-y}}';
+document.head.appendChild(s);
 })();
 sv();
 })();
