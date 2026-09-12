@@ -538,8 +538,26 @@ body.is-cashier .cust .acts{min-width:260px}
   .sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 </style>
+<script>
+(function(){var q=new URLSearchParams(location.search);
+var need=!(sessionStorage.getItem('splashDone')||q.get('brand')||q.get('tab')||q.get('src')||/Telegram/i.test(navigator.userAgent));
+document.documentElement.classList.add(need?'need-splash':'no-splash');})();
+</script>
+<style>
+html.no-splash #brandSplashStatic{display:none!important}
+html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
+#brandSplashStatic{position:fixed;inset:0;z-index:400;background:#F5F2EC;display:flex;align-items:center;justify-content:center;padding:16px}
+</style>
 </head>
 <body>
+  <div id="brandSplashStatic">
+<div style="width:100%;max-width:560px;text-align:center">
+<div style="font:400 clamp(20px,5.5vw,30px)/1.25 Prata,serif;margin-bottom:6px">«Пятница» & …и кофе</div>
+<div style="color:#63707C;font-size:14px;margin-bottom:22px">Выберите, куда вы сегодня</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<button data-go="delivery" style="border:2px solid #F2D9A5;background:#FFF6E5;color:#6B4E0E;border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;width:100%">🍕<br><br>«Пятница»<small style="display:block;font:400 12px Golos Text,sans-serif;margin-top:6px">доставка пиццы и роллов</small></button>
+<button data-go="coffee" style="border:2px solid #DDE3E8;background:#fff;color:#101418;border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;width:100%">🌊<br><br>Кофейня<small style="display:block;font:400 12px Golos Text,sans-serif;margin-top:6px">меню, штампы и бонусы</small></button>
+</div></div></div>
 
 <header class="topbar">
   <div class="brand">

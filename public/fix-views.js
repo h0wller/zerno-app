@@ -1349,5 +1349,119 @@ return _lm.apply(this,arguments);};})(loadMyOrders);
 
 setTimeout(patchCards,300);
 })();
+/* ══ v62: FAB/модалки/z, настройки-шестерёнка, поиск в Пятнице, журнал кассира (кофе), закрытие карточки гостя, статичный сплэш ══ */
+(function(){
+var css=document.createElement('style');
+css.textContent=
+'.chat-fab{z-index:95!important}'+
+'@media(max-width:1180px){body.panel-open .chat-fab{display:none}}'+
+'@media(max-width:1180px){.overlay{z-index:330!important}.modal{z-index:340!important}}'+
+'.phead .gear{margin-left:auto;width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:18px}'+
+'#settingsModal .set-row{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;background:#fff}'+
+'#deliveryView .search{min-width:180px;margin-left:auto}';
+document.head.appendChild(css);
+
+/* класс panel-open на body */
+(function(){var p=document.getElementById('panel');if(!p)return;
+new MutationObserver(function(){document.body.classList.toggle('panel-open',p.classList.contains('open'));})
+.observe(p,{attributes:true,attributeFilter:['class']});})();
+
+/* статичный сплэш: обработчик + убираем динамический дубль v61 */
+(function(){
+var bs=document.getElementById('brandSplash');if(bs)bs.remove();
+var ss=document.getElementById('brandSplashStatic');if(!ss)return;
+ss.addEventListener('click',function(e){
+var b=e.target.closest('[data-go]');if(!b)return;
+brand=b.dataset.go;sessionStorage.setItem('splashDone','1');
+document.documentElement.classList.remove('need-splash');
+document.documentElement.classList.add('no-splash');
+ss.remove();
+if(mode==='cashier'||mode==='orders')setMode('guest');
+document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
+sv();if(brand==='delivery'&&!DMENU.length)loadDelivery();
+try{chatCtx=brand;localStorage.setItem('zt_chatctx',chatCtx);setBotName();}catch(e){}
+});})();
+
+/* шестерёнка: настройки (PIN + уведомления + сброс) */
+(function(){
+if(document.getElementById('settingsModal'))return;
+var m=document.createElement('div');m.className='modal';m.id='settingsModal';
+m.innerHTML='<div class="modal-card" style="width:min(420px,100%)"><button class="mclose" id="setClose">✕</button>'+
+'<h3>Настройки</h3><div class="msub">PIN, уведомления и данные устройства</div>'+
+'<div class="set-row"><span style="flex:1">🔐 Задать / сменить PIN</span><button class="btn ghost" id="setPinGo2">Открыть</button></div>'+
+'<div class="set-row" style="margin-bottom:6px"><span style="flex:1">🔔 Каналы уведомлений</span></div>'+
+'<div style="display:flex;gap:16px;margin:0 0 12px 4px">'+
+'<label class="chk"><input type="checkbox" id="ntTg2"> 🤖 Telegram</label>'+
+'<label class="chk"><input type="checkbox" id="ntWeb2"> 🔔 Пуши браузера</label></div>'+
+'<div class="set-row"><span style="flex:1">↺ Сбросить локальные данные</span><button class="btn ghost danger" id="resetGo2">Сброс</button></div></div>';
+document.body.appendChild(m);
+document.getElementById('setClose').onclick=function(){m.classList.remove('show');syncOverlay();};
+document.getElementById('setPinGo2').onclick=function(){m.classList.remove('show');syncOverlay();var b=document.getElementById('setPinBtn');if(b)b.click();};
+document.getElementById('resetGo2').onclick=function(){var b=document.getElementById('resetBtn');if(b)b.click();};
+var t=document.getElementById('ntTg2'),w=document.getElementById('ntWeb2');
+function sync(){if(!me)return;t.checked=me.notify_tg!==0;w.checked=me.notify_web!==0;}
+[t,w].forEach(function(el){el.addEventListener('change',async function(){
+try{await api('/me/notify',{method:'PUT',body:{tg:t.checked?1:0,web:w.checked?1:0}});toast('Каналы уведомлений сохранены','✅');}
+catch(e){toast(e.message,'⚠️');}});});
+window.__syncSettings=sync;
+})();
+(function(){
+var ph=document.querySelector('#profileBox .phead');
+if(ph&&!ph.querySelector('.gear')){
+var g=document.createElement('button');g.className='gear';g.textContent='⚙️';g.title='Настройки';
+g.onclick=function(){if(window.__syncSettings)window.__syncSettings();
+document.getElementById('settingsModal').classList.add('show');syncOverlay();};
+ph.appendChild(g);
+}
+var spb=document.getElementById('setPinBtn');if(spb)spb.style.display='none';
+var nd=document.getElementById('notifyDetails');if(nd)nd.style.display='none';
+})();
+
+/* поиск в меню «Пятницы» */
+var dQuery='';
+function applyDFilter(){
+document.querySelectorAll('#deliveryGrid .card').forEach(function(card){
+var add=card.querySelector('[data-add]');var id=add&&add.getAttribute('data-add');
+var p=id&&DMENU.find(function(x){return x.id===id;});
+if(!p){card.style.display='';return;}
+card.style.display=(!dQuery||((p.name||'')+' '+(p.desc||'')).toLowerCase().includes(dQuery))?'':'none';
+});
+}
+renderDeliveryMenu=(function(_rm){return function(){var r=_rm.apply(this,arguments);applyDFilter();return r;};})(renderDeliveryMenu);
+(function(){
+var dv=document.getElementById('deliveryView');if(!dv||dv.querySelector('#dSearch'))return;
+var mh=dv.querySelector('.mh-top');if(!mh)return;
+var wrap=document.createElement('div');wrap.className='search';
+wrap.innerHTML='🔍 <input id="dSearch" placeholder="Найти в меню…">';
+mh.appendChild(wrap);
+document.getElementById('dSearch').addEventListener('input',function(e){dQuery=e.target.value.trim().toLowerCase();applyDFilter();});
+})();
+
+/* кассир: вернуть журнал (только кофейные события) и активации */
+function filterCashLog(){
+document.querySelectorAll('#cashLog .logrow').forEach(function(r){
+var la=r.querySelector('.la');if(!la)return;
+var t=la.textContent||'';
+r.style.display=/заказ|задерж|доставк|Пятниц|курьер|пуш всем/i.test(t)?'none':'';
+});
+}
+setMode=(function(_sm){return function(m){var r=_sm.apply(this,arguments);
+setTimeout(function(){
+var cl=document.getElementById('cashLog');
+if(cl){var card=cl.closest('.cash-card');if(card)card.style.display='';filterCashLog();}
+},60);
+return r;};})(setMode);
+new MutationObserver(function(){filterCashLog();})
+.observe(document.getElementById('cashLog')||document.body,{childList:true,subtree:true});
+
+/* выход из карточки гостя (закрыть режим начисления) */
+(function(){
+var acts=document.querySelector('#custCard .acts');
+if(!acts||document.getElementById('custClose'))return;
+var b=document.createElement('button');b.id='custClose';b.className='btn ghost';b.textContent='✕ Закрыть карточку';
+b.onclick=function(){document.getElementById('custCard').classList.remove('show');try{found=null;}catch(e){}};
+acts.appendChild(b);
+})();
+})();
 sv();
 })();
