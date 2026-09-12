@@ -884,32 +884,68 @@ if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('message',fu
   if(e.data&&e.data.type==='zpush'){refreshOrdersLive();refreshProfileLive();}
 });
 
-/* ========== 13. Диплинки и Telegram Mini App ========== */
+/* ========== 13. Диплинки и Telegram Mini App (надёжная версия) ========== */
 (function(){
-  var bP=QS.get('brand'),tab=QS.get('tab');
-  if(!bP&&!tab)return;
-  setTimeout(function(){
-    try{
-      if(bP&&bP!==brand){
-        brand=bP;
-        document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
-        sv();
-        if(brand==='delivery'&&!DMENU.length)loadDelivery();
-      }
-      if(tab==='bonus'||tab==='orders'){
-  if(tab==='orders'&&brand!=='delivery'){brand='delivery';sv();}
-  if(me){openPanel('profile');setTab(tab==='bonus'?'bonus':'orders');}else openAuth();
+var bP=QS.get('brand'),tab=QS.get('tab');
+if(!bP&&!tab)return;
+function openOrdersView(){
+try{
+if(brand!=='delivery'){
+brand='delivery';
+document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
+sv();
+if(!DMENU.length)loadDelivery();
 }
-      history.replaceState(null,'',location.pathname);
-    }catch(e){}
-  },700);
+openPanel('profile');
+setTab('profile');
+try{renderProfile();}catch(e){}
+try{loadMyOrders();}catch(e){}
+/* страховка от пустой шторки */
+setTimeout(function(){
+var pv=document.getElementById('pvProfile');
+if(pv&&!pv.hidden){
+var nu=document.getElementById('profileNoUser'),pb=document.getElementById('profileBox');
+if(nu&&nu.hidden&&pb&&pb.hidden){try{renderProfile();}catch(e){}}
+}
+},600);
+}catch(e){}
+}
+function apply(){
+try{
+if(bP&&bP!==brand){
+brand=bP;
+document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
+sv();
+if(brand==='delivery'&&!DMENU.length)loadDelivery();
+}
+if(tab==='orders'){
+if(me){openOrdersView();}
+else{window.__ztPendingDeep='orders';openAuth();}
+}
+if(tab==='bonus'){
+if(me){openPanel('profile');setTab('bonus');}
+else{window.__ztPendingDeep='bonus';openAuth();}
+}
+if(tab==='chat'){/* поддержку разбирает секция 10 */}
+}catch(e){}
+}
+/* ждём бут: me либо однозначное "не залогинен" */
+var t0=Date.now(),iv=setInterval(function(){
+var ready=(typeof me!=='undefined'&&(me||!localStorage.getItem('zt_user')));
+if(ready||Date.now()-t0>4000){clearInterval(iv);apply();}
+},150);
+/* после успешного логина продолжаем диплинк автоматически */
+if(typeof setUser==='function'&&!setUser.__deepWrap){
+setUser=(function(_su){return function(t,c){
+var r=_su.apply(this,arguments);
+var pend=window.__ztPendingDeep;window.__ztPendingDeep=null;
+if(pend==='orders')setTimeout(openOrdersView,150);
+if(pend==='bonus')setTimeout(function(){openPanel('profile');setTab('bonus');},150);
+return r;};})(setUser);
+setUser.__deepWrap=1;
+}
+history.replaceState(null,'',location.pathname);
 })();
-if(IN_TG&&!window.Telegram){
-  var tgs=document.createElement('script');tgs.src='https://telegram.org/js/telegram-web-app.js';
-  tgs.onload=function(){try{if(window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.ready)window.Telegram.WebApp.ready();}catch(e){}};
-  tgs.onerror=function(){};document.head.appendChild(tgs);
-}
-
 /* ========== 14. Конфиг: ссылки на бота ========== */
 fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(cfg){
   window.TG_USERNAME=cfg.tgUsername||'and_coffee_bot';
