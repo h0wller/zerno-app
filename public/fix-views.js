@@ -1504,5 +1504,69 @@ function filterCashRows(){
 new MutationObserver(function(){unhideCashLog();filterCashRows();}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
 setTimeout(function(){unhideCashLog();filterCashRows();},300);
 })();
+/* ══ v64: профиль окончательно — брендовые правила + шестерёнка/настройки на мобильных ══ */
+(function(){
+var $=function(s){return document.querySelector(s);};
+var $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s));};
+function histH4(){return $$('#profileBox h4').filter(function(h){return /История/i.test(h.textContent);})[0]||null;}
+function profileBrandRules(){
+  var deliv=(typeof brand!=='undefined'&&brand==='delivery');
+  var mo=$('#myOrders'),mb=$('#myOrdersBtn'),fi=$('#fridayInfo');
+  if(mo)mo.style.display=deliv?'':'none';
+  if(mb)mb.style.display=deliv?'':'none';
+  $$('#profileBox .placebox').forEach(function(p){
+    var t=p.textContent||'';
+    if(/Мы у моря/i.test(t))p.style.display=deliv?'none':'';
+    if(/Понравилось у нас/i.test(t))p.style.display=deliv?'none':'';
+  });
+  $$('#profileBox a').forEach(function(a){
+    if(/instagram\.com|t\.me\/and_coffee39/i.test(a.href||''))a.style.display=deliv?'none':'';
+  });
+  if(fi){
+    fi.style.display=deliv?'':'none';
+    if(deliv){var h=histH4();if(h&&fi!==h.previousSibling)h.parentNode.insertBefore(fi,h);}
+  }
+}
+renderProfile=(function(_rp){return function(){var r=_rp.apply(this,arguments);profileBrandRules();return r;};})(renderProfile);
+document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(profileBrandRules,80);});
+new MutationObserver(function(){profileBrandRules();}).observe($('#myOrders')||document.body,{childList:true,subtree:true});
+
+/* шестерёнка и «Настройки» поверх шторки на мобильных */
+(function(){
+  var pb=$('#profileBox');if(!pb)return;
+  var ph=pb.querySelector('.phead');
+  function openSettings(){
+    var m=$('#settingsModal');if(!m)return;
+    m.classList.add('show');
+    var ov=$('#overlay');if(ov){ov.classList.add('show');ov.classList.add('ov-high');}
+    if(window.__syncSettings)window.__syncSettings();
+  }
+  function afterClose(){
+    var ov=$('#overlay');if(!ov)return;
+    var anyModal=document.querySelector('.modal.show');
+    var panelOpen=$('#panel').classList.contains('open');
+    if(!anyModal&&!panelOpen){ov.classList.remove('show');ov.classList.remove('ov-high');}
+    else if(anyModal){ov.classList.add('show');ov.classList.add('ov-high');}
+    else{ov.classList.add('show');ov.classList.remove('ov-high');}
+  }
+  if(ph&&!ph.querySelector('.gear')){
+    var g=document.createElement('button');g.type='button';g.className='gear';g.textContent='⚙️';
+    g.style.cssText+=';margin-left:auto;width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:18px;flex:0 0 auto';
+    ph.appendChild(g);
+  }
+  var gear=ph&&ph.querySelector('.gear');
+  if(gear)gear.onclick=openSettings;
+  var sc=$('#setClose');if(sc)sc.addEventListener('click',function(){setTimeout(afterClose,0);});
+  document.addEventListener('click',function(e){
+    var m=$('#settingsModal');if(!m||!m.classList.contains('show'))return;
+    if(e.target.id==='overlay'){e.stopPropagation();m.classList.remove('show');afterClose();}
+  },true);
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape')return;
+    var m=$('#settingsModal');if(m&&m.classList.contains('show')){m.classList.remove('show');afterClose();}
+  },true);
+})();
+setTimeout(profileBrandRules,300);
+})();
 sv();
 })();
