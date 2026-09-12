@@ -1463,5 +1463,46 @@ b.onclick=function(){document.getElementById('custCard').classList.remove('show'
 acts.appendChild(b);
 })();
 })();
+/* ══ v63: модалки выше шторки на мобильных; журнал кассира виден (только кофейные события) ══ */
+(function(){
+var css=document.createElement('style');
+css.textContent=
+'.modal{z-index:340!important}'+
+'.overlay.ov-high{z-index:330!important}'+
+'.toasts{z-index:360!important}'+
+'#fx{z-index:350!important}';
+document.head.appendChild(css);
+
+/* оверлей: поднимать над шторкой, когда открыта модалка; убирать залипший show */
+setInterval(function(){
+  var ov=document.getElementById('overlay');if(!ov)return;
+  var modalOpen=!!document.querySelector('.modal.show');
+  var panelOpen=document.getElementById('panel').classList.contains('open');
+  if(ov.classList.contains('show')&&!modalOpen&&!panelOpen)ov.classList.remove('show');
+  ov.classList.toggle('ov-high',modalOpen);
+},400);
+
+/* тап по подложке закрывает «Настройки» */
+document.getElementById('overlay').addEventListener('click',function(){
+  var m=document.getElementById('settingsModal');
+  if(m&&m.classList.contains('show'))m.classList.remove('show');
+});
+
+/* кассир: карточка журнала/активаций всегда видна в режиме кассира, строки — только кофейные */
+function unhideCashLog(){
+  var cl=document.getElementById('cashLog');if(!cl)return;
+  var card=cl.closest('.cash-card');
+  if(card&&card.style.display==='none')card.style.display='';
+}
+function filterCashRows(){
+  document.querySelectorAll('#cashLog .logrow').forEach(function(r){
+    var la=r.querySelector('.la');if(!la)return;
+    var t=la.textContent||'';
+    r.style.display=/заказ|задерж|доставк|Пятниц|курьер|пуш всем/i.test(t)?'none':'';
+  });
+}
+new MutationObserver(function(){unhideCashLog();filterCashRows();}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+setTimeout(function(){unhideCashLog();filterCashRows();},300);
+})();
 sv();
 })();
