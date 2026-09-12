@@ -939,17 +939,6 @@ fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(
   var p0=document.getElementById('chatPanel');
   if(p0&&window.MutationObserver)new MutationObserver(function(){norm();}).observe(p0,{childList:true,subtree:true});
 })();
-
-/* ========== 15. Fix: Глобальный оверлей блокирует клики (Playwright & UI) ========== */
-setInterval(function(){
-  var ov = document.getElementById('overlay');
-  if(ov && ov.classList.contains('show')){
-    // Если нет ни одной открытой модалки, принудительно скрываем глобальный оверлей
-    if(!document.querySelector('.modal.show')){
-      ov.classList.remove('show');
-    }
-  }
-}, 500);
 /* ══ v61 ВОССТАНОВЛЕНИЕ: один блок, одна реализация на фичу. Фаза 2 — свернём в app.js ══ */
 (function(){
 'use strict';
@@ -1463,16 +1452,6 @@ b.onclick=function(){document.getElementById('custCard').classList.remove('show'
 acts.appendChild(b);
 })();
 })();
-/* ══ v63: модалки выше шторки на мобильных; журнал кассира виден (только кофейные события) ══ */
-(function(){
-var css=document.createElement('style');
-css.textContent=
-'.modal{z-index:340!important}'+
-'.overlay.ov-high{z-index:330!important}'+
-'.toasts{z-index:360!important}'+
-'#fx{z-index:350!important}';
-document.head.appendChild(css);
-
 /* оверлей: поднимать над шторкой, когда открыта модалка; убирать залипший show */
 setInterval(function(){
   var ov=document.getElementById('overlay');if(!ov)return;
@@ -1568,41 +1547,45 @@ new MutationObserver(function(){profileBrandRules();}).observe($('#myOrders')||d
 })();
 setTimeout(profileBrandRules,300);
 })();
-/* ══ v65: модалки выше шторки всегда; оверлей всегда блокирует фон; одна модалка за раз ══ */
+/* ══ v66: ЕДИНЫЙ контроллер оверлея (модалка 340 / корзина 120 / шторка 320) ══ */
 (function(){
 var css=document.createElement('style');
 css.textContent=
 '.modal{z-index:340!important}'+
 '#settingsModal,#ordersModal,#redeemPick{z-index:345!important}'+
-'.overlay{z-index:330!important}'+
-'.overlay.show{pointer-events:auto!important;opacity:1!important}'+
-'.overlay:not(.show){pointer-events:none!important;opacity:0!important}'+
-'@media(max-width:1180px){#panel.open{z-index:320!important}}';
+'#panel.open{z-index:320!important}'+
+'.cartPanel{z-index:120!important}';
 document.head.appendChild(css);
-
-function anyModal(){return !!document.querySelector('.modal.show,#ordersModal.show,#redeemPick.show');}
-function fixOverlay(){
+var histPushed66=false;
+function state(){
+var modal=document.querySelector('.modal.show');
+var cart=document.getElementById('cartPanel');
+var panel=document.getElementById('panel');
+return {modal:modal,
+cartOpen:!!(cart&&cart.classList.contains('open')),
+panelOpen:!!(panel&&panel.classList.contains('open'))};
+}
+function apply(){
 var ov=document.getElementById('overlay');if(!ov)return;
-var on=document.getElementById('panel').classList.contains('open')||anyModal();
+var s=state();
+var on=!!s.modal||s.cartOpen||s.panelOpen;
 ov.classList.toggle('show',on);
-ov.style.pointerEvents=on?'auto':'none';   // сбивает старые inline-стили
+ov.style.pointerEvents=on?'auto':'none';
+ov.style.zIndex=s.modal?330:(s.cartOpen?110:310);
+if(on&&!histPushed66){histPushed66=true;try{history.pushState({zerno:1},'');}catch(e){}}
+else if(!on&&histPushed66){histPushed66=false;try{history.back();}catch(e){}}
 }
-var lastModal=null;
-new MutationObserver(function(muts){
-for(var i=0;i<muts.length;i++){
-var el=muts[i].target;
-if(muts[i].attributeName!=='class'||!el.classList)continue;
-var has=el.classList.contains('show');
-var had=muts[i].oldValue?/(^|\s)show(\s|$)/.test(muts[i].oldValue):false;
-if(has&&!had)lastModal=el;
-}
-var shown=[].slice.call(document.querySelectorAll('.modal.show'));
-if(shown.length>1&&lastModal){
-shown.forEach(function(m){if(m!==lastModal)m.classList.remove('show');});
-}
-fixOverlay();
-}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class'],attributeOldValue:true});
-setInterval(fixOverlay,400);
+window.syncOverlay=apply;   // базовые openPanel/openAuth/… вызывают syncOverlay() → попадут сюда
+var ov=document.getElementById('overlay');
+if(ov){var oldClick=ov.onclick;
+ov.onclick=function(e){
+var s=state();
+if(s.cartOpen&&!s.modal&&!s.panelOpen)document.getElementById('cartPanel').classList.remove('open');
+if(typeof oldClick==='function')oldClick.call(this,e);
+apply();
+};}
+setInterval(apply,150);
+new MutationObserver(apply).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
+apply();
 })();
 sv();
-})();
