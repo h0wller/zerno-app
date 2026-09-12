@@ -200,16 +200,16 @@ const TG_WEBHOOK_SECRET = process.env.TG_WEBHOOK_SECRET || '';
 const PUBLIC_URL = process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : '');
 const APP_URL = PUBLIC_URL || 'https://app.andcoffee.online';
 
-async function tgSend(chatId, text, markup) {
-  if (!TG_TOKEN) return;
-  const body = { chat_id: chatId, text };
-  if (markup) body.reply_markup = markup;
-  try {
-    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-  } catch (e) {}
+async function tgSend(chatId, text, kb) {
+  const token = process.env.TEST_TOKEN || TG_TOKEN;
+  if (!token) return;
+  const body = { chat_id: chatId, text, parse_mode: 'HTML' };
+  if (kb) body.reply_markup = kb;
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).catch(() => {});
 }
 
 async function sendTg(cid, title, body, markup) {
@@ -612,10 +612,13 @@ app.put('/api/me', userGuard, (req, res) => {
   db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
-app.put('/api/me/notify', userGuard, (req, res) => {
-  db.prepare('UPDATE customers SET notify_tg=?, notify_web=? WHERE id=?')
-    .run(req.body.tg ? 1 : 0, req.body.web ? 1 : 0, req.user.id);
-  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
+app.put('/api/me/notify', authGuard, (req, res) => {
+  const tg = req.body.tg ? 1 : 0;
+  const web = req.body.web ? 1 : 0;
+  db.prepare('UPDATE customers SET notify_tg=?, notify_web=? WHERE id=?').run(tg, web, req.customer.id);
+  req.customer.notify_tg = tg;
+  req.customer.notify_web = web;
+  res.json({ ok: true, customer: req.customer });
 });
 app.post('/api/redeem', userGuard, (req, res) => {
   const r = redeem(req.user.id, 'Гость');

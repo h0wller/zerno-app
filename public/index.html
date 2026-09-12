@@ -52,10 +52,18 @@ input,select,textarea{font-family:inherit}
 :focus-visible{outline:3px solid rgba(31,78,140,.45);outline-offset:2px;border-radius:8px}
 
 /* ══ шапка ══ */
+@media(max-width:600px){
+.topbar{padding:8px 12px!important;gap:6px}
+.topbar .brand{font-size:18px!important}
+.topbar .brand small{font-size:10px!important}}
+@media(max-width:400px){
+.ticker span{font-size:10px;padding:.35rem 1rem}}
 .topbar{position:sticky;top:0;z-index:90;background:var(--esp);color:var(--cream);
   display:flex;align-items:center;gap:14px;padding:10px 20px;
   padding-top:calc(10px + env(safe-area-inset-top));
-  border-bottom:1px solid #2A3540;box-shadow:0 6px 24px -12px rgba(0,0,0,.5)}
+  border-bottom:1px solid #2A3540;box-shadow:0 6px 24px -12px rgba(0,0,0,.5)
+}
+  
 .brand{display:flex;align-items:center;gap:11px;margin-right:auto}
 .brand .mark{width:40px;height:40px;border-radius:12px;background:var(--flame);display:grid;place-items:center;
   box-shadow:0 4px 14px -4px rgba(31,78,140,.7);transition:transform .3s}

@@ -896,8 +896,9 @@ if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('message',fu
         if(brand==='delivery'&&!DMENU.length)loadDelivery();
       }
       if(tab==='bonus'||tab==='orders'){
-        if(me){openPanel('profile');setTab(tab==='bonus'?'bonus':'profile');}else openAuth();
-      }
+  if(tab==='orders'&&brand!=='delivery'){brand='delivery';sv();}
+  if(me){openPanel('profile');setTab(tab==='bonus'?'bonus':'orders');}else openAuth();
+}
       history.replaceState(null,'',location.pathname);
     }catch(e){}
   },700);
