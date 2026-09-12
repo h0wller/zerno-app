@@ -188,7 +188,7 @@ if (!vapidRow) {
 }
 const VAPID = JSON.parse(vapidRow.value);
 webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
-const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const TG_TOKEN = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
 const TG_CHANNEL = process.env.TG_CHANNEL_ID || '';
 const appKb = () => ({ inline_keyboard: [
   [{ text: '🍕 Меню и заказ', web_app: { url: WEBAPP_URL + '/?src=tg&brand=delivery' } }],
@@ -612,13 +612,10 @@ app.put('/api/me', userGuard, (req, res) => {
   db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
-app.put('/api/me/notify', authGuard, (req, res) => {
-  const tg = req.body.tg ? 1 : 0;
-  const web = req.body.web ? 1 : 0;
-  db.prepare('UPDATE customers SET notify_tg=?, notify_web=? WHERE id=?').run(tg, web, req.customer.id);
-  req.customer.notify_tg = tg;
-  req.customer.notify_web = web;
-  res.json({ ok: true, customer: req.customer });
+app.put('/api/me/notify', userGuard, (req, res) => {
+  db.prepare('UPDATE customers SET notify_tg=?, notify_web=? WHERE id=?')
+    .run(req.body.tg ? 1 : 0, req.body.web ? 1 : 0, req.user.id);
+  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
 app.post('/api/redeem', userGuard, (req, res) => {
   const r = redeem(req.user.id, 'Гость');
