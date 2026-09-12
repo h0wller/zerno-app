@@ -7,9 +7,30 @@ async function skipSplash(page){
 
 /* ВАЖНО: эмулируем "вернувшегося" гостя, чтобы authModal не открывался автоматически */
 async function prepare(page, url = '/') {
-  await page.addInitScript(() => localStorage.setItem('zt_onb', '1'));
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+  });
   await page.goto(url);
-  await skipSplash(page);
+
+  // кликаем по тому сплэшу, который реально видим: статичный (#brandSplashStatic) или старый динамический
+  const coffeeBtn = page
+    .locator('#brandSplashStatic [data-go="coffee"], #brandSplash [data-go="coffee"]')
+    .first();
+  if (await coffeeBtn.isVisible().catch(() => false)) {
+    await coffeeBtn.click();
+  }
+
+  // дожидаемся, пока сплэш исчезнет и с body снимется visibility:hidden
+  await page
+    .waitForFunction(
+      () =>
+        !document.getElementById('brandSplashStatic') &&
+        !document.getElementById('brandSplash') &&
+        !document.documentElement.classList.contains('need-splash'),
+      null,
+      { timeout: 5000 }
+    )
+    .catch(() => {});
 }
 
 test('поддержка из бота: оверлей появляется и НЕ исчезает', async ({ page }) => {
