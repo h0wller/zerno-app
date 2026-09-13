@@ -13,6 +13,12 @@ import { ph10, fmtPhone } from './server/utils/phone.js';
 import { nowISO, uid } from './server/utils/id-time.js';
 import { hashPin, pinLocks, lockKey, lockedSeconds, registerFail, safeEqual } from './server/utils/security.js';
 import { otpStore } from './server/utils/otp.js';
+import {
+  userGuard, staffGuard, chatGuard, adminGuard, pendingGuard, dispatchGuard,
+  securityHeaders, corsMiddleware
+} from './server/middleware/index.js';
+
+const app = express();
 
 const TG_TOKEN = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
 const TG_CHANNEL = process.env.TG_CHANNEL_ID || '';
@@ -123,27 +129,6 @@ const issueToken = ref => {
 
 // (Утилиты ph10, fmtPhone, nowISO, uid, hashPin, otpStore, pinLocks, lockKey, lockedSeconds, registerFail, safeEqual перенесены в server/utils/)
 
-/* ── guards по ролям ── */
-function authUser(req) { const t = (req.header('Authorization') || '').replace('Bearer ', '');
-  const row = db.prepare("SELECT * FROM tokens WHERE token=? AND kind='user'").get(t);
-  return row ? db.prepare('SELECT * FROM customers WHERE id=?').get(row.ref) : null; }
-const userGuard = (req, res, next) => { req.user = authUser(req);
-  req.user ? next() : res.status(401).json({ error: 'Нужен вход по номеру' }); };
-const staffGuard = (req, res, next) => { req.user = authUser(req);
-  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
-  if (req.user.role !== 'cashier' && req.user.role !== 'admin')
-    return res.status(403).json({ error: 'Недостаточно прав: нужна роль кассира' });
-  next(); };
-const chatGuard = (req, res, next) => { req.user = authUser(req);
-  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
-  if (!['cashier','admin','dispatch'].includes(req.user.role))
-    return res.status(403).json({ error: 'Недостаточно прав' });
-  next(); };
-const adminGuard = (req, res, next) => { req.user = authUser(req);
-  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
-  if (req.user.role !== 'admin')
-    return res.status(403).json({ error: 'Недостаточно прав: нужна роль администратора' });
-  next(); };
 /* ── лояльность ── */
 function grant(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
   if (!c) return null;
@@ -185,24 +170,8 @@ db.prepare('INSERT INTO customers (id,name,phone,stamps,free,cups,qr,created_at,
 addHist(id, 'Профиль создан', 'Приложение');
 return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(id)) }; }
 
-const app = express();
-app.disable('x-powered-by');
-app.set('trust proxy', true);
-app.use((req, res, next) => {
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=()');
-res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; frame-ancestors https://web.telegram.org https://webk.telegram.org https://weba.telegram.org https://*.telegram.org https://telegram.org");
-  next();
-});
-app.use((req, res, next) => {
-res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Staff');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  if (req.method === 'OPTIONS') return res.sendStatus(204);
-  next();
-});
+app.use(securityHeaders);
+app.use(corsMiddleware);
 app.use(express.json({ limit: '10mb' }));
 
 /* ── меню ─ */
@@ -394,10 +363,6 @@ app.post('/api/auth/activate', userGuard, (req, res) => {
   logEv(req.user.name, role === 'admin' ? 'активирован админ' : 'активирован кассир');
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
-const pendingGuard = (req, res, next) => { req.user = authUser(req);
-  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
-  if (!['cashier','admin','dispatch'].includes(req.user.role)) return res.status(403).json({ error: 'Недостаточно прав' });
-  next(); };
 app.post('/api/staff/activate-guest', pendingGuard, (req, res) => {
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(String(req.body.id || ''));
   if (!c) return res.status(404).json({ error: 'Гость не найден' });
@@ -804,10 +769,6 @@ app.put('/api/admin/weekpromo', adminGuard, (req, res) => {
         if (TG_CHANNEL) tgSend(TG_CHANNEL, `🍕 Пятничный подарок\n${b.text}`);
   res.json({ ok: true });
 });
-const dispatchGuard = (req, res, next) => { req.user = authUser(req);
-  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
-  if (!['cashier','admin','dispatch'].includes(req.user.role)) return res.status(403).json({ error: 'Недостаточно прав' });
-  next(); };
 const ORDER_STATUS = { new: '🆕 Заказ принят', accept: '✅ Подтверждён, готовим', cook: '👨🍳 Готовится', way: '🛵 Курьер выехал', done: '🏁 Выполнен', cancel: '❌ Отменён' };
 function orderNotifyStaff(o) {
   const lines = o.items.map(i => `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${i.qty * i.price} ₽`);
