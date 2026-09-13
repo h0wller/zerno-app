@@ -80,3 +80,6 @@ tests/chat-support.spec.js
 test-results/
 error-context.md
 playwright-report/
+artifacts/smoke.db
+tmp/
+*.db

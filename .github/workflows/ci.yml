@@ -47,3 +47,17 @@ jobs:
         env:
           TEST_URL: ${{ github.event.inputs.test_url }}
         run: npx playwright test
+
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-audit --no-fund
+      - run: node --check server.js
+      - name: contract smoke (эфемерная БД)
+        run: |
+          DB_PATH="$RUNNER_TEMP/smoke.db" PORT=3100 ADMIN_CODE=1234 CASHIER_CODE=2468 DISPATCH_CODE=5719 node server.js &
+          for i in $(seq 1 30); do curl -sf http://localhost:3100/api/health >/dev/null && break; sleep 1; done
+          BASE_URL=http://localhost:3100 SMOKE_ADMIN_CODE=1234 SMOKE_CASHIER_CODE=2468 node scripts/contract-smoke.mjs
