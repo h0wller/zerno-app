@@ -162,3 +162,32 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
   /* ── shim в window — контракт F1.3 ── */
   Object.assign(window, { renderBonus, renderProfile, renderVerifyNote, loadMyOrders });
 })();
+/* QR-патч: показывает буквенный QR-код под подписями в профиле.
+   Перенесено из inline (F2.4): раньше жил в конце scanner-IIFE. */
+(function patchQR() {
+  if (typeof window.renderProfile !== 'function') return;
+  const _rp = window.renderProfile;
+  window.renderProfile = function () {
+    const r = _rp.apply(this, arguments);
+    setTimeout(() => {
+      try {
+        if (!me || !me.qr) return;
+        const labs = [...document.querySelectorAll('*')].filter(n =>
+          !n.children.length && (/Ваш QR для штампов/.test(n.textContent) || /Покажите кассиру/.test(n.textContent))
+        );
+        for (const lab of labs) {
+          if (lab.parentNode.querySelector('.qrCodeText')) continue;
+          const d = document.createElement('div');
+          d.className = 'qrCodeText';
+          d.style.cssText = 'text-align:center;font-weight:800;letter-spacing:.14em;margin:6px 0 2px;color:inherit;font-size:18px';
+          d.textContent = me.qr;
+          lab.parentNode.insertBefore(d, lab.nextSibling);
+          document.querySelectorAll('button').forEach(b => {
+            if (/Погасить/.test(b.textContent)) b.style.display = (me.role === 'guest' ? 'none' : '');
+          });
+        }
+      } catch (e) {}
+    }, 60);
+    return r;
+  };
+})();
