@@ -82,4 +82,5 @@ error-context.md
 playwright-report/
 artifacts/smoke.db
 tmp/
-*.dbartifacts/
+*.db
+artifacts/

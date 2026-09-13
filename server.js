@@ -1,3 +1,5 @@
+import { initDatabase, getVapidPublicKey } from './server/db/index.js';
+ initDatabase();
 import express from 'express';
 import crypto from 'node:crypto';
 import webpush from 'web-push';
@@ -11,177 +13,7 @@ import { ph10, fmtPhone } from './server/utils/phone.js';
 import { nowISO, uid } from './server/utils/id-time.js';
 import { hashPin, pinLocks, lockKey, lockedSeconds, registerFail, safeEqual } from './server/utils/security.js';
 import { otpStore } from './server/utils/otp.js';
-db.pragma('journal_mode = WAL');
 
-db.exec(`
-CREATE TABLE IF NOT EXISTS customers(
-  id TEXT PRIMARY KEY, name TEXT, phone TEXT UNIQUE,
-  stamps INTEGER DEFAULT 0, free INTEGER DEFAULT 0, cups INTEGER DEFAULT 0,
-  qr TEXT UNIQUE, created_at TEXT, role TEXT DEFAULT 'guest');
-CREATE TABLE IF NOT EXISTS history(
-  id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, ts TEXT, a TEXT, by TEXT);
-CREATE TABLE IF NOT EXISTS menu(
-  id TEXT PRIMARY KEY, cat TEXT, e TEXT, name TEXT, descr TEXT,
-  comp TEXT, vol TEXT, price TEXT, tag TEXT, coffee INTEGER, is_on INTEGER DEFAULT 1, img TEXT);
-CREATE TABLE IF NOT EXISTS tokens(
-  token TEXT PRIMARY KEY, kind TEXT, ref TEXT, ts TEXT);
-CREATE TABLE IF NOT EXISTS events(
-  id INTEGER PRIMARY KEY AUTOINCREMENT, t TEXT, w TEXT, a TEXT);
-CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
-CREATE TABLE IF NOT EXISTS promos(
-  id TEXT PRIMARY KEY, code TEXT UNIQUE, kind TEXT, value INTEGER DEFAULT 1,
-  active INTEGER DEFAULT 1, expires TEXT, maxuses INTEGER DEFAULT 0, uses INTEGER DEFAULT 0, created TEXT);
-CREATE TABLE IF NOT EXISTS promo_use(
-  id INTEGER PRIMARY KEY AUTOINCREMENT, promo TEXT, cid TEXT, ts TEXT);
-  CREATE TABLE IF NOT EXISTS subs(
-  id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, sub TEXT UNIQUE, created TEXT);
-  CREATE TABLE IF NOT EXISTS chat(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  key TEXT, who TEXT, text TEXT, ts TEXT,
-  human INTEGER DEFAULT 0, read_g INTEGER DEFAULT 0, read_s INTEGER DEFAULT 0);
- CREATE TABLE IF NOT EXISTS chat_meta(
-  key TEXT PRIMARY KEY, closed INTEGER DEFAULT 0, staff_in INTEGER DEFAULT 0);
-  CREATE TABLE IF NOT EXISTS fcm(
-  id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, token TEXT UNIQUE, created TEXT);
-`);
-/* миграции */
-const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
-if (ccols.length && !ccols.includes('role')) db.exec(`ALTER TABLE customers ADD COLUMN role TEXT DEFAULT 'guest'`);
-const MENU_V = '4';
-if (db.prepare("SELECT value FROM meta WHERE key='menu_v'").get()?.value !== MENU_V) {
-  db.exec('DELETE FROM menu');
-  const seed = [
-    ['esp','coffee','⚡','Эспрессо','40 мл чистой честности. Без молока и компромиссов',['эспрессо'],'40 мл','200','',1],
-    ['amer','coffee','☕','Американо','Для тех, кто любит «просто кофе». Держит до вечера',['эспрессо','вода'],'200 мл','240','',1],
-    ['batch','coffee','🫖','Батч брю','Заварили с любовью. Кислит, сладит, живёт',['фильтр-кофе'],'200/300 мл','220/260','',1],
-    ['flat','coffee','☕','Флэт уайт','Двойной эспрессо в бархатной накидке',['двойной эспрессо','молоко'],'180 мл','280','',1],
-    ['cap','coffee','☕','Капучино','Классика, за которой возвращаются. Пенка — хоть рисуй',['эспрессо','молоко'],'200/300 мл','250/340','Хит',1],
-    ['lat','coffee','🥛','Латте','Мягкий и тёплый, как объятие. Только вкуснее',['эспрессо','молоко'],'300/400 мл','310/360','',1],
-    ['raf','coffee','🍦','Раф','Сливочный, сладкий, затягивает. Мы никому не расскажем',['эспрессо','сливки','ванильный сахар'],'300/400 мл','360/400','',1],
-    ['matcha','drinks','🍵','Матча','Зелёный, полезный, фотогеничный. Энергия без кофе',['маття','молоко'],'300/400 мл','290/360','',0],
-    ['cocoa','drinks','🍫','Какао','Из детства, с маршмеллоу и без сожалений',['какао','молоко','маршмеллоу'],'300/400 мл','290/370','',0],
-    ['tea','drinks','🫖','Чай','Семь характеров: от ассама до каркаде. Выбирай настроение',['ассам','эрл грей','сенча','молочный улун','горные травы','ройбуш с малиной','каркаде с цукатами'],'400 мл','210','',0],
-    ['monblan','seasonal','🏔','Монблан','Такой красивый, что улетает сразу в соцсети',['каштан','сливки','эспрессо'],'—','400','New',0],
-    ['lemonade','seasonal','🍋','Кофейный лимонад','Сложный, как твой выбор',['эспрессо','лимон','сироп'],'—','400','',0],
-    ['diet','seasonal','🍨','Я не на диете','Когда решил позволить себе все и даже больше!',['эспрессо','сливки','сироп'],'—','400','',0],
-    ['mtonic','seasonal','🌴','Тропическая матча-тоник','Сделали вкусно для тех, кто любит матчу',['матча','тоник','тропический сироп'],'—','420','New',0],
-    ['panini-ham','food','🥪','Панини ветчина','Горячий, хрустящий, сытный. Как надо',['ветчина','сыр','соус'],'—','320','',0],
-    ['panini-pep','food','🥪','Панини пепперони','Горячий, хрустящий, сытный. Как надо',['пепперони','сыр','томаты'],'—','320','',0],
-    ['panini-tuna','food','🥪','Панини тунец','Горячий, хрустящий, сытный. Как надо',['тунец','сыр','овощи'],'—','350','',0],
-    ['granola','food','🥣','Гранола','Миска утра: гранола, йогурт, ягоды. Даже если уже вечер',['гранола','йогурт','ягоды'],'—','360','',0],
-    ['syrniki','food','🥞','Сырники','Как у бабушки, только со сметаной и нашим вайбом',['творог','сметана','ягоды'],'—','350','',0],
-    ['carrot','desserts','🥕','Морковный торт','Орех хрустит, крем тает. Овощ, а праздник',['морковь','крем-чиз','грецкий орех'],'—','360','Хит',0],
-    ['moti','desserts','🍡','Моти','4 вкуса: клубника-пломбир, финик-дорблю, манго-пломбир, вишня-латте',['клубника-пломбир','финик-дорблю','манго-пломбир','вишня-латте'],'—','275','',0],
-    ['pie','desserts','🥧','Пирог','Вишнёвый или грушевый — что сегодня решил духовой шкаф',['вишня/груша','песочное тесто'],'—','300','',0],
-    ['shu','desserts','🧁','Шу','Хрустящее снаружи, кремовое внутри. Тает быстрее, чем кажется',['шу','крем'],'—','250','',0],
-    ['eclair','desserts','🍫','Эклер','Классика, которой не нужно представляться',['шу','шоколад','крем'],'—','230','',0],
-    ['bars','desserts','⚡','Батончики','Kick и R.A.W. Life — когда нужна энергия прямо сейчас',['Kick','R.A.W. Life'],'—','300','',0],
-    ['drip','shop','☕','Дрип','Кофе в кармане. Завари где угодно',['Tasty Coffee'],'1 шт','150','',0],
-    ['candy','shop','🍬','Леденцы','Scandic: арктическая мята, пряное яблоко и другие',['Scandic'],'1 шт','150','',0],
-  ];
-  const ins = db.prepare('INSERT INTO menu(id,cat,e,name,descr,comp,vol,price,tag,coffee,is_on,img) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
-  for (const p of seed) ins.run(p[0],p[1],p[2],p[3],p[4],JSON.stringify(p[5]),p[6],p[7],p[8],p[9],1,null);
-  db.prepare("INSERT INTO meta(key,value) VALUES('menu_v',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(MENU_V);
-}
-const mcols = db.prepare('PRAGMA table_info(chat_meta)').all().map(c => c.name);
-if (mcols.length && !mcols.includes('staff_in')) db.exec('ALTER TABLE chat_meta ADD COLUMN staff_in INTEGER DEFAULT 0');
-if (mcols.length && !mcols.includes('ctx')) db.exec(`ALTER TABLE chat_meta ADD COLUMN ctx TEXT DEFAULT 'coffee'`);
-const tcols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
-if (tcols.length && !tcols.includes('tg')) db.exec('ALTER TABLE customers ADD COLUMN tg TEXT');
-if (tcols.length && !tcols.includes('pin')) db.exec("ALTER TABLE customers ADD COLUMN pin TEXT DEFAULT ''");
-if (tcols.length && !tcols.includes('verified')) db.exec('ALTER TABLE customers ADD COLUMN verified INTEGER DEFAULT 0');
-if (tcols.length && !tcols.includes('welcome')) db.exec('ALTER TABLE customers ADD COLUMN welcome INTEGER DEFAULT 0');
-if (tcols.length && !tcols.includes('actcode')) db.exec('ALTER TABLE customers ADD COLUMN actcode TEXT');
-if (!db.prepare("SELECT 1 FROM meta WHERE key='verified_migrated'").get()) {
-  db.exec('UPDATE customers SET verified=1'); // старые профили — честные
-  db.prepare("INSERT INTO meta(key,value) VALUES('verified_migrated','1')").run();
-}
-/* ── доставка: колонки и таблицы ── */
-const menuCols = db.prepare('PRAGMA table_info(menu)').all().map(c => c.name);
-if (menuCols.length && !menuCols.includes('section')) db.exec(`ALTER TABLE menu ADD COLUMN section TEXT DEFAULT 'coffee'`);
-if (menuCols.length && !menuCols.includes('opts')) db.exec(`ALTER TABLE menu ADD COLUMN opts TEXT DEFAULT '[]'`);
-const prCols = db.prepare('PRAGMA table_info(promos)').all().map(c => c.name);
-if (prCols.length && !prCols.includes('scope')) db.exec(`ALTER TABLE promos ADD COLUMN scope TEXT DEFAULT 'coffee'`);
-db.exec(`CREATE TABLE IF NOT EXISTS orders(
-  id TEXT PRIMARY KEY, no INTEGER, cid TEXT, name TEXT, phone TEXT,
-  method TEXT, place TEXT, addr TEXT, slot TEXT, pay TEXT, comment TEXT,
-  items TEXT, total INTEGER, discount INTEGER, fee INTEGER, gifts TEXT,
-  status TEXT DEFAULT 'new', created TEXT, updated TEXT)`);
-  const ocols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
-if (ocols.length && !ocols.includes('promo')) db.exec(`ALTER TABLE orders ADD COLUMN promo TEXT DEFAULT ''`);
-if (ocols.length && !ocols.includes('promodiscount')) db.exec(`ALTER TABLE orders ADD COLUMN promodiscount INTEGER DEFAULT 0`);
-if (ocols.length && !ocols.includes('eta')) db.exec(`ALTER TABLE orders ADD COLUMN eta TEXT DEFAULT ''`);
-const ncols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
-if (ncols.length && !ncols.includes('notify_tg')) db.exec(`ALTER TABLE customers ADD COLUMN notify_tg INTEGER DEFAULT 1`);
-if (ncols.length && !ncols.includes('notify_web')) db.exec(`ALTER TABLE customers ADD COLUMN notify_web INTEGER DEFAULT 1`);
-if (ncols.length && !ncols.includes('consent')) db.exec(`ALTER TABLE customers ADD COLUMN consent TEXT DEFAULT ''`);
-
-  const DMENU_V = '1';
-if (db.prepare("SELECT value FROM meta WHERE key='dmenu_v'").get()?.value !== DMENU_V) {
-  db.exec(`DELETE FROM menu WHERE section='delivery'`);
-  const P = (a,b,c,d) => JSON.stringify([
-    {l:'25 см, пышное', w:a[0]+' г', p:a[1], sz:25},
-    {l:'35 см, пышное', w:b[0]+' г', p:b[1], sz:35},
-    {l:'25 см, тонкое', w:c[0]+' г', p:c[1], sz:25},
-    {l:'35 см, тонкое', w:d[0]+' г', p:d[1], sz:35}]);
-  const dz = [
-   ['pz-marg','Маргарита','Красный соус, моцарелла',['красный соус','моцарелла'],[415,535],[750,735],[335,435],[550,635]],
-   ['pz-hamgr','Ветчина и грибы','Белый соус, моцарелла, шампиньоны, ветчина, чеддер',['белый соус','моцарелла','шампиньоны','ветчина','чеддер'],[545,745],[990,1095],[465,645],[790,995]],
-   ['pz-veg','Овощная','Песто, баклажаны, цукини, перец, помидоры черри, брокколи, руккола',['песто','баклажаны','цукини','перец','черри','брокколи','руккола'],[485,635],[870,935],[405,535],[670,835]],
-   ['pz-cheese','Сырная','Белый соус, моцарелла, чеддер, камамбер',['белый соус','моцарелла','чеддер','камамбер'],[500,845],[850,1145],[420,745],[650,1045]],
-   ['pz-hamsal','Ветчина-салями','Красный соус, моцарелла, салями, ветчина, перец, руккола',['красный соус','моцарелла','салями','ветчина','перец','руккола'],[470,790],[860,1090],[390,690],[660,990]],
-   ['pz-bacon','С беконом','Белый соус, моцарелла, шампиньоны, бекон, маринованный огурец, красный лук',['белый соус','моцарелла','шампиньоны','бекон','огурец','лук'],[510,740],[930,1140],[430,640],[730,1040]],
-   ['pz-tuna','С тунцом','Белый соус, моцарелла, тунец, болгарский перец, чеддер',['белый соус','моцарелла','тунец','перец','чеддер'],[470,760],[880,1130],[390,660],[660,1030]],
-   ['pz-chickgr','С курицей и грибами','Белый соус, моцарелла, маринованная курица, шампиньоны, руккола',['белый соус','моцарелла','курица','шампиньоны','руккола'],[540,740],[980,1040],[435,640],[780,940]],
-   ['pz-farsh','С фаршем','Белый соус, моцарелла, помидоры, фарш говяжий, огурец, красный лук, чеддер',['белый соус','моцарелла','помидоры','фарш','огурец','лук','чеддер'],[545,840],[1000,1240],[465,740],[800,1140]],
-   ['pz-pep','Пепперони','Красный соус, моцарелла, пепперони, халапеньо, руккола',['красный соус','моцарелла','пепперони','халапеньо','руккола'],[470,790],[840,1090],[390,690],[640,990]],
-   ['pz-mush','Грибная','Белый соус, моцарелла, шампиньоны, руккола',['белый соус','моцарелла','шампиньоны','руккола'],[515,770],[930,1070],[435,670],[730,970]],
-   ['pz-chickpine','С курицей и ананасами','Белый соус, моцарелла, маринованная курица, ананас, руккола',['белый соус','моцарелла','курица','ананас','руккола'],[540,750],[980,1060],[460,650],[780,960]],
-  ];
-  const insD = db.prepare(`INSERT INTO menu(id,section,cat,e,name,descr,comp,vol,price,tag,coffee,is_on,img,opts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
-  for (const z of dz) insD.run(z[0],'delivery','pizza','🍕',z[1],z[2],JSON.stringify(z[3]),'25/35 см','0','',0,1,null,P(z[4],z[5],z[6],z[7]));
-  const simple = [
-   ['rl-hos-og','Хосомаки с огурцом','rolls','🍣',['рис','нори','огурец','микрозелень'],'150 г','220'],
-   ['rl-hos-ls','Хосомаки с лососем','rolls','🍣',['рис','нори','лосось','микрозелень'],'150 г','370'],
-   ['rl-hos-tn','Хосомаки с тунцом','rolls','🍣',['рис','нори','тунец','огурец','микрозелень'],'160 г','370'],
-   ['rl-hos-kr','Хосомаки с креветкой','rolls','🍣',['рис','нори','креветка','кимчи','микрозелень'],'150 г','370'],
-   ['rl-phil-og','Филадельфия с огурцом','rolls','🍣',['рис','нори','сливочный сыр','огурец','лосось','микрозелень'],'250 г','650'],
-   ['rl-phil-sliv','Филадельфия сливочная','rolls','🍣',['рис','нори','сливочный сыр','лосось','микрозелень'],'250 г','650'],
-   ['rl-calif','Калифорния с креветкой','rolls','🍣',['рис','нори','сливочный сыр','огурец','креветка','кимчи','суари'],'250 г','620'],
-   ['rl-phil-tn','Филадельфия с тунцом','rolls','🍣',['рис','нори','сливочный сыр','огурец','тунец','кунжутный соус'],'260 г','660'],
-   ['rl-smoke-ch','С копчёной курицей','rolls','🍣',['рис','нори','сливочный сыр','курица в/к','огурец','перец','кунжут'],'240 г','530'],
-   ['rl-bonito','Бонито','rolls','🍣',['рис','нори','тунец','огурец','стружка тунца'],'210 г','760'],
-   ['rl-tartar-ls','Тар-тар с лососем','rolls','🍣',['рис','нори','сливочный сыр','омлет','огурец','лосось','кимчи'],'250 г','590'],
-   ['rl-tartar-kr','Тар-тар с креветкой','rolls','🍣',['рис','нори','сливочный сыр','омлет','огурец','креветка','кимчи'],'250 г','580'],
-   ['rl-tartar-tn','Тар-тар с тунцом','rolls','🍣',['рис','нори','сливочный сыр','омлет','огурец','тунец','кимчи'],'260 г','610'],
-   ['rl-marioka-kr','Мариока с креветкой','rolls','🔥',['рис','нори','сливочный сыр','креветка','унаги','кунжут'],'260 г','570'],
-   ['rl-marioka-ls','Мариока с лососем','rolls','🔥',['рис','нори','сливочный сыр','лосось','унаги','кунжут'],'260 г','590'],
-   ['rl-kioto-kr','Киото с креветкой','rolls','🔥',['рис','нори','сливочный сыр','креветка','соус запекания','унаги','кунжут'],'290 г','570'],
-   ['rl-kioto-ls','Киото с лососем','rolls','🔥',['рис','нори','сливочный сыр','лосось','соус запекания','унаги','кунжут'],'290 г','570'],
-   ['rl-bake-ch','Запечённая с копчёной курицей','rolls','🔥',['рис','нори','сливочный сыр','курица','унаги','огурец'],'300 г','650'],
-   ['rl-bake-phil','Запечённая Филадельфия','rolls','🔥',['рис','нори','сливочный сыр','огурец','лосось','соус запекания','унаги','кунжут'],'280 г','710'],
-   ['rl-bake-calif','Запечённая Калифорния','rolls','🔥',['рис','нори','сливочный сыр','огурец','креветка','соус запекания','унаги','кунжут'],'310 г','670'],
-   ['set-tartar','Сет Тар-тар','sets','🍱',['тар-тар лосось','тар-тар креветка','тар-тар тунец'],'750 г','1570'],
-   ['set-phil','Сет Филадельфия','sets','🍱',['филадельфия сливочная','с огурцом','запечённая'],'750 г','1740'],
-   ['set-bake','Сет запечённый','sets','🍱',['филадельфия с курицей','калифорния запечённая','мариока лосось','киото креветка'],'1000 г','1860'],
-   ['set-combo','Сет комбинированный','sets','🍱',['мариока креветка','киото лосось','калифорния креветка','филадельфия сливочная'],'1000 г','2000'],
-   ['sc-red','Соус красный','sauces','🥫',['томат','специи'],'40 г','80'],
-   ['sc-rose','Соус розовый','sauces','🥫',['томат','сливки'],'40 г','80'],
-   ['sc-garlic','Соус чесночный','sauces','🥫',['чеснок','сливки'],'40 г','80'],
-   ['sc-white','Соус белый','sauces','🥫',['сливки','специи'],'40 г','80'],
-  ];
-  for (const s of simple) insD.run(s[0],'delivery',s[2],s[3],s[1],'',JSON.stringify(s[4]),s[5],s[6],'',0,1,null,'[]');
-  db.prepare("INSERT INTO meta(key,value) VALUES('dmenu_v',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(DMENU_V);
-}
-/* ── VAPID-ключи для пушей (создаются один раз) ── */
-let vapidRow = db.prepare("SELECT value FROM meta WHERE key='vapid'").get();
-if (!vapidRow) {
-  const keys = webpush.generateVAPIDKeys();
-  db.prepare("INSERT INTO meta(key,value) VALUES('vapid',?)").run(JSON.stringify(keys));
-  vapidRow = { value: JSON.stringify(keys) };
-}
-const VAPID = JSON.parse(vapidRow.value);
-webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
 const TG_TOKEN = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
 const TG_CHANNEL = process.env.TG_CHANNEL_ID || '';
 const appKb = () => ({ inline_keyboard: [
@@ -718,7 +550,7 @@ app.get('/api/stats', adminGuard, (req, res) => {
   res.json({ total,newWeek,newMonth,stampsToday,stampsWeek,stampsMonth,redeemed,returning,avgCups,promoUses,days });
 });
 /* ── пуш-уведомления ── */
-app.get('/api/vapid', (req, res) => res.json({ publicKey: VAPID.publicKey }));
+app.get('/api/vapid', (req, res) => res.json({ publicKey: getVapidPublicKey() }));
 app.post('/api/push/subscribe', userGuard, (req, res) => {
   const sub = req.body.sub;
   if (!sub || !sub.endpoint) return res.status(400).json({ error: 'bad sub' });
