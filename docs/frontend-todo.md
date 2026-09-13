@@ -35,3 +35,15 @@
 
 **Фикс в Фазе 3:** перенести содержимое fix-views-версии в `profile.js`
 как единственную реализацию, удалить дубликат из fix-views.
+### v61 (fix-views) — openEditor и exitEdit заменяются целиком
+
+`fix-views.js` переопределяет:
+- `openEditor=function(id){...}` (строка 400)
+- `exitEdit=function(){...}` (строка 481)
+
+Оригиналы в `index.html` — **мёртвый код** после fix-views.
+Связанные функции (`renderZone`, `loadImg`, `edit`, `#emZone/#emFile` handlers)
+тоже остаются в inline: их использует fix-views-овский `openEditor`.
+
+**Фикс в Фазе 3:** перенести содержимое fix-views-версий в `public/app/menu-editor.js`,
+удалить дубликат.
