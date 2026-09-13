@@ -1,31 +1,13 @@
-/* public/app/core/a11y.js — Ф3.1: a11y + reduced-motion + lazy-img.
-   Растворено из fix-views.js v68-полиш. */
-
-(function () {
-  'use strict';
-
-  /* reduced-motion: уважаем системную настройку */
-  var css = document.createElement('style');
-  css.textContent = '@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}';
-  document.head.appendChild(css);
-
-  /* ARIA для модалок */
-  document.querySelectorAll('.modal').forEach(function (m) {
-    m.setAttribute('role', 'dialog');
-    m.setAttribute('aria-modal', 'true');
-  });
-  document.querySelectorAll('.mclose').forEach(function (b) {
-    if (!b.getAttribute('aria-label')) b.setAttribute('aria-label', 'Закрыть');
-  });
-
   /* lazy-img: loading=lazy + decoding=async, включая динамически добавленные */
+  function applyLazy(img) {
+    if (img.loading !== 'lazy') {              // ← было if (!img.loading), стало явное сравнение
+      img.loading = 'lazy';
+      img.decoding = 'async';
+    }
+  }
   function lazify(root) {
-    (root || document).querySelectorAll('img').forEach(function (img) {
-      if (!img.loading) {
-        img.loading = 'lazy';
-        img.decoding = 'async';
-      }
-    });
+    if (root.nodeType === 1 && root.tagName === 'IMG') applyLazy(root);
+    (root || document).querySelectorAll('img').forEach(applyLazy);
   }
   lazify(document);
   new MutationObserver(function (ms) {
@@ -35,4 +17,3 @@
       });
     });
   }).observe(document.body, { childList: true, subtree: true });
-})();
