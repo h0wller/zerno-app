@@ -57,3 +57,8 @@ CSS-инъекция v62 (`.chat-fab`, `.modal`, `.phead .gear`, `#settingsModal
 `#deliveryView .search`) и MutationObserver `body.panel-open` перенесены
 в `public/app/ui/styles.js`. Остальные части v62-IIFE (splash, settingsModal,
 поиск в Пятнице, cashLog, custClose) — в следующих шагах.
+### Ф3.3 (растворено) — v62 splash → public/app/core/splash.js
+
+Splash-обработчик (`#brandSplashStatic`) перенесён в `public/app/core/splash.js`.
+Добавлен экспорт `window.setChatCtx(ctx)` в fix-views (строка 624) —
+точка входа для chatCtx из внешних модулей.
