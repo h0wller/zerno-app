@@ -3,11 +3,9 @@ import { initDatabase, getVapidPublicKey } from './server/db/index.js';
 import express from 'express';
 import crypto from 'node:crypto';
 import webpush from 'web-push';
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getMessaging } from 'firebase-admin/messaging';
 
 // ── Конфигурация и БД ──
-import { db, PORT, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, PUBLIC_DIR, WEBAPP_URL, setFcmReady, isFcmReady } from './server/config.js';
+import { db, PORT, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, PUBLIC_DIR, WEBAPP_URL, } from './server/config.js';
 // ── Утилиты ──
 import { ph10, fmtPhone } from './server/utils/phone.js';
 import { nowISO, uid } from './server/utils/id-time.js';
@@ -18,81 +16,12 @@ import {
   securityHeaders, corsMiddleware
 } from './server/middleware/index.js';
 
+import { tgSend, tgEnsureWebhook, TG_BOT_USERNAME, TG_CHANNEL, TG_WEBHOOK_SECRET, APP_URL } from './server/services/telegram.js';
+import { sendSms } from './server/services/sms.js';
+import { sendPush } from './server/services/push.js';
+
 const app = express();
 
-const TG_TOKEN = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
-const TG_CHANNEL = process.env.TG_CHANNEL_ID || '';
-const appKb = () => ({ inline_keyboard: [
-  [{ text: '🍕 Меню и заказ', web_app: { url: WEBAPP_URL + '/?src=tg&brand=delivery' } }],
-  [{ text: '📦 Мои заказы', web_app: { url: WEBAPP_URL + '/?src=tg&tab=orders' } }, { text: '☕ Штампы', web_app: { url: WEBAPP_URL + '/?src=tg&tab=bonus' } }],
-[{ text: '💬 Поддержка', web_app: { url: WEBAPP_URL + '/?src=tg&tab=chat&support=choose' } }]
-]});
-const TG_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'and_coffee_bot';
-const TG_WEBHOOK_SECRET = process.env.TG_WEBHOOK_SECRET || '';
-const PUBLIC_URL = process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : '');
-const APP_URL = PUBLIC_URL || 'https://app.andcoffee.online';
-
-async function tgSend(chatId, text, kb) {
-  const token = process.env.TEST_TOKEN || TG_TOKEN;
-  if (!token) return;
-  const body = { chat_id: chatId, text, parse_mode: 'HTML' };
-  if (kb) body.reply_markup = kb;
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  }).catch(() => {});
-}
-
-async function sendTg(cid, title, body, markup) {
-  const c = db.prepare('SELECT tg FROM customers WHERE id=?').get(cid);
-  if (c && c.tg) await tgSend(c.tg, `${title}\n${body}`, markup);
-}
-
-async function sendPush(cid, title, body, markup) {
-  const c = db.prepare('SELECT tg, notify_tg, notify_web FROM customers WHERE id=?').get(cid);
-  const wantTg = !c || c.notify_tg !== 0;
-  const wantWeb = !c || c.notify_web !== 0;
-  
-  if (wantTg) sendTg(cid, title, body, markup).catch(() => {});
-  
-  if (wantWeb) {
-    sendFcm(cid, title, body).catch(() => {});
-    const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
-    for (const r of rows) {
-      try { 
-        await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body })); 
-      } catch (e) { 
-        if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub); 
-      }
-    }
-  }
-  return { ok: true };
-}
-async function tgEnsureWebhook() {
-  if (!TG_TOKEN || !PUBLIC_URL) { console.log('[tg] webhook пропущен: нет TOKEN или PUBLIC_URL'); return; }
-  const want = PUBLIC_URL + '/api/tg/webhook';
-  try {
-    const info = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/getWebhookInfo`).then(r => r.json());
-    if (info.ok && info.result && info.result.url === want) { console.log('[tg] webhook уже наш:', want); return; }
-    const body = { url: want, allowed_updates: ['message'] };
-    if (TG_WEBHOOK_SECRET) body.secret_token = TG_WEBHOOK_SECRET;
-    const set = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/setWebhook`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
-    console.log('[tg] setWebhook:', set.ok ? 'ok → ' + want : set.description);
-  } catch (e) { console.log('[tg] webhook ensure error:', e.message); }
-}
-
-const SMS_API = process.env.SMSRU_API_ID || '';
-async function sendSms(phone, text) {
-  if (!SMS_API) { console.log('[DEV SMS]', phone, text); return; }
-  try { await fetch(`https://sms.ru/sms/send?api_id=${SMS_API}&to=7${ph10(phone)}&text=${encodeURIComponent(text)}&json=1`); } catch (e) {}
-}
-/* ── FCM для нативного приложения ── */
-if (process.env.FIREBASE_SA) {
-  try { initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_SA)) }); setFcmReady(true); }
-    catch (e) { console.log('FCM init error', e.message); }
-}
 // ── Доменные хелперы БД (остаются в server.js, так как не входят в целевые модули рефакторинга) ──
 const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
   comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
@@ -529,17 +458,6 @@ app.post('/api/push/test', userGuard, async (req, res) => {
   const s = await sendPush(req.user.id, '🔔 Тестовый пуш', 'Если ты это видишь — пуши на этом устройстве работают');
   res.json(s);
 });
-async function sendFcm(cid, title, body) {
-  try {
-            if (!isFcmReady()) return;
-    const messaging = getMessaging();
-    const rows = db.prepare('SELECT token FROM fcm WHERE cid=?').all(cid);
-    for (const r of rows) {
-      try { await messaging.send({ token: r.token, notification: { title, body } }); }
-      catch (e) { if (String(e.code || '').includes('registration-token')) db.prepare('DELETE FROM fcm WHERE token=?').run(r.token); }
-    }
-  } catch (e) { console.log('FCM send error', e.message); }
-}
 app.post('/api/push/fcm', userGuard, (req, res) => {
   const token = String(req.body.token || '');
   if (!token) return res.status(400).json({ error: 'bad token' });
