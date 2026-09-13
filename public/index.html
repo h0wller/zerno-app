@@ -1552,8 +1552,8 @@ $('#nameInput').addEventListener('change',async e=>{if(!me)return;
 $('#resetBtn').onclick=()=>{if(!confirm('Выйти и очистить локальные данные (токены)?'))return;
  localStorage.clear();location.reload()};
  /* ── отзывы ── */
-const REVIEW_URL='https://yandex.ru/maps/-/CTHxjIyq';
-const SOCIAL_URL='https://t.me/and_coffee39';
+var REVIEW_URL='https://yandex.ru/maps/-/CTHxjIyq';
+var SOCIAL_URL='https://t.me/and_coffee39';
 $('#reviewBtn').onclick=()=>{window.open(REVIEW_URL,'_blank');toast('Спасибо! Вы лучшие 💙','⭐')};
 function maybeAskReview(){
  if(!me)return;
@@ -1836,167 +1836,6 @@ async function renderLog(){try{const r=await api('/staff/log');loadPending();
   `<div class="logrow cashlog"><span class="lt">${esc(l.t)}</span><span class="la">${esc(l.w)} — ${esc(l.a)}</span></div>`).join('')
   ||'<div class="hmini">Журнал пуст</div>'}catch(e){$('#cashLog').innerHTML=''}
 }
-/* ── чат-бот с характером «…и кофе» ── */
-let chatOpened=false,unread=0;
-const now=()=>new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
-function addMsg(who,text){const m=document.createElement('div');m.className='msg '+who;
-  const safe=esc(text).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" style="color:var(--flame)">$1</a>');
-  m.innerHTML=`${safe}<time>${now()}</time>`;$('#chatMsgs').append(m);$('#chatMsgs').scrollTop=1e6}
-function showTyping(){const t=document.createElement('div');t.className='typing';t.id='tp';t.innerHTML='<i></i><i></i><i></i>';
- $('#chatMsgs').append(t);$('#chatMsgs').scrollTop=1e6}
-function hideTyping(){const t=$('#tp');t&&t.remove()}
-const CALL_LABEL='🙋 Позвать сотрудника';
-function renderChips(){
- const list=['Как работает 10-й кофе?','Где вы?','Какие чаи есть?','Моти — какие вкусы?'];
- if(me)list.push(CALL_LABEL);
- $('#chatChips').innerHTML=list.map(t=>`<button>${t}</button>`).join('');
-}
-renderChips();
-let callTimer=null;
-$('#chatChips').addEventListener('click',e=>{
- const b=e.target.closest('button');if(!b)return;
- if(b.dataset.armed==='1'){ // второй тап — осознанно
-  clearTimeout(callTimer);b.dataset.armed='';b.textContent=CALL_LABEL;
-  return sendChat('🙋 Позовите, пожалуйста, сотрудника');
- }
- if(b.textContent===CALL_LABEL){ // первый тап — взводим
-  b.dataset.armed='1';b.textContent='❗ Точно позвать? Нажмите ещё раз';
-  callTimer=setTimeout(()=>{b.dataset.armed='';b.textContent=CALL_LABEL;},4000);
-  return;
- }
- sendChat(b.textContent);
-});
-function botReply(q){q=q.toLowerCase();
- if(/привет|здравств|добр/.test(q))return'Здравствуйте! 👋 Это Ника из «…и кофе». Подскажу по меню, бонусам и чаю.';
- if(/инст|insta/.test(q))return'Мы в Инстаграм! 📸 https://www.instagram.com/and_coffee39/ — подписывайтесь.';
- if(/10|десят|штамп|бонус|лояльн|бесплат|накоп/.test(q))return'Работает так: покупаете кофе — кассир сканирует ваш QR и ставит штамп-зерно 🫘 Собрали 9 — десятый кофе бесплатно! Подарок появится в «Бонусах» и будет ждать, пока вы его не выпьете 😄';
- if(/ча[йи]|чаев|ассам|эрл|сенча|улун|ройбуш|каркаде|трав/.test(q))return'У нас семь чаёв: ассам, эрл грей, сенча, молочный улун, горные травы, ройбуш с малиной и каркаде с цукатами. 400 мл — 210 ₽. Какой под настроение?';
- if(/моти/.test(q))return'Моти — 4 вкуса: клубника-пломбир, финик-дорблю, манго-пломбир и вишня-латте. 275 ₽ за штучку счастья.';
- if(/во сколько|до скольк|время работы|часы работы|график|режим работы|когда открыт|работаете/.test(q))return'Ежедневно: май–сентябрь 8:00–21:00, октябрь–апрель 8:00–20:00. Мы в Янтарном, Советская 70г 🌊';
- if(/адрес|где вы|найти вас|на карте/.test(q))return'Мы у моря: п. Янтарный, Советская ул., 70г. Белый домик с вывеской «…и кофе» 🌊';
- if(/телеграм|связ|написать|контакт/.test(q))return'Пишите в Telegram: '+SOCIAL_URL+' — отвечаем быстро и с удовольствием.';
- if(/молоко|овсян|кокос|миндал|альтернатив|банан/.test(q))return'Альтернативное молоко (овсяное, кокосовое, миндальное, банановое) — +70 ₽. Банановое, кстати, слаще обычного!';
- if(/состав|капучино|из чего|входит/.test(q)){
-  const hit=MENU.find(p=>p.name.toLowerCase().includes('капучино'));
-  return hit&&hit.comp&&hit.comp.length?`Состав: ${hit.comp.join(', ')}. Полный состав любой позиции виден прямо в меню 📋`
-   :'Состав каждой позиции указан в карточке меню 📋'}
- if(/меню|новинк|сезон/.test(q))return'Загляните в категорию «🌊 Сезонное»: Монблан, кофейный лимонад, «Я не на диете» и тропическая матча-тоник. Всё по 400–420 ₽ и очень фотогеничное ✨';
- if(/возврат|вернуть/.test(q))return'Возврат оформим на кассе по чеку — мгновенно. Деньги вернутся на карту за 3–5 дней.';
- if(/спасибо|благодар/.test(q))return'Всегда рады! Приходите ещё — море рядом, кофе горячий 💙';
- if(/отзыв|рейтинг|оценить|яндекс/.test(q))return'Будем рады вашему отзыву! 🌟 Ссылка: '+REVIEW_URL+' — это правда помогает маленькой кофейне у моря.';
- if(/позов|сотруд|человек|менедж|оператор|живой/.test(q))return'Приняла! Зову сотрудника — обычно отвечаем за 2–3 минуты 🙋';
- return'Приняла! Передаю человеку — обычно отвечаем за 2–3 минуты. А пока могу рассказать про: чаи, моти, бонусы, адрес и часы работы.'}
- 
-function chatKey(){
- if(me)return me.id;
- let k=localStorage.getItem('zt_chatkey');
- if(!k){k='anon-'+Math.random().toString(36).slice(2,10);localStorage.setItem('zt_chatkey',k);}
- return k;}
-function sendChat(text){if(!text.trim())return;addMsg('me',text);$('#chatInput').value='';
- const key=chatKey();
- if(staffIn){
-  fetch(API_BASE+'/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text,human:0})}).catch(()=>{});
-  return;}
- const reply=botReply(text);
- const needHuman=reply.startsWith('Приняла!');
- const human=needHuman&&me?1:0;
- const out=needHuman&&!me?'Передала бы вопрос сотруднику, но они отвечают только гостям с профилем 🙂 Создайте его за 10 секунд — тапните на аватарку сверху. А я подскажу по меню, бонусам и чаю!':reply;
- fetch(API_BASE+'/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text,human})}).catch(()=>{});
- showTyping();
- setTimeout(()=>{hideTyping();addMsg('bot',out);
-  fetch(API_BASE+'/api/chat/botlog',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text:out})}).catch(()=>{});
-  if(!$('#chatPanel').classList.contains('open')){unread++;const b=$('#chatBadge');b.hidden=false;b.textContent=unread}},900+Math.random()*700)}
-$('#chatSend').onclick=()=>sendChat($('#chatInput').value);
-$('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat($('#chatInput').value)});
-let lastChatId=0,historyLoaded=false;
-let staffIn=false;
-const unreadKey=()=>'zt_unread_'+chatKey();
-function showBadge(){const u=+localStorage.getItem(unreadKey())||0;const b=$('#chatBadge');b.hidden=!u;b.textContent=u||'';}
-async function initChatPointer(){try{
- const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
- for(const m of r.msgs)lastChatId=Math.max(lastChatId,m.id);
- const rk='zt_read_'+chatKey();
- let readId=+localStorage.getItem(rk)||0;
- if(!localStorage.getItem(rk)){readId=lastChatId;localStorage.setItem(rk,String(readId));}
- localStorage.setItem(unreadKey(),r.msgs.filter(m=>m.who==='staff'&&m.id>readId).length);
- showBadge();
-}catch(e){}}
-async function loadHistory(){try{
- const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();
- $('#chatMsgs').innerHTML='';staffIn=false;
- for(const m of r.msgs){lastChatId=Math.max(lastChatId,m.id);
-  if(m.who==='guest')addMsg('me',m.text);
-  else if(m.who==='staff')addMsg('staff',m.text);
-  else if(m.who==='system'){staffIn=m.text.includes('подключился');addMsg('sys',m.text);}
-  else addMsg('bot',m.text);}
- $('#chatFab').classList.toggle('live',staffIn);
- historyLoaded=true;}catch(e){historyLoaded=true}}
-setInterval(async()=>{if(document.visibilityState!=='visible')return;
- try{const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after='+lastChatId)).json();
-  for(const m of r.msgs){lastChatId=Math.max(lastChatId,m.id);
-   if(m.who==='staff'){addMsg('staff',m.text);
-    if(!$('#chatPanel').classList.contains('open')){
-     localStorage.setItem(unreadKey(),(+localStorage.getItem(unreadKey())||0)+1);showBadge();}}
-   if(m.who==='system'){staffIn=m.text.includes('подключился');addMsg('sys',m.text);$('#chatFab').classList.toggle('live',staffIn);}
-  }
- }catch(e){}},7000);
-$('#chatFab').onclick=async()=>{const p=$('#chatPanel');p.classList.toggle('open');
-   $('#chatFab').classList.toggle('open',p.classList.contains('open'));
- if(p.classList.contains('open')){   if(!lastChatId){try{const r=await(await fetch(API_BASE+'/api/chat/thread?key='+encodeURIComponent(chatKey())+'&after=0')).json();for(const m of r.msgs)lastChatId=Math.max(lastChatId,m.id);}catch(e){}}localStorage.setItem(unreadKey(),'0');showBadge();localStorage.setItem('zt_read_'+chatKey(),lastChatId);
-  if(!historyLoaded)await loadHistory();
-  if(!chatOpened){chatOpened=true;
-   if(!$('#chatMsgs').children.length)setTimeout(()=>addMsg('bot','Привет! Я Ника, поддержка «…и кофе» 🌊 Если я не смогу ответить — к чату подключится сотрудник.'),350)}}};
-$('#chatClose').onclick=()=>{$('#chatPanel').classList.remove('open');$('#chatFab').classList.remove('open');};
-/* ── стафф: чаты гостей ── */
-let scKey=null;
-function openStaffChat(){
- if(me&&('Notification' in window)){
- if(Notification.permission!=='granted')toast('Включите уведомления в профиле — иначе не узнаете о вопросах гостей','🔔');
- else navigator.serviceWorker.ready.then(r=>r.pushManager.getSubscription()).then(s=>{
- if(!s)toast('Включите уведомления в профиле (🔔), чтобы получать вопросы гостей','🔔');});
-}
-$('#staffChatModal').classList.add('show');syncOverlay();$('#scDialogWrap').hidden=true;scKey=null;loadScList();}
-function closeStaffChat(){$('#staffChatModal').classList.remove('show');syncOverlay(),updateStaffBadge();}
-$('#chatsToggle').onclick=openStaffChat;
-$('#chatsToggle2').onclick=openStaffChat;
-$('#scClose').onclick=closeStaffChat;
-let scClosedView=false;
-async function loadScList(){try{const r=await api('/chat/list'+(scClosedView?'?closed=1':''));
- $('#scShowClosed').textContent=scClosedView?'← Активные чаты':'Показать закрытые';
- $('#scList').innerHTML=r.threads.map(t=>`<div class="hmini" style="cursor:pointer" data-sck="${esc(t.key)}">
-  <b>${esc(t.name)}</b>${t.human&&!scClosedView?'<span class="tag hit" style="position:static;margin-left:6px">нужен ответ</span>':''}
-  <span style="float:right">${t.unread?'новое: '+t.unread:''}</span></div>`).join('')
- ||`<div class="hmini">${scClosedView?'Закрытых чатов нет':'Пока тихо'}</div>`;}catch(e){}}
-$('#scShowClosed').onclick=()=>{scClosedView=!scClosedView;loadScList();};
-$('#scCloseThread').onclick=async()=>{if(!scKey)return;
- try{
-  if(scClosedView){await api('/chat/open',{method:'POST',body:{key:scKey}});toast('Чат снова активен','↺');}
-  else{await api('/chat/close',{method:'POST',body:{key:scKey}});toast('Чат закрыт','✅');}
-  $('#scDialogWrap').hidden=true;scKey=null;loadScList();
- }catch(e){toast(e.message,'⚠️')}};
-$('#scList').addEventListener('click',e=>{const el=e.target.closest('[data-sck]');if(!el)return;scKey=el.dataset.sck;openScDialog();});
-async function openScDialog(){$('#scDialogWrap').hidden=false;
-$('#scCloseThread').textContent=scClosedView?'↺ Открыть чат':'✓ Закрыть чат';
- try{const r=await api('/chat/dialog?key='+encodeURIComponent(scKey));
- $('#scDialog').innerHTML=r.msgs.map(m=>`<div class="msg ${m.who==='guest'?'me':(m.who==='staff'?'staff':'bot')}" style="max-width:92%">${esc(m.text)}</div>`).join('');
- $('#scDialog').scrollTop=1e6;}catch(e){}
-updateStaffBadge();}
-$('#scBack').onclick=()=>{$('#scDialogWrap').hidden=true;scKey=null;loadScList(),updateStaffBadge();};
-async function scSend(){const t=$('#scInput').value.trim();if(!t||!scKey)return;
- try{await api('/chat/reply',{method:'POST',body:{key:scKey,text:t}});$('#scInput').value='';openScDialog();}catch(e){toast(e.message,'⚠️')}}
-$('#scSend').onclick=scSend;
-$('#scInput').addEventListener('keydown',e=>{if(e.key==='Enter')scSend()});
-/* счётчик новых вопросов гостей на кнопках 💬 */
-async function updateStaffBadge(){
- if(!me||(me.role!=='admin'&&me.role!=='cashier'))return;
- try{const r=await api('/chat/list');
-  const un=r.threads.reduce((a,t)=>a+(+t.unread||0),0);
-  $('#chatsToggle').textContent=un?`💬 Чаты гостей · ${un}`:'💬 Чаты гостей';
-  $('#chatsToggle2').textContent=un?`💬 ${un}`:'💬';
- }catch(e){}
-}
-setInterval(()=>{if(document.visibilityState==='visible')updateStaffBadge();},10000);
-
 const fx=$('#fx'),fxx=fx.getContext('2d');let pieces=[],fxOn=false;
 function fitFx(){fx.width=innerWidth;fx.height=innerHeight}fitFx();addEventListener('resize',fitFx);
 function confetti(){const C=['#1F4E8C','#7FB2D9','#C89B6A','#BBD6EE','#F5F2EC'];
@@ -2314,6 +2153,7 @@ $('#brandSeg').addEventListener('click',e=>{
 })();
 console.info('%c🌊 …и кофе · ребрендинг','font-weight:bold;font-size:14px','| меню v2 | штампы-зёрна');
 </script>
+<script src="./app/chat.js"></script>
 <div id="installBanner" hidden style="position:fixed;left:12px;right:12px;bottom:86px;z-index:90;background:#12303E;color:#fff;border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.3)">
  <span style="flex:1;font-size:14px">📲 Установите приложение — карта всегда под рукой</span>
  <button id="installBtn" style="background:#2E6F8E;border:none;color:#fff;border-radius:10px;padding:8px 12px;font-weight:700">OK</button>
