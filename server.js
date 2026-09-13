@@ -1,107 +1,38 @@
 import { initDatabase, getVapidPublicKey } from './server/db/index.js';
  initDatabase();
 import express from 'express';
-import crypto from 'node:crypto';
 import webpush from 'web-push';
 
 // ── Конфигурация и БД ──
-import { db, PORT, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, PUBLIC_DIR, WEBAPP_URL, } from './server/config.js';
+import { db, PORT, PUBLIC_DIR, WEBAPP_URL, } from './server/config.js';
 // ── Утилиты ──
-import { ph10, fmtPhone } from './server/utils/phone.js';
+import {  fmtPhone } from './server/utils/phone.js';
 import { nowISO, uid } from './server/utils/id-time.js';
-import { hashPin, pinLocks, lockKey, lockedSeconds, registerFail, safeEqual } from './server/utils/security.js';
 import { otpStore } from './server/utils/otp.js';
 import {
-  userGuard, staffGuard, chatGuard, adminGuard, pendingGuard, dispatchGuard,
+  userGuard, chatGuard, adminGuard, dispatchGuard,
   securityHeaders, corsMiddleware
 } from './server/middleware/index.js';
 
 import { tgSend, tgEnsureWebhook, TG_BOT_USERNAME, TG_CHANNEL, TG_WEBHOOK_SECRET, APP_URL } from './server/services/telegram.js';
-import { sendSms } from './server/services/sms.js';
 import { sendPush } from './server/services/push.js';
+// === module-05: domain customers/auth + loyalty ===
+import { authRouter } from './server/routes/auth.js';
+import { staffRouter } from './server/routes/staff.js';
+import { item, cust, addHist, logEv, getMeta, touch, issueToken } from './server/domain/helpers.js';
+// Если в оставшихся роутах server.js (например, в заказах) используются функции лояльности, 
+// раскомментируй и эти две строки:
+// import { grant, redeem } from './server/domain/loyalty.js';
+// import { createCustomer } from './server/domain/customers.js';
 
 const app = express();
-
-// ── Доменные хелперы БД (остаются в server.js, так как не входят в целевые модули рефакторинга) ──
-const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
-  comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
-  coffee: r.coffee, on: r.is_on, img: r.img, section: r.section || 'coffee', opts: JSON.parse(r.opts || '[]') });
-
-const cust = c => ({ 
-  id: c.id, name: c.name, phone: c.phone, stamps: c.stamps, free: c.free,
-  cups: c.cups, qr: c.qr, role: c.role || 'guest', 
-  verified: c.verified ? 1 : 0, welcome: c.welcome ? 1 : 0,
-  tg: c.tg ? 1 : 0, 
-  notify_tg: c.notify_tg !== 0 ? 1 : 0, 
-  notify_web: c.notify_web !== 0 ? 1 : 0,
-  history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) 
-});
-
-const addHist = (cid, a, by) => db.prepare('INSERT INTO history(cid,ts,a,by) VALUES(?,?,?,?)').run(cid, nowISO(), a, by);
-
-const logEv = (w, a) => { 
-  const d = new Date(); 
-  const pad = n => String(n).padStart(2, '0');
-  db.prepare('INSERT INTO events(t,w,a) VALUES(?,?,?)')
-    .run(`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`, w, a); 
-};
-
-const getMeta = () => db.prepare("SELECT value FROM meta WHERE key='updatedAt'").get()?.value || nowISO();
-
-const touch = () => db.prepare("INSERT INTO meta(key,value) VALUES('updatedAt',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(nowISO());
-
-const issueToken = ref => { 
-  const t = crypto.randomUUID();
-  db.prepare('INSERT INTO tokens(token,kind,ref,ts) VALUES(?,?,?,?)').run(t, 'user', ref, nowISO()); 
-  return t; 
-};
-
-// (Утилиты ph10, fmtPhone, nowISO, uid, hashPin, otpStore, pinLocks, lockKey, lockedSeconds, registerFail, safeEqual перенесены в server/utils/)
-
-/* ── лояльность ── */
-function grant(cid, by) { const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
-  if (!c) return null;
-  c.stamps++; c.cups++;
-  db.prepare('UPDATE customers SET stamps=?,cups=? WHERE id=?').run(c.stamps, c.cups, cid);
-  addHist(cid, `Штамп ${c.stamps} из 10`, by);
-  let ten = false;
-  if (c.stamps >= 10) { c.stamps = 0; c.free++; ten = true;
-    db.prepare('UPDATE customers SET stamps=?,free=? WHERE id=?').run(0, c.free, cid);
-    addHist(cid, '🎉 10-й кофе — подарок начислен', 'Система'); }
-  logEv(c.name, ten ? '10-й кофе — подарок начислен' : `+1 штамп → ${c.stamps} из 10`);
-  const f = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
-  if (ten) sendPush(cid, '🎁 Бесплатный кофе ждёт вас!', 'Вы собрали 10 штампов. Заходите — кофе за наш счёт.', { text: '☕ Мой профиль', url: APP_URL });
-  else if (f.stamps === 9) sendPush(cid, '☕ Осталась одна чашка!', 'У вас 9 из 10 штампов. Следующий кофе — бесплатно 😉', { text: '☕ Мой профиль', url: APP_URL });
-  return { customer: cust(f), ten, msg: ten ? '10-й штамп! Начислен бесплатный кофе' : `+1 штамп → ${f.stamps} из 10` }; }
-function redeem(cid, by, item) {
-  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
-  if (!c || c.free < 1) return null;
-  db.prepare('UPDATE customers SET free=? WHERE id=?').run(c.free - 1, cid);
-  addHist(cid, `🎁 Списан бесплатный кофе: ${item || 'классика'} (осталось ${c.free - 1})`, by);
-  logEv(c.name, 'списан бесплатный кофе: ' + (item || 'классика'));
-  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) };
-}
-function grantWelcome(cid, by) {
-  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
-  if (!c || c.welcome) return null;
-  db.prepare('UPDATE customers SET welcome=1, verified=1 WHERE id=?').run(cid);
-  addHist(cid, '🎁 Приветственный бонус: +1 штамп', 'Система');
-  return grant(cid, by || 'Система');
-}
-function createCustomer(name, phone, pin) { const p = fmtPhone(phone);
-if (String(name).trim().length < 2) return { err: 'Введите имя', code: 400 };
-if (ph10(p).length < 10) return { err: 'Введите номер полностью', code: 400 };
-if (pin !== undefined && !/^\d{4}$/.test(String(pin))) return { err: 'PIN — ровно 4 цифры', code: 400 };
-if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return { err: 'exists', code: 409 };
-const id = uid('u'), qr = 'Z-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-db.prepare('INSERT INTO customers (id,name,phone,stamps,free,cups,qr,created_at,role,pin) VALUES (?,?,?,?,?,?,?,?,?,?)')
-.run(id, name.trim(), p, 0, 0, 0, qr, nowISO(), 'guest', pin ? hashPin(pin) : '');
-addHist(id, 'Профиль создан', 'Приложение');
-return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(id)) }; }
-
+app.use(express.json({ limit: '10mb' }));
 app.use(securityHeaders);
 app.use(corsMiddleware);
-app.use(express.json({ limit: '10mb' }));
+
+// === module-05: роутеры auth и staff ===
+app.use(authRouter);
+app.use(staffRouter);
 
 /* ── меню ─ */
 app.get('/api/health', (req, res) => res.json({ ok: true }));
@@ -135,239 +66,6 @@ app.put('/api/menu/:id', adminGuard, (req, res) => {
 app.delete('/api/menu/:id', adminGuard, (req, res) => {
   db.prepare('DELETE FROM menu WHERE id=?').run(req.params.id); touch(); res.json({ ok: true });
 });
-app.post('/api/auth/request-reg-otp', (req, res) => {
-  const p = fmtPhone(req.body.phone || '');
-  const via = req.body.via === 'tg' ? 'tg' : 'sms';
-  if (ph10(p).length < 10) return res.status(400).json({ error: 'Введите номер полностью' });
-  if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) return res.status(409).json({ error: 'Номер уже зарегистрирован — войдите' });
-  const wait = lockedSeconds(req, 'reg');
-  if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
-  if (via === 'tg') {
-    const token = crypto.randomBytes(6).toString('hex');
-    otpStore.set('regtg:' + token, { phone: p, expires: Date.now() + 10 * 60 * 1000 });
-    otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
-    return res.json({ ok: true, tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}` });
-  }
-  const st = otpStore.get('reg:' + p);
-  if (st && Date.now() - (st.lastSent || 0) < 60000) return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
-  if (st && st.sent >= 5) return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
-  const code = String(Math.floor(1000 + Math.random() * 9000));
-  otpStore.set('reg:' + p, { code, expires: Date.now() + 5 * 60 * 1000, sent: (st ? st.sent : 0) + 1, lastSent: Date.now() });
-  sendSms(p, `…и кофе 🌊 Код регистрации: ${code}`);
-  res.json({ ok: true });
-});
-app.get('/api/auth/check-reg', (req, res) => {
-  const p = fmtPhone(req.query.phone || '');
-  const st = otpStore.get('reg:' + p);
-  res.json({ confirmed: !!(st && st.confirmed && Date.now() < st.expires) });
-});
-/* ── аккаунты ── */
-app.post('/api/auth/register', (req, res) => {
-const p = fmtPhone(req.body.phone || '');
-const code = String(req.body.code || '').trim();
-const st = otpStore.get('reg:' + p);
-const okTg = !!(st && st.confirmed && Date.now() < st.expires);
-const okSms = !!(st && st.code && code && st.code === code && Date.now() < st.expires);
-if (okSms) pinLocks.delete(lockKey(req, 'reg'));
-const tgChat = okTg ? (st.tgChat || null) : null;
-if (okTg || okSms) otpStore.delete('reg:' + p);
-const ex = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
-if (ex) {
-  const age = Date.now() - new Date(ex.created_at).getTime();
-  if (!ex.verified && age > 7 * 86400000) { // сквот протух
-    db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
-    db.prepare('DELETE FROM customers WHERE id=?').run(ex.id);
-    if (!req.body.consent) return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
-db.prepare('UPDATE customers SET consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id || ex.id);
-  } else if (okTg && !ex.verified) { // владелец с TG возвращает номер
-    db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
-    db.prepare('UPDATE customers SET name=?, tg=?, verified=1 WHERE id=?')
-      .run(String(req.body.name || '').trim() || ex.name, tgChat, ex.id);
-    addHist(ex.id, 'Профиль подтверждён через Telegram', 'Система');
-    grantWelcome(ex.id, 'Telegram');
-    return res.json({ token: issueToken(ex.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(ex.id)) });
-  } else return res.status(409).json({ error: 'exists' });
-}
-const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
-if (r.err) return res.status(r.code).json({ error: r.err });
-if (okTg || okSms) {
-  if (tgChat) db.prepare('UPDATE customers SET tg=? WHERE id=?').run(tgChat, r.customer.id);
-  db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
-  if (okTg) grantWelcome(r.customer.id, 'Telegram'); // бонус ТОЛЬКО за «поделиться номером»
-  addHist(r.customer.id, okTg ? 'Telegram привязан при регистрации' : 'Подтверждение по SMS', 'Система');
-  if (!req.body.consent) return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
-db.prepare('UPDATE customers SET consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id || ex.id);
-} else {
-  let ac; do { ac = String(Math.floor(1000 + Math.random() * 9000)); }
-  while (db.prepare('SELECT 1 FROM customers WHERE actcode=? AND verified=0').get(ac));
-  db.prepare('UPDATE customers SET actcode=? WHERE id=?').run(ac, r.customer.id);
-  const staff = db.prepare("SELECT id FROM customers WHERE role IN ('cashier','admin')").all();
-  for (const s of staff) sendPush(s.id, '🆕 Новый гость ждёт активации', `${r.customer.name}, ${r.customer.phone} — код ${ac}`);
-  logEv(r.customer.name, 'регистрация без TG, ждёт код кассира');
-}
-res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
-});
-app.post('/api/auth/activate-guest', userGuard, (req, res) => {
-  const code = String(req.body.code || '').trim();
-  if (!/^\d{4}$/.test(code)) return res.status(400).json({ error: 'Код — 4 цифры' });
-  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id);
-  if (c.verified) return res.status(409).json({ error: 'Профиль уже активирован' });
-  if (!c.actcode || c.actcode !== code) { registerFail(req, 'act'); return res.status(403).json({ error: 'Неверный код активации' }); }
-  db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
-  addHist(c.id, '✅ Профиль активирован на кассе', 'Кассир');
-  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
-});
-
-app.post('/api/auth/login', (req, res) => {
-const p = fmtPhone(req.body.phone || '');
-const pin = String(req.body.pin || '').trim();
-const otp = String(req.body.otp || '').trim();
-const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
-if (!c) return res.status(404).json({ error: 'Профиль не найден — создайте новый' });
-const wait = lockedSeconds(req, 'login');
-if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
-if (otp) {
- const st = otpStore.get(p);
- if (!st || Date.now() > st.expires) return res.status(403).json({ error: 'Код просрочен — запросите новый' });
- if (st.code !== otp) { registerFail(req, 'login'); return res.status(403).json({ error: 'Неверный код' }); }
- otpStore.delete(p); pinLocks.delete(lockKey(req, 'login'));
- addHist(c.id, 'Вход по коду из Telegram', 'Приложение');
- return res.json({ token: issueToken(c.id), customer: cust(c), needPin: !c.pin });
-}
-if (!c.pin) {
- if (!pin) return res.status(409).json({ error: 'PIN ещё не задан — придумайте его', setup: true });
- if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
- db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), c.id);
- addHist(c.id, 'Задан PIN (первый вход)', 'Приложение');
- return res.json({ token: issueToken(c.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
-}
-if (!pin) return res.status(400).json({ error: 'Введите PIN' });
-if (hashPin(pin) !== c.pin) { registerFail(req, 'login'); return res.status(403).json({ error: 'Неверный PIN' }); }
-pinLocks.delete(lockKey(req, 'login'));
-addHist(c.id, 'Вход по PIN', 'Приложение');
-res.json({ token: issueToken(c.id), customer: cust(c) });
-});
-app.post('/api/auth/setup-pin', (req, res) => {
-const p = fmtPhone(req.body.phone || '');
-const pin = String(req.body.pin || '').trim();
-if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
-const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
-if (!c) return res.status(404).json({ error: 'Профиль не найден' });
-if (c.pin) return res.status(403).json({ error: 'PIN уже задан — входите с ним' });
-db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), c.id);
-addHist(c.id, 'Задан PIN (первый вход)', 'Приложение');
-res.json({ token: issueToken(c.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
-});
-app.post('/api/auth/set-pin', userGuard, (req, res) => {
-const pin = String(req.body.pin || '').trim();
-if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
-db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), req.user.id);
-addHist(req.user.id, 'Задан новый PIN', 'Приложение');
-res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
-});
-app.post('/api/auth/request-otp', (req, res) => {
-const p = fmtPhone(req.body.phone || '');
-const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
-if (!c) return res.status(404).json({ error: 'Профиль не найден' });
-if (!c.tg) return res.status(400).json({ error: 'Telegram не привязан — войдите по PIN' });
-const wait = lockedSeconds(req, 'login');
-if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
-const code = String(Math.floor(1000 + Math.random() * 9000));
-otpStore.set(p, { code, expires: Date.now() + 5 * 60 * 1000 });
-tgSend(c.tg, `🔑 Код для входа в приложение: ${code}\nДействует 5 минут. Никому не сообщайте!`);
-res.json({ ok: true });
-});
-app.post('/api/auth/activate', userGuard, (req, res) => {
-  const wait = lockedSeconds(req);
-  if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
-  const code = String(req.body.code || '').trim();
-  let role = null;
-  if (safeEqual(code, ADMIN_CODE)) role = 'admin';
-  else if (safeEqual(code, CASHIER_CODE)) role = 'cashier';
-  else if (safeEqual(code, DISPATCH_CODE)) role = 'dispatch';
-  if (!role) { registerFail(req); return res.status(403).json({ error: 'Неверный код доступа' }); }
-  pinLocks.delete(lockKey(req));
-  db.prepare('UPDATE customers SET role=? WHERE id=?').run(role, req.user.id);
-  addHist(req.user.id, role === 'admin' ? '🔓 Выдан доступ администратора' : '🧾 Выдан доступ кассира', 'Система');
-  logEv(req.user.name, role === 'admin' ? 'активирован админ' : 'активирован кассир');
-  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
-});
-app.post('/api/staff/activate-guest', pendingGuard, (req, res) => {
-  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(String(req.body.id || ''));
-  if (!c) return res.status(404).json({ error: 'Гость не найден' });
-  if (c.verified) return res.status(409).json({ error: 'Уже активирован' });
-  db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
-  addHist(c.id, '✅ Профиль активирован сотрудником', 'Сотрудник');
-  logEv(req.user.name, `активировал гостя ${c.name}`);
-  res.json({ ok: true });
-});
-app.get('/api/staff/pending', pendingGuard, (req, res) => {
-  res.json({ pending: db.prepare('SELECT id,name,phone,actcode,created_at FROM customers WHERE verified=0 AND actcode IS NOT NULL ORDER BY created_at DESC LIMIT 20').all() });
-});
-app.post('/api/auth/deactivate', userGuard, (req, res) => {
-  if (req.user.role === 'admin') {
-    const n = db.prepare("SELECT COUNT(*) as c FROM customers WHERE role='admin'").get().c;
-    if (n <= 1) return res.status(403).json({ error: 'Нельзя отключить последнего администратора' });
-  }
-  db.prepare("UPDATE customers SET role='guest' WHERE id=?").run(req.user.id);
-  addHist(req.user.id, 'Права сотрудника отключены', 'Система');
-  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
-});
-app.post('/api/exit', userGuard, (req, res) => {
-  const t = (req.header('Authorization') || '').replace('Bearer ', '');
-  db.prepare('DELETE FROM tokens WHERE token=?').run(t); res.json({ ok: true });
-});
-app.get('/api/me', userGuard, (req, res) => res.json({ customer: cust(req.user) }));
-app.put('/api/me', userGuard, (req, res) => {
-  const name = String(req.body.name || '').trim() || 'Гость';
-  db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
-  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
-});
-app.put('/api/me/notify', userGuard, (req, res) => {
-  db.prepare('UPDATE customers SET notify_tg=?, notify_web=? WHERE id=?')
-    .run(req.body.tg ? 1 : 0, req.body.web ? 1 : 0, req.user.id);
-  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
-});
-app.post('/api/redeem', userGuard, (req, res) => {
-  const r = redeem(req.user.id, 'Гость');
-  r ? res.json(r) : res.status(400).json({ error: 'Нет доступных подарков' });
-});
-
-/* ── кассир ── */
-app.get('/api/staff/customers', staffGuard, (req, res) => {
-  const q = String(req.query.search || ''); const d = ph10(q); const t = q.trim().toLowerCase();
-  const rows = db.prepare('SELECT * FROM customers ORDER BY created_at DESC LIMIT 50').all()
-    .filter(c => (d.length >= 3 && ph10(c.phone).includes(d)) || (t && c.name.toLowerCase().includes(t)))
-    .slice(0, 5);
-  res.json({ customers: rows.map(cust) });
-});
-app.post('/api/staff/customers', staffGuard, (req, res) => {
-  const r = createCustomer(req.body.name || '', req.body.phone || '');
-  if (r.err) return res.status(r.code).json({ error: r.err });
-  db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
-  addHist(r.customer.id, 'Профиль создан', 'Кассир'); logEv(r.customer.name, 'Создан профиль');
-  res.json(r);
-});
-app.post('/api/staff/stamp', staffGuard, (req, res) => {
-  const r = grant(req.body.id, 'Кассир');
-  r ? res.json(r) : res.status(404).json({ error: 'Гость не найден' });
-});
-app.post('/api/staff/redeem', staffGuard, (req, res) => {
-  const r = redeem(req.body.id, 'Кассир', String(req.body.item || '').slice(0, 40));
-  r ? res.json(r) : res.status(400).json({ error: 'Нет доступных подарков' });
-});
-app.post('/api/staff/scan', staffGuard, (req, res) => {
-  const c = db.prepare('SELECT * FROM customers WHERE qr=?').get(String(req.body.code || '').trim());
-  c ? res.json({ customer: cust(c) }) : res.status(404).json({ error: 'QR не найден' });
-});
-let demoIdx = 0;
-app.get('/api/staff/demo', staffGuard, (req, res) => {
-  const rows = db.prepare('SELECT * FROM customers ORDER BY created_at').all();
-  if (!rows.length) return res.status(404).json({ error: 'Нет гостей' });
-  res.json({ customer: cust(rows[demoIdx++ % rows.length]) });
-});
-app.get('/api/staff/log', staffGuard, (req, res) =>
-  res.json({ log: db.prepare('SELECT t,w,a FROM events ORDER BY id DESC LIMIT 20').all() }));
 /* ── промокоды ── */
 app.post('/api/promo/redeem', userGuard, (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase();
