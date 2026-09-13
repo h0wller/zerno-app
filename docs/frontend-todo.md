@@ -47,3 +47,7 @@
 
 **Фикс в Фазе 3:** перенести содержимое fix-views-версий в `public/app/menu-editor.js`,
 удалить дубликат.
+### Ф3.1 (растворено) — v68-полиш → public/app/core/a11y.js
+
+`fix-views.js` v68-полиш (a11y + reduced-motion + lazy-img) перенесён
+в `public/app/core/a11y.js`. Удалён из fix-views, оставлен маркер.
