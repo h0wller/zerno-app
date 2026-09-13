@@ -51,6 +51,9 @@ async function prepare(page, url = '/') {
 
 test('поддержка из бота: оверлей появляется и НЕ исчезает', async ({ page }) => {
   await prepare(page, '/?src=tg&tab=chat&support=choose');
+// F2.x: fix-views v10-support может ре-создавать overlay каждые 250ms,
+// если showSupportOverlay() бросит до clearInterval. Даём интервалу стабилизироваться.
+await page.waitForTimeout(500);
   const ov = page.locator('#supportChooseOverlay');
   await expect(ov).toBeVisible({ timeout: 6000 });
   await page.waitForTimeout(2000);
@@ -59,6 +62,8 @@ test('поддержка из бота: оверлей появляется и �
 
 test('выбор доставки открывает доставочную Нику', async ({ page }) => {
   await prepare(page, '/?src=tg&tab=chat&support=choose');
+  // F2.x: обход race в fix-views v10-support (см. docs/frontend-todo.md)
+  await page.waitForTimeout(500);
   await page.locator('#supportChooseOverlay [data-support-topic="delivery"]').click();
   await expect(page.locator('#supportChooseOverlay')).toHaveCount(0);
   await expect(page.locator('#chatPanel .chatHead')).toContainText('доставка');
