@@ -51,3 +51,9 @@
 
 `fix-views.js` v68-полиш (a11y + reduced-motion + lazy-img) перенесён
 в `public/app/core/a11y.js`. Удалён из fix-views, оставлен маркер.
+### Ф3.2 (растворено) — v62 CSS + panel-open → public/app/ui/styles.js
+
+CSS-инъекция v62 (`.chat-fab`, `.modal`, `.phead .gear`, `#settingsModal .set-row`,
+`#deliveryView .search`) и MutationObserver `body.panel-open` перенесены
+в `public/app/ui/styles.js`. Остальные части v62-IIFE (splash, settingsModal,
+поиск в Пятнице, cashLog, custClose) — в следующих шагах.

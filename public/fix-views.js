@@ -1393,21 +1393,6 @@ setTimeout(patchCards,300);
 })();
 /* ══ v62: FAB/модалки/z, настройки-шестерёнка, поиск в Пятнице, журнал кассира (кофе), закрытие карточки гостя, статичный сплэш ══ */
 (function(){
-var css=document.createElement('style');
-css.textContent=
-'.chat-fab{z-index:95!important}'+
-'@media(max-width:1180px){body.panel-open .chat-fab{display:none}}'+
-'.modal{z-index:340!important}'+
-'.phead .gear{margin-left:auto;width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:18px}'+
-'#settingsModal .set-row{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;background:#fff}'+
-'#deliveryView .search{min-width:180px;margin-left:auto}';
-document.head.appendChild(css);
-
-/* класс panel-open на body */
-(function(){var p=document.getElementById('panel');if(!p)return;
-new MutationObserver(function(){document.body.classList.toggle('panel-open',p.classList.contains('open'));})
-.observe(p,{attributes:true,attributeFilter:['class']});})();
-
 /* статичный сплэш: обработчик + удаление после выбора */
 (function(){
   var bs=document.getElementById('brandSplash');if(bs)bs.remove();
