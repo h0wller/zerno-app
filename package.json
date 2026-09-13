@@ -4,8 +4,10 @@
   "type": "module",
   "scripts": {
   "start": "node server.js",
+  "smoke": "node scripts/contract-smoke.mjs",
   "test": "node test-api.mjs",
   "test:e2e": "playwright test",
+  "ui:baseline": "npx playwright test tests/ui-baseline.spec.js --update-snapshots",
   "check": "node --check server.js"
 },
   "engines": {

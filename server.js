@@ -1,22 +1,16 @@
 import express from 'express';
-import Database from 'better-sqlite3';
 import crypto from 'node:crypto';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import webpush from 'web-push';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
-let fcmReady = false;
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT || 3000;
-const ADMIN_CODE = process.env.ADMIN_CODE || '1234';
-const CASHIER_CODE = process.env.CASHIER_CODE || '2468';
-const DISPATCH_CODE = process.env.DISPATCH_CODE || '5719';
-const PUBLIC_DIR = process.env.PUBLIC_DIR || path.join(__dirname, 'public');
-const WEBAPP_URL = (process.env.WEBAPP_URL || process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : '')).replace(/\/+$/, '');
-
-const db = new Database(process.env.DB_PATH || path.join(__dirname, 'zerno.db'));
+// ── Конфигурация и БД ──
+import { db, PORT, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, PUBLIC_DIR, WEBAPP_URL, setFcmReady, isFcmReady } from './server/config.js';
+// ── Утилиты ──
+import { ph10, fmtPhone } from './server/utils/phone.js';
+import { nowISO, uid } from './server/utils/id-time.js';
+import { hashPin, pinLocks, lockKey, lockedSeconds, registerFail, safeEqual } from './server/utils/security.js';
+import { otpStore } from './server/utils/otp.js';
 db.pragma('journal_mode = WAL');
 
 db.exec(`
@@ -258,23 +252,14 @@ async function sendSms(phone, text) {
 }
 /* ── FCM для нативного приложения ── */
 if (process.env.FIREBASE_SA) {
-  try { initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_SA)) }); fcmReady = true; }
-  catch (e) { console.log('FCM init error', e.message); }
+  try { initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_SA)) }); setFcmReady(true); }
+    catch (e) { console.log('FCM init error', e.message); }
 }
-/* ── утилиты ── */
-const ph10 = v => { let d = String(v || '').replace(/\D/g, '');
-  if (d.startsWith('8')) d = '7' + d.slice(1);
-  if (d.startsWith('7')) d = d.slice(1); return d.slice(0, 10); };
-const fmtPhone = v => { const d = ph10(v); if (!d) return '';
-  let r = '+7'; if (d.length > 0) r += ' ' + d.slice(0, 3); if (d.length > 3) r += ' ' + d.slice(3, 6);
-  if (d.length > 6) r += '-' + d.slice(6, 8); if (d.length > 8) r += '-' + d.slice(8, 10); return r; };
-const nowISO = () => new Date().toISOString();
-const uid = p => p + crypto.randomBytes(5).toString('hex');
-const hashPin = p => crypto.createHash('sha256').update('pin:' + String(p)).digest('hex');
-const otpStore = new Map(); // phone -> {code, expires}
+// ── Доменные хелперы БД (остаются в server.js, так как не входят в целевые модули рефакторинга) ──
 const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
-comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
-coffee: r.coffee, on: r.is_on, img: r.img, section: r.section || 'coffee', opts: JSON.parse(r.opts || '[]') });
+  comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
+  coffee: r.coffee, on: r.is_on, img: r.img, section: r.section || 'coffee', opts: JSON.parse(r.opts || '[]') });
+
 const cust = c => ({ 
   id: c.id, name: c.name, phone: c.phone, stamps: c.stamps, free: c.free,
   cups: c.cups, qr: c.qr, role: c.role || 'guest', 
@@ -284,27 +269,27 @@ const cust = c => ({
   notify_web: c.notify_web !== 0 ? 1 : 0,
   history: db.prepare('SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10').all(c.id) 
 });
-const addHist = (cid, a, by) => db.prepare('INSERT INTO history(cid,ts,a,by) VALUES(?,?,?,?)').run(cid, nowISO(), a, by);
-const logEv = (w, a) => { const d = new Date(); const pad = n => String(n).padStart(2, '0');
-  db.prepare('INSERT INTO events(t,w,a) VALUES(?,?,?)')
-  .run(`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`, w, a); };
-const getMeta = () => db.prepare("SELECT value FROM meta WHERE key='updatedAt'").get()?.value || nowISO();
-const touch = () => db.prepare("INSERT INTO meta(key,value) VALUES('updatedAt',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(nowISO());
-const issueToken = ref => { const t = crypto.randomUUID();
-  db.prepare('INSERT INTO tokens(token,kind,ref,ts) VALUES(?,?,?,?)').run(t, 'user', ref, nowISO()); return t; };
 
-/* ── защита кодов от брутфорса ── */
-const pinLocks = new Map();
-const lockKey = (req, tag = 'staff') => (req.headers['x-forwarded-for'] || req.ip || 'local') + ':' + tag;
-function lockedSeconds(req, tag = 'staff') { const e = pinLocks.get(lockKey(req, tag));
-return e && e.lockedUntil > Date.now() ? Math.ceil((e.lockedUntil - Date.now()) / 1000) : 0; }
-function registerFail(req, tag = 'staff') { const k = lockKey(req, tag);
-  const e = pinLocks.get(k) || { fails: 0, streak: 0, lockedUntil: 0 };
-  e.fails++;
-  if (e.fails >= 5) { e.streak++; e.lockedUntil = Date.now() + 60000 * Math.pow(2, Math.min(e.streak - 1, 6)); e.fails = 0; }
-  pinLocks.set(k, e); }
-function safeEqual(a, b) { const ha = crypto.createHash('sha256').update(String(a)).digest();
-  const hb = crypto.createHash('sha256').update(String(b)).digest(); return crypto.timingSafeEqual(ha, hb); }
+const addHist = (cid, a, by) => db.prepare('INSERT INTO history(cid,ts,a,by) VALUES(?,?,?,?)').run(cid, nowISO(), a, by);
+
+const logEv = (w, a) => { 
+  const d = new Date(); 
+  const pad = n => String(n).padStart(2, '0');
+  db.prepare('INSERT INTO events(t,w,a) VALUES(?,?,?)')
+    .run(`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`, w, a); 
+};
+
+const getMeta = () => db.prepare("SELECT value FROM meta WHERE key='updatedAt'").get()?.value || nowISO();
+
+const touch = () => db.prepare("INSERT INTO meta(key,value) VALUES('updatedAt',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(nowISO());
+
+const issueToken = ref => { 
+  const t = crypto.randomUUID();
+  db.prepare('INSERT INTO tokens(token,kind,ref,ts) VALUES(?,?,?,?)').run(t, 'user', ref, nowISO()); 
+  return t; 
+};
+
+// (Утилиты ph10, fmtPhone, nowISO, uid, hashPin, otpStore, pinLocks, lockKey, lockedSeconds, registerFail, safeEqual перенесены в server/utils/)
 
 /* ── guards по ролям ── */
 function authUser(req) { const t = (req.header('Authorization') || '').replace('Bearer ', '');
@@ -749,7 +734,7 @@ app.post('/api/push/test', userGuard, async (req, res) => {
 });
 async function sendFcm(cid, title, body) {
   try {
-    if (!fcmReady) return;
+            if (!isFcmReady()) return;
     const messaging = getMessaging();
     const rows = db.prepare('SELECT token FROM fcm WHERE cid=?').all(cid);
     for (const r of rows) {
