@@ -1045,6 +1045,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
   <button class="btn ghost" id="cartClose" style="margin-top:8px;width:100%">Закрыть</button>
 </div>
 <script src="./app/core/utils.js"></script>
+<script src="./app/core/api.js"></script>
 <script>
 'use strict';
 /* шапка: часы справа, одним рядом */
@@ -1057,13 +1058,15 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
  if(seg)tb.append(ck,seg,av);else tb.append(ck,av);
 })();
 /* ── API-клиент ── */
-const API_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
-  ? 'http://localhost:3000'
-  : ''; // на боевых/тестовых доменах API живёт на том же домене (same-origin)
 const T_USER='zt_user',T_ONB='zt_onb';
-let USER_TOKEN=localStorage.getItem(T_USER)||null;
-let onboarded=localStorage.getItem(T_ONB)==='1';
-let MENU=[],meta={updatedAt:Date.now()},me=null,mode='guest',editMode=false,brand='coffee';
+var USER_TOKEN=localStorage.getItem(T_USER)||null;
+var onboarded=localStorage.getItem(T_ONB)==='1';
+var MENU=[];
+var meta={updatedAt:Date.now()};
+var me=null;
+var mode='guest';
+var editMode=false;
+var brand='coffee';
 async function api(path,opts={}){
  const h={'Content-Type':'application/json'};
  if(USER_TOKEN)h['Authorization']='Bearer '+USER_TOKEN;
@@ -1343,7 +1346,8 @@ $('#logoutBtn').onclick=async()=>{
  USER_TOKEN=null;localStorage.removeItem(T_USER);me=null;mode='guest';
  closePanel();renderAll();openAuth();};
 
-let cat='coffee',query='';
+var cat='coffee';
+var query='';
 $('#rail').innerHTML=CATS.map(c=>`<button data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`).join('');
 function renderRail(){document.querySelectorAll('#rail button').forEach(b=>b.classList.toggle('on',b.dataset.cat===cat))}
 $('#rail').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;cat=b.dataset.cat;renderRail();renderMenu()});
@@ -2051,9 +2055,11 @@ function renderAll(){
  if(mode==='cashier')renderLog();
 }
 /* ── доставка: меню, корзина, чекаут ── */
-let DMENU=[], cart=JSON.parse(localStorage.getItem('zt_cart')||'[]'), deliveryInfo=null;
+var DMENU=[];
+var cart=JSON.parse(localStorage.getItem('zt_cart')||'[]');
+var deliveryInfo=null;
 const DCATS=[{id:'pizza',e:'🍕',l:'Пиццы'},{id:'rolls',e:'🍣',l:'Роллы'},{id:'sets',e:'🍱',l:'Сеты'},{id:'sauces',e:'🥫',l:'Соусы'}];
-let dcat='pizza';
+var dcat='pizza';
 
 async function loadDelivery(){
   try{
