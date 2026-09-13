@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { db } from '../db/connection.js';
 import { cust, addHist, logEv, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
-import { grantWelcome } from '../domain/loyalty.js';
+import { grantWelcome, redeem } from '../domain/loyalty.js';
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { lockedSeconds, registerFail, hashPin, safeEqual, pinLocks, lockKey } from '../utils/security.js';
 import { otpStore } from '../utils/otp.js';
