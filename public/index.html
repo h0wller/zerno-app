@@ -2010,6 +2010,8 @@ function loop(){fxx.clearRect(0,0,fx.width,fx.height);pieces=pieces.filter(p=>p.
 
 /* ── оверлей: единый источник правды, безопасная версия ── */
 let histPushed = false;
+// F1.4: replaced by fix-views v66 (window.syncOverlay = apply). Kept for boot only.
+// Contract: public/app/core/overlay.md
 function syncOverlay(){
   const ov = document.getElementById('overlay');
   const panel = document.getElementById('panel');
@@ -2027,6 +2029,7 @@ addEventListener('popstate',()=>{
  histPushed=false;
  closePanel();closeEditor();closeAuth();closePin();closeQRFull();closePromo();closeDash();closeStaffChat();
 });
+// F1.4: цепочка base → v66 → v67. Не трогать (см. overlay.md)
 $('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeSetPin();closeQRFull();closePromo();closeDash();
   if(onboarded||me)closeAuth()};
 addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeSetPin();closeQRFull();closePromo();closeDash();
