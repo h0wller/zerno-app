@@ -850,14 +850,14 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 <label id="regOtpRow" hidden>Код из SMS<input id="regOtp" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label>
 <label id="regPinRow">PIN-код (4 цифры)<input id="regPin" type="text" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password"></label>
 <small style="color:#8B98A5;font-size:11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная номер</small>
-      <button class="cta" id="regBtn">Создать профиль</button>
+      <button type="button" class="cta" id="regBtn">Создать профиль</button>
       <div class="alt">Уже есть профиль? <button type="button" id="toLogin">Войти по номеру</button></div>
     </form>
     <form id="loginForm" style="display:none;flex-direction:column;gap:11px">
     <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
     <label id="logPinRow">PIN-код<input id="logPin" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="current-password"></label>
     <div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" type="text" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label></div>
-      <button class="cta" id="logBtn">Войти</button>
+      <button type="button" class="cta" id="logBtn">Войти</button>
       <div class="alt" id="otpBackRow" style="display:none"><button type="button" id="otpBack">← Вернуться ко входу по PIN</button></div>
       <div class="alt"><button type="button" id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
       <div class="alt"><button type="button" id="toReg">← Создать новый профиль</button></div>
@@ -874,7 +874,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
   <form id="pinForm">
    <input type="text" autocomplete="username" hidden>
    <input class="pin" id="pinInput" type="text" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
-   <button class="cta" id="pinGo">Активировать</button>
+   <button type="button" class="cta" id="pinGo">Активировать</button>
   </form>
   <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
  </div>
@@ -887,7 +887,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
   <form id="setPinForm">
    <input type="text" autocomplete="username" hidden>
    <input class="pin" id="setPinInput" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="new-password">
-   <button class="cta" id="setPinGo">Сохранить PIN</button>
+   <button type="button" class="cta" id="setPinGo">Сохранить PIN</button>
   </form>
   <div class="alt"><button type="button" id="setPinOtp">🔑 Не помню PIN — код в Telegram</button></div>
  </div>
