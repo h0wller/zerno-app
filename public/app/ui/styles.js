@@ -13,6 +13,15 @@
     '.phead .gear{margin-left:auto;width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:18px}' +
     '#settingsModal .set-row{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;background:#fff}' +
     '#deliveryView .search{min-width:180px;margin-left:auto}';
+    var cssChat = document.createElement('style');
+  cssChat.textContent =
+    '.chatHint.pulse{' +
+    'animation:chatHintPulse 1.3s ease-in-out infinite;' +
+    'background:#F3E2CE!important;border-color:#B4552D!important;color:#6B2A0E!important;font-weight:700}' +
+    '@keyframes chatHintPulse{' +
+    '0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(180,85,45,.45)}' +
+    '50%{transform:scale(1.05);box-shadow:0 0 0 10px rgba(180,85,45,0)}}';
+  document.head.appendChild(cssChat);
   document.head.appendChild(css);
 
   /* ── класс panel-open на body (для CSS выше) ── */
