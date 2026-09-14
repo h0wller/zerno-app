@@ -1,44 +1,23 @@
-/* ВРЕМЕННЫЙ debug-модуль. УДАЛИТЬ после отладки. */
-(function () {
-  function inspect(label) {
-    var t1 = document.getElementById('chatsToggle');
-    var t2 = document.getElementById('chatsToggle2');
-    var t3 = document.getElementById('chatsToggleD');
-    var m  = document.getElementById('staffChatModal');
-    console.log('[DBG2 ' + label + ']',
-      't1.onclick === window.openStaffChat:', !!(t1 && t1.onclick === window.openStaffChat),
-      '| t2.onclick === window.openStaffChat:', !!(t2 && t2.onclick === window.openStaffChat),
-      '| t3:', t3 ? 'есть' : 'НЕТ',
-      '| typeof window.openStaffChat:', typeof window.openStaffChat,
-      '| modal.class:', m && m.className
-    );
-  }
+/* ВРЕМЕННЫЙ debug. УДАЛИТЬ после отладки. */
+setTimeout(function () {
+  var m = document.getElementById('staffChatModal');
+  if (!m) return console.log('[DBG3] нет #staffChatModal');
 
-  setTimeout(function () {
-    inspect('after-1.5s');
+  var origAdd = m.classList.add.bind(m.classList);
+  var origRemove = m.classList.remove.bind(m.classList);
 
-    var m = document.getElementById('staffChatModal');
+  m.classList.add = function () {
+    var r = origAdd.apply(this, arguments);
+    console.log('[DBG3] classList.add(', Array.from(arguments).join(','), ') → modal.class:', m.className);
+    return r;
+  };
+  m.classList.remove = function () {
+    var r = origRemove.apply(this, arguments);
+    console.log('[DBG3] classList.remove(', Array.from(arguments).join(','), ') → modal.class:', m.className);
+    return r;
+  };
 
-    // 1. Прямой вызов window.openStaffChat
-    console.log('[DBG2] вызов window.openStaffChat() напрямую');
-    try {
-      window.openStaffChat();
-      console.log('[DBG2] OK, modal.class:', m && m.className);
-    } catch (e) {
-      console.log('[DBG2] ОШИБКА:', e && e.message, '| stack:', e && e.stack);
-    }
-    if (m) m.classList.remove('show');
-
-    // 2. Прямой вызов через onclick кнопки
-    var t1 = document.getElementById('chatsToggle');
-    if (t1 && typeof t1.onclick === 'function') {
-      console.log('[DBG2] вызов t1.onclick() напрямую');
-      try {
-        t1.onclick.call(t1, { target: t1, preventDefault: function () {} });
-        console.log('[DBG2] OK, modal.class:', m && m.className);
-      } catch (e) {
-        console.log('[DBG2] ОШИБКА:', e && e.message, '| stack:', e && e.stack);
-      }
-    }
-  }, 1500);
-})();
+  console.log('[DBG3] start, class:', m.className);
+  window.openStaffChat();
+  console.log('[DBG3] after openStaffChat, class:', m.className);
+}, 1500);
