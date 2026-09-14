@@ -1676,38 +1676,6 @@ function renderAll(){
  if(mode==='cashier')renderLog();
 }
 
-async function loadDelivery(){
-  try{
-    const r=await fetch(API_BASE+'/api/dmenu').then(r=>r.json());
-    DMENU=r.items||[];
-    deliveryInfo=await fetch(API_BASE+'/api/delivery/info').then(r=>r.json());
-    populatePlaces();populateSlots();
-      const wp=deliveryInfo.weekPromo, pm=deliveryInfo.pizzaMonth;
-  $('#deliveryBanner').innerHTML=(wp?`<div class="deliveryBanner">🎁 ${esc(wp.text)}</div>`:'')+(pm?`<div class="deliveryBanner">🍕 2 пиццы 35 см → «${esc(pm.name)}» в подарок!</div>`:'');
-    renderDeliveryRail();renderDeliveryMenu();updateCartFab();
-  }catch(e){console.log('delivery load err',e)}
-}
-
-function updateCartFab(){
-  const sum=cart.reduce((a,c)=>a+c.price*c.qty,0);
-  $('#cartFab').hidden=!sum;
-  $('#cartSum').textContent=fmt(sum);
-}
-
-function populateSlots(){
-  const now=new Date();
-  const slots=[{v:'asap',l:'Как можно скорее (~45 мин)'}];
-  for(let d=0;d<2;d++){
-    for(let h=11;h<22;h+=0.5){
-      const t=new Date(now);t.setDate(t.getDate()+d);t.setHours(h,0,0,0);
-      if(t<=now)continue;
-      const label=`${t.getDate()}.${t.getMonth()+1} ${String(t.getHours()).padStart(2,'0')}:${t.getMinutes()===0?'00':'30'}`;
-      slots.push({v:t.toISOString(),l:label});
-    }
-  }
-  $('#checkoutSlot').innerHTML=slots.map(s=>`<option value="${s.v}">${s.l}</option>`).join('');
-}
-
 $('#brandSeg').addEventListener('click',e=>{
   const b=e.target.closest('[data-brand]');if(!b)return;
   brand=b.dataset.brand;
@@ -1769,7 +1737,6 @@ console.info('%c🌊 …и кофе · ребрендинг','font-weight:bold;f
 <script src="./app/chat.js"></script>
 <script src="./app/profile.js"></script>
 <script src="./app/cashier.js"></script>
-<script src="./app/delivery.js"></script>
 <script src="./app/orders.js"></script>
 <script src="./app/menu.js"></script>
 <script src="./app/core/a11y.js"></script>
@@ -1848,6 +1815,7 @@ body.is-cashier #scanFab{display:flex}
 <script src="./qrcode.min.js" async></script>
 <script src="./app/scanner.js"></script>
 <script src="app/menu-editor.js"></script>
+<script src="app/delivery.js"></script>
 <script src="fix-views.js"></script>
 <script src="./app/core/splash.js"></script>
 <!-- Ф3.4: модули настроек, поиска, журнала и карточки -->

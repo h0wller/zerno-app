@@ -175,8 +175,7 @@ document.getElementById('brandSeg').addEventListener('click',function(e){
 });
 
 /* ========== 4. Корзина ========== */
-var cartPromoCode=localStorage.getItem('zt_cartpromo')||'';
-var promoInfo=null;
+/* Ф3.7: promoInfo и cartPromoCode объявлены в public/app/delivery.js */
 function promoDisc(sum,info){return info.kind==='percent'?Math.round(sum*Math.min(90,info.value)/100):Math.min(info.value||0,sum);}
 function totalsNow(){
   var sum=cart.reduce(function(a,c){return a+c.price*c.qty;},0);
@@ -197,13 +196,7 @@ function paintTotals(){
   var cnt=cart.reduce(function(a,c){return a+c.qty;},0);
   if(s)s.textContent=cnt+' поз · '+Number(t.total).toLocaleString('ru-RU');
 }
-updateCartFab=function(){
-  var t=totalsNow();
-  var fab=document.getElementById('cartFab');
-  if(fab)fab.hidden=(t.sum===0);
-  paintTotals();
-  cartFabShow();
-};
+/* Ф3.7: перенесено в public/app/delivery.js */
 async function refreshPromoLine(sum){
   var line=document.getElementById('cartPromoLine');if(!line)return;
   if(!cartPromoCode){promoInfo=null;line.textContent='';paintTotals();return;}
@@ -289,41 +282,7 @@ orderCard=(function(_oc){return function(o){
   if(o.promo)h=h.replace('<div class="ocTotal">','<div class="ocItems">🎟 Промокод '+esc(o.promo)+': −'+fmt(o.promodiscount||0)+'</div><div class="ocTotal">');
   return h;};})(orderCard);
 
-/* ========== 5. Доставка: меню, редактор, слоты ========== */
-loadDelivery=async function(){
-  try{
-    var r;
-    if(me&&me.role==='admin'){
-      var all=await api('/menu/all');
-      r={items:(all.items||[]).filter(function(p){return p.section==='delivery';})};
-    }else{
-      r=await api('/dmenu');
-    }
-    DMENU=r.items||[];
-    deliveryInfo=await fetch(API_BASE+'/api/delivery/info').then(function(x){return x.json();});
-    var wp=deliveryInfo.weekPromo,pm=deliveryInfo.pizzaMonth;
-    var bEl=document.getElementById('deliveryBanner');
-    if(bEl)bEl.innerHTML=(wp?'<div class="deliveryBanner">🎁 '+esc(wp.text)+'</div>':'')+
-      (pm?'<div class="deliveryBanner">🍕 2 пиццы 35 см → «'+esc(pm.name)+'» в подарок!</div>':'');
-    populatePlaces();populateSlots();
-    renderDeliveryRail();renderDeliveryMenu();updateCartFab();
-  }catch(e){console.log('delivery load err',e);}
-};
-populateSlots=function(){
-  var now=new Date();
-  var pad=function(n){return String(n).padStart(2,'0');};
-  var slots=[{v:'asap',l:'Как можно скорее (~45 мин)'}];
-  for(var d=0;d<2;d++){
-    for(var m=660;m<1320;m+=30){
-      var t=new Date(now);t.setDate(t.getDate()+d);t.setHours(Math.floor(m/60),m%60,0,0);
-      if(t<=now)continue;
-      var label=pad(t.getDate())+'-'+pad(t.getMonth()+1)+' | '+pad(t.getHours())+'-'+pad(t.getMinutes());
-      slots.push({v:label,l:label});
-    }
-  }
-  var sel=document.getElementById('checkoutSlot');
-  if(sel)sel.innerHTML=slots.map(function(s){return '<option value="'+s.v+'">'+s.l+'</option>';}).join('');
-};
+/* Ф3.7: перенесено в public/app/delivery.js */
 /* Ф3.6: DCATSL, editorFields, openEditor, exitEdit и их обработчики перенесены в public/app/menu-editor.js */
 renderDeliveryRail=(function(_rr){return function(){_rr();
   var b=document.querySelector('#deliveryRail [data-dcat="sauces"]');if(b)b.remove();

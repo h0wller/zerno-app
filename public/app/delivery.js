@@ -7,6 +7,9 @@
 var DMENU = [];
 var cart = JSON.parse(localStorage.getItem('zt_cart') || '[]');
 var deliveryInfo = null;
+var promoInfo = null;
+var cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
+
 const DCATS = [{ id: 'pizza', e: '🍕', l: 'Пиццы' }, { id: 'rolls', e: '🍣', l: 'Роллы' }, { id: 'sets', e: '🍱', l: 'Сеты' }, { id: 'sauces', e: '🥫', l: 'Соусы' }];
 var dcat = 'pizza';
 
@@ -27,8 +30,8 @@ function renderDeliveryMenu() {
   $('#deliveryGrid').innerHTML = list.map(p => {
     const opts = p.opts || [];
     const optsHTML = opts.length
-      ? `<div class="opts">${opts.map((o, i) => `<button data-id="${p.id}" data-oi="${i}" class="${i === 0 ? 'sel' : ''}">${o.l} · ${o.w} · ${fmt(o.p)}</button>`).join('')}</div>`
-      : '';
+      ?  `<div class="opts">${opts.map((o, i) =>` <button data-id= "${p.id} " data-oi= "${i} " >${o.l} · ${o.w} · ${fmt(o.p)} </button > `).join('')}</div>` 
+: '';
     return `<article class="card" style="--d:0">
       <div class="media" style="--tint:#F3E2CE"><span class="em">${p.e || '🍕'}</span></div>
       <div class="cbody">
@@ -144,3 +147,101 @@ $('#checkoutBtn').onclick = async () => {
     $('#cartPanel').classList.remove('open');
   } catch (e) { toast(e.message, '⚠️'); }
 };
+/* ══ Ф3.7: loadDelivery, populateSlots, updateCartFab ══ */
+/* Перенесено из fix-views.js и мёртвого кода index.html */
+
+window.loadDelivery = async function(){
+  try {
+    var r;
+    if (me && me.role === 'admin') {
+      var all = await api('/menu/all');
+      r = { items: (all.items || []).filter(function(p){ return p.section === 'delivery'; }) };
+    } else {
+      r = await api('/dmenu');
+    }
+    
+    DMENU = r.items || [];
+    deliveryInfo = await fetch(API_BASE + '/api/delivery/info').then(function(x){ return x.json(); });
+    
+    var wp = deliveryInfo.weekPromo, pm = deliveryInfo.pizzaMonth;
+    var bEl = document.getElementById('deliveryBanner');
+    if (bEl) {
+      bEl.innerHTML = (wp ? '<div class="deliveryBanner">🎁 ' + esc(wp.text) + '</div>' : '') +
+                      (pm ? '<div class="deliveryBanner">🍕 2 пиццы 35 см → «' + esc(pm.name) + '» в подарок!</div>' : '');
+    }
+    
+    populatePlaces();
+    populateSlots();
+    renderDeliveryRail();
+    renderDeliveryMenu();
+    updateCartFab();
+  } catch(e) {
+    console.log('delivery load err', e);
+  }
+};
+
+window.populateSlots = function(){
+  var now = new Date();
+  var pad = function(n){ return String(n).padStart(2, '0'); };
+  var slots = [{ v: 'asap', l: 'Как можно скорее (~45 мин)' }];
+  
+  for (var d = 0; d < 2; d++) {
+    for (var m = 660; m < 1320; m += 30) {
+      var t = new Date(now);
+      t.setDate(t.getDate() + d);
+      t.setHours(Math.floor(m / 60), m % 60, 0, 0);
+      if (t <= now) continue;
+      
+      var label = pad(t.getDate()) + '-' + pad(t.getMonth() + 1) + ' | ' + pad(t.getHours()) + '-' + pad(t.getMinutes());
+      slots.push({ v: label, l: label });
+    }
+  }
+  
+  var sel = document.getElementById('checkoutSlot');
+  if (sel) {
+    sel.innerHTML = slots.map(function(s){ 
+      return '<option value="' + s.v + '">' + s.l + '</option>'; 
+    }).join('');
+  }
+};
+
+window.updateCartFab = function(){
+  var t = totalsNow();
+  var fab = document.getElementById('cartFab');
+  if (fab) fab.hidden = (t.sum === 0);
+  paintTotals();
+  cartFabShow();
+};
+/* ══ Ф3.7: totalsNow, paintTotals, cartFabShow (зависимости updateCartFab) ═ */
+window.totalsNow = function(){
+  var sum = cart.reduce(function(a,c){ return a + c.price * c.qty; }, 0);
+  var method = document.getElementById('checkoutMethod').value;
+  var pickup = method === 'pickup' ? Math.round(sum * 0.10) : 0;
+  var fee = 0;
+  if (method === 'delivery' && deliveryInfo) {
+    var z = deliveryInfo.zones.find(function(z){ 
+      return z.places.includes(document.getElementById('checkoutPlace').value); 
+    });
+    fee = z ? z.fee : 0;
+  }
+  var pd = promoInfo ? promoDisc(sum, promoInfo) : 0;
+  return { sum: sum, pickup: pickup, fee: fee, pd: pd, total: sum - pickup - pd + fee };
+};
+
+window.paintTotals = function(){
+  var t = totalsNow();
+  var el = document.getElementById('cartTotal');
+  if (el) el.textContent = fmt(t.total);
+  var s = document.getElementById('cartSum');
+  var cnt = cart.reduce(function(a,c){ return a + c.qty; }, 0);
+  if (s) s.textContent = cnt + ' поз · ' + Number(t.total).toLocaleString('ru-RU');
+};
+
+window.cartFabShow = function(){
+  var cf = document.getElementById('cartFab');
+  if (cf) cf.style.display = ((mode === 'guest' || mode === 'admin') && brand === 'delivery') ? '' : 'none';
+};
+
+function promoDisc(sum, info){
+  return info.kind === 'percent' ? Math.round(sum * Math.min(90, info.value) / 100) : Math.min(info.value || 0, sum);
+}
