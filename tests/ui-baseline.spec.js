@@ -8,7 +8,10 @@ const CASHIER = process.env.UI_CASHIER_CODE || '2468';
 
 test.beforeAll(() => fs.mkdirSync(OUT, { recursive: true }));
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('zt_onb', '1'));
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');      // пропускаем авто-открытие #authModal в boot()
+    sessionStorage.setItem('splashDone', '1');
+  });
 });
 
 const shot = (page, name) => page.screenshot({ path: path.join(OUT, name + '.png') });
@@ -47,7 +50,6 @@ async function loginAs(page, { code } = {}) {
 
 test('baseline: гостевые экраны', async ({ page }) => {
   // пропускаем бренд-сплэш: он прячет UI через visibility:hidden — иначе гонка с page.goto
-  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/');
   await closeOverlay(page);
 
