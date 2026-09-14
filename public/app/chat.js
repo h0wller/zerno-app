@@ -67,29 +67,49 @@ var scKey = null, scClosedView = false;
     return k;
   }
 
-  function sendChat(text) {
-    {if(!text.trim())return;addMsg('me',text);$('#chatInput').value='';
- const key=chatKey();
- if(staffIn){
-  fetch(API_BASE+'/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text,human:0})}).catch(()=>{});
-  return;}
- const reply=botReply(text);
- const needHuman=reply.startsWith('Приняла!');
- const human=needHuman&&me?1:0;
- const out=needHuman&&!me?'Передала бы вопрос сотруднику, но они отвечают только гостям с профилем 🙂 Создайте его за 10 секунд — тапните на аватарку сверху. А я подскажу по меню, бонусам и чаю!':reply;
- fetch(API_BASE+'/api/chat/send',
-    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text,human})})
-    .catch(()=>{});
-    showTyping();
- setTimeout(()=>{hideTyping();
-    addMsg('bot',out);
-  fetch(API_BASE+'/api/chat/botlog',
-    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,text:out})})
-    .catch(()=>{});
-  if(!$('#chatPanel').classList.contains('open'))
-    {unread++;const b=$('#chatBadge');b.hidden=false;b.textContent=unread}},900+Math.random()*700)}
+function sendChat(text) {
+  if (!text.trim()) return;
+  addMsg('me', text);
+  $('#chatInput').value = '';
+  const key = chatKey();
+  if (staffIn) {
+    fetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human: 0 }) }).catch(() => {});
+    return;
   }
-
+  const reply = botReply(text);
+  const isFallback = reply.startsWith('Приняла!');
+  const isExplicitHuman = /позов|сотруд|человек|менедж|оператор|живой/i.test(text);
+  const human = isExplicitHuman && me ? 1 : 0;
+  let out;
+  if (isFallback && !isExplicitHuman) {
+    out = 'Хм, не уверена, что поняла 🤔 Хотите, позову сотрудника? Тапните «🙋 Позвать сотрудника» ниже.';
+  } else if (isExplicitHuman && !me) {
+    out = 'Передала бы вопрос сотруднику, но они отвечают только гостям с профилем 🙂 Создайте его за 10 секунд — тапните на аватарку сверху. А я подскажу по меню, бонусам и чаю!';
+  } else {
+    out = reply;
+  }
+  fetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human }) }).catch(() => {});
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    addMsg('bot', out);
+    fetch(API_BASE + '/api/chat/botlog', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text: out }) }).catch(() => {});
+    if (!$('#chatPanel').classList.contains('open')) {
+      unread++;
+      const b = $('#chatBadge');
+      b.hidden = false;
+      b.textContent = unread;
+    }
+    if (isFallback && !isExplicitHuman) {
+      const chips = document.getElementById('chatChips');
+      const btn = chips && [...chips.querySelectorAll('button')].find(x => /Позвать сотрудника/.test(x.textContent));
+      if (btn) {
+        btn.classList.add('pulse');
+        setTimeout(() => btn.classList.remove('pulse'), 12000);
+      }
+    }
+  }, 900 + Math.random() * 700);
+}
   function showBadge() {
     const u = +localStorage.getItem(unreadKey()) || 0;
     const b = $('#chatBadge'); b.hidden = !u; b.textContent = u || '';
