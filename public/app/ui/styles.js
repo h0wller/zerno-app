@@ -15,7 +15,7 @@
     '#deliveryView .search{min-width:180px;margin-left:auto}';
     var cssChat = document.createElement('style');
   cssChat.textContent =
-    '.chatHint.pulse{' +
+    '.pulse{' +
     'animation:chatHintPulse 1.3s ease-in-out infinite;' +
     'background:#F3E2CE!important;border-color:#B4552D!important;color:#6B2A0E!important;font-weight:700}' +
     '@keyframes chatHintPulse{' +
