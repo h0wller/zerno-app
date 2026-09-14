@@ -1,23 +1,20 @@
 /* ВРЕМЕННЫЙ debug. УДАЛИТЬ после отладки. */
 setTimeout(function () {
   var m = document.getElementById('staffChatModal');
-  if (!m) return console.log('[DBG3] нет #staffChatModal');
 
-  var origAdd = m.classList.add.bind(m.classList);
-  var origRemove = m.classList.remove.bind(m.classList);
+  // Тест 1: прямой classList.add работает?
+  console.log('[DBG6] before:', m.className);
+  m.classList.add('show');
+  console.log('[DBG6] immediate:', m.className);
 
-  m.classList.add = function () {
-    var r = origAdd.apply(this, arguments);
-    console.log('[DBG3] classList.add(', Array.from(arguments).join(','), ') → modal.class:', m.className);
-    return r;
-  };
-  m.classList.remove = function () {
-    var r = origRemove.apply(this, arguments);
-    console.log('[DBG3] classList.remove(', Array.from(arguments).join(','), ') → modal.class:', m.className);
-    return r;
-  };
+  setTimeout(function () {
+    console.log('[DBG6] +300ms:', m.className);
+    console.log('[DBG6] display:', getComputedStyle(m).display);
 
-  console.log('[DBG3] start, class:', m.className);
-  window.openStaffChat();
-  console.log('[DBG3] after openStaffChat, class:', m.className);
+    // Тест 2: что внутри openStaffChat
+    console.log('[DBG6] source head:', window.openStaffChat.toString().slice(0, 600));
+
+    // Тест 3: длина fn
+    console.log('[DBG6] fn length:', window.openStaffChat.toString().length);
+  }, 300);
 }, 1500);
