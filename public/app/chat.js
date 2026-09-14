@@ -147,25 +147,23 @@ var scKey = null, scClosedView = false;
     }
   }
   /* ── стафф: чаты гостей ── */
-  function openStaffChat() {
-    if (me && "Notification" in window) {
-      if (Notification.permission !== "granted")
-        toast(
-          "Включите уведомления в профиле — иначе не узнаете о вопросах гостей",
-          "🔔",
-        );
-      else
-        navigator.serviceWorker.ready
-          .then((r) => r.pushManager.getSubscription())
-          .then((s) => {
-            if (!s)
-              toast(
-                "Включите уведомления в профиле (🔔), чтобы получать вопросы гостей",
-                "🔔",
-              );
-          });
-    }
+function openStaffChat() {
+  if (me && 'Notification' in window) {
+    if (Notification.permission !== 'granted')
+      toast('Включите уведомления в профиле — иначе не узнаете о вопросах гостей', '🔔');
+    else
+      navigator.serviceWorker.ready
+        .then(r => r.pushManager.getSubscription())
+        .then(s => {
+          if (!s) toast('Включите уведомления в профиле (🔔), чтобы получать вопросы гостей', '🔔');
+        });
   }
+  $('#staffChatModal').classList.add('show');
+  syncOverlay();
+  $('#scDialogWrap').hidden = true;
+  scKey = null;
+  loadScList();
+}
   function closeStaffChat() {
     $("#staffChatModal").classList.remove("show");
     (syncOverlay(), updateStaffBadge());
