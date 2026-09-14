@@ -1413,77 +1413,10 @@ setTimeout(patchCards,300);
 /* ══ v62: FAB/модалки/z, настройки-шестерёнка, поиск в Пятнице, журнал кассира (кофе), закрытие карточки гостя, статичный сплэш ══ */
 (function(){
 /* статичный сплэш: обработчик + удаление после выбора */
-
-/* шестерёнка: настройки (PIN + уведомления + сброс) */
-(function(){
-if(document.getElementById('settingsModal'))return;
-var m=document.createElement('div');m.className='modal';m.id='settingsModal';
-m.innerHTML='<div class="modal-card" style="width:min(420px,100%)"><button class="mclose" id="setClose">✕</button>'+
-'<h3>Настройки</h3><div class="msub">PIN, уведомления и данные устройства</div>'+
-'<div class="set-row"><span style="flex:1">🔐 Задать / сменить PIN</span><button class="btn ghost" id="setPinGo2">Открыть</button></div>'+
-'<div class="set-row" style="margin-bottom:6px"><span style="flex:1">🔔 Каналы уведомлений</span></div>'+
-'<div style="display:flex;gap:16px;margin:0 0 12px 4px">'+
-'<label class="chk"><input type="checkbox" id="ntTg2"> 🤖 Telegram</label>'+
-'<label class="chk"><input type="checkbox" id="ntWeb2"> 🔔 Пуши браузера</label></div>'+
-'<div class="set-row"><span style="flex:1">↺ Сбросить локальные данные</span><button class="btn ghost danger" id="resetGo2">Сброс</button></div></div>';
-document.body.appendChild(m);
-document.getElementById('setClose').onclick=function(){m.classList.remove('show');syncOverlay();};
-document.getElementById('setPinGo2').onclick=function(){m.classList.remove('show');syncOverlay();var b=document.getElementById('setPinBtn');if(b)b.click();};
-document.getElementById('resetGo2').onclick=function(){var b=document.getElementById('resetBtn');if(b)b.click();};
-var t=document.getElementById('ntTg2'),w=document.getElementById('ntWeb2');
-function sync(){syncNotifyAll();}
-[t,w].forEach(function(el){el.addEventListener('change',function(){window.applyNotify(t.checked,w.checked);});});
-window.__syncSettings=sync;
-})();
-(function(){
-var ph=document.querySelector('#profileBox .phead');
-if(ph&&!ph.querySelector('.gear')){
-var g=document.createElement('button');g.className='gear';g.textContent='⚙️';g.title='Настройки';
-g.onclick=function(){if(window.__syncSettings)window.__syncSettings();
-document.getElementById('settingsModal').classList.add('show');syncOverlay();};
-ph.appendChild(g);
-}
-var spb=document.getElementById('setPinBtn');if(spb)spb.style.display='none';
-var nd=document.getElementById('notifyDetails');if(nd)nd.style.display='none';
-})();
-
-/* поиск в меню «Пятницы» */
-var dQuery='';
-function applyDFilter(){
-document.querySelectorAll('#deliveryGrid .card').forEach(function(card){
-var add=card.querySelector('[data-add]');var id=add&&add.getAttribute('data-add');
-var p=id&&DMENU.find(function(x){return x.id===id;});
-if(!p){card.style.display='';return;}
-card.style.display=(!dQuery||((p.name||'')+' '+(p.desc||'')).toLowerCase().includes(dQuery))?'':'none';
-});
-}
-renderDeliveryMenu=(function(_rm){return function(){var r=_rm.apply(this,arguments);applyDFilter();return r;};})(renderDeliveryMenu);
-(function(){
-var dv=document.getElementById('deliveryView');if(!dv||dv.querySelector('#dSearch'))return;
-var mh=dv.querySelector('.mh-top');if(!mh)return;
-var wrap=document.createElement('div');wrap.className='search';
-wrap.innerHTML='🔍 <input id="dSearch" placeholder="Найти в меню…">';
-mh.appendChild(wrap);
-document.getElementById('dSearch').addEventListener('input',function(e){dQuery=e.target.value.trim().toLowerCase();applyDFilter();});
-})();
-
-/* кассир: вернуть журнал (только кофейные события) и активации */
-function filterCashLog(){
-document.querySelectorAll('#cashLog .logrow').forEach(function(r){
-var la=r.querySelector('.la');if(!la)return;
-var t=la.textContent||'';
-r.style.display=/заказ|задерж|доставк|Пятниц|курьер|пуш всем/i.test(t)?'none':'';
-});
-}
-setMode=(function(_sm){return function(m){var r=_sm.apply(this,arguments);
-setTimeout(function(){
-var cl=document.getElementById('cashLog');
-if(cl){var card=cl.closest('.cash-card');if(card)card.style.display='';filterCashLog();}
-},60);
-return r;};})(setMode);
-new MutationObserver(function(){filterCashLog();})
-.observe(document.getElementById('cashLog')||document.body,{childList:true,subtree:true});
-
+/* Ф3.4: перенесено в public/app/ui/settings.js */
+/* Ф3.4: перенесено в public/app/ui/delivery-search.js */
+/* Ф3.4: перенесено в public/app/ui/cashier-log.js */
+/* Ф3.4: перенесено в public/app/ui/cashier-card.js */
 /* выход из карточки гостя (закрыть режим начисления) */
 (function(){
 var acts=document.querySelector('#custCard .acts');
@@ -1501,28 +1434,8 @@ setInterval(function(){
   if(ov.classList.contains('show')&&!modalOpen&&!panelOpen)ov.classList.remove('show');
   ov.classList.toggle('ov-high',modalOpen);
 },400);
-
-/* тап по подложке закрывает «Настройки» */
-document.getElementById('overlay').addEventListener('click',function(){
-  var m=document.getElementById('settingsModal');
-  if(m&&m.classList.contains('show'))m.classList.remove('show');
-});
-
-/* кассир: карточка журнала/активаций всегда видна в режиме кассира, строки — только кофейные */
-function unhideCashLog(){
-  var cl=document.getElementById('cashLog');if(!cl)return;
-  var card=cl.closest('.cash-card');
-  if(card&&card.style.display==='none')card.style.display='';
-}
-function filterCashRows(){
-  document.querySelectorAll('#cashLog .logrow').forEach(function(r){
-    var la=r.querySelector('.la');if(!la)return;
-    var t=la.textContent||'';
-    r.style.display=/заказ|задерж|доставк|Пятниц|курьер|пуш всем/i.test(t)?'none':'';
-  });
-}
-new MutationObserver(function(){unhideCashLog();filterCashRows();}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
-setTimeout(function(){unhideCashLog();filterCashRows();},300);
+/* Ф3.4: перенесено в public/app/ui/settings.js */
+/* Ф3.4: перенесено в public/app/ui/cashier-log.js */
 /* ══ v64: профиль окончательно — брендовые правила + шестерёнка/настройки на мобильных ══ */
 (function(){
 var $=function(s){return document.querySelector(s);};
@@ -1549,41 +1462,7 @@ function profileBrandRules(){
 renderProfile=(function(_rp){return function(){var r=_rp.apply(this,arguments);profileBrandRules();return r;};})(renderProfile);
 document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(profileBrandRules,80);});
 new MutationObserver(function(){profileBrandRules();}).observe($('#myOrders')||document.body,{childList:true,subtree:true});
-/* шестерёнка и «Настройки» поверх шторки на мобильных */
-(function(){
-  var pb=$('#profileBox');if(!pb)return;
-  var ph=pb.querySelector('.phead');
-  function openSettings(){
-    var m=$('#settingsModal');if(!m)return;
-    m.classList.add('show');
-    var ov=$('#overlay');if(ov){ov.classList.add('show');ov.classList.add('ov-high');}
-    if(window.__syncSettings)window.__syncSettings();
-  }
-  function afterClose(){
-    var ov=$('#overlay');if(!ov)return;
-    var anyModal=document.querySelector('.modal.show');
-    var panelOpen=$('#panel').classList.contains('open');
-    if(!anyModal&&!panelOpen){ov.classList.remove('show');ov.classList.remove('ov-high');}
-    else if(anyModal){ov.classList.add('show');ov.classList.add('ov-high');}
-    else{ov.classList.add('show');ov.classList.remove('ov-high');}
-  }
-  if(ph&&!ph.querySelector('.gear')){
-    var g=document.createElement('button');g.type='button';g.className='gear';g.textContent='⚙️';
-    g.style.cssText+=';margin-left:auto;width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:18px;flex:0 0 auto';
-    ph.appendChild(g);
-  }
-  var gear=ph&&ph.querySelector('.gear');
-  if(gear)gear.onclick=openSettings;
-  var sc=$('#setClose');if(sc)sc.addEventListener('click',function(){setTimeout(afterClose,0);});
-  document.addEventListener('click',function(e){
-    var m=$('#settingsModal');if(!m||!m.classList.contains('show'))return;
-    if(e.target.id==='overlay'){e.stopPropagation();m.classList.remove('show');afterClose();}
-  },true);
-  document.addEventListener('keydown',function(e){
-    if(e.key!=='Escape')return;
-    var m=$('#settingsModal');if(m&&m.classList.contains('show')){m.classList.remove('show');afterClose();}
-  },true);
-})();
+/* Ф3.4: перенесено в public/app/ui/settings.js */
 setTimeout(profileBrandRules,300);
 })();
 /* ══ v66: ЕДИНЫЙ контроллер оверлея (модалка 340 / корзина 120 / шторка 320) ══ */
