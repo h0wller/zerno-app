@@ -96,7 +96,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`,
         )
         .join("") || '<div class="hmini">История пока пуста</div>';
-    loadMyOrders();
+   // loadMyOrders();
   }
 
   /* ── блок верификации под кнопкой PIN ── */
