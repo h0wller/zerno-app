@@ -524,22 +524,6 @@ renderVerifyNote=function(){
   var ab=document.getElementById('actBtn');
   if(ab)ab.onclick=async function(){try{var r=await api('/auth/activate-guest',{method:'POST',body:{code:document.getElementById('actCode').value.trim()}});me=r.customer;toast('Профиль активирован! А +1 штамп ждёт в Telegram 🎁','');renderAll();}catch(e){toast(e.message,'⚠️');}};
 };
-loadMyOrders=async function(){
-  var host=document.getElementById('myOrders');if(!host||!me)return;
-  try{
-    var r=await api('/orders/mine');
-    var ST={new:['🆕','mo-new','Новый'],accept:['✅','mo-accept','Подтверждён'],cook:['👨🍳','mo-cook','Готовится'],way:['🛵','mo-way','Курьер в пути'],done:['🏁','mo-done','Выполнен'],cancel:['❌','mo-cancel','Отменён']};
-    host.innerHTML=r.orders.length?r.orders.slice(0,8).map(function(o){
-      var s=ST[o.status]||['•','mo-new',o.status];
-      var items=o.items.slice(0,3).map(function(i){return i.qty+'× '+i.name;}).join(', ')+(o.items.length>3?'…':'');
-      return '<div class="myOrderCard"><div class="moTop"><span>Заказ #'+o.no+'</span><span class="moSt '+s[1]+'">'+s[0]+' '+s[2]+'</span></div>'+
-        '<div class="moSum">'+fmt(o.total)+' · '+new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</div>'+
-        (items?'<div class="moItems">'+esc(items)+'</div>':'')+
-        ((o.gifts&&o.gifts.length)?'<div class="moGifts">🎁 '+o.gifts.map(function(g){return esc(g.name)+' ×'+g.qty;}).join(', ')+'</div>':'')+
-        '</div>';
-    }).join(''):'<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';
-  }catch(e){}
-};
 renderProfile=(function(_rp){return function(){var r=_rp();
   var deliv=(brand==='delivery');
   var q=document.getElementById('qrMain');var qb=q&&q.closest('.qrbox');
@@ -1054,53 +1038,6 @@ document.addEventListener('click',function(e){
   if(!e.target.closest('#ctxDrop')&&!e.target.closest('#ctxSwitch')){var d=$('#ctxDrop');if(d)d.remove();}
 },true);
 
-/* R2. Мои заказы: последняя в профиле + кнопка полного списка */
-loadMyOrders=async function(){
-  var host=$('#myOrders');if(!host||!me)return;
-  try{
-    var r=await api('/orders/mine');
-    var ST={new:['🆕','mo-new','Новый'],accept:['✅','mo-accept','Подтверждён'],cook:['👨🍳','mo-cook','Готовится'],way:['🛵','mo-way','Курьер в пути'],done:['🏁','mo-done','Выполнен'],cancel:['❌','mo-cancel','Отменён']};
-    var o=(r.orders||[])[0];
-    if(!o){host.innerHTML='<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';return;}
-    var s=ST[o.status]||['•','mo-new',o.status];
-    var d=new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'});
-    var items=o.items.slice(0,3).map(function(i){return i.qty+'× '+i.name;}).join(', ')+(o.items.length>3?'…':'');
-    host.innerHTML='<div class="myOrderCard"><div class="moTop"><span>Заказ #'+o.no+'<span class="moDate">· '+d+'</span></span><span class="moSt '+s[1]+'">'+s[0]+' '+s[2]+'</span></div>'+
-      '<div class="moSum">'+fmt(o.total)+(o.eta?' · ⏰ '+esc(o.eta):'')+'</div>'+
-      (items?'<div class="moItems">'+esc(items)+'</div>':'')+
-      ((o.gifts&&o.gifts.length)?'<div class="moGifts">🎁 '+o.gifts.map(function(g){return esc(g.name)+' ×'+g.qty;}).join(', ')+'</div>':'')+'</div>';
-  }catch(e){}
-};
-(function(){
-  if($('#ordersModal'))return;
-  var m=document.createElement('div');m.id='ordersModal';
-  m.innerHTML='<div class="omCard"><button type="button" class="omClose">✕ Закрыть</button><h3 style="margin:0 0 12px">📦 Мои заказы</h3><div id="omList"></div></div>';
-  document.body.appendChild(m);
-  m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.omClose'))m.classList.remove('show');});
-})();
-async function renderOrdersModal(){
-  var list=$('#omList');if(!list||!me)return;
-  list.innerHTML='<div class="hmini">Загрузка…</div>';
-  $('#ordersModal').classList.add('show');
-  try{
-    var r=await api('/orders/mine');
-    var ST={new:'🆕 Новый',accept:'✅ Подтверждён',cook:'👨‍🍳 Готовится',way:'🛵 Курьер в пути',done:'🏁 Выполнен',cancel:'❌ Отменён'};
-    list.innerHTML=(r.orders||[]).map(function(o){
-      var d=new Date(o.created).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'});
-      return '<div class="myOrderCard" style="margin-bottom:8px"><div class="moTop"><span>Заказ #'+o.no+'<span class="moDate">· '+d+'</span></span><span class="moSt">'+(ST[o.status]||o.status)+'</span></div>'+
-        '<div class="moSum">'+fmt(o.total)+(o.eta?' · ⏰ '+esc(o.eta):'')+'</div>'+
-        '<div class="moItems">'+esc(o.items.map(function(i){return i.qty+'× '+i.name;}).join(', '))+'</div>'+
-        ((o.gifts&&o.gifts.length)?'<div class="moGifts">🎁 '+o.gifts.map(function(g){return esc(g.name)+' ×'+g.qty;}).join(', ')+'</div>':'')+'</div>';
-    }).join('')||'<div class="hmini">Заказов пока нет 🍕</div>';
-  }catch(e){list.innerHTML='<div class="hmini">Не загрузилось</div>';}
-}
-(function(){
-  var pb=$('#profileBox');if(!pb||$('#myOrdersBtn'))return;
-  var b=document.createElement('button');b.type='button';b.id='myOrdersBtn';b.className='demoBtn';b.textContent='📦 Мои заказы';
-  var mo=$('#myOrders');if(mo)pb.insertBefore(b,mo);else pb.appendChild(b);
-  b.onclick=renderOrdersModal;
-}
-)();
 /* ══ каналы уведомлений: единое применение без перезагрузок ══ */
 function syncNotifyAll(){
 if(!me)return;
@@ -1404,9 +1341,6 @@ var show=(typeof brand!=='undefined'&&brand==='delivery');
 var mo=document.getElementById('myOrders');if(mo)mo.style.display=show?'':'none';
 var mb=document.getElementById('myOrdersBtn');if(mb)mb.style.display=show?'':'none';
 return r;};})(renderProfile);
-loadMyOrders=(function(_lm){return async function(){
-if(typeof brand!=='undefined'&&brand!=='delivery'){var h=document.getElementById('myOrders');if(h)h.innerHTML='';return;}
-return _lm.apply(this,arguments);};})(loadMyOrders);
 
 setTimeout(patchCards,300);
 })();
