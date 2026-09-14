@@ -689,8 +689,22 @@ async function mySend(q){
   var a=null;
   try{a=await kbAnswer(q,chatCtx||'coffee');}catch(e){}
   if(!a&&typeof _br==='function'){try{a=await _br(q);}catch(e){}}
-  addMsg('bot',a||'Хм, не знаю ответа 🤔 Попробуйте иначе или позовите сотрудника.');
-  try{fetch(API_BASE+'/api/chat/botlog',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:chatKey(),text:a||''})});}catch(e){}
+  var isFallback = !a || /передаю человеку|Приняла!/i.test(a);
+  if(isFallback){
+    addMsg('bot','Хм, не уверена, что поняла 🤔 Хотите, позову сотрудника? Тапните «🙋 Позвать сотрудника» ниже.');
+    showHints();
+    setTimeout(function(){
+      var wrap=msgs&&msgs.querySelector('.hintsWrap');
+      if(!wrap)return;
+      var call=wrap.querySelector('.chatHint[data-hint*="Позвать"]');
+      if(call){
+        call.classList.add('pulse');
+        setTimeout(function(){call.classList.remove('pulse');},12000);
+      }
+    },80);
+    return;
+  }
+  addMsg('bot',a);
   showHints();
 }
 sendChat=function(text,human){return mySend(text,human);};
