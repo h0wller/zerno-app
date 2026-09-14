@@ -1,6 +1,9 @@
 # Frontend tech debt (Фаза 2, стратегия B1)
-
-## fix-views.js заморожен
+## Статус Фазы 3
+- ✅ Ф3.1 — v68-полиш → public/app/core/a11y.js
+- ✅ Ф3.2 — v62 CSS + panel-open → public/app/ui/styles.js
+- ✅ Ф3.3 — v62 splash → public/app/core/splash.js
+- ❄️ fix-views.js заморожен. Следующий шаг: **Ф3.4** — v62-остаток (settingsModal + шестерёнка, поиск в Пятнице, журнал кассира, custClose)
 
 ### v10-support: гонка с интервалом
 `fix-views.js` (блок `if(SUPPORT_ENTRY&&!chosenSupportCtx)`):

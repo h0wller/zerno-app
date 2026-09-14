@@ -1139,8 +1139,6 @@ function renderModes(){
  if(!modeSegBound){modeSegBound=true;
   seg.addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(b)setMode(b.dataset.mode)})}
 }
-function exitEdit(){if(!editMode)return;editMode=false;document.body.classList.remove('editing');
- $('#editToggle').textContent='✏️ Редактировать';$('#editToggle').classList.remove('on');renderMenu()}
 function setMode(m){
  const role=me?me.role:'guest';
  if(m==='cashier'&&role!=='cashier'&&role!=='admin')return;
@@ -1348,11 +1346,6 @@ $('#logoutBtn').onclick=async()=>{
 
 $('#grid').addEventListener('click',e=>{const b=e.target.closest('[data-ed]');if(b)openEditor(b.dataset.ed)});
 /* ── превью фото: карточка на матовом фоне ── */
-$('#editToggle').onclick=()=>{editMode=!editMode;document.body.classList.toggle('editing',editMode);
- $('#editToggle').textContent=editMode?'✔ Готово':'✏️ Редактировать';
- $('#editToggle').classList.toggle('on',editMode);renderMenu();
- if(editMode)toast('Режим редактирования: ✏️ на карточке или тумблер «в меню»','✏️')};
-
 let edit=null;
 $('#emCat').innerHTML=CATS.map(c=>`<option value="${c.id}">${c.e} ${c.l}</option>`).join('');
 function renderZone(){const z=$('#emZone');
@@ -1360,23 +1353,7 @@ function renderZone(){const z=$('#emZone');
   ?`<img src="${edit.img}" alt=""><button type="button" class="zdel" id="emImgDel">✕ убрать фото</button>`
   :`<div class="zempty"><span>📷</span><b>Загрузить фото</b><small>JPG/PNG · перетащите или кликните</small></div>`;
  const d=$('#emImgDel');if(d)d.onclick=e=>{e.stopPropagation();edit.img=null;renderZone()}}
-function openEditor(id){
- if(mode!=='admin'||!me||me.role!=='admin')return;
- const src=id?MENU.find(x=>x.id===id):null;
- edit=src?clone(src):{cat,e:'☕',name:'',desc:'',comp:[],vol:'',price:0,tag:'',coffee:0,on:1,img:null};
- $('#emTitle').textContent=src?'Редактировать позицию':'Новая позиция';
- $('#emName').value=edit.name;$('#emCat').value=edit.cat;$('#emPrice').value=edit.price;
- $('#emVol').value=edit.vol||'';$('#emDesc').value=edit.desc||'';$('#emComp').value=(edit.comp||[]).join(', ');
- $('#emTag').value=edit.tag||'';$('#emEmoji').value=edit.e||'';
- $('#emVol').placeholder='200/300 мл или 180 г';
- $('#emPrice').type='text';
- $('#emPrice').placeholder='250/340 или 320';
- $('#emCoffee').checked=!!edit.coffee;$('#emOn').checked=!!edit.on;
- $('#emDel').style.display=src?'':'none';$('#emDup').style.display=src?'':'none';
- renderZone();
- $('#emModal').classList.add('show');syncOverlay();
- setTimeout(()=>$('#emName').focus(),150);
-}
+
 function closeEditor(){$('#emModal').classList.remove('show');syncOverlay()}
 $('#emClose').onclick=closeEditor;
 $('#emZone').onclick=()=>$('#emFile').click();
@@ -1392,28 +1369,13 @@ function loadImg(file){const u=URL.createObjectURL(file),img=new Image();
   edit.img=c.toDataURL('image/jpeg',.82);URL.revokeObjectURL(u);renderZone()};
  img.onerror=()=>{URL.revokeObjectURL(u);toast('Не удалось прочитать файл','⚠️')};
  img.src=u}
-$('#emSave').onclick=async()=>{
- edit.name=$('#emName').value.trim()||'Без названия';
- const priceRaw=$('#emPrice').value.trim();
- edit.price=priceRaw.includes('/')?priceRaw:Math.max(0,Math.round(Number(priceRaw)||0));
- edit.vol=$('#emVol').value.trim();edit.desc=$('#emDesc').value.trim();
- edit.comp=$('#emComp').value.split(',').map(s=>s.trim()).filter(Boolean);
- edit.tag=$('#emTag').value;edit.e=$('#emEmoji').value.trim()||'☕';
- edit.coffee=$('#emCoffee').checked?1:0;edit.on=$('#emOn').checked?1:0;
- try{
-  if(edit.id)await api('/menu/'+edit.id,{method:'PUT',body:edit});
-  else await api('/menu',{method:'POST',body:edit});
-  cat=edit.cat;query='';$('#searchInput').value='';renderRail();
-  await loadMenu();closeEditor();
-  toast(`«${esc(edit.name)}» сохранено · меню обновлено для гостей`,'✅')}
- catch(err){toast(err.message,'⚠️')}};
+/* Ф3.6: openEditor/exitEdit/emSave/editToggle перенесены в public/app/menu-editor.js */
 $('#emDup').onclick=()=>{const c=clone(edit);delete c.id;c.name+=' (копия)';
  MENU.push(c);renderMenu();closeEditor();openEditor(c.id);
  toast('Дубликат подготовлен — нажмите «Сохранить»','⧉')};
 $('#emDel').onclick=async()=>{if(!confirm('Удалить позицию из меню?'))return;
  try{await api('/menu/'+edit.id,{method:'DELETE'});await loadMenu();closeEditor();
   toast('Позиция удалена','🗑')}catch(e){toast(e.message,'⚠️')}};
-
 function setTab(t){document.querySelectorAll('.tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
  $('#pvBonus').hidden=t!=='bonus';$('#pvProfile').hidden=t!=='profile'}
 document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab)});
@@ -1885,6 +1847,7 @@ body.is-cashier #scanFab{display:flex}
 
 <script src="./qrcode.min.js" async></script>
 <script src="./app/scanner.js"></script>
+<script src="app/menu-editor.js"></script>
 <script src="fix-views.js"></script>
 <script src="./app/core/splash.js"></script>
 <!-- Ф3.4: модули настроек, поиска, журнала и карточки -->
