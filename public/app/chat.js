@@ -101,12 +101,30 @@ function sendChat(text) {
       b.textContent = unread;
     }
     if (isFallback && !isExplicitHuman) {
-      const chips = document.getElementById('chatChips');
-      const btn = chips && [...chips.querySelectorAll('button')].find(x => /Позвать сотрудника/.test(x.textContent));
-      if (btn) {
-        btn.classList.add('pulse');
-        setTimeout(() => btn.classList.remove('pulse'), 12000);
-      }
+      const findCall = () => {
+        const selectors = [
+          '#chatMsgs .hintsWrap .chatHint',
+          '#chatChips button',
+          '.chatHint'
+        ];
+        for (const sel of selectors) {
+          const all = [...document.querySelectorAll(sel)];
+          const btn = all.find(x => /Позвать сотрудника/i.test(x.textContent || ''));
+          if (btn) return btn;
+        }
+        return null;
+      };
+      let tries = 0;
+      const tryPulse = () => {
+        const btn = findCall();
+        if (btn) {
+          btn.classList.add('pulse');
+          setTimeout(() => btn.classList.remove('pulse'), 12000);
+        } else if (++tries < 5) {
+          setTimeout(tryPulse, 200);
+        }
+      };
+      tryPulse();
     }
   }, 900 + Math.random() * 700);
 }
