@@ -469,25 +469,7 @@ document.getElementById('chatMsgs').addEventListener('click',function(e){
   }
   mySend(h.dataset.hint||h.textContent);
 },true);
-/* пилюля смены заведения (обычное использование) */
-function showCtxSwitch(){
-  var msgs=document.getElementById('chatMsgs');if(!msgs)return;
-  var old=msgs.querySelector('.ctxSwitchWrap');if(old)old.remove();
-  var wrap=document.createElement('div');wrap.className='ctxSwitchWrap msg bot';wrap.style.cssText='max-width:92%;padding:10px';
-  wrap.innerHTML='<div style="font-size:12px;color:var(--soft);margin-bottom:6px">Сменить заведение:</div>'+
-    '<div class="ctxPick"><button class="cpD" data-ctxsw="delivery">🍕 Пятница</button><button class="cpC" data-ctxsw="coffee">☕ Кофейня</button></div>';
-  msgs.appendChild(wrap);msgs.scrollTop=1e6;
-}
-(function(){
-  var head=document.querySelector('#chatPanel .chatHead');
-  if(head&&!document.getElementById('ctxSwitch')){
-    var b=document.createElement('button');b.id='ctxSwitch';b.textContent=(chatCtx==='delivery'?'🍕':'')+' ▾';
-    b.onclick=showCtxSwitch;head.appendChild(b);
-  }
-})();
-document.getElementById('chatPanel').addEventListener('click',function(e){
-  if(e.target.closest('[data-ctxsw]'))setTimeout(function(){reloadChatThread();},80);
-});
+/* пилюля смены заведения: удалено (Ф3.11-cleanup) — контекст следует за brandSeg */
 /* открытие чата: контекст следует за брендом, если не ждём выбор темы */
 (function(){
   var f=document.getElementById('chatFab');if(!f||f.__fvWrap)return;
