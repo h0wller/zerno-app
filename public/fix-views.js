@@ -335,71 +335,7 @@ document.addEventListener('click',async function(e){
   });
 })();
 /* ========== 9. Чат: ядро ========== Ф3.11: перенесено в public/app/chat-core.js ========== */
-/* ========== 10. Поддержка: оверлей выбора темы ========== */
-function showSupportOverlay(){
-  if(document.getElementById('supportChooseOverlay'))return;
-  var d=document.createElement('div');d.id='supportChooseOverlay';
-  d.innerHTML='<div class="scTitle">У вас вопрос по кофе или доставке?</div>'+
-    '<div class="scSub">Выберите тему — откроется нужная Ника, а вызов сотрудника уйдёт правильной команде.</div>'+
-    '<div class="ctxPick scBtns">'+
-    '<button type="button" class="cpD" data-support-topic="delivery">🍕<br>Доставка<br><small>Пятница</small></button>'+
-    '<button type="button" class="cpC" data-support-topic="coffee">☕<br>Кофейня<br><small>…и кофе</small></button></div>';
-  document.body.appendChild(d);
-  setBotName();
-}
-function hideSupportOverlay() {
-  var o = document.getElementById("supportChooseOverlay");
-  if (o) o.remove();
-}
-window.showSupportOverlay=showSupportOverlay;
-window.hideSupportOverlay=hideSupportOverlay;
-if (SUPPORT_ENTRY && !chosenSupportCtx) {
-  document.body.classList.add("support-pending");
-  var supTries = 0;
-  var supIv = setInterval(function () {
-    try {
-      supTries++;
-      var am = document.getElementById("authModal");
-      if (am && am.classList.contains("show")) {
-        am.classList.remove("show");
-        try {
-          syncOverlay();
-        } catch (e) {}
-      }
-      var p = document.getElementById("chatPanel");
-      if (p && !p.classList.contains("open")) {
-        var f = document.getElementById("chatFab");
-        if (f) f.click();
-      } else if (p && p.classList.contains("open")) {
-        showSupportOverlay();
-      }
-    } finally {
-      if (
-        chosenSupportCtx ||
-        document.getElementById("supportChooseOverlay") ||
-        supTries > 40
-      )
-        clearInterval(supIv);
-    }
-  }, 250);
-}
-
-document.addEventListener('click',function(e){
-  var b=e.target.closest('[data-support-topic]');if(!b)return;
-  e.preventDefault();e.stopPropagation();
-  var ctx=b.getAttribute('data-support-topic')==='delivery'?'delivery':'coffee';
-  chosenSupportCtx=ctx;supportPending=false;
-  try{sessionStorage.setItem('zt_support_ctx',ctx);}catch(err){}
-  document.body.classList.remove('support-pending');
-  chatCtx=ctx;try{localStorage.setItem('zt_chatctx',ctx);}catch(err){}
-  hideSupportOverlay();
-  setBotName();
-  setTimeout(setBotName,50);
-  setTimeout(setBotName,300);
-  setTimeout(setBotName,900);
-  reloadChatThread();
-},true);
-
+/* ========== 10. Поддержка: оверлей выбора темы ========== Ф3.12: перенесено в public/app/chat-core.js ========== */
 /* ========== 11. Пуши: самовосстановление подписки ========== */
 function b64urlToU8(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var b=atob(s);var u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
 function u8ToB64url(u){var s='';for(var i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}

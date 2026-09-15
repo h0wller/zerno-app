@@ -3,8 +3,13 @@
 - ✅ Ф3.1 — v68-полиш → public/app/core/a11y.js
 - ✅ Ф3.2 — v62 CSS + panel-open → public/app/ui/styles.js
 - ✅ Ф3.3 — v62 splash → public/app/core/splash.js
-- ❄️ fix-views.js заморожен. Следующий шаг: **Ф3.4** — v62-остаток (settingsModal + шестерёнка, поиск в Пятнице, журнал кассира, custClose)
-
+Ф3.11 (растворено) — секция 9 (чат-ядро) → public/app/chat-core.js
+chatKey, fetch/toast-патчи, setBotName, kbAnswer, showHints, addMsg, mySend,
+sendChat, reloadChatThread, chatMsgs-клики, chatFab-обёртка, loadScList,
+updateStaffBadge вынесены. State (chatCtx/supportPending/chosenSupportCtx)
+остаётся приватным в fix-views секция 0 и публикуется мостом
+window.__fvChatState; chat-state.js — делегирующий прокси.
+Пилюля ctxSwitch удалена (контекст следует за brandSeg).
 ### v10-support: гонка с интервалом
 `fix-views.js` (блок `if(SUPPORT_ENTRY&&!chosenSupportCtx)`):
 интервал 250ms ре-создаёт `#supportChooseOverlay`, если `showSupportOverlay()`

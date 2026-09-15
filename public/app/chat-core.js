@@ -295,4 +295,52 @@ document.getElementById('chatMsgs').addEventListener('click',function(e){
     if(!document.querySelector('#chatMsgs .hintsWrap'))showHints();
   };
 })();
+/* ── Ф3.12: оверлей выбора темы поддержки (было секция 10 fix-views) ── */
+function showSupportOverlay(){
+  if(document.getElementById('supportChooseOverlay'))return;
+  var d=document.createElement('div');d.id='supportChooseOverlay';
+  d.innerHTML='<div class="scTitle">У вас вопрос по кофе или доставке?</div>'+
+    '<div class="scSub">Выберите тему — откроется нужная Ника, а вызов сотрудника уйдёт правильной команде.</div>'+
+    '<div class="ctxPick scBtns">'+
+    '<button type="button" class="cpD" data-support-topic="delivery">🍕<br>Доставка<br><small>Пятница</small></button>'+
+    '<button type="button" class="cpC" data-support-topic="coffee">☕<br>Кофейня<br><small>…и кофе</small></button></div>';
+  document.body.appendChild(d);
+  window.setBotName();
+}
+function hideSupportOverlay(){var o=document.getElementById('supportChooseOverlay');if(o)o.remove();}
+window.showSupportOverlay=showSupportOverlay;
+window.hideSupportOverlay=hideSupportOverlay;
+
+var QS12=new URLSearchParams(location.search);
+var SUPPORT_ENTRY12=(QS12.get('tab')==='chat'||QS12.get('support')==='choose');
+if(SUPPORT_ENTRY12&&!CS.getChosenSupportCtx()){
+  document.body.classList.add('support-pending');
+  var supTries=0;
+  var supIv=setInterval(function(){
+    try{
+      supTries++;
+      var am=document.getElementById('authModal');
+      if(am&&am.classList.contains('show')){am.classList.remove('show');try{window.syncOverlay();}catch(e){}}
+      var p=document.getElementById('chatPanel');
+      if(p&&!p.classList.contains('open')){var f=document.getElementById('chatFab');if(f)f.click();}
+      else if(p&&p.classList.contains('open')){showSupportOverlay();}
+    }finally{
+      if(CS.getChosenSupportCtx()||document.getElementById('supportChooseOverlay')||supTries>40)clearInterval(supIv);
+    }
+  },250);
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-support-topic]');if(!b)return;
+  e.preventDefault();e.stopPropagation();
+  var ctx=b.getAttribute('data-support-topic')==='delivery'?'delivery':'coffee';
+  CS.setChosenSupportCtx(ctx);CS.setSupportPending(false);
+  document.body.classList.remove('support-pending');
+  CS.setChatCtx(ctx);
+  hideSupportOverlay();
+  window.setBotName();
+  setTimeout(window.setBotName,50);
+  setTimeout(window.setBotName,300);
+  setTimeout(window.setBotName,900);
+  window.reloadChatThread();
+},true);
 })();
