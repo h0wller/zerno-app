@@ -182,67 +182,7 @@ document.getElementById('brandSeg').addEventListener('click',function(e){
 /* Ф3.7: promoInfo и cartPromoCode объявлены в public/app/delivery.js */
 /* Ф3.7: перенесено в public/app/delivery.js */
 /* Ф3.6: DCATSL, editorFields, openEditor, exitEdit и их обработчики перенесены в public/app/menu-editor.js */
-renderDeliveryRail=(function(_rr){return function(){_rr();
-  var b=document.querySelector('#deliveryRail [data-dcat="sauces"]');if(b)b.remove();
-};})(renderDeliveryRail);
-renderDeliveryMenu=(function(_rm){return function(){_rm();
-  var list=DMENU.filter(function(p){return p.cat===dcat;});
-  var cards=document.querySelectorAll('#deliveryGrid .card');
-  cards.forEach(function(card,i){
-    var p=list[i]; if(!p) return;
-    card.classList.toggle('stopped', !p.on);
-    var media=card.querySelector('.media');
-    if(!media) return;
-    var sb=media.querySelector('.stopbadge');
-    if(!p.on && !sb){ sb=document.createElement('span'); sb.className='stopbadge'; sb.textContent='СТОП'; media.appendChild(sb); }
-    if(p.on && sb) sb.remove();
-  });
-  document.querySelectorAll('#deliveryGrid .opts button').forEach(function(b){
-    if(b.querySelector('.ol'))return;
-    var parts=b.textContent.split(' · ');
-    if(parts.length<3)return;
-    b.innerHTML='<span class="ol">'+parts[0]+'</span><span class="op">'+parts[1]+' · '+parts[2]+'</span>';
-  });
-  document.querySelectorAll('#deliveryGrid .opts button.sel').forEach(function(b){b.classList.remove('sel');});
-};})(renderDeliveryMenu);
-document.getElementById('deliveryGrid').addEventListener('click',function(e){
-  var ed=e.target.closest('[data-ed]');
-  if(ed){openEditor(ed.dataset.ed);return;}
-  var ob=e.target.closest('.opts button');
-  if(ob&&ob.classList.contains('sel')){
-    e.stopPropagation();
-    ob.classList.remove('sel');
-    var id=ob.dataset.id,oi=+ob.dataset.oi;
-    var before=cart.length;
-    cart=cart.filter(function(c){return !(c.id===id&&c.oi===oi);});
-    if(cart.length!==before){
-      localStorage.setItem('zt_cart',JSON.stringify(cart));
-      updateCartFab();renderCart();
-      toast('Убрали из заказа','🗑');
-    }
-    return;
-  }
-  var add=e.target.closest('[data-add]');
-  if(add){
-    var body=add.closest('.cbody');var optsBox=body&&body.querySelector('.opts');
-    if(optsBox&&!optsBox.querySelector('.sel')){
-      e.stopPropagation();
-      toast('Выберите размер пиццы 🍕','');
-      optsBox.classList.remove('shake');void optsBox.offsetWidth;optsBox.classList.add('shake');
-    }
-  }
-},true);
-document.addEventListener('animationend',function(e){
-  if(e.target&&e.target.classList&&e.target.classList.contains('shake'))e.target.classList.remove('shake');
-},true);
-document.getElementById('deliveryGrid').addEventListener('change',async function(e){
-  var t=e.target.closest('[data-onoff]');if(!t)return;
-  var p=DMENU.find(function(x){return x.id===t.dataset.onoff;});if(!p)return;
-  p.on=t.checked?1:0;renderDeliveryMenu();
-  try{await api('/menu/'+p.id,{method:'PUT',body:p});await loadDelivery();
-    toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');}
-  catch(err){toast(err.message,'⚠️');loadDelivery();}
-});
+/* Ф3.18: пост-обработка карточек доставки → public/app/delivery.js */
 
 loadPromos=async function(){try{var r=await api('/promos');
   document.getElementById('pmList').innerHTML=r.promos.map(function(p){
@@ -407,54 +347,7 @@ function cashierClean(){
 new MutationObserver(function(){
   var cv=$('#cashierView');if(cv&&!cv.hidden)cashierClean();
 }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
-
-/* R8. Редактор пятницы: карандаши + тумблер «в меню» */
-function injectEdits(){
-  if(!document.body.classList.contains('editing'))return;
-  $$('#deliveryGrid [data-add]').forEach(function(add){
-    var card=add.closest('.card');if(!card)return;
-    card.style.position='relative';
-    if(!card.querySelector('.edBtn')){
-      var b=document.createElement('button');b.type='button';b.className='edBtn';b.dataset.ed=add.getAttribute('data-add');b.textContent='✏️';
-      card.appendChild(b);
-    }
-    
-    if(!card.querySelector('.donoff')){
-      var id=add.getAttribute('data-add');
-      var p=(window.DMENU||[]).filter(function(x){return x.id===id;})[0];
-      var lab=document.createElement('label');lab.className='donoff';
-      lab.innerHTML='<input type="checkbox" data-onoff="'+id+'" '+((!p||p.on)?'checked':'')+'>в меню';
-      card.appendChild(lab);
-    }
-  });
-}
-new MutationObserver(function(){injectEdits();}).observe($('#deliveryGrid')||document.body,{childList:true,subtree:true});
-document.getElementById('editToggle').addEventListener('click',function(){setTimeout(injectEdits,80);setTimeout(injectEdits,400);});
-document.addEventListener('click',function(e){
-  var b=e.target.closest('#deliveryGrid .edBtn');if(!b)return;
-  e.stopPropagation();e.preventDefault();
-  var id=b.getAttribute('data-ed');
-  if(id&&typeof openEditor==='function'){
-    openEditor(id);
-  }
-},true);
-document.getElementById('deliveryGrid').addEventListener('change',async function(e){
-  var t=e.target.closest('.donoff [data-onoff]');if(!t)return;
-  e.stopPropagation();
-  var id=t.getAttribute('data-onoff');
-  var p=(window.DMENU||[]).find(function(x){return x.id===id;});
-  if(!p)return;
-  p.on=t.checked?1:0;
-  try{
-    await api('/menu/'+p.id,{method:'PUT',body:p});
-    await loadDelivery();
-    toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');
-  }catch(err){
-    toast(err.message,'⚠️');
-    loadDelivery();
-  }
-},true);
-
+/* R8. Редактор пятницы: карандаши + тумблер — Ф3.18: → public/app/delivery.js */
 /* R9. Списание свободного кофе с выбором напитка */
 showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return _sc(u,last);};})(showCust);
 (function(){
@@ -528,81 +421,10 @@ document.addEventListener('click',async function(e){
   }catch(err){toast(err.message,'⚠️');}
 },true);
 
-setTimeout(function(){applyProfileBrand();applyBrandChrome();cashierClean();injectEdits();syncNotifyUI();},400);
+setTimeout(function(){applyProfileBrand();applyBrandChrome();cashierClean();syncNotifyUI();},400);
 console.log('fix-views v61 восстановление готов');
 })();
-/* ══ v62: стоп-лист/фото/тумблер/тикер/заказы в профиле — один блок ══ */
-(function(){
-var css=document.createElement('style');
-css.textContent=
-'#deliveryGrid .card .media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}';
-document.head.appendChild(css);
-
-function patchCards(){
-var list=(typeof DMENU!=='undefined'?DMENU:[]).filter(function(p){return p.cat===(typeof dcat!=='undefined'?dcat:'pizza');});
-var cards=document.querySelectorAll('#deliveryGrid .card');
-var editing=document.body.classList.contains('editing');
-cards.forEach(function(card,i){
-var p=list[i];if(!p)return;
-/* вид СТОП */
-card.classList.toggle('stopped',!p.on);
-var media=card.querySelector('.media');
-if(media){
-var sb=media.querySelector('.stopbadge');
-if(!p.on&&!sb){sb=document.createElement('span');sb.className='stopbadge';sb.textContent='СТОП';media.appendChild(sb);}
-if(p.on&&sb)sb.remove();
-/* фото в карточке */
-if(p.img&&!media.querySelector('img')){var em=media.querySelector('.em');if(em)em.remove();
-var im=document.createElement('img');im.src=p.img;im.alt=p.name||'';media.appendChild(im);}
-}
-/* стоп не добавить в корзину */
-var add=card.querySelector('[data-add]');
-if(add){
-if(!p.on){add.disabled=true;add.style.opacity='.45';add.style.pointerEvents='none';add.textContent='СТОП — недоступно';}
-else if(add.disabled){add.disabled=false;add.style.opacity='';add.style.pointerEvents='';add.textContent='Добавить';}
-}
-/* карандаш + тумблер в режиме правки, с реальным состоянием */
-if(editing){
-card.style.position='relative';
-if(!card.querySelector('.edBtn')){var b=document.createElement('button');b.type='button';b.className='edBtn';b.dataset.ed=p.id;b.textContent='✏️';card.appendChild(b);}
-var lab=card.querySelector('.donoff');
-if(!lab){lab=document.createElement('label');lab.className='donoff';lab.innerHTML='<input type="checkbox" data-onoff="'+p.id+'">в меню';card.appendChild(lab);}
-lab.querySelector('input').checked=!!p.on;
-}else{
-var d2=card.querySelector('.donoff');if(d2)d2.remove();
-var e2=card.querySelector('.edBtn');if(e2)e2.remove();
-}
-});
-}
-renderDeliveryMenu=(function(_rm){return function(){var r=_rm();try{patchCards();}catch(e){}return r;};})(renderDeliveryMenu);
-
-/* тумблер: capture-обработчик на реальном DMENU (window.DMENU не существует) */
-document.getElementById('deliveryGrid').addEventListener('change',async function(e){
-var t=e.target.closest('.donoff [data-onoff]');if(!t)return;
-e.stopPropagation();
-var p=(typeof DMENU!=='undefined'?DMENU:[]).find(function(x){return x.id===t.getAttribute('data-onoff');});if(!p)return;
-p.on=t.checked?1:0;
-try{await api('/menu/'+p.id,{method:'PUT',body:p});await loadDelivery();
-toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');}
-catch(err){toast(err.message,'⚠️');loadDelivery();}
-},true);
-
-/* страховка: клик «Добавить» по стоп-позиции */
-document.getElementById('deliveryGrid').addEventListener('click',function(e){
-var add=e.target.closest('[data-add]');if(!add)return;
-var p=(typeof DMENU!=='undefined'?DMENU:[]).find(function(x){return x.id===add.getAttribute('data-add');});
-if(p&&!p.on){e.stopPropagation();e.preventDefault();toast('Позиция в стоп-листе — недоступна для заказа','⛔');}
-},true);
-
-/* профиль кофейни: без «Мои заказы» и последней карточки заказа */
-renderProfile=(function(_rp){return function(){var r=_rp();
-var show=(typeof brand!=='undefined'&&brand==='delivery');
-var mo=document.getElementById('myOrders');if(mo)mo.style.display=show?'':'none';
-var mb=document.getElementById('myOrdersBtn');if(mb)mb.style.display=show?'':'none';
-return r;};})(renderProfile);
-
-setTimeout(patchCards,300);
-})();
+/* ══ v62: стоп-лист/фото/карандаши ══ Ф3.18: → public/app/delivery.js; обёртка renderProfile удалена (покрыто profile-brand.js) ══ */
 /* ══ v62: FAB/модалки/z, настройки-шестерёнка, поиск в Пятнице, журнал кассира (кофе), закрытие карточки гостя, статичный сплэш ══ */
 (function(){
 /* статичный сплэш: обработчик + удаление после выбора */

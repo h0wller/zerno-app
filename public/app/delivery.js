@@ -245,3 +245,103 @@ window.cartFabShow = function(){
 function promoDisc(sum, info){
   return info.kind === 'percent' ? Math.round(sum * Math.min(90, info.value) / 100) : Math.min(info.value || 0, sum);
 }
+/* ── Ф3.18: пост-обработка карточек доставки (стоп-лист, фото, карандаши, тумблеры, размеры).
+Слияние секции 4 + R8 + v62 fix-views в одну реализацию.
+Повторный тап по размеру НЕ здесь — он в cart.js (Ф3.9). ── */
+(function(){
+'use strict';
+var css=document.createElement('style');
+css.textContent='#deliveryGrid .card .media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}';
+document.head.appendChild(css);
+function patchCards(){
+var list=(typeof DMENU!=='undefined'?DMENU:[]).filter(function(p){return p.cat===(typeof dcat!=='undefined'?dcat:'pizza');});
+var cards=document.querySelectorAll('#deliveryGrid .card');
+var editing=document.body.classList.contains('editing');
+cards.forEach(function(card,i){
+var p=list[i];if(!p)return;
+card.classList.toggle('stopped',!p.on);
+var media=card.querySelector('.media');
+if(media){
+var sb=media.querySelector('.stopbadge');
+if(!p.on&&!sb){sb=document.createElement('span');sb.className='stopbadge';sb.textContent='СТОП';media.appendChild(sb);}
+if(p.on&&sb)sb.remove();
+if(p.img&&!media.querySelector('img')){var em=media.querySelector('.em');if(em)em.remove();
+var im=document.createElement('img');im.src=p.img;im.alt=p.name||'';media.appendChild(im);}
+}
+var add=card.querySelector('[data-add]');
+if(add){
+if(!p.on){add.disabled=true;add.style.opacity='.45';add.style.pointerEvents='none';add.textContent='СТОП — недоступно';}
+else if(add.disabled){add.disabled=false;add.style.opacity='';add.style.pointerEvents='';add.textContent='Добавить';}
+}
+card.querySelectorAll('.opts button').forEach(function(b){
+if(b.querySelector('.ol'))return;
+var parts=b.textContent.split(' · ');
+if(parts.length<3)return;
+b.innerHTML='<span class="ol">'+parts[0]+'</span><span class="op">'+parts[1]+' · '+parts[2]+'</span>';
+});
+card.querySelectorAll('.opts button.sel').forEach(function(b){b.classList.remove('sel');});
+if(editing){
+card.style.position='relative';
+if(!card.querySelector('.edBtn')){var b=document.createElement('button');b.type='button';b.className='edBtn';b.dataset.ed=p.id;b.textContent='✏️';card.appendChild(b);}
+var lab=card.querySelector('.donoff');
+if(!lab){lab=document.createElement('label');lab.className='donoff';lab.innerHTML='<input type="checkbox" data-onoff="'+p.id+'">в меню';card.appendChild(lab);}
+lab.querySelector('input').checked=!!p.on;
+}else{
+var d2=card.querySelector('.donoff');if(d2)d2.remove();
+var e2=card.querySelector('.edBtn');if(e2)e2.remove();
+}
+});
+}
+window.patchCards=patchCards;
+/* соусы не нужны в рейле */
+renderDeliveryRail=(function(_rr){return function(){var r=_rr.apply(this,arguments);
+var b=document.querySelector('#deliveryRail [data-dcat="sauces"]');if(b)b.remove();
+return r;};})(renderDeliveryRail);
+/* единственная пост-обработка при рендере меню */
+renderDeliveryMenu=(function(_rm){return function(){var r=_rm.apply(this,arguments);
+try{patchCards();}catch(e){}
+return r;};})(renderDeliveryMenu);
+/* карандаш → редактор */
+document.addEventListener('click',function(e){
+var b=e.target.closest('#deliveryGrid .edBtn');if(!b)return;
+e.stopPropagation();e.preventDefault();
+var id=b.getAttribute('data-ed');
+if(id&&typeof openEditor==='function')openEditor(id);
+},true);
+/* стоп-гард клика + шейк «выбери размер» */
+document.getElementById('deliveryGrid').addEventListener('click',function(e){
+var add=e.target.closest('[data-add]');if(!add)return;
+var p=(typeof DMENU!=='undefined'?DMENU:[]).find(function(x){return x.id===add.getAttribute('data-add');});
+if(p&&!p.on){e.stopPropagation();e.preventDefault();toast('Позиция в стоп-листе — недоступна для заказа','⛔');return;}
+var body=add.closest('.cbody');var optsBox=body&&body.querySelector('.opts');
+if(optsBox&&!optsBox.querySelector('.sel')){
+e.stopPropagation();
+toast('Выберите размер пиццы 🍕','');
+optsBox.classList.remove('shake');void optsBox.offsetWidth;optsBox.classList.add('shake');
+}
+},true);
+/* снятие шейка */
+document.addEventListener('animationend',function(e){
+if(e.target&&e.target.classList&&e.target.classList.contains('shake'))e.target.classList.remove('shake');
+},true);
+/* ЕДИНСТВЕННЫЙ обработчик тумблера стоп-листа */
+document.getElementById('deliveryGrid').addEventListener('change',async function(e){
+var t=e.target.closest('.donoff [data-onoff]');if(!t)return;
+e.stopPropagation();
+var p=(typeof DMENU!=='undefined'?DMENU:[]).find(function(x){return x.id===t.getAttribute('data-onoff');});
+if(!p)return;
+p.on=t.checked?1:0;
+try{
+await api('/menu/'+p.id,{method:'PUT',body:p});
+await loadDelivery();
+toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');
+}catch(err){
+toast(err.message,'⚠️');
+loadDelivery();
+}
+},true);
+/* вход/выход из режима правки + живые перерисовки сетки */
+document.getElementById('editToggle').addEventListener('click',function(){setTimeout(patchCards,80);setTimeout(patchCards,400);});
+new MutationObserver(function(){if(document.body.classList.contains('editing'))patchCards();}).observe(document.getElementById('deliveryGrid')||document.body,{childList:true,subtree:true});
+setTimeout(patchCards,300);
+})();
