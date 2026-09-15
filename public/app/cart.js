@@ -137,15 +137,10 @@ updateCartFab();renderCart();
 document.getElementById('cartPanel').classList.remove('open');
 }catch(e){toast(e.message,'⚠️');}
 };
-/* чат-FAB: не поверх корзины — скрыт, пока шторка открыта */
+/* чат-FAB: не поверх корзины — скрыт чисто CSS, пока шторка открыта (без JS-гонок) */
 (function(){
-var cp=document.getElementById('cartPanel');if(!cp)return;
-function sync(){
-var cf=document.getElementById('chatFab');if(!cf)return;
-if(cp.classList.contains('open'))cf.style.display='none';
-else cartFabShow();
-}
-new MutationObserver(sync).observe(cp,{attributes:true,attributeFilter:['class']});
-sync();
+var s=document.createElement('style');
+s.textContent='body:has(#cartPanel.open) #chatFab{display:none!important}';
+document.head.appendChild(s);
 })();
 })();
