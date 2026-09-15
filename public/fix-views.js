@@ -184,27 +184,7 @@ document.getElementById('brandSeg').addEventListener('click',function(e){
 /* Ф3.6: DCATSL, editorFields, openEditor, exitEdit и их обработчики перенесены в public/app/menu-editor.js */
 /* Ф3.18: пост-обработка карточек доставки → public/app/delivery.js */
 
-loadPromos=async function(){try{var r=await api('/promos');
-  document.getElementById('pmList').innerHTML=r.promos.map(function(p){
-    var exp=p.expires?new Date(p.expires).toLocaleDateString('ru-RU'):'бессрочно';
-    var dead=p.expires&&new Date(p.expires)<new Date();
-    var kind=p.kind==='stamp'?'+'+p.value+' штамп(а) 🌊':p.kind==='free'?'+'+p.value+' кофе 🌊':p.kind==='percent'?'−'+p.value+'% 🍕':'−'+p.value+' ₽ 🍕';
-    return '<div class="logrow" style="align-items:center;gap:8px;flex-wrap:wrap">'+
-      '<span class="lt">'+esc(p.code)+'</span>'+
-      '<span style="flex:1;min-width:150px">'+kind+' · '+(dead?'истёк':'до '+exp)+' · лимит '+(p.maxuses||'∞')+' · исп. '+p.uses+'</span>'+
-      '<button class="btn ghost" data-pt="'+p.id+'">'+(p.active?'Выкл':'Вкл')+'</button>'+
-      '<button class="btn ghost danger" data-pd="'+p.id+'">🗑</button></div>';}).join('')
-  ||'<div class="hmini">Пока пусто — создайте первый код</div>';}catch(e){}};
-if(typeof renderMenu==='function'){renderMenu=(function(_rm){return function(){
-  if(typeof MENU==='undefined'||!Array.isArray(MENU))return;
-  return _rm.apply(this,arguments);};})(renderMenu);}
-if(typeof renderRail==='function'){renderRail=(function(_rr){return function(){
-  if(typeof MENU==='undefined'||!Array.isArray(MENU))return;
-  return _rr.apply(this,arguments);};})(renderRail);}
-if(typeof loadMenu==='function'){loadMenu=(function(_lm){return async function(){
-  var r=await _lm.apply(this,arguments);
-  try{if(brand==='coffee'){renderRail();renderMenu();}}catch(e){}
-  return r;};})(loadMenu);}
+/* Ф3.20: loadPromos + guard'ы кофейного меню → public/app/admin-extra.js */
 
 /* ========== 6. Профиль и бонусы ========== Ф3.16: перенесено в public/app/profile-brand.js ========== */
 /* ========== 7. Сотрудники: активации и журнал ========== Ф3.13b: перенесено в public/app/orders.js ========== */
@@ -299,127 +279,12 @@ function syncNotifyUI(){
 
 
 /* R4. Профиль: инфо-блок пятницы + брендовые скрытия — Ф3.16: перенесено в public/app/profile-brand.js */
-/* R5. Тикер и логотип по бренду */
-var BRAND_ORIG_LOGO=null;
-function applyBrandChrome(){
-  var deliv=(brand==='delivery');
-  var track=$('#tickerTrack');
-  if(track){
-    var L=deliv?['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']
-               :['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с 8:00–21:00'];
-    track.innerHTML=L.concat(L).map(function(x){return '<span>'+x+'</span>';}).join('');
-  }
-  var br=document.querySelector('.topbar .brand');
-  if(br){
-    if(BRAND_ORIG_LOGO===null)BRAND_ORIG_LOGO=br.innerHTML;
-    if(deliv)br.innerHTML='<img src="friday-logo.png" alt="Пятница" onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>🍕</span>\'"><div><b>Пятница</b><small>доставка пиццы и роллов</small></div>';
-    else br.innerHTML=BRAND_ORIG_LOGO;
-  }
-}
-document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(applyBrandChrome,60);});
-
-/* R6. Согласие с политикой при регистрации */
-(function(){
-  var form=$('#regForm');if(!form||$('#consentRow'))return;
-  var lab=document.createElement('label');lab.id='consentRow';lab.className='chk';
-  lab.innerHTML='<input type="checkbox" id="consentBox"><span>Согласен с <a href="/privacy.html" target="_blank" style="color:#1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных</span>';
-  var btn=$('#regBtn');if(btn)form.insertBefore(lab,btn);
-})();
-document.addEventListener('click',function(e){
-  var b=e.target.closest('#regBtn');if(!b)return;
-  var cb=$('#consentBox');
-  if(cb&&!cb.checked){e.stopImmediatePropagation();e.preventDefault();toast('Отметь согласие с политикой конфиденциальности','⚠️');}
-},true);
-(function(){var _f=window.fetch;window.fetch=function(u,o){ /* слой consent поверх fetch-патча v50 */
-  try{
-    if(o&&o.body&&typeof o.body==='string'&&String(u).indexOf('/api/auth/register')>-1){
-      var b=JSON.parse(o.body);var cb=$('#consentBox');b.consent=(cb&&cb.checked)?1:0;
-      o=Object.assign({},o,{body:JSON.stringify(b)});
-    }
-  }catch(e){}
-  return _f.call(this,u,o);};})();
-
-/* R7. Кассир: без «Последних событий», без дубля «Новый гость» */
-function cashierClean(){
-  var cl=$('#cashLog');if(cl){var card=cl.closest('.cash-card');if(card)card.style.display='none';}
-  var ng2=$('#newGuestBtn2');if(ng2)ng2.style.display='none';
-}
-new MutationObserver(function(){
-  var cv=$('#cashierView');if(cv&&!cv.hidden)cashierClean();
-}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+/* R5. Тикер и логотип по бренду — Ф3.20: → public/app/admin-extra.js */
+/* R6. Согласие с политикой при регистрации — Ф3.20: → public/app/admin-extra.js */
+/* R7. Чистка вида кассира — Ф3.19a: → public/app/cashier.js */
 /* R8. Редактор пятницы: карандаши + тумблер — Ф3.18: → public/app/delivery.js */
-/* R9. Списание свободного кофе с выбором напитка */
-showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return _sc(u,last);};})(showCust);
-(function(){
-  if($('#redeemPick'))return;
-  var m=document.createElement('div');m.id='redeemPick';
-  m.innerHTML='<div class="omCard" style="max-width:420px"><button type="button" class="omClose">✕</button><h3 style="margin:0 0 12px">🎁 Какой кофе списать?</h3><div id="rpList" style="display:grid;gap:8px"></div></div>';
-  document.body.appendChild(m);
-  m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.omClose'))m.classList.remove('show');});
-  $('#rpList').innerHTML=['Эспрессо','Американо','Капучино','Латте','Флэт уайт','Батч брю'].map(function(n){return '<button type="button" class="btn ghost" data-rp="'+n+'" style="width:100%">'+n+'</button>';}).join('');
-  m.addEventListener('click',async function(e){
-    var b=e.target.closest('[data-rp]');if(!b)return;
-    var id=window.__foundId;if(!id)return toast('Гость не найден','⚠️');
-    try{var r=await api('/staff/redeem',{method:'POST',body:{id:id,item:b.dataset.rp}});
-      m.classList.remove('show');toast('Списано: '+b.dataset.rp,'🎁');
-      try{showCust(r.customer);}catch(e2){}
-    }catch(err){toast(err.message,'⚠️');}
-  });
-  var rb=$('#redeemBtn');
-  if(rb)rb.addEventListener('click',function(e){
-    e.stopImmediatePropagation();e.preventDefault();
-    $('#redeemPick').classList.add('show');
-  },true);
-})();
-
-/* R10. Диспетчер: задержка доставки */
-(function(){
-  var top=document.querySelector('#ordersView .cash-top');
-  if(top&&!$('#delayAllBox')){
-    var d=document.createElement('div');d.id='delayAllBox';d.className='delayBtns';
-    d.innerHTML='<b>Задержать все:</b><button type="button" data-dlyall="15">+15 мин</button><button type="button" data-dlyall="30">+30 мин</button>';
-    top.appendChild(d);
-  }
-  /* статистика списаний — в дашборде, разбивкой по напиткам */
-document.getElementById('dashToggle').addEventListener('click', function(){
-  setTimeout(async function(){
-    try{
-      var r = await api('/stats/redeems');
-      var host = $('#dashMore'); if(!host) return;
-      var old = document.getElementById('dashRedeems'); if(old) old.remove();
-      var items = Object.entries(r.byItem || {}).sort(function(a,b){return b[1]-a[1];});
-      var d = document.createElement('div'); d.id='dashRedeems';
-      d.innerHTML = '<div class="hmini" style="margin-top:8px">🎁 Списано бесплатных кофе за 30 дней: <b>'+r.total+'</b>'+
-        (items.length ? ' · '+items.map(function(e){return esc(e[0])+' ×'+e[1];}).join(', ') : '')+'</div>';
-      host.appendChild(d);
-    }catch(e){}
-  }, 700);
-});
-})();
-function injectDelay(){
-  if(mode!=='orders')return;
-  $$('#ordersList .orderCard').forEach(function(card){
-    if(card.querySelector('.delayBtns'))return;
-    if(/Выполнен|Отменён/.test(card.textContent))return;
-    var oid=card.dataset.oid;if(!oid)return;
-    var d=document.createElement('div');d.className='delayBtns';
-    d.innerHTML='<button type="button" data-dly="15" data-oid="'+oid+'">⏰ +15 мин</button><button type="button" data-dly="30" data-oid="'+oid+'">⏰ +30 мин</button>';
-    card.appendChild(d);
-  });
-}
-new MutationObserver(function(){injectDelay();}).observe($('#ordersList')||document.body,{childList:true,subtree:true});
-document.addEventListener('click',async function(e){
-  var b=e.target.closest('[data-dly],[data-dlyall]');if(!b)return;
-  e.stopPropagation();e.preventDefault();
-  var comment=prompt('Причина задержки (необязательно):','');
-  if(comment===null)return;               // отмена = без пуша
-  var min=+(b.dataset.dly||b.dataset.dlyall);
-  try{
-    if(b.dataset.dly)await api('/orders/'+b.dataset.oid+'/delay',{method:'POST',body:{min:min,comment:comment}});
-    else{var r=await api('/orders/delay-all',{method:'POST',body:{min:min,comment:comment}});toast('Уведомлено заказов: '+r.count,'⏰');}
-    renderOrders(true);
-  }catch(err){toast(err.message,'⚠️');}
-},true);
+/* R9. Списание свободного кофе — Ф3.19a: → public/app/cashier.js */
+/* R10. Задержки + статистика списаний — Ф3.19b: → public/app/orders.js */
 
 setTimeout(function(){applyProfileBrand();applyBrandChrome();cashierClean();syncNotifyUI();},400);
 console.log('fix-views v61 восстановление готов');

@@ -80,3 +80,51 @@ document.addEventListener('click',async function(e){
   try{await api('/staff/activate-guest',{method:'POST',body:{id:b.dataset.actg}});toast('Гость активирован','✅');window.loadPending();}
   catch(e2){toast(e2.message,'⚠️');}
 });
+/* ── Ф3.19b: задержки доставки + статистика списаний в дашборде.
+Было fix-views.js: R10. ── */
+(function(){
+  var top=document.querySelector('#ordersView .cash-top');
+  if(top&&!document.getElementById('delayAllBox')){
+    var d=document.createElement('div');d.id='delayAllBox';d.className='delayBtns';
+    d.innerHTML='<b>Задержать все:</b><button type="button" data-dlyall="15">+15 мин</button><button type="button" data-dlyall="30">+30 мин</button>';
+    top.appendChild(d);
+  }
+  document.getElementById('dashToggle').addEventListener('click', function(){
+    setTimeout(async function(){
+      try{
+        var r = await api('/stats/redeems');
+        var host = document.getElementById('dashMore'); if(!host) return;
+        var old = document.getElementById('dashRedeems'); if(old) old.remove();
+        var items = Object.entries(r.byItem || {}).sort(function(a,b){return b[1]-a[1];});
+        var d = document.createElement('div'); d.id='dashRedeems';
+        d.innerHTML = '<div class="hmini" style="margin-top:8px">🎁 Списано бесплатных кофе за 30 дней: <b>'+r.total+'</b>'+
+          (items.length ? ' · '+items.map(function(e){return esc(e[0])+' ×'+e[1];}).join(', ') : '')+'</div>';
+        host.appendChild(d);
+      }catch(e){}
+    }, 700);
+  });
+})();
+function injectDelay(){
+  if(mode!=='orders')return;
+  Array.prototype.slice.call(document.querySelectorAll('#ordersList .orderCard')).forEach(function(card){
+    if(card.querySelector('.delayBtns'))return;
+    if(/Выполнен|Отменён/.test(card.textContent))return;
+    var oid=card.dataset.oid;if(!oid)return;
+    var d=document.createElement('div');d.className='delayBtns';
+    d.innerHTML='<button type="button" data-dly="15" data-oid="'+oid+'">⏰ +15 мин</button><button type="button" data-dly="30" data-oid="'+oid+'">⏰ +30 мин</button>';
+    card.appendChild(d);
+  });
+}
+new MutationObserver(function(){injectDelay();}).observe(document.getElementById('ordersList')||document.body,{childList:true,subtree:true});
+document.addEventListener('click',async function(e){
+  var b=e.target.closest('[data-dly],[data-dlyall]');if(!b)return;
+  e.stopPropagation();e.preventDefault();
+  var comment=prompt('Причина задержки (необязательно):','');
+  if(comment===null)return;               // отмена = без пуша
+  var min=+(b.dataset.dly||b.dataset.dlyall);
+  try{
+    if(b.dataset.dly)await api('/orders/'+b.dataset.oid+'/delay',{method:'POST',body:{min:min,comment:comment}});
+    else{var r=await api('/orders/delay-all',{method:'POST',body:{min:min,comment:comment}});toast('Уведомлено заказов: '+r.count,'⏰');}
+    renderOrders(true);
+  }catch(err){toast(err.message,'⚠️');}
+},true);

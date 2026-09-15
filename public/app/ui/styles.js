@@ -32,3 +32,9 @@
     }).observe(panel, { attributes: true, attributeFilter: ['class'] });
   }
 })();
+/* ── фикс: тост поверх модалок и оверлея (иначе уходит под backdrop-blur) ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='#toast,div[class*="toast"]{z-index:600!important}';
+  document.head.appendChild(s);
+})();

@@ -129,3 +129,34 @@ async function renderLog() {
     ).join('') || '<div class="hmini">Журнал пуст</div>';
   } catch (e) { $('#cashLog').innerHTML = ''; }
 }
+/* ── Ф3.19a: чистка вида кассира + списание свободного кофе с выбором напитка.
+Было fix-views.js: R7 + R9. ── */
+function cashierClean(){
+  var cl=document.getElementById('cashLog');if(cl){var card=cl.closest('.cash-card');if(card)card.style.display='none';}
+  var ng2=document.getElementById('newGuestBtn2');if(ng2)ng2.style.display='none';
+}
+new MutationObserver(function(){
+  var cv=document.getElementById('cashierView');if(cv&&!cv.hidden)cashierClean();
+}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return _sc(u,last);};})(showCust);
+(function(){
+  if(document.getElementById('redeemPick'))return;
+  var m=document.createElement('div');m.id='redeemPick';
+  m.innerHTML='<div class="omCard" style="max-width:420px"><button type="button" class="omClose">✕</button><h3 style="margin:0 0 12px">🎁 Какой кофе списать?</h3><div id="rpList" style="display:grid;gap:8px"></div></div>';
+  document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.omClose'))m.classList.remove('show');});
+  document.getElementById('rpList').innerHTML=['Эспрессо','Американо','Капучино','Латте','Флэт уайт','Батч брю'].map(function(n){return '<button type="button" class="btn ghost" data-rp="'+n+'" style="width:100%">'+n+'</button>';}).join('');
+  m.addEventListener('click',async function(e){
+    var b=e.target.closest('[data-rp]');if(!b)return;
+    var id=window.__foundId;if(!id)return toast('Гость не найден','⚠️');
+    try{var r=await api('/staff/redeem',{method:'POST',body:{id:id,item:b.dataset.rp}});
+      m.classList.remove('show');toast('Списано: '+b.dataset.rp,'🎁');
+      try{showCust(r.customer);}catch(e2){}
+    }catch(err){toast(err.message,'⚠️');}
+  });
+  var rb=document.getElementById('redeemBtn');
+  if(rb)rb.addEventListener('click',function(e){
+    e.stopImmediatePropagation();e.preventDefault();
+    document.getElementById('redeemPick').classList.add('show');
+  },true);
+})();
