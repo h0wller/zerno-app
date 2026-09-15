@@ -298,69 +298,7 @@ renderProfile=(function(_rp){return function(){var r=_rp();
 /* ========== 10. Поддержка: оверлей выбора темы ========== Ф3.12: перенесено в public/app/chat-core.js ========== */
 /* ========== 11. Пуши: самовосстановление подписки ========== Ф3.14a: перенесено в public/app/core/push.js ========== */
 /* ========== 12. Живые обновления ========== Ф3.14b: перенесено в public/app/live.js ========== */
-/* ========== 13. Диплинки и Telegram Mini App (надёжная версия) ========== */
-(function(){
-var bP=QS.get('brand'),tab=QS.get('tab');
-if(!bP&&!tab)return;
-function openOrdersView(){
-try{
-if(brand!=='delivery'){
-brand='delivery';
-document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
-sv();
-if(!DMENU.length)loadDelivery();
-}
-openPanel('profile');
-setTab('profile');
-try{renderProfile();}catch(e){}
-try{loadMyOrders();}catch(e){}
-/* страховка от пустой шторки */
-setTimeout(function(){
-var pv=document.getElementById('pvProfile');
-if(pv&&!pv.hidden){
-var nu=document.getElementById('profileNoUser'),pb=document.getElementById('profileBox');
-if(nu&&nu.hidden&&pb&&pb.hidden){try{renderProfile();}catch(e){}}
-}
-},600);
-}catch(e){}
-}
-function apply(){
-try{
-if(bP&&bP!==brand){
-brand=bP;
-document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
-sv();
-if(brand==='delivery'&&!DMENU.length)loadDelivery();
-}
-if(tab==='orders'){
-if(me){openOrdersView();}
-else{window.__ztPendingDeep='orders';openAuth();}
-}
-if(tab==='bonus'){
-if(me){openPanel('profile');setTab('bonus');}
-else{window.__ztPendingDeep='bonus';openAuth();}
-}
-if(tab==='chat'){/* поддержку разбирает секция 10 */}
-}catch(e){}
-}
-/* ждём бут: me либо однозначное "не залогинен" */
-var t0=Date.now(),iv=setInterval(function(){
-var ready=(typeof me!=='undefined'&&(me||!localStorage.getItem('zt_user')));
-if(ready||Date.now()-t0>4000){clearInterval(iv);apply();}
-},150);
-/* после успешного логина продолжаем диплинк автоматически */
-if(typeof setUser==='function'&&!setUser.__deepWrap){
-setUser=(function(_su){return function(t,c){
-var r=_su.apply(this,arguments);
-var pend=window.__ztPendingDeep;window.__ztPendingDeep=null;
-if(pend==='orders')setTimeout(openOrdersView,150);
-if(pend==='bonus')setTimeout(function(){openPanel('profile');setTab('bonus');},150);
-return r;};})(setUser);
-setUser.__deepWrap=1;
-}
-history.replaceState(null,'',location.pathname);
-})();
-/* ========== 14. Конфиг: ссылки на бота → public/app/core/config.js (Ф3.10b) ========== */
+/* ========== 13. Диплинки и Telegram Mini App ========== Ф3.15: перенесено в public/app/core/deeplink.js ========== */
 
 /* ── v51: стабильные классы шапки чата → public/app/core/chat-head.js (Ф3.10a) ── */
 /* ══ v61 ВОССТАНОВЛЕНИЕ: один блок, одна реализация на фичу. Фаза 2 — свернём в app.js ══ */
@@ -919,42 +857,5 @@ s.textContent='@media(max-width:1180px){#panel{touch-action:pan-y}}';
 document.head.appendChild(s);
 })();
 /* ══ v68: финальный полиш — a11y, reduced-motion, lazy-img ══ */
-/* ══ v69: диплинк заказов: «мой заказ» → фокус на заказе, «мои заказы» → история ══ */
-(function(){
-var css=document.createElement('style');
-css.textContent='.myOrderCard.flash{outline:3px solid rgba(31,78,140,.55);outline-offset:2px;animation:oflash 2.4s}'+
-'@keyframes oflash{0%{background:#EAF1F9}100%{background:#fff}}';
-document.head.appendChild(css);
-if(QS.get('tab')!=='orders')return;
-var no=QS.get('no');
-var done=false;
-function focusCard(){
-var cards=document.querySelectorAll('#myOrders .myOrderCard');
-if(!cards.length)return false;
-var target=null;
-if(no){for(var i=0;i<cards.length;i++){if(cards[i].textContent.indexOf('#'+no)>-1){target=cards[i];break;}}}
-if(!target)target=cards[0];           /* нет номера — фокус на последнем */
-try{target.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}
-target.classList.add('flash');
-setTimeout(function(){target.classList.remove('flash');},2400);
-return true;
-}
-function apply(){
-if(done||!me)return;
-done=true;
-if(no){
-/* «мой заказ»: профиль + фокус на заказе (с повторами, пока карточки рендерятся) */
-setTimeout(function(){if(!focusCard()){setTimeout(focusCard,600);setTimeout(focusCard,1400);}},500);
-}else{
-/* «мои заказы»: модалка с историей */
-setTimeout(function(){if(typeof renderOrdersModal==='function')renderOrdersModal();},500);
-}
-}
-/* ждём: сессия + открытая шторка (в т.ч. после логина по диплинку) */
-var iv=setInterval(function(){
-if(me&&document.getElementById('panel').classList.contains('open')){clearInterval(iv);apply();}
-},250);
-setTimeout(function(){clearInterval(iv);},300000);
-})();
-sv();
+/* ══ v69: диплинк заказов ══ Ф3.15: перенесено в public/app/core/deeplink.js ══ */
 })();
