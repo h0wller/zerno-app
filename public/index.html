@@ -1727,10 +1727,13 @@ $('#brandSeg').addEventListener('click',e=>{
   syncBrandViews();
   if(brand==='delivery'&&!DMENU.length)loadDelivery();
 });
-(async function boot(){
- if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
- await loadMenu();renderAll();showBadge();initChatPointer();maybeAskReview();
- if(!onboarded)setTimeout(()=>openAuth(false),600);
+(function(){
+  async function boot(){
+    if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
+await loadMenu();renderAll();if(typeof window.syncBrandViews==='function')window.syncBrandViews();showBadge();initChatPointer();maybeAskReview();
+    if(!onboarded)setTimeout(()=>openAuth(false),600);
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',boot);}else{boot();}
 })();
 console.info('%c🌊 …и кофе · ребрендинг','font-weight:bold;font-size:14px','| меню v2 | штампы-зёрна');
 </script>
