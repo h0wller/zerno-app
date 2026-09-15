@@ -931,7 +931,6 @@ var show=(typeof brand!=='undefined'&&brand==='delivery');
 var mo=document.getElementById('myOrders');if(mo)mo.style.display=show?'':'none';
 var mb=document.getElementById('myOrdersBtn');if(mb)mb.style.display=show?'':'none';
 return r;};})(renderProfile);
-})();
 /* ══ v62: FAB/модалки/z, настройки-шестерёнка, поиск в Пятнице, журнал кассира (кофе), закрытие карточки гостя, статичный сплэш ══ */
 (function(){
 /* статичный сплэш: обработчик + удаление после выбора */
