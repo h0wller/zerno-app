@@ -297,46 +297,7 @@ renderProfile=(function(_rp){return function(){var r=_rp();
 /* ========== 9. Чат: ядро ========== Ф3.11: перенесено в public/app/chat-core.js ========== */
 /* ========== 10. Поддержка: оверлей выбора темы ========== Ф3.12: перенесено в public/app/chat-core.js ========== */
 /* ========== 11. Пуши: самовосстановление подписки ========== Ф3.14a: перенесено в public/app/core/push.js ========== */
-/* ========== 12. Живые обновления ========== */
-var lastStaffSig='',lastMineSig='',lastProfileSig='';
-async function refreshOrdersLive(){
-  if(document.visibilityState!=='visible')return;
-  try{
-    if(mode==='orders'&&me&&['cashier','admin','dispatch'].includes(me.role)){
-      var r=await api('/orders');
-      var sig=r.orders.map(function(o){return o.no+':'+o.status;}).join(',');
-      if(sig!==lastStaffSig){lastStaffSig=sig;renderOrders(true);}
-    }
-    if(me&&mode!=='cashier'&&mode!=='orders'){
-      var m=await api('/orders/mine');
-      var msig=m.orders.map(function(o){return o.no+':'+o.status;}).join(',');
-      if(msig!==lastMineSig){lastMineSig=msig;loadMyOrders();}
-    }
-  }catch(e){}
-}
-async function refreshProfileLive(){
-  if(!me||document.visibilityState!=='visible')return;
-  try{
-    var r=await api('/me');if(!r||!r.customer)return;
-    var sig=r.customer.stamps+':'+r.customer.free+':'+r.customer.welcome+':'+r.customer.tg+':'+r.customer.notify_tg+':'+r.customer.notify_web;
-    if(sig!==lastProfileSig){
-      lastProfileSig=sig;
-      me=r.customer;
-      if(typeof window.syncNotifyAll==='function')window.syncNotifyAll();
-      if(typeof renderProfile==='function')renderProfile();
-      if(typeof renderVerifyNote==='function')renderVerifyNote();
-    }
-  }catch(e){}
-}
-if(window.ordersPoll){clearInterval(ordersPoll);ordersPoll=null;}
-ordersPoll=setInterval(refreshOrdersLive,6000);
-setInterval(refreshProfileLive,5000);
-document.addEventListener('visibilitychange',function(){refreshOrdersLive();refreshProfileLive();});
-addEventListener('focus',function(){refreshOrdersLive();refreshProfileLive();});
-if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('message',function(e){
-  if(e.data&&e.data.type==='zpush'){refreshOrdersLive();refreshProfileLive();}
-});
-
+/* ========== 12. Живые обновления ========== Ф3.14b: перенесено в public/app/live.js ========== */
 /* ========== 13. Диплинки и Telegram Mini App (надёжная версия) ========== */
 (function(){
 var bP=QS.get('brand'),tab=QS.get('tab');
