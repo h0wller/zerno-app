@@ -63,7 +63,6 @@ await page.waitForTimeout(500);
 test('выбор доставки открывает доставочную Нику', async ({ page }) => {
   await prepare(page, '/?src=tg&tab=chat&support=choose');
   // F2.x: обход race в fix-views v10-support (см. docs/frontend-todo.md)
-  await page.waitForTimeout(500);
   await page.locator('#supportChooseOverlay [data-support-topic="delivery"]').click();
   await expect(page.locator('#supportChooseOverlay')).toHaveCount(0);
   await expect(page.locator('#chatPanel .chatHead')).toContainText('доставка');
