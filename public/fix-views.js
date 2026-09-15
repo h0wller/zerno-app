@@ -292,23 +292,7 @@ renderProfile=(function(_rp){return function(){var r=_rp();
   if(me)loadMyOrders();
   return r;};})(renderProfile);
 
-/* ========== 7. Сотрудники: активации и журнал ========== */
-loadPending=async function(){
-  try{
-    var r=await api('/staff/pending');
-    var html=r.pending.length?r.pending.map(function(p){
-      return '<div class="hmini"><b>'+esc(p.name)+'</b> · '+esc(p.phone)+' · код: <b style="font-size:15px">'+p.actcode+'</b> <button class="btn fire" data-actg="'+p.id+'" style="margin-left:6px;padding:4px 10px;font-size:11px">Активировать</button></div>';
-    }).join(''):'<div class="hmini">Все гости активированы ✅</div>';
-    var a=document.getElementById('pendingBox');if(a)a.innerHTML=html;
-    var b=document.getElementById('pendingBoxD');if(b)b.innerHTML=html;
-  }catch(e){}
-};
-renderOrders=(function(_ro){return async function(s){var r=await _ro(s);loadPending();return r;};})(renderOrders);
-document.addEventListener('click',async function(e){
-  var b=e.target.closest('[data-actg]');if(!b)return;
-  try{await api('/staff/activate-guest',{method:'POST',body:{id:b.dataset.actg}});toast('Гость активирован','✅');loadPending();}
-  catch(e2){toast(e2.message,'⚠️');}
-});
+/* ========== 7. Сотрудники: активации и журнал ========== Ф3.13b: перенесено в public/app/orders.js ========== */
 /* ========== 8. Сплэш бренда ========== Ф3.13a: перенесено в public/app/core/splash.js ========== */
 /* ========== 9. Чат: ядро ========== Ф3.11: перенесено в public/app/chat-core.js ========== */
 /* ========== 10. Поддержка: оверлей выбора темы ========== Ф3.12: перенесено в public/app/chat-core.js ========== */

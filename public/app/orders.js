@@ -63,3 +63,20 @@ $('#ordersList').addEventListener('click', async e => {
 });
 
 $('#ordersRefresh').onclick = () => renderOrders();
+/* ── Ф3.13b: активации гостей (было секция 7 fix-views) ── */
+window.loadPending=async function(){
+  try{
+    var r=await api('/staff/pending');
+    var html=r.pending.length?r.pending.map(function(p){
+      return '<div class="hmini"><b>'+esc(p.name)+'</b> · '+esc(p.phone)+' · код: <b style="font-size:15px">'+p.actcode+'</b> <button class="btn fire" data-actg="'+p.id+'" style="margin-left:6px;padding:4px 10px;font-size:11px">Активировать</button></div>';
+    }).join(''):'<div class="hmini">Все гости активированы ✅</div>';
+    var a=document.getElementById('pendingBox');if(a)a.innerHTML=html;
+    var b=document.getElementById('pendingBoxD');if(b)b.innerHTML=html;
+  }catch(e){}
+};
+renderOrders=(function(_ro){return async function(s){var r=await _ro(s);window.loadPending();return r;};})(renderOrders);
+document.addEventListener('click',async function(e){
+  var b=e.target.closest('[data-actg]');if(!b)return;
+  try{await api('/staff/activate-guest',{method:'POST',body:{id:b.dataset.actg}});toast('Гость активирован','✅');window.loadPending();}
+  catch(e2){toast(e2.message,'⚠️');}
+});
