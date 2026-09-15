@@ -309,31 +309,7 @@ document.addEventListener('click',async function(e){
   try{await api('/staff/activate-guest',{method:'POST',body:{id:b.dataset.actg}});toast('Гость активирован','✅');loadPending();}
   catch(e2){toast(e2.message,'⚠️');}
 });
-
-/* ========== 8. Сплэш бренда ========== */
-(function(){
-  if(sessionStorage.getItem('splashDone')||DEEP||IN_TG)return;
-  var sp=document.createElement('div');sp.id='brandSplash';
-  sp.innerHTML='<div class="spInner">'+
-    '<div class="spTitle">«Пятница» & …и кофе</div>'+
-    '<div class="spSub">Выберите, куда вы сегодня</div>'+
-    '<div class="spBtns">'+
-    '<button class="spBtn spPizza" data-go="delivery">🍕<br><br>«Пятница»<small>доставка пиццы и роллов</small></button>'+
-    '<button class="spBtn spCoffee" data-go="coffee">🌊<br><br>Кофейня<small>меню, штампы и бонусы</small></button>'+
-    '</div></div>';
-  document.body.appendChild(sp);
-  sp.addEventListener('click',function(e){
-    var b=e.target.closest('[data-go]');if(!b)return;
-    brand=b.dataset.go;
-    sessionStorage.setItem('splashDone','1');
-    sp.remove();
-    if(mode==='cashier'||mode==='orders')setMode('guest');
-    document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
-    chatCtx=brand;try{localStorage.setItem('zt_chatctx',chatCtx);}catch(err){}
-    sv();
-    if(brand==='delivery'&&!DMENU.length)loadDelivery();
-  });
-})();
+/* ========== 8. Сплэш бренда ========== Ф3.13a: перенесено в public/app/core/splash.js ========== */
 /* ========== 9. Чат: ядро ========== Ф3.11: перенесено в public/app/chat-core.js ========== */
 /* ========== 10. Поддержка: оверлей выбора темы ========== Ф3.12: перенесено в public/app/chat-core.js ========== */
 /* ========== 11. Пуши: самовосстановление подписки ========== */
