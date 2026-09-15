@@ -48,7 +48,6 @@ css.textContent=
 '#brandSplash .spCoffee{border:2px solid var(--line);background:#fff;color:var(--ink)}#brandSplash .spCoffee small{color:var(--soft)}'+
 '@media(min-width:560px){#brandSplash .spBtns{grid-template-columns:1fr 1fr}}'+
 '#chatPanel [class*="chip"],#chatPanel #chips,#chatPanel .chips{display:none!important}'+
-'#ctxSwitch{color:#fff!important;border-color:rgba(255,255,255,.4)!important;background:rgba(255,255,255,.12)!important;font-size:12px!important;padding:4px 12px;border-radius:999px!important;margin-left:auto}'+
 '.chatHint{display:inline-block;background:#EDF2F6;border:1.5px solid var(--line);border-radius:16px 16px 16px 4px;padding:8px 14px;margin:3px 4px;font-size:13px;color:var(--ink);cursor:pointer}'+
 '.chatHint:active{background:#D6E4F0}'+
 '.ctxPick{display:flex;gap:8px;margin:8px 0}.ctxPick button{flex:1;padding:10px;border-radius:14px;font-size:13px;font-weight:700;border:1.5px solid var(--line);background:#fff;cursor:pointer}'+
@@ -363,8 +362,6 @@ function setBotName(){
   try { localStorage.setItem('zt_chatctx', ctx); } catch (e) {}
   if (typeof setBotName === 'function') setBotName();
 };
-  var b=document.getElementById('ctxSwitch');
-  if(b)b.textContent=(chatCtx==='delivery'?'🍕':'')+' ▾';
 }
 function dinfoP(){if(window.__dinfo)return Promise.resolve(window.__dinfo);
   window.__dinfoP=window.__dinfoP||fetch(API_BASE+'/api/delivery/info').then(function(r){return r.json();}).then(function(x){window.__dinfo=x;return x;});
@@ -727,26 +724,7 @@ css.textContent=
 '#ctxDrop button.on{background:#FFF6E5}';
 document.head.appendChild(css);
 
-/* R1. Чат: пилюля = выпадающий список */
-showCtxSwitch=function(){
-  var p=$('#chatPanel');if(!p)return;
-  var old=$('#ctxDrop');if(old){old.remove();return;}
-  var d=document.createElement('div');d.id='ctxDrop';
-  d.innerHTML='<button type="button" data-ctxsw="coffee" class="'+(chatCtx==='coffee'?'on':'')+'">☕ Кофейня</button>'+
-              '<button type="button" data-ctxsw="delivery" class="'+(chatCtx==='delivery'?'on':'')+'">🍕 Пятница</button>';
-  p.appendChild(d);
-};
-document.addEventListener('click',function(e){
-  var b=e.target.closest('#ctxDrop [data-ctxsw]');if(!b)return;
-  chatCtx=b.getAttribute('data-ctxsw');
-  try{localStorage.setItem('zt_chatctx',chatCtx);}catch(err){}
-  var d=$('#ctxDrop');if(d)d.remove();
-  try{setBotName();}catch(err){}
-  try{reloadChatThread();}catch(err){}
-},true);
-document.addEventListener('click',function(e){
-  if(!e.target.closest('#ctxDrop')&&!e.target.closest('#ctxSwitch')){var d=$('#ctxDrop');if(d)d.remove();}
-},true);
+/* R1. Пилюля смены заведения: удалено (Ф3.11-cleanup) */
 
 /* ══ каналы уведомлений: единое применение без перезагрузок ══ */
 function syncNotifyAll(){
