@@ -3,6 +3,11 @@
    (331/1362/1482), renderDeliveryRail (328).
    loadDelivery / populateSlots / updateCartFab остаются в index.html:
    fix-views полностью их перезаписывает (см. docs/frontend-todo.md). */
+(function(){
+'use strict';
+try {
+// ... весь существующий код файла ...
+
 
 var DMENU = [];
 var cart = JSON.parse(localStorage.getItem('zt_cart') || '[]');
@@ -339,3 +344,5 @@ optsBox.classList.remove('shake');void optsBox.offsetWidth;optsBox.classList.add
 document.addEventListener('animationend',function(e){
 if(e.target&&e.target.classList&&e.target.classList.contains('shake'))e.target.classList.remove('shake');
 },true);
+} catch(e) { console.error('delivery.js ERR:', e); }
+})();
