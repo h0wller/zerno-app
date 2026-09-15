@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const BASE = (process.env.BASE_URL || 'http://localhost:3100').replace(/\/+$/, '');
+const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
 const ADMIN = process.env.SMOKE_ADMIN_CODE || '';
 const CASHIER = process.env.SMOKE_CASHIER_CODE || '';
 let pass = 0, fail = 0;
