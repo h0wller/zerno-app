@@ -705,12 +705,7 @@ setUser.__deepWrap=1;
 }
 history.replaceState(null,'',location.pathname);
 })();
-/* ========== 14. Конфиг: ссылки на бота ========== */
-fetch(API_BASE+'/api/config').then(function(r){return r.json();}).then(function(cfg){
-  window.TG_USERNAME=cfg.tgUsername||'and_coffee_bot';
-  relink();
-  if(typeof renderVerifyNote==='function')renderVerifyNote();
-}).catch(function(){});
+/* ========== 14. Конфиг: ссылки на бота → public/app/core/config.js (Ф3.10b) ========== */
 
 /* ── v51: стабильные классы шапки чата → public/app/core/chat-head.js (Ф3.10a) ── */
 /* ══ v61 ВОССТАНОВЛЕНИЕ: один блок, одна реализация на фичу. Фаза 2 — свернём в app.js ══ */
