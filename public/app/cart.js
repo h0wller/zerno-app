@@ -143,21 +143,4 @@ var s=document.createElement('style');
 s.textContent='body:has(#cartPanel.open) #chatFab{display:none!important}';
 document.head.appendChild(s);
 })();
-/* повторный тап по выбранному размеру убирает позицию из заказа */
-document.getElementById('deliveryGrid').addEventListener('click',function(e){
-var ob=e.target.closest('.opts button');
-if(ob&&ob.classList.contains('sel')){
-e.stopPropagation();
-ob.classList.remove('sel');
-var id=ob.dataset.id,oi=+ob.dataset.oi;
-var before=cart.length;
-cart=cart.filter(function(c){return !(c.id===id&&c.oi===oi);});
-if(cart.length!==before){
-localStorage.setItem('zt_cart',JSON.stringify(cart));
-updateCartFab();renderCart();
-toast('Убрали из заказа','🗑');
-}
-}
-},true);
-
 })();
