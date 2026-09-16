@@ -42,3 +42,5 @@ d.addEventListener('change',function(){window.applyNotify(document.getElementByI
 var b=document.getElementById(id);if(b)b.addEventListener('click',function(){setTimeout(syncNotifyUI,120);});
 });
 })();
+/* ── Ф3.23: инициализация синка каналов (было хвостом fix-views v61) ── */
+setTimeout(function(){if(typeof window.syncNotifyUI==='function')window.syncNotifyUI();},400);

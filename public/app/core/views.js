@@ -1,8 +1,8 @@
-/* fix-views.js — ЕДИНАЯ сборка v61. Грузится ПОСЛЕ основного скрипта. */
+/* public/app/core/views.js — Ф3.22: флаги и state-мост чата, CSS-инъекция, DOM-переезды,
+виды/режимы (sv/setMode/brandSeg) + первичный sv(). Было fix-views.js секции 0–3 + финальный sv(). */
 (function(){
 'use strict';
-
-/* ========== 0. Флаги и константы ========== */
+/* ========== 0. Флаги и state-мост чата ========== */
 var QS=new URLSearchParams(location.search);
 var IN_TG=/Telegram/i.test(navigator.userAgent);
 var DEEP=!!(QS.get('brand')||QS.get('tab')||QS.get('src'));
@@ -11,11 +11,6 @@ var chosenSupportCtx=SUPPORT_ENTRY?(sessionStorage.getItem('zt_support_ctx')||''
 var supportPending=SUPPORT_ENTRY&&!chosenSupportCtx;
 var chatCtx=localStorage.getItem('zt_chatctx')||'';
 if(chosenSupportCtx)chatCtx=chosenSupportCtx;
-var GREET_D='Привет! Я Ника, поддержка доставки «Пятница» 🍕 Спрашивайте — или позовите диспетчера.';
-var GREET_C='Привет! Я Ника, поддержка кофейни «…и кофе» 🌊 Спрашивайте — или позовите сотрудника.';
-var DHINTS=['Зоны и стоимость доставки','Сколько ждать заказ?','Какие сейчас акции?','Где мой заказ?'];
-var CHINTS=['Где вы и часы работы?','Как копить штампы?','Куда ввести промокод?'];
-var CALL_HINT='💬 Позвать сотрудника';
 window.__fvChatState={
   getChatCtx:function(){return chatCtx;},
   setChatCtx:function(v){chatCtx=v;try{localStorage.setItem('zt_chatctx',v);}catch(e){}},
@@ -70,14 +65,12 @@ css.textContent=
 '.myOrderCard .moItems{margin-top:2px;font-size:12px;color:var(--soft)}'+
 '.myOrderCard .moGifts{margin-top:4px;font-size:12px;color:#2F7D4F;font-weight:700}'+
 'body.support-pending .hintsWrap{display:none!important}'+
-/* FIX: z-index для теста и UI, чтобы глобальный #overlay не перекрывал */
 '.chat-fab{z-index:10001!important}'+
 '#supportChooseOverlay{position:fixed;inset:0;z-index:10002!important;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}'+
 '#supportChooseOverlay .scTitle{font:400 22px Prata,serif}'+
 '#supportChooseOverlay .scSub{color:var(--soft);font-size:13px}'+
 '#supportChooseOverlay .scBtns{width:100%;max-width:340px}';
 document.head.appendChild(css);
-
 /* ========== 2. DOM-переезды ========== */
 var wrapEl=document.querySelector('.wrap');
 var sec=wrapEl?wrapEl.querySelector(':scope>section'):null;
@@ -111,10 +104,7 @@ if(sec&&ab0&&ab0.parentNode!==sec)sec.insertBefore(ab0,sec.firstChild);
     var d=document.createElement('div');d.id='cartAddons';d.style.margin='0 0 10px';cp.insertBefore(d,ci);
   }
 })();
-
 /* ========== 3. Виды и режимы ========== */
-/* cartFabShow: Ф3.9 → public/app/cart.js */
-
 function sv(){
   var showGuest=(mode==='guest'||mode==='admin');
   var showCoffee=showGuest&&brand==='coffee';
@@ -177,67 +167,6 @@ document.getElementById('brandSeg').addEventListener('click',function(e){
   if(!supportPending&&chatCtx!==brand){chatCtx=brand;try{localStorage.setItem('zt_chatctx',chatCtx);}catch(err){}setBotName();}
   if(document.getElementById('chatPanel').classList.contains('open'))setTimeout(function(){reloadChatThread();},80);
 });
-
-/* ========== 4. Корзина ========== Ф3.9: перенесено в public/app/cart.js ========== */
-/* Ф3.7: promoInfo и cartPromoCode объявлены в public/app/delivery.js */
-/* Ф3.7: перенесено в public/app/delivery.js */
-/* Ф3.6: DCATSL, editorFields, openEditor, exitEdit и их обработчики перенесены в public/app/menu-editor.js */
-/* Ф3.18: пост-обработка карточек доставки → public/app/delivery.js */
-
-/* Ф3.20: loadPromos + guard'ы кофейного меню → public/app/admin-extra.js */
-
-/* ========== 6. Профиль и бонусы ========== Ф3.16: перенесено в public/app/profile-brand.js ========== */
-/* ========== 7. Сотрудники: активации и журнал ========== Ф3.13b: перенесено в public/app/orders.js ========== */
-/* ========== 8. Сплэш бренда ========== Ф3.13a: перенесено в public/app/core/splash.js ========== */
-/* ========== 9. Чат: ядро ========== Ф3.11: перенесено в public/app/chat-core.js ========== */
-/* ========== 10. Поддержка: оверлей выбора темы ========== Ф3.12: перенесено в public/app/chat-core.js ========== */
-/* ========== 11. Пуши: самовосстановление подписки ========== Ф3.14a: перенесено в public/app/core/push.js ========== */
-/* ========== 12. Живые обновления ========== Ф3.14b: перенесено в public/app/live.js ========== */
-/* ========== 13. Диплинки и Telegram Mini App ========== Ф3.15: перенесено в public/app/core/deeplink.js ========== */
-
-/* ── v51: стабильные классы шапки чата → public/app/core/chat-head.js (Ф3.10a) ── */
-/* ══ v61 ВОССТАНОВЛЕНИЕ: один блок, одна реализация на фичу. Фаза 2 — свернём в app.js ══ */
-(function(){
-'use strict';
-var $=function(s){return document.querySelector(s);};
-var $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s));};
-
-/* R0. CSS — Ф3.21: → public/app/ui/styles.js */
-/* R1. Пилюля смены заведения: удалено (Ф3.11-cleanup) */
-
-/* notify-кластер + R3 — Ф3.21: → public/app/core/notify.js */
-/* R4. Профиль: инфо-блок пятницы + брендовые скрытия — Ф3.16: перенесено в public/app/profile-brand.js */
-/* R5. Тикер и логотип по бренду — Ф3.20: → public/app/admin-extra.js */
-/* R6. Согласие с политикой при регистрации — Ф3.20: → public/app/admin-extra.js */
-/* R7. Чистка вида кассира — Ф3.19a: → public/app/cashier.js */
-/* R8. Редактор пятницы: карандаши + тумблер — Ф3.18: → public/app/delivery.js */
-/* R9. Списание свободного кофе — Ф3.19a: → public/app/cashier.js */
-/* R10. Задержки + статистика списаний — Ф3.19b: → public/app/orders.js */
-
-setTimeout(function(){applyProfileBrand();applyBrandChrome();cashierClean();syncNotifyUI();},400);
-console.log('fix-views v61 восстановление готов');
-})();
-/* ══ v62: стоп-лист/фото/карандаши ══ Ф3.18: → public/app/delivery.js; обёртка renderProfile удалена (покрыто profile-brand.js) ══ */
-/* ══ v62: FAB/модалки/z, настройки-шестерёнка, поиск в Пятнице, журнал кассира (кофе), закрытие карточки гостя, статичный сплэш ══ */
-(function(){
-/* статичный сплэш: обработчик + удаление после выбора */
-/* Ф3.4: перенесено в public/app/ui/settings.js */
-/* Ф3.4: перенесено в public/app/ui/delivery-search.js */
-/* Ф3.4: перенесено в public/app/ui/cashier-log.js */
-/* Ф3.4: перенесено в public/app/ui/cashier-card.js */
-/* выход из карточки гостя (закрыть режим начисления) */
-(function(){
-var acts=document.querySelector('#custCard .acts');
-if(!acts||document.getElementById('custClose'))return;
-var b=document.createElement('button');b.id='custClose';b.className='btn ghost';b.textContent='✕ Закрыть карточку';
-b.onclick=function(){document.getElementById('custCard').classList.remove('show');try{found=null;}catch(e){}};
-acts.appendChild(b);
-})();
-})();
-/* оверлей: залипший show + ov-high — Ф3.17: перенесено в public/app/core/overlay.js */
-/* Ф3.4: перенесено в public/app/ui/settings.js */
-/* Ф3.4: перенесено в public/app/ui/cashier-log.js */
-/* ══ v64: профильтные брендовые правила ══ Ф3.16: перенесено в public/app/profile-brand.js ══ */
-/* ══ v66/v67/v68: оверлей, фон-тап, сброс, свайп ══ Ф3.17: перенесено в public/app/core/overlay.js и public/app/core/swipe.js ══ */
-/* ══ v69: диплинк заказов ══ Ф3.15: перенесено в public/app/core/deeplink.js ══ */
+/* первичная расстановка видов (раньше — финальный sv() в fix-views) */
+sv();
 })();

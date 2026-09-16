@@ -70,3 +70,13 @@ CSS-инъекция v62 (`.chat-fab`, `.modal`, `.phead .gear`, `#settingsModal
 Splash-обработчик (`#brandSplashStatic`) перенесён в `public/app/core/splash.js`.
 Добавлен экспорт `window.setChatCtx(ctx)` в fix-views (строка 624) —
 точка входа для chatCtx из внешних модулей.
+Фаза 3 (fix-views): ЗАВЕРШЕНА (Ф3.11–Ф3.23). fix-views.js удалён, тег f3.23.
+Инвентаризация inline (Ф3.24): базы renderCart/orderCard/renderOrders/renderProfile/
+loadMyOrders/showCust/renderLog/chatKey/addMsg/loadHistory/botReply/openStaffChat
+живут в модулях; inline больше не дублирует их.
+Остаток inline = ядро (глобалы, api/toast, auth, панели, QR, кофе-редактор,
+review, renderAll/boot) → вынесено в отдельную Фазу 4.
+Фаза 4 (план): 4.1 QR+review-кластер → core/qr.js, core/review.js;
+4.2 auth-кластер → core/auth.js; 4.3 панели/виды → core/views.js (дополнить);
+4.4 глобалы+утилиты → core/state.js, core/utils.js; renderAll/boot → core/boot.js;
+удаление inline-скрипта; 4.5 ESM-миграция.

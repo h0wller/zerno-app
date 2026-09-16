@@ -66,3 +66,5 @@ document.addEventListener('click',function(e){
   }catch(e){}
   return _f.call(this,u,o);};})();
 })();
+/* ── Ф3.23: инициализация брендового хрома (было хвостом fix-views v61) ── */
+setTimeout(function(){if(typeof window.applyBrandChrome==='function')window.applyBrandChrome();},400);

@@ -160,3 +160,12 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
     document.getElementById('redeemPick').classList.add('show');
   },true);
 })();
+/* ── Ф3.23: выход из карточки гостя (было fix-views v62-FAB) + инициализация чистки ── */
+(function(){
+var acts=document.querySelector('#custCard .acts');
+if(!acts||document.getElementById('custClose'))return;
+var b=document.createElement('button');b.id='custClose';b.className='btn ghost';b.textContent='✕ Закрыть карточку';
+b.onclick=function(){document.getElementById('custCard').classList.remove('show');try{found=null;}catch(e){}};
+acts.appendChild(b);
+})();
+setTimeout(cashierClean,400);
