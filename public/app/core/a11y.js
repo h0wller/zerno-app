@@ -1,6 +1,7 @@
 /* lazy-img: loading=lazy + decoding=async, включая динамически добавленные.
    Ф6.1: первая картинка в #grid/#deliveryGrid — LCP-элемент — грузится сразу. */
 function applyLazy(img) {
+  if (img.dataset && img.dataset.lcp) return;
   if (img.loading !== 'lazy') {
     img.loading = 'lazy';
     img.decoding = 'async';

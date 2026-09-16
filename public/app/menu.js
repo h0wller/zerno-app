@@ -118,3 +118,12 @@ $('#grid').addEventListener('change', async e => {
     loadMenu();
   }
 });
+/* ── Ф6.2: LCP-картинка первого экрана — eager + fetchpriority ── */
+(function(){
+function fixLcp(){
+var f=document.querySelector('#grid img, #deliveryGrid img');
+if(f&&!f.dataset.lcp){f.dataset.lcp='1';f.loading='eager';try{f.fetchPriority='high';}catch(e){}}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixLcp);else fixLcp();
+new MutationObserver(function(){fixLcp();}).observe(document.body,{childList:true,subtree:true});
+})();

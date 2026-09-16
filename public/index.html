@@ -3,6 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+(function(){
+  var pre=null;
+  try{ pre=fetch('/api/menu/all',{headers:{'Accept':'application/json'}}); }catch(e){}
+  var of=window.fetch;
+  window.fetch=function(u,o){
+    if(pre&&(!o||(o.method||'GET')==='GET')&&String(u).indexOf('/api/menu/all')>-1){var p=pre;pre=null;return p;}
+    return of.apply(this,arguments);
+  };
+})();
+</script>
 <title>…и кофе — кофейня на берегу моря</title>
 <meta name="description" content="Кофейня «…и кофе» в Янтарном: актуальное меню и бонусы — каждый 10-й кофе бесплатно.">
 <meta property="og:type" content="website">
@@ -24,9 +35,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" fetchpriority="high" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap">
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap" rel="stylesheet"></noscript>
+<link rel="preload" as="style" fetchpriority="high" href="https://fonts.googleapis.com/css2?familyfamily=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{
   --paper:#F5F2EC; --card:#FFFFFF; --panel:#FFFCF5; --ink:#101418; --soft:#63707C;
@@ -589,7 +600,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 
 <div class="ticker" aria-hidden="true"><div class="track" id="tickerTrack"></div></div>
 
-<main class="wrap">
+<div class="wrap" role="main"
   <nav class="rail" id="rail"></nav>
 
     <section>
