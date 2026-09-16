@@ -82,8 +82,8 @@ function sendChat(text) {
   const human = isExplicitHuman && me ? 1 : 0;
   let out;
   if (isFallback && !isExplicitHuman) {
-    out = 'Хм, не уверена, что поняла 🤔 Хотите, позову сотрудника? Тапните «🙋 Позвать сотрудника» выше.';
-  } else if (isExplicitHuman && !me) {
+    out = 'Хм, не уверена, что поняла 🤔 Хотите, позову сотрудника? Тапните «💬 Позвать сотрудника» ниже.';
+    } else if (isExplicitHuman && !me) {
     out = 'Передала бы вопрос сотруднику, но они отвечают только гостям с профилем 🙂 Создайте его за 10 секунд — тапните на аватарку сверху. А я подскажу по меню, бонусам и чаю!';
   } else {
     out = reply;
@@ -101,34 +101,17 @@ function sendChat(text) {
       b.textContent = unread;
     }
     if (isFallback && !isExplicitHuman) {
-      const findCall = () => {
-        const selectors = [
-          '#chatMsgs .hintsWrap .chatHint',
-          '#chatChips button',
-          '.chatHint'
-        ];
-        for (const sel of selectors) {
-          const all = [...document.querySelectorAll(sel)];
-          const btn = all.find(x => /Позвать сотрудника/i.test(x.textContent || ''));
-          if (btn) return btn;
-        }
-        return null;
-      };
-      let tries = 0;
-      const tryPulse = () => {
-        const btn = findCall();
-        if (btn) {
-          btn.classList.add('pulse');
-          setTimeout(() => btn.classList.remove('pulse'), 12000);
-        } else if (++tries < 5) {
-          setTimeout(tryPulse, 200);
-        }
-      };
-      tryPulse();
+            const bar = document.getElementById('chatHintsBar');
+      const call = bar && bar.querySelector('.chatHint[data-hint*="Позвать"]');
+      if (call) {
+        if (bar.firstChild !== call) bar.insertBefore(call, bar.firstChild);
+        call.classList.add('armed', 'pulse');
+              }
     }
-  }, 900 + Math.random() * 700);
+  }, 700);
 }
-  function showBadge() {
+
+function showBadge() {
     const u = +localStorage.getItem(unreadKey()) || 0;
     const b = $('#chatBadge'); b.hidden = !u; b.textContent = u || '';
   }

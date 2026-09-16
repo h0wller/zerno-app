@@ -54,13 +54,17 @@ async function renderOrders(silent) {
   } catch (e) { if (!silent) toast(e.message, '⚠️'); }
 }
 
-$('#ordersList').addEventListener('click', async e => {
-  const b = e.target.closest('[data-os]');
-  if (!b) return;
-  const id = b.closest('.orderCard').dataset.oid;
-  try { await api('/orders/' + id + '/status', { method: 'POST', body: { status: b.dataset.os } }); renderOrders(true); }
-  catch (e2) { toast(e2.message, '⚠️'); }
-});
+document.addEventListener('click', async function (e) {
+  var b = e.target.closest('[data-os]'); if (!b) return;
+  var card = b.closest('.orderCard'); if (!card) return;
+  var id = card.dataset.oid; if (!id) return;
+  e.stopPropagation();
+  b.disabled = true; b.style.opacity = '.6';
+  try {
+    await api('/orders/' + id + '/status', { method: 'POST', body: { status: b.dataset.os } });
+    renderOrders(true);
+  } catch (e2) { toast(e2.message, '⚠️'); b.disabled = false; b.style.opacity = ''; }
+}, true);
 
 $('#ordersRefresh').onclick = () => renderOrders();
 /* ── Ф3.13b: активации гостей (было секция 7 fix-views) ── */

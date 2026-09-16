@@ -349,20 +349,23 @@ new MutationObserver(function(){
 }).observe(document.getElementById('deliveryGrid')||document.body,{childList:true,subtree:true});
 setTimeout(patchCards,300);
 })();
-/* ── Ф5.7b v2: «обновлено» — хвостом к подзаголовку Пятницы ── */
+/* ── Ф5.7b v3: «Обновлено» в Пятнице — 1-в-1 как в кофейне (класс .upd, отдельной строкой) ── */
 (function(){
   var dv=document.getElementById('deliveryView');if(!dv)return;
   var old=document.getElementById('updWhenD');if(old)old.remove();
   var leaf=Array.prototype.slice.call(dv.querySelectorAll('.mh-top *')).filter(function(el){
     return /Работаем ежедневно/.test(el.textContent||'')&&el.children.length===0;
   })[0];
-  if(!leaf)return;
-  var s=document.createElement('span');s.id='updWhenD';
-  leaf.appendChild(s);
+  var box=leaf?leaf.parentElement:dv.querySelector('.mh-top');
+  if(!box)return;
+  var d=document.createElement('div');d.className='upd';d.id='updWhenD';
+  d.innerHTML='Обновлено <b>—</b>';
+  box.appendChild(d);
   function upd(){
     var el=document.getElementById('updWhenD');
-    if(el&&typeof meta!=='undefined'&&meta.updatedAt)
-      el.textContent=' · обновлено '+new Date(meta.updatedAt).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
+    var b=el&&el.querySelector('b');
+    if(b&&typeof meta!=='undefined'&&meta.updatedAt)
+      b.textContent=new Date(meta.updatedAt).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
   }
   renderDeliveryMenu=(function(_rm){return function(){var r=_rm.apply(this,arguments);upd();return r;};})(renderDeliveryMenu);
   upd();
