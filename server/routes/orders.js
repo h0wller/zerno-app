@@ -93,7 +93,7 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     const oi = Number.isInteger(li.oi) ? li.oi : -1;
     if (oi >= 0 && !opts[oi]) return res.status(400).json({ error: 'Вариант недоступен' });
     const price = oi >= 0 ? opts[oi].p : (parseInt(m.price) || 0);
-    const qty = Math.max(1, Math.min(20, +li.qty || 1));
+    const qty = Math.max(1, Math.min(99, +li.qty || 1));
     items.push({ id: m.id, name: m.name, opt: oi >= 0 ? opts[oi].l : null, sz: oi >= 0 ? (opts[oi].sz || 0) : 0, price, qty });
     sum += price * qty;
   }

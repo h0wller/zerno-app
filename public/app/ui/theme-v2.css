@@ -278,7 +278,6 @@ body {
   box-shadow: var(--shadow-float);
 }
 /* Дополнительные кнопки, не покрытые основным CSS */
-#reviewBtn,
 #qrOpenBonus,
 #qrOpenProfile {
   min-height: 44px;
