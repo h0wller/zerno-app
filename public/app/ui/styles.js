@@ -138,6 +138,14 @@ document.head.appendChild(s);
 /* ── фикс D: кофейная сетка — 3+ колонки на десктопе ── */
 (function(){
   var s=document.createElement('style');
-  s.textContent='@media(min-width:1181px){#grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important}}';
+    s.textContent='@media(min-width:1181px){#grid{grid-template-columns:repeat(3,1fr)!important}}'+
+  '@media(min-width:1600px){#grid{grid-template-columns:repeat(4,1fr)!important}}';
+  document.head.appendChild(s);
+})();
+/* ── фикс: пульс-подсветка пилюли «Позвать сотрудника» ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='#chatHintsBar .chatHint.pulse{animation:hintPulse 1.2s ease-in-out 3}'+
+  '@keyframes hintPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06);background:#FDE8E8;border-color:#B3372B}}';
   document.head.appendChild(s);
 })();

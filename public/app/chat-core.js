@@ -251,21 +251,21 @@
     }
     var isFallback = !a || /передаю человеку|Приняла!/i.test(a);
     if (isFallback) {
-      window.addMsg(
+            window.addMsg(
         "bot",
-        "Хм, не уверена, что поняла 🤔 Хотите, позову сотрудника? Тапните «🙋 Позвать сотрудника» ниже.",
+        "Хм, не уверена, что поняла 🤔 Хотите, позову сотрудника? Тапните «💬 Позвать сотрудника» ниже.",
       );
       showHints();
       setTimeout(function () {
-        var wrap = msgs && msgs.querySelector(".hintsWrap");
-        if (!wrap) return;
-        var call = wrap.querySelector('.chatHint[data-hint*="Позвать"]');
-        if (call) {
-          call.classList.add("pulse");
-          setTimeout(function () {
-            call.classList.remove("pulse");
-          }, 12000);
-        }
+        var bar = document.getElementById("chatHintsBar");
+        if (!bar) return;
+        var call = bar.querySelector('.chatHint[data-hint*="Позвать"]');
+        if (!call) return;
+        if (bar.firstChild !== call) bar.insertBefore(call, bar.firstChild);
+        call.classList.add("armed", "pulse");
+        setTimeout(function () {
+          call.classList.remove("pulse");
+        }, 12000);
       }, 80);
       return;
     }
