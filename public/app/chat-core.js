@@ -343,40 +343,36 @@
       if (c3) c3.textContent = un ? "💬 Чаты гостей · " + un : "💬 Чаты гостей";
     } catch (e) {}
   };
-  /* клики по подсказкам + вызов сотрудника в два тапа */
+    /* клики по подсказкам + вызов сотрудника в два тапа */
   document.addEventListener("click", function (e) {
-      var h = e.target.closest(".chatHint");
-      if (!h) return;
-      e.stopPropagation();
-      e.preventDefault();
-      if (h.dataset.hint === CS.CALL_HINT || h.dataset.arm === "1") {
-        if (h.dataset.arm === "1") {
-          h.dataset.arm = "";
-          h.textContent = CS.CALL_HINT;
-          h.style.background = "";
-          h.style.borderColor = "";
-          mySend(CS.CALL_HINT);
-        } else {
-          h.dataset.arm = "1";
-          h.textContent = "✅ Точно позвать сотрудника? (нажмите ещё раз)";
-          h.style.background = "#FDE8E8";
-          h.style.borderColor = "#B3372B";
-          setTimeout(function () {
-            if (h.dataset.arm === "1") {
-              h.dataset.arm = "";
-              h.textContent = CS.CALL_HINT;
-              h.style.background = "";
-              h.style.borderColor = "";
-            }
-          }, 4000);
-        }
-        return;
+    var h = e.target.closest(".chatHint");
+    if (!h) return;
+    e.stopPropagation();
+    e.preventDefault();
+    var isCall = (h.dataset.hint || "").indexOf("Позвать") > -1 || h.dataset.hint === CS.CALL_HINT;
+    if (isCall || h.dataset.arm === "1") {
+      if (h.dataset.arm === "1") {
+        h.dataset.arm = "";
+        h.classList.remove("armed");
+        h.textContent = CS.CALL_HINT;
+        mySend(CS.CALL_HINT);
+      } else {
+        h.dataset.arm = "1";
+        h.classList.add("armed");
+        h.textContent = "✅ Точно позвать? Нажмите ещё раз";
+        setTimeout(function () {
+          if (h.dataset.arm === "1") {
+            h.dataset.arm = "";
+            h.classList.remove("armed");
+            h.textContent = CS.CALL_HINT;
+          }
+        }, 4000);
       }
-      mySend(h.dataset.hint || h.textContent);
-    },
-    true,
-  );
-
+      return;
+    }
+    mySend(h.dataset.hint || h.textContent);
+  }, true);
+  
   /* открытие чата: контекст следует за брендом, если не ждём выбор темы */
   (function () {
     var f = document.getElementById("chatFab");

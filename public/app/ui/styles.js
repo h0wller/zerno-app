@@ -64,11 +64,13 @@ s.textContent=
 '#ctxDrop button.on{background:#FFF6E5}';
 document.head.appendChild(s);
 })();
-/* ── Ф5.1: панель быстрых ответов приклеена к низу чата ── */
+/* ── Ф5.1: панель быстрых ответов приклеена к низу чата (компактная, в одну строку) ── */
 (function(){
   var s=document.createElement('style');
-  s.textContent='#chatHintsBar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;border-top:1px solid var(--line)}'+
-  '#chatHintsBar .chatHint{margin:0}'+
+  s.textContent='#chatHintsBar{display:flex;flex-wrap:nowrap;gap:6px;padding:6px 8px;border-top:1px solid var(--line);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}'+
+  '#chatHintsBar::-webkit-scrollbar{display:none}'+
+  '#chatHintsBar .chatHint{margin:0;flex:0 0 auto;white-space:nowrap;font-size:12px;padding:6px 10px;border-radius:12px}'+
+  '#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:#FDE8E8;border-color:#B3372B;color:#B3372B;font-weight:700}'+
   'body.support-pending #chatHintsBar{display:none!important}';
   document.head.appendChild(s);
 })();
