@@ -347,8 +347,7 @@
   document.addEventListener("click", function (e) {
     var h = e.target.closest(".chatHint");
     if (!h) return;
-        var barEl = h.closest("#chatHintsBar");
-    if (barEl && barEl.dataset.dragged === "1") { barEl.dataset.dragged = ""; return; }
+    if (window.__hintDragUntil && Date.now() < window.__hintDragUntil) return;
     e.stopPropagation();
     e.preventDefault();
     var isCall = (h.dataset.hint || "").indexOf("Позвать") > -1 || h.dataset.hint === CS.CALL_HINT;
@@ -481,21 +480,23 @@
     true,
   );
 })();
-/* ── Ф5.1b: drag-скролл бара подсказок мышью (зажал и потянул) ── */
+/* ── Ф5.1c: drag-скролл бара подсказок мышью (зажал и потянул) ── */
 (function(){
   var bar=null,down=false,sx=0,sl=0,moved=0;
   document.addEventListener('pointerdown',function(e){
     bar=(e.target.closest&&e.target.closest('#chatHintsBar'))||null;
     if(!bar||e.pointerType!=='mouse')return;
-    down=true;moved=0;sx=e.clientX;sl=bar.scrollLeft;bar.dataset.dragged='';
+    down=true;moved=0;sx=e.clientX;sl=bar.scrollLeft;
   });
   document.addEventListener('pointermove',function(e){
     if(!down||!bar)return;
     var dx=e.clientX-sx;moved=Math.max(moved,Math.abs(dx));
-    bar.scrollLeft=sl-dx;
+    if(moved>8){bar.scrollLeft=sl-dx;if(e.cancelable)e.preventDefault();}
   });
-  document.addEventListener('pointerup',function(){
-    if(down&&bar&&moved>6)bar.dataset.dragged='1';
-    down=false;
-  });
+  function end(){
+    if(down&&bar&&moved>8)window.__hintDragUntil=Date.now()+80;
+    down=false;bar=null;
+  }
+  document.addEventListener('pointerup',end);
+  document.addEventListener('pointercancel',end);
 })();

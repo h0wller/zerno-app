@@ -116,3 +116,16 @@ document.head.appendChild(s);
   '}';
   document.head.appendChild(s);
 })();
+/* ── Ф5.1c: armed-подсветка пилюли «Позвать сотрудника» ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:#FDE8E8!important;border-color:#B3372B!important;color:#B3372B!important;font-weight:700}';
+  document.head.appendChild(s);
+})();
+/* ── Ф5.7: одинаковая посадка поиска в кофейне и Пятнице ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='#menuView .mh-top,#deliveryView .mh-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}'+
+  '#menuView .mh-top .search,#deliveryView .mh-top .search{margin:0 0 0 auto;flex:0 1 320px;min-width:220px}';
+  document.head.appendChild(s);
+})();
