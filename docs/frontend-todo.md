@@ -80,3 +80,14 @@ review, renderAll/boot) → вынесено в отдельную Фазу 4.
 4.2 auth-кластер → core/auth.js; 4.3 панели/виды → core/views.js (дополнить);
 4.4 глобалы+утилиты → core/state.js, core/utils.js; renderAll/boot → core/boot.js;
 удаление inline-скрипта; 4.5 ESM-миграция.
+
+Фаза 4 (дедупликация inline): ЗАВЕРШЕНА (Ф4.1a/b, Ф4.2).
+QR-кластер → core/qr.js; review-кластер → core/review.js; мёртвый loadPromos удалён.
+Аудит остатка (weekpromo/pmSave/dash/loadSubs/confetti/promoBtn, база оверлея,
+auth, панели, renderAll/boot): реализации одиночные, дублей нет — оставлены
+в inline как ядро приложения.
+Цепочка оверлея base→v66→v67 не тронута (контракт core/overlay.md).
+Фаза 5 (план): вынос ядра из inline + переход на ESM — отдельная работа
+с полным прогоном: 5.1 core/state.js (глобалы), 5.2 core/ui.js (api/toast/часы),
+5.3 core/auth.js, 5.4 core/panel.js (база оверлея+панели), 5.5 core/boot.js
+(renderAll/boot), 5.6 type=module + import/export, отказ от window.*-глобалов.
