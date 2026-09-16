@@ -1384,16 +1384,7 @@ $('#promoBtn').onclick=async()=>{
 $('#promoToggle').onclick=()=>{$('#promoModal').classList.add('show');syncOverlay();loadPromos();loadWeekPromo()};
 function closePromo(){$('#promoModal').classList.remove('show');syncOverlay()}
 $('#promoClose').onclick=closePromo;
-async function loadPromos(){try{const r=await api('/promos');
- $('#pmList').innerHTML=r.promos.map(p=>{
-  const exp=p.expires?new Date(p.expires).toLocaleDateString('ru-RU'):'бессрочно';
-  const dead=p.expires&&new Date(p.expires)<new Date();
-  return `<div class="logrow" style="align-items:center;gap:8px;flex-wrap:wrap">
-   <span class="lt">${esc(p.code)}</span>
-   <span style="flex:1;min-width:150px">${p.kind==='stamp'?'+'+p.value+' штамп(а)':'+'+p.value+' кофе'} · ${dead?'истёк':'до '+exp} · лимит ${p.maxuses||'∞'} · исп. ${p.uses}</span>
-   <button class="btn ghost" data-pt="${p.id}">${p.active?'Выкл':'Вкл'}</button>
-   <button class="btn ghost danger" data-pd="${p.id}">🗑</button></div>`;}).join('')
- ||'<div class="hmini">Пока пусто — создайте первый код</div>';}catch(e){}}
+// Ф4.2: объявление loadPromos удалено — единственная реализация в public/app/admin-extra.js (window.loadPromos)
 
 $('#pmList').addEventListener('click',async e=>{
  const t=e.target.closest('[data-pt]'),d=e.target.closest('[data-pd]');
