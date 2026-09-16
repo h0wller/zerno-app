@@ -120,7 +120,9 @@ if(!me){toast('Сначала войдите по номеру','👤');openAuth
 var method=document.getElementById('checkoutMethod').value;
 if(method==='delivery'){
 if(!document.getElementById('checkoutPlace').value)return toast('Выберите населённый пункт','📍');
-if(!document.getElementById('checkoutAddr').value.trim())return toast('Укажите адрес','🏠');
+var addrV=document.getElementById('checkoutAddr').value.trim();
+if(!addrV)return toast('Укажите адрес','🏠');
+if(!/\d/.test(addrV)||addrV.length<5)return toast('Адрес выглядит неполным: нужны улица и номер дома, напр. «Советская 10, кв. 5»','🏠');
 }
 var body={method:method,place:document.getElementById('checkoutPlace').value,addr:document.getElementById('checkoutAddr').value.trim(),
 slot:document.getElementById('checkoutSlot').value,pay:document.getElementById('checkoutPay').value,

@@ -170,27 +170,26 @@
   }
 
   /* ── showHints ── */
-  function showHints() {
-    var msgs = document.getElementById("chatMsgs");
-    if (!msgs) return;
-    if (CS.getSupportPending()) return;
-    var old = msgs.querySelector(".hintsWrap");
-    if (old) old.remove();
-    var wrap = document.createElement("div");
-    wrap.className = "hintsWrap";
-    wrap.style.cssText = "padding:4px 0 8px";
-    var list = (CS.getChatCtx() === "delivery" ? CS.DHINTS : CS.CHINTS).slice();
-    if (!(typeof staffIn !== "undefined" && staffIn)) list.push(CS.CALL_HINT);
-    list.forEach(function (h) {
-      var b = document.createElement("button");
-      b.className = "chatHint";
-      b.textContent = h;
-      b.dataset.hint = h;
-      wrap.appendChild(b);
-    });
-    msgs.appendChild(wrap);
-    msgs.scrollTop = 1e6;
+  function showHints(){
+  if(CS.getSupportPending())return;
+  var msgs=document.getElementById('chatMsgs');if(!msgs)return;
+  var old=msgs.querySelector('.hintsWrap');if(old)old.remove();
+  var bar=document.getElementById('chatHintsBar');
+  if(!bar){
+    var inp=document.getElementById('chatInput');
+    var foot=inp&&(inp.closest('.chatFoot')||inp.parentElement);
+    if(!foot)return;
+    bar=document.createElement('div');bar.id='chatHintsBar';
+    foot.parentNode.insertBefore(bar,foot);
   }
+  bar.innerHTML='';
+  var list=(CS.getChatCtx()==='delivery'?CS.DHINTS:CS.CHINTS).slice();
+  if(!(typeof staffIn!=='undefined'&&staffIn))list.push(CS.CALL_HINT);
+  list.forEach(function(h){
+    var b=document.createElement('button');b.type='button';b.className='chatHint';b.textContent=h;b.dataset.hint=h;bar.appendChild(b);
+  });
+  msgs.scrollTop=1e6;
+}
 
   /* ── addMsg: обёртка ── */
   window.addMsg = (function (_am) {
@@ -345,9 +344,7 @@
     } catch (e) {}
   };
   /* клики по подсказкам + вызов сотрудника в два тапа */
-  document.getElementById("chatMsgs").addEventListener(
-    "click",
-    function (e) {
+  document.addEventListener("click", function (e) {
       var h = e.target.closest(".chatHint");
       if (!h) return;
       e.stopPropagation();

@@ -64,3 +64,29 @@ s.textContent=
 '#ctxDrop button.on{background:#FFF6E5}';
 document.head.appendChild(s);
 })();
+/* ── Ф5.1: панель быстрых ответов приклеена к низу чата ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='#chatHintsBar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;border-top:1px solid var(--line)}'+
+  '#chatHintsBar .chatHint{margin:0}'+
+  'body.support-pending #chatHintsBar{display:none!important}';
+  document.head.appendChild(s);
+})();
+/* ── Ф5.2: корзина читаема на широких экранах ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='@media(min-width:900px){'+
+  '#cartPanel>*{max-width:860px;margin-left:auto;margin-right:auto;width:100%}'+
+  '#cartPanel .cartItem{font-size:15px}'+
+  '#checkoutBtn{max-width:860px;margin-left:auto;margin-right:right}'+
+  '#checkoutBtn{margin-right:auto}'+
+  '}';
+  document.head.appendChild(s);
+})();
+/* ── Ф5.4: footer с контактом ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='.siteFooter{padding:30px 16px calc(40px + env(safe-area-inset-bottom));text-align:center;color:var(--soft);font-size:13px}'+
+  '.siteFooter a{color:#1F4E8C;font-weight:700;text-decoration:none}';
+  document.head.appendChild(s);
+})();

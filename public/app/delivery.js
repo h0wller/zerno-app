@@ -342,6 +342,10 @@ loadDelivery();
 },true);
 /* вход/выход из режима правки + живые перерисовки сетки */
 document.getElementById('editToggle').addEventListener('click',function(){setTimeout(patchCards,80);setTimeout(patchCards,400);});
-new MutationObserver(function(){if(document.body.classList.contains('editing'))patchCards();}).observe(document.getElementById('deliveryGrid')||document.body,{childList:true,subtree:true});
+var pcQueued=false;
+new MutationObserver(function(){
+  if(pcQueued)return;pcQueued=true;
+  requestAnimationFrame(function(){pcQueued=false;if(document.body.classList.contains('editing'))patchCards();});
+}).observe(document.getElementById('deliveryGrid')||document.body,{childList:true,subtree:true});
 setTimeout(patchCards,300);
 })();
