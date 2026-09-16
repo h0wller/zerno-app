@@ -359,6 +359,7 @@
       } else {
         h.dataset.arm = "1";
         h.classList.add("armed");
+        h.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
         h.textContent = "✅ Точно позвать? Нажмите ещё раз";
         setTimeout(function () {
           if (h.dataset.arm === "1") {
@@ -372,7 +373,7 @@
     }
     mySend(h.dataset.hint || h.textContent);
   }, true);
-  
+
   /* открытие чата: контекст следует за брендом, если не ждём выбор темы */
   (function () {
     var f = document.getElementById("chatFab");
