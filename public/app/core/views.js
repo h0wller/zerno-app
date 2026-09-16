@@ -31,11 +31,11 @@ css.textContent=
 '@media(max-width:400px){#deliveryGrid .opts{grid-template-columns:1fr}}'+
 '#deliveryGrid .opts button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:1.5px solid var(--line);border-radius:12px;font-size:11px;font-weight:600;background:#fff;line-height:1.3;white-space:normal;text-align:left;width:100%}'+
 '#deliveryGrid .opts button .op{color:var(--soft);font-weight:700}'+
-'#deliveryGrid .opts button.sel{background:#B4552D;border-color:#B4552D;color:#fff}'+
+'#deliveryGrid .opts button.sel{background:var(--flame);border-color:var(--flame);color:#fff}'+
 '#deliveryGrid .opts button.sel .op{color:#F3E2CE}'+
 '#deliveryGrid .opts.shake{animation:shake .4s}'+
-'#cartFab{background:#B4552D!important;box-shadow:0 12px 30px -8px rgba(180,85,45,.75)!important;bottom:calc(84px + env(safe-area-inset-bottom))!important}'+
-'.addonChip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}.addonChip b{color:#B4552D}'+
+'#cartFab{background:var(--flame)!important;box-shadow:0 12px 30px -8px rgba(180,85,45,.75)!important;bottom:calc(84px + env(safe-area-inset-bottom))!important}'+
+'.addonChip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}.addonChip b{color:var(--flame)}'+
 '@media(max-width:820px){.topbar{flex-wrap:wrap;row-gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,0px) + 10px)!important}.topbar .brand{order:1;min-width:0}#clock{order:2;margin-left:auto}#profileTopBtn{order:3}#brandSeg{order:10;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}#modeSeg{order:11;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}'+
 '@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}'+
 '@media(max-width:1180px){#panel.open{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;max-height:100%!important;border-radius:0!important;margin:0!important;transform:none!important;z-index:320!important}#panel .tabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}}'+
@@ -106,6 +106,7 @@ if(sec&&ab0&&ab0.parentNode!==sec)sec.insertBefore(ab0,sec.firstChild);
 })();
 /* ========== 3. Виды и режимы ========== */
 function sv(){
+  document.documentElement.setAttribute('data-brand', brand);
   var showGuest=(mode==='guest'||mode==='admin');
   var showCoffee=showGuest&&brand==='coffee';
   var showDeliv=showGuest&&brand==='delivery';

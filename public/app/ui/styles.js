@@ -17,7 +17,7 @@
   cssChat.textContent =
     '.pulse{' +
     'animation:chatHintPulse 1.3s ease-in-out infinite;' +
-    'background:#F3E2CE!important;border-color:#B4552D!important;color:#6B2A0E!important;font-weight:700}' +
+    'background:#F3E2CE!important;border-color:var(--flame)!important;color:#6B2A0E!important;font-weight:700}' +
     '@keyframes chatHintPulse{' +
     '0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(180,85,45,.45)}' +
     '50%{transform:scale(1.05);box-shadow:0 0 0 10px rgba(180,85,45,0)}}';
@@ -70,7 +70,7 @@ document.head.appendChild(s);
   s.textContent='#chatHintsBar{display:flex;flex-wrap:nowrap;gap:6px;padding:6px 8px;border-top:1px solid var(--line);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}'+
   '#chatHintsBar::-webkit-scrollbar{display:none}'+
   '#chatHintsBar .chatHint{margin:0;flex:0 0 auto;white-space:nowrap;font-size:12px;padding:6px 10px;border-radius:12px}'+
-  '#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:#FDE8E8;border-color:#B3372B;color:#B3372B;font-weight:700}'+
+  '#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:#FDE8E8;border-color:var(--status-danger);color:var(--status-danger);font-weight:700}'+
   'body.support-pending #chatHintsBar{display:none!important}';
   document.head.appendChild(s);
 })();
@@ -89,7 +89,7 @@ document.head.appendChild(s);
 (function(){
   var s=document.createElement('style');
   s.textContent='.siteFooter{padding:30px 16px calc(40px + env(safe-area-inset-bottom));text-align:center;color:var(--soft);font-size:13px}'+
-  '.siteFooter a{color:#1F4E8C;font-weight:700;text-decoration:none}';
+  '.siteFooter a{color:var(--flame);font-weight:700;text-decoration:none}';
   document.head.appendChild(s);
 })();
 /* ── Ф5.4b: футер прижат к низу даже на коротких экранах ── */
@@ -119,7 +119,7 @@ document.head.appendChild(s);
 /* ── Ф5.1c: armed-подсветка пилюли «Позвать сотрудника» ── */
 (function(){
   var s=document.createElement('style');
-  s.textContent='#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:#FDE8E8!important;border-color:#B3372B!important;color:#B3372B!important;font-weight:700}';
+  s.textContent='#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:#FDE8E8!important;border-color:var(--status-danger)!important;color:--status-danger!important;font-weight:700}';
   document.head.appendChild(s);
 })();
 /* ── Ф5.7: одинаковая посадка поиска в кофейне и Пятнице ── */
@@ -146,6 +146,6 @@ document.head.appendChild(s);
 (function(){
   var s=document.createElement('style');
   s.textContent='#chatHintsBar .chatHint.pulse{animation:hintPulse 1.2s ease-in-out 3}'+
-  '@keyframes hintPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06);background:#FDE8E8;border-color:#B3372B}}';
+  '@keyframes hintPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06);background:#FDE8E8;border-color:var(--status-danger)}}';
   document.head.appendChild(s);
 })();
