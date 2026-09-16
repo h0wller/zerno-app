@@ -30,12 +30,15 @@ var b=e.target.closest('button');
 if(b&&/уведомлени/i.test(b.textContent||''))setTimeout(function(){ensurePush(true);},50);
 });
 (function(){
-if(sessionStorage.getItem('pushHealed'))return;
-setTimeout(async function(){
-if(me&&('Notification' in window)&&Notification.permission==='granted'){
-sessionStorage.setItem('pushHealed','1');
-await ensurePush(false);
-}
-},4000);
+  if(sessionStorage.getItem('pushHealed'))return;
+  var tries=0;
+  var iv=setInterval(async function(){
+    tries++;
+    if(me&&('Notification' in window)&&Notification.permission==='granted'){
+      clearInterval(iv);sessionStorage.setItem('pushHealed','1');
+      await ensurePush(false);
+    }
+    if(tries>10)clearInterval(iv);
+  },3000);
 })();
 })();

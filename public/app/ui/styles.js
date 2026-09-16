@@ -129,3 +129,15 @@ document.head.appendChild(s);
   '#menuView .mh-top .search,#deliveryView .mh-top .search{margin:0 0 0 auto;flex:0 1 320px;min-width:220px}';
   document.head.appendChild(s);
 })();
+/* ── Ф5.7b: строка обновления в шапке доставки ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='#updWhenD{flex:1 1 100%;font-size:12px;color:var(--soft);margin-top:-6px}';
+  document.head.appendChild(s);
+})();
+/* ── фикс D: кофейная сетка — 3+ колонки на десктопе ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='@media(min-width:1181px){#grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important}}';
+  document.head.appendChild(s);
+})();

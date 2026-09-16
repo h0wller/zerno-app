@@ -184,8 +184,8 @@
   }
   bar.innerHTML='';
   var list=(CS.getChatCtx()==='delivery'?CS.DHINTS:CS.CHINTS).slice();
-  if(!(typeof staffIn!=='undefined'&&staffIn))list.push(CS.CALL_HINT);
-  list.forEach(function(h){
+    if(!(typeof staffIn!=='undefined'&&staffIn))list.push(CS.CALL_HINT);
+          list.forEach(function(h){
     var b=document.createElement('button');b.type='button';b.className='chatHint';b.textContent=h;b.dataset.hint=h;bar.appendChild(b);
   });
   msgs.scrollTop=1e6;
@@ -360,7 +360,8 @@
       } else {
         h.dataset.arm = "1";
         h.classList.add("armed");
-        h.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+                var bar2 = h.parentElement;
+        if (bar2 && bar2.firstChild !== h) bar2.insertBefore(h, bar2.firstChild);
         h.textContent = "✅ Точно позвать? Нажмите ещё раз";
         setTimeout(function () {
           if (h.dataset.arm === "1") {
