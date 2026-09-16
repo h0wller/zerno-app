@@ -22,7 +22,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" fetchpriority="high" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -546,6 +546,7 @@ body.is-cashier .cust .acts{min-width:260px}
   .sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 </style>
+<script src="app/core/state.js"></script>
 <script>
 (function(){var q=new URLSearchParams(location.search);
 var need=!(sessionStorage.getItem('splashDone')||q.get('brand')||q.get('tab')||q.get('src')||/Telegram/i.test(navigator.userAgent));
@@ -588,7 +589,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 
 <div class="ticker" aria-hidden="true"><div class="track" id="tickerTrack"></div></div>
 
-<div class="wrap">
+<main class="wrap">
   <nav class="rail" id="rail"></nav>
 
     <section>
@@ -604,6 +605,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
     <div class="mh-top">
       <div>
         <h1>Пятница <em>— доставка пиццы и роллов</em></h1>
+        <h2 class="vh">Разделы меню</h2>
         <div class="upd">Работаем ежедневно 11:00–22:00 · доставка ~45 мин</div>
       </div>
     </div>
@@ -617,6 +619,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
         <div class="mh-top">
           <div>
             <h1>Меню <em>на берегу моря</em></h1>
+            <h2 class="vh">Разделы меню</h2>
             <div class="upd">Обновлено <b id="updWhen">—</b><span class="adminBadge" id="adminBadge" hidden>режим администратора</span></div>
           </div>
           <div class="mh-right">
@@ -1058,19 +1061,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
  if(seg)tb.append(ck,seg,av);else tb.append(ck,av);
 })();
 /* ── API-клиент ── */
-const T_USER='zt_user',T_ONB='zt_onb';
-var USER_TOKEN=localStorage.getItem(T_USER)||null;
-var onboarded=localStorage.getItem(T_ONB)==='1';
-var MENU=[];
-var meta={updatedAt:Date.now()};
-var me=null;
-var mode='guest';
-var editMode=false;
-var brand='coffee';
-const CATS=[{id:'coffee',e:'☕',l:'Кофе',t:'#F3E2CE'},{id:'drinks',e:'🧋',l:'Напитки',t:'#E4EFE2'},
- {id:'seasonal',e:'🌊',l:'Сезонное',t:'#DCE9F5'},{id:'food',e:'🥐',l:'Еда',t:'#F9ECC7'},
- {id:'desserts',e:'🍰',l:'Десерты',t:'#F8E1E4'},{id:'shop',e:'🛍',l:'С полки',t:'#E8E6E1'}];
-const TINT=Object.fromEntries(CATS.map(c=>[c.id,c.t]));
+// Ф5.1: глобалы (T_USER..TINT) → public/app/core/state.js
 async function api(path,opts={}){
  const h={'Content-Type':'application/json'};
  if(USER_TOKEN)h['Authorization']='Bearer '+USER_TOKEN;

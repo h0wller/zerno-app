@@ -91,3 +91,17 @@ auth, панели, renderAll/boot): реализации одиночные, д
 с полным прогоном: 5.1 core/state.js (глобалы), 5.2 core/ui.js (api/toast/часы),
 5.3 core/auth.js, 5.4 core/panel.js (база оверлея+панели), 5.5 core/boot.js
 (renderAll/boot), 5.6 type=module + import/export, отказ от window.*-глобалов.
+
+WISHLIST (пункты 1–7): ЗАКРЫТ (теги theme-v2, wishlist-done).
+Правка pointerdown для [data-os] отменена: отмена работает с первого клика
+(capture-обработчик + блокировка кнопки).
+Ф5.9 (план): вычистка мёртвых блоков theme-v2.css (#brand-toggle/.menu-card/
+.pizza-opts-grid/#cart-sheet/.staff-call-btn/.card-stopped) + компонентный слой
+на реальных селекторах отдельным визуальным прогоном.
+PERF (новое): анализ Lighthouse-отчёта zerno-test-production — получить JSON,
+разбор opportunities (SW-стратегия, render-blocking, вес медиа, main-thread),
+карточки Ф6.x по итогам.
+Фаза 5 (план): вынос inline-ядра index.html: 5.1 core/state.js (глобалы),
+5.2 core/ui.js (api/toast/tickClock/renderUpd/TK), 5.3 core/auth.js (openAuth/
+setUser/PIN-флоу), 5.4 core/panel.js (база оверлея + панели/табы),
+5.5 core/boot.js (renderAll/boot), 5.6 ESM (type=module, import/export, отказ от window.*).

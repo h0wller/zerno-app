@@ -149,3 +149,10 @@ s.textContent='#updWhenD{color:var(--soft);font-size:12px;margin-top:2px;font-we
   '@keyframes hintPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06);background:#FDE8E8;border-color:var(--status-danger)}}';
   document.head.appendChild(s);
 })();
+/* ── Ф6.3: резерв высоты пустого грида — футер не прыгает при догрузке меню ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='#grid:empty::before,#deliveryGrid:empty::before{content:"";display:block;min-height:70vh}';
+  document.head.appendChild(s);
+})();
+(function(){var s=document.createElement('style');s.textContent='.vh{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}';document.head.appendChild(s);})();
