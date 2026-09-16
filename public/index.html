@@ -1092,33 +1092,7 @@ function renderUpd(){$('#updWhen').textContent=new Date(meta.updatedAt).toLocale
 const TK=['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с '+hoursNow()];
 $('#tickerTrack').innerHTML=TK.concat(TK).map(x=>`<span>${x}</span>`).join('');
 
-/* ── QR ── */
-function drawQR(cv,seed){
- if(typeof qrcode==='undefined'){setTimeout(()=>drawQR(cv,seed),250);return;}
- const s=String(seed||'guest');
- let q;
- try{q=qrcode(0,'M');q.addData(s);q.make();}
- catch(e){q=qrcode(4,'M');q.addData(s);q.make();}
- const M=q.getModuleCount(),pad=2,T=M+pad*2,cell=cv.width/T,x=cv.getContext('2d');
- x.fillStyle='#FFFDF7';x.fillRect(0,0,cv.width,cv.height);
- x.fillStyle='#101418';
- for(let j=0;j<M;j++)for(let i=0;i<M;i++)if(q.isDark(j,i))
-  x.fillRect(Math.floor((i+pad)*cell),Math.floor((j+pad)*cell),Math.ceil(cell),Math.ceil(cell));
-}
-
-let wakeLock=null;
-function openQRFull(){if(!me){toast('Сначала создайте профиль','👤');openAuth();return}
- $('#qrName').textContent=me.name;
- $('#qrMeta').textContent=`${me.phone} · штампов: ${me.stamps} из 10`+(me.free?` · 🎁 подарок: ${me.free}`:'');
- drawQR($('#qrFull'),me.qr||'guest');
- $('#qrModal').classList.add('show');syncOverlay();
- if('wakeLock' in navigator)navigator.wakeLock.request('screen').then(w=>wakeLock=w).catch(()=>{})}
-function closeQRFull(){$('#qrModal').classList.remove('show');syncOverlay();
- if(wakeLock){try{wakeLock.release()}catch(e){}wakeLock=null}}
-$('#qrCard').addEventListener('click',closeQRFull);
-$('#qrClose').addEventListener('click',e=>{e.stopPropagation();closeQRFull()});
-$('#qrOpenBonus').onclick=openQRFull;
-$('#qrOpenProfile').onclick=openQRFull;
+// Ф4.1a: QR-кластер (drawQR/openQRFull/closeQRFull + 4 привязки) → public/app/core/qr.js
 
 /* ── меню ── */
 async function loadMenu(){try{
@@ -1399,20 +1373,7 @@ $('#nameInput').addEventListener('change',async e=>{if(!me)return;
   toast('Профиль обновлён','✅')}catch(err){toast(err.message,'⚠️')}});
 $('#resetBtn').onclick=()=>{if(!confirm('Выйти и очистить локальные данные (токены)?'))return;
  localStorage.clear();location.reload()};
- /* ── отзывы ── */
-var REVIEW_URL='https://yandex.ru/maps/-/CTHxjIyq';
-var SOCIAL_URL='https://t.me/and_coffee39';
-$('#reviewBtn').onclick=()=>{window.open(REVIEW_URL,'_blank');toast('Спасибо! Вы лучшие 💙','⭐')};
-function maybeAskReview(){
- if(!me)return;
- if(!localStorage.getItem('zt_first'))localStorage.setItem('zt_first',String(Date.now()));
- const first=+localStorage.getItem('zt_first');
- if(localStorage.getItem('zt_asked'))return;
- if((me.stamps||0)<3&&(me.cups||0)<3)return;
- if(Date.now()-first<3*86400000)return;
- localStorage.setItem('zt_asked','1');
- setTimeout(()=>toast('Понравилось у нас? Пара секунд — и отзыв на Картах 🌟','⭐',()=>window.open(REVIEW_URL,'_blank')),4000);
-}
+/*  Ф4.1b: Review-кластер → public/app/core/review.js --> */
 /* ── промокоды ── */
 $('#promoBtn').onclick=async()=>{
  const code=$('#promoInput').value.trim();
@@ -1840,5 +1801,7 @@ body.is-cashier #scanFab{display:flex}
   <script src="app/ui/delivery-search.js"></script>
   <script src="app/ui/cashier-log.js"></script>
   <script src="app/ui/cashier-card.js"></script>
+  <script src="app/core/qr.js"></script>
+  <script src="app/core/review.js"></script>
 </body>
 </html>
