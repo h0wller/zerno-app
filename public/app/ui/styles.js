@@ -99,3 +99,20 @@ document.head.appendChild(s);
   '.siteFooter{margin-top:auto}';
   document.head.appendChild(s);
 })();
+/* ── Ф5.5: корзина читаема на широких экранах (max-width 860, двухколоночная форма) ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='@media(min-width:900px){'+
+  '.cartPanel{max-width:860px!important;margin:0 auto!important;padding:28px 32px!important;font-size:15px}'+
+  '.cartPanel h3{font-size:20px;margin-bottom:20px!important}'+
+  '.cartPanel #cartItems{margin-bottom:20px}'+
+  '.cartPanel .checkoutForm{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-top:20px}'+
+  '.cartPanel .checkoutForm label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--soft)}'+
+  '.cartPanel .checkoutForm label:nth-child(5){grid-column:1/-1}'+
+  '.cartPanel .checkoutForm select,.cartPanel .checkoutForm input,.cartPanel .checkoutForm textarea{font-size:14px;padding:10px 12px}'+
+  '.cartPanel button.cta{margin-top:24px!important;font-size:16px;padding:16px}'+
+  '.cartPanel .findrow{display:flex;gap:8px;margin-top:14px}'+
+  '.cartPanel .findrow input{flex:1;font-size:14px}'+
+  '}';
+  document.head.appendChild(s);
+})();
