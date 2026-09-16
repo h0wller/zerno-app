@@ -92,3 +92,10 @@ document.head.appendChild(s);
   '.siteFooter a{color:#1F4E8C;font-weight:700;text-decoration:none}';
   document.head.appendChild(s);
 })();
+/* ── Ф5.4b: футер прижат к низу даже на коротких экранах ── */
+(function(){
+  var s=document.createElement('style');
+  s.textContent='body{min-height:100vh;display:flex;flex-direction:column}'+
+  '.siteFooter{margin-top:auto}';
+  document.head.appendChild(s);
+})();
