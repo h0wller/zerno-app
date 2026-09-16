@@ -52,7 +52,7 @@
 }
 
 /* Тема: Доставка «Пятница» */
-[data-brand="friday"] {
+[data-brand="delivery"] {
   --paper: #F3EDE6;
   --card: #FFFFFF;
   --panel: #EAE0D5;

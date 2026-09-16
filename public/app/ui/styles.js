@@ -132,7 +132,7 @@ document.head.appendChild(s);
 /* ── Ф5.7b: строка обновления в шапке доставки ── */
 (function(){
   var s=document.createElement('style');
-  '#updWhenD{color:var(--soft);font-size:12px;margin-top:2px;font-weight:600}#updWhenD b{font-weight:700}'
+s.textContent='#updWhenD{color:var(--soft);font-size:12px;margin-top:2px;font-weight:600}#updWhenD b{font-weight:700}';
   document.head.appendChild(s);
 })();
 /* ── фикс D: кофейная сетка — 3+ колонки на десктопе ── */
