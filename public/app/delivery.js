@@ -349,16 +349,20 @@ new MutationObserver(function(){
 }).observe(document.getElementById('deliveryGrid')||document.body,{childList:true,subtree:true});
 setTimeout(patchCards,300);
 })();
-/* ── Ф5.7b: строка «Обновлено» в шапке Пятницы (паритет с кофейней) ── */
+/* ── Ф5.7b v2: «обновлено» — хвостом к подзаголовку Пятницы ── */
 (function(){
   var dv=document.getElementById('deliveryView');if(!dv)return;
-  var mh=dv.querySelector('.mh-top');if(!mh||document.getElementById('updWhenD'))return;
-  var s=document.createElement('div');s.id='updWhenD';
-  mh.appendChild(s);
+  var old=document.getElementById('updWhenD');if(old)old.remove();
+  var leaf=Array.prototype.slice.call(dv.querySelectorAll('.mh-top *')).filter(function(el){
+    return /Работаем ежедневно/.test(el.textContent||'')&&el.children.length===0;
+  })[0];
+  if(!leaf)return;
+  var s=document.createElement('span');s.id='updWhenD';
+  leaf.appendChild(s);
   function upd(){
     var el=document.getElementById('updWhenD');
     if(el&&typeof meta!=='undefined'&&meta.updatedAt)
-      el.textContent='Обновлено '+new Date(meta.updatedAt).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
+      el.textContent=' · обновлено '+new Date(meta.updatedAt).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
   }
   renderDeliveryMenu=(function(_rm){return function(){var r=_rm.apply(this,arguments);upd();return r;};})(renderDeliveryMenu);
   upd();
