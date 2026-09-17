@@ -1,30 +1,20 @@
-/* lazy-img: loading=lazy + decoding=async, включая динамически добавленные.
-   Ф6.1: первая картинка в #grid/#deliveryGrid — LCP-элемент — грузится сразу. */
+/* lazy-img: loading=lazy + decoding=async, кроме LCP-картинки первого экрана. */
 function applyLazy(img) {
-  if (img.dataset && img.dataset.lcp) return;
+  var g = img.closest && img.closest('#grid, #deliveryGrid');
+  if (g && g.querySelector('img') === img) {
+    img.loading = 'eager';
+    img.decoding = 'async';
+    try { img.fetchPriority = 'high'; } catch (e) {}
+    return;
+  }
   if (img.loading !== 'lazy') {
     img.loading = 'lazy';
     img.decoding = 'async';
   }
 }
-function applyLcp(img) {
-  img.loading = 'eager';
-  img.decoding = 'async';
-  try { img.fetchPriority = 'high'; } catch (e) {}
-}
-function isLcpImg(img) {
-  var grid = img.closest && img.closest('#grid, #deliveryGrid');
-  if (!grid) return false;
-  return grid.querySelector('img') === img;
-}
 function lazify(root) {
-  if (root && root.nodeType === 1 && root.tagName === 'IMG') {
-    if (isLcpImg(root)) applyLcp(root); else applyLazy(root);
-    return;
-  }
-  (root || document).querySelectorAll('img').forEach(function (img) {
-    if (isLcpImg(img)) applyLcp(img); else applyLazy(img);
-  });
+  if (root.nodeType === 1 && root.tagName === 'IMG') applyLazy(root);
+  (root || document).querySelectorAll('img').forEach(applyLazy);
 }
 lazify(document);
 new MutationObserver(function (ms) {

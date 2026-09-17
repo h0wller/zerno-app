@@ -52,13 +52,18 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
     }
 
     /* ── профиль ── */
-    function renderProfile() {
+    /* защита от рекурсии: sv() → renderProfile() → syncBrandViews() (= sv()) */
+var _rpRunning = false;
+function renderProfile() {
+    if (_rpRunning) return;
+    _rpRunning = true;
+    try {
         $("#profileNoUser").hidden = !!me;
         $("#profileBox").hidden = !me;
         if (!me) {
             $("#avInit").textContent = "?";
             $("#profileTopBtn").textContent = "?";
-            return;
+            return;                 // гостю sync не нужен — sv() уже отработал
         }
         $("#avInit").textContent = (me.name[0] || "Г").toUpperCase();
         $("#profileTopBtn").textContent = (me.name[0] || "Г").toUpperCase();
@@ -95,8 +100,13 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                         `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`,
                 )
                 .join("") || '<div class="hmini">История пока пуста</div>';
-    }
 
+        /* перерисовать виды/режимы после загрузки me — ТЕПЕРЬ БЕЗОПАСНО */
+        if (typeof window.syncBrandViews === "function") window.syncBrandViews();
+    } finally {
+        _rpRunning = false;
+    }
+}
     /* ── блок верификации под кнопкой PIN ── */
     function renderVerifyNote() {
         let n = $("#verifyNote");
@@ -256,6 +266,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                     lab.parentNode.insertBefore(d, lab.nextSibling);
                     document.querySelectorAll('button').forEach(b => {
                         if (/Погасить/.test(b.textContent)) b.style.display = (me.role === 'guest' ? 'none' : '');
+                        
                     });
                 }
             } catch (e) { }

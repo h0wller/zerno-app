@@ -1,10 +1,11 @@
 import { initDatabase, getVapidPublicKey } from './server/db/index.js';
- initDatabase();
+initDatabase();
 import express from 'express';
+import compression from 'compression';
 import webpush from 'web-push';
 
 // ── Конфигурация и БД ──
-import { db, PORT, PUBLIC_DIR, WEBAPP_URL, } from './server/config.js';
+import { db, PORT, PUBLIC_DIR, WEBAPP_URL } from './server/config.js';
 // ── Утилиты ──
 import { nowISO, uid } from './server/utils/id-time.js';
 import {
@@ -14,7 +15,7 @@ import {
 
 import { tgSend, tgEnsureWebhook, TG_BOT_USERNAME, TG_CHANNEL, TG_WEBHOOK_SECRET, APP_URL } from './server/services/telegram.js';
 import { sendPush } from './server/services/push.js';
-// === module-05: domain customers/auth + loyalty ===
+// === domain routes ===
 import { authRouter } from './server/routes/auth.js';
 import { staffRouter } from './server/routes/staff.js';
 import { promosRouter } from './server/routes/promos.js';
@@ -24,10 +25,6 @@ import { createTgRouter } from './server/routes/tg.js';
 import pushRouter from './server/routes/push.js';
 import statsRouter from './server/routes/stats.js';
 import { item, cust, addHist, logEv, getMeta, touch, issueToken } from './server/domain/helpers.js';
-// Если в оставшихся роутах server.js (например, в заказах) используются функции лояльности, 
-// раскомментируй и эти две строки:
-// import { grant, redeem } from './server/domain/loyalty.js';
-// import { createCustomer } from './server/domain/customers.js';
 
 const app = express();
 function appKb() {
@@ -36,11 +33,14 @@ function appKb() {
     resize_keyboard: true,
   };
 }
+
+// ── Оптимизация сети: сжатие Gzip/Deflate для HTML, JS, CSS и JSON ──
+app.use(compression({ threshold: 1024 }));
 app.use(securityHeaders);
 app.use(corsMiddleware);
 app.use(express.json({ limit: '10mb' }));
 
-// === module-05: роутеры auth и staff ===
+// ── Роутеры ──
 app.use(authRouter);
 app.use(staffRouter);
 app.use(promosRouter);
@@ -56,6 +56,7 @@ app.post('/api/clientlog', (req, res) => {
   res.json({ ok: true });
 });
 app.get('/api/config', (req, res) => res.json({ tgUsername: TG_BOT_USERNAME }));
+
 /* ── меню ── */
 app.get('/api/menu', (req, res) => res.json({
   items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee'").all().map(item),
@@ -88,9 +89,20 @@ app.delete('/api/menu/:id', adminGuard, (req, res) => {
   db.prepare('DELETE FROM menu WHERE id=?').run(req.params.id);
   touch(); res.json({ ok: true });
 });
-/* ── статика ── */
-app.use(express.static(PUBLIC_DIR, { setHeaders: (res, p) => {
-  if (p.endsWith('index.html') || p.endsWith('sw.js')) res.setHeader('Cache-Control', 'no-cache');
-} }));
+
+/* ── статика с эффективным кэшированием ── */
+app.use(express.static(PUBLIC_DIR, {
+  maxAge: '1d',
+  setHeaders: (res, p) => {
+    if (p.endsWith('index.html') || p.endsWith('sw.js') || p.endsWith('manifest.webmanifest')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (/\.(woff2?|png|jpe?g|svg|ico|webp)$/i.test(p)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (/\.(css|js)$/i.test(p)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  }
+}));
+
 const server = app.listen(PORT, () => { console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`); tgEnsureWebhook(); });
 process.on('SIGTERM', () => { console.log('[srv] SIGTERM, корректно закрываюсь…'); server.close(() => process.exit(0)); setTimeout(() => process.exit(0), 3000); });

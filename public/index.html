@@ -6,10 +6,15 @@
 <script>
 (function(){
   var pre=null;
-  try{ pre=fetch('/api/menu/all',{headers:{'Accept':'application/json'}}); }catch(e){}
+  try{ pre=fetch('/api/menu',{headers:{'Accept':'application/json'}}); }catch(e){}
   var of=window.fetch;
   window.fetch=function(u,o){
-    if(pre&&(!o||(o.method||'GET')==='GET')&&String(u).indexOf('/api/menu/all')>-1){var p=pre;pre=null;return p;}
+    var hasAuth = o && o.headers && (
+      typeof o.headers.get === 'function' ? o.headers.get('Authorization') : (o.headers.Authorization || o.headers['Authorization'])
+    );
+    if(pre && !hasAuth && (!o||(o.method||'GET')==='GET') && String(u).indexOf('/api/menu')>-1 && String(u).indexOf('/api/menu/all')===-1){
+      var p=pre; pre=null; return p;
+    }
     return of.apply(this,arguments);
   };
 })();
@@ -35,7 +40,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" fetchpriority="high" href="https://fonts.googleapis.com/css2?familyfamily=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap">
+<link rel="preload" as="style" fetchpriority="high" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap" rel="stylesheet"></noscript>
 <style>
@@ -600,31 +605,32 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 
 <div class="ticker" aria-hidden="true"><div class="track" id="tickerTrack"></div></div>
 
-<div class="wrap" role="main"
+<div class="wrap" role="main">
   <nav class="rail" id="rail"></nav>
 
-    <section>
+  <section>
     <div class="adminBar" id="adminBar" hidden>
       <button id="editToggle" hidden>✏️ Редактировать</button>
       <button id="promoToggle" hidden>🎟 Промокоды</button>
       <button id="dashToggle" hidden>📊 Дашборд</button>
       <button id="chatsToggle2" hidden>💬</button>
     </div>
-    <div id="menuView">
+
     <div id="deliveryView" class="deliveryView">
-  <div class="menu-head">
-    <div class="mh-top">
-      <div>
-        <h1>Пятница <em>— доставка пиццы и роллов</em></h1>
-        <h2 class="vh">Разделы меню</h2>
-        <div class="upd">Работаем ежедневно 11:00–22:00 · доставка ~45 мин</div>
+      <div class="menu-head">
+        <div class="mh-top">
+          <div>
+            <h1>Пятница <em>— доставка пиццы и роллов</em></h1>
+            <h2 class="vh">Разделы меню</h2>
+            <div class="upd">Работаем ежедневно 11:00–22:00 · доставка ~45 мин</div>
+          </div>
+        </div>
       </div>
+      <div id="deliveryBanner"></div>
+      <div class="rail" id="deliveryRail"></div>
+      <div class="grid" id="deliveryGrid"></div>
     </div>
-  </div>
-  <div id="deliveryBanner"></div>
-  <div class="rail" id="deliveryRail"></div>
-  <div class="grid" id="deliveryGrid"></div>
-</div>
+
     <div id="menuView">
       <div class="menu-head">
         <div class="mh-top">
@@ -1691,14 +1697,14 @@ await loadMenu();renderAll();if(typeof window.syncBrandViews==='function')window
 })();
 console.info('%c🌊 …и кофе · ребрендинг','font-weight:bold;font-size:14px','| меню v2 | штампы-зёрна');
 </script>
-<script src="./app/chat.js"></script>
-<script src="./app/core/chat-head.js"></script>
-<script src="./app/profile.js"></script>
-<script src="./app/cashier.js"></script>
-<script src="./app/orders.js"></script>
-<script src="./app/menu.js"></script>
-<script src="./app/core/a11y.js"></script>
-<script src="./app/ui/styles.js"></script>
+<script src="./app/chat.js" defer></script>
+<script src="./app/core/chat-head.js" defer></script>
+<script src="./app/profile.js" defer></script>
+<script src="./app/cashier.js" defer></script>
+<script src="./app/orders.js" defer></script>
+<script src="./app/menu.js" defer></script>
+<script src="./app/core/a11y.js" defer></script>
+<script src="./app/ui/styles.js" defer></script>
 <link rel="stylesheet" href="app/ui/theme-v2.css">
 <div id="installBanner" hidden style="position:fixed;left:12px;right:12px;bottom:86px;z-index:90;background:#12303E;color:#fff;border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.3)">
  <span style="flex:1;font-size:14px">📲 Установите приложение — карта всегда под рукой</span>
@@ -1771,32 +1777,30 @@ body.is-cashier #scanFab{display:flex}
  </div>
 </div>
 
-<script src="./qrcode.min.js" async></script>
-<script src="./app/scanner.js"></script>
-<script src="app/menu-editor.js"></script>
-
-<script src="app/delivery.js"></script>
-<script src="app/cart.js"></script>
-<script src="app/core/chat-state.js"></script>
-<script src="app/chat-core.js"></script>
-<script src="app/core/push.js"></script>
-<script src="app/live.js"></script>
-<script src="app/core/deeplink.js"></script>
-<script src="app/profile-brand.js"></script>
-<script src="app/core/overlay.js"></script>
-<script src="app/core/swipe.js"></script>
-<script src="app/admin-extra.js"></script>
-<script src="app/core/notify.js"></script>
-<script src="app/core/views.js"></script>
-<script src="app/core/config.js"></script>
-<script src="./app/core/splash.js"></script>
-<!-- Ф3.4: модули настроек, поиска, журнала и карточки -->
-  <script src="app/ui/settings.js"></script>
-  <script src="app/ui/delivery-search.js"></script>
-  <script src="app/ui/cashier-log.js"></script>
-  <script src="app/ui/cashier-card.js"></script>
-  <footer class="siteFooter">✉️ <a href="mailto:woxyara76@gmail.com">woxyara76@gmail.com</a> · вопросы, предложения, сотрудничество</footer>
-  <script src="app/core/qr.js"></script>
-  <script src="app/core/review.js"></script>
+<script src="./qrcode.min.js" defer></script>
+<script src="./app/scanner.js" defer></script>
+<script src="app/menu-editor.js" defer></script>
+<script src="app/delivery.js" defer></script>
+<script src="app/cart.js" defer></script>
+<script src="app/core/chat-state.js" defer></script>
+<script src="app/chat-core.js" defer></script>
+<script src="app/core/push.js" defer></script>
+<script src="app/live.js" defer></script>
+<script src="app/core/deeplink.js" defer></script>
+<script src="app/profile-brand.js" defer></script>
+<script src="app/core/overlay.js" defer></script>
+<script src="app/core/swipe.js" defer></script>
+<script src="app/admin-extra.js" defer></script>
+<script src="app/core/notify.js" defer></script>
+<script src="app/core/views.js" defer></script>
+<script src="app/core/config.js" defer></script>
+<script src="./app/core/splash.js" defer></script>
+<script src="app/ui/settings.js" defer></script>
+<script src="app/ui/delivery-search.js" defer></script>
+<script src="app/ui/cashier-log.js" defer></script>
+<script src="app/ui/cashier-card.js" defer></script>
+<footer class="siteFooter">✉️ <a href="mailto:woxyara76@gmail.com">woxyara76@gmail.com</a> · вопросы, предложения, сотрудничество</footer>
+<script src="app/core/qr.js" defer></script>
+<script src="app/core/review.js" defer></script>
 </body>
 </html>

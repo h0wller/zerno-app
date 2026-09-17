@@ -241,6 +241,8 @@
       openAuth();
       return;
     }
+    var clipped=false;cart.forEach(function(c){if(c.qty>99){c.qty=99;clipped=true;}});
+    if(clipped){toast('Максимум 99 шт в одной строке','⚠️');renderCart();return;}
     var method = document.getElementById("checkoutMethod").value;
     if (method === "delivery") {
       if (!document.getElementById("checkoutPlace").value)

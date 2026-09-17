@@ -149,10 +149,9 @@
     "@keyframes hintPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06);background:#FDE8E8;border-color:var(--status-danger)}}";
   document.head.appendChild(s);
 })();
-/* ── Ф6.1: CLS-стопор пустого грида + скрытый h2 ── */
+/* ── Ф6.1: CLS — резерв высоты пустого грида, футер не прыгает ── */
 (function(){
   var s=document.createElement('style');
-s.textContent='#grid:empty,#grid:not(:has(*)),#deliveryGrid:empty,#deliveryGrid:not(:has(*)){min-height:65vh}'+
-  '.vh{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}';
+  s.textContent='#grid:empty,#deliveryGrid:empty{min-height:60vh}';
   document.head.appendChild(s);
 })();
