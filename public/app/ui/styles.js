@@ -47,8 +47,7 @@
     "#ordersModal.show,#redeemPick.show{display:flex}" +
     "#notifyDetails{margin:10px 0;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;background:#fff}" +
     "#notifyDetails summary{cursor:pointer;font-weight:700}" +
-    "#fridayInfo{background:#EAF1F9;border:1px solid #B9CDE4;border-radius:18px;padding:14px;margin:12px 0;font-size:12.5px;color:#33507A;line-height:1.6}" +
-    "#fridayInfo b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}" +
+"#fridayInfo{background:var(--tint-cool);border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0;font-size:12.5px;color:var(--ink);line-height:1.6}" +    "#fridayInfo b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}" +
     ".topbar .brand img{height:34px;width:auto;border-radius:10px}" +
     ".edBtn{position:absolute;top:8px;right:8px;z-index:3;border:0;background:rgba(255,255,255,.92);border-radius:10px;padding:6px 9px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}" +
     ".donoff{position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:11px;font-weight:700;cursor:pointer}" +
@@ -74,7 +73,7 @@
     "#chatHintsBar{display:flex;flex-wrap:nowrap;gap:6px;padding:6px 8px;border-top:1px solid var(--line);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
     "#chatHintsBar::-webkit-scrollbar{display:none}" +
     "#chatHintsBar .chatHint{margin:0;flex:0 0 auto;white-space:nowrap;font-size:12px;padding:6px 10px;border-radius:12px}" +
-'#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:#FDE8E8!important;border-color:var(--status-danger)!important;color:var(--status-danger)!important;font-weight:700}';    "body.support-pending #chatHintsBar{display:none!important}";
+'#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:var(--tint-danger)!important;border-color:var(--status-danger)!important;color:var(--status-danger)!important;font-weight:700}';
   document.head.appendChild(s);
 })();
 /* ── Ф5.4: footer с контактом ── */

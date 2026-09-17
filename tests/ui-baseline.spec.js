@@ -44,45 +44,50 @@ async function assertBootTemplate(page) {
   }
 }
 
-/** Вход без UI: register → activate → токен в localStorage ДО загрузки → boot стартует залогиненным. */
+/** Вход без UI: register (retry при 409) → activate → токен в localStorage ДО загрузки. */
 async function loginAs(page, { code } = {}) {
-  const d = '9' + String(Date.now()).slice(-9);
-  const res = await page.request.post('/api/auth/register', {
-    data: { name: 'Baseline ' + d.slice(-4), phone: '+7' + d, pin: '1234', consent: 1 },
-  });
-  if (!res.ok()) throw new Error('register: ' + res.status() + ' ' + (await res.text()));
-  let { token } = await res.json();
-  
+  const expectedRole = code ? (code === ADMIN ? 'admin' : 'cashier') : 'guest';
+  let token = null;
+  let digits = '';
+
+  for (let attempt = 0; attempt < 5 && !token; attempt++) {
+    // Уникальный номер: 7 цифр времени + 2 случайные → не коллидирует в параллельных воркерах
+    digits = '9' + String(Date.now()).slice(-7) + String(Math.floor(Math.random() * 100)).padStart(2, '0');
+    const res = await page.request.post('/api/auth/register', {
+      data: { name: 'Baseline ' + digits.slice(-4), phone: '+7' + digits, pin: '1234', consent: 1 },
+    });
+    if (res.ok()) { token = (await res.json()).token; break; }
+    if (res.status() === 409) { await page.waitForTimeout(30 + attempt * 40); continue; }
+    throw new Error('register: ' + res.status() + ' ' + (await res.text()));
+  }
+  if (!token) throw new Error('register: 409-коллизия после 5 попыток');
+
   if (code) {
     const r2 = await page.request.post('/api/auth/activate', {
       data: { code },
       headers: { Authorization: 'Bearer ' + token },
     });
-    if (!r2.ok()) throw new Error('activate(' + code + '): ' + r2.status());
+    if (!r2.ok()) throw new Error('activate(' + code + '): ' + r2.status() + ' ' + (await r2.text()));
     const r2Data = await r2.json().catch(() => ({}));
     if (r2Data.token) token = r2Data.token;
   }
-  
-  // КРИТИЧЕСКИ ВАЖНО: Инжектим window.USER_TOKEN для api.js
+
   await page.addInitScript((t) => {
     localStorage.setItem('zt_user', t);
-    window.USER_TOKEN = t; 
+    window.USER_TOKEN = t;
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   }, token);
-  
-  const mePromise = page.waitForResponse('**/api/me', { timeout: 15000 });
+
+  const mePromise = page.waitForResponse('**/api/me', { timeout: 15000 }).catch(() => null);
   await page.goto('/');
   const meResponse = await mePromise;
-  if (!meResponse.ok()) throw new Error('Auth failed: /api/me returned ' + meResponse.status());
+  if (meResponse && !meResponse.ok()) throw new Error('Auth failed: /api/me → ' + meResponse.status());
 
-  const expectedRole = code === ADMIN ? 'admin' : (code === CASHIER ? 'cashier' : 'guest');
-  await page.waitForFunction((role) => {
-    return window.me && window.me.id && window.me.role === role;
-  }, expectedRole, { timeout: 15000 });
-  
+  await page.waitForFunction((role) => window.me && window.me.id && window.me.role === role,
+    expectedRole, { timeout: 15000 });
   await closeOverlay(page);
-  return { digits: d, token };
+  return { digits, token };
 }
 
 /** Ждем, пока sv()/renderProfile() снимут hidden с #modeSeg; иначе — диагноз. */
@@ -130,6 +135,7 @@ const menuResponse = await menuPromise;
   await expect(page.locator('#grid .card, #grid .menu-card, #grid article').first()).toBeVisible({ timeout: 15000 });
   await shot(page, '01-coffee-menu');
   
+  await page.locator('#venueToggle').click();
   await page.locator('#brandSeg [data-brand="delivery"]').click();
   await expect(page.locator('#deliveryGrid .card, #deliveryGrid .menu-card, #deliveryGrid article').first()).toBeVisible({ timeout: 15000 });
   await shot(page, '02-delivery-menu');

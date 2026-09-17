@@ -1,10 +1,9 @@
 /* ==========================================================================
-   PRODUCTION RESKIN TOKENS: ...И КОФЕ / ПЯТНИЦА
-   Сохраняет совместимость со всеми исходными селекторами и классами PWA
+   PRODUCTION RESKIN TOKENS: ...И КОФЕ / ПЯТНИЦА — FINAL (deduped)
    ========================================================================== */
 
+/* ── 0. Токены ── */
 :root {
-  /* Базовая типографика и геометрия */
   --font-display: 'Prata', serif;
   --font-accent: 'Unbounded', sans-serif;
   --font-ui: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -15,297 +14,472 @@
   --r-sheet: 24px 24px 0 0;
   --r-full: 9999px;
 
-  /* Elevation */
-  --shadow-card: 0 2px 8px -2px rgba(17, 22, 27, 0.06), 0 1px 3px rgba(17, 22, 27, 0.03);
-  --shadow-float: 0 10px 28px -4px rgba(17, 22, 27, 0.14), 0 3px 8px -1px rgba(17, 22, 27, 0.05);
-  --shadow-sheet: 0 -8px 36px -4px rgba(17, 22, 27, 0.18);
+  --shadow-card: 0 4px 16px -2px rgba(17, 22, 27, 0.08);
+  --shadow-float: 0 12px 30px -4px rgba(17, 22, 27, 0.18);
+  --shadow-sheet: 0 -10px 40px rgba(17, 22, 27, 0.25);
 
-  /* Системные статусы (общие для обоих брендов) */
   --green: #186A43;
   --status-success: var(--green);
   --status-danger: #D63939;
   --status-alert: #E07A1E;
   --amber: #C2935F;
+
+  /* палитра «Пятницы» для скоуп-оверрайдов ниже */
+  --fr-tan: #C99E6E;
+  --fr-choc: #3A2A1C;
+  --fr-rice: #EFE6D8;
+  --fr-paper: #F6EEE1;
 }
 
-/* ==========================================================================
-   BRAND THEMES (Управляются переключателем брендов через data-brand)
-   ========================================================================== */
-
-/* Тема по умолчанию: «…и кофе» */
+/* ── 1. Темы брендов ── */
 :root,
 [data-brand="coffee"] {
-  --paper: #F4F0E8;
-  --card: #FFFFFF;
-  --panel: #ECE7DC;
-  --ink: #11161B;
-  --soft: #586470;
-  --line: #D8DFE4;
-
-  /* Primary Brand Action: Baltic Deep Blue */
-  --flame: #1B447B;
-  --flame-d: #122E54;
-
-  --banner-bg: #EAE5D8;
-  --banner-border: #DCD5C5;
+  --paper: #FFFFFF !important;
+  --card: #FFFFFF !important;
+  --panel: #F3F8FC !important;
+  --ink: #101418 !important;
+  --soft: #586470 !important;
+  --line: #D8DFE4 !important;
+  --flame: #123A6B !important;
+  --flame-d: #0B2446 !important;
+  --azure: #3E8FD0 !important;
+  --banner-bg: #EAF3FB !important;
+  --banner-border: #B9D4F0 !important;
   --brand-header-font: var(--font-display);
 }
-
-/* Тема: Доставка «Пятница» */
 [data-brand="delivery"] {
-  --paper: #F3EDE6;
-  --card: #FFFFFF;
-  --panel: #EAE0D5;
-  --ink: #141312;
-  --soft: #635E5A;
-  --line: #DFD5CA;
-
-  /* Primary Brand Action: Delivery Terracotta */
-  --flame: #B84C24;
-  --flame-d: #8E3716;
-
-  --banner-bg: #FFF3EB;
-  --banner-border: #FAD8C3;
+  --paper: #F3EDE6 !important;
+  --card: #FFFFFF !important;
+  --panel: #EAE0D5 !important;
+  --ink: #141312 !important;
+  --soft: #635E5A !important;
+  --line: #DFD5CA !important;
+  --flame: #C03B2A !important;
+  --flame-d: #8E3716 !important;
+  --banner-bg: #FFF3EB !important;
+  --banner-border: #FAD8C3 !important;
   --brand-header-font: var(--font-accent);
 }
 
-/* ==========================================================================
-   КОМПОНЕНТНЫЕ СТИЛИ И ПЕРЕОПРЕДЕЛЕНИЯ UI
-   ========================================================================== */
-
+/* ── 2. База ── */
 body {
-  background-color: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-ui);
+  background-color: var(--paper) !important;
+  color: var(--ink) !important;
+  font-family: var(--font-ui) !important;
   margin: 0;
   padding: 0;
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
+}
+[data-brand="delivery"] body::before {
+  content: "" !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: -2 !important;
+  pointer-events: none !important;
+  background-image: radial-gradient(rgba(58, 42, 28, 0.1) 1px, transparent 1.5px) !important;
+  background-size: 12px 12px !important;
 }
 
-/* Переключатель брендов в шапке */
-#brand-toggle {
-  display: flex;
-  background: var(--panel);
-  border-radius: var(--r-md);
-  padding: 3px;
-  gap: 4px;
-  max-width: 320px;
-  margin: 0 auto;
+/* ── 3. Топбар, марка бренда, венью-дропдаун ── */
+.topbar .brand img,
+.topbar .brand svg {
+  max-height: 38px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display: block !important;
+  flex-shrink: 0 !important;
+}
+[data-brand="delivery"] .topbar .brand img,
+.topbar .brand img.is-wordmark {
+  height: 26px;
+  width: auto;
+  border-radius: 6px;
+}
+[data-brand="delivery"] .topbar .brand { gap: 10px; }
+.brand .mark {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 12px; overflow: hidden;
+  background: var(--card); border: 1.5px solid var(--line);
+}
+.brand .mark img { width: 100%; height: 100%; object-fit: contain; }
+.brand .mark.is-delivery {
+  background: var(--fr-tan); border: 2px solid var(--fr-choc);
+  box-shadow: 2px 2px 0 var(--fr-choc); border-radius: 10px; font-size: 20px;
+}
+.venueWrap { position: relative; display: inline-flex; }
+#venueToggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 9999px; cursor: pointer;
+  font: 600 12.5px var(--font-ui); letter-spacing: .02em;
+  background: var(--card); color: var(--ink);
+  border: 1.5px solid var(--line); box-shadow: 0 2px 8px rgba(17, 22, 27, .08);
+}
+[data-brand="delivery"] #venueToggle {
+  background: var(--fr-tan); color: var(--fr-choc);
+  border: 2px solid var(--fr-choc); box-shadow: 2px 2px 0 var(--fr-choc);
+}
+#venueToggle .vt-arrow { font-size: 10px; opacity: .8; }
+#brandSeg {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  display: none; flex-direction: column; gap: 4px; min-width: 230px;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(17, 22, 27, .18); padding: 6px; z-index: 1050;
+  margin-left: 0 !important;
+}
+#brandSeg.open { display: flex; }
+#brandSeg button[data-brand] {
+  display: flex !important; position: static !important;
+  width: 100%; justify-content: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: 10px; border: none;
+  background: transparent; color: var(--ink);
+  font: 600 13px var(--font-ui); text-align: left; cursor: pointer;
+  min-width: 0 !important; box-shadow: none !important;
+}
+#brandSeg button[data-brand].on { background: var(--banner-bg); color: var(--flame); }
+#brandSeg button[data-brand].on::after { content: " ✓"; margin-left: auto; font-size: 11px; }
+[data-brand="delivery"] .menu-head h1,
+[data-brand="delivery"] #deliveryView .menu-head h1 {
+  font-size: clamp(20px, 2.8vw, 30px) !important;
+  line-height: 1.2 !important;
+  word-break: break-word;
 }
 
-#brand-toggle .toggle-btn {
-  flex: 1;
-  min-height: 44px;
-  border: none;
-  background: transparent;
-  color: var(--soft);
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: calc(var(--r-md) - 2px);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.18s ease-out;
+/* ── 4. Тикер (единая посадка на всех ширинах) ── */
+html .ticker, html #ticker {
+  height: 30px !important;
+  min-height: 30px !important;
+  max-height: 30px !important;
+  overflow: hidden !important;
+}
+html .ticker span, html .ticker b, html .ticker div, html .ticker i,
+html #ticker span, html #ticker b, html #ticker div, html #ticker i {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
 }
 
-#brand-toggle .toggle-btn.active {
-  background: var(--card);
-  color: var(--flame);
-  box-shadow: var(--shadow-card);
+/* ── 5. Поиск ── */
+.search, .search input { color: var(--ink, #101418) !important; }
+.search input::placeholder { color: var(--soft, #586470) !important; opacity: .8 !important; }
+.search {
+  background: #FFFFFF !important;
+  border: 1.5px solid var(--line) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .06) !important;
+}
+html[data-brand="delivery"] .search {
+  background: var(--fr-rice) !important;
+  border: 2px solid var(--fr-choc) !important;
+  border-radius: 12px !important;
+  box-shadow: 3px 3px 0 var(--fr-choc) !important;
 }
 
-/* Тикер-маркиза */
-#marquee-ticker {
-  background: var(--ink);
-  color: var(--paper);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  white-space: nowrap;
+/* ── 6. Карточки меню ── */
+#grid .card {
+  background: #FFFFFF !important;
+  border: 1.5px solid #D8DFE4 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 6px 20px rgba(18, 58, 107, .08) !important;
 }
-
-/* Карточки блюд */
-.menu-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-card);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+#deliveryGrid .card {
+  background: #FFFFFF !important;
+  border: 2px solid var(--fr-choc) !important;
+  border-radius: 16px !important;
+  box-shadow: 4px 4px 0 var(--fr-choc) !important;
 }
-
-.menu-card:active {
-  transform: scale(0.99);
-}
-
-.menu-card h3 {
-  font-family: var(--brand-header-font);
-  font-size: 16px;
-  margin: 8px 0 4px 0;
-  color: var(--ink);
-}
-
-/* 4-кнопочный грид пиццы (Пятница) */
-.pizza-opts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin: 10px 0;
-}
-
-.pizza-opts-grid button {
-  min-height: 44px;
-  background: var(--panel);
-  border: 1.5px solid transparent;
-  border-radius: var(--r-sm);
-  padding: 4px 6px;
-  font-family: var(--font-ui);
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease;
-}
-
-.pizza-opts-grid button.selected {
-  border-color: var(--flame);
-  background: var(--card);
-}
-
-.pizza-opts-grid button .opt-title {
-  display: block;
-  font-size: 10px;
-  color: var(--soft);
-}
-
-.pizza-opts-grid button .opt-price {
-  display: block;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-/* Кнопка действия (CTA) */
-.btn-primary {
-  min-height: 48px;
-  background-color: var(--flame);
-  color: #FFFFFF;
-  border: none;
-  border-radius: var(--r-md);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  transition: background-color 0.15s ease;
-}
-
-.btn-primary:active {
-  background-color: var(--flame-d);
-  transform: scale(0.98);
-}
-
-/* Выдвижной корзина-шит */
-#cart-sheet {
-  background: var(--card);
-  border-radius: var(--r-sheet);
-  box-shadow: var(--shadow-sheet);
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  padding: 16px 20px calc(20px + env(safe-area-inset-bottom)) 20px;
-}
-
-/* Кнопка двухтапового вызова сотрудника */
-.staff-call-btn {
-  min-height: 44px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--soft);
-  font-weight: 600;
-  font-size: 13px;
-  transition: all 0.2s ease;
-}
-
-.staff-call-btn.armed {
-  background: var(--status-danger) !important;
+#deliveryGrid button[data-add] {
+  background: var(--flame) !important;
   color: #FFFFFF !important;
-  border-color: transparent !important;
-  animation: armed-pulse 1s infinite alternate;
+  border: 2px solid var(--fr-choc) !important;
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+  box-shadow: 2px 2px 0 var(--fr-choc) !important;
+}
+.addonChip {
+  background: var(--fr-rice) !important;
+  color: var(--fr-choc) !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  display: inline-block !important;
+}
+[data-brand="delivery"] .card .media,
+[data-brand="delivery"] #deliveryGrid .card .media {
+  background:
+    radial-gradient(rgba(58, 42, 28, .08) 1px, transparent 1.5px) 0 0 / 10px 10px,
+    var(--fr-paper) !important;
+}
+[data-brand="delivery"] .card h3,
+[data-brand="delivery"] .card .cbody h3 { color: #141312 !important; }
+[data-brand="delivery"] .card .price,
+[data-brand="delivery"] .card .op { color: #C03B2A !important; }
+[data-brand="delivery"] #deliveryGrid .opts button.sel {
+  background: var(--fr-rice) !important;
+  border: 2px solid var(--fr-choc) !important;
+  box-shadow: 2px 2px 0 var(--fr-choc) !important;
+  color: #141312 !important;
 }
 
-@keyframes armed-pulse {
-  from { transform: scale(1); box-shadow: 0 0 0 0 rgba(214, 57, 57, 0.4); }
-  to { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(214, 57, 57, 0); }
+/* ── 7. Рейл: место под ховер-стикер, ничего не обрезается ── */
+#rail, #deliveryRail { padding: 8px !important; margin: -8px !important; }
+@media (min-width: 821px) {
+  #rail, #deliveryRail { overflow: visible !important; }
+}
+#rail button, #deliveryRail button { will-change: transform; }
+[data-brand="delivery"] #rail button.on,
+[data-brand="delivery"] #deliveryRail button.on {
+  background: #C03B2A !important;
+  color: #FFFFFF !important;
+  border: 2px solid var(--fr-choc) !important;
+  box-shadow: 2px 2px 0 var(--fr-choc) !important;
+  border-radius: 12px !important;
 }
 
-/* Стоп-лист бейдж */
-.card-stopped {
-  opacity: 0.6;
-  filter: grayscale(0.8);
-  pointer-events: none;
-  position: relative;
+/* ── 8. Корзина ── */
+#cartFab {
+  background: var(--flame) !important;
+  color: #FFFFFF !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, .25) !important;
+  font-family: var(--font-accent) !important;
+  font-weight: 700 !important;
+  z-index: 95 !important;
+}
+[data-brand="delivery"] #cartFab {
+  border: 2px solid var(--fr-choc) !important;
+  box-shadow: 3px 3px 0 var(--fr-choc) !important;
+}
+.cartPanel {
+  background: #FFFFFF !important;
+  border-radius: 24px 24px 0 0 !important;
+  box-shadow: var(--shadow-sheet) !important;
+}
+[data-brand="delivery"] .cartPanel {
+  background: var(--fr-rice) !important;
+  border: 3px solid var(--fr-choc) !important;
+  border-bottom: none !important;
 }
 
-.card-stopped::after {
-  content: "СТОП-ЛИСТ";
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-6deg);
-  background: var(--status-danger);
-  color: #FFFFFF;
-  padding: 6px 14px;
-  font-family: var(--font-accent);
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: var(--r-sm);
-  box-shadow: var(--shadow-float);
+/* ── 9. Панель профиля / табы ── */
+.panel {
+  background: var(--panel) !important;
+  border: 1.5px solid var(--line) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--shadow-card) !important;
 }
-/* Дополнительные кнопки, не покрытые основным CSS */
-#qrOpenBonus,
-#qrOpenProfile {
-  min-height: 44px;
-  padding: 0 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  font-weight: 600;
-  cursor: pointer;
-  margin: 4px 0;
+.tabs button.on {
+  background: var(--flame) !important;
+  color: #FFFFFF !important;
+  border-radius: 12px !important;
 }
 
-/* Чипсы чата (старый контейнер, если ещё используется) */
-#chatChips {
-  display: flex;
-  gap: 8px;
-  padding: 8px 16px;
-  overflow-x: auto;
-  border-top: 1px solid var(--line);
+/* ── 10. Чат: база ── */
+.chat-h {
+  background: #101418 !important;
+  color: #FFFFFF !important;
+  padding: 14px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 11px !important;
+}
+.chat-h b, .chat-h small { color: #FFFFFF !important; opacity: 1 !important; }
+.chat-m { background: #F0F4F8 !important; }
+.msg.bot {
+  background: #FFFFFF !important;
+  color: #101418 !important;
+  border: 1px solid #D8DFE4 !important;
+}
+.msg.me { background: #123A6B !important; color: #FFFFFF !important; }
+.chatHint {
+  background: #FFFFFF !important;
+  border: 1.5px solid #D8DFE4 !important;
+  border-radius: 9999px !important;
+  color: #123A6B !important;
+  font-weight: 600 !important;
+}
+.chat-fab {
+  background: #123A6B !important;
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 12px 30px rgba(18, 58, 107, .45) !important;
+  border: 2px solid #3E8FD0 !important;
+}
+.chat-fab svg { fill: #FFFFFF !important; }
+
+/* ── 11. Чат: оверрайды «Пятницы» (одна иконка, стикеры) ── */
+[data-brand="delivery"] .chat-h,
+[data-brand="delivery"] .chatHead { background: var(--fr-choc) !important; }
+[data-brand="delivery"] .chat-h .op,
+[data-brand="delivery"] .chatHead .op,
+[data-brand="delivery"] .chat-h .ava {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: var(--fr-tan) !important;
+  background-image: none !important;
+  border: 2px solid var(--fr-choc) !important;
+  box-shadow: 2px 2px 0 var(--fr-choc) !important;
+  border-radius: 10px !important;
+}
+[data-brand="delivery"] .chat-h img,
+[data-brand="delivery"] .chatHead img,
+[data-brand="delivery"] .chat-h .ava img { display: none !important; }
+[data-brand="delivery"] .chat-h .op::before,
+[data-brand="delivery"] .chatHead .op::before { content: none !important; }
+[data-brand="delivery"] .chat-h .op::after,
+[data-brand="delivery"] .chatHead .op::after {
+  content: "🍕" !important;
+  font-size: 18px;
+  line-height: 1;
+}
+[data-brand="delivery"] .msg.me {
+  background: #C03B2A !important;
+  color: #FFFFFF !important;
+  border: 2px solid var(--fr-choc) !important;
+  box-shadow: 2px 2px 0 var(--fr-choc) !important;
+  border-radius: 14px 14px 4px 14px !important;
+}
+[data-brand="delivery"] #chatSend,
+[data-brand="delivery"] .chat-i button[aria-label="Отправить"] {
+  background: #C03B2A !important;
+  border: 2px solid var(--fr-choc) !important;
+  box-shadow: 2px 2px 0 var(--fr-choc) !important;
+}
+[data-brand="delivery"] #chatSend svg { fill: #FFFFFF !important; }
+[data-brand="delivery"] .chatHint {
+  background: var(--fr-rice) !important;
+  border: 2px solid var(--fr-choc) !important;
+  color: var(--fr-choc) !important;
+  box-shadow: 2px 2px 0 var(--fr-choc) !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+}
+[data-brand="delivery"] #chatHintsBar {
+  background: var(--fr-paper) !important;
+  border-top: 2px solid var(--fr-choc) !important;
+}
+[data-brand="delivery"] .chat-m,
+[data-brand="delivery"] #chatMsgs { background: var(--fr-paper) !important; }
+
+/* ── 12. Активация гостей: карточки-строки, колонки по линии ── */
+#pendingBox, #pendingBoxD {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 280px; overflow: auto; padding: 2px;
+}
+#pendingBox .hmini, #pendingBoxD .hmini {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px;
+  margin: 0; padding: 8px 12px; font-size: 13px;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 12px;
+}
+#pendingBox .hmini b, #pendingBoxD .hmini b { font-size: 13px; }
+#pendingBox .hmini b[style], #pendingBoxD .hmini b[style] {
+  display: inline-block; min-width: 56px; text-align: right;
+}
+#pendingBox .hmini button, #pendingBoxD .hmini button {
+  margin-left: auto !important;
+  min-width: 124px;
+  justify-content: center;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+}
+[data-brand="delivery"] #pendingBox .hmini button,
+[data-brand="delivery"] #pendingBoxD .hmini button {
+  box-shadow: 2px 2px 0 var(--fr-choc);
 }
 
-#chatChips button {
-  min-height: 44px;
-  padding: 0 14px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--r-full);
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
+/* ── 13. CTA ── */
+button.cta, .btn.fire, #checkoutBtn {
+  background: var(--flame) !important;
+  color: #FFFFFF !important;
+  border-radius: 14px !important;
+  font-family: var(--font-accent) !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+[data-brand="delivery"] button.cta,
+[data-brand="delivery"] .btn.fire,
+[data-brand="delivery"] #checkoutBtn {
+  border: 2px solid var(--fr-choc) !important;
+  box-shadow: 3px 3px 0 var(--fr-choc) !important;
+}
+
+/* ── 14. Сплэш ── */
+#brandSplashStatic, #brandSplash { background-color: var(--paper, #F5F2EC) !important; }
+#brandSplashStatic button[data-go="coffee"], #brandSplash .spCoffee {
+  background: linear-gradient(160deg, #123A6B, #1D5C9B, #3E8FD0) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, .3) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 10px 24px -6px rgba(18, 58, 107, .35) !important;
+}
+#brandSplashStatic button[data-go="delivery"], #brandSplash .spPizza {
+  background-color: var(--fr-tan) !important;
+  background-image: radial-gradient(rgba(58, 42, 28, .14) 1px, transparent 1.5px) !important;
+  background-size: 10px 10px !important;
+  border: 2px solid var(--fr-choc) !important;
+  border-radius: 18px !important;
+  color: var(--fr-choc) !important;
+  box-shadow: 4px 4px 0 var(--fr-choc) !important;
+  transform: rotate(-.6deg);
+}
+
+/* ── 15. Мобильные фиксы ── */
+@media (max-width: 640px) {
+  #brandTitle, #brandSub,
+  .topbar .brand > div:not(.mark),
+  .topbar .brand .bt, .topbar .brand .bs { display: none !important; }
+  .topbar .brand { gap: 0 !important; }
+  #venueToggle { white-space: nowrap; padding: 6px 12px; font-size: 11.5px; }
+  #modeSeg {
+    flex: 0 0 auto !important;
+    width: max-content !important;
+    margin-left: auto !important;
+  }
+}
+
+/* ── 16. Пульс кнопки пушей при открытом профиле ── */
+#pushBtn.pulse, .panel button.pulse { animation: pushPulse 1.2s ease-in-out 3 !important; }
+@keyframes pushPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); background: #FFE9C9; border-color: #E07A1E; }
+}
+/* ==========================================================================
+   FIX (добавлено после чистки): Пятница — крем-rail и терракотовый chatFab
+   ========================================================================== */
+
+/* ── Rail в Пятнице: неактивные чипсы — кремовые, активный — терракотовый стикер ── */
+[data-brand="delivery"] #rail button,
+[data-brand="delivery"] #deliveryRail button,
+[data-brand="delivery"] .rail button {
+  background: #F6EEE1 !important;          /* рисовая бумага вместо светло-синего */
+  border: 1.5px solid #DFD5CA !important;
+  color: #141312 !important;
+  box-shadow: none !important;
+}
+[data-brand="delivery"] #rail button:hover:not(.on),
+[data-brand="delivery"] #deliveryRail button:hover:not(.on),
+[data-brand="delivery"] .rail button:hover:not(.on) {
+  background: #EFE6D8 !important;
+}
+[data-brand="delivery"] #rail button.on,
+[data-brand="delivery"] #deliveryRail button.on,
+[data-brand="delivery"] .rail button.on {
+  background: #C03B2A !important;
+  border: 2px solid #3A2A1C !important;
+  box-shadow: 2px 2px 0 #3A2A1C !important;
+  color: #FFFFFF !important;
+}
+
+/* ── chatFab в Пятнице: терракотовый круг с шоколадным офсетом вместо синего ── */
+[data-brand="delivery"] .chat-fab,
+[data-brand="delivery"] #chatFab {
+  background: #C03B2A !important;
+  border: 2px solid #3A2A1C !important;
+  box-shadow: 3px 3px 0 #3A2A1C !important;
+  border-radius: 50% !important;
+}
+[data-brand="delivery"] .chat-fab svg,
+[data-brand="delivery"] #chatFab svg {
+  fill: #FFFFFF !important;
 }

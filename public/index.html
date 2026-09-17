@@ -45,27 +45,19 @@
 <noscript><link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{
-  --paper:#F5F2EC; --card:#FFFFFF; --panel:#FFFCF5; --ink:#101418; --soft:#63707C;
-  --line:#DDE3E8; --flame:#1F4E8C; --flame-d:#163B6B; --green:#1E7A4E; --amber:#C89B6A;
-  --esp:#101418; --esp2:#1B2530; --cream:#F5F2EC; --r:18px;
+  --paper:#FFFFFF; --card:#FFFFFF; --panel:#F3F8FC; --ink:#101418; --soft:#586470;
+  --line:#D8DFE4; --flame:#123A6B; --flame-d:#0B2446; --green:#186A43; --amber:#C2935F;
+  --esp:#101418; --esp2:#1B2530; --cream:#FFFFFF; --r:18px;
   --sh:0 10px 30px -12px rgba(16,20,24,.18);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 [hidden]{display:none!important}
 body{font:400 15px/1.5 "Golos Text",system-ui,sans-serif;color:var(--ink);background:var(--paper);
   min-height:100vh;overflow-x:hidden;-webkit-text-size-adjust:100%;touch-action:manipulation}
-body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
-  background:
-   radial-gradient(600px 400px at 85% -5%, rgba(127,178,217,.22), transparent 65%),
-   radial-gradient(700px 500px at -10% 30%, rgba(31,78,140,.10), transparent 60%),
-   radial-gradient(500px 500px at 60% 110%, rgba(200,155,106,.12), transparent 60%),
-   radial-gradient(circle at 12% 78%, transparent 118px, rgba(16,20,24,.045) 119px, rgba(16,20,24,.045) 122px, transparent 123px),
-   radial-gradient(circle at 88% 40%, transparent 90px, rgba(16,20,24,.04) 91px, rgba(16,20,24,.04) 94px, transparent 95px);}
-body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.05;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E")}
+[data-brand="delivery"] body{background-color:#F3EDE6!important}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 input,select,textarea{font-family:inherit}
-:focus-visible{outline:3px solid rgba(31,78,140,.45);outline-offset:2px;border-radius:8px}
+:focus-visible{outline:3px solid rgba(18,58,107,.45);outline-offset:2px;border-radius:8px}
 
 /* ══ шапка ══ */
 @media(max-width:600px){
@@ -74,129 +66,125 @@ input,select,textarea{font-family:inherit}
 .topbar .brand small{font-size:10px!important}}
 @media(max-width:400px){
 .ticker span{font-size:10px;padding:.35rem 1rem}}
-.topbar{position:sticky;top:0;z-index:90;background:var(--esp);color:var(--cream);
+.topbar{position:sticky;top:0;z-index:90;background:#F3F8FC;color:#123A6B;
   display:flex;align-items:center;gap:14px;padding:10px 20px;
   padding-top:calc(10px + env(safe-area-inset-top));
-  border-bottom:1px solid #2A3540;box-shadow:0 6px 24px -12px rgba(0,0,0,.5)
+  border-bottom:1px solid rgba(62,143,208,.25);box-shadow:0 4px 16px -4px rgba(18,58,107,.08)
 }
+[data-brand="delivery"] .topbar{background:#C99E6E!important;color:#3A2A1C!important;border-bottom:3px solid #3A2A1C!important}
   
 .brand{display:flex;align-items:center;gap:11px;margin-right:auto}
-.brand .mark{width:40px;height:40px;border-radius:12px;background:var(--flame);display:grid;place-items:center;
-  box-shadow:0 4px 14px -4px rgba(31,78,140,.7);transition:transform .3s}
+.brand .mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#123A6B,#3E8FD0);display:grid;place-items:center;
+  box-shadow:0 3px 10px -2px rgba(18,58,107,.4);transition:transform .3s}
 .brand:hover .mark{transform:rotate(-8deg) scale(1.06)}
-.brand b{font:400 19px "Prata",serif;letter-spacing:.04em}
-.brand small{display:block;font:500 10.5px "Golos Text";color:#9FB4C8;letter-spacing:.14em;text-transform:uppercase}
-.chip{display:flex;align-items:center;gap:7px;background:var(--esp2);border:1px solid #2A3540;
-  border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;white-space:nowrap}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--green);position:relative}
-.dot::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid currentColor;color:var(--green);opacity:.6;animation:ping 2s infinite}
-@keyframes ping{0%{transform:scale(.6);opacity:.8}80%,100%{transform:scale(1.5);opacity:0}}
-/* ── шапка: одна чистая строка ── */
+.brand b{font:400 19px "Prata",serif;letter-spacing:.04em;color:#123A6B}
+[data-brand="delivery"] .brand b{font:900 18px "Unbounded",sans-serif!important;color:#3A2A1C!important}
+.brand small{display:block;font:600 11px "Golos Text";color:#3E8FD0;letter-spacing:.12em;text-transform:uppercase}
+[data-brand="delivery"] .brand small{color:#3A2A1C!important;opacity:.85}
+
 .topbar{flex-wrap:nowrap !important;gap:10px}
 .clock{position:static !important;left:auto !important;top:auto !important;transform:none !important;
  margin-left:auto;display:flex;align-items:center;white-space:nowrap;
- padding:6px 12px;border-radius:999px;background:#1B232B;color:#B9C7D6;
- font:700 13px/1 'Manrope',sans-serif;letter-spacing:.08em;font-variant-numeric:tabular-nums}
-@media(max-width:900px){.clock{padding:5px 9px;font-size:11px}}
-@media(max-width:600px){
- .brand small{display:none}
- .brand b{font-size:16px}
- .topbar{gap:8px}
- #modeSeg button,.modes button,.seg button{padding:7px 9px;font-size:11px}
-}
+ padding:6px 12px;border-radius:999px;background:#EAF3FB;color:#123A6B;
+ font:700 13px/1 'Golos Text',sans-serif;letter-spacing:.08em;font-variant-numeric:tabular-nums;border:1px solid rgba(62,143,208,.3)}
+[data-brand="delivery"] .clock{background:#EFE6D8!important;color:#3A2A1C!important;border:2px solid #3A2A1C!important;box-shadow:2px 2px 0 #3A2A1C!important}
+
 .modeSeg{display:flex;background:var(--esp2);border:1px solid #2A3540;border-radius:999px;padding:3px}
 .modeSeg button{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;color:#9FB4C8;transition:.25s}
 .modeSeg button.on{background:var(--flame);color:#fff;box-shadow:0 3px 10px -3px rgba(31,78,140,.8)}
-.ava{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#7FB2D9,#1F4E8C);
-  color:#fff;font:700 14px "Unbounded";display:grid;place-items:center;border:2px solid #2A3540;transition:.25s}
+.ava{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3E8FD0,#123A6B);
+  color:#fff;font:700 14px "Unbounded";display:grid;place-items:center;border:1px solid #FFF;box-shadow:0 3px 8px rgba(18,58,107,.25);transition:.25s}
+[data-brand="delivery"] #profileTopBtn{background:#E8A33D!important;color:#3A2A1C!important;border:2px solid #3A2A1C!important;box-shadow:2px 2px 0 #3A2A1C!important;font-weight:900!important}
 .ava:hover{transform:scale(1.08)}
 
 /* ══ тикер ══ */
-.ticker{background:#16202B;color:#C9D6E2;overflow:hidden;border-bottom:1px solid #2A3540;max-width:100%}
+.ticker{background:#123A6B;color:#BBD7F2;height:30px!important;line-height:30px!important;overflow:hidden;border-bottom:1px solid rgba(62,143,208,.25);max-width:100%}
+[data-brand="delivery"] .ticker{background:#3A2A1C!important;color:#E8A33D!important;border-bottom:2px solid #3A2A1C!important}
 .ticker .track{display:inline-flex;white-space:nowrap;animation:tick 30s linear infinite;will-change:transform;max-width:none}
-.ticker span{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem 1.4rem;font:500 11px "Unbounded";letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
-.ticker span::after{content:"〜";color:#7FB2D9;margin-left:1.4rem}
-.ticker{width:100%;max-width:100vw;overflow:hidden}
+.ticker span{display:inline-flex;align-items:center;gap:.5rem;padding:0 1.2rem;font:600 11px/30px "Unbounded";letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.ticker span::after{content:"〜";color:#3E8FD0;margin-left:1.4rem}
+[data-brand="delivery"] .ticker span::after{color:#C03B2A!important}
 @keyframes tick{to{transform:translateX(-50%)}}
 
 /* ══ каркас ══ */
 .wrap{display:grid;grid-template-columns:92px 1fr 350px;gap:22px;padding:22px;max-width:1480px;margin:0 auto;align-items:start}
 .rail{position:sticky;top:118px;display:flex;flex-direction:column;gap:8px}
-.rail button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:13px 6px;border-radius:16px;
-  background:#E7ECF0;border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--soft);transition:.25s}
+.rail button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:13px 6px;border-radius:14px;
+  background:#F3F8FC;border:1px solid rgba(62,143,208,.22);font-size:11px;font-weight:700;color:#123A6B;transition:.25s}
 .rail .re{font-size:23px;transition:transform .25s}
-.rail button:hover{transform:translateY(-2px);box-shadow:var(--sh)}
-.rail button:hover .re{transform:scale(1.2) rotate(-6deg)}
-.rail button.on{background:var(--esp);color:var(--cream);border-color:var(--esp);box-shadow:var(--sh)}
+.rail button:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(18,58,107,.1)}
+.rail button.on{background:linear-gradient(145deg,#123A6B,#1D5C9B);color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(18,58,107,.28)}
 
 .menu-head{margin:2px 0 18px;animation:rise .6s both}
 .mh-top{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
-.menu-head h1{font:400 clamp(26px,3.2vw,42px)/1.15 "Prata",serif}
-.menu-head h1 em{font-style:normal;color:var(--flame)}
-.menu-head .upd{color:var(--soft);margin-top:8px;font-size:13.5px}
+.menu-head h1{font:400 clamp(26px,3.2vw,40px)/1.15 "Prata",serif;color:#123A6B}
+.menu-head h1 em{font-style:normal;color:#3E8FD0;border-bottom:2px solid rgba(62,143,208,.4);padding-bottom:2px}
+[data-brand="delivery"] #deliveryView .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif!important;color:#3A2A1C!important}
+[data-brand="delivery"] #deliveryView .menu-head h1 em{color:#3A2A1C!important;background:linear-gradient(transparent 62%, #FAD8C3 62%)}
+
+.menu-head .upd{color:var(--soft);margin-top:6px;font:600 11px/1.4 "Golos Text",sans-serif;letter-spacing:.12em;text-transform:uppercase}
 .menu-head .upd b{color:var(--green)}
-.adminBadge{background:#EAF1F9;color:#163B6B;border:1px solid #B9CDE4;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:800;margin-left:6px;white-space:nowrap}
-@media(max-width:400px){.adminBadge{font-size:10px;padding:3px 8px;margin-left:0}}
+.adminBadge{background:#EAF1F9;color:#123A6B;border:1px solid #B9D4F0;border-radius:999px;padding:3px 10px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-left:6px;white-space:nowrap}
 
 .mh-right{margin-left:auto;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.search{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:9px 16px;transition:.2s;min-width:210px}
-.search:focus-within{border-color:var(--flame);box-shadow:0 0 0 4px rgba(31,78,140,.12)}
-.search input{border:none;outline:none;flex:1;font-size:13.5px;background:transparent;min-width:0}
+.search{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #D8DFE4;border-radius:999px;padding:9px 16px;transition:.2s;min-width:210px;box-shadow:0 2px 8px rgba(18,58,107,.05)}
+.search:focus-within{border-color:#3E8FD0;box-shadow:0 0 0 3px rgba(62,143,208,.18)}
+.search input{border:none;outline:none;flex:1;font-size:13.5px;background:transparent;min-width:0;color:#101418}
+[data-brand="delivery"] #deliveryView .search{background:#EFE6D8!important;border:2px solid #3A2A1C!important;border-radius:12px!important;box-shadow:3px 3px 0 #3A2A1C!important}
+
 #editToggle,#promoToggle,#dashToggle,#chatsToggle2{border-radius:999px;padding:10px 18px;font-size:13px;font-weight:800;border:1.5px solid var(--esp);transition:.25s;background:#fff}
 #editToggle:hover{transform:translateY(-1px);box-shadow:var(--sh)}
 #editToggle.on{background:var(--esp);color:var(--cream)}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 
 /* ══ карточки меню ══ */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;
-  transition:transform .25s,box-shadow .25s,border-color .25s;animation:pop .5s both;animation-delay:var(--d);position:relative}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(min-width:1600px){.grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:900px){.grid{grid-template-columns:repeat(auto-fill,minmax(228px,1fr))}}
+
+.card{background:#FFFFFF;border:1.5px solid rgba(62,143,208,.25);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;
+  transition:transform .25s,box-shadow .25s,border-color .25s;animation:pop .5s both;animation-delay:var(--d);position:relative;box-shadow:0 6px 20px rgba(18,58,107,.08)}
 @keyframes pop{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
-.card:hover{transform:translateY(-4px);box-shadow:var(--sh);border-color:#B9C6D2}
+.card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(18,58,107,.15);border-color:#3E8FD0}
 body.editing .card{border-style:dashed;border-color:#9FB4C8}
 body.editing .card:hover{transform:none}
-.media{height:150px;position:relative;overflow:hidden;background:var(--tint,#E7ECF0);display:grid;place-items:center}
+
+.media{height:150px;position:relative;overflow:hidden;background:linear-gradient(180deg, rgba(62,143,208,.08), transparent);display:grid;place-items:center}
 .media img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
 .card:hover .media img{transform:scale(1.07)}
 .media .em{font-size:56px;filter:drop-shadow(0 8px 10px rgba(16,20,24,.22));transition:transform .3s}
 .card:hover .media .em{transform:scale(1.14) rotate(-5deg)}
-.tag{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+
+.tag{position:absolute;top:10px;left:10px;font:700 9.5px "Unbounded";letter-spacing:.08em;text-transform:uppercase;
   padding:4px 9px;border-radius:999px;color:#fff;z-index:2}
-.tag.hit{background:var(--flame)}.tag.new{background:var(--green)}.tag.vegan{background:#274E36}
+.tag.hit{background:#3E8FD0}.tag.new{background:var(--green)}.tag.vegan{background:#7BA05B}
 .stopped .media img,.stopped .media .em{filter:grayscale(1);opacity:.5}
-.stopbadge{position:absolute;top:10px;right:10px;background:#7A2E1D;color:#FFE9E2;font:800 10px "Unbounded";
+.stopbadge{position:absolute;top:10px;right:10px;background:#D63939;color:#FFFFFF;font:800 10px "Unbounded";
   letter-spacing:.12em;padding:5px 10px;border-radius:999px;z-index:2}
-.editbtn{position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:50%;background:#fff;color:var(--ink);
-  display:grid;place-items:center;box-shadow:0 6px 16px -4px rgba(0,0,0,.35);transition:.2s;z-index:3;font-size:15px}
-.editbtn:hover{background:var(--flame);color:#fff;transform:scale(1.1)}
+
 .cbody{padding:13px 14px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
-.cbody h3{font-size:15.5px;font-weight:700}
+.cbody h3{font:700 15.5px/1.3 "Golos Text",sans-serif;color:#123A6B}
 .cbody .desc{font-size:12.5px;color:var(--soft)}
 .comp{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
-.comp i{font-style:normal;background:#EDF2F6;border-radius:999px;padding:3px 9px;font-size:10.5px;font-weight:600;color:#5B6B7A}
-.cbody .vol{font-size:11px;color:#8B98A5;font-weight:600;letter-spacing:.04em;margin-top:auto}
+.comp i{font-style:normal;background:#EAF3FB;border:1px solid rgba(62,143,208,.25);border-radius:999px;padding:3px 9px;font:600 10.5px "Golos Text";color:#123A6B}
+.cbody .vol{font:600 11px "Golos Text";color:var(--soft);letter-spacing:.04em;margin-top:auto}
 .cfoot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
-.price{font:700 16px "Unbounded"}
-.qswitch{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;color:var(--soft)}
-.qswitch input{appearance:none;width:34px;height:19px;border-radius:999px;background:#C9D3DC;position:relative;transition:.25s;cursor:pointer}
-.qswitch input::after{content:"";position:absolute;top:2.5px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.25s}
-.qswitch input:checked{background:var(--green)}
-.qswitch input:checked::after{left:17px}
-.addcard{border:2px dashed #9FB4C8;border-radius:var(--r);min-height:260px;display:flex;flex-direction:column;gap:8px;
-  align-items:center;justify-content:center;color:var(--soft);font-weight:700;background:rgba(255,255,255,.5);transition:.25s}
-.addcard span{font-size:34px;display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:#E7ECF0;transition:.25s}
-.addcard:hover{border-color:var(--flame);color:var(--flame);transform:translateY(-3px)}
-.addcard:hover span{background:var(--flame);color:#fff;transform:rotate(90deg) scale(1.05)}
+.price{font:700 16px "Golos Text";font-variant-numeric:tabular-nums;color:#123A6B}
+
 .gempty{text-align:center;padding:60px 20px;color:var(--soft)}
 .gempty .ee{font-size:52px;display:block;margin-bottom:12px}
 
 /* ══ правая панель ══ */
-.panel{position:sticky;top:118px;max-height:calc(100vh - 140px);background:var(--panel);border:1px solid var(--line);
-  border-radius:22px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--sh)}
-.tabs{display:flex;gap:4px;padding:12px 12px 0}
+.panel{position:sticky;top:118px;max-height:calc(100vh - 140px);background:#FFFCF5;border:1.5px solid rgba(62,143,208,.25);
+  border-radius:22px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 14px 40px -12px rgba(18,58,107,.18)}
+[data-brand="delivery"] .panel{background:#EFE6D8!important;border:3px solid #3A2A1C!important;box-shadow:-8px 0 30px rgba(58,42,28,.2)!important}
+
+.tabs{display:flex;gap:6px;padding:12px 12px 0}
 .tabs button{flex:1;padding:9px 4px;border-radius:12px;font-size:13px;font-weight:700;color:var(--soft);transition:.2s}
 .tabs button:hover{background:#EDF2F6}
-.tabs button.on{background:var(--esp);color:var(--cream)}
+.tabs button.on{background:#123A6B;color:#FFFFFF;border-radius:12px;box-shadow:0 4px 12px rgba(18,58,107,.25)}
+[data-brand="delivery"] .tabs button.on{background:#C99E6E!important;color:#3A2A1C!important;border:2px solid #3A2A1C!important;border-radius:10px!important;box-shadow:2px 2px 0 #3A2A1C!important;transform:rotate(-0.8deg)}
+
 .tabs .btn-back{flex:0 0 auto;padding:9px 12px;color:var(--flame);font-weight:800}
 @media(min-width:1181px){.tabs .btn-back{display:none}}
 .pv{overflow-y:auto;padding:14px;flex:1;scrollbar-width:thin}
@@ -205,41 +193,33 @@ body.editing .card:hover{transform:none}
 .pv h4:first-child{margin-top:2px}
 
 .stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}
-/* зерно всегда = 72% своего кружка, где бы ни стояло */
 .stamp svg,.cdot svg{width:72%;height:72%;display:block}
-
-/* адаптивность на узких экранах */
-@media(max-width:420px){
-  .stamps{gap:6px;padding:12px}
-  .cdot{width:18px;height:18px}
-  .cust .big{width:52px;height:52px;font-size:18px}
-}
 .stamp{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:15px;transition:.3s}
-.stamp.f{background:transparent;color:#6B4A2F}
-.stamp.f.last{animation:stampin .5s cubic-bezier(.2,1.6,.4,1)}
-@keyframes stampin{0%{transform:scale(0) rotate(-90deg)}100%{transform:none}}
+.stamp.f{background:linear-gradient(135deg,#123A6B,#3E8FD0)!important;border-radius:50%;border:none!important;color:#FFFFFF!important;box-shadow:0 3px 8px rgba(18,58,107,.3)}
 .stamp.n{border:2px dashed var(--amber);animation:nextp 1.6s infinite}
 @keyframes nextp{50%{box-shadow:0 0 0 5px rgba(200,155,106,.25)}}
-.stamp.e{border:2px dashed var(--line)}
+.stamp.e{border:1.5px dashed rgba(62,143,208,.35)!important;background:transparent!important}
+
 .prog{margin-top:11px;font-size:13.5px;color:var(--soft)}
 .prog b{color:var(--ink)}
-.freeCard{margin-top:12px;background:linear-gradient(120deg,#F3E3CE,#E4C9A5);border-radius:18px;padding:15px;display:flex;gap:12px;align-items:center;
-  box-shadow:0 10px 24px -10px rgba(200,155,106,.8);animation:rise .4s both;flex-wrap:wrap}
+.freeCard{margin-top:12px;background:linear-gradient(120deg,#F5E5C9,#E6CFA8)!important;border:2px solid var(--amber)!important;border-radius:18px!important;padding:15px;display:flex;gap:12px;align-items:center;
+  box-shadow:0 8px 24px rgba(194,147,95,.35)!important}
 .freeCard .fe{font-size:30px;animation:sway 2.6s infinite}
 @keyframes sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
-.freeCard b{display:block;font:700 14px "Unbounded";color:#4A3100}
+.freeCard b{display:block;font:700 14px "Unbounded";color:#4A3100!important}
 .freeCard small{color:#6B4E0E;font-size:11.5px}
-.freeCard button{margin-left:auto;background:#4A3100;color:#F3E3CE;border-radius:999px;padding:9px 13px;font-size:12px;font-weight:800;transition:.2s}
+.freeCard button{margin-left:auto;background:#4A3100!important;color:#F5E5C9!important;border-radius:999px;padding:9px 13px;font-size:12px;font-weight:800;transition:.2s}
 .freeCard button:hover{transform:scale(1.05)}
+
 .demoBtn,.resetBtn{width:100%;margin-top:12px;border:1.5px dashed var(--line);border-radius:14px;padding:10px;font-size:12.5px;font-weight:700;color:var(--soft);transition:.2s;background:#fff}
 .demoBtn:hover{border-color:var(--flame);color:var(--flame)}
 .resetBtn{font-size:12px;color:#8B98A5}
 .resetBtn:hover{border-color:#B3372B;color:#B3372B}
+
 .qrbox{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center;margin-top:12px}
 .qrbox canvas{image-rendering:pixelated;border-radius:8px}
 .qrbox small{display:block;margin-top:8px;font-size:11.5px;color:var(--soft)}
-.placebox{background:#EAF1F9;border:1px solid #B9CDE4;border-radius:18px;padding:14px;margin-top:12px;font-size:12.5px;color:#33507A;line-height:1.6}
-.placebox b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+
 .authPrompt{background:linear-gradient(135deg,#EAF1F9,#D8E6F4);border:1px dashed #7FB2D9;border-radius:18px;padding:18px;text-align:center;animation:rise .4s both}
 .authPrompt .ap{font-size:34px;display:block;margin-bottom:8px}
 .authPrompt b{font:700 14.5px "Unbounded";color:#163B6B;display:block;margin-bottom:6px}
@@ -252,11 +232,15 @@ body.editing .card:hover{transform:none}
 .phead input{border:none;border-bottom:2px solid var(--line);background:transparent;font:700 17px "Golos Text";width:100%;padding:3px 0;transition:.2s}
 .phead input:focus{outline:none;border-color:var(--flame)}
 .phead .ph{font-size:12px;color:var(--soft);margin-top:2px}
+
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 6px;text-align:center;transition:.2s}
+.stat{background:#FFFFFF!important;border:1px solid rgba(62,143,208,.2)!important;border-radius:14px!important;padding:11px 6px;text-align:center;transition:.2s}
+[data-brand="delivery"] .stat{border:2px solid #3A2A1C!important;border-radius:10px!important;box-shadow:2px 2px 0 #3A2A1C!important}
 .stat:hover{transform:translateY(-2px);box-shadow:var(--sh)}
-.stat b{font:900 19px "Unbounded";color:var(--flame)}
+.stat b{font:900 19px "Unbounded";color:#123A6B}
+[data-brand="delivery"] .stat b{color:#3A2A1C!important}
 .stat span{display:block;font-size:10.5px;color:var(--soft);font-weight:600;margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+
 .hmini{font-size:11.5px;color:var(--soft);padding:6px 2px;border-bottom:1px dashed var(--line);animation:rise .3s both}
 .hmini b{color:var(--ink);font-variant-numeric:tabular-nums}
 .hmini i{font-style:normal;opacity:.75}
@@ -283,14 +267,26 @@ body.editing .card:hover{transform:none}
 .findrow{display:flex;gap:8px;flex-wrap:wrap}
 .findrow input{flex:1;min-width:150px;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;font-size:14px;background:#fff;transition:.2s}
 .findrow input:focus{outline:none;border-color:var(--flame)}
-.btn{border-radius:12px;padding:11px 17px;font-size:13.5px;font-weight:800;transition:.22s}
+
+.btn, button.cta, .btn.fire, #checkoutBtn{
+  border-radius:12px;padding:11px 17px;font-size:13.5px;font-weight:800;transition:.22s;
+  background:#123A6B;color:#FFFFFF;font-family:var(--font-accent);cursor:pointer;
+}
 .btn.dark{background:var(--esp);color:var(--cream)}.btn.dark:hover{background:#000;transform:translateY(-1px)}
-.btn.fire{background:var(--flame);color:#fff;box-shadow:0 6px 16px -6px rgba(31,78,140,.7)}.btn.fire:hover{background:var(--flame-d);transform:translateY(-1px)}
+.btn.fire{background:#123A6B;color:#fff;box-shadow:0 6px 16px -6px rgba(18,58,107,.5)}.btn.fire:hover{background:#0B2446;transform:translateY(-1px)}
+[data-brand="delivery"] .btn.fire, [data-brand="delivery"] button.cta, [data-brand="delivery"] #checkoutBtn {
+  background: #C03B2A !important;
+  color: #FFFFFF !important;
+  border: 2px solid #3A2A1C !important;
+  box-shadow: 3px 3px 0 #3A2A1C !important;
+}
+
 .btn.ghost{border:1.5px solid var(--line);background:#fff;color:var(--soft)}.btn.ghost:hover{border-color:var(--esp);color:var(--ink)}
 .btn.ghost.danger:hover{border-color:#B3372B;color:#B3372B}
+
 .cust{display:none;gap:18px;align-items:flex-start;flex-wrap:wrap}
 .cust.show{display:flex;animation:rise .35s both}
-.cust .big{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#7FB2D9,#1F4E8C);color:#fff;
+.cust .big{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#3E8FD0,#123A6B);color:#fff;
   font:700 22px "Unbounded";display:grid;place-items:center;flex-shrink:0}
 .cust .info{flex:1;min-width:220px}
 .cust .info b{font:700 18px "Unbounded"}
@@ -307,71 +303,81 @@ body.editing .card:hover{transform:none}
 .cashlog{flex-direction:column;gap:3px;align-items:flex-start}
 .cashlog .la{font-size:13.5px}
 
-
 /* ══ чат ══ */
-.chat-fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:95;width:58px;height:58px;border-radius:50%;background:var(--esp);
-  display:grid;place-items:center;box-shadow:0 12px 30px -8px rgba(16,20,24,.6);transition:.25s}
-@media(hover:hover){.chat-fab:hover{transform:scale(1.08) rotate(-6deg);background:var(--flame)}}
-.chat-fab:active{transform:scale(.95);background:var(--flame)}
-.chat-fab.open{background:var(--flame)}
-.chat-fab::before{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--flame);opacity:.6;animation:ping 2.4s infinite}
-.chat-fab svg{width:26px;height:26px;fill:var(--cream)}
-.chat-fab .ub{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;border-radius:999px;background:var(--flame);color:#fff;
-  font:700 11px "Unbounded";display:grid;place-items:center;padding:0 5px;border:2px solid var(--paper)}
+.chat-fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:10001;width:58px;height:58px;border-radius:50%;background:#123A6B;
+  display:grid;place-items:center;box-shadow:0 12px 30px rgba(18,58,107,.45);border:2px solid #3E8FD0;transition:.25s}
+.chat-fab svg{width:26px;height:26px;fill:#FFFFFF}
+@media(hover:hover){.chat-fab:hover{transform:scale(1.08) rotate(-6deg);background:#3E8FD0}}
+.chat-fab:active{transform:scale(.95)}
+.chat-fab.open{background:#3E8FD0}
+.chat-fab::before{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid #3E8FD0;opacity:.6;animation:ping 2.4s infinite}
+.chat-fab .ub{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;border-radius:999px;background:#123A6B;color:#fff;
+  font:700 11px "Unbounded";display:grid;place-items:center;padding:0 5px;border:2px solid #FFF}
+
 .chat{position:fixed;right:20px;bottom:calc(90px + env(safe-area-inset-bottom));z-index:96;width:362px;max-width:calc(100vw - 30px);height:500px;max-height:calc(100vh - 140px);
   background:#fff;border-radius:20px;border:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;
   box-shadow:0 30px 70px -20px rgba(16,20,24,.5);transform-origin:bottom right;transform:scale(.9) translateY(14px);opacity:0;pointer-events:none;transition:.3s cubic-bezier(.2,1,.3,1)}
 .chat.open{transform:none;opacity:1;pointer-events:auto}
-.chat-h{background:var(--esp);color:var(--cream);padding:14px 16px;display:flex;align-items:center;gap:11px}
-.chat-h .op{width:38px;height:38px;border-radius:50%;background:var(--flame);display:grid;place-items:center;font-size:18px}
-.chat-h b{font-size:14.5px}
-.chat-h small{display:flex;align-items:center;gap:6px;color:#9FB4C8;font-size:11.5px}
+
+.chat-h{background:#101418;color:#FFFFFF;padding:14px 16px;display:flex;align-items:center;gap:11px}
+.chat-h .op{width:38px;height:38px;border-radius:50%;background:#123A6B;display:grid;place-items:center;font-size:18px}
+.chat-h b{font-size:14.5px;color:#FFFFFF!important}
+.chat-h small{display:flex;align-items:center;gap:6px;color:#FFFFFF!important;font-size:11.5px;opacity:1!important}
 .chat-h small i{width:7px;height:7px;border-radius:50%;background:#4ADE80;display:inline-block}
 .chat-h button{margin-left:auto;color:#9FB4C8;font-size:20px;padding:4px}
 .chat-h button:hover{color:#fff}
+
 .chat-m{flex:1;overflow-y:auto;background:#F0F4F8;padding:14px;display:flex;flex-direction:column;gap:9px;scrollbar-width:thin}
 .msg{max-width:82%;padding:9px 13px;border-radius:16px;font-size:13.5px;line-height:1.45;animation:msgin .3s cubic-bezier(.2,1.2,.4,1) both}
 @keyframes msgin{from{opacity:0;transform:translateY(8px) scale(.96)}}
-.msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px}
-.msg.me{align-self:flex-end;background:var(--esp);color:var(--cream);border-bottom-right-radius:5px}
+.msg.bot{align-self:flex-start;background:#FFFFFF;color:#101418;border:1px solid #D8DFE4;border-bottom-left-radius:5px}
+.msg.me{align-self:flex-end;background:#123A6B;color:#FFFFFF;border-bottom-right-radius:5px}
 .msg time{display:block;font-size:10px;opacity:.55;margin-top:3px}
 .msg.sys{align-self:center;background:transparent;border:none;color:#8B98A5;font-size:12px;text-align:center}
-#chatFab.live::after{content:'';position:absolute;top:10px;right:10px;width:10px;height:10px;background:#2FA36B;border-radius:50%;border:2px solid #fff}
-.typing{align-self:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;border-bottom-left-radius:5px;padding:12px 15px;display:flex;gap:4px}
-.typing i{width:7px;height:7px;border-radius:50%;background:#9FB4C8;animation:tp 1s infinite}
-.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
-@keyframes tp{30%{transform:translateY(-5px);background:var(--flame)}}
-.chips{display:flex;flex-wrap:wrap;gap:6px;padding:9px 12px;background:#F0F4F8;border-top:1px dashed var(--line)}
-.chips button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--soft);transition:.2s}
-.chips button:hover{border-color:var(--flame);color:var(--flame);transform:translateY(-1px)}
+
+.chatHint{display:inline-block;background:#FFFFFF;border:1.5px solid #D8DFE4;border-radius:9999px;padding:8px 14px;margin:3px 4px;font:600 11.5px "Golos Text",sans-serif;color:#123A6B;cursor:pointer}
+.chatHint:active{background:#D6E4F0}
+.chatHint.armed,.chatHint[data-arm="1"]{background:#C03B2A!important;border-color:#3A2A1C!important;color:#FFFFFF!important;font-weight:800!important}
+.chatHint.pulse{animation:hintPulseComposite 1.2s ease-in-out infinite!important}
+@keyframes hintPulseComposite{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.9}}
+
 .chat-i{display:flex;gap:8px;padding:11px 12px;border-top:1px solid var(--line);background:#fff}
-.chat-i input{flex:1;border:1.5px solid var(--line);border-radius:999px;padding:10px 16px;font-size:13.5px}
+.chat-i input{flex:1;border:1.5px solid var(--line);border-radius:999px;padding:10px 16px;font-size:13.5px;color:#101418}
 .chat-i input:focus{outline:none;border-color:var(--flame)}
-.chat-i button{width:42px;height:42px;border-radius:50%;background:var(--flame);display:grid;place-items:center;transition:.2s;flex-shrink:0}
-.chat-i button:hover{background:var(--flame-d);transform:scale(1.07)}
+.chat-i button{width:42px;height:42px;border-radius:50%;background:#123A6B;display:grid;place-items:center;transition:.2s;flex-shrink:0}
+.chat-i button:hover{background:#0B2446;transform:scale(1.07)}
 .chat-i svg{width:18px;height:18px;fill:#fff}
 
 /* ══ модалки ══ */
-.overlay{position:fixed;inset:0;background:rgba(16,20,24,.55);backdrop-filter:blur(3px);z-index:110;opacity:0;pointer-events:none;transition:.3s}
+.overlay{position:fixed;inset:0;background:rgba(58,42,28,.45);backdrop-filter:blur(4px);z-index:110;opacity:0;pointer-events:none;transition:.3s}
 .overlay.show{opacity:1;pointer-events:auto}
-.modal{position:fixed;inset:0;z-index:140;display:grid;place-items:center;padding:18px;pointer-events:none}
-.modal-card{width:min(480px,100%);max-height:90vh;overflow-y:auto;background:var(--panel);border-radius:24px;padding:24px;position:relative;
-  box-shadow:0 40px 90px -20px rgba(0,0,0,.55);transform:translateY(20px) scale(.97);opacity:0;transition:.35s cubic-bezier(.2,1,.3,1)}
+.modal{position:fixed;inset:0;z-index:340;display:grid;place-items:center;padding:18px;pointer-events:none}
+.modal-card{width:min(480px,100%);max-height:90vh;overflow-y:auto;background:#FFFFFF;border:1px solid rgba(62,143,208,.25);border-radius:22px;padding:24px;position:relative;
+  box-shadow:0 25px 60px rgba(18,58,107,.2);transform:translateY(20px) scale(.97);opacity:0;transition:.35s cubic-bezier(.2,1,.3,1)}
+[data-brand="delivery"] .modal-card{background-color:#EFE6D8!important;background-image:radial-gradient(rgba(58,42,28,.08) 1px, transparent 1.5px)!important;background-size:10px 10px!important;border:3px solid #3A2A1C!important;border-radius:18px!important;box-shadow:6px 6px 0 #3A2A1C, 0 20px 50px rgba(0,0,0,.35)!important}
+
 .modal.show .modal-card{transform:none;opacity:1;pointer-events:auto}
-.mclose{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;background:#E7ECF0;font-size:17px;transition:.2s;z-index:2}
-.mclose:hover{background:var(--flame);color:#fff;transform:rotate(90deg)}
-.modal-card h3{font:400 22px "Prata",serif;margin-bottom:4px}
+.mclose{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;background:#FFFFFF;border:1.5px solid rgba(18,58,107,.2);color:#101418;font-size:17px;transition:.2s;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+[data-brand="delivery"] .mclose{background:#C99E6E!important;border:2px solid #3A2A1C!important;box-shadow:2px 2px 0 #3A2A1C!important;color:#3A2A1C!important}
+.mclose:hover{transform:rotate(90deg) scale(1.1)}
+
+.modal-card h3{font:400 24px "Prata",serif;margin-bottom:4px;color:#123A6B}
+[data-brand="delivery"] .modal-card h3{font:900 20px "Unbounded",sans-serif!important;color:#3A2A1C!important}
 .modal-card .msub{color:var(--soft);font-size:12.5px;margin-bottom:16px}
+
 .form{display:flex;flex-direction:column;gap:11px}
 .form label{display:flex;flex-direction:column;gap:5px;font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8B98A5}
 .form label small{text-transform:none;font-weight:600;letter-spacing:0}
 .form input:not([type=checkbox]),.form select,.form textarea{border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;
   font-size:14px;background:#fff;color:var(--ink);transition:.2s;font-weight:500}
+[data-brand="delivery"] .modal-card input:not([type=checkbox]),[data-brand="delivery"] .modal-card select,[data-brand="delivery"] .modal-card textarea{background:#FFFFFF!important;border:2px solid #3A2A1C!important;color:#3A2A1C!important;font-weight:600!important}
+
 .form textarea{resize:vertical;min-height:44px}
 .form input:focus,.form select:focus,.form textarea:focus{outline:none;border-color:var(--flame)}
 .frow{display:flex;gap:9px}.f1{flex:1}.f2{flex:2}
 .chk{flex-direction:row!important;align-items:center;gap:9px!important;font-size:13px!important;color:var(--ink)!important;text-transform:none!important;letter-spacing:0!important}
 .chk input{width:19px;height:19px;accent-color:var(--flame);cursor:pointer}
+
 .zone{border:2px dashed #9FB4C8;border-radius:16px;height:132px;display:grid;place-items:center;position:relative;overflow:hidden;
   cursor:pointer;transition:.2s;background:#fff}
 .zone:hover,.zone.over{border-color:var(--flame);background:#EAF1F9}
@@ -383,18 +389,14 @@ body.editing .card:hover{transform:none}
 .zdel{position:absolute;bottom:8px;right:8px;background:rgba(16,20,24,.8);color:#fff;border-radius:999px;padding:6px 12px;font-size:11.5px;font-weight:700;z-index:2}
 .zdel:hover{background:#B3372B}
 .acts{margin-top:4px}
-.cta{width:100%;margin-top:12px;padding:15px;border-radius:16px;background:var(--flame);color:#fff;
-  font:700 15px "Unbounded";letter-spacing:.02em;box-shadow:0 10px 24px -8px rgba(31,78,140,.65);transition:.25s}
-.cta:hover{background:var(--flame-d);transform:translateY(-2px)}
-.cta:active{transform:scale(.98)}
 
 .authcard{text-align:center;width:min(400px,100%)}
-.alogo{width:66px;height:66px;border-radius:20px;background:var(--flame);display:grid;place-items:center;margin:2px auto 14px;
-  box-shadow:0 12px 26px -8px rgba(31,78,140,.6);animation:stampin .6s cubic-bezier(.2,1.6,.4,1)}
+.alogo{width:66px;height:66px;border-radius:20px;background:#123A6B;display:grid;place-items:center;margin:0 auto 16px;
+  box-shadow:0 12px 26px -8px rgba(18,58,107,.6);animation:stampin .6s cubic-bezier(.2,1.6,.4,1)}
 .alt{font-size:12.5px;color:var(--soft);margin-top:13px;text-align:center}
 .alt button{color:var(--flame);font-weight:700;text-decoration:underline;text-underline-offset:3px}
 .pin{font:900 28px "Unbounded";letter-spacing:.45em;text-align:center;padding:12px 8px;border:2px solid var(--line);border-radius:14px;
-  width:186px;margin:6px auto 4px;display:block;background:#fff}
+  width:186px;margin:6px auto 4px;display:block;background:#fff;color:#101418}
 .pin:focus{outline:none;border-color:var(--flame)}
 .pin.err{animation:shake .4s;border-color:#B3372B}
 @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
@@ -404,8 +406,8 @@ body.editing .card:hover{transform:none}
 .qrcard{width:min(430px,100%);text-align:center;background:#fff;cursor:pointer;user-select:none}
 .qrcard canvas{width:min(330px,74vw);height:auto;display:block;margin:10px auto 4px;border-radius:16px;border:1px solid var(--line);
   image-rendering:pixelated;animation:stampin .45s cubic-bezier(.2,1.4,.4,1)}
-.qrttl{font:700 12px "Unbounded";letter-spacing:.16em;text-transform:uppercase;color:#8B98A5}
-.qrname{font:400 26px "Prata",serif;margin-top:10px}
+.qrttl{font:700 11px "Unbounded";letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.qrname{font:400 24px "Prata",serif;margin-top:10px;color:#123A6B}
 .qrmeta{color:var(--soft);font-size:13.5px;margin-top:4px}
 .qrhint{color:#8B98A5;font-size:11.5px;margin-top:16px}
 
@@ -421,7 +423,7 @@ body.editing .card:hover{transform:none}
   background:var(--esp);color:var(--cream);border-radius:999px;padding:13px 24px;font:700 14px "Unbounded";align-items:center;gap:10px;
   box-shadow:0 16px 40px -10px rgba(16,20,24,.6)}
   .msg.staff{align-self:flex-start;background:#EAF1F9;border:1px solid #B9CDE4;border-bottom-left-radius:5px}
-/* кассир на десктопе: во всю ширину, без правой панели */
+
 @media(min-width:1181px){
 body.is-cashier .panel{display:none}
 body.is-cashier .wrap{grid-template-columns:1fr}
@@ -465,7 +467,7 @@ body.is-cashier .cust .acts{min-width:260px}
   #modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}
   #profileTopBtn{width:38px;height:38px;min-width:38px;flex:0 0 38px;font-size:15px}
 }
-/* фото меню заполняют карточку целиком */
+
 .card img, .ci img, .cimg img, [class*="card"] img{
   width:100% !important;
   height:100% !important;
@@ -473,7 +475,7 @@ body.is-cashier .cust .acts{min-width:260px}
   object-position:center !important;
   display:block;
 }
-/* Пульсация аватарки и подсказка для пушей */
+
 @keyframes pulse-hint {
   0% { box-shadow: 0 0 0 0 rgba(232,161,58,.7); }
   70% { box-shadow: 0 0 0 14px rgba(232,161,58,0); }
@@ -487,26 +489,22 @@ body.is-cashier .cust .acts{min-width:260px}
 }
 
 .rail button{color:#475462}
-/* контраст для доступности */
 .cbody .vol,.form label,.authcard small,.pinhint,.phead .ph{color:#5B6874}
 .brand{cursor:pointer}
-/* промокоды: мобильная раскладка */
 @media(max-width:560px){
  #promoModal .frow{flex-direction:column;gap:11px}
 }
 #promoModal .form label small{margin-top:4px}
 #pmList .logrow{flex-wrap:wrap}
-/* iOS не зумит поля от 16px */
 @media(max-width:640px){
  input,select,textarea{font-size:16px !important}
 }
-/* редактирование позиции: мобильная раскладка */
 @media(max-width:560px){
  #emModal .frow{flex-direction:column;gap:11px}
  #emModal .modal-card{padding:18px}
 }
 .frow>.f1,.frow>.f2{min-width:0}
-/* золотой чип подарка на кнопке бонусов */
+
 .mbonus .mb-free{background:linear-gradient(120deg,#F3E3CE,#E4C9A5);color:#4A3100;border-radius:999px;
  padding:5px 11px;font-size:12px;font-weight:800;box-shadow:0 0 0 2px rgba(228,201,165,.4);animation:freePulse 2.2s infinite}
 @keyframes freePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
@@ -532,16 +530,23 @@ body.is-cashier .cust .acts{min-width:260px}
 .opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .opts button{padding:6px 10px;border:1.5px solid var(--line);border-radius:10px;font-size:11px;font-weight:600;background:#fff;transition:.2s}
 .opts button.sel{background:var(--flame);color:#fff;border-color:var(--flame)}
-.cartFab{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:95;background:var(--flame);color:#fff;border-radius:999px;padding:12px 24px;font:700 15px "Unbounded";box-shadow:0 12px 30px -8px rgba(31,78,140,.6);transition:.25s}
-.cartFab:hover{transform:translateX(-50%) translateY(-2px);background:var(--flame-d)}
-.cartPanel{position:fixed;bottom:0;left:0;right:0;z-index:120;background:#fff;border-radius:22px 22px 0 0;max-height:80vh;overflow-y:auto;padding:20px;box-shadow:0 -10px 40px rgba(0,0,0,.3);transform:translateY(100%);transition:.3s}
+
+.cartFab{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:95;background:#123A6B;color:#fff;border-radius:999px;padding:12px 24px;font:700 15px "Unbounded";box-shadow:0 10px 25px rgba(0,0,0,.25);transition:.25s}
+[data-brand="delivery"] .cartFab{background:#C03B2A!important}
+.cartFab:hover{transform:translateX(-50%) translateY(-2px)}
+
+.cartPanel{position:fixed;bottom:0;left:0;right:0;z-index:120;background:#FFFFFF;border-radius:22px 22px 0 0;max-height:80vh;overflow-y:auto;padding:20px;box-shadow:var(--shadow-sheet);transform:translateY(100%);transition:.3s}
+[data-brand="delivery"] .cartPanel{background:#EFE6D8!important;border:3px solid #3A2A1C!important;border-bottom:none!important}
 .cartPanel.open{transform:none}
 .cartItem{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+[data-brand="delivery"] .cartPanel .cartItem{border-bottom:1.5px dashed rgba(58,42,28,.3)!important;color:#3A2A1C!important;font-weight:600!important}
 .cartItem .qty{display:flex;gap:6px;align-items:center}
 .cartItem .qty button{width:28px;height:28px;border-radius:50%;background:#E7ECF0;font-weight:700}
+[data-brand="delivery"] .cartPanel .qty button{background:#C99E6E!important;border:1.5px solid #3A2A1C!important;color:#3A2A1C!important}
+
 .checkoutForm{display:flex;flex-direction:column;gap:12px;margin-top:16px}
 .checkoutForm label{font-size:13px;font-weight:600;color:var(--soft)}
-.checkoutForm input,.checkoutForm select,.checkoutForm textarea{border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;font-size:14px}
+.checkoutForm input,.checkoutForm select,.checkoutForm textarea{border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;font-size:14px;background:#fff;color:#101418}
 .checkoutForm textarea{resize:vertical;min-height:60px}
 .deliveryBanner{background:#FFF6E5;border:1.5px dashed #F2D9A5;border-radius:14px;padding:12px 16px;margin-bottom:16px;color:#6B4E0E;font-size:13px;font-weight:600}
 
@@ -585,15 +590,17 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 </div></div></div>
 
 <header class="topbar">
-  <div class="brand">
-    <div class="mark"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke-linecap="round">
+  <div class="brand" id="headerBrand">
+  <div class="mark" id="brandMark">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke-linecap="round">
       <path d="M5 4h14v7a7 7 0 0 1-14 0V4z" stroke="#fff" stroke-width="1.7"/>
       <path d="M5.5 9.5c2.2-1.4 4.3-1.4 6.5 0s4.3 1.4 6.5 0" stroke="#BBD6EE" stroke-width="1.5"/>
       <path d="M6.5 12.5c1.8-1.2 3.7-1.2 5.5 0s3.7 1.2 5.5 0" stroke="#7FB2D9" stroke-width="1.5"/>
       <path d="M8.5 15.5c1.2-.8 2.3-.8 3.5 0s2.3.8 3.5 0" stroke="#4C7FC0" stroke-width="1.5"/>
-    </svg></div>
-    <div><b>…и кофе</b><small>кофейня на берегу моря</small></div>
+    </svg>
   </div>
+  <div><b id="brandTitle">…и кофе</b><small id="brandSub">кофейня на берегу моря</small></div>
+</div>
   <div class="clock" id="clock">--:--</div>
   <div class="modeSeg" id="modeSeg" hidden></div>
   <div class="brandSeg" id="brandSeg">
@@ -640,7 +647,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
             <div class="upd">Обновлено <b id="updWhen">—</b><span class="adminBadge" id="adminBadge" hidden>режим администратора</span></div>
           </div>
           <div class="mh-right">
-            <div class="search">🔍 <input id="searchInput" placeholder="Найти в меню…"></div>
+            <div class="search">🔍 <input id="searchInput" name="search" placeholder="Найти в меню…"></div>
           </div>
         </div>
       </div>
@@ -658,8 +665,8 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
         <div class="cash-card" id="ngCard" hidden>
           <h4 style="font:700 12px 'Unbounded';letter-spacing:.08em;text-transform:uppercase;color:#8B98A5;margin-bottom:10px">Создать профиль гостя</h4>
           <div class="findrow">
-            <input id="ngName" placeholder="Имя гостя" maxlength="24">
-            <input id="ngPhone" placeholder="+7 900 000-00-00" inputmode="tel">
+            <input id="ngName" name="ngName" placeholder="Имя гостя" maxlength="24">
+            <input id="ngPhone" name="ngPhone" placeholder="+7 900 000-00-00" inputmode="tel">
             <button class="btn fire" id="ngSave">Создать</button>
             <button class="btn ghost" id="ngCancel">Отмена</button>
           </div>
@@ -668,7 +675,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
         <div class="cash-card">
   <h4 style="font:700 12px 'Unbounded';letter-spacing:.08em;text-transform:uppercase;color:#8B98A5;margin-bottom:14px">Найти гостя</h4>
   <div class="findrow" style="gap:12px">
-    <input id="findInput" placeholder="Номер телефона или имя…" autocomplete="off" style="flex:2;min-width:200px;font-size:15px;padding:14px 16px">
+    <input id="findInput" name="findInput" placeholder="Номер телефона или имя…" autocomplete="off" style="flex:2;min-width:200px;font-size:15px;padding:14px 16px">
     <button class="btn fire" id="findBtn" style="flex:1;min-width:140px;font-size:14px;padding:14px 20px">Найти</button>
     <button class="btn dark" id="newGuestBtn2" style="flex:1;min-width:140px;font-size:14px;padding:14px 20px">＋ Новый гость</button>
   </div>
@@ -729,7 +736,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
         <div id="freeSlot"></div>
         <div class="qrbox" style="margin-top:12px">
   <small style="display:block;margin:0 0 8px">Есть промокод?</small>
-  <div class="findrow"><input id="promoInput" placeholder="Например MORE10" style="text-transform:uppercase">
+  <div class="findrow"><input id="promoInput" name="promoInput" placeholder="Например MORE10" style="text-transform:uppercase">
   <button class="btn fire" id="promoBtn">OK</button></div>
 </div>
         <div class="qrbox"><canvas id="qrMini" width="196" height="196" style="width:112px;height:112px"></canvas>
@@ -751,7 +758,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
         <h4>Профиль</h4>
         <div class="phead">
           <div class="ava" id="avInit">А</div>
-          <div style="flex:1"><input id="nameInput" maxlength="24"><div class="ph" id="phoneLbl"></div><div class="ph" id="roleLbl"></div></div>
+          <div style="flex:1"><input id="nameInput" name="nameInput" maxlength="24"><div class="ph" id="phoneLbl"></div><div class="ph" id="roleLbl"></div></div>
         </div>
         <button class="demoBtn" id="activateBtn" hidden>🔑 У меня код доступа сотрудника</button>
         <button class="demoBtn" id="pushBtn" hidden>🔔 Включить уведомления</button>
@@ -802,7 +809,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
   <div class="chat-m" id="chatMsgs"></div>
   <div class="chips" id="chatChips"></div>
   <div class="chat-i">
-    <input id="chatInput" placeholder="Напишите сообщение…" autocomplete="off">
+    <input id="chatInput" name="chatInput" placeholder="Напишите сообщение…" autocomplete="off">
     <button id="chatSend" aria-label="Отправить"><svg viewBox="0 0 24 24"><path d="M3 20l19-8L3 4v6l13 2-13 2z"/></svg></button>
   </div>
 </section>
@@ -818,30 +825,30 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
       <div class="zone" id="emZone"></div>
       <input type="file" id="emFile" accept="image/*" hidden>
       <div class="frow">
-        <label class="f2">Название<input id="emName" maxlength="40" placeholder="Капучино"></label>
-        <label class="f1">Категория<select id="emCat"></select></label>
+        <label for="emName">Название<input id="emName" name="emName" maxlength="40" placeholder="Капучино"></label>
+        <label for="emCat">Категория<select id="emCat" name="emCat"></select></label>
       </div>
       <div class="frow">
-        <label class="f1">Цена, ₽<input id="emPrice" type="number" min="0" step="10"></label>
-        <label class="f1">Объём / выход<input id="emVol" maxlength="14" placeholder="300 мл"></label>
-        <label class="f1">Эмодзи-фолбэк<input id="emEmoji" maxlength="4" placeholder="☕"></label>
+        <label for="emPrice">Цена, ₽<input id="emPrice" name="emPrice" type="number" min="0" step="10"></label>
+        <label for="emVol">Объём / выход<input id="emVol" name="emVol" maxlength="14" placeholder="300 мл"></label>
+        <label for="emEmoji">Эмодзи-фолбэк<input id="emEmoji" name="emEmoji" maxlength="4" placeholder="☕"></label>
       </div>
       <div id="emOptsBox" hidden>
   <label style="margin-top:6px">Размеры пиццы<small>— вес (г) и цена (₽) четырёх вариантов</small></label>
-  <div class="frow"><label class="f1">25 пышное<input id="emOpt0w" placeholder="415 г"></label><label class="f1">₽<input id="emOpt0p" type="number"></label></div>
-  <div class="frow"><label class="f1">35 пышное<input id="emOpt1w" placeholder="750 г"></label><label class="f1">₽<input id="emOpt1p" type="number"></label></div>
-  <div class="frow"><label class="f1">25 тонкое<input id="emOpt2w" placeholder="335 г"></label><label class="f1">₽<input id="emOpt2p" type="number"></label></div>
-  <div class="frow"><label class="f1">35 тонкое<input id="emOpt3w" placeholder="550 г"></label><label class="f1">₽<input id="emOpt3p" type="number"></label></div>
+  <div class="frow"><label for="emOpt0w" class="f1">25 пышное<input id="emOpt0w" name="emOpt0w" placeholder="415 г"></label><label for="emOpt0p" class="f1">₽<input id="emOpt0p" name="emOpt0p" type="number"></label></div>
+  <div class="frow"><label for="emOpt1w" class="f1">35 пышное<input id="emOpt1w" name="emOpt1w" placeholder="750 г"></label><label for="emOpt1p" class="f1">₽<input id="emOpt1p" name="emOpt1p" type="number"></label></div>
+  <div class="frow"><label for="emOpt2w" class="f1">25 тонкое<input id="emOpt2w" name="emOpt2w" placeholder="335 г"></label><label for="emOpt2p" class="f1">₽<input id="emOpt2p" name="emOpt2p" type="number"></label></div>
+  <div class="frow"><label for="emOpt3w" class="f1">35 тонкое<input id="emOpt3w" name="emOpt3w" placeholder="550 г"></label><label for="emOpt3p" class="f1">₽<input id="emOpt3p" name="emOpt3p" type="number"></label></div>
 </div>
-      <label>Описание<textarea id="emDesc" rows="2" maxlength="140" placeholder="Коротко и с характером"></textarea></label>
-      <label>Состав <small>— через запятую, покажем чипсами</small><textarea id="emComp" rows="2" placeholder="эспрессо, молоко"></textarea></label>
+      <label for="emDesc">Описание<textarea id="emDesc" name="emDesc" rows="2" maxlength="140" placeholder="Коротко и с характером"></textarea></label>
+      <label for="emComp">Состав <small>— через запятую, покажем чипсами</small><textarea id="emComp" name="emComp" rows="2" placeholder="эспрессо, молоко"></textarea></label>
       <div class="frow">
-        <label class="f1">Метка
-          <select id="emTag"><option value="">без метки</option><option>Хит</option><option>New</option><option>Vegan</option></select>
+        <label for="emTag" class="f1">Метка
+          <select id="emTag" name="emTag"><option value="">без метки</option><option>Хит</option><option>New</option><option>Vegan</option></select>
         </label>
-        <label class="chk" style="flex:2"><input type="checkbox" id="emCoffee"> Считать в бонусах (это кофе)</label>
+        <label class="chk" style="flex:2"><input type="checkbox" id="emCoffee" name="emCoffee"> Считать в бонусах (это кофе)</label>
       </div>
-      <label class="chk"><input type="checkbox" id="emOn" checked> Показывать в меню (снять = стоп-лист)</label>
+      <label class="chk"><input type="checkbox" id="emOn" name="emOn" checked> Показывать в меню (снять = стоп-лист)</label>
       <div class="frow acts">
         <button class="btn fire" id="emSave" style="flex:1">Сохранить</button>
         <button class="btn ghost" id="emDup" title="Дублировать">⧉</button>
@@ -861,22 +868,23 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
     </svg></div>
     <h3 id="authTitle">Создайте профиль</h3>
     <div class="msub">Штампы и бесплатные кофе — по номеру телефона.<br>Никаких карт и анкет.</div>
-    <form id="regForm" style="display:flex;flex-direction:column;gap:11px">      <label>Имя<input id="regName" maxlength="24" placeholder="Как к вам обращаться?"></label>
-<label>Телефон<input id="regPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
-<button type="button" class="btn fire" id="regTgBtn" style="width:100%">🤖 Подтвердить в Telegram · бесплатно</button>
-<div id="regTgRow" hidden style="font-size:11.5px;color:#1E7A4E;text-align:center;font-weight:700">✅ Номер подтверждён — завершите регистрацию</div>
-<small style="color:#8B98A5;font-size:11px">Нет Telegram? Создайте профиль — кассир назовёт код активации, а +1 штамп ждёт в Telegram 🎁</small>
-<button type="button" class="btn ghost" id="regOtpBtn" style="width:100%;margin-top:8px" hidden>📨 Код по SMS (платная опция)</button>
-<label id="regOtpRow" hidden>Код из SMS<input id="regOtp" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label>
-<label id="regPinRow">PIN-код (4 цифры)<input id="regPin" type="text" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password"></label>
-<small style="color:#8B98A5;font-size:11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная номер</small>
+    <form id="regForm" style="display:flex;flex-direction:column;gap:11px">      
+      <label for="regName">Имя<input id="regName" name="regName" maxlength="24" placeholder="Как к вам обращаться?"></label>
+      <label for="regPhone">Телефон<input id="regPhone" name="regPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
+      <button type="button" class="btn fire" id="regTgBtn" style="width:100%">🤖 Подтвердить в Telegram · бесплатно</button>
+      <div id="regTgRow" hidden style="font-size:11.5px;color:#1E7A4E;text-align:center;font-weight:700">✅ Номер подтверждён — завершите регистрацию</div>
+      <small style="color:#8B98A5;font-size:11px">Нет Telegram? Создайте профиль — кассир назовёт код активации, а +1 штамп ждёт в Telegram 🎁</small>
+      <button type="button" class="btn ghost" id="regOtpBtn" style="width:100%;margin-top:8px" hidden>📨 Код по SMS (платная опция)</button>
+      <label for="regOtp" id="regOtpRow" hidden>Код из SMS<input id="regOtp" name="regOtp" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label>
+      <label for="regPin" id="regPinRow">PIN-код (4 цифры)<input id="regPin" name="regPin" type="text" inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password"></label>
+      <small style="color:#8B98A5;font-size:11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная номер</small>
       <button type="button" class="cta" id="regBtn">Создать профиль</button>
       <div class="alt">Уже есть профиль? <button type="button" id="toLogin">Войти по номеру</button></div>
     </form>
     <form id="loginForm" style="display:none;flex-direction:column;gap:11px">
-    <label>Ваш номер телефона<input id="logPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
-    <label id="logPinRow">PIN-код<input id="logPin" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="current-password"></label>
-    <div id="logOtpWrap" style="display:none"><label>Код из Telegram<input id="logOtp" type="text" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label></div>
+      <label for="logPhone">Ваш номер телефона<input id="logPhone" name="logPhone" inputmode="tel" placeholder="+7 900 000-00-00" autocomplete="username"></label>
+      <label for="logPin" id="logPinRow">PIN-код<input id="logPin" name="logPin" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="current-password"></label>
+      <div id="logOtpWrap" style="display:none"><label for="logOtp">Код из Telegram<input id="logOtp" name="logOtp" type="text" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="one-time-code"></label></div>
       <button type="button" class="cta" id="logBtn">Войти</button>
       <div class="alt" id="otpBackRow" style="display:none"><button type="button" id="otpBack">← Вернуться ко входу по PIN</button></div>
       <div class="alt"><button type="button" id="otpBtn">🔑 Не помню PIN — код в Telegram</button></div>
@@ -893,7 +901,8 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
   <div class="msub">Введите код, который выдал владелец кофейни.<br>Вкладки «Кассир» и «Админ» открываются только сотрудникам.</div>
   <form id="pinForm">
    <input type="text" autocomplete="username" hidden>
-   <input class="pin" id="pinInput" type="text" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+   <label for="pinInput" class="sr-only">Код доступа</label>
+   <input class="pin" id="pinInput" name="pinInput" type="text" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
    <button type="button" class="cta" id="pinGo">Активировать</button>
   </form>
   <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
@@ -906,7 +915,8 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
   <div class="msub">4 цифры — вы будете вводить их при входе.<br>Без PIN никто не сможет войти в ваш профиль.</div>
   <form id="setPinForm">
    <input type="text" autocomplete="username" hidden>
-   <input class="pin" id="setPinInput" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="new-password">
+   <label for="setPinInput" class="sr-only">PIN-код</label>
+   <input class="pin" id="setPinInput" name="setPinInput" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="new-password">
    <button type="button" class="cta" id="setPinGo">Сохранить PIN</button>
   </form>
   <div class="alt"><button type="button" id="setPinOtp">🔑 Не помню PIN — код в Telegram</button></div>
@@ -930,26 +940,27 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
   <h3>Промокоды и акции</h3>
   <div class="msub">Гость активирует код в «Бонусах» → «Есть промокод?»</div>
   <div class="form">
-   <label>Код
-    <input id="pmCode" placeholder="MORE10" style="text-transform:uppercase">
+   <label for="pmCode">Код
+    <input id="pmCode" name="pmCode" placeholder="MORE10" style="text-transform:uppercase">
     <small>Латиницей, без пробелов. Например: MORE10, SEA5</small>
    </label>
    <div class="frow">
-    <label class="f1">Тип
-  <select id="pmKind"><option value="stamp">Штампы (кофейня)</option><option value="free">Бесплатный кофе (кофейня)</option><option value="percent">Скидка % (доставка)</option><option value="money">Скидка ₽ (доставка)</option></select>     <small>«Штампы» — начислит N штампов. «Кофе» — сразу даст подарок</small>
+    <label for="pmKind" class="f1">Тип
+      <select id="pmKind" name="pmKind"><option value="stamp">Штампы (кофейня)</option><option value="free">Бесплатный кофе (кофейня)</option><option value="percent">Скидка % (доставка)</option><option value="money">Скидка ₽ (доставка)</option></select>
+      <small>«Штампы» — начислит N штампов. «Кофе» — сразу даст подарок</small>
     </label>
-    <label class="f1">Кол-во
-     <input id="pmValue" type="number" min="1" value="1">
+    <label for="pmValue" class="f1">Кол-во
+     <input id="pmValue" name="pmValue" type="number" min="1" value="1">
      <small>Сколько даст код: штампов или бесплатных кофе</small>
     </label>
    </div>
    <div class="frow">
-    <label class="f1">Дней
-     <input id="pmDays" type="number" min="0" value="0">
+    <label for="pmDays" class="f1">Дней
+     <input id="pmDays" name="pmDays" type="number" min="0" value="0">
      <small>0 — бессрочно. Иначе сгорит через N дней</small>
     </label>
-    <label class="f1">Лимит
-     <input id="pmMax" type="number" min="0" value="0">
+    <label for="pmMax" class="f1">Лимит
+     <input id="pmMax" name="pmMax" type="number" min="0" value="0">
      <small>0 — без лимита. Иначе — всего N активаций на всех</small>
     </label>
    </div>
@@ -959,19 +970,19 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
   <div id="pmList"></div>
   <h4 style="margin-top:16px">🍕 Пятничный подарок (доставка)</h4>
 <div class="form">
- <label>Текст акции для гостей<input id="wpText" placeholder="Каждые 2000 ₽ в чеке — бутылка пива в подарок 🍺"></label>
+ <label for="wpText">Текст акции для гостей<input id="wpText" name="wpText" placeholder="Каждые 2000 ₽ в чеке — бутылка пива в подарок 🍺"></label>
  <div class="frow">
-  <label class="f1">Порог, ₽ (0 = подарок к каждому заказу)<input id="wpThreshold" type="number" min="0" value="0"></label>
-  <label class="f1">Подарок (пусто = только текст)<input id="wpGift" placeholder="Пиво 0.5"></label>
+  <label for="wpThreshold" class="f1">Порог, ₽ (0 = подарок к каждому заказу)<input id="wpThreshold" name="wpThreshold" type="number" min="0" value="0"></label>
+  <label for="wpGift" class="f1">Подарок (пусто = только текст)<input id="wpGift" name="wpGift" placeholder="Пиво 0.5"></label>
  </div>
- <label>Действует до<input id="wpUntil" type="date"></label>
- <label class="chk"><input type="checkbox" id="wpPush"> Отправить пуш всем при сохранении</label>
+ <label for="wpUntil">Действует до<input id="wpUntil" name="wpUntil" type="date"></label>
+ <label class="chk"><input type="checkbox" id="wpPush" name="wpPush"> Отправить пуш всем при сохранении</label>
  <button class="btn fire" id="wpSave">Сохранить пятничный подарок</button>
 </div>
 <h4 style="margin-top:16px">🍕 Пицца месяца</h4>
 <div class="form">
- <label>Название подарочной (30 см, тонкое)<input id="pmName" placeholder="Маргарита"></label>
- <label class="chk"><input type="checkbox" id="pmOn"> Акция «2 пиццы 35 см → подарок» включена</label>
+ <label for="pmName">Название подарочной (30 см, тонкое)<input id="pmName" name="pmName" placeholder="Маргарита"></label>
+ <label class="chk"><input type="checkbox" id="pmOn" name="pmOn"> Акция «2 пиццы 35 см → подарок» включена</label>
  <button class="btn fire" id="pmSave">Сохранить пиццу месяца</button>
 </div>
  </div>
@@ -990,7 +1001,7 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
     <h4 style="margin-top:16px">Кто подписан на пуши</h4>
 <div id="pushSubs"></div>
 <div class="form">
-  <label>Текст акции<input id="pushText" maxlength="120" placeholder="Например: сегодня до 12:00 капучино −20%"></label>
+  <label for="pushText">Текст акции<input id="pushText" name="pushText" maxlength="120" placeholder="Например: сегодня до 12:00 капучино −20%"></label>
   <button class="btn fire" id="pushSend">🔔 Отправить</button>
 </div>
   </div>
@@ -1007,7 +1018,8 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
       <button class="btn ghost" id="scCloseThread" style="margin:10px 0 10px 8px">✓ Закрыть чат</button>
       <div id="scDialog" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
       <div class="findrow" style="margin-top:10px">
-        <input id="scInput" placeholder="Ответ гостю…">
+        <label for="scInput" class="sr-only">Ответ гостю</label>
+        <input id="scInput" name="scInput" placeholder="Ответ гостю…">
         <button class="btn fire" id="scSend">Отправить</button>
       </div>
     </div>
@@ -1028,36 +1040,40 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
     <div id="cartDiscount" style="color:var(--green);font-size:13px;margin-top:4px"></div>
     <div id="cartFee" style="color:var(--soft);font-size:13px;margin-top:2px"></div>
     <div id="cartGifts" style="color:var(--green);font-size:13px;margin-top:2px"></div>
-    <div class="findrow" style="margin-top:10px"><input id="cartPromo" placeholder="Промокод" style="text-transform:uppercase"><button class="btn ghost" id="cartPromoBtn">Применить</button></div>
-    <div id="cartPromoLine" style="color:var(--green);font-size:13px;margin-top:2px"></div>
+    <div class="findrow" style="margin-top:10px">
+      <label for="cartPromo" class="sr-only">Промокод</label>
+      <input id="cartPromo" name="cartPromo" placeholder="Промокод" style="text-transform:uppercase">
+      <button class="btn ghost" id="cartPromoBtn">Применить</button>
+    </div>
+    <div id="cartPromoLine" style="color:var(--green);font-size:13.5px;margin-top:2px"></div>
   </div>
   
   <div class="checkoutForm">
-    <label>Способ получения
-      <select id="checkoutMethod">
+    <label for="checkoutMethod">Способ получения
+      <select id="checkoutMethod" name="checkoutMethod">
         <option value="delivery">Доставка</option>
         <option value="pickup">Самовывоз (−10%)</option>
       </select>
     </label>
-    <label id="checkoutPlaceLabel">Населённый пункт
-      <select id="checkoutPlace"></select>
+    <label for="checkoutPlace" id="checkoutPlaceLabel">Населённый пункт
+      <select id="checkoutPlace" name="checkoutPlace"></select>
     </label>
-    <label id="checkoutAddrLabel">Адрес (улица, дом, квартира)
-      <input id="checkoutAddr" placeholder="Советская 10, кв. 5">
+    <label for="checkoutAddr" id="checkoutAddrLabel">Адрес (улица, дом, квартира)
+      <input id="checkoutAddr" name="checkoutAddr" placeholder="Советская 10, кв. 5">
     </label>
-    <label>Когда привезти
-      <select id="checkoutSlot">
+    <label for="checkoutSlot">Когда привезти
+      <select id="checkoutSlot" name="checkoutSlot">
         <option value="asap">Как можно скорее (~45 мин)</option>
       </select>
     </label>
-    <label>Оплата
-      <select id="checkoutPay">
+    <label for="checkoutPay">Оплата
+      <select id="checkoutPay" name="checkoutPay">
         <option value="cash">Наличные при получении</option>
         <option value="card">Картой при получении</option>
       </select>
     </label>
-    <label>Комментарий
-      <textarea id="checkoutComment" placeholder="Домофон, подъезд, пожелания…"></textarea>
+    <label for="checkoutComment">Комментарий
+      <textarea id="checkoutComment" name="checkoutComment" placeholder="Домофон, подъезд, пожелания…"></textarea>
     </label>
   </div>
   
@@ -1078,7 +1094,6 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
  if(seg)tb.append(ck,seg,av);else tb.append(ck,av);
 })();
 /* ── API-клиент ── */
-// Ф5.1: глобалы (T_USER..TINT) → public/app/core/state.js
 async function api(path,opts={}){
  const h={'Content-Type':'application/json'};
  if(USER_TOKEN)h['Authorization']='Bearer '+USER_TOKEN;
@@ -1099,8 +1114,6 @@ tickClock();setInterval(tickClock,20000);
 function renderUpd(){$('#updWhen').textContent=new Date(meta.updatedAt).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}
 const TK=['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с '+hoursNow()];
 $('#tickerTrack').innerHTML=TK.concat(TK).map(x=>`<span>${x}</span>`).join('');
-
-// Ф4.1a: QR-кластер (drawQR/openQRFull/closeQRFull + 4 привязки) → public/app/core/qr.js
 
 /* ── меню ── */
 async function loadMenu(){try{
@@ -1174,13 +1187,12 @@ async function tryActivate(){const v=$('#pinInput').value.trim();
   }}}
 $('#pinGo').onclick=tryActivate;
 document.addEventListener('submit',e=>{e.preventDefault();
- if(e.submitter)return; // клик по кнопке — её onclick уже сработал
+ if(e.submitter)return;
  if(e.target.id==='regForm')$('#regBtn').click();
  else if(e.target.id==='loginForm')$('#logBtn').click();
  else if(e.target.id==='pinForm')$('#pinGo').click();
  else if(e.target.id==='setPinForm')$('#setPinGo').click();
 });
-/* тап по самому QR = «на весь экран» (профиль и бонусы) */
 document.addEventListener('click',e=>{
  const t=e.target;
  const media=t.closest&&t.closest('canvas,img,svg,table');
@@ -1191,7 +1203,6 @@ document.addEventListener('click',e=>{
   if(b){b.click();return;}
  }
 });
-/* клавиатура не должна открываться над скрытыми полями */
 document.addEventListener('focusin',e=>{const t=e.target;
  if(t&&t.tagName==='INPUT'&&t.closest('[hidden], .modal:not(.show)'))t.blur();});
 addEventListener('load',()=>{const a=document.activeElement;
@@ -1327,7 +1338,6 @@ $('#logoutBtn').onclick=async()=>{
  closePanel();renderAll();openAuth();};
 
 $('#grid').addEventListener('click',e=>{const b=e.target.closest('[data-ed]');if(b)openEditor(b.dataset.ed)});
-/* ── превью фото: карточка на матовом фоне ── */
 let edit=null;
 $('#emCat').innerHTML=CATS.map(c=>`<option value="${c.id}">${c.e} ${c.l}</option>`).join('');
 function renderZone(){const z=$('#emZone');
@@ -1351,7 +1361,6 @@ function loadImg(file){const u=URL.createObjectURL(file),img=new Image();
   edit.img=c.toDataURL('image/jpeg',.82);URL.revokeObjectURL(u);renderZone()};
  img.onerror=()=>{URL.revokeObjectURL(u);toast('Не удалось прочитать файл','⚠️')};
  img.src=u}
-/* Ф3.6: openEditor/exitEdit/emSave/editToggle перенесены в public/app/menu-editor.js */
 $('#emDup').onclick=()=>{const c=clone(edit);delete c.id;c.name+=' (копия)';
  MENU.push(c);renderMenu();closeEditor();openEditor(c.id);
  toast('Дубликат подготовлен — нажмите «Сохранить»','⧉')};
@@ -1381,7 +1390,7 @@ $('#nameInput').addEventListener('change',async e=>{if(!me)return;
   toast('Профиль обновлён','✅')}catch(err){toast(err.message,'⚠️')}});
 $('#resetBtn').onclick=()=>{if(!confirm('Выйти и очистить локальные данные (токены)?'))return;
  localStorage.clear();location.reload()};
-/*  Ф4.1b: Review-кластер → public/app/core/review.js --> */
+
 /* ── промокоды ── */
 $('#promoBtn').onclick=async()=>{
  const code=$('#promoInput').value.trim();
@@ -1392,7 +1401,6 @@ $('#promoBtn').onclick=async()=>{
 $('#promoToggle').onclick=()=>{$('#promoModal').classList.add('show');syncOverlay();loadPromos();loadWeekPromo()};
 function closePromo(){$('#promoModal').classList.remove('show');syncOverlay()}
 $('#promoClose').onclick=closePromo;
-// Ф4.2: объявление loadPromos удалено — единственная реализация в public/app/admin-extra.js (window.loadPromos)
 
 $('#pmList').addEventListener('click',async e=>{
  const t=e.target.closest('[data-pt]'),d=e.target.closest('[data-pd]');
@@ -1456,7 +1464,7 @@ $('#dashToggle').onclick=async()=>{
  
 function closeDash(){$('#dashModal').classList.remove('show');syncOverlay()}
 $('#dashClose').onclick=closeDash;
-/* ── пуши ── */
+
 function urlBase64ToUint8Array(s){
   const padding='='.repeat((4-s.length%4)%4);
   const b64=(s+padding).replace(/-/g,'+').replace(/_/g,'/');
@@ -1495,7 +1503,7 @@ async function enablePush(){
   try{
    sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(v.publicKey)});
   }catch(e){
-   sub=await reg.pushManager.getSubscription();   // уже была подписка — берём её
+   sub=await reg.pushManager.getSubscription();
    if(!sub)throw e;
   }
   await api('/push/subscribe',{method:'POST',body:{sub:sub.toJSON()}});
@@ -1513,7 +1521,7 @@ function togglePushHint(show){
  if(show&&!h){
     setTimeout(()=>{
    if(document.getElementById('pushHint'))return;
-   const pb2=$('#pushBtn');if(pb2&&pb2.hidden)return;   // пуши уже включены — не дёргаем
+   const pb2=$('#pushBtn');if(pb2&&pb2.hidden)return;
    const nh=document.createElement('div');
    nh.id='pushHint';nh.className='pushHint';
    nh.innerHTML='🔔 Включите пуши тут →';
@@ -1556,7 +1564,7 @@ function refreshPushBtn(){
  let done=false;
  const apply=need=>{if(done)return;done=true;
   pb.hidden=!need;if(av)av.classList.toggle('pulse-hint',need);togglePushHint(need);};
- const t=setTimeout(()=>apply(false),3000); // SW не стартовал (Telegram Desktop) — прячем
+ const t=setTimeout(()=>apply(false),3000);
  navigator.serviceWorker.ready.then(async reg=>{
   try{
    let s=await reg.pushManager.getSubscription();
@@ -1570,7 +1578,7 @@ function refreshPushBtn(){
  }).catch(()=>{clearTimeout(t);apply(false);});
 }
 $('#pushBtn').onclick=enablePush;
-/* ── FCM (нативное приложение) ── */
+
 const isCap=!!(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.PushNotifications);
 if(isCap){
  const PN=Capacitor.Plugins.PushNotifications;
@@ -1599,18 +1607,15 @@ function loop(){fxx.clearRect(0,0,fx.width,fx.height);pieces=pieces.filter(p=>p.
   fxx.fillStyle=p.c;fxx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.62);fxx.restore()});
  pieces.length?requestAnimationFrame(loop):(fxOn=false,fxx.clearRect(0,0,fx.width,fx.height))}
 
-/* ── оверлей: единый источник правды, безопасная версия ── */
 let histPushed = false;
-// F1.4: replaced by fix-views v66 (window.syncOverlay = apply). Kept for boot only.
-// Contract: public/app/core/overlay.md
 function syncOverlay(){
   const ov = document.getElementById('overlay');
   const panel = document.getElementById('panel');
-  if (!ov) return;                                   // нет оверлея — нечего синхронизировать
-  const on = !!document.querySelector('.modal.show') // любая видимая модалка (без списка ID)
+  if (!ov) return;
+  const on = !!document.querySelector('.modal.show')
           || !!(panel && panel.classList.contains('open'));
   ov.classList.toggle('show', on);
-  ov.style.pointerEvents = on ? 'auto' : 'none';     // явно снимаем перехват кликов
+  ov.style.pointerEvents = on ? 'auto' : 'none';
   ov.setAttribute('aria-hidden', on ? 'false' : 'true');
   if (on && !histPushed){ histPushed = true; try { history.pushState({zerno:1},''); } catch(e){} }
   else if (!on && histPushed){ histPushed = false; try { history.back(); } catch(e){} }
@@ -1620,7 +1625,6 @@ addEventListener('popstate',()=>{
  histPushed=false;
  closePanel();closeEditor();closeAuth();closePin();closeQRFull();closePromo();closeDash();closeStaffChat();
 });
-// F1.4: цепочка base → v66 → v67. Не трогать (см. overlay.md)
 $('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeSetPin();closeQRFull();closePromo();closeDash();
   if(onboarded||me)closeAuth()};
 addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeSetPin();closeQRFull();closePromo();closeDash();
@@ -1644,7 +1648,7 @@ $('#brandSeg').addEventListener('click',e=>{
   syncBrandViews();
   if(brand==='delivery'&&!DMENU.length)loadDelivery();
 });
-/* ── ФИНАЛЬНАЯ версия переключения режимов и брендов (перекрывает всё выше) ── */
+
 function syncBrandViews(){
   const showGuest=(mode==='guest'||mode==='admin');
   const mv=$('#menuView'), dv=$('#deliveryView'), rl=$('#rail');
@@ -1705,6 +1709,7 @@ console.info('%c🌊 …и кофе · ребрендинг','font-weight:bold;f
 <script src="./app/menu.js" defer></script>
 <script src="./app/core/a11y.js" defer></script>
 <script src="./app/ui/styles.js" defer></script>
+<script src="app/ui/dropdowns.js" defer></script>
 <link rel="stylesheet" href="app/ui/theme-v2.css">
 <div id="installBanner" hidden style="position:fixed;left:12px;right:12px;bottom:86px;z-index:90;background:#12303E;color:#fff;border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.3)">
  <span style="flex:1;font-size:14px">📲 Установите приложение — карта всегда под рукой</span>
@@ -1722,6 +1727,10 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!localSt
  b.querySelector('span').innerHTML='🍏 Нажмите <b>Поделиться</b> → <b>На экран «Домой»</b> — и приложение на рабочем столе';
  b.querySelector('#installBtn').style.display='none';
 }
+</script>
+<div id="iosHint" hidden style="position:fixed;left:12px;right:12px;bottom:86px;z-index:95;background:#12303E;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:14px;line-height:1.45">
+ <span id="iosHintText"></span>
+ <button id="iosHintClose" style="float:right;background:none;border:none;color:#9FB2C6;font-size:16px">✕</button>
 </script>
 <div id="iosHint" hidden style="position:fixed;left:12px;right:12px;bottom:86px;z-index:95;background:#12303E;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:14px;line-height:1.45">
  <span id="iosHintText"></span>
@@ -1761,7 +1770,7 @@ body.is-cashier #scanFab{display:flex}
   <h3 style="margin:0 0 10px">📷 Скан QR гостя</h3>
   <video id="scanVideo" style="width:100%;border-radius:12px;background:#000" autoplay playsinline muted></video>
   <div id="scanStatus" style="color:#5A6B7A;font-size:13px;margin:8px 0">Наведите камеру на QR на экране гостя</div>
-  <input id="scanManual" placeholder="Или введите код, напр. Z-1A2B3C" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #D5DDE4">
+  <input id="scanManual" name="scanManual" placeholder="Или введите код, напр. Z-1A2B3C" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #D5DDE4">
   <button id="scanManualBtn" style="margin-top:8px;width:100%;padding:12px;border:none;border-radius:10px;background:#2E6F8E;color:#fff;font-weight:700">Найти</button>
  </div>
 </div>
@@ -1777,7 +1786,7 @@ body.is-cashier #scanFab{display:flex}
  </div>
 </div>
 
-<script src="./qrcode.min.js" defer></script>
+<script src="./qrcode.min.js" dehydrate="true" defer></script>
 <script src="./app/scanner.js" defer></script>
 <script src="app/menu-editor.js" defer></script>
 <script src="app/delivery.js" defer></script>
@@ -1790,7 +1799,7 @@ body.is-cashier #scanFab{display:flex}
 <script src="app/profile-brand.js" defer></script>
 <script src="app/core/overlay.js" defer></script>
 <script src="app/core/swipe.js" defer></script>
-<script src="app/admin-extra.js" defer></script>
+<script src="app/admin-extra.js" депозиты="true"></script>
 <script src="app/core/notify.js" defer></script>
 <script src="app/core/views.js" defer></script>
 <script src="app/core/config.js" defer></script>
@@ -1802,5 +1811,6 @@ body.is-cashier #scanFab{display:flex}
 <footer class="siteFooter">✉️ <a href="mailto:woxyara76@gmail.com">woxyara76@gmail.com</a> · вопросы, предложения, сотрудничество</footer>
 <script src="app/core/qr.js" defer></script>
 <script src="app/core/review.js" defer></script>
+
 </body>
 </html>
