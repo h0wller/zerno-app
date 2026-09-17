@@ -7,8 +7,71 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
 (function () {
     'use strict';
 
-    /* ── бонусы ── */
+    /* ══════════════════════════════════════════════════════════════
+       ГОТОВНОСТЬ me
+       Флаг: объект `me` уже загружен (или достоверно null для гостя).
+       До этого момента НЕ рендерим профиль/верификацию/бонусы,
+       чтобы у залогиненных не мигал блок «создайте профиль».
+       Внешний триггер: window.__profileMeReady()
+       ══════════════════════════════════════════════════════════════ */
+    var _meResolved = false;
+    var _meWaiters = [];
+
+    function _onMeResolved(fn) {
+        if (_meResolved) { try { fn(); } catch (e) { console.error(e); } return; }
+        _meWaiters.push(fn);
+    }
+
+    function _resolveMeReady() {
+        if (_meResolved) return;
+        _meResolved = true;
+        var queue = _meWaiters.splice(0);
+        queue.forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
+    }
+    window.__profileMeReady = _resolveMeReady;
+
+    // Автофолбэк — если внешний код не позвал __profileMeReady():
+    //  - ждём появления `me` до 5 сек, если в localStorage лежит токен;
+    //  - 500 мс, если токена нет (значит это чистый гость).
+    (function autoResolveMe() {
+        var started = Date.now();
+        var hasToken = false;
+        try { hasToken = (typeof USER_TOKEN !== 'undefined' && !!USER_TOKEN); } catch (_) {}
+        if (!hasToken) {
+            try {
+                for (var i = 0; i < localStorage.length; i++) {
+                    var k = localStorage.key(i);
+                    if (!k || !/token|auth|jwt/i.test(k)) continue;
+                    var v = localStorage.getItem(k);
+                    if (v && v.length > 8) { hasToken = true; break; }
+                }
+            } catch (_) {}
+        }
+        var timeout = hasToken ? 5000 : 500;
+        var tick = function () {
+            if (_meResolved) return;
+            var loaded = false;
+            try { loaded = (typeof me !== 'undefined') && me !== null; } catch (_) {}
+            if (loaded || Date.now() - started > timeout) return _resolveMeReady();
+            setTimeout(tick, 80);
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { setTimeout(tick, 20); }, { once: true });
+        } else {
+            setTimeout(tick, 20);
+        }
+    })();
+
+        /* ── бонусы ── */
     function renderBonus() {
+        if (!_meResolved) {
+            var noUserEl = document.getElementById('bonusNoUser');
+            var boxEl = document.getElementById('bonusBox');
+            if (noUserEl) noUserEl.hidden = true;
+            if (boxEl) boxEl.hidden = true;
+            _onMeResolved(function () { try { renderBonus(); } catch (e) {} });
+            return;
+        }
         $("#bonusNoUser").hidden = !!me;
         $("#bonusBox").hidden = !me;
         if (!me) return;
@@ -30,9 +93,9 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                 ? `<div class="freeCard"><span class="fe">🎁</span>
 <div><b>Кофе за наш счёт ×${me.free}</b><small>Покажите этот экран кассиру</small></div></div>`
                 : "";
-        const b = $("#burnFree");
-        if (b)
-            b.onclick = async () => {
+        const burnBtn = $("#burnFree");
+        if (burnBtn)
+            burnBtn.onclick = async () => {
                 try {
                     const r = await api("/redeem", { method: "POST" });
                     me = r.customer;
@@ -49,93 +112,144 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             mbf.hidden = me.free < 1;
             mbf.textContent = `🎁 подарок: ${me.free}`;
         }
+        setTimeout(() => {
+            if (me && me.qr) {
+                const qm = document.getElementById('qrMini');
+                const qmain = document.getElementById('qrMain');
+                if (qm && typeof drawQR === 'function') drawQR(qm, me.qr);
+                if (qmain && typeof drawQR === 'function') drawQR(qmain, me.qr);
+            }
+        }, 50);
     }
 
     /* ── профиль ── */
     /* защита от рекурсии: sv() → renderProfile() → syncBrandViews() (= sv()) */
-var _rpRunning = false;
-function renderProfile() {
-    if (_rpRunning) return;
-    _rpRunning = true;
-    try {
-        $("#profileNoUser").hidden = !!me;
-        $("#profileBox").hidden = !me;
-        if (!me) {
-            $("#avInit").textContent = "?";
-            $("#profileTopBtn").textContent = "?";
-            return;                 // гостю sync не нужен — sv() уже отработал
-        }
-        $("#avInit").textContent = (me.name[0] || "Г").toUpperCase();
-        $("#profileTopBtn").textContent = (me.name[0] || "Г").toUpperCase();
-        $("#nameInput").value = me.name;
-        $("#phoneLbl").textContent = me.phone + " · вход по номеру";
-        $("#chatsToggle2").hidden = !(
-            me &&
-            (me.role === "admin" || me.role === "cashier")
-        );
-        const r = me.role || "guest";
-        $("#roleLbl").textContent =
-            r === "admin"
-                ? "🔑 роль: администратор"
-                : r === "cashier"
-                    ? "🧾 роль: кассир"
-                    : "роль: гость";
-        $("#activateBtn").hidden = !(r === "guest" || r === "cashier");
-        $("#activateBtn").textContent =
-            r === "guest"
-                ? "🔑 У меня код доступа сотрудника"
-                : "🔑 Повысить до администратора";
-        refreshPushBtn();
-        const spb2 = $("#setPinBtn");
-        if (spb2) spb2.hidden = !me;
-        $("#dashToggle").hidden = !(me && me.role === "admin");
-        $("#stCups").textContent = me.cups;
-        $("#stStamps").textContent = me.stamps + "/10";
-        $("#stFree").textContent = me.free;
-        $("#histList").innerHTML =
-            (me.history || [])
-                .slice(0, 8)
-                .map(
-                    (h) =>
-                        `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`,
-                )
-                .join("") || '<div class="hmini">История пока пуста</div>';
+    var _rpRunning = false;
+    function renderProfile() {
+        if (_rpRunning) return;
+        _rpRunning = true;
+        try {
+            if (!_meResolved) {
+                // Пока me не загружен — держим оба блока скрытыми
+                var pnu = document.getElementById('profileNoUser');
+                var pbx = document.getElementById('profileBox');
+                if (pnu) pnu.hidden = true;
+                if (pbx) pbx.hidden = true;
+                _onMeResolved(function () { try { renderProfile(); } catch (e) {} });
+                return;
+            }
+            $("#profileNoUser").hidden = !!me;
+            $("#profileBox").hidden = !me;
+            if (!me) {
+                $("#avInit").textContent = "?";
+                $("#profileTopBtn").textContent = "?";
+                return;
+            }
+            $("#avInit").textContent = (me.name[0] || "Г").toUpperCase();
+            $("#profileTopBtn").textContent = (me.name[0] || "Г").toUpperCase();
+            $("#nameInput").value = me.name;
+            $("#phoneLbl").textContent = me.phone + " · вход по номеру";
+            $("#chatsToggle2").hidden = !(
+                me &&
+                (me.role === "admin" || me.role === "cashier")
+            );
+            const r = me.role || "guest";
+            $("#roleLbl").textContent =
+                r === "admin"
+                    ? "🔑 роль: администратор"
+                    : r === "cashier"
+                        ? "🧾 роль: кассир"
+                        : "роль: гость";
+            $("#activateBtn").hidden = !(r === "guest" || r === "cashier");
+            $("#activateBtn").textContent =
+                r === "guest"
+                    ? "🔑 У меня код доступа сотрудника"
+                    : "🔑 Повысить до администратора";
+            refreshPushBtn();
+            const spb2 = $("#setPinBtn");
+            if (spb2) spb2.hidden = !me;
+            $("#dashToggle").hidden = !(me && me.role === "admin");
+            $("#stCups").textContent = me.cups;
+            $("#stStamps").textContent = me.stamps + "/10";
+            $("#stFree").textContent = me.free;
+            $("#histList").innerHTML =
+                (me.history || [])
+                    .slice(0, 8)
+                    .map(
+                        (h) =>
+                            `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`,
+                    )
+                    .join("") || '<div class="hmini">История пока пуста</div>';
 
-        /* перерисовать виды/режимы после загрузки me — ТЕПЕРЬ БЕЗОПАСНО */
-        if (typeof window.syncBrandViews === "function") window.syncBrandViews();
-    } finally {
-        _rpRunning = false;
-    }
-}
-    /* ── блок верификации под кнопкой PIN ── */
-    function renderVerifyNote() {
-        let n = $("#verifyNote");
-        if (!n && $("#setPinBtn")) {
-            n = document.createElement("div");
-            n.id = "verifyNote";
-            $("#setPinBtn").parentNode.insertBefore(n, $("#setPinBtn"));
+            if (typeof window.syncBrandViews === "function") window.syncBrandViews();
+        } finally {
+            _rpRunning = false;
         }
-        if (!n) return;
-        if (!me) {
-            n.hidden = true;
+    }
+
+    /* ── блок верификации под кнопкой PIN ── */
+    var _verifyNoteQueued = false;
+    function renderVerifyNote() {
+        // ПОКА me НЕ ЗАГРУЖЕН — ничего не показываем и ставим рендер в очередь
+        if (!_meResolved) {
+            var existing = document.getElementById('verifyNote');
+            if (existing) existing.hidden = true;
+            var actBtn0 = document.getElementById('activateBtn');
+            if (actBtn0) actBtn0.hidden = true;
+            if (!_verifyNoteQueued) {
+                _verifyNoteQueued = true;
+                _onMeResolved(function () {
+                    _verifyNoteQueued = false;
+                    try { renderVerifyNote(); } catch (e) {}
+                });
+            }
             return;
         }
+
+        let n = $("#verifyNote");
+        const pb = $("#profileBox");
+        if (!pb) return;
+
+        if (!n) {
+            n = document.createElement("div");
+            n.id = "verifyNote";
+            pb.insertBefore(n, pb.firstChild);
+        }
+
+        const isStaff = me && me.role && me.role !== 'guest';
+        const isVerified = me && (me.verified === true || me.verified === 1 || me.verified > 0);
+        const isAlreadyActive = !me || isStaff || isVerified;
+
+        if (isAlreadyActive) {
+            n.hidden = true;
+            n.innerHTML = "";
+            const actBtn = document.getElementById('activateBtn');
+            if (actBtn) actBtn.hidden = true;
+            return;
+        }
+
         let html = "";
-        if (!me.verified)
-            html +=
-                '<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small><div style="display:flex;gap:8px"><input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1"><button class="btn fire" id="actBtn">Активировать</button></div>';
-        if (!me.welcome && !me.tg)
-            html +=
-                '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>+1 штамп</b> за привязку в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
-        n.hidden = !html;
+        html += '<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small>' +
+                '<div style="display:flex;gap:8px;margin-bottom:12px">' +
+                '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1">' +
+                '<button class="btn fire" id="actBtn">Активировать</button>' +
+                '</div>';
+
+        if (!me.welcome && !me.tg) {
+            html += '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>+1 штамп</b> за привязку в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
+        }
+
+        n.hidden = false;
         n.innerHTML = html;
+
         const ab = $("#actBtn");
-        if (ab)
+        if (ab) {
             ab.onclick = async () => {
                 try {
+                    const codeVal = $("#actCode").value.trim();
                     const r = await api("/auth/activate-guest", {
                         method: "POST",
-                        body: { code: $("#actCode").value.trim() },
+                        body: { code: codeVal },
                     });
                     me = r.customer;
                     toast("Профиль активирован! А +1 штамп ждёт в Telegram 🎁", "");
@@ -144,13 +258,13 @@ function renderProfile() {
                     toast(e.message, "⚠️");
                 }
             };
+        }
     }
 
     /* ══ Ф3.5: loadMyOrders (единая реализация) ══ */
     async function loadMyOrders() {
         var host = document.getElementById('myOrders');
         if (!host || !me) return;
-        // Бренд-гард: показываем только для доставки
         if (typeof brand !== 'undefined' && brand !== 'delivery') {
             host.innerHTML = '';
             return;
@@ -244,8 +358,7 @@ function renderProfile() {
     b.onclick = window.renderOrdersModal;
 })();
 
-/* QR-патч: показывает буквенный QR-код под подписями в профиле.
-Перенесено из inline (F2.4): раньше жил в конце scanner-IIFE. */
+/* QR-патч: показывает буквенный QR-код под подписями в профиле. */
 (function patchQR() {
     if (typeof window.renderProfile !== 'function') return;
     const _rp = window.renderProfile;
@@ -266,7 +379,6 @@ function renderProfile() {
                     lab.parentNode.insertBefore(d, lab.nextSibling);
                     document.querySelectorAll('button').forEach(b => {
                         if (/Погасить/.test(b.textContent)) b.style.display = (me.role === 'guest' ? 'none' : '');
-                        
                     });
                 }
             } catch (e) { }

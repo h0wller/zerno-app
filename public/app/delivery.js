@@ -1,8 +1,4 @@
-/* public/app/delivery.js — F2.5: доставка — state, рендер меню и корзины.
-   ВАЖНО: без IIFE — fix-views.js оборачивает renderCart (231), renderDeliveryMenu
-   (331/1362/1482), renderDeliveryRail (328).
-   loadDelivery / populateSlots / updateCartFab остаются в index.html:
-   fix-views полностью их перезаписывает (см. docs/frontend-todo.md). */
+/* public/app/delivery.js — F2.5: доставка — state, рендер меню и корзины. */
 
 var DMENU = [];
 var cart = JSON.parse(localStorage.getItem('zt_cart') || '[]');
@@ -13,7 +9,6 @@ var cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
 const DCATS = [{ id: 'pizza', e: '🍕', l: 'Пиццы' }, { id: 'rolls', e: '🍣', l: 'Роллы' }, { id: 'sets', e: '🍱', l: 'Сеты' }, { id: 'sauces', e: '🥫', l: 'Соусы' }];
 var dcat = 'pizza';
 
-/* ── рейл категорий ── */
 function renderDeliveryRail() {
   $('#deliveryRail').innerHTML = DCATS.map(c =>
     `<button data-dcat="${c.id}" class="${c.id === dcat ? 'on' : ''}"><span class="re">${c.e}</span>${c.l}</button>`
@@ -24,15 +19,14 @@ $('#deliveryRail').addEventListener('click', e => {
   if (b) { dcat = b.dataset.dcat; renderDeliveryRail(); renderDeliveryMenu(); }
 });
 
-/* ── сетка блюд ── */
 function renderDeliveryMenu() {
   const list = DMENU.filter(p => p.cat === dcat);
-  $('#deliveryGrid').innerHTML = list.map(p => {
+  let html = list.map(p => {
     const opts = p.opts || [];
     const optsHTML = opts.length
-      ?  `<div class="opts">${opts.map((o, i) =>` <button data-id= "${p.id} " data-oi= "${i} " >${o.l} · ${o.w} · ${fmt(o.p)} </button > `).join('')}</div>` 
-: '';
-    return `<article class="card" style="--d:0">
+      ? `<div class="opts">${opts.map((o, i) => `<button data-id="${p.id}" data-oi="${i}">${o.l} · ${o.w} ·${fmt(o.p)}</button>`).join('')}</div>`
+      : '';
+    return `<article class="card">
       <div class="media" style="--tint:#F3E2CE"><span class="em">${p.e || '🍕'}</span></div>
       <div class="cbody">
         <h3>${esc(p.name)}</h3>
@@ -41,7 +35,25 @@ function renderDeliveryMenu() {
         <button class="cta" data-add="${p.id}" style="margin-top:auto">Добавить</button>
       </div>
     </article>`;
-  }).join('') || '<div class="gempty">В этой категории пока пусто</div>';
+  }).join('');
+
+  if (typeof editMode !== 'undefined' && editMode) {
+    html += `<article class="card add-card" id="addDelivCard">
+      <div style="font-size:32px">➕</div>
+      <div>Добавить позицию в доставку</div>
+    </article>`;
+  }
+
+  if (list.length === 0 && (!typeof editMode !== 'undefined' || !editMode)) {
+    html += '<div class="gempty">В этой категории пока пусто</div>';
+  }
+
+  $('#deliveryGrid').innerHTML = html;
+
+  const addCard = document.getElementById('addDelivCard');
+  if (addCard) {
+    addCard.onclick = () => openEditor(null, 'delivery');
+  }
 }
 
 $('#deliveryGrid').addEventListener('click', e => {
@@ -69,7 +81,6 @@ $('#deliveryGrid').addEventListener('click', e => {
   }
 });
 
-/* ── корзина ── */
 $('#cartFab').onclick = () => { $('#cartPanel').classList.add('open'); };
 $('#cartClose').onclick = () => { $('#cartPanel').classList.remove('open'); };
 
@@ -115,7 +126,6 @@ $('#checkoutMethod').onchange = () => {
 
 $('#cartFab').onclick = () => { renderCart(); $('#cartPanel').classList.add('open'); };
 
-/* ── оформление ── */
 function populatePlaces() {
   if (!deliveryInfo) return;
   const places = deliveryInfo.zones.flatMap(z => z.places);
@@ -147,8 +157,6 @@ $('#checkoutBtn').onclick = async () => {
     $('#cartPanel').classList.remove('open');
   } catch (e) { toast(e.message, '⚠️'); }
 };
-/* ══ Ф3.7: loadDelivery, populateSlots, updateCartFab ══ */
-/* Перенесено из fix-views.js и мёртвого кода index.html */
 
 window.loadDelivery = async function(){
   try {
@@ -159,49 +167,33 @@ window.loadDelivery = async function(){
     } else {
       r = await api('/dmenu');
     }
-    
     DMENU = r.items || [];
     deliveryInfo = await fetch(API_BASE + '/api/delivery/info').then(function(x){ return x.json(); });
-    
-    var wp = deliveryInfo.weekPromo, pm = deliveryInfo.pizzaMonth;
-    var bEl = document.getElementById('deliveryBanner');
-    if (bEl) {
-      bEl.innerHTML = (wp ? '<div class="deliveryBanner">🎁 ' + esc(wp.text) + '</div>' : '') +
-                      (pm ? '<div class="deliveryBanner">🍕 2 пиццы 35 см → «' + esc(pm.name) + '» в подарок!</div>' : '');
-    }
-    
     populatePlaces();
     populateSlots();
     renderDeliveryRail();
     renderDeliveryMenu();
     updateCartFab();
-  } catch(e) {
-    console.log('delivery load err', e);
-  }
+  } catch(e) {}
 };
 
 window.populateSlots = function(){
   var now = new Date();
   var pad = function(n){ return String(n).padStart(2, '0'); };
   var slots = [{ v: 'asap', l: 'Как можно скорее (~45 мин)' }];
-  
   for (var d = 0; d < 2; d++) {
     for (var m = 660; m < 1320; m += 30) {
       var t = new Date(now);
       t.setDate(t.getDate() + d);
       t.setHours(Math.floor(m / 60), m % 60, 0, 0);
       if (t <= now) continue;
-      
       var label = pad(t.getDate()) + '-' + pad(t.getMonth() + 1) + ' | ' + pad(t.getHours()) + '-' + pad(t.getMinutes());
       slots.push({ v: label, l: label });
     }
   }
-  
   var sel = document.getElementById('checkoutSlot');
   if (sel) {
-    sel.innerHTML = slots.map(function(s){ 
-      return '<option value="' + s.v + '">' + s.l + '</option>'; 
-    }).join('');
+    sel.innerHTML = slots.map(function(s){ return '<option value="' + s.v + '">' + s.l + '</option>'; }).join('');
   }
 };
 
@@ -212,16 +204,14 @@ window.updateCartFab = function(){
   paintTotals();
   cartFabShow();
 };
-/* ══ Ф3.7: totalsNow, paintTotals, cartFabShow (зависимости updateCartFab) ═ */
+
 window.totalsNow = function(){
   var sum = cart.reduce(function(a,c){ return a + c.price * c.qty; }, 0);
   var method = document.getElementById('checkoutMethod').value;
   var pickup = method === 'pickup' ? Math.round(sum * 0.10) : 0;
   var fee = 0;
   if (method === 'delivery' && deliveryInfo) {
-    var z = deliveryInfo.zones.find(function(z){ 
-      return z.places.includes(document.getElementById('checkoutPlace').value); 
-    });
+    var z = deliveryInfo.zones.find(function(z){ return z.places.includes(document.getElementById('checkoutPlace').value); });
     fee = z ? z.fee : 0;
   }
   var pd = promoInfo ? promoDisc(sum, promoInfo) : 0;
@@ -245,128 +235,3 @@ window.cartFabShow = function(){
 function promoDisc(sum, info){
   return info.kind === 'percent' ? Math.round(sum * Math.min(90, info.value) / 100) : Math.min(info.value || 0, sum);
 }
-/* ── Ф3.18: пост-обработка карточек доставки (стоп-лист, фото, карандаши, тумблеры, размеры).
-Слияние секции 4 + R8 + v62 fix-views в одну реализацию.
-Повторный тап по размеру НЕ здесь — он в cart.js (Ф3.9). ── */
-(function(){
-'use strict';
-var css=document.createElement('style');
-css.textContent='#deliveryGrid .card .media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}';
-document.head.appendChild(css);
-function patchCards(){
-var list=(typeof DMENU!=='undefined'?DMENU:[]).filter(function(p){return p.cat===(typeof dcat!=='undefined'?dcat:'pizza');});
-var cards=document.querySelectorAll('#deliveryGrid .card');
-var editing=document.body.classList.contains('editing');
-cards.forEach(function(card,i){
-var p=list[i];if(!p)return;
-card.classList.toggle('stopped',!p.on);
-var media=card.querySelector('.media');
-if(media){
-var sb=media.querySelector('.stopbadge');
-if(!p.on&&!sb){sb=document.createElement('span');sb.className='stopbadge';sb.textContent='СТОП';media.appendChild(sb);}
-if(p.on&&sb)sb.remove();
-if(p.img&&!media.querySelector('img')){var em=media.querySelector('.em');if(em)em.remove();
-var im=document.createElement('img');im.src=p.img;im.alt=p.name||'';media.appendChild(im);}
-}
-var add=card.querySelector('[data-add]');
-if(add){
-if(!p.on){add.disabled=true;add.style.opacity='.45';add.style.pointerEvents='none';add.textContent='СТОП — недоступно';}
-else if(add.disabled){add.disabled=false;add.style.opacity='';add.style.pointerEvents='';add.textContent='Добавить';}
-}
-card.querySelectorAll('.opts button').forEach(function(b){
-if(b.querySelector('.ol'))return;
-var parts=b.textContent.split(' · ');
-if(parts.length<3)return;
-b.innerHTML='<span class="ol">'+parts[0]+'</span><span class="op">'+parts[1]+' · '+parts[2]+'</span>';
-});
-card.querySelectorAll('.opts button.sel').forEach(function(b){b.classList.remove('sel');});
-if(editing){
-card.style.position='relative';
-if(!card.querySelector('.edBtn')){var b=document.createElement('button');b.type='button';b.className='edBtn';b.dataset.ed=p.id;b.textContent='✏️';card.appendChild(b);}
-var lab=card.querySelector('.donoff');
-if(!lab){lab=document.createElement('label');lab.className='donoff';lab.innerHTML='<input type="checkbox" data-onoff="'+p.id+'">в меню';card.appendChild(lab);}
-lab.querySelector('input').checked=!!p.on;
-}else{
-var d2=card.querySelector('.donoff');if(d2)d2.remove();
-var e2=card.querySelector('.edBtn');if(e2)e2.remove();
-}
-});
-}
-window.patchCards=patchCards;
-/* соусы не нужны в рейле */
-renderDeliveryRail=(function(_rr){return function(){var r=_rr.apply(this,arguments);
-var b=document.querySelector('#deliveryRail [data-dcat="sauces"]');if(b)b.remove();
-return r;};})(renderDeliveryRail);
-/* единственная пост-обработка при рендере меню */
-renderDeliveryMenu=(function(_rm){return function(){var r=_rm.apply(this,arguments);
-try{patchCards();}catch(e){}
-return r;};})(renderDeliveryMenu);
-/* карандаш → редактор */
-document.addEventListener('click',function(e){
-var b=e.target.closest('#deliveryGrid .edBtn');if(!b)return;
-e.stopPropagation();e.preventDefault();
-var id=b.getAttribute('data-ed');
-if(id&&typeof openEditor==='function')openEditor(id);
-},true);
-/* стоп-гард клика + шейк «выбери размер» */
-document.getElementById('deliveryGrid').addEventListener('click',function(e){
-var add=e.target.closest('[data-add]');if(!add)return;
-var p=(typeof DMENU!=='undefined'?DMENU:[]).find(function(x){return x.id===add.getAttribute('data-add');});
-if(p&&!p.on){e.stopPropagation();e.preventDefault();toast('Позиция в стоп-листе — недоступна для заказа','⛔');return;}
-var body=add.closest('.cbody');var optsBox=body&&body.querySelector('.opts');
-if(optsBox&&!optsBox.querySelector('.sel')){
-e.stopPropagation();
-toast('Выберите размер пиццы 🍕','');
-optsBox.classList.remove('shake');void optsBox.offsetWidth;optsBox.classList.add('shake');
-}
-},true);
-/* снятие шейка */
-document.addEventListener('animationend',function(e){
-if(e.target&&e.target.classList&&e.target.classList.contains('shake'))e.target.classList.remove('shake');
-},true);
-/* ЕДИНСТВЕННЫЙ обработчик тумблера стоп-листа */
-document.getElementById('deliveryGrid').addEventListener('change',async function(e){
-var t=e.target.closest('.donoff [data-onoff]');if(!t)return;
-e.stopPropagation();
-var p=(typeof DMENU!=='undefined'?DMENU:[]).find(function(x){return x.id===t.getAttribute('data-onoff');});
-if(!p)return;
-p.on=t.checked?1:0;
-try{
-await api('/menu/'+p.id,{method:'PUT',body:p});
-await loadDelivery();
-toast(t.checked?'«'+esc(p.name)+'» снова в меню':'«'+esc(p.name)+'» → стоп-лист',t.checked?'✅':'⛔');
-}catch(err){
-toast(err.message,'⚠️');
-loadDelivery();
-}
-},true);
-/* вход/выход из режима правки + живые перерисовки сетки */
-document.getElementById('editToggle').addEventListener('click',function(){setTimeout(patchCards,80);setTimeout(patchCards,400);});
-var pcQueued=false;
-new MutationObserver(function(){
-  if(pcQueued)return;pcQueued=true;
-  requestAnimationFrame(function(){pcQueued=false;if(document.body.classList.contains('editing'))patchCards();});
-}).observe(document.getElementById('deliveryGrid')||document.body,{childList:true,subtree:true});
-setTimeout(patchCards,300);
-})();
-/* ── Ф5.7b v3: «Обновлено» в Пятнице — 1-в-1 как в кофейне (класс .upd, отдельной строкой) ── */
-(function(){
-  var dv=document.getElementById('deliveryView');if(!dv)return;
-  var old=document.getElementById('updWhenD');if(old)old.remove();
-  var leaf=Array.prototype.slice.call(dv.querySelectorAll('.mh-top *')).filter(function(el){
-    return /Работаем ежедневно/.test(el.textContent||'')&&el.children.length===0;
-  })[0];
-  var box=leaf?leaf.parentElement:dv.querySelector('.mh-top');
-  if(!box)return;
-  var d=document.createElement('div');d.className='upd';d.id='updWhenD';
-  d.innerHTML='Обновлено <b>—</b>';
-  box.appendChild(d);
-  function upd(){
-    var el=document.getElementById('updWhenD');
-    var b=el&&el.querySelector('b');
-    if(b&&typeof meta!=='undefined'&&meta.updatedAt)
-      b.textContent=new Date(meta.updatedAt).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
-  }
-  renderDeliveryMenu=(function(_rm){return function(){var r=_rm.apply(this,arguments);upd();return r;};})(renderDeliveryMenu);
-  upd();
-})();

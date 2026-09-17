@@ -34,13 +34,24 @@ function showCust(u, last = null) {
 }
 
 $('#findBtn').onclick = async () => {
-  const q = $('#findInput').value;
+  let q = $('#findInput').value.trim();
+  // Очищаем от нецифровых символов для надежного поиска (обрезаем до 10 цифр с конца)
+  const clean = q.replace(/\D/g, '');
+  if (clean.length >= 7) {
+    q = clean.slice(-10);
+  }
   try {
     const r = await api('/staff/customers?search=' + encodeURIComponent(q));
-    if (!r.customers.length) return toast('Гость не найден. Создайте профиль → «＋ Новый гость»', '🔍');
-    if (r.customers.length > 1) toast('Найдено несколько — показан первый', 'ℹ️');
+    if (!r.customers || !r.customers.length) {
+      return toast('Гость не найден. Создайте профиль → «＋ Новый гость»', '🔍');
+    }
+    if (r.customers.length > 1) {
+      toast('Найдено несколько — показан первый', 'ℹ️');
+    }
     showCust(r.customers[0]);
-  } catch (e) { toast(e.message, '⚠️'); }
+  } catch (e) { 
+    toast(e.message, '⚠️'); 
+  }
 };
 
 $('#findInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('#findBtn').click(); });

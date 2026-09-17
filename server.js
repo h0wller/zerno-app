@@ -96,10 +96,8 @@ app.use(express.static(PUBLIC_DIR, {
   setHeaders: (res, p) => {
     if (p.endsWith('index.html') || p.endsWith('sw.js') || p.endsWith('manifest.webmanifest')) {
       res.setHeader('Cache-Control', 'no-cache');
-    } else if (/\.(woff2?|png|jpe?g|svg|ico|webp)$/i.test(p)) {
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    } else if (/\.(css|js)$/i.test(p)) {
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+    } else if (/\.(woff2?|png|jpe?g|svg|ico|webp)$/i.test(p)) {       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');     } else if (/\.(css\vert{}js)$/i.test(p)) {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
     }
   }
 }));
