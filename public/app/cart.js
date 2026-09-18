@@ -1,6 +1,5 @@
 /* public/app/cart.js — Ф3.9: корзина доставки (состояние, промо, итоги, аддоны, checkout).
-   База рендера (renderCart/orderCard) остаётся в index.html; здесь — состояние и дополнения.
-   Обёртки — паттерн растворения: финальное слияние с базой в Ф3.15–Ф3.16. */
+   База рендера (renderCart/orderCard) остаётся в index.html; здесь — состояние и дополнения. */
 (function () {
   "use strict";
 
@@ -135,18 +134,70 @@
     paintTotals();
   }
 
-  /* глобалы для delivery.js (updateCartFab), sv() из fix-views и будущих модулей */
   window.totalsNow = totalsNow;
   window.paintTotals = paintTotals;
   window.cartFabShow = cartFabShow;
   window.clearPromo = clearPromo;
 
-  /* ── обёртки рендера (база — index.html) ── */
+  // Прогресс-бар акции доставки, синхронизированный с админкой (weekPromo)
+  var isDelivery = document.documentElement.getAttribute('data-brand') === 'delivery';
+  if (isDelivery) {
+    var tNow = window.totalsNow ? window.totalsNow().sum : 0;
+    var wp = (typeof deliveryInfo !== 'undefined' && deliveryInfo && deliveryInfo.weekPromo) ? deliveryInfo.weekPromo : {};
+    var thresholdVal = Number(wp.threshold) > 0 ? Number(wp.threshold) : 2000;
+    var giftText = wp.gift || 'бонус';
+    
+    var diffVal = thresholdVal - (tNow % thresholdVal);
+    var progressVal = thresholdVal > 0 ? Math.min(100, Math.round(((thresholdVal - (tNow % thresholdVal)) / thresholdVal) * 100)) : 0;
+    if (tNow >= thresholdVal) progressVal = 100;
+    var isDone = tNow >= thresholdVal;
+    
+    var container = document.getElementById('cartItems');
+    var pBar = document.getElementById('deliveryPromoBar');
+    if (!pBar && container) {
+      pBar = document.createElement('div');
+      pBar.id = 'deliveryPromoBar';
+      container.prepend(pBar);
+    }
+    if (pBar) {
+      pBar.style.cssText = 'background: #F4EFE6; padding: 10px 14px; border-radius: 10px; margin: 8px 0 14px; border: 1px dashed var(--flame, #C03B2A);';
+      pBar.innerHTML = '<div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; margin-bottom:6px; color:#222;">' +
+        '<span>' + (isDone ? '🎁 Акция выполнена: ' + esc(giftText) : 'До подарка (' + esc(giftText) + '):') + '</span>' +
+        '<span>' + (isDone ? 'Выполнено' : 'еще ' + diffVal + ' ₽') + '</span></div>' +
+        '<div style="height: 6px; background: #E0D9CD; border-radius: 4px; overflow: hidden;">' +
+        '<div style="width: ' + progressVal + '%; height: 100%; background: var(--flame, #C03B2A); transition: width 0.3s ease;"></div></div>';
+    }
+  }
+
+  /* ── обёртки рендера ── */
   renderCart = (function (_rc) {
     return function () {
       var r = _rc();
       renderAddons();
       paintTotals();
+      
+      var isDelBrand = document.documentElement.getAttribute('data-brand') === 'delivery';
+      var container = document.getElementById('cartItems');
+      if (isDelBrand && container && !document.getElementById('deliveryPromoBar')) {
+        var tNow = window.totalsNow ? window.totalsNow().sum : 0;
+        var wp = (typeof deliveryInfo !== 'undefined' && deliveryInfo && deliveryInfo.weekPromo) ? deliveryInfo.weekPromo : {};
+        var thresholdVal = Number(wp.threshold) > 0 ? Number(wp.threshold) : 2000;
+        var giftText = wp.gift || 'бонус';
+        var diffVal = thresholdVal - (tNow % thresholdVal);
+        var progressVal = thresholdVal > 0 ? Math.min(100, Math.round(((thresholdVal - (tNow % thresholdVal)) / thresholdVal) * 100)) : 0;
+        if (tNow >= thresholdVal) progressVal = 100;
+        var isDone = tNow >= thresholdVal;
+
+        var pBar = document.createElement('div');
+        pBar.id = 'deliveryPromoBar';
+        pBar.style.cssText = 'background: #F4EFE6; padding: 10px 14px; border-radius: 10px; margin: 8px 0 14px; border: 1px dashed var(--flame, #C03B2A);';
+        pBar.innerHTML = '<div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; margin-bottom:6px; color:#222;">' +
+          '<span>' + (isDone ? '🎁 Акция выполнена: ' + esc(giftText) : 'До подарка (' + esc(giftText) + '):') + '</span>' +
+          '<span>' + (isDone ? 'Выполнено' : 'еще ' + diffVal + ' ₽') + '</span></div>' +
+          '<div style="height: 6px; background: #E0D9CD; border-radius: 4px; overflow: hidden;">' +
+          '<div style="width: ' + progressVal + '%; height: 100%; background: var(--flame, #C03B2A); transition: width 0.3s ease;"></div></div>';
+        container.prepend(pBar);
+      }
       var sum = cart.reduce(function (a, c) {
         return a + c.price * c.qty;
       }, 0);
@@ -171,15 +222,11 @@
     };
   })(orderCard);
 
-  /* ── обработчики ── */
   var promoInput = document.getElementById("cartPromo");
   if (promoInput) {
     promoInput.addEventListener("input", function () {
       var v = promoInput.value.trim().toUpperCase();
-      if (!v) {
-        clearPromo();
-        return;
-      }
+      if (!v) { clearPromo(); return; }
       clearTimeout(promoTimer);
       promoTimer = setTimeout(function () {
         cartPromoCode = v;
@@ -191,22 +238,13 @@
   if (promoBtn)
     promoBtn.onclick = function () {
       var v = (promoInput ? promoInput.value : "").trim().toUpperCase();
-      if (!v) {
-        clearPromo();
-        return;
-      }
+      if (!v) { clearPromo(); return; }
       cartPromoCode = v;
       refreshPromoLine(totalsNow().sum);
     };
-  function repaintCart() {
-    renderCart();
-  }
-  document
-    .getElementById("checkoutPlace")
-    .addEventListener("change", repaintCart);
-  document
-    .getElementById("checkoutMethod")
-    .addEventListener("change", repaintCart);
+  function repaintCart() { renderCart(); }
+  document.getElementById("checkoutPlace").addEventListener("change", repaintCart);
+  document.getElementById("checkoutMethod").addEventListener("change", repaintCart);
 
   document.getElementById("cartPanel").addEventListener("click", function (e) {
     var ch = e.target.closest("[data-addon]");
@@ -250,20 +288,7 @@
       var addrV = document.getElementById("checkoutAddr").value.trim();
       if (!addrV) return toast("Укажите адрес", "🏠");
       if (!/\d/.test(addrV) || addrV.length < 5)
-        return toast(
-          "Адрес выглядит неполным: нужны улица и номер дома, напр. «Советская 10, кв. 5»",
-          "🏠",
-        );
-    }
-    var clamped = cart.some(function (c) {
-      return c.qty > 99;
-    });
-    if (clamped) {
-      cart.forEach(function (c) {
-        if (c.qty > 99) c.qty = 99;
-      });
-      toast("Максимум 99 шт в одной строке — количество уменьшено", "⚠️");
-      renderCart();
+        return toast("Адрес выглядит неполным: нужны улица и номер дома, напр. «Советская 10, кв. 5»", "🏠");
     }
     var body = {
       method: method,
@@ -292,11 +317,10 @@
       toast(e.message, "⚠️");
     }
   };
-  /* чат-FAB: не поверх корзины — скрыт чисто CSS, пока шторка открыта (без JS-гонок) */
+
   (function () {
     var s = document.createElement("style");
-    s.textContent =
-      "body:has(#cartPanel.open) #chatFab{display:none!important}";
+    s.textContent = "body:has(#cartPanel.open) #chatFab{display:none!important}";
     document.head.appendChild(s);
   })();
 })();

@@ -1,5 +1,4 @@
 /* public/app/profile.js — F2.2: профиль гостя, бонусы, верификация */
-/* ── state: хелперы штампов ── */
 var cupWord = n => n === 1 ? 'чашка' : (n > 0 && n < 5 ? 'чашки' : 'чашек');
 var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
   '<g transform="rotate(-24 12 12)">' +
@@ -9,18 +8,11 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
       'stroke-linecap="round"/>' +
     '<ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/>' +
   '</g></svg>';
-  var stampIcon = i => i === 9 ? '☕' : BEAN;
+var stampIcon = i => i === 9 ? '☕' : BEAN;
 
 (function () {
     'use strict';
 
-    /* ══════════════════════════════════════════════════════════════
-       ГОТОВНОСТЬ me
-       Флаг: объект `me` уже загружен (или достоверно null для гостя).
-       До этого момента НЕ рендерим профиль/верификацию/бонусы,
-       чтобы у залогиненных не мигал блок «создайте профиль».
-       Внешний триггер: window.__profileMeReady()
-       ══════════════════════════════════════════════════════════════ */
     var _meResolved = false;
     var _meWaiters = [];
 
@@ -37,9 +29,6 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
     }
     window.__profileMeReady = _resolveMeReady;
 
-    // Автофолбэк — если внешний код не позвал __profileMeReady():
-    //  - ждём появления `me` до 5 сек, если в localStorage лежит токен;
-    //  - 500 мс, если токена нет (значит это чистый гость).
     (function autoResolveMe() {
         var started = Date.now();
         var hasToken = false;
@@ -54,13 +43,13 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
                 }
             } catch (_) {}
         }
-        var timeout = hasToken ? 5000 : 500;
+        var timeout = hasToken ? 3000 : 300;
         var tick = function () {
             if (_meResolved) return;
             var loaded = false;
             try { loaded = (typeof me !== 'undefined') && me !== null; } catch (_) {}
             if (loaded || Date.now() - started > timeout) return _resolveMeReady();
-            setTimeout(tick, 80);
+            setTimeout(tick, 100);
         };
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function () { setTimeout(tick, 20); }, { once: true });
@@ -69,7 +58,7 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
         }
     })();
 
-        /* ── бонусы ── */
+    /* ── бонусы ── */
     function renderBonus() {
         if (!_meResolved) {
             var noUserEl = document.getElementById('bonusNoUser');
@@ -130,14 +119,12 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
     }
 
     /* ── профиль ── */
-    /* защита от рекурсии: sv() → renderProfile() → syncBrandViews() (= sv()) */
     var _rpRunning = false;
     function renderProfile() {
         if (_rpRunning) return;
         _rpRunning = true;
         try {
             if (!_meResolved) {
-                // Пока me не загружен — держим оба блока скрытыми
                 var pnu = document.getElementById('profileNoUser');
                 var pbx = document.getElementById('profileBox');
                 if (pnu) pnu.hidden = true;
@@ -197,7 +184,6 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
     /* ── блок верификации под кнопкой PIN ── */
     var _verifyNoteQueued = false;
     function renderVerifyNote() {
-        // ПОКА me НЕ ЗАГРУЖЕН — ничего не показываем и ставим рендер в очередь
         if (!_meResolved) {
             var existing = document.getElementById('verifyNote');
             if (existing) existing.hidden = true;
@@ -235,8 +221,7 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
             return;
         }
 
-        let html = "";
-        html += '<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small>' +
+        let html = '<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small>' +
                 '<div style="display:flex;gap:8px;margin-bottom:12px">' +
                 '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1">' +
                 '<button class="btn fire" id="actBtn">Активировать</button>' +
@@ -268,7 +253,6 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
         }
     }
 
-    /* ══ Ф3.5: loadMyOrders (единая реализация) ══ */
     async function loadMyOrders() {
         var host = document.getElementById('myOrders');
         if (!host || !me) return;
@@ -302,7 +286,6 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
         } catch (e) { }
     }
 
-    /* ══ Ф3.5: renderOrdersModal ══ */
     async function renderOrdersModal() {
         var list = document.getElementById('omList');
         if (!list || !me) return;
@@ -331,11 +314,9 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
         }
     }
 
-    /* ── shim в window — контракт F1.3 + Ф3.5 ── */
     Object.assign(window, { renderBonus, renderProfile, renderVerifyNote, loadMyOrders, renderOrdersModal });
 })();
 
-/* ══ Ф3.5: Инъекция модалки истории заказов ══ */
 (function () {
     if (document.getElementById('ordersModal')) return;
     var m = document.createElement('div');
@@ -350,7 +331,6 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
     });
 })();
 
-/* ══ Ф3.5: Инъекция кнопки «📦 Мои заказы» в профиль ══ */
 (function () {
     var pb = document.getElementById('profileBox');
     if (!pb || document.getElementById('myOrdersBtn')) return;
@@ -365,7 +345,7 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
     b.onclick = window.renderOrdersModal;
 })();
 
-/* QR-патч: показывает буквенный QR-код под подписями в профиле. */
+// Оптимизированный patchQR без querySelectorAll('*')
 (function patchQR() {
     if (typeof window.renderProfile !== 'function') return;
     const _rp = window.renderProfile;
@@ -374,22 +354,18 @@ var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
         setTimeout(() => {
             try {
                 if (!me || !me.qr) return;
-                const labs = [...document.querySelectorAll('*')].filter(n =>
-                    !n.children.length && (/Ваш QR для штампов/.test(n.textContent) || /Покажите кассиру/.test(n.textContent))
-                );
-                for (const lab of labs) {
-                    if (lab.parentNode.querySelector('.qrCodeText')) continue;
+                const pBox = document.getElementById('profileBox');
+                if (!pBox) return;
+                const target = pBox.querySelector('.qrbox small');
+                if (target && !target.parentNode.querySelector('.qrCodeText')) {
                     const d = document.createElement('div');
                     d.className = 'qrCodeText';
                     d.style.cssText = 'text-align:center;font-weight:800;letter-spacing:.14em;margin:6px 0 2px;color:inherit;font-size:18px';
                     d.textContent = me.qr;
-                    lab.parentNode.insertBefore(d, lab.nextSibling);
-                    document.querySelectorAll('button').forEach(b => {
-                        if (/Погасить/.test(b.textContent)) b.style.display = (me.role === 'guest' ? 'none' : '');
-                    });
+                    target.parentNode.insertBefore(d, target.nextSibling);
                 }
             } catch (e) { }
-        }, 60);
+        }, 50);
         return r;
     };
 })();

@@ -1,7 +1,4 @@
-/* public/app/cashier.js — F2.3: кассир — поиск гостя, штампы, списание, журнал.
-   ВАЖНО: без IIFE — fix-views.js патчит showCust (1244), заменяет loadPending (553),
-   зовёт renderLog (159). Всё должно быть в глобальном lexical env. */
-
+/* public/app/cashier.js — F2.3: кассир — поиск гостя, штампы, списание, журнал. */
 var found = null;
 
 function dotsHTML(u, last) {
@@ -35,11 +32,8 @@ function showCust(u, last = null) {
 
 $('#findBtn').onclick = async () => {
   let q = $('#findInput').value.trim();
-  // Очищаем от нецифровых символов для надежного поиска (обрезаем до 10 цифр с конца)
   const clean = q.replace(/\D/g, '');
-  if (clean.length >= 7) {
-    q = clean.slice(-10);
-  }
+  if (clean.length >= 7) q = clean.slice(-10);
   try {
     const r = await api('/staff/customers?search=' + encodeURIComponent(q));
     if (!r.customers || !r.customers.length) {
@@ -143,26 +137,30 @@ async function renderLog() {
         ).join('')
       : '<div class="hmini">Журнал пуст</div>';
 
-    // Страховка: если h4 «Последние события» был скрыт — показываем обратно
     const h = $('#cashLog').previousElementSibling;
     if (h && h.tagName === 'H4') h.style.display = '';
   } catch (e) {
     $('#cashLog').innerHTML = '';
   }
 }
-/* ── Ф3.19a: чистка вида кассира + списание свободного кофе с выбором напитка.
-Было fix-views.js: R7 + R9. ── */
+
 function cashierClean(){
-  // Журнал «Последние события» НЕ прячем — кассир должен его видеть.
-  // Скрываем только дублирующую кнопку «+ Новый» снизу и, при желании, сам журнал
-  // можно фильтровать через renderLog() (см. ниже).
   var ng2 = document.getElementById('newGuestBtn2');
   if (ng2) ng2.style.display = 'none';
 }
-new MutationObserver(function(){
-  var cv=document.getElementById('cashierView');if(cv&&!cv.hidden)cashierClean();
-}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+
+// Наблюдатель привязан СТРОГО к #cashierView, не перегружая весь DOM приложения
+(function initCashierObserver() {
+  var cv = document.getElementById('cashierView');
+  if (cv && typeof MutationObserver !== 'undefined') {
+    new MutationObserver(function() {
+      if (!cv.hidden) cashierClean();
+    }).observe(cv, { attributes: true, attributeFilter: ['hidden'] });
+  }
+})();
+
 showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return _sc(u,last);};})(showCust);
+
 (function(){
   if(document.getElementById('redeemPick'))return;
   var m=document.createElement('div');m.id='redeemPick';
@@ -184,12 +182,11 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
     document.getElementById('redeemPick').classList.add('show');
   },true);
 })();
-/* ── Ф3.23: выход из карточки гостя (было fix-views v62-FAB) + инициализация чистки ── */
+
 (function(){
-var acts=document.querySelector('#custCard .acts');
-if(!acts||document.getElementById('custClose'))return;
-var b=document.createElement('button');b.id='custClose';b.className='btn ghost';b.textContent='✕ Закрыть карточку';
-b.onclick=function(){document.getElementById('custCard').classList.remove('show');try{found=null;}catch(e){}};
-acts.appendChild(b);
+  var acts=document.querySelector('#custCard .acts');
+  if(!acts||document.getElementById('custClose'))return;
+  var b=document.createElement('button');b.id='custClose';b.className='btn ghost';b.textContent='✕ Закрыть карточку';
+  b.onclick=function(){document.getElementById('custCard').classList.remove('show');try{found=null;}catch(e){}};
+  acts.appendChild(b);
 })();
-setTimeout(cashierClean,400);

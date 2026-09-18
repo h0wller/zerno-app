@@ -1,46 +1,118 @@
-const CACHE = 'zerno-v264';
-const PRECACHE = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
+// public/sw.js
+const STATIC_CACHE = 'zerno-static-v4';
+const MEDIA_CACHE = 'zerno-media-v4';
+const API_CACHE = 'zerno-api-v4';
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys()
-    .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
-    .then(() => self.clients.claim()));
-});
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return;
-  if (url.pathname.startsWith('/api/')) return;
-  e.respondWith(
-    fetch(e.request).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
-      return res;
-    }).catch(() => caches.match(e.request).then(c => c || caches.match('./index.html')))
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/app/ui/theme-v2.css',
+  '/app/core/views.js',
+  '/app/menu.js',
+  '/app/cart.js',
+  '/app/profile.js',
+  '/manifest.webmanifest'
+];
+
+const API_TTL = 5 * 60 * 1000; // 5 минут
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS))
   );
+  self.skipWaiting();
 });
-/* ── пуши ── */
-self.addEventListener('push', e => {
-  let data = {};
-  try { data = e.data.json(); } catch (_) {}
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-    .then(cs => cs.forEach(c => c.postMessage({ type: 'zpush', title: (data && data.title) || '' })));
-  e.waitUntil(self.registration.showNotification(data.title || '…и кофе', {
-    body: data.body || '☕',
-    icon: './icon.svg',
-    badge: './icon.svg',
-    vibrate: [200, 100, 200],
-    requireInteraction: true,
-    silent: false,
-    tag: 'zerno-push'
-  }));
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((k) => ![STATIC_CACHE, MEDIA_CACHE, API_CACHE].includes(k))
+          .map((k) => caches.delete(k))
+      )
+    )
+  );
+  self.clients.claim();
 });
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
-    for (const c of cs) { if ('focus' in c) return c.focus(); }
-    return clients.openWindow('./');
-  }));
+
+self.addEventListener('fetch', (e) => {
+  const { request } = e;
+  const url = new URL(request.url);
+
+ // Игнорируем мутации, внешние домены (fonts.googleapis.com и т.д.) и служебные ручки
+  if (
+    request.method !== 'GET' ||
+    url.origin !== location.origin ||
+    url.pathname.startsWith('/api/orders') ||
+    url.pathname.startsWith('/api/chat') ||
+    url.pathname.startsWith('/api/auth')
+  ) {
+    return;
+  }
+
+  // 1. SWR для меню
+  if (url.pathname.startsWith('/api/menu')) {
+    e.respondWith(
+      caches.open(API_CACHE).then(async (cache) => {
+        const cachedRes = await cache.match(request);
+        const fetchPromise = fetch(request)
+          .then((netRes) => {
+            if (netRes.ok) {
+              const clone = netRes.clone();
+              const headers = new Headers(clone.headers);
+              headers.append('sw-timestamp', Date.now().toString());
+
+              clone.blob().then((body) => {
+                cache.put(
+                  request,
+                  new Response(body, {
+                    status: clone.status,
+                    statusText: clone.statusText,
+                    headers
+                  })
+                );
+              });
+            }
+            return netRes;
+          })
+          .catch(() => cachedRes);
+
+        if (cachedRes) {
+          const ts = cachedRes.headers.get('sw-timestamp');
+          if (ts && Date.now() - parseInt(ts, 10) < API_TTL) {
+            return cachedRes;
+          }
+        }
+        return fetchPromise;
+      })
+    );
+    return;
+  }
+
+  // 2. Cache-First для медиа-ресурсов
+  if (url.pathname.match(/\.(png|jpg|jpeg|webp|svg|ico)$/)) {
+    e.respondWith(
+      caches.open(MEDIA_CACHE).then(async (cache) => {
+        const match = await cache.match(request);
+        if (match) return match;
+
+        try {
+          const netRes = await fetch(request);
+          if (netRes.ok) {
+            cache.put(request, netRes.clone());
+          }
+          return netRes;
+        } catch (err) {
+          return match;
+        }
+      })
+    );
+    return;
+  }
+
+  // 3. App Shell
+  e.respondWith(
+    caches.match(request).then((res) => res || fetch(request))
+  );
 });

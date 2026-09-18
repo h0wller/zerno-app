@@ -106,3 +106,8 @@ scripts/reshoot-v2.mjs
 scripts/reshoot-v3.mjs
 scripts/reshoot.mjs
 scripts/shoot.mjs
+schema-dump.sql
+public/dump-schema.mjs
+sqlite-tools-win-x64-3530400/sqldiff.exe
+sqlite-tools-win-x64-3530400/sqlite3_analyzer.exe
+sqlite-tools-win-x64-3530400/sqlite3_rsync.exe

@@ -483,3 +483,38 @@ button.cta, .btn.fire, #checkoutBtn {
 [data-brand="delivery"] #chatFab svg {
   fill: #FFFFFF !important;
 }
+/* Фикс контраста authModal (соотношение 5.4:1 на #ECE7DC) */
+#authModal small,
+#authModal .text-muted,
+.auth-desc {
+  color: #3D4751 !important;
+  font-weight: 500;
+}
+/* Устранение скачков макета (CLS) */
+.grid {
+  contain-intrinsic-size: auto 400px;
+  content-visibility: auto;
+}
+
+.card {
+  min-height: 340px;
+  contain: layout style paint;
+}
+
+.media {
+  min-height: 150px;
+  background-color: #E7ECF0;
+}
+
+/* Фиксация плавающей кнопки бонусов, чтобы она не сдвигала контент при появлении */
+.mbonus {
+  position: fixed !important;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+  transform: translateX(-50%) !important;
+  will-change: transform;
+}
+/* Исправление контрастности тегов меню (соотношение > 4.5:1) */
+.tag.hit {
+  background: #1B5E8A !important; /* глубокий синий вместо светлого #3E8FD0 */
+  color: #FFFFFF !important;
+}

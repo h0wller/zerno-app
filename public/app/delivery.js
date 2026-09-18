@@ -2,6 +2,11 @@
 
 var DMENU = [];
 var cart = JSON.parse(localStorage.getItem('zt_cart') || '[]');
+
+// Очистка корзины от битых позиций с нулевой или отрицательной ценой
+cart = cart.filter(c => c.price > 0);
+localStorage.setItem('zt_cart', JSON.stringify(cart));
+
 var deliveryInfo = null;
 var promoInfo = null;
 var cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
@@ -69,12 +74,27 @@ $('#deliveryGrid').addEventListener('click', e => {
     const id = add.dataset.add;
     const p = DMENU.find(x => x.id === id);
     const opts = p.opts || [];
+    
+    // Строгая проверка: если у товара есть опции (размеры), требуем их выбора
     const selOpt = add.closest('.cbody').querySelector('.opts button.sel');
+    if (opts.length > 0 && !selOpt) {
+      toast('Выберите размер и тесто', '⚠️');
+      return;
+    }
+
     const oi = selOpt ? +selOpt.dataset.oi : -1;
+    const price = oi >= 0 ? opts[oi].p : (+p.price || 0);
+
+    if (price <= 0) {
+      toast('Выберите размер', '⚠️');
+      return;
+    }
+
     const key = id + (oi >= 0 ? '_' + oi : '');
     const existing = cart.find(c => c.key === key);
     if (existing) existing.qty++;
-    else cart.push({ key, id, oi, name: p.name, opt: oi >= 0 ? opts[oi].l : null, price: oi >= 0 ? opts[oi].p : (+p.price || 0), sz: oi >= 0 ? (opts[oi].sz || 0) : 0, qty: 1 });
+    else cart.push({ key, id, oi, name: p.name, opt: oi >= 0 ? opts[oi].l : null, price: price, sz: oi >= 0 ? (opts[oi].sz || 0) : 0, qty: 1 });
+    
     localStorage.setItem('zt_cart', JSON.stringify(cart));
     updateCartFab();
     toast('Добавлено в корзину', '🛒');

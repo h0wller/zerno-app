@@ -174,7 +174,8 @@ body.editing .card:hover{transform:none}
 
 .tag{position:absolute;top:10px;left:10px;font:700 9.5px "Unbounded";letter-spacing:.08em;text-transform:uppercase;
   padding:4px 9px;border-radius:999px;color:#fff;z-index:2;background:#1B4F8A}
-.tag.hit{background:#3E8FD0}.tag.new{background:var(--green)}.tag.vegan{background:#7BA05B}
+.tag.hit{background:#1B5E8A !important; color:#FFFFFF !important;}
+.tag.new{background:var(--green)}.tag.vegan{background:#7BA05B}
 .stopped .media img,.stopped .media .em{filter:grayscale(1);opacity:.5}
 .stopbadge{position:absolute;top:10px;right:10px;background:#D63939;color:#FFFFFF;font:800 10px "Unbounded";
   letter-spacing:.12em;padding:5px 10px;border-radius:999px;z-index:2}
@@ -190,21 +191,6 @@ body.editing .card:hover{transform:none}
 
 .gempty{text-align:center;padding:60px 20px;color:var(--soft)}
 .gempty .ee{font-size:52px;display:block;margin-bottom:12px}
-
-/* ══ скелетоны ══ */
-.skeleton-shimmer {
-  background: linear-gradient(90deg, #EDF2F7 25%, #F7FAFC 50%, #EDF2F7 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-.skeleton-line {
-  border-radius: 4px;
-  background: #EDF2F7;
-}
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 
 /* ══ правая панель ══ */
 .panel{position:sticky;top:118px;max-height:calc(100vh - 140px);background:#FFFCF5;border:1.5px solid rgba(62,143,208,.25);
@@ -231,7 +217,7 @@ body.editing .card:hover{transform:none}
     background: #FFFFFF !important;
     border: 1.5px solid rgba(107, 74, 47, 0.18) !important;
     border-radius: 50%;
-    color: #6B4A2F !important;                 /* коричневое зерно */
+    color: #6B4A2F !important;
     box-shadow: 0 2px 6px rgba(107, 74, 47, .08);
 }
 .stamp.n{border:2px dashed var(--amber);animation:nextp 1.6s infinite}
@@ -1146,7 +1132,6 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 <div class="toasts" id="toasts"></div>
 <canvas id="fx"></canvas>
 <button class="cartFab" id="cartFab" hidden>🛒 <span id="cartSum">0</span> ₽</button>
-
 <div class="cartPanel" id="cartPanel">
   <h3 style="margin-bottom:16px">Корзина</h3>
   <div id="cartItems"></div>
@@ -1422,7 +1407,7 @@ $('#otpBtn').onclick=async()=>{
  if(ph10(phone).length<10)return toast('Введите номер полностью','📵');
  try{await api('/auth/request-otp',{method:'POST',body:{phone}});
   loginMode='otp';
-  const pr=$('#logPinRow');if(pr)pr.style.display='none';
+  const pr=$('#logPinRow');if(pr)pr.style.display='';
   $('#logOtpWrap').style.display='';
   const bk=$('#otpBackRow');if(bk)bk.style.display='';
   $('#logBtn').textContent='Войти по коду';
@@ -1683,17 +1668,15 @@ function togglePushHint(show){
    nh.id='pushHint';nh.className='pushHint';
    nh.innerHTML='🔔 Включите пуши тут →';
    const av=$('#profileTopBtn');
-   if(av){const r=av.getBoundingClientRect();
-    nh.style.right=Math.max(8,Math.round(innerWidth-r.right))+'px';
-    nh.style.top=(Math.round(r.bottom)+8)+'px';
-    nh.style.setProperty('--ax',Math.max(6,Math.round(r.width/2)-6)+'px');}
+   if(av){
+    nh.style.position='fixed';
+    nh.style.top='58px';
+    nh.style.right='16px';
+   }
    nh.onclick=()=>{const a2=$('#profileTopBtn');if(a2)a2.click();nh.remove();
     setTimeout(()=>{const pb=$('#pushBtn');if(pb&&!pb.hidden){
-     pb.style.border='2px dashed #E8A13A';
-     pb.style.color='#B26A05';
-     pb.style.background='#FFF6E5';
      pb.classList.add('glow');
-     setTimeout(()=>{pb.style.border='';pb.style.color='';pb.style.background='';pb.classList.remove('glow');},6000);
+     setTimeout(()=>{pb.classList.remove('glow');},6000);
     }},450);};
    document.body.appendChild(nh);
   },4000);
@@ -1798,7 +1781,6 @@ bindMask($('#regPhone'));bindMask($('#logPhone'));bindMask($('#ngPhone'));
 function renderVerifyNote() {
   const actBtn = document.getElementById('activateBtn');
   if (actBtn) {
-    // Кнопка скрывается только если пользователь реально верифицирован или имеет роль сотрудника
     const isActivated = me && (me.verified === true || me.verified === 1 || (me.role && me.role !== 'guest'));
     actBtn.hidden = !!isActivated;
   }

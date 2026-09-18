@@ -90,14 +90,17 @@ app.delete('/api/menu/:id', adminGuard, (req, res) => {
   touch(); res.json({ ok: true });
 });
 
-/* ── статика с эффективным кэшированием ── */
+/* ── статика с кэшированием (7 дней для JS/CSS, 1 год для медиа) ── */
 app.use(express.static(PUBLIC_DIR, {
-  maxAge: '1d',
+  maxAge: '7d',
+  etag: true,
   setHeaders: (res, p) => {
     if (p.endsWith('index.html') || p.endsWith('sw.js') || p.endsWith('manifest.webmanifest')) {
       res.setHeader('Cache-Control', 'no-cache');
-    } else if (/\.(woff2?|png|jpe?g|svg|ico|webp)$/i.test(p)) {       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');     } else if (/\.(css\vert{}js)$/i.test(p)) {
-      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    } else if (/\.(woff2?|png|jpe?g|svg|ico|webp)$/i.test(p)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (/\.(css|js)$/i.test(p)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
     }
   }
 }));
