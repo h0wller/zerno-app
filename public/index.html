@@ -227,7 +227,13 @@ body.editing .card:hover{transform:none}
 .stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}
 .stamp svg,.cdot svg{width:72%;height:72%;display:block}
 .stamp{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:15px;transition:.3s}
-.stamp.f{background:linear-gradient(135deg,#123A6B,#3E8FD0)!important;border-radius:50%;border:none!important;color:#FFFFFF!important;box-shadow:0 3px 8px rgba(18,58,107,.3)}
+.stamp.f {
+    background: #FFFFFF !important;
+    border: 1.5px solid rgba(107, 74, 47, 0.18) !important;
+    border-radius: 50%;
+    color: #6B4A2F !important;                 /* коричневое зерно */
+    box-shadow: 0 2px 6px rgba(107, 74, 47, .08);
+}
 .stamp.n{border:2px dashed var(--amber);animation:nextp 1.6s infinite}
 @keyframes nextp{50%{box-shadow:0 0 0 5px rgba(200,155,106,.25)}}
 .stamp.e{border:1.5px dashed rgba(62,143,208,.35)!important;background:transparent!important}

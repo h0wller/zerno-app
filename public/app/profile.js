@@ -1,8 +1,15 @@
 /* public/app/profile.js — F2.2: профиль гостя, бонусы, верификация */
 /* ── state: хелперы штампов ── */
 var cupWord = n => n === 1 ? 'чашка' : (n > 0 && n < 5 ? 'чашки' : 'чашек');
-var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.6" ry="9.6" fill="currentColor"/><path d="M12 3.2c-2.8 3.6-2.8 14 0 17.6" fill="none" stroke="#F7F3EA" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
-var stampIcon = i => i === 9 ? '☕' : BEAN;
+var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<g transform="rotate(-24 12 12)">' +
+    '<ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="currentColor"/>' +
+    '<path d="M12 3.6 C 8.4 7.8 15.6 16.2 12 20.4" ' +
+      'fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" ' +
+      'stroke-linecap="round"/>' +
+    '<ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/>' +
+  '</g></svg>';
+  var stampIcon = i => i === 9 ? '☕' : BEAN;
 
 (function () {
     'use strict';
