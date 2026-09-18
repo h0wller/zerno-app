@@ -133,18 +133,31 @@ async function loadPending() {
 
 async function renderLog() {
   try {
-    const r = await api('/staff/log');
+    const r = await api('/staff/log?scope=coffee');
     loadPending();
-    $('#cashLog').innerHTML = r.log.map(l =>
-      `<div class="logrow cashlog"><span class="lt">${esc(l.t)}</span><span class="la">${esc(l.w)} — ${esc(l.a)}</span></div>`
-    ).join('') || '<div class="hmini">Журнал пуст</div>';
-  } catch (e) { $('#cashLog').innerHTML = ''; }
+
+    const rows = r.log || [];
+    $('#cashLog').innerHTML = rows.length
+      ? rows.map(l =>
+          `<div class="logrow cashlog"><span class="lt">${esc(l.t)}</span><span class="la">${esc(l.w)} — ${esc(l.a)}</span></div>`
+        ).join('')
+      : '<div class="hmini">Журнал пуст</div>';
+
+    // Страховка: если h4 «Последние события» был скрыт — показываем обратно
+    const h = $('#cashLog').previousElementSibling;
+    if (h && h.tagName === 'H4') h.style.display = '';
+  } catch (e) {
+    $('#cashLog').innerHTML = '';
+  }
 }
 /* ── Ф3.19a: чистка вида кассира + списание свободного кофе с выбором напитка.
 Было fix-views.js: R7 + R9. ── */
 function cashierClean(){
-  var cl=document.getElementById('cashLog');if(cl){var card=cl.closest('.cash-card');if(card)card.style.display='none';}
-  var ng2=document.getElementById('newGuestBtn2');if(ng2)ng2.style.display='none';
+  // Журнал «Последние события» НЕ прячем — кассир должен его видеть.
+  // Скрываем только дублирующую кнопку «+ Новый» снизу и, при желании, сам журнал
+  // можно фильтровать через renderLog() (см. ниже).
+  var ng2 = document.getElementById('newGuestBtn2');
+  if (ng2) ng2.style.display = 'none';
 }
 new MutationObserver(function(){
   var cv=document.getElementById('cashierView');if(cv&&!cv.hidden)cashierClean();
