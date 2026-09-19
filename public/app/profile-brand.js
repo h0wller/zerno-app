@@ -33,8 +33,25 @@ function brandRules(){
   }
   if(typeof window.syncNotifyUI==='function')window.syncNotifyUI();
 }
-window.applyProfileBrand=brandRules;
-document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(brandRules,80);});
+window.applyProfileBrand = brandRules;
+
+// Корректный обработчик клика по переключателю бренда с обновлением атрибутов темы
+var bSegEl = document.getElementById('brandSeg');
+if (bSegEl) {
+  bSegEl.addEventListener('click', function() {
+    setTimeout(function() {
+      var isDeliv = (typeof brand !== 'undefined' && brand === 'delivery');
+      var modeName = isDeliv ? 'delivery' : 'coffee';
+      
+      // Синхронизируем корни документов, чтобы стили фонов переключались мгновенно
+      document.documentElement.setAttribute('data-brand', modeName);
+      document.body.setAttribute('data-brand', modeName);
+      
+      brandRules();
+    }, 50);
+  });
+}
+
 var brQueued=false;
 new MutationObserver(function(){
   if(brQueued)return;brQueued=true;
