@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v22';
+const STATIC_CACHE = 'zerno-static-v23';
 const MEDIA_CACHE = 'zerno-media-v4';
 const API_CACHE = 'zerno-api-v4';
 
@@ -117,7 +117,23 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 3. App Shell
+  // 3. App Shell: network-first для кода (иначе SW отдаёт устаревшие модули после деплоя)
+  if (request.destination === 'document' || url.pathname.startsWith('/app/') || /\.(js|css)$/.test(url.pathname)) {
+    e.respondWith(
+      fetch(request)
+        .then((netRes) => {
+          if (netRes.ok) {
+            const clone = netRes.clone();
+            caches.open(STATIC_CACHE).then((c) => c.put(request, clone));
+          }
+          return netRes;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // 4. Остальная статика — cache-first
   e.respondWith(
     caches.match(request).then((res) => res || fetch(request))
   );
