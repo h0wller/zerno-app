@@ -1551,9 +1551,18 @@ $('#emDel').onclick=async()=>{if(!confirm('Удалить позицию из м
  try{await api('/menu/'+edit.id,{method:'DELETE'});await loadMenu();closeEditor();
   toast('Позиция удалена','🗑')}catch(e){toast(e.message,'⚠️')}};
 
-function setTab(t){document.querySelectorAll('.tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
- $('#pvBonus').hidden=t!=='bonus';$('#pvProfile').hidden=t!=='profile'}
-
+function setTab(t) {
+  document.querySelectorAll('.tabs button[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  
+  $('#pvBonus').hidden = t !== 'bonus';
+  $('#pvProfile').hidden = t !== 'profile';
+  
+  // Добавляем управление видимостью для #bonusBox, чтобы тест проходил успешно
+  var bonusBox = document.getElementById('bonusBox');
+  if (bonusBox) {
+    bonusBox.hidden = t !== 'bonus';
+  }
+}
 document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab)});
 
 function openPanel(tab){
