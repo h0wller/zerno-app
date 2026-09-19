@@ -1,35 +1,39 @@
 /* public/app/core/views.js — Ф3.22: флаги и state-мост чата, CSS-инъекция, DOM-переезды,
-виды/режимы (sv/setMode/brandSeg) + первичный sv(). Было fix-views.js секции 0–3 + финальный sv(). */
+   виды/режимы (sv/setMode/brandSeg) + первичный sv() с исправленными конфликтами брендинга. */
 (function(){
 'use strict';
+
 /* ========== 0. Флаги и state-мост чата ========== */
-var QS=new URLSearchParams(location.search);
-var IN_TG=/Telegram/i.test(navigator.userAgent);
-var DEEP=!!(QS.get('brand')||QS.get('tab')||QS.get('src'));
-var SUPPORT_ENTRY=(QS.get('tab')==='chat'||QS.get('support')==='choose');
-var chosenSupportCtx=SUPPORT_ENTRY?(sessionStorage.getItem('zt_support_ctx')||''):'';
-var supportPending=SUPPORT_ENTRY && !chosenSupportCtx;
-var chatCtx=localStorage.getItem('zt_chatctx')||'';
-if(chosenSupportCtx)chatCtx=chosenSupportCtx;
-window.__fvChatState={
-getChatCtx:function(){return chatCtx;}, 
-setChatCtx:function(v){chatCtx=v;try{localStorage.setItem('zt_chatctx',v);}catch(e){}},
-getSupportPending:function(){return supportPending;},
-setSupportPending:function(v){supportPending=v;},
-getChosenSupportCtx:function(){return chosenSupportCtx;},
-setChosenSupportCtx:function(v){chosenSupportCtx=v;try{sessionStorage.setItem('zt_support_ctx',v);}catch(e){}}
+var QS = new URLSearchParams(location.search);
+var IN_TG = /Telegram/i.test(navigator.userAgent);
+var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
+var SUPPORT_ENTRY = (QS.get('tab') === 'chat' || QS.get('support') === 'choose');
+var chosenSupportCtx = SUPPORT_ENTRY ? (sessionStorage.getItem('zt_support_ctx') || '') : '';
+var supportPending = SUPPORT_ENTRY && !chosenSupportCtx;
+var chatCtx = localStorage.getItem('zt_chatctx') || '';
+if (chosenSupportCtx) chatCtx = chosenSupportCtx;
+
+window.__fvChatState = {
+  getChatCtx: function() { return chatCtx; }, 
+  setChatCtx: function(v) { chatCtx = v; try { localStorage.setItem('zt_chatctx', v); } catch(e) {} },
+  getSupportPending: function() { return supportPending; },
+  setSupportPending: function(v) { supportPending = v; },
+  getChosenSupportCtx: function() { return chosenSupportCtx; },
+  setChosenSupportCtx: function(v) { chosenSupportCtx = v; try { sessionStorage.setItem('zt_support_ctx', v); } catch(e) {} }
 };
+
 if (supportPending) {
     document.body.classList.add('support-pending');
     var ov = document.getElementById('supportChooseOverlay');
     if (ov) {
-        ov.style.display = 'flex'; // Принудительно показываем
+        ov.style.display = 'flex';
         ov.style.zIndex = '10002';
     }
 }
+
 /* ========== 1. CSS ========== */
-var css=document.createElement('style');
-css.textContent=
+var css = document.createElement('style');
+css.textContent =
 '@media(min-width:1181px){body:not(.is-cashier) .wrap >.rail{grid-column:1}body:not(.is-cashier) .wrap >section{grid-column:2}body:not(.is-cashier) .wrap >.panel{grid-column:3}}'+
 'html,body{overflow-x:hidden;max-width:100%}img,canvas,svg,video{max-width:100%}'+
 '.topbar{padding-top:calc(env(safe-area-inset-top,0px) + 10px)!important}'+
@@ -79,167 +83,245 @@ css.textContent=
 '#supportChooseOverlay .scSub{color:var(--soft);font-size:13px}'+
 '#supportChooseOverlay .scBtns{width:100%;max-width:340px}';
 document.head.appendChild(css);
+
 /* ========== 2. DOM-переезды ========== */
-var wrapEl=document.querySelector('.wrap');
-var sec=wrapEl?wrapEl.querySelector(':scope >section'):null;
-['deliveryView','ordersView','cashierView'].forEach(function(id){
-var el=document.getElementById(id);
-if(sec && el && el.parentNode!==sec)sec.appendChild(el);
+var wrapEl = document.querySelector('.wrap');
+var sec = wrapEl ? wrapEl.querySelector(':scope >section') : null;
+['deliveryView', 'ordersView', 'cashierView'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (sec && el && el.parentNode !== sec) sec.appendChild(el);
 });
-var dRail=document.getElementById('deliveryRail');
-if(wrapEl && dRail && dRail.parentNode!==wrapEl){wrapEl.insertBefore(dRail,sec);dRail.classList.add('rail');}
-var ab0=document.getElementById('adminBar');
-if(sec && ab0 && ab0.parentNode!==sec)sec.insertBefore(ab0,sec.firstChild);
+var dRail = document.getElementById('deliveryRail');
+if (wrapEl && dRail && dRail.parentNode !== wrapEl) { wrapEl.insertBefore(dRail, sec); dRail.classList.add('rail'); }
+var ab0 = document.getElementById('adminBar');
+if (sec && ab0 && ab0.parentNode !== sec) sec.insertBefore(ab0, sec.firstChild);
+
 (function(){
-var ov=document.getElementById('ordersView');
-if(ov && !document.getElementById('pendingBoxD')){
-var d=document.createElement('div');d.className='cash-card';
-d.innerHTML='<h3 style="margin:0 0 8px">🆕 Активация гостей</h3><div id="pendingBoxD"></div>';
-var lc=document.getElementById('ordersList');
-if(lc)ov.querySelector('.cashier').insertBefore(d,lc.closest('.cash-card'));
-}
-if(ov && !document.getElementById('chatsToggleD')){
-var top=ov.querySelector('.cash-top');
-var b=document.createElement('button');b.id='chatsToggleD';b.className='btn ghost';b.textContent='💬 Чаты гостей';
-b.onclick=openStaffChat;
-var ref=document.getElementById('ordersRefresh');
-if(top && ref)top.insertBefore(b,ref);
-}
+  var ov = document.getElementById('ordersView');
+  if (ov && !document.getElementById('pendingBoxD')) {
+    var d = document.createElement('div'); d.className = 'cash-card';
+    d.innerHTML = '<h3 style="margin:0 0 8px">🆕 Активация гостей</h3><div id="pendingBoxD"></div>';
+    var lc = document.getElementById('ordersList');
+    if (lc) ov.querySelector('.cashier').insertBefore(d, lc.closest('.cash-card'));
+  }
+  if (ov && !document.getElementById('chatsToggleD')) {
+    var top = ov.querySelector('.cash-top');
+    var b = document.createElement('button'); b.id = 'chatsToggleD'; b.className = 'btn ghost'; b.textContent = '💬 Чаты гостей';
+    b.onclick = typeof openStaffChat === 'function' ? openStaffChat : function(){};
+    var ref = document.getElementById('ordersRefresh');
+    if (top && ref) top.insertBefore(b, ref);
+  }
 })();
+
 (function(){
-var cp=document.getElementById('cartPanel'),ci=document.getElementById('cartItems');
-if(cp && ci && !document.getElementById('cartAddons')){
-var d=document.createElement('div');d.id='cartAddons';d.style.margin='0 0 10px';cp.insertBefore(d,ci);
-}
+  var cp = document.getElementById('cartPanel'), ci = document.getElementById('cartItems');
+  if (cp && ci && !document.getElementById('cartAddons')) {
+    var d = document.createElement('div'); d.id = 'cartAddons'; d.style.margin = '0 0 10px'; cp.insertBefore(d, ci);
+  }
 })();
+
 if (supportPending) {
     document.body.classList.add('support-pending');
     var ov = document.getElementById('supportChooseOverlay');
     if (ov) {
-        ov.style.display = 'flex'; // Принудительно показываем
+        ov.style.display = 'flex';
         ov.style.zIndex = '10002';
     }
 }
+
 /* ========== 3. Виды и режимы ========== */
 function sv(){
   try { 
-    document.documentElement.setAttribute('data-brand', brand); 
-    // Синхронизируем текст и класс на кнопках переключения бренда
+    // ЖЕСТКАЯ СИНХРОНИЗАЦИЯ БРЕНДА НА ОБОИХ КОРНЯХ ДОКУМЕНТА
+    var bName = (typeof brand !== 'undefined' && brand === 'delivery') ? 'delivery' : 'coffee';
+    document.documentElement.setAttribute('data-brand', bName);
+    document.body.setAttribute('data-brand', bName);
+
     var seg = document.getElementById('brandSeg');
     if (seg) {
       var cBtn = seg.querySelector('[data-brand="coffee"]');
       var dBtn = seg.querySelector('[data-brand="delivery"]');
-      if (cBtn) cBtn.classList.toggle('on', brand === 'coffee');
-      if (dBtn) dBtn.classList.toggle('on', brand === 'delivery');
-      seg.classList.toggle('is-delivery', brand === 'delivery');
+      if (cBtn) cBtn.classList.toggle('on', bName === 'coffee');
+      if (dBtn) dBtn.classList.toggle('on', bName === 'delivery');
+      seg.classList.toggle('is-delivery', bName === 'delivery');
     }
- // Синхронизируем бренд-блок: марка (#brandMark), название, подзаголовок
-var isDel = (brand === 'delivery');
-var mark = document.getElementById('brandMark') || document.querySelector('.brand .mark');
-if (mark) {
-  mark.classList.toggle('is-delivery', isDel);
-  // Пятница — стикер с пиццей; кофейня — родной icon.svg
-  mark.innerHTML = isDel ? '🍕' : '<img src="./icon.svg" alt="…и кофе">';
-}
-/* Аватар чата: ровно одна иконка на бренд */
-var op = document.querySelector('.chat-h .op, .chatHead .op');
-if (op) {
-  if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
-  op.innerHTML = isDel ? '' : (op.getAttribute('data-orig') || '');
-}
-var bTitle = document.getElementById('brandTitle');
-var bSub = document.getElementById('brandSub');
-if (bTitle) bTitle.textContent = isDel ? 'Пятница' : '…и кофе';
-if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
-/* Дропдаун «Сменить заведение» — строится один раз вокруг #brandSeg */
-var seg2 = document.getElementById('brandSeg');
-if (seg2 && !document.getElementById('venueToggle')) {
-  var vw = document.createElement('div'); vw.className = 'venueWrap';
-  seg2.parentNode.insertBefore(vw, seg2);
-  var vt = document.createElement('button');
-  vt.id = 'venueToggle'; vt.type = 'button'; vt.className = 'venueToggle';
-  vt.setAttribute('aria-haspopup', 'listbox'); vt.setAttribute('aria-expanded', 'false');
-  vt.innerHTML = '🏪 Сменить заведение <span class="vt-arrow">▾</span>';
-  vw.appendChild(vt); vw.appendChild(seg2);
-  vt.addEventListener('click', function (e) {
-    e.stopPropagation();
-    var open = seg2.classList.toggle('open');
-    vt.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  document.addEventListener('click', function (e) {
-    if (!vw.contains(e.target)) { seg2.classList.remove('open'); vt.setAttribute('aria-expanded', 'false'); }
-  });
-};
+
+    var isDel = (bName === 'delivery');
+    var mark = document.getElementById('brandMark') || document.querySelector('.brand .mark');
+    if (mark) {
+      mark.classList.toggle('is-delivery', isDel);
+      mark.innerHTML = isDel ? '🍕' : '<img src="./icon.svg" alt="…и кофе">';
+    }
+
+    var op = document.querySelector('.chat-h .op, .chatHead .op');
+    if (op) {
+      if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
+      op.innerHTML = isDel ? '' : (op.getAttribute('data-orig') || '');
+    }
+
+    var bTitle = document.getElementById('brandTitle');
+    var bSub = document.getElementById('brandSub');
+    if (bTitle) bTitle.textContent = isDel ? 'Пятница' : '…и кофе';
+    if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
+
+    var seg2 = document.getElementById('brandSeg');
+    if (seg2 && !document.getElementById('venueToggle')) {
+      var vw = document.createElement('div'); vw.className = 'venueWrap';
+      seg2.parentNode.insertBefore(vw, seg2);
+      var vt = document.createElement('button');
+      vt.id = 'venueToggle'; vt.type = 'button'; vt.className = 'venueToggle';
+      vt.setAttribute('aria-haspopup', 'listbox'); vt.setAttribute('aria-expanded', 'false');
+      vt.innerHTML = '🏪 Сменить заведение <span class="vt-arrow">▾</span>';
+      vw.appendChild(vt); vw.appendChild(seg2);
+      vt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = seg2.classList.toggle('open');
+        vt.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      document.addEventListener('click', function (e) {
+        if (!vw.contains(e.target)) { seg2.classList.remove('open'); vt.setAttribute('aria-expanded', 'false'); }
+      });
+    }
   } catch(e){}
 
-  var showGuest=(mode==='guest'||mode==='admin');
-  var showCoffee=showGuest && brand==='coffee';
-  var showDeliv=showGuest && brand==='delivery';
-  var mv=document.getElementById('menuView'),dv=document.getElementById('deliveryView');
-  var rl=document.getElementById('rail'),dr=document.getElementById('deliveryRail');
-  if(mv){mv.hidden=!showCoffee;mv.style.display=showCoffee?'':'none';}
-  if(dv){dv.hidden=false;dv.style.display=showDeliv?'block':'none';}
-  if(rl)rl.style.display=showCoffee?'':'none';
-  if(dr)dr.style.display=showDeliv?'':'none';
-  var et=document.getElementById('editToggle');if(et)et.hidden=(mode!=='admin');
-  var ab=document.getElementById('adminBar');if (ab)ab.hidden=(mode!=='admin');
+  var showGuest = (typeof mode !== 'undefined' && (mode === 'guest' || mode === 'admin'));
+  var bName = (typeof brand !== 'undefined' && brand === 'delivery') ? 'delivery' : 'coffee';
+  var showCoffee = showGuest && bName === 'coffee';
+  var showDeliv = showGuest && bName === 'delivery';
+
+  var mv = document.getElementById('menuView'), dv = document.getElementById('deliveryView');
+  var rl = document.getElementById('rail'), dr = document.getElementById('deliveryRail');
+  
+  if (mv) { mv.hidden = !showCoffee; mv.style.display = showCoffee ? '' : 'none'; }
+  if (dv) { dv.hidden = false; dv.style.display = showDeliv ? 'block' : 'none'; }
+  if (rl) rl.style.display = showCoffee ? '' : 'none';
+  if (dr) dr.style.display = showDeliv ? '' : 'none';
+
+  var et = document.getElementById('editToggle');
+  if (et) et.hidden = (mode !== 'admin');
+  
+  var ab = document.getElementById('adminBar');
+  if (ab) ab.hidden = (mode !== 'admin');
+
   var ms = document.getElementById('modeSeg');
-  var isStaff = !!(me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
+  var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
   if (ms) ms.hidden = !isStaff;
+  
   if (typeof renderModes === 'function') renderModes();
-  var mb=document.getElementById('mbonusBtn');if(mb)mb.style.display=(mode==='guest' && brand==='coffee')?'':'none';
-  var bt=document.querySelector('.tabs button[data-tab="bonus"]');
-  if(bt)bt.style.display=(brand==='delivery')?'none':'';
-  if(brand==='delivery')setTab('profile');
-  if(me)renderProfile();
-  var staff=(mode==='cashier'||mode==='orders');
-  var cfab =document.getElementById('chatFab');
-  if(cfab)cfab.style.display=staff?'none':'';
-  if(staff){var p=document.getElementById('chatPanel');if(p)p.classList.remove('open');}
-  var showScan = (mode === 'cashier');
+
+  var mb = document.getElementById('mbonusBtn');
+  if (mb) mb.style.display = (mode === 'guest' && bName === 'coffee') ? '' : 'none';
+  
+  var bt = document.querySelector('.tabs button[data-tab="bonus"]');
+  if (bt) bt.style.display = (bName === 'delivery') ? 'none' : '';
+  
+  if (bName === 'delivery' && typeof setTab === 'function') setTab('profile');
+  if (typeof me !== 'undefined' && me && typeof renderProfile === 'function') renderProfile();
+
+  var staff = (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders'));
+  var cfab = document.getElementById('chatFab');
+  if (cfab) cfab.style.display = staff ? 'none' : '';
+  if (staff) { var p = document.getElementById('chatPanel'); if (p) p.classList.remove('open'); }
+
+  var showScan = (typeof mode !== 'undefined' && mode === 'cashier');
   document.querySelectorAll('#scanBtn,#scanFab,#qrFab,#scanToggle,.fab-scan').forEach(function(b){
     b.style.display = showScan ? '' : 'none';
   });
+  
   if (typeof cartFabShow === 'function') cartFabShow();
 }
-window.syncBrandViews=sv;
-setMode=function(m){
-var role=me?me.role:'guest';
-if(m==='cashier' && role!=='cashier' && role!=='admin')return;
-if(m==='orders' && role!=='dispatch' && role!=='cashier' && role!=='admin')return;
-if(m==='admin' && role!=='admin')return;
-mode=m;
-document.body.classList.toggle('is-cashier',m==='cashier'||m==='orders');
-var cv=document.getElementById('cashierView');if(cv){cv.hidden=(m!=='cashier');cv.style.display='';}
-var ov=document.getElementById('ordersView');if(ov)ov.hidden=(m!=='orders');
-sv();
-var pt=document.getElementById('promoToggle');if(pt)pt.hidden=(m!=='admin');
-var dt=document.getElementById('dashToggle');if(dt)dt.hidden=(m!=='admin');
-var ct=document.getElementById('chatsToggle2');if(ct)ct.hidden=!(me && (me.role==='admin'||me.role==='cashier'||me.role==='dispatch'));
-var bd=document.getElementById('adminBadge');if(bd)bd.hidden=(m!=='admin');
-if(m!=='admin')exitEdit();
-if(m==='cashier')renderLog();
-if(m==='orders'){renderOrders();if(!ordersPoll)ordersPoll=setInterval(function(){if(mode==='orders')renderOrders(true);},8000);}
-if(m==='admin')loadMenu();
-if((m==='guest'||m==='admin') && brand==='delivery' && !DMENU.length)loadDelivery();
-renderModes();
-toast(m==='admin'?'Режим администратора активен':m==='cashier'?'Смена кассира активна':m==='orders'?'Панель диспетчера':'Режим гостя', m==='admin'?'🔓':m==='cashier'?'🧾':m==='orders'?'🍕':'');
+
+window.syncBrandViews = sv;
+
+window.setMode = function(m){
+  var role = (typeof me !== 'undefined' && me) ? me.role : 'guest';
+  if (m === 'cashier' && role !== 'cashier' && role !== 'admin') return;
+  if (m === 'orders' && role !== 'dispatch' && role !== 'cashier' && role !== 'admin') return;
+  if (m === 'admin' && role !== 'admin') return;
+  
+  mode = m;
+  document.body.classList.toggle('is-cashier', m === 'cashier' || m === 'orders');
+  
+  var cv = document.getElementById('cashierView');
+  if (cv) { cv.hidden = (m !== 'cashier'); cv.style.display = ''; }
+  
+  var ov = document.getElementById('ordersView');
+  if (ov) ov.hidden = (m !== 'orders');
+  
+  sv();
+  
+  var pt = document.getElementById('promoToggle'); if (pt) pt.hidden = (m !== 'admin');
+  var dt = document.getElementById('dashToggle'); if (dt) dt.hidden = (m !== 'admin');
+  var ct = document.getElementById('chatsToggle2'); if (ct) ct.hidden = !(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
+  var bd = document.getElementById('adminBadge'); if (bd) bd.hidden = (m !== 'admin');
+  
+  if (m !== 'admin' && typeof exitEdit === 'function') exitEdit();
+  if (m === 'cashier' && typeof renderLog === 'function') renderLog();
+  if (m === 'orders') {
+    if (typeof renderOrders === 'function') renderOrders();
+    if (typeof ordersPoll === 'undefined' || !ordersPoll) {
+      window.ordersPoll = setInterval(function(){ if (mode === 'orders' && typeof renderOrders === 'function') renderOrders(true); }, 8000);
+    }
+  }
+  if (m === 'admin' && typeof loadMenu === 'function') loadMenu();
+  if ((m === 'guest' || m === 'admin') && brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
+    loadDelivery();
+  }
+  if (typeof renderModes === 'function') renderModes();
+  
+  if (typeof toast === 'function') {
+    toast(m === 'admin' ? 'Режим администратора активен' : m === 'cashier' ? 'Смена кассира активна' : m === 'orders' ? 'Панель диспетчера' : 'Режим гостя', m === 'admin' ? '🔓' : m === 'cashier' ? '🧾' : m === 'orders' ? '🍕' : '');
+  }
 };
-document.getElementById('brandSeg').addEventListener('click',function(e){
-var b=e.target.closest('[data-brand]');if(!b)return;
-brand=b.dataset.brand;
-if(mode==='cashier'||mode==='orders')setMode('guest');
-document.querySelectorAll('#brandSeg button').forEach(function(x){x.classList.toggle('on',x.dataset.brand===brand);});
-document.getElementById('brandSeg').classList.remove('open');
-var vtg = document.getElementById('venueToggle'); if (vtg) vtg.setAttribute('aria-expanded', 'false');
+
+/* Единый безопасный обработчик клика по переключателю бренда без конфликтов */
+var brandSegEl = document.getElementById('brandSeg');
+if (brandSegEl) {
+  brandSegEl.addEventListener('click', function(e){
+    var b = e.target.closest('[data-brand]'); 
+    if (!b) return;
+    
+    brand = b.dataset.brand;
+
+    // Мгновенная синхронизация атрибутов стиля на обоих корнях
+    document.documentElement.setAttribute('data-brand', brand);
+    document.body.setAttribute('data-brand', brand);
+
+    if (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders')) {
+      if (typeof setMode === 'function') setMode('guest');
+    }
+
+    brandSegEl.querySelectorAll('button').forEach(function(x){
+      x.classList.toggle('on', x.dataset.brand === brand);
+    });
+    brandSegEl.classList.remove('open');
+    
+    var vtg = document.getElementById('venueToggle'); 
+    if (vtg) vtg.setAttribute('aria-expanded', 'false');
+    
+    sv();
+
+    if (brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
+      loadDelivery();
+    }
+    
+    if (typeof supportPending !== 'undefined' && !supportPending && typeof chatCtx !== 'undefined' && chatCtx !== brand) {
+      chatCtx = brand;
+      try { localStorage.setItem('zt_chatctx', chatCtx); } catch(err) {}
+      if (typeof setBotName === 'function') setBotName();
+    }
+    
+    var cp = document.getElementById('chatPanel');
+    if (cp && cp.classList.contains('open')) {
+      setTimeout(function(){ if (typeof reloadChatThread === 'function') reloadChatThread(); }, 80);
+    }
+  });
+}
+
+/* Первичная инициализация видов */
 sv();
-if(brand==='delivery' && !DMENU.length)loadDelivery();
-if(!supportPending && chatCtx!==brand){chatCtx=brand;try{localStorage.setItem('zt_chatctx',chatCtx);}catch(err){}setBotName();}
-if(document.getElementById('chatPanel').classList.contains('open'))setTimeout(function(){reloadChatThread();},80);
-});
-/* первичная расстановка видов (раньше — финальный sv() в fix-views) */
-sv();
-/* ── Пуш-баббл «Включите пуши»: якорь под кнопкой профиля, скрыт при открытом #panel ── */
+
+/* ── Пуш-баббл «Включите пуши» ── */
 (function () {
   function findPush() {
     var el = document.getElementById('pushHint') || document.getElementById('pushBubble') ||
@@ -264,36 +346,36 @@ sv();
     b.style.zIndex = '1200';
   }
   function refresh() {
-  var p = document.getElementById('panel');
-  var open = p && p.classList.contains('open');
-  var b = findPush();
-  if (b) {
-    b.style.display = open ? 'none' : '';
-    if (!open) place();
+    var p = document.getElementById('panel');
+    var open = p && p.classList.contains('open');
+    var b = findPush();
+    if (b) {
+      b.style.display = open ? 'none' : '';
+      if (!open) place();
+    }
+    pulsePushBtn(open);
   }
-  pulsePushBtn(open);
-}
-function pushBtnEl() {
-  var byId = document.getElementById('pushBtn');
-  if (byId) return byId;
-  var all = document.querySelectorAll('#profileBox button, .panel button');
-  for (var i = 0; i < all.length; i++) {
-    if (/Включить уведомления/.test(all[i].textContent || '')) return all[i];
+  function pushBtnEl() {
+    var byId = document.getElementById('pushBtn');
+    if (byId) return byId;
+    var all = document.querySelectorAll('#profileBox button, .panel button');
+    for (var i = 0; i < all.length; i++) {
+      if (/Включить уведомления/.test(all[i].textContent || '')) return all[i];
+    }
+    return null;
   }
-  return null;
-}
-function pulsePushBtn(open) {
-  var btn = pushBtnEl();
-  if (!btn) return;
-  var need = !!open && /Включить уведомления/.test(btn.textContent || '');
-  if (need && !btn.classList.contains('pulse')) {
-    btn.classList.remove('pulse');
-    void btn.offsetWidth;            // перезапуск анимации при каждом открытии
-    btn.classList.add('pulse');
-  } else if (!need) {
-    btn.classList.remove('pulse');
+  function pulsePushBtn(open) {
+    var btn = pushBtnEl();
+    if (!btn) return;
+    var need = !!open && /Включить уведомления/.test(btn.textContent || '');
+    if (need && !btn.classList.contains('pulse')) {
+      btn.classList.remove('pulse');
+      void btn.offsetWidth;
+      btn.classList.add('pulse');
+    } else if (!need) {
+      btn.classList.remove('pulse');
+    }
   }
-}
   var panelEl = document.getElementById('panel');
   if (panelEl && typeof MutationObserver !== 'undefined') {
     new MutationObserver(refresh).observe(panelEl, { attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
@@ -305,4 +387,5 @@ function pulsePushBtn(open) {
   setTimeout(refresh, 400);
   setTimeout(refresh, 1500);
 })();
+
 })();
