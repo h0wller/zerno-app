@@ -222,6 +222,8 @@
   window.clearPromo = clearPromo;
   window.updateDeliveryPromoBar = updateDeliveryPromoBar;
 
+ /* Добавляем логику сохранения и восстановления драфта чекаута в public/app/cart.js */
+
   /* ── автосохранение драфта чекаута ── */
   function saveDraft() {
     try {
@@ -255,7 +257,6 @@
       }
     } catch(e) {}
   }
-
   /* ── обёртки рендера ── */
   renderCart = (function (_rc) {
     return function () {
@@ -309,6 +310,7 @@
       refreshPromoLine(totalsNow().sum);
     };
 
+  // Привязках к событиям изменения полей чекаута
   function repaintCart() { 
     saveDraft();
     renderCart(); 
@@ -326,6 +328,8 @@
       el.addEventListener('change', saveDraft);
     }
   });
+  // Восстановление сохраненного драфта при инициализации скрипта
+  restoreDraft();
 
   document.getElementById("cartPanel").addEventListener("click", function (e) {
     var ch = e.target.closest("[data-addon]");
