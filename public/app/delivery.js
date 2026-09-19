@@ -87,7 +87,7 @@ $('#deliveryGrid').addEventListener('click', e => {
   const addBtn = e.target.closest('[data-add]');
   if (addBtn) {
     const id = addBtn.dataset.add;
-    const p = DMENU.find(x => x.id === id);
+    const p = DMENU.find(x => String(x.id) === String(id));
     if (!p) return;
     
     const opts = p.opts || [];
@@ -117,7 +117,8 @@ $('#deliveryGrid').addEventListener('click', e => {
     const optLabel = (oi >= 0 && opts[oi]) ? opts[oi].l : null;
     const key = id + (oi >= 0 ? '_' + oi : '');
     
-    const existing = cart.find(c => c.key === key);
+    const existing = cart.find(c => String(c.key) === String(key));
+
     if (existing) {
       existing.qty++;
     } else {
