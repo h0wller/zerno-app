@@ -30,9 +30,12 @@ if (supportPending) {
         ov.style.zIndex = '10002';
     }
 }
-
 /* ========== 1. CSS ========== */
+/* ВЛАДЕНИЕ: базовые компоненты — в theme-v2.css (СЛОЙ 1).
+   Здесь только layout-фиксы и брендовые переопределения (СЛОЙ 2).
+   Правила: docs/css-architecture.md */
 var css = document.createElement('style');
+
 css.textContent =
 '@media(min-width:1181px){body:not(.is-cashier) .wrap >.rail{grid-column:1}body:not(.is-cashier) .wrap >section{grid-column:2}body:not(.is-cashier) .wrap >.panel{grid-column:3}}'+
 'html,body{overflow-x:hidden;max-width:100%}img,canvas,svg,video{max-width:100%}'+
@@ -172,17 +175,6 @@ if (sec && ab0 && ab0.parentNode !== sec) sec.insertBefore(ab0, sec.firstChild);
   if (cp && ci && !document.getElementById('cartAddons')) {
     var d = document.createElement('div'); d.id = 'cartAddons'; d.style.margin = '0 0 10px'; cp.insertBefore(d, ci);
   }
-})();
-
-if (supportPending) {
-    document.body.classList.add('support-pending');
-    var ov = document.getElementById('supportChooseOverlay');
-    if (ov) {
-        ov.style.display = 'flex';
-        ov.style.zIndex = '10002';
-    }
-}
-
 /* ========== 3. Виды и режимы ========== */
 function sv(){
   try { 
