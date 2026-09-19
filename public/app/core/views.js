@@ -81,7 +81,28 @@ css.textContent =
 '#supportChooseOverlay{position:fixed;inset:0;z-index:10002!important;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}'+
 '#supportChooseOverlay .scTitle{font:400 22px Prata,serif}'+
 '#supportChooseOverlay .scSub{color:var(--soft);font-size:13px}'+
-'#supportChooseOverlay .scBtns{width:100%;max-width:340px}';
+'#supportChooseOverlay .scBtns{width:100%;max-width:340px}'+
+'/* Ф3.7-fix: шапка — venueWrap в сетке topbar */'+
+'.topbar .venueWrap{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}'+
+'.venueToggle{align-self:flex-start;border:0;background:transparent;color:var(--soft);font:700 12px "Golos Text",system-ui,sans-serif;padding:2px 4px;cursor:pointer}'+
+'@media(max-width:820px){.topbar .venueWrap{order:10;flex:1 1 100%}.topbar .venueWrap #brandSeg{order:0;flex:0 0 auto;width:100%}}'+
+'/* Ф3.7-fix: фирменный крафт-акцент Пятницы в режиме доставки */'+
+'[data-brand="delivery"] #deliveryGrid .opts button.sel{background:#B4552D;border-color:#B4552D;color:#fff}'+
+'[data-brand="delivery"] #deliveryGrid .opts button.sel .op{color:#F3E2CE}'+
+'[data-brand="delivery"] #cartFab{background:#B4552D!important;box-shadow:0 12px 30px -8px rgba(180,85,45,.75)!important}'+
+'[data-brand="delivery"] .addonChip b{color:#B4552D}'+
+'/* Ф3.7-fix: состояния кнопки «Добавить» */'+
+'#deliveryGrid .cta{background:#fff;border:1.5px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:700 14px "Golos Text",system-ui,sans-serif;cursor:pointer;box-shadow:none;transition:background .15s,border-color .15s,color .15s}'+
+'#deliveryGrid .cta:active{transform:translateY(1px)}'+
+'#deliveryGrid .cta:disabled{background:#EDF2F6;border-color:var(--line);color:#8B98A5;cursor:not-allowed;transform:none}'+
+'#deliveryGrid .cta.incart{border-color:#B4552D;color:#B4552D}'+
+'[data-brand="coffee"] #deliveryGrid .cta.incart{border-color:var(--flame);color:var(--flame)}'+
+'#deliveryGrid .cta.added{background:#B4552D;border-color:#B4552D;color:#fff}'+
+'[data-brand="coffee"] #deliveryGrid .cta.added{background:var(--flame);border-color:var(--flame)}'+
+'#deliveryGrid .card .media{position:relative}'+
+'#deliveryGrid .card.stopped{opacity:.75}'+
+'#deliveryGrid .stopbadge{position:absolute;top:8px;left:8px;z-index:2;background:#B3372B;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}';
+
 document.head.appendChild(css);
 
 /* ========== 2. DOM-переезды ========== */
