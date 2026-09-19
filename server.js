@@ -95,7 +95,10 @@ app.use(express.static(PUBLIC_DIR, {
   maxAge: '7d',
   etag: true,
   setHeaders: (res, p) => {
-    if (p.endsWith('index.html') || p.endsWith('sw.js') || p.endsWith('manifest.webmanifest')) {
+    // sw.js ОБЯЗАН быть no-store, чтобы iOS не брала его из кэша
+    if (p.endsWith('sw.js')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    } else if (p.endsWith('index.html') || p.endsWith('manifest.webmanifest')) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (/\.(woff2?|png|jpe?g|svg|ico|webp)$/i.test(p)) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
