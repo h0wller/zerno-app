@@ -1775,15 +1775,22 @@ $('#overlay').onclick=()=>{closePanel();closeEditor();closePin();closeSetPin();c
 addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closeEditor();closePin();closeSetPin();closeQRFull();closePromo();closeDash();
   $('#chatPanel').classList.remove('open');if(onboarded||me)closeAuth()}});
 
-if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => {
+    // updateViaCache: 'none' принуждает Safari проверять сервер в обход HTTP-кэша
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+      reg.update();
+    }).catch(() => {});
 
-bindMask($('#regPhone'));bindMask($('#logPhone'));bindMask($('#ngPhone'));
-function renderVerifyNote() {
-  const actBtn = document.getElementById('activateBtn');
-  if (actBtn) {
-    const isActivated = me && (me.verified === true || me.verified === 1 || (me.role && me.role !== 'guest'));
-    actBtn.hidden = !!isActivated;
-  }
+    // Как только новый Service Worker активировался — перезагружаем приложение с новым кодом
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+  });
 }
 
 function renderAll(){
