@@ -101,7 +101,9 @@ css.textContent =
 '[data-brand="coffee"] #deliveryGrid .cta.added{background:var(--flame);border-color:var(--flame)}'+
 '#deliveryGrid .card .media{position:relative}'+
 '#deliveryGrid .card.stopped{opacity:.75}'+
-'#deliveryGrid .stopbadge{position:absolute;top:8px;left:8px;z-index:2;background:#B3372B;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}';
+'#deliveryGrid .stopbadge{position:absolute;top:8px;left:8px;z-index:2;background:#B3372B;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}'+
+'/* Ф3-фикс: iosHint/installBanner не накрывают шапку */'+
+'#iosHint,#installBanner{top:auto!important;bottom:calc(96px + env(safe-area-inset-bottom))!important}';
 
 document.head.appendChild(css);
 
