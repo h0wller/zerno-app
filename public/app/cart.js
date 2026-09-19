@@ -8,15 +8,12 @@
     if (typeof brand !== 'undefined' && brand) {
       return brand === 'delivery';
     }
-    var bSeg = document.querySelector('#brandSeg button[data-brand="delivery"]');
-    if (bSeg && bSeg.classList.contains('on')) return true;
-    if (document.documentElement.getAttribute('data-brand') === 'delivery') return true;
-    if (document.body && document.body.getAttribute('data-brand') === 'delivery') return true;
-    var dv = document.getElementById('deliveryView');
-    if (dv && (dv.classList.contains('active') || !dv.hidden)) return true;
-    return false;
+    var bSegOn = document.querySelector('#brandSeg button.on');
+    if (bSegOn && bSegOn.dataset.brand) {
+      return bSegOn.dataset.brand === 'delivery';
+    }
+    return document.documentElement.getAttribute('data-brand') === 'delivery';
   }
-
   function syncBrandAttribute() {
     var isDel = checkIsDelivery();
     var cur = isDel ? 'delivery' : 'coffee';
