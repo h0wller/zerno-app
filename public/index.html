@@ -1235,7 +1235,10 @@ async function api(path,opts={}){
    body:opts.body?JSON.stringify(opts.body):undefined})}
  catch(e){throw new Error('Сервер недоступен — проверьте подключение')}
  const j=await r.json().catch(()=>({}));
- if(r.status===401&&!path.startsWith('/auth')){USER_TOKEN=null;localStorage.removeItem(T_USER);me=null}
+ if(r.status===401&&!path.startsWith('/auth')){USER_TOKEN=null;localStorage.removeItem(T_USER);me=null;window.__ztAuthDead=true;
+  if(typeof renderModes==='function')renderModes();
+  if(typeof window.syncBrandViews==='function')window.syncBrandViews();}
+ if(r.ok&&path==='/me')window.__ztAuthDead=false;
  if(!r.ok){const err=new Error(j.error||('Ошибка '+r.status));err.code=r.status;throw err}
  return j}
 
