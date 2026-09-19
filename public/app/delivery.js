@@ -28,17 +28,17 @@ function renderDeliveryMenu() {
   const list = DMENU.filter(p => p.cat === dcat);
   let html = list.map(p => {
     const opts = p.opts || [];
-    // Автоматически делаем первый вариант выбранным (.sel), если он есть
+    // Рендерим чипсы с классами .opts и кнопками, у первой сразу ставим .sel и активный стиль
     const optsHTML = opts.length
-      ? `<div class="opts" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${opts.map((o, i) => `<button type="button" data-id="${p.id}" data-oi="${i}" class="${i === 0 ? 'sel' : ''}" style="padding:8px 12px;border-radius:10px;border:1.5px solid ${i === 0 ? '#C03B2A' : '#D8DFE4'};background:${i === 0 ? '#F9EBEA' : '#fff'};color:#123A6B;font-weight:700;font-size:12px;cursor:pointer">${o.l} · ${o.w} ·${fmt(o.p)}</button>`).join('')}</div>`
+      ? `<div class="opts" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${opts.map((o, i) => `<button type="button" data-id="${p.id}" data-oi="${i}" class="${i === 0 ? 'sel' : ''}" style="padding:10px 14px;border-radius:12px;border:2px solid ${i === 0 ? '#C03B2A' : '#D8DFE4'};background:${i === 0 ? '#F9EBEA' : '#fff'};color:#123A6B;font-weight:700;font-size:13px;cursor:pointer">${esc(o.l)} · ${esc(o.w)} ·${fmt(o.p)}</button>`).join('')}</div>`
       : '';
-    return `<article class="card">
+    return `<article class="card" data-product-id="${p.id}">
       <div class="media" style="--tint:#F3E2CE"><span class="em">${p.e || '🍕'}</span></div>
       <div class="cbody">
         <h3>${esc(p.name)}</h3>
         ${p.desc ? `<div class="desc">${esc(p.desc)}</div>` : ''}
         ${optsHTML}
-        <button class="cta" data-add="${p.id}" style="margin-top:auto">Добавить</button>
+        <button class="cta" data-add="${p.id}" style="margin-top:auto;padding:12px;border-radius:12px;background:#C03B2A;color:#fff;font-weight:700;border:none;cursor:pointer">Добавить</button>
       </div>
     </article>`;
   }).join('');
@@ -63,44 +63,64 @@ function renderDeliveryMenu() {
 }
 
 $('#deliveryGrid').addEventListener('click', e => {
-  const opt = e.target.closest('.opts button');
-  if (opt) {
-    const group = opt.closest('.opts');
+  // Обработка клика по чипсу размера/теста
+  const optBtn = e.target.closest('.opts button');
+  if (optBtn) {
+    const group = optBtn.closest('.opts');
     group.querySelectorAll('button').forEach(b => {
       b.classList.remove('sel');
       b.style.borderColor = '#D8DFE4';
       b.style.background = '#fff';
     });
-    opt.classList.add('sel');
-    opt.style.borderColor = '#C03B2A';
-    opt.style.background = '#F9EBEA';
+    optBtn.classList.add('sel');
+    optBtn.style.borderColor = '#C03B2A';
+    optBtn.style.background = '#F9EBEA';
     return;
   }
-  const add = e.target.closest('[data-add]');
-  if (add) {
-    const id = add.dataset.add;
+
+  // Обработка клика по кнопке «Добавить»
+  const addBtn = e.target.closest('[data-add]');
+  if (addBtn) {
+    const id = addBtn.dataset.add;
     const p = DMENU.find(x => x.id === id);
+    if (!p) return;
     const opts = p.opts || [];
     
-    // Если опции есть, но ни одна не выбрана — берем первую по умолчанию
-    let selOpt = add.closest('.cbody').querySelector('.opts button.sel');
-    if (opts.length > 0 && !selOpt) {
-      selOpt = add.closest('.cbody').querySelector('.opts button');
+    const cardBody = addBtn.closest('.cbody');
+    let selOpt = cardBody ? cardBody.querySelector('.opts button.sel') : null;
+    
+    // Если опции есть, но по какой-то причине ни одна не выбрана — принудительно берем первую
+    if (opts.length > 0 && !selOpt && cardBody) {
+      selOpt = cardBody.querySelector('.opts button');
       if (selOpt) selOpt.classList.add('sel');
     }
 
-    const oi = selOpt ? +selOpt.dataset.oi : (opts.length > 0 ? 0 : -1);
-    const price = oi >= 0 && opts[oi] ? opts[oi].p : (+p.price || 0);
+    const oi = selOpt ? parseInt(selOpt.dataset.oi, 10) : (opts.length > 0 ? 0 : -1);
+    const price = (oi >= 0 && opts[oi]) ? Number(opts[oi].p) : (Number(p.price) || 0);
 
     if (price <= 0) {
-      toast('Выберите размер', '⚠️');
+      toast('Выберите размер и тесто', '⚠️');
       return;
     }
 
+    const optLabel = (oi >= 0 && opts[oi]) ? opts[oi].l : null;
     const key = id + (oi >= 0 ? '_' + oi : '');
+    
     const existing = cart.find(c => c.key === key);
-    if (existing) existing.qty++;
-    else cart.push({ key, id, oi, name: p.name, opt: oi >= 0 && opts[oi] ? opts[oi].l : null, price: price, sz: oi >= 0 && opts[oi] ? (opts[oi].sz || 0) : 0, qty: 1 });
+    if (existing) {
+      existing.qty++;
+    } else {
+      cart.push({
+        key: key,
+        id: id,
+        oi: oi,
+        name: p.name,
+        opt: optLabel,
+        price: price,
+        sz: (oi >= 0 && opts[oi]) ? (Number(opts[oi].sz) || 0) : 0,
+        qty: 1
+      });
+    }
     
     localStorage.setItem('zt_cart', JSON.stringify(cart));
     updateCartFab();
