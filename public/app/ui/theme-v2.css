@@ -490,15 +490,15 @@ button.cta, .btn.fire, #checkoutBtn {
   color: #3D4751 !important;
   font-weight: 500;
 }
-/* Устранение скачков макета (CLS) */
+/* СТАЛО: безопасная стабилизация без краша Safari WebKit */
 .grid {
-  contain-intrinsic-size: auto 400px;
-  content-visibility: auto;
+  /* Убираем content-visibility: auto, ломающий рендеринг Safari при зуме */
 }
 
 .card {
   min-height: 340px;
-  contain: layout style paint;
+  /* Убираем contain: paint — он изолирует текстуры в видеопамяти, вызывая OOM при масштабировании */
+  contain: layout style;
 }
 
 .media {
