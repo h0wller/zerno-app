@@ -64,7 +64,36 @@ function renderDeliveryMenu() {
   }
 
   $('#deliveryGrid').innerHTML = html;
+/* ── состояния карточек: стоп-лист + кнопка «Добавить» ── */
+function patchDeliveryCards(list) {
+  const cards = $('#deliveryGrid').querySelectorAll('.card');
+  cards.forEach((card, i) => {
+    const p = list[i]; if (!p) return;
+    card.classList.toggle('stopped', !p.on);
+    const media = card.querySelector('.media');
+    if (media) {
+      let sb = media.querySelector('.stopbadge');
+      if (!p.on && !sb) { sb = document.createElement('span'); sb.className = 'stopbadge'; sb.textContent = 'СТОП'; media.appendChild(sb); }
+      if (p.on && sb) sb.remove();
+    }
+    const add = card.querySelector('[data-add]');
+    if (add) {
+      if (!p.on) { add.disabled = true; add.classList.remove('incart', 'added'); add.textContent = 'СТОП — недоступно'; }
+      else if (add.disabled) { add.disabled = false; }
+    }
+  });
+  syncAddButtons();
+}
 
+/* Кнопка подсвечена ТОЛЬКО когда позиция уже в корзине */
+function syncAddButtons() {
+  document.querySelectorAll('#deliveryGrid [data-add]').forEach(b => {
+    if (b.disabled) return;
+    const n = cart.reduce((a, c) => a + (String(c.id) === String(b.dataset.add) ? c.qty : 0), 0);
+    b.classList.toggle('incart', n > 0);
+    if (!b.classList.contains('added')) b.textContent = n > 0 ? ('В корзине · ' + n) : 'Добавить';
+  });
+}
   const addCard = document.getElementById('addDelivCard');
   if (addCard) {
     addCard.onclick = () => openEditor(null, 'delivery');
