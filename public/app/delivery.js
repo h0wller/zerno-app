@@ -28,17 +28,26 @@ function renderDeliveryMenu() {
   const list = DMENU.filter(p => p.cat === dcat);
   let html = list.map(p => {
     const opts = p.opts || [];
-    // Рендерим чипсы с классами .opts и кнопками, у первой сразу ставим .sel и активный стиль
+    
+    // Генерируем чипсы опций. Первый вариант (i === 0) по умолчанию выбран (.sel).
+    // ВАЖНО: оборачиваем текст в .ol и .op, чтобы CSS из views.js корректно красил веса/цены.
     const optsHTML = opts.length
-      ? `<div class="opts" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${opts.map((o, i) => `<button type="button" data-id="${p.id}" data-oi="${i}" class="${i === 0 ? 'sel' : ''}" style="padding:10px 14px;border-radius:12px;border:2px solid ${i === 0 ? '#C03B2A' : '#D8DFE4'};background:${i === 0 ? '#F9EBEA' : '#fff'};color:#123A6B;font-weight:700;font-size:13px;cursor:pointer">${esc(o.l)} · ${esc(o.w)} ·${fmt(o.p)}</button>`).join('')}</div>`
+      ? `<div class="opts">
+          ${opts.map((o, i) => {
+            return `<button type="button" data-id="${p.id}" data-oi="${i}" class="${i === 0 ? 'sel' : ''}">
+              <span class="ol">${esc(o.l)}</span> <span class="op">${esc(o.w)} · ${fmt(o.p)}</span>
+            </button>`;
+          }).join('')}
+        </div>`
       : '';
+
     return `<article class="card" data-product-id="${p.id}">
       <div class="media" style="--tint:#F3E2CE"><span class="em">${p.e || '🍕'}</span></div>
       <div class="cbody">
         <h3>${esc(p.name)}</h3>
         ${p.desc ? `<div class="desc">${esc(p.desc)}</div>` : ''}
         ${optsHTML}
-        <button class="cta" data-add="${p.id}" style="margin-top:auto;padding:12px;border-radius:12px;background:#C03B2A;color:#fff;font-weight:700;border:none;cursor:pointer">Добавить</button>
+        <button class="cta" data-add="${p.id}">Добавить</button>
       </div>
     </article>`;
   }).join('');
@@ -50,7 +59,7 @@ function renderDeliveryMenu() {
     </article>`;
   }
 
-  if (list.length === 0 && (!typeof editMode !== 'undefined' || !editMode)) {
+  if (list.length === 0 && (typeof editMode === 'undefined' || !editMode)) {
     html += '<div class="gempty">В этой категории пока пусто</div>';
   }
 
@@ -63,43 +72,45 @@ function renderDeliveryMenu() {
 }
 
 $('#deliveryGrid').addEventListener('click', e => {
-  // Обработка клика по чипсу размера/теста
+  // 1. Клик по чипсу размера/теста
   const optBtn = e.target.closest('.opts button');
   if (optBtn) {
     const group = optBtn.closest('.opts');
-    group.querySelectorAll('button').forEach(b => {
-      b.classList.remove('sel');
-      b.style.borderColor = '#D8DFE4';
-      b.style.background = '#fff';
-    });
+    // Снимаем .sel со всех кнопок в группе и вешаем на кликнутую.
+    // CSS из views.js сам перекрасит их через класс .sel
+    group.querySelectorAll('button').forEach(b => b.classList.remove('sel'));
     optBtn.classList.add('sel');
-    optBtn.style.borderColor = '#C03B2A';
-    optBtn.style.background = '#F9EBEA';
     return;
   }
 
-  // Обработка клика по кнопке «Добавить»
+  // 2. Клик по кнопке «Добавить»
   const addBtn = e.target.closest('[data-add]');
   if (addBtn) {
     const id = addBtn.dataset.add;
     const p = DMENU.find(x => x.id === id);
     if (!p) return;
+    
     const opts = p.opts || [];
-    
     const cardBody = addBtn.closest('.cbody');
-    let selOpt = cardBody ? cardBody.querySelector('.opts button.sel') : null;
     
-    // Если опции есть, но по какой-то причине ни одна не выбрана — принудительно берем первую
-    if (opts.length > 0 && !selOpt && cardBody) {
+    // Ищем выбранный вариант. 
+    // Fallback: если пользователь ничего не нажал (или .sel слетел), принудительно берем первый.
+    let selOpt = cardBody ? cardBody.querySelector('.opts button.sel') : null;
+    if (!selOpt && cardBody && opts.length > 0) {
       selOpt = cardBody.querySelector('.opts button');
       if (selOpt) selOpt.classList.add('sel');
     }
 
     const oi = selOpt ? parseInt(selOpt.dataset.oi, 10) : (opts.length > 0 ? 0 : -1);
-    const price = (oi >= 0 && opts[oi]) ? Number(opts[oi].p) : (Number(p.price) || 0);
+    
+    if (opts.length > 0 && oi === -1) {
+      if (typeof toast === 'function') toast('Выберите размер и тесто', '⚠️');
+      return;
+    }
 
+    const price = (oi >= 0 && opts[oi]) ? Number(opts[oi].p) : (Number(p.price) || 0);
     if (price <= 0) {
-      toast('Выберите размер и тесто', '⚠️');
+      if (typeof toast === 'function') toast('Ошибка цены', '⚠️');
       return;
     }
 
@@ -123,8 +134,8 @@ $('#deliveryGrid').addEventListener('click', e => {
     }
     
     localStorage.setItem('zt_cart', JSON.stringify(cart));
-    updateCartFab();
-    toast('Добавлено в корзину', '🛒');
+    if (typeof updateCartFab === 'function') updateCartFab();
+    if (typeof toast === 'function') toast('Добавлено в корзину', '🛒');
   }
 });
 
