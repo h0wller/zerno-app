@@ -1297,15 +1297,39 @@ function setMode(m){
        m==='admin'?'🔓':m==='cashier'?'🧾':m==='orders'?'🍕':'');
 }
 
-function syncBrandViews(){
-  const showGuest=(mode==='guest'||mode==='admin');
-  const mv=$('#menuView'), dv=$('#deliveryView'), rl=$('#rail');
-  if(mv)mv.hidden=!showGuest||brand!=='coffee';
-  if(dv)dv.classList.toggle('active', showGuest&&brand==='delivery');
-  if(rl)rl.style.display=(mv&&mv.hidden)?'none':'';
-  const et=$('#editToggle'); if(et)et.hidden=!(mode==='admin'&&brand==='coffee');
-}
+function syncBrandViews() {
+  const isDel = (brand === 'delivery');
+  const bName = isDel ? 'delivery' : 'coffee';
 
+  // 1. Принудительно выставляем актуальный бренд на html и body
+  document.documentElement.setAttribute('data-brand', bName);
+  document.body.setAttribute('data-brand', bName);
+
+  // 2. Синхронизируем активную кнопку в переключателе
+  const bSeg = document.getElementById('brandSeg');
+  if (bSeg) {
+    bSeg.querySelectorAll('button').forEach(btn => {
+      btn.classList.toggle('on', btn.dataset.brand === bName);
+    });
+  }
+
+  // 3. Переключаем видимость меню
+  const showGuest = (mode === 'guest' || mode === 'admin');
+  const mv = document.getElementById('menuView');
+  const dv = document.getElementById('deliveryView');
+  const rl = document.getElementById('rail');
+
+  if (mv) mv.hidden = !showGuest || isDel;
+  if (dv) dv.classList.toggle('active', showGuest && isDel);
+  if (rl) rl.style.display = (mv && mv.hidden) ? 'none' : '';
+
+  const et = document.getElementById('editToggle');
+  if (et) et.hidden = !(mode === 'admin' && !isDel);
+
+  // 4. Обновляем корзину и плавающую кнопку
+  if (typeof window.cartFabShow === 'function') window.cartFabShow();
+  if (typeof window.updateDeliveryPromoBar === 'function') window.updateDeliveryPromoBar();
+}
 function openPin(){armPw();$('#pinModal').classList.add('show');syncOverlay();setTimeout(()=>$('#pinInput').focus(),150)}
 function closePin(){$('#pinModal').classList.remove('show');$('#pinInput').value='';syncOverlay()}
 $('#pinClose').onclick=closePin;
@@ -1828,17 +1852,14 @@ function renderAll(){
  drawQR($('#qrMini'),s);drawQR($('#qrMain'),s);
  if(mode==='cashier')renderLog();
 }
-
-
-$('#brandSeg').addEventListener('click',e=>{
-  const b=e.target.closest('[data-brand]');if(!b)return;
-  brand=b.dataset.brand;
-  if(mode==='cashier'||mode==='orders')setMode('guest');
-  $('#brandSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.brand===brand));
+$('#brandSeg').addEventListener('click', e => {
+  const b = e.target.closest('[data-brand]');
+  if (!b) return;
+  brand = b.dataset.brand;
+  if (mode === 'cashier' || mode === 'orders') setMode('guest');
   syncBrandViews();
-  if(brand==='delivery'&&!DMENU.length)loadDelivery();
+  if (brand === 'delivery' && !DMENU.length) loadDelivery();
 });
-
 (function(){
   async function boot(){
     if(USER_TOKEN){try{me=(await api('/me')).customer}catch(e){me=null;USER_TOKEN=null;localStorage.removeItem(T_USER)}}
