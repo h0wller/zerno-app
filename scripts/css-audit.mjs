@@ -1,0 +1,113 @@
+#!/usr/bin/env node
+/* Автоматическая проверка архитектурных правил CSS.
+   Запуск: node scripts/css-audit.mjs
+   Интеграция в CI: добавь в package.json → "pretest": "node scripts/css-audit.mjs" */
+
+import { readFileSync } from 'node:fs';
+
+const THEME = readFileSync('public/app/ui/theme-v2.css', 'utf8');
+const VIEWS = readFileSync('public/app/core/views.js', 'utf8');
+
+// Извлекаем CSS-строку из views.js (между `var rules = [` и `];`)
+const rulesMatch = VIEWS.match(/var rules = \[([\s\S]*?)\];\s*css\.textContent = rules\.join/);
+if (!rulesMatch) {
+  console.error('❌ Не найден массив rules в views.js');
+  process.exit(1);
+}
+const viewsCSS = rulesMatch[1]
+  .replace(/'([^']*)'/g, '$1')   // убираем одинарные кавычки
+  .replace(/\\n/g, '\n');
+
+let failures = 0;
+const fail = (msg) => { failures++; console.error('❌', msg); };
+const ok = (msg) => { console.log('✅', msg); };
+
+/* ── ПРАВИЛО 1: в theme-v2.css нет !important (кроме [hidden]) ── */
+const importantMatches = THEME.match(/!important/g) || [];
+const hiddenMatches = (THEME.match(/\[hidden\][^}]*!important/g) || []).length;
+if (importantMatches.length > hiddenMatches) {
+  fail(`theme-v2.css: найдено ${importantMatches.length - hiddenMatches} !important вне [hidden]. Базовые стили не должны иметь !important.`);
+} else {
+  ok('theme-v2.css: !important только в [hidden] (системное)');
+}
+
+/* ── ПРАВИЛО 2: в theme-v2.css нет [data-brand="..."] селекторов ── */
+if (/\[data-brand\s*=/.test(THEME)) {
+  fail('theme-v2.css: найдены [data-brand="..."] селекторы. Брендовые переопределения — в views.js (СЛОЙ 2).');
+} else {
+  ok('theme-v2.css: нет брендовых селекторов [data-brand="..."]');
+}
+
+/* ── ПРАВИЛО 3: в theme-v2.css нет хардкода брендовых цветов Пятницы ── */
+const fridayColors = ['#B4552D', '#8B3E1F', '#3A2A1C', '#241812', '#F3E2CE', '#F3EDE6', '#D9C7AD'];
+const fridayInTheme = fridayColors.filter(c => THEME.includes(c));
+if (fridayInTheme.length) {
+  fail(`theme-v2.css: найдены крафт-цвета Пятницы: ${fridayInTheme.join(', ')}. Брендовые цвета — в views.js.`);
+} else {
+  ok('theme-v2.css: нет хардкода брендовых цветов Пятницы');
+}
+
+/* ── ПРАВИЛО 4: в views.js все правила либо layout, либо начинаются с [data-brand= ── */
+const viewsLines = viewsCSS.split('\n').map(l => l.trim()).filter(Boolean);
+const badLines = viewsLines.filter(l => {
+  // layout/media/system — разрешены
+  if (l.startsWith('@media') || l.startsWith('@keyframes') || l.startsWith('html,') || l.startsWith('body{') || l.startsWith('img,') || l === '') return false;
+  // [data-brand=...] — разрешено
+  if (l.startsWith('[data-brand=') || l.startsWith('html[data-brand=') || l.startsWith('body[data-brand=') || l.startsWith('html[data-brand="delivery"] body')) return false;
+  // системные id-селекторы (FAB, grid, overlay) — разрешены
+  if (l.startsWith('#') || l.startsWith('.topbar') || l.startsWith('.chat-fab') || l.startsWith('.addonChip') || l.startsWith('.ctxPick') || l.startsWith('.chatHint') || l.startsWith('#chatPanel') || l.startsWith('.myOrderCard') || l.startsWith('.moSt') || l.startsWith('.mo-') || l.startsWith('#myOrders') || l.startsWith('#brandSplash') || l.startsWith('#supportChooseOverlay') || l.startsWith('.venueToggle') || l.startsWith('.topbar .venueWrap') || l.startsWith('#iosHint') || l.startsWith('#installBanner') || l.startsWith('body.support-pending') || l.startsWith('#deliveryGrid') || l.startsWith('#cartFab')) return false;
+  return true;
+});
+if (badLines.length) {
+  fail(`views.js: найдены правила без бренда и вне разрешённых селекторов:\n  ${badLines.slice(0, 5).join('\n  ')}`);
+} else {
+  ok('views.js: все правила — либо layout/system, либо [data-brand="..."]');
+}
+
+/* ── ПРАВИЛО 5: CSS в theme-v2.css парсится без ошибок (базовая проверка баланса скобок) ── */
+let depth = 0;
+for (const ch of THEME) {
+  if (ch === '{') depth++;
+  if (ch === '}') depth--;
+  if (depth < 0) break;
+}
+if (depth !== 0) {
+  fail(`theme-v2.css: несбалансированные скобки (разница: ${depth}).`);
+} else {
+  ok('theme-v2.css: скобки сбалансированы');
+}
+
+/* ── ПРАВИЛО 6: в views.js нет разрывов слов (!importan t, & &, > .) ── */
+const typos = ['!importan t', '& &', '> .', ' >.'];
+const foundTypos = typos.filter(t => viewsCSS.includes(t));
+if (foundTypos.length) {
+  fail(`views.js: найдены опечатки-разрывы: ${foundTypos.join(', ')}`);
+} else {
+  ok('views.js: нет опечаток-разрывов');
+}
+
+/* ── ПРАВИЛО 7: нет дублей селекторов в views.js ── */
+const selectorCounts = {};
+viewsLines.forEach(l => {
+  const m = l.match(/^([^{:]+){/);
+  if (m) {
+    const sel = m[1].trim();
+    selectorCounts[sel] = (selectorCounts[sel] || 0) + 1;
+  }
+});
+const duplicates = Object.entries(selectorCounts).filter(([, n]) => n > 1);
+if (duplicates.length) {
+  fail(`views.js: дубли селекторов:\n  ${duplicates.map(([s, n]) => `${s} (×${n})`).join('\n  ')}`);
+} else {
+  ok('views.js: нет дублей селекторов');
+}
+
+/* ── Итог ── */
+console.log('\n' + '='.repeat(60));
+if (failures === 0) {
+  console.log('🎉 Архитектурных нарушений не найдено!');
+  process.exit(0);
+} else {
+  console.error(`\n💥 Найдено нарушений: ${failures}`);
+  process.exit(1);
+}

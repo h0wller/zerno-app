@@ -1,438 +1,500 @@
 /* public/app/core/views.js — Ф3.22: флаги и state-мост чата, CSS-инъекция, DOM-переезды,
    виды/режимы (sv/setMode/brandSeg) + первичный sv() с исправленными конфликтами брендинга. */
-(function(){
-'use strict';
+(function () {
+  'use strict';
 
-/* ========== 0. Флаги и state-мост чата ========== */
-var QS = new URLSearchParams(location.search);
-var IN_TG = /Telegram/i.test(navigator.userAgent);
-var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
-var SUPPORT_ENTRY = (QS.get('tab') === 'chat' || QS.get('support') === 'choose');
-var chosenSupportCtx = SUPPORT_ENTRY ? (sessionStorage.getItem('zt_support_ctx') || '') : '';
-var supportPending = SUPPORT_ENTRY && !chosenSupportCtx;
-var chatCtx = localStorage.getItem('zt_chatctx') || '';
-if (chosenSupportCtx) chatCtx = chosenSupportCtx;
+  /* ========== 0. Флаги и state-мост чата ========== */
+  var QS = new URLSearchParams(location.search);
+  var IN_TG = /Telegram/i.test(navigator.userAgent);
+  var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
+  var SUPPORT_ENTRY = (QS.get('tab') === 'chat' || QS.get('support') === 'choose');
+  var chosenSupportCtx = SUPPORT_ENTRY ? (sessionStorage.getItem('zt_support_ctx') || '') : '';
+  var supportPending = SUPPORT_ENTRY && !chosenSupportCtx;
+  var chatCtx = localStorage.getItem('zt_chatctx') || '';
+  if (chosenSupportCtx) chatCtx = chosenSupportCtx;
 
-window.__fvChatState = {
-  getChatCtx: function() { return chatCtx; }, 
-  setChatCtx: function(v) { chatCtx = v; try { localStorage.setItem('zt_chatctx', v); } catch(e) {} },
-  getSupportPending: function() { return supportPending; },
-  setSupportPending: function(v) { supportPending = v; },
-  getChosenSupportCtx: function() { return chosenSupportCtx; },
-  setChosenSupportCtx: function(v) { chosenSupportCtx = v; try { sessionStorage.setItem('zt_support_ctx', v); } catch(e) {} }
-};
+  window.__fvChatState = {
+    getChatCtx: function () { return chatCtx; },
+    setChatCtx: function (v) { chatCtx = v; try { localStorage.setItem('zt_chatctx', v); } catch (e) {} },
+    getSupportPending: function () { return supportPending; },
+    setSupportPending: function (v) { supportPending = v; },
+    getChosenSupportCtx: function () { return chosenSupportCtx; },
+    setChosenSupportCtx: function (v) { chosenSupportCtx = v; try { sessionStorage.setItem('zt_support_ctx', v); } catch (e) {} },
+  };
 
-if (supportPending) {
+  if (supportPending) {
     document.body.classList.add('support-pending');
-    var ov = document.getElementById('supportChooseOverlay');
-    if (ov) {
-        ov.style.display = 'flex';
-        ov.style.zIndex = '10002';
-    }
-}
-/* ========== 1. CSS ========== */
-/* ВЛАДЕНИЕ: базовые компоненты — в theme-v2.css (СЛОЙ 1).
-   Здесь только layout-фиксы и брендовые переопределения (СЛОЙ 2).
-   Правила: docs/css-architecture.md */
-var css = document.createElement('style');
-
-css.textContent =
-'@media(min-width:1181px){body:not(.is-cashier) .wrap >.rail{grid-column:1}body:not(.is-cashier) .wrap >section{grid-column:2}body:not(.is-cashier) .wrap >.panel{grid-column:3}}'+
-'html,body{overflow-x:hidden;max-width:100%}img,canvas,svg,video{max-width:100%}'+
-'.topbar{padding-top:calc(env(safe-area-inset-top,0px) + 10px)!important}'+
-'#deliveryGrid{grid-template-columns:1fr!important;padding-bottom:120px}'+
-'@media(min-width:560px){#deliveryGrid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important}}'+
-'#deliveryGrid .opts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}'+
-'@media(max-width:400px){#deliveryGrid .opts{grid-template-columns:1fr}}'+
-'#deliveryGrid .opts button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:1.5px solid var(--line);border-radius:12px;font-size:11px;font-weight:600;background:#fff;line-height:1.3;white-space:normal;text-align:left;width:100%}'+
-'#deliveryGrid .opts button .op{color:var(--soft);font-weight:700}'+
-'#deliveryGrid .opts button.sel{background:var(--flame);border-color:var(--flame);color:#fff}'+
-'#deliveryGrid .opts button.sel .op{color:var(--tint-warm)}'+
-'#deliveryGrid .opts.shake{animation:shake .4s}'+
-'#cartFab{background:var(--flame)!important;box-shadow:0 12px 30px -8px rgba(58,42,28,.45)!important;bottom:calc(84px + env(safe-area-inset-bottom))!important}'+
-'.addonChip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}.addonChip b{color:var(--flame)}'+
-'@media(max-width:820px){.topbar{flex-wrap:wrap;row-gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,0px) + 10px)!important}.topbar .brand{order:1;min-width:0}#clock{order:2;margin-left:auto}#profileTopBtn{order:3}#brandSeg{order:10;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}#modeSeg{order:11;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar, #modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}'+
-'@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}'+
-'@media(max-width:1180px){#panel.open{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;max-height:100%!important;border-radius:0!important;margin:0!important;transform:none!important;z-index:320!important}#panel .tabs{padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 10px)}}'+
-'#brandSplash{position:fixed;inset:0;z-index:400;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}'+
-'#brandSplash .spInner{width:100%;max-width:560px;text-align:center}'+
-'#brandSplash .spTitle{font:400 clamp(20px,5.5vw,30px)/1.25 Prata,serif;margin-bottom:6px;overflow-wrap:break-word}'+
-'#brandSplash .spSub{color:var(--soft);font-size:14px;margin-bottom:22px}'+
-'#brandSplash .spBtns{display:grid;grid-template-columns:1fr;gap:12px}'+
-'#brandSplash .spBtn{border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;box-shadow:var(--sh);width:100%}'+
-'#brandSplash .spBtn small{display:block;font:400 12px Golos Text,sans-serif;margin-top:6px}'+
-'#brandSplash .spPizza{border:2px solid #F2D9A5;background:#FFF6E5;color:#6B4E0E}#brandSplash .spPizza small{color:#8A6D3B}'+
-'#brandSplash .spCoffee{border:2px solid var(--line);background:#fff;color:var(--ink)}#brandSplash .spCoffee small{color:var(--soft)}'+
-'@media(min-width:560px){#brandSplash .spBtns{grid-template-columns:1fr 1fr}}'+
-'#chatPanel [class="chip"],#chatPanel #chips,#chatPanel .chips{display:none!important}'+
-'.chatHint{display:inline-block;background:#EDF2F6;border:1.5px solid var(--line);border-radius:16px 16px 16px 4px; padding:8px 14px;margin:3px 4px;font-size:13px;color:var(--ink);cursor:pointer}'+
-'.chatHint:active{background:#D6E4F0}'+
-'.ctxPick{display:flex;gap:8px;margin:8px 0}.ctxPick button{flex:1;padding:10px;border-radius:14px;font-size:13px;font-weight:700;border:1.5px solid var(--line);background:#fff;cursor:pointer}'+
-'.ctxPick .cpD{border-color:#F2D9A5;background:#FFF6E5;color:#6B4E0E}.ctxPick .cpC{color:var(--ink)}'+
-'#myOrders{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}'+
-'#myOrders .hmini{margin:0;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;font-weight:600}'+
-'.myOrderCard{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--sh)}'+
-'.myOrderCard .moTop{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;font-weight:800}'+
-'.moSt{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;background:#EDF2F6;color:#33507A;white-space:nowrap}'+
-'.mo-new,.mo-accept{background:var(--tint-cool);color:var(--flame)}.mo-cook{background:var(--status-alert-tint);color:var(--status-alert)}'+
-'.mo-way{background:var(--tint-cool);color:var(--flame)}.mo-done{background:var(--tint-success);color:var(--status-success)}.mo-cancel{background:var(--tint-danger);color:var(--status-danger)}'+
-'.myOrderCard .moSum{margin-top:6px;font-size:15px;font-weight:800}'+
-'.myOrderCard .moItems{margin-top:2px;font-size:12px;color:var(--soft)}'+
-'.myOrderCard .moGifts{margin-top:4px;font-size:12px;color:#2F7D4F;font-weight:700}'+
-'body.support-pending .hintsWrap{display:none!important}'+
-'.chat-fab{z-index:10001!important}'+
-'#supportChooseOverlay{position:fixed;inset:0;z-index:10002!important;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}'+
-'#supportChooseOverlay .scTitle{font:400 22px Prata,serif}'+
-'#supportChooseOverlay .scSub{color:var(--soft);font-size:13px}'+
-'#supportChooseOverlay .scBtns{width:100%;max-width:340px}'+
-'/* Ф3.7-fix: шапка — venueWrap в сетке topbar */'+
-'.topbar .venueWrap{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}'+
-'.venueToggle{align-self:flex-start;border:0;background:transparent;color:var(--soft);font:700 12px "Golos Text",system-ui,sans-serif;padding:2px 4px;cursor:pointer}'+
-'@media(max-width:820px){.topbar .venueWrap{order:10;flex:1 1 100%}.topbar .venueWrap #brandSeg{order:0;flex:0 0 auto;width:100%}}'+
-'/* Ф3.7-fix: фирменный крафт-акцент Пятницы в режиме доставки */'+
-'[data-brand="delivery"] #deliveryGrid .opts button.sel{background:#B4552D;border-color:#B4552D;color:#fff}'+
-'[data-brand="delivery"] #deliveryGrid .opts button.sel .op{color:#F3E2CE}'+
-'[data-brand="delivery"] #cartFab{background:#B4552D!important;box-shadow:0 12px 30px -8px rgba(180,85,45,.75)!important}'+
-'[data-brand="delivery"] .addonChip b{color:#B4552D}'+
-'/* Ф3.7-fix: состояния кнопки «Добавить» */'+
-'#deliveryGrid .cta{background:#fff;border:1.5px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:700 14px "Golos Text",system-ui,sans-serif;cursor:pointer;box-shadow:none;transition:background .15s,border-color .15s,color .15s}'+
-'#deliveryGrid .cta:active{transform:translateY(1px)}'+
-'#deliveryGrid .cta:disabled{background:#EDF2F6;border-color:var(--line);color:#8B98A5;cursor:not-allowed;transform:none}'+
-'#deliveryGrid .cta.incart{border-color:#B4552D;color:#B4552D}'+
-'[data-brand="coffee"] #deliveryGrid .cta.incart{border-color:var(--flame);color:var(--flame)}'+
-'#deliveryGrid .cta.added{background:#B4552D;border-color:#B4552D;color:#fff}'+
-'[data-brand="coffee"] #deliveryGrid .cta.added{background:var(--flame);border-color:var(--flame)}'+
-'#deliveryGrid .card .media{position:relative}'+
-'#deliveryGrid .card.stopped{opacity:.75}'+
-'#deliveryGrid .stopbadge{position:absolute;top:8px;left:8px;z-index:2;background:#B3372B;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}'+
-'/* Ф3-фикс: iosHint/installBanner не накрывают шапку */'+
-'#iosHint,#installBanner{top:auto!important;bottom:calc(96px + env(safe-area-inset-bottom))!important}'+
-'/* ══ БРЕНДОВЫЕ ПЕРЕОПРЕДЕЛЕНИЯ ДЛЯ ПЯТНИЦЫ ══ */'+
-'html[data-brand="delivery"],body[data-brand="delivery"]{'+
-  '--flame:#B4552D;--flame-d:#8B3E1F;--esp:#3A2A1C;--esp2:#241812;'+
-  '--tint-cool:#F3E2CE;--tint-warm:#F3E2CE;'+
-  '--green:#186A43;--amber:#C2935F;'+
-'}'+
-'[data-brand="delivery"] body{background-color:#F3EDE6!important}'+
-'[data-brand="delivery"] .card{border-color:rgba(180,85,45,.25)}'+
-'[data-brand="delivery"] .card h3{color:#3A2A1C}'+
-'[data-brand="delivery"] .cbody .desc{color:#5B4E3A}'+
-'[data-brand="delivery"] .price{color:#B4552D}'+
-'[data-brand="delivery"] .tag{background:#B4552D}'+
-'[data-brand="delivery"] .tag.hit{background:#8B3E1F!important}'+
-'[data-brand="delivery"] .stopbadge{background:#D63939}'+
-'[data-brand="delivery"] .comp i{background:#F3E2CE;border-color:rgba(180,85,45,.25);color:#3A2A1C}'+
-'[data-brand="delivery"] #deliveryGrid .opts button.sel{background:#B4552D!important;border-color:#B4552D!important;color:#fff!important}'+
-'[data-brand="delivery"] #deliveryGrid .opts button.sel .op{color:#F3E2CE!important}'+
-'[data-brand="delivery"] #deliveryRail button.on{background:#B4552D!important;border-color:#B4552D!important;color:#fff!important}'+
-'[data-brand="delivery"] #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on{background:#B4552D!important;color:#fff!important}'+
-'[data-brand="delivery"] #cartFab{background:#B4552D!important;box-shadow:0 12px 30px -8px rgba(180,85,45,.75)!important}'+
-'[data-brand="delivery"] .addonChip b{color:#B4552D!important}'+
-'[data-brand="delivery"] .chat-fab,[data-brand="delivery"] #chatFab{background:#B4552D!important;box-shadow:0 0 0 4px rgba(180,85,45,.25),0 12px 30px -8px rgba(58,42,28,.5)!important}'+
-'[data-brand="delivery"] #chatPanel .chatHead{background:#241812!important;color:#fff!important}'+
-'[data-brand="delivery"] #chatMsgs .msg.me,[data-brand="delivery"] #chatMsgs .me{background:#B4552D!important;border-color:#B4552D!important;color:#fff!important}'+
-'[data-brand="delivery"] #checkoutBtn{background:#B4552D!important;border-color:#B4552D!important;color:#fff!important}'+
-'[data-brand="delivery"] #cartPromoBtn{color:#B4552D!important}'+
-'[data-brand="delivery"] .mo-new,[data-brand="delivery"] .mo-accept,[data-brand="delivery"] .mo-way{background:#F3E2CE!important;color:#B4552D!important}'+
-'[data-brand="delivery"] .topbar .brand img{height:34px;width:auto;border-radius:10px}'+
-'[data-brand="delivery"] .venueToggle{color:#8A6D3B}'+
-'[data-brand="delivery"] #brandSeg,[data-brand="delivery"] #modeSeg{background:#241812}'+
-'[data-brand="delivery"] .cartPanel .qty button{background:#C99E6E!important;border:1.5px solid #3A2A1C!important;color:#3A2A1C!important}';
-
-document.head.appendChild(css);
-
-/* ========== 2. DOM-переезды ========== */
-var wrapEl = document.querySelector('.wrap');
-var sec = wrapEl ? wrapEl.querySelector(':scope >section') : null;
-['deliveryView', 'ordersView', 'cashierView'].forEach(function(id) {
-  var el = document.getElementById(id);
-  if (sec && el && el.parentNode !== sec) sec.appendChild(el);
-});
-var dRail = document.getElementById('deliveryRail');
-if (wrapEl && dRail && dRail.parentNode !== wrapEl) { wrapEl.insertBefore(dRail, sec); dRail.classList.add('rail'); }
-var ab0 = document.getElementById('adminBar');
-if (sec && ab0 && ab0.parentNode !== sec) sec.insertBefore(ab0, sec.firstChild);
-
-(function(){
-  var ov = document.getElementById('ordersView');
-  if (ov && !document.getElementById('pendingBoxD')) {
-    var d = document.createElement('div'); d.className = 'cash-card';
-    d.innerHTML = '<h3 style="margin:0 0 8px">🆕 Активация гостей</h3><div id="pendingBoxD"></div>';
-    var lc = document.getElementById('ordersList');
-    if (lc) ov.querySelector('.cashier').insertBefore(d, lc.closest('.cash-card'));
+    var ov0 = document.getElementById('supportChooseOverlay');
+    if (ov0) { ov0.style.display = 'flex'; ov0.style.zIndex = '10002'; }
   }
-  if (ov && !document.getElementById('chatsToggleD')) {
-    var top = ov.querySelector('.cash-top');
-    var b = document.createElement('button'); b.id = 'chatsToggleD'; b.className = 'btn ghost'; b.textContent = '💬 Чаты гостей';
-    b.onclick = typeof openStaffChat === 'function' ? openStaffChat : function(){};
-    var ref = document.getElementById('ordersRefresh');
-    if (top && ref) top.insertBefore(b, ref);
-  }
-})();
 
-(function(){
-  var cp = document.getElementById('cartPanel'), ci = document.getElementById('cartItems');
-  if (cp && ci && !document.getElementById('cartAddons')) {
-    var d = document.createElement('div'); d.id = 'cartAddons'; d.style.margin = '0 0 10px'; cp.insertBefore(d, ci);
-  }
-  })();
-/* ========== 3. Виды и режимы ========== */
-function sv(){
-  try { 
-    // ЖЕСТКАЯ СИНХРОНИЗАЦИЯ БРЕНДА НА ОБОИХ КОРНЯХ ДОКУМЕНТА
-    var bName = (typeof brand !== 'undefined' && brand === 'delivery') ? 'delivery' : 'coffee';
-    document.documentElement.setAttribute('data-brand', bName);
-    document.body.setAttribute('data-brand', bName);
+  /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
+  /* Базовые компоненты — в theme-v2.css (СЛОЙ 1). Здесь — только то, чего там нет.
+     Правила архитектуры: docs/css-architecture.md */
+  var css = document.createElement('style');
+  var rules = [
+    /* --- Layout: сетка wrap + safe-area --- */
+    '@media(min-width:1181px){body:not(.is-cashier) .wrap > .rail{grid-column:1}body:not(.is-cashier) .wrap > section{grid-column:2}body:not(.is-cashier) .wrap > .panel{grid-column:3}}',
+    'html,body{overflow-x:hidden;max-width:100%}',
+    'img,canvas,svg,video{max-width:100%}',
+    '.topbar{padding-top:calc(env(safe-area-inset-top,0px) + 10px)}',
 
-    var seg = document.getElementById('brandSeg');
-    if (seg) {
-      var cBtn = seg.querySelector('[data-brand="coffee"]');
-      var dBtn = seg.querySelector('[data-brand="delivery"]');
-      if (cBtn) cBtn.classList.toggle('on', bName === 'coffee');
-      if (dBtn) dBtn.classList.toggle('on', bName === 'delivery');
-      seg.classList.toggle('is-delivery', bName === 'delivery');
-    }
+    /* --- Delivery grid + опции --- */
+    '#deliveryGrid{grid-template-columns:1fr;padding-bottom:120px}',
+    '@media(min-width:560px){#deliveryGrid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}}',
+    '#deliveryGrid .opts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}',
+    '@media(max-width:400px){#deliveryGrid .opts{grid-template-columns:1fr}}',
+    '#deliveryGrid .opts button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:1.5px solid var(--line);border-radius:12px;font-size:11px;font-weight:600;background:#fff;line-height:1.3;white-space:normal;text-align:left;width:100%}',
+    '#deliveryGrid .opts button .op{color:var(--soft);font-weight:700}',
+    '#deliveryGrid .opts button.sel{background:var(--flame);border-color:var(--flame);color:#fff}',
+    '#deliveryGrid .opts button.sel .op{color:var(--tint-warm)}',
+    '#deliveryGrid .opts.shake{animation:shake .4s}',
 
-    var isDel = (bName === 'delivery');
-    var mark = document.getElementById('brandMark') || document.querySelector('.brand .mark');
-    if (mark) {
-      mark.classList.toggle('is-delivery', isDel);
-      mark.innerHTML = isDel ? '🍕' : '<img src="./icon.svg" alt="…и кофе">';
-    }
+    /* --- FAB корзины --- */
+    '#cartFab{background:var(--flame);box-shadow:0 12px 30px -8px rgba(58,42,28,.45);bottom:calc(84px + env(safe-area-inset-bottom))}',
+    '.addonChip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}',
+    '.addonChip b{color:var(--flame)}',
 
-    var op = document.querySelector('.chat-h .op, .chatHead .op');
-    if (op) {
-      if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
-      op.innerHTML = isDel ? '' : (op.getAttribute('data-orig') || '');
-    }
+    /* --- Мобильная шапка --- */
+    '@media(max-width:820px){.topbar{flex-wrap:wrap;row-gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,0px) + 10px)}.topbar .brand{order:1;min-width:0}#clock{order:2;margin-left:auto}#profileTopBtn{order:3}#brandSeg{order:10;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}#modeSeg{order:11;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}',
+    '@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}',
 
-    var bTitle = document.getElementById('brandTitle');
-    var bSub = document.getElementById('brandSub');
-    if (bTitle) bTitle.textContent = isDel ? 'Пятница' : '…и кофе';
-    if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
+    /* --- Шторка на мобильных --- */
+    '@media(max-width:1180px){#panel.open{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;max-height:100%;border-radius:0;margin:0;transform:none;z-index:320}#panel .tabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}}',
 
-    var seg2 = document.getElementById('brandSeg');
-    if (seg2 && !document.getElementById('venueToggle')) {
-      var vw = document.createElement('div'); vw.className = 'venueWrap';
-      seg2.parentNode.insertBefore(vw, seg2);
-      var vt = document.createElement('button');
-      vt.id = 'venueToggle'; vt.type = 'button'; vt.className = 'venueToggle';
-      vt.setAttribute('aria-haspopup', 'listbox'); vt.setAttribute('aria-expanded', 'false');
-      vt.innerHTML = '🏪 Сменить заведение <span class="vt-arrow">▾</span>';
-      vw.appendChild(vt); vw.appendChild(seg2);
-      vt.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var open = seg2.classList.toggle('open');
-        vt.setAttribute('aria-expanded', open ? 'true' : 'false');
-      });
-      document.addEventListener('click', function (e) {
-        if (!vw.contains(e.target)) { seg2.classList.remove('open'); vt.setAttribute('aria-expanded', 'false'); }
-      });
-    }
-  } catch(e){}
+    /* --- Сплэш бренда --- */
+    '#brandSplash{position:fixed;inset:0;z-index:400;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}',
+    '#brandSplash .spInner{width:100%;max-width:560px;text-align:center}',
+    '#brandSplash .spTitle{font:400 clamp(20px,5.5vw,30px)/1.25 Prata,serif;margin-bottom:6px;overflow-wrap:break-word}',
+    '#brandSplash .spSub{color:var(--soft);font-size:14px;margin-bottom:22px}',
+    '#brandSplash .spBtns{display:grid;grid-template-columns:1fr;gap:12px}',
+    '#brandSplash .spBtn{border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;box-shadow:var(--sh);width:100%}',
+    '#brandSplash .spBtn small{display:block;font:400 12px Golos Text,sans-serif;margin-top:6px}',
+    '#brandSplash .spPizza{border:2px solid #F2D9A5;background:#FFF6E5;color:#6B4E0E}',
+    '#brandSplash .spPizza small{color:#8A6D3B}',
+    '#brandSplash .spCoffee{border:2px solid var(--line);background:#fff;color:var(--ink)}',
+    '#brandSplash .spCoffee small{color:var(--soft)}',
+    '@media(min-width:560px){#brandSplash .spBtns{grid-template-columns:1fr 1fr}}',
 
-  var showGuest = (typeof mode !== 'undefined' && (mode === 'guest' || mode === 'admin'));
-  var bName = (typeof brand !== 'undefined' && brand === 'delivery') ? 'delivery' : 'coffee';
-  var showCoffee = showGuest && bName === 'coffee';
-  var showDeliv = showGuest && bName === 'delivery';
+    /* --- Чат --- */
+    '#chatPanel [class="chip"],#chatPanel #chips,#chatPanel .chips{display:none}',
+    '.chatHint{display:inline-block;background:#EDF2F6;border:1.5px solid var(--line);border-radius:16px 16px 16px 4px;padding:8px 14px;margin:3px 4px;font-size:13px;color:var(--ink);cursor:pointer}',
+    '.chatHint:active{background:#D6E4F0}',
+    '.ctxPick{display:flex;gap:8px;margin:8px 0}',
+    '.ctxPick button{flex:1;padding:10px;border-radius:14px;font-size:13px;font-weight:700;border:1.5px solid var(--line);background:#fff;cursor:pointer}',
+    '.ctxPick .cpD{border-color:#F2D9A5;background:#FFF6E5;color:#6B4E0E}',
+    '.ctxPick .cpC{color:var(--ink)}',
+    '.chat-fab{z-index:10001}',
 
-  var mv = document.getElementById('menuView'), dv = document.getElementById('deliveryView');
-  var rl = document.getElementById('rail'), dr = document.getElementById('deliveryRail');
-  
-  if (mv) { mv.hidden = !showCoffee; mv.style.display = showCoffee ? '' : 'none'; }
-  if (dv) { dv.hidden = false; dv.style.display = showDeliv ? 'block' : 'none'; }
-  if (rl) rl.style.display = showCoffee ? '' : 'none';
-  if (dr) dr.style.display = showDeliv ? '' : 'none';
+    /* --- Заказы в профиле --- */
+    '#myOrders{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}',
+    '#myOrders .hmini{margin:0;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;font-weight:600}',
+    '.myOrderCard{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--sh)}',
+    '.myOrderCard .moTop{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;font-weight:800}',
+    '.moSt{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;background:#EDF2F6;color:#33507A;white-space:nowrap}',
+    '.mo-new,.mo-accept{background:var(--tint-cool);color:var(--flame)}',
+    '.mo-cook{background:var(--status-alert-tint);color:var(--status-alert)}',
+    '.mo-way{background:var(--tint-cool);color:var(--flame)}',
+    '.mo-done{background:var(--tint-success);color:var(--status-success)}',
+    '.mo-cancel{background:var(--tint-danger);color:var(--status-danger)}',
+    '.myOrderCard .moSum{margin-top:6px;font-size:15px;font-weight:800}',
+    '.myOrderCard .moItems{margin-top:2px;font-size:12px;color:var(--soft)}',
+    '.myOrderCard .moGifts{margin-top:4px;font-size:12px;color:#2F7D4F;font-weight:700}',
 
-  var et = document.getElementById('editToggle');
-  if (et) et.hidden = (mode !== 'admin');
-  
-  var ab = document.getElementById('adminBar');
-  if (ab) ab.hidden = (mode !== 'admin');
+    /* --- Поддержка: оверлей выбора темы --- */
+    'body.support-pending .hintsWrap{display:none}',
+    '#supportChooseOverlay{position:fixed;inset:0;z-index:10002;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}',
+    '#supportChooseOverlay .scTitle{font:400 22px Prata,serif}',
+    '#supportChooseOverlay .scSub{color:var(--soft);font-size:13px}',
+    '#supportChooseOverlay .scBtns{width:100%;max-width:340px}',
 
-  var ms = document.getElementById('modeSeg');
-  var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
-  if (ms) ms.hidden = !isStaff;
-  
-  if (typeof renderModes === 'function') renderModes();
+    /* --- Ф3.7-fix: шапка — venueWrap в сетке topbar --- */
+    '.topbar .venueWrap{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}',
+    '.venueToggle{align-self:flex-start;border:0;background:transparent;color:var(--soft);font:700 12px "Golos Text",system-ui,sans-serif;padding:2px 4px;cursor:pointer}',
+    '@media(max-width:820px){.topbar .venueWrap{order:10;flex:1 1 100%}.topbar .venueWrap #brandSeg{order:0;flex:0 0 auto;width:100%}}',
 
-  var mb = document.getElementById('mbonusBtn');
-  if (mb) mb.style.display = (mode === 'guest' && bName === 'coffee') ? '' : 'none';
-  
-  var bt = document.querySelector('.tabs button[data-tab="bonus"]');
-  if (bt) bt.style.display = (bName === 'delivery') ? 'none' : '';
-  
-  if (bName === 'delivery' && typeof setTab === 'function') setTab('profile');
-  if (typeof me !== 'undefined' && me && typeof renderProfile === 'function') renderProfile();
+    /* --- Ф3.7-fix: состояния кнопки «Добавить» в доставке --- */
+    '#deliveryGrid .cta{background:#fff;border:1.5px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:700 14px "Golos Text",system-ui,sans-serif;cursor:pointer;box-shadow:none;transition:background .15s,border-color .15s,color .15s}',
+    '#deliveryGrid .cta:active{transform:translateY(1px)}',
+    '#deliveryGrid .cta:disabled{background:#EDF2F6;border-color:var(--line);color:#8B98A5;cursor:not-allowed;transform:none}',
+    '#deliveryGrid .cta.incart{border-color:var(--flame);color:var(--flame)}',
+    '#deliveryGrid .cta.added{background:var(--flame);border-color:var(--flame);color:#fff}',
+    '#deliveryGrid .card .media{position:relative}',
+    '#deliveryGrid .card.stopped{opacity:.75}',
+    '#deliveryGrid .stopbadge{position:absolute;top:8px;left:8px;z-index:2;background:#B3372B;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}',
 
-  var staff = (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders'));
-  var cfab = document.getElementById('chatFab');
-  if (cfab) cfab.style.display = staff ? 'none' : '';
-  if (staff) { var p = document.getElementById('chatPanel'); if (p) p.classList.remove('open'); }
+    /* --- Ф3-фикс: iosHint/installBanner не накрывают шапку --- */
+    '#iosHint,#installBanner{top:auto;bottom:calc(96px + env(safe-area-inset-bottom))}',
 
-  var showScan = (typeof mode !== 'undefined' && mode === 'cashier');
-  document.querySelectorAll('#scanBtn,#scanFab,#qrFab,#scanToggle,.fab-scan').forEach(function(b){
-    b.style.display = showScan ? '' : 'none';
+    /* ════════════════════════════════════════════════════════════════════
+       БРЕНДОВЫЕ ПЕРЕОПРЕДЕЛЕНИЯ ДЛЯ ПЯТНИЦЫ (только [data-brand="delivery"])
+       ════════════════════════════════════════════════════════════════════ */
+    'html[data-brand="delivery"],body[data-brand="delivery"]{--flame:#B4552D;--flame-d:#8B3E1F;--esp:#3A2A1C;--esp2:#241812;--tint-cool:#F3E2CE;--tint-warm:#F3E2CE;--green:#186A43;--amber:#C2935F}',
+    'html[data-brand="delivery"] body{background-color:#F3EDE6}',
+    '[data-brand="delivery"] .card{border-color:rgba(180,85,45,.25)}',
+    '[data-brand="delivery"] .card h3{color:#3A2A1C}',
+    '[data-brand="delivery"] .cbody .desc{color:#5B4E3A}',
+    '[data-brand="delivery"] .price{color:#B4552D}',
+    '[data-brand="delivery"] .tag{background:#B4552D}',
+    '[data-brand="delivery"] .tag.hit{background:#8B3E1F}',
+    '[data-brand="delivery"] .stopbadge{background:#D63939}',
+    '[data-brand="delivery"] .comp i{background:#F3E2CE;border-color:rgba(180,85,45,.25);color:#3A2A1C}',
+    '[data-brand="delivery"] #deliveryGrid .opts button.sel{background:#B4552D;border-color:#B4552D;color:#fff}',
+    '[data-brand="delivery"] #deliveryGrid .opts button.sel .op{color:#F3E2CE}',
+    '[data-brand="delivery"] #deliveryRail button.on{background:#B4552D;border-color:#B4552D;color:#fff}',
+    '[data-brand="delivery"] #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on{background:#B4552D;color:#fff}',
+    '[data-brand="delivery"] #brandSeg,[data-brand="delivery"] #modeSeg{background:#241812}',
+    '[data-brand="delivery"] #cartFab{background:#B4552D;box-shadow:0 12px 30px -8px rgba(180,85,45,.75)}',
+    '[data-brand="delivery"] .addonChip b{color:#B4552D}',
+    '[data-brand="delivery"] .chat-fab,[data-brand="delivery"] #chatFab{background:#B4552D;box-shadow:0 0 0 4px rgba(180,85,45,.25),0 12px 30px -8px rgba(58,42,28,.5)}',
+    '[data-brand="delivery"] #chatPanel .chatHead{background:#241812;color:#fff}',
+    '[data-brand="delivery"] #chatMsgs .msg.me,[data-brand="delivery"] #chatMsgs .me{background:#B4552D;border-color:#B4552D;color:#fff}',
+    '[data-brand="delivery"] #checkoutBtn{background:#B4552D;border-color:#B4552D;color:#fff}',
+    '[data-brand="delivery"] #cartPromoBtn{color:#B4552D}',
+    '[data-brand="delivery"] .mo-new,[data-brand="delivery"] .mo-accept,[data-brand="delivery"] .mo-way{background:#F3E2CE;color:#B4552D}',
+    '[data-brand="delivery"] .topbar .brand img{height:34px;width:auto;border-radius:10px}',
+    '[data-brand="delivery"] .venueToggle{color:#8A6D3B}',
+    '[data-brand="delivery"] .cartPanel .qty button{background:#C99E6E;border:1.5px solid #3A2A1C;color:#3A2A1C}',
+
+    /* --- Ф3-финал: точечная докраска чата Пятницы --- */
+    '[data-brand="delivery"] #chatSend{background:#B4552D;color:#fff}',
+    '[data-brand="delivery"] #chatPanel .chatHead .av{background:#B4552D;color:#fff}',
+    '[data-brand="delivery"] #chatMsgs{background:#FAF5EF}',
+    '[data-brand="delivery"] #chatInput{border-color:#D9C7AD}',
+    '[data-brand="delivery"] #chatMsgs .chatHint{background:#F3E2CE;border-color:#D9C7AD;color:#3A2A1C}',
+    '[data-brand="delivery"] #chatMsgs .chatHint.armed{background:#B4552D;border-color:#B4552D;color:#fff}',
+  ];
+  css.textContent = rules.join('\n');
+  document.head.appendChild(css);
+
+  /* ========== 2. DOM-переезды ========== */
+  var wrapEl = document.querySelector('.wrap');
+  var sec = wrapEl ? wrapEl.querySelector(':scope > section') : null;
+  ['deliveryView', 'ordersView', 'cashierView'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (sec && el && el.parentNode !== sec) sec.appendChild(el);
   });
-  
-  if (typeof cartFabShow === 'function') cartFabShow();
-}
+  var dRail = document.getElementById('deliveryRail');
+  if (wrapEl && dRail && dRail.parentNode !== wrapEl) {
+    wrapEl.insertBefore(dRail, sec);
+    dRail.classList.add('rail');
+  }
+  var ab0 = document.getElementById('adminBar');
+  if (sec && ab0 && ab0.parentNode !== sec) sec.insertBefore(ab0, sec.firstChild);
 
-window.syncBrandViews = sv;
-
-window.setMode = function(m){
-  var role = (typeof me !== 'undefined' && me) ? me.role : 'guest';
-  if (m === 'cashier' && role !== 'cashier' && role !== 'admin') return;
-  if (m === 'orders' && role !== 'dispatch' && role !== 'cashier' && role !== 'admin') return;
-  if (m === 'admin' && role !== 'admin') return;
-  
-  mode = m;
-  document.body.classList.toggle('is-cashier', m === 'cashier' || m === 'orders');
-  
-  var cv = document.getElementById('cashierView');
-  if (cv) { cv.hidden = (m !== 'cashier'); cv.style.display = ''; }
-  
-  var ov = document.getElementById('ordersView');
-  if (ov) ov.hidden = (m !== 'orders');
-  
-  sv();
-  
-  var pt = document.getElementById('promoToggle'); if (pt) pt.hidden = (m !== 'admin');
-  var dt = document.getElementById('dashToggle'); if (dt) dt.hidden = (m !== 'admin');
-  var ct = document.getElementById('chatsToggle2'); if (ct) ct.hidden = !(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
-  var bd = document.getElementById('adminBadge'); if (bd) bd.hidden = (m !== 'admin');
-  
-  if (m !== 'admin' && typeof exitEdit === 'function') exitEdit();
-  if (m === 'cashier' && typeof renderLog === 'function') renderLog();
-  if (m === 'orders') {
-    if (typeof renderOrders === 'function') renderOrders();
-    if (typeof ordersPoll === 'undefined' || !ordersPoll) {
-      window.ordersPoll = setInterval(function(){ if (mode === 'orders' && typeof renderOrders === 'function') renderOrders(true); }, 8000);
+  (function () {
+    var ov = document.getElementById('ordersView');
+    if (ov && !document.getElementById('pendingBoxD')) {
+      var d = document.createElement('div');
+      d.className = 'cash-card';
+      d.innerHTML = '<h3 style="margin:0 0 8px">🆕 Активация гостей</h3><div id="pendingBoxD"></div>';
+      var lc = document.getElementById('ordersList');
+      if (lc) ov.querySelector('.cashier').insertBefore(d, lc.closest('.cash-card'));
     }
-  }
-  if (m === 'admin' && typeof loadMenu === 'function') loadMenu();
-  if ((m === 'guest' || m === 'admin') && brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
-    loadDelivery();
-  }
-  if (typeof renderModes === 'function') renderModes();
-  
-  if (typeof toast === 'function') {
-    toast(m === 'admin' ? 'Режим администратора активен' : m === 'cashier' ? 'Смена кассира активна' : m === 'orders' ? 'Панель диспетчера' : 'Режим гостя', m === 'admin' ? '🔓' : m === 'cashier' ? '🧾' : m === 'orders' ? '🍕' : '');
-  }
-};
+    if (ov && !document.getElementById('chatsToggleD')) {
+      var top = ov.querySelector('.cash-top');
+      var b = document.createElement('button');
+      b.id = 'chatsToggleD';
+      b.className = 'btn ghost';
+      b.textContent = '💬 Чаты гостей';
+      b.onclick = typeof openStaffChat === 'function' ? openStaffChat : function () {};
+      var ref = document.getElementById('ordersRefresh');
+      if (top && ref) top.insertBefore(b, ref);
+    }
+  })();
 
-/* Единый безопасный обработчик клика по переключателю бренда без конфликтов */
-var brandSegEl = document.getElementById('brandSeg');
-if (brandSegEl) {
-  brandSegEl.addEventListener('click', function(e){
-    var b = e.target.closest('[data-brand]'); 
-    if (!b) return;
-    
-    brand = b.dataset.brand;
+  (function () {
+    var cp = document.getElementById('cartPanel');
+    var ci = document.getElementById('cartItems');
+    if (cp && ci && !document.getElementById('cartAddons')) {
+      var d = document.createElement('div');
+      d.id = 'cartAddons';
+      d.style.margin = '0 0 10px';
+      cp.insertBefore(d, ci);
+    }
+  })();
 
-    // Мгновенная синхронизация атрибутов стиля на обоих корнях
-    document.documentElement.setAttribute('data-brand', brand);
-    document.body.setAttribute('data-brand', brand);
+  /* ========== 3. Виды и режимы ========== */
+  function sv() {
+    try {
+      var bName = (typeof brand !== 'undefined' && brand === 'delivery') ? 'delivery' : 'coffee';
+      document.documentElement.setAttribute('data-brand', bName);
+      document.body.setAttribute('data-brand', bName);
 
-    if (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders')) {
-      if (typeof setMode === 'function') setMode('guest');
+      var seg = document.getElementById('brandSeg');
+      if (seg) {
+        var cBtn = seg.querySelector('[data-brand="coffee"]');
+        var dBtn = seg.querySelector('[data-brand="delivery"]');
+        if (cBtn) cBtn.classList.toggle('on', bName === 'coffee');
+        if (dBtn) dBtn.classList.toggle('on', bName === 'delivery');
+        seg.classList.toggle('is-delivery', bName === 'delivery');
+      }
+
+      var isDel = (bName === 'delivery');
+      var mark = document.getElementById('brandMark') || document.querySelector('.brand .mark');
+      if (mark) {
+        mark.classList.toggle('is-delivery', isDel);
+        mark.innerHTML = isDel ? '🍕' : '<img src="./icon.svg" alt="…и кофе">';
+      }
+
+      var op = document.querySelector('.chat-h .op, .chatHead .op');
+      if (op) {
+        if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
+        op.innerHTML = isDel ? '' : (op.getAttribute('data-orig') || '');
+      }
+
+      var bTitle = document.getElementById('brandTitle');
+      var bSub = document.getElementById('brandSub');
+      if (bTitle) bTitle.textContent = isDel ? 'Пятница' : '…и кофе';
+      if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
+
+      var seg2 = document.getElementById('brandSeg');
+      if (seg2 && !document.getElementById('venueToggle')) {
+        var vw = document.createElement('div');
+        vw.className = 'venueWrap';
+        seg2.parentNode.insertBefore(vw, seg2);
+        var vt = document.createElement('button');
+        vt.id = 'venueToggle';
+        vt.type = 'button';
+        vt.className = 'venueToggle';
+        vt.setAttribute('aria-haspopup', 'listbox');
+        vt.setAttribute('aria-expanded', 'false');
+        vt.innerHTML = '🏪 Сменить заведение <span class="vt-arrow">▾</span>';
+        vw.appendChild(vt);
+        vw.appendChild(seg2);
+        vt.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var open = seg2.classList.toggle('open');
+          vt.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        document.addEventListener('click', function (e) {
+          if (!vw.contains(e.target)) {
+            seg2.classList.remove('open');
+            vt.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+    } catch (e) {}
+
+    var showGuest = (typeof mode !== 'undefined' && (mode === 'guest' || mode === 'admin'));
+    var bName2 = (typeof brand !== 'undefined' && brand === 'delivery') ? 'delivery' : 'coffee';
+    var showCoffee = showGuest && bName2 === 'coffee';
+    var showDeliv = showGuest && bName2 === 'delivery';
+
+    var mv = document.getElementById('menuView');
+    var dv = document.getElementById('deliveryView');
+    var rl = document.getElementById('rail');
+    var dr = document.getElementById('deliveryRail');
+
+    if (mv) { mv.hidden = !showCoffee; mv.style.display = showCoffee ? '' : 'none'; }
+    if (dv) { dv.hidden = false; dv.style.display = showDeliv ? 'block' : 'none'; }
+    if (rl) rl.style.display = showCoffee ? '' : 'none';
+    if (dr) dr.style.display = showDeliv ? '' : 'none';
+
+    var et = document.getElementById('editToggle');
+    if (et) et.hidden = (mode !== 'admin');
+
+    var ab = document.getElementById('adminBar');
+    if (ab) ab.hidden = (mode !== 'admin');
+
+    var ms = document.getElementById('modeSeg');
+    var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
+    if (ms) ms.hidden = !isStaff;
+
+    if (typeof renderModes === 'function') renderModes();
+
+    var mb = document.getElementById('mbonusBtn');
+    if (mb) mb.style.display = (mode === 'guest' && bName2 === 'coffee') ? '' : 'none';
+
+    var bt = document.querySelector('.tabs button[data-tab="bonus"]');
+    if (bt) bt.style.display = (bName2 === 'delivery') ? 'none' : '';
+
+    if (bName2 === 'delivery' && typeof setTab === 'function') setTab('profile');
+    if (typeof me !== 'undefined' && me && typeof renderProfile === 'function') renderProfile();
+
+    var staff = (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders'));
+    var cfab = document.getElementById('chatFab');
+    if (cfab) cfab.style.display = staff ? 'none' : '';
+    if (staff) {
+      var p = document.getElementById('chatPanel');
+      if (p) p.classList.remove('open');
     }
 
-    brandSegEl.querySelectorAll('button').forEach(function(x){
-      x.classList.toggle('on', x.dataset.brand === brand);
+    var showScan = (typeof mode !== 'undefined' && mode === 'cashier');
+    document.querySelectorAll('#scanBtn,#scanFab,#qrFab,#scanToggle,.fab-scan').forEach(function (b) {
+      b.style.display = showScan ? '' : 'none';
     });
-    brandSegEl.classList.remove('open');
-    
-    var vtg = document.getElementById('venueToggle'); 
-    if (vtg) vtg.setAttribute('aria-expanded', 'false');
-    
+
+    if (typeof cartFabShow === 'function') cartFabShow();
+  }
+
+  window.syncBrandViews = sv;
+
+  window.setMode = function (m) {
+    var role = (typeof me !== 'undefined' && me) ? me.role : 'guest';
+    if (m === 'cashier' && role !== 'cashier' && role !== 'admin') return;
+    if (m === 'orders' && role !== 'dispatch' && role !== 'cashier' && role !== 'admin') return;
+    if (m === 'admin' && role !== 'admin') return;
+
+    mode = m;
+    document.body.classList.toggle('is-cashier', m === 'cashier' || m === 'orders');
+
+    var cv = document.getElementById('cashierView');
+    if (cv) { cv.hidden = (m !== 'cashier'); cv.style.display = ''; }
+
+    var ov = document.getElementById('ordersView');
+    if (ov) ov.hidden = (m !== 'orders');
+
     sv();
 
-    if (brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
+    var pt = document.getElementById('promoToggle'); if (pt) pt.hidden = (m !== 'admin');
+    var dt = document.getElementById('dashToggle'); if (dt) dt.hidden = (m !== 'admin');
+    var ct = document.getElementById('chatsToggle2');
+    if (ct) ct.hidden = !(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
+    var bd = document.getElementById('adminBadge'); if (bd) bd.hidden = (m !== 'admin');
+
+    if (m !== 'admin' && typeof exitEdit === 'function') exitEdit();
+    if (m === 'cashier' && typeof renderLog === 'function') renderLog();
+    if (m === 'orders') {
+      if (typeof renderOrders === 'function') renderOrders();
+      if (typeof ordersPoll === 'undefined' || !ordersPoll) {
+        window.ordersPoll = setInterval(function () {
+          if (mode === 'orders' && typeof renderOrders === 'function') renderOrders(true);
+        }, 8000);
+      }
+    }
+    if (m === 'admin' && typeof loadMenu === 'function') loadMenu();
+    if ((m === 'guest' || m === 'admin') && brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
       loadDelivery();
     }
-    
-    if (typeof supportPending !== 'undefined' && !supportPending && typeof chatCtx !== 'undefined' && chatCtx !== brand) {
-      chatCtx = brand;
-      try { localStorage.setItem('zt_chatctx', chatCtx); } catch(err) {}
-      if (typeof setBotName === 'function') setBotName();
-    }
-    
-    var cp = document.getElementById('chatPanel');
-    if (cp && cp.classList.contains('open')) {
-      setTimeout(function(){ if (typeof reloadChatThread === 'function') reloadChatThread(); }, 80);
-    }
-  });
-}
+    if (typeof renderModes === 'function') renderModes();
 
-/* Первичная инициализация видов */
-sv();
+    if (typeof toast === 'function') {
+      toast(
+        m === 'admin' ? 'Режим администратора активен' : m === 'cashier' ? 'Смена кассира активна' : m === 'orders' ? 'Панель диспетчера' : 'Режим гостя',
+        m === 'admin' ? '🔓' : m === 'cashier' ? '🧾' : m === 'orders' ? '🍕' : ''
+      );
+    }
+  };
 
-/* ── Пуш-баббл «Включите пуши» ── */
-(function () {
-  function findPush() {
-    var el = document.getElementById('pushHint') || document.getElementById('pushBubble') ||
-             document.querySelector('.pushHint, .push-bubble, .pushBubble');
-    if (el) return el;
-    var all = document.querySelectorAll('body *');
-    for (var i = 0; i < all.length; i++) {
-      var t = (all[i].textContent || '');
-      if (t.indexOf('Включите пуши') > -1 && t.length < 40 && all[i].children.length <= 2) return all[i];
-    }
-    return null;
-  }
-  function place() {
-    var b = findPush(), av = document.getElementById('profileTopBtn');
-    if (!b || !av || b.style.display === 'none') return;
-    var r = av.getBoundingClientRect();
-    b.style.position = 'fixed';
-    b.style.top = (r.bottom + 10) + 'px';
-    b.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
-    b.style.left = 'auto';
-    b.style.margin = '0';
-    b.style.zIndex = '1200';
-  }
-  function refresh() {
-    var p = document.getElementById('panel');
-    var open = p && p.classList.contains('open');
-    var b = findPush();
-    if (b) {
-      b.style.display = open ? 'none' : '';
-      if (!open) place();
-    }
-    pulsePushBtn(open);
-  }
-  function pushBtnEl() {
-    var byId = document.getElementById('pushBtn');
-    if (byId) return byId;
-    var all = document.querySelectorAll('#profileBox button, .panel button');
-    for (var i = 0; i < all.length; i++) {
-      if (/Включить уведомления/.test(all[i].textContent || '')) return all[i];
-    }
-    return null;
-  }
-  function pulsePushBtn(open) {
-    var btn = pushBtnEl();
-    if (!btn) return;
-    var need = !!open && /Включить уведомления/.test(btn.textContent || '');
-    if (need && !btn.classList.contains('pulse')) {
-      btn.classList.remove('pulse');
-      void btn.offsetWidth;
-      btn.classList.add('pulse');
-    } else if (!need) {
-      btn.classList.remove('pulse');
-    }
-  }
-  var panelEl = document.getElementById('panel');
-  if (panelEl && typeof MutationObserver !== 'undefined') {
-    new MutationObserver(refresh).observe(panelEl, { attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
-  }
-  document.addEventListener('click', function () { setTimeout(refresh, 0); });
-  window.addEventListener('resize', place);
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refresh);
-  else refresh();
-  setTimeout(refresh, 400);
-  setTimeout(refresh, 1500);
-})();
+  /* Единый безопасный обработчик клика по переключателю бренда */
+  var brandSegEl = document.getElementById('brandSeg');
+  if (brandSegEl) {
+    brandSegEl.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-brand]');
+      if (!b) return;
 
+      brand = b.dataset.brand;
+      document.documentElement.setAttribute('data-brand', brand);
+      document.body.setAttribute('data-brand', brand);
+
+      if (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders')) {
+        if (typeof setMode === 'function') setMode('guest');
+      }
+
+      brandSegEl.querySelectorAll('button').forEach(function (x) {
+        x.classList.toggle('on', x.dataset.brand === brand);
+      });
+      brandSegEl.classList.remove('open');
+
+      var vtg = document.getElementById('venueToggle');
+      if (vtg) vtg.setAttribute('aria-expanded', 'false');
+
+      sv();
+
+      if (brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
+        loadDelivery();
+      }
+
+      if (typeof supportPending !== 'undefined' && !supportPending && typeof chatCtx !== 'undefined' && chatCtx !== brand) {
+        chatCtx = brand;
+        try { localStorage.setItem('zt_chatctx', chatCtx); } catch (err) {}
+        if (typeof setBotName === 'function') setBotName();
+      }
+
+      var cp = document.getElementById('chatPanel');
+      if (cp && cp.classList.contains('open')) {
+        setTimeout(function () {
+          if (typeof reloadChatThread === 'function') reloadChatThread();
+        }, 80);
+      }
+    });
+  }
+
+  /* Первичная инициализация видов */
+  sv();
+
+  /* ── Пуш-баббл «Включите пуши» ── */
+  (function () {
+    function findPush() {
+      var el = document.getElementById('pushHint') || document.getElementById('pushBubble') ||
+               document.querySelector('.pushHint, .push-bubble, .pushBubble');
+      if (el) return el;
+      var all = document.querySelectorAll('body *');
+      for (var i = 0; i < all.length; i++) {
+        var t = (all[i].textContent || '');
+        if (t.indexOf('Включите пуши') > -1 && t.length < 40 && all[i].children.length <= 2) return all[i];
+      }
+      return null;
+    }
+    function place() {
+      var b = findPush();
+      var av = document.getElementById('profileTopBtn');
+      if (!b || !av || b.style.display === 'none') return;
+      var r = av.getBoundingClientRect();
+      b.style.position = 'fixed';
+      b.style.top = (r.bottom + 10) + 'px';
+      b.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+      b.style.left = 'auto';
+      b.style.margin = '0';
+      b.style.zIndex = '1200';
+    }
+    function refresh() {
+      var p = document.getElementById('panel');
+      var open = p && p.classList.contains('open');
+      var b = findPush();
+      if (b) {
+        b.style.display = open ? 'none' : '';
+        if (!open) place();
+      }
+      pulsePushBtn(open);
+    }
+    function pushBtnEl() {
+      var byId = document.getElementById('pushBtn');
+      if (byId) return byId;
+      var all = document.querySelectorAll('#profileBox button, .panel button');
+      for (var i = 0; i < all.length; i++) {
+        if (/Включить уведомления/.test(all[i].textContent || '')) return all[i];
+      }
+      return null;
+    }
+    function pulsePushBtn(open) {
+      var btn = pushBtnEl();
+      if (!btn) return;
+      var need = !!open && /Включить уведомления/.test(btn.textContent || '');
+      if (need && !btn.classList.contains('pulse')) {
+        btn.classList.remove('pulse');
+        void btn.offsetWidth;
+        btn.classList.add('pulse');
+      } else if (!need) {
+        btn.classList.remove('pulse');
+      }
+    }
+    var panelEl = document.getElementById('panel');
+    if (panelEl && typeof MutationObserver !== 'undefined') {
+      new MutationObserver(refresh).observe(panelEl, {
+        attributes: true,
+        attributeFilter: ['class', 'hidden', 'style'],
+      });
+    }
+    document.addEventListener('click', function () { setTimeout(refresh, 0); });
+    window.addEventListener('resize', place);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', refresh);
+    } else {
+      refresh();
+    }
+    setTimeout(refresh, 400);
+    setTimeout(refresh, 1500);
+  })();
 })();
