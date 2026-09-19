@@ -32,13 +32,6 @@ CREATE TABLE IF NOT EXISTS chat_meta(
 CREATE TABLE IF NOT EXISTS fcm(
   id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, token TEXT UNIQUE, created TEXT);
   `);
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-    CREATE INDEX IF NOT EXISTS idx_orders_cid ON orders(cid);
-    CREATE INDEX IF NOT EXISTS idx_history_cid ON history(cid);
-    CREATE INDEX IF NOT EXISTS idx_chat_key ON chat(key);
-  `);
-  
 
   /* миграции */
   const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
@@ -83,4 +76,12 @@ CREATE TABLE IF NOT EXISTS fcm(
   if (ncols.length && !ncols.includes('notify_tg')) db.exec(`ALTER TABLE customers ADD COLUMN notify_tg INTEGER DEFAULT 1`);
   if (ncols.length && !ncols.includes('notify_web')) db.exec(`ALTER TABLE customers ADD COLUMN notify_web INTEGER DEFAULT 1`);
   if (ncols.length && !ncols.includes('consent')) db.exec(`ALTER TABLE customers ADD COLUMN consent TEXT DEFAULT ''`);
+
+  /* ── индексы (создаются строго после создания всех таблиц) ── */
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+    CREATE INDEX IF NOT EXISTS idx_orders_cid ON orders(cid);
+    CREATE INDEX IF NOT EXISTS idx_history_cid ON history(cid);
+    CREATE INDEX IF NOT EXISTS idx_chat_key ON chat(key);
+  `);
 }
