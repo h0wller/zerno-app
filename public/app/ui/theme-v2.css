@@ -497,8 +497,6 @@ button.cta, .btn.fire, #checkoutBtn {
 
 .card {
   min-height: 340px;
-  /* Убираем contain: paint — он изолирует текстуры в видеопамяти, вызывая OOM при масштабировании */
-  contain: layout style;
 }
 
 .media {
