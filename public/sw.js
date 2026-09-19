@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v4.01';
+const STATIC_CACHE = 'zerno-static-v6';
 const MEDIA_CACHE = 'zerno-media-v4';
 const API_CACHE = 'zerno-api-v4';
 
@@ -13,12 +13,17 @@ const STATIC_ASSETS = [
   '/app/profile.js',
   '/manifest.webmanifest'
 ];
-
 const API_TTL = 5 * 60 * 1000; // 5 минут
-
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(STATIC_CACHE).then((cache) => {
+      // Загружаем файлы независимо: если один споткнется, остальные сохранятся и SW не упадет
+      return Promise.allSettled(
+        STATIC_ASSETS.map((url) =>
+          cache.add(url).catch((err) => console.warn('[SW] Ошибка предзагрузки ресурса:', url, err))
+        )
+      );
+    })
   );
   self.skipWaiting();
 });
