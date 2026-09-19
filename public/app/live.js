@@ -3,8 +3,9 @@
 (function(){
 'use strict';
 var lastStaffSig='',lastMineSig='',lastProfileSig='';
+function authAlive(){return !window.__ztAuthDead&&!!localStorage.getItem('zt_user');}
 async function refreshOrdersLive(){
-if(document.visibilityState!=='visible')return;
+if(document.visibilityState!=='visible'||!authAlive()||!me)return;
 try{
 if(mode==='orders'&&me&&['cashier','admin','dispatch'].includes(me.role)){
 var r=await api('/orders');
@@ -18,8 +19,9 @@ if(msig!==lastMineSig){lastMineSig=msig;loadMyOrders();}
 }
 }catch(e){}
 }
+
 async function refreshProfileLive(){
-if(!me||document.visibilityState!=='visible')return;
+if(!authAlive()||!me||document.visibilityState!=='visible')return;
 try{
 var r=await api('/me');if(!r||!r.customer)return;
 var sig=r.customer.stamps+':'+r.customer.free+':'+r.customer.welcome+':'+r.customer.tg+':'+r.customer.notify_tg+':'+r.customer.notify_web;
