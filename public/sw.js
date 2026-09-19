@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v6';
+const STATIC_CACHE = 'zerno-static-v7';
 const MEDIA_CACHE = 'zerno-media-v4';
 const API_CACHE = 'zerno-api-v4';
 
@@ -9,6 +9,7 @@ const STATIC_ASSETS = [
   '/app/ui/theme-v2.css',
   '/app/core/views.js',
   '/app/menu.js',
+  '/app/delivery.js',
   '/app/cart.js',
   '/app/profile.js',
   '/manifest.webmanifest'
