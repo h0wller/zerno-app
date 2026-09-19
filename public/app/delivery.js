@@ -64,6 +64,7 @@ function renderDeliveryMenu() {
   }
 
   $('#deliveryGrid').innerHTML = html;
+  patchDeliveryCards(list);
 /* ── состояния карточек: стоп-лист + кнопка «Добавить» ── */
 function patchDeliveryCards(list) {
   const cards = $('#deliveryGrid').querySelectorAll('.card');
