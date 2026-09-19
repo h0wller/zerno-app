@@ -103,7 +103,38 @@ css.textContent =
 '#deliveryGrid .card.stopped{opacity:.75}'+
 '#deliveryGrid .stopbadge{position:absolute;top:8px;left:8px;z-index:2;background:#B3372B;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}'+
 '/* Ф3-фикс: iosHint/installBanner не накрывают шапку */'+
-'#iosHint,#installBanner{top:auto!important;bottom:calc(96px + env(safe-area-inset-bottom))!important}';
+'#iosHint,#installBanner{top:auto!important;bottom:calc(96px + env(safe-area-inset-bottom))!important}'+
+'/* ══ БРЕНДОВЫЕ ПЕРЕОПРЕДЕЛЕНИЯ ДЛЯ ПЯТНИЦЫ ══ */'+
+'html[data-brand="delivery"],body[data-brand="delivery"]{'+
+  '--flame:#B4552D;--flame-d:#8B3E1F;--esp:#3A2A1C;--esp2:#241812;'+
+  '--tint-cool:#F3E2CE;--tint-warm:#F3E2CE;'+
+  '--green:#186A43;--amber:#C2935F;'+
+'}'+
+'[data-brand="delivery"] body{background-color:#F3EDE6!important}'+
+'[data-brand="delivery"] .card{border-color:rgba(180,85,45,.25)}'+
+'[data-brand="delivery"] .card h3{color:#3A2A1C}'+
+'[data-brand="delivery"] .cbody .desc{color:#5B4E3A}'+
+'[data-brand="delivery"] .price{color:#B4552D}'+
+'[data-brand="delivery"] .tag{background:#B4552D}'+
+'[data-brand="delivery"] .tag.hit{background:#8B3E1F!important}'+
+'[data-brand="delivery"] .stopbadge{background:#D63939}'+
+'[data-brand="delivery"] .comp i{background:#F3E2CE;border-color:rgba(180,85,45,.25);color:#3A2A1C}'+
+'[data-brand="delivery"] #deliveryGrid .opts button.sel{background:#B4552D!important;border-color:#B4552D!important;color:#fff!important}'+
+'[data-brand="delivery"] #deliveryGrid .opts button.sel .op{color:#F3E2CE!important}'+
+'[data-brand="delivery"] #deliveryRail button.on{background:#B4552D!important;border-color:#B4552D!important;color:#fff!important}'+
+'[data-brand="delivery"] #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on{background:#B4552D!important;color:#fff!important}'+
+'[data-brand="delivery"] #cartFab{background:#B4552D!important;box-shadow:0 12px 30px -8px rgba(180,85,45,.75)!important}'+
+'[data-brand="delivery"] .addonChip b{color:#B4552D!important}'+
+'[data-brand="delivery"] .chat-fab,[data-brand="delivery"] #chatFab{background:#B4552D!important;box-shadow:0 0 0 4px rgba(180,85,45,.25),0 12px 30px -8px rgba(58,42,28,.5)!important}'+
+'[data-brand="delivery"] #chatPanel .chatHead{background:#241812!important;color:#fff!important}'+
+'[data-brand="delivery"] #chatMsgs .msg.me,[data-brand="delivery"] #chatMsgs .me{background:#B4552D!important;border-color:#B4552D!important;color:#fff!important}'+
+'[data-brand="delivery"] #checkoutBtn{background:#B4552D!important;border-color:#B4552D!important;color:#fff!important}'+
+'[data-brand="delivery"] #cartPromoBtn{color:#B4552D!important}'+
+'[data-brand="delivery"] .mo-new,[data-brand="delivery"] .mo-accept,[data-brand="delivery"] .mo-way{background:#F3E2CE!important;color:#B4552D!important}'+
+'[data-brand="delivery"] .topbar .brand img{height:34px;width:auto;border-radius:10px}'+
+'[data-brand="delivery"] .venueToggle{color:#8A6D3B}'+
+'[data-brand="delivery"] #brandSeg,[data-brand="delivery"] #modeSeg{background:#241812}'+
+'[data-brand="delivery"] .cartPanel .qty button{background:#C99E6E!important;border:1.5px solid #3A2A1C!important;color:#3A2A1C!important}';
 
 document.head.appendChild(css);
 
