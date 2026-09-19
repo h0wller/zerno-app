@@ -241,8 +241,8 @@ function openStaffChat() {
     }
   }
 
-  async function updateStaffBadge() {
-    if (!me || (me.role !== "admin" && me.role !== "cashier")) return;
+async function updateStaffBadge() {
+  if (!me || window.__ztAuthDead || (me.role !== "admin" && me.role !== "cashier" && me.role !== "dispatch")) return;
     try {
       const r = await api("/chat/list");
       const un = r.threads.reduce((a, t) => a + (+t.unread || 0), 0);
