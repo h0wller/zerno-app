@@ -147,7 +147,7 @@
       list
         .map(function (p) {
           var inCart = cart.find(function (c) {
-            return c.id === p.id;
+            return String(c.id) === String(p.id);
           });
           return (
             '<button class="addonChip" data-addon="' +
@@ -222,8 +222,6 @@
   window.clearPromo = clearPromo;
   window.updateDeliveryPromoBar = updateDeliveryPromoBar;
 
- /* Добавляем логику сохранения и восстановления драфта чекаута в public/app/cart.js */
-
   /* ── автосохранение драфта чекаута ── */
   function saveDraft() {
     try {
@@ -257,6 +255,7 @@
       }
     } catch(e) {}
   }
+
   /* ── обёртки рендера ── */
   renderCart = (function (_rc) {
     return function () {
@@ -310,7 +309,6 @@
       refreshPromoLine(totalsNow().sum);
     };
 
-  // Привязках к событиям изменения полей чекаута
   function repaintCart() { 
     saveDraft();
     renderCart(); 
@@ -328,20 +326,20 @@
       el.addEventListener('change', saveDraft);
     }
   });
-  // Восстановление сохраненного драфта при инициализации скрипта
+
   restoreDraft();
 
   document.getElementById("cartPanel").addEventListener("click", function (e) {
     var ch = e.target.closest("[data-addon]");
     if (!ch) return;
     
-var p = DMENU.find(function (x) {
-  return String(x.id) === String(ch.dataset.addon);
-});
+    var p = DMENU.find(function (x) {
+      return String(x.id) === String(ch.dataset.addon);
     });
     if (!p) return;
+
     var ex = cart.find(function (c) {
-      return c.id === p.id;
+      return String(c.id) === String(p.id);
     });
     if (ex) ex.qty++;
     else
@@ -419,6 +417,5 @@ var p = DMENU.find(function (x) {
     document.head.appendChild(s);
   })();
 
-  // Восстановление сохранённого драфта при инициализации
   restoreDraft();
 })();
