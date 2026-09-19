@@ -202,6 +202,12 @@ $('#cartItems').addEventListener('click', e => {
   else if (cart[i].qty > 1) cart[i].qty--;
   else cart.splice(i, 1);
   localStorage.setItem('zt_cart', JSON.stringify(cart));
+  syncAddButtons();
+addBtn.classList.add('added');
+const label = addBtn.textContent;
+addBtn.textContent = '✓ Добавлено';
+setTimeout(() => { addBtn.classList.remove('added'); addBtn.textContent = label; }, 700);
+if (typeof updateCartFab === 'function') updateCartFab();
   updateCartFab();
   renderCart();
 });
@@ -291,6 +297,7 @@ window.updateCartFab = function(){
   var fab = document.getElementById('cartFab');
   if (fab) fab.hidden = (t.sum === 0);
   paintTotals();
+  if (typeof syncAddButtons === 'function') syncAddButtons();
   cartFabShow();
 };
 
