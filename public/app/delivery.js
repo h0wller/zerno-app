@@ -28,8 +28,9 @@ function renderDeliveryMenu() {
   const list = DMENU.filter(p => p.cat === dcat);
   let html = list.map(p => {
     const opts = p.opts || [];
+    // Автоматически делаем первый вариант выбранным (.sel), если он есть
     const optsHTML = opts.length
-      ? `<div class="opts">${opts.map((o, i) => `<button data-id="${p.id}" data-oi="${i}">${o.l} · ${o.w} ·${fmt(o.p)}</button>`).join('')}</div>`
+      ? `<div class="opts" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${opts.map((o, i) => `<button type="button" data-id="${p.id}" data-oi="${i}" class="${i === 0 ? 'sel' : ''}" style="padding:8px 12px;border-radius:10px;border:1.5px solid ${i === 0 ? '#C03B2A' : '#D8DFE4'};background:${i === 0 ? '#F9EBEA' : '#fff'};color:#123A6B;font-weight:700;font-size:12px;cursor:pointer">${o.l} · ${o.w} ·${fmt(o.p)}</button>`).join('')}</div>`
       : '';
     return `<article class="card">
       <div class="media" style="--tint:#F3E2CE"><span class="em">${p.e || '🍕'}</span></div>
@@ -65,8 +66,14 @@ $('#deliveryGrid').addEventListener('click', e => {
   const opt = e.target.closest('.opts button');
   if (opt) {
     const group = opt.closest('.opts');
-    group.querySelectorAll('button').forEach(b => b.classList.remove('sel'));
+    group.querySelectorAll('button').forEach(b => {
+      b.classList.remove('sel');
+      b.style.borderColor = '#D8DFE4';
+      b.style.background = '#fff';
+    });
     opt.classList.add('sel');
+    opt.style.borderColor = '#C03B2A';
+    opt.style.background = '#F9EBEA';
     return;
   }
   const add = e.target.closest('[data-add]');
@@ -75,15 +82,15 @@ $('#deliveryGrid').addEventListener('click', e => {
     const p = DMENU.find(x => x.id === id);
     const opts = p.opts || [];
     
-    // Строгая проверка: если у товара есть опции (размеры), требуем их выбора
-    const selOpt = add.closest('.cbody').querySelector('.opts button.sel');
+    // Если опции есть, но ни одна не выбрана — берем первую по умолчанию
+    let selOpt = add.closest('.cbody').querySelector('.opts button.sel');
     if (opts.length > 0 && !selOpt) {
-      toast('Выберите размер и тесто', '⚠️');
-      return;
+      selOpt = add.closest('.cbody').querySelector('.opts button');
+      if (selOpt) selOpt.classList.add('sel');
     }
 
-    const oi = selOpt ? +selOpt.dataset.oi : -1;
-    const price = oi >= 0 ? opts[oi].p : (+p.price || 0);
+    const oi = selOpt ? +selOpt.dataset.oi : (opts.length > 0 ? 0 : -1);
+    const price = oi >= 0 && opts[oi] ? opts[oi].p : (+p.price || 0);
 
     if (price <= 0) {
       toast('Выберите размер', '⚠️');
@@ -93,7 +100,7 @@ $('#deliveryGrid').addEventListener('click', e => {
     const key = id + (oi >= 0 ? '_' + oi : '');
     const existing = cart.find(c => c.key === key);
     if (existing) existing.qty++;
-    else cart.push({ key, id, oi, name: p.name, opt: oi >= 0 ? opts[oi].l : null, price: price, sz: oi >= 0 ? (opts[oi].sz || 0) : 0, qty: 1 });
+    else cart.push({ key, id, oi, name: p.name, opt: oi >= 0 && opts[oi] ? opts[oi].l : null, price: price, sz: oi >= 0 && opts[oi] ? (opts[oi].sz || 0) : 0, qty: 1 });
     
     localStorage.setItem('zt_cart', JSON.stringify(cart));
     updateCartFab();
