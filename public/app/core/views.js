@@ -175,6 +175,7 @@ if (sec && ab0 && ab0.parentNode !== sec) sec.insertBefore(ab0, sec.firstChild);
   if (cp && ci && !document.getElementById('cartAddons')) {
     var d = document.createElement('div'); d.id = 'cartAddons'; d.style.margin = '0 0 10px'; cp.insertBefore(d, ci);
   }
+  })();
 /* ========== 3. Виды и режимы ========== */
 function sv(){
   try { 

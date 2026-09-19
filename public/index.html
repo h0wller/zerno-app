@@ -1847,14 +1847,18 @@ if ('serviceWorker' in navigator) {
       reg.update();
     }).catch(() => {});
 
-    // Как только новый Service Worker активировался — перезагружаем приложение с новым кодом
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
-      }
-    });
+    // Как только новый Service Worker активировался — перезагружаем приложение с новым кодом.
+// ВАЖНО: reload только при АПДЕЙТЕ (когда уже был controller). Первая активация
+// (clients.claim() в чистом профиле) reload не требует — иначе страница перезагружается
+// из-под пользователя/теста сразу после открытия.
+let refreshing = false;
+const hadController = !!navigator.serviceWorker.controller;
+navigator.serviceWorker.addEventListener('controllerchange', () => {
+  if (hadController && !refreshing) {
+    refreshing = true;
+    window.location.reload();
+  }
+});
   });
 }
 

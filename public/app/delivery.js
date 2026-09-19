@@ -63,9 +63,16 @@ function renderDeliveryMenu() {
     html += '<div class="gempty">В этой категории пока пусто</div>';
   }
 
-  $('#deliveryGrid').innerHTML = html;
+   $('#deliveryGrid').innerHTML = html;
   patchDeliveryCards(list);
-/* ── состояния карточек: стоп-лист + кнопка «Добавить» ── */
+
+  const addCard = document.getElementById('addDelivCard');
+  if (addCard) {
+    addCard.onclick = () => openEditor(null, 'delivery');
+  }
+}
+
+/* ── состояния карточек: стоп-лист + кнопка «Добавить» (вынесены на верхний уровень) ── */
 function patchDeliveryCards(list) {
   const cards = $('#deliveryGrid').querySelectorAll('.card');
   cards.forEach((card, i) => {
@@ -94,11 +101,6 @@ function syncAddButtons() {
     b.classList.toggle('incart', n > 0);
     if (!b.classList.contains('added')) b.textContent = n > 0 ? ('В корзине · ' + n) : 'Добавить';
   });
-}
-  const addCard = document.getElementById('addDelivCard');
-  if (addCard) {
-    addCard.onclick = () => openEditor(null, 'delivery');
-  }
 }
 
 $('#deliveryGrid').addEventListener('click', e => {
@@ -165,6 +167,13 @@ $('#deliveryGrid').addEventListener('click', e => {
     }
     
     localStorage.setItem('zt_cart', JSON.stringify(cart));
+    
+    /* Обратная связь: вспышка "✓ Добавлено" */
+    addBtn.classList.add('added');
+    const prevLabel = addBtn.textContent;
+    addBtn.textContent = '✓ Добавлено';
+    setTimeout(() => { addBtn.classList.remove('added'); if (typeof syncAddButtons === 'function') syncAddButtons(); }, 700);
+    
     if (typeof updateCartFab === 'function') updateCartFab();
     if (typeof toast === 'function') toast('Добавлено в корзину', '🛒');
   }
@@ -202,13 +211,7 @@ $('#cartItems').addEventListener('click', e => {
   else if (cart[i].qty > 1) cart[i].qty--;
   else cart.splice(i, 1);
   localStorage.setItem('zt_cart', JSON.stringify(cart));
-  syncAddButtons();
-addBtn.classList.add('added');
-const label = addBtn.textContent;
-addBtn.textContent = '✓ Добавлено';
-setTimeout(() => { addBtn.classList.remove('added'); addBtn.textContent = label; }, 700);
-if (typeof updateCartFab === 'function') updateCartFab();
-  updateCartFab();
+  if (typeof updateCartFab === 'function') updateCartFab();
   renderCart();
 });
 

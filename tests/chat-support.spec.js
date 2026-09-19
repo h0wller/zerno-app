@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 
+/* SW на первом входе делает clients.claim() → controllerchange → location.reload():
+   контекст страницы погибает посреди prepare(). Чат-тестам SW не нужен —
+   блокируем целиком, как в ui-baseline.spec.js. */
+test.use({ serviceWorkers: 'block' });
+
 async function skipSplash(page){
   const sp = page.locator('#brandSplash');
   if (await sp.count()) await sp.locator('[data-go="coffee"]').click();
