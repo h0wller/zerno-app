@@ -334,8 +334,10 @@
   document.getElementById("cartPanel").addEventListener("click", function (e) {
     var ch = e.target.closest("[data-addon]");
     if (!ch) return;
-    var p = DMENU.find(function (x) {
-      return x.id === ch.dataset.addon;
+    
+var p = DMENU.find(function (x) {
+  return String(x.id) === String(ch.dataset.addon);
+});
     });
     if (!p) return;
     var ex = cart.find(function (c) {
