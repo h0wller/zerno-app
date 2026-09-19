@@ -40,7 +40,6 @@ function renderMenu() {
     return String(v).replace(/(\d+)\s*\/\s*(\d+)\s*(мл|л|г|кг)?/i, '$1 / $2 $3').trim();
   };
 
-  // Асинхронный рендер сетки для разгрузки главного потока (Performance)
   const gridEl = $('#grid');
   if (!gridEl) return;
   
@@ -94,8 +93,7 @@ function openItemModifiersModal(product) {
     opts = typeof product.opts === 'string' ? JSON.parse(product.opts) : (product.opts || []);
   } catch(e) {}
 
-  // Состояние выбранных модификаторов
-  var selectedOpt = opts.length > 0 ? opts[0] : null; // Автовыбор первого дефолта
+  var selectedOpt = opts.length > 0 ? opts[0] : null;
 
   modal.innerHTML = `
     <div style="background:#fff;border-radius:24px;padding:24px;max-width:400px;width:92vw;box-shadow:0 25px 60px rgba(0,0,0,0.3);position:relative">
@@ -129,7 +127,6 @@ function openItemModifiersModal(product) {
   var closeBtn = modal.querySelector('#modalCloseBtn');
   var optsList = modal.querySelector('#modalOptsList');
 
-  // Обработка выбора чипсов модификаторов
   if (optsList) {
     optsList.addEventListener('click', function(e) {
       var btn = e.target.closest('[data-opt-idx]');
@@ -159,13 +156,11 @@ function openItemModifiersModal(product) {
   };
 
   addBtn.onclick = function() {
-    // Валидация: если опции обязательны, проверяем выбор
     if (opts.length > 0 && !selectedOpt) {
       toast('Выберите размер или вариант', '⚠️');
       return;
     }
 
-    // Добавление в корзину с учетом выбранного модификатора
     var finalPrice = parseInt(product.price) || 0;
     var finalName = product.name;
     if (selectedOpt) {
@@ -174,7 +169,7 @@ function openItemModifiersModal(product) {
     }
 
     if (typeof cart !== 'undefined') {
-      var ex = cart.find(function(c) { return c.id === product.id && c.optName === (selectedOpt ? selectedOpt.name : null); });
+      var ex = cart.find(function(c) { return String(c.id) === String(product.id) && c.optName === (selectedOpt ? selectedOpt.name : null); });
       if (ex) {
         ex.qty++;
       } else {
@@ -201,7 +196,6 @@ function openItemModifiersModal(product) {
   };
 }
 
-/* Превью фото: карточка на матовом фоне */
 function openZoom(src, name, price) {
   const w = document.createElement('div');
   w.style.cssText = 'position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(16,24,32,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);opacity:0;transition:opacity .25s';
@@ -219,7 +213,7 @@ function openZoom(src, name, price) {
   x.textContent = '✕';
   x.style.cssText = 'position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px;width:42px;height:42px;border:none;border-radius:50%;background:rgba(255,255,255,.95);color:#12303E;font-size:17px;box-shadow:0 6px 18px rgba(0,0,0,.28)';
   w.appendChild(card); w.appendChild(x);
-  const close = () => { w.style.opacity = '0'; card.style.transform = 'scale(.92) translateY(14px); document.body.style.overflow = ''; setTimeout(() => w.remove(), 260); };
+  const close = () => { w.style.opacity = '0'; card.style.transform = 'scale(.92) translateY(14px)'; document.body.style.overflow = ''; setTimeout(() => w.remove(), 260); };
   w.addEventListener('click', e => { if (e.target === w || e.target === x) close(); });
   document.body.style.overflow = 'hidden';
   document.body.appendChild(w);
@@ -229,7 +223,6 @@ function openZoom(src, name, price) {
 $('#grid').addEventListener('click', e => {
   if (editMode) return;
   
-  // Клик по картинке/зуму
   const img = e.target.closest('[data-zoom]');
   if (img) {
     const art = img.closest('article');
@@ -239,10 +232,9 @@ $('#grid').addEventListener('click', e => {
     return;
   }
 
-  // Клик по карточке для открытия модалки модификаторов (если товар имеет опции)
   const card = e.target.closest('article[data-item-id]');
   if (card && !e.target.closest('button') && !e.target.closest('input')) {
-    const p = MENU.find(x => x.id === card.dataset.itemId);
+    const p = MENU.find(x => String(x.id) === String(card.dataset.itemId));
     if (p) {
       try {
         const opts = typeof p.opts === 'string' ? JSON.parse(p.opts) : (p.opts || []);
@@ -257,7 +249,7 @@ $('#grid').addEventListener('click', e => {
 $('#grid').addEventListener('change', async e => {
   const t = e.target.closest('[data-onoff]');
   if (!t) return;
-  const p = MENU.find(x => x.id === t.dataset.onoff);
+  const p = MENU.find(x => String(x.id) === String(t.dataset.onoff));
   if (!p) return;
   const on = t.checked ? 1 : 0;
   p.on = on;
