@@ -26,22 +26,23 @@ if(typeof loadMenu==='function'){loadMenu=(function(_lm){return async function()
   var r=await _lm.apply(this,arguments);
   try{if(brand==='coffee'){renderRail();renderMenu();}}catch(e){}
   return r;};})(loadMenu);}
-/* ── R5: тикер и логотип по бренду ── */
-var BRAND_ORIG_LOGO=null;
+/* ── R5: тикер и логотип по бренду.
+   Ф3.25: ЕДИНСТВЕННЫЙ владелец mark.innerHTML — applyBrandChrome();
+   views.js только синхронизирует класс .is-delivery и вызывает эту функцию. ── */
 function applyBrandChrome(){
-  var deliv=(brand==='delivery');
-  var track=document.getElementById('tickerTrack');
-  if(track){
-    var L=deliv?['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']
-               :['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с 8:00–21:00'];
-    track.innerHTML=L.concat(L).map(function(x){return '<span>'+x+'</span>';}).join('');
-  }
-  var br=document.querySelector('.topbar .brand');
-  if(br){
-    if(BRAND_ORIG_LOGO===null)BRAND_ORIG_LOGO=br.innerHTML;
-    if(deliv)br.innerHTML='<img src="friday-logo.png" alt="Пятница" onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>🍕</span>\'"><div><b>Пятница</b><small>доставка пиццы и роллов</small></div>';
-    else br.innerHTML=BRAND_ORIG_LOGO;
-  }
+var deliv=(brand==='delivery');
+var track=document.getElementById('tickerTrack');
+if(track){
+var L=deliv?['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']
+:['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с 8:00–21:00'];
+track.innerHTML=L.concat(L).map(function(x){return '<span>'+x+'</span>';}).join('');
+}
+/* Ф3.24: меняем только src внутри марки — #brandTitle/#brandSub не трогаем,
+    их тексты обновляет sv() из views.js. Один владелец на элемент. */
+var mark=document.getElementById('brandMark')||document.querySelector('.topbar .brand .mark');
+if(mark){
+mark.innerHTML='<img class="brandLogo" src="'+(deliv?'friday-logo.svg':'andCoffee.svg')+'" alt="'+(deliv?'Пятница':'…и кофе')+'" onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>'+(deliv?'🍕':'☕')+'</span>\'">';
+}
 }
 window.applyBrandChrome=applyBrandChrome;
 document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(applyBrandChrome,60);});
@@ -67,4 +68,5 @@ document.addEventListener('click',function(e){
   return _f.call(this,u,o);};})();
 })();
 /* ── Ф3.23: инициализация брендового хрома (было хвостом fix-views v61) ── */
+if(typeof window.applyBrandChrome==='function')window.applyBrandChrome();
 setTimeout(function(){if(typeof window.applyBrandChrome==='function')window.applyBrandChrome();},400);

@@ -364,6 +364,8 @@
       openAuth();
       return;
     }
+    var preorder = false;
+    if (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen()) preorder = true;
     var clipped = false;
     cart.forEach(function (c) {
       if (c.qty > 99) { c.qty = 99; clipped = true; }
@@ -386,7 +388,7 @@
       method: method,
       place: document.getElementById("checkoutPlace").value,
       addr: document.getElementById("checkoutAddr").value.trim(),
-      slot: document.getElementById("checkoutSlot").value,
+      slot: preorder && window.preorderSlot ? window.preorderSlot() : document.getElementById("checkoutSlot").value,
       pay: document.getElementById("checkoutPay").value,
       comment: document.getElementById("checkoutComment").value.trim(),
       items: cart.map(function (c) {

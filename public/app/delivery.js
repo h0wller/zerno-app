@@ -33,11 +33,15 @@ function renderDeliveryMenu() {
     // ВАЖНО: оборачиваем текст в .ol и .op, чтобы CSS из views.js корректно красил веса/цены.
     const optsHTML = opts.length
       ? `<div class="opts">
+          
           ${opts.map((o, i) => {
-            return `<button type="button" data-id="${p.id}" data-oi="${i}" class="${i === 0 ? 'sel' : ''}">
+            // Без автоподсветки: .sel вешается только тапом пользователя
+            // (или кнопкой «Добавить» как обратная связь)
+            return `<button type="button" data-id="${p.id}" data-oi="${i}">
               <span class="ol">${esc(o.l)}</span> <span class="op">${esc(o.w)} · ${fmt(o.p)}</span>
             </button>`;
           }).join('')}
+
         </div>`
       : '';
 
@@ -104,14 +108,31 @@ function syncAddButtons() {
 }
 
 $('#deliveryGrid').addEventListener('click', e => {
+  // 0. Тап по карточке (мимо чипсов и кнопок) — режим выбора размера
+  const card = e.target.closest('#deliveryGrid .card');
+  if (card && !e.target.closest('.opts button') && !e.target.closest('[data-add]') && !e.target.closest('.edBtn') && !e.target.closest('.donoff')) {
+    const optsBox = card.querySelector('.opts');
+    const addBtn = card.querySelector('[data-add]');
+    const p = DMENU.find(x => String(x.id) === String(addBtn && addBtn.dataset.add));
+    if (p && (p.opts || []).length && optsBox) {
+      if (!optsBox.querySelector('.sel')) {
+        optsBox.classList.remove('shake'); void optsBox.offsetWidth; optsBox.classList.add('shake');
+        optsBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        if (typeof toast === 'function') toast('Выберите размер и тесто 🍕', '');
+      }
+    } else if (p && addBtn) {
+      addBtn.click(); // без размеров (соусы) — сразу в корзину
+    }
+    return;
+  }
   // 1. Клик по чипсу размера/теста
   const optBtn = e.target.closest('.opts button');
   if (optBtn) {
     const group = optBtn.closest('.opts');
-    // Снимаем .sel со всех кнопок в группе и вешаем на кликнутую.
-    // CSS из views.js сам перекрасит их через класс .sel
+    const wasSel = optBtn.classList.contains('sel');
     group.querySelectorAll('button').forEach(b => b.classList.remove('sel'));
-    optBtn.classList.add('sel');
+    // Повторный клик по выбранному чипсу отменяет выбор
+    if (!wasSel) optBtn.classList.add('sel');
     return;
   }
 
@@ -231,8 +252,16 @@ function populatePlaces() {
 }
 
 $('#checkoutBtn').onclick = async () => {
-  if (!me) { toast('Сначала войдите в профиль', '👤'); openAuth(); return; }
+  // Блокировка 1: неавторизованные не могут оформлять (только добавлять в корзину)
+  if (!me || !me.id) { 
+    toast('Сначала войдите по номеру телефона', '👤'); 
+    openAuth(); 
+    return; 
+  }
   const method = $('#checkoutMethod').value;
+  // Вне рабочего времени (11:00–22:00) заказ становится предзаказом на завтра
+  const preorder = typeof window.assertServiceOpen === 'function' ? !window.assertServiceOpen() : false;
+
   if (method === 'delivery') {
     if (!$('#checkoutPlace').value) return toast('Выберите населённый пункт', '📍');
     if (!$('#checkoutAddr').value.trim()) return toast('Укажите адрес', '🏠');
@@ -241,11 +270,12 @@ $('#checkoutBtn').onclick = async () => {
     method,
     place: $('#checkoutPlace').value,
     addr: $('#checkoutAddr').value.trim(),
-    slot: $('#checkoutSlot').value,
+    slot: preorder && window.preorderSlot ? window.preorderSlot() : $('#checkoutSlot').value,
     pay: $('#checkoutPay').value,
     comment: $('#checkoutComment').value.trim(),
     items: cart.map(c => ({ id: c.id, oi: c.oi, qty: c.qty }))
   };
+  if (preorder) toast('Предзаказ принят 🌙 Приготовим завтра с 11:00', '⏰');
   try {
     const r = await api('/orders', { method: 'POST', body });
     toast(`Заказ #${r.order.no} оформлен!`, '🎉');
@@ -302,6 +332,8 @@ window.updateCartFab = function(){
   paintTotals();
   if (typeof syncAddButtons === 'function') syncAddButtons();
   cartFabShow();
+  var cb = document.getElementById('checkoutBtn');
+  if (cb) cb.textContent = (typeof window.assertServiceOpen === 'function' && !window.assertServiceOpen()) ? '🌙 Предзаказ на завтра' : 'Оформить заказ';
 };
 
 window.totalsNow = function(){
@@ -332,5 +364,16 @@ window.cartFabShow = function(){
 };
 
 function promoDisc(sum, info){
-  return info.kind === 'percent' ? Math.round(sum * Math.min(90, info.value) / 100) : Math.min(info.value || 0, sum);
+return info.kind === 'percent' ? Math.round(sum * Math.min(90, info.value) / 100) : Math.min(info.value || 0, sum);
 }
+
+/* ── Рабочие часы: единая проверка для всех обработчиков оформления ── */
+window.assertServiceOpen = function () {
+  var h = new Date().getHours();
+  return h >= 11 && h < 22;
+};
+window.preorderSlot = function () {
+  var t = new Date(); t.setDate(t.getDate() + 1); t.setHours(11, 0, 0, 0);
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  return pad(t.getDate()) + '-' + pad(t.getMonth() + 1) + ' | ' + pad(t.getHours()) + '-' + pad(t.getMinutes());
+};

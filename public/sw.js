@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v29';
+const STATIC_CACHE = 'zerno-static-v42';
 const MEDIA_CACHE = 'zerno-media-v4';
 const API_CACHE = 'zerno-api-v4';
 
@@ -12,7 +12,9 @@ const STATIC_ASSETS = [
   '/app/delivery.js',
   '/app/cart.js',
   '/app/profile.js',
-  '/manifest.webmanifest'
+  '/manifest.webmanifest',
+  '/friday-logo.svg',
+  '/andCoffee.svg'
 ];
 const API_TTL = 5 * 60 * 1000; // 5 минут
 self.addEventListener('install', (e) => {

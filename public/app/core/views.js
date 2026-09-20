@@ -44,8 +44,10 @@
     '@media(min-width:560px){#deliveryGrid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}}',
     '#deliveryGrid .opts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}',
     '@media(max-width:400px){#deliveryGrid .opts{grid-template-columns:1fr}}',
-    '#deliveryGrid .opts button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:1.5px solid var(--line);border-radius:12px;font-size:11px;font-weight:600;background:#fff;line-height:1.3;white-space:normal;text-align:left;width:100%}',
-    '#deliveryGrid .opts button .op{color:var(--soft);font-weight:700}',
+  '#deliveryGrid .opts button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:2px solid var(--line);border-radius:12px;font-size:11px;font-weight:600;background:#fff;line-height:1.3;white-space:normal;text-align:left;width:100%;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}',
+  '#deliveryGrid .opts button:active{transform:translateY(1px)}',
+    '@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}',
+  '#deliveryGrid .opts button .op{color:var(--soft);font-weight:700}',
     '#deliveryGrid .opts button.sel{background:var(--flame);border-color:var(--flame);color:#fff}',
     '#deliveryGrid .opts button.sel .op{color:var(--tint-warm)}',
     '#deliveryGrid .opts.shake{animation:shake .4s}',
@@ -108,10 +110,38 @@
     '#supportChooseOverlay .scSub{color:var(--soft);font-size:13px}',
     '#supportChooseOverlay .scBtns{width:100%;max-width:340px}',
 
-    /* --- Ф3.7-fix: шапка — venueWrap в сетке topbar --- */
-    '.topbar .venueWrap{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}',
-    '.venueToggle{align-self:flex-start;border:0;background:transparent;color:var(--soft);font:700 12px "Golos Text",system-ui,sans-serif;padding:2px 4px;cursor:pointer}',
-    '@media(max-width:820px){.topbar .venueWrap{order:10;flex:1 1 100%}.topbar .venueWrap #brandSeg{order:0;flex:0 0 auto;width:100%}}',
+'/* ── Топбар: адаптив + бренд-тема дропдауна + анимация ── */'+
+'.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}'+
+'.topbar .venueWrap{position:relative;order:1;flex:0 0 auto}'+
+'.topbar .brand{order:2;flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:10px;min-width:0}'+
+'/* Логотип: ОДНО правило, только min/max — без !important и войн специфичности */'+
+
+'.topbar .brand .mark{display:flex;align-items:center;justify-content:center;width:auto;height:auto;min-height:36px;max-height:48px;overflow:hidden;background:transparent;border:0;box-shadow:none;border-radius:12px;flex:0 0 auto}'+
+'.topbar .brand .mark img,.topbar .brand .mark svg,.topbar .brand .friday-svg,.topbar .brand .friday-svg svg{display:block;width:auto;height:auto;min-height:28px;max-height:44px;max-width:min(52vw,240px);object-fit:contain;aspect-ratio:auto;flex:0 0 auto}'+
+'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{max-height:40px;max-width:min(56vw,260px)}'+
+'@media(max-width:820px){.topbar .brand .mark{min-height:32px;max-height:40px}.topbar .brand .mark img,.topbar .brand .mark svg{max-height:34px;max-width:48vw}}'+
+'.topbar #clock{order:3;margin-left:auto}'+
+'.topbar #profileTopBtn{order:4;flex:0 0 auto}'+
+'.topbar #modeSeg{order:10;flex:1 1 100%}'+
+'.venueToggle{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--card,#fff);border-radius:999px;padding:7px 12px;font:700 13px "Golos Text",system-ui,sans-serif;color:var(--ink);cursor:pointer;transition:all .2s}'+
+'.venueToggle:hover{background:#F5F5F5;transform:translateY(-1px)}'+
+'[data-brand="delivery"] .venueToggle{border:2px solid #3A2A1C;background:#F6EEE1;color:#3A2A1C;box-shadow:2px 2px 0 #3A2A1C}'+
+'[data-brand="delivery"] .venueToggle:hover{background:#EFE6D8;box-shadow:3px 3px 0 #3A2A1C;transform:translate(-1px,-1px)}'+
+'.venueToggle .vt-arrow{font-size:9px;opacity:.7;transition:transform .2s}'+
+'.venueToggle[aria-expanded="true"] .vt-arrow{transform:rotate(180deg)}'+
+'.venueWrap #brandSeg{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:80;flex-direction:column;gap:2px;width:max-content;min-width:max(180px,100%);max-width:calc(100vw - 24px);border:1.5px solid var(--line);border-radius:14px;background:var(--card,#fff);box-shadow:var(--sh);padding:6px;overflow:visible;animation:fadeIn .2s ease}'+
+'.venueWrap #brandSeg.open{display:flex}'+
+'[data-brand="delivery"] .venueWrap #brandSeg{background:#F6EEE1;border:2px solid #3A2A1C;box-shadow:3px 3px 0 #3A2A1C;border-radius:12px}'+
+'.venueWrap #brandSeg button{flex:0 0 auto;width:100%;border:0;border-radius:10px;padding:10px 12px;font:700 14px "Golos Text",sans-serif;background:transparent;color:var(--ink);text-align:left;box-shadow:none;display:flex;align-items:center;gap:8px;transition:all .15s;cursor:pointer}'+
+'.venueWrap #brandSeg button:hover{background:rgba(0,0,0,.06);transform:translateX(2px)}'+
+'[data-brand="delivery"] .venueWrap #brandSeg button:hover{background:#EFE6D8;transform:translateX(3px)}'+
+'.venueWrap #brandSeg button .re,.venueWrap #brandSeg button span{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;font-size:16px}'+
+'.venueWrap #brandSeg button.on{background:var(--flame);color:#fff}'+
+'[data-brand="delivery"] .venueWrap #brandSeg button.on{background:#C03B2A;border:2px solid #3A2A1C;box-shadow:2px 2px 0 #3A2A1C;color:#fff}'+
+'.venueWrap #brandSeg button.on span{color:#fff!important}'+
+'@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}'+
+'@media(max-width:820px){.topbar #clock{display:none}.topbar .brand .mark{width:40px;height:40px}.topbar .brand b{font-size:19px}[data-brand="delivery"] .topbar .brand .mark{max-width:120px;height:36px}}'+
+
 
     /* --- Ф3.7-fix: состояния кнопки «Добавить» в доставке --- */
     '#deliveryGrid .cta{background:#fff;border:1.5px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:700 14px "Golos Text",system-ui,sans-serif;cursor:pointer;box-shadow:none;transition:background .15s,border-color .15s,color .15s}',
@@ -121,48 +151,57 @@
     '#deliveryGrid .cta.added{background:var(--flame);border-color:var(--flame);color:#fff}',
     '#deliveryGrid .card .media{position:relative}',
     '#deliveryGrid .card.stopped{opacity:.75}',
-    '#deliveryGrid .stopbadge{position:absolute;top:8px;left:8px;z-index:2;background:#B3372B;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}',
+    '#deliveryGrid .stopbadge{position:absolute;top:10px;right:10px;left:auto;z-index:2;background:#D63939;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}'+
 
     /* --- Ф3-фикс: iosHint/installBanner не накрывают шапку --- */
     '#iosHint,#installBanner{top:auto;bottom:calc(96px + env(safe-area-inset-bottom))}',
 
-    /* ════════════════════════════════════════════════════════════════════
-       БРЕНДОВЫЕ ПЕРЕОПРЕДЕЛЕНИЯ ДЛЯ ПЯТНИЦЫ (только [data-brand="delivery"])
-       ════════════════════════════════════════════════════════════════════ */
-    'html[data-brand="delivery"],body[data-brand="delivery"]{--flame:#B4552D;--flame-d:#8B3E1F;--esp:#3A2A1C;--esp2:#241812;--tint-cool:#F3E2CE;--tint-warm:#F3E2CE;--green:#186A43;--amber:#C2935F}',
-    'html[data-brand="delivery"] body{background-color:#F3EDE6}',
-    '[data-brand="delivery"] .card{border-color:rgba(180,85,45,.25)}',
-    '[data-brand="delivery"] .card h3{color:#3A2A1C}',
-    '[data-brand="delivery"] .cbody .desc{color:#5B4E3A}',
-    '[data-brand="delivery"] .price{color:#B4552D}',
-    '[data-brand="delivery"] .tag{background:#B4552D}',
-    '[data-brand="delivery"] .tag.hit{background:#8B3E1F}',
-    '[data-brand="delivery"] .stopbadge{background:#D63939}',
-    '[data-brand="delivery"] .comp i{background:#F3E2CE;border-color:rgba(180,85,45,.25);color:#3A2A1C}',
-    '[data-brand="delivery"] #deliveryGrid .opts button.sel{background:#B4552D;border-color:#B4552D;color:#fff}',
-    '[data-brand="delivery"] #deliveryGrid .opts button.sel .op{color:#F3E2CE}',
-    '[data-brand="delivery"] #deliveryRail button.on{background:#B4552D;border-color:#B4552D;color:#fff}',
-    '[data-brand="delivery"] #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on{background:#B4552D;color:#fff}',
-    '[data-brand="delivery"] #brandSeg,[data-brand="delivery"] #modeSeg{background:#241812}',
-    '[data-brand="delivery"] #cartFab{background:#B4552D;box-shadow:0 12px 30px -8px rgba(180,85,45,.75)}',
-    '[data-brand="delivery"] .addonChip b{color:#B4552D}',
-    '[data-brand="delivery"] .chat-fab,[data-brand="delivery"] #chatFab{background:#B4552D;box-shadow:0 0 0 4px rgba(180,85,45,.25),0 12px 30px -8px rgba(58,42,28,.5)}',
-    '[data-brand="delivery"] #chatPanel .chatHead{background:#241812;color:#fff}',
-    '[data-brand="delivery"] #chatMsgs .msg.me,[data-brand="delivery"] #chatMsgs .me{background:#B4552D;border-color:#B4552D;color:#fff}',
-    '[data-brand="delivery"] #checkoutBtn{background:#B4552D;border-color:#B4552D;color:#fff}',
-    '[data-brand="delivery"] #cartPromoBtn{color:#B4552D}',
-    '[data-brand="delivery"] .mo-new,[data-brand="delivery"] .mo-accept,[data-brand="delivery"] .mo-way{background:#F3E2CE;color:#B4552D}',
-    '[data-brand="delivery"] .topbar .brand img{height:34px;width:auto;border-radius:10px}',
-    '[data-brand="delivery"] .venueToggle{color:#8A6D3B}',
-    '[data-brand="delivery"] .cartPanel .qty button{background:#C99E6E;border:1.5px solid #3A2A1C;color:#3A2A1C}',
-
-    /* --- Ф3-финал: точечная докраска чата Пятницы --- */
-    '[data-brand="delivery"] #chatSend{background:#B4552D;color:#fff}',
-    '[data-brand="delivery"] #chatPanel .chatHead .av{background:#B4552D;color:#fff}',
-    '[data-brand="delivery"] #chatMsgs{background:#FAF5EF}',
-    '[data-brand="delivery"] #chatInput{border-color:#D9C7AD}',
-    '[data-brand="delivery"] #chatMsgs .chatHint{background:#F3E2CE;border-color:#D9C7AD;color:#3A2A1C}',
-    '[data-brand="delivery"] #chatMsgs .chatHint.armed{background:#B4552D;border-color:#B4552D;color:#fff}',
+    '/* ══ БРЕНД: Пятница — терракотовый стикер-арт по гайдлайну ══ */'+
+'html[data-brand="delivery"],body[data-brand="delivery"]{--flame:#C03B2A;--flame-d:#8E3716;--esp:#3A2A1C;--esp2:#241812;--fr-choc:#3A2A1C;--fr-tan:#C99E6E;--fr-rice:#EFE6D8;--fr-paper:#F6EEE1;--paper:#F3EDE6;--tint-cool:#F3E2CE;--tint-warm:#F3E2CE}'+
+'html[data-brand="delivery"] body{background-color:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.1) 1px,transparent 1.5px);background-size:12px 12px}'+
+'[data-brand="delivery"] h1,[data-brand="delivery"] h2,[data-brand="delivery"] h3,[data-brand="delivery"] .cbody h3{font-family:Unbounded,sans-serif;color:var(--fr-choc)}'+
+'[data-brand="delivery"] .card{border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);background:var(--fr-paper)}'+
+'[data-brand="delivery"] .cta,[data-brand="delivery"] #checkoutBtn,[data-brand="delivery"] .btn.fire{border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc);background:var(--flame);color:#fff}'+
+'[data-brand="delivery"] .price{color:var(--flame)}'+
+'[data-brand="delivery"] .tag{background:var(--flame)}'+
+'[data-brand="delivery"] .tag.hit{background:var(--flame-d)}'+
+'[data-brand="delivery"] .comp i{background:var(--fr-rice);border-color:var(--fr-tan);color:var(--fr-choc)}'+
+'[data-brand="delivery"] #deliveryGrid .opts button{border:2px solid var(--fr-tan);background:#fff}',
+'[data-brand="delivery"] #deliveryGrid .opts button.sel{background:var(--fr-tan);border-color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:var(--fr-choc)}',
+'[data-brand="delivery"] #deliveryGrid .opts button.sel .op{color:var(--fr-choc)}'+
+'[data-brand="delivery"] #deliveryRail button.on{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff;font:700 13px Unbounded,sans-serif}'+
+'#deliveryRail button{transition:transform .15s,box-shadow .15s,background .15s}',
+'#deliveryRail button:hover{transform:translateY(-1px)}',
+'#deliveryRail button.on:hover{transform:none}',
+'[data-brand="delivery"] #brandSeg,[data-brand="delivery"] #modeSeg{background:var(--esp)}'+
+'[data-brand="delivery"] #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on{background:var(--flame);color:#fff}'+
+'[data-brand="delivery"] #cartFab,[data-brand="delivery"] .chat-fab{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc)}'+
+'[data-brand="delivery"] .addonChip b{color:var(--flame)}'+
+'[data-brand="delivery"] #cartPanel,[data-brand="delivery"] .cartPanel{background:var(--fr-rice);border:2px solid var(--fr-choc)}'+
+'[data-brand="delivery"] .cartPanel .qty button{background:#C99E6E!important;border:1.5px solid #3A2A1C!important;color:#3A2A1C!important}'+
+'/* ── Карточки доставки: описание клампим в 2 строки, опции прижимаем к низу — ряды совпадают ── */'+
+'#deliveryGrid .cbody .desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.75em}'+
+'#deliveryGrid .cbody .opts{margin-top:auto}'+
+'/* ── Ника с иконкой и крафтовое кольцо FAB в доставке ── */'+
+'[data-brand="delivery"] .chatHead .op{background:#F6EEE1!important;border:0!important;display:flex;align-items:center;justify-content:center;font-size:20px}'+
+'[data-brand="delivery"] .chat-fab::before{border-color:#C03B2A!important}'+
+'[data-brand="delivery"] #chatPanel .chatHead{background:var(--fr-choc);color:#fff}'+
+'[data-brand="delivery"] .chatHead .av{background:var(--fr-paper);background-image:none;color:var(--fr-choc)}'+
+'[data-brand="delivery"] #chatMsgs{background:var(--fr-paper)}'+
+'[data-brand="delivery"] #chatMsgs .msg.me,[data-brand="delivery"] #chatMsgs .me{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff}'+
+'[data-brand="delivery"] #chatMsgs .chatHint{background:var(--fr-rice);border-color:var(--fr-tan);color:var(--fr-choc)}'+
+'[data-brand="delivery"] #chatSend{background:var(--flame);border:2px solid var(--fr-choc);color:#fff}'+
+'[data-brand="delivery"] .mo-new,[data-brand="delivery"] .mo-accept,[data-brand="delivery"] .mo-way{background:var(--fr-rice);color:var(--flame)}'+
+'.topbar .brand{flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:10px;min-width:0}',
+'.topbar .brand .mark,.topbar .brand img,.topbar .brand .friday-svg{height:44px;width:auto;max-width:220px;object-fit:contain;flex:0 1 auto}',
+'[data-brand="delivery"] .topbar .brand{justify-content:center}',
+'[data-brand="delivery"] .topbar .brand .mark,[data-brand="delivery"] .topbar .brand .friday-svg,[data-brand="delivery"] .topbar .brand img{width:100%;max-width:760px;height:64px;object-fit:contain;border-radius:0}',
+'@media(max-width:820px){[data-brand="delivery"] .topbar .brand .mark,[data-brand="delivery"] .topbar .brand .friday-svg,[data-brand="delivery"] .topbar .brand img{height:48px;max-width:60vw}}',
+'[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] #brandTitle,[data-brand="delivery"] #brandSub{display:none!important}'+
+'[data-brand="delivery"] .topbar .brand{justify-content:flex-start}'+
+'[data-brand="delivery"] .venueToggle{border-color:var(--fr-tan);background:var(--fr-paper);color:var(--fr-choc)}'+
+'[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{background:var(--fr-choc);color:#E8A33D}'+
+'[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2}'
   ];
   css.textContent = rules.join('\n');
   document.head.appendChild(css);
@@ -230,50 +269,58 @@
         seg.classList.toggle('is-delivery', bName === 'delivery');
       }
 
-      var isDel = (bName === 'delivery');
-      var mark = document.getElementById('brandMark') || document.querySelector('.brand .mark');
-      if (mark) {
-        mark.classList.toggle('is-delivery', isDel);
-        mark.innerHTML = isDel ? '🍕' : '<img src="./icon.svg" alt="…и кофе">';
-      }
+// Ф3.25: mark.innerHTML владеет admin-extra.js (applyBrandChrome) — здесь не трогаем
+      if (window.__ensureVenueToggle) window.__ensureVenueToggle();
+      if (window.__labelVenueToggle) window.__labelVenueToggle();
+      if (mark) mark.classList.toggle('is-delivery', isDel);
+ /* Ф3.24: содержимое марки — ответственность admin-extra.js (applyBrandChrome).
+    sv() владеет только классом марки и текстами #brandTitle/#brandSub. */
 
-      var op = document.querySelector('.chat-h .op, .chatHead .op');
-      if (op) {
-        if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
-        op.innerHTML = isDel ? '' : (op.getAttribute('data-orig') || '');
-      }
+    // Страховка: снимаем инлайновые width/height/object-fit с логотипа шапки
+    // (их вешают сторонние патчи, из-за чего friday-logo.png растягивался на весь экран)
+    var bimg = document.querySelector('.topbar .brand img');
+    if (bimg) {
+      bimg.style.width = '';
+   bimg.style.height = '';
+   bimg.style.objectFit = '';
+   bimg.style.position = '';
+   bimg.style.inset = '';
+   bimg.style.aspectRatio = '';
+    }
+
+    var op = document.querySelector('.chat-h .op, .chatHead .op');
+    if (op) {
+      if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
+      op.innerHTML = isDel ? '🍕' : (op.getAttribute('data-orig') || '');
+    }
 
       var bTitle = document.getElementById('brandTitle');
       var bSub = document.getElementById('brandSub');
       if (bTitle) bTitle.textContent = isDel ? 'Пятница' : '…и кофе';
       if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
 
-      var seg2 = document.getElementById('brandSeg');
-      if (seg2 && !document.getElementById('venueToggle')) {
-        var vw = document.createElement('div');
-        vw.className = 'venueWrap';
-        seg2.parentNode.insertBefore(vw, seg2);
-        var vt = document.createElement('button');
-        vt.id = 'venueToggle';
-        vt.type = 'button';
-        vt.className = 'venueToggle';
-        vt.setAttribute('aria-haspopup', 'listbox');
-        vt.setAttribute('aria-expanded', 'false');
-        vt.innerHTML = '🏪 Сменить заведение <span class="vt-arrow">▾</span>';
-        vw.appendChild(vt);
-        vw.appendChild(seg2);
-        vt.addEventListener('click', function (e) {
-          e.stopPropagation();
-          var open = seg2.classList.toggle('open');
-          vt.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-        document.addEventListener('click', function (e) {
-          if (!vw.contains(e.target)) {
-            seg2.classList.remove('open');
-            vt.setAttribute('aria-expanded', 'false');
-          }
-        });
-      }
+    var seg2 = document.getElementById('brandSeg');
+    if (seg2 && !document.getElementById('venueToggle')) {
+      var vw = document.createElement('div'); vw.className = 'venueWrap';
+      seg2.parentNode.insertBefore(vw, seg2);
+      var vt = document.createElement('button');
+      vt.id = 'venueToggle'; vt.type = 'button'; vt.className = 'venueToggle';
+      vt.setAttribute('aria-haspopup', 'listbox'); vt.setAttribute('aria-expanded', 'false');
+      vw.appendChild(vt); vw.appendChild(seg2);   // #brandSeg = список дропдауна (тесты кликают его)
+      vt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = seg2.classList.toggle('open');
+        seg2.style.display = open ? 'flex' : 'none';   // inline-гарантия: список рисуется всегда
+        vt.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      document.addEventListener('click', function (e) {
+        if (!vw.contains(e.target)) { seg2.classList.remove('open'); seg2.style.display = 'none'; vt.setAttribute('aria-expanded', 'false'); }
+      });
+    }
+    // Компактная метка переключателя = текущее заведение (освобождает шапку)
+    var vt2 = document.getElementById('venueToggle');
+    if (vt2) vt2.innerHTML = (isDel ? '🍕 Пятница' : '🌊 Кофейня') + ' <span class="vt-arrow">▾</span>';
+
     } catch (e) {}
 
     var showGuest = (typeof mode !== 'undefined' && (mode === 'guest' || mode === 'admin'));
@@ -326,9 +373,10 @@
     });
 
     if (typeof cartFabShow === 'function') cartFabShow();
-  }
-
-  window.syncBrandViews = sv;
+ // Ф3.25: синхронизируем брендовый хром (тикер + логотип) прямым вызовом владельца
+ if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
+}
+window.syncBrandViews = sv;
 
   window.setMode = function (m) {
     var role = (typeof me !== 'undefined' && me) ? me.role : 'guest';
@@ -396,9 +444,9 @@
         x.classList.toggle('on', x.dataset.brand === brand);
       });
       brandSegEl.classList.remove('open');
-
-      var vtg = document.getElementById('venueToggle');
-      if (vtg) vtg.setAttribute('aria-expanded', 'false');
+      brandSegEl.style.display = 'none';
+  var vtg = document.getElementById('venueToggle');
+  if (vtg) vtg.setAttribute('aria-expanded', 'false');
 
       sv();
 
@@ -421,8 +469,47 @@
     });
   }
 
-  /* Первичная инициализация видов */
-  sv();
+/* Первичная инициализация видов */
+sv();
+
+/* ── Ф3.26: гарантия #venueToggle (дропдаун заведений) — создание вне sv(), с ретраями ── */
+(function () {
+  function ensure() {
+    var seg = document.getElementById('brandSeg');
+    if (!seg || document.getElementById('venueToggle')) return;
+    var vw = document.createElement('div'); vw.className = 'venueWrap';
+    seg.parentNode.insertBefore(vw, seg);
+    var vt = document.createElement('button');
+    vt.id = 'venueToggle'; vt.type = 'button'; vt.className = 'venueToggle';
+    vt.setAttribute('aria-haspopup', 'listbox'); vt.setAttribute('aria-expanded', 'false');
+    vw.appendChild(vt); vw.appendChild(seg);
+    vt.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = seg.classList.toggle('open');
+      seg.style.display = open ? 'flex' : 'none';
+      vt.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    document.addEventListener('click', function (e) {
+      if (!vw.contains(e.target)) { seg.classList.remove('open'); seg.style.display = 'none'; vt.setAttribute('aria-expanded', 'false'); }
+    });
+    label();
+  }
+  function label() {
+    var vt = document.getElementById('venueToggle');
+    if (!vt) return;
+    var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
+    vt.innerHTML = (isDel ? '🍕 Пятница' : '🌊 Кофейня') + ' <span class="vt-arrow">▾</span>';
+  }
+  window.__ensureVenueToggle = ensure;
+  window.__labelVenueToggle = label;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensure);
+  else ensure();
+  setTimeout(ensure, 300);
+  setTimeout(ensure, 1200);
+})();
+
+/* Ф3.24: логотип шапки владеет admin-extra.js (applyBrandChrome);
+   наблюдатель-подменщик удалён, официальный svg больше не перезаписывается. */
 
   /* ── Пуш-баббл «Включите пуши» ── */
   (function () {
