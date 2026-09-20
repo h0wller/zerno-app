@@ -29,8 +29,14 @@ if(typeof loadMenu==='function'){loadMenu=(function(_lm){return async function()
 /* ── R5: тикер и логотип по бренду.
    Ф3.25: ЕДИНСТВЕННЫЙ владелец mark.innerHTML — applyBrandChrome();
    views.js только синхронизирует класс .is-delivery и вызывает эту функцию. ── */
+
+var __chromeLast=null;
 function applyBrandChrome(){
 var deliv=(brand==='delivery');
+/* Ф3.27: пересборка DOM тикера/марки только при СМЕНЕ бренда.
+   Иначе каждый sv() перезаписывает track.innerHTML и сбрасывает CSS-анимацию. */
+if(__chromeLast===brand)return;
+__chromeLast=brand;
 var track=document.getElementById('tickerTrack');
 if(track){
 var L=deliv?['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']

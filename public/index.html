@@ -132,20 +132,10 @@ input,select,textarea{font-family:inherit}
 .ticker{background:#123A6B;color:#BBD7F2;height:30px!important;line-height:30px!important;overflow:hidden;border-bottom:1px solid rgba(62,143,208,.25);max-width:100%}
 [data-brand="delivery"] .ticker{background:#3A2A1C!important;color:#E8A33D!important;border-bottom:2px solid #3A2A1C!important}
 
-.ticker {
-  max-height: 64px;
-  overflow: hidden; /* убираем contain: layout style paint */
-}
-.ticker .track {
-  display: inline-flex;
-  white-space: nowrap;
-  animation: tick 30s linear infinite; /* убираем will-change: transform */
-  max-width: none;
-}
-.ticker span{display:inline-flex;align-items:center;gap:.5rem;padding:0 1.2rem;font:600 11px/30px "Unbounded";letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
-.ticker span::after{content:"〜";color:#3E8FD0;margin-left:1.4rem}
-[data-brand="delivery"] .ticker span::after{color:#C03B2A!important}
-@keyframes tick{to{transform:translateX(-50%)}}
+/* Ф3.27: LCP-фикс — кофейное меню видно до выполнения defer-скриптов;
+   delivery-вид скрыт до sv(), брендовый атрибут ставится рано. */
+body:not([data-brand="delivery"]) #deliveryView{display:none}
+body[data-brand="delivery"] #menuView{display:none}
 
 /* ══ каркас ══ */
 .wrap{display:grid;grid-template-columns:92px 1fr 350px;gap:22px;padding:22px;max-width:1480px;margin:0 auto;align-items:start}

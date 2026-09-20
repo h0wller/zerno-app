@@ -202,12 +202,12 @@
 '[data-brand="delivery"] .venueToggle{border-color:var(--fr-tan);background:var(--fr-paper);color:var(--fr-choc)}'+
 '[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{background:var(--fr-choc);color:#E8A33D}'+
 '[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2}'+
-/* ── Тикер: скелет бегущей строки (контент дублируется applyBrandChrome → шов не виден) ── */
-'.ticker{overflow:hidden;max-width:100%}',
-'#tickerTrack{display:inline-flex;white-space:nowrap;animation:marquee 30s linear infinite}',
-'#tickerTrack span{display:inline-block;padding:0 14px;flex:0 0 auto}',
-'@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}',
-'@media(prefers-reduced-motion:reduce){#tickerTrack{animation:none}}',
+/* ── Тикер: единственный владелец бегущей строки; translate3d = композитинг, не встаёт ── */
+    '.ticker{overflow:hidden;max-width:100%;height:30px;line-height:30px}',
+    '#tickerTrack{display:inline-flex;align-items:center;white-space:nowrap;width:max-content;backface-visibility:hidden;animation:zt-marquee 40s linear infinite}',
+    '#tickerTrack span{flex:0 0 auto;padding:0 14px}',
+    '@keyframes zt-marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}',
+    '@media(prefers-reduced-motion:reduce){#tickerTrack{animation:none}}',
   ];
   css.textContent = rules.join('\n');
   document.head.appendChild(css);
