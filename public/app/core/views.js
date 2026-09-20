@@ -201,7 +201,13 @@
 '[data-brand="delivery"] .topbar .brand{justify-content:flex-start}'+
 '[data-brand="delivery"] .venueToggle{border-color:var(--fr-tan);background:var(--fr-paper);color:var(--fr-choc)}'+
 '[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{background:var(--fr-choc);color:#E8A33D}'+
-'[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2}'
+'[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2}'+
+/* ── Тикер: скелет бегущей строки (контент дублируется applyBrandChrome → шов не виден) ── */
+'.ticker{overflow:hidden;max-width:100%}',
+'#tickerTrack{display:inline-flex;white-space:nowrap;animation:marquee 30s linear infinite}',
+'#tickerTrack span{display:inline-block;padding:0 14px;flex:0 0 auto}',
+'@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}',
+'@media(prefers-reduced-motion:reduce){#tickerTrack{animation:none}}',
   ];
   css.textContent = rules.join('\n');
   document.head.appendChild(css);
