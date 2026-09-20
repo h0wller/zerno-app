@@ -203,11 +203,13 @@
 '[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{background:var(--fr-choc);color:#E8A33D}'+
 '[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2}'+
 /* ── Тикер: единственный владелец бегущей строки; translate3d = композитинг, не встаёт ── */
-    '.ticker{overflow:hidden;max-width:100%;height:30px;line-height:30px}',
-    '#tickerTrack{display:inline-flex;align-items:center;white-space:nowrap;width:max-content;backface-visibility:hidden;animation:zt-marquee 40s linear infinite}',
-    '#tickerTrack span{flex:0 0 auto;padding:0 14px}',
-    '@keyframes zt-marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}',
-    '@media(prefers-reduced-motion:reduce){#tickerTrack{animation:none}}',
+'.ticker{overflow:hidden;max-width:100%;height:30px;line-height:30px}',
+'#tickerTrack{display:inline-flex;align-items:center;white-space:nowrap;width:max-content;backface-visibility:hidden;animation:zt-marquee 40s linear infinite}',
+'#tickerTrack span{flex:0 0 auto;display:inline-flex;align-items:center;gap:.5rem;padding:0 1.2rem;font:600 11px/30px "Unbounded",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}',
+'#tickerTrack span::after{content:"〜";margin-left:1.4rem;color:var(--azure,#3E8FD0)}',
+'[data-brand="delivery"] #tickerTrack span::after{color:#C03B2A}',
+'@keyframes zt-marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}',
+'@media(prefers-reduced-motion:reduce){#tickerTrack{animation:none}}',
   ];
   css.textContent = rules.join('\n');
   document.head.appendChild(css);
