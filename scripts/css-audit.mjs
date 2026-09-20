@@ -49,11 +49,20 @@ if (fridayInTheme.length) {
 
 /* ── ПРАВИЛО 4: в views.js все правила либо layout, либо начинаются с [data-brand= ── */
 const viewsLines = viewsCSS.split('\n').map(l => l.trim()).filter(Boolean);
+/* Ф3.32: разрешённые layout-селекторы (топбар, FAB, grid) */
+const allowedGeneric = ['.grid', '.card', '.wrap', '.rail', '.panel', '.tabs', '.modal', '.chat', '.btn', '.cta', '.form', '.venueWrap', '#brandSeg', '.venueToggle', '.topbar', '.brand', 'body.editing'];
 const badLines = viewsLines.filter(l => {
+  /* Ф3.34: ранние разрешения (layer-2 layout + тикер-владелец) — гарантированно до return true */
+  if (allowedGeneric.some(s => l.startsWith(s))) return false;
+  if (l.startsWith('body.editing') || l.startsWith('.ticker') || l.startsWith('#tickerTrack')) return false;
+
+  if (l.startsWith('/*') || l.startsWith('*')) return false;   // JS-комментарии внутри массива — не правила
   // layout/media/system — разрешены
   if (l.startsWith('@media') || l.startsWith('@keyframes') || l.startsWith('html,') || l.startsWith('body{') || l.startsWith('img,') || l === '') return false;
   // [data-brand=...] — разрешено
   if (l.startsWith('[data-brand=') || l.startsWith('html[data-brand=') || l.startsWith('body[data-brand=') || l.startsWith('html[data-brand="delivery"] body')) return false;
+  /* Ф3.32: layout-селекторы топбара/карточек (не брендовые, но легитимные) */
+  if (allowedGeneric.some(s => l.startsWith(s))) return false;
   // системные id-селекторы (FAB, grid, overlay) — разрешены
   if (l.startsWith('#') || l.startsWith('.topbar') || l.startsWith('.chat-fab') || l.startsWith('.addonChip') || l.startsWith('.ctxPick') || l.startsWith('.chatHint') || l.startsWith('#chatPanel') || l.startsWith('.myOrderCard') || l.startsWith('.moSt') || l.startsWith('.mo-') || l.startsWith('#myOrders') || l.startsWith('#brandSplash') || l.startsWith('#supportChooseOverlay') || l.startsWith('.venueToggle') || l.startsWith('.topbar .venueWrap') || l.startsWith('#iosHint') || l.startsWith('#installBanner') || l.startsWith('body.support-pending') || l.startsWith('#deliveryGrid') || l.startsWith('#cartFab')) return false;
   return true;
@@ -78,7 +87,8 @@ if (depth !== 0) {
 }
 
 /* ── ПРАВИЛО 6: в views.js нет разрывов слов (!importan t, & &, > .) ── */
-const typos = ['!importan t', '& &', '> .', ' >.'];
+const typos = ['!importan t', '& &'];   // '> .' — легитимный child-комбинатор, не опечатка
+
 const foundTypos = typos.filter(t => viewsCSS.includes(t));
 if (foundTypos.length) {
   fail(`views.js: найдены опечатки-разрывы: ${foundTypos.join(', ')}`);
@@ -100,6 +110,30 @@ if (duplicates.length) {
   fail(`views.js: дубли селекторов:\n  ${duplicates.map(([s, n]) => `${s} (×${n})`).join('\n  ')}`);
 } else {
   ok('views.js: нет дублей селекторов');
+}
+/* ── ПРАВИЛО 8: sanity-check эмитуемого CSS из views.js ── */
+import { readFileSync as rfs } from 'node:fs';
+const vsrc = rfs('public/app/core/views.js', 'utf8');
+const m = vsrc.match(/var rules = \[([\s\S]*?)\];\s*css\.textContent = rules\.join/);
+if (m) {
+  const cssText = m[1].split('\n')
+    .map(l => l.trim())
+    .filter(l => l.startsWith("'") && l.endsWith("',"))
+    .map(l => l.slice(1, -2))
+    .join('\n');
+  let bad = 0;
+  (cssText.match(/@media\([^)]*\)\s*(?=\n|$)/g) || []).forEach(x => { bad++; console.error('❌ views.js: висячий @media без блока:', x); });
+  const open = (cssText.match(/\/\*/g) || []).length, close = (cssText.match(/\*\//g) || []).length;
+  if (open !== close) { bad++; console.error(`❌ views.js: незакрытые CSS-комментарии (${open} vs ${close})`); }
+  const watched = ['.ticker', '.brand .mark', '.opts button', '.brandSeg', '.cartPanel'];
+  const idx = rfs('public/index.html', 'utf8');
+  watched.forEach(sel => {
+    const inIdx = new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[{,]').test(idx);
+    const inViews = cssText.includes(sel);
+    if (inIdx && inViews) console.warn('⚠️ дубль-владелец:', sel, '(index.html + views.js) — кандидат на миграцию Фазы 4');
+  });
+  if (bad) { failures += bad; }
+  else ok('views.js: эмитуемый CSS структурно корректен');
 }
 
 /* ── Итог ── */

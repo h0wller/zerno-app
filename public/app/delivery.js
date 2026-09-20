@@ -79,6 +79,7 @@ function renderDeliveryMenu() {
 /* ── состояния карточек: стоп-лист + кнопка «Добавить» (вынесены на верхний уровень) ── */
 function patchDeliveryCards(list) {
   const cards = $('#deliveryGrid').querySelectorAll('.card');
+  const editing = (typeof editMode !== 'undefined' && editMode);
   cards.forEach((card, i) => {
     const p = list[i]; if (!p) return;
     card.classList.toggle('stopped', !p.on);
@@ -87,11 +88,36 @@ function patchDeliveryCards(list) {
       let sb = media.querySelector('.stopbadge');
       if (!p.on && !sb) { sb = document.createElement('span'); sb.className = 'stopbadge'; sb.textContent = 'СТОП'; media.appendChild(sb); }
       if (p.on && sb) sb.remove();
+      /* Ф3.28: фото позиции в карточке (было fix-views v62) */
+      if (p.img && !media.querySelector('img')) {
+        const em = media.querySelector('.em'); if (em) em.remove();
+        const im = document.createElement('img');
+        im.src = p.img; im.alt = p.name || ''; im.loading = 'lazy';
+        media.appendChild(im);
+      }
     }
     const add = card.querySelector('[data-add]');
     if (add) {
       if (!p.on) { add.disabled = true; add.classList.remove('incart', 'added'); add.textContent = 'СТОП — недоступно'; }
       else if (add.disabled) { add.disabled = false; }
+    }
+    /* Ф3.28: карандаш и тумблер «в меню» только в режиме правки (было fix-views v62) */
+    if (editing) {
+      if (!card.querySelector('.edBtn')) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'edBtn'; b.dataset.ed = p.id; b.textContent = '✏️';
+        card.appendChild(b);
+      }
+      let lab = card.querySelector('.donoff');
+      if (!lab) {
+        lab = document.createElement('label'); lab.className = 'donoff';
+        lab.innerHTML = '<input type="checkbox" data-onoff="' + p.id + '">в меню';
+        card.appendChild(lab);
+      }
+      const inp = lab.querySelector('input'); if (inp) inp.checked = !!p.on;
+    } else {
+      const d2 = card.querySelector('.donoff'); if (d2) d2.remove();
+      const e2 = card.querySelector('.edBtn'); if (e2) e2.remove();
     }
   });
   syncAddButtons();
@@ -189,11 +215,10 @@ $('#deliveryGrid').addEventListener('click', e => {
     
     localStorage.setItem('zt_cart', JSON.stringify(cart));
     
-    /* Обратная связь: вспышка "✓ Добавлено" */
+    /* Обратная связь: CSS-вспышка без смены текста → без reflow/CLS */
+    if (typeof syncAddButtons === 'function') syncAddButtons();
     addBtn.classList.add('added');
-    const prevLabel = addBtn.textContent;
-    addBtn.textContent = '✓ Добавлено';
-    setTimeout(() => { addBtn.classList.remove('added'); if (typeof syncAddButtons === 'function') syncAddButtons(); }, 700);
+    setTimeout(() => addBtn.classList.remove('added'), 700);
     
     if (typeof updateCartFab === 'function') updateCartFab();
     if (typeof toast === 'function') toast('Добавлено в корзину', '🛒');
@@ -377,3 +402,21 @@ window.preorderSlot = function () {
   var pad = function (n) { return String(n).padStart(2, '0'); };
   return pad(t.getDate()) + '-' + pad(t.getMonth() + 1) + ' | ' + pad(t.getHours()) + '-' + pad(t.getMinutes());
 };
+/* ── Ф3.28: стоп-лист и редактор карточек доставки (было fix-views v62) ── */
+$('#deliveryGrid').addEventListener('change', async function (e) {
+  const t = e.target.closest('.donoff [data-onoff]'); if (!t) return;
+  e.stopPropagation();
+  const p = DMENU.find(x => String(x.id) === String(t.dataset.onoff)); if (!p) return;
+  p.on = t.checked ? 1 : 0;
+  try {
+    await api('/menu/' + p.id, { method: 'PUT', body: p });
+    await loadDelivery();
+    toast(t.checked ? '«' + esc(p.name) + '» снова в меню' : '«' + esc(p.name) + '» → стоп-лист', t.checked ? '✅' : '⛔');
+  } catch (err) { toast(err.message, '⚠️'); loadDelivery(); }
+}, true);
+
+$('#deliveryGrid').addEventListener('click', function (e) {
+  const b = e.target.closest('.edBtn[data-ed]'); if (!b) return;
+  e.stopPropagation(); e.preventDefault();
+  if (typeof openEditor === 'function') openEditor(b.dataset.ed);
+}, true);

@@ -15,9 +15,10 @@ function finish(choice) {
 sessionStorage.setItem('splashDone', '1');
 document.documentElement.classList.remove('need-splash');
 document.documentElement.classList.add('no-splash');
-var el = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
+var el = document.getElementById('brandSplashStatic')|| document.getElementById('brandSplash');
 if (el) el.remove();
 brand = choice;
+try { localStorage.setItem('zt_brand', brand); } catch (e) {}
 if (mode === 'cashier' || mode === 'orders') setMode('guest');
 document.querySelectorAll('#brandSeg button').forEach(function (x) {
 x.classList.toggle('on', x.dataset.brand === brand);

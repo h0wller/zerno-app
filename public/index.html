@@ -89,14 +89,8 @@ input,select,textarea{font-family:inherit}
   .topbar .brand{font-size:18px!important}
   .topbar .brand small{font-size:10px!important}
 }
-@media(max-width:400px){
-  .ticker span{font-size:10px;padding:.35rem 1rem}
-}
 
 .brand{display:flex;align-items:center;gap:11px;margin-right:auto;cursor:pointer}
-.brand .mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#123A6B,#3E8FD0);display:grid;place-items:center;
-  box-shadow:0 3px 10px -2px rgba(18,58,107,.4);transition:transform .3s}
-.brand:hover .mark{transform:rotate(-8deg) scale(1.06)}
 .brand b{font:400 19px "Prata",serif;letter-spacing:.04em;color:#123A6B}
 [data-brand="delivery"] .brand b{font:900 18px "Unbounded",sans-serif!important;color:#3A2A1C!important}
 .brand small{display:block;font:600 11px "Golos Text";color:#3E8FD0;letter-spacing:.12em;text-transform:uppercase}
@@ -108,8 +102,9 @@ input,select,textarea{font-family:inherit}
     gap: 6px !important;
     padding: 6px 10px !important;
   }
-  .brand b { font-size: 14px !important; }
-  .brand .mark { width: 32px !important; height: 32px !important; }
+    .brand b { font-size: 14px !important; }
+  [data-brand="coffee"] .brand .mark { width: 32px !important; height: 32px !important; }
+
   .brandSeg { margin-left: auto; }
   .clock { display: none !important; }
 }
@@ -127,10 +122,6 @@ input,select,textarea{font-family:inherit}
   color:#fff;font:700 14px "Unbounded";display:grid;place-items:center;border:1px solid #FFF;box-shadow:0 3px 8px rgba(18,58,107,.25);transition:.25s}
 [data-brand="delivery"] #profileTopBtn{background:#E8A33D!important;color:#3A2A1C!important;border:2px solid #3A2A1C!important;box-shadow:2px 2px 0 #3A2A1C!important;font-weight:900!important}
 .ava:hover{transform:scale(1.08)}
-
-/* ══ тикер ══ */
-.ticker{background:#123A6B;color:#BBD7F2;height:30px!important;line-height:30px!important;overflow:hidden;border-bottom:1px solid rgba(62,143,208,.25);max-width:100%}
-[data-brand="delivery"] .ticker{background:#3A2A1C!important;color:#E8A33D!important;border-bottom:2px solid #3A2A1C!important}
 
 /* Ф3.27: LCP-фикс — кофейное меню видно до выполнения defer-скриптов;
    delivery-вид скрыт до sv(), брендовый атрибут ставится рано. */
@@ -188,7 +179,6 @@ body.editing .card:hover{transform:none}
 .media{height:150px;position:relative;overflow:hidden;background:linear-gradient(180deg, rgba(62,143,208,.08), transparent);display:grid;place-items:center}
 .media img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
 .card:hover .media img{transform:scale(1.07)}
-.media .em{font-size:56px;text-shadow:(0 8px 10px rgba(16,20,24,.22));transition:transform .3s}
 .card:hover .media .em{transform:scale(1.14) rotate(-5deg)}
 
 .tag{position:absolute;top:10px;left:10px;font:700 9.5px "Unbounded";letter-spacing:.08em;text-transform:uppercase;
@@ -477,8 +467,8 @@ body.editing .card:hover{transform:none}
 .pin{font:900 28px "Unbounded";letter-spacing:.45em;text-align:center;padding:12px 8px;border:2px solid var(--line);border-radius:14px;
   width:186px;margin:6px auto 4px;display:block;background:#fff;color:#101418}
 .pin:focus{outline:none;border-color:var(--flame)}
-.pin.err{animation:shake .4s;border-color:#B3372B}
-@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.pin.err{animation:shakePin .4s;border-color:#B3372B}
+@keyframes shakePin{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 .pinhint{font-size:11.5px;color:#8B98A5;text-align:center;margin-top:10px}
 
 /* ══ полноэкранный QR ══ */
@@ -621,9 +611,6 @@ body.is-cashier .cust .acts{min-width:260px}
 .brandSeg button.on{background:var(--flame);color:#fff;box-shadow:0 3px 10px -3px rgba(31,78,140,.8)}
 .deliveryView{display:none}
 .deliveryView.active{display:block}
-.opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.opts button{padding:6px 10px;border:1.5px solid var(--line);border-radius:10px;font-size:11px;font-weight:600;background:#fff;transition:.2s}
-.opts button.sel{background:var(--flame);color:#fff;border-color:var(--flame)}
 
 .cartFab{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:95;background:#123A6B;color:#fff;border-radius:999px;padding:12px 24px;font:700 15px "Unbounded";box-shadow:0 10px 25px rgba(0,0,0,.25);transition:.25s}
 [data-brand="delivery"] .cartFab{background:#C03B2A!important}
@@ -671,13 +658,14 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 </head>
 <body>
   <div id="brandSplashStatic">
-<div style="width:100%;max-width:560px;text-align:center">
-<div style="font:400 clamp(20px,5.5vw,30px)/1.25 Prata,serif;margin-bottom:6px">«Пятница» & …и кофе</div>
-<div style="color:#63707C;font-size:14px;margin-bottom:22px">Выберите, куда вы сегодня</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-<button data-go="delivery" style="border:2px solid #F2D9A5;background:#FFF6E5;color:#6B4E0E;border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;width:100%">🍕<br><br>«Пятница»<small style="display:block;font:400 12px Golos Text,sans-serif;margin-top:6px">доставка пиццы и роллов</small></button>
-<button data-go="coffee" style="border:2px solid #DDE3E8;background:#fff;color:#101418;border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;width:100%">🌊<br><br>Кофейня<small style="display:block;font:400 12px Golos Text,sans-serif;margin-top:6px">меню, штампы и бонусы</small></button>
-</div></div></div>
+<div class="spInner">
+<div class="spTitle">«Пятница» & …и кофе</div>
+<div class="spSub">Выберите, куда вы сегодня</div>
+<div class="spBtns">
+<button class="spBtn spPizza" data-go="delivery">🍕<br><br>«Пятница»<small>доставка пиццы и роллов</small></button>
+<button class="spBtn spCoffee" data-go="coffee">🌊<br><br>Кофейня<small>меню, штампы и бонусы</small></button>
+</div></div>
+</div>
 
 <header class="topbar">
   <div class="brandSeg" id="brandSeg">

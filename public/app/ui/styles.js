@@ -114,7 +114,7 @@
 (function () {
   var s = document.createElement("style");
   s.textContent =
-    '#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:#FDE8E8!important;border-color:var(--status-danger)!important;color:--status-danger!important;font-weight:700}';
+'#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:#FDE8E8!important;border-color:var(--status-danger)!important;color:var(--status-danger)!important;font-weight:700}'
   document.head.appendChild(s);
 })();
 /* ── Ф5.7: одинаковая посадка поиска в кофейне и Пятнице ── */
@@ -140,14 +140,7 @@
     "@media(min-width:1600px){#grid{grid-template-columns:repeat(4,1fr)!important}}";
   document.head.appendChild(s);
 })();
-/* ── фикс: пульс-подсветка пилюли «Позвать сотрудника» ── */
-(function () {
-  var s = document.createElement("style");
-  s.textContent =
-    "#chatHintsBar .chatHint.pulse{animation:hintPulse 1.2s ease-in-out 3}" +
-    "@keyframes hintPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06);background:#FDE8E8;border-color:var(--status-danger)}}";
-  document.head.appendChild(s);
-})();
+/* Ф3.25: пульс подсказки владеет index.html (hintPulseComposite); дубль удалён */
 /* ── Ф6.1: CLS — резерв высоты пустого грида, футер не прыгает ── */
 (function () {
   var s = document.createElement("style");

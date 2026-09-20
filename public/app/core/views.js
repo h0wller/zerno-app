@@ -37,7 +37,6 @@
     '@media(min-width:1181px){body:not(.is-cashier) .wrap > .rail{grid-column:1}body:not(.is-cashier) .wrap > section{grid-column:2}body:not(.is-cashier) .wrap > .panel{grid-column:3}}',
     'html,body{overflow-x:hidden;max-width:100%}',
     'img,canvas,svg,video{max-width:100%}',
-    '.topbar{padding-top:calc(env(safe-area-inset-top,0px) + 10px)}',
 
     /* --- Delivery grid + опции --- */
     '#deliveryGrid{grid-template-columns:1fr;padding-bottom:120px}',
@@ -65,6 +64,18 @@
     '@media(max-width:1180px){#panel.open{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;max-height:100%;border-radius:0;margin:0;transform:none;z-index:320}#panel .tabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}}',
 
     /* --- Сплэш бренда --- */
+    '#brandSplashStatic .spInner{width:100%;max-width:560px;text-align:center}',
+'#brandSplashStatic .spTitle{font:400 clamp(20px,5.5vw,30px)/1.25 Prata,serif;margin-bottom:6px;overflow-wrap:break-word}',
+'#brandSplashStatic .spSub{color:var(--soft);font-size:14px;margin-bottom:22px}',
+'#brandSplashStatic .spBtns{display:grid;grid-template-columns:1fr;gap:12px}',
+'#brandSplashStatic .spBtn{border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;box-shadow:var(--sh);width:100%}',
+'#brandSplashStatic .spBtn small{display:block;font:400 12px Golos Text,sans-serif;margin-top:6px}',
+'#brandSplashStatic .spPizza{border:2px solid #F2D9A5;background:#FFF6E5;color:#6B4E0E}',
+'#brandSplashStatic .spPizza small{color:#8A6D3B}',
+'#brandSplashStatic .spCoffee{border:2px solid var(--line);background:#fff;color:var(--ink)}',
+'#brandSplashStatic .spCoffee small{color:var(--soft)}',
+'@media(min-width:560px){#brandSplash .spBtns,#brandSplashStatic .spBtns{grid-template-columns:1fr 1fr}}',
+'html[data-brand="delivery"] #brandSplashStatic{background:#F3EDE6}',
     '#brandSplash{position:fixed;inset:0;z-index:400;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}',
     '#brandSplash .spInner{width:100%;max-width:560px;text-align:center}',
     '#brandSplash .spTitle{font:400 clamp(20px,5.5vw,30px)/1.25 Prata,serif;margin-bottom:6px;overflow-wrap:break-word}',
@@ -76,7 +87,8 @@
     '#brandSplash .spPizza small{color:#8A6D3B}',
     '#brandSplash .spCoffee{border:2px solid var(--line);background:#fff;color:var(--ink)}',
     '#brandSplash .spCoffee small{color:var(--soft)}',
-    '@media(min-width:560px){#brandSplash .spBtns{grid-template-columns:1fr 1fr}}',
+    'html[data-brand="coffee"] #brandSplash{background:#FFFFFF}',
+  'html[data-brand="delivery"] #brandSplash{background:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.08) 1px,transparent 1.5px);background-size:12px 12px}',
 
     /* --- Чат --- */
     '#chatPanel [class="chip"],#chatPanel #chips,#chatPanel .chips{display:none}',
@@ -111,21 +123,16 @@
     '#supportChooseOverlay .scBtns{width:100%;max-width:340px}',
 
 '/* ── Топбар: адаптив + бренд-тема дропдауна + анимация ── */'+
-'.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}'+
+'.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:calc(env(safe-area-inset-top,0px) + 10px)}'+
+
 '.topbar .venueWrap{position:relative;order:1;flex:0 0 auto}'+
 '.topbar .brand{order:2;flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:10px;min-width:0}'+
-'/* Логотип: ОДНО правило, только min/max — без !important и войн специфичности */'+
-
-'.topbar .brand .mark{display:flex;align-items:center;justify-content:center;width:auto;height:auto;min-height:36px;max-height:48px;overflow:hidden;background:transparent;border:0;box-shadow:none;border-radius:12px;flex:0 0 auto}'+
-'.topbar .brand .mark img,.topbar .brand .mark svg,.topbar .brand .friday-svg,.topbar .brand .friday-svg svg{display:block;width:auto;height:auto;min-height:28px;max-height:44px;max-width:min(52vw,240px);object-fit:contain;aspect-ratio:auto;flex:0 0 auto}'+
-'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{max-height:40px;max-width:min(56vw,260px)}'+
-'@media(max-width:820px){.topbar .brand .mark{min-height:32px;max-height:40px}.topbar .brand .mark img,.topbar .brand .mark svg{max-height:34px;max-width:48vw}}'+
 '.topbar #clock{order:3;margin-left:auto}'+
 '.topbar #profileTopBtn{order:4;flex:0 0 auto}'+
 '.topbar #modeSeg{order:10;flex:1 1 100%}'+
 '.venueToggle{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--card,#fff);border-radius:999px;padding:7px 12px;font:700 13px "Golos Text",system-ui,sans-serif;color:var(--ink);cursor:pointer;transition:all .2s}'+
 '.venueToggle:hover{background:#F5F5F5;transform:translateY(-1px)}'+
-'[data-brand="delivery"] .venueToggle{border:2px solid #3A2A1C;background:#F6EEE1;color:#3A2A1C;box-shadow:2px 2px 0 #3A2A1C}'+
+'[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}'+
 '[data-brand="delivery"] .venueToggle:hover{background:#EFE6D8;box-shadow:3px 3px 0 #3A2A1C;transform:translate(-1px,-1px)}'+
 '.venueToggle .vt-arrow{font-size:9px;opacity:.7;transition:transform .2s}'+
 '.venueToggle[aria-expanded="true"] .vt-arrow{transform:rotate(180deg)}'+
@@ -140,19 +147,21 @@
 '[data-brand="delivery"] .venueWrap #brandSeg button.on{background:#C03B2A;border:2px solid #3A2A1C;box-shadow:2px 2px 0 #3A2A1C;color:#fff}'+
 '.venueWrap #brandSeg button.on span{color:#fff!important}'+
 '@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}'+
-'@media(max-width:820px){.topbar #clock{display:none}.topbar .brand .mark{width:40px;height:40px}.topbar .brand b{font-size:19px}[data-brand="delivery"] .topbar .brand .mark{max-width:120px;height:36px}}'+
-
-
+'.card .tag{position:absolute;top:8px;left:8px;z-index:2;pointer-events:none;max-width:calc(100% - 16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     /* --- Ф3.7-fix: состояния кнопки «Добавить» в доставке --- */
-    '#deliveryGrid .cta{background:#fff;border:1.5px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:700 14px "Golos Text",system-ui,sans-serif;cursor:pointer;box-shadow:none;transition:background .15s,border-color .15s,color .15s}',
+    '#deliveryGrid .cta{background:#fff;border:1.5px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;min-height:44px;font:700 14px "Golos Text",system-ui,sans-serif;cursor:pointer;box-shadow:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,border-color .15s,color .15s}',
     '#deliveryGrid .cta:active{transform:translateY(1px)}',
     '#deliveryGrid .cta:disabled{background:#EDF2F6;border-color:var(--line);color:#8B98A5;cursor:not-allowed;transform:none}',
     '#deliveryGrid .cta.incart{border-color:var(--flame);color:var(--flame)}',
-    '#deliveryGrid .cta.added{background:var(--flame);border-color:var(--flame);color:#fff}',
+    '#deliveryGrid .cta.added{animation:ctaFlash .7s ease}',
+    '@keyframes ctaFlash{0%{background:var(--flame);border-color:var(--flame);color:#fff}100%{background:#fff;border-color:var(--line);color:var(--ink)}}',
     '#deliveryGrid .card .media{position:relative}',
     '#deliveryGrid .card.stopped{opacity:.75}',
     '#deliveryGrid .stopbadge{position:absolute;top:10px;right:10px;left:auto;z-index:2;background:#D63939;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}'+
-
+    '#deliveryGrid .card{position:relative}',
+    '#deliveryGrid .edBtn{position:absolute;top:8px;right:8px;z-index:3;width:34px;height:34px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:16px;cursor:pointer}',
+    '#deliveryGrid .donoff{position:absolute;bottom:8px;right:8px;z-index:3;display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--ink)}',
+    'body.editing #deliveryGrid .stopbadge{right:52px}',
     /* --- Ф3-фикс: iosHint/installBanner не накрывают шапку --- */
     '#iosHint,#installBanner{top:auto;bottom:calc(96px + env(safe-area-inset-bottom))}',
 
@@ -170,6 +179,7 @@
 '[data-brand="delivery"] #deliveryGrid .opts button.sel{background:var(--fr-tan);border-color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:var(--fr-choc)}',
 '[data-brand="delivery"] #deliveryGrid .opts button.sel .op{color:var(--fr-choc)}'+
 '[data-brand="delivery"] #deliveryRail button.on{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff;font:700 13px Unbounded,sans-serif}'+
+ '.rail,#deliveryRail{padding:6px 4px 10px;margin:-6px -4px -10px;overflow-x:auto;overflow-y:hidden}',   
 '#deliveryRail button{transition:transform .15s,box-shadow .15s,background .15s}',
 '#deliveryRail button:hover{transform:translateY(-1px)}',
 '#deliveryRail button.on:hover{transform:none}',
@@ -192,16 +202,16 @@
 '[data-brand="delivery"] #chatMsgs .chatHint{background:var(--fr-rice);border-color:var(--fr-tan);color:var(--fr-choc)}'+
 '[data-brand="delivery"] #chatSend{background:var(--flame);border:2px solid var(--fr-choc);color:#fff}'+
 '[data-brand="delivery"] .mo-new,[data-brand="delivery"] .mo-accept,[data-brand="delivery"] .mo-way{background:var(--fr-rice);color:var(--flame)}'+
-'.topbar .brand{flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:10px;min-width:0}',
-'.topbar .brand .mark,.topbar .brand img,.topbar .brand .friday-svg{height:44px;width:auto;max-width:220px;object-fit:contain;flex:0 1 auto}',
-'[data-brand="delivery"] .topbar .brand{justify-content:center}',
-'[data-brand="delivery"] .topbar .brand .mark,[data-brand="delivery"] .topbar .brand .friday-svg,[data-brand="delivery"] .topbar .brand img{width:100%;max-width:760px;height:64px;object-fit:contain;border-radius:0}',
-'@media(max-width:820px){[data-brand="delivery"] .topbar .brand .mark,[data-brand="delivery"] .topbar .brand .friday-svg,[data-brand="delivery"] .topbar .brand img{height:48px;max-width:60vw}}',
-'[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] #brandTitle,[data-brand="delivery"] #brandSub{display:none!important}'+
+'.topbar .brand .mark{display:flex;align-items:center;justify-content:center;width:44px;height:44px;flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent}',
+'.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}',
+'[data-brand="delivery"] .topbar .brand .mark{width:auto;height:44px;max-width:min(56vw,260px);flex:0 1 auto}',
+'@media(max-width:820px){[data-brand="delivery"] .topbar{flex-wrap:wrap}[data-brand="delivery"] .topbar .venueWrap{order:1}[data-brand="delivery"] .topbar #clock{order:2;margin-left:auto}[data-brand="delivery"] .topbar #profileTopBtn{order:3}[data-brand="delivery"] .topbar .brand{order:4;flex:1 1 100%;width:100%;justify-content:center;margin:2px 0 6px}[data-brand="delivery"] .topbar .brand .mark{width:100%;max-width:100%;height:auto;max-height:none;flex:1 1 auto}[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:auto;max-height:none;object-fit:contain;border-radius:8px}}',
 '[data-brand="delivery"] .topbar .brand{justify-content:flex-start}'+
-'[data-brand="delivery"] .venueToggle{border-color:var(--fr-tan);background:var(--fr-paper);color:var(--fr-choc)}'+
-'[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{background:var(--fr-choc);color:#E8A33D}'+
-'[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2}'+
+'[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] #brandTitle,[data-brand="delivery"] #brandSub{display:none!important}',
+
+'[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{background:var(--fr-choc);color:#E8A33D;border-bottom:2px solid var(--fr-choc)}',
+'[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2;border-bottom:1px solid rgba(62,143,208,.25)}',
+'@media(max-width:400px){#tickerTrack span{font-size:10px;padding:.35rem 1rem}}',
 /* ── Тикер: единственный владелец бегущей строки; translate3d = композитинг, не встаёт ── */
 '.ticker{overflow:hidden;max-width:100%;height:30px;line-height:30px}',
 '#tickerTrack{display:inline-flex;align-items:center;white-space:nowrap;width:max-content;backface-visibility:hidden;animation:zt-marquee 40s linear infinite}',
@@ -262,8 +272,10 @@
   })();
 
   /* ========== 3. Виды и режимы ========== */
-  function sv() {
+ function sv() {
     try {
+      // Ф3.29: state.js мог не загрузиться (офлайн до прекэша) — не падаем
+      var mode = (typeof window.mode !== 'undefined') ? window.mode : 'guest';
       var bName = (typeof brand !== 'undefined' && brand === 'delivery') ? 'delivery' : 'coffee';
       document.documentElement.setAttribute('data-brand', bName);
       document.body.setAttribute('data-brand', bName);
@@ -287,14 +299,15 @@
     // Страховка: снимаем инлайновые width/height/object-fit с логотипа шапки
     // (их вешают сторонние патчи, из-за чего friday-logo.png растягивался на весь экран)
     var bimg = document.querySelector('.topbar .brand img');
-    if (bimg) {
-      bimg.style.width = '';
-   bimg.style.height = '';
-   bimg.style.objectFit = '';
-   bimg.style.position = '';
-   bimg.style.inset = '';
-   bimg.style.aspectRatio = '';
-    }
+if (bimg) {
+bimg.style.width = '';bimg.style.height = '';
+bimg.style.objectFit = '';
+bimg.style.position = '';
+bimg.style.inset = '';
+bimg.style.aspectRatio = '';
+}
+var mk = document.querySelector('.topbar .brand .mark');
+if (mk) { mk.style.aspectRatio = '';mk.style.width = '';mk.style.height = ''; }
 
     var op = document.querySelector('.chat-h .op, .chatHead .op');
     if (op) {
@@ -392,7 +405,7 @@ window.syncBrandViews = sv;
     if (m === 'orders' && role !== 'dispatch' && role !== 'cashier' && role !== 'admin') return;
     if (m === 'admin' && role !== 'admin') return;
 
-    mode = m;
+  window.mode = m;
     document.body.classList.toggle('is-cashier', m === 'cashier' || m === 'orders');
 
     var cv = document.getElementById('cashierView');
@@ -441,8 +454,8 @@ window.syncBrandViews = sv;
       if (!b) return;
 
       brand = b.dataset.brand;
+      try { localStorage.setItem('zt_brand', brand); } catch (e) {}
       document.documentElement.setAttribute('data-brand', brand);
-      document.body.setAttribute('data-brand', brand);
 
       if (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders')) {
         if (typeof setMode === 'function') setMode('guest');

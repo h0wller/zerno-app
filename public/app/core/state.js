@@ -8,7 +8,7 @@ var meta={updatedAt:Date.now()};
 var me=null;
 var mode='guest';
 var editMode=false;
-var brand='coffee';
+var brand=localStorage.getItem('zt_brand')||'coffee';
 const CATS=[{id:'coffee',e:'☕',l:'Кофе',t:'#F3E2CE'},{id:'drinks',e:'🧋',l:'Напитки',t:'#E4EFE2'},
  {id:'seasonal',e:'🌊',l:'Сезонное',t:'#DCE9F5'},{id:'food',e:'🥐',l:'Еда',t:'#F9ECC7'},
  {id:'desserts',e:'🍰',l:'Десерты',t:'#F8E1E4'},{id:'shop',e:'🛍',l:'С полки',t:'#E8E6E1'}];

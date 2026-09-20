@@ -1,22 +1,54 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v45';
+const STATIC_CACHE = 'zerno-static-v32'; // ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v4';
 const API_CACHE = 'zerno-api-v4';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/manifest.webmanifest',
+  '/icon.svg',
+  '/andCoffee.svg',
   '/app/ui/theme-v2.css',
+  '/app/core/state.js',
+  '/app/core/utils.js',
+  '/app/core/api.js',
   '/app/core/views.js',
+  '/app/core/config.js',
+  '/app/core/a11y.js',
+  '/app/core/chat-head.js',
+  '/app/core/chat-state.js',
+  '/app/core/push.js',
+  '/app/core/deeplink.js',
+  '/app/core/overlay.js',
+  '/app/core/swipe.js',
+  '/app/core/notify.js',
+  '/app/core/splash.js',
+  '/app/core/qr.js',
+  '/app/core/review.js',
+  '/app/chat.js',
+  '/app/chat-core.js',
+  '/app/profile.js',
+  '/app/profile-brand.js',
+  '/app/cashier.js',
+  '/app/orders.js',
   '/app/menu.js',
+  '/app/menu-editor.js',
   '/app/delivery.js',
   '/app/cart.js',
-  '/app/profile.js',
-  '/manifest.webmanifest',
-  '/friday-logo.svg',
-  '/andCoffee.svg'
+  '/app/live.js',
+  '/app/admin-extra.js',
+  '/app/scanner.js',
+  '/app/vendor/qrcode.min.js',
+  '/app/ui/styles.js',
+  '/app/ui/dropdowns.js',
+  '/app/ui/settings.js',
+  '/app/ui/delivery-search.js',
+  '/app/ui/cashier-log.js',
+  '/app/ui/cashier-card.js'
 ];
 const API_TTL = 5 * 60 * 1000; // 5 минут
+
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
@@ -48,7 +80,7 @@ self.addEventListener('fetch', (e) => {
   const { request } = e;
   const url = new URL(request.url);
 
- // Игнорируем мутации, внешние домены (fonts.googleapis.com и т.д.) и служебные ручки
+  // Игнорируем мутации, внешние домены (fonts.googleapis.com и т.д.) и служебные ручки
   if (
     request.method !== 'GET' ||
     url.origin !== location.origin ||
@@ -70,27 +102,20 @@ self.addEventListener('fetch', (e) => {
               const clone = netRes.clone();
               const headers = new Headers(clone.headers);
               headers.append('sw-timestamp', Date.now().toString());
-
               clone.blob().then((body) => {
-                cache.put(
-                  request,
-                  new Response(body, {
-                    status: clone.status,
-                    statusText: clone.statusText,
-                    headers
-                  })
-                );
+                cache.put(request, new Response(body, {
+                  status: clone.status,
+                  statusText: clone.statusText,
+                  headers
+                }));
               });
             }
             return netRes;
           })
           .catch(() => cachedRes);
-
         if (cachedRes) {
           const ts = cachedRes.headers.get('sw-timestamp');
-          if (ts && Date.now() - parseInt(ts, 10) < API_TTL) {
-            return cachedRes;
-          }
+          if (ts && Date.now() - parseInt(ts, 10) < API_TTL) return cachedRes;
         }
         return fetchPromise;
       })
@@ -98,45 +123,52 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 2. Cache-First для медиа-ресурсов
+  // 2. Cache-First для медиа. Ф3.30: НИКОГДА не возвращаем undefined в respondWith
   if (url.pathname.match(/\.(png|jpg|jpeg|webp|svg|ico)$/)) {
     e.respondWith(
       caches.open(MEDIA_CACHE).then(async (cache) => {
         const match = await cache.match(request);
         if (match) return match;
-
         try {
           const netRes = await fetch(request);
-          if (netRes.ok) {
-            cache.put(request, netRes.clone());
-          }
+          if (netRes.ok) cache.put(request, netRes.clone());
           return netRes;
         } catch (err) {
-          return match;
+          return match || new Response('', { status: 503, statusText: 'offline' });
         }
       })
     );
     return;
   }
 
-  // 3. App Shell: network-first для кода (иначе SW отдаёт устаревшие модули после деплоя)
+  // 3. App Shell: network-first для кода. Ф3.30: нет сети и нет кэша — явный 503, а не reject
   if (request.destination === 'document' || url.pathname.startsWith('/app/') || /\.(js|css)$/.test(url.pathname)) {
     e.respondWith(
       fetch(request)
         .then((netRes) => {
           if (netRes.ok) {
             const clone = netRes.clone();
-            caches.open(STATIC_CACHE).then((c) => c.put(request, clone));
+            caches.open(STATIC_CACHE).then((c) => c.put(request, clone)).catch(() => {});
           }
           return netRes;
         })
-        .catch(() => caches.match(request))
+        .catch(() =>
+          caches.match(request).then((cached) =>
+            cached || new Response('/* offline */', {
+              status: 503,
+              statusText: 'offline',
+              headers: { 'Content-Type': 'text/javascript; charset=utf-8' }
+            })
+          )
+        )
     );
     return;
   }
 
-  // 4. Остальная статика — cache-first
+  // 4. Остальная статика — cache-first. Ф3.30: здесь тоже не reject'уем
   e.respondWith(
-    caches.match(request).then((res) => res || fetch(request))
+    caches.match(request).then((res) =>
+      res || fetch(request).catch(() => new Response('', { status: 503, statusText: 'offline' }))
+    )
   );
 });
