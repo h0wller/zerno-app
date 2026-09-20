@@ -295,3 +295,54 @@ body.editing .card:hover {
 .skeleton-card { pointer-events:none; }
 .skeleton-shimmer, .skeleton-line { background:linear-gradient(90deg,#EDF2F6 25%,#F7FAFC 50%,#EDF2F6 75%); background-size:200% 100%; animation:shimmer 1.2s infinite; }
 .skeleton-line { border-radius:8px; }
+/* ── Тумблер режима правки (единый для обоих брендов, Ф3.35) ── */
+.donoff {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+}
+.donoff input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: #C9D3DC;
+  position: relative;
+  transition: background .2s;
+  cursor: pointer;
+  margin: 0;
+  flex: 0 0 auto;
+}
+.donoff input:checked { background: #2F7D4F; }
+.donoff input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left .2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+.donoff input:checked::after { left: 16px; }
+.card .donoff {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 4px 8px;
+}

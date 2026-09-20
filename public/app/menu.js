@@ -70,7 +70,7 @@ function renderMenu() {
          ${p.comp && p.comp.length ? `<div class="comp">${p.comp.map(c => `<i>${esc(c)}</i>`).join('')}</div>` : ''}
          ${volStr ? `<span class="vol">${esc(volStr)}</span>` : ''}
          <div class="cfoot"><span class="price">${priceStr}</span>
-          ${editMode ? `<label class="qswitch"><input type="checkbox" data-onoff="${p.id}" ${p.on ? 'checked' : ''}>в меню</label>` : ''}
+          ${editMode ? `<label class="donoff"><input type="checkbox" data-onoff="${p.id}" ${p.on ? 'checked' : ''}>в меню</label>` : ''}
          </div></div></article>`;
     }).join('')
     + (editMode ? `<button class="addcard" id="addCard"><span>＋</span>Добавить позицию</button>` : '')

@@ -15,7 +15,7 @@ if (!rulesMatch) {
   process.exit(1);
 }
 const viewsCSS = rulesMatch[1]
-  .replace(/'([^']*)'/g, '$1')   // убираем одинарные кавычки
+  .replace(/['"]([^'"]*)['"]/g, '$1')   // Ф3.36: views.js отформатирован в двойные кавычки
   .replace(/\\n/g, '\n');
 
 let failures = 0;
@@ -118,7 +118,7 @@ const m = vsrc.match(/var rules = \[([\s\S]*?)\];\s*css\.textContent = rules\.jo
 if (m) {
   const cssText = m[1].split('\n')
     .map(l => l.trim())
-    .filter(l => l.startsWith("'") && l.endsWith("',"))
+    .filter(l => (l.startsWith("'") || l.startsWith('"')) && (l.endsWith("',") || l.endsWith('",')))
     .map(l => l.slice(1, -2))
     .join('\n');
   let bad = 0;
