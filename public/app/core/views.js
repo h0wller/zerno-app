@@ -9,6 +9,21 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
 var QS = new URLSearchParams(location.search);
 var IN_TG = /Telegram/i.test(navigator.userAgent);
 if (IN_TG) document.body.classList.add('in-tg');
+/* Ф3.56: safe-area фолбэк: если iOS standalone отдаёт env()=0 (нет viewport-fit), ставим --sat */
+(function () {
+function setSat() {
+var probe = document.createElement('div');
+probe.style.cssText = 'position:fixed;top:0;left:0;height:var(--sat, env(safe-area-inset-top,0px));visibility:hidden';
+document.body.appendChild(probe);
+var inset = probe.getBoundingClientRect().height;
+probe.remove();
+var standalone = (navigator.standalone === true) || matchMedia('(display-mode: standalone)').matches;
+var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+document.documentElement.style.setProperty('--sat', (inset > 0 ? inset : (standalone && ios ? 47 : 0)) + 'px');
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setSat);
+else setSat();
+})();
 var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
 var SUPPORT_ENTRY = (QS.get('tab') === 'chat' || QS.get('support') === 'choose');
 var chosenSupportCtx = SUPPORT_ENTRY ? (sessionStorage.getItem('zt_support_ctx') || '') : '';

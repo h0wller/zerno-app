@@ -1,6 +1,6 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v57'; // ← поставь своё текущее значение +1
-const MEDIA_CACHE = 'zerno-media-v8';
+const STATIC_CACHE = 'zerno-static-v58'; // ← поставь своё текущее значение +1
+const MEDIA_CACHE = 'zerno-media-v9';
 const API_CACHE = 'zerno-api-v5';
 
 const STATIC_ASSETS = [
@@ -126,7 +126,24 @@ self.addEventListener('fetch', (e) => {
 
  // 2. Медиа: Stale-While-Revalidate. Кэш отвечает мгновенно, обновление скачивается фоном —
 // новый логотип/картинки приходят на СЛЕДУЮЩЕЙ загрузке после деплоя, без хард-ресета.
-if (url.pathname.match(/\.(png|jpg|jpeg|webp|svg|ico)$/)) {
+// 2a. SVG (логотипы/иконки): network-first с ревалидацией — F5 ВСЕГДА показывает свежий файл,
+// офлайн — отдаём кэш. Лечит «логотип не меняется при F5».
+if (/\.svg$/.test(url.pathname)) {
+e.respondWith(
+fetch(request, { cache: 'no-cache' })
+.then((netRes) => {
+if (netRes.ok) {
+const c = netRes.clone();
+caches.open(MEDIA_CACHE).then((cc) => cc.put(request, c)).catch(() => {});
+}
+return netRes;
+})
+.catch(() => caches.match(request).then((m) => m || new Response('', { status: 503, statusText: 'offline' })))
+);
+return;
+}
+// 2b. Остальные медиа (фото позиций): Stale-While-Revalidate — кэш мгновенно, свежее фоном.
+if (url.pathname.match(/.(png|jpg|jpeg|webp|ico)$/)) {
 e.respondWith(
 caches.open(MEDIA_CACHE).then(async (cache) => {
 const match = await cache.match(request);
