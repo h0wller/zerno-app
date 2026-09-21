@@ -138,10 +138,10 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     '#deliveryGrid .cta:disabled{background:#EDF2F6;border-color:var(--line);color:#8B98A5;cursor:not-allowed;transform:none}',
     '#deliveryGrid .cta.incart{border-color:var(--flame);color:var(--flame)}',
     '#deliveryGrid .cta.added{background:var(--flame);border-color:var(--flame);color:#fff}',
-    '#deliveryGrid .card .media{position:relative}',
-    '#deliveryGrid .card.stopped{opacity:.75}',
-    '#deliveryGrid .stopbadge{position:absolute;top:10px;right:10px;left:auto;z-index:2;background:#D63939;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}',
-    'body.editing #deliveryGrid .stopbadge{right:52px}',
+    '.card .media{position:relative}',
+    '.card .stopbadge{position:absolute;top:10px;right:10px;left:auto;z-index:2;background:#D63939;color:#fff;font:800 10px "Golos Text",sans-serif;letter-spacing:.06em;border-radius:8px;padding:3px 8px}',
+    'body.editing .card .stopbadge{right:52px}',
+'.card.stopped{opacity:.75}',
     /* --- iosHint/installBanner не накрывают шапку --- */
     '#iosHint,#installBanner{top:auto;bottom:calc(96px + env(safe-area-inset-bottom))}',
     /* --- Рейл: ховер без среза обводки --- */
@@ -195,7 +195,7 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
 '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
 '[data-brand="delivery"] #panel,[data-brand="delivery"] .panel{background:var(--fr-paper);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
 '@media(max-width:600px){.topbar .brand small{display:none}}',
-  '@media(min-width:821px){.topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;max-width:100%}.topbar #profileTopBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}}',
+'@media(min-width:821px){.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0;min-width:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;max-width:100%}.topbar #profileTopBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}}',
 '@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
 '@media(max-width:360px){[data-brand="coffee"] .topbar .brand .mark{width:32px;height:32px}}',
 '[data-brand="delivery"] .cartPanel .cartItem{border-bottom:1.5px dashed rgba(58,42,28,.3);color:#3A2A1C;font-weight:600}',
