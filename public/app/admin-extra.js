@@ -31,6 +31,14 @@ if(typeof loadMenu==='function'){loadMenu=(function(_lm){return async function()
    views.js только синхронизирует класс .is-delivery и вызывает эту функцию. ── */
 
 var __chromeLast=null;
+function padTicker(){
+  var t = document.getElementById('tickerTrack');
+  if (!t) return;
+  var vw = window.innerWidth || 1024;
+  var guard = 0;
+  while (t.scrollWidth < vw * 2 && guard < 4) { t.innerHTML += t.innerHTML; guard++; }
+}
+window.addEventListener('resize', function(){ clearTimeout(window.__padT); window.__padT = setTimeout(padTicker, 200); });
 function applyBrandChrome(){
 var deliv=(brand==='delivery');
 /* Ф3.27: пересборка DOM тикера/марки только при СМЕНЕ бренда.
@@ -41,7 +49,8 @@ var track=document.getElementById('tickerTrack');
 if(track){
 var L=deliv?['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']
 :['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с 8:00–21:00'];
-track.innerHTML=L.concat(L).map(function(x){return '<span>'+x+'</span>';}).join('');
+track.innerHTML = L.concat(L).map(function (x) { return '<span>' + x + '</span>'; }).join('');
+padTicker();
 }
 /* Ф3.24: меняем только src внутри марки — #brandTitle/#brandSub не трогаем,
     их тексты обновляет sv() из views.js. Один владелец на элемент. */

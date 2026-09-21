@@ -15,7 +15,6 @@
   --flame: #123A6B;
   --flame-d: #0B2446;
   --green: #186A43;
-  --amber: #C2935F;
   --esp: #101418;
   --esp2: #1B2530;
   --cream: #FFFFFF;
@@ -346,3 +345,6 @@ body.editing .card:hover {
   border-radius: 10px;
   padding: 4px 8px;
 }
+/* ── Ф3.43: адаптивная высота шапки (одна переменная) ── */
+@media (max-width: 820px) { :root { --topbar-h: 56px; } }
+@media (max-width: 480px) { :root { --topbar-h: 52px; } }

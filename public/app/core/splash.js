@@ -49,8 +49,8 @@ sp.innerHTML = '<div class="spInner">' +
 '<div class="spTitle">«Пятница» & …и кофе</div>' +
 '<div class="spSub">Выберите, куда вы сегодня</div>' +
 '<div class="spBtns">' +
-'<button class="spBtn spPizza" data-go="delivery">🍕<br><br>«Пятница»<small>доставка пиццы и роллов</small></button>' +
-'<button class="spBtn spCoffee" data-go="coffee">🌊<br><br>Кофейня<small>меню, штампы и бонусы</small></button>' +
+'<button class="spBtn spPizza" data-go="delivery"><span class="em">🍕</span><span class="bt">«Пятница»</span><small>доставка пиццы и роллов</small></button>'+
+'<button class="spBtn spCoffee" data-go="coffee"><span class="em">🌊</span><span class="bt">Кофейня</span><small>меню, штампы и бонусы</small></button>'+
 '</div></div>';
 document.body.appendChild(sp);
 bind(sp);

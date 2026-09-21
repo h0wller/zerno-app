@@ -311,9 +311,15 @@ $('#checkoutBtn').onclick = async () => {
   } catch (e) { toast(e.message, '⚠️'); }
 };
 
+function skelCards(n){
+var c='<div class="card skeleton-card"><div class="media skeleton-shimmer"></div><div class="cbody"><div class="skeleton-line" style="width:65%;height:14px"></div><div class="skeleton-line" style="width:85%;height:12px"></div><div class="skeleton-line" style="width:45%;height:12px;margin-top:auto"></div></div></div>';
+var out='';for(var i=0;i<n;i++)out+=c;return out;
+}
 window.loadDelivery = async function(){
-  try {
-    var r;
+try {
+var g=document.getElementById('deliveryGrid');
+if(g && !DMENU.length){ g.innerHTML=skelCards(6); }
+var r;
     if (me && me.role === 'admin') {
       var all = await api('/menu/all');
       r = { items: (all.items || []).filter(function(p){ return p.section === 'delivery'; }) };

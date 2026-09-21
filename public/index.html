@@ -106,15 +106,7 @@ input,select,textarea{font-family:inherit}
   [data-brand="coffee"] .brand .mark { width: 32px !important; height: 32px !important; }
 
   .brandSeg { margin-left: auto; }
-  .clock { display: none !important; }
 }
-
-.clock{position:static !important;left:auto !important;top:auto !important;transform:none !important;
- margin-left:auto;display:flex;align-items:center;white-space:nowrap;
- padding:6px 12px;border-radius:999px;background:#EAF3FB;color:#123A6B;
- font:700 13px/1 'Golos Text',sans-serif;letter-spacing:.08em;font-variant-numeric:tabular-nums;border:1px solid rgba(62,143,208,.3)}
-[data-brand="delivery"] .clock{background:#EFE6D8!important;color:#3A2A1C!important;border:2px solid #3A2A1C!important;box-shadow:2px 2px 0 #3A2A1C!important}
-
 .modeSeg{display:flex;background:var(--esp2);border:1px solid #2A3540;border-radius:999px;padding:3px}
 .modeSeg button{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;color:#9FB4C8;transition:.25s}
 .modeSeg button.on{background:var(--flame);color:#fff;box-shadow:0 3px 10px -3px rgba(31,78,140,.8)}
@@ -522,8 +514,11 @@ body.is-cashier .cust .acts{min-width:260px}
 @media(max-width:640px){
   .topbar{flex-wrap:wrap;gap:6px;padding-left:14px;padding-right:14px}
   .brand b{font-size:15px;white-space:nowrap}
+}
+@media(max-width:360px){
   .brand small{display:none}
-  .clock{padding:4px 8px;font-size:10px}
+}
+@media(max-width:640px){
   #modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}
   #profileTopBtn {
     width: 44px !important;
@@ -662,8 +657,8 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 <div class="spTitle">«Пятница» & …и кофе</div>
 <div class="spSub">Выберите, куда вы сегодня</div>
 <div class="spBtns">
-<button class="spBtn spPizza" data-go="delivery">🍕<br><br>«Пятница»<small>доставка пиццы и роллов</small></button>
-<button class="spBtn spCoffee" data-go="coffee">🌊<br><br>Кофейня<small>меню, штампы и бонусы</small></button>
+<button class="spBtn spPizza" data-go="delivery"><span class="em">🍕</span><span class="bt">«Пятница»</span><small>доставка пиццы и роллов</small></button>
+<button class="spBtn spCoffee" data-go="coffee"><span class="em">🌊</span><span class="bt">Кофейня</span><small>меню, штампы и бонусы</small></button>
 </div></div>
 </div>
 
@@ -683,7 +678,6 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
   </div>
   <div><b id="brandTitle">…и кофе</b><small id="brandSub">кофейня на берегу моря</small></div>
 </div>
-  <div class="clock" id="clock">--:--</div>
   <div class="modeSeg" id="modeSeg" hidden></div>
   <button class="ava" id="profileTopBtn" title="Профиль">?</button>
 </header>
@@ -1193,15 +1187,6 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 <script src="./app/core/api.js"></script>
 <script>
 'use strict';
-/* шапка: часы справа, одним рядом */
-(function(){
- const tb=document.querySelector('.topbar')||document.querySelector('header');
- const ck=document.querySelector('.clock');
- const av=document.getElementById('profileTopBtn');
- const seg=document.getElementById('modeSeg')||document.querySelector('.modes,.seg,[class*="mode"]');
- if(!tb||!ck||!av)return;
- if(seg)tb.append(ck,seg,av);else tb.append(ck,av);
-})();
 
 /* ── API-клиент ── */
 async function api(path,opts={}){
@@ -1223,8 +1208,6 @@ function toast(msg,icon='✨',onclick=null){const t=document.createElement('div'
  t.innerHTML=`<span>${icon}</span><span>${msg}</span>`;$('#toasts').append(t);
  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),320)},onclick?7000:3400)}
 
-function tickClock(){$('#clock').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
-tickClock();setInterval(tickClock,20000);
 function renderUpd(){$('#updWhen').textContent=new Date(meta.updatedAt).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}
 const TK=['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с '+hoursNow()];
 $('#tickerTrack').innerHTML=TK.concat(TK).map(x=>`<span>${x}</span>`).join('');

@@ -54,7 +54,7 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     '.addonChip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}',
     '.addonChip b{color:var(--flame)}',
     /* --- Мобильная шапка (база) --- */
-    '@media(max-width:820px){.topbar{flex-wrap:wrap;row-gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,0px) + 10px)}.topbar .brand{order:1;min-width:0}#clock{order:2;margin-left:auto}#profileTopBtn{order:3}#brandSeg{order:10;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}#modeSeg{order:11;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}',
+    '@media(max-width:820px){#brandSeg{overflow-x:auto;scrollbar-width:none}#modeSeg{overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}',
     '@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}',
     /* --- Шторка на мобильных --- */
     '@media(max-width:1180px){#panel.open{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;max-height:100%;border-radius:0;margin:0;transform:none;z-index:320}#panel .tabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}}',
@@ -70,7 +70,22 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     '#brandSplash .spPizza small{color:#8A6D3B}',
     '#brandSplash .spCoffee{border:2px solid var(--line);background:#fff;color:var(--ink)}',
     '#brandSplash .spCoffee small{color:var(--soft)}',
-    '@media(min-width:560px){#brandSplash .spBtns{grid-template-columns:1fr 1fr}}',
+    '#brandSplashStatic .spInner{width:100%;max-width:560px;text-align:center}',
+'#brandSplashStatic .spTitle{font:400 clamp(20px,5.5vw,30px)/1.25 Prata,serif;margin-bottom:6px;overflow-wrap:break-word}',
+'#brandSplashStatic .spSub{color:var(--soft);font-size:14px;margin-bottom:22px}',
+'#brandSplashStatic .spBtns{display:grid;grid-template-columns:1fr;gap:12px}',
+'#brandSplashStatic .spBtn{border-radius:22px;padding:22px 16px;font:700 16px Unbounded,sans-serif;box-shadow:var(--sh);width:100%}',
+'#brandSplashStatic .spBtn small{display:block;font:400 12px Golos Text,sans-serif;margin-top:6px}',
+'#brandSplashStatic .spPizza{border:2px solid #F2D9A5;background:#FFF6E5;color:#6B4E0E}',
+'#brandSplashStatic .spPizza small{color:#8A6D3B}',
+'#brandSplashStatic .spCoffee{border:2px solid var(--line);background:#fff;color:var(--ink)}',
+'#brandSplashStatic .spCoffee small{color:var(--soft)}',
+'@media(min-width:560px){#brandSplashStatic .spBtns{grid-template-columns:1fr 1fr}}',
+/* Ф3.43: сплэш нейтральный по гайдлайну — белая бумага, брендованы только карточки */
+'#brandSplash,#brandSplashStatic{background:#FFFFFF}',
+'#brandSplash .spBtn .em,#brandSplashStatic .spBtn .em{display:block;font-size:30px;line-height:1;margin-bottom:10px}',
+'#brandSplash .spBtn .bt,#brandSplashStatic .spBtn .bt{display:block;font:700 16px Unbounded,sans-serif}',
+'@media(min-width:560px){#brandSplash .spBtns{grid-template-columns:1fr 1fr}}',
     /* --- Чат --- */
     '#chatPanel [class="chip"],#chatPanel #chips,#chatPanel .chips{display:none}',
     '.chatHint{display:inline-block;background:#EDF2F6;border:1.5px solid var(--line);border-radius:16px 16px 16px 4px;padding:8px 14px;margin:3px 4px;font-size:13px;color:var(--ink);cursor:pointer}',
@@ -100,17 +115,21 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     '#supportChooseOverlay .scTitle{font:400 22px Prata,serif}',
     '#supportChooseOverlay .scSub{color:var(--soft);font-size:13px}',
     '#supportChooseOverlay .scBtns{width:100%;max-width:340px}',
-    /* --- Топбар: кластер шапки + дропдаун заведений --- */
-    '.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:calc(env(safe-area-inset-top,0px) + 10px)}',
-    '.topbar .venueWrap{position:relative;order:1;flex:0 0 auto}',
-    '.topbar .brand{order:2;flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:10px;min-width:0}',
-    '.topbar .brand .mark{display:flex;align-items:center;justify-content:center;width:44px;height:44px;flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent}',
-    '.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}',
-    '.topbar #clock{order:3;margin-left:auto}',
-    '.topbar #profileTopBtn{order:4;flex:0 0 auto}',
-    '.topbar #modeSeg{order:10;flex:1 1 100%}',
-    '.venueToggle{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--card,#fff);border-radius:999px;padding:7px 12px;font:700 13px "Golos Text",system-ui,sans-serif;color:var(--ink);cursor:pointer;transition:all .2s}',
-    '.venueToggle:hover{background:#F5F5F5;transform:translateY(-1px)}',
+        /* ── Ф3.46: шапка = 3 зоны, высота из токена, фолбэк 64px ── */
+'.topbar{display:flex;align-items:center;flex-wrap:nowrap;gap:8px;height:calc(var(--topbar-h,64px) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0;box-sizing:border-box}',
+'.topbar .venueWrap{position:relative;flex:0 1 18%;min-width:0;display:flex;justify-content:flex-start}',
+'.topbar .brand{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px}',
+'.topbar #profileTopBtn{flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);font-size:calc(var(--topbar-h,64px) * 0.28)}',
+'.topbar #modeSeg{order:10;flex:1 1 100%}',
+'.topbar .brand .mark{display:flex;align-items:center;justify-content:center;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent}',
+'.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}',
+'[data-brand="coffee"] .topbar .brand .mark{width:calc(var(--topbar-h,64px) - 6px);height:calc(var(--topbar-h,64px) - 6px);border-radius:14px}',
+'[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 12px);max-width:100%;flex:0 1 auto;border-radius:8px}',
+'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:auto;height:100%;max-width:100%;object-fit:contain}',
+'[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] #brandTitle,[data-brand="delivery"] #brandSub{display:none!important}',
+'.venueToggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line);background:var(--card,#fff);border-radius:999px;padding:0 12px;height:calc(var(--topbar-h,64px) - 20px);font:700 calc(var(--topbar-h,64px) * 0.22) "Golos Text",system-ui,sans-serif;color:var(--ink);cursor:pointer;transition:all .2s;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+'@media(max-width:600px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
+        '.topbar #clock{display:none!important}',    '.venueToggle:hover{background:#F5F5F5;transform:translateY(-1px)}',
     '.venueToggle .vt-arrow{font-size:9px;opacity:.7;transition:transform .2s}',
     '.venueToggle[aria-expanded="true"] .vt-arrow{transform:rotate(180deg)}',
     '.venueWrap #brandSeg{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:80;flex-direction:column;gap:2px;width:max-content;min-width:max(180px,100%);max-width:calc(100vw - 24px);border:1.5px solid var(--line);border-radius:14px;background:var(--card,#fff);box-shadow:var(--sh);padding:6px;overflow:visible;animation:fadeIn .2s ease}',
@@ -141,8 +160,8 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     '#deliveryRail button:hover{transform:translateY(-1px)}',
     '#deliveryRail button.on:hover{transform:none}',
     /* --- Тикер: единственный владелец бегущей строки --- */
-    '.ticker{overflow:hidden;max-width:100%;height:30px;line-height:30px}',
-    '#tickerTrack{display:inline-flex;align-items:center;white-space:nowrap;width:max-content;backface-visibility:hidden;animation:zt-marquee 40s linear infinite}',
+    '.ticker{overflow:hidden;max-width:100%;height:30px;line-height:30px;display:flex;align-items:center}',
+    '#tickerTrack{display:inline-flex;align-items:center;height:30px;white-space:nowrap;width:max-content;backface-visibility:hidden;animation:zt-marquee 40s linear infinite}',
     '#tickerTrack span{flex:0 0 auto;display:inline-flex;align-items:center;gap:.5rem;padding:0 1.2rem;font:600 11px/30px "Unbounded",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}',
     '#tickerTrack span::after{content:"〜";margin-left:1.4rem;color:var(--azure,#3E8FD0)}',
     '@media(max-width:400px){#tickerTrack span{font-size:10px;padding:.35rem 1rem}}',
@@ -186,10 +205,6 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     '[data-brand="delivery"] .venueWrap #brandSeg button:hover{background:#EFE6D8;transform:translateX(3px)}',
     '[data-brand="delivery"] .venueWrap #brandSeg button.on{background:#C03B2A;border:2px solid #3A2A1C;box-shadow:2px 2px 0 #3A2A1C;color:#fff}',
     '[data-brand="delivery"] .topbar .brand{justify-content:center}',
-    '[data-brand="delivery"] .topbar .brand .mark{width:auto;height:48px;max-width:min(56vw,260px);flex:0 1 auto;border-radius:8px}',
-    '[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:auto;height:100%;max-width:100%;object-fit:contain}',
-    '[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] #brandTitle,[data-brand="delivery"] #brandSub{display:none!important}',
-    '@media(max-width:820px){[data-brand="delivery"] .topbar{flex-wrap:wrap;row-gap:6px}[data-brand="delivery"] .topbar .venueWrap{order:1;flex:0 0 auto}[data-brand="delivery"] .topbar .brand{order:2;flex:1 1 auto;width:auto;min-width:0;justify-content:center;margin:0}[data-brand="delivery"] .topbar #clock{display:none}[data-brand="delivery"] .topbar #profileTopBtn{order:3;flex:0 0 auto;margin-left:0}[data-brand="delivery"] .topbar #modeSeg{order:4;flex:1 1 100%}[data-brand="delivery"] .topbar .brand .mark{width:auto!important;height:52px!important;max-width:100%!important;overflow:hidden;flex:0 1 auto}[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:auto!important;height:52px!important;max-width:100%!important;object-fit:contain!important;border-radius:8px}}',
     /* --- Тикер: брендовые цвета --- */
     '[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{background:var(--fr-choc);color:#E8A33D;border-bottom:2px solid var(--fr-choc)}',
     '[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2;border-bottom:1px solid rgba(62,143,208,.25)}',
@@ -312,7 +327,7 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
         });
       }
       var vt2 = document.getElementById('venueToggle');
-      if (vt2) vt2.innerHTML = (isDel ? '🍕 Пятница' : '🌊 Кофейня') + ' <span class="vt-arrow">▾</span>';
+    if (vt2) vt2.innerHTML = '<span class="vt-label">Сменить</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
     } catch (e) {}
 
     var showGuest = (typeof mode !== 'undefined' && (mode === 'guest' || mode === 'admin'));
@@ -488,7 +503,7 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
       var vt = document.getElementById('venueToggle');
       if (!vt) return;
       var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
-      vt.innerHTML = (isDel ? '🍕 Пятница' : '🌊 Кофейня') + ' <span class="vt-arrow">▾</span>';
+vt.innerHTML = '<span class="vt-label">Сменить</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
     }
     window.__ensureVenueToggle = ensure;
     window.__labelVenueToggle = label;
