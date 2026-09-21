@@ -174,7 +174,7 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     '[data-brand="delivery"] #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on{background:var(--flame);color:#fff}',
     '[data-brand="delivery"] #cartFab,[data-brand="delivery"] .chat-fab{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc)}',
     '[data-brand="delivery"] .addonChip b{color:var(--flame)}',
-    '[data-brand="delivery"] #cartPanel,[data-brand="delivery"] .cartPanel{background:var(--fr-rice);border:2px solid var(--fr-choc)}',
+    '[data-brand="delivery"] #cartPanel,[data-brand="delivery"] .cartPanel{background:var(--fr-rice);border:3px solid var(--fr-choc);border-bottom:none}',
     '[data-brand="delivery"] .cartPanel .qty button{background:#C99E6E!important;border:1.5px solid #3A2A1C!important;color:#3A2A1C!important}',
     '#deliveryGrid .cbody .desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.75em}',
     '#deliveryGrid .cbody .opts{margin-top:auto}',
@@ -196,8 +196,9 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
 '[data-brand="delivery"] #panel,[data-brand="delivery"] .panel{background:var(--fr-paper);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
 '@media(max-width:600px){.topbar .brand small{display:none}}',
   '@media(min-width:821px){.topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;max-width:100%}.topbar #profileTopBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}}',
-'.ticker{margin-top:-3px;position:relative;z-index:1}',
 '@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
+'@media(max-width:360px){[data-brand="coffee"] .topbar .brand .mark{width:32px;height:32px}}',
+'[data-brand="delivery"] .cartPanel .cartItem{border-bottom:1.5px dashed rgba(58,42,28,.3);color:#3A2A1C;font-weight:600}',
 ];
   css.textContent = rules.join('\n');
   document.head.appendChild(css);

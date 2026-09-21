@@ -371,3 +371,16 @@ body.editing .card .tag{display:none}
 .skeleton-card { pointer-events:none; }
 .skeleton-shimmer, .skeleton-line { background:linear-gradient(90deg,#EDF2F6 25%,#F7FAFC 50%,#EDF2F6 75%); background-size:200% 100%; animation:shimmer 1.2s infinite; }
 .skeleton-line { border-radius:8px; }
+
+/* ── Фаза 4, чанк 1: база, перенесённая из index.html inline-<style> ── */
+.cartPanel { position:fixed;bottom:0;left:0;right:0;z-index:120;background:#FFFFFF;border-radius:22px 22px 0 0;max-height:80vh;overflow-y:auto;padding:20px;box-shadow:var(--shadow-sheet);transform:translateY(100%);transition:.3s }
+.cartPanel.open { transform:none }
+
+/* ── Тикер: база (брендовые цвета — СЛОЙ 2, views.js) ── */
+.ticker{overflow:hidden;max-width:100%;height:30px;line-height:30px;display:flex;align-items:center;margin-top:-3px;position:relative;z-index:1}
+#tickerTrack{display:inline-flex;align-items:center;height:30px;white-space:nowrap;width:max-content;backface-visibility:hidden;animation:zt-marquee 40s linear infinite}
+#tickerTrack span{flex:0 0 auto;display:inline-flex;align-items:center;gap:.5rem;padding:0 1.2rem;font:600 11px/30px "Unbounded",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+#tickerTrack span::after{content:"〜";margin-left:1.4rem;color:var(--azure,#3E8FD0)}
+@keyframes zt-marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+@media(prefers-reduced-motion:reduce){#tickerTrack{animation:none}}
+@media(max-width:400px){#tickerTrack span{font-size:10px;padding:.35rem 1rem}}

@@ -103,7 +103,6 @@ input,select,textarea{font-family:inherit}
     padding: 6px 10px !important;
   }
     .brand b { font-size: 14px !important; }
-  [data-brand="coffee"] .brand .mark { width: 32px !important; height: 32px !important; }
 
   .brandSeg { margin-left: auto; }
 }
@@ -610,14 +609,8 @@ body.is-cashier .cust .acts{min-width:260px}
 .cartFab{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:95;background:#123A6B;color:#fff;border-radius:999px;padding:12px 24px;font:700 15px "Unbounded";box-shadow:0 10px 25px rgba(0,0,0,.25);transition:.25s}
 [data-brand="delivery"] .cartFab{background:#C03B2A!important}
 .cartFab:hover{transform:translateX(-50%) translateY(-2px)}
-
-.cartPanel{position:fixed;bottom:0;left:0;right:0;z-index:120;background:#FFFFFF;border-radius:22px 22px 0 0;max-height:80vh;overflow-y:auto;padding:20px;box-shadow:var(--shadow-sheet);transform:translateY(100%);transition:.3s}
-[data-brand="delivery"] .cartPanel{background:#EFE6D8!important;border:3px solid #3A2A1C!important;border-bottom:none!important}
-.cartPanel.open{transform:none}
 .cartItem{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
-[data-brand="delivery"] .cartPanel .cartItem{border-bottom:1.5px dashed rgba(58,42,28,.3)!important;color:#3A2A1C!important;font-weight:600!important}
 .cartItem .qty{display:flex;gap:6px;align-items:center}
-[data-brand="delivery"] .cartPanel .qty button{background:#C99E6E!important;border:1.5px solid #3A2A1C!important;color:#3A2A1C!important}
 
 .checkoutForm{display:flex;flex-direction:column;gap:12px;margin-top:16px}
 .checkoutForm label{font-size:13px;font-weight:600;color:var(--soft)}
@@ -658,14 +651,11 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 .topbar{position:relative;display:flex;align-items:center;flex-wrap:nowrap;gap:8px;height:calc(var(--topbar-h) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0;box-sizing:border-box}
 .topbar .venueWrap{position:relative;flex:0 1 18%;min-width:0;display:flex;justify-content:flex-start}
 .topbar .brand{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px}
-.topbar .brand .mark{display:flex;align-items:center;justify-content:center;width:calc(var(--topbar-h) - 20px);height:calc(var(--topbar-h) - 20px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent}
-.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}
 .topbar #profileTopBtn{flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h) - 20px);height:calc(var(--topbar-h) - 20px);font-size:calc(var(--topbar-h) * .28);border-radius:50%;background:var(--flame,#123A6B);color:#fff;display:flex;align-items:center;justify-content:center}
 .venueToggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line,#D8DFE4);background:var(--card,#fff);border-radius:999px;padding:0 12px;height:calc(var(--topbar-h) - 20px);font:700 calc(var(--topbar-h) * .22) "Golos Text",system-ui,sans-serif;color:var(--ink,#101418);cursor:pointer;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #brandSeg{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:80;flex-direction:column;gap:2px;width:max-content;min-width:max(180px,100%);max-width:calc(100vw - 24px);border:1.5px solid var(--line,#D8DFE4);border-radius:14px;background:var(--card,#fff);box-shadow:0 10px 30px -12px rgba(16,20,24,.18);padding:6px}
 #brandSeg.open{display:flex}
 #brandSeg button{flex:0 0 auto;width:100%;border:0;border-radius:10px;padding:10px 12px;font:700 14px "Golos Text",sans-serif;background:transparent;color:var(--ink,#101418);text-align:left;display:flex;align-items:center;gap:8px;cursor:pointer}
-.ticker{overflow:hidden;height:30px;line-height:30px}
 #tickerTrack{display:inline-flex;align-items:center;height:30px;white-space:nowrap;width:max-content;animation:zt-marquee 40s linear infinite}
 #tickerTrack span{flex:0 0 auto;display:inline-flex;align-items:center;gap:.5rem;padding:0 1.2rem;font:600 11px/30px "Unbounded",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
 @keyframes zt-marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
