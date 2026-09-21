@@ -252,16 +252,15 @@ $('#grid').addEventListener('change', async e => {
   const p = MENU.find(x => String(x.id) === String(t.dataset.onoff));
   if (!p) return;
   const on = t.checked ? 1 : 0;
-  p.on = on;
-  renderMenu();
-  try {
-    await api('/menu/' + p.id, { method: 'PUT', body: p });
-    await loadMenu();
-    toast(on ? `«${esc(p.name)}» снова в меню` : `«${esc(p.name)}» → стоп-лист`, on ? '✅' : '⛔');
-  } catch (err) {
-    toast(err.message, '⚠️');
-    loadMenu();
-  }
+p.on = on;
+try {
+await api('/menu/' + p.id, { method: 'PUT', body: p });
+renderMenu();   // локальный рендер из обновлённого MENU — без stale-рефетча
+toast(on ? `«${esc(p.name)}» снова в меню` : `«${esc(p.name)}» → стоп-лист`, on ? '✅' : '⛔');
+} catch (err) {
+toast(err.message, '⚠️');
+await loadMenu();
+}
 });
 
 /* ── Ф6.2: LCP-картинка первого экрана — eager + fetchpriority ── */

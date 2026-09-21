@@ -99,7 +99,8 @@ if (foundTypos.length) {
 /* ── ПРАВИЛО 7: нет дублей селекторов в views.js ── */
 const selectorCounts = {};
 viewsLines.forEach(l => {
-  const m = l.match(/^([^{:]+){/);
+if (l.startsWith('@')) return;   // медиа-строки — не селекторные дубли
+const m = l.match(/^([^{:]+){/);
   if (m) {
     const sel = m[1].trim();
     selectorCounts[sel] = (selectorCounts[sel] || 0) + 1;

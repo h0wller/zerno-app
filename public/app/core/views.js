@@ -56,6 +56,19 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     /* --- Мобильная шапка (база) --- */
     '@media(max-width:820px){#brandSeg{overflow-x:auto;scrollbar-width:none}#modeSeg{overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}',
     '@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}',
+'[data-brand="coffee"] .topbar .brand .mark{width:calc(var(--topbar-h,64px) - 6px);height:calc(var(--topbar-h,64px) - 6px);border-radius:14px}',
+'[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 6px);max-width:100%;flex:0 1 auto;border-radius:8px}',
+'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:auto;height:100%;max-width:100%;object-fit:contain}',
+'.topbar #clock{display:none!important}',
+'[data-brand="delivery"] .topbar .brand{max-width:70%}',
+'[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] #brandTitle,[data-brand="delivery"] #brandSub{display:none!important}',
+'[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
+'[data-brand="delivery"] .venueToggle:hover{background:#EFE6D8;box-shadow:3px 3px 0 var(--fr-choc);transform:translate(-1px,-1px)}',
+'[data-brand="delivery"] .venueWrap #brandSeg{background:#F6EEE1;border:2px solid #3A2A1C;box-shadow:3px 3px 0 #3A2A1C;border-radius:12px}',
+'[data-brand="delivery"] .venueWrap #brandSeg button:hover{background:#EFE6D8;transform:translateX(3px)}',
+'[data-brand="delivery"] .venueWrap #brandSeg button.on{background:#C03B2A;border:2px solid #3A2A1C;box-shadow:2px 2px 0 #3A2A1C;color:#fff}',
+'[data-brand="delivery"] .authPrompt{background:linear-gradient(135deg,#F6EEE1,#EFE6D8);border:2px dashed var(--fr-choc);color:var(--fr-choc)}',
+'[data-brand="delivery"] .authPrompt button{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff}',
     /* --- Шторка на мобильных --- */
     '@media(max-width:1180px){#panel.open{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;max-height:100%;border-radius:0;margin:0;transform:none;z-index:320}#panel .tabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}}',
     /* --- Сплэш бренда --- */
@@ -116,29 +129,7 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     '#supportChooseOverlay .scSub{color:var(--soft);font-size:13px}',
     '#supportChooseOverlay .scBtns{width:100%;max-width:340px}',
         /* ── Ф3.46: шапка = 3 зоны, высота из токена, фолбэк 64px ── */
-'.topbar{display:flex;align-items:center;flex-wrap:nowrap;gap:8px;height:calc(var(--topbar-h,64px) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0;box-sizing:border-box}',
-'.topbar .venueWrap{position:relative;flex:0 1 18%;min-width:0;display:flex;justify-content:flex-start}',
-'.topbar .brand{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px}',
-'.topbar #profileTopBtn{flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);font-size:calc(var(--topbar-h,64px) * 0.28)}',
-'.topbar #modeSeg{order:10;flex:1 1 100%}',
-'.topbar .brand .mark{display:flex;align-items:center;justify-content:center;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent}',
-'.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}',
-'[data-brand="coffee"] .topbar .brand .mark{width:calc(var(--topbar-h,64px) - 6px);height:calc(var(--topbar-h,64px) - 6px);border-radius:14px}',
-'[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 12px);max-width:100%;flex:0 1 auto;border-radius:8px}',
-'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:auto;height:100%;max-width:100%;object-fit:contain}',
-'[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] #brandTitle,[data-brand="delivery"] #brandSub{display:none!important}',
-'.venueToggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line);background:var(--card,#fff);border-radius:999px;padding:0 12px;height:calc(var(--topbar-h,64px) - 20px);font:700 calc(var(--topbar-h,64px) * 0.22) "Golos Text",system-ui,sans-serif;color:var(--ink);cursor:pointer;transition:all .2s;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-'@media(max-width:600px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
-        '.topbar #clock{display:none!important}',    '.venueToggle:hover{background:#F5F5F5;transform:translateY(-1px)}',
-    '.venueToggle .vt-arrow{font-size:9px;opacity:.7;transition:transform .2s}',
-    '.venueToggle[aria-expanded="true"] .vt-arrow{transform:rotate(180deg)}',
-    '.venueWrap #brandSeg{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:80;flex-direction:column;gap:2px;width:max-content;min-width:max(180px,100%);max-width:calc(100vw - 24px);border:1.5px solid var(--line);border-radius:14px;background:var(--card,#fff);box-shadow:var(--sh);padding:6px;overflow:visible;animation:fadeIn .2s ease}',
-    '.venueWrap #brandSeg.open{display:flex}',
-    '.venueWrap #brandSeg button{flex:0 0 auto;width:100%;border:0;border-radius:10px;padding:10px 12px;font:700 14px "Golos Text",sans-serif;background:transparent;color:var(--ink);text-align:left;box-shadow:none;display:flex;align-items:center;gap:8px;transition:all .15s;cursor:pointer}',
-    '.venueWrap #brandSeg button:hover{background:rgba(0,0,0,.06);transform:translateX(2px)}',
-    '.venueWrap #brandSeg button .re,.venueWrap #brandSeg button span{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;font-size:16px}',
-    '.venueWrap #brandSeg button.on{background:var(--flame);color:#fff}',
-    '.venueWrap #brandSeg button.on span{color:#fff!important}',
+
     '@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}',
     '.card .tag{position:absolute;top:8px;left:8px;z-index:2;pointer-events:none;max-width:calc(100% - 16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     /* --- Кнопка «Добавить» в доставке --- */
@@ -156,17 +147,15 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     /* --- Рейл: ховер без среза обводки --- */
     '.rail,#deliveryRail{padding:8px 6px 16px;margin:-8px -6px -16px;overflow-x:auto;overflow-y:hidden}',
     '@media(min-width:1181px){.rail{overflow:visible;padding:0;margin:0}}',
+    '[data-brand="delivery"] #deliveryRail{background:transparent}',
+    '[data-brand="delivery"] #deliveryRail button{background:var(--panel);border:1.5px solid var(--line);color:var(--ink)}',
     '#deliveryRail button{transition:transform .15s,box-shadow .15s,background .15s}',
     '#deliveryRail button:hover{transform:translateY(-1px)}',
     '#deliveryRail button.on:hover{transform:none}',
+    '[data-brand="delivery"] #rail button,[data-brand="delivery"] #deliveryRail button{background:var(--fr-paper);border:2px solid var(--fr-tan);color:var(--fr-choc)}',
+    '[data-brand="delivery"] .panel,[data-brand="delivery"] .placebox{background:var(--fr-rice);border-color:var(--fr-choc);color:var(--fr-choc)}',
+    '[data-brand="delivery"] .panel .btn.fire,[data-brand="delivery"] #profileBox .btn.fire,[data-brand="delivery"] .authBtn{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc);color:#fff}',
     /* --- Тикер: единственный владелец бегущей строки --- */
-    '.ticker{overflow:hidden;max-width:100%;height:30px;line-height:30px;display:flex;align-items:center}',
-    '#tickerTrack{display:inline-flex;align-items:center;height:30px;white-space:nowrap;width:max-content;backface-visibility:hidden;animation:zt-marquee 40s linear infinite}',
-    '#tickerTrack span{flex:0 0 auto;display:inline-flex;align-items:center;gap:.5rem;padding:0 1.2rem;font:600 11px/30px "Unbounded",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}',
-    '#tickerTrack span::after{content:"〜";margin-left:1.4rem;color:var(--azure,#3E8FD0)}',
-    '@media(max-width:400px){#tickerTrack span{font-size:10px;padding:.35rem 1rem}}',
-    '@keyframes zt-marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}',
-    '@media(prefers-reduced-motion:reduce){#tickerTrack{animation:none}}',
     /* ══ БРЕНД: Пятница — терракотовый стикер-арт по гайдлайну ══ */
     'html[data-brand="delivery"],body[data-brand="delivery"]{--flame:#C03B2A;--flame-d:#8E3716;--esp:#3A2A1C;--esp2:#241812;--fr-choc:#3A2A1C;--fr-tan:#C99E6E;--fr-rice:#EFE6D8;--fr-paper:#F6EEE1;--paper:#F3EDE6;--tint-cool:#F3E2CE;--tint-warm:#F3E2CE}',
     'html[data-brand="delivery"] body{background-color:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.1) 1px,transparent 1.5px);background-size:12px 12px}',
@@ -199,17 +188,17 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     '[data-brand="delivery"] #chatSend{background:var(--flame);border:2px solid var(--fr-choc);color:#fff}',
     '[data-brand="delivery"] .mo-new,[data-brand="delivery"] .mo-accept,[data-brand="delivery"] .mo-way{background:var(--fr-rice);color:var(--flame)}',
     /* --- Топбар Пятницы: тумблер, дропдаун, логотип --- */
-    '[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
-    '[data-brand="delivery"] .venueToggle:hover{background:#EFE6D8;box-shadow:3px 3px 0 var(--fr-choc);transform:translate(-1px,-1px)}',
-    '[data-brand="delivery"] .venueWrap #brandSeg{background:#F6EEE1;border:2px solid #3A2A1C;box-shadow:3px 3px 0 #3A2A1C;border-radius:12px}',
-    '[data-brand="delivery"] .venueWrap #brandSeg button:hover{background:#EFE6D8;transform:translateX(3px)}',
-    '[data-brand="delivery"] .venueWrap #brandSeg button.on{background:#C03B2A;border:2px solid #3A2A1C;box-shadow:2px 2px 0 #3A2A1C;color:#fff}',
-    '[data-brand="delivery"] .topbar .brand{justify-content:center}',
     /* --- Тикер: брендовые цвета --- */
     '[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{background:var(--fr-choc);color:#E8A33D;border-bottom:2px solid var(--fr-choc)}',
     '[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2;border-bottom:1px solid rgba(62,143,208,.25)}',
-    '[data-brand="delivery"] #tickerTrack span::after{color:#C03B2A}'
-  ];
+    '[data-brand="delivery"] #tickerTrack span::after{color:#C03B2A}',
+'[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
+'[data-brand="delivery"] #panel,[data-brand="delivery"] .panel{background:var(--fr-paper);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
+'@media(max-width:600px){.topbar .brand small{display:none}}',
+  '@media(min-width:821px){.topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;max-width:100%}.topbar #profileTopBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}}',
+'.ticker{margin-top:-3px;position:relative;z-index:1}',
+'@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
+];
   css.textContent = rules.join('\n');
   document.head.appendChild(css);
 
@@ -358,7 +347,9 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     var mb = document.getElementById('mbonusBtn');
     if (mb) mb.style.display = (typeof mode !== 'undefined' && mode === 'guest' && bName2 === 'coffee') ? '' : 'none';
 
-    var bt = document.querySelector('.tabs button[data-tab="bonus"]');
+    var bb = document.getElementById('bonusBox');
+  if (bb) bb.style.display = (typeof me !== 'undefined' && me) ? '' : 'none';
+  var bt = document.querySelector('.tabs button[data-tab="bonus"]');
     if (bt) bt.style.display = (bName2 === 'delivery') ? 'none' : '';
 
     if (bName2 === 'delivery' && typeof setTab === 'function') setTab('profile');
@@ -378,8 +369,14 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
     });
 
     if (typeof cartFabShow === 'function') cartFabShow();
-    /* Ф3.25: синхронизируем брендовый хром (тикер + логотип) прямым вызовом владельца */
-    if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
+  /* Ф3.48: первичная загрузка доставки — бут зовёт sv() без setMode() */
+    if (showDeliv && typeof window.DMENU !== 'undefined' && !window.DMENU.length &&
+     typeof window.loadDelivery === 'function' && !window.__dlReq) {
+   window.__dlReq = 1;
+   window.loadDelivery();
+ }
+ /* Ф3.25: синхронизируем брендовый хром (тикер + логотип) прямым вызовом владельца */
+ if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
   }
   window.syncBrandViews = sv;
 
@@ -452,7 +449,7 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
       brandSegEl.style.display = 'none';
       var vtg = document.getElementById('venueToggle');
       if (vtg) vtg.setAttribute('aria-expanded', 'false');
-
+      window.__dlReq = 0;
       sv();
 
       if (brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
@@ -587,3 +584,12 @@ vt.innerHTML = '<span class="vt-label">Сменить</span> ' + (isDel ? '🍕'
     setTimeout(refresh, 1500);
   })();
 })();
+/* ── Ф3.49: кнопка authPrompt через делегирование (переживает перерендеры) ── */
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('#authPrompt button, #authPrompt [data-auth]');
+  if (!b) return;
+  e.preventDefault();
+  if (typeof openAuth === 'function') { openAuth(); return; }
+  var m = document.getElementById('authModal');
+  if (m) { m.classList.add('open'); m.style.display = 'flex'; }
+});

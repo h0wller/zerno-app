@@ -32,12 +32,22 @@ if(typeof loadMenu==='function'){loadMenu=(function(_lm){return async function()
 
 var __chromeLast=null;
 function padTicker(){
-  var t = document.getElementById('tickerTrack');
-  if (!t) return;
-  var vw = window.innerWidth || 1024;
-  var guard = 0;
-  while (t.scrollWidth < vw * 2 && guard < 4) { t.innerHTML += t.innerHTML; guard++; }
+var t = document.getElementById('tickerTrack');
+if (!t) return;
+var vw = window.innerWidth || 1024;
+var guard = 0;
+while (t.scrollWidth < vw * 2 && guard < 4) { t.innerHTML += t.innerHTML; guard++; }
+setTickerSpeed();
 }
+/* Ф3.48: скорость тикера постоянна (px/s) независимо от числа копий и веб-шрифтов */
+function setTickerSpeed(){
+var t = document.getElementById('tickerTrack');
+if (!t) return;
+var half = t.scrollWidth / 2;
+t.style.animationDuration = Math.max(20, Math.round(half / 55)) + 's';
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(setTickerSpeed);
+window.addEventListener('resize', function(){ clearTimeout(window.__tsT); window.__tsT = setTimeout(setTickerSpeed, 200); });
 window.addEventListener('resize', function(){ clearTimeout(window.__padT); window.__padT = setTimeout(padTicker, 200); });
 function applyBrandChrome(){
 var deliv=(brand==='delivery');

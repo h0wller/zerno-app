@@ -348,3 +348,26 @@ body.editing .card:hover {
 /* ── Ф3.43: адаптивная высота шапки (одна переменная) ── */
 @media (max-width: 820px) { :root { --topbar-h: 56px; } }
 @media (max-width: 480px) { :root { --topbar-h: 52px; } }
+/* ── Тумблер режима правки (база, оба бренда; было styles.js Ф3.21) ─── */
+.donoff{position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:11px;font-weight:700;cursor:pointer}
+.donoff input{appearance:none;-webkit-appearance:none;width:34px;height:19px;border-radius:999px;background:#C9D3DC;position:relative;transition:.25s;cursor:pointer;margin:0}
+.donoff input::after{content:"";position:absolute;top:2.5px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.25s}
+.donoff input:checked{background:var(--status-success)}
+.donoff input:checked::after{left:17px}
+/* в режиме правки метка (hit/new/vegan) не спорит с тумблем за левый верхний угол */
+body.editing .card .tag{display:none}
+/* ══ АУДИТ 21.09: недостающие keyframes / переменные / классы ══ */
+:root { --shadow-sheet: 0 -10px 40px -12px rgba(16,20,24,.25); }
+@keyframes ping {
+  0%   { transform: scale(1); opacity: .6; }
+  70%  { transform: scale(1.25); opacity: 0; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+@keyframes stampin { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.vh { position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.placebox { margin-top:12px; padding:12px 14px; border:1.5px dashed var(--line); border-radius:14px; background:#fff; font-size:12.5px; color:var(--soft); line-height:1.5; }
+.placebox b { display:block; color:var(--ink); font-size:13px; margin-bottom:4px; }
+.skeleton-card { pointer-events:none; }
+.skeleton-shimmer, .skeleton-line { background:linear-gradient(90deg,#EDF2F6 25%,#F7FAFC 50%,#EDF2F6 75%); background-size:200% 100%; animation:shimmer 1.2s infinite; }
+.skeleton-line { border-radius:8px; }

@@ -369,3 +369,12 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         return r;
     };
 })();
+/* Ф3.49: делегированный клик по [data-auth] в capture-фазе.
+Кнопка лежит в #profileUser, а старые байнды смотрели на #profileBox — клики проходили мимо. */
+document.addEventListener('click', function (e) {
+  var b = (e.target && e.target.closest) ? e.target.closest('[data-auth]') : null;
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (typeof openAuth === 'function') openAuth();
+}, true);

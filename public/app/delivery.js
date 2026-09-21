@@ -414,11 +414,11 @@ $('#deliveryGrid').addEventListener('change', async function (e) {
   e.stopPropagation();
   const p = DMENU.find(x => String(x.id) === String(t.dataset.onoff)); if (!p) return;
   p.on = t.checked ? 1 : 0;
-  try {
-    await api('/menu/' + p.id, { method: 'PUT', body: p });
-    await loadDelivery();
-    toast(t.checked ? '«' + esc(p.name) + '» снова в меню' : '«' + esc(p.name) + '» → стоп-лист', t.checked ? '✅' : '⛔');
-  } catch (err) { toast(err.message, '⚠️'); loadDelivery(); }
+try {
+await api('/menu/' + p.id, { method: 'PUT', body: p });
+renderDeliveryMenu();   // локальный рендер из обновлённого DMENU — без stale-рефетча
+toast(t.checked ? '«' + esc(p.name) + '» снова в меню' : '«' + esc(p.name) + '» → стоп-лист', t.checked ? '✅' : '⛔');
+} catch (err) { toast(err.message, '⚠️'); await loadDelivery(); }
 }, true);
 
 $('#deliveryGrid').addEventListener('click', function (e) {
