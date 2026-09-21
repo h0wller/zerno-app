@@ -1,6 +1,6 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v48'; // ← поставь своё текущее значение +1
-const MEDIA_CACHE = 'zerno-media-v4';
+const STATIC_CACHE = 'zerno-static-v53'; // ← поставь своё текущее значение +1
+const MEDIA_CACHE = 'zerno-media-v7';
 const API_CACHE = 'zerno-api-v4';
 
 const STATIC_ASSETS = [
@@ -124,23 +124,23 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 2. Cache-First для медиа. Ф3.30: НИКОГДА не возвращаем undefined в respondWith
-  if (url.pathname.match(/\.(png|jpg|jpeg|webp|svg|ico)$/)) {
-    e.respondWith(
-      caches.open(MEDIA_CACHE).then(async (cache) => {
-        const match = await cache.match(request);
-        if (match) return match;
-        try {
-          const netRes = await fetch(request);
-          if (netRes.ok) cache.put(request, netRes.clone());
-          return netRes;
-        } catch (err) {
-          return match || new Response('', { status: 503, statusText: 'offline' });
-        }
-      })
-    );
-    return;
-  }
+ // 2. Медиа: Stale-While-Revalidate. Кэш отвечает мгновенно, обновление скачивается фоном —
+// новый логотип/картинки приходят на СЛЕДУЮЩЕЙ загрузке после деплоя, без хард-ресета.
+if (url.pathname.match(/\.(png|jpg|jpeg|webp|svg|ico)$/)) {
+e.respondWith(
+caches.open(MEDIA_CACHE).then(async (cache) => {
+const match = await cache.match(request);
+const network = fetch(request)
+.then((netRes) => {
+if (netRes.ok) cache.put(request, netRes.clone());
+return netRes;
+})
+.catch(() => match || new Response('', { status: 503, statusText: 'offline' }));
+return match || network;
+})
+);
+return;
+}
 
   // 3. App Shell: network-first для кода. Ф3.30: нет сети и нет кэша — явный 503, а не reject
   if (request.destination === 'document' || url.pathname.startsWith('/app/') || /\.(js|css)$/.test(url.pathname)) {

@@ -333,9 +333,9 @@ body.editing .card:hover {
 }
 .donoff input:checked::after { left: 16px; }
 /* ── Ф3.43: адаптивная высота шапки (одна переменная) ── */
-@media (max-width: 820px) { :root { --topbar-h: 56px; } }
-@media (min-width: 821px) { :root { --topbar-h: 76px; } }
-@media (min-width: 821px) { :root { --topbar-h: 76px; } }
+@media (max-width: 820px) { :root { --topbar-h: 72px; } }
+
+@media (min-width: 821px) { :root { --topbar-h: 88px; } }
 @media (max-width: 480px) { :root { --topbar-h: 52px; } }
 /* ── Тумблер режима правки (база, оба бренда; было styles.js Ф3.21) ─── */
 .donoff{position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:11px;font-weight:700;cursor:pointer}
