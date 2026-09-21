@@ -8,7 +8,7 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
   /* ========== 0. Флаги и state-мост чата ========== */
   var QS = new URLSearchParams(location.search);
   var IN_TG = /Telegram/i.test(navigator.userAgent);
-  var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
+  if (IN_TG) document.documentElement.classList.add('in-tg');  var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
   var SUPPORT_ENTRY = (QS.get('tab') === 'chat' || QS.get('support') === 'choose');
   var chosenSupportCtx = SUPPORT_ENTRY ? (sessionStorage.getItem('zt_support_ctx') || '') : '';
   var supportPending = SUPPORT_ENTRY && !chosenSupportCtx;
@@ -60,6 +60,7 @@ DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропда�
 '[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,72px) - 8px);max-width:100%;flex:0 1 auto;border-radius:8px}',
 '[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:auto;height:100%;max-width:100%;object-fit:contain}',
 '.topbar #clock{display:none!important}',
+'html.in-tg .topbar{height:auto;min-height:calc(var(--topbar-h,64px) + env(safe-area-inset-top,0px) + 56px);padding-top:calc(env(safe-area-inset-top,0px) + 56px)}',
 '.venueToggle{height:calc(var(--topbar-h,72px) - 28px)}',
 '.topbar #profileTopBtn{width:calc(var(--topbar-h,72px) - 28px);height:calc(var(--topbar-h,72px) - 28px);font-size:calc(var(--topbar-h,72px) * 0.26)}',
 '[data-brand="delivery"] .topbar .brand{max-width:70%}',
