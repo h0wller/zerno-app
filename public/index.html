@@ -659,6 +659,12 @@ html.need-splash body>*:not(#brandSplashStatic){visibility:hidden}
 .topbar .brand{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px}
 .topbar #profileTopBtn{flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h) - 20px);height:calc(var(--topbar-h) - 20px);font-size:calc(var(--topbar-h) * .28);border-radius:50%;background:var(--flame,#123A6B);color:#fff;display:flex;align-items:center;justify-content:center}
 .venueToggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line,#D8DFE4);background:var(--card,#fff);border-radius:999px;padding:0 12px;height:calc(var(--topbar-h) - 20px);font:700 calc(var(--topbar-h) * .22) "Golos Text",system-ui,sans-serif;color:var(--ink,#101418);cursor:pointer;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ── Ф3.56: критические размеры марки (первый кадр = финальный, без FOUC) ── */
+.topbar .brand .mark{display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden;background:transparent;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);border-radius:12px}
+.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}
+[data-brand="delivery"] .topbar .brand .mark{width:auto;height:clamp(56px,14vw,110px);max-width:min(56vw,420px);border-radius:8px}
+[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:auto;height:100%;max-width:100%;object-fit:contain}
+[data-brand="coffee"] .topbar .brand .mark{width:calc(var(--topbar-h,64px) - 6px);height:calc(var(--topbar-h,64px) - 6px);border-radius:14px}
 #brandSeg{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:80;flex-direction:column;gap:2px;width:max-content;min-width:max(180px,100%);max-width:calc(100vw - 24px);border:1.5px solid var(--line,#D8DFE4);border-radius:14px;background:var(--card,#fff);box-shadow:0 10px 30px -12px rgba(16,20,24,.18);padding:6px}
 #brandSeg.open{display:flex}
 #brandSeg button{flex:0 0 auto;width:100%;border:0;border-radius:10px;padding:10px 12px;font:700 14px "Golos Text",sans-serif;background:transparent;color:var(--ink,#101418);text-align:left;display:flex;align-items:center;gap:8px;cursor:pointer}

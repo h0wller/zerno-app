@@ -28,6 +28,18 @@ document.body.classList.add('support-pending');
 var ov0 = document.getElementById('supportChooseOverlay');
 if (ov0) { ov0.style.display = 'flex'; ov0.style.zIndex = '10002'; }
 }
+/* Ф3.56: safe-area фолбэк — если iOS standalone отдаёт inset 0 (баг env), ставим константу */
+(function () {
+  var probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;top:0;left:0;height:var(--sat, env(safe-area-inset-top,0px));visibility:hidden';
+  document.body.appendChild(probe);
+  var inset = probe.getBoundingClientRect().height;
+  probe.remove();
+  var standalone = (navigator.standalone === true) || matchMedia('(display-mode: standalone)').matches;
+  var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  var sat = inset > 0 ? inset : (standalone && ios ? 47 : 0);
+  document.documentElement.style.setProperty('--sat', sat + 'px');
+})();
 /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
 var css = document.createElement('style');
 var rules = [
@@ -52,7 +64,7 @@ var rules = [
 '.addonChip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}',
 '.addonChip b{color:var(--flame)}',
 /* --- ШАПКА: база (единственный блок, Ф3.55) --- */
-'.topbar{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:8px;height:calc(var(--topbar-h,64px) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0;box-sizing:border-box}',
+'.topbar{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:8px;height:calc(var(--topbar-h,64px) + var(--sat, env(safe-area-inset-top,0px)));padding:var(--sat, env(safe-area-inset-top,0px)) 12px 0;box-sizing:border-box}',
 '.topbar .venueWrap{position:relative;order:1;flex:0 0 auto;min-width:0;display:flex;justify-content:flex-start}',
 '.topbar .brand{order:2;flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;position:static;transform:none}',
 '.topbar .brand .mark{display:flex;align-items:center;justify-content:center;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent}',
