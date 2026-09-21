@@ -83,6 +83,12 @@ input,select,textarea{font-family:inherit}
   box-shadow:0 4px 16px -4px rgba(18,58,107,.08);
 }
 [data-brand="delivery"] .topbar{background:#C99E6E!important;color:#3A2A1C!important;border-bottom:3px solid #3A2A1C!important}
+/* ── Ф3.55: размеры марки в критическом слое — до инъекции views.js ── */
+.topbar .brand .mark{width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent}
+.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}
+[data-brand="coffee"] .topbar .brand .mark{width:calc(var(--topbar-h,64px) - 6px);height:calc(var(--topbar-h,64px) - 6px);border-radius:14px}
+[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 6px);max-width:100%;flex:0 1 auto;border-radius:8px}
+[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:auto;height:100%;max-width:100%;object-fit:contain}
 
 @media(max-width:600px){
   .topbar{padding:8px 12px!important;gap:6px}

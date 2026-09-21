@@ -78,9 +78,6 @@ var rules = [
 '@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
 '@media(max-width:600px){.topbar .brand small{display:none}}',
 /* --- Шапка: марки брендов (70% ТОЛЬКО внутри ≤820px — не бьёт грид) --- */
-'[data-brand="coffee"] .topbar .brand .mark{width:calc(var(--topbar-h,64px) - 6px);height:calc(var(--topbar-h,64px) - 6px);border-radius:14px}',
-'[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 12px);max-width:100%;flex:0 1 auto;border-radius:8px}',
-'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:auto;height:100%;max-width:100%;object-fit:contain}',
 '@media(max-width:820px){[data-brand="delivery"] .topbar .brand{max-width:70%}}',
 '[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] #brandTitle,[data-brand="delivery"] #brandSub{display:none!important}',
 '@media(min-width:821px){[data-brand="delivery"] .topbar .brand .mark{height:calc(var(--topbar-h,64px) - 8px);max-width:min(56vw,420px)}[data-brand="coffee"] .topbar .brand .mark{width:calc(var(--topbar-h,64px) - 10px);height:calc(var(--topbar-h,64px) - 10px)}}',
