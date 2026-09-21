@@ -50,7 +50,7 @@ if (fridayInTheme.length) {
 /* ── ПРАВИЛО 4: в views.js все правила либо layout, либо начинаются с [data-brand= ── */
 const viewsLines = viewsCSS.split('\n').map(l => l.trim()).filter(Boolean);
 /* Ф3.32: разрешённые layout-селекторы (топбар, FAB, grid) */
-const allowedGeneric = ['.grid', '.card', '.wrap', '.rail', '.panel', '.tabs', '.modal', '.chat', '.btn', '.cta', '.form', '.venueWrap', '#brandSeg', '.venueToggle', '.topbar', '.brand', 'body.editing'];
+const allowedGeneric = ['html.in-tg', '.grid', '.card', '.wrap', '.rail', '.panel', '.tabs', '.modal', '.chat', '.btn', '.cta', '.form', '.venueWrap', '#brandSeg', '.venueToggle', '.topbar', '.brand', 'body.editing'];
 const badLines = viewsLines.filter(l => {
   /* Ф3.34: ранние разрешения (layer-2 layout + тикер-владелец) — гарантированно до return true */
   if (allowedGeneric.some(s => l.startsWith(s))) return false;
