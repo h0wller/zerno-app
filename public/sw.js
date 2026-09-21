@@ -1,7 +1,7 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v58'; // ← поставь своё текущее значение +1
-const MEDIA_CACHE = 'zerno-media-v9';
-const API_CACHE = 'zerno-api-v5';
+const STATIC_CACHE = 'zerno-static-v59'; // ← поставь своё текущее значение +1
+const MEDIA_CACHE = 'zerno-media-v10';
+const API_CACHE = 'zerno-api-v6';
 
 const STATIC_ASSETS = [
   '/',
