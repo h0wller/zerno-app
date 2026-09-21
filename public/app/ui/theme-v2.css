@@ -6,7 +6,6 @@
    ========================================================================== */
 
 :root {
-  --topbar-h: 64px;   /* база; медиа ниже переопределяют */
   --paper: #FFFFFF;
   --card: #FFFFFF;
   --panel: #F3F8FC;
@@ -333,11 +332,6 @@ body.editing .card:hover {
   box-shadow: 0 1px 2px rgba(0,0,0,.2);
 }
 .donoff input:checked::after { left: 16px; }
-/* ── Ф3.43: адаптивная высота шапки (одна переменная) ── */
-@media (max-width: 820px) { :root { --topbar-h: 72px; } }
-
-@media (min-width: 821px) { :root { --topbar-h: 88px; } }
-@media (max-width: 480px) { :root { --topbar-h: 52px; } }
 /* ── Тумблер режима правки (база, оба бренда; было styles.js Ф3.21) ─── */
 .donoff{position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:11px;font-weight:700;cursor:pointer}
 .donoff input{appearance:none;-webkit-appearance:none;width:34px;height:19px;border-radius:999px;background:#C9D3DC;position:relative;transition:.25s;cursor:pointer;margin:0}
@@ -367,9 +361,7 @@ body.editing .card .tag{display:none}
 .cartPanel.open { transform:none }
 
 /* ── Тикер: база (брендовые цвета — СЛОЙ 2, views.js) ── */
-.ticker{overflow:hidden;max-width:100%;height:30px;line-height:30px;display:flex;align-items:center;margin-top:-3px;position:relative;z-index:1}
-#tickerTrack{display:inline-flex;align-items:center;height:30px;white-space:nowrap;width:max-content;backface-visibility:hidden;animation:zt-marquee 40s linear infinite}
-#tickerTrack span{flex:0 0 auto;display:inline-flex;align-items:center;gap:.5rem;padding:0 1.2rem;font:600 11px/30px "Unbounded",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.ticker{overflow:hidden;max-width:100%;height:30px;line-height:30px;display:flex;align-items:center;margin-top:-1px;position:relative;z-index:1}#tickerTrack span{flex:0 0 auto;display:inline-flex;align-items:center;gap:.5rem;padding:0 1.2rem;font:600 11px/30px "Unbounded",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
 #tickerTrack span::after{content:"〜";margin-left:1.4rem;color:var(--azure,#3E8FD0)}
 @keyframes zt-marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
 @media(prefers-reduced-motion:reduce){#tickerTrack{animation:none}}

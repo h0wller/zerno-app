@@ -103,15 +103,19 @@ var rules = [
 '@media(max-width:820px){#brandSeg{overflow-x:auto;scrollbar-width:none}#modeSeg{overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}',
 '@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}',
 '@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
-'@media(max-width:600px){.topbar .brand small{display:none}}',
+/* delivery ≤1023px: только лого, прячем текст и его обёртку (иначе пустой div в gap уводит лого влево) */
+'@media(max-width:1023px){[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] .topbar .brand > div:not(.mark){display:none!important}}',
+/* coffee ≤600px: убираем длинную подпись «кофейня на берегу моря» */
+'@media(max-width:600px){[data-brand="coffee"] .topbar .brand small{display:none!important}}',
+/* coffee ≤480px: компактно, но текст «…и кофе» остаётся */
+'@media(max-width:480px){[data-brand="coffee"] .topbar .brand{gap:6px!important}[data-brand="coffee"] .topbar .brand b{font-size:16px!important}}',
+/* ≥821px (1024, 1440): кнопки по краям компактные, не гигантские */
+'@media(min-width:821px){.topbar #profileTopBtn{width:56px!important;height:56px!important;font-size:22px!important}.topbar .venueToggle{height:52px!important;font-size:15px!important;padding:0 18px!important;gap:8px!important}}',
 /* --- Шапка: марки брендов (70% ТОЛЬКО внутри ≤820px — не бьёт грид) --- */
-'@media(max-width:820px){[data-brand="delivery"] .topbar .brand{max-width:70%}}',
-'[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] #brandTitle,[data-brand="delivery"] #brandSub{display:none!important}',
-'@media(min-width:821px){[data-brand="delivery"] .topbar .brand .mark{height:calc(var(--topbar-h,64px) - 8px);max-width:min(56vw,420px)}[data-brand="coffee"] .topbar .brand .mark{width:calc(var(--topbar-h,64px) - 10px);height:calc(var(--topbar-h,64px) - 10px)}}',
-'@media(max-width:360px){[data-brand="coffee"] .topbar .brand .mark{width:32px;height:32px}}',
+'[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 8px);max-height:calc(var(--topbar-h,64px) - 8px);max-width:min(60vw,420px);border-radius:8px}',
+'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}','@media(max-width:360px){[data-brand="coffee"] .topbar .brand .mark{width:32px;height:32px}}',
 /* --- Шапка: грид-центрирование ≥821px (после всех brand-правил) --- */
-'@media(min-width:821px){.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0;min-width:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;max-width:100%}.topbar #profileTopBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}}',
-/* --- Шапка: брендовые override тумблера/дропдауна/authPrompt --- */
+'.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;align-content:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0;min-width:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;max-width:100%}.topbar #profileTopBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}',/* --- Шапка: брендовые override тумблера/дропдауна/authPrompt --- */
 '[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
 '[data-brand="delivery"] .venueToggle:hover{background:#EFE6D8;box-shadow:3px 3px 0 var(--fr-choc);transform:translate(-1px,-1px)}',
 '[data-brand="delivery"] .venueWrap #brandSeg{background:#F6EEE1;border:2px solid #3A2A1C;box-shadow:3px 3px 0 #3A2A1C;border-radius:12px}',
@@ -306,17 +310,7 @@ if (window.__labelVenueToggle) window.__labelVenueToggle();
 var mark = document.getElementById('brandMark') || document.querySelector('.brand .mark');
 if (mark) mark.classList.toggle('is-delivery', isDel);
 /* Страховка: снимаем инлайновые размеры/aspect-ratio с логотипа и марки */
-var bimg = document.querySelector('.topbar .brand img');
-if (bimg) {
-bimg.style.width = '';
-bimg.style.height = '';
-bimg.style.objectFit = '';
-bimg.style.position = '';
-bimg.style.inset = '';
-bimg.style.aspectRatio = '';
-}
-var mk = document.querySelector('.topbar .brand .mark');
-if (mk) { mk.style.aspectRatio = ''; mk.style.width = ''; mk.style.height = ''; }
+stripLogoInlineStyles();
 var op = document.querySelector('.chat-h .op, .chatHead .op');
 if (op) {
 if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
@@ -346,7 +340,7 @@ if (!vw.contains(e.target)) { seg2.classList.remove('open'); seg2.style.display 
 });
 }
 var vt2 = document.getElementById('venueToggle');
-if (vt2) vt2.innerHTML = '<span class="vt-label">Сменить</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
+if (vt2) vt2.innerHTML = '<span class="vt-label">Сменить заведение</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
 } catch (e) {}
 var showGuest = (typeof mode !== 'undefined' && (mode === 'guest' || mode === 'admin'));
 var bName2 = (typeof brand !== 'undefined' && brand === 'delivery') ? 'delivery' : 'coffee';
@@ -398,6 +392,53 @@ window.loadDelivery();
 if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
 }
 window.syncBrandViews = sv;
+/* ── Ф3.57: снятие инлайн-стилей, которые admin-extra ставит на логотип.
+   !important перебивает aspect-ratio:1/1 и width:100%, которые admin-extra 
+   навешивает на <img> при каждой смене бренда. MutationObserver ловит 
+   повторные инъекции после sv(). */
+function stripLogoInlineStyles() {
+  var wrap = document.querySelector('.topbar .brand .mark');
+  var img  = document.querySelector('.topbar .brand .mark img, .topbar .brand .mark svg');
+  if (img) {
+    img.style.setProperty('width', '100%', 'important');
+    img.style.setProperty('height', '100%', 'important');
+    img.style.setProperty('max-width', '100%', 'important');
+    img.style.setProperty('max-height', '100%', 'important');
+    img.style.setProperty('aspect-ratio', 'auto', 'important');
+    img.style.setProperty('object-fit', 'contain', 'important');
+    img.style.removeProperty('position');
+    img.style.removeProperty('inset');
+    img.removeAttribute('width');
+    img.removeAttribute('height');
+  }
+  if (wrap) {
+    wrap.style.setProperty('aspect-ratio', 'auto', 'important');
+    wrap.style.setProperty('max-height', 'calc(var(--topbar-h,64px) - 8px)', 'important');
+    wrap.style.removeProperty('width');
+    wrap.style.removeProperty('height');
+  }
+}
+window.stripLogoInlineStyles = stripLogoInlineStyles;
+
+(function () {
+  function observe() {
+    var target = document.querySelector('.topbar .brand');
+    if (!target || !window.MutationObserver) { stripLogoInlineStyles(); return; }
+    new MutationObserver(function () {
+      stripLogoInlineStyles();
+    }).observe(target, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style']
+    });
+    stripLogoInlineStyles();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observe);
+  else observe();
+  setTimeout(stripLogoInlineStyles, 500);
+  setTimeout(stripLogoInlineStyles, 1500);
+})();
 window.setMode = function (m) {
 var role = (typeof me !== 'undefined' && me) ? me.role : 'guest';
 if (m === 'cashier' && role !== 'cashier' && role !== 'admin') return;
@@ -503,7 +544,7 @@ function label() {
 var vt = document.getElementById('venueToggle');
 if (!vt) return;
 var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
-vt.innerHTML = '<span class="vt-label">Сменить</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
+vt.innerHTML = '<span class="vt-label">Сменить заведение</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
 }
 window.__ensureVenueToggle = ensure;
 window.__labelVenueToggle = label;

@@ -1,6 +1,10 @@
 /* lazy-img: loading=lazy + decoding=async, кроме LCP-картинки первого экрана. */
 /* lazy-img: loading=lazy + decoding=async, кроме LCP-картинки первого экрана. */
 function applyLazy(img) {
+  // Не трогаем брендовые логотипы — у них свои размеры в CSS (.topbar .brand .mark)
+  if (img.closest('.topbar') || img.classList.contains('brandLogo')) {
+    return;
+  }
   var g = img.closest && img.closest('#grid, #deliveryGrid');
   if (g && g.querySelector('img') === img) {
     img.loading = 'eager';
@@ -14,7 +18,7 @@ function applyLazy(img) {
   }
   // Фикс CLS для ленивых картинок без размеров
   if (!img.getAttribute('width') && !img.getAttribute('height') && !img.style.aspectRatio) {
-    img.style.aspectRatio = '1 / 1'; // Задаем квадратный дефолтный аспект-рецио, чтобы не было прыжков 0x0
+    img.style.aspectRatio = '1 / 1';
     img.style.width = '100%';
     img.style.height = 'auto';
   }
