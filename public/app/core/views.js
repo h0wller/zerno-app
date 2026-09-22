@@ -115,8 +115,7 @@ var rules = [
 '[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 8px);max-height:calc(var(--topbar-h,64px) - 8px);max-width:min(60vw,420px);border-radius:8px}',
 '[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}','@media(max-width:360px){[data-brand="coffee"] .topbar .brand .mark{width:32px;height:32px}}',
 /* --- Шапка: грид-центрирование ≥821px (после всех brand-правил) --- */
-'.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;align-content:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0;min-width:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;max-width:100%}.topbar #profileTopBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}',/* --- Шапка: брендовые override тумблера/дропдауна/authPrompt --- */
-'[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
+'@media(min-width:821px){.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;align-content:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0;min-width:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;max-width:100%}.topbar #profileTopBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}}','[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
 '[data-brand="delivery"] .venueToggle:hover{background:#EFE6D8;box-shadow:3px 3px 0 var(--fr-choc);transform:translate(-1px,-1px)}',
 '[data-brand="delivery"] .venueWrap #brandSeg{background:#F6EEE1;border:2px solid #3A2A1C;box-shadow:3px 3px 0 #3A2A1C;border-radius:12px}',
 '[data-brand="delivery"] .venueWrap #brandSeg button:hover{background:#EFE6D8;transform:translateX(3px)}',
@@ -241,7 +240,13 @@ var rules = [
 '[data-brand="delivery"] #tickerTrack span::after{color:#C03B2A}',
 /* --- Панели --- */
 '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
-'[data-brand="delivery"] #panel,[data-brand="delivery"] .panel{background:var(--fr-paper);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}'
+'[data-brand="delivery"] #panel,[data-brand="delivery"] .panel{background:var(--fr-paper);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
+/* ── Ф3.57: профиль без двойного скролла ── */
+'#panel .pv{overscroll-behavior:contain}',
+'@media(max-width:1180px){body.panel-open{overflow:hidden}}',
+/* ── Ф3.58: кнопка «вверх» — брендовые стили ── */
+'[data-brand="coffee"] #scrollTopBtn{background:#fff;border:1.5px solid var(--line);color:var(--flame);box-shadow:0 10px 26px -10px rgba(18,58,107,.45)}',
+'[data-brand="delivery"] #scrollTopBtn{background:var(--fr-paper);border:2px solid var(--fr-choc);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);

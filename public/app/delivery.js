@@ -175,12 +175,16 @@ $('#deliveryGrid').addEventListener('click', e => {
     // Ищем выбранный вариант. 
     // Fallback: если пользователь ничего не нажал (или .sel слетел), принудительно берем первый.
     let selOpt = cardBody ? cardBody.querySelector('.opts button.sel') : null;
-    if (!selOpt && cardBody && opts.length > 0) {
-      selOpt = cardBody.querySelector('.opts button');
-      if (selOpt) selOpt.classList.add('sel');
-    }
-
-    const oi = selOpt ? parseInt(selOpt.dataset.oi, 10) : (opts.length > 0 ? 0 : -1);
+if (!selOpt && opts.length > 0) {
+const optsBox = (cardBody && cardBody.querySelector('.opts')) || null;
+if (optsBox) {
+optsBox.classList.remove('shake'); void optsBox.offsetWidth; optsBox.classList.add('shake');
+optsBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+if (typeof toast === 'function') toast('Выберите размер и тесто 🍕', '');
+return;
+}
+const oi = selOpt ? parseInt(selOpt.dataset.oi, 10) : -1;
     
     if (opts.length > 0 && oi === -1) {
       if (typeof toast === 'function') toast('Выберите размер и тесто', '⚠️');
@@ -285,8 +289,14 @@ $('#checkoutBtn').onclick = async () => {
   }
   const method = $('#checkoutMethod').value;
   // Вне рабочего времени (11:00–22:00) заказ становится предзаказом на завтра
-  const preorder = typeof window.assertServiceOpen === 'function' ? !window.assertServiceOpen() : false;
-
+const pm = typeof window.preorderMode === 'function' ? window.preorderMode() : (typeof window.assertServiceOpen === 'function' && !window.assertServiceOpen() ? 'tomorrow' : null);
+const preorder = !!pm;
+const slotVal = ($('#checkoutSlot') || {}).value || '';
+if (preorder && (!slotVal || slotVal === 'asap')) {
+toast('Выберите время доставки ⏰', '️');
+var sl = $('#checkoutSlot'); if (sl) sl.focus();
+return;
+}
   if (method === 'delivery') {
     if (!$('#checkoutPlace').value) return toast('Выберите населённый пункт', '📍');
     if (!$('#checkoutAddr').value.trim()) return toast('Укажите адрес', '🏠');
@@ -295,12 +305,12 @@ $('#checkoutBtn').onclick = async () => {
     method,
     place: $('#checkoutPlace').value,
     addr: $('#checkoutAddr').value.trim(),
-    slot: preorder && window.preorderSlot ? window.preorderSlot() : $('#checkoutSlot').value,
+    slot: slotVal,
     pay: $('#checkoutPay').value,
     comment: $('#checkoutComment').value.trim(),
     items: cart.map(c => ({ id: c.id, oi: c.oi, qty: c.qty }))
   };
-  if (preorder) toast('Предзаказ принят 🌙 Приготовим завтра с 11:00', '⏰');
+if (preorder) toast(pm === 'tomorrow' ? 'Предзаказ принят 🌙 Приготовим завтра с 11:00' : 'Предзаказ принят ⏰ Приготовим сегодня с 11:00', '⏰');
   try {
     const r = await api('/orders', { method: 'POST', body });
     toast(`Заказ #${r.order.no} оформлен!`, '🎉');
@@ -339,8 +349,13 @@ var r;
 window.populateSlots = function(){
   var now = new Date();
   var pad = function(n){ return String(n).padStart(2, '0'); };
-  var slots = [{ v: 'asap', l: 'Как можно скорее (~45 мин)' }];
-  for (var d = 0; d < 2; d++) {
+  var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : null;
+  var slots = pm
+  ? [{ v: '', l: pm === 'tomorrow' ? '⏰ Выберите время на завтра…' : '⏰ Выберите время сегодня…', dis: 1 }]
+  : [{ v: 'asap', l: 'Как можно скорее (~45 мин)' }];
+  var dFrom = pm === 'tomorrow' ? 1 : 0;
+  var dTo = pm === 'today' ? 1 : 2;
+  for (var d = dFrom; d < dTo; d++) {
     for (var m = 660; m < 1320; m += 30) {
       var t = new Date(now);
       t.setDate(t.getDate() + d);
@@ -352,7 +367,8 @@ window.populateSlots = function(){
   }
   var sel = document.getElementById('checkoutSlot');
   if (sel) {
-    sel.innerHTML = slots.map(function(s){ return '<option value="' + s.v + '">' + s.l + '</option>'; }).join('');
+    sel.innerHTML = slots.map(function(s){ return '<option value="' + s.v + '"' + (s.dis ? ' disabled selected' : '') + '>' + s.l + '</option>';
+ }).join('');
   }
 };
 
@@ -364,8 +380,11 @@ window.updateCartFab = function(){
   if (typeof syncAddButtons === 'function') syncAddButtons();
   cartFabShow();
   var cb = document.getElementById('checkoutBtn');
-  if (cb) cb.textContent = (typeof window.assertServiceOpen === 'function' && !window.assertServiceOpen()) ? '🌙 Предзаказ на завтра' : 'Оформить заказ';
-};
+if (cb) {
+var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : null;
+}
+}
+
 
 window.totalsNow = function(){
   var sum = cart.reduce(function(a,c){ return a + c.price * c.qty; }, 0);
@@ -399,15 +418,15 @@ return info.kind === 'percent' ? Math.round(sum * Math.min(90, info.value) / 100
 }
 
 /* ── Рабочие часы: единая проверка для всех обработчиков оформления ── */
-window.assertServiceOpen = function () {
-  var h = new Date().getHours();
-  return h >= 11 && h < 22;
+/* Ф3.59: режимы предзаказа: 'today' — до открытия (<11:00), 'tomorrow' — после закрытия (>=22:00), null — работаем */
+window.preorderMode = function () {
+var h = new Date().getHours();
+if (h >= 22) return 'tomorrow';
+if (h < 11) return 'today';
+return null;
 };
-window.preorderSlot = function () {
-  var t = new Date(); t.setDate(t.getDate() + 1); t.setHours(11, 0, 0, 0);
-  var pad = function (n) { return String(n).padStart(2, '0'); };
-  return pad(t.getDate()) + '-' + pad(t.getMonth() + 1) + ' | ' + pad(t.getHours()) + '-' + pad(t.getMinutes());
-};
+window.assertServiceOpen = function () { return window.preorderMode() === null; };
+window.preorder
 /* ── Ф3.28: стоп-лист и редактор карточек доставки (было fix-views v62) ── */
 $('#deliveryGrid').addEventListener('change', async function (e) {
   const t = e.target.closest('.donoff [data-onoff]'); if (!t) return;
