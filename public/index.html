@@ -2031,5 +2031,21 @@ body.is-cashier #scanFab{display:flex}
 <script src="app/vendor/qrcode.min.js" defer></script>
 <script src="app/core/qr.js" defer></script>
 <script src="app/core/review.js" defer></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+    .then(function(reg) {
+      reg.addEventListener('updatefound', function() {
+        var inst = reg.installing;
+        if (inst) inst.addEventListener('statechange', function() {
+         if (inst.state === 'installed' && navigator.serviceWorker.controller) {
+            inst.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+    }).catch(function() {});
+  navigator.serviceWorker.addEventListener('controllerchange', function() { window.location.reload(); });
+}
+</script>
 </body>
 </html>

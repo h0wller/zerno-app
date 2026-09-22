@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v61'; // ← поставь своё текущее значение +1
+const STATIC_CACHE = 'zerno-static-v62'; // ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v10';
 const API_CACHE = 'zerno-api-v6';
 
@@ -76,7 +76,11 @@ self.addEventListener('activate', (e) => {
   );
   self.clients.claim();
 });
-
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 self.addEventListener('fetch', (e) => {
   const { request } = e;
   const url = new URL(request.url);

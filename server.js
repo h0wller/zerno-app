@@ -98,9 +98,9 @@ app.use(express.static(PUBLIC_DIR, {
     // sw.js ОБЯЗАН быть no-store, чтобы iOS не брала его из кэша
     if (p.endsWith('sw.js')) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-    } else if (p.endsWith('index.html') || p.endsWith('manifest.webmanifest')) {
+    } else if (p.endsWith('index.html') || p.endsWith('manifest.webmanifest') || /\.svg$/i.test(p)) {      
       res.setHeader('Cache-Control', 'no-cache');
-    } else if (/\.(woff2?|png|jpe?g|svg|ico|webp)$/i.test(p)) {
+    } else if (/\.(woff2?|png|jpe?g|ico|webp)$/i.test(p)) {      
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     } else if (/\.(css|js)$/i.test(p)) {
       res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
