@@ -347,30 +347,53 @@ var r;
 };
 
 window.populateSlots = function(){
-  var now = new Date();
-  var pad = function(n){ return String(n).padStart(2, '0'); };
-  var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : null;
-  var slots = pm
-  ? [{ v: '', l: pm === 'tomorrow' ? '⏰ Выберите время на завтра…' : '⏰ Выберите время сегодня…', dis: 1 }]
-  : [{ v: 'asap', l: 'Как можно скорее (~45 мин)' }];
-  var dFrom = pm === 'tomorrow' ? 1 : 0;
-  var dTo = pm === 'today' ? 1 : 2;
-  for (var d = dFrom; d < dTo; d++) {
-    for (var m = 660; m < 1320; m += 30) {
-      var t = new Date(now);
-      t.setDate(t.getDate() + d);
-      t.setHours(Math.floor(m / 60), m % 60, 0, 0);
-      if (t <= now) continue;
-      var label = pad(t.getDate()) + '-' + pad(t.getMonth() + 1) + ' | ' + pad(t.getHours()) + '-' + pad(t.getMinutes());
-      slots.push({ v: label, l: label });
-    }
-  }
-  var sel = document.getElementById('checkoutSlot');
-  if (sel) {
-    sel.innerHTML = slots.map(function(s){ return '<option value="' + s.v + '"' + (s.dis ? ' disabled selected' : '') + '>' + s.l + '</option>';
- }).join('');
-  }
+var now = new Date();
+var pad = function(n){ return String(n).padStart(2, '0'); };
+var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : null;
+var sel = document.getElementById('checkoutSlot');
+var prev = sel ? sel.value : '';
+/* собираем слоты по дням: значение = «ДД-ММ | ЧЧ-ММ», подпись = только время */
+var days = {};
+var dFrom = pm === 'tomorrow' ? 1 : 0;
+var dTo = pm === 'today' ? 1 : 2;
+for (var d = dFrom; d < dTo; d++) {
+var items = [];
+for (var m = 660; m < 1320; m += 30) {
+var t = new Date(now);
+t.setDate(t.getDate() + d);
+t.setHours(Math.floor(m / 60), m % 60, 0, 0);
+if (t <= now) continue;
+items.push({ v: pad(t.getDate()) + '-' + pad(t.getMonth() + 1) + ' | ' + pad(t.getHours()) + '-' + pad(t.getMinutes()), l: pad(t.getHours()) + ':' + pad(t.getMinutes()) });
+}
+if (items.length) {
+var dt = new Date(now); dt.setDate(dt.getDate() + d);
+days[d] = { label: (d === 0 ? 'Сегодня' : 'Завтра') + ' (' + pad(dt.getDate()) + '.' + pad(dt.getMonth() + 1) + ')', items: items };
+}
+}
+var html = '';
+/* Ф3.60: в предзаказе время ОБЯЗАТЕЛЬНО — пустой заблокированный placeholder */
+if (pm) html += '<option value="" disabled selected>⏰ Выберите время доставки…</option>';
+else html += '<option value="asap">Как можно скорее (~45 мин)</option>';
+Object.keys(days).forEach(function (k) {
+html += '<optgroup label="' + days[k].label + '">' + days[k].items.map(function (s) { return '<option value="' + s.v + '">' + s.l + '</option>'; }).join('') + '</optgroup>';
+});
+if (sel) {
+sel.innerHTML = html;
+/* восстанавливаем прежний выбор, если он ещё доступен */
+if (prev) {
+for (var i = 0; i < sel.options.length; i++) {
+if (sel.options[i].value === prev && !sel.options[i].disabled) { sel.value = prev; break; }
+}
+}
+sel.classList.toggle('need-slot', !!pm);
+}
 };
+/* ── Ф3.60: подсветка селекта времени в режиме предзаказа ── */
+(function(){
+var s = document.createElement('style');
+s.textContent = '#checkoutSlot.need-slot{border:2px solid var(--flame);background:#FFF6E5;font-weight:700}';
+document.head.appendChild(s);
+})();
 
 window.updateCartFab = function(){
   var t = totalsNow();
@@ -426,7 +449,8 @@ if (h < 11) return 'today';
 return null;
 };
 window.assertServiceOpen = function () { return window.preorderMode() === null; };
-window.preorder
+window.preorderSlot = function () { return ''; }; // deprecated: слот берём из select
+
 /* ── Ф3.28: стоп-лист и редактор карточек доставки (было fix-views v62) ── */
 $('#deliveryGrid').addEventListener('change', async function (e) {
   const t = e.target.closest('.donoff [data-onoff]'); if (!t) return;

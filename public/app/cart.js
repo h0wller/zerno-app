@@ -364,8 +364,14 @@
       openAuth();
       return;
     }
-    var preorder = false;
-    if (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen()) preorder = true;
+    var pm = typeof window.preorderMode === "function" ? window.preorderMode() : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);
+var preorder = !!pm;
+var slotVal = (document.getElementById("checkoutSlot") || {}).value || "";
+if (preorder && (!slotVal || slotVal === "asap")) {
+toast("Выберите время доставки ⏰", "⚠️");
+var sl2 = document.getElementById("checkoutSlot"); if (sl2) sl2.focus();
+return;
+}
     var clipped = false;
     cart.forEach(function (c) {
       if (c.qty > 99) { c.qty = 99; clipped = true; }
@@ -388,7 +394,7 @@
       method: method,
       place: document.getElementById("checkoutPlace").value,
       addr: document.getElementById("checkoutAddr").value.trim(),
-      slot: preorder && window.preorderSlot ? window.preorderSlot() : document.getElementById("checkoutSlot").value,
+      slot: slotVal,
       pay: document.getElementById("checkoutPay").value,
       comment: document.getElementById("checkoutComment").value.trim(),
       items: cart.map(function (c) {
