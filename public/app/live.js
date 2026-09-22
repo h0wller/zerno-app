@@ -39,6 +39,13 @@ ordersPoll=setInterval(refreshOrdersLive,6000);
 setInterval(refreshProfileLive,5000);
 document.addEventListener('visibilitychange',function(){refreshOrdersLive();refreshProfileLive();});
 addEventListener('focus',function(){refreshOrdersLive();refreshProfileLive();});
+addEventListener('pageshow',function(e){
+  if(e.persisted){
+    refreshOrdersLive();
+    refreshProfileLive();
+    if(typeof window.syncBrandViews==='function')window.syncBrandViews();
+  }
+});
 if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('message',function(e){
 if(e.data&&e.data.type==='zpush'){refreshOrdersLive();refreshProfileLive();}
 });
