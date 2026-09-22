@@ -385,7 +385,7 @@ for (var i = 0; i < sel.options.length; i++) {
 if (sel.options[i].value === prev && !sel.options[i].disabled) { sel.value = prev; break; }
 }
 }
-sel.classList.toggle('need-slot', !!pm);
+sel.classList.toggle('need-slot', !!pm && !sel.value);
 }
 };
 /* ── Ф3.60: подсветка селекта времени в режиме предзаказа ── */

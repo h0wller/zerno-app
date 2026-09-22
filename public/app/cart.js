@@ -319,13 +319,6 @@
   var cmEl = document.getElementById("checkoutMethod");
   if (cmEl) cmEl.addEventListener("change", repaintCart);
 
-  ['checkoutAddr', 'checkoutSlot', 'checkoutPay', 'checkoutComment'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('input', saveDraft);
-      el.addEventListener('change', saveDraft);
-    }
-  });
 
   restoreDraft();
 
@@ -368,9 +361,9 @@
 var preorder = !!pm;
 var slotVal = (document.getElementById("checkoutSlot") || {}).value || "";
 if (preorder && (!slotVal || slotVal === "asap")) {
-toast("Выберите время доставки ⏰", "⚠️");
-var sl2 = document.getElementById("checkoutSlot"); if (sl2) sl2.focus();
-return;
+var sl = document.getElementById("checkoutSlot");
+if (sl) flagField(sl);
+return toast("Выберите время доставки ⏰", "⚠️");
 }
     var clipped = false;
     cart.forEach(function (c) {
@@ -383,13 +376,13 @@ return;
     }
     var method = document.getElementById("checkoutMethod").value;
     if (method === "delivery") {
-      if (!document.getElementById("checkoutPlace").value)
-        return toast("Выберите населённый пункт", "📍");
-      var addrV = document.getElementById("checkoutAddr").value.trim();
-      if (!addrV) return toast("Укажите адрес", "🏠");
-      if (!/\d/.test(addrV) || addrV.length < 5)
-        return toast("Адрес выглядит неполным: нужны улица и номер дома, напр. «Советская 10, кв. 5»", "🏠");
-    }
+var placeEl = document.getElementById("checkoutPlace");
+if (!placeEl.value) { flagField(placeEl); return toast("Выберите населённый пункт", "📍"); }
+var addrEl = document.getElementById("checkoutAddr");
+var addrV = addrEl.value.trim();
+if (!addrV) { flagField(addrEl); return toast("Укажите адрес", "🏠"); }
+if (!/\d/.test(addrV) || addrV.length < 5) { flagField(addrEl); return toast("Адрес выглядит неполным: нужны улица и номер дома, напр. «Советская 10, кв. 5»", "🏠"); }
+}
     var body = {
       method: method,
       place: document.getElementById("checkoutPlace").value,
@@ -420,10 +413,24 @@ return;
   };
 
   (function () {
-    var s = document.createElement("style");
-    s.textContent = "body:has(#cartPanel.open) #chatFab{display:none!important}";
-    document.head.appendChild(s);
-  })();
+var s = document.createElement("style");
+s.textContent =
+"body:has(#cartPanel.open) #chatFab{display:none!important}" +
+"#cartPanel .field-error{border:2px solid var(--flame,#C03B2A);background:#FFF6E5;animation:cartFieldShake .4s}" +
+"@keyframes cartFieldShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}";
+document.head.appendChild(s);
+})();
+/* ── Ф3.61: подсветка проблемного поля внутри корзины ── */
+function flagField(el) {
+if (!el) return;
+el.classList.remove("field-error", "need-slot");
+void el.offsetWidth;                       // рестарт шейка
+el.classList.add("field-error");
+try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
+try { el.focus({ preventScroll: true }); } catch (e) { try { el.focus(); } catch (e2) {} }
+clearTimeout(el.__flagT);
+el.__flagT = setTimeout(function () { el.classList.remove("field-error"); }, 4000);
+}
 
   restoreDraft();
 })();

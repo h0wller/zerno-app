@@ -1,107 +1,160 @@
-# Frontend tech debt (Фаза 2, стратегия B1)
-## Статус Фазы 3
-- ✅ Ф3.1 — v68-полиш → public/app/core/a11y.js
-- ✅ Ф3.2 — v62 CSS + panel-open → public/app/ui/styles.js
-- ✅ Ф3.3 — v62 splash → public/app/core/splash.js
-Ф3.11 (растворено) — секция 9 (чат-ядро) → public/app/chat-core.js
-chatKey, fetch/toast-патчи, setBotName, kbAnswer, showHints, addMsg, mySend,
-sendChat, reloadChatThread, chatMsgs-клики, chatFab-обёртка, loadScList,
-updateStaffBadge вынесены. State (chatCtx/supportPending/chosenSupportCtx)
-остаётся приватным в fix-views секция 0 и публикуется мостом
-window.__fvChatState; chat-state.js — делегирующий прокси.
-Пилюля ctxSwitch удалена (контекст следует за brandSeg).
-### v10-support: гонка с интервалом
-`fix-views.js` (блок `if(SUPPORT_ENTRY&&!chosenSupportCtx)`):
-интервал 250ms ре-создаёт `#supportChooseOverlay`, если `showSupportOverlay()`
-бросил исключение до `clearInterval(supIv)`. В CI проявляется как
-`toHaveCount(0) failed: expected 0, received 1` в тесте `выбор доставки`.
+# Frontend Roadmap & Tech Debt (ZERNO-APP)
 
-**Обход сейчас:** `waitForTimeout(500)` в тесте + `retries:2` в CI.
+## 1. Текущий статус проекта
 
-**Фикс в Фазе 3:** обернуть тело интервала в try/finally, либо снимать интервал
-при `chosenSupportCtx` безусловно.
-### v61/v62 (fix-views) — loadDelivery / populateSlots / updateCartFab
+* Ветка: `pizza`.
 
-В `fix-views.js` эти три функции **полностью заменяются** (не оборачиваются):
-- `updateCartFab=function(){...}` (строка 200)
-- `loadDelivery=async function(){...}` (строка 293)
-- `populateSlots=function(){...}` (строка 312)
 
-Оригинальные версии в `index.html` — **мёртвый код**, оставлены до Фазы 3.
+* Базовый статус: E2E-тесты Playwright — **20 passed**, `css-audit.mjs` — **0 нарушений**.
 
-**Почему не вынесены в `public/app/delivery.js` (F2.5, вариант B):**
-если положить их в наш модуль, fix-views всё равно перезапишет их через
-глобальное присваивание. Получится дубль, обёрнутый дважды — риск
-двойных вызовов/побочных эффектов.
 
-**Фикс в Фазе 3:** перенести содержимое fix-views версий в `delivery.js`
-как единственную реализацию, удалить старые из `index.html` и `fix-views.js`.
-### v61 (fix-views) — loadMyOrders перезаписывается
+* Инвалидация и PWA: внедрён релизный цикл F3.58 (активация через `SKIP_WAITING`, `updateViaCache: 'none'`, ETag/`no-cache` на сервере для `.svg`, поддержка `pageshow` для bfcache).
 
-`loadMyOrders` в `fix-views.js` **полностью заменяется** на строках 527 и 1039.
-Оригинал из `profile.js` (F2.2) — **мёртвый код** после загрузки fix-views.
 
-**Фикс в Фазе 3:** перенести содержимое fix-views-версии в `profile.js`
-как единственную реализацию, удалить дубликат из fix-views.
-### v61 (fix-views) — openEditor и exitEdit заменяются целиком
+* Монолит `fix-views.js` полностью устранён (закрыто в Фазе 3, тег `f3.23`).
 
-`fix-views.js` переопределяет:
-- `openEditor=function(id){...}` (строка 400)
-- `exitEdit=function(){...}` (строка 481)
 
-Оригиналы в `index.html` — **мёртвый код** после fix-views.
-Связанные функции (`renderZone`, `loadImg`, `edit`, `#emZone/#emFile` handlers)
-тоже остаются в inline: их использует fix-views-овский `openEditor`.
 
-**Фикс в Фазе 3:** перенести содержимое fix-views-версий в `public/app/menu-editor.js`,
-удалить дубликат.
-### Ф3.1 (растворено) — v68-полиш → public/app/core/a11y.js
+---
 
-`fix-views.js` v68-полиш (a11y + reduced-motion + lazy-img) перенесён
-в `public/app/core/a11y.js`. Удалён из fix-views, оставлен маркер.
-### Ф3.2 (растворено) — v62 CSS + panel-open → public/app/ui/styles.js
+## 2. Фаза 5: Вынос inline-ядра из `public/index.html` (Текущий приоритет)
 
-CSS-инъекция v62 (`.chat-fab`, `.modal`, `.phead .gear`, `#settingsModal .set-row`,
-`#deliveryView .search`) и MutationObserver `body.panel-open` перенесены
-в `public/app/ui/styles.js`. Остальные части v62-IIFE (splash, settingsModal,
-поиск в Пятнице, cashLog, custClose) — в следующих шагах.
-### Ф3.3 (растворено) — v62 splash → public/app/core/splash.js
+Inline-скрипт `public/index.html` по-прежнему содержит более 500 строк бизнес-логики ядра. Задача фазы — оставить в `index.html` исключительно критический скелет и разметку.
 
-Splash-обработчик (`#brandSplashStatic`) перенесён в `public/app/core/splash.js`.
-Добавлен экспорт `window.setChatCtx(ctx)` в fix-views (строка 624) —
-точка входа для chatCtx из внешних модулей.
-Фаза 3 (fix-views): ЗАВЕРШЕНА (Ф3.11–Ф3.23). fix-views.js удалён, тег f3.23.
-Инвентаризация inline (Ф3.24): базы renderCart/orderCard/renderOrders/renderProfile/
-loadMyOrders/showCust/renderLog/chatKey/addMsg/loadHistory/botReply/openStaffChat
-живут в модулях; inline больше не дублирует их.
-Остаток inline = ядро (глобалы, api/toast, auth, панели, QR, кофе-редактор,
-review, renderAll/boot) → вынесено в отдельную Фазу 4.
-Фаза 4 (план): 4.1 QR+review-кластер → core/qr.js, core/review.js;
-4.2 auth-кластер → core/auth.js; 4.3 панели/виды → core/views.js (дополнить);
-4.4 глобалы+утилиты → core/state.js, core/utils.js; renderAll/boot → core/boot.js;
-удаление inline-скрипта; 4.5 ESM-миграция.
+### [ ] 5.2 — UI & Сетевое ядро (`public/app/core/ui.js`)
 
-Фаза 4 (дедупликация inline): ЗАВЕРШЕНА (Ф4.1a/b, Ф4.2).
-QR-кластер → core/qr.js; review-кластер → core/review.js; мёртвый loadPromos удалён.
-Аудит остатка (weekpromo/pmSave/dash/loadSubs/confetti/promoBtn, база оверлея,
-auth, панели, renderAll/boot): реализации одиночные, дублей нет — оставлены
-в inline как ядро приложения.
-Цепочка оверлея base→v66→v67 не тронута (контракт core/overlay.md).
-Фаза 5 (план): вынос ядра из inline + переход на ESM — отдельная работа
-с полным прогоном: 5.1 core/state.js (глобалы), 5.2 core/ui.js (api/toast/часы),
-5.3 core/auth.js, 5.4 core/panel.js (база оверлея+панели), 5.5 core/boot.js
-(renderAll/boot), 5.6 type=module + import/export, отказ от window.*-глобалов.
+* Вынести функцию запросов `api()` с обработкой 401 и обновлением `window.__ztAuthDead`.
 
-WISHLIST (пункты 1–7): ЗАКРЫТ (теги theme-v2, wishlist-done).
-Правка pointerdown для [data-os] отменена: отмена работает с первого клика
-(capture-обработчик + блокировка кнопки).
-Ф5.9 (план): вычистка мёртвых блоков theme-v2.css (#brand-toggle/.menu-card/
-.pizza-opts-grid/#cart-sheet/.staff-call-btn/.card-stopped) + компонентный слой
-на реальных селекторах отдельным визуальным прогоном.
-PERF (новое): анализ Lighthouse-отчёта zerno-test-production — получить JSON,
-разбор opportunities (SW-стратегия, render-blocking, вес медиа, main-thread),
-карточки Ф6.x по итогам.
-Фаза 5 (план): вынос inline-ядра index.html: 5.1 core/state.js (глобалы),
-5.2 core/ui.js (api/toast/tickClock/renderUpd/TK), 5.3 core/auth.js (openAuth/
-setUser/PIN-флоу), 5.4 core/panel.js (база оверлея + панели/табы),
-5.5 core/boot.js (renderAll/boot), 5.6 ESM (type=module, import/export, отказ от window.*).
+
+* Вынести систему системных сообщений `toast()`.
+
+
+* Вынести генерацию тикера `TK` и форматирование даты обновления меню `renderUpd()`.
+
+
+* Обеспечить обратную совместимость через `window.api` и `window.toast`.
+
+
+
+### [ ] 5.3 — Кластер авторизации (`public/app/core/auth.js`)
+
+* Вынести модальные окна и функции `openAuth()`, `closeAuth()`, `authSwap()`.
+
+
+* Вынести логику `setUser()` (сохранение токенов, сброс состояний, отрисовка QR-кодов).
+
+
+* Вынести формы регистрации, входа по PIN/OTP и сброса доступа.
+
+
+* Вынести экран ввода пин-кода персонала `openPin()`, `closePin()`, `tryActivate()`.
+
+
+
+### [ ] 5.4 — Панели, шторка и оверлеи (`public/app/core/panel.js`)
+
+* Вынести контроллер шторки профиля (`openPanel`, `closePanel`).
+
+
+* Вынести обработчик переключения вкладок `.tabs button` (`setTab`).
+
+
+* Централизовать синхронизацию с `overlay.js`.
+
+
+
+### [ ] 5.5 — Инициализация и жизненный цикл (`public/app/core/boot.js`)
+
+* Вынести агрегационную функцию `renderAll()`.
+
+
+* Сформировать стартовую точку входа `boot()`: загрузка пользователя, проверка сплэша, инициализация видов.
+
+
+* Очистить тег `<body>` в `public/index.html` от остаточных инлайн-скриптов.
+
+
+
+### [ ] 5.6 — Миграция на ESM (ECMAScript Modules)
+
+* Перевести загрузку клиентского кода на единую точку входа: `<script type="module" src="./app/main.js"></script>`.
+
+
+* Заменить неявные зависимости `window.*` на декларативные `import` и `export`.
+
+
+* Изолировать приватные состояния модулей (`cart`, `MENU`, `me`).
+
+
+
+---
+
+## 3. Оптимизация CSS и закрытие техдолга (`docs/css-tech-debt.md`)
+
+| Задача | Текущее состояние | Целевое решение | Приоритет |
+| --- | --- | --- | --- |
+| **Разгрузка Слоя 0**<br> | Inline `<style>` в `index.html` содержит ~90% базовых компонентов.
+
+ | Перенос классов модалок, карточек, корзины и чата в `theme-v2.css` (Слой 1).
+
+ | **P1** |
+| **Дубль `.brand .mark**`<br> | Стили логотипа дублируются в `index.html` и `views.js`.
+
+ | Оставить в Слое 0 только сброс габаритов против FOUC, layout перенести в Слой 2.
+
+ | **P2** |
+| **Токен `--topbar-h**`<br> | Переменная объявлена инлайном в `index.html`.
+
+ | Закрепить базовый токер в `:root` внутри `theme-v2.css`.
+
+ | **P2** |
+| **Ф5.9: Очистка `theme-v2.css**`<br> | Наличие классов-рудиментов (`#brand-toggle`, `.pizza-opts-grid`, `.staff-call-btn`).
+
+ | Полная ревизия и удаление неиспользуемых селекторов.
+
+ | **P3** |
+
+---
+
+## 4. Бэклог продуктовых фич (`docs/notes.md`)
+
+### [ ] Предзаказы вне рабочих часов
+
+* **Контекст:** Сервис доставки работает строго с 11:00 до 22:00.
+
+
+* **UI/UX:** При попытке чекаута вне интервала показывать модальное окно выбора предзаказа с выбором даты (завтра/послезавтра) и слота (утро 11:00–14:00, день 14:00–18:00, вечер 18:00–22:00).
+
+
+* **Бэкенд:** Расширить таблицу `orders` полями `is_preorder INTEGER DEFAULT 0` и `preorder_date TEXT`.
+
+
+* **Профиль:** Добавить индикацию и фильтр «Предзаказы» в раздел «Мои заказы».
+
+
+
+---
+
+## 5. Регламент внесения изменений
+
+```
+1. Правка кода в public/app/* или server/*
+2. node --check <затронутые файлы>
+3. npm run pretest (node scripts/css-audit.mjs) -> ожидание: 0 нарушений
+4. npm run test:e2e -> ожидание: 20 passed
+5. Инкремент STATIC_CACHE в public/sw.js при правках фронтенда
+6. Формат коммита: fix(scope): F3.XX - описание изменений
+
+```
+
+---
+
+## 6. Архив выполненных этапов
+
+* **Фаза 1–3 (f3.23):** Полный распил и ликвидация монолита `fix-views.js`. Выделены независимые модули `a11y.js`, `api.js`, `cart.js`, `cashier.js`, `chat-core.js`, `chat.js`, `config.js`, `deeplink.js`, `delivery.js`, `live.js`, `menu-editor.js`, `menu.js`, `notify.js`, `orders.js`, `overlay.js`, `profile-brand.js`, `profile.js`, `push.js`, `scanner.js`, `splash.js`, `styles.js`, `swipe.js`, `utils.js`, `views.js`.
+
+
+* **Фаза 4 (Ф4.1–Ф4.2):** Дедупликация инлайн-кода: QR-генератор перенесён в `core/qr.js`, отзывы — в `core/review.js`, базовые переменные — в `core/state.js`. Удалён мёртвый код промокодов.
+
+
+* **PWA & Cache стабилизация (F3.58):** Устранено неконтролируемое кэширование `.svg` в `server.js`, обеспечен корректный жизненный цикл воркера через `skipWaiting`/`updateViaCache: none`, закрыта проблема сброса состояния при жестах iOS/Android bfcache.
