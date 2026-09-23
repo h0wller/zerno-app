@@ -128,40 +128,40 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
- // 2. Медиа: Stale-While-Revalidate. Кэш отвечает мгновенно, обновление скачивается фоном —
-// новый логотип/картинки приходят на СЛЕДУЮЩЕЙ загрузке после деплоя, без хард-ресета.
-// 2a. SVG (логотипы/иконки): network-first с ревалидацией — F5 ВСЕГДА показывает свежий файл,
-// офлайн — отдаём кэш. Лечит «логотип не меняется при F5».
-if (/\.svg$/.test(url.pathname)) {
-e.respondWith(
-fetch(request, { cache: 'no-cache' })
-.then((netRes) => {
-if (netRes.ok) {
-const c = netRes.clone();
-caches.open(MEDIA_CACHE).then((cc) => cc.put(request, c)).catch(() => {});
-}
-return netRes;
-})
-.catch(() => caches.match(request).then((m) => m || new Response('', { status: 503, statusText: 'offline' })))
-);
-return;
-}
-// 2b. Остальные медиа (фото позиций): Stale-While-Revalidate — кэш мгновенно, свежее фоном.
-if (url.pathname.match(/.(png|jpg|jpeg|webp|ico)$/)) {
-e.respondWith(
-caches.open(MEDIA_CACHE).then(async (cache) => {
-const match = await cache.match(request);
-const network = fetch(request)
-.then((netRes) => {
-if (netRes.ok) cache.put(request, netRes.clone());
-return netRes;
-})
-.catch(() => match || new Response('', { status: 503, statusText: 'offline' }));
-return match || network;
-})
-);
-return;
-}
+  // 2. Медиа: Stale-While-Revalidate. Кэш отвечает мгновенно, обновление скачивается фоном —
+  // новый логотип/картинки приходят на СЛЕДУЮЩЕЙ загрузке после деплоя, без хард-ресета.
+  // 2a. SVG (логотипы/иконки): network-first с ревалидацией — F5 ВСЕГДА показывает свежий файл,
+  // офлайн — отдаём кэш. Лечит «логотип не меняется при F5».
+  if (/\.svg$/.test(url.pathname)) {
+    e.respondWith(
+      fetch(request, { cache: 'no-cache' })
+        .then((netRes) => {
+          if (netRes.ok) {
+            const c = netRes.clone();
+            caches.open(MEDIA_CACHE).then((cc) => cc.put(request, c)).catch(() => { });
+          }
+          return netRes;
+        })
+        .catch(() => caches.match(request).then((m) => m || new Response('', { status: 503, statusText: 'offline' })))
+    );
+    return;
+  }
+  // 2b. Остальные медиа (фото позиций): Stale-While-Revalidate — кэш мгновенно, свежее фоном.
+  if (url.pathname.match(/.(png|jpg|jpeg|webp|ico)$/)) {
+    e.respondWith(
+      caches.open(MEDIA_CACHE).then(async (cache) => {
+        const match = await cache.match(request);
+        const network = fetch(request)
+          .then((netRes) => {
+            if (netRes.ok) cache.put(request, netRes.clone());
+            return netRes;
+          })
+          .catch(() => match || new Response('', { status: 503, statusText: 'offline' }));
+        return match || network;
+      })
+    );
+    return;
+  }
 
   // 3. App Shell: network-first для кода. Ф3.30: нет сети и нет кэша — явный 503, а не reject
   if (request.destination === 'document' || url.pathname.startsWith('/app/') || /\.(js|css)$/.test(url.pathname)) {
@@ -170,7 +170,7 @@ return;
         .then((netRes) => {
           if (netRes.ok) {
             const clone = netRes.clone();
-            caches.open(STATIC_CACHE).then((c) => c.put(request, clone)).catch(() => {});
+            caches.open(STATIC_CACHE).then((c) => c.put(request, clone)).catch(() => { });
           }
           return netRes;
         })

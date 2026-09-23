@@ -6,6 +6,7 @@ import { logEv } from '../domain/helpers.js';
 import { nowISO, uid } from '../utils/id-time.js';
 import { sendPush } from '../services/push.js';
 import { tgSend, TG_CHANNEL } from '../services/telegram.js';
+import { getStreetSuggestions, validateDeliveryAddress } from '../domain/address.js';
 
 const ordersRouter = Router();
 
@@ -14,9 +15,9 @@ const DELIVERY = {
   hours: [11, 22], eta: 45, slotStep: 30, slotDays: 2,
   pickupAddr: 'пгт Янтарный, ул. Советская, 38А', pickupDiscount: 0.10,
   zones: [
-    { fee: 200, places: ['Янтарный','Покровское','Синявино'] },
-    { fee: 500, places: ['Кленовое','Охотное','Русское','Поваровка','Морозовка','Янтаровка','Красноторовка','Ягодное'] },
-    { fee: 1100, places: ['Донское','Прислово'] },
+    { fee: 200, places: ['Янтарный', 'Покровское', 'Синявино'] },
+    { fee: 500, places: ['Кленовое', 'Охотное', 'Русское', 'Поваровка', 'Морозовка', 'Янтаровка', 'Красноторовка', 'Ягодное'] },
+    { fee: 1100, places: ['Донское', 'Прислово'] },
   ],
 };
 
@@ -26,6 +27,7 @@ const weekPromo = () => {
   if (w.until && new Date(w.until) < new Date()) return null;
   return w;
 };
+
 const pizzaMonth = () => {
   const m = JSON.parse(db.prepare("SELECT value FROM meta WHERE key='pizza_month'").get()?.value || 'null');
   return (m && m.on && m.name) ? m : null;
@@ -34,7 +36,7 @@ const pizzaMonth = () => {
 export const ORDER_STATUS = {
   new: '🆕 Заказ принят',
   accept: '✅ Подтверждён, передаем на кухню',
-  cook: '👨🍳 Готовится',
+  cook: '👨‍🍳 Готовится',
   way: '🛵 Курьер выехал',
   done: '🏁 Выполнен',
   cancel: '❌ Отменён',
@@ -72,17 +74,41 @@ ordersRouter.put('/api/admin/weekpromo', adminGuard, (req, res) => {
   res.json({ ok: true });
 });
 
+/* ── Эндпоинт подсказок улиц для datalist ── */
+ordersRouter.get('/api/delivery/addr', (req, res) => {
+  const place = String(req.query.place || '').trim();
+  const q = String(req.query.q || '').trim();
+  const suggestions = getStreetSuggestions(place, q);
+  res.json({ suggestions });
+});
+
 /* ── заказы ── */
 ordersRouter.post('/api/orders', userGuard, (req, res) => {
   const b = req.body || {};
   const method = b.method === 'pickup' ? 'pickup' : 'delivery';
   let fee = 0;
+  let addrStr = '';
+
   if (method === 'delivery') {
     const z = DELIVERY.zones.find(z => z.places.includes(String(b.place || '').trim()));
     if (!z) return res.status(400).json({ error: 'Выберите населённый пункт из списка' });
-    if (!String(b.addr || '').trim()) return res.status(400).json({ error: 'Укажите адрес' });
+
+    const street = String(b.street || '').trim();
+    const house = String(b.house || '').trim();
+    const legacyAddr = String(b.addr || '').trim();
+
+    if (street && house) {
+      const vErr = validateDeliveryAddress(b.place, street, house);
+      if (vErr) return res.status(400).json({ error: vErr });
+      addrStr = street + ', ' + house;
+    } else if (legacyAddr) {
+      addrStr = legacyAddr; // Фолбэк для обратной совместимости и тестов
+    } else {
+      return res.status(400).json({ error: 'Укажите улицу и дом' });
+    }
     fee = z.fee;
   }
+
   const raw = Array.isArray(b.items) ? b.items.slice(0, 50) : [];
   if (!raw.length) return res.status(400).json({ error: 'Корзина пуста' });
   const items = []; let sum = 0;
@@ -120,14 +146,19 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
   const total = sum - discount - promoDiscount + fee;
   const no = ((db.prepare("SELECT value FROM meta WHERE key='order_no'").get()?.value | 0) + 1);
   db.prepare("INSERT INTO meta(key,value) VALUES('order_no',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(String(no));
-  const o = { id: uid('o'), no, cid: req.user.id, name: req.user.name, phone: req.user.phone, method,
-    place: method === 'delivery' ? String(b.place).trim() : '', addr: method === 'delivery' ? String(b.addr).trim() : '',
-    slot: b.slot === 'asap' ? 'asap' : String(b.slot || 'asap').slice(0, 40), pay: b.pay === 'card' ? 'card' : 'cash',
-    comment: String(b.comment || '').slice(0, 300), items, total, discount, fee, gifts, promo: promoCode, promodiscount: promoDiscount, status: 'new', created: nowISO(), updated: nowISO() };
-  db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,fee,gifts,status,created,updated)
-    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+  const o = { 
+    id: uid('o'), no, cid: req.user.id, name: req.user.name, phone: req.user.phone, method,
+    place: method === 'delivery' ? String(b.place).trim() : '',  
+    addr: addrStr,
+    slot: b.slot === 'asap' ? 'asap' : String(b.slot || 'asap').slice(0, 40), 
+    pay: b.pay === 'card' ? 'card' : 'cash',
+    comment: String(b.comment || '').slice(0, 300), 
+    items, total, discount, fee, gifts, promo: promoCode, promodiscount: promoDiscount, 
+    status: 'new', created: nowISO(), updated: nowISO() 
+  };
+  db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,fee,gifts,status,created,updated) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(o.id, o.no, o.cid, o.name, o.phone, o.method, o.place, o.addr, o.slot, o.pay, o.comment,
-      JSON.stringify(o.items), o.total, o.discount, o.fee, JSON.stringify(o.gifts), o.status, o.created, o.updated);
+    JSON.stringify(o.items), o.total, o.discount, o.fee, JSON.stringify(o.gifts), o.status, o.created, o.updated);
   orderNotifyStaff(o);
   res.json({ order: o });
 });
@@ -161,7 +192,7 @@ ordersRouter.post('/api/orders/:id/delay', dispatchGuard, (req, res) => {
   const min = +req.body.min || 0;
   const comment = String(req.body.comment || '').slice(0, 140);
   const o = db.prepare('SELECT * FROM orders WHERE id=?').get(req.params.id)
-        || db.prepare('SELECT * FROM orders WHERE no=?').get(+req.params.id || 0);
+    || db.prepare('SELECT * FROM orders WHERE no=?').get(+req.params.id || 0);
   if (!o) return res.status(404).json({ error: 'Заказ не найден' });
   db.prepare('UPDATE orders SET eta=?, updated=? WHERE id=?').run(min ? `+${min} мин` : '', nowISO(), o.id);
   sendPush(o.cid, '🛵 Время доставки обновлено',
