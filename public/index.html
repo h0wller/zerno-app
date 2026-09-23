@@ -227,7 +227,7 @@ body.editing .card:hover{transform:none}
 
 .tabs .btn-back{flex:0 0 auto;padding:9px 12px;color:var(--flame);font-weight:800}
 @media(min-width:1181px){.tabs .btn-back{display:none}}
-.pv{overflow-y:auto;padding:14px;flex:1;scrollbar-width:thin}
+.pv{overflow-y:auto;padding:14px;flex:1;scrollbar-width:thin;overscroll-behavior:contain}
 .pv::-webkit-scrollbar{width:6px}.pv::-webkit-scrollbar-thumb{background:#C9D3DC;border-radius:3px}
 .pv h4{font:700 12px "Unbounded";letter-spacing:.08em;text-transform:uppercase;color:#8B98A5;margin:14px 2px 9px}
 .pv h4:first-child{margin-top:2px}
@@ -394,7 +394,7 @@ body.editing .card:hover{transform:none}
 .chat-h button{margin-left:auto;color:#9FB4C8;font-size:20px;padding:4px}
 .chat-h button:hover{color:#fff}
 
-.chat-m{flex:1;overflow-y:auto;background:#F0F4F8;padding:14px;display:flex;flex-direction:column;gap:9px;scrollbar-width:thin}
+.chat-m{flex:1;overflow-y:auto;background:#F0F4F8;padding:14px;display:flex;flex-direction:column;gap:9px;scrollbar-width:thin;overscroll-behavior:contain}
 .msg{max-width:82%;padding:9px 13px;border-radius:16px;font-size:13.5px;line-height:1.45;animation:msgin .3s cubic-bezier(.2,1.2,.4,1) both}
 @keyframes msgin{from{opacity:0;transform:translateY(8px) scale(.96)}}
 .msg.bot{align-self:flex-start;background:#FFFFFF;color:#101418;border:1px solid #D8DFE4;border-bottom-left-radius:5px}
