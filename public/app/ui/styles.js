@@ -6,9 +6,13 @@
   "use strict";
   /* ── z-index + panel-open + settings CSS ── */
   var css = document.createElement("style");
-  css.textContent =
-    ".chat-fab{z-index:95!important} " +
-    "@media(max-width:1180px){body.panel-open .chat-fab{display:none}} " +
+css.textContent =
+".chat-fab{z-index:95!important}" +
+"@media(max-width:1180px){body.panel-open .chat-fab{display:none}}" +
+/* Ф3.62: профиль открыт на мобильном — body не скроллится (нет «второго скролла» под профилем) */
+"@media(max-width:1180px){body.panel-open{overflow:hidden}}" +
+/* ленты не передают скролл дальше себя (overscroll-цепочка) */
+".pv,#chatMsgs,.cartPanel{overscroll-behavior:contain}" +
     ".modal{z-index:340!important} " +
     ".phead .gear{margin-left:auto;width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:18px} " +
     "#settingsModal .set-row{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;background:#fff} " +
