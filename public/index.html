@@ -626,10 +626,14 @@ body.is-cashier .cust .acts{min-width:260px}
 .cartItem{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
 .cartItem .qty{display:flex;gap:6px;align-items:center}
 
-.checkoutForm{display:flex;flex-direction:column;gap:12px;margin-top:16px}
-.checkoutForm label{font-size:13px;font-weight:600;color:var(--soft)}
-.checkoutForm input,.checkoutForm select,.checkoutForm textarea{border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;font-size:14px;background:#fff;color:#101418}
-.checkoutForm textarea{resize:vertical;min-height:60px}
+.checkoutForm{display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px}
+.checkoutForm label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)}
+.checkoutForm input,.checkoutForm select,.checkoutForm textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-size:16px;background:#fff;color:#101418}
+.checkoutForm textarea{resize:vertical;min-height:64px}
+.cartPanel #checkoutBtn{width:100%}
+.cartPanel .findrow{flex-wrap:nowrap;align-items:stretch}
+.cartPanel .findrow input{min-width:0;font-size:16px}
+.cartPanel .findrow .btn{flex:0 0 auto;white-space:nowrap}
 .deliveryBanner{background:#FFF6E5;border:1.5px dashed #F2D9A5;border-radius:14px;padding:12px 16px;margin-bottom:16px;color:#6B4E0E;font-size:13px;font-weight:600}
 
 .orderCard{border:1.5px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;background:#fff}
