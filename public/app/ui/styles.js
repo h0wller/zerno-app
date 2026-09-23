@@ -6,9 +6,15 @@
   "use strict";
   /* ── z-index + panel-open + settings CSS ── */
   var css = document.createElement("style");
-  css.textContent =
-    ".chat-fab{z-index:95!important} " +
-    "@media(max-width:1180px){body.panel-open .chat-fab{display:none}} " +
+css.textContent =
+".chat-fab{z-index:95!important} " +
+"@media(max-width:1180px){body.panel-open .chat-fab{display:none}} " +
+/* Ф3.63: открытая шторка = документ не скроллится (убирает «скролл-призрак» и конфликты скроллов) */
+"@media(max-width:1180px){body.panel-open{overflow:hidden}} " +
+/* Ф3.62: профиль открыт на мобильном — body не скроллится (нет «второго скролла» под профилем) */
+"@media(max-width:1180px){body.panel-open{overflow:hidden}}" +
+/* ленты не передают скролл дальше себя (overscroll-цепочка) */
+".pv,#chatMsgs,.cartPanel{overscroll-behavior:contain}" +
     ".modal{z-index:340!important} " +
     ".phead .gear{margin-left:auto;width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:18px} " +
     "#settingsModal .set-row{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;background:#fff} " +
@@ -100,10 +106,11 @@
     ".cartPanel{max-width:860px!important;margin:0 auto!important;padding:28px 32px!important;font-size:15px} " +
     ".cartPanel h3{font-size:20px;margin-bottom:20px!important} " +
     ".cartPanel #cartItems{margin-bottom:20px} " +
-    ".cartPanel .checkoutForm{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-top:20px} " +
-    ".cartPanel .checkoutForm label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--soft)} " +
-    ".cartPanel .checkoutForm label:nth-child(5){grid-column:1/-1} " +
-    ".cartPanel .checkoutForm select,.cartPanel .checkoutForm input,.cartPanel .checkoutForm textarea{font-size:14px;padding:10px 12px} " +
+".cartPanel .checkoutForm{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-top:20px} " +
+".cartPanel .checkoutForm label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)} " +
+".cartPanel .checkoutForm label:nth-child(3),.cartPanel .checkoutForm label:nth-child(6){grid-column:1/-1} " +
+".cartPanel .checkoutForm select,.cartPanel .checkoutForm input,.cartPanel .checkoutForm textarea{font-size:15px;padding:12px 14px} " +
+".cartPanel .checkoutForm textarea{min-height:80px} " +
     ".cartPanel button.cta{margin-top:24px!important;font-size:16px;padding:16px} " +
     ".cartPanel .findrow{display:flex;gap:8px;margin-top:14px} " +
     ".cartPanel .findrow input{flex:1;font-size:14px} " +
