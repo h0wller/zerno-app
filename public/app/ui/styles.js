@@ -7,8 +7,10 @@
   /* ── z-index + panel-open + settings CSS ── */
   var css = document.createElement("style");
 css.textContent =
-".chat-fab{z-index:95!important}" +
-"@media(max-width:1180px){body.panel-open .chat-fab{display:none}}" +
+".chat-fab{z-index:95!important} " +
+"@media(max-width:1180px){body.panel-open .chat-fab{display:none}} " +
+/* Ф3.63: открытая шторка = документ не скроллится (убирает «скролл-призрак» и конфликты скроллов) */
+"@media(max-width:1180px){body.panel-open{overflow:hidden}} " +
 /* Ф3.62: профиль открыт на мобильном — body не скроллится (нет «второго скролла» под профилем) */
 "@media(max-width:1180px){body.panel-open{overflow:hidden}}" +
 /* ленты не передают скролл дальше себя (overscroll-цепочка) */
