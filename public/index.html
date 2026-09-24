@@ -3900,48 +3900,33 @@
       </div>
 
       <div class="checkoutForm">
-        <label for="checkoutMethod"
-          >Способ получения
-          <select id="checkoutMethod" name="checkoutMethod">
-            <option value="delivery">Доставка</option>
-            <option value="pickup">Самовывоз (−10%)</option>
-          </select>
-        </label>
+    <label for="checkoutMethod">Способ получения
+      <select id="checkoutMethod" name="checkoutMethod">
+        <option value="delivery">Доставка</option>
+        <option value="pickup">Самовывоз (−10%)</option>
+      </select>
+    </label>
 
-        <!-- Блок доставки: скрывается целиком при самовывозе -->
-        <div id="checkoutDeliveryGroup">
-          <label for="checkoutPlace" id="checkoutPlaceLabel"
-            >Населённый пункт
-            <select id="checkoutPlace" name="checkoutPlace"></select>
-          </label>
+    <div id="checkoutDeliveryGroup" style="display:contents">
+      <label for="checkoutPlace" id="checkoutPlaceLabel">Населённый пункт
+        <select id="checkoutPlace" name="checkoutPlace"></select>
+      </label>
 
-          <label for="checkoutStreet" id="checkoutStreetLabel">Улица</label>
-          <input
-            type="text"
-            id="checkoutStreet"
-            name="checkoutStreet"
-            list="streetSuggestions"
-            placeholder="Начните вводить улицу..."
-            autocomplete="off"
-          />
-          <datalist id="streetSuggestions"></datalist>
+      <label for="checkoutStreet" id="checkoutStreetLabel">Улица
+        <input type="text" id="checkoutStreet" name="checkoutStreet" list="streetSuggestions" placeholder="Начните вводить улицу..." autocomplete="off">
+      </label>
+      <datalist id="streetSuggestions"></datalist>
 
-          <label for="checkoutHouse" id="checkoutHouseLabel"
-            >Дом, корпус, квартира</label
-          >
-          <input
-            type="text"
-            id="checkoutHouse"
-            name="checkoutHouse"
-            placeholder="10, кв. 5"
-          />
-        </div>
-        <label for="checkoutSlot"
-          >Когда привезти
-          <select id="checkoutSlot" name="checkoutSlot">
-            <option value="asap">Как можно скорее (~45 мин)</option>
-          </select>
-        </label>
+      <label for="checkoutHouse" id="checkoutHouseLabel">Дом, корпус, квартира
+        <input type="text" id="checkoutHouse" name="checkoutHouse" placeholder="10, кв. 5">
+      </label>
+    </div>
+
+    <label for="checkoutSlot">Когда привезти
+      <select id="checkoutSlot" name="checkoutSlot">
+        <option value="asap">Как можно скорее (~45 мин)</option>
+      </select>
+    </label>
         <label for="checkoutPay"
           >Оплата
           <select id="checkoutPay" name="checkoutPay">

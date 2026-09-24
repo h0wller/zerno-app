@@ -406,17 +406,6 @@
         return;
       }
 
-      var pm = typeof window.preorderMode === "function"
-        ? window.preorderMode()
-        : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);
-      var preorder = !!pm;
-      var slotVal = (document.getElementById("checkoutSlot") || {}).value || "";
-      if (preorder && (!slotVal || slotVal === "asap")) {
-        var sl = document.getElementById("checkoutSlot");
-        if (sl) flagField(sl);
-        return toast("Выберите время доставки ⏰", "⚠️");
-      }
-
       var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
       var placeV = "";
       var streetV = "";
@@ -433,7 +422,37 @@
         houseV = houseEl ? houseEl.value.trim() : "";
 
         if (!streetV) { flagField(streetEl); return toast("Укажите улицу", "🏠"); }
+
+        // Мгновенная проверка улицы по справочнику населённого пункта
+        if (window.AddressModule && window.AddressModule.LOCAL_STREETS) {
+          var placeKey = (window.AddressModule.normPlace || function(p){ return String(p || '').toLowerCase().trim(); })(placeV);
+          var validStreets = window.AddressModule.LOCAL_STREETS[placeKey] || [];
+          if (validStreets.length > 0) {
+            var sClean = streetV.toLowerCase().replace(/^(ул\.?|улица|пер\.?|проезд|пр-д)\s+/i, '').replace(/\s+(ул\.?|улица)$/i, '').trim();
+            var found = validStreets.some(function(s) {
+              if (s === '(без улицы)') return true;
+              var candClean = s.toLowerCase().replace(/^(ул\.?|улица|пер\.?|проезд|пр-д)\s+/i, '').replace(/\s+(ул\.?|улица)$/i, '').trim();
+              return candClean === sClean;
+            });
+            if (!found && sClean !== 'без улицы' && sClean !== '(без улицы)') {
+              flagField(streetEl); // Поле сразу затрясётся красным
+              return toast("В " + placeV + " нет улицы «" + streetV + "»", "⚠️");
+            }
+          }
+        }
+
         if (!houseV) { flagField(houseEl); return toast("Укажите дом и квартиру", "🏠"); }
+      }
+
+      var pm = typeof window.preorderMode === "function"
+        ? window.preorderMode()
+        : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);
+      var preorder = !!pm;
+      var slotVal = (document.getElementById("checkoutSlot") || {}).value || "";
+      if (preorder && (!slotVal || slotVal === "asap")) {
+        var sl = document.getElementById("checkoutSlot");
+        if (sl) flagField(sl);
+        return toast("Выберите время доставки ⏰", "⚠️");
       }
 
       var body = {

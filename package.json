@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
+    "start": "node --env-file=.env server.js",
     "smoke": "node scripts/contract-smoke.mjs",
     "test": "node test-api.mjs",
     "pretest": "node scripts/css-audit.mjs",
