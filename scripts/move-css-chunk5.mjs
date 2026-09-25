@@ -1,30 +1,41 @@
-/* Ф5.8b: пакетная конверсия IIFE-листьев → type="module" (только смена тега).
-Безопасность: файл обязан быть IIFE ('(function' в первых 400 символах) И тег обязан
-иметь defer (иначе конверсия меняет тайминг parse→defer). Несовпадение → skip с варном.
-Модули исполняются в общем defer-порядке по позиции тега — порядок сохранён. */
+/* Ф5.8c-1-fix v2: два застарелых UX-бага поддержки. Якоря — regex с \s* (CRLF/отступы).
+1) Панель не открывалась после выбора темы: bubble-обработчик ov из deeplink.js мёртв
+   (capture-слушатель chat-core с stopPropagation перехватывает клик) → открываем
+   #chatPanel/#chatFab прямо в обработчике chat-core перед reloadChatThread.
+2) Чипс «Позвать сотрудника» залипал armed: ветка isFallback && !isExplicitHuman
+   ре-армит чипс через 700 мс и не разоружает → после фактического вызова (callSent) пропускаем. */
 import fs from 'node:fs';
-const IDX = 'public/index.html';
-const NAMES = [
-  'app/chat.js', 'app/core/chat-head.js', 'app/core/chat-state.js', 'app/chat-core.js',
-  'app/core/config.js', 'app/core/deeplink.js', 'app/core/swipe.js', 'app/core/overlay.js',
-  'app/admin-extra.js', 'app/core/notify.js', 'app/core/splash.js', 'app/ui/settings.js',
-  'app/ui/delivery-search.js', 'app/ui/cashier-log.js', 'app/ui/cashier-card.js',
-  'app/live.js', 'app/scanner.js', 'app/ui/scrolltop.js', 'app/ui/styles.js', 'app/core/a11y.js',
-];
-let idx = fs.readFileSync(IDX, 'utf8');
-let done = 0;
-for (const rel of NAMES) {
-  const file = 'public/' + rel;
-  const src = fs.readFileSync(file, 'utf8');
-  if (!/\(function/.test(src.slice(0, 400))) { console.log('⚠️ ' + rel + ': не IIFE — пропуск (пойдёт в Ф5.8c с шимами)'); continue; }
-  const re = new RegExp('<script([^>]*?)src="([^"]*' + rel.replace(/[./]/g, '\\$&') + ')"([^>]*)>');
-  const m = idx.match(re);
-  if (!m) { console.log('⚠️ ' + rel + ': тег не найден — проверь вручную'); continue; }
-  if (/type="module"/.test(m[0])) { console.log('⚠️ ' + rel + ': уже module'); continue; }
-  if (!/defer/.test(m[1] + m[3])) { console.log('⚠️ ' + rel + ': тег без defer — пропуск (тайминг-риск)'); continue; }
-  idx = idx.replace(m[0], '<script type="module" src="' + m[2] + '"></script>');
-  console.log('✅ ' + rel + ' → type="module"');
-  done++;
-}
-if (done) fs.writeFileSync(IDX, idx);
-console.log('✅ конвертировано:', done, 'из', NAMES.length);
+const P = 'public/app/chat-core.js';
+let s = fs.readFileSync(P, 'utf8');
+if (s.includes('Ф5.8c-1-fix')) { console.log('⚠️ уже применено'); process.exit(0); }
+
+/* ── Якорь A: setBotName×4 → reloadChatThread (вставляем открытие панели между) ── */
+const reA = /setTimeout\(window\.setBotName,\s*900\);\s*window\.reloadChatThread\(\);/;
+if (!reA.test(s)) { console.error('❌ якорь A не найден (regex) — покажи строки вокруг reloadChatThread'); process.exit(1); }
+s = s.replace(reA,
+  'setTimeout(window.setBotName, 900);\n' +
+  '      /* Ф5.8c-1-fix (1): открываем панель после выбора темы (deeplink-обработчик мёртв из-за capture+stopPropagation) */\n' +
+  '      var cp = document.getElementById("chatPanel");\n' +
+  '      if (cp) cp.classList.add("open");\n' +
+  '      var fb2 = document.getElementById("chatFab");\n' +
+  '      if (fb2) fb2.classList.add("open");\n' +
+  '      if (typeof window.syncOverlay === "function") window.syncOverlay();\n' +
+  '      window.reloadChatThread();');
+
+/* ── Якорь B0: объявление callSent перед showHints ── */
+const reB0 = /^[ \t]*\/\*[ \t]*─+[ \t]*showHints[ \t]*─+[ \t]*\*\//m;
+if (!reB0.test(s)) { console.error('❌ якорь B0 (showHints-баннер) не найден'); process.exit(1); }
+s = s.replace(reB0, (m0) => '  var callSent = false; /* Ф5.8c-1-fix (2): вызов сотрудника уже выполнен */\n' + m0);
+
+/* ── Якорь B1: mySend(CS.CALL_HINT) во втором тапе → ставим флаг ── */
+const reB1 = /mySend\(CS\.CALL_HINT\);/;
+if (!reB1.test(s)) { console.error('❌ якорь B1 (mySend CALL_HINT) не найден'); process.exit(1); }
+s = s.replace(reB1, 'mySend(CS.CALL_HINT);\n        callSent = true;');
+
+/* ── Якорь B2: re-arm в fallback-ветке → глушим после фактического вызова ── */
+const reB2 = /call\.classList\.add\("armed",\s*"pulse"\);/;
+if (!reB2.test(s)) { console.error('❌ якорь B2 (re-arm armed+pulse) не найден'); process.exit(1); }
+s = s.replace(reB2, 'if (!callSent) call.classList.add("armed", "pulse");');
+
+fs.writeFileSync(P, s);
+console.log('✅ chat-core.js: панель открывается после выбора; чипс не ре-армится после вызова');

@@ -169,6 +169,7 @@
     };
   }
 
+  var callSent = false; /* Ф5.8c-1-fix (2): вызов сотрудника уже выполнен */
   /* ── showHints ── */
   function showHints(){
   if(CS.getSupportPending())return;
@@ -262,7 +263,7 @@
         var call = bar.querySelector('.chatHint[data-hint*="Позвать"]');
         if (!call) return;
         if (bar.firstChild !== call) bar.insertBefore(call, bar.firstChild);
-        call.classList.add("armed", "pulse");
+        if (!callSent) call.classList.add("armed", "pulse");
         setTimeout(function () {
           call.classList.remove("pulse");
         }, 12000);
@@ -357,6 +358,7 @@
         h.classList.remove("armed");
         h.textContent = CS.CALL_HINT;
         mySend(CS.CALL_HINT);
+        callSent = true;
       } else {
         h.dataset.arm = "1";
         h.classList.add("armed");
@@ -476,6 +478,12 @@
       setTimeout(window.setBotName, 50);
       setTimeout(window.setBotName, 300);
       setTimeout(window.setBotName, 900);
+      /* Ф5.8c-1-fix (1): открываем панель после выбора темы (deeplink-обработчик мёртв из-за capture+stopPropagation) */
+      var cp = document.getElementById("chatPanel");
+      if (cp) cp.classList.add("open");
+      var fb2 = document.getElementById("chatFab");
+      if (fb2) fb2.classList.add("open");
+      if (typeof window.syncOverlay === "function") window.syncOverlay();
       window.reloadChatThread();
     },
     true,

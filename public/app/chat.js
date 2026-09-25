@@ -3,7 +3,7 @@
    fix-views.js (v61) читает/пишет их напрямую — контракт сохраняем. */
 var chatOpened = false, unread = 0;
 var callTimer = null;
-var lastChatId = 0, historyLoaded = false, staffIn = false;
+window.lastChatId = 0; window.historyLoaded = false; window.staffIn = false; /* Ф5.8c-1-fix: разделяемое состояние чата (chat-core пишет голыми, auth — через window) */
 var CALL_LABEL = '🙋 Позвать сотрудника';
 var scKey = null, scClosedView = false;
 

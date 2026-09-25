@@ -78,6 +78,9 @@ test('выбор кофейни открывает кофейную Нику', a
   await prepare(page, '/?src=tg&tab=chat&support=choose');
   await page.locator('#supportChooseOverlay [data-support-topic="coffee"]').click();
   await expect(page.locator('#chatPanel .chatHead')).toContainText('кофейня');
+  await expect.poll(() => page.evaluate(() =>
+  document.getElementById('chatPanel').classList.contains('open')),
+  { timeout: 3000 }).toBe(true);   // панель РЕАЛЬНО открыта, а не opacity:0
 });
 
 test('обычное открытие чата — без оверлея', async ({ page }) => {
@@ -93,4 +96,6 @@ test('вызов сотрудника требует подтверждения 
   const call = page.locator('.chatHint', { hasText: 'Позвать сотрудника' });
   await call.click();
   await expect(page.locator('.chatHint', { hasText: 'Точно позвать' })).toBeVisible();
+  await page.waitForTimeout(1200);
+await expect(page.locator('.chatHint.armed')).toHaveCount(0);  // чипс разоружён
 });
