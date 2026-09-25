@@ -6,6 +6,8 @@
 import { readFileSync } from 'node:fs';
 
 const THEME = readFileSync('public/app/ui/theme-v2.css', 'utf8');
+/* F5.7b: комментарии не участвуют в проверках — считаем только реальный CSS */
+const THEME_CSS = THEME.replace(/\/\*[\s\S]*?\*\//g, '');
 const VIEWS = readFileSync('public/app/core/views.js', 'utf8');
 
 // Извлекаем CSS-строку из views.js (между `var rules = [` и `];`)
@@ -23,8 +25,8 @@ const fail = (msg) => { failures++; console.error('❌', msg); };
 const ok = (msg) => { console.log('✅', msg); };
 
 /* ── ПРАВИЛО 1: в theme-v2.css нет !important (кроме [hidden]) ── */
-const importantMatches = THEME.match(/!important/g) || [];
-const hiddenMatches = (THEME.match(/\[hidden\][^}]*!important/g) || []).length;
+const importantMatches = THEME_CSS.match(/!important/g) || [];
+const hiddenMatches = (THEME_CSS.match(/\[hidden\][^}]*!important/g) || []).length;
 if (importantMatches.length > hiddenMatches) {
   fail(`theme-v2.css: найдено ${importantMatches.length - hiddenMatches} !important вне [hidden]. Базовые стили не должны иметь !important.`);
 } else {
@@ -32,7 +34,7 @@ if (importantMatches.length > hiddenMatches) {
 }
 
 /* ── ПРАВИЛО 2: в theme-v2.css нет [data-brand="..."] селекторов ── */
-if (/\[data-brand\s*=/.test(THEME)) {
+if (/\[data-brand\s*=/.test(THEME_CSS)) {
   fail('theme-v2.css: найдены [data-brand="..."] селекторы. Брендовые переопределения — в views.js (СЛОЙ 2).');
 } else {
   ok('theme-v2.css: нет брендовых селекторов [data-brand="..."]');
@@ -40,7 +42,7 @@ if (/\[data-brand\s*=/.test(THEME)) {
 
 /* ── ПРАВИЛО 3: в theme-v2.css нет хардкода брендовых цветов Пятницы ── */
 const fridayColors = ['#B4552D', '#8B3E1F', '#3A2A1C', '#241812', '#F3E2CE', '#F3EDE6', '#D9C7AD'];
-const fridayInTheme = fridayColors.filter(c => THEME.includes(c));
+const fridayInTheme = fridayColors.filter(c => THEME_CSS.includes(c));
 if (fridayInTheme.length) {
   fail(`theme-v2.css: найдены крафт-цвета Пятницы: ${fridayInTheme.join(', ')}. Брендовые цвета — в views.js.`);
 } else {
