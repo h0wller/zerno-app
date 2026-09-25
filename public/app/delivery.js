@@ -315,38 +315,67 @@ window.populateSlots = function(){
   var dFrom = pm === 'tomorrow' ? 1 : 0;
   var dTo = pm === 'today' ? 1 : 2;
 
+  // Список занятых слотов с бэкенда
+  var busyList = (deliveryInfo && Array.isArray(deliveryInfo.busySlots)) ? deliveryInfo.busySlots : [];
+
   for (var d = dFrom; d < dTo; d++) {
     var items = [];
-    // Старт с 11:30 (690 минут), чтобы у кухни было минимум 30 мин на растопку печи
+    // Стартуем с 11:30 (690 мин), шагаем по 30 мин до 22:00 (1320 мин)
     for (var m = 690; m < 1320; m += 30) {
       var t = new Date(now);
       t.setDate(t.getDate() + d);
       t.setHours(Math.floor(m / 60), m % 60, 0, 0);
-      if (t <= now) continue;
-      // Формат: ДД.ММ | ЧЧ:ММ
+
+      var tEnd = new Date(t.getTime() + 30 * 60 * 1000);
+
+      // Если слот на сегодня наступает меньше чем через 45 минут — пропускаем
+      if (d === 0 && (t.getTime() - now.getTime() < 45 * 60 * 1000)) continue;
+
       var datePart = pad(t.getDate()) + '.' + pad(t.getMonth() + 1);
-      var timePart = pad(t.getHours()) + ':' + pad(t.getMinutes());
-      items.push({ v: datePart + ' | ' + timePart, l: timePart });
+      var startPart = pad(t.getHours()) + ':' + pad(t.getMinutes());
+      var endPart = pad(tEnd.getHours()) + ':' + pad(tEnd.getMinutes());
+
+      // Значение слота: 26.09 | 11:30–12:00
+      var slotVal = datePart + ' | ' + startPart + '–' + endPart;
+      var slotLabel = startPart + ' – ' + endPart;
+      var isBusy = busyList.indexOf(slotVal) > -1;
+
+      items.push({ 
+        v: slotVal, 
+        l: slotLabel + (isBusy ? ' (мест нет)' : ''),
+        disabled: isBusy 
+      });
     }
+
     if (items.length) {
       var dt = new Date(now); dt.setDate(dt.getDate() + d);
-      days[d] = { label: (d === 0 ? 'Сегодня' : 'Завтра') + ' (' + pad(dt.getDate()) + '.' + pad(dt.getMonth() + 1) + ')', items: items };
+      days[d] = { 
+        label: (d === 0 ? 'Сегодня' : 'Завтра') + ' (' + pad(dt.getDate()) + '.' + pad(dt.getMonth() + 1) + ')', 
+        items: items 
+      };
     }
   }
 
   var html = '';
-  if (pm) html += '<option value="" disabled selected>⏰ Выберите время доставки…</option>';
+  if (pm) html += '<option value="" disabled selected>⏰ Выберите интервал доставки…</option>';
   else html += '<option value="asap">Как можно скорее (~45 мин)</option>';
 
   Object.keys(days).forEach(function (k) {
-    html += '<optgroup label="' + days[k].label + '">' + days[k].items.map(function (s) { return '<option value="' + s.v + '">' + s.l + '</option>'; }).join('') + '</optgroup>';
+    html += '<optgroup label="' + days[k].label + '">' + 
+      days[k].items.map(function (s) { 
+        return '<option value="' + s.v + '"' + (s.disabled ? ' disabled style="color:#8E9AA5;background:#F0F4F8"' : '') + '>' + s.l + '</option>'; 
+      }).join('') + 
+    '</optgroup>';
   });
 
   if (sel) {
     sel.innerHTML = html;
     if (prev) {
       for (var i = 0; i < sel.options.length; i++) {
-        if (sel.options[i].value === prev && !sel.options[i].disabled) { sel.value = prev; break; }
+        if (sel.options[i].value === prev && !sel.options[i].disabled) { 
+          sel.value = prev; 
+          break; 
+        }
       }
     }
     sel.classList.toggle('need-slot', !!pm && !sel.value);

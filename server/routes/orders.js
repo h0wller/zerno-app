@@ -13,6 +13,7 @@ const ordersRouter = Router();
 /* ── конфиг доставки ── */
 const DELIVERY = {
   hours: [11, 22], eta: 45, slotStep: 30, slotDays: 2,
+  maxPreordersPerSlot: 2, // Лимит предзаказов на один 30-минутный интервал
   pickupAddr: 'пгт Янтарный, ул. Советская, 38А', pickupDiscount: 0.10,
   zones: [
     { fee: 200, places: ['Янтарный', 'Покровское', 'Синявино'] },
@@ -52,9 +53,28 @@ function orderNotifyStaff(o) {
   logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);
 }
 
-/* ── публичный конфиг доставки ── */
-ordersRouter.get('/api/delivery/info', (req, res) =>
-  res.json({ ...DELIVERY, weekPromo: weekPromo(), pizzaMonth: pizzaMonth() }));
+/* ── публичный конфиг доставки + занятые слоты ── */
+ordersRouter.get('/api/delivery/info', (req, res) => {
+  // Находим интервалы, где лимит предзаказов уже исчерпан
+  const busyRows = db.prepare(`
+    SELECT slot, COUNT(*) as cnt 
+    FROM orders 
+    WHERE status NOT IN ('cancel', 'done') 
+      AND is_preorder = 1 
+      AND slot != 'asap'
+    GROUP BY slot
+    HAVING cnt >= ?
+  `).all(DELIVERY.maxPreordersPerSlot);
+
+  const busySlots = busyRows.map(r => r.slot);
+
+  res.json({ 
+    ...DELIVERY, 
+    busySlots,
+    weekPromo: weekPromo(), 
+    pizzaMonth: pizzaMonth() 
+  });
+});
 
 ordersRouter.put('/api/admin/weekpromo', adminGuard, (req, res) => {
   const b = req.body || {};
@@ -125,27 +145,45 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     sum += price * qty;
   }
 
-  // ── Предзаказы и рабочее время ──
+  // ── Предзаказы и проверка лимитов слота ──
   const now = new Date();
   const currentHour = now.getHours();
   const isWorkingHours = currentHour >= DELIVERY.hours[0] && currentHour < DELIVERY.hours[1];
 
-  let isPreorder = 0;
-  let preorderDate = '';
+  let isPreorder = b.is_preorder ? 1 : 0;
+  let preorderDate = String(b.preorder_date || '').trim();
   const slotStr = String(b.slot || 'asap').trim();
 
   if (slotStr && slotStr !== 'asap') {
     isPreorder = 1;
-    const dateMatch = slotStr.match(/^(\d{2}[.-]\d{2})/);
-    if (dateMatch) preorderDate = dateMatch[1];
+    if (!preorderDate) {
+      const dateMatch = slotStr.match(/^(\d{2}[.-]\d{2})/);
+      if (dateMatch) preorderDate = dateMatch[1];
+    }
   }
 
   const isTestEnv = process.env.NODE_ENV === 'test' || (process.env.DB_PATH && process.env.DB_PATH.includes('tmp'));
+  
   if (!isWorkingHours) {
     if (!isTestEnv && slotStr === 'asap') {
-      return res.status(400).json({ error: 'Доставка сейчас закрыта. Выберите время для предзаказа на завтра.' });
+      return res.status(400).json({ error: 'Доставка сейчас закрыта. Пожалуйста, выберите интервал для предзаказа.' });
     }
     isPreorder = 1;
+  }
+
+  // Защита от переполнения: проверяем квоту на сервере
+  if (isPreorder && slotStr && slotStr !== 'asap' && !isTestEnv) {
+    const slotCheck = db.prepare(`
+      SELECT COUNT(*) as cnt 
+      FROM orders 
+      WHERE slot = ? AND status NOT IN ('cancel', 'done') AND is_preorder = 1
+    `).get(slotStr);
+
+    if (slotCheck && slotCheck.cnt >= DELIVERY.maxPreordersPerSlot) {
+      return res.status(409).json({ 
+        error: `Интервал доставки ${slotStr} уже полностью заполнен. Пожалуйста, выберите другое время.` 
+      });
+    }
   }
 
   const discount = method === 'pickup' ? Math.round(sum * DELIVERY.pickupDiscount) : 0;
