@@ -237,21 +237,48 @@
         comment: (document.getElementById('checkoutComment') || {}).value
       };
       sessionStorage.setItem('zt_checkout_draft', JSON.stringify(draft));
+
+      // Сохраняем адрес навсегда для будущих заказов
+      if (draft.place || draft.street || draft.house) {
+        localStorage.setItem('zt_saved_address', JSON.stringify({
+          place: draft.place,
+          street: draft.street,
+          house: draft.house
+        }));
+      }
     } catch (e) { }
   }
 
   function restoreDraft() {
     try {
       var draft = JSON.parse(sessionStorage.getItem('zt_checkout_draft') || '{}');
+      var saved = JSON.parse(localStorage.getItem('zt_saved_address') || '{}');
+
+      var placeVal = draft.place || saved.place;
+      var streetVal = draft.street || saved.street;
+      var houseVal = draft.house || saved.house;
+
       if (draft.method && document.getElementById('checkoutMethod')) {
         document.getElementById('checkoutMethod').value = draft.method;
       }
-      if (draft.place && document.getElementById('checkoutPlace')) document.getElementById('checkoutPlace').value = draft.place;
-      if (draft.street && document.getElementById('checkoutStreet')) document.getElementById('checkoutStreet').value = draft.street;
-      if (draft.house && document.getElementById('checkoutHouse')) document.getElementById('checkoutHouse').value = draft.house;
-      if (draft.slot && document.getElementById('checkoutSlot')) document.getElementById('checkoutSlot').value = draft.slot;
-      if (draft.pay && document.getElementById('checkoutPay')) document.getElementById('checkoutPay').value = draft.pay;
-      if (draft.comment && document.getElementById('checkoutComment')) document.getElementById('checkoutComment').value = draft.comment;
+      if (placeVal && document.getElementById('checkoutPlace')) {
+        document.getElementById('checkoutPlace').value = placeVal;
+      }
+      if (streetVal && document.getElementById('checkoutStreet')) {
+        document.getElementById('checkoutStreet').value = streetVal;
+      }
+      if (houseVal && document.getElementById('checkoutHouse')) {
+        document.getElementById('checkoutHouse').value = houseVal;
+      }
+      if (draft.slot && document.getElementById('checkoutSlot')) {
+        document.getElementById('checkoutSlot').value = draft.slot;
+      }
+      if (draft.pay && document.getElementById('checkoutPay')) {
+        document.getElementById('checkoutPay').value = draft.pay;
+      }
+      if (draft.comment && document.getElementById('checkoutComment')) {
+        document.getElementById('checkoutComment').value = draft.comment;
+      }
       toggleDeliveryGroup();
     } catch (e) { }
   }
