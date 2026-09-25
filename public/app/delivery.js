@@ -406,7 +406,7 @@ function setupSlotDisplayToggle(sel) {
     sel.__displayBound = true;
     // Перед открытием списка сбрасываем все пункты на короткие (только часы)
     ['pointerdown', 'mousedown', 'touchstart', 'focus'].forEach(function(ev) {
-      sel.addEventListener(ev, showShort);
+      sel.addEventListener(ev, showShort, { passive: true });
     });
     // После выбора или закрытия показываем выбранный пункт с датой
     ['change', 'blur', 'focusout'].forEach(function(ev) {

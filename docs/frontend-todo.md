@@ -158,3 +158,9 @@ Inline-скрипт `public/index.html` по-прежнему содержит �
 
 
 * **PWA & Cache стабилизация (F3.58):** Устранено неконтролируемое кэширование `.svg` в `server.js`, обеспечен корректный жизненный цикл воркера через `skipWaiting`/`updateViaCache: none`, закрыта проблема сброса состояния при жестах iOS/Android bfcache.
+### [x] 5.4 — Панели, шторка и оверлеи (`public/app/core/panel.js`)
+* Вынесен контроллер шторки профиля (`openPanel`, `closePanel`).
+* Вынесен обработчик переключения вкладок `.tabs button` (`setTab`).
+* Синхронизация с `overlay.js` через `window.syncOverlay`.
+* Обработчик `mbonusBtn` перенесён в модуль.
+* Убран `onclick="closePanel()"` из `btn-back`.

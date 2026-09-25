@@ -1,20 +1,21 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v83'; // ← поставь своё текущее значение +1
+const STATIC_CACHE = 'zerno-static-v84'; // ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/icon.svg',
-  './andCoffee.svg',
-  './friday-logo.svg',
-  '/app/ui/theme-v2.css',
-  '/app/core/state.js',
-  '/app/core/utils.js',
-  '/app/core/api.js',
-  '/app/core/views.js',
+    '/',
+    '/index.html',
+    '/manifest.webmanifest',
+    '/icon.svg',
+    './andCoffee.svg',
+    './friday-logo.svg',
+    '/app/ui/theme-v2.css',
+    '/app/core/state.js',
+    '/app/core/utils.js',
+    '/app/core/api.js',
+    '/app/core/panel.js',       // ← Ф5.4
+    '/app/core/views.js',
   '/app/core/config.js',
   '/app/core/a11y.js',
   '/app/core/chat-head.js',
