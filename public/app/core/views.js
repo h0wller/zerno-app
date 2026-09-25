@@ -247,6 +247,11 @@ var rules = [
 /* ── Ф3.58: кнопка «вверх» — брендовые стили ── */
 '[data-brand="coffee"] #scrollTopBtn{background:#fff;border:1.5px solid var(--line);color:var(--flame);box-shadow:0 10px 26px -10px rgba(18,58,107,.45)}',
 '[data-brand="delivery"] #scrollTopBtn{background:var(--fr-paper);border:2px solid var(--fr-choc);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
+/* ── Ф5.7 чанк 2: брендовые модалки (было inline <style> index.html) ── */
+'[data-brand="delivery"] .modal-card{background-color:#EFE6D8!important;background-image:radial-gradient(rgba(58,42,28,.08) 1px,transparent 1.5px)!important;background-size:10px 10px!important;border:3px solid #3A2A1C!important;border-radius:18px!important;box-shadow:6px 6px 0 #3A2A1C,0 20px 50px rgba(0,0,0,.35)!important}',
+'[data-brand="delivery"] .mclose{background:#C99E6E!important;border:2px solid #3A2A1C!important;box-shadow:2px 2px 0 #3A2A1C!important;color:#3A2A1C!important}',
+'[data-brand="delivery"] .modal-card h3{font:900 20px Unbounded,sans-serif!important;color:#3A2A1C!important}',
+'[data-brand="delivery"] .modal-card input:not([type="checkbox"]),[data-brand="delivery"] .modal-card select,[data-brand="delivery"] .modal-card textarea{background:#fff!important;border:2px solid #3A2A1C!important;color:#3A2A1C!important;font-weight:600!important}',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
