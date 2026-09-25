@@ -255,6 +255,8 @@ var rules = [
 '[data-brand="delivery"] .tabs button.on { background: #c99e6e !important; color: #3a2a1c !important; border: 2px solid #3a2a1c !important; border-radius: 10px !important; box-shadow: 2px 2px 0 #3a2a1c !important; transform: rotate(-0.8deg); }',
 '[data-brand="delivery"] .stat { border: 2px solid #3a2a1c !important; border-radius: 10px !important; box-shadow: 2px 2px 0 #3a2a1c !important; }',
 '[data-brand="delivery"] .stat b { color: #3a2a1c !important; }',
+/* ── F5.10 чанк 5: брендовый кассир (было inline <style> index.html) ── */
+'[data-brand="delivery"] .btn.fire, [data-brand="delivery"] button.cta, [data-brand="delivery"] #checkoutBtn { background: #c03b2a !important; color: #ffffff !important; border: 2px solid #3a2a1c !important; box-shadow: 3px 3px 0 #3a2a1c !important; }',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
