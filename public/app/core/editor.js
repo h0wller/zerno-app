@@ -40,7 +40,7 @@ document.getElementById("grid").addEventListener("click", (e) => {
         const b = e.target.closest("[data-ed]");
         if (b) openEditor(b.dataset.ed);
       });
-      let edit = null;
+window.edit = null; /* Ф5.6.2f: разделяемое состояние с menu-editor.js через window */
       $("#emCat").innerHTML = CATS.map(
         (c) => `<option value="${c.id}">${c.e} ${c.l}</option>`,
       ).join("");
@@ -145,3 +145,8 @@ document.getElementById("grid").addEventListener("click", (e) => {
       };
 
       
+/* ── Ф5.6.2f: ESM-шимы ── */
+window.armPw = armPw;
+window.renderZone = renderZone;
+window.closeEditor = closeEditor;
+window.loadImg = loadImg;

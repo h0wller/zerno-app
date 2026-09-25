@@ -4,7 +4,7 @@ function urlBase64ToUint8Array(s) {
         const b64 = (s + padding).replace(/-/g, "+").replace(/_/g, "/");
         const raw = atob(b64);
         const out = new Uint8Array(raw.length);
-        for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
+        for (window.i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
         return out;
       }
 
@@ -15,6 +15,7 @@ function urlBase64ToUint8Array(s) {
         try {
           if (isCap) {
             const PN = Capacitor.Plugins.PushNotifications;
+/* Ф5.6.2g: разделяемое состояние с fx.js через window */
             const perm = await PN.requestPermissions();
             if (perm.receive !== "granted")
               return toast("Уведомления не включены", "😔");
@@ -228,14 +229,10 @@ function urlBase64ToUint8Array(s) {
         }
       };
 
-      const fx = $("#fx"),
-        fxx = fx.getContext("2d");
-      let pieces = [],
-        fxOn = false;
-      function fitFx() {
-        fx.width = innerWidth;
-        fx.height = innerHeight;
-      }
-      fitFx();
-      addEventListener("resize", fitFx);
       
+      
+/* ── Ф5.6.2g: ESM-шимы ── */
+window.enablePush = enablePush;
+window.togglePushHint = togglePushHint;
+window.refreshPushBtn = refreshPushBtn;
+window.urlBase64ToUint8Array = urlBase64ToUint8Array;

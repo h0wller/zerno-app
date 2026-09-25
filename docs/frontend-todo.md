@@ -186,3 +186,7 @@ overlay-база (syncOverlay/popstate/Escape) остаётся в overlay-core.
 (построчный grep пропустил; var+let = SyntaxError с каскадом renderProfile/sv).
 Мина fxx/fxOn отменена: ложноположительная (let-глобалы видны из модулей).
 Урок: проверки объявлений — только многострочно-осведомлённым regex или парсером, не построчно.
+### [x] 5.6.2f-h - editor/push-ui/overlay-core → module. Конфетти консолидировано в fx.js
+(module-private состояние: класс синхронизационных багов window-шимов устранён).
+ВСЕ 8 КЛАСТЕРОВ + конфетти — модули. Perf-бэклог: CLS 0.33 local (7 shifts, DevTools Layout shifts) —
+разбор после финала ESM.

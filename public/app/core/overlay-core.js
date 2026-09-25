@@ -68,3 +68,6 @@ function syncOverlay() {
         syncBrandViews();
         if (brand === "delivery" && !DMENU.length) loadDelivery();
       });
+
+/* ── Ф5.6.2h: ESM-шим (на случай чтения до инъекта overlay.js) ── */
+window.syncOverlay = syncOverlay;
