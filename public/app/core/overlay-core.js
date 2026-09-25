@@ -1,4 +1,5 @@
 /* public/app/core/overlay-core.js — Ф5.7: кластер "overlay-core" из legacy-core.js (вербатим, порядок сохранён). Top-level = global. */
+let histPushed = false;
 function syncOverlay() {
         const ov = document.getElementById("overlay");
         const panel = document.getElementById("panel");

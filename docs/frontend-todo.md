@@ -178,3 +178,7 @@ file-to-file, сухим прогоном по якорям.
 ### [x] 5.7 - legacy-core.js декомпозирован на 8 кластерных classic-модулей (вербатим, порядок тегов = прежний порядок кода).
 overlay-база (syncOverlay/popstate/Escape) остаётся в overlay-core.js до ESM-этапа: overlay.js самодостаточен,
 слияние дублей — задача Ф5.6.2.
+### [x] 5.6.2a - ESM-пилот fx.js (module + шим confetti). Фикс: histPushed возвращён overlay-core.js
+(объявление попало в fx.js при сплите Ф5.7 и стало module-private → ReferenceError в popstate).
+### [x] 5.6.2b - catalog.js → module + window-шимы (loadMenu/renderModes/setMode/syncBrandViews).
+Долг: push-ui.js — голые записи fxx/fxOn (неявные глобалы), чинить перед его конверсией.

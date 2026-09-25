@@ -37,5 +37,6 @@ function confetti() {
           : ((fxOn = false), fxx.clearRect(0, 0, fx.width, fx.height));
       }
 
-      let histPushed = false;
       
+/* ── Ф5.6.2a: ESM-шим: явный экспорт для классик-вызывающих (кассир/админ штамп) ── */
+window.confetti = confetti;

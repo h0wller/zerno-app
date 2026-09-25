@@ -148,3 +148,8 @@
           window.updateDeliveryPromoBar();
       }
       
+/* ── Ф5.6.2b: ESM-шим: явные window-экспорты для классик-потребителей ── */
+window.loadMenu = loadMenu;
+window.renderModes = renderModes;
+window.setMode = setMode;
+window.syncBrandViews = syncBrandViews;
