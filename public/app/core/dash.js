@@ -92,3 +92,6 @@
       $("#dashClose").onclick = closeDash;
 
       
+/* ── Ф5.6.2c: ESM-шим: явные window-экспорты для классик-потребителей ── */
+window.loadSubs = loadSubs;
+window.closeDash = closeDash;

@@ -182,3 +182,7 @@ overlay-база (syncOverlay/popstate/Escape) остаётся в overlay-core.
 (объявление попало в fx.js при сплите Ф5.7 и стало module-private → ReferenceError в popstate).
 ### [x] 5.6.2b - catalog.js → module + window-шимы (loadMenu/renderModes/setMode/syncBrandViews).
 Долг: push-ui.js — голые записи fxx/fxOn (неявные глобалы), чинить перед его конверсией.
+### [x] 5.6.2b-fix3 - откат вставки var fxx/fxOn: они объявлены многострочным let в push-ui.js
+(построчный grep пропустил; var+let = SyntaxError с каскадом renderProfile/sv).
+Мина fxx/fxOn отменена: ложноположительная (let-глобалы видны из модулей).
+Урок: проверки объявлений — только многострочно-осведомлённым regex или парсером, не построчно.

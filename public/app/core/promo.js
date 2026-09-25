@@ -118,3 +118,6 @@
       };
 
       
+/* ── Ф5.6.2c: ESM-шим: явные window-экспорты для классик-потребителей ── */
+window.closePromo = closePromo;
+window.loadWeekPromo = loadWeekPromo;

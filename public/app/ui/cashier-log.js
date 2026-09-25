@@ -30,6 +30,6 @@
       r.style.display=/заказ|задерж|доставк|Пятниц|курьер|пуш всем/i.test(t)?'none':'';
     });
   }
-  new MutationObserver(function(){unhideCashLog();filterCashRows();}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+  new MutationObserver(function(){if(window.__clRaf)return;window.__clRaf=requestAnimationFrame(function(){window.__clRaf=0;unhideCashLog();filterCashRows();});}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
   setTimeout(function(){unhideCashLog();filterCashRows();},300);
 })();

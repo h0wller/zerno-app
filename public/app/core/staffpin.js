@@ -69,3 +69,7 @@ function openPin() {
       });
 
       
+/* ── Ф5.6.2e: ESM-шим: явные window-экспорты для классик-потребителей ── */
+window.openPin = openPin;
+window.closePin = closePin;
+window.tryActivate = tryActivate;
