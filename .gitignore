@@ -112,3 +112,4 @@ sqlite-tools-win-x64-3530400/sqldiff.exe
 sqlite-tools-win-x64-3530400/sqlite3_analyzer.exe
 sqlite-tools-win-x64-3530400/sqlite3_rsync.exe
 bundle.ps1
+docs/inline-core-dump.txt
