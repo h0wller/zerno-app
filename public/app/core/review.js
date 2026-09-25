@@ -13,3 +13,5 @@ function maybeAskReview(){
  localStorage.setItem('zt_asked','1');
  setTimeout(()=>toast('Понравилось у нас? Пара секунд — и отзыв на Картах ⭐','⭐',()=>window.open(REVIEW_URL,'_blank')),4000);
 }
+/* ── Ф5.8a-fix: ESM-шим: boot.js зовёт maybeAskReview голым идентификатором ── */
+window.maybeAskReview = maybeAskReview;

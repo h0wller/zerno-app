@@ -8,7 +8,7 @@ const fx = $("#fx"),
         fx.width = innerWidth;
         fx.height = innerHeight;
       }
-      window.fitFx();
+      fitFx(); /* Ф5.8a-fix: локальный инициализационный вызов — шим присваивается ниже */
       addEventListener("resize", fitFx);
 
 function confetti() {

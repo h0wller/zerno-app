@@ -192,3 +192,6 @@ overlay-база (syncOverlay/popstate/Escape) остаётся в overlay-core.
 разбор после финала ESM.
 ### [x] 5.6.2i - window-резолв само-вызовов + e2e кейс 15-delivery-cashier-clean
 (стафф-режимы в бренде Пятница прячут delivery-меню немедленно; регресс-страховка).
+### [x] 5.8a - листья menu-editor/address/review → module. Фиксы: топ-левельный само-вызов
+в fx.js (window.fitFx до шима), шим maybeAskReview в review.js.
+Правило: скрипт window-резолва пропускает вызовы в top-level области модуля.
