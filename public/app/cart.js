@@ -497,19 +497,38 @@
       };
       if (cartPromoCode) body.promo = cartPromoCode;
 
-      try {
+try {
         var r = await api("/orders", { method: "POST", body: body });
         toast("Заказ #" + r.order.no + " оформлен!", "🎉");
-        cart = [];
+
+        // 1. Очищаем корзину in-place для всех модулей
+        if (typeof cart !== 'undefined' && Array.isArray(cart)) cart.length = 0;
+        window.cart = [];
         localStorage.setItem("zt_cart", "[]");
         sessionStorage.removeItem("zt_checkout_draft");
         clearPromo();
-        var pi = document.getElementById("cartPromo");
-        if (pi) pi.value = "";
-        window.updateCartFab();
+
+        // 2. Очищаем поля ввода в шторке чекаута
+        var pi = document.getElementById("cartPromo"); if (pi) pi.value = "";
+        var stEl = document.getElementById("checkoutStreet"); if (stEl) stEl.value = "";
+        var hsEl = document.getElementById("checkoutHouse"); if (hsEl) hsEl.value = "";
+        var cmEl = document.getElementById("checkoutComment"); if (cmEl) cmEl.value = "";
+        var slEl = document.getElementById("checkoutSlot"); 
+        if (slEl) slEl.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
+
+        // 3. Сбрасываем выбранные размеры на карточках пиццы (убираем коричневую подсветку .sel)
+        document.querySelectorAll('#deliveryGrid .opts button.sel').forEach(function(b) {
+          b.classList.remove('sel');
+        });
+
+        // 4. Обновляем кнопки карточек ("В корзине" -> "Добавить") и скрываем плавающую корзину
+        if (typeof syncAddButtons === 'function') syncAddButtons();
+        if (typeof updateCartFab === 'function') updateCartFab();
         renderCartBase();
+
         var cp = document.getElementById("cartPanel");
         if (cp) cp.classList.remove("open");
+        if (typeof syncOverlay === 'function') syncOverlay();
         if (typeof loadMyOrders === 'function') loadMyOrders();
       } catch (e) {
         toast(e.message, "⚠️");

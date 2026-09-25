@@ -277,7 +277,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             }
             var s = ST[o.status] || ['•', 'mo-new', o.status];
             var d = new Date(o.created).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
-            var items = o.items.slice(0, 3).map(function (i) { return i.qty + '× ' + i.name; }).join(', ') + (o.items.length > 3 ? '…' : '');
+            var items = (o.items || []).slice(0, 3).map(function (i) { return i.qty + '× ' + i.name; }).join(', ') + ((o.items || []).length > 3 ? '…' : '');
 
             var timeInfo = o.is_preorder
                 ? ' · <b style="color:#B26A05">⏰ Предзаказ: ' + esc(o.slot) + '</b>'

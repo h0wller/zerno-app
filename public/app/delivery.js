@@ -280,47 +280,6 @@ function populatePlaces() {
   $('#checkoutPlace').innerHTML = places.map(p => `<option>${p}</option>`).join('');
 }
 
-$('#checkoutBtn').onclick = async () => {
-  // Блокировка 1: неавторизованные не могут оформлять (только добавлять в корзину)
-  if (!me || !me.id) { 
-    toast('Сначала войдите по номеру телефона', '👤'); 
-    openAuth(); 
-    return; 
-  }
-  const method = $('#checkoutMethod').value;
-  // Вне рабочего времени (11:00–22:00) заказ становится предзаказом на завтра
-const pm = typeof window.preorderMode === 'function' ? window.preorderMode() : (typeof window.assertServiceOpen === 'function' && !window.assertServiceOpen() ? 'tomorrow' : null);
-const preorder = !!pm;
-const slotVal = ($('#checkoutSlot') || {}).value || '';
-if (preorder && (!slotVal || slotVal === 'asap')) {
-toast('Выберите время доставки ⏰', '️');
-var sl = $('#checkoutSlot'); if (sl) sl.focus();
-return;
-}
-  if (method === 'delivery') {
-    if (!$('#checkoutPlace').value) return toast('Выберите населённый пункт', '📍');
-    if (!$('#checkoutAddr').value.trim()) return toast('Укажите адрес', '🏠');
-  }
-  const body = {
-    method,
-    place: $('#checkoutPlace').value,
-    addr: $('#checkoutAddr').value.trim(),
-    slot: slotVal,
-    pay: $('#checkoutPay').value,
-    comment: $('#checkoutComment').value.trim(),
-    items: cart.map(c => ({ id: c.id, oi: c.oi, qty: c.qty }))
-  };
-if (preorder) toast(pm === 'tomorrow' ? 'Предзаказ принят 🌙 Приготовим завтра с 11:00' : 'Предзаказ принят ⏰ Приготовим сегодня с 11:00', '⏰');
-  try {
-    const r = await api('/orders', { method: 'POST', body });
-    toast(`Заказ #${r.order.no} оформлен!`, '🎉');
-    cart = [];
-    localStorage.setItem('zt_cart', '[]');
-    updateCartFab();
-    $('#cartPanel').classList.remove('open');
-  } catch (e) { toast(e.message, '⚠️'); }
-};
-
 function skelCards(n){
 var c='<div class="card skeleton-card"><div class="media skeleton-shimmer"></div><div class="cbody"><div class="skeleton-line" style="width:65%;height:14px"></div><div class="skeleton-line" style="width:85%;height:12px"></div><div class="skeleton-line" style="width:45%;height:12px;margin-top:auto"></div></div></div>';
 var out='';for(var i=0;i<n;i++)out+=c;return out;
@@ -347,46 +306,51 @@ var r;
 };
 
 window.populateSlots = function(){
-var now = new Date();
-var pad = function(n){ return String(n).padStart(2, '0'); };
-var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : null;
-var sel = document.getElementById('checkoutSlot');
-var prev = sel ? sel.value : '';
-/* собираем слоты по дням: значение = «ДД-ММ | ЧЧ-ММ», подпись = только время */
-var days = {};
-var dFrom = pm === 'tomorrow' ? 1 : 0;
-var dTo = pm === 'today' ? 1 : 2;
-for (var d = dFrom; d < dTo; d++) {
-var items = [];
-for (var m = 660; m < 1320; m += 30) {
-var t = new Date(now);
-t.setDate(t.getDate() + d);
-t.setHours(Math.floor(m / 60), m % 60, 0, 0);
-if (t <= now) continue;
-items.push({ v: pad(t.getDate()) + '-' + pad(t.getMonth() + 1) + ' | ' + pad(t.getHours()) + '-' + pad(t.getMinutes()), l: pad(t.getHours()) + ':' + pad(t.getMinutes()) });
-}
-if (items.length) {
-var dt = new Date(now); dt.setDate(dt.getDate() + d);
-days[d] = { label: (d === 0 ? 'Сегодня' : 'Завтра') + ' (' + pad(dt.getDate()) + '.' + pad(dt.getMonth() + 1) + ')', items: items };
-}
-}
-var html = '';
-/* Ф3.60: в предзаказе время ОБЯЗАТЕЛЬНО — пустой заблокированный placeholder */
-if (pm) html += '<option value="" disabled selected>⏰ Выберите время доставки…</option>';
-else html += '<option value="asap">Как можно скорее (~45 мин)</option>';
-Object.keys(days).forEach(function (k) {
-html += '<optgroup label="' + days[k].label + '">' + days[k].items.map(function (s) { return '<option value="' + s.v + '">' + s.l + '</option>'; }).join('') + '</optgroup>';
-});
-if (sel) {
-sel.innerHTML = html;
-/* восстанавливаем прежний выбор, если он ещё доступен */
-if (prev) {
-for (var i = 0; i < sel.options.length; i++) {
-if (sel.options[i].value === prev && !sel.options[i].disabled) { sel.value = prev; break; }
-}
-}
-sel.classList.toggle('need-slot', !!pm && !sel.value);
-}
+  var now = new Date();
+  var pad = function(n){ return String(n).padStart(2, '0'); };
+  var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : null;
+  var sel = document.getElementById('checkoutSlot');
+  var prev = sel ? sel.value : '';
+  var days = {};
+  var dFrom = pm === 'tomorrow' ? 1 : 0;
+  var dTo = pm === 'today' ? 1 : 2;
+
+  for (var d = dFrom; d < dTo; d++) {
+    var items = [];
+    // Старт с 11:30 (690 минут), чтобы у кухни было минимум 30 мин на растопку печи
+    for (var m = 690; m < 1320; m += 30) {
+      var t = new Date(now);
+      t.setDate(t.getDate() + d);
+      t.setHours(Math.floor(m / 60), m % 60, 0, 0);
+      if (t <= now) continue;
+      // Формат: ДД.ММ | ЧЧ:ММ
+      var datePart = pad(t.getDate()) + '.' + pad(t.getMonth() + 1);
+      var timePart = pad(t.getHours()) + ':' + pad(t.getMinutes());
+      items.push({ v: datePart + ' | ' + timePart, l: timePart });
+    }
+    if (items.length) {
+      var dt = new Date(now); dt.setDate(dt.getDate() + d);
+      days[d] = { label: (d === 0 ? 'Сегодня' : 'Завтра') + ' (' + pad(dt.getDate()) + '.' + pad(dt.getMonth() + 1) + ')', items: items };
+    }
+  }
+
+  var html = '';
+  if (pm) html += '<option value="" disabled selected>⏰ Выберите время доставки…</option>';
+  else html += '<option value="asap">Как можно скорее (~45 мин)</option>';
+
+  Object.keys(days).forEach(function (k) {
+    html += '<optgroup label="' + days[k].label + '">' + days[k].items.map(function (s) { return '<option value="' + s.v + '">' + s.l + '</option>'; }).join('') + '</optgroup>';
+  });
+
+  if (sel) {
+    sel.innerHTML = html;
+    if (prev) {
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === prev && !sel.options[i].disabled) { sel.value = prev; break; }
+      }
+    }
+    sel.classList.toggle('need-slot', !!pm && !sel.value);
+  }
 };
 /* ── Ф3.60: подсветка селекта времени в режиме предзаказа ── */
 (function(){
