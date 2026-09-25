@@ -3961,6 +3961,7 @@
     <script src="./app/core/ui.js"></script>
     <script src="./app/core/auth.js"></script>
     <script src="./app/core/panel.js"></script>
+    <script src="./app/core/boot.js"></script>
     <script>
       "use strict";
 
@@ -4872,45 +4873,6 @@
           if (onboarded || me) closeAuth();
         }
       });
-
-      if ("serviceWorker" in navigator) {
-        addEventListener("load", () => {
-          // updateViaCache: 'none' принуждает Safari проверять сервер в обход HTTP-кэша
-          navigator.serviceWorker
-            .register("sw.js", { updateViaCache: "none" })
-            .then((reg) => {
-              reg.update();
-            })
-            .catch(() => {});
-
-          // Как только новый Service Worker активировался — перезагружаем приложение с новым кодом.
-          // ВАЖНО: reload только при АПДЕЙТЕ (когда уже был controller). Первая активация
-          // (clients.claim() в чистом профиле) reload не требует — иначе страница перезагружается
-          // из-под пользователя/теста сразу после открытия.
-          let refreshing = false;
-          const hadController = !!navigator.serviceWorker.controller;
-          navigator.serviceWorker.addEventListener("controllerchange", () => {
-            if (hadController && !refreshing) {
-              refreshing = true;
-              window.location.reload();
-            }
-          });
-        });
-      }
-
-      function renderAll() {
-        renderRail();
-        renderMenu();
-        renderBonus();
-        renderProfile();
-        renderModes();
-        renderChips();
-        renderVerifyNote();
-        const s = (me && me.qr) || "guest";
-        drawQR($("#qrMini"), s);
-        drawQR($("#qrMain"), s);
-        if (mode === "cashier") renderLog();
-      }
       $("#brandSeg").addEventListener("click", (e) => {
         const b = e.target.closest("[data-brand]");
         if (!b) return;
@@ -4919,37 +4881,6 @@
         syncBrandViews();
         if (brand === "delivery" && !DMENU.length) loadDelivery();
       });
-      (function () {
-        async function boot() {
-          if (USER_TOKEN) {
-            try {
-              me = (await api("/me")).customer;
-            } catch (e) {
-              me = null;
-              USER_TOKEN = null;
-              localStorage.removeItem(T_USER);
-            }
-          }
-          await loadMenu();
-          renderAll();
-          if (typeof window.syncBrandViews === "function")
-            window.syncBrandViews();
-          showBadge();
-          initChatPointer();
-          maybeAskReview();
-          if (!onboarded) setTimeout(() => openAuth(false), 600);
-        }
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", boot);
-        } else {
-          boot();
-        }
-      })();
-      console.info(
-        "%c🌊 …и кофе · ребрендинг",
-        "font-weight:bold;font-size:14px",
-        "| меню v2 | штампы-зёрна",
-      );
     </script>
     <script src="./app/chat.js" defer></script>
     <script src="./app/core/chat-head.js" defer></script>
@@ -5003,38 +4934,6 @@
         ✕
       </button>
     </div>
-    <script>
-      let _defPrompt = null;
-      window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        _defPrompt = e;
-        if (!localStorage.getItem("zt_inst_hide"))
-          $("#installBanner").hidden = false;
-      });
-      document.getElementById("installBtn").onclick = async () => {
-        if (_defPrompt) {
-          _defPrompt.prompt();
-          await _defPrompt.userChoice;
-          _defPrompt = null;
-        }
-        $("#installBanner").hidden = true;
-      };
-      document.getElementById("installClose").onclick = () => {
-        $("#installBanner").hidden = true;
-        localStorage.setItem("zt_inst_hide", "1");
-      };
-      if (
-        /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-        !navigator.standalone &&
-        !localStorage.getItem("zt_inst_hide")
-      ) {
-        const b = $("#installBanner");
-        b.hidden = false;
-        b.querySelector("span").innerHTML =
-          "🍏 Нажмите <b>Поделиться</b> → <b>На экран «Домой»</b> — и приложение на рабочем столе";
-        b.querySelector("#installBtn").style.display = "none";
-      }
-    </script>
     <div
       id="iosHint"
       hidden
@@ -5067,31 +4966,6 @@
         ✕
       </button>
     </div>
-    <script>
-      (function () {
-        var ua = navigator.userAgent;
-        var isIOS =
-          /iPhone|iPad|iPod/.test(ua) ||
-          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-        var standalone =
-          window.navigator.standalone === true ||
-          matchMedia("(display-mode: standalone)").matches;
-        var inApp = /(Telegram|Instagram|FBAN|FBAV|VK|WhatsApp|Twitter)/.test(
-          ua,
-        );
-        if (!isIOS || standalone || localStorage.getItem("zt_ios_hide")) return;
-        setTimeout(function () {
-          document.getElementById("iosHintText").innerHTML = inApp
-            ? "🍏 Чтобы установить приложение: нажмите <b>⋯</b> → <b>Открыть в Safari</b>, затем в Safari — <b>Поделиться</b> → <b>На экран «Домой»</b>"
-            : "🍏 Установите приложение: нажмите <b>Поделиться</b> (квадрат со стрелкой) → <b>На экран «Домой»</b> → <b>Добавить</b> — карта гостя всегда под рукой!";
-          document.getElementById("iosHint").hidden = false;
-        }, 800);
-        document.getElementById("iosHintClose").onclick = function () {
-          document.getElementById("iosHint").hidden = true;
-          localStorage.setItem("zt_ios_hide", "1");
-        };
-      })();
-    </script>
     <style>
       #scanFab {
         position: fixed;
@@ -5320,33 +5194,6 @@
     <script src="app/vendor/qrcode.min.js" defer></script>
     <script src="app/core/qr.js" defer></script>
     <script src="app/core/review.js" defer></script>
-    <script>
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .register("/sw.js", { updateViaCache: "none" })
-          .then(function (reg) {
-            reg.addEventListener("updatefound", function () {
-              var inst = reg.installing;
-              if (inst)
-                inst.addEventListener("statechange", function () {
-                  if (
-                    inst.state === "installed" &&
-                    navigator.serviceWorker.controller
-                  ) {
-                    inst.postMessage({ type: "SKIP_WAITING" });
-                  }
-                });
-            });
-          })
-          .catch(function () {});
-        navigator.serviceWorker.addEventListener(
-          "controllerchange",
-          function () {
-            window.location.reload();
-          },
-        );
-      }
-    </script>
     <script src="app/address.js" defer></script>
   </body>
 </html>

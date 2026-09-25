@@ -164,3 +164,8 @@ Inline-скрипт `public/index.html` по-прежнему содержит �
 * Синхронизация с `overlay.js` через `window.syncOverlay`.
 * Обработчик `mbonusBtn` перенесён в модуль.
 * Убран `onclick="closePanel()"` из `btn-back`.
+### [x] 5.5 — Инициализация и жизненный цикл (`public/app/core/boot.js`)
+* Вынесена агрегационная функция `renderAll()`.
+* Сформирована точка входа `boot()`: загрузка пользователя, меню, инициализация видов.
+* Единая регистрация SW (SKIP_WAITING + reload только при hadController) — дубль из `<body>` удалён.
+* Инлайн-скрипты install-баннера и iOS-хинта переехали в boot.js; `<body>` без инлайн-кода.
