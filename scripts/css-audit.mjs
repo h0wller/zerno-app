@@ -129,7 +129,13 @@ if (m) {
   const open = (cssText.match(/\/\*/g) || []).length, close = (cssText.match(/\*\//g) || []).length;
   if (open !== close) { bad++; console.error(`❌ views.js: незакрытые CSS-комментарии (${open} vs ${close})`); }
   const watched = ['.ticker', '.brand .mark', '.opts button', '.brandSeg', '.cartPanel'];
-  const idx = rfs('public/index.html', 'utf8');
+  const idxFull = rfs('public/index.html', 'utf8');
+/* F5.12: critical FOUC-guard (Ф3.51) — разрешённый дубль-владелец, из watched исключён */
+const critStart = idxFull.indexOf('critical FOUC-guard');
+const critEnd = critStart >= 0 ? idxFull.indexOf('</style>', critStart) : -1;
+const idx = (critStart >= 0 && critEnd > critStart)
+  ? idxFull.slice(0, critStart) + idxFull.slice(critEnd)
+  : idxFull;
   watched.forEach(sel => {
     const inIdx = new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[{,]').test(idx);
     const inViews = cssText.includes(sel);

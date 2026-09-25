@@ -45,3 +45,7 @@ armed/pulse — styles.js; пульс бара подсказок теперь 3
 остаются в Слое 0 до ручной доработки.
 чанк 6b (F5.11b): residual растворён — 3 системных/layout правила → views.js,
 .ava.pulse-hint → theme-v2 без !important; большой инлайн-<style> = только «шапка» + «каркас».
+чанк 8 (F5.13) — ФИНАЛ P1/P2: большой инлайн-<style> растворён целиком (35 правил базы → theme-v2,
+14 бренд/layout → views.js, 3 → critical CRITICAL-first-frame, 3 DROP марка, --amber смерджен).
+F5.13b: дубль delivery-марки слит union-слиянием деклараций (старое правило перебивает конфликты).
+P1/P2 = закрыто; Слой 0 = splash-guard + critical-блок.

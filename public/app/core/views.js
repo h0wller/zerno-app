@@ -112,7 +112,7 @@ var rules = [
 /* ≥821px (1024, 1440): кнопки по краям компактные, не гигантские */
 '@media(min-width:821px){.topbar #profileTopBtn{width:56px!important;height:56px!important;font-size:22px!important}.topbar .venueToggle{height:52px!important;font-size:15px!important;padding:0 18px!important;gap:8px!important}}',
 /* --- Шапка: марки брендов (70% ТОЛЬКО внутри ≤820px — не бьёт грид) --- */
-'[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 8px);max-height:calc(var(--topbar-h,64px) - 8px);max-width:min(60vw,420px);border-radius:8px}',
+'[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 8px);max-height:calc(var(--topbar-h,64px) - 8px);max-width:min(60vw,420px);flex: 0 1 auto;border-radius:8px}',
 '[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}','@media(max-width:360px){[data-brand="coffee"] .topbar .brand .mark{width:32px;height:32px}}',
 /* --- Шапка: грид-центрирование ≥821px (после всех brand-правил) --- */
 '@media(min-width:821px){.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;align-content:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0;min-width:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;max-width:100%}.topbar #profileTopBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}}','[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
@@ -263,6 +263,20 @@ var rules = [
 '@media(min-width:1181px){body.is-cashier .panel{display:none}body.is-cashier .wrap{grid-template-columns:1fr}.topbar > :last-child{margin-left:0!important}#profileTopBtn{margin-left:auto;width:46px;height:46px;font-size:18px}}',
 '@media(max-width:640px){#modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}#profileTopBtn{width:44px!important;height:44px!important;min-width:44px!important;flex:0 0 44px!important}.wrap{padding:14px}.grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:11px}.media{position:relative;overflow:hidden;height:120px}.chat{right:8px}.mh-right{margin-left:0;width:100%}}',
 '@media(hover:none) and (pointer:coarse){input,select,textarea{font-size:16px!important}}',
+/* ── F5.13: бренд/layout из растворённого большого <style> ── */
+'[data-brand="delivery"] body { background-color: #f3ede6 !important; }',
+'[data-brand="delivery"] .topbar { background: #c99e6e !important; color: #3a2a1c !important; border-bottom: 3px solid #3a2a1c !important; }',
+'[data-brand="coffee"] .topbar .brand .mark { width: calc(var(--topbar-h, 64px) - 6px); height: calc(var(--topbar-h, 64px) - 6px); border-radius: 14px; }',
+'[data-brand="delivery"] .topbar .brand .mark img, [data-brand="delivery"] .topbar .brand .mark svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; }',
+'@media (max-width: 600px) { .topbar { padding: 8px 12px !important; gap: 6px; } .topbar .brand { font-size: 18px !important; } .topbar .brand small { font-size: 10px !important; } }',
+'[data-brand="coffee"] .topbar .brand .mark img, [data-brand="coffee"] .topbar .brand .mark svg { width: 100% !important; max-width: 100% !important; }',
+'[data-brand="delivery"] .brand b { font: 900 18px "Unbounded", sans-serif !important; color: #3a2a1c !important; }',
+'[data-brand="delivery"] .brand small { color: #3a2a1c !important; opacity: 0.85; }',
+'@media (max-width: 360px) { .topbar { flex-wrap: wrap !important; gap: 6px !important; padding: 6px 10px !important; } .brand b { font-size: 14px !important; } .brandSeg { margin-left: auto; } }',
+'[data-brand="delivery"] #profileTopBtn { background: #e8a33d !important; color: #3a2a1c !important; border: 2px solid #3a2a1c !important; box-shadow: 2px 2px 0 #3a2a1c !important; font-weight: 900 !important; }',
+'[data-brand="delivery"] #deliveryView .menu-head h1 { font: 900 clamp(22px, 3.2vw, 36px)/1.15 "Unbounded", sans-serif !important; color: #3a2a1c !important; }',
+'[data-brand="delivery"] #deliveryView .menu-head h1 em { color: #3a2a1c !important; background: linear-gradient(transparent 62%, #fad8c3 62%); }',
+'[data-brand="delivery"] #deliveryView .search { background: #efe6d8 !important; border: 2px solid #3a2a1c !important; border-radius: 12px !important; box-shadow: 3px 3px 0 #3a2a1c !important; }',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
