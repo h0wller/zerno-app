@@ -315,41 +315,32 @@ window.populateSlots = function(){
   var dFrom = pm === 'tomorrow' ? 1 : 0;
   var dTo = pm === 'today' ? 1 : 2;
 
-  // Список занятых слотов с бэкенда
   var busyList = (deliveryInfo && Array.isArray(deliveryInfo.busySlots)) ? deliveryInfo.busySlots : [];
 
   for (var d = dFrom; d < dTo; d++) {
     var items = [];
-    // Стартуем с 11:30 (690 мин), шагаем по 30 мин до 22:00 (1320 мин)
     for (var m = 690; m < 1320; m += 30) {
       var t = new Date(now);
       t.setDate(t.getDate() + d);
       t.setHours(Math.floor(m / 60), m % 60, 0, 0);
 
       var tEnd = new Date(t.getTime() + 30 * 60 * 1000);
-
-      // Если слот на сегодня наступает меньше чем через 45 минут — пропускаем
       if (d === 0 && (t.getTime() - now.getTime() < 45 * 60 * 1000)) continue;
 
       var datePart = pad(t.getDate()) + '.' + pad(t.getMonth() + 1);
       var startPart = pad(t.getHours()) + ':' + pad(t.getMinutes());
       var endPart = pad(tEnd.getHours()) + ':' + pad(tEnd.getMinutes());
 
-      var datePart = pad(t.getDate()) + '.' + pad(t.getMonth() + 1);
-      var startPart = pad(t.getHours()) + ':' + pad(t.getMinutes());
-      var endPart = pad(tEnd.getHours()) + ':' + pad(tEnd.getMinutes());
-
-      // Значение для сервера: 26.09 | 11:30–12:00
       var slotVal = datePart + ' | ' + startPart + '–' + endPart;
-      
-      // Текст в селекторе: теперь содержит и день, и дату, и интервал
+      var slotShort = startPart + ' – ' + endPart;
       var dayPrefix = (d === 0 ? 'Сегодня' : 'Завтра');
-      var slotLabel = dayPrefix + ' (' + datePart + ') · ' + startPart + ' – ' + endPart;
+      var slotFull = dayPrefix + ' (' + datePart + ') · ' + slotShort;
       var isBusy = busyList.indexOf(slotVal) > -1;
 
       items.push({ 
         v: slotVal, 
-        l: slotLabel + (isBusy ? ' (мест нет)' : ''),
+        shortLabel: slotShort + (isBusy ? ' (мест нет)' : ''),
+        fullLabel: slotFull + (isBusy ? ' (мест нет)' : ''),
         disabled: isBusy 
       });
     }
@@ -364,13 +355,17 @@ window.populateSlots = function(){
   }
 
   var html = '';
-  if (pm) html += '<option value="" disabled selected>⏰ Выберите интервал доставки…</option>';
-  else html += '<option value="asap">Как можно скорее (~45 мин)</option>';
+  if (pm) html += '<option value="" disabled selected data-short="⏰ Выберите время доставки…" data-full="⏰ Выберите время доставки…">⏰ Выберите время доставки…</option>';
+  else html += '<option value="asap" data-short="Как можно скорее (~45 мин)" data-full="Как можно скорее (~45 мин)">Как можно скорее (~45 мин)</option>';
 
+  // В списке option отображается ТОЛЬКО короткий интервал (без "Завтра/Сегодня")
   Object.keys(days).forEach(function (k) {
     html += '<optgroup label="' + days[k].label + '">' + 
       days[k].items.map(function (s) { 
-        return '<option value="' + s.v + '"' + (s.disabled ? ' disabled style="color:#8E9AA5;background:#F0F4F8"' : '') + '>' + s.l + '</option>'; 
+        return '<option value="' + s.v + '" data-short="' + esc(s.shortLabel) + '" data-full="' + esc(s.fullLabel) + '"' + 
+          (s.disabled ? ' disabled style="color:#8E9AA5;background:#F0F4F8"' : '') + '>' + 
+          esc(s.shortLabel) + 
+        '</option>'; 
       }).join('') + 
     '</optgroup>';
   });
@@ -386,8 +381,43 @@ window.populateSlots = function(){
       }
     }
     sel.classList.toggle('need-slot', !!pm && !sel.value);
+
+    // Подключаем переключатель «в списке коротко, в строке с датой»
+    setupSlotDisplayToggle(sel);
   }
 };
+
+function setupSlotDisplayToggle(sel) {
+  function showFull() {
+    var cur = sel.options[sel.selectedIndex];
+    if (cur && cur.dataset && cur.dataset.full) {
+      cur.textContent = cur.dataset.full;
+    }
+  }
+
+  function showShort() {
+    for (var i = 0; i < sel.options.length; i++) {
+      var o = sel.options[i];
+      if (o.dataset && o.dataset.short) o.textContent = o.dataset.short;
+    }
+  }
+
+  if (!sel.__displayBound) {
+    sel.__displayBound = true;
+    // Перед открытием списка сбрасываем все пункты на короткие (только часы)
+    ['pointerdown', 'mousedown', 'touchstart', 'focus'].forEach(function(ev) {
+      sel.addEventListener(ev, showShort);
+    });
+    // После выбора или закрытия показываем выбранный пункт с датой
+    ['change', 'blur', 'focusout'].forEach(function(ev) {
+      sel.addEventListener(ev, showFull);
+    });
+  }
+
+  // При первой отрисовке сразу форматируем выбранный пункт с датой
+  showFull();
+  window.syncSlotDisplay = showFull;
+}
 /* ── Ф3.60: подсветка селекта времени в режиме предзаказа ── */
 (function(){
 var s = document.createElement('style');
