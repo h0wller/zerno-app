@@ -14,6 +14,7 @@
   }
 
   /* ── Брендовая адаптация модалки (Вариант 3) ── */
+  /* ── Брендовая адаптация модалки ── */
   function applyAuthBrand() {
     var isDeliv = (typeof brand !== 'undefined' && brand === 'delivery');
     var modal = document.getElementById('authModal');
@@ -21,10 +22,25 @@
 
     var logoContainer = modal.querySelector('.alogo');
     if (logoContainer) {
-      logoContainer.style.background = isDeliv ? '#F6EEE1' : '#123A6B';
-      logoContainer.style.border = isDeliv ? '2px solid #3A2A1C' : 'none';
-      logoContainer.style.boxShadow = isDeliv ? '3px 3px 0 #3A2A1C' : '0 12px 26px -8px rgba(18, 58, 107, 0.6)';
-      logoContainer.innerHTML = '<img src="' + (isDeliv ? 'friday-logo.svg' : 'andCoffee.svg') + '" alt="logo" style="width:70%;height:70%;object-fit:contain">';
+      if (isDeliv) {
+        // Пятница: без рамки, крупно, на всю ширину контейнера
+        logoContainer.style.background = 'transparent';
+        logoContainer.style.border = 'none';
+        logoContainer.style.boxShadow = 'none';
+        logoContainer.style.width = '140px';
+        logoContainer.style.height = 'auto';
+        logoContainer.style.margin = '0 auto 12px';
+        logoContainer.innerHTML = '<img src="friday-logo.svg" alt="Пятница" style="width:100%;height:auto;object-fit:contain;display:block;">';
+      } else {
+        // Кофейня: на белом фоне в аккуратном квадрате с скруглением
+        logoContainer.style.background = '#FFFFFF';
+        logoContainer.style.border = '1.5px solid var(--line, #D8DFE4)';
+        logoContainer.style.boxShadow = '0 6px 20px rgba(18, 58, 107, 0.12)';
+        logoContainer.style.width = '66px';
+        logoContainer.style.height = '66px';
+        logoContainer.style.margin = '0 auto 16px';
+        logoContainer.innerHTML = '<img src="andCoffee.svg" alt="…и кофе" style="width:75%;height:75%;object-fit:contain;display:block;margin:auto;">';
+      }
     }
 
     var msub = modal.querySelector('.msub');
