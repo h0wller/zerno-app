@@ -152,8 +152,6 @@ var rules = [
 '#brandSplash .spBtn .bt,#brandSplashStatic .spBtn .bt{display:block;font:700 16px Unbounded,sans-serif}',
 /* --- Чат --- */
 '#chatPanel [class="chip"],#chatPanel #chips,#chatPanel .chips{display:none}',
-'.chatHint{display:inline-block;background:#EDF2F6;border:1.5px solid var(--line);border-radius:16px 16px 16px 4px;padding:8px 14px;margin:3px 4px;font-size:13px;color:var(--ink);cursor:pointer}',
-'.chatHint:active{background:#D6E4F0}',
 '#supportChooseOverlay .ctxPick,#chatPanel .ctxPick{display:flex;gap:8px;margin:8px 0}',
 '#supportChooseOverlay .ctxPick button,#chatPanel .ctxPick button{flex:1;padding:10px;border-radius:14px;font-size:14px;font-weight:700;border:1.5px solid var(--line);background:#fff;cursor:pointer}',
 '#supportChooseOverlay .ctxPick .cpD,#chatPanel .ctxPick .cpD{border-color:#F2D9A5;background:#FFF6E5;color:#6B4E0E}',
