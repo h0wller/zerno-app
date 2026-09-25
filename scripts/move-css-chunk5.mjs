@@ -1,46 +1,30 @@
-/* Ф5.6.2g-fix: консолидация конфетти-подсистемы в fx.js.
-v2-regex push-ui съел const fx/fxx внутрь window.pushBusy-ассайна → pieces остался
-module-private в push-ui → ReferenceError: pieces is not defined на штампе.
-Решение: весь конфетти-блок (fx/fxx/pieces/fxOn + fitFx + resize) переезжает в fx.js
-как module-private состояние; push-ui чистим от fx-кода и window-артефактов v2. */
+/* Ф5.6.2i: устранить лексическое затенение в конвертированных модулях.
+Голые вызовы функций, которые модуль сам экспортирует в window (и которые снаружи
+могут быть обёрнуты: sv→syncBrandViews, admin-extra→loadMenu, cashier-log→setMode),
+заменяем на window.X(...) — как резолвилось в classic-режиме в момент вызова.
+Не трогаем: определения (function X(), window.X =), внутренние неэкспортируемые
+функции (loop и т.п.), обращения через точку/$. */
 import fs from 'node:fs';
-const P = 'public/app/core/push-ui.js';
-const FX = 'public/app/core/fx.js';
-let p = fs.readFileSync(P, 'utf8');
-let f = fs.readFileSync(FX, 'utf8');
-
-/* 1. убрать window-артефакты v2 для fx-состояния */
-p = p.replace(/^[ \t]*window\.(fx|fxx|pieces|fxOn)[ \t]*=[^\n]*\n/gm, '');
-p = p.replace(/^[ \t]*window\.fitFx[ \t]*=[^\n]*\n/gm, '');
-
-/* 2. вырезать конфетти-блок из push-ui (от const fx до resize-биндинга) */
-let block = '';
-const reBlock = /const\s+fx\s*=[\s\S]*?addEventListener\(["']resize["'],\s*fitFx\);/;
-const m = p.match(reBlock);
-if (m) { block = m[0]; p = p.replace(reBlock, ''); }
-
-/* 3. фолбэк: если блок не собрался — синтезируем чистый */
-if (!block || !block.includes('function fitFx')) {
-  block = 'const fx = $("#fx"),\n  fxx = fx.getContext("2d");\nlet pieces = [],\n  fxOn = false;\nfunction fitFx() {\n  fx.width = innerWidth;\n  fx.height = innerHeight;\n}\nfitFx();\naddEventListener("resize", fitFx);';
-  console.log('⚠️ блок не найден целиком — синтезирована чистая версия');
+const FILES = ['catalog', 'staffpin', 'editor', 'promo', 'dash', 'push-ui', 'fx', 'overlay-core']
+  .map(n => 'public/app/core/' + n + '.js');
+let total = 0;
+for (const f of FILES) {
+  let s = fs.readFileSync(f, 'utf8');
+  const names = new Set();
+  const reExp = /window\.(\w+)\s*=\s*\1\s*;/g;
+  let m;
+  while ((m = reExp.exec(s))) names.add(m[1]);
+  let changed = 0;
+  for (const n of names) {
+    const re = new RegExp('(?<!function\\s)(?<![\\w$.])' + n + '\\s*\\(', 'g');
+    const before = s;
+    s = s.replace(re, (hit, off) => {
+      /* не трогаем строку-шим window.n = n; (там нет скобок сразу после имени) и комментарии */
+      return 'window.' + n + '(';
+    });
+    if (s !== before) changed++;
+    total += (before.match(re) || []).length;
+  }
+  if (changed) { fs.writeFileSync(f, s); console.log('✅ ' + f.split('/').pop() + ': головые вызовы → window.* (' + [...names].join(', ') + ')'); }
 }
-
-/* 4. страховка: в push-ui не осталось fx-ссылок */
-if (/\b(fxx|fxOn|pieces|fitFx)\b/.test(p.replace(/\/\*[\s\S]*?\*\//g, ''))) {
-  console.error('❌ push-ui.js всё ещё ссылается на fx/fxx/pieces/fxOn — покажи строки вручную');
-  process.exit(1);
-}
-
-/* 5. вставить блок в fx.js (после шапки), если fitFx ещё не там */
-if (!f.includes('function fitFx')) {
-  const lines = f.split('\n');
-  let at = 0;
-  if (lines[0].trim().startsWith('/*')) at = 1;
-  lines.splice(at, 0, '/* ── Ф5.6.2g-fix: конфетти-подсистема целиком в fx.js (module-private) ── */\n' + block + '\n');
-  f = lines.join('\n');
-}
-if (!f.includes('window.fitFx =')) f += '\nwindow.fitFx = fitFx;\n';
-
-fs.writeFileSync(P, p);
-fs.writeFileSync(FX, f);
-console.log('✅ конфетти консолидировано в fx.js; push-ui.js очищен');
+console.log('✅ всего замен:', total);

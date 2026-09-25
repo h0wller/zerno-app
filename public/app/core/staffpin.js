@@ -21,7 +21,7 @@ function openPin() {
             body: { code: v },
           });
           me = r.customer;
-          closePin();
+          window.closePin();
           renderModes();
           renderProfile();
           toast(

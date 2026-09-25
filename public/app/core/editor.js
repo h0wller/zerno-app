@@ -55,7 +55,7 @@ window.edit = null; /* Ф5.6.2f: разделяемое состояние с me
           d.onclick = (e) => {
             e.stopPropagation();
             edit.img = null;
-            renderZone();
+            window.renderZone();
           };
       }
 
@@ -75,10 +75,10 @@ window.edit = null; /* Ф5.6.2f: разделяемое состояние с me
       $("#emZone").addEventListener("drop", (e) => {
         e.preventDefault();
         $("#emZone").classList.remove("over");
-        if (e.dataTransfer.files[0]) loadImg(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files[0]) window.loadImg(e.dataTransfer.files[0]);
       });
       $("#emFile").addEventListener("change", (e) => {
-        if (e.target.files[0]) loadImg(e.target.files[0]);
+        if (e.target.files[0]) window.loadImg(e.target.files[0]);
         e.target.value = "";
       });
 
@@ -93,7 +93,7 @@ window.edit = null; /* Ф5.6.2f: разделяемое состояние с me
           c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
           edit.img = c.toDataURL("image/jpeg", 0.82);
           URL.revokeObjectURL(u);
-          renderZone();
+          window.renderZone();
         };
         img.onerror = () => {
           URL.revokeObjectURL(u);
@@ -108,7 +108,7 @@ window.edit = null; /* Ф5.6.2f: разделяемое состояние с me
         c.name += " (копия)";
         MENU.push(c);
         renderMenu();
-        closeEditor();
+        window.closeEditor();
         openEditor(c.id);
         toast("Дубликат подготовлен — нажмите «Сохранить»", "⧉");
       };
@@ -118,7 +118,7 @@ window.edit = null; /* Ф5.6.2f: разделяемое состояние с me
         try {
           await api("/menu/" + edit.id, { method: "DELETE" });
           await loadMenu();
-          closeEditor();
+          window.closeEditor();
           toast("Позиция удалена", "🗑");
         } catch (e) {
           toast(e.message, "⚠️");

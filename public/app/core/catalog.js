@@ -37,7 +37,7 @@
           modeSegBound = true;
           seg.addEventListener("click", (e) => {
             const b = e.target.closest("[data-mode]");
-            if (b) setMode(b.dataset.mode);
+            if (b) window.setMode(b.dataset.mode);
           });
         }
       }
@@ -62,7 +62,7 @@
         if (cv) cv.hidden = m !== "cashier";
         const ov = $("#ordersView");
         if (ov) ov.hidden = m !== "orders";
-        syncBrandViews();
+        window.syncBrandViews();
         const ab = $("#adminBar");
         if (ab) ab.hidden = m !== "admin";
         const pt = $("#promoToggle");
@@ -87,14 +87,14 @@
               if (mode === "orders") renderOrders(true);
             }, 8000);
         }
-        if (m === "admin") loadMenu();
+        if (m === "admin") window.loadMenu();
         if (
           (m === "guest" || m === "admin") &&
           brand === "delivery" &&
           !DMENU.length
         )
           loadDelivery();
-        renderModes();
+        window.renderModes();
         toast(
           m === "admin"
             ? "Режим администратора активен"

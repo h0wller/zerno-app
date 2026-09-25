@@ -190,3 +190,5 @@ overlay-база (syncOverlay/popstate/Escape) остаётся в overlay-core.
 (module-private состояние: класс синхронизационных багов window-шимов устранён).
 ВСЕ 8 КЛАСТЕРОВ + конфетти — модули. Perf-бэклог: CLS 0.33 local (7 shifts, DevTools Layout shifts) —
 разбор после финала ESM.
+### [x] 5.6.2i - window-резолв само-вызовов + e2e кейс 15-delivery-cashier-clean
+(стафф-режимы в бренде Пятница прячут delivery-меню немедленно; регресс-страховка).

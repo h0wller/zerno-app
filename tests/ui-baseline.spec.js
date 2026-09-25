@@ -171,6 +171,26 @@ test('baseline: кассир', async ({ page }) => {
   await shot(page, '06-orders');
 });
 
+test('baseline: стафф-режим прячет delivery-меню сразу (бренд Пятница)', async ({ page }) => {
+  // бренд Пятница — через localStorage, URL-параметр state.js не читает
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_brand', 'delivery');
+  });
+  await page.goto('/', { waitUntil: 'networkidle' });
+  await loginAs(page, { code: CASHIER });
+  await waitModeSeg(page);
+
+  await modeBtn(page, 'cashier', 'Кассир').click();
+  await expect(page.locator('#deliveryView')).toBeHidden({ timeout: 2000 });
+  await expect(page.locator('#menuView')).toBeHidden({ timeout: 2000 });
+  await expect(page.locator('#rail')).toBeHidden({ timeout: 2000 });
+
+  await modeBtn(page, 'orders', 'Заказы').click();
+  await expect(page.locator('#deliveryView')).toBeHidden({ timeout: 2000 });
+  await expect(page.locator('#menuView')).toBeHidden({ timeout: 2000 });
+  await shot(page, '15-delivery-cashier-clean');
+});
+
 test('baseline: админ', async ({ page }) => {
   await loginAs(page, { code: ADMIN });
   await waitModeSeg(page);

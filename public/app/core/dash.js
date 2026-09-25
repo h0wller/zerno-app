@@ -3,7 +3,7 @@
       $("#dashToggle").onclick = async () => {
         $("#dashModal").classList.add("show");
         syncOverlay();
-        loadSubs();
+        window.loadSubs();
         try {
           const s = await api("/stats");
           $("#dashTop").innerHTML = `

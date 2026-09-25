@@ -8,7 +8,7 @@ const fx = $("#fx"),
         fx.width = innerWidth;
         fx.height = innerHeight;
       }
-      fitFx();
+      window.fitFx();
       addEventListener("resize", fitFx);
 
 function confetti() {

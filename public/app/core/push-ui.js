@@ -59,7 +59,7 @@ function urlBase64ToUint8Array(s) {
           try {
             sub = await reg.pushManager.subscribe({
               userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(v.publicKey),
+              applicationServerKey: window.urlBase64ToUint8Array(v.publicKey),
             });
           } catch (e) {
             sub = await reg.pushManager.getSubscription();
@@ -69,7 +69,7 @@ function urlBase64ToUint8Array(s) {
             method: "POST",
             body: { sub: sub.toJSON() },
           });
-          refreshPushBtn();
+          window.refreshPushBtn();
           toast("Готово! Проверочный пуш уже летит", "🔔");
         } catch (e) {
           toast(
@@ -129,13 +129,13 @@ function urlBase64ToUint8Array(s) {
         const hide = () => {
           pb.hidden = true;
           if (av) av.classList.remove("pulse-hint");
-          togglePushHint(false);
+          window.togglePushHint(false);
         };
         if (isCap) {
           const needPush = me && localStorage.getItem("zt_fcm") !== "1";
           pb.hidden = !needPush;
           if (av) av.classList.toggle("pulse-hint", !!needPush);
-          togglePushHint(!!needPush);
+          window.togglePushHint(!!needPush);
           return;
         }
         const ua = navigator.userAgent;
@@ -162,7 +162,7 @@ function urlBase64ToUint8Array(s) {
           done = true;
           pb.hidden = !need;
           if (av) av.classList.toggle("pulse-hint", need);
-          togglePushHint(need);
+          window.togglePushHint(need);
         };
         const t = setTimeout(() => apply(false), 3000);
         navigator.serviceWorker.ready
@@ -173,7 +173,7 @@ function urlBase64ToUint8Array(s) {
                 const v = await (await fetch(API_BASE + "/api/vapid")).json();
                 s = await reg.pushManager.subscribe({
                   userVisibleOnly: true,
-                  applicationServerKey: urlBase64ToUint8Array(v.publicKey),
+                  applicationServerKey: window.urlBase64ToUint8Array(v.publicKey),
                 });
                 await api("/push/subscribe", {
                   method: "POST",
@@ -209,7 +209,7 @@ function urlBase64ToUint8Array(s) {
               method: "POST",
               body: { token: t.value },
             }).catch(() => {});
-          refreshPushBtn();
+          window.refreshPushBtn();
         });
         try {
           PN.register();

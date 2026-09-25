@@ -23,7 +23,7 @@
         $("#promoModal").classList.add("show");
         syncOverlay();
         loadPromos();
-        loadWeekPromo();
+        window.loadWeekPromo();
       };
       function closePromo() {
         $("#promoModal").classList.remove("show");
