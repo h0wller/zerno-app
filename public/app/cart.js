@@ -276,6 +276,25 @@
         '</div>';
     }).join('') || '<div style="color:var(--soft);text-align:center;padding:20px">Корзина пуста</div>';
 
+    // Плашка режима предзаказа вне рабочих часов (11:00–22:00)
+    var pmNotice = document.getElementById('preorderNotice');
+    var isOffHours = typeof window.preorderMode === 'function' && window.preorderMode() !== null;
+    if (isOffHours && checkIsDelivery()) {
+      if (!pmNotice) {
+        pmNotice = document.createElement('div');
+        pmNotice.id = 'preorderNotice';
+        pmNotice.style.cssText = 'background:#FFF6E5;border:1.5px dashed #F2D9A5;border-radius:12px;padding:10px 14px;margin:10px 0;font-size:13px;color:#6B4E0E;font-weight:600;line-height:1.4;';
+        cItems.parentNode.insertBefore(pmNotice, cItems);
+      }
+      var pmMode = window.preorderMode();
+      pmNotice.innerHTML = pmMode === 'tomorrow'
+        ? '🌙 <b>Кухня сейчас отдыхает.</b> Мы принимаем предзаказы на завтра — выберите удобное время доставки ниже!'
+        : '☀️ <b>Откроемся в 11:00.</b> Оформите предзаказ сейчас, и мы привезём его к выбранному времени!';
+      pmNotice.style.display = '';
+    } else if (pmNotice) {
+      pmNotice.style.display = 'none';
+    }
+
     renderAddons();
     updateDeliveryPromoBar();
     paintTotals();
@@ -447,12 +466,19 @@
       var pm = typeof window.preorderMode === "function"
         ? window.preorderMode()
         : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);
-      var preorder = !!pm;
       var slotVal = (document.getElementById("checkoutSlot") || {}).value || "";
-      if (preorder && (!slotVal || slotVal === "asap")) {
+      var isPreorder = !!pm || (slotVal && slotVal !== "asap");
+
+      if (isPreorder && (!slotVal || slotVal === "asap")) {
         var sl = document.getElementById("checkoutSlot");
         if (sl) flagField(sl);
-        return toast("Выберите время доставки ⏰", "⚠️");
+        return toast("Выберите время доставки для предзаказа ⏰", "⚠️");
+      }
+
+      var preorderDate = "";
+      if (slotVal && slotVal !== "asap") {
+        var mDate = slotVal.match(/^(\d{2}[.-]\d{2})/);
+        if (mDate) preorderDate = mDate[1];
       }
 
       var body = {
@@ -461,6 +487,8 @@
         street: streetV,
         house: houseV,
         slot: slotVal,
+        is_preorder: isPreorder ? 1 : 0,
+        preorder_date: preorderDate,
         pay: (document.getElementById("checkoutPay") || {}).value || "cash",
         comment: ((document.getElementById("checkoutComment") || {}).value || "").trim(),
         items: cart.map(function (c) {

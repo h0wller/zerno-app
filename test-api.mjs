@@ -44,6 +44,8 @@ const run=async()=>{
   const pizza=(await api('/dmenu')).j.items.find(p=>p.cat==='pizza');
   const ord=await api('/orders',{method:'POST',token:g,body:{method:'delivery',place:'Янтарный',addr:'Советская 1',slot:'asap',pay:'cash',items:[{id:pizza.id,oi:1,qty:2}],promo:'PIZZA10'}});
   check('заказ с промокодом создан',ord.status===200&&ord.j.order?.promodiscount>0,JSON.stringify(ord.j));
+  const ordPre = await api('/orders',{method:'POST',token:g,body:{method:'delivery',place:'Янтарный',addr:'Советская 1',slot:'26-09 | 14-00',pay:'cash',items:[{id:pizza.id,oi:1,qty:1}]}});
+  check('предзаказ сохранён',ordPre.status===200&&ordPre.j.order?.is_preorder===1&&ordPre.j.order?.preorder_date==='26-09');
   check('подарок пиццы месяца начислен',(ord.j.order?.gifts||[]).length>=1);
   check('диспетчер видит заказ',(await api('/orders',{token:d})).j.orders?.some(o=>o.no===ord.j.order?.no));
   check('статус меняется',(await api('/orders/'+ord.j.order.id+'/status',{method:'POST',token:d,body:{status:'accept'}})).status===200);

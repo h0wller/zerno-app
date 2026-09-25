@@ -279,8 +279,12 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             var d = new Date(o.created).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
             var items = o.items.slice(0, 3).map(function (i) { return i.qty + '× ' + i.name; }).join(', ') + (o.items.length > 3 ? '…' : '');
 
+            var timeInfo = o.is_preorder
+                ? ' · <b style="color:#B26A05">⏰ Предзаказ: ' + esc(o.slot) + '</b>'
+                : (o.eta ? ' · ⏰ ' + esc(o.eta) : '');
+
             host.innerHTML = '<div class="myOrderCard"><div class="moTop"><span>Заказ #' + o.no + ' <span class="moDate">· ' + d + '</span></span><span class="moSt ' + s[1] + '">' + s[0] + ' ' + s[2] + '</span></div>' +
-                '<div class="moSum">' + fmt(o.total) + (o.eta ? ' · ⏰ ' + esc(o.eta) : '') + '</div>' +
+                '<div class="moSum">' + fmt(o.total) + timeInfo + '</div>' +
                 (items ? '<div class="moItems">' + esc(items) + '</div>' : '') +
                 ((o.gifts && o.gifts.length) ? '<div class="moGifts">🎁 ' + o.gifts.map(function (g) { return esc(g.name) + ' ×' + g.qty; }).join(', ') + '</div>' : '') + '</div>';
         } catch (e) { }
@@ -302,10 +306,15 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                 done: '🏁 Выполнен',
                 cancel: '❌ Отменён'
             };
+            
             list.innerHTML = (r.orders || []).map(function (o) {
                 var d = new Date(o.created).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                var timeInfo = o.is_preorder
+                    ? ' · <b style="color:#B26A05">⏰ Предзаказ: ' + esc(o.slot) + '</b>'
+                    : (o.eta ? ' · ⏰ ' + esc(o.eta) : '');
+
                 return '<div class="myOrderCard" style="margin-bottom:8px"><div class="moTop"><span>Заказ #' + o.no + ' <span class="moDate">· ' + d + '</span></span><span class="moSt">' + (ST[o.status] || o.status) + '</span></div>' +
-                    '<div class="moSum">' + fmt(o.total) + (o.eta ? ' · ⏰ ' + esc(o.eta) : '') + '</div>' +
+                    '<div class="moSum">' + fmt(o.total) + timeInfo + '</div>' +
                     '<div class="moItems">' + esc(o.items.map(function (i) { return i.qty + '× ' + i.name; }).join(', ')) + '</div>' +
                     ((o.gifts && o.gifts.length) ? '<div class="moGifts">🎁 ' + o.gifts.map(function (g) { return esc(g.name) + ' ×' + g.qty; }).join(', ') + '</div>' : '') + '</div>';
             }).join('') || '<div class="hmini">Заказов пока нет 🍕</div>';
@@ -345,7 +354,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
     b.onclick = window.renderOrdersModal;
 })();
 
-// Оптимизированный patchQR без querySelectorAll('*')
 (function patchQR() {
     if (typeof window.renderProfile !== 'function') return;
     const _rp = window.renderProfile;
@@ -369,8 +377,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         return r;
     };
 })();
-/* Ф3.49: делегированный клик по [data-auth] в capture-фазе.
-Кнопка лежит в #profileUser, а старые байнды смотрели на #profileBox — клики проходили мимо. */
+
 document.addEventListener('click', function (e) {
   var b = (e.target && e.target.closest) ? e.target.closest('[data-auth]') : null;
   if (!b) return;

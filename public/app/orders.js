@@ -23,26 +23,46 @@ function beep() {
 }
 
 function orderCard(o) {
-  const next = o.status === 'new' ? ['accept']
+  var next = o.status === 'new' ? ['accept']
     : o.status === 'accept' ? ['cook']
     : o.status === 'cook' ? (o.method === 'pickup' ? ['done'] : ['way'])
     : o.status === 'way' ? ['done']
     : [];
 
-  const items = o.items.map(i => `${i.qty}× ${esc(i.name)}${i.opt ? ' (' + esc(i.opt) + ')' : ''}`).join('<br>');
-  const gifts = (o.gifts || []).map(g => `🎁 ${esc(g.name)} ×${g.qty}`).join('<br>');
+  var items = o.items.map(function(i) {
+    return i.qty + '× ' + esc(i.name) + (i.opt ? ' (' + esc(i.opt) + ')' : '');
+  }).join('<br>');
 
-  return `<div class="orderCard" data-oid="${o.id}">
-    <div class="ocHead"><b>#${o.no}</b> <span class="ocStatus st-${o.status}">${orderLabel(o.status)}</span>
-      <span class="ocTime">${new Date(o.created).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span></div>
-    <div class="ocWho">${esc(o.name)} · ${esc(o.phone)}</div>
-    <div class="ocAddr">${o.method === 'pickup' ? '🛍 Самовывоз, Советская 38А' : '🚗 ' + esc(o.place) + ', ' + esc(o.addr)}<br>⏰ ${o.slot === 'asap' ? 'как можно скорее' : esc(o.slot)} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}</div>
-    <div class="ocItems">${items}${gifts ? '<br>' + gifts : ''}</div>
-    <div class="ocTotal">Итого: <b>${fmt(o.total)}</b>${o.discount ? ` · скидка ${fmt(o.discount)}` : ''}${o.fee ? ` · доставка ${fmt(o.fee)}` : ''}</div>
-    ${o.comment ? `<div class="ocComment">💬 ${esc(o.comment)}</div>` : ''}
-    <div class="ocActs">${next.map(s => `<button class="btn fire" data-os="${s}">${orderLabel(s)}</button>`).join('')}
-    ${(o.status !== 'done' && o.status !== 'cancel') ? `<button class="btn ghost danger" data-os="cancel">❌ Отменить</button>` : ''}</div>
-  </div>`;
+  var gifts = (o.gifts || []).map(function(g) {
+    return '🎁 ' + esc(g.name) + ' ×' + g.qty;
+  }).join('<br>');
+
+  // Метка предзаказа для диспетчера
+  var preBadge = o.is_preorder
+    ? '<span class="ocStatus" style="background:#FFF3D6;color:#8A6D3B;border:1px solid #F2D9A5">⏰ Предзаказ</span> '
+    : '';
+
+  var slotDisplay = o.is_preorder
+    ? '<span style="color:#B26A05;font-weight:700">⏰ Ко времени: ' + esc(o.slot) + '</span>'
+    : '⏰ ' + (o.slot === 'asap' ? 'как можно скорее' : esc(o.slot));
+
+  var addrString = o.method === 'pickup'
+    ? '🛍 Самовывоз, Советская 38А'
+    : '🚗 ' + esc(o.place) + ', ' + esc(o.addr);
+
+  return '<div class="orderCard" data-oid="' + o.id + '">' +
+    '<div class="ocHead"><b>#' + o.no + '</b> ' + preBadge + '<span class="ocStatus st-' + o.status + '">' + orderLabel(o.status) + '</span>' +
+      '<span class="ocTime">' + new Date(o.created).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) + '</span></div>' +
+    '<div class="ocWho">' + esc(o.name) + ' · ' + esc(o.phone) + '</div>' +
+    '<div class="ocAddr">' + addrString + '<br>' + slotDisplay + ' · 💳 ' + (o.pay === 'cash' ? 'наличные' : 'карта при получении') + '</div>' +
+    '<div class="ocItems">' + items + (gifts ? '<br>' + gifts : '') + '</div>' +
+    '<div class="ocTotal">Итого: <b>' + fmt(o.total) + '</b>' + (o.discount ? ' · скидка ' + fmt(o.discount) : '') + (o.fee ? ' · доставка ' + fmt(o.fee) : '') + '</div>' +
+    (o.comment ? '<div class="ocComment">💬 ' + esc(o.comment) + '</div>' : '') +
+    '<div class="ocActs">' + next.map(function(s) {
+      return '<button class="btn fire" data-os="' + s + '">' + orderLabel(s) + '</button>';
+    }).join('') +
+    ((o.status !== 'done' && o.status !== 'cancel') ? '<button class="btn ghost danger" data-os="cancel">❌ Отменить</button>' : '') + '</div>' +
+  '</div>';
 }
 
 async function renderOrders(silent) {

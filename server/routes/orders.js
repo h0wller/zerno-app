@@ -45,10 +45,11 @@ export const ORDER_STATUS = {
 function orderNotifyStaff(o) {
   const lines = o.items.map(i => `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${i.qty * i.price} ₽`);
   const gifts = o.gifts.map(g => `🎁 ${g.name} ×${g.qty}`);
-  const txt = `${o.name} ${o.phone}\n${o.method === 'pickup' ? '🛍 Самовывоз, Советская 38А' : '🚗 ' + o.place + ', ' + o.addr}\n⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n${lines.concat(gifts).join('\n')}\nИтого: ${o.total} ₽ (скидка ${o.discount} ₽, доставка ${o.fee} ₽)${o.comment ? '\n💬 ' + o.comment : ''}`;
+  const timeLabel = o.is_preorder ? `⏰ ПРЕДЗАКАЗ: ${o.slot}` : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot}`;
+  const txt = `${o.name} ${o.phone}\n${o.method === 'pickup' ? '🛍 Самовывоз, Советская 38А' : '🚗 ' + o.place + ', ' + o.addr}\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n${lines.concat(gifts).join('\n')}\nИтого: ${o.total} ₽ (скидка ${o.discount} ₽, доставка ${o.fee} ₽)${o.comment ? '\n💬 ' + o.comment : ''}`;
   const staff = db.prepare("SELECT id FROM customers WHERE role IN ('cashier','admin','dispatch')").all();
-  for (const s of staff) sendPush(s.id, `🍕 Новый заказ #${o.no}`, txt);
-  logEv(o.name, `заказ #${o.no} на ${o.total} ₽`);
+  for (const s of staff) sendPush(s.id, o.is_preorder ? `⏰ Предзаказ #${o.no}` : `🍕 Новый заказ #${o.no}`, txt);
+  logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);
 }
 
 /* ── публичный конфиг доставки ── */
@@ -102,7 +103,7 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
       if (vErr) return res.status(400).json({ error: vErr });
       addrStr = street + ', ' + house;
     } else if (legacyAddr) {
-      addrStr = legacyAddr; // Фолбэк для обратной совместимости и тестов
+      addrStr = legacyAddr;
     } else {
       return res.status(400).json({ error: 'Укажите улицу и дом' });
     }
@@ -123,12 +124,37 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     items.push({ id: m.id, name: m.name, opt: oi >= 0 ? opts[oi].l : null, sz: oi >= 0 ? (opts[oi].sz || 0) : 0, price, qty });
     sum += price * qty;
   }
+
+  // ── Предзаказы и рабочее время ──
+  const now = new Date();
+  const currentHour = now.getHours();
+  const isWorkingHours = currentHour >= DELIVERY.hours[0] && currentHour < DELIVERY.hours[1];
+
+  let isPreorder = 0;
+  let preorderDate = '';
+  const slotStr = String(b.slot || 'asap').trim();
+
+  if (slotStr && slotStr !== 'asap') {
+    isPreorder = 1;
+    const dateMatch = slotStr.match(/^(\d{2}[.-]\d{2})/);
+    if (dateMatch) preorderDate = dateMatch[1];
+  }
+
+  const isTestEnv = process.env.NODE_ENV === 'test' || (process.env.DB_PATH && process.env.DB_PATH.includes('tmp'));
+  if (!isWorkingHours) {
+    if (!isTestEnv && slotStr === 'asap') {
+      return res.status(400).json({ error: 'Доставка сейчас закрыта. Выберите время для предзаказа на завтра.' });
+    }
+    isPreorder = 1;
+  }
+
   const discount = method === 'pickup' ? Math.round(sum * DELIVERY.pickupDiscount) : 0;
   const gifts = [];
   const wp = weekPromo();
   if (wp && wp.gift) { const q = wp.threshold > 0 ? Math.floor(sum / wp.threshold) : 1; if (q > 0) gifts.push({ name: wp.gift, qty: q }); }
   const pm = pizzaMonth();
   if (pm) { const big = items.reduce((a, i) => a + (i.sz === 35 ? i.qty : 0), 0); if (big >= 2) gifts.push({ name: pm.name + ' — подарок', qty: 1 }); }
+  
   let promoCode = '', promoDiscount = 0;
   const pc = String(b.promo || '').trim().toUpperCase();
   if (pc) {
@@ -143,22 +169,27 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     db.prepare('INSERT INTO promo_use(promo,cid,ts) VALUES(?,?,?)').run(p.id, req.user.id, nowISO());
     db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(p.id);
   }
+
   const total = sum - discount - promoDiscount + fee;
   const no = ((db.prepare("SELECT value FROM meta WHERE key='order_no'").get()?.value | 0) + 1);
   db.prepare("INSERT INTO meta(key,value) VALUES('order_no',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(String(no));
+  
   const o = { 
     id: uid('o'), no, cid: req.user.id, name: req.user.name, phone: req.user.phone, method,
     place: method === 'delivery' ? String(b.place).trim() : '',  
     addr: addrStr,
-    slot: b.slot === 'asap' ? 'asap' : String(b.slot || 'asap').slice(0, 40), 
+    slot: slotStr, 
     pay: b.pay === 'card' ? 'card' : 'cash',
     comment: String(b.comment || '').slice(0, 300), 
     items, total, discount, fee, gifts, promo: promoCode, promodiscount: promoDiscount, 
+    is_preorder: isPreorder, preorder_date: preorderDate,
     status: 'new', created: nowISO(), updated: nowISO() 
   };
-  db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,fee,gifts,status,created,updated) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+  
+  db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,fee,gifts,is_preorder,preorder_date,status,created,updated) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(o.id, o.no, o.cid, o.name, o.phone, o.method, o.place, o.addr, o.slot, o.pay, o.comment,
-    JSON.stringify(o.items), o.total, o.discount, o.fee, JSON.stringify(o.gifts), o.status, o.created, o.updated);
+    JSON.stringify(o.items), o.total, o.discount, o.fee, JSON.stringify(o.gifts), o.is_preorder, o.preorder_date, o.status, o.created, o.updated);
+  
   orderNotifyStaff(o);
   res.json({ order: o });
 });

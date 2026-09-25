@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS fcm(
   if (tcols.length && !tcols.includes('actcode')) db.exec('ALTER TABLE customers ADD COLUMN actcode TEXT');
 
   if (!db.prepare("SELECT 1 FROM meta WHERE key='verified_migrated'").get()) {
-    db.exec('UPDATE customers SET verified=1'); // старые профили — честные
+    db.exec('UPDATE customers SET verified=1');
     db.prepare("INSERT INTO meta(key,value) VALUES('verified_migrated','1')").run();
   }
 
@@ -65,19 +65,21 @@ CREATE TABLE IF NOT EXISTS fcm(
     id TEXT PRIMARY KEY, no INTEGER, cid TEXT, name TEXT, phone TEXT,
     method TEXT, place TEXT, addr TEXT, slot TEXT, pay TEXT, comment TEXT,
     items TEXT, total INTEGER, discount INTEGER, fee INTEGER, gifts TEXT,
+    is_preorder INTEGER DEFAULT 0, preorder_date TEXT DEFAULT '',
     status TEXT DEFAULT 'new', created TEXT, updated TEXT)`);
 
   const ocols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
   if (ocols.length && !ocols.includes('promo')) db.exec(`ALTER TABLE orders ADD COLUMN promo TEXT DEFAULT ''`);
   if (ocols.length && !ocols.includes('promodiscount')) db.exec(`ALTER TABLE orders ADD COLUMN promodiscount INTEGER DEFAULT 0`);
   if (ocols.length && !ocols.includes('eta')) db.exec(`ALTER TABLE orders ADD COLUMN eta TEXT DEFAULT ''`);
+  if (ocols.length && !ocols.includes('is_preorder')) db.exec(`ALTER TABLE orders ADD COLUMN is_preorder INTEGER DEFAULT 0`);
+  if (ocols.length && !ocols.includes('preorder_date')) db.exec(`ALTER TABLE orders ADD COLUMN preorder_date TEXT DEFAULT ''`);
 
   const ncols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
   if (ncols.length && !ncols.includes('notify_tg')) db.exec(`ALTER TABLE customers ADD COLUMN notify_tg INTEGER DEFAULT 1`);
   if (ncols.length && !ncols.includes('notify_web')) db.exec(`ALTER TABLE customers ADD COLUMN notify_web INTEGER DEFAULT 1`);
   if (ncols.length && !ncols.includes('consent')) db.exec(`ALTER TABLE customers ADD COLUMN consent TEXT DEFAULT ''`);
 
-  /* ── индексы (создаются строго после создания всех таблиц) ── */
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
     CREATE INDEX IF NOT EXISTS idx_orders_cid ON orders(cid);
