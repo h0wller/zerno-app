@@ -195,3 +195,6 @@ overlay-база (syncOverlay/popstate/Escape) остаётся в overlay-core.
 ### [x] 5.8a - листья menu-editor/address/review → module. Фиксы: топ-левельный само-вызов
 в fx.js (window.fitFx до шима), шим maybeAskReview в review.js.
 Правило: скрипт window-резолва пропускает вызовы в top-level области модуля.
+### [x] 5.8b - IIFE-листья (chat-семейство, overlay, swipe, notify, splash, settings,
+delivery-search, cashier-log/card, live, scanner, scrolltop, styles, a11y, admin-extra,
+config, deeplink) → module. Гэйты скрипта: IIFE-паттерн + defer-тег, иначе skip.
