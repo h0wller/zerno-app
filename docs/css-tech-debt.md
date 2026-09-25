@@ -38,3 +38,5 @@ Runtime-файл содержит базовые компоненты (`.siteFoo
 база → theme-v2.css, бренд → views.js, .chk де-!important через специфичность.
 чанк 3 (чат + chatFab) — F5.8: база → theme-v2.css, владелец .chatHint переехал из views.js,
 armed/pulse — styles.js; пульс бара подсказок теперь 3 цикла (hintPulse) вместо бесконечного.
+чанк 4 (карточки меню + правая панель) — F5.9: база → theme-v2.css, 4 бренд-правила → views.js,
+!important снят через специфичность (.card .tag.hit, .stats .stat, #pvBonus .stamp/.freeCard).

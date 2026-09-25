@@ -250,6 +250,11 @@ var rules = [
 '[data-brand="delivery"] .mclose{background:#C99E6E!important;border:2px solid #3A2A1C!important;box-shadow:2px 2px 0 #3A2A1C!important;color:#3A2A1C!important}',
 '[data-brand="delivery"] .modal-card h3{font:900 20px Unbounded,sans-serif!important;color:#3A2A1C!important}',
 '[data-brand="delivery"] .modal-card input:not([type="checkbox"]),[data-brand="delivery"] .modal-card select,[data-brand="delivery"] .modal-card textarea{background:#fff!important;border:2px solid #3A2A1C!important;color:#3A2A1C!important;font-weight:600!important}',
+/* ── Ф5.9 чанк 4: брендовые карточки/панель (было inline <style> index.html) ── */
+'[data-brand="delivery"] .panel { background: #efe6d8 !important; border: 3px solid #3a2a1c !important; box-shadow: -8px 0 30px rgba(58, 42, 28, 0.2) !important; }',
+'[data-brand="delivery"] .tabs button.on { background: #c99e6e !important; color: #3a2a1c !important; border: 2px solid #3a2a1c !important; border-radius: 10px !important; box-shadow: 2px 2px 0 #3a2a1c !important; transform: rotate(-0.8deg); }',
+'[data-brand="delivery"] .stat { border: 2px solid #3a2a1c !important; border-radius: 10px !important; box-shadow: 2px 2px 0 #3a2a1c !important; }',
+'[data-brand="delivery"] .stat b { color: #3a2a1c !important; }',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
