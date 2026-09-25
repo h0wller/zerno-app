@@ -1,43 +1,33 @@
-/* F5.13b: слить два правила [data-brand="delivery"] .topbar .brand .mark в views.js.
-Каскад до чанка 8: старое правило views.js побеждало конфликты (инжект позже большого <style>),
-уникальные декларации большого стиля применялись. Слияние = union, старое перебивает конфликты. */
+/* Ф5.6.1: вербатим-вынос INLINE #4 (>10k символов) в public/app/core/legacy-core.js
+с заменой тега НА ТОЙ ЖЕ ПОЗИЦИИ (тайминг классик-скрипта идентичен).
+INLINE #2 (gesture-guard) дословно докладывается в state.js.
+Ноль семантических изменений. Идемпотентно (аборт, если legacy-core.js уже есть). */
 import fs from 'node:fs';
-const P = 'public/app/core/views.js';
-const SEL = '[data-brand="delivery"] .topbar .brand .mark';
-let s = fs.readFileSync(P, 'utf8');
+const IDX = 'public/index.html';
+const STATE = 'public/app/core/state.js';
+const OUT = 'public/app/core/legacy-core.js';
 
-const anchor = s.indexOf('css.textContent = rules.join');
-const close = s.lastIndexOf('];', anchor);
-const region = s.slice(0, close);
-const lines = region.split('\n');
-
-const hits = [];
-lines.forEach((l, i) => {
-  const t = l.trim();
-  if (!t.startsWith("'")) return;
-  const unq = t.slice(1).replace(/\\'/g, "'");
-  const bi = unq.indexOf('{');
-  if (bi < 0) return;
-  if (unq.slice(0, bi).trim() === SEL) hits.push(i);
-});
-if (hits.length !== 2) {
-  console.error('❌ ожидалось 2 вхождения, найдено:', hits.length);
-  hits.forEach(i => console.error('   ', lines[i].slice(0, 120)));
-  process.exit(1);
+let idx = fs.readFileSync(IDX, 'utf8');
+const re = /<script(?![^>]*\bsrc\b)[^>]*>([\s\S]*?)<\/script>/g;
+let m, big = null, bigStart = -1, bigEnd = -1, gest = null, gStart = -1, gEnd = -1;
+while ((m = re.exec(idx))) {
+  const body = m[1];
+  if (big === null && body.length > 10000) { big = body; bigStart = m.index; bigEnd = m.index + m[0].length; }
+  else if (gest === null && /gesturestart/.test(body)) { gest = body; gStart = m.index; gEnd = m.index + m[0].length; }
 }
-const [iOld, iNew] = hits;
-const bodyOf = (line) => {
-  const u = line.trim().slice(1);
-  return u.slice(u.indexOf('{') + 1, u.lastIndexOf('}'));
-};
-const decls = (b) => b.split(';').map(d => d.trim()).filter(Boolean);
-const map = {};
-decls(bodyOf(lines[iNew])).forEach(d => { map[d.slice(0, d.indexOf(':')).trim()] = d; });
-decls(bodyOf(lines[iOld])).forEach(d => { map[d.slice(0, d.indexOf(':')).trim()] = d; }); // старое перебивает
-const merged = Object.values(map).join(';');
-const selRaw = lines[iOld].trim().slice(1);
-lines[iOld] = "'" + selRaw.slice(0, selRaw.indexOf('{')) + '{' + merged + "}',";
-lines.splice(iNew, 1);
-s = lines.join('\n') + s.slice(close);
-fs.writeFileSync(P, s);
-console.log('✅ слито: деклараций было', decls(bodyOf(lines[iOld])).length, '+', decls(bodyOf(lines[iNew])).length, '→ стало', Object.keys(map).length);
+if (!big) { console.error('❌ INLINE #4 не найден'); process.exit(1); }
+if (fs.existsSync(OUT)) { console.error('❌ legacy-core.js уже существует — аборт (идемпотентность)'); process.exit(1); }
+
+fs.writeFileSync(OUT, big.trim() + '\n');
+idx = idx.slice(0, bigStart) + '<script src="./app/core/legacy-core.js"></script>' + idx.slice(bigEnd);
+
+if (gest && gEnd < bigStart) {
+  let st = fs.readFileSync(STATE, 'utf8');
+  st += '\n/* ── Ф5.6.1: iOS gesture-guard (было INLINE #2 index.html, дословно) ── */\n' + gest.trim() + '\n';
+  fs.writeFileSync(STATE, st);
+  idx = idx.slice(0, gStart) + idx.slice(gEnd);   // gEnd < bigStart → индексы валидны после первого среза
+  console.log('✅ INLINE #2 дословно долит в state.js и удалён из index.html');
+} else console.log('⚠️ INLINE #2 (gesturestart) не найден или порядок срезов небезопасен — пропуск');
+
+fs.writeFileSync(IDX, idx);
+console.log('✅ INLINE #4 →', OUT, '(' + big.length + ' символов, тег заменён на той же позиции)');

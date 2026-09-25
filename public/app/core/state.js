@@ -13,3 +13,28 @@ const CATS=[{id:'coffee',e:'☕',l:'Кофе',t:'#F3E2CE'},{id:'drinks',e:'🧋'
  {id:'seasonal',e:'🌊',l:'Сезонное',t:'#DCE9F5'},{id:'food',e:'🥐',l:'Еда',t:'#F9ECC7'},
  {id:'desserts',e:'🍰',l:'Десерты',t:'#F8E1E4'},{id:'shop',e:'🛍',l:'С полки',t:'#E8E6E1'}];
 const TINT=Object.fromEntries(CATS.map(c=>[c.id,c.t]));
+/* ── Ф5.6.1: iOS gesture-guard (было INLINE #2 index.html, дословно) ── */
+// Блокировка паразитного зума окна в iOS Safari / PWA (защита от вылета WebKit)
+      document.addEventListener(
+        "gesturestart",
+        function (e) {
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+
+      document.addEventListener(
+        "gesturechange",
+        function (e) {
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+
+      document.addEventListener(
+        "gestureend",
+        function (e) {
+          e.preventDefault();
+        },
+        { passive: false },
+      );

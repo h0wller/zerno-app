@@ -169,3 +169,8 @@ Inline-скрипт `public/index.html` по-прежнему содержит �
 * Сформирована точка входа `boot()`: загрузка пользователя, меню, инициализация видов.
 * Единая регистрация SW (SKIP_WAITING + reload только при hadController) — дубль из `<body>` удалён.
 * Инлайн-скрипты install-баннера и iOS-хинта переехали в boot.js; `<body>` без инлайн-кода.
+### [x] 5.6.1 - Инлайн-ядро вынесено вербатим в public/app/core/legacy-core.js (тег на той же позиции),
+gesture-guard дословно в state.js. В index.html остались только INLINE #1 (префетч /api/menu)
+и INLINE #3 (splash/FOUC-guard) — оба задокументированы как разрешённый critical-скелет.
+Декомпозиция legacy-core.js на кластеры (promo/dash/push-ui/staffpin/overlay-DROP) — бэклог Ф5.7,
+file-to-file, сухим прогоном по якорям.
