@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v94'; // ← поставь своё текущее значение +1
+const STATIC_CACHE = 'zerno-static-v95'; // ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
@@ -15,7 +15,14 @@ const STATIC_ASSETS = [
     '/app/core/utils.js',
     '/app/core/api.js',
     '/app/core/panel.js',
-    '/app/core/legacy-core.js',
+    '/app/core/catalog.js',
+    '/app/core/staffpin.js',
+    '/app/core/editor.js',
+    '/app/core/promo.js',
+    '/app/core/dash.js',
+    '/app/core/push-ui.js',
+    '/app/core/fx.js',
+    '/app/core/overlay-core.js',
     '/app/core/boot.js',       
     '/app/core/views.js',
   '/app/core/config.js',

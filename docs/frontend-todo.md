@@ -174,3 +174,7 @@ gesture-guard дословно в state.js. В index.html остались то�
 и INLINE #3 (splash/FOUC-guard) — оба задокументированы как разрешённый critical-скелет.
 Декомпозиция legacy-core.js на кластеры (promo/dash/push-ui/staffpin/overlay-DROP) — бэклог Ф5.7,
 file-to-file, сухим прогоном по якорям.
+### [x] 5.6.1 - Инлайн-ядро → legacy-core.js вербатим (тег на той же позиции); gesture-guard → state.js.
+### [x] 5.7 - legacy-core.js декомпозирован на 8 кластерных classic-модулей (вербатим, порядок тегов = прежний порядок кода).
+overlay-база (syncOverlay/popstate/Escape) остаётся в overlay-core.js до ESM-этапа: overlay.js самодостаточен,
+слияние дублей — задача Ф5.6.2.
