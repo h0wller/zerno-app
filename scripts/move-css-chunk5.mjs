@@ -1,85 +1,49 @@
-/* F5.11: механический перенос секции «служебное» из inline <style> index.html
-в theme-v2.css (Слой 1) и views.js (Слой 2). Секция идёт до закрывающего </style>.
-Предохранители F5.9: якорь ]; перед css.textContent; бренд-строки однострочные;
-!important без карты специфичности НЕ переносится (остаётся в Слое 0 списком). */
+/* F5.11b: растворение residual-блока Слоя 0 (4 правила с !important).
+3 системных/layout → views.js однострочными; .ava.pulse-hint → theme-v2 без !important.
+Блок и маркер удаляются из index.html. Идемпотентно. */
 import fs from 'node:fs';
-
 const IDX = 'public/index.html';
 const THEME = 'public/app/ui/theme-v2.css';
 const VIEWS = 'public/app/core/views.js';
-const M_START = '/* ══ служебное ══ */';
-
-/* Карта специфичности вместо !important. Пустая на первом прогоне:
-если skipped непустой — досылаем записи отдельным фиксом (образец: fix-chunk4-spec). */
-const SPEC_MAP = {
-  // '.selector': '#ancestor .selector',
-};
 
 let idx = fs.readFileSync(IDX, 'utf8');
-const s = idx.indexOf(M_START);
-if (s < 0) {
-  console.error('❌ Маркер «служебное» не найден. Доступные:');
-  console.error((idx.match(/\/\* ══.+?══ \*\//g) || []).join('\n'));
-  process.exit(1);
-}
-const e = idx.indexOf('</style>', s);
-if (e < 0) { console.error('❌ не найден </style> после маркера'); process.exit(1); }
-const block = idx.slice(s, e);
+const m = idx.indexOf('ждут ручной доработки (F5.11)');
+if (m < 0) { console.error('❌ residual не найден (уже удалён?)'); process.exit(1); }
+const commentStart = idx.lastIndexOf('/*', m);
+const closeStyle = idx.indexOf('</style>', m);
+if (commentStart < 0 || closeStyle < 0) { console.error('❌ не найдены границы residual'); process.exit(1); }
+idx = idx.slice(0, commentStart) + idx.slice(closeStyle);
+fs.writeFileSync(IDX, idx);
+console.log('✅ index.html: residual-блок удалён');
 
-function splitRules(css) {
-  const out = []; let depth = 0, cur = '', inC = false;
-  for (let i = 0; i < css.length; i++) {
-    const ch = css[i], nx = css[i + 1];
-    if (inC) { cur += ch; if (ch === '*' && nx === '/') { cur += nx; i++; inC = false; } continue; }
-    if (ch === '/' && nx === '*') { inC = true; cur += ch + nx; i++; continue; }
-    if (ch === '{') depth++;
-    if (ch === '}') { depth--; cur += ch; if (depth === 0) { out.push(cur.trim()); cur = ''; } continue; }
-    cur += ch;
+/* Слой 1: состояние модуля без !important */
+let th = fs.readFileSync(THEME, 'utf8');
+if (!th.includes('.ava.pulse-hint{')) {
+  let add = '\n/* ── F5.11b: подсветка-подсказка аватара (состояние; было residual Слоя 0, !important снят: специфичность .ava.pulse-hint выше .ava и бренд-правил) ── */\n.ava.pulse-hint{animation:pulse-hint 2s infinite;border:2px solid #e8a13a;background:#e8a13a;color:#fff}\n';
+  if (!th.includes('@keyframes pulse-hint')) {
+    add += '@keyframes pulse-hint{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}\n';
+    console.log('⚠️ @keyframes pulse-hint не найдены в theme-v2 — добавлен фолбэк-пульс');
   }
-  return out.filter(r => r.replace(/\/\*[\s\S]*?\*\//g, '').trim());
-}
+  fs.writeFileSync(THEME, th + add);
+  console.log('✅ theme-v2.css: .ava.pulse-hint добавлена');
+} else console.log('⚠️ .ava.pulse-hint уже в theme-v2 — пропуск');
 
-const base = [], brand = [], skipped = [];
-for (const rule of splitRules(block)) {
-  if (rule.trimStart().startsWith('[data-brand')) { brand.push(rule); continue; }
-  if (rule.includes('!important')) {
-    const bi = rule.indexOf('{');
-    const parts = rule.slice(0, bi).trim().split(',').map(x => x.trim());
-    if (!parts.every(p => SPEC_MAP[p])) { skipped.push(rule); continue; }
-    base.push(parts.map(p => SPEC_MAP[p]).join(',') + ' ' + rule.slice(bi).replace(/!important/g, ''));
-  } else base.push(rule);
-}
-
-/* Слой 0: секцию вырезаем, skipped-правила оставляем на месте перед </style> */
-const residual = skipped.length
-  ? '/* ══ служебное: правила с !important, ждут ручной доработки (F5.11) ══ */\n' + skipped.join('\n') + '\n'
-  : '';
-idx = idx.slice(0, s) + residual + idx.slice(e);
-
-/* Слой 1 */
-fs.appendFileSync(THEME,
-  '\n/* ── F5.11 чанк 6: служебный кластер (было inline <style> index.html) ── */\n' +
-  base.join('\n') + '\n');
-
-/* Слой 2: якорь — ]; ПЕРЕД css.textContent = rules.join */
-if (brand.length) {
-  let vw = fs.readFileSync(VIEWS, 'utf8');
+/* Слой 2: системные/layout правила, однострочные */
+let vw = fs.readFileSync(VIEWS, 'utf8');
+if (vw.includes('F5.11b')) { console.log('⚠️ F5.11b уже в views.js — пропуск'); }
+else {
   const anchor = vw.indexOf('css.textContent = rules.join');
   if (anchor < 0) { console.error('❌ views.js: якорь css.textContent не найден'); process.exit(1); }
   const close = vw.lastIndexOf('];', anchor);
   if (close < 0) { console.error('❌ views.js: не найден ]; перед якорем'); process.exit(1); }
-  const lines = brand.map(r => "'" + r.replace(/\s*\n\s*/g, ' ').replace(/'/g, "\\'") + "',").join('\n');
+  const lines = [
+    '@media(min-width:1181px){body.is-cashier .panel{display:none}body.is-cashier .wrap{grid-template-columns:1fr}.topbar > :last-child{margin-left:0!important}#profileTopBtn{margin-left:auto;width:46px;height:46px;font-size:18px}}',
+    '@media(max-width:640px){#modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}#profileTopBtn{width:44px!important;height:44px!important;min-width:44px!important;flex:0 0 44px!important}.wrap{padding:14px}.grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:11px}.media{position:relative;overflow:hidden;height:120px}.chat{right:8px}.mh-right{margin-left:0;width:100%}}',
+    '@media(hover:none) and (pointer:coarse){input,select,textarea{font-size:16px!important}}',
+  ].map((r) => "'" + r + "',").join('\n');
   vw = vw.slice(0, close) +
-    '/* ── F5.11 чанк 6: брендовый служебный кластер (было inline <style> index.html) ── */\n' +
+    '/* ── F5.11b: системные правила из residual Слоя 0 (кассир-десктоп, мобильный компакт, анти-zoom iOS) ── */\n' +
     lines + '\n' + vw.slice(close);
   fs.writeFileSync(VIEWS, vw);
+  console.log('✅ views.js: 3 системных правила вставлены');
 }
-fs.writeFileSync(IDX, idx);
-
-console.log('✅ Перенесено: база →', base.length, '| бренд →', brand.length);
-if (skipped.length) {
-  console.log('⚠️ Оставлено в Слое 0 (!important без компенсации):', skipped.length);
-  skipped.forEach(r => console.log('   ', r.split('{')[0].trim()));
-} else console.log('✅ Хвостов не осталось');
-console.log('ℹ️ Секции, оставшиеся в инлайне:',
-  (idx.match(/\/\* ══.+?══ \*\//g) || []).join(' | ') || '(нет)');

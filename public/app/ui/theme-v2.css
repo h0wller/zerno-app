@@ -1702,3 +1702,6 @@ body.is-cashier .cust .acts {
         clip: rect(0 0 0 0);
         white-space: nowrap;
       }
+
+/* ── F5.11b: подсветка-подсказка аватара (состояние; было residual Слоя 0, !important снят: специфичность .ava.pulse-hint выше .ava и бренд-правил) ── */
+.ava.pulse-hint{animation:pulse-hint 2s infinite;border:2px solid #e8a13a;background:#e8a13a;color:#fff}

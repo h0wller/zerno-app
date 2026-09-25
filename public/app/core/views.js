@@ -259,6 +259,10 @@ var rules = [
 '[data-brand="delivery"] .btn.fire, [data-brand="delivery"] button.cta, [data-brand="delivery"] #checkoutBtn { background: #c03b2a !important; color: #ffffff !important; border: 2px solid #3a2a1c !important; box-shadow: 3px 3px 0 #3a2a1c !important; }',
 /* ── F5.11 чанк 6: брендовый служебный кластер (было inline <style> index.html) ── */
 '[data-brand="delivery"] .cartFab { background: #c03b2a !important; }',
+/* ── F5.11b: системные правила из residual Слоя 0 (кассир-десктоп, мобильный компакт, анти-zoom iOS) ── */
+'@media(min-width:1181px){body.is-cashier .panel{display:none}body.is-cashier .wrap{grid-template-columns:1fr}.topbar > :last-child{margin-left:0!important}#profileTopBtn{margin-left:auto;width:46px;height:46px;font-size:18px}}',
+'@media(max-width:640px){#modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}#profileTopBtn{width:44px!important;height:44px!important;min-width:44px!important;flex:0 0 44px!important}.wrap{padding:14px}.grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:11px}.media{position:relative;overflow:hidden;height:120px}.chat{right:8px}.mh-right{margin-left:0;width:100%}}',
+'@media(hover:none) and (pointer:coarse){input,select,textarea{font-size:16px!important}}',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
