@@ -3958,80 +3958,9 @@
 
     <script src="./app/core/utils.js"></script>
     <script src="./app/core/api.js"></script>
+    <script src="./app/core/ui.js"></script>
     <script>
       "use strict";
-
-      /* ── API-клиент ── */
-      async function api(path, opts = {}) {
-        const h = { "Content-Type": "application/json" };
-        if (USER_TOKEN) h["Authorization"] = "Bearer " + USER_TOKEN;
-        let r;
-        try {
-          r = await fetch(API_BASE + "/api" + path, {
-            method: opts.method || "GET",
-            headers: h,
-            body: opts.body ? JSON.stringify(opts.body) : undefined,
-          });
-        } catch (e) {
-          throw new Error("Сервер недоступен — проверьте подключение");
-        }
-        const j = await r.json().catch(() => ({}));
-        if (r.status === 401 && !path.startsWith("/auth")) {
-          USER_TOKEN = null;
-          localStorage.removeItem(T_USER);
-          me = null;
-          window.__ztAuthDead = true;
-          if (typeof renderModes === "function") renderModes();
-          if (typeof window.syncBrandViews === "function")
-            window.syncBrandViews();
-        }
-        if (r.ok && path === "/me") window.__ztAuthDead = false;
-        if (!r.ok) {
-          const err = new Error(j.error || "Ошибка " + r.status);
-          err.code = r.status;
-          throw err;
-        }
-        return j;
-      }
-
-      function toast(msg, icon = "✨", onclick = null) {
-        const t = document.createElement("div");
-        t.className = "toast";
-        if (onclick) {
-          t.style.cursor = "pointer";
-          t.onclick = () => {
-            onclick();
-            t.classList.add("out");
-            setTimeout(() => t.remove(), 300);
-          };
-        }
-        t.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
-        $("#toasts").append(t);
-        setTimeout(
-          () => {
-            t.classList.add("out");
-            setTimeout(() => t.remove(), 320);
-          },
-          onclick ? 7000 : 3400,
-        );
-      }
-
-      function renderUpd() {
-        $("#updWhen").textContent = new Date(meta.updatedAt).toLocaleString(
-          "ru-RU",
-          { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" },
-        );
-      }
-      const TK = [
-        "кофейня на берегу моря …и кофе",
-        "каждый 10-й кофе — бесплатно",
-        "п. Янтарный, Советская 70г",
-        "t.me/and_coffee39",
-        "ежедневно с " + hoursNow(),
-      ];
-      $("#tickerTrack").innerHTML = TK.concat(TK)
-        .map((x) => `<span>${x}</span>`)
-        .join("");
 
       /* ── меню ── */
       async function loadMenu() {

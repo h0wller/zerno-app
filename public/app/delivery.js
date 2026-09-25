@@ -335,9 +335,16 @@ window.populateSlots = function(){
       var startPart = pad(t.getHours()) + ':' + pad(t.getMinutes());
       var endPart = pad(tEnd.getHours()) + ':' + pad(tEnd.getMinutes());
 
-      // Значение слота: 26.09 | 11:30–12:00
+      var datePart = pad(t.getDate()) + '.' + pad(t.getMonth() + 1);
+      var startPart = pad(t.getHours()) + ':' + pad(t.getMinutes());
+      var endPart = pad(tEnd.getHours()) + ':' + pad(tEnd.getMinutes());
+
+      // Значение для сервера: 26.09 | 11:30–12:00
       var slotVal = datePart + ' | ' + startPart + '–' + endPart;
-      var slotLabel = startPart + ' – ' + endPart;
+      
+      // Текст в селекторе: теперь содержит и день, и дату, и интервал
+      var dayPrefix = (d === 0 ? 'Сегодня' : 'Завтра');
+      var slotLabel = dayPrefix + ' (' + datePart + ') · ' + startPart + ' – ' + endPart;
       var isBusy = busyList.indexOf(slotVal) > -1;
 
       items.push({ 
