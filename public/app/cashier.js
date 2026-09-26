@@ -189,6 +189,7 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
   var b=document.createElement('button');b.id='custClose';b.className='btn ghost';b.textContent='✕ Закрыть карточку';
   b.onclick=function(){document.getElementById('custCard').classList.remove('show');try{found=null;}catch(e){}};
   acts.appendChild(b);
+window.renderLog = renderLog; /* Ф5.6-финал шаг 2-fix: голый вызов из catalog setMode */
 })();
 /* ── Ф5.8f: ESM-шимы: scanner.js/views.js/cashier-card/admin-extra ── */
 window.showCust = showCust;

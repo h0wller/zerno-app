@@ -2,6 +2,11 @@
    Порядок импортов = прежний документ-порядок module-тегов.
    boot.js импортируется последним: его DOMContentLoaded-listener зарегистрируется
    после всех shims, и boot() вызовется корректно. */
+import './core/utils.js'; /* Ф5.6-финал шаг 3 */
+import './core/api.js'; /* Ф5.6-финал шаг 3 */
+import './core/ui.js'; /* Ф5.6-финал шаг 3 */
+import './core/auth.js'; /* Ф5.6-финал шаг 3 */
+import './core/panel.js'; /* Ф5.6-финал шаг 3 */
 import './core/catalog.js';
 import './core/staffpin.js';
 import './core/editor.js';
@@ -32,6 +37,7 @@ import './core/overlay.js';
 import './core/swipe.js';
 import './admin-extra.js';
 import './core/notify.js';
+import './core/views.js'; /* Ф5.6-финал шаг 2: позиция прежнего тега 36 */
 import './core/config.js';
 import './core/splash.js';
 import './ui/settings.js';
