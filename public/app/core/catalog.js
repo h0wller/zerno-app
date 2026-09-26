@@ -83,8 +83,8 @@ document.body.classList.toggle("is-admin", m === "admin"); /* F5.14 */
         if (m === "cashier") renderLog();
         if (m === "orders") {
           renderOrders();
-          if (!ordersPoll)
-            ordersPoll = setInterval(() => {
+          if (!window.ordersPoll)
+            window.ordersPoll = setInterval(() => {
               if (mode === "orders") renderOrders(true);
             }, 8000);
         }

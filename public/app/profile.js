@@ -387,3 +387,6 @@ document.addEventListener('click', function (e) {
   e.stopPropagation();
   if (typeof openAuth === 'function') openAuth();
 }, true);
+/* ── Ф5.8f: ESM-шимы: catalog.js/profile-brand.js/boot.js/live.js ── */
+window.renderBonus = renderBonus;
+window.loadMyOrders = loadMyOrders;

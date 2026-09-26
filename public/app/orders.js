@@ -1,5 +1,5 @@
 /* public/app/orders.js — F2.5.5: диспетчер заказов на клиенте */
-var ordersPoll = null, lastOrderNo = 0;
+window.ordersPoll = null, lastOrderNo = 0;
 
 function orderLabel(s) {
   return ({ 
@@ -171,3 +171,5 @@ document.addEventListener('click', async function (e) {
     renderOrders(true);
   } catch (err) { toast(err.message, '⚠️'); }
 }, true);
+/* ── Ф5.8f: ESM-шим: catalog.js setMode и views.js sv() ── */
+window.renderOrders = renderOrders;

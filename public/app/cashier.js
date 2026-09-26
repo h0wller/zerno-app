@@ -190,3 +190,8 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
   b.onclick=function(){document.getElementById('custCard').classList.remove('show');try{found=null;}catch(e){}};
   acts.appendChild(b);
 })();
+/* ── Ф5.8f: ESM-шимы: scanner.js/views.js/cashier-card/admin-extra ── */
+window.showCust = showCust;
+window.dotsHTML = dotsHTML;
+window.hrow = hrow;
+window.cashierClean = cashierClean;
