@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* Плавающая кнопка «Мои бонусы» */
     var mbonusBtn = document.getElementById('mbonusBtn');
+  if (mbonusBtn && !mbonusBtn.dataset.st) mbonusBtn.dataset.st = '0/10'; /* F5.18b */
     if (mbonusBtn) {
         mbonusBtn.onclick = function () {
             if (typeof me !== 'undefined' && me) {
@@ -71,4 +72,13 @@ document.addEventListener('DOMContentLoaded', function () {
 window.setTab = setTab;
 window.openPanel = openPanel;
 window.closePanel = closePanel;
+})();
+/* ── F5.17: бонус-пилюля не закрывает футер ── */
+(function () {
+  var mb = document.getElementById("mbonusBtn");
+  var ft = document.querySelector(".siteFooter");
+  if (!mb || !ft || typeof IntersectionObserver === "undefined") return;
+  new IntersectionObserver(function (es) {
+    es.forEach(function (en) { mb.classList.toggle("near-footer", en.isIntersecting); });
+  }, { threshold: 0.05 }).observe(ft);
 })();

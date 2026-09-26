@@ -103,6 +103,8 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                 }
             };
         $("#mbonusSt").textContent = `${me.stamps}/10`;
+var mbBtn2 = document.getElementById("mbonusBtn"); if (mbBtn2) mbBtn2.dataset.st = (me.stamps || 0) + "/10"; /* F5.18 */
+var mf2 = document.getElementById("mbonusFree"); if (mbBtn2) mbBtn2.dataset.free = mf2 && !mf2.hidden ? ((mf2.textContent.match(/\d+/) || [0])[0]) : "0"; /* F5.18b */
         const mbf = $("#mbonusFree");
         if (mbf) {
             mbf.hidden = me.free < 1;

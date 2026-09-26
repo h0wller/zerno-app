@@ -60,7 +60,7 @@ var css = document.createElement('style');
 var rules = [
 /* --- Layout: сетка wrap + safe-area --- */
 '@media(min-width:1181px){body:not(.is-cashier) .wrap > .rail{grid-column:1}body:not(.is-cashier) .wrap > section{grid-column:2}body:not(.is-cashier) .wrap > .panel{grid-column:3}}',
-'html,body{overflow-x:hidden;max-width:100%}',
+'html,body{overflow-x:hidden;overflow-x:clip;max-width:100%}',
 'img,canvas,svg,video{max-width:100%}',
 /* --- Delivery grid + опции --- */
 '#deliveryGrid{grid-template-columns:1fr;padding-bottom:120px}',
@@ -277,6 +277,8 @@ var rules = [
 '[data-brand="delivery"] #deliveryView .menu-head h1 { font: 900 clamp(22px, 3.2vw, 36px)/1.15 "Unbounded", sans-serif !important; color: #3a2a1c !important; }',
 '[data-brand="delivery"] #deliveryView .menu-head h1 em { color: #3a2a1c !important; background: linear-gradient(transparent 62%, #fad8c3 62%); }',
 '[data-brand="delivery"] #deliveryView .search { background: #efe6d8 !important; border: 2px solid #3a2a1c !important; border-radius: 12px !important; box-shadow: 3px 3px 0 #3a2a1c !important; }',
+/* ── F5.14 P4: маркетинговый тикер не нужен персоналу ── */
+'@media(min-width:0){body.is-cashier .ticker,body.is-admin .ticker{visibility:hidden}}',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);

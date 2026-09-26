@@ -52,7 +52,7 @@ body {
   color: var(--ink);
   background: var(--paper);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: hidden; overflow-x: clip;
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
 }
@@ -1717,6 +1717,8 @@ body.is-cashier .cust .acts {
 /* F5.12: база layout марки; габаритный FOUC-сброс остаётся в critical-блоке Слоя 0 */
 .topbar .brand .mark{display:flex;align-items:center;justify-content:center;border-radius:12px;background:transparent}
 
+/* F5.14: база .wrap (была в critical-блоке, перебивала медиа) */
+.wrap{display:grid;grid-template-columns:92px 1fr 350px;gap:22px;padding:22px;max-width:1480px;margin:0 auto;align-items:start}
 /* ── F5.13: база из растворённого большого <style> (порядок = прежний каскад) ── */
 :root {
         --paper: #ffffff;
@@ -1749,7 +1751,7 @@ body {
         background: var(--paper);
         padding-top: env(safe-area-inset-top, 0px);
         min-height: 100vh;
-        overflow-x: hidden;
+        overflow-x: hidden; overflow-x: clip;
         -webkit-text-size-adjust: 100%;
         touch-action: manipulation;
       }
@@ -1987,3 +1989,126 @@ input,
           transform: none;
         }
       }
+
+/* F5.14 P5: пилюля бонусов слева от круглого FAB чата на ≤820px */
+@media (max-width: 820px) {
+  .mbonus { left: 50%; right: auto; transform: translateX(-50%);
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    font-size: 12px; padding: 8px 12px; gap: 6px; max-width: calc(100vw - 24px); }
+  .mbonus > * { font-size: 11px; padding: 3px 7px; border-radius: 9px; }
+}
+
+/* ── F5.15: мобильный рейл — узкая вертикальная колонка, sticky слева на весь скролл
+   (продуктовое решение 27.09: вертикальный рейл на мобиле — фирменный вид;
+   горизонтальная строка из media max-1180 отменена для рейла).
+   .wrap .rail (0,2,0) перебивает горизонтальный padding/overflow Слоя 2. ── */
+@media (max-width: 1180px) {
+  .wrap { grid-template-columns: 64px minmax(0, 1fr); gap: 8px; padding: 8px 10px 28px 6px; }
+  .wrap .rail, .wrap #deliveryRail {
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 8px);
+    height: calc(100dvh - env(safe-area-inset-top, 0px) - 16px);
+    display: flex; flex-direction: column; gap: 6px;
+    width: 64px; min-width: 64px; padding: 4px; margin: 0;
+    overflow-y: auto; overflow-x: hidden; overflow-x: clip; scrollbar-width: none;
+  }
+  .wrap .rail::-webkit-scrollbar, .wrap #deliveryRail::-webkit-scrollbar { display: none; }
+  .wrap .rail button, .wrap #deliveryRail button {
+    flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    width: 100%; min-height: 54px; padding: 6px 2px; margin: 0;
+    border-radius: 12px; font-size: 9.5px; line-height: 1.1; letter-spacing: 0;
+    white-space: normal; text-align: center;
+  }
+  .wrap .rail .re, .wrap #deliveryRail .re { font-size: 19px; margin: 0; }
+  body.is-cashier .wrap, body.is-admin .wrap { grid-template-columns: 1fr; padding: 10px 12px 28px; }
+}
+
+/* ── F5.16: мобильная доводка (рейл-типографика, компакт активаций, тосты) ── */
+.wrap .rail, .wrap #deliveryRail { align-self: start; }
+.wrap .rail button, .wrap #deliveryRail button { font-size: 10.5px; font-weight: 600; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 7px 3px; }
+#pendingBox, #pendingBoxD { max-height: 264px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+@media (max-width: 640px) {
+  .toasts { left: 12px; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 8px); transform: none; align-items: stretch; }
+  .toast { font-size: 12.5px; padding: 10px 14px; border-radius: 14px; max-width: 100%; }
+}
+
+/* ── F5.16b: рейл-кнопки block (ellipsis не живёт во flex), .on-типографика ── */
+.wrap .rail button, .wrap #deliveryRail button { display: block; text-align: center; }
+.wrap .rail .re, .wrap #deliveryRail .re { display: block; margin: 0 0 2px; }
+.wrap .rail button.on, .wrap #deliveryRail button.on { font-size: 10.5px; font-weight: 600; line-height: 1.15; }
+
+/* ── F5.17: рейл по центру вертикали; кнопки крупнее, шрифт мельче, весь текст виден ── */
+@media (max-width: 1180px) {
+  .wrap { grid-template-columns: 72px minmax(0, 1fr); }
+  .wrap .rail, .wrap #deliveryRail {
+    top: 50%; transform: translateY(-50%);
+    height: auto; max-height: calc(100dvh - 24px);
+  }
+  .wrap .rail button, .wrap #deliveryRail button {
+    min-height: 60px; padding: 7px 3px; border-radius: 14px;
+    font-size: 9px; line-height: 1.08;
+    white-space: normal; overflow: visible; text-overflow: clip;
+  }
+  .wrap .rail button.on, .wrap #deliveryRail button.on { font-size: 9px; }
+  .wrap .rail .re, .wrap #deliveryRail .re { font-size: 20px; }
+}
+/* ── F5.17: бонус-пилюля компакт справа над FAB; у футера растворяется ── */
+.mbonus { transition: opacity .25s, transform .25s; }
+.mbonus.near-footer { opacity: 0; pointer-events: none; transform: translateY(8px); }
+@media (max-width: 820px) {
+  .mbonus { left: auto; right: 12px; transform: none;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    font-size: 10.5px; padding: 6px 10px; gap: 6px; }
+  .mbonus > * { font-size: 10px; padding: 3px 6px; border-radius: 8px; }
+  .mbonus.near-footer { transform: translateY(8px); }
+}
+
+/* ── F5.18: бейдж бонусов слева + рейл Пятницы ×2 + .on-типографика через body-префикс ── */
+body .wrap .rail button.on, body .wrap #deliveryRail button.on { font-size: 9.5px; font-weight: 700; line-height: 1.1; }
+@media (max-width: 820px) {
+  .mbonus {
+    left: 8px; right: auto; transform: none;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    flex-direction: column; align-items: center; gap: 4px;
+    padding: 8px 6px; border-radius: 16px; max-width: 64px;
+  }
+  .mbonus > span:not(.mb-free) { display: none; }
+  .mbonus::before { content: "🎁 " attr(data-st); font-size: 11px; font-weight: 800; color: #fff; }
+  .mbonus .mb-free { font-size: 9px; padding: 3px 5px; border-radius: 8px; }
+  .mbonus .mb-free[hidden] { display: none; }
+}
+
+/* ── F5.18b: рейл Пятницы крупнее (скоуп без [data-brand]) + гармония бонус-бейджа ── */
+@media (max-width: 1180px) {
+  .wrap:has(#deliveryRail) { grid-template-columns: 108px minmax(0, 1fr); }
+  .wrap #deliveryRail button { min-height: 120px; padding: 12px 5px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .wrap #deliveryRail .re { font-size: 36px; }
+}
+@media (max-width: 820px) {
+  .mbonus { left: 8px; right: auto; transform: none;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    flex-direction: column; align-items: center; gap: 3px;
+    padding: 8px 10px; border-radius: 14px; max-width: 84px; }
+  .mbonus > span { display: none; }
+  .mbonus::before { content: "🎁 " attr(data-st); font-size: 11px; font-weight: 800; color: #fff; white-space: nowrap; }
+  .mbonus::after { content: "+" attr(data-free) " 🎁"; font-size: 9.5px; font-weight: 700;
+    color: #fff; background: var(--amber); border-radius: 8px; padding: 2px 6px; }
+  .mbonus[data-free="0"]::after, .mbonus:not([data-free])::after { display: none; }
+}
+
+/* ── F5.19: бейдж бонусов = круг в языке FAB + бабл-счёт (финал экспериментов с формой) ── */
+@media (max-width: 820px) {
+  .mbonus {
+    left: 10px; right: auto; bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    width: 48px; height: 48px; padding: 0; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transform: none; gap: 0; max-width: none;
+  }
+  .mbonus > span { display: none; }
+  .mbonus::before { content: "🎁"; font-size: 20px; white-space: normal; }
+  .mbonus::after {
+    content: attr(data-st); position: absolute; top: -6px; right: -8px;
+    background: var(--amber); color: #fff; font-size: 9px; font-weight: 800;
+    border-radius: 999px; padding: 2px 5px; line-height: 1;
+  }
+  .mbonus[data-st="0/10"]::after, .mbonus:not([data-st])::after { display: none; }
+}

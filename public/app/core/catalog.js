@@ -58,6 +58,7 @@
           "is-cashier",
           m === "cashier" || m === "orders",
         );
+document.body.classList.toggle("is-admin", m === "admin"); /* F5.14 */
         const cv = $("#cashierView");
         if (cv) cv.hidden = m !== "cashier";
         const ov = $("#ordersView");
