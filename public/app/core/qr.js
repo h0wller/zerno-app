@@ -117,3 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+/* ── Ф5.8e: ESM-шимы: boot renderAll и CLOSE-карта overlay.js ── */
+window.drawQR = drawQR;
+window.openQRFull = openQRFull;
+window.closeQRFull = closeQRFull;

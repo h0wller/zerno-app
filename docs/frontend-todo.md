@@ -198,3 +198,15 @@ overlay-база (syncOverlay/popstate/Escape) остаётся в overlay-core.
 ### [x] 5.8b - IIFE-листья (chat-семейство, overlay, swipe, notify, splash, settings,
 delivery-search, cashier-log/card, live, scanner, scrolltop, styles, a11y, admin-extra,
 config, deeplink) → module. Гэйты скрипта: IIFE-паттерн + defer-тег, иначе skip.
+### [x] F5.14–F5.17 - мобильный эпик (принято продуктом)
+- F5.14: база .wrap из critical в Слой 1 (каскадный корень «узких стафф-экранов»);
+  is-admin в setMode; тикер visibility:hidden в стаффе (высота полосы держит modeSeg).
+- F5.16: overflow-x:clip (sticky-рейл); «Активация гостей» ≤6 строк со внутренним скроллом;
+  компактные тосты ≤640px.
+- F5.17: рейл вертикальный, sticky по центру вертикали (top:50%+translateY);
+  mbonus = компактная пилюля по центру над FAB; IntersectionObserver прячет её у футера.
+
+### [won't fix] F5.18–F5.19 - эксперименты с формой бонус-бейджа (колонка слева,
+::before/::after, круг с баблом) и кнопки рейла Пятницы ×2 — отклонены продуктом, откат.
+Открытый продуктовый вопрос: место/форма бонус-бейджа на мобиле — решать мокапом,
+не CSS-итерациями (4 итерации без сходимости).
