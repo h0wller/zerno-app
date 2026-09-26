@@ -1,5 +1,6 @@
 /* public/app/orders.js — F2.5.5: диспетчер заказов на клиенте */
-window.ordersPoll = null, lastOrderNo = 0;
+window.ordersPoll = null;
+let lastOrderNo = 0; /* Ф5.8f-fix: module-private */
 
 function orderLabel(s) {
   return ({ 
