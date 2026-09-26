@@ -1,12 +1,13 @@
-/* Ф5.8f-fix: lastOrderNo отделить от window.ordersPoll.
-Составное объявление `var ordersPoll = null, lastOrderNo = 0;` после замены первого
-декларатора оставило голое присваивание в strict-модуле → ReferenceError на eval.
-lastOrderNo приватный для orders.js → module-private let. */
+/* F5.8h-fix2: coffeePool вызывала саму себя (RangeError: Maximum call stack size exceeded).
+v2-скрипт вставил DEF с MENU.filter( ВНУТРИ и затем глобальной заменой MENU.filter( →
+coffeePool().filter( попал в собственный DEF. Восстанавливаем MENU.filter в определении.
+Регламент: глобальные замены не должны задевать только что вставленный текст —
+вставлять DEF с плейсхолдером или менять до вставки. */
 import fs from 'node:fs';
-const P = 'public/app/orders.js';
+const P = 'public/app/menu.js';
 let s = fs.readFileSync(P, 'utf8');
-const re = /window\.ordersPoll = null,\s*lastOrderNo = 0;/;
-if (!re.test(s)) { console.error('❌ составная строка не найдена (уже починено?)'); process.exit(1); }
-s = s.replace(re, 'window.ordersPoll = null;\nlet lastOrderNo = 0; /* Ф5.8f-fix: module-private */');
+const BAD = 'function coffeePool() { return coffeePool().filter(';
+if (!s.includes(BAD)) { console.log('⚠️ рекурсивное определение не найдено (уже починено?)'); process.exit(0); }
+s = s.replace(BAD, 'function coffeePool() { return MENU.filter(');
 fs.writeFileSync(P, s);
-console.log('✅ orders.js: lastOrderNo → module-private let');
+console.log('✅ menu.js: coffeePool больше не рекурсивна');

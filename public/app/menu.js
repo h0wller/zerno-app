@@ -1,9 +1,11 @@
 /* public/app/menu.js — F2.6a: гостевое меню — рейл, поиск, сетка, редактор-зум.
-   Без IIFE: fix-views.js оборачивает renderMenu (499) и renderRail (502),
+   Без IIFE: fix-views.js оборачивает window.renderMenu(499) и window.renderRail(502),
    читает CATS лексически (406). Все объявления — top-level var/function. */
 
 var cat = 'coffee';
 var query = '';
+/* F5.8h-fix: кофейный пул без delivery-секции (поиск и сетка не матчат чужой бренд) */
+function coffeePool() { return MENU.filter(function (p) { return (p.section || "coffee") !== "delivery"; }); }
 
 $('#rail').innerHTML = CATS.map(c => `<button data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`).join('');
 
@@ -15,19 +17,19 @@ $('#rail').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]');
   if (!b) return;
   cat = b.dataset.cat;
-  renderRail();
-  renderMenu();
+  window.renderRail();
+  window.renderMenu();
 });
 
 $('#searchInput').addEventListener('input', e => {
   query = e.target.value.trim().toLowerCase();
-  renderMenu();
+  window.renderMenu();
 });
 
 function renderMenu() {
   let list = query
-    ? MENU.filter(p => (p.name + ' ' + p.desc + ' ' + (p.comp || []).join(' ')).toLowerCase().includes(query))
-    : MENU.filter(p => p.cat === cat);
+    ? coffeePool().filter(p => (p.name + ' ' + p.desc + ' ' + (p.comp || []).join(' ')).toLowerCase().includes(query))
+    : coffeePool().filter(p => p.cat === cat);
   if (!editMode) list = list.filter(p => p.on);
 
   const fmtMulti = p => {
@@ -255,7 +257,7 @@ $('#grid').addEventListener('change', async e => {
 p.on = on;
 try {
 await api('/menu/' + p.id, { method: 'PUT', body: p });
-renderMenu();   // локальный рендер из обновлённого MENU — без stale-рефетча
+window.renderMenu();   // локальный рендер из обновлённого MENU — без stale-рефетча
 toast(on ? `«${esc(p.name)}» снова в меню` : `«${esc(p.name)}» → стоп-лист`, on ? '✅' : '⛔');
 } catch (err) {
 toast(err.message, '⚠️');
@@ -272,3 +274,9 @@ if(f&&!f.dataset.lcp){f.dataset.lcp='1';f.loading='eager';try{f.fetchPriority='h
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixLcp);else fixLcp();
 new MutationObserver(function(){fixLcp();}).observe(document.body,{childList:true,subtree:true});
 })();
+
+/* ── Ф5.8g: ESM-шимы (boot/catalog/editor/menu-editor + обёртки admin-extra/delivery-search) ── */
+window.renderMenu = renderMenu;
+window.renderRail = renderRail;
+window.openZoom = openZoom;
+window.openItemModifiersModal = openItemModifiersModal;

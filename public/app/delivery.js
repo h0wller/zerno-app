@@ -1,18 +1,18 @@
 /* public/app/delivery.js — F2.5: доставка — state, рендер меню и корзины. */
 
-var DMENU = [];
-var cart = JSON.parse(localStorage.getItem('zt_cart') || '[]');
+window.DMENU = [];
+window.cart = JSON.parse(localStorage.getItem('zt_cart') || '[]');
 
 // Очистка корзины от битых позиций с нулевой или отрицательной ценой
 cart = cart.filter(c => c.price > 0);
 localStorage.setItem('zt_cart', JSON.stringify(cart));
 
-var deliveryInfo = null;
-var promoInfo = null;
-var cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
+window.deliveryInfo = null;
+window.promoInfo = null;
+window.cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
 
 const DCATS = [{ id: 'pizza', e: '🍕', l: 'Пиццы' }, { id: 'rolls', e: '🍣', l: 'Роллы' }, { id: 'sets', e: '🍱', l: 'Сеты' }, { id: 'sauces', e: '🥫', l: 'Соусы' }];
-var dcat = 'pizza';
+window.dcat = 'pizza';
 
 function renderDeliveryRail() {
   $('#deliveryRail').innerHTML = DCATS.map(c =>
@@ -21,7 +21,7 @@ function renderDeliveryRail() {
 }
 $('#deliveryRail').addEventListener('click', e => {
   const b = e.target.closest('[data-dcat]');
-  if (b) { dcat = b.dataset.dcat; renderDeliveryRail(); renderDeliveryMenu(); }
+  if (b) { dcat = b.dataset.dcat; renderDeliveryRail(); window.renderDeliveryMenu(); }
 });
 
 function renderDeliveryMenu() {
@@ -262,17 +262,17 @@ $('#cartItems').addEventListener('click', e => {
   else cart.splice(i, 1);
   localStorage.setItem('zt_cart', JSON.stringify(cart));
   if (typeof updateCartFab === 'function') updateCartFab();
-  renderCart();
+  window.renderCart();
 });
 
 $('#checkoutMethod').onchange = () => {
   const pickup = $('#checkoutMethod').value === 'pickup';
   $('#checkoutPlaceLabel').hidden = pickup;
   $('#checkoutAddrLabel').hidden = pickup;
-  renderCart();
+  window.renderCart();
 };
 
-$('#cartFab').onclick = () => { renderCart(); $('#cartPanel').classList.add('open'); };
+$('#cartFab').onclick = () => { window.renderCart(); $('#cartPanel').classList.add('open'); };
 
 function populatePlaces() {
   if (!deliveryInfo) return;
@@ -300,7 +300,7 @@ var r;
     populatePlaces();
     populateSlots();
     renderDeliveryRail();
-    renderDeliveryMenu();
+    window.renderDeliveryMenu();
     updateCartFab();
   } catch(e) {}
 };
@@ -489,7 +489,7 @@ $('#deliveryGrid').addEventListener('change', async function (e) {
   p.on = t.checked ? 1 : 0;
 try {
 await api('/menu/' + p.id, { method: 'PUT', body: p });
-renderDeliveryMenu();   // локальный рендер из обновлённого DMENU — без stale-рефетча
+window.renderDeliveryMenu();   // локальный рендер из обновлённого DMENU — без stale-рефетча
 toast(t.checked ? '«' + esc(p.name) + '» снова в меню' : '«' + esc(p.name) + '» → стоп-лист', t.checked ? '✅' : '⛔');
 } catch (err) { toast(err.message, '⚠️'); await loadDelivery(); }
 }, true);
@@ -499,3 +499,12 @@ $('#deliveryGrid').addEventListener('click', function (e) {
   e.stopPropagation(); e.preventDefault();
   if (typeof openEditor === 'function') openEditor(b.dataset.ed);
 }, true);
+/* ── Ф5.8h: ESM-шимы (views.js sv, cart.js, live.js, menu-editor, cart-checkout) ── */
+window.renderDeliveryRail = renderDeliveryRail;
+window.renderDeliveryMenu = renderDeliveryMenu;
+window.patchDeliveryCards = patchDeliveryCards;
+window.syncAddButtons = syncAddButtons;
+window.populatePlaces = populatePlaces;
+window.setupSlotDisplayToggle = setupSlotDisplayToggle;
+window.promoDisc = promoDisc;
+window.renderCart = renderCart;

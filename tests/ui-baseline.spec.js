@@ -132,12 +132,12 @@ const menuResponse = await menuPromise;
     console.warn(`⚠️ Menu API вернул статус: ${menuResponse.status()}`);
   }
   
-  await expect(page.locator('#grid .card, #grid .menu-card, #grid article').first()).toBeVisible({ timeout: 15000 });
+await expect(page.locator('#grid .card:not(.skeleton-card), #grid .menu-card, #grid article').first()).toBeVisible({ timeout: 15000 });
   await shot(page, '01-coffee-menu');
   
   await page.locator('#venueToggle').click();
   await page.locator('#brandSeg [data-brand="delivery"]').click();
-  await expect(page.locator('#deliveryGrid .card, #deliveryGrid .menu-card, #deliveryGrid article').first()).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('#deliveryGrid .card:not(.skeleton-card), #deliveryGrid .menu-card, #deliveryGrid article').first()).toBeVisible({ timeout: 15000 });
   await shot(page, '02-delivery-menu');
 });
 
