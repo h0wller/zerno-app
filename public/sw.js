@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v119'; // ← поставь своё текущее значение +1
+const STATIC_CACHE = 'zerno-static-v120'; // ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
@@ -174,10 +174,10 @@ self.addEventListener('fetch', (e) => {
   }
 
   // 3. App Shell: network-first для кода
-  if (request.destination === 'document' || url.pathname.startsWith('/app/') || /\.(js|css)$/.test(url.pathname)) {
-    e.respondWith(
-      fetch(request, { cache: 'no-cache' })
-        .then((netRes) => {
+if (request.destination === 'document' || url.pathname.startsWith('/app/') || /\.(js|css)$/.test(url.pathname)) {
+  e.respondWith(
+    fetch(request, { cache: 'reload' })
+      .then((netRes) => {
           if (netRes.ok) {
             const clone = netRes.clone();
             caches.open(STATIC_CACHE).then((c) => c.put(request, clone)).catch(() => { });
