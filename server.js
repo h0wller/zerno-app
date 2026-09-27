@@ -38,6 +38,14 @@ function appKb() {
 app.use(compression({ threshold: 1024 }));
 app.use(securityHeaders);
 app.use(corsMiddleware);
+/* Ф5.20: канонический хост — один origin для SW/кэша/PWA */
+app.use((req, res, next) => {
+  if (req.hostname === 'andcoffee.online' || req.hostname === 'www.andcoffee.online') {
+    return res.redirect(301, 'https://friday.andcoffee.online' + req.originalUrl);
+  }
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 
 // ── Роутеры ──
