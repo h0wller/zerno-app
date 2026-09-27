@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v117'; // ← поставь своё текущее значение +1
+const STATIC_CACHE = 'zerno-static-v118'; // ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
@@ -173,10 +173,10 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 3. App Shell: network-first для кода. Ф3.30: нет сети и нет кэша — явный 503, а не reject
+  // 3. App Shell: network-first для кода
   if (request.destination === 'document' || url.pathname.startsWith('/app/') || /\.(js|css)$/.test(url.pathname)) {
     e.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-cache' })
         .then((netRes) => {
           if (netRes.ok) {
             const clone = netRes.clone();
