@@ -89,18 +89,25 @@
     <link rel="stylesheet" href="app/ui/theme-v2.css" />
     
     <script src="app/core/state.js"></script>
-<script>
-(function () {
-  var q = new URLSearchParams(location.search);
-  var isTG = /Telegram/i.test(navigator.userAgent);
-  var hasDeep = !!(q.get("brand") || q.get("tab") || q.get("src"));
-  var isDone = false;
-  try { isDone = sessionStorage.getItem("splashDone") === "1"; } catch (e) {}
-  
-  var need = !(isDone || hasDeep || isTG);
-  document.documentElement.classList.add(need ? "need-splash" : "no-splash");
-})();
-</script>
+    <script>
+      (function () {
+        var need = false;
+        try {
+          var q = new URLSearchParams(location.search);
+          var done = false;
+          try { done = !!sessionStorage.getItem("splashDone"); } catch (e) {}
+          need = !(
+            done ||
+            q.get("brand") ||
+            q.get("tab") ||
+            q.get("src") ||
+            /Telegram/i.test(navigator.userAgent)
+          );
+        } catch (e) {}
+        document.documentElement.classList.add(need ? "need-splash" : "no-splash");
+      })();
+    </script>
+
     <style>
       html.no-splash #brandSplashStatic {
         display: none !important;
@@ -307,6 +314,28 @@ body[data-brand="delivery"] #menuView {
         </div>
       </div>
     </div>
+    <script>
+      (function () {
+        var s = document.getElementById("brandSplashStatic");
+        if (!s) return;
+        s.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-go]");
+          if (!btn) return;
+          var brand = btn.getAttribute("data-go");
+          try { sessionStorage.setItem("splashDone", "1"); } catch (err) {}
+          document.documentElement.classList.remove("need-splash");
+          document.documentElement.classList.add("no-splash");
+          s.remove();
+          if (typeof window.sv === "function") {
+            window.sv(brand);
+          } else {
+            var u = new URL(location.href);
+            u.searchParams.set("brand", brand);
+            location.replace(u.toString());
+          }
+        });
+      })();
+    </script>
 
     <header class="topbar">
       <div class="brandSeg" id="brandSeg">
