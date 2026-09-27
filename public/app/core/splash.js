@@ -7,13 +7,15 @@
 var bs = document.getElementById('brandSplash');
 if (bs) bs.remove();
 var ss = document.getElementById('brandSplashStatic');
-var done = sessionStorage.getItem('splashDone') === '1';
+var done = sessionStorage.getItem('splashDone') === '1' || 
+           localStorage.getItem('zt_splashDone') === '1';
 var QS = new URLSearchParams(location.search);
 var IN_TG = /Telegram/i.test(navigator.userAgent);
 var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
 function finish(choice) {
-sessionStorage.setItem('splashDone', '1');
-document.documentElement.classList.remove('need-splash');
+  sessionStorage.setItem('splashDone', '1');
+  try { localStorage.setItem('zt_splashDone', '1'); } catch(e) {} // PWA/инкогнито фолбэк
+  document.documentElement.classList.remove('need-splash');
 document.documentElement.classList.add('no-splash');
 var el = document.getElementById('brandSplashStatic')|| document.getElementById('brandSplash');
 if (el) el.remove();
