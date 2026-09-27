@@ -34,8 +34,8 @@ if(typeof renderVerifyNote==='function')renderVerifyNote();
 }
 }catch(e){}
 }
-if(window.ordersPoll){clearInterval(ordersPoll);ordersPoll=null;}
-ordersPoll=setInterval(refreshOrdersLive,6000);
+if(window.ordersPoll){clearInterval(window.ordersPoll);window.ordersPoll=null;}
+window.ordersPoll=setInterval(refreshOrdersLive,6000);
 setInterval(refreshProfileLive,5000);
 document.addEventListener('visibilitychange',function(){refreshOrdersLive();refreshProfileLive();});
 addEventListener('focus',function(){refreshOrdersLive();refreshProfileLive();});
