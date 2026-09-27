@@ -2076,3 +2076,7 @@ body .wrap .rail button.on, body .wrap #deliveryRail button.on { font-size: 9.5p
   .mbonus .mb-free { font-size: 9px; padding: 3px 5px; border-radius: 8px; }
   .mbonus .mb-free[hidden] { display: none; }
 }
+
+/* ── Ф6.1: CLS-резервы (трейс 27.09): модалка стафф-чата не прыгает при loadScList ── */
+#scModal .modal-card { min-height: min(70vh, 380px); box-sizing: border-box; }
+.skeleton-foot { height: 46px; margin-top: 10px; border-radius: 12px; }

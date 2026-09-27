@@ -297,7 +297,7 @@ function populatePlaces() {
 }
 
 function skelCards(n){
-var c='<div class="card skeleton-card"><div class="media skeleton-shimmer"></div><div class="cbody"><div class="skeleton-line" style="width:65%;height:14px"></div><div class="skeleton-line" style="width:85%;height:12px"></div><div class="skeleton-line" style="width:45%;height:12px;margin-top:auto"></div></div></div>';
+var c='<div class="card skeleton-card"><div class="media skeleton-shimmer"></div><div class="cbody"><div class="skeleton-line" style="width:65%;height:14px"></div><div class="skeleton-line" style="width:85%;height:12px"></div><div class="skeleton-line" style="width:45%;height:12px;margin-top:auto"></div></div><div class="skeleton-foot"></div></div>';
 var out='';for(var i=0;i<n;i++)out+=c;return out;
 }
 window.loadDelivery = async function(){
