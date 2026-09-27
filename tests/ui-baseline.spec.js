@@ -205,3 +205,34 @@ test('baseline: оверлей поддержки', async ({ page }) => {
   await expect(page.locator('#supportChooseOverlay')).toBeVisible({ timeout: 6000 });
   await shot(page, '08-support-overlay');
 });
+test('baseline: кассир — pending-кнопки «Активировать» на месте', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  await loginAs(page, { code: CASHIER });
+  await waitModeSeg(page);
+  /* сид неактивированного гостя: verified=0 + actcode → строка в /staff/pending */
+  const phone = '+7 9' + String(Date.now()).slice(-7) + Math.floor(10 + Math.random() * 89);
+  await page.request.post('/api/auth/register', { data: { name: 'Pending Guest', phone } });
+  await modeBtn(page, 'cashier', 'Кассир').click();
+  await expect(page.locator('#pendingBox button', { hasText: 'Активировать' }).first())
+    .toBeVisible({ timeout: 8000 });
+  expect(errs).toEqual([]);
+});
+
+test('baseline: админ — редактор открывается и сохраняет без «is not defined»', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  await loginAs(page, { code: ADMIN });
+  await waitModeSeg(page);
+  await modeBtn(page, 'admin', 'Админ').click();
+  await expect(page.locator('#editToggle')).toBeVisible({ timeout: 8000 });
+  await page.locator('#editToggle').click();
+  await page.locator('#grid .card [data-ed]').first().click({ timeout: 8000 });
+  await expect(page.locator('#emModal')).toBeVisible({ timeout: 8000 });
+  const save = page.locator('#emSave');
+  if (await save.count()) await save.click();
+  else await page.locator('#emModal button', { hasText: 'Сохранить' }).click();
+  await expect.poll(async () => page.evaluate(() => !document.getElementById('emModal').classList.contains('show')), { timeout: 8000 }).toBe(true); /* opacity:0 ≠ hidden для Playwright */
+  await expect(page.locator('.toast', { hasText: 'not defined' })).toHaveCount(0);
+  expect(errs).toEqual([]);
+});

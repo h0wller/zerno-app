@@ -31,7 +31,8 @@ function renderDeliveryMenu() {
     
     // Генерируем чипсы опций. Первый вариант (i === 0) по умолчанию выбран (.sel).
     // ВАЖНО: оборачиваем текст в .ol и .op, чтобы CSS из views.js корректно красил веса/цены.
-    const optsHTML = opts.length
+    const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0); /* Ф5.23 */
+const optsHTML = opts.length
       ? `<div class="opts">
           
           ${opts.map((o, i) => {
@@ -49,9 +50,9 @@ function renderDeliveryMenu() {
       <div class="media" style="--tint:#F3E2CE"><span class="em">${p.e || '🍕'}</span></div>
       <div class="cbody">
         <h3>${esc(p.name)}</h3>
-        ${p.desc ? `<div class="desc">${esc(p.desc)}</div>` : ''}
+        ${p.desc ? `<div class="desc">${esc(p.desc)}</div>` : ''}${p.comp && p.comp.length ? `<div class="comp">${p.comp.map(c => `<i>${esc(c)}</i>`).join('')}</div>` : ''}
         ${optsHTML}
-        <button class="cta" data-add="${p.id}">Добавить</button>
+        <div class="steprow"><button type="button" class="step" data-step="-1" data-sid="${p.id}" ${n0 ? '' : 'hidden'}>−</button><button class="cta" data-add="${p.id}">${n0 ? 'В корзине · ' + n0 : 'Добавить'}</button><button type="button" class="step" data-step="1" data-sid="${p.id}" ${n0 ? '' : 'hidden'}>+</button></div>
       </div>
     </article>`;
   }).join('');
@@ -129,11 +130,28 @@ function syncAddButtons() {
     if (b.disabled) return;
     const n = cart.reduce((a, c) => a + (String(c.id) === String(b.dataset.add) ? c.qty : 0), 0);
     b.classList.toggle('incart', n > 0);
+const row = b.closest('.steprow'); if (row) row.querySelectorAll('.step').forEach(s => { s.hidden = !n; }); /* Ф5.23: синхронизация боковых */
     if (!b.classList.contains('added')) b.textContent = n > 0 ? ('В корзине · ' + n) : 'Добавить';
   });
 }
 
 $('#deliveryGrid').addEventListener('click', e => {
+/* Ф5.23: ветка степпера — раньше card-tap, иначе тап по «−» уйдёт в shake/add */
+const st = e.target.closest('[data-step]');
+if (st) {
+  const id = st.dataset.sid; const delta = +st.dataset.step;
+  const item = cart.find(c => String(c.id) === String(id));
+  if (!item && delta < 0) return;
+  if (item) { if (delta > 0) item.qty++; else if (item.qty > 1) item.qty--; else cart.splice(cart.indexOf(item), 1); }
+  localStorage.setItem('zt_cart', JSON.stringify(cart));
+  if (typeof window.updateCartFab === 'function') window.updateCartFab();
+  if (typeof window.renderCart === 'function') window.renderCart();
+  const n = cart.reduce((a, c) => (String(c.id) === String(id) ? a + c.qty : a), 0);
+  const row = st.closest('.steprow'); const mid = row && row.querySelector('[data-add]');
+  if (mid) { mid.textContent = n ? ('В корзине · ' + n) : 'Добавить'; mid.classList.toggle('incart', n > 0); }
+  if (row) row.querySelectorAll('.step').forEach(s => { s.hidden = !n; });
+  return;
+}
   // 0. Тап по карточке (мимо чипсов и кнопок) — режим выбора размера
   const card = e.target.closest('#deliveryGrid .card');
   if (card && !e.target.closest('.opts button') && !e.target.closest('[data-add]') && !e.target.closest('.edBtn') && !e.target.closest('.donoff')) {
@@ -506,3 +524,11 @@ window.populatePlaces = populatePlaces;
 window.setupSlotDisplayToggle = setupSlotDisplayToggle;
 window.promoDisc = promoDisc;
 window.renderCart = renderCart;
+
+/* ── Ф5.23-styles: степпер карточки доставки (отдельная инжекция Слоя 3) ── */
+(function(){var s=document.createElement('style');s.textContent=
+'#deliveryGrid .card .cbody{display:flex;flex-direction:column}' +
+'.steprow{display:flex;gap:6px;align-items:stretch;margin-top:auto;padding-top:8px}' +
+'.steprow .cta{flex:1;margin-top:0}' +
+'.steprow .step{width:44px;border:2px solid var(--fr-choc);background:#fff;border-radius:12px;font:800 18px/1 "Golos Text",system-ui,sans-serif;color:var(--fr-choc);cursor:pointer}';
+document.head.appendChild(s);})();
