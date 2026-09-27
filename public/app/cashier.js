@@ -100,7 +100,7 @@ $('#ngSave').onclick = async () => {
     renderLog();
     toast(`Профиль создан: ${esc(name)}. Можно начислять штампы`, '✅');
   } catch (e) {
-    if (e.code === 409) {
+    if (e.code === 409 || (e.code === 400 && /exists/i.test(e.message || ''))) { /* Ф5.24: exists-fallthrough сервера */
       try {
         const f = await api('/staff/customers?search=' + encodeURIComponent(phone));
         if (f.customers.length) {
