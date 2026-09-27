@@ -338,8 +338,8 @@ body.editing .card:hover {
 .donoff input:checked::after { left: 16px; }
 /* ── Тумблер режима правки (база, оба бренда; было styles.js Ф3.21) ─── */
 .donoff{position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:11px;font-weight:700;cursor:pointer}
-.donoff input{appearance:none;-webkit-appearance:none;width:34px;height:19px;border-radius:999px;background:#C9D3DC;position:relative;transition:.25s;cursor:pointer;margin:0}
-.donoff input::after{content:"";position:absolute;top:2.5px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.25s}
+.donoff input{appearance:none;-webkit-appearance:none;width:34px;height:19px;border-radius:999px;background:#C9D3DC;position:relative;transition:background .25s;cursor:pointer;margin:0}
+.donoff input::after{content:"";position:absolute;top:2.5px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .25s}
 .donoff input:checked{background:var(--status-success)}
 .donoff input:checked::after{left:17px}
 /* в режиме правки метка (hit/new/vegan) не спорит с тумблем за левый верхний угол */
@@ -396,7 +396,7 @@ padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
 .overlay{position:fixed;inset:0;background:rgba(58,42,28,.45);backdrop-filter:blur(4px);z-index:110;opacity:0;pointer-events:none;transition:.3s}
 .overlay.show{opacity:1;pointer-events:auto}
 .modal{position:fixed;inset:0;z-index:340;display:grid;place-items:center;padding:18px;pointer-events:none}
-.modal-card{width:min(480px,100%);max-height:90vh;overflow-y:auto;background:#fff;border:1px solid rgba(62,143,208,.25);border-radius:22px;padding:24px;position:relative;box-shadow:0 25px 60px rgba(18,58,107,.2);transform:translateY(20px) scale(.97);opacity:0;transition:.35s cubic-bezier(.2,1,.3,1)}
+.modal-card{width:min(480px,100%);max-height:90vh;overflow-y:auto;background:#fff;border:1px solid rgba(62,143,208,.25);border-radius:22px;padding:24px;position:relative;box-shadow:0 25px 60px rgba(18,58,107,.2);transform:translateY(20px) scale(.97);opacity:0;transition:opacity .35s cubic-bezier(.2,1,.3,1),transform .35s cubic-bezier(.2,1,.3,1)}
 .modal.show .modal-card{transform:none;opacity:1;pointer-events:auto}
 .mclose{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1.5px solid rgba(18,58,107,.2);color:#101418;font-size:17px;transition:.2s;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,.1);display:grid;place-items:center}
 .mclose:hover{transform:rotate(90deg) scale(1.1)}
@@ -444,7 +444,7 @@ padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
 #promoModal .form label small{margin-top:4px}
 #pmList .logrow{flex-wrap:wrap}
 /* ── Ф5.8 чанк 3: база чата и FAB (было inline <style> index.html + views.js) ── */
-.chat-fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:10001;width:58px;height:58px;border-radius:50%;background:#123A6B;display:grid;place-items:center;box-shadow:0 12px 30px rgba(18,58,107,.45);border:2px solid #3E8FD0;transition:.25s}
+.chat-fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:10001;width:58px;height:58px;border-radius:50%;background:#123A6B;display:grid;place-items:center;box-shadow:0 12px 30px rgba(18,58,107,.45);border:2px solid #3E8FD0;transition:left .25s}
 .chat-fab svg{width:26px;height:26px;fill:#fff}
 @media (hover:hover){.chat-fab:hover{transform:scale(1.08) rotate(-6deg);background:#3E8FD0}}
 .chat-fab:active{transform:scale(.95)}
@@ -2080,3 +2080,6 @@ body .wrap .rail button.on, body .wrap #deliveryRail button.on { font-size: 9.5p
 /* ── Ф6.1: CLS-резервы (трейс 27.09): модалка стафф-чата не прыгает при loadScList ── */
 #scModal .modal-card { min-height: min(70vh, 380px); box-sizing: border-box; }
 .skeleton-foot { height: 46px; margin-top: 10px; border-radius: 12px; }
+
+/* ── Ф6.2: фокус промо-поля не анимирует font-size (микро-CLS/джанк) ── */
+#cartPromo{transition:none}

@@ -87,7 +87,7 @@ var rules = [
 '.topbar #profileTopBtn{order:3;flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);font-size:calc(var(--topbar-h,64px) * 0.28)}',
 '.topbar #modeSeg{order:10;flex:1 1 100%}',
 '.topbar #clock{display:none!important}',
-'.venueToggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line);background:var(--card,#fff);border-radius:999px;padding:0 12px;height:calc(var(--topbar-h,64px) - 20px);font:700 calc(var(--topbar-h,64px) * 0.22) "Golos Text",system-ui,sans-serif;color:var(--ink);cursor:pointer;transition:all .2s;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+'.venueToggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line);background:var(--card,#fff);border-radius:999px;padding:0 12px;height:calc(var(--topbar-h,64px) - 20px);font:700 calc(var(--topbar-h,64px) * 0.22) "Golos Text",system-ui,sans-serif;color:var(--ink);cursor:pointer;transition:background .2s,transform .2s,border-color .2s;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
 '.venueToggle:hover{background:#F5F5F5;transform:translateY(-1px)}',
 '.venueToggle .vt-arrow{font-size:9px;opacity:.7;transition:transform .2s}',
 '.venueToggle[aria-expanded="true"] .vt-arrow{transform:rotate(180deg)}',
