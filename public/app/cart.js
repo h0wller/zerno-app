@@ -34,8 +34,8 @@
     var method = methodEl ? methodEl.value : "delivery";
     var pickup = method === "pickup" ? Math.round(sum * 0.1) : 0;
     var fee = 0;
-
-    if (method === "delivery" && typeof deliveryInfo !== 'undefined' && deliveryInfo && deliveryInfo.zones) {
+var cartLen = (typeof cart !== 'undefined' ? cart : []).length; /* Ф5.21b */
+if (cartLen && method === "delivery" && typeof deliveryInfo !== 'undefined' && deliveryInfo && deliveryInfo.zones) {
       var placeEl = document.getElementById("checkoutPlace");
       var placeVal = placeEl ? placeEl.value : "";
       var z = deliveryInfo.zones.find(function (zone) {
@@ -68,7 +68,8 @@
     if (discEl) discEl.textContent = t.pickup ? "−10% самовывоз: −" + fmt(t.pickup) : "";
     var feeEl = document.getElementById("cartFee");
     if (feeEl) feeEl.textContent = t.fee ? "Доставка: " + fmt(t.fee) : "";
-  }
+    renderGifts(); /* Ф5.21b */
+}
 
   function cartFabShow() {
     var cf = document.getElementById("cartFab");
@@ -153,6 +154,7 @@
   }
 
   function updateDeliveryPromoBar() {
+  if (!((typeof cart !== 'undefined' ? cart : []).length)) { var pb0 = document.getElementById('deliveryPromoBar'); if (pb0) pb0.style.display = 'none'; return; } /* Ф5.21b */
     var isDel = checkIsDelivery();
     var pBar = document.getElementById('deliveryPromoBar');
     if (!isDel) {
@@ -284,7 +286,20 @@
   }
 
   /* ── Основной рендер содержимого корзины ── */
-  function renderCartBase() {
+  /* Ф5.21b: владелец строки подарков (перенесён из мёртвого renderCart delivery.js) */
+function renderGifts() {
+  var el = document.getElementById("cartGifts"); if (!el) return;
+  var list = (typeof cart !== 'undefined' ? cart : []);
+  var sum = list.reduce(function (a, c) { return a + (Number(c.price)||0) * (Number(c.qty)||1); }, 0);
+  var di = (typeof deliveryInfo !== 'undefined' && deliveryInfo) ? deliveryInfo : null;
+  var gifts = [];
+  var wp2 = di && di.weekPromo;
+  if (wp2 && wp2.gift && sum > 0) { var q = wp2.threshold > 0 ? Math.floor(sum / wp2.threshold) : 1; if (q > 0) gifts.push("🎁 " + wp2.gift + " ×" + q); }
+  var pm2 = di && di.pizzaMonth;
+  if (pm2 && pm2.name) { var big = list.reduce(function (a, c) { return a + ((Number(c.sz) === 35) ? (Number(c.qty)||1) : 0); }, 0); if (big >= 2) gifts.push("🎁 " + pm2.name + " — подарок"); }
+  el.innerHTML = gifts.join("<br>");
+}
+function renderCartBase() {
     var cItems = document.getElementById('cartItems');
     if (!cItems) return;
     var list = typeof cart !== 'undefined' ? cart : [];
@@ -345,16 +360,16 @@
     cartFabShow();
   };
 
-  /* ── Слушатели событий корзины ── */
+  renderGifts(); /* Ф5.21b */
+/* ── Слушатели событий корзины ── */
   var cPanel = document.getElementById("cartPanel");
   if (cPanel) {
     cPanel.addEventListener('click', function (e) {
       var b = e.target.closest('[data-ci]');
       if (b) {
         var i = +b.dataset.ci;
-        if (b.dataset.act === '+') cart[i].qty++;
-        else if (cart[i].qty > 1) cart[i].qty--;
-        else cart.splice(i, 1);
+        var it = cart[i]; if (!it) { renderCartBase(); return; } /* Ф5.21: гард протухшего индекса */
+if (b.dataset.act === '+') it.qty++; else if (it.qty > 1) it.qty--; else cart.splice(i, 1);
         localStorage.setItem('zt_cart', JSON.stringify(cart));
         window.updateCartFab();
         renderCartBase();

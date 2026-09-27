@@ -1,32 +1,37 @@
-/* Ф5.6-финал шаг 4-fix3: chat-support.spec.js — сплэш не должен участвовать в чат-тестах.
-1) prepare(): addInitScript ставит sessionStorage.splashDone='1' (как в ui-baseline) —
-   статичный сплэш снимается skip-веткой splash.js до первого кадра, без навигации.
-2) skipSplash(): селектор #brandSplash → #brandSplashStatic (динамического больше нет;
-   страховка на случай ручных сценариев без splashDone).
-Продукт не меняется — правка только тестовая. */
+/* Ф5.21c: убираем дубль мутаций корзины: 1 клик = +2 (qty 1→3).
+delivery.js #cartItems и cart.js #cartPanel оба мутировали cart[i].qty на одном клике
+(target + bubble). Мутации и save остаются ТОЛЬКО в cart.js (cPanel);
+из delivery.js цепочка qty удалена. syncAddButtons гарантируем из cart.js после рендера.
+Побочный эффект фикса: уходит корень TypeError Ф5.21 (splice + протухший индекс во втором обработчике). */
 import fs from 'node:fs';
-const P = 'tests/chat-support.spec.js';
-let s = fs.readFileSync(P, 'utf8');
-let changed = false;
+const DEL = 'public/app/delivery.js';
+const CART = 'public/app/cart.js';
 
-/* 1 */
-const reOnb = /localStorage\.setItem\('zt_onb',\s*'1'\);/;
-if (reOnb.test(s) && !s.includes("sessionStorage.setItem('splashDone'")) {
-  s = s.replace(reOnb, (m0) => m0 + " sessionStorage.setItem('splashDone', '1'); /* шаг 4-fix3: сплэш вне чат-тестов */");
-  changed = true;
-  console.log('✅ prepare(): splashDone в addInitScript');
-} else if (s.includes("sessionStorage.setItem('splashDone'")) {
-  console.log('⚠️ prepare(): splashDone уже ставится');
+/* 1) delivery.js: вырезаем цепочку мутаций (минифицированная и проставленная формы) */
+let d = fs.readFileSync(DEL, 'utf8');
+const reMut = /if \(b\.dataset\.act === '\+'\) cart\[i\]\.qty\+\+;\s*else if \(cart\[i\]\.qty > 1\) cart\[i\]\.qty--;\s*else cart\.splice\(i, 1\);/;
+if (reMut.test(d)) {
+  d = d.replace(reMut, '/* Ф5.21c: qty-мутации и save ведёт cart.js (cPanel); дубль убран */');
+  fs.writeFileSync(DEL, d);
+  console.log('✅ delivery.js: цепочка qty-мутаций удалена из #cartItems-слушателя');
+} else if (d.includes('Ф5.21c: qty-мутации')) {
+  console.log('⚠️ delivery.js: уже удалена');
 } else {
-  console.error('❌ prepare(): якорь zt_onb не найден — покажи тело prepare()');
+  console.error('❌ delivery.js: цепочка мутаций не найдена — покажи тело слушателя #cartItems');
   process.exit(1);
 }
 
-/* 2 */
-if (s.includes("page.locator('#brandSplash')")) {
-  s = s.replace("page.locator('#brandSplash')", "page.locator('#brandSplashStatic')");
-  changed = true;
-  console.log('✅ skipSplash(): селектор → #brandSplashStatic');
-} else console.log('⚠️ skipSplash(): старого селектора нет');
+/* 2) cart.js: syncAddButtons после рендера в cPanel-обработчике (если ещё нет) */
+let c = fs.readFileSync(CART, 'utf8');
+if (!/syncAddButtons/.test(c)) {
+  const reChain = /(var it = cart\[i\];[\s\S]{0,400}?renderCartBase\(\);)/;
+  if (!reChain.test(c)) { console.error('❌ cart.js: цепочка cPanel-обработчика не найдена'); process.exit(1); }
+  c = c.replace(reChain, '$1\n      if (typeof window.syncAddButtons === "function") window.syncAddButtons(); /* Ф5.21c */');
+  fs.writeFileSync(CART, c);
+  console.log('✅ cart.js: syncAddButtons после renderCartBase в cPanel-обработчике');
+} else console.log('⚠️ cart.js: syncAddButtons уже вызывается');
 
-if (changed) { fs.writeFileSync(P, s); console.log('✅ chat-support.spec.js обновлён'); }
+/* 3) контроль: мутация qty осталась ровно в одном файле */
+const cnt = (c.match(/cart\[i\]\.qty\+\+/g) || []).length + (d.match(/cart\[i\]\.qty\+\+/g) || []).length;
+console.log(cnt === 1 ? '✅ мутация qty единственная (cart.js)' : '❌ мутаций qty: ' + cnt + ' — проверь вручную');
+if (cnt !== 1) process.exit(1);

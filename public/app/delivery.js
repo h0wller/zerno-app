@@ -257,9 +257,7 @@ $('#cartItems').addEventListener('click', e => {
   const b = e.target.closest('[data-ci]');
   if (!b) return;
   const i = +b.dataset.ci;
-  if (b.dataset.act === '+') cart[i].qty++;
-  else if (cart[i].qty > 1) cart[i].qty--;
-  else cart.splice(i, 1);
+  /* Ф5.21c: qty-мутации и save ведёт cart.js (cPanel); дубль убран */
   localStorage.setItem('zt_cart', JSON.stringify(cart));
   if (typeof updateCartFab === 'function') updateCartFab();
   window.renderCart();
