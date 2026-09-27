@@ -390,3 +390,7 @@ document.addEventListener('click', function (e) {
 /* ── Ф5.8f: ESM-шимы: catalog.js/profile-brand.js/boot.js/live.js ── */
 window.renderBonus = renderBonus;
 window.loadMyOrders = loadMyOrders;
+
+/* ── Ф5.25: ESM-шимы для кассира (точки штампов, склонения чашек) ── */
+window.stampIcon = stampIcon; /* Ф5.25: dotsHTML в cashier.js */
+window.cupWord = cupWord; /* Ф5.25: тексты списаний/подарков */
