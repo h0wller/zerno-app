@@ -89,21 +89,18 @@
     <link rel="stylesheet" href="app/ui/theme-v2.css" />
     
     <script src="app/core/state.js"></script>
-    <script>
-      (function () {
-        var q = new URLSearchParams(location.search);
-        var need = !(
-          sessionStorage.getItem("splashDone") ||
-          q.get("brand") ||
-          q.get("tab") ||
-          q.get("src") ||
-          /Telegram/i.test(navigator.userAgent)
-        );
-        document.documentElement.classList.add(
-          need ? "need-splash" : "no-splash",
-        );
-      })();
-    </script>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var isTG = /Telegram/i.test(navigator.userAgent);
+  var hasDeep = !!(q.get("brand") || q.get("tab") || q.get("src"));
+  var isDone = false;
+  try { isDone = sessionStorage.getItem("splashDone") === "1"; } catch (e) {}
+  
+  var need = !(isDone || hasDeep || isTG);
+  document.documentElement.classList.add(need ? "need-splash" : "no-splash");
+})();
+</script>
     <style>
       html.no-splash #brandSplashStatic {
         display: none !important;
