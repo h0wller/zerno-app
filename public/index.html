@@ -1815,5 +1815,13 @@ body[data-brand="delivery"] #menuView {
     </footer>
     <script src="app/vendor/qrcode.min.js" defer></script>
     </script>
+    <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+      .then(function(reg) {
+        reg.update();
+      }).catch(function() {});
+  }
+</script>
           </body>
 </html>
