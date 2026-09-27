@@ -214,3 +214,4 @@ config, deeplink) → module. Гэйты скрипта: IIFE-паттерн + d
 строки 5.8h + fix2 + «e2e: скелетоны исключены из селекторов отрендеренного меню».
 fix2: путь core/review.js в графе импортов + файловый чекер импортов main.js
 ### [x] 5.6-финал шаг 3 - utils/api/ui/auth/panel → module (голова графа; контракт window.api принадлежит ui.js)
+### [x] Ф5.20 - stale-кэш Safari/PWA: SW code-fetch с cache:'reload', канон-хост 301, purge edge; урок: network-first в SW обязан обходить HTTP-кэш движка, иначе бампы STATIC_CACHE бессильны в A2HS
