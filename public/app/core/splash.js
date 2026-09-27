@@ -10,14 +10,14 @@
   var ss = document.getElementById('brandSplashStatic');
   
   var done = false;
-  try { done = sessionStorage.getItem('splashDone') === '1'; } catch (e) {}
+  try { done = (()=>{try{return sessionStorage.getItem("splashDone")}catch(e){return null}})() === '1'; } catch (e) {}
 
   var QS = new URLSearchParams(location.search);
   var IN_TG = /Telegram/i.test(navigator.userAgent);
   var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
 
   function finish(choice) {
-    try { sessionStorage.setItem('splashDone', '1'); } catch (e) {}
+    try { (()=>{try{sessionStorage.setItem("splashDone","1")}catch(e){}})(); } catch (e) {}
     try { localStorage.setItem('zt_brand', choice); } catch (e) {} // Фолбэк для PWA
     
     document.documentElement.classList.remove('need-splash');
