@@ -128,7 +128,7 @@ async function loadPending() {
 async function renderLog() {
   try {
     const r = await api('/staff/log?scope=coffee');
-    loadPending();
+    window.loadPending(); /* Ф5.6-финал шаг 4-fix2: версия orders.js с кнопками */
 
     const rows = r.log || [];
     $('#cashLog').innerHTML = rows.length

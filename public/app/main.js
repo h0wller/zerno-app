@@ -1,3 +1,4 @@
+import './core/state.js'; /* Ф5.6-финал шаг 4: ПЕРВЫМ (все модули читают state-глобалы) */
 /* public/app/main.js — Ф5.6-финал: единая module-точка входа приложения.
    Порядок импортов = прежний документ-порядок module-тегов.
    boot.js импортируется последним: его DOMContentLoaded-listener зарегистрируется
@@ -48,3 +49,5 @@ import './core/qr.js';
 import './core/review.js';
 import './address.js';
 import './core/boot.js';
+
+import './core/push.js'; /* Ф5.6-финал шаг 4: ПОСЛЕДНИМ (был после main.js) */

@@ -6,13 +6,13 @@ import { test, expect } from '@playwright/test';
 test.use({ serviceWorkers: 'block' });
 
 async function skipSplash(page){
-  const sp = page.locator('#brandSplash');
+  const sp = page.locator('#brandSplashStatic');
   if (await sp.count()) await sp.locator('[data-go="coffee"]').click();
 }
 
 async function prepare(page, url = '/') {
   await page.addInitScript(() => {
-    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_onb', '1'); sessionStorage.setItem('splashDone', '1'); /* шаг 4-fix3: сплэш вне чат-тестов */
   });
   await page.goto(url);
 

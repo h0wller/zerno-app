@@ -7,12 +7,12 @@ function u8ToB64url(u){var s='';for(var i=0;i<u.length;i++)s+=String.fromCharCod
 async function ensurePush(verbose){
 try{
 if(!('serviceWorker' in navigator)||!('PushManager' in window)){if(verbose)toast('Пуши не поддерживаются устройством','⚠️');return false;}
-if(!me){if(verbose)toast('Сначала войдите по номеру','👤');return false;}
+if(!window.me){if(verbose)toast('Сначала войдите по номеру','👤');return false;}
 var perm=Notification.permission;
 if(perm==='default')perm=await Notification.requestPermission();
 if(perm!=='granted'){if(verbose)toast('Уведомления запрещены в настройках браузера','⚠️');return false;}
 var reg=await navigator.serviceWorker.ready;
-var vap=await fetch(API_BASE+'/api/vapid').then(function(r){return r.json();});
+var vap=await fetch(window.API_BASE+'/api/vapid').then(function(r){return r.json();});
 var sub=await reg.pushManager.getSubscription();
 if(sub){
 var cur=u8ToB64url(new Uint8Array(sub.options.applicationServerKey));
@@ -34,7 +34,7 @@ if(b&&/уведомлени/i.test(b.textContent||''))setTimeout(function(){ensu
   var tries=0;
   var iv=setInterval(async function(){
     tries++;
-    if(me&&('Notification' in window)&&Notification.permission==='granted'){
+    if(window.me&&('Notification' in window)&&Notification.permission==='granted'){
       clearInterval(iv);sessionStorage.setItem('pushHealed','1');
       await ensurePush(false);
     }

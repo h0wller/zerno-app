@@ -1,36 +1,32 @@
-/* Ф5.6-финал шаг 3 (v2): utils/api/ui/auth/panel → module-импорты в ГОЛОВУ main.js.
-v1 упал на ложном контракте: window.api объявляет ui.js (Ф5.2), а core/api.js (F1.2)
-экспортирует API_BASE/fetchJSON через Object.assign. Контракты исправлены по бандлу.
-Порядок головы = прежний документ-порядок (utils→api→ui→auth→panel): auth на eval
-зовёт bindMask (utils), views/overlay/boot зовут setTab/closePanel (panel) в рантайме. */
+/* Ф5.6-финал шаг 4-fix3: chat-support.spec.js — сплэш не должен участвовать в чат-тестах.
+1) prepare(): addInitScript ставит sessionStorage.splashDone='1' (как в ui-baseline) —
+   статичный сплэш снимается skip-веткой splash.js до первого кадра, без навигации.
+2) skipSplash(): селектор #brandSplash → #brandSplashStatic (динамического больше нет;
+   страховка на случай ручных сценариев без splashDone).
+Продукт не меняется — правка только тестовая. */
 import fs from 'node:fs';
-const MAIN = 'public/app/main.js';
-const IDX = 'public/index.html';
-const FILES = [
-  { rel: './core/utils.js', tag: 'app/core/utils.js', contract: 'Object.assign(window,' },
-  { rel: './core/api.js',   tag: 'app/core/api.js',   contract: 'fetchJSON' },
-  { rel: './core/ui.js',    tag: 'app/core/ui.js',    contract: 'window.toast' },
-  { rel: './core/auth.js',  tag: 'app/core/auth.js',  contract: 'window.openAuth' },
-  { rel: './core/panel.js', tag: 'app/core/panel.js', contract: 'window.setTab' },
-];
-let m = fs.readFileSync(MAIN, 'utf8');
-const first = m.indexOf("import './core/catalog.js';");
-if (first < 0) { console.error('❌ main.js: якорь import catalog.js не найден'); process.exit(1); }
-let ins = '';
-for (const f of FILES) {
-  const src = fs.readFileSync('public/' + f.tag, 'utf8');
-  if (!src.includes(f.contract)) { console.error('❌ ' + f.tag + ': нет контракта ' + f.contract); process.exit(1); }
-  if (m.includes("import '" + f.rel + "';")) { console.log('⚠️ ' + f.rel + ': уже импортируется'); continue; }
-  ins += "import '" + f.rel + "'; /* Ф5.6-финал шаг 3 */\n";
-}
-m = m.slice(0, first) + ins + m.slice(first);
-fs.writeFileSync(MAIN, m);
-console.log('✅ main.js: импорты core-5 в голове списка');
+const P = 'tests/chat-support.spec.js';
+let s = fs.readFileSync(P, 'utf8');
+let changed = false;
 
-let idx = fs.readFileSync(IDX, 'utf8');
-for (const f of FILES) {
-  const re = new RegExp('<script[^>]*src="[^"]*' + f.tag.replace(/[./]/g, '\\$&') + '"[^>]*><\\/script>[ \\t]*\\r?\\n?');
-  if (re.test(idx)) { idx = idx.replace(re, ''); console.log('✅ index.html: тег ' + f.tag + ' удалён'); }
-  else console.log('⚠️ index.html: тег ' + f.tag + ' не найден');
+/* 1 */
+const reOnb = /localStorage\.setItem\('zt_onb',\s*'1'\);/;
+if (reOnb.test(s) && !s.includes("sessionStorage.setItem('splashDone'")) {
+  s = s.replace(reOnb, (m0) => m0 + " sessionStorage.setItem('splashDone', '1'); /* шаг 4-fix3: сплэш вне чат-тестов */");
+  changed = true;
+  console.log('✅ prepare(): splashDone в addInitScript');
+} else if (s.includes("sessionStorage.setItem('splashDone'")) {
+  console.log('⚠️ prepare(): splashDone уже ставится');
+} else {
+  console.error('❌ prepare(): якорь zt_onb не найден — покажи тело prepare()');
+  process.exit(1);
 }
-fs.writeFileSync(IDX, idx);
+
+/* 2 */
+if (s.includes("page.locator('#brandSplash')")) {
+  s = s.replace("page.locator('#brandSplash')", "page.locator('#brandSplashStatic')");
+  changed = true;
+  console.log('✅ skipSplash(): селектор → #brandSplashStatic');
+} else console.log('⚠️ skipSplash(): старого селектора нет');
+
+if (changed) { fs.writeFileSync(P, s); console.log('✅ chat-support.spec.js обновлён'); }

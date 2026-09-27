@@ -2,8 +2,8 @@
    Без IIFE: fix-views.js оборачивает window.renderMenu(499) и window.renderRail(502),
    читает CATS лексически (406). Все объявления — top-level var/function. */
 
-var cat = 'coffee';
-var query = '';
+window.cat = 'coffee'; /* Ф5.6-финал шаг 4-fix: menu-editor читает cat голым */
+window.query = ''; /* Ф5.6-финал шаг 4-fix2: menu-editor пишет query голым */
 /* F5.8h-fix: кофейный пул без delivery-секции (поиск и сетка не матчат чужой бренд) */
 function coffeePool() { return MENU.filter(function (p) { return (p.section || "coffee") !== "delivery"; }); }
 
