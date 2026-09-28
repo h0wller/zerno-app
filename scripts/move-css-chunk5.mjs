@@ -1,82 +1,92 @@
-/* scripts/fix-admin-bar.mjs — Ф5.48:
-   1. Сетка 2х2 для кнопок adminBar на мобильных экранах (без лесенок и нахлёстов).
-   2. Уменьшение высоты и отступов мобильных тостов.
-   3. Инкремент STATIC_CACHE в sw.js.
-*/
+// scripts/diagnose-tg.mjs — только диагностика, ничего не пишет.
+// Запуск: node scripts/diagnose-tg.mjs
+
 import fs from 'node:fs';
 
-const TH_PATH = 'public/app/ui/theme-v2.css';
-let th = fs.readFileSync(TH_PATH, 'utf8');
+const env = Object.fromEntries(
+  fs.readFileSync('.env', 'utf8').split(/\r?\n/)
+    .map(l => l.trim()).filter(l => l && !l.startsWith('#'))
+    .map(l => {
+      const i = l.indexOf('=');
+      if (i < 0) return null;
+      let v = l.slice(i + 1).trim();
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+      return [l.slice(0, i).trim(), v];
+    }).filter(Boolean)
+);
 
-// Удаляем предыдущие патчи админ-бара
-th = th.replace(/\/\* ── Ф5\.(46|47)[\s\S]*$/g, '');
+const TOKEN   = env.TEST_TOKEN || env.TELEGRAM_BOT_TOKEN;
+const SECRET  = env.TG_WEBHOOK_SECRET || '';
+const APP_URL = (env.PUBLIC_URL || env.APP_URL || '').replace(/\/+$/, '');
 
-const adminBarPatch = `/* ── Ф5.48: Сетка панели администратора (2х2 на мобиле) и микро-тосты ── */
-.adminBar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin: 0 0 12px;
-  flex-wrap: wrap;
+if (!TOKEN)   { console.error('Нет токена в .env'); process.exit(1); }
+if (!APP_URL) { console.error('Нет PUBLIC_URL в .env'); process.exit(1); }
+
+const tg = async (method, body) => {
+  const r = await fetch('https://api.telegram.org/bot' + TOKEN + '/' + method, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {}),
+  });
+  return r.json();
+};
+
+const me = (await tg('getMe')).result;
+console.log('BOT: @' + me.username + ' (' + me.first_name + ')');
+console.log('');
+
+const w = (await tg('getWebhookInfo')).result;
+console.log('WEBHOOK:');
+console.log('  url:                 ' + (w.url || '(не установлен)'));
+console.log('  pending_update_count: ' + w.pending_update_count);
+console.log('  last_error_date:     ' + (w.last_error_date ? new Date(w.last_error_date * 1000).toLocaleString('ru-RU') : '—'));
+console.log('  last_error_message:  ' + (w.last_error_message || '—'));
+console.log('  allowed_updates:     ' + (w.allowed_updates || []).join(', '));
+console.log('');
+
+console.log('GET ' + APP_URL + '/api/health …');
+try {
+  const r = await fetch(APP_URL + '/api/health', { signal: AbortSignal.timeout(10000) });
+  console.log('  HTTP ' + r.status + ' · ' + (await r.text()).slice(0, 120));
+} catch (e) { console.log('  ERROR: ' + e.message); }
+console.log('');
+
+console.log('POST ' + APP_URL + '/api/tg/webhook (без секрета, ожидаем 403) …');
+try {
+  const r = await fetch(APP_URL + '/api/tg/webhook', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: { chat: { id: 1 }, text: '/diag' } }),
+    signal: AbortSignal.timeout(10000),
+  });
+  console.log('  HTTP ' + r.status + ' · ' + (await r.text()).slice(0, 120));
+} catch (e) { console.log('  ERROR: ' + e.message); }
+console.log('');
+
+console.log('POST ' + APP_URL + '/api/tg/webhook (с секретом, ожидаем 200) …');
+try {
+  const r = await fetch(APP_URL + '/api/tg/webhook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-telegram-bot-api-secret-token': SECRET },
+    body: JSON.stringify({ message: { chat: { id: 1 }, text: '/diag' } }),
+    signal: AbortSignal.timeout(10000),
+  });
+  console.log('  HTTP ' + r.status + ' · ' + (await r.text()).slice(0, 120));
+} catch (e) { console.log('  ERROR: ' + e.message); }
+console.log('');
+
+// Пытаемся получить обновления напрямую, минуя webhook.
+// Если они есть — значит webhook их не забирает (или старый код не отвечает).
+console.log('getUpdates (что Telegram копит необработанного) …');
+const upd = await tg('getUpdates', { limit: 5, timeout: 0 });
+if (upd.ok && upd.result && upd.result.length) {
+  console.log('  Есть ' + upd.result.length + ' необработанных обновлений:');
+  for (const u of upd.result) {
+    const m = u.message;
+    if (m) console.log('    id=' + u.update_id + ' chat=' + m.chat.id + ' text=' + JSON.stringify(m.text));
+    else console.log('    id=' + u.update_id + ' ' + Object.keys(u).filter(k => k !== 'update_id').join(','));
+  }
+  console.log('  → Если ты только что нажимал /start, а тут лежат updates — значит webhook не доходит до сервера.');
+} else if (upd.ok) {
+  console.log('  Пусто. Telegram всё отдал по webhook (или ты давно не писал).');
+} else {
+  console.log('  ERROR: ' + JSON.stringify(upd));
 }
-
-@media (max-width: 820px) {
-  .adminBar {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    margin: 0 0 8px;
-    width: 100%;
-  }
-  .adminBar button {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 10px;
-    font-size: 11px;
-    font-weight: 700;
-    border-radius: 10px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    background: #fff;
-    border: 1.5px solid var(--line);
-    box-sizing: border-box;
-  }
-  #chatsToggle2 {
-    grid-column: span 2;
-  }
-
-  /* Компактные тосты строго под шапкой */
-  .toasts {
-    top: calc(var(--topbar-h, 56px) + env(safe-area-inset-top, 0px) + 12px);
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    width: max-content;
-    max-width: calc(100vw - 24px);
-    pointer-events: none;
-    z-index: 1100;
-  }
-  .toast {
-    padding: 6px 12px;
-    font-size: 11.5px;
-    border-radius: 10px;
-    gap: 6px;
-    box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.4);
-    pointer-events: auto;
-  }
-}
-`;
-
-th = th.trimEnd() + '\n\n' + adminBarPatch + '\n';
-fs.writeFileSync(TH_PATH, th, 'utf8');
-console.log('✅ theme-v2.css: adminBar переведён в сетку 2x2, тосты оптимизированы');
-
-// Инкремент STATIC_CACHE в sw.js
-const SW_PATH = 'public/sw.js';
-let sw = fs.readFileSync(SW_PATH, 'utf8');
-sw = sw.replace(/zerno-static-v(\d+)/, (m, n) => 'zerno-static-v' + (parseInt(n, 10) + 1));
-fs.writeFileSync(SW_PATH, sw, 'utf8');
-console.log('✅ sw.js: STATIC_CACHE инкрементирован');

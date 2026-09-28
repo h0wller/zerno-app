@@ -3970,7 +3970,7 @@ body .wrap #deliveryRail button.on {
   }
 }
 
-/* ── Ф5.48: Сетка панели администратора (2х2 на мобиле) и микро-тосты ── */
+/* ── Ф5.51: Компактная сетка 2х2 для adminBar (все кнопки видны на экране) ── */
 .adminBar {
   display: flex;
   gap: 8px;
@@ -3984,30 +3984,37 @@ body .wrap #deliveryRail button.on {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 6px;
-    margin: 0 0 8px;
+    margin: 0 0 8px 0;
     width: 100%;
+    box-sizing: border-box;
   }
-  .adminBar button {
+  .adminBar button,
+  #editToggle,
+  #promoToggle,
+  #dashToggle,
+  #chatsToggle2 {
     width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 10px;
-    font-size: 11px;
+    height: 34px;
+    padding: 0 8px;
+    font-size: 10.5px;
     font-weight: 700;
-    border-radius: 10px;
+    border-radius: 8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     background: #fff;
     border: 1.5px solid var(--line);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     box-sizing: border-box;
   }
   #chatsToggle2 {
     grid-column: span 2;
   }
 
-  /* Компактные тосты строго под шапкой */
+  /* Тосты строго под шапкой, не перекрывают админку */
   .toasts {
     top: calc(var(--topbar-h, 56px) + env(safe-area-inset-top, 0px) + 12px);
     left: 50%;
