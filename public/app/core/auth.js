@@ -166,6 +166,34 @@
 
   /* ── Инициализация слушателей при загрузке DOM ── */
   document.addEventListener('DOMContentLoaded', function () {
+    // [tg-initdata-fast-auth-v1]
+    async function checkTgAutoLogin() {
+      if (localStorage.getItem('zt_user')) return;
+      var tg = window.Telegram && window.Telegram.WebApp;
+      var initData = tg && tg.initData;
+      if (!initData) return;
+      try {
+        if (typeof tg.ready === 'function') tg.ready();
+        var r = await api('/auth/tg-link', {
+          method: 'POST',
+          body: { initData: initData }
+        });
+        if (r && r.token && r.customer) {
+          setUser(r.token, r.customer);
+          if (typeof renderAll === 'function') renderAll();
+          if (typeof toast === 'function') toast('Вход выполнен через Telegram', '🤖');
+          closeAuth();
+        } else if (r && r.needPhone) {
+          window.__tgInitData = initData;
+          window.__tgUser = r.tgUser;
+          var rn = document.getElementById('regName');
+          if (rn && !rn.value && r.tgUser && r.tgUser.name) rn.value = r.tgUser.name;
+          var rtb = document.getElementById('regTgBtn');
+          if (rtb) rtb.style.display = 'none';
+        }
+      } catch (_) {}
+    }
+    checkTgAutoLogin();
     var toLogin = document.getElementById('toLogin');
     if (toLogin) toLogin.onclick = function () { authSwap(true); };
 
@@ -193,6 +221,32 @@
         if (name.length < 2) return toast('Введите имя', '✍️');
         if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
         if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
+
+        if (window.__tgInitData) {
+          try {
+            var rTg = await api('/auth/tg-link', {
+              method: 'POST',
+              body: { initData: window.__tgInitData, phone: phone, name: name, pin: pin }
+            });
+            if (rTg && rTg.token && rTg.customer) {
+              setUser(rTg.token, rTg.customer);
+              closeAuth();
+              if (typeof renderAll === 'function') renderAll();
+              toast(rTg.isNew ? 'Профиль создан! +1 штамп ваш 🎁' : 'Профиль привязан к Telegram ✅', '🎉');
+              return;
+            }
+          } catch (errTg) {
+            if (errTg.code === 409) {
+              toast('Номер уже зарегистрирован — входим', '🔗');
+              var lpTg = document.getElementById('logPhone');
+              if (lpTg) lpTg.value = fmtPhone(phone);
+              authSwap(true);
+              return;
+            }
+            toast(errTg.message || 'Ошибка регистрации через Telegram', '⚠️');
+            return;
+          }
+        }
 
         try {
           var r = await api('/auth/register', {
