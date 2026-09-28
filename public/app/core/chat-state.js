@@ -2,10 +2,12 @@
 'use strict';
 var QS=new URLSearchParams(location.search);
 var SUPPORT_ENTRY=(QS.get('tab')==='chat'||QS.get('support')==='choose');
-var chosen=SUPPORT_ENTRY?(sessionStorage.getItem('zt_support_ctx')||''):'';
+// [tg-support-ctx-from-url]
+var ctxFromUrl=(QS.get('ctx')==='delivery'||QS.get('ctx')==='coffee')?QS.get('ctx'):'';
+var chosen=SUPPORT_ENTRY?(ctxFromUrl||sessionStorage.getItem('zt_support_ctx')||''):'';
 var pending=SUPPORT_ENTRY&&!chosen;
 var ctx=localStorage.getItem('zt_chatctx')||'';
-if(chosen)ctx=chosen;
+if(chosen){ctx=chosen;try{localStorage.setItem('zt_chatctx',chosen);}catch(e){}}
 var local={
   getChatCtx:function(){return ctx;},
   setChatCtx:function(v){ctx=v;try{localStorage.setItem('zt_chatctx',v);}catch(e){}},

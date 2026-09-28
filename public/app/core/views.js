@@ -26,7 +26,9 @@ else setSat();
 })();
 var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
 var SUPPORT_ENTRY = (QS.get('tab') === 'chat' || QS.get('support') === 'choose');
-var chosenSupportCtx = SUPPORT_ENTRY ? (sessionStorage.getItem('zt_support_ctx') || '') : '';
+// [tg-support-ctx-from-url]
+var ctxFromUrl = (QS.get('ctx') === 'delivery' || QS.get('ctx') === 'coffee') ? QS.get('ctx') : '';
+var chosenSupportCtx = SUPPORT_ENTRY ? (ctxFromUrl || sessionStorage.getItem('zt_support_ctx') || '') : '';
 var supportPending = SUPPORT_ENTRY && !chosenSupportCtx;
 var chatCtx = localStorage.getItem('zt_chatctx') || '';
 if (chosenSupportCtx) chatCtx = chosenSupportCtx;

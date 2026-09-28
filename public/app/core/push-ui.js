@@ -129,7 +129,7 @@ function urlBase64ToUint8Array(s) {
         // [tg-mini-app-skip-push]
         // В Telegram Mini App пуши идут через нативного бота,
         // кнопка «Включить уведомления» не нужна.
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+        if (window.__isTgMiniApp) { // [tg-mini-app-detect]
           pb.hidden = true;
           if (av) av.classList.remove("pulse-hint");
           window.togglePushHint(false);

@@ -20,7 +20,7 @@ function welcomeKeyboard(c) { // [tg-ux-v1]
   if (c) {
     rows.push([
       { text: '📦 Мои заказы',    web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } },
-      { text: '💬 Задать вопрос', web_app: { url: APP_URL + '/?src=tg&tab=chat&support=choose' } },
+      { text: '💬 Задать вопрос', callback_data: 'support_choose' },
     ]);
   } else {
     rows.push([{ text: '🔗 Привязать номер', callback_data: 'link_phone' }]);
@@ -124,6 +124,43 @@ export function createTgRouter({ appKb }) {
       }
 
       /* 🔗 Привязать номер */
+      // [tg-support-flow-v1]
+      /* 💬 Поддержка: выбор темы в Telegram, потом открытие WebApp */
+      if (data === 'support_choose') {
+        await tgSend(chatId, '💬 По какой теме вопрос?', {
+          inline_keyboard: [
+            [{ text: '🍕 Доставка — «Пятница»', callback_data: 'support_delivery' }],
+            [{ text: '☕ Кофейня — «…и кофе»',  callback_data: 'support_coffee' }],
+          ]
+        });
+        return;
+      }
+      if (data === 'support_delivery' || data === 'support_coffee') {
+        const ctx = data === 'support_delivery' ? 'delivery' : 'coffee';
+        const label = ctx === 'delivery' ? '🍕 Доставка' : '☕ Кофейня';
+        const cbMsgId = cb.message && cb.message.message_id;
+        const openBtn = {
+          inline_keyboard: [[
+            { text: '💬 Открыть чат с поддержкой', web_app: { url: APP_URL + '/?src=tg&tab=chat&ctx=' + ctx } }
+          ]]
+        };
+        if (cbMsgId && TG_TOKEN) {
+          await fetch('https://api.telegram.org/bot' + TG_TOKEN + '/editMessageText', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              message_id: cbMsgId,
+              text: 'Открываю чат: ' + label,
+              reply_markup: openBtn,
+            }),
+          }).catch(function () {});
+        } else {
+          await tgSend(chatId, 'Открываю чат: ' + label, openBtn);
+        }
+        return;
+      }
+
       if (data === 'link_phone') {
         const existing = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
         if (existing) {

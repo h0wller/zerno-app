@@ -197,6 +197,13 @@ var QS = new URLSearchParams(location.search);
       if (tab === 'chat') {
         var cp = document.getElementById('chatPanel');
         if (cp && QS.get('support') !== 'choose') cp.classList.add('open');
+        // [tg-support-load-thread]
+        if (QS.get('ctx')) {
+          setTimeout(function () {
+            if (typeof window.reloadChatThread === 'function') window.reloadChatThread();
+            if (typeof window.setBotName === 'function') window.setBotName();
+          }, 350);
+        }
       }
     } catch(e) {}
   }
