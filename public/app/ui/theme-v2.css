@@ -2096,3 +2096,33 @@ body .wrap .rail button.on, body .wrap #deliveryRail button.on { font-size: 9.5p
 .wrap .rail, .wrap #deliveryRail { top: calc(env(safe-area-inset-top, 0px) + 8px); transform: none; height: auto; max-height: calc(100dvh - 16px); }
 .wrap .rail button, .wrap #deliveryRail button { min-height: 44px; font-size: 8.5px; }
 }
+
+/* ── Ф5.28: семья FAB: одна ось right:10, базы 14/80, диаметры 56 ── */
+.chat-fab, #cartFab { right: 10px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: 56px; height: 56px; }
+/* ── Ф5.28: бейдж бонусов: ≥821 в потоке шапки слева от аватара; <821 вертикальная колонка в створе рейла ── */
+@media (min-width: 821px) {
+#mbonusBtn { position: static; grid-column: 3; grid-row: 1; justify-self: end; margin-right: 56px; top: auto; left: auto; right: auto; bottom: auto; transform: none; height: 36px; flex-direction: row; align-items: center; gap: 6px; padding: 0 12px; border-radius: 999px; }
+#mbonusBtn.near-footer { opacity: 1; pointer-events: auto; transform: none; }
+}
+@media (max-width: 820px) {
+#mbonusBtn { position: fixed; left: 6px; right: auto; top: auto; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: 72px; max-width: 72px; height: auto; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border-radius: 16px; transform: none; }
+#mbonusBtn .mb-free { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; padding: 3px 5px; border-radius: 8px; }
+#mbonusBtn.near-footer { opacity: 0; pointer-events: none; transform: translateY(8px); }
+}
+/* ── Ф5.29: бейдж = ::before «🎁 0/10» + чип «🎁 N»; длинный span скрыт везде ── */
+#mbonusBtn > span:not(.mb-free) { display: none; }
+#mbonusBtn::before { content: "🎁 " attr(data-st); font-weight: 800; color: var(--cream); font-size: 12px; }
+@media (min-width: 821px) {
+#mbonusBtn { height: 56px; padding: 0 14px; gap: 8px; justify-content: center; }
+#mbonusBtn::before { font-size: 13px; }
+#mbonusBtn .mb-free { font-size: 11px; padding: 5px 10px; }
+}
+@media (max-width: 820px) {
+#mbonusBtn { width: 64px; max-width: 64px; padding: 8px 4px; gap: 4px; }
+#mbonusBtn::before { font-size: 11px; }
+#mbonusBtn .mb-free { font-size: 9px; padding: 3px 4px; }
+}
+/* ── Ф5.31: док шапки ≥821: ширина из JS-уравнения, без капа 72px и колонки Ф5.26 ── */
+@media (min-width: 821px) {
+#mbonusBtn { width: auto; max-width: none; flex-direction: row; }
+}

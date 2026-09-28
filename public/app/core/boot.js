@@ -108,7 +108,7 @@ const b = document.getElementById('installBanner');
 if (b) {
 b.hidden = false;
 b.querySelector('span').innerHTML =
-'🍏 Нажмите <b>Поделиться</b> → <b>На экран «Домой»</b> — и приложение на рабочем столе';
+'💻 Приложение можно установить: <b>меню ⋮ → «Установить приложение»</b> — или нажмите этот баннер';
 b.querySelector('#installBtn').style.display = 'none';
 }
 }

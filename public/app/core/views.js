@@ -110,7 +110,7 @@ var rules = [
 /* coffee ≤480px: компактно, но текст «…и кофе» остаётся */
 '@media(max-width:480px){[data-brand="coffee"] .topbar .brand{gap:6px!important}[data-brand="coffee"] .topbar .brand b{font-size:16px!important}}',
 /* ≥821px (1024, 1440): кнопки по краям компактные, не гигантские */
-'@media(min-width:821px){.topbar #profileTopBtn{width:56px!important;height:56px!important;font-size:22px!important}.topbar .venueToggle{height:52px!important;font-size:15px!important;padding:0 18px!important;gap:8px!important}}',
+'@media(min-width:821px){.topbar #profileTopBtn{width:56px!important;height:56px!important;font-size:22px!important}.topbar .venueToggle{height:56px!important;font-size:15px!important;padding:0 18px!important;gap:8px!important}}',
 /* --- Шапка: марки брендов (70% ТОЛЬКО внутри ≤820px — не бьёт грид) --- */
 '[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 8px);max-height:calc(var(--topbar-h,64px) - 8px);max-width:min(60vw,420px);flex: 0 1 auto;border-radius:8px}',
 '[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}','@media(max-width:360px){[data-brand="coffee"] .topbar .brand .mark{width:32px;height:32px}}',
@@ -583,12 +583,23 @@ if (!vt) return;
 var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
 vt.innerHTML = '<span class="vt-label">Сменить заведение</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
 }
+/* ── Ф5.30: правый кластер (бонус+аватар) по ширине равен venueToggle ── */
+function syncHeaderCluster() {
+  var vt = document.getElementById('venueToggle');
+  var av = document.getElementById('profileTopBtn');
+  var mb = document.getElementById('mbonusBtn');
+  if (!vt || !av || !mb) return;
+  var inHeader = window.innerWidth > 820 && getComputedStyle(mb).position === 'static';
+  if (!inHeader || mb.style.display === 'none' || mb.hidden) { if (mb.style.width) mb.style.width = ''; return; }
+  var w = vt.offsetWidth - av.offsetWidth - 8;
+  mb.style.width = (w >= 120 ? w : 120) + 'px';
+}
+window.__syncHeaderCluster = syncHeaderCluster;
 window.__ensureVenueToggle = ensure;
-window.__labelVenueToggle = label;
+window.__labelVenueToggle = function () { label(); syncHeaderCluster(); };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensure);
 else ensure();
-setTimeout(ensure, 300);
-setTimeout(ensure, 1200);
+setTimeout(ensure, 300); setTimeout(ensure, 1200); setTimeout(window.__syncHeaderCluster, 350); setTimeout(window.__syncHeaderCluster, 1250);
 })();
 /* ========== Пуш-баббл «Включите пуши» ========== */
 (function () {
@@ -673,3 +684,7 @@ if (typeof openAuth === 'function') { openAuth(); return; }
 var m = document.getElementById('authModal');
 if (m) { m.classList.add('open'); m.style.display = 'flex'; }
 });
+/* Ф5.30: пересчёт кластера шапки */
+window.addEventListener('resize', function () { setTimeout(window.__syncHeaderCluster, 60); });
+window.addEventListener('orientationchange', function () { setTimeout(window.__syncHeaderCluster, 120); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { window.__syncHeaderCluster(); });

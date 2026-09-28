@@ -5,12 +5,12 @@
 'use strict';
 var css = document.createElement('style');
 css.textContent =
-'#scrollTopBtn{position:fixed;right:20px;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:96;width:48px;height:48px;border-radius:50%;' +
+'#scrollTopBtn{position:fixed;right:10px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:96;width:56px;height:56px;border-radius:50%;' +
 'border:1.5px solid var(--line);background:var(--card,#fff);color:var(--ink);font-size:20px;line-height:1;' +
 'display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px -8px rgba(16,20,24,.4);' +
 'opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .25s,transform .25s}' +
 '#scrollTopBtn.show{opacity:1;pointer-events:auto;transform:none}' +
-'#scrollTopBtn.low{bottom:calc(20px + env(safe-area-inset-bottom,0px))}' +
+'#scrollTopBtn.low{bottom:calc(14px + env(safe-area-inset-bottom,0px))}' +
 '#scrollTopBtn:active{transform:scale(.94)}';
 document.head.appendChild(css);
 

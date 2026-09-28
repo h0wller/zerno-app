@@ -108,7 +108,7 @@ var mf2 = document.getElementById("mbonusFree"); if (mbBtn2) mbBtn2.dataset.free
         const mbf = $("#mbonusFree");
         if (mbf) {
             mbf.hidden = me.free < 1;
-            mbf.textContent = `🎁 подарок: ${me.free}`;
+            mbf.textContent = `🎁 ${me.free}`; mbf.title = `Бесплатных кофе: ${me.free}`; /* Ф5.29 */
         }
         setTimeout(() => {
             if (me && me.qr) {

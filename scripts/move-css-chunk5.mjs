@@ -1,23 +1,15 @@
-/* Ф5.26-fix: резина шапки без дубля селектора (Правило 7 аудита).
-Удаляем отдельное правило .topbar{height:auto;…}, вставленное Ф5.26, и переносим
-резину ВНУТРЬ базового правила шапки: height:calc(…) → height:auto;min-height:calc(…).
-Поведение то же (modeSeg во 2-м ряду грида ≥821 не выливается), селектор один. */
+/* Ф5.31: шапочный док ≥821px без ограничений колонки из Ф5.26.
+max-width:72px срезал инлайн-ширину от syncHeaderCluster (уравнение краёв шапки),
+flex-direction:column ставил контент столбиком на 821–1180px.
+Оверрайд: width:auto (инлайн от JS решает), max-width:none, row-направление.
+Мобайл ≤820 не трогаем: колонка 64px из Ф5.29 остаётся продуктовым видом. */
 import fs from 'node:fs';
-const P = 'public/app/core/views.js';
-let s = fs.readFileSync(P, 'utf8');
-let changed = false;
-
-/* 1) убрать отдельное правило Ф5.26 */
-const solo = /'\.topbar\{height:auto;min-height:calc\(var\(--topbar-h,64px\) \+ env\(safe-area-inset-top,0px\)\)\}',[^\n]*\n/;
-if (solo.test(s)) { s = s.replace(solo, ''); changed = true; console.log('✅ views.js: отдельное правило .topbar удалено'); }
-else console.log('⚠️ views.js: отдельное правило не найдено (уже удалено?)');
-
-/* 2) резина внутри базового правила */
-const baseOld = "height:calc(var(--topbar-h,64px) + var(--sat, env(safe-area-inset-top,0px)));padding:var(--sat";
-const baseNew = "height:auto;min-height:calc(var(--topbar-h,64px) + var(--sat, env(safe-area-inset-top,0px)));padding:var(--sat";
-const n = (s.split(baseOld).length - 1);
-if (n === 1) { s = s.replace(baseOld, baseNew); changed = true; console.log('✅ views.js: базовое .topbar → height:auto + min-height'); }
-else if (s.includes(baseNew)) console.log('⚠️ views.js: базовое правило уже резиновое');
-else { console.error('❌ views.js: базовая декларация height шапки не найдена (вхождений: ' + n + ')'); process.exit(1); }
-
-if (changed) fs.writeFileSync(P, s);
+const TH = 'public/app/ui/theme-v2.css';
+let t = fs.readFileSync(TH, 'utf8');
+if (t.includes('Ф5.31')) { console.log('⚠️ theme-v2: блок Ф5.31 уже есть'); process.exit(0); }
+t += '/* ── Ф5.31: док шапки ≥821: ширина из JS-уравнения, без капа 72px и колонки Ф5.26 ── */\n' +
+  '@media (min-width: 821px) {\n' +
+  '#mbonusBtn { width: auto; max-width: none; flex-direction: row; }\n' +
+  '}\n';
+fs.writeFileSync(TH, t);
+console.log('✅ theme-v2: блок Ф5.31 (док шапки длиннее, по уравнению краёв)');
