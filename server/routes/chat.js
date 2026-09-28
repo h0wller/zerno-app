@@ -4,6 +4,8 @@ import { db } from '../db/connection.js';
 import { chatGuard } from '../middleware/auth.js';
 import { nowISO } from '../utils/id-time.js';
 import { sendPush } from '../services/push.js';
+import { fmtPhone } from '../utils/phone.js';
+import { APP_URL } from '../services/telegram.js';
 
 const chatRouter = Router();
 
@@ -17,10 +19,38 @@ chatRouter.post('/api/chat/send', (req, res) => {
   const human = req.body.human && isUser ? 1 : 0;
   db.prepare('INSERT INTO chat(key,who,text,ts,human,read_s) VALUES(?,?,?,?,?,0)').run(key, 'guest', text, nowISO(), human);
   db.prepare("INSERT INTO chat_meta(key,closed,ctx) VALUES(?,0,?) ON CONFLICT(key) DO UPDATE SET closed=0, ctx=excluded.ctx").run(key, ctx);
+  // [tg-staff-call-card-v1]
   if (human) {
     const roles = ctx === 'delivery' ? "('dispatch','admin')" : "('cashier','admin')";
     const staff = db.prepare(`SELECT id FROM customers WHERE role IN ${roles}`).all();
-    for (const s of staff) sendPush(s.id, ctx === 'delivery' ? '💬 Вопрос по доставке' : '💬 Вопрос по кофейне', text.slice(0, 80));
+    const cust = db.prepare('SELECT id, name, phone, tg FROM customers WHERE id=?').get(base);
+    const guestName = (cust && cust.name) ? cust.name : 'Гость';
+    const guestPhone = (cust && cust.phone) ? fmtPhone(cust.phone) : 'номер не указан';
+    const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const safeName = esc(guestName);
+    const safeText = esc(text.length > 200 ? text.slice(0, 197) + '...' : text);
+    const guestLink = (cust && cust.tg)
+      ? ('<a href="tg://user?id=' + cust.tg + '">' + safeName + '</a>')
+      : ('<b>' + safeName + '</b>');
+
+    const timeStr = new Date().toLocaleTimeString('ru-RU', {
+      timeZone: 'Europe/Kaliningrad',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const brandLabel = ctx === 'delivery' ? '🍕 Доставка' : '☕ Кофейня';
+    const title = '🔔 <b>Вызов оператора</b> · ' + brandLabel;
+    const body = '\n👤 Гость: ' + guestLink + ' (' + guestPhone + ')\n💬 Запрос: «' + safeText + '»\n⏰ Время: ' + timeStr;
+    const kb = {
+      inline_keyboard: [[
+        { text: '💬 Открыть чат в приложении', web_app: { url: (APP_URL || 'https://friday.andcoffee.online') + '/?src=tg&brand=' + ctx } }
+      ]]
+    };
+
+    for (const s of staff) {
+      sendPush(s.id, title, body, kb);
+    }
   }
   res.json({ ok: true });
 });
@@ -79,7 +109,15 @@ chatRouter.post('/api/chat/reply', chatGuard, (req, res) => {
     return res.status(403).json({ error: 'Этот чат ведёт другое заведение' });
   if (!key || !text) return res.status(400).json({ error: 'bad request' });
   db.prepare('INSERT INTO chat(key,who,text,ts,read_g) VALUES(?,?,?,?,0)').run(key, 'staff', text, nowISO());
-  if (!key.startsWith('anon-')) sendPush(key.replace(/:[cd]$/, ''), '💬 Вам ответили из «…и кофе»', text.slice(0, 80));
+  if (!key.startsWith('anon-')) {
+    const replyKb = {
+      inline_keyboard: [[
+        { text: '💬 Открыть ответ', web_app: { url: (APP_URL || 'https://friday.andcoffee.online') + '/?src=tg&brand=' + mctx + '&tab=chat&ctx=' + mctx } }
+      ]]
+    };
+    const replyTitle = mctx === 'delivery' ? '💬 Ответ поддержки · «Пятница»' : '💬 Ответ поддержки · «…и кофе»';
+    sendPush(key.replace(/:[cd]$/, ''), replyTitle, text.slice(0, 140), replyKb);
+  }
   res.json({ ok: true });
 });
 
