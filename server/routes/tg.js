@@ -12,14 +12,16 @@ const STATUS_EMOJI = { new:'🆕', accept:'✅', cook:'👨‍🍳', way:'🛵',
 const STEPS = ['new', 'accept', 'cook', 'way', 'done'];
 
 /* Inline-клавиатура для приветствия. c — customer или null. */
-function welcomeKeyboard(c) {
+function welcomeKeyboard(c) { // [tg-ux-v1]
   const rows = [
     [{ text: '☕ Кофейня — меню и штампы', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }],
     [{ text: '🍕 Пятница — доставка',     web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],
   ];
   if (c) {
-    rows.push([{ text: '🎁 Мои бонусы', callback_data: 'bonus' },
-               { text: '📦 Мои заказы', callback_data: 'orders' }]);
+    rows.push([
+      { text: '📦 Мои заказы',    web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } },
+      { text: '💬 Задать вопрос', web_app: { url: APP_URL + '/?src=tg&tab=chat&support=choose' } },
+    ]);
   } else {
     rows.push([{ text: '🔗 Привязать номер', callback_data: 'link_phone' }]);
   }
@@ -90,31 +92,16 @@ export function createTgRouter({ appKb }) {
       }
 
       /* 📦 Мои заказы */
-      if (data === 'orders') {
+      if (data === 'orders') { // [tg-ux-v1]
         const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
         if (!c) {
           await tgSend(chatId, 'Сначала привяжите номер — нажмите кнопку ниже 👇', appKb());
           return;
         }
-        const rows = db.prepare('SELECT id,no,status,total FROM orders WHERE cid=? ORDER BY no DESC LIMIT 5').all(c.id);
-        if (!rows.length) {
-          await tgSend(chatId, 'Заказов пока нет — самое время выбрать пиццу 🍕', {
-            inline_keyboard: [[{ text: '🍕 Открыть меню', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }]],
-          });
-          return;
-        }
-        for (const o of rows) {
-          const idx = STEPS.indexOf(o.status);
-          const bar = STEPS.map((s, i) => i <= idx && idx >= 0 ? '●' : '○').join('─');
-          const emoji = STATUS_EMOJI[o.status] || '•';
-          await tgSend(chatId,
-            `<b>#${o.no}</b> · ${emoji} ${ORDER_STATUS[o.status] || o.status}\n${bar}\nИтого: <b>${o.total} ₽</b>`,
-            { inline_keyboard: [
-              [{ text: '📦 Детали', web_app: { url: `${APP_URL}/?src=tg&brand=delivery&tab=orders&no=${o.no}` } }],
-              [{ text: '🔁 Повторить', callback_data: `reorder_${o.id}` }],
-            ]}
-          );
-        }
+        await tgSend(chatId,
+          '📦 Мои заказы открываются в приложении:',
+          { inline_keyboard: [[{ text: '📦 Открыть мои заказы', web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } }]] }
+        );
         return;
       }
 
@@ -301,42 +288,27 @@ export function createTgRouter({ appKb }) {
     }
 
     /* 5. /orders — список с action-кнопками */
-    if (text === '/orders') {
+    if (text === '/orders') { // [tg-ux-v1]
       const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
       if (!c) {
         await tgSend(chatId, 'Сначала привяжите профиль 👇', appKb());
         return;
       }
-      const rows = db.prepare('SELECT id,no,status,total FROM orders WHERE cid=? ORDER BY no DESC LIMIT 5').all(c.id);
-      if (!rows.length) {
-        await tgSend(chatId, 'Заказов пока нет — самое время выбрать пиццу 🍕', {
-          inline_keyboard: [[{ text: '🍕 Открыть меню', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }]],
-        });
-        return;
-      }
-      for (const o of rows) {
-        const idx = STEPS.indexOf(o.status);
-        const bar = STEPS.map((s, i) => i <= idx && idx >= 0 ? '●' : '○').join('─');
-        const emoji = STATUS_EMOJI[o.status] || '•';
-        await tgSend(chatId,
-          `<b>#${o.no}</b> · ${emoji} ${ORDER_STATUS[o.status] || o.status}\n${bar}\nИтого: <b>${o.total} ₽</b>`,
-          { inline_keyboard: [
-            [{ text: '📦 Детали', web_app: { url: `${APP_URL}/?src=tg&brand=delivery&tab=orders&no=${o.no}` } }],
-            [{ text: '🔁 Повторить', callback_data: `reorder_${o.id}` }],
-          ]}
-        );
-      }
+      await tgSend(chatId,
+        '📦 Мои заказы открываются в приложении — статусы, состав и повтор одним тапом:',
+        { inline_keyboard: [[{ text: '📦 Открыть мои заказы', web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } }]] }
+      );
       return;
     }
 
     /* 6. /help */
-    if (text === '/help') {
+    if (text === '/help') { // [tg-ux-v1]
       await tgSend(chatId,
         'Что умею:\n' +
-        '/menu — меню и заказ (открывается в приложении)\n' +
+        '/menu — меню кофейни и доставки\n' +
         '/bonus — мои штампы и подарки\n' +
         '/orders — мои заказы\n' +
-        '/start — перезапустить\n\n' +
+        '/start — главное меню\n\n' +
         'Или пишите вопрос словами — отвечу сам или позову сотрудника.',
         welcomeKeyboard(db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId))
       );
