@@ -277,6 +277,8 @@ new MutationObserver(function(){fixLcp();}).observe(document.body,{childList:tru
 
 /* ── Ф5.8g: ESM-шимы (boot/catalog/editor/menu-editor + обёртки admin-extra/delivery-search) ── */
 window.renderMenu = renderMenu;
+  if (typeof window.alignRailWithCard === 'function') setTimeout(window.alignRailWithCard, 40);
+if (typeof window.alignRailWithCard === 'function') setTimeout(window.alignRailWithCard, 0);
 window.renderRail = renderRail;
 window.openZoom = openZoom;
 window.openItemModifiersModal = openItemModifiersModal;

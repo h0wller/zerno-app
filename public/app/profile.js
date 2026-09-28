@@ -59,7 +59,34 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
     })();
 
     /* ── бонусы ── */
+    
+function updateMbonusBadge() {
+        var mbBtn = document.getElementById("mbonusBtn");
+        if (!mbBtn) return;
+        var stamps = (window.me && typeof window.me.stamps === 'number') ? window.me.stamps : 0;
+        var free = (window.me && typeof window.me.free === 'number') ? window.me.free : 0;
+        mbBtn.dataset.st = stamps + "/10";
+
+        var stNum = document.getElementById("mbonusSt");
+        if (stNum) stNum.textContent = stamps + "/10";
+
+        var beanEl = mbBtn.querySelector('.mb-bean');
+        if (beanEl && !beanEl.querySelector('svg')) {
+            beanEl.innerHTML = BEAN;
+        }
+
+        var mbf = document.getElementById("mbonusFree");
+        if (mbf) {
+            mbf.hidden = free < 1;
+            mbf.textContent = '🎁 ' + free;
+            mbf.title = 'Бесплатных кофе: ' + free;
+        }
+    }
+    window.updateMbonusBadge = updateMbonusBadge;
+
+    /* ── бонусы ── */
     function renderBonus() {
+        updateMbonusBadge();
         if (!_meResolved) {
             var noUserEl = document.getElementById('bonusNoUser');
             var boxEl = document.getElementById('bonusBox');
@@ -68,9 +95,13 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             _onMeResolved(function () { try { renderBonus(); } catch (e) {} });
             return;
         }
-        $("#bonusNoUser").hidden = !!me;
-        $("#bonusBox").hidden = !me;
+        var bnu = document.getElementById("bonusNoUser");
+        if (bnu) bnu.hidden = !!me;
+        var bbx = document.getElementById("bonusBox");
+        if (bbx) bbx.hidden = !me;
+
         if (!me) return;
+
         let h = "";
         for (let i = 0; i < 10; i++)
             h +=
@@ -79,17 +110,27 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                     : i === me.stamps && !me.free
                         ? `<div class="stamp n"></div>`
                         : `<div class="stamp e"></div>`;
-        $("#stampGrid").innerHTML = h;
-        $("#bonusProg").innerHTML =
-            me.free > 0
-                ? `У вас <b>${me.free} бесплатный(х) кофе</b> 🎉`
-                : `До бесплатного кофе: <b>${10 - me.stamps} ${cupWord(10 - me.stamps)}</b> из 10`;
-        $("#freeSlot").innerHTML =
-            me.free > 0
-                ? `<div class="freeCard"><span class="fe">🎁</span>
+        var sg = document.getElementById("stampGrid");
+        if (sg) sg.innerHTML = h;
+
+        var bp = document.getElementById("bonusProg");
+        if (bp) {
+            bp.innerHTML =
+                me.free > 0
+                    ? `У вас <b>${me.free} бесплатный(х) кофе</b> 🎉`
+                    : `До бесплатного кофе: <b>${10 - me.stamps} ${cupWord(10 - me.stamps)}</b> из 10`;
+        }
+
+        var fsEl = document.getElementById("freeSlot");
+        if (fsEl) {
+            fsEl.innerHTML =
+                me.free > 0
+                    ? `<div class="freeCard"><span class="fe">🎁</span>
 <div><b>Кофе за наш счёт ×${me.free}</b><small>Покажите этот экран кассиру</small></div></div>`
-                : "";
-        const burnBtn = $("#burnFree");
+                    : "";
+        }
+
+        const burnBtn = document.getElementById("burnFree");
         if (burnBtn)
             burnBtn.onclick = async () => {
                 try {
@@ -102,14 +143,9 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                     toast(e.message, "⚠️");
                 }
             };
-        $("#mbonusSt").textContent = `${me.stamps}/10`;
-var mbBtn2 = document.getElementById("mbonusBtn"); if (mbBtn2) mbBtn2.dataset.st = (me.stamps || 0) + "/10"; /* F5.18 */
-var mf2 = document.getElementById("mbonusFree"); if (mbBtn2) mbBtn2.dataset.free = mf2 && !mf2.hidden ? ((mf2.textContent.match(/\d+/) || [0])[0]) : "0"; /* F5.18b */
-        const mbf = $("#mbonusFree");
-        if (mbf) {
-            mbf.hidden = me.free < 1;
-            mbf.textContent = `🎁 ${me.free}`; mbf.title = `Бесплатных кофе: ${me.free}`; /* Ф5.29 */
-        }
+
+        updateMbonusBadge();
+
         setTimeout(() => {
             if (me && me.qr) {
                 const qm = document.getElementById('qrMini');

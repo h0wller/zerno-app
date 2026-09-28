@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* Плавающая кнопка «Мои бонусы» */
     var mbonusBtn = document.getElementById('mbonusBtn');
-  if (mbonusBtn && !mbonusBtn.dataset.st) mbonusBtn.dataset.st = '0/10'; /* F5.18b */
+  if (mbonusBtn && window.me && !mbonusBtn.dataset.st) mbonusBtn.dataset.st = '0/10'; /* F5.18b */
     if (mbonusBtn) {
         mbonusBtn.onclick = function () {
             if (typeof me !== 'undefined' && me) {

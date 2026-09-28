@@ -236,3 +236,5 @@ fix(js): Ф5.21/21b/21c - корзина: гард индекса, единый 
 e2e были слепы, потому что при 0 штампов вызова нет)
 
 ### [x] продуктовое решение 28.09: бейдж = элемент шапки на ≥821 (ширина кластера = venueToggle), вертикальная колонка рейла на мобиле; вопрос формы закрыт, мокап не нужен
+
+`npx repomix --remote 'https://github.com/h0wller/zerno-app/tree/pizza' --remove-empty-lines --output-show-line-numbers --compress`

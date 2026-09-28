@@ -688,3 +688,39 @@ if (m) { m.classList.add('open'); m.style.display = 'flex'; }
 window.addEventListener('resize', function () { setTimeout(window.__syncHeaderCluster, 60); });
 window.addEventListener('orientationchange', function () { setTimeout(window.__syncHeaderCluster, 120); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { window.__syncHeaderCluster(); });
+
+/* ── Ф5.38: fitSearch — мобайл-поиск во всю ширину, cascade-immune (inline) ── */
+(function () {
+  function fitSearch() {
+  /* Ф5.40: принудительная установка inline width для поиска */
+  var mhRights = document.querySelectorAll('.mh-top .mh-right');
+  for (var i = 0; i < mhRights.length; i++) {
+    if (window.innerWidth <= 820) {
+      mhRights[i].style.setProperty('width', '100%', 'important');
+      mhRights[i].style.setProperty('max-width', '100%', 'important');
+    } else {
+      mhRights[i].style.width = '';
+      mhRights[i].style.maxWidth = '';
+    }
+  }
+
+    var list = document.querySelectorAll('.mh-top .mh-right');
+    for (var i = 0; i < list.length; i++) {
+      if (window.innerWidth <= 820) list[i].style.width = '100%';
+      else list[i].style.width = '';
+    }
+  }
+  window.__fitSearch = fitSearch;
+  window.addEventListener('resize', fitSearch);
+  window.addEventListener('orientationchange', fitSearch);
+  setTimeout(fitSearch, 0); setTimeout(fitSearch, 350); setTimeout(fitSearch, 1200);
+
+/* ── Ф5.39: fitSearch после DOMContentLoaded (поиск во всю ширину) ── */
+if (typeof window.__fitSearch === 'function') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.__fitSearch);
+  } else {
+    window.__fitSearch();
+  }
+}
+})();
