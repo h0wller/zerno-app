@@ -44,11 +44,18 @@ chatRouter.post('/api/chat/send', (req, res) => {
     const body = '\n👤 Гость: ' + guestLink + ' (' + guestPhone + ')\n💬 Запрос: «' + safeText + '»\n⏰ Время: ' + timeStr;
     const kb = {
       inline_keyboard: [[
-        { text: '💬 Открыть чат в приложении', web_app: { url: (APP_URL || 'https://friday.andcoffee.online') + '/?src=tg&brand=' + ctx } }
+        { text: '💬 Открыть чат в приложении', web_app: { url: (APP_URL || 'https://friday.andcoffee.online') + '/?src=tg&brand=' + ctx + '&tab=chat&ctx=' + ctx } }
       ]]
     };
 
+    // [tg-chat-url-dedup-v1]
+    const sentTgChat = new Set();
     for (const s of staff) {
+      const sCust = db.prepare('SELECT tg FROM customers WHERE id=?').get(s.id);
+      if (sCust && sCust.tg) {
+        if (sentTgChat.has(String(sCust.tg))) continue;
+        sentTgChat.add(String(sCust.tg));
+      }
       sendPush(s.id, title, body, kb);
     }
   }

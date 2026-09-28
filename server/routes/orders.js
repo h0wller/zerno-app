@@ -43,13 +43,32 @@ export const ORDER_STATUS = {
   cancel: '❌ Отменён',
 };
 
+// [tg-chat-url-dedup-v1]
 function orderNotifyStaff(o) {
   const lines = o.items.map(i => `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${i.qty * i.price} ₽`);
   const gifts = o.gifts.map(g => `🎁 ${g.name} ×${g.qty}`);
   const timeLabel = o.is_preorder ? `⏰ ПРЕДЗАКАЗ: ${o.slot}` : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot}`;
-  const txt = `${o.name} ${o.phone}\n${o.method === 'pickup' ? '🛍 Самовывоз, Советская 38А' : '🚗 ' + o.place + ', ' + o.addr}\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n${lines.concat(gifts).join('\n')}\nИтого: ${o.total} ₽ (скидка ${o.discount} ₽, доставка ${o.fee} ₽)${o.comment ? '\n💬 ' + o.comment : ''}`;
-  const staff = db.prepare("SELECT id FROM customers WHERE role IN ('cashier','admin','dispatch')").all();
-  for (const s of staff) sendPush(s.id, o.is_preorder ? `⏰ Предзаказ #${o.no}` : `🍕 Новый заказ #${o.no}`, txt);
+  const txt = `👨‍🍳 <b>[Кухня] Заказ #${o.no}</b>\n\n👤 ${o.name} (${o.phone})\n${o.method === 'pickup' ? '🛍 Самовывоз: Советская 38А' : '🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr}\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n\n${lines.concat(gifts).join('\n')}\n\nИтого: <b>${o.total} ₽</b>${o.comment ? '\n💬 ' + o.comment : ''}`;
+
+  const staff = db.prepare("SELECT id, tg FROM customers WHERE role IN ('cashier','admin','dispatch')").all();
+  const sentTg = new Set();
+
+  // Исключаем покупателя, если он сам является сотрудником (он уже получает чек покупателя)
+  const buyer = db.prepare('SELECT tg FROM customers WHERE id=?').get(o.cid);
+  if (buyer && buyer.tg) sentTg.add(String(buyer.tg));
+
+  const base = (typeof APP_URL !== 'undefined' && APP_URL) || 'https://friday.andcoffee.online';
+  const staffKb = {
+    inline_keyboard: [[
+      { text: '📋 Открыть заказы', web_app: { url: base + '/?src=tg&brand=delivery&tab=orders' } }
+    ]]
+  };
+
+  for (const s of staff) {
+    if (!s.tg || sentTg.has(String(s.tg))) continue;
+    sentTg.add(String(s.tg));
+    sendPush(s.id, '', txt, staffKb);
+  }
   logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);
 }
 

@@ -1,14 +1,17 @@
-// scripts/fix-tg-smart-replies.mjs
-// Умные естественные ответы на вопросы гостей и точное распознавание номеров в tg.js
-// Запуск из корня проекта: node scripts/fix-tg-smart-replies.mjs
+// scripts/fix-tg-chat-url-dedup.mjs
+// 1. Исправление URL открытия чата (&tab=chat&ctx=...)
+// 2. Устранение дублей заказов у сотрудников и дедупликация TG-рассылки
+// Запуск из корня: node scripts/fix-tg-chat-url-dedup.mjs
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
-const TARGET_FILE = path.resolve('server/routes/tg.js');
-const BAK_FILE = TARGET_FILE + '.bak-smart-replies';
-const MARKER = '// [tg-smart-replies-v1]';
+const CHAT_FILE = path.resolve('server/routes/chat.js');
+const ORDERS_FILE = path.resolve('server/routes/orders.js');
+const BAK_CHAT = CHAT_FILE + '.bak-chat-url-dedup';
+const BAK_ORDERS = ORDERS_FILE + '.bak-chat-url-dedup';
+const MARKER = '// [tg-chat-url-dedup-v1]';
 
 function readNorm(P) {
   const raw = fs.readFileSync(P, 'utf8');
@@ -20,233 +23,127 @@ function writeNorm(P, content, isCRLF) {
   fs.writeFileSync(P, isCRLF ? content.replace(/\n/g, '\r\n') : content, 'utf8');
 }
 
-if (!fs.existsSync(TARGET_FILE)) {
-  console.error('Файл не найден: ' + TARGET_FILE);
+if (!fs.existsSync(CHAT_FILE)) {
+  console.error('Файл не найден: ' + CHAT_FILE);
+  process.exit(1);
+}
+if (!fs.existsSync(ORDERS_FILE)) {
+  console.error('Файл не найден: ' + ORDERS_FILE);
   process.exit(1);
 }
 
-const { content, isCRLF, raw } = readNorm(TARGET_FILE);
+const chatData = readNorm(CHAT_FILE);
+const ordersData = readNorm(ORDERS_FILE);
 
-if (content.indexOf(MARKER) !== -1) {
-  console.log('server/routes/tg.js: уже пропатчено (' + MARKER + ').');
+if (chatData.content.indexOf(MARKER) !== -1 && ordersData.content.indexOf(MARKER) !== -1) {
+  console.log('Файлы chat.js и orders.js уже пропатчены (' + MARKER + ').');
   process.exit(0);
 }
 
-// 1. Проверяем якорь импорта phone.js (добавляем ph10)
-const FROM_IMPORT = "import { fmtPhone } from '../utils/phone.js';";
-const TO_IMPORT = "import { fmtPhone, ph10 } from '../utils/phone.js';";
-if (content.split(FROM_IMPORT).length - 1 !== 1) {
-  console.error('Якорь импорта fmtPhone не найден в server/routes/tg.js.');
+// ── 1. Патч chat.js (URL чата и дедупликация вызова оператора) ──
+const FROM_CHAT_KB = "        { text: '💬 Открыть чат в приложении', web_app: { url: (APP_URL || 'https://friday.andcoffee.online') + '/?src=tg&brand=' + ctx } }";
+const TO_CHAT_KB = "        { text: '💬 Открыть чат в приложении', web_app: { url: (APP_URL || 'https://friday.andcoffee.online') + '/?src=tg&brand=' + ctx + '&tab=chat&ctx=' + ctx } }";
+
+if (chatData.content.split(FROM_CHAT_KB).length - 1 !== 1) {
+  console.error('Якорь кнопки чата не найден в server/routes/chat.js.');
   process.exit(1);
 }
 
-// 2. Проверяем блок /help
-const FROM_HELP = [
-  "    /* 6. /help */",
-  "    if (text === '/help') { // [tg-ux-v1]",
-  "      await tgSend(chatId,",
-  "        'Что умею:\\n' +",
-  "        '/menu — меню кофейни и доставки\\n' +",
-  "        '/bonus — мои штампы и подарки\\n' +",
-  "        '/orders — мои заказы\\n' +",
-  "        '/start — главное меню\\n\\n' +",
-  "        'Или пишите вопрос словами — отвечу сам или позову сотрудника.',",
-  "        welcomeKeyboard(db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId))",
-  "      );",
-  "      return;",
+const FROM_CHAT_LOOP = [
+  "    for (const s of staff) {",
+  "      sendPush(s.id, title, body, kb);",
   "    }"
 ].join('\n');
 
-if (content.split(FROM_HELP).length - 1 !== 1) {
-  console.error('Якорь блока /help не найден в server/routes/tg.js.');
-  process.exit(1);
-}
-
-const TO_HELP = [
-  "    /* 6. /help */",
-  "    if (text === '/help') { // [tg-ux-v1]",
-  "      await tgSend(chatId,",
-  "        '🤖 <b>Чем я могу помочь:</b>\\n\\n' +",
-  "        '• <b>Команды:</b>\\n' +",
-  "        '/menu — меню кофейни и доставки\\n' +",
-  "        '/bonus — мои штампы и подарки\\n' +",
-  "        '/orders — мои заказы и статус\\n' +",
-  "        '/start — главное меню\\n\\n' +",
-  "        '• <b>Или просто спросите меня словами:</b>\\n' +",
-  "        '— «Сколько у меня штампов?»\\n' +",
-  "        '— «Где мой заказ?»\\n' +",
-  "        '— «Часы работы и адрес»\\n' +",
-  "        '— «Позови оператора»',",
-  "        welcomeKeyboard(db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId))",
-  "      );",
-  "      return;",
-  "    }"
-].join('\n');
-
-// 3. Проверяем блок секции 8 (обработка текста и номеров)
-const FROM_SECTION_8 = [
-  "    /* 8. Пользователь прислал contact или текст — ищем профиль по номеру */",
-  "    const phone = u.message.contact ? u.message.contact.phone_number : text;",
-  "    const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(fmtPhone(phone));",
-  "    if (c) {",
-  "      db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);",
-  "      if (!c.welcome) {",
-  "        grantWelcome(c.id, 'Telegram');",
-  "        await tgSend(chatId, " + "`" + "✅ Готово, ${c.name}! Профиль привязан.\\n🎁 Приветственный бонус начислен: +1 штамп!" + "`" + ", welcomeKeyboard(c));",
-  "      } else {",
-  "        await tgSend(chatId, " + "`" + "✅ Готово, ${c.name}! Профиль привязан." + "`" + ", welcomeKeyboard(c));",
-  "      }",
-  "    } else if (u.message.contact) {",
-  "      tgSend(chatId,",
-  "        'Профиль с таким номером не найден ⚠️\\n\\nСоздайте его в приложении — займёт 10 секунд:',",
-  "        { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }",
-  "      );",
-  "    } else {",
-  "      /* Свободный текст без команды — мягкая подсказка */",
-  "      tgSend(chatId,",
-  "        '☕ Я бот «…и кофе» + «Пятница».\\nНажмите /start, чтобы увидеть меню, или выберите действие ниже:',",
-  "        welcomeKeyboard(db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId))",
-  "      );",
-  "    }"
-].join('\n');
-
-if (content.split(FROM_SECTION_8).length - 1 !== 1) {
-  console.error('Якорь секции 8 не найден в server/routes/tg.js.');
-  process.exit(1);
-}
-
-const TO_SECTION_8 = [
+const TO_CHAT_LOOP = [
   "    " + MARKER,
-  "    // 8. Проверка, прислан ли номер телефона (контакт или 10 цифр)",
-  "    const isPhoneInput = !!u.message.contact || (text && ph10(text).length === 10);",
-  "    if (isPhoneInput) {",
-  "      const rawPhone = u.message.contact ? u.message.contact.phone_number : text;",
-  "      const formatted = fmtPhone(rawPhone);",
-  "      const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(formatted);",
-  "      if (c) {",
-  "        db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);",
-  "        if (!c.welcome) {",
-  "          grantWelcome(c.id, 'Telegram');",
-  "          await tgSend(chatId, '✅ Готово, ' + c.name + '! Профиль привязан.\\n🎁 Приветственный бонус начислен: +1 штамп!', welcomeKeyboard(c));",
-  "        } else {",
-  "          await tgSend(chatId, '✅ Готово, ' + c.name + '! Профиль привязан.', welcomeKeyboard(c));",
-  "        }",
-  "      } else if (u.message.contact) {",
-  "        await tgSend(chatId,",
-  "          'Профиль с таким номером не найден ⚠️\\n\\nСоздайте его в приложении — займёт 10 секунд:',",
-  "          { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }",
-  "        );",
-  "      } else {",
-  "        await tgSend(chatId,",
-  "          'Профиль с номером ' + formatted + ' не найден ⚠️\\n\\nСоздайте его в приложении за 10 секунд — и получите приветственный штамп 🎁',",
-  "          { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }",
-  "        );",
+  "    const sentTgChat = new Set();",
+  "    for (const s of staff) {",
+  "      const sCust = db.prepare('SELECT tg FROM customers WHERE id=?').get(s.id);",
+  "      if (sCust && sCust.tg) {",
+  "        if (sentTgChat.has(String(sCust.tg))) continue;",
+  "        sentTgChat.add(String(sCust.tg));",
   "      }",
-  "      return;",
-  "    }",
-  "",
-  "    // 9. Умные ответы на естественные вопросы гостей",
-  "    const lower = text.toLowerCase();",
-  "",
-  "    // а) Вызов поддержки / оператора",
-  "    if (/(оператор|человек|помощь|поддержк|админ|связаться|проблем|жалоб|ошибк|позови)/i.test(lower)) {",
-  "      await tgSend(chatId, '💬 Служба заботы на связи. По какой теме вопрос?', {",
-  "        inline_keyboard: [",
-  "          [{ text: '🍕 Доставка — «Пятница»', callback_data: 'support_delivery' }],",
-  "          [{ text: '☕ Кофейня — «…и кофе»',  callback_data: 'support_coffee' }],",
-  "        ]",
-  "      });",
-  "      return;",
-  "    }",
-  "",
-  "    // б) Штампы / бонусы / бесплатный кофе",
-  "    if (/(штамп|бонус|бесплатн|подарок|зерн|зёрн|промокод|баллы|qr)/i.test(lower)) {",
-  "      const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);",
-  "      if (c) {",
-  "        const left = 10 - c.stamps;",
-  "        const line = c.free",
-  "          ? ('🎁 Бесплатных кофе: <b>' + c.free + '</b>')",
-  "          : ('До подарка: <b>' + left + '</b> ' + (left === 1 ? 'чашка' : (left >= 2 && left <= 4 ? 'чашки' : 'чашек')));",
-  "        await tgSend(chatId,",
-  "          '☕ <b>' + c.name + '</b>\\n\\n' + stampBar(c.stamps) + '\\n\\nШтампов: <b>' + c.stamps + '/10</b>\\n' + line,",
-  "          bonusKeyboard()",
-  "        );",
-  "      } else {",
-  "        await tgSend(chatId,",
-  "          '🎁 <b>Программа лояльности «…и кофе»:</b>\\n\\nКаждый 10-й кофе — бесплатно!\\nПривяжите номер телефона, чтобы видеть свои штампы и копить бонусы 👇',",
-  "          welcomeKeyboard(null)",
-  "        );",
-  "      }",
-  "      return;",
-  "    }",
-  "",
-  "    // в) Заказы / статус доставки",
-  "    if (/(заказ|где курьер|где доставка|доставк|статус заказа)/i.test(lower)) {",
-  "      await tgSend(chatId,",
-  "        '📦 Все ваши заказы со статусами и составом доступны в приложении:',",
-  "        { inline_keyboard: [[{ text: '📦 Открыть мои заказы', web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } }]] }",
-  "      );",
-  "      return;",
-  "    }",
-  "",
-  "    // г) Адрес / график работы",
-  "    if (/(где вы|адрес|находит|как добраться|время работ|режим работ|часы работ|до скольки|со скольки|янтарн)/i.test(lower)) {",
-  "      await tgSend(chatId,",
-  "        '📍 <b>Наши заведения в пгт Янтарный:</b>\\n\\n' +",
-  "        '🌊 <b>Кофейня «…и кофе»</b>\\n' +",
-  "        'Советская ул., 70г (на берегу моря)\\n' +",
-  "        '⏰ Май–сентябрь: 8:00–21:00\\n' +",
-  "        '⏰ Октябрь–апрель: 8:00–20:00\\n\\n' +",
-  "        '🍕 <b>Доставка пиццы «Пятница»</b>\\n' +",
-  "        'Советская ул., 38А\\n' +",
-  "        '⏰ Ежедневно: 11:00–22:00 (~45 мин)\\n' +",
-  "        '🛍 При самовывозе скидка −10%',",
-  "        {",
-  "          inline_keyboard: [",
-  "            [{ text: '☕ Меню кофейни', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }],",
-  "            [{ text: '🍕 Заказать доставку', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],",
-  "          ]",
-  "        }",
-  "      );",
-  "      return;",
-  "    }",
-  "",
-  "    // д) Меню / пицца / напитки",
-  "    if (/(меню|пицц|ролл|кофе|напитк|десерт)/i.test(lower)) {",
-  "      await tgSend(chatId, 'Меню открывается прямо в Telegram 🍕☕', {",
-  "        inline_keyboard: [",
-  "          [{ text: '☕ Кофейня', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }],",
-  "          [{ text: '🍕 Доставка', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],",
-  "        ]",
-  "      });",
-  "      return;",
-  "    }",
-  "",
-  "    // е) Мягкий ответ по умолчанию с кнопками действий",
-  "    const custCur = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);",
-  "    await tgSend(chatId,",
-  "      'Я подскажу по меню, заказам и бонусам 🌊\\nВыберите действие в меню ниже или напишите свой вопрос:',",
-  "      welcomeKeyboard(custCur)",
-  "    );"
+  "      sendPush(s.id, title, body, kb);",
+  "    }"
 ].join('\n');
 
-fs.writeFileSync(BAK_FILE, raw, 'utf8');
+if (chatData.content.split(FROM_CHAT_LOOP).length - 1 !== 1) {
+  console.error('Якорь цикла отправки стаффу не найден в server/routes/chat.js.');
+  process.exit(1);
+}
 
-let patched = content.split(FROM_IMPORT).join(TO_IMPORT);
-patched = patched.split(FROM_HELP).join(TO_HELP);
-patched = patched.split(FROM_SECTION_8).join(TO_SECTION_8);
+// ── 2. Патч orders.js (устранение дублей заказов) ──
+const FROM_ORDER_NOTIFY = [
+  "function orderNotifyStaff(o) {",
+  "  const lines = o.items.map(i => `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${i.qty * i.price} ₽`);",
+  "  const gifts = o.gifts.map(g => `🎁 ${g.name} ×${g.qty}`);",
+  "  const timeLabel = o.is_preorder ? `⏰ ПРЕДЗАКАЗ: ${o.slot}` : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot}`;",
+  "  const txt = `${o.name} ${o.phone}\\n${o.method === 'pickup' ? '🛍 Самовывоз, Советская 38А' : '🚗 ' + o.place + ', ' + o.addr}\\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\\n${lines.concat(gifts).join('\\n')}\\nИтого: ${o.total} ₽ (скидка ${o.discount} ₽, доставка ${o.fee} ₽)${o.comment ? '\\n💬 ' + o.comment : ''}`;",
+  "  const staff = db.prepare(\"SELECT id FROM customers WHERE role IN ('cashier','admin','dispatch')\").all();",
+  "  for (const s of staff) sendPush(s.id, o.is_preorder ? `⏰ Предзаказ #${o.no}` : `🍕 Новый заказ #${o.no}`, txt);",
+  "  logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);",
+  "}"
+].join('\n');
 
-writeNorm(TARGET_FILE, patched, isCRLF);
+if (ordersData.content.split(FROM_ORDER_NOTIFY).length - 1 !== 1) {
+  console.error('Якорь orderNotifyStaff не найден в server/routes/orders.js.');
+  process.exit(1);
+}
 
+const TO_ORDER_NOTIFY = [
+  MARKER,
+  "function orderNotifyStaff(o) {",
+  "  const lines = o.items.map(i => `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${i.qty * i.price} ₽`);",
+  "  const gifts = o.gifts.map(g => `🎁 ${g.name} ×${g.qty}`);",
+  "  const timeLabel = o.is_preorder ? `⏰ ПРЕДЗАКАЗ: ${o.slot}` : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot}`;",
+  "  const txt = `👨‍🍳 <b>[Кухня] Заказ #${o.no}</b>\\n\\n👤 ${o.name} (${o.phone})\\n${o.method === 'pickup' ? '🛍 Самовывоз: Советская 38А' : '🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr}\\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\\n\\n${lines.concat(gifts).join('\\n')}\\n\\nИтого: <b>${o.total} ₽</b>${o.comment ? '\\n💬 ' + o.comment : ''}`;",
+  "",
+  "  const staff = db.prepare(\"SELECT id, tg FROM customers WHERE role IN ('cashier','admin','dispatch')\").all();",
+  "  const sentTg = new Set();",
+  "",
+  "  // Исключаем покупателя, если он сам является сотрудником (он уже получает чек покупателя)",
+  "  const buyer = db.prepare('SELECT tg FROM customers WHERE id=?').get(o.cid);",
+  "  if (buyer && buyer.tg) sentTg.add(String(buyer.tg));",
+  "",
+  "  const base = (typeof APP_URL !== 'undefined' && APP_URL) || 'https://friday.andcoffee.online';",
+  "  const staffKb = {",
+  "    inline_keyboard: [[",
+  "      { text: '📋 Открыть заказы', web_app: { url: base + '/?src=tg&brand=delivery&tab=orders' } }",
+  "    ]]",
+  "  };",
+  "",
+  "  for (const s of staff) {",
+  "    if (!s.tg || sentTg.has(String(s.tg))) continue;",
+  "    sentTg.add(String(s.tg));",
+  "    sendPush(s.id, '', txt, staffKb);",
+  "  }",
+  "  logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);",
+  "}"
+].join('\n');
+
+// ── Применение патчей и бэкапы ──
+fs.writeFileSync(BAK_CHAT, chatData.raw, 'utf8');
+let patchedChat = chatData.content.split(FROM_CHAT_KB).join(TO_CHAT_KB);
+patchedChat = patchedChat.split(FROM_CHAT_LOOP).join(TO_CHAT_LOOP);
+writeNorm(CHAT_FILE, patchedChat, chatData.isCRLF);
+
+fs.writeFileSync(BAK_ORDERS, ordersData.raw, 'utf8');
+let patchedOrders = ordersData.content.split(FROM_ORDER_NOTIFY).join(TO_ORDER_NOTIFY);
+writeNorm(ORDERS_FILE, patchedOrders, ordersData.isCRLF);
+
+// ── Проверка синтаксиса ──
 try {
-  execSync('node --check ' + TARGET_FILE, { stdio: 'pipe' });
-  console.log('Синтаксис корректен (node --check passed).');
+  execSync('node --check ' + CHAT_FILE, { stdio: 'pipe' });
+  execSync('node --check ' + ORDERS_FILE, { stdio: 'pipe' });
+  console.log('Синтаксис обоих файлов корректен (node --check passed).');
 } catch (e) {
   console.error('Синтаксис сломан:');
   console.error((e.stderr || '').toString());
-  fs.writeFileSync(TARGET_FILE, raw, 'utf8');
+  fs.writeFileSync(CHAT_FILE, chatData.raw, 'utf8');
+  fs.writeFileSync(ORDERS_FILE, ordersData.raw, 'utf8');
   process.exit(1);
 }
 
-console.log('Успешно: умные ответы и строгая проверка телефонов добавлены в tg.js.');
-console.log('Бэкап: ' + BAK_FILE);
+console.log('Успешно: URL чата исправлен, дубли заказов устранены.');
+console.log('Бэкапы: ' + BAK_CHAT + ', ' + BAK_ORDERS);
