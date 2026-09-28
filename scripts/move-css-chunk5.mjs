@@ -1,16 +1,14 @@
-// scripts/fix-tg-client-auth.mjs
-// Автоматический вход и регистрация через Telegram initData в PWA
-// Запуск из корня: node scripts/fix-tg-client-auth.mjs
+// scripts/fix-tg-order-receipt.mjs
+// Мгновенный Telegram-чек гостю при создании заказа + повтор/отзыв при статусе "Выполнен"
+// Запуск из корня: node scripts/fix-tg-order-receipt.mjs
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
-const AUTH_FILE = path.resolve('public/app/core/auth.js');
-const SW_FILE = path.resolve('public/sw.js');
-const BAK_AUTH = AUTH_FILE + '.bak-tg-auth';
-const BAK_SW = SW_FILE + '.bak-tg-auth';
-const MARKER = '// [tg-initdata-fast-auth-v1]';
+const TARGET_FILE = path.resolve('server/routes/orders.js');
+const BAK_FILE = TARGET_FILE + '.bak-order-receipt';
+const MARKER = '// [tg-order-receipt-v1]';
 
 function readNorm(P) {
   const raw = fs.readFileSync(P, 'utf8');
@@ -22,143 +20,113 @@ function writeNorm(P, content, isCRLF) {
   fs.writeFileSync(P, isCRLF ? content.replace(/\n/g, '\r\n') : content, 'utf8');
 }
 
-if (!fs.existsSync(AUTH_FILE)) {
-  console.error('Файл не найден: ' + AUTH_FILE);
-  process.exit(1);
-}
-if (!fs.existsSync(SW_FILE)) {
-  console.error('Файл не найден: ' + SW_FILE);
+if (!fs.existsSync(TARGET_FILE)) {
+  console.error('Файл не найден: ' + TARGET_FILE);
   process.exit(1);
 }
 
-const authData = readNorm(AUTH_FILE);
-if (authData.content.indexOf(MARKER) !== -1) {
-  console.log('public/app/core/auth.js: уже пропатчено (' + MARKER + ').');
+const { content, isCRLF, raw } = readNorm(TARGET_FILE);
+
+if (content.indexOf(MARKER) !== -1) {
+  console.log('server/routes/orders.js: уже пропатчено (' + MARKER + ').');
   process.exit(0);
 }
 
-// 1. Якорь в DOMContentLoaded для функции авто-логина
-const FROM_DOM = "  /* ── Инициализация слушателей при загрузке DOM ── */\n  document.addEventListener('DOMContentLoaded', function () {";
-const TO_DOM = [
-  "  /* ── Инициализация слушателей при загрузке DOM ── */",
-  "  document.addEventListener('DOMContentLoaded', function () {",
-  "    " + MARKER,
-  "    async function checkTgAutoLogin() {",
-  "      if (localStorage.getItem('zt_user')) return;",
-  "      var tg = window.Telegram && window.Telegram.WebApp;",
-  "      var initData = tg && tg.initData;",
-  "      if (!initData) return;",
-  "      try {",
-  "        if (typeof tg.ready === 'function') tg.ready();",
-  "        var r = await api('/auth/tg-link', {",
-  "          method: 'POST',",
-  "          body: { initData: initData }",
-  "        });",
-  "        if (r && r.token && r.customer) {",
-  "          setUser(r.token, r.customer);",
-  "          if (typeof renderAll === 'function') renderAll();",
-  "          if (typeof toast === 'function') toast('Вход выполнен через Telegram', '🤖');",
-  "          closeAuth();",
-  "        } else if (r && r.needPhone) {",
-  "          window.__tgInitData = initData;",
-  "          window.__tgUser = r.tgUser;",
-  "          var rn = document.getElementById('regName');",
-  "          if (rn && !rn.value && r.tgUser && r.tgUser.name) rn.value = r.tgUser.name;",
-  "          var rtb = document.getElementById('regTgBtn');",
-  "          if (rtb) rtb.style.display = 'none';",
-  "        }",
-  "      } catch (_) {}",
-  "    }",
-  "    checkTgAutoLogin();"
+// 1. Проверяем якорь orderNotifyStaff
+const FROM_NOTIFY = [
+  "  orderNotifyStaff(o);",
+  "  res.json({ order: o });"
 ].join('\n');
 
-if (authData.content.split(FROM_DOM).length - 1 !== 1) {
-  console.error('Якорь DOMContentLoaded не найден в public/app/core/auth.js.');
+if (content.split(FROM_NOTIFY).length - 1 !== 1) {
+  console.error('Якорь orderNotifyStaff не найден в server/routes/orders.js.');
   process.exit(1);
 }
 
-// 2. Якорь в regBtn.onclick для перехвата регистрации через TG
-const FROM_REG = "        if (!/^\\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');\n\n        try {\n          var r = await api('/auth/register', {";
-const TO_REG = [
-  "        if (!/^\\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');",
-  "",
-  "        if (window.__tgInitData) {",
-  "          try {",
-  "            var rTg = await api('/auth/tg-link', {",
-  "              method: 'POST',",
-  "              body: { initData: window.__tgInitData, phone: phone, name: name, pin: pin }",
-  "            });",
-  "            if (rTg && rTg.token && rTg.customer) {",
-  "              setUser(rTg.token, rTg.customer);",
-  "              closeAuth();",
-  "              if (typeof renderAll === 'function') renderAll();",
-  "              toast(rTg.isNew ? 'Профиль создан! +1 штамп ваш 🎁' : 'Профиль привязан к Telegram ✅', '🎉');",
-  "              return;",
-  "            }",
-  "          } catch (errTg) {",
-  "            if (errTg.code === 409) {",
-  "              toast('Номер уже зарегистрирован — входим', '🔗');",
-  "              var lpTg = document.getElementById('logPhone');",
-  "              if (lpTg) lpTg.value = fmtPhone(phone);",
-  "              authSwap(true);",
-  "              return;",
-  "            }",
-  "            toast(errTg.message || 'Ошибка регистрации через Telegram', '⚠️');",
-  "            return;",
-  "          }",
-  "        }",
-  "",
-  "        try {",
-  "          var r = await api('/auth/register', {"
+const TO_NOTIFY = [
+  "  orderNotifyStaff(o);",
+  "  orderNotifyCustomer(o);",
+  "  res.json({ order: o });"
 ].join('\n');
 
-if (authData.content.split(FROM_REG).length - 1 !== 1) {
-  console.error('Якорь regBtn.onclick не найден в public/app/core/auth.js.');
+// 2. Вставляем функцию orderNotifyCustomer перед роутом создания заказа
+const FROM_POST_ROUTE = "ordersRouter.post('/api/orders', userGuard, (req, res) => {";
+if (content.split(FROM_POST_ROUTE).length - 1 !== 1) {
+  console.error('Якорь роута POST /api/orders не найден в server/routes/orders.js.');
   process.exit(1);
 }
 
-// 3. Бэкап и замена auth.js
-fs.writeFileSync(BAK_AUTH, authData.raw, 'utf8');
-let patchedAuth = authData.content.split(FROM_DOM).join(TO_DOM);
-patchedAuth = patchedAuth.split(FROM_REG).join(TO_REG);
-writeNorm(AUTH_FILE, patchedAuth, authData.isCRLF);
+const TO_POST_ROUTE = [
+  MARKER,
+  "function orderNotifyCustomer(o) {",
+  "  try {",
+  "    const isPickup = o.method === 'pickup';",
+  "    const timeLabel = o.is_preorder ? ('⏰ Предзаказ на: <b>' + o.slot + '</b>') : '⏰ Доставка: ~45 мин';",
+  "    const dest = isPickup ? '🛍 Самовывоз: ул. Советская, 38А' : ('🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr);",
+  "    const lines = (o.items || []).map(i => '• ' + i.name + (i.opt ? ' (' + i.opt + ')' : '') + ' × ' + i.qty).join('\\n');",
+  "    const gifts = (o.gifts || []).map(g => '🎁 ' + g.name + ' × ' + g.qty).join('\\n');",
+  "    const itemsText = gifts ? (lines + '\\n' + gifts) : lines;",
+  "    const payText = o.pay === 'cash' ? 'наличные' : 'картой при получении';",
+  "",
+  "    const text =",
+  "      '🍕 <b>Заказ #' + o.no + ' принят!</b>\\n\\n' +",
+  "      itemsText + '\\n\\n' +",
+  "      'Итого: <b>' + o.total + ' ₽</b> · 💳 ' + payText + '\\n' +",
+  "      dest + '\\n' + timeLabel + '\\n\\n' +",
+  "      'Мы уже передали заказ на кухню. Статус обновится здесь автоматически 👇';",
+  "",
+  "    const kb = typeof orderActionKb === 'function' ? orderActionKb(o.no) : undefined;",
+  "    sendPush(o.cid, '', text, kb);",
+  "  } catch (err) {",
+  "    console.error('[orders] orderNotifyCustomer error:', err.message);",
+  "  }",
+  "}",
+  "",
+  "ordersRouter.post('/api/orders', userGuard, (req, res) => {"
+].join('\n');
+
+// 3. Обновляем статусную отправку в /status (для статуса 'done' отдаём кнопки повтора и отзыва)
+const FROM_STATUS_SEND = "  sendPush(o.cid, `🍕 Заказ #${o.no}`,\n    ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''),\n    orderActionKb(o.no));";
+
+if (content.split(FROM_STATUS_SEND).length - 1 !== 1) {
+  console.error('Якорь строки sendPush в роуте status не найден в server/routes/orders.js.');
+  process.exit(1);
+}
+
+const TO_STATUS_SEND = [
+  "  const isDone = s === 'done';",
+  "  const base = (typeof APP_URL !== 'undefined' && APP_URL) || (typeof WEBAPP_URL !== 'undefined' && WEBAPP_URL) || 'https://friday.andcoffee.online';",
+  "  const doneKb = {",
+  "    inline_keyboard: [",
+  "      [{ text: '🔁 Повторить заказ', web_app: { url: base + '/?src=tg&brand=delivery&reorder=' + o.id } }],",
+  "      [{ text: '⭐ Оставить отзыв', web_app: { url: base + '/?src=tg&brand=delivery&tab=profile' } }],",
+  "    ]",
+  "  };",
+  "  const kb = isDone ? doneKb : orderActionKb(o.no);",
+  "  const msgTitle = isDone ? '' : ('🍕 Заказ #' + o.no);",
+  "  const msgBody = isDone",
+  "    ? ('🏁 <b>Заказ #' + o.no + ' выполнен!</b>\\n\\nПриятного аппетита! Спасибо, что выбираете нас 🍕\\nБудем рады вашему отзыву или новому заказу 👇')",
+  "    : (ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''));",
+  "  sendPush(o.cid, msgTitle, msgBody, kb);"
+].join('\n');
+
+fs.writeFileSync(BAK_FILE, raw, 'utf8');
+
+let patched = content.split(FROM_POST_ROUTE).join(TO_POST_ROUTE);
+patched = patched.split(FROM_NOTIFY).join(TO_NOTIFY);
+patched = patched.split(FROM_STATUS_SEND).join(TO_STATUS_SEND);
+
+writeNorm(TARGET_FILE, patched, isCRLF);
 
 try {
-  execSync('node --check ' + AUTH_FILE, { stdio: 'pipe' });
-  console.log('Синтаксис auth.js корректен (node --check passed).');
+  execSync('node --check ' + TARGET_FILE, { stdio: 'pipe' });
+  console.log('Синтаксис корректен (node --check passed).');
 } catch (e) {
-  console.error('Синтаксис auth.js сломан:');
+  console.error('Синтаксис сломан:');
   console.error((e.stderr || '').toString());
-  fs.writeFileSync(AUTH_FILE, authData.raw, 'utf8');
+  fs.writeFileSync(TARGET_FILE, raw, 'utf8');
   process.exit(1);
 }
 
-// 4. Инкремент STATIC_CACHE в sw.js
-const swData = readNorm(SW_FILE);
-const swMatch = swData.content.match(/zerno-static-v(\d+)/);
-if (!swMatch) {
-  console.error('Не найден токен STATIC_CACHE в public/sw.js.');
-  fs.writeFileSync(AUTH_FILE, authData.raw, 'utf8');
-  process.exit(1);
-}
-
-const oldVer = swMatch[0];
-const newVer = 'zerno-static-v' + (parseInt(swMatch[1], 10) + 1);
-const patchedSw = swData.content.replace(oldVer, newVer);
-
-fs.writeFileSync(BAK_SW, swData.raw, 'utf8');
-writeNorm(SW_FILE, patchedSw, swData.isCRLF);
-
-try {
-  execSync('node --check ' + SW_FILE, { stdio: 'pipe' });
-  console.log('Синтаксис sw.js корректен. Версия кэша: ' + oldVer + ' → ' + newVer);
-} catch (e) {
-  console.error('Синтаксис sw.js сломан:');
-  console.error((e.stderr || '').toString());
-  fs.writeFileSync(AUTH_FILE, authData.raw, 'utf8');
-  fs.writeFileSync(SW_FILE, swData.raw, 'utf8');
-  process.exit(1);
-}
-
-console.log('Успешно: клиентский auth.js подключён к initData, sw.js обновлён.');
-console.log('Бэкапы: ' + BAK_AUTH + ', ' + BAK_SW);
+console.log('Успешно: чеки заказов и статус завершения обновлены в orders.js.');
+console.log('Бэкап: ' + BAK_FILE);

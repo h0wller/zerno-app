@@ -104,6 +104,31 @@ ordersRouter.get('/api/delivery/addr', (req, res) => {
 });
 
 /* ── заказы ── */
+// [tg-order-receipt-v1]
+function orderNotifyCustomer(o) {
+  try {
+    const isPickup = o.method === 'pickup';
+    const timeLabel = o.is_preorder ? ('⏰ Предзаказ на: <b>' + o.slot + '</b>') : '⏰ Доставка: ~45 мин';
+    const dest = isPickup ? '🛍 Самовывоз: ул. Советская, 38А' : ('🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr);
+    const lines = (o.items || []).map(i => '• ' + i.name + (i.opt ? ' (' + i.opt + ')' : '') + ' × ' + i.qty).join('\n');
+    const gifts = (o.gifts || []).map(g => '🎁 ' + g.name + ' × ' + g.qty).join('\n');
+    const itemsText = gifts ? (lines + '\n' + gifts) : lines;
+    const payText = o.pay === 'cash' ? 'наличные' : 'картой при получении';
+
+    const text =
+      '🍕 <b>Заказ #' + o.no + ' принят!</b>\n\n' +
+      itemsText + '\n\n' +
+      'Итого: <b>' + o.total + ' ₽</b> · 💳 ' + payText + '\n' +
+      dest + '\n' + timeLabel + '\n\n' +
+      'Мы уже передали заказ на кухню. Статус обновится здесь автоматически 👇';
+
+    const kb = typeof orderActionKb === 'function' ? orderActionKb(o.no) : undefined;
+    sendPush(o.cid, '', text, kb);
+  } catch (err) {
+    console.error('[orders] orderNotifyCustomer error:', err.message);
+  }
+}
+
 ordersRouter.post('/api/orders', userGuard, (req, res) => {
   const b = req.body || {};
   const method = b.method === 'pickup' ? 'pickup' : 'delivery';
@@ -229,6 +254,7 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     JSON.stringify(o.items), o.total, o.discount, o.fee, JSON.stringify(o.gifts), o.is_preorder, o.preorder_date, o.status, o.created, o.updated);
   
   orderNotifyStaff(o);
+  orderNotifyCustomer(o);
   res.json({ order: o });
 });
 
@@ -261,9 +287,20 @@ ordersRouter.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
   const o = db.prepare('SELECT * FROM orders WHERE id=?').get(req.params.id);
   if (!o) return res.status(404).json({ error: 'Заказ не найден' });
   db.prepare('UPDATE orders SET status=?, updated=? WHERE id=?').run(s, nowISO(), o.id);
-  sendPush(o.cid, `🍕 Заказ #${o.no}`,
-    ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''),
-    orderActionKb(o.no));
+  const isDone = s === 'done';
+  const base = (typeof APP_URL !== 'undefined' && APP_URL) || (typeof WEBAPP_URL !== 'undefined' && WEBAPP_URL) || 'https://friday.andcoffee.online';
+  const doneKb = {
+    inline_keyboard: [
+      [{ text: '🔁 Повторить заказ', web_app: { url: base + '/?src=tg&brand=delivery&reorder=' + o.id } }],
+      [{ text: '⭐ Оставить отзыв', web_app: { url: base + '/?src=tg&brand=delivery&tab=profile' } }],
+    ]
+  };
+  const kb = isDone ? doneKb : orderActionKb(o.no);
+  const msgTitle = isDone ? '' : ('🍕 Заказ #' + o.no);
+  const msgBody = isDone
+    ? ('🏁 <b>Заказ #' + o.no + ' выполнен!</b>\n\nПриятного аппетита! Спасибо, что выбираете нас 🍕\nБудем рады вашему отзыву или новому заказу 👇')
+    : (ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''));
+  sendPush(o.cid, msgTitle, msgBody, kb);
   logEv(req.user.name, `заказ #${o.no} → ${s}`);
   res.json({ ok: true });
 });
