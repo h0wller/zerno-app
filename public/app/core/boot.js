@@ -40,7 +40,8 @@ if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
 showBadge();
 initChatPointer();
 maybeAskReview();
-if (!onboarded) setTimeout(() => openAuth(false), 600);
+const _qsSrc = new URLSearchParams(location.search).get("src");
+if (!onboarded && _qsSrc !== "tg") setTimeout(() => openAuth(false), 600);
 }
 
 /* ── 3. Service Worker: ЕДИНАЯ регистрация (F3.58, дедупликация двух инлайн-блоков).
