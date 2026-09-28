@@ -1,14 +1,14 @@
-// scripts/fix-tg-push-logging.mjs
-// Логирование и прозрачная обработка ошибок отправки в push.js
-// Запуск из корня: node scripts/fix-tg-push-logging.mjs
+// scripts/fix-tg-order-buttons.mjs
+// Интерактивные inline-кнопки (детали заказа + чат) в уведомлениях orders.js
+// Запуск из корня: node scripts/fix-tg-order-buttons.mjs
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
-const TARGET_FILE = path.resolve('server/services/push.js');
-const BAK_FILE = TARGET_FILE + '.bak-push-logging';
-const MARKER = '// [tg-push-logging-v1]';
+const TARGET_FILE = path.resolve('server/routes/orders.js');
+const BAK_FILE = TARGET_FILE + '.bak-order-buttons';
+const MARKER = '// [tg-order-buttons-v1]';
 
 function readNorm(P) {
   const raw = fs.readFileSync(P, 'utf8');
@@ -28,107 +28,54 @@ if (!fs.existsSync(TARGET_FILE)) {
 const { content, isCRLF, raw } = readNorm(TARGET_FILE);
 
 if (content.indexOf(MARKER) !== -1) {
-  console.log('server/services/push.js: уже пропатчено (' + MARKER + ').');
+  console.log('server/routes/orders.js: уже пропатчено (' + MARKER + ').');
   process.exit(0);
 }
 
-const FROM_BLOCK = [
-  "export async function sendTg(cid, title, body, markup) {",
-  "  const c = db.prepare('SELECT tg FROM customers WHERE id=?').get(cid);",
-  "  if (c && c.tg) await tgSend(c.tg, " + "`" + "${" + "title}\\n${" + "body}`" + ", markup);",
-  "}",
-  "",
-  "export async function sendPush(cid, title, body, markup) {",
-  "  const c = db.prepare('SELECT tg, notify_tg, notify_web FROM customers WHERE id=?').get(cid);",
-  "  const wantTg = !c || c.notify_tg !== 0;",
-  "  const wantWeb = !c || c.notify_web !== 0;",
-  "",
-  "  if (wantTg) sendTg(cid, title, body, markup).catch(() => {});",
-  "",
-  "  if (wantWeb) {",
-  "    sendFcm(cid, title, body).catch(() => {});",
-  "    const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);",
-  "    for (const r of rows) {",
-  "      try {",
-  "        await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body }));",
-  "      } catch (e) {",
-  "        if (e.statusCode === 404 || e.statusCode === 410) {",
-  "          db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub);",
-  "        }",
-  "      }",
-  "    }",
-  "  }",
-  "  return { ok: true };",
-  "}"
-].join('\n');
-
-const count = content.split(FROM_BLOCK).length - 1;
-if (count !== 1) {
-  console.error('Ошибка: целевой блок функции sendTg/sendPush не найден ровно 1 раз (найдено: ' + count + ').');
+// 1. Проверяем якорь импорта APP_URL
+const FROM_IMPORT = "import { tgSend, TG_CHANNEL } from '../services/telegram.js';";
+const TO_IMPORT = "import { tgSend, TG_CHANNEL, APP_URL } from '../services/telegram.js';";
+if (content.split(FROM_IMPORT).length - 1 !== 1) {
+  console.error('Якорь импорта telegram.js не найден или неоднозначен.');
   process.exit(1);
 }
 
-const TO_BLOCK = [
+// 2. Проверяем точку вставки хелпера кнопок перед роутом /status
+const FROM_ROUTE = "ordersRouter.post('/api/orders/:id/status', dispatchGuard, (req, res) => {";
+const TO_ROUTE = [
   MARKER,
-  "export async function sendTg(cid, title, body, markup) {",
-  "  try {",
-  "    const c = db.prepare('SELECT id, tg FROM customers WHERE id=?').get(cid);",
-  "    if (!c || !c.tg) {",
-  "      console.log('[push] tg skip: cid=' + cid + ' (нет привязанного Telegram)');",
-  "      return { ok: false, reason: 'no_tg' };",
-  "    }",
-  "    const text = title ? (title + '\\n' + body) : body;",
-  "    await tgSend(c.tg, text, markup);",
-  "    console.log('[push] tg ok: cid=' + cid + ' tg=' + c.tg + ' title=\"' + (title || '') + '\"');",
-  "    return { ok: true };",
-  "  } catch (err) {",
-  "    console.error('[push] tg ERR for cid=' + cid + ':', err.message);",
-  "    return { ok: false, error: err.message };",
-  "  }",
+  "function orderActionKb(no) {",
+  "  const base = APP_URL || WEBAPP_URL || 'https://friday.andcoffee.online';",
+  "  return {",
+  "    inline_keyboard: [",
+  "      [{ text: '📦 Детали заказа #' + no, web_app: { url: base + '/?src=tg&brand=delivery&tab=orders&no=' + no } }],",
+  "      [{ text: '💬 Чат с поддержкой', web_app: { url: base + '/?src=tg&brand=delivery&tab=chat&ctx=delivery' } }],",
+  "    ]",
+  "  };",
   "}",
   "",
-  "export async function sendPush(cid, title, body, markup) {",
-  "  try {",
-  "    const c = db.prepare('SELECT tg, notify_tg, notify_web FROM customers WHERE id=?').get(cid);",
-  "    const wantTg = !c || c.notify_tg !== 0;",
-  "    const wantWeb = !c || c.notify_web !== 0;",
-  "",
-  "    if (wantTg) {",
-  "      await sendTg(cid, title, body, markup).catch(e => {",
-  "        console.error('[push] sendTg unhandled for cid=' + cid + ':', e.message);",
-  "      });",
-  "    } else {",
-  "      console.log('[push] tg skip: notify_tg выключен у cid=' + cid);",
-  "    }",
-  "",
-  "    if (wantWeb) {",
-  "      sendFcm(cid, title, body).catch(e => {",
-  "        console.error('[push] sendFcm err cid=' + cid + ':', e.message);",
-  "      });",
-  "      const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);",
-  "      for (const r of rows) {",
-  "        try {",
-  "          await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body }));",
-  "        } catch (e) {",
-  "          if (e.statusCode === 404 || e.statusCode === 410) {",
-  "            console.log('[push] webpush sub expired (удаляем): cid=' + cid);",
-  "            db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub);",
-  "          } else {",
-  "            console.error('[push] webpush send err cid=' + cid + ':', e.message);",
-  "          }",
-  "        }",
-  "      }",
-  "    }",
-  "    return { ok: true };",
-  "  } catch (err) {",
-  "    console.error('[push] sendPush fatal err for cid=' + cid + ':', err.message);",
-  "    return { ok: false, error: err.message };",
-  "  }",
-  "}"
+  "ordersRouter.post('/api/orders/:id/status', dispatchGuard, (req, res) => {"
 ].join('\n');
+if (content.split(FROM_ROUTE).length - 1 !== 1) {
+  console.error('Якорь роута orders /status не найден или неоднозначен.');
+  process.exit(1);
+}
+
+// 3. Проверяем старый шаблон кнопки (должен встречаться ровно 3 раза: статус, задержка, общая задержка)
+const FROM_KB = "{ inline_keyboard: [[{ text: '📦 Открыть заказ', web_app: { url: WEBAPP_URL + '/?src=tg&tab=orders&no=' + o.no } }]] }";
+const TO_KB = "orderActionKb(o.no)";
+const kbCount = content.split(FROM_KB).length - 1;
+if (kbCount !== 3) {
+  console.error('Ошибка: старый блок inline_keyboard найден ' + kbCount + ' раз вместо 3.');
+  process.exit(1);
+}
 
 fs.writeFileSync(BAK_FILE, raw, 'utf8');
-const patched = content.split(FROM_BLOCK).join(TO_BLOCK);
+
+let patched = content.split(FROM_IMPORT).join(TO_IMPORT);
+patched = patched.split(FROM_ROUTE).join(TO_ROUTE);
+patched = patched.split(FROM_KB).join(TO_KB);
+
 writeNorm(TARGET_FILE, patched, isCRLF);
 
 try {
@@ -141,5 +88,5 @@ try {
   process.exit(1);
 }
 
-console.log('Успешно: логирование push.js обновлено.');
+console.log('Успешно: интерактивные кнопки добавлены в orders.js.');
 console.log('Бэкап: ' + BAK_FILE);

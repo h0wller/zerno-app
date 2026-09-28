@@ -5,7 +5,7 @@ import { userGuard, adminGuard, dispatchGuard } from '../middleware/auth.js';
 import { logEv } from '../domain/helpers.js';
 import { nowISO, uid } from '../utils/id-time.js';
 import { sendPush } from '../services/push.js';
-import { tgSend, TG_CHANNEL } from '../services/telegram.js';
+import { tgSend, TG_CHANNEL, APP_URL } from '../services/telegram.js';
 import { getStreetSuggestions, validateDeliveryAddress } from '../domain/address.js';
 
 const ordersRouter = Router();
@@ -244,6 +244,17 @@ ordersRouter.get('/api/orders', dispatchGuard, (req, res) => {
   res.json({ orders: rows.map(o => ({ ...o, items: JSON.parse(o.items || '[]'), gifts: JSON.parse(o.gifts || '[]') })) });
 });
 
+// [tg-order-buttons-v1]
+function orderActionKb(no) {
+  const base = APP_URL || WEBAPP_URL || 'https://friday.andcoffee.online';
+  return {
+    inline_keyboard: [
+      [{ text: '📦 Детали заказа #' + no, web_app: { url: base + '/?src=tg&brand=delivery&tab=orders&no=' + no } }],
+      [{ text: '💬 Чат с поддержкой', web_app: { url: base + '/?src=tg&brand=delivery&tab=chat&ctx=delivery' } }],
+    ]
+  };
+}
+
 ordersRouter.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
   const s = String(req.body.status || '');
   if (!ORDER_STATUS[s]) return res.status(400).json({ error: 'Неизвестный статус' });
@@ -252,7 +263,7 @@ ordersRouter.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
   db.prepare('UPDATE orders SET status=?, updated=? WHERE id=?').run(s, nowISO(), o.id);
   sendPush(o.cid, `🍕 Заказ #${o.no}`,
     ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''),
-    { inline_keyboard: [[{ text: '📦 Открыть заказ', web_app: { url: WEBAPP_URL + '/?src=tg&tab=orders&no=' + o.no } }]] });
+    orderActionKb(o.no));
   logEv(req.user.name, `заказ #${o.no} → ${s}`);
   res.json({ ok: true });
 });
@@ -266,7 +277,7 @@ ordersRouter.post('/api/orders/:id/delay', dispatchGuard, (req, res) => {
   db.prepare('UPDATE orders SET eta=?, updated=? WHERE id=?').run(min ? `+${min} мин` : '', nowISO(), o.id);
   sendPush(o.cid, '🛵 Время доставки обновлено',
     `Заказ #${o.no}: задерживаем на +${min} мин.${comment ? ' Причина: ' + comment : ''} Спасибо, что ждёте!`,
-    { inline_keyboard: [[{ text: '📦 Открыть заказ', web_app: { url: WEBAPP_URL + '/?src=tg&tab=orders&no=' + o.no } }]] });
+    orderActionKb(o.no));
   logEv(req.user.name, `заказ #${o.no} задержка +${min} мин`);
   res.json({ ok: true });
 });
@@ -279,7 +290,7 @@ ordersRouter.post('/api/orders/delay-all', dispatchGuard, (req, res) => {
     db.prepare('UPDATE orders SET eta=?, updated=? WHERE id=?').run(min ? `+${min} мин` : '', nowISO(), o.id);
     sendPush(o.cid, '🛵 Время доставки обновлено',
       `Заказ #${o.no}: задерживаем на +${min} мин.${comment ? ' Причина: ' + comment : ''} Спасибо, что ждёте!`,
-      { inline_keyboard: [[{ text: '📦 Открыть заказ', web_app: { url: WEBAPP_URL + '/?src=tg&tab=orders&no=' + o.no } }]] });
+      orderActionKb(o.no));
   }
   logEv(req.user.name, `задержка всем +${min} мин (${rows.length})`);
   res.json({ ok: true, count: rows.length });
