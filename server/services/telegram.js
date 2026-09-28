@@ -37,8 +37,11 @@ export async function tgEnsureWebhook() {
   const want = PUBLIC_URL + '/api/tg/webhook';
   try {
     const info = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/getWebhookInfo`).then(r => r.json());
-    if (info.ok && info.result && info.result.url === want) { console.log('[tg] webhook уже наш:', want); return; }
-    const body = { url: want, allowed_updates: ['message'] };
+    // [tg-ensure-webhook-allowed-updates-v1]
+    const hasUpdates = Array.isArray(info.result?.allowed_updates) &&
+      ['message', 'callback_query', 'edited_message'].every(x => info.result.allowed_updates.includes(x));
+    if (info.ok && info.result && info.result.url === want && hasUpdates) { console.log('[tg] webhook уже наш и актуален:', want); return; }
+    const body = { url: want, allowed_updates: ['message', 'callback_query', 'edited_message'] };
     if (TG_WEBHOOK_SECRET) body.secret_token = TG_WEBHOOK_SECRET;
     const set = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/setWebhook`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
