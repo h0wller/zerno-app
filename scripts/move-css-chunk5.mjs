@@ -1,14 +1,14 @@
-// scripts/fix-tg-staff-call.mjs
-// Форматированная карточка вызова сотрудника с контактами гостя и WebApp-кнопкой
-// Запуск из корня: node scripts/fix-tg-staff-call.mjs
+// scripts/add-tg-link-auth.mjs
+// Добавление эндпоинта /api/auth/tg-link для мгновенного входа через initData
+// Запуск из корня проекта: node scripts/add-tg-link-auth.mjs
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
-const TARGET_FILE = path.resolve('server/routes/chat.js');
-const BAK_FILE = TARGET_FILE + '.bak-staff-call';
-const MARKER = '// [tg-staff-call-card-v1]';
+const TARGET_FILE = path.resolve('server/routes/auth.js');
+const BAK_FILE = TARGET_FILE + '.bak-tg-link';
+const MARKER = '// [tg-link-auth-endpoint-v1]';
 
 function readNorm(P) {
   const raw = fs.readFileSync(P, 'utf8');
@@ -28,97 +28,130 @@ if (!fs.existsSync(TARGET_FILE)) {
 const { content, isCRLF, raw } = readNorm(TARGET_FILE);
 
 if (content.indexOf(MARKER) !== -1) {
-  console.log('server/routes/chat.js: уже пропатчено (' + MARKER + ').');
+  console.log('server/routes/auth.js: уже пропатчено (' + MARKER + ').');
   process.exit(0);
 }
 
-// 1. Проверяем якорь импортов
-const FROM_IMPORT = "import { sendPush } from '../services/push.js';";
-const TO_IMPORT = [
-  "import { sendPush } from '../services/push.js';",
-  "import { fmtPhone } from '../utils/phone.js';",
-  "import { APP_URL } from '../services/telegram.js';"
-].join('\n');
-
+// 1. Проверяем якорь импорта TG_TOKEN
+const FROM_IMPORT = "import { tgSend } from '../services/telegram.js';";
+const TO_IMPORT = "import { tgSend, TG_TOKEN } from '../services/telegram.js';";
 if (content.split(FROM_IMPORT).length - 1 !== 1) {
-  console.error('Якорь импорта sendPush не найден или неоднозначен.');
+  console.error('Якорь импорта tgSend не найден или неоднозначен.');
   process.exit(1);
 }
 
-// 2. Проверяем якорь блока вызова сотрудника
-const FROM_HUMAN = [
-  "  if (human) {",
-  "    const roles = ctx === 'delivery' ? \"('dispatch','admin')\" : \"('cashier','admin')\";",
-  "    const staff = db.prepare(" + "`" + "SELECT id FROM customers WHERE role IN ${roles}" + "`" + ").all();",
-  "    for (const s of staff) sendPush(s.id, ctx === 'delivery' ? '💬 Вопрос по доставке' : '💬 Вопрос по кофейне', text.slice(0, 80));",
-  "  }"
-].join('\n');
-
-if (content.split(FROM_HUMAN).length - 1 !== 1) {
-  console.error('Якорь блока if (human) не найден в server/routes/chat.js.');
-  process.exit(1);
-}
-
-const TO_HUMAN = [
-  "  " + MARKER,
-  "  if (human) {",
-  "    const roles = ctx === 'delivery' ? \"('dispatch','admin')\" : \"('cashier','admin')\";",
-  "    const staff = db.prepare(" + "`" + "SELECT id FROM customers WHERE role IN ${roles}" + "`" + ").all();",
-  "    const cust = db.prepare('SELECT id, name, phone, tg FROM customers WHERE id=?').get(base);",
-  "    const guestName = (cust && cust.name) ? cust.name : 'Гость';",
-  "    const guestPhone = (cust && cust.phone) ? fmtPhone(cust.phone) : 'номер не указан';",
-  "    const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');",
-  "    const safeName = esc(guestName);",
-  "    const safeText = esc(text.length > 200 ? text.slice(0, 197) + '...' : text);",
-  "    const guestLink = (cust && cust.tg)",
-  "      ? ('<a href=\"tg://user?id=' + cust.tg + '\">' + safeName + '</a>')",
-  "      : ('<b>' + safeName + '</b>');",
+// 2. Проверяем точку вставки роута после создания authRouter
+const FROM_ROUTER = "export const authRouter = express.Router();";
+const TO_ROUTER = [
+  "export const authRouter = express.Router();",
   "",
-  "    const timeStr = new Date().toLocaleTimeString('ru-RU', {",
-  "      timeZone: 'Europe/Kaliningrad',",
-  "      hour: '2-digit',",
-  "      minute: '2-digit',",
-  "    });",
+  MARKER,
+  "function validateTgInitData(initData, botToken) {",
+  "  if (!initData || !botToken) return null;",
+  "  try {",
+  "    const params = new URLSearchParams(initData);",
+  "    const hash = params.get('hash');",
+  "    if (!hash) return null;",
+  "    params.delete('hash');",
   "",
-  "    const brandLabel = ctx === 'delivery' ? '🍕 Доставка' : '☕ Кофейня';",
-  "    const title = '🔔 <b>Вызов оператора</b> · ' + brandLabel;",
-  "    const body = '\\n👤 Гость: ' + guestLink + ' (' + guestPhone + ')\\n💬 Запрос: «' + safeText + '»\\n⏰ Время: ' + timeStr;",
-  "    const kb = {",
-  "      inline_keyboard: [[",
-  "        { text: '💬 Открыть чат в приложении', web_app: { url: (APP_URL || 'https://friday.andcoffee.online') + '/?src=tg&brand=' + ctx } }",
-  "      ]]",
-  "    };",
+  "    const entries = Array.from(params.entries());",
+  "    entries.sort((a, b) => a[0].localeCompare(b[0]));",
+  "    const dataCheckString = entries.map(([k, v]) => `${k}=${v}`).join('\\n');",
   "",
-  "    for (const s of staff) {",
-  "      sendPush(s.id, title, body, kb);",
+  "    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();",
+  "    const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');",
+  "",
+  "    const hashBuf = Buffer.from(hash, 'hex');",
+  "    const calcBuf = Buffer.from(calculatedHash, 'hex');",
+  "    if (hashBuf.length !== calcBuf.length || !crypto.timingSafeEqual(hashBuf, calcBuf)) {",
+  "      return null;",
   "    }",
-  "  }"
+  "",
+  "    const userRaw = params.get('user');",
+  "    if (!userRaw) return null;",
+  "    const user = JSON.parse(userRaw);",
+  "    const authDate = Number(params.get('auth_date') || 0);",
+  "",
+  "    return { user, authDate };",
+  "  } catch (e) {",
+  "    return null;",
+  "  }",
+  "}",
+  "",
+  "authRouter.post('/api/auth/tg-link', (req, res) => {",
+  "  const initData = String(req.body.initData || '').trim();",
+  "  const token = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || TG_TOKEN;",
+  "",
+  "  const valid = validateTgInitData(initData, token);",
+  "  if (!valid || !valid.user || !valid.user.id) {",
+  "    return res.status(401).json({ error: 'Неверные данные авторизации Telegram' });",
+  "  }",
+  "",
+  "  const tgId = String(valid.user.id);",
+  "  const tgName = [valid.user.first_name, valid.user.last_name].filter(Boolean).join(' ') || valid.user.username || 'Гость';",
+  "",
+  "  // 1. Проверяем, есть ли уже профиль с таким Telegram ID",
+  "  let c = db.prepare('SELECT * FROM customers WHERE tg=?').get(tgId);",
+  "  if (c) {",
+  "    addHist(c.id, 'Вход через Telegram Mini App', 'Telegram');",
+  "    return res.json({ token: issueToken(c.id), customer: cust(c), isNew: false });",
+  "  }",
+  "",
+  "  // 2. Если профиля нет по TG — проверяем, передан ли номер",
+  "  const rawPhone = String(req.body.phone || '').trim();",
+  "  if (!rawPhone) {",
+  "    return res.json({",
+  "      needPhone: true,",
+  "      tgUser: {",
+  "        id: tgId,",
+  "        name: tgName,",
+  "        username: valid.user.username || null",
+  "      }",
+  "    });",
+  "  }",
+  "",
+  "  const p = fmtPhone(rawPhone);",
+  "  if (ph10(p).length < 10) {",
+  "    return res.status(400).json({ error: 'Введите номер полностью' });",
+  "  }",
+  "",
+  "  // 3. Ищем существующего клиента по номеру телефона",
+  "  c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);",
+  "  if (c) {",
+  "    db.prepare('UPDATE customers SET tg=?, verified=1 WHERE id=?').run(tgId, c.id);",
+  "    if (!c.welcome) {",
+  "      grantWelcome(c.id, 'Telegram');",
+  "    }",
+  "    addHist(c.id, 'Telegram привязан через Mini App', 'Telegram');",
+  "    const updated = db.prepare('SELECT * FROM customers WHERE id=?').get(c.id);",
+  "    return res.json({ token: issueToken(c.id), customer: cust(updated), isNew: false });",
+  "  }",
+  "",
+  "  // 4. Создаем нового клиента сразу верифицированным через Telegram",
+  "  const finalName = String(req.body.name || '').trim() || tgName;",
+  "  const pin = String(req.body.pin || '').trim();",
+  "  const r = createCustomer(finalName, p, pin);",
+  "  if (r.err) return res.status(r.code).json({ error: r.err });",
+  "",
+  "  db.prepare('UPDATE customers SET tg=?, verified=1, consent=? WHERE id=?')",
+  "    .run(tgId, nowISO() + ' v1', r.customer.id);",
+  "  grantWelcome(r.customer.id, 'Telegram');",
+  "  addHist(r.customer.id, 'Регистрация через Telegram Mini App', 'Telegram');",
+  "",
+  "  const newCust = db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id);",
+  "  return res.json({ token: issueToken(r.customer.id), customer: cust(newCust), isNew: true });",
+  "});"
 ].join('\n');
 
-// 3. Проверяем якорь ответа сотрудника гостю
-const FROM_REPLY = "  if (!key.startsWith('anon-')) sendPush(key.replace(/:[cd]$/, ''), '💬 Вам ответили из «…и кофе»', text.slice(0, 80));";
-const TO_REPLY = [
-  "  if (!key.startsWith('anon-')) {",
-  "    const replyKb = {",
-  "      inline_keyboard: [[",
-  "        { text: '💬 Открыть ответ', web_app: { url: (APP_URL || 'https://friday.andcoffee.online') + '/?src=tg&brand=' + mctx + '&tab=chat&ctx=' + mctx } }",
-  "      ]]",
-  "    };",
-  "    const replyTitle = mctx === 'delivery' ? '💬 Ответ поддержки · «Пятница»' : '💬 Ответ поддержки · «…и кофе»';",
-  "    sendPush(key.replace(/:[cd]$/, ''), replyTitle, text.slice(0, 140), replyKb);",
-  "  }"
-].join('\n');
-
-if (content.split(FROM_REPLY).length - 1 !== 1) {
-  console.error('Якорь строки sendPush при ответе сотрудника не найден.');
+if (content.split(FROM_ROUTER).length - 1 !== 1) {
+  console.error('Якорь точки вставки роута не найден в server/routes/auth.js.');
   process.exit(1);
 }
 
 fs.writeFileSync(BAK_FILE, raw, 'utf8');
 
 let patched = content.split(FROM_IMPORT).join(TO_IMPORT);
-patched = patched.split(FROM_HUMAN).join(TO_HUMAN);
-patched = patched.split(FROM_REPLY).join(TO_REPLY);
+patched = patched.split(FROM_ROUTER).join(TO_ROUTER);
 
 writeNorm(TARGET_FILE, patched, isCRLF);
 
@@ -132,5 +165,5 @@ try {
   process.exit(1);
 }
 
-console.log('Успешно: карточка вызова оператора обновлена в chat.js.');
+console.log('Успешно: эндпоинт /api/auth/tg-link добавлен в auth.js.');
 console.log('Бэкап: ' + BAK_FILE);
