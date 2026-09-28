@@ -1,117 +1,216 @@
-// scripts/fix-tg-support-fallback.mjs — добавляет support_* в text-fallback.
-// Telegram Desktop иногда отправляет callback_data обычным текстом.
-// У нас уже есть fallback для link_phone/bonus/orders — расширяем на support_*.
-// CRLF-safe, идемпотентно. Запуск: node scripts/fix-tg-support-fallback.mjs
+// scripts/fix-tg-logging.mjs — подробное логирование webhook и ошибок tgSend.
+// Помогает найти, где обрывается цепочка.
+// Идемпотентно, CRLF-safe. Запуск: node scripts/fix-tg-logging.mjs
 
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 
-const P = 'server/routes/tg.js';
-const BAK = 'server/routes/tg.js.bak-support-fallback';
-
-if (!fs.existsSync(P)) { console.error('Не найден ' + P); process.exit(1); }
-
-const raw = fs.readFileSync(P, 'utf8');
-const isCRLF = raw.indexOf('\r\n') !== -1;
-let s = raw.replace(/\r\n/g, '\n');
-
-function write() { fs.writeFileSync(P, isCRLF ? s.replace(/\n/g, '\r\n') : s, 'utf8'); }
-function check() {
+function readNorm(P) {
+  const raw = fs.readFileSync(P, 'utf8');
+  const isCRLF = raw.indexOf('\r\n') !== -1;
+  return { content: raw.replace(/\r\n/g, '\n'), isCRLF, raw };
+}
+function writeNorm(P, content, isCRLF) {
+  fs.writeFileSync(P, isCRLF ? content.replace(/\n/g, '\r\n') : content, 'utf8');
+}
+function check(P) {
   try { execSync('node --check ' + P, { stdio: 'pipe' }); return true; }
-  catch (e) { console.error('Синтаксис сломан:\n' + (e.stderr || '').toString()); return false; }
+  catch (e) { console.error('Синтаксис сломан в ' + P + ':\n' + (e.stderr || '').toString()); return false; }
 }
 
-const MARKER = '// [support-fallback-v1]';
-if (s.indexOf(MARKER) !== -1) {
-  console.log('Уже пропатчено.');
-  if (!check()) process.exit(1);
-  process.exit(0);
+// ─── 1. tg.js — лог входящих апдейтов ──────────────────────────────────
+{
+  const P = 'server/routes/tg.js';
+  const { content, isCRLF } = readNorm(P);
+  let s = content;
+  const MARKER = '// [tg-logging-v1]';
+
+  if (s.indexOf(MARKER) !== -1) {
+    console.log('✓ tg.js: логирование уже есть');
+  } else {
+    const ANCHOR = "    const u = req.body;\n    res.json({ ok: true });\n    if (!u) return;";
+    if (s.indexOf(ANCHOR) === -1) {
+      console.error('✗ tg.js: не найден якорь для логирования');
+      process.exit(1);
+    }
+    const REPLACE = [
+      "    const u = req.body;",
+      "    res.json({ ok: true });",
+      "    if (!u) return;",
+      "    " + MARKER,
+      "    // Логируем всё входящее — по update_id и типу сразу видно, что прислал Telegram.",
+      "    try {",
+      "      var _kind = u.callback_query ? 'callback' : (u.message ? (u.message.contact ? 'contact' : 'message') : 'other');",
+      "      var _body = u.callback_query ? (u.callback_query.data || '') : (u.message ? (u.message.text || (u.message.contact ? 'phone' : '')) : '');",
+      "      console.log('[tg] in  kind=' + _kind + '  body=' + JSON.stringify(_body) + '  from=' + (u.message ? u.message.chat.id : (u.callback_query ? u.callback_query.from.id : '?')));",
+      "    } catch (e) {}",
+    ].join('\n');
+    s = s.replace(ANCHOR, REPLACE);
+    writeNorm(P, s, isCRLF);
+    console.log('✓ tg.js: логирование входящих апдейтов');
+  }
+  if (!check(P)) process.exit(1);
 }
 
-// Найти блок fallback-text-callback от прошлого скрипта.
-// Оригинал начинается с проверки if (text === 'link_phone' || text === 'bonus' || text === 'orders') {
-const ANCHOR = "    if (text === 'link_phone' || text === 'bonus' || text === 'orders') {";
-if (s.indexOf(ANCHOR) === -1) {
-  console.error('✗ tg.js: не найден fallback-блок от fix-tg-fallbacks.mjs.');
-  console.error('  Возможно, ты его не запускал или уже правил вручную.');
-  console.error('  Проверь, что в файле есть строка:');
-  console.error("    if (text === 'link_phone' || text === 'bonus' || text === 'orders') {");
+// ─── 2. telegram.js — не глотать ошибки tgSend ─────────────────────────
+{
+  const P = 'server/services/telegram.js';
+  const { content, isCRLF } = readNorm(P);
+  let s = content;
+  const MARKER = '// [tg-logging-v1]';
+
+  if (s.indexOf(MARKER) !== -1) {
+    console.log('✓ telegram.js: логирование уже есть');
+  } else {
+    const FROM = [
+      "export async function tgSend(chatId, text, kb) {",
+      "  const token = process.env.TEST_TOKEN || TG_TOKEN;",
+      "  if (!token) return;",
+      "  const body = { chat_id: chatId, text, parse_mode: 'HTML' };",
+      "  if (kb) body.reply_markup = kb;",
+      "  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {",
+      "    method: 'POST',",
+      "    headers: { 'Content-Type': 'application/json' },",
+      "    body: JSON.stringify(body)",
+      "  }).catch(() => {});",
+      "}",
+    ].join('\n');
+
+    if (s.indexOf(FROM) === -1) {
+      console.error('✗ telegram.js: не найден tgSend. Пришли его текущий вид.');
+      process.exit(1);
+    }
+
+    const TO = [
+      "export async function tgSend(chatId, text, kb) { // [tg-logging-v1]",
+      "  const token = process.env.TEST_TOKEN || TG_TOKEN;",
+      "  if (!token) { console.log('[tg] tgSend: NO TOKEN'); return; }",
+      "  const body = { chat_id: chatId, text, parse_mode: 'HTML' };",
+      "  if (kb) body.reply_markup = kb;",
+      "  try {",
+      "    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {",
+      "      method: 'POST',",
+      "      headers: { 'Content-Type': 'application/json' },",
+      "      body: JSON.stringify(body)",
+      "    });",
+      "    const j = await r.json().catch(() => ({}));",
+      "    if (!j.ok) {",
+      "      console.error('[tg] tgSend FAIL → chat=' + chatId + '  err=' + (j.description || r.status));",
+      "      console.error('[tg] tgSend text was: ' + String(text).slice(0, 80));",
+      "      if (kb) console.error('[tg] tgSend kb was: ' + JSON.stringify(kb).slice(0, 200));",
+      "    }",
+      "  } catch (e) {",
+      "    console.error('[tg] tgSend NETWORK ERR: ' + e.message);",
+      "  }",
+      "}",
+    ].join('\n');
+
+    s = s.replace(FROM, TO);
+    writeNorm(P, s, isCRLF);
+    console.log('✓ telegram.js: ошибки tgSend теперь логируются');
+  }
+  if (!check(P)) process.exit(1);
+}
+
+// ─── 3. Отдельный скрипт-пробник: локально дёргает /api/tg/webhook ──
+{
+  const P = 'scripts/probe-tg-webhook.mjs';
+  const isCRLF = false;
+  const content = `// scripts/probe-tg-webhook.mjs — отправляет поддельный callback в webhook.
+// Позволяет проверить цепочку без Telegram: Telegram → webhook → сервер → ответ.
+// Запуск: node scripts/probe-tg-webhook.mjs
+import fs from 'node:fs';
+
+const env = Object.fromEntries(
+  fs.readFileSync('.env', 'utf8').split(/\\r?\\n/)
+    .map(l => l.trim()).filter(l => l && !l.startsWith('#'))
+    .map(l => {
+      const i = l.indexOf('=');
+      if (i < 0) return null;
+      let v = l.slice(i + 1).trim();
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+      return [l.slice(0, i).trim(), v];
+    }).filter(Boolean)
+);
+
+const APP_URL = (env.PUBLIC_URL || env.APP_URL || '').replace(/\\/+$/, '');
+const SECRET = env.TG_WEBHOOK_SECRET || '';
+const CHAT_ID = process.env.CHAT_ID || '';
+
+if (!APP_URL) { console.error('Нет PUBLIC_URL'); process.exit(1); }
+if (!CHAT_ID) {
+  console.error('Укажи CHAT_ID в переменной окружения — свой Telegram user id.');
+  console.error('Найти можно через бота @userinfobot, или из логов pm2 (from=...)');
+  console.error('Запуск: CHAT_ID=123456789 node scripts/probe-tg-webhook.mjs');
   process.exit(1);
 }
 
-// Заменяем условие на расширенное + добавляем новые обработчики внутрь того же if
-const FROM = [
-  "    if (text === 'link_phone' || text === 'bonus' || text === 'orders') {",
-  "      const cbChatId = String(u.message.chat.id);",
-].join('\n');
+const upd = {
+  update_id: 900000 + Math.floor(Math.random() * 100000),
+  callback_query: {
+    id: 'probe_' + Date.now(),
+    from: { id: Number(CHAT_ID), is_bot: false, first_name: 'Probe' },
+    message: {
+      message_id: 1,
+      date: Math.floor(Date.now() / 1000),
+      chat: { id: Number(CHAT_ID), type: 'private' },
+    },
+    data: 'support_choose',
+  },
+};
 
-const TO = [
-  "    " + MARKER,
-  "    if (text === 'link_phone' || text === 'bonus' || text === 'orders' ||",
-  "        text === 'support_choose' || text === 'support_delivery' || text === 'support_coffee') {",
-  "      const cbChatId = String(u.message.chat.id);",
-  "",
-  "      // ── Поддержка: тема в Telegram, чат в PWA ──",
-  "      if (text === 'support_choose') {",
-  "        await tgSend(cbChatId, '💬 По какой теме вопрос?', {",
-  "          inline_keyboard: [",
-  "            [{ text: '🍕 Доставка — «Пятница»', callback_data: 'support_delivery' }],",
-  "            [{ text: '☕ Кофейня — «…и кофе»',  callback_data: 'support_coffee' }],",
-  "          ]",
-  "        });",
-  "        return;",
-  "      }",
-  "      if (text === 'support_delivery' || text === 'support_coffee') {",
-  "        const ctx = text === 'support_delivery' ? 'delivery' : 'coffee';",
-  "        const label = ctx === 'delivery' ? '🍕 Доставка' : '☕ Кофейня';",
-  "        await tgSend(cbChatId, 'Открываю чат: ' + label, {",
-  "          inline_keyboard: [[",
-  "            { text: '💬 Открыть чат с поддержкой', web_app: { url: APP_URL + '/?src=tg&tab=chat&ctx=' + ctx } }",
-  "          ]]",
-  "        });",
-  "        return;",
-  "      }",
-  "",
-].join('\n');
-
-s = s.replace(FROM, TO);
-
-fs.writeFileSync(BAK, raw, 'utf8');
-console.log('Бэкап: ' + BAK);
-write();
-
-if (!check()) {
-  console.error('Откат: copy ' + BAK + ' ' + P);
-  process.exit(1);
+console.log('POST ' + APP_URL + '/api/tg/webhook');
+console.log('  data: support_choose, chat: ' + CHAT_ID);
+console.log('');
+const t0 = Date.now();
+const r = await fetch(APP_URL + '/api/tg/webhook', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'x-telegram-bot-api-secret-token': SECRET },
+  body: JSON.stringify(upd),
+});
+console.log('  HTTP ' + r.status + ' · ' + (Date.now() - t0) + 'ms · ' + (await r.text()).slice(0, 120));
+console.log('');
+console.log('Если в Telegram пришло «💬 По какой теме вопрос?» — цепочка работает.');
+console.log('Если нет — смотри pm2 logs zerno-app.');
+`;
+  fs.writeFileSync(P, content, 'utf8');
+  console.log('✓ ' + P + ' создан');
 }
-console.log('✓ tg.js: support_* добавлены в text-fallback');
 
-// sw.js — по привычке
-const SW = 'public/sw.js';
-if (fs.existsSync(SW)) {
-  const swRaw = fs.readFileSync(SW, 'utf8');
-  const swIsCRLF = swRaw.indexOf('\r\n') !== -1;
-  let sw = swRaw.replace(/\r\n/g, '\n');
-  const m = sw.match(/zerno-static-v(\d+)/);
-  if (m) {
-    const before = m[1];
-    sw = sw.replace(/zerno-static-v(\d+)/, 'zerno-static-v' + (parseInt(before, 10) + 1));
-    fs.writeFileSync(SW, swIsCRLF ? sw.replace(/\n/g, '\r\n') : sw, 'utf8');
-    console.log('✓ sw.js: STATIC_CACHE v' + before + ' → v' + (parseInt(before, 10) + 1));
+// ─── sw.js ────────────────────────────────────────────────────────────
+{
+  const P = 'public/sw.js';
+  if (fs.existsSync(P)) {
+    const { content, isCRLF } = readNorm(P);
+    const m = content.match(/zerno-static-v(\d+)/);
+    if (m) {
+      const before = m[1];
+      const next = content.replace(/zerno-static-v(\d+)/, 'zerno-static-v' + (parseInt(before, 10) + 1));
+      writeNorm(P, next, isCRLF);
+      console.log('✓ sw.js: STATIC_CACHE v' + before + ' → v' + (parseInt(before, 10) + 1));
+    }
   }
 }
 
 console.log('');
 console.log('Готово. Дальше:');
 console.log('  1. git add -A');
-console.log('  2. git commit -m "fix(tg): support_* в text-fallback (Desktop шлёт callback текстом)"');
+console.log('  2. git commit -m "diag(tg): логирование webhook + probe-скрипт"');
 console.log('  3. git push');
 console.log('  4. pm2 restart zerno-app --update-env');
 console.log('');
-console.log('Проверь в боте:');
-console.log('  • /start -> «Задать вопрос» -> теперь приходят ДВЕ кнопки тем в ответе');
-console.log('  • Клик на тему -> сообщение редактируется в «Открываю чат: ...»');
-console.log('    с кнопкой «💬 Открыть чат с поддержкой»');
-console.log('  • Клик на кнопку -> Mini App открывается на нужной Нике, без сплэша');
+console.log('После деплоя:');
+console.log('  A. Открой pm2 logs zerno-app --lines 0 на сервере.');
+console.log('  B. В Telegram нажми «Задать вопрос».');
+console.log('  C. Смотри логи — там будет что-то из:');
+console.log('       [tg] in  kind=callback  body="support_choose"');
+console.log('       [tg] tgSend FAIL → ...');
+console.log('       [tg] tgSend NETWORK ERR: ...');
+console.log('       (тишина = webhook не вызывается вообще)');
 console.log('');
-console.log('Откат: copy ' + BAK + ' ' + P);
+console.log('  Если тишина — проверь, что webhook указывает на этот домен:');
+console.log('    node scripts/check-webhook-url.mjs');
+console.log('');
+console.log('  Проверить цепочку без Telegram:');
+console.log('    CHAT_ID=<твой_user_id> node scripts/probe-tg-webhook.mjs');
+console.log('    (узнать user_id: напиши боту @userinfobot в Telegram)');
