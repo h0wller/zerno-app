@@ -182,7 +182,16 @@ var QS = new URLSearchParams(location.search);
         else { window.__ztPendingDeep = 'orders'; openAuth(); }
       }
       if (tab === 'bonus') {
-        if (me) { openPanel('profile'); setTab('bonus'); }
+        if (me) {
+          openPanel('profile');
+          setTab('bonus');
+          // [tg-mini-app-qr-full]
+          setTimeout(function () {
+            if (typeof openQRFull === 'function') {
+              try { openQRFull(); } catch (e) {}
+            }
+          }, 500);
+        }
         else { window.__ztPendingDeep = 'bonus'; openAuth(); }
       }
       if (tab === 'chat') {
@@ -209,6 +218,45 @@ var QS = new URLSearchParams(location.search);
     })(setUser);
     setUser.__deepWrap = 1;
   }
+
+  // [tg-mini-app-reorder]
+  (function () {
+    var rid = QS.get('reorder');
+    if (!rid) return;
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      if (window.me && typeof api === 'function') {
+        clearInterval(iv);
+        api('/orders/mine').then(function (data) {
+          var order = (data.orders || []).find(function (x) { return x.id === rid; });
+          if (!order) return;
+          var restored = (order.items || []).map(function (i) {
+            return {
+              key: String(i.id) + '_' + (i.opt || '0'),
+              id: i.id,
+              oi: -1,
+              name: i.name,
+              opt: i.opt || null,
+              price: Number(i.price) || 0,
+              sz: Number(i.sz) || 0,
+              qty: Number(i.qty) || 1,
+            };
+          });
+          window.cart = restored;
+          try { localStorage.setItem('zt_cart', JSON.stringify(restored)); } catch (e) {}
+          if (typeof window.updateCartFab === 'function') window.updateCartFab();
+          if (typeof window.renderCart === 'function') window.renderCart();
+          if (typeof window.syncAddButtons === 'function') window.syncAddButtons();
+          var cp = document.getElementById('cartPanel');
+          if (cp) cp.classList.add('open');
+          if (typeof window.syncOverlay === 'function') window.syncOverlay();
+          if (typeof toast === 'function') toast('Заказ восстановлен в корзине', '🛒');
+        }).catch(function () {});
+      }
+      if (tries > 40) clearInterval(iv);
+    }, 250);
+  })();
 
   if (QS.get('support') !== 'choose') {
     try { history.replaceState(null, '', location.pathname); } catch(e) {}

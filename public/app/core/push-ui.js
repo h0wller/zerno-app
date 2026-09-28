@@ -126,6 +126,15 @@ function urlBase64ToUint8Array(s) {
         const pb = $("#pushBtn");
         const av = $("#profileTopBtn");
         if (!pb) return;
+        // [tg-mini-app-skip-push]
+        // В Telegram Mini App пуши идут через нативного бота,
+        // кнопка «Включить уведомления» не нужна.
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+          pb.hidden = true;
+          if (av) av.classList.remove("pulse-hint");
+          window.togglePushHint(false);
+          return;
+        }
         const hide = () => {
           pb.hidden = true;
           if (av) av.classList.remove("pulse-hint");

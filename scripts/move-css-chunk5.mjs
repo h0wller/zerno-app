@@ -1,152 +1,249 @@
-// scripts/fix-tg-fallbacks.mjs — правит server/routes/tg.js:
-//   1. URL деталей заказа получает &brand=delivery
-//   2. Тексты 'link_phone' / 'bonus' / 'orders' обрабатываются как callback_data
-//      (Telegram Desktop иногда отправляет их как обычный текст)
-// Идемпотентно. Проверяет якоря. Запуск: node scripts/fix-tg-fallbacks.mjs
+// scripts/fix-miniapp-frontend.mjs — v3: CRLF-safe + regex-устойчивость.
+//   1. boot.js: не показывать authModal, если src=tg
+//   2. push-ui.js: не показывать кнопку push в Telegram Mini App
+//   3. deeplink.js: tab=bonus → сразу openQRFull
+//   4. deeplink.js: ?reorder=<id> → восстановить корзину из заказа
+//   5. .gitignore: добавить *.bak-*
+//   6. sw.js: инкремент STATIC_CACHE
+// Идемпотентно. CRLF/LF agnostic. Запуск: node scripts/fix-miniapp-frontend.mjs
 
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 
-const P = 'server/routes/tg.js';
-const BAK = 'server/routes/tg.js.bak-fallback';
+const FILES = {
+  boot:      'public/app/core/boot.js',
+  pushui:    'public/app/core/push-ui.js',
+  deeplink:  'public/app/core/deeplink.js',
+  sw:        'public/sw.js',
+  gitignore: '.gitignore',
+};
 
-if (!fs.existsSync(P)) { console.error('Не найден ' + P); process.exit(1); }
-
-let s = fs.readFileSync(P, 'utf8');
-
-// ─── 1. URL деталей ────────────────────────────────────────────────────
-{
-  const MARKER = '// [fallback-url-v1]';
-  const FROM = '`${APP_URL}/?src=tg&tab=orders&no=${o.no}`';
-  const TO   = '`${APP_URL}/?src=tg&brand=delivery&tab=orders&no=${o.no}`';
-  const count = s.split(FROM).length - 1;
-  if (count === 0 && s.indexOf(TO) !== -1) {
-    console.log('URL деталей: уже пропатчен');
-  } else if (count === 0) {
-    console.error('URL деталей: НЕ найдено');
-    process.exit(1);
-  } else {
-    s = s.split(FROM).join(TO);
-    console.log('URL деталей: brand=delivery добавлен (' + count + ' мест)');
+// ─── Хелперы для CRLF-safe чтения/записи ───────────────────────────────
+function readNorm(P) {
+  const raw = fs.readFileSync(P, 'utf8');
+  const isCRLF = raw.indexOf('\r\n') !== -1;
+  return { content: raw.replace(/\r\n/g, '\n'), isCRLF };
+}
+function writeNorm(P, content, isCRLF) {
+  fs.writeFileSync(P, isCRLF ? content.replace(/\n/g, '\r\n') : content, 'utf8');
+}
+function check(P) {
+  try { execSync('node --check ' + P, { stdio: 'pipe' }); return true; }
+  catch (e) {
+    console.error('Синтаксис сломан в ' + P + ':');
+    console.error((e.stderr || '').toString());
+    return false;
   }
 }
 
-// ─── 2. Fallback text → callback ──────────────────────────────────────
+// ─── 1. boot.js ────────────────────────────────────────────────────────
 {
-  const MARKER = '// [fallback-text-callback-v1]';
-  const ANCHOR = '    const text = String(u.message.text || \'\').trim();';
+  const P = FILES.boot;
+  const { content, isCRLF } = readNorm(P);
+  let s = content;
+  if (s.indexOf('_qsSrc') !== -1) {
+    console.log('✓ boot.js: уже пропатчен');
+  } else {
+    const FROM = 'if (!onboarded) setTimeout(() => openAuth(false), 600);';
+    const TO = [
+      'const _qsSrc = new URLSearchParams(location.search).get("src");',
+      'if (!onboarded && _qsSrc !== "tg") setTimeout(() => openAuth(false), 600);',
+    ].join('\n');
+    if (s.indexOf(FROM) === -1) { console.error('✗ boot.js: не найден якорь'); process.exit(1); }
+    s = s.replace(FROM, TO);
+    writeNorm(P, s, isCRLF);
+    console.log('✓ boot.js: authModal не открывается при src=tg');
+  }
+  if (!check(P)) process.exit(1);
+}
+
+// ─── 2. push-ui.js ─────────────────────────────────────────────────────
+{
+  const P = FILES.pushui;
+  const { content, isCRLF } = readNorm(P);
+  let s = content;
+  const MARKER = '// [tg-mini-app-skip-push]';
 
   if (s.indexOf(MARKER) !== -1) {
-    console.log('Fallback: уже пропатчен');
-  } else if (s.indexOf(ANCHOR) === -1) {
-    console.error('Fallback: НЕ найден якорь const text');
-    process.exit(1);
+    console.log('✓ push-ui.js: уже пропатчен');
   } else {
-    const BLOCK = [
-      ANCHOR,
-      '',
-      '    ' + MARKER,
-      '    // Telegram Desktop (некоторые версии) отправляет callback_data обычным текстом.',
-      '    // Перехватываем и обрабатываем как callback, чтобы кнопки работали везде.',
-      '    if (text === \'link_phone\' || text === \'bonus\' || text === \'orders\') {',
-      '      const cbChatId = String(u.message.chat.id);',
-      '      if (text === \'link_phone\') {',
-      '        const existing = db.prepare(\'SELECT * FROM customers WHERE tg=?\').get(cbChatId);',
-      '        if (existing) {',
-      '          const left = 10 - existing.stamps;',
-      '          const line = existing.free',
-      '            ? \'🎁 Бесплатных кофе: <b>\' + existing.free + \'</b>\'',
-      '            : \'До подарка: <b>\' + left + \'</b> \' + (left === 1 ? \'чашка\' : (left >= 2 && left <= 4 ? \'чашки\' : \'чашек\'));',
-      '          await tgSend(cbChatId,',
-      '            \'Профиль уже привязан ✅\\n\\n<b>\' + existing.name + \'</b> · \' + fmtPhone(existing.phone) + \'\\n\\n\' +',
-      '            stampBar(existing.stamps) + \'\\nШтампов: <b>\' + existing.stamps + \'/10</b>\\n\' + line,',
-      '            bonusKeyboard()',
-      '          );',
+    // Устойчивый regex: допускает любое число пробелов, переводы строк, CRLF.
+    const FROM_RE = /function refreshPushBtn\(\) \{\n(\s*)const pb = \$\("#pushBtn"\);\n\s*const av = \$\("#profileTopBtn"\);\n\s*if \(!pb\) return;/;
+
+    const m = s.match(FROM_RE);
+    if (!m) {
+      console.error('✗ push-ui.js: не найден блок function refreshPushBtn');
+      console.error('  Покажи этот файл — подстрою якорь.');
+      process.exit(1);
+    }
+
+    const matched = m[0];
+    const INSERT = [
+      matched,
+      '        ' + MARKER,
+      '        // В Telegram Mini App пуши идут через нативного бота,',
+      '        // кнопка «Включить уведомления» не нужна.',
+      '        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {',
+      '          pb.hidden = true;',
+      '          if (av) av.classList.remove("pulse-hint");',
+      '          window.togglePushHint(false);',
       '          return;',
       '        }',
-      '        await tgSend(cbChatId,',
-      '          \'Привяжите номер телефона — копите штампы и получайте бонусы.\\n\\n\' +',
-      '          \'Если у вас <b>уже есть профиль</b> — нажмите кнопку ниже и поделитесь номером 👇\',',
-      '          appKb()',
-      '        );',
-      '        await tgSend(cbChatId,',
-      '          \'Если профиля ещё нет — создайте его в приложении:\',',
-      '          { inline_keyboard: [[{ text: \'📝 Создать профиль\', web_app: { url: APP_URL + \'/?src=tg&brand=coffee\' } }]] }',
-      '        );',
-      '        return;',
-      '      }',
-      '      if (text === \'bonus\') {',
-      '        const existing = db.prepare(\'SELECT * FROM customers WHERE tg=?\').get(cbChatId);',
-      '        if (!existing) {',
-      '          await tgSend(cbChatId, \'Сначала привяжите номер — нажмите кнопку ниже 👇\', appKb());',
-      '          return;',
-      '        }',
-      '        const left = 10 - existing.stamps;',
-      '        const line = existing.free',
-      '          ? \'🎁 Бесплатных кофе: <b>\' + existing.free + \'</b>\'',
-      '          : \'До подарка: <b>\' + left + \'</b> \' + (left === 1 ? \'чашка\' : (left >= 2 && left <= 4 ? \'чашки\' : \'чашек\'));',
-      '        await tgSend(cbChatId,',
-      '          \'☕ <b>\' + existing.name + \'</b>\\n\\n\' + stampBar(existing.stamps) + \'\\n\\nШтампов: <b>\' + existing.stamps + \'/10</b>\\n\' + line,',
-      '          bonusKeyboard()',
-      '        );',
-      '        return;',
-      '      }',
-      '      if (text === \'orders\') {',
-      '        const existing = db.prepare(\'SELECT * FROM customers WHERE tg=?\').get(cbChatId);',
-      '        if (!existing) {',
-      '          await tgSend(cbChatId, \'Сначала привяжите профиль 👇\', appKb());',
-      '          return;',
-      '        }',
-      '        const rows = db.prepare(\'SELECT id,no,status,total FROM orders WHERE cid=? ORDER BY no DESC LIMIT 5\').all(existing.id);',
-      '        if (!rows.length) {',
-      '          await tgSend(cbChatId, \'Заказов пока нет 🍕\', {',
-      '            inline_keyboard: [[{ text: \'🍕 Открыть меню\', web_app: { url: APP_URL + \'/?src=tg&brand=delivery\' } }]],',
-      '          });',
-      '          return;',
-      '        }',
-      '        for (const o of rows) {',
-      '          const idx = STEPS.indexOf(o.status);',
-      '          const bar = STEPS.map((s, i) => i <= idx && idx >= 0 ? \'●\' : \'○\').join(\'─\');',
-      '          const emoji = STATUS_EMOJI[o.status] || \'•\';',
-      '          await tgSend(cbChatId,',
-      '            \'<b>#\' + o.no + \'</b> · \' + emoji + \' \' + (ORDER_STATUS[o.status] || o.status) + \'\\n\' + bar + \'\\nИтого: <b>\' + o.total + \' ₽</b>\',',
-      '            { inline_keyboard: [',
-      '              [{ text: \'📦 Детали\', web_app: { url: APP_URL + \'/?src=tg&brand=delivery&tab=orders&no=\' + o.no } }],',
-      '              [{ text: \'🔁 Повторить\', callback_data: \'reorder_\' + o.id }],',
-      '            ]}',
-      '          );',
-      '        }',
-      '        return;',
-      '      }',
-      '    }',
     ].join('\n');
 
+    s = s.replace(matched, INSERT);
+    writeNorm(P, s, isCRLF);
+    console.log('✓ push-ui.js: кнопка push скрыта в Telegram Mini App');
+  }
+  if (!check(P)) process.exit(1);
+}
+
+// ─── 3. deeplink.js: tab=bonus → openQRFull ───────────────────────────
+{
+  const P = FILES.deeplink;
+  const { content, isCRLF } = readNorm(P);
+  let s = content;
+  const MARKER = '// [tg-mini-app-qr-full]';
+
+  if (s.indexOf(MARKER) !== -1) {
+    console.log('✓ deeplink.js (QR): уже пропатчен');
+  } else {
+    const FROM_RE = /if \(tab === 'bonus'\) \{\n(\s*)if \(me\) \{ openPanel\('profile'\); setTab\('bonus'\); \}\n\s*else \{ window\.__ztPendingDeep = 'bonus'; openAuth\(\); \}\n\s*\}/;
+
+    const m = s.match(FROM_RE);
+    if (!m) {
+      console.error('✗ deeplink.js: не найден блок tab=bonus');
+      process.exit(1);
+    }
+
+    const REPLACEMENT = [
+      "if (tab === 'bonus') {",
+      "        if (me) {",
+      "          openPanel('profile');",
+      "          setTab('bonus');",
+      "          " + MARKER,
+      "          setTimeout(function () {",
+      "            if (typeof openQRFull === 'function') {",
+      "              try { openQRFull(); } catch (e) {}",
+      "            }",
+      "          }, 500);",
+      "        }",
+      "        else { window.__ztPendingDeep = 'bonus'; openAuth(); }",
+      "      }",
+    ].join('\n');
+
+    s = s.replace(m[0], REPLACEMENT);
+    writeNorm(P, s, isCRLF);
+    console.log('✓ deeplink.js: tab=bonus открывает полный QR');
+  }
+  if (!check(P)) process.exit(1);
+}
+
+// ─── 4. deeplink.js: ?reorder=<id> ────────────────────────────────────
+{
+  const P = FILES.deeplink;
+  const { content, isCRLF } = readNorm(P);
+  let s = content;
+  const MARKER = '// [tg-mini-app-reorder]';
+
+  if (s.indexOf(MARKER) !== -1) {
+    console.log('✓ deeplink.js (reorder): уже пропатчен');
+  } else {
+    const ANCHOR = "  if (QS.get('support') !== 'choose') {";
+    if (s.indexOf(ANCHOR) === -1) {
+      console.error('✗ deeplink.js: не найден якорь для reorder');
+      process.exit(1);
+    }
+    const BLOCK = [
+      "  " + MARKER,
+      "  (function () {",
+      "    var rid = QS.get('reorder');",
+      "    if (!rid) return;",
+      "    var tries = 0;",
+      "    var iv = setInterval(function () {",
+      "      tries++;",
+      "      if (window.me && typeof api === 'function') {",
+      "        clearInterval(iv);",
+      "        api('/orders/mine').then(function (data) {",
+      "          var order = (data.orders || []).find(function (x) { return x.id === rid; });",
+      "          if (!order) return;",
+      "          var restored = (order.items || []).map(function (i) {",
+      "            return {",
+      "              key: String(i.id) + '_' + (i.opt || '0'),",
+      "              id: i.id,",
+      "              oi: -1,",
+      "              name: i.name,",
+      "              opt: i.opt || null,",
+      "              price: Number(i.price) || 0,",
+      "              sz: Number(i.sz) || 0,",
+      "              qty: Number(i.qty) || 1,",
+      "            };",
+      "          });",
+      "          window.cart = restored;",
+      "          try { localStorage.setItem('zt_cart', JSON.stringify(restored)); } catch (e) {}",
+      "          if (typeof window.updateCartFab === 'function') window.updateCartFab();",
+      "          if (typeof window.renderCart === 'function') window.renderCart();",
+      "          if (typeof window.syncAddButtons === 'function') window.syncAddButtons();",
+      "          var cp = document.getElementById('cartPanel');",
+      "          if (cp) cp.classList.add('open');",
+      "          if (typeof window.syncOverlay === 'function') window.syncOverlay();",
+      "          if (typeof toast === 'function') toast('Заказ восстановлен в корзине', '🛒');",
+      "        }).catch(function () {});",
+      "      }",
+      "      if (tries > 40) clearInterval(iv);",
+      "    }, 250);",
+      "  })();",
+      "",
+      ANCHOR,
+    ].join('\n');
     s = s.replace(ANCHOR, BLOCK);
-    fs.writeFileSync(P, s, 'utf8');
-    console.log('Fallback text→callback: добавлен для link_phone/bonus/orders');
+    writeNorm(P, s, isCRLF);
+    console.log('✓ deeplink.js: ?reorder=<id> восстанавливает корзину');
+  }
+  if (!check(P)) process.exit(1);
+}
+
+// ─── 5. .gitignore ────────────────────────────────────────────────────
+{
+  const P = FILES.gitignore;
+  const raw = fs.existsSync(P) ? fs.readFileSync(P, 'utf8') : '';
+  const isCRLF = raw.indexOf('\r\n') !== -1;
+  let s = raw.replace(/\r\n/g, '\n');
+  const MARKER = '# Backups от скриптов';
+  if (s.indexOf(MARKER) !== -1) {
+    console.log('✓ .gitignore: уже пропатчен');
+  } else {
+    s = s + '\n' + MARKER + '\n*.bak\n*.bak-*\n';
+    fs.writeFileSync(P, isCRLF ? s.replace(/\n/g, '\r\n') : s, 'utf8');
+    console.log('✓ .gitignore: добавлено *.bak-*');
   }
 }
 
-// ─── Бэкап + проверка ─────────────────────────────────────────────────
-fs.writeFileSync(BAK, fs.readFileSync(P, 'utf8'), 'utf8');
-console.log('Бэкап: ' + BAK);
-
-try {
-  execSync('node --check ' + P, { stdio: 'pipe' });
-  console.log('node --check: OK');
-} catch (e) {
-  console.error('Синтаксис сломан:');
-  console.error((e.stderr || '').toString());
-  console.error('Откат: copy ' + BAK + ' ' + P);
-  process.exit(1);
+// ─── 6. sw.js ─────────────────────────────────────────────────────────
+{
+  const P = FILES.sw;
+  if (fs.existsSync(P)) {
+    const { content, isCRLF } = readNorm(P);
+    const m = content.match(/zerno-static-v(\d+)/);
+    if (m) {
+      const before = m[1];
+      const next = content.replace(/zerno-static-v(\d+)/, 'zerno-static-v' + (parseInt(before, 10) + 1));
+      writeNorm(P, next, isCRLF);
+      console.log('✓ sw.js: STATIC_CACHE v' + before + ' → v' + (parseInt(before, 10) + 1));
+    }
+  }
 }
 
 console.log('');
 console.log('Готово. Дальше:');
-console.log('  1. git add -A && git commit -m "fix(tg): fallback text-callback + brand=delivery в деталях" && git push');
-console.log('  2. pm2 restart zerno-app --update-env');
-console.log('  3. В боте проверь:');
-console.log('     • /start -> «Привязать номер» -> приходит reply-кнопка + inline «Создать профиль»');
-console.log('     • /orders -> «Детали» -> Mini App открывает профиль delivery с заказами');
-console.log('     • /orders -> «Повторить» -> корзина с тем же составом');
-console.log('     • /bonus -> «Показать QR» -> сразу полный QR-экран');
+console.log('  1. git add -A');
+console.log('  2. git commit -m "fix(miniapp): push skip, QR full, reorder, .gitignore"');
+console.log('  3. git push');
+console.log('  4. Дождись деплоя (или pm2 restart zerno-app --update-env на сервере)');
+console.log('');
+console.log('Проверь в боте:');
+console.log('  • /start -> «Привязать номер» -> inline-ответ');
+console.log('  • /orders -> «Детали» -> профиль delivery');
+console.log('  • /orders -> «Повторить» -> корзина');
+console.log('  • /bonus -> «Показать QR кассиру» -> сразу полный QR');
+console.log('  • Кнопки «Включить уведомления» в Mini App больше нет');
