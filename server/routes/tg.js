@@ -20,9 +20,8 @@ function welcomeKeyboard(c) { // [tg-ux-v1]
   if (c) {
     rows.push([
       { text: '📦 Мои заказы',    web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } },
-      // [tg-direct-support-v1]
-      { text: '☕ Чат кофейни', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=chat&ctx=coffee' } },
-      { text: '🍕 Чат доставки', web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=chat&ctx=delivery' } },
+      // [tg-support-clean-v1]
+      { text: '💬 Задать вопрос', callback_data: 'support_choose' },
     ]);
   } else {
     rows.push([{ text: '🔗 Привязать номер', callback_data: 'link_phone' }]);
@@ -150,7 +149,7 @@ export function createTgRouter({ appKb }) {
         const cbMsgId = cb.message && cb.message.message_id;
         const openBtn = {
           inline_keyboard: [[
-            { text: '💬 Открыть чат с поддержкой', web_app: { url: APP_URL + '/?src=tg&tab=chat&ctx=' + ctx } }
+            { text: '💬 Открыть чат с поддержкой', web_app: { url: APP_URL + '/?src=tg&brand=' + ctx + '&tab=chat&ctx=' + ctx } }
           ]]
         };
         if (cbMsgId && TG_TOKEN) {
@@ -227,7 +226,7 @@ export function createTgRouter({ appKb }) {
         const label = ctx === 'delivery' ? '🍕 Доставка' : '☕ Кофейня';
         await tgSend(cbChatId, 'Открываю чат: ' + label, {
           inline_keyboard: [[
-            { text: '💬 Открыть чат с поддержкой', web_app: { url: APP_URL + '/?src=tg&tab=chat&ctx=' + ctx } }
+            { text: '💬 Открыть чат с поддержкой', web_app: { url: APP_URL + '/?src=tg&brand=' + ctx + '&tab=chat&ctx=' + ctx } }
           ]]
         });
         return;
