@@ -1,14 +1,23 @@
-/* Ф5.25: шимы stampIcon/cupWord из profile.js (владелец) для cashier.js (dotsHTML).
-Тот же класс бага, что renderLog/cat/query: после Ф5.8f profile.js — module,
-stampIcon/cupWord стали module-private, а dotsHTML зовёт голым. При 0 штампов
-вызова нет → тесты были зелены; на карточке с штампами — ReferenceError. */
+/* Ф5.26-fix: резина шапки без дубля селектора (Правило 7 аудита).
+Удаляем отдельное правило .topbar{height:auto;…}, вставленное Ф5.26, и переносим
+резину ВНУТРЬ базового правила шапки: height:calc(…) → height:auto;min-height:calc(…).
+Поведение то же (modeSeg во 2-м ряду грида ≥821 не выливается), селектор один. */
 import fs from 'node:fs';
-const P = 'public/app/profile.js';
+const P = 'public/app/core/views.js';
 let s = fs.readFileSync(P, 'utf8');
-const add = [];
-if (!/window\.stampIcon\s*=/.test(s)) add.push('window.stampIcon = stampIcon; /* Ф5.25: dotsHTML в cashier.js */');
-if (!/window\.cupWord\s*=/.test(s)) add.push('window.cupWord = cupWord; /* Ф5.25: тексты списаний/подарков */');
-if (!add.length) { console.log('⚠️ profile.js: шимы уже есть'); process.exit(0); }
-s += '\n/* ── Ф5.25: ESM-шимы для кассира (точки штампов, склонения чашек) ── */\n' + add.join('\n') + '\n';
-fs.writeFileSync(P, s);
-console.log('✅ profile.js:', add.length, 'шим(а) добавлено');
+let changed = false;
+
+/* 1) убрать отдельное правило Ф5.26 */
+const solo = /'\.topbar\{height:auto;min-height:calc\(var\(--topbar-h,64px\) \+ env\(safe-area-inset-top,0px\)\)\}',[^\n]*\n/;
+if (solo.test(s)) { s = s.replace(solo, ''); changed = true; console.log('✅ views.js: отдельное правило .topbar удалено'); }
+else console.log('⚠️ views.js: отдельное правило не найдено (уже удалено?)');
+
+/* 2) резина внутри базового правила */
+const baseOld = "height:calc(var(--topbar-h,64px) + var(--sat, env(safe-area-inset-top,0px)));padding:var(--sat";
+const baseNew = "height:auto;min-height:calc(var(--topbar-h,64px) + var(--sat, env(safe-area-inset-top,0px)));padding:var(--sat";
+const n = (s.split(baseOld).length - 1);
+if (n === 1) { s = s.replace(baseOld, baseNew); changed = true; console.log('✅ views.js: базовое .topbar → height:auto + min-height'); }
+else if (s.includes(baseNew)) console.log('⚠️ views.js: базовое правило уже резиновое');
+else { console.error('❌ views.js: базовая декларация height шапки не найдена (вхождений: ' + n + ')'); process.exit(1); }
+
+if (changed) fs.writeFileSync(P, s);

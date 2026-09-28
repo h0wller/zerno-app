@@ -79,7 +79,7 @@ var rules = [
 '.addonChip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}',
 '.addonChip b{color:var(--flame)}',
 /* --- ШАПКА: база (единственный блок, Ф3.55) --- */
-'.topbar{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:8px;height:calc(var(--topbar-h,64px) + var(--sat, env(safe-area-inset-top,0px)));padding:var(--sat, env(safe-area-inset-top,0px)) 12px 0;box-sizing:border-box}',
+'.topbar{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:8px;height:auto;min-height:calc(var(--topbar-h,64px) + var(--sat, env(safe-area-inset-top,0px)));padding:var(--sat, env(safe-area-inset-top,0px)) 12px 0;box-sizing:border-box}',
 '.topbar .venueWrap{position:relative;order:1;flex:0 0 auto;min-width:0;display:flex;justify-content:flex-start}',
 '.topbar .brand{order:2;flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;position:static;transform:none}',
 '.topbar .brand .mark{display:flex;align-items:center;justify-content:center;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent}',
