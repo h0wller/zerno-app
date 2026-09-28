@@ -311,7 +311,7 @@ ordersRouter.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
   const doneKb = {
     inline_keyboard: [
       [{ text: '🔁 Повторить заказ', web_app: { url: base + '/?src=tg&brand=delivery&reorder=' + o.id } }],
-      [{ text: '⭐ Оставить отзыв', web_app: { url: base + '/?src=tg&brand=delivery&tab=profile' } }],
+      [{ text: '⭐ Оставить отзыв', web_app: { url: base + '/?src=tg&brand=delivery&tab=review' } }],
     ]
   };
   const kb = isDone ? doneKb : orderActionKb(o.no);

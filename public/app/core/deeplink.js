@@ -177,9 +177,33 @@ var QS = new URLSearchParams(location.search);
         if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
         if (brand === 'delivery' && !DMENU.length) loadDelivery();
       }
+// [tg-splash-and-review-v1]
+      function openReviewView(forReview) {
+        try {
+          openPanel('profile');
+          setTab('profile');
+          if (typeof renderProfile === 'function') renderProfile();
+          setTimeout(function() {
+            var pv = document.getElementById('pvProfile');
+            if (pv && !pv.hidden) {
+              var nu = document.getElementById('profileNoUser'), pb = document.getElementById('profileBox');
+              if (nu && nu.hidden && pb && pb.hidden && typeof renderProfile === 'function') { renderProfile(); }
+            }
+            var btn = document.getElementById('reviewBtn');
+            if (btn) {
+              btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              btn.classList.add('glow');
+            }
+          }, 500);
+        } catch(e) {}
+      }
       if (tab === 'orders') {
         if (me) { openOrdersView(); }
         else { window.__ztPendingDeep = 'orders'; openAuth(); }
+      }
+      if (tab === 'profile' || tab === 'review') {
+        if (me) { openReviewView(tab === 'review'); }
+        else { window.__ztPendingDeep = tab; openAuth(); }
       }
       if (tab === 'bonus') {
         if (me) {
@@ -220,6 +244,7 @@ var QS = new URLSearchParams(location.search);
         var pend = window.__ztPendingDeep; window.__ztPendingDeep = null;
         if (pend === 'orders') setTimeout(openOrdersView, 150);
         if (pend === 'bonus') setTimeout(function() { openPanel('profile'); setTab('bonus'); }, 150);
+        if (pend === 'profile' || pend === 'review') setTimeout(function() { openReviewView(pend === 'review'); }, 150);
         return r;
       };
     })(setUser);

@@ -88,20 +88,20 @@
     /></noscript>
     <link rel="stylesheet" href="app/ui/theme-v2.css" />
     
-        <script>
+        <!-- [tg-splash-menu-fix-v1] -->
+    <script>
       (function () {
         var need = false;
         try {
           var q = new URLSearchParams(location.search);
           var done = false;
           try { done = !!sessionStorage.getItem("splashDone"); } catch (e) {}
-          need = !(
-            done ||
-            q.get("brand") ||
-            q.get("tab") ||
-            q.get("src") ||
-            /Telegram/i.test(navigator.userAgent)
-          );
+          if (q.get("splash") === "1" || q.get("splash") === "true") {
+            try { sessionStorage.removeItem("splashDone"); } catch (e) {}
+            need = true;
+          } else {
+            need = !(done || q.get("brand") || q.get("tab"));
+          }
         } catch (e) {}
         document.documentElement.classList.add(need ? "need-splash" : "no-splash");
       })();

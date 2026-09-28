@@ -1,17 +1,24 @@
-// scripts/fix-tg-chat-url-dedup.mjs
-// 1. Исправление URL открытия чата (&tab=chat&ctx=...)
-// 2. Устранение дублей заказов у сотрудников и дедупликация TG-рассылки
-// Запуск из корня: node scripts/fix-tg-chat-url-dedup.mjs
+// scripts/fix-tg-splash-and-review.mjs
+// 1. Диплинк tab=review: открытие профиля и фокус на отзыве
+// 2. Сплэш-экран выбора заведения при клике на «Меню и штампы»
+// 3. Инкремент кэша sw.js и вызов setChatMenuButton в Telegram API
+// Запуск: node scripts/fix-tg-splash-and-review.mjs
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
-const CHAT_FILE = path.resolve('server/routes/chat.js');
+const INDEX_FILE = path.resolve('public/index.html');
+const DEEP_FILE = path.resolve('public/app/core/deeplink.js');
 const ORDERS_FILE = path.resolve('server/routes/orders.js');
-const BAK_CHAT = CHAT_FILE + '.bak-chat-url-dedup';
-const BAK_ORDERS = ORDERS_FILE + '.bak-chat-url-dedup';
-const MARKER = '// [tg-chat-url-dedup-v1]';
+const SETUP_FILE = path.resolve('scripts/tg-bot-setup.mjs');
+const SW_FILE = path.resolve('public/sw.js');
+
+const BAK_INDEX = INDEX_FILE + '.bak-splash-review';
+const BAK_DEEP = DEEP_FILE + '.bak-splash-review';
+const BAK_ORDERS = ORDERS_FILE + '.bak-splash-review';
+const BAK_SW = SW_FILE + '.bak-splash-review';
+const MARKER = '// [tg-splash-and-review-v1]';
 
 function readNorm(P) {
   const raw = fs.readFileSync(P, 'utf8');
@@ -23,127 +30,216 @@ function writeNorm(P, content, isCRLF) {
   fs.writeFileSync(P, isCRLF ? content.replace(/\n/g, '\r\n') : content, 'utf8');
 }
 
-if (!fs.existsSync(CHAT_FILE)) {
-  console.error('Файл не найден: ' + CHAT_FILE);
-  process.exit(1);
-}
-if (!fs.existsSync(ORDERS_FILE)) {
-  console.error('Файл не найден: ' + ORDERS_FILE);
-  process.exit(1);
-}
-
-const chatData = readNorm(CHAT_FILE);
-const ordersData = readNorm(ORDERS_FILE);
-
-if (chatData.content.indexOf(MARKER) !== -1 && ordersData.content.indexOf(MARKER) !== -1) {
-  console.log('Файлы chat.js и orders.js уже пропатчены (' + MARKER + ').');
-  process.exit(0);
-}
-
-// ── 1. Патч chat.js (URL чата и дедупликация вызова оператора) ──
-const FROM_CHAT_KB = "        { text: '💬 Открыть чат в приложении', web_app: { url: (APP_URL || 'https://friday.andcoffee.online') + '/?src=tg&brand=' + ctx } }";
-const TO_CHAT_KB = "        { text: '💬 Открыть чат в приложении', web_app: { url: (APP_URL || 'https://friday.andcoffee.online') + '/?src=tg&brand=' + ctx + '&tab=chat&ctx=' + ctx } }";
-
-if (chatData.content.split(FROM_CHAT_KB).length - 1 !== 1) {
-  console.error('Якорь кнопки чата не найден в server/routes/chat.js.');
-  process.exit(1);
+function loadEnv() {
+  const envPath = path.resolve('.env');
+  if (!fs.existsSync(envPath)) return {};
+  const raw = fs.readFileSync(envPath, 'utf8');
+  const env = {};
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx !== -1) {
+      const k = trimmed.slice(0, eqIdx).trim();
+      let v = trimmed.slice(eqIdx + 1).trim();
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+        v = v.slice(1, -1);
+      }
+      env[k] = v;
+      if (!process.env[k]) process.env[k] = v;
+    }
+  }
+  return env;
 }
 
-const FROM_CHAT_LOOP = [
-  "    for (const s of staff) {",
-  "      sendPush(s.id, title, body, kb);",
-  "    }"
+const env = loadEnv();
+
+// ── 1. Патч public/index.html (показ сплэша при splash=1 и в Telegram) ──
+const indexData = readNorm(INDEX_FILE);
+const FROM_INDEX = [
+  '    <script>',
+  '      (function () {',
+  '        var need = false;',
+  '        try {',
+  '          var q = new URLSearchParams(location.search);',
+  '          var done = false;',
+  '          try { done = !!sessionStorage.getItem("splashDone"); } catch (e) {}',
+  '          need = !(',
+  '            done ||',
+  '            q.get("brand") ||',
+  '            q.get("tab") ||',
+  '            q.get("src") ||',
+  '            /Telegram/i.test(navigator.userAgent)',
+  '          );',
+  '        } catch (e) {}',
+  '        document.documentElement.classList.add(need ? "need-splash" : "no-splash");',
+  '      })();',
+  '    </script>'
 ].join('\n');
 
-const TO_CHAT_LOOP = [
-  "    " + MARKER,
-  "    const sentTgChat = new Set();",
-  "    for (const s of staff) {",
-  "      const sCust = db.prepare('SELECT tg FROM customers WHERE id=?').get(s.id);",
-  "      if (sCust && sCust.tg) {",
-  "        if (sentTgChat.has(String(sCust.tg))) continue;",
-  "        sentTgChat.add(String(sCust.tg));",
-  "      }",
-  "      sendPush(s.id, title, body, kb);",
-  "    }"
-].join('\n');
-
-if (chatData.content.split(FROM_CHAT_LOOP).length - 1 !== 1) {
-  console.error('Якорь цикла отправки стаффу не найден в server/routes/chat.js.');
+if (indexData.content.split(FROM_INDEX).length - 1 !== 1) {
+  console.error('Якорь сплэша не найден в public/index.html.');
   process.exit(1);
 }
 
-// ── 2. Патч orders.js (устранение дублей заказов) ──
-const FROM_ORDER_NOTIFY = [
-  "function orderNotifyStaff(o) {",
-  "  const lines = o.items.map(i => `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${i.qty * i.price} ₽`);",
-  "  const gifts = o.gifts.map(g => `🎁 ${g.name} ×${g.qty}`);",
-  "  const timeLabel = o.is_preorder ? `⏰ ПРЕДЗАКАЗ: ${o.slot}` : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot}`;",
-  "  const txt = `${o.name} ${o.phone}\\n${o.method === 'pickup' ? '🛍 Самовывоз, Советская 38А' : '🚗 ' + o.place + ', ' + o.addr}\\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\\n${lines.concat(gifts).join('\\n')}\\nИтого: ${o.total} ₽ (скидка ${o.discount} ₽, доставка ${o.fee} ₽)${o.comment ? '\\n💬 ' + o.comment : ''}`;",
-  "  const staff = db.prepare(\"SELECT id FROM customers WHERE role IN ('cashier','admin','dispatch')\").all();",
-  "  for (const s of staff) sendPush(s.id, o.is_preorder ? `⏰ Предзаказ #${o.no}` : `🍕 Новый заказ #${o.no}`, txt);",
-  "  logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);",
-  "}"
+const TO_INDEX = [
+  '    <!-- [tg-splash-menu-fix-v1] -->',
+  '    <script>',
+  '      (function () {',
+  '        var need = false;',
+  '        try {',
+  '          var q = new URLSearchParams(location.search);',
+  '          var done = false;',
+  '          try { done = !!sessionStorage.getItem("splashDone"); } catch (e) {}',
+  '          if (q.get("splash") === "1" || q.get("splash") === "true") {',
+  '            try { sessionStorage.removeItem("splashDone"); } catch (e) {}',
+  '            need = true;',
+  '          } else {',
+  '            need = !(done || q.get("brand") || q.get("tab"));',
+  '          }',
+  '        } catch (e) {}',
+  '        document.documentElement.classList.add(need ? "need-splash" : "no-splash");',
+  '      })();',
+  '    </script>'
 ].join('\n');
 
-if (ordersData.content.split(FROM_ORDER_NOTIFY).length - 1 !== 1) {
-  console.error('Якорь orderNotifyStaff не найден в server/routes/orders.js.');
+// ── 2. Патч public/app/core/deeplink.js (поддержка tab=review и tab=profile) ──
+const deepData = readNorm(DEEP_FILE);
+const FROM_DEEP_APPLY = [
+  "      if (tab === 'orders') {",
+  "        if (me) { openOrdersView(); }",
+  "        else { window.__ztPendingDeep = 'orders'; openAuth(); }",
+  "      }"
+].join('\n');
+
+if (deepData.content.split(FROM_DEEP_APPLY).length - 1 !== 1) {
+  console.error('Якорь tab === orders не найден в public/app/core/deeplink.js.');
   process.exit(1);
 }
 
-const TO_ORDER_NOTIFY = [
+const TO_DEEP_APPLY = [
   MARKER,
-  "function orderNotifyStaff(o) {",
-  "  const lines = o.items.map(i => `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${i.qty * i.price} ₽`);",
-  "  const gifts = o.gifts.map(g => `🎁 ${g.name} ×${g.qty}`);",
-  "  const timeLabel = o.is_preorder ? `⏰ ПРЕДЗАКАЗ: ${o.slot}` : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot}`;",
-  "  const txt = `👨‍🍳 <b>[Кухня] Заказ #${o.no}</b>\\n\\n👤 ${o.name} (${o.phone})\\n${o.method === 'pickup' ? '🛍 Самовывоз: Советская 38А' : '🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr}\\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\\n\\n${lines.concat(gifts).join('\\n')}\\n\\nИтого: <b>${o.total} ₽</b>${o.comment ? '\\n💬 ' + o.comment : ''}`;",
-  "",
-  "  const staff = db.prepare(\"SELECT id, tg FROM customers WHERE role IN ('cashier','admin','dispatch')\").all();",
-  "  const sentTg = new Set();",
-  "",
-  "  // Исключаем покупателя, если он сам является сотрудником (он уже получает чек покупателя)",
-  "  const buyer = db.prepare('SELECT tg FROM customers WHERE id=?').get(o.cid);",
-  "  if (buyer && buyer.tg) sentTg.add(String(buyer.tg));",
-  "",
-  "  const base = (typeof APP_URL !== 'undefined' && APP_URL) || 'https://friday.andcoffee.online';",
-  "  const staffKb = {",
-  "    inline_keyboard: [[",
-  "      { text: '📋 Открыть заказы', web_app: { url: base + '/?src=tg&brand=delivery&tab=orders' } }",
-  "    ]]",
-  "  };",
-  "",
-  "  for (const s of staff) {",
-  "    if (!s.tg || sentTg.has(String(s.tg))) continue;",
-  "    sentTg.add(String(s.tg));",
-  "    sendPush(s.id, '', txt, staffKb);",
-  "  }",
-  "  logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);",
-  "}"
+  "      function openReviewView(forReview) {",
+  "        try {",
+  "          openPanel('profile');",
+  "          setTab('profile');",
+  "          if (typeof renderProfile === 'function') renderProfile();",
+  "          setTimeout(function() {",
+  "            var pv = document.getElementById('pvProfile');",
+  "            if (pv && !pv.hidden) {",
+  "              var nu = document.getElementById('profileNoUser'), pb = document.getElementById('profileBox');",
+  "              if (nu && nu.hidden && pb && pb.hidden && typeof renderProfile === 'function') { renderProfile(); }",
+  "            }",
+  "            var btn = document.getElementById('reviewBtn');",
+  "            if (btn) {",
+  "              btn.scrollIntoView({ behavior: 'smooth', block: 'center' });",
+  "              btn.classList.add('glow');",
+  "            }",
+  "          }, 500);",
+  "        } catch(e) {}",
+  "      }",
+  "      if (tab === 'orders') {",
+  "        if (me) { openOrdersView(); }",
+  "        else { window.__ztPendingDeep = 'orders'; openAuth(); }",
+  "      }",
+  "      if (tab === 'profile' || tab === 'review') {",
+  "        if (me) { openReviewView(tab === 'review'); }",
+  "        else { window.__ztPendingDeep = tab; openAuth(); }",
+  "      }"
 ].join('\n');
 
-// ── Применение патчей и бэкапы ──
-fs.writeFileSync(BAK_CHAT, chatData.raw, 'utf8');
-let patchedChat = chatData.content.split(FROM_CHAT_KB).join(TO_CHAT_KB);
-patchedChat = patchedChat.split(FROM_CHAT_LOOP).join(TO_CHAT_LOOP);
-writeNorm(CHAT_FILE, patchedChat, chatData.isCRLF);
+const FROM_DEEP_SETUSER = "        if (pend === 'bonus') setTimeout(function() { openPanel('profile'); setTab('bonus'); }, 150);";
+const TO_DEEP_SETUSER = [
+  "        if (pend === 'bonus') setTimeout(function() { openPanel('profile'); setTab('bonus'); }, 150);",
+  "        if (pend === 'profile' || pend === 'review') setTimeout(function() { openReviewView(pend === 'review'); }, 150);"
+].join('\n');
+
+if (deepData.content.split(FROM_DEEP_SETUSER).length - 1 !== 1) {
+  console.error('Якорь setUser в public/app/core/deeplink.js не найден.');
+  process.exit(1);
+}
+
+// ── 3. Патч server/routes/orders.js (кнопка отзыва с tab=review) ──
+const ordersData = readNorm(ORDERS_FILE);
+const FROM_ORDERS_REVIEW = "tab=profile";
+const TO_ORDERS_REVIEW = "tab=review";
+
+if (ordersData.content.split(FROM_ORDERS_REVIEW).length - 1 < 1) {
+  console.error('Якорь tab=profile не найден в server/routes/orders.js.');
+  process.exit(1);
+}
+
+// ── Запись бэкапов и применение замен ──
+fs.writeFileSync(BAK_INDEX, indexData.raw, 'utf8');
+const patchedIndex = indexData.content.split(FROM_INDEX).join(TO_INDEX);
+writeNorm(INDEX_FILE, patchedIndex, indexData.isCRLF);
+
+fs.writeFileSync(BAK_DEEP, deepData.raw, 'utf8');
+let patchedDeep = deepData.content.split(FROM_DEEP_APPLY).join(TO_DEEP_APPLY);
+patchedDeep = patchedDeep.split(FROM_DEEP_SETUSER).join(TO_DEEP_SETUSER);
+writeNorm(DEEP_FILE, patchedDeep, deepData.isCRLF);
 
 fs.writeFileSync(BAK_ORDERS, ordersData.raw, 'utf8');
-let patchedOrders = ordersData.content.split(FROM_ORDER_NOTIFY).join(TO_ORDER_NOTIFY);
+const patchedOrders = ordersData.content.split(FROM_ORDERS_REVIEW).join(TO_ORDERS_REVIEW);
 writeNorm(ORDERS_FILE, patchedOrders, ordersData.isCRLF);
 
-// ── Проверка синтаксиса ──
+// ── 4. Инкремент STATIC_CACHE в sw.js ──
+const swData = readNorm(SW_FILE);
+const swMatch = swData.content.match(/zerno-static-v(\d+)/);
+if (!swMatch) {
+  console.error('Не найден токен STATIC_CACHE в public/sw.js.');
+  process.exit(1);
+}
+
+const oldVer = swMatch[0];
+const newVer = 'zerno-static-v' + (parseInt(swMatch[1], 10) + 1);
+const patchedSw = swData.content.replace(oldVer, newVer);
+
+fs.writeFileSync(BAK_SW, swData.raw, 'utf8');
+writeNorm(SW_FILE, patchedSw, swData.isCRLF);
+
+// ── Валидация синтаксиса ──
 try {
-  execSync('node --check ' + CHAT_FILE, { stdio: 'pipe' });
+  execSync('node --check ' + DEEP_FILE, { stdio: 'pipe' });
   execSync('node --check ' + ORDERS_FILE, { stdio: 'pipe' });
-  console.log('Синтаксис обоих файлов корректен (node --check passed).');
+  execSync('node --check ' + SW_FILE, { stdio: 'pipe' });
+  console.log('Синтаксис файлов корректен (node --check passed).');
 } catch (e) {
   console.error('Синтаксис сломан:');
   console.error((e.stderr || '').toString());
-  fs.writeFileSync(CHAT_FILE, chatData.raw, 'utf8');
+  fs.writeFileSync(INDEX_FILE, indexData.raw, 'utf8');
+  fs.writeFileSync(DEEP_FILE, deepData.raw, 'utf8');
   fs.writeFileSync(ORDERS_FILE, ordersData.raw, 'utf8');
+  fs.writeFileSync(SW_FILE, swData.raw, 'utf8');
   process.exit(1);
 }
 
-console.log('Успешно: URL чата исправлен, дубли заказов устранены.');
-console.log('Бэкапы: ' + BAK_CHAT + ', ' + BAK_ORDERS);
+// ── 5. Обновление Menu Button в Telegram Bot API ──
+const token = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || process.env.TG_TOKEN;
+const appUrl = (process.env.APP_URL || process.env.PUBLIC_URL || 'https://friday.andcoffee.online').replace(/\/+$/, '');
+
+if (token) {
+  console.log('Обновление Menu Button в Telegram API для URL:', appUrl + '/?src=tg&splash=1');
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/setChatMenuButton`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        menu_button: {
+          type: 'web_app',
+          text: 'Меню и штампы',
+          web_app: { url: appUrl + '/?src=tg&splash=1' }
+        }
+      })
+    });
+    const j = await res.json().catch(() => ({}));
+    console.log('[tg] setChatMenuButton:', j.ok ? 'OK' : j.description);
+  } catch (err) {
+    console.warn('[tg] Не удалось обновить кнопку меню через API:', err.message);
+  }
+} else {
+  console.log('Токен не найден в .env — пропуск вызова setChatMenuButton.');
+}
+
+console.log('Успешно: сплэш-экран и диплинк отзыва настроены.');
+console.log('Кэш обновлён: ' + oldVer + ' → ' + newVer);
