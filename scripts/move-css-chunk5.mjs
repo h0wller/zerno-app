@@ -1,92 +1,137 @@
-// scripts/diagnose-tg.mjs — только диагностика, ничего не пишет.
-// Запуск: node scripts/diagnose-tg.mjs
+// scripts/add-tg-diag.mjs — добавляет GET /api/tg/diag в server.js.
+// Идемпотентно: повторный запуск ничего не меняет.
+// После правки — node --check и инкремент STATIC_CACHE в sw.js.
 
 import fs from 'node:fs';
+import { execSync } from 'node:child_process';
 
-const env = Object.fromEntries(
-  fs.readFileSync('.env', 'utf8').split(/\r?\n/)
-    .map(l => l.trim()).filter(l => l && !l.startsWith('#'))
-    .map(l => {
-      const i = l.indexOf('=');
-      if (i < 0) return null;
-      let v = l.slice(i + 1).trim();
-      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-      return [l.slice(0, i).trim(), v];
-    }).filter(Boolean)
-);
+const P = 'server.js';
+const BAK = 'server.js.bak';
+const MARKER = "// [tg-diag v1] — диагностика Telegram-бота, добавляется scripts/add-tg-diag.mjs";
 
-const TOKEN   = env.TEST_TOKEN || env.TELEGRAM_BOT_TOKEN;
-const SECRET  = env.TG_WEBHOOK_SECRET || '';
-const APP_URL = (env.PUBLIC_URL || env.APP_URL || '').replace(/\/+$/, '');
-
-if (!TOKEN)   { console.error('Нет токена в .env'); process.exit(1); }
-if (!APP_URL) { console.error('Нет PUBLIC_URL в .env'); process.exit(1); }
-
-const tg = async (method, body) => {
-  const r = await fetch('https://api.telegram.org/bot' + TOKEN + '/' + method, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body || {}),
-  });
-  return r.json();
-};
-
-const me = (await tg('getMe')).result;
-console.log('BOT: @' + me.username + ' (' + me.first_name + ')');
-console.log('');
-
-const w = (await tg('getWebhookInfo')).result;
-console.log('WEBHOOK:');
-console.log('  url:                 ' + (w.url || '(не установлен)'));
-console.log('  pending_update_count: ' + w.pending_update_count);
-console.log('  last_error_date:     ' + (w.last_error_date ? new Date(w.last_error_date * 1000).toLocaleString('ru-RU') : '—'));
-console.log('  last_error_message:  ' + (w.last_error_message || '—'));
-console.log('  allowed_updates:     ' + (w.allowed_updates || []).join(', '));
-console.log('');
-
-console.log('GET ' + APP_URL + '/api/health …');
-try {
-  const r = await fetch(APP_URL + '/api/health', { signal: AbortSignal.timeout(10000) });
-  console.log('  HTTP ' + r.status + ' · ' + (await r.text()).slice(0, 120));
-} catch (e) { console.log('  ERROR: ' + e.message); }
-console.log('');
-
-console.log('POST ' + APP_URL + '/api/tg/webhook (без секрета, ожидаем 403) …');
-try {
-  const r = await fetch(APP_URL + '/api/tg/webhook', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: { chat: { id: 1 }, text: '/diag' } }),
-    signal: AbortSignal.timeout(10000),
-  });
-  console.log('  HTTP ' + r.status + ' · ' + (await r.text()).slice(0, 120));
-} catch (e) { console.log('  ERROR: ' + e.message); }
-console.log('');
-
-console.log('POST ' + APP_URL + '/api/tg/webhook (с секретом, ожидаем 200) …');
-try {
-  const r = await fetch(APP_URL + '/api/tg/webhook', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-telegram-bot-api-secret-token': SECRET },
-    body: JSON.stringify({ message: { chat: { id: 1 }, text: '/diag' } }),
-    signal: AbortSignal.timeout(10000),
-  });
-  console.log('  HTTP ' + r.status + ' · ' + (await r.text()).slice(0, 120));
-} catch (e) { console.log('  ERROR: ' + e.message); }
-console.log('');
-
-// Пытаемся получить обновления напрямую, минуя webhook.
-// Если они есть — значит webhook их не забирает (или старый код не отвечает).
-console.log('getUpdates (что Telegram копит необработанного) …');
-const upd = await tg('getUpdates', { limit: 5, timeout: 0 });
-if (upd.ok && upd.result && upd.result.length) {
-  console.log('  Есть ' + upd.result.length + ' необработанных обновлений:');
-  for (const u of upd.result) {
-    const m = u.message;
-    if (m) console.log('    id=' + u.update_id + ' chat=' + m.chat.id + ' text=' + JSON.stringify(m.text));
-    else console.log('    id=' + u.update_id + ' ' + Object.keys(u).filter(k => k !== 'update_id').join(','));
-  }
-  console.log('  → Если ты только что нажимал /start, а тут лежат updates — значит webhook не доходит до сервера.');
-} else if (upd.ok) {
-  console.log('  Пусто. Telegram всё отдал по webhook (или ты давно не писал).');
-} else {
-  console.log('  ERROR: ' + JSON.stringify(upd));
+if (!fs.existsSync(P)) {
+  console.error('Не найден ' + P);
+  process.exit(1);
 }
+
+const s = fs.readFileSync(P, 'utf8');
+
+if (s.indexOf(MARKER) !== -1) {
+  console.log('Endpoint /api/tg/diag уже добавлен. Правка не нужна.');
+  // Всё равно проверим синтаксис
+  try {
+    execSync('node --check ' + P, { stdio: 'pipe' });
+    console.log('node --check: OK');
+  } catch (e) {
+    console.error('Синтаксис сломан:');
+    console.error((e.stderr || e.stdout || '').toString());
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
+// Бэкап
+fs.writeFileSync(BAK, s, 'utf8');
+console.log('Бэкап: ' + BAK);
+
+// Якорь: строка с app.get('/api/config', ...)
+const anchor = "app.get('/api/config', (req, res) => res.json({ tgUsername: TG_BOT_USERNAME }));";
+if (s.indexOf(anchor) === -1) {
+  console.error('Не нашёл якорь в server.js:');
+  console.error('  ' + anchor);
+  console.error('Ищи строку с /api/config в server.js, там может быть другое форматирование.');
+  console.error('Откат не нужен — файл не тронут.');
+  process.exit(1);
+}
+
+const NEW_BLOCK = [
+  anchor,
+  '',
+  MARKER,
+  "app.get('/api/tg/diag', async (req, res) => {",
+  "  const token = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';",
+  "  let me = null, err = null;",
+  "  if (token) {",
+  "    try {",
+  "      const r = await fetch('https://api.telegram.org/bot' + token + '/getMe');",
+  "      const j = await r.json();",
+  "      me = j.ok ? j.result : null;",
+  "      if (!j.ok) err = j.description;",
+  "    } catch (e) { err = e.message; }",
+  "  }",
+  "  const secret = process.env.TG_WEBHOOK_SECRET || '';",
+  "  res.json({",
+  "    token_prefix: token ? token.slice(0, 12) + '…' : null,",
+  "    token_len: token.length,",
+  "    bot: me ? '@' + me.username : null,",
+  "    bot_name: me ? me.first_name : null,",
+  "    telegram_error: err,",
+  "    env: {",
+  "      TEST_TOKEN: process.env.TEST_TOKEN ? 'set' : 'MISSING',",
+  "      TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ? 'set' : 'MISSING',",
+  "      TELEGRAM_BOT_USERNAME: process.env.TELEGRAM_BOT_USERNAME || null,",
+  "      TG_BOT_USERNAME: process.env.TG_BOT_USERNAME || null,",
+  "      PUBLIC_URL: process.env.PUBLIC_URL || null,",
+  "      APP_URL: process.env.APP_URL || null,",
+  "      TG_WEBHOOK_SECRET: secret ? 'set (' + secret.length + ' chars)' : 'MISSING',",
+  "      NODE_ENV: process.env.NODE_ENV || null,",
+  "    },",
+  "  });",
+  "});",
+  "",
+].join('\n');
+
+const out = s.replace(anchor, NEW_BLOCK);
+fs.writeFileSync(P, out, 'utf8');
+console.log('Endpoint /api/tg/diag добавлен в ' + P);
+
+// Проверка синтаксиса
+try {
+  execSync('node --check ' + P, { stdio: 'pipe' });
+  console.log('node --check: OK');
+} catch (e) {
+  console.error('Синтаксис сломан:');
+  console.error((e.stderr || e.stdout || '').toString());
+  console.error('Откат: copy ' + BAK + ' ' + P);
+  process.exit(1);
+}
+
+// Инкремент sw.js
+const SW = 'public/sw.js';
+if (fs.existsSync(SW)) {
+  let sw = fs.readFileSync(SW, 'utf8');
+  const m = sw.match(/zerno-static-v(\d+)/);
+  if (m) {
+    const before = m[1];
+    sw = sw.replace(/zerno-static-v(\d+)/, 'zerno-static-v' + (parseInt(before, 10) + 1));
+    fs.writeFileSync(SW, sw, 'utf8');
+    console.log('sw.js: STATIC_CACHE v' + before + ' → v' + (parseInt(before, 10) + 1));
+  }
+}
+
+console.log('');
+console.log('Готово.');
+console.log('');
+console.log('Что дальше:');
+console.log('  1. Задеплой server.js на Timeweb (как ты это обычно делаешь).');
+console.log('  2. Перезапусти процесс.');
+console.log('  3. Открой в браузере:');
+console.log('       https://friday.andcoffee.online/api/tg/diag');
+console.log('');
+console.log('  Ожидаешь увидеть примерно:');
+console.log('    {');
+console.log('      "token_prefix": "8937507348:A…",   <- должен начинаться как токен @friday_and_coffeeBot');
+console.log('      "bot": "@friday_and_coffeeBot",    <- имя нового бота');
+console.log('      "telegram_error": null,');
+console.log('      "env": {');
+console.log('        "TEST_TOKEN": "set",');
+console.log('        "PUBLIC_URL": "https://friday.andcoffee.online/",');
+console.log('        ...');
+console.log('      }');
+console.log('    }');
+console.log('');
+console.log('  Если bot: "@Friday_and_coffee" или другой username — значит в .env на Timeweb СТАРЫЙ токен.');
+console.log('  Если bot: null + telegram_error — токен в .env битый или пустой.');
+console.log('  Если PUBLIC_URL: null — надо прописать.');
+console.log('');
+console.log('Откат (снесут endpoint): copy ' + BAK + ' ' + P);

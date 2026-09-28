@@ -65,39 +65,6 @@ app.post('/api/clientlog', (req, res) => {
 });
 app.get('/api/config', (req, res) => res.json({ tgUsername: TG_BOT_USERNAME }));
 
-// [tg-diag v1] — диагностика Telegram-бота, добавляется scripts/add-tg-diag.mjs
-app.get('/api/tg/diag', async (req, res) => {
-  const token = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
-  let me = null, err = null;
-  if (token) {
-    try {
-      const r = await fetch('https://api.telegram.org/bot' + token + '/getMe');
-      const j = await r.json();
-      me = j.ok ? j.result : null;
-      if (!j.ok) err = j.description;
-    } catch (e) { err = e.message; }
-  }
-  const secret = process.env.TG_WEBHOOK_SECRET || '';
-  res.json({
-    token_prefix: token ? token.slice(0, 12) + '…' : null,
-    token_len: token.length,
-    bot: me ? '@' + me.username : null,
-    bot_name: me ? me.first_name : null,
-    telegram_error: err,
-    env: {
-      TEST_TOKEN: process.env.TEST_TOKEN ? 'set' : 'MISSING',
-      TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ? 'set' : 'MISSING',
-      TELEGRAM_BOT_USERNAME: process.env.TELEGRAM_BOT_USERNAME || null,
-      TG_BOT_USERNAME: process.env.TG_BOT_USERNAME || null,
-      PUBLIC_URL: process.env.PUBLIC_URL || null,
-      APP_URL: process.env.APP_URL || null,
-      TG_WEBHOOK_SECRET: secret ? 'set (' + secret.length + ' chars)' : 'MISSING',
-      NODE_ENV: process.env.NODE_ENV || null,
-    },
-  });
-});
-
-
 /* ── меню ── */
 app.get('/api/menu', (req, res) => res.json({
   items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee'").all().map(item),
