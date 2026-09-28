@@ -14,8 +14,8 @@ const STEPS = ['new', 'accept', 'cook', 'way', 'done'];
 /* Inline-клавиатура для приветствия. c — customer или null. */
 function welcomeKeyboard(c) {
   const rows = [
-    [{ text: '☕ Кофейня — меню и штампы', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }],
-    [{ text: '🍕 Пятница — доставка',     web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],
+    [{ text: '☕ Кофейня — меню и штампы', web_app: { url: APP_URL } }],
+    [{ text: '🍕 Пятница — доставка',     web_app: { url: APP_URL + '?brand=delivery' } }],
   ];
   if (c) {
     rows.push([{ text: '🎁 Мои бонусы', callback_data: 'bonus' },
@@ -45,7 +45,7 @@ function stampBar(n) {
 /* Клавиатура с QR и обновлением. */
 function bonusKeyboard() {
   return { inline_keyboard: [
-    [{ text: '📱 Показать QR кассиру', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=bonus' } }],
+    [{ text: '📱 Показать QR кассиру', web_app: { url: APP_URL + '?tab=bonus' } }],
     [{ text: '🔄 Обновить', callback_data: 'bonus' }],
   ]};
 }
@@ -99,7 +99,7 @@ export function createTgRouter({ appKb }) {
         const rows = db.prepare('SELECT id,no,status,total FROM orders WHERE cid=? ORDER BY no DESC LIMIT 5').all(c.id);
         if (!rows.length) {
           await tgSend(chatId, 'Заказов пока нет — самое время выбрать пиццу 🍕', {
-            inline_keyboard: [[{ text: '🍕 Открыть меню', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }]],
+            inline_keyboard: [[{ text: '🍕 Открыть меню', web_app: { url: APP_URL + '?brand=delivery' } }]],
           });
           return;
         }
@@ -122,7 +122,7 @@ export function createTgRouter({ appKb }) {
       if (data.startsWith('reorder_')) {
         const orderId = data.slice(8);
         await tgSend(chatId, 'Открываю корзину с тем же составом 🛒', {
-          inline_keyboard: [[{ text: '🛒 Открыть корзину', web_app: { url: `${APP_URL}/?src=tg&brand=delivery&reorder=${orderId}` } }]],
+          inline_keyboard: [[{ text: '🛒 Открыть корзину', web_app: { url: `${APP_URL}/?reorder=${orderId}` } }]],
         });
         return;
       }
@@ -138,28 +138,7 @@ export function createTgRouter({ appKb }) {
 
       /* 🔗 Привязать номер */
       if (data === 'link_phone') {
-        const existing = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
-        if (existing) {
-          const left = 10 - existing.stamps;
-          const line = existing.free
-            ? '🎁 Бесплатных кофе: <b>' + existing.free + '</b>'
-            : 'До подарка: <b>' + left + '</b> ' + (left === 1 ? 'чашка' : (left >= 2 && left <= 4 ? 'чашки' : 'чашек'));
-          await tgSend(chatId,
-            'Профиль уже привязан ✅\n\n<b>' + existing.name + '</b> · ' + fmtPhone(existing.phone) + '\n\n' +
-            stampBar(existing.stamps) + '\nШтампов: <b>' + existing.stamps + '/10</b>\n' + line,
-            bonusKeyboard()
-          );
-          return;
-        }
-        await tgSend(chatId,
-          'Привяжите номер телефона, чтобы копить штампы и получать бонусы.\n\n' +
-          'Если у вас <b>уже есть профиль</b> в приложении — нажмите кнопку ниже и поделитесь номером 👇',
-          appKb()
-        );
-        await tgSend(chatId,
-          'Если профиля ещё нет — создайте его в приложении (10 секунд):',
-          { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }
-        );
+        await tgSend(chatId, 'Нажмите кнопку ниже — привяжем профиль к этому Telegram 👇', appKb());
         return;
       }
 
@@ -199,8 +178,8 @@ export function createTgRouter({ appKb }) {
     if (text === '/menu') {
       await tgSend(chatId, 'Меню открывается прямо в Telegram 🍕☕', {
         inline_keyboard: [
-          [{ text: '☕ Кофейня', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }],
-          [{ text: '🍕 Доставка', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],
+          [{ text: '☕ Кофейня', web_app: { url: APP_URL } }],
+          [{ text: '🍕 Доставка', web_app: { url: APP_URL + '?brand=delivery' } }],
         ],
       });
       return;
@@ -235,7 +214,7 @@ export function createTgRouter({ appKb }) {
       const rows = db.prepare('SELECT id,no,status,total FROM orders WHERE cid=? ORDER BY no DESC LIMIT 5').all(c.id);
       if (!rows.length) {
         await tgSend(chatId, 'Заказов пока нет — самое время выбрать пиццу 🍕', {
-          inline_keyboard: [[{ text: '🍕 Открыть меню', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }]],
+          inline_keyboard: [[{ text: '🍕 Открыть меню', web_app: { url: APP_URL + '?brand=delivery' } }]],
         });
         return;
       }
@@ -296,10 +275,7 @@ export function createTgRouter({ appKb }) {
         await tgSend(chatId, `✅ Готово, ${c.name}! Профиль привязан.`, welcomeKeyboard(c));
       }
     } else if (u.message.contact) {
-      tgSend(chatId,
-        'Профиль с таким номером не найден ⚠️\n\nСоздайте его в приложении — займёт 10 секунд:',
-        { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }
-      );
+      tgSend(chatId, 'Профиль с таким номером не найден ⚠️\nСоздайте его в приложении и нажмите «Поделиться номером» ещё раз.');
     } else {
       /* Свободный текст без команды — мягкая подсказка */
       tgSend(chatId,
