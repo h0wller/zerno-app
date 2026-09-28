@@ -20,7 +20,9 @@ function welcomeKeyboard(c) { // [tg-ux-v1]
   if (c) {
     rows.push([
       { text: '📦 Мои заказы',    web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } },
-      { text: '💬 Задать вопрос', callback_data: 'support_choose' },
+      // [tg-direct-support-v1]
+      { text: '☕ Чат кофейни', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=chat&ctx=coffee' } },
+      { text: '🍕 Чат доставки', web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=chat&ctx=delivery' } },
     ]);
   } else {
     rows.push([{ text: '🔗 Привязать номер', callback_data: 'link_phone' }]);
