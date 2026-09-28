@@ -198,8 +198,32 @@ export function createTgRouter({ appKb }) {
     // [fallback-text-callback-v1]
     // Telegram Desktop (некоторые версии) отправляет callback_data обычным текстом.
     // Перехватываем и обрабатываем как callback, чтобы кнопки работали везде.
-    if (text === 'link_phone' || text === 'bonus' || text === 'orders') {
+    // [support-fallback-v1]
+    if (text === 'link_phone' || text === 'bonus' || text === 'orders' ||
+        text === 'support_choose' || text === 'support_delivery' || text === 'support_coffee') {
       const cbChatId = String(u.message.chat.id);
+
+      // ── Поддержка: тема в Telegram, чат в PWA ──
+      if (text === 'support_choose') {
+        await tgSend(cbChatId, '💬 По какой теме вопрос?', {
+          inline_keyboard: [
+            [{ text: '🍕 Доставка — «Пятница»', callback_data: 'support_delivery' }],
+            [{ text: '☕ Кофейня — «…и кофе»',  callback_data: 'support_coffee' }],
+          ]
+        });
+        return;
+      }
+      if (text === 'support_delivery' || text === 'support_coffee') {
+        const ctx = text === 'support_delivery' ? 'delivery' : 'coffee';
+        const label = ctx === 'delivery' ? '🍕 Доставка' : '☕ Кофейня';
+        await tgSend(cbChatId, 'Открываю чат: ' + label, {
+          inline_keyboard: [[
+            { text: '💬 Открыть чат с поддержкой', web_app: { url: APP_URL + '/?src=tg&tab=chat&ctx=' + ctx } }
+          ]]
+        });
+        return;
+      }
+
       if (text === 'link_phone') {
         const existing = db.prepare('SELECT * FROM customers WHERE tg=?').get(cbChatId);
         if (existing) {
