@@ -85,7 +85,7 @@
       setTimeout(function () {
         t.remove();
       }, 300);
-    }, 4000);
+    }, 2200);
 
     return t;
   }
