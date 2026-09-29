@@ -21,7 +21,18 @@ function renderDeliveryRail() {
 }
 $('#deliveryRail').addEventListener('click', e => {
   const b = e.target.closest('[data-dcat]');
-  if (b) { dcat = b.dataset.dcat; renderDeliveryRail(); window.renderDeliveryMenu(); }
+  if (b) {
+    dcat = b.dataset.dcat;
+    renderDeliveryRail();
+    /* SKELETON-PULSE-PATCH v1: показываем скелетоны перед перерисовкой */
+    if (typeof renderDeliverySkeleton === 'function') {
+      renderDeliverySkeleton();
+    }
+    /* requestAnimationFrame даёт скелетону 1 кадр на отрисовку */
+    requestAnimationFrame(() => {
+      window.renderDeliveryMenu();
+    });
+  }
 });
 
 function renderDeliveryMenu() {
@@ -298,8 +309,15 @@ function populatePlaces() {
 }
 
 function skelCards(n){
-var c='<div class="card skeleton-card"><div class="media skeleton-shimmer"></div><div class="cbody"><div class="skeleton-line" style="width:65%;height:14px"></div><div class="skeleton-line" style="width:85%;height:12px"></div><div class="skeleton-line" style="width:45%;height:12px;margin-top:auto"></div></div><div class="skeleton-foot"></div></div>';
+var c='<div class="card skeleton-card"><div class="media skeleton-pulse"></div><div class="cbody"><div class="skeleton-line skeleton-pulse" style="width:65%;height:14px"></div><div class="skeleton-line skeleton-pulse" style="width:85%;height:12px"></div><div class="skeleton-line skeleton-pulse" style="width:45%;height:12px;margin-top:auto"></div></div><div class="skeleton-foot skeleton-pulse"></div></div>';
 var out='';for(var i=0;i<n;i++)out+=c;return out;
+}
+
+/* SKELETON-PULSE-PATCH v1: показ скелетонов при переключении категорий */
+function renderDeliverySkeleton() {
+  var grid = document.getElementById('deliveryGrid');
+  if (!grid) return;
+  grid.innerHTML = skelCards(6);
 }
 window.loadDelivery = async function(){
 try {
@@ -504,6 +522,7 @@ $('#deliveryGrid').addEventListener('click', function (e) {
 }, true);
 /* ── Ф5.8h: ESM-шимы (views.js sv, cart.js, live.js, menu-editor, cart-checkout) ── */
 window.renderDeliveryRail = renderDeliveryRail;
+window.renderDeliverySkeleton = renderDeliverySkeleton; /* SKELETON-PULSE-PATCH v1 */
 window.renderDeliveryMenu = renderDeliveryMenu;
 window.patchDeliveryCards = patchDeliveryCards;
 window.syncAddButtons = syncAddButtons;
@@ -519,3 +538,5 @@ window.renderCart = renderCart;
 '.steprow .cta{flex:1;margin-top:0}' +
 '.steprow .step{width:44px;border:2px solid var(--fr-choc);background:#fff;border-radius:12px;font:800 18px/1 "Golos Text",system-ui,sans-serif;color:var(--fr-choc);cursor:pointer}';
 document.head.appendChild(s);})();
+
+/* SKELETON-EMPTY-PATCH v3: функция уже была */

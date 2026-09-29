@@ -42,6 +42,11 @@ if (cartLen && method === "delivery" && typeof deliveryInfo !== 'undefined' && d
         return zone.places && zone.places.includes(placeVal);
       });
       fee = z ? Number(z.fee) || 0 : 0;
+    /* ADDR-PATCH v5: fallback на локальный справочник (безопасный curPlace) */
+    if (!fee && window.AddressModule && typeof window.AddressModule.getFee === 'function') {
+      var curPlace = (typeof placeVal !== 'undefined' ? placeVal : (document.getElementById('checkoutPlace') ? document.getElementById('checkoutPlace').value : ''));
+      fee = Number(window.AddressModule.getFee(curPlace)) || 0;
+    }
     }
 
     var pd = promoInfo ? promoDisc(sum, promoInfo) : 0;
@@ -319,7 +324,12 @@ function renderCartBase() {
         '</div>' +
         '<div style="font-weight:700">' + fmt((Number(c.price) || 0) * (Number(c.qty) || 1)) + '</div>' +
         '</div>';
-    }).join('') || '<div style="color:var(--soft);text-align:center;padding:20px">Корзина пуста</div>';
+    }).join('') || '<div class="empty-state">' +
+      '<div class="empty-state-icon">🍕</div>' +
+      '<div class="empty-state-title">Корзина пуста</div>' +
+      '<div class="empty-state-sub">Добавьте что-нибудь вкусное из меню доставки</div>' +
+      '<button type="button" class="empty-state-btn" data-goto-menu>Перейти в меню</button>' +
+      '</div>';
 
     // Плашка режима предзаказа вне рабочих часов (11:00–22:00)
     var pmNotice = document.getElementById('preorderNotice');
@@ -559,6 +569,24 @@ if (b.dataset.act === '+') it.qty++; else if (it.qty > 1) it.qty--; else cart.sp
 try {
         var r = await api("/orders", { method: "POST", body: body });
         toast("Заказ #" + r.order.no + " оформлен!", "🎉");
+      /* PREORDER-TIMER v5: если предзаказ — запускаем обновление таймеров */
+      try {
+        var preorderSlot = document.getElementById('checkoutSlot') ? document.getElementById('checkoutSlot').value : '';
+        if (preorderSlot && preorderSlot !== 'asap' && window.PreorderTimer && typeof window.PreorderTimer.updateAll === 'function') {
+          setTimeout(window.PreorderTimer.updateAll, 500);
+        }
+      } catch (e) {}
+      /* ADDR-PATCH v5: сохраняем адрес в профиль */
+      try {
+        var addrToSave = {
+          place: document.getElementById('checkoutPlace') ? document.getElementById('checkoutPlace').value : '',
+          street: document.getElementById('checkoutStreet') ? document.getElementById('checkoutStreet').value : '',
+          house: document.getElementById('checkoutHouse') ? document.getElementById('checkoutHouse').value : ''
+        };
+        if (addrToSave.place || addrToSave.street) {
+          localStorage.setItem('zt_saved_address', JSON.stringify(addrToSave));
+        }
+      } catch (e) {}
       if (window.TgUx) window.TgUx.success(); /* TG-UX-PATCH checkout */
 
         // 1. Очищаем корзину in-place для всех модулей
@@ -597,4 +625,44 @@ try {
   }
 
   restoreDraft();
+
+/* SKELETON-EMPTY-PATCH v3: кнопка «Перейти в меню» */
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest('[data-goto-menu]');
+  if (!btn) return;
+
+  // Закрываем корзину или профиль через TgUx (для нативного BackButton)
+  if (window.TgUx && typeof window.TgUx.closeTop === 'function') {
+    window.TgUx.closeTop();
+  } else {
+    // Fallback: закрываем вручную
+    var cp = document.getElementById('cartPanel');
+    if (cp) cp.classList.remove('open');
+    var panel = document.getElementById('panel');
+    if (panel) panel.classList.remove('open');
+    if (typeof window.syncOverlay === 'function') window.syncOverlay();
+  }
+
+  // Если активен кофе — переключить на доставку
+  if (typeof window.brand !== 'undefined' && window.brand !== 'delivery') {
+    if (typeof window.setBrand === 'function') {
+      window.setBrand('delivery');
+    } else if (typeof window.switchBrand === 'function') {
+      window.switchBrand('delivery');
+    } else {
+      // Fallback: кликаем по кнопке бренда
+      var brandBtn = document.querySelector('#brandSeg button[data-brand="delivery"]');
+      if (brandBtn) brandBtn.click();
+    }
+  }
+
+  // Скроллим к #deliveryGrid
+  setTimeout(function () {
+    var grid = document.getElementById('deliveryGrid');
+    if (grid) {
+      grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 100);
+});
+
 })();
