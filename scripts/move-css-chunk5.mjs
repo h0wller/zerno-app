@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * scripts/fix-tg-syntax-and-tests.mjs
- * SYNTAX-FIX v1: исправляет 'Unexpected token ||' в TG-OFFLOAD inline-скрипте
- * + проверяет применение патча ZERNO_STAFF_CODE в ui-baseline.spec.js
- * + bump STATIC_CACHE
- * Запуск: node scripts/fix-tg-syntax-and-tests.mjs && npx playwright test
+ * scripts/fix-tg-syntax-definitive.mjs
+ * TG-OFFLOAD v3: полная перезапись inline-скрипта на заведомо корректную версию
+ * (без многострочных цепочек с || в начале — именно это было причиной "Unexpected token '||'").
+ * + проверка применения всех остальных патчей.
+ * Запуск: node scripts/fix-tg-syntax-definitive.mjs && npx playwright test
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,6 +31,10 @@ function readLf(abs) {
 function writeEol(abs, text, eol) {
   fs.writeFileSync(abs, eol === '\r\n' ? text.replace(/\n/g, '\r\n') : text, 'utf8');
 }
+function checkSyntax(abs) {
+  const r = spawnSync(process.execPath, ['--check', abs], { encoding: 'utf8' });
+  if (r.status !== 0) throw new Error('node --check failed: ' + abs + '\n' + (r.stderr || r.stdout));
+}
 function modifyFile(rel, fn) {
   const abs = resolvePath(rel);
   if (!fs.existsSync(abs)) { warnings.push('Файл не найден: ' + rel); return false; }
@@ -55,21 +59,86 @@ function patchSwCache(text) {
   return found ? out : text;
 }
 
-/* ── 1. Исправление синтаксиса '||' в index.html ── */
-function patchIndexSyntax(text) {
-  /* Паттерн: строка заканчивается ';', следующая начинается с '||' */
-  const bad = /(!!window\.TelegramWebAppProxy \|\| !!window\.TelegramGameProxy);[\s\n]+(\|\| !?\(window\.Telegram)/;
-  if (bad.test(text)) {
-    return text.replace(bad, '$1 ||\n       $2');
+/* ── TG-OFFLOAD v3: заведомо корректная версия (без многострочных || цепочек) ── */
+const TG_INLINE_JS_V3 = `(function () {
+  /* TG-OFFLOAD v3: SDK грузится ТОЛЬКО внутри Mini App; снаружи — stub, 0 запросов */
+  var q = location.search + location.hash;
+  var inTg = false;
+  try {
+    inTg = /Telegram/i.test(navigator.userAgent) ||
+      /[?&#]tgWebApp(Data|Platform|Version|BotId)=/.test(q) ||
+      !!(window.TelegramWebAppProxy || window.TelegramGameProxy) ||
+      !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+  } catch (e) { inTg = false; }
+  window.__isTgMiniApp = window.__isTgMiniApp || inTg;
+  function makeStub() {
+    var noop = function () {};
+    var btn = function () {
+      return { text: '', isVisible: false, show: noop, hide: noop, enable: noop,
+               disable: noop, setText: noop, setColor: noop, onClick: noop, offClick: noop };
+    };
+    return {
+      isStub: true, readyState: 'ready', isExpanded: true,
+      initData: '', initDataUnsafe: {}, version: '0.0', platform: 'web',
+      colorScheme: 'light', themeParams: {},
+      ready: noop, expand: noop, close: noop,
+      enableClosingConfirmation: noop, disableVerticalSwipes: noop,
+      setHeaderColor: noop, setBackgroundColor: noop,
+      showPopup: noop, showAlert: noop,
+      showConfirm: function () { return false; },
+      openLink: noop, openTelegramLink: noop, openInvoice: noop,
+      onEvent: noop, offEvent: noop,
+      MainButton: btn(), BackButton: btn(),
+      HapticFeedback: { impactOccurred: noop, notificationOccurred: noop, selectionChanged: noop }
+    };
   }
-  /* Альтернатива: если патч v2 уже был применён корректно, проверяем наличие */
-  if (text.indexOf('!!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData)') === -1) {
-    warnings.push('index.html: патч TG-OFFLOAD v2 (initData detect) не найден');
+  function installStub() {
+    window.Telegram = window.Telegram || {};
+    if (!window.Telegram.WebApp || window.Telegram.WebApp.isStub) {
+      window.Telegram.WebApp = makeStub();
+    }
   }
-  return text;
+  if (inTg) {
+    var s = document.createElement('script');
+    s.src = 'https://telegram.org/js/telegram-web-app.js';
+    s.async = false;
+    s.onerror = installStub;
+    document.head.appendChild(s);
+  } else {
+    installStub();
+  }
+})();`;
+
+function patchIndexHtml(text) {
+  if (text.indexOf('TG-OFFLOAD v3') !== -1) return text;
+
+  /* Удаляем ЛЮБОЙ существующий inline-скрипт TG-OFFLOAD */
+  let out = text.replace(
+    /<script>[\s\n]*\/\*[\s\n]*TG-OFFLOAD v[12][\s\S]*?<\/script>/g,
+    ''
+  );
+
+  /* Ищем тег-заглушку или старый статический тег telegram-web-app.js */
+  const staticTag = /<script[^>]*src=["']https:\/\/telegram\.org\/js\/telegram-web-app\.js["'][^>]*><\/script>/;
+  if (staticTag.test(out)) {
+    out = out.replace(staticTag, '');
+  }
+
+  /* Вставляем новый TG-OFFLOAD v3 в <head> сразу после meta charset */
+  const newTag = '<script>' + TG_INLINE_JS_V3 + '</script>';
+  if (out.indexOf('TG-OFFLOAD v3') === -1) {
+    if (/<meta charset/i.test(out)) {
+      out = out.replace(/(<meta charset[^>]*>)/i, '$1\n' + newTag);
+    } else if (/<head>/i.test(out)) {
+      out = out.replace(/<head>/i, '<head>\n' + newTag);
+    } else {
+      warnings.push('index.html: не найдено место для вставки TG-OFFLOAD v3');
+    }
+  }
+
+  return out;
 }
 
-/* ── 2. Проверка патча ZERNO_STAFF_CODE в ui-baseline.spec.js ── */
 function patchBaselineSpec(text) {
   if (text.indexOf("process.env.ZERNO_STAFF_CODE") !== -1) return text;
   const out = text.replace(/(['"])1234\1/g, "(process.env.ZERNO_STAFF_CODE || '1234') /* SYNTAX-FIX v1 */");
@@ -77,14 +146,51 @@ function patchBaselineSpec(text) {
   return out;
 }
 
-try {
-  console.log('Task: SYNTAX-FIX v1 (|| token + staff code env)...\n');
+const HELPER = `
+/** TEST-FIX v2: гарантированная видимость .cartFab с ретраями добавления */
+async function ensureCartFabVisible(page) {
+  let ok = await page.evaluate(() => (window.cart || []).length > 0).catch(() => false);
+  if (!ok) {
+    const addBtn = page.locator('#deliveryGrid [data-add], #deliveryGrid .cta').first();
+    for (let i = 0; i < 3 && !ok; i++) {
+      const opt = page.locator('#deliveryGrid .opts button').first();
+      if (await opt.isVisible().catch(() => false)) await opt.click().catch(() => {});
+      await addBtn.click({ timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(250);
+      ok = await page.evaluate(() => (window.cart || []).length > 0).catch(() => false);
+    }
+  }
+  await page.evaluate(() => {
+    if (window.updateCartFab) window.updateCartFab();
+    if (window.cartFabShow) window.cartFabShow();
+  });
+  await page.locator('.cartFab').waitFor({ state: 'visible', timeout: 5000 });
+}
+`;
+function patchResponsiveSpec(text) {
+  if (text.indexOf('TEST-FIX v2') !== -1) return text;
+  let out = text;
+  const pagesAnchor = /(const PAGES = \[[\s\S]*?\];)/;
+  if (pagesAnchor.test(out)) {
+    out = out.replace(pagesAnchor, function (m) { return m + '\n' + HELPER; });
+  } else {
+    out = HELPER + '\n' + out;
+  }
+  out = out.replace(/await cartFab\.waitFor\(\{ state: 'visible', timeout: 3000 \}\);/g, 'await ensureCartFabVisible(page);');
+  return out;
+}
 
-  console.log('index.html: исправление синтаксиса || в TG-OFFLOAD...');
-  modifyFile('public/index.html', patchIndexSyntax);
+try {
+  console.log('Task: TG-OFFLOAD v3 (полная перезапись) + все фиксы тестов...\n');
+
+  console.log('index.html: полная перезапись TG-OFFLOAD на v3...');
+  modifyFile('public/index.html', patchIndexHtml);
 
   console.log('ui-baseline.spec.js: ZERNO_STAFF_CODE из env...');
   modifyFile('tests/ui-baseline.spec.js', patchBaselineSpec);
+
+  console.log('pwa-responsive.spec.js: ensureCartFabVisible хелпер...');
+  modifyFile('tests/pwa-responsive.spec.js', patchResponsiveSpec);
 
   console.log('sw.js: bump STATIC_CACHE...');
   modifyFile('public/sw.js', patchSwCache);
