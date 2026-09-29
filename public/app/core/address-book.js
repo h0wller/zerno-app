@@ -92,7 +92,7 @@
     if (document.getElementById('addrBookBtn')) return;
     var btn = document.createElement('button');
     btn.type = 'button'; btn.id = 'addrBookBtn';
-    btn.className = 'addr-book-btn'; btn.textContent = '📍 Мои адреса';
+    btn.className = 'btn ghost addr-book-btn'; /* ADDR-BTN-NATIVE v1 */ btn.textContent = '📍 Мои адреса';
     btn.addEventListener('click', function (e) { e.stopPropagation(); openSheet(); });
     var label = place.closest('label') || place.parentElement;
     var parent = (label && label.parentElement) || place.parentElement;

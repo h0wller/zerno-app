@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 /**
- * scripts/fix-tg-syntax-definitive.mjs
- * TG-OFFLOAD v3: полная перезапись inline-скрипта на заведомо корректную версию
- * (без многострочных цепочек с || в начале — именно это было причиной "Unexpected token '||'").
- * + проверка применения всех остальных патчей.
- * Запуск: node scripts/fix-tg-syntax-definitive.mjs && npx playwright test
+ * scripts/fix-address-btn-native.mjs
+ * ADDR-BTN-NATIVE v1: кнопка «Мои адреса» в родном стиле доставки.
+ *  1) address-book.js: кнопка создаётся с системными классами "btn ghost addr-book-btn"
+ *     (цвета/бордеры наследует от дизайн-системы, бренд перекрашивает сам).
+ *  2) theme-v2.css: brace-matching удаляет ВСЕ поколения правил .addr-book-btn,
+ *     взамен — только геометрия (align-self/width/margin), без цветов.
+ *  3) sw.js: bump STATIC_CACHE.
+ * Запуск: node scripts/fix-address-btn-native.mjs
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -43,6 +46,9 @@ function modifyFile(rel, fn) {
   if (typeof out !== 'string' || out === text) return false;
   const bak = backupFile(abs);
   writeEol(abs, out, eol);
+  if (rel.endsWith('.js') || rel.endsWith('.mjs')) {
+    try { checkSyntax(abs); } catch (e) { if (bak) fs.copyFileSync(bak, abs); throw e; }
+  }
   changed.push(rel);
   console.log('✔ Изменён: ' + rel + (bak ? ' (backup: ' + path.basename(bak) + ')' : ''));
   return true;
@@ -59,145 +65,84 @@ function patchSwCache(text) {
   return found ? out : text;
 }
 
-/* ── TG-OFFLOAD v3: заведомо корректная версия (без многострочных || цепочек) ── */
-const TG_INLINE_JS_V3 = `(function () {
-  /* TG-OFFLOAD v3: SDK грузится ТОЛЬКО внутри Mini App; снаружи — stub, 0 запросов */
-  var q = location.search + location.hash;
-  var inTg = false;
-  try {
-    inTg = /Telegram/i.test(navigator.userAgent) ||
-      /[?&#]tgWebApp(Data|Platform|Version|BotId)=/.test(q) ||
-      !!(window.TelegramWebAppProxy || window.TelegramGameProxy) ||
-      !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
-  } catch (e) { inTg = false; }
-  window.__isTgMiniApp = window.__isTgMiniApp || inTg;
-  function makeStub() {
-    var noop = function () {};
-    var btn = function () {
-      return { text: '', isVisible: false, show: noop, hide: noop, enable: noop,
-               disable: noop, setText: noop, setColor: noop, onClick: noop, offClick: noop };
-    };
-    return {
-      isStub: true, readyState: 'ready', isExpanded: true,
-      initData: '', initDataUnsafe: {}, version: '0.0', platform: 'web',
-      colorScheme: 'light', themeParams: {},
-      ready: noop, expand: noop, close: noop,
-      enableClosingConfirmation: noop, disableVerticalSwipes: noop,
-      setHeaderColor: noop, setBackgroundColor: noop,
-      showPopup: noop, showAlert: noop,
-      showConfirm: function () { return false; },
-      openLink: noop, openTelegramLink: noop, openInvoice: noop,
-      onEvent: noop, offEvent: noop,
-      MainButton: btn(), BackButton: btn(),
-      HapticFeedback: { impactOccurred: noop, notificationOccurred: noop, selectionChanged: noop }
-    };
-  }
-  function installStub() {
-    window.Telegram = window.Telegram || {};
-    if (!window.Telegram.WebApp || window.Telegram.WebApp.isStub) {
-      window.Telegram.WebApp = makeStub();
-    }
-  }
-  if (inTg) {
-    var s = document.createElement('script');
-    s.src = 'https://telegram.org/js/telegram-web-app.js';
-    s.async = false;
-    s.onerror = installStub;
-    document.head.appendChild(s);
+/* ── 1. address-book.js: системные классы кнопки ── */
+function patchAddressBook(text) {
+  if (text.indexOf('ADDR-BTN-NATIVE v1') !== -1) return text;
+  let out = text;
+  const re = /btn\.className = 'addr-book-btn';/;
+  if (re.test(out)) {
+    out = out.replace(re, "btn.className = 'btn ghost addr-book-btn'; /* ADDR-BTN-NATIVE v1 */");
   } else {
-    installStub();
+    warnings.push('address-book.js: строка создания класса кнопки не найдена');
   }
-})();`;
+  return out;
+}
 
-function patchIndexHtml(text) {
-  if (text.indexOf('TG-OFFLOAD v3') !== -1) return text;
+/* ── 2. theme-v2.css: вырез всех .addr-book-btn + геометрия без цветов ── */
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\s+/g, ' ').trim();
 
-  /* Удаляем ЛЮБОЙ существующий inline-скрипт TG-OFFLOAD */
-  let out = text.replace(
-    /<script>[\s\n]*\/\*[\s\n]*TG-OFFLOAD v[12][\s\S]*?<\/script>/g,
-    ''
-  );
-
-  /* Ищем тег-заглушку или старый статический тег telegram-web-app.js */
-  const staticTag = /<script[^>]*src=["']https:\/\/telegram\.org\/js\/telegram-web-app\.js["'][^>]*><\/script>/;
-  if (staticTag.test(out)) {
-    out = out.replace(staticTag, '');
-  }
-
-  /* Вставляем новый TG-OFFLOAD v3 в <head> сразу после meta charset */
-  const newTag = '<script>' + TG_INLINE_JS_V3 + '</script>';
-  if (out.indexOf('TG-OFFLOAD v3') === -1) {
-    if (/<meta charset/i.test(out)) {
-      out = out.replace(/(<meta charset[^>]*>)/i, '$1\n' + newTag);
-    } else if (/<head>/i.test(out)) {
-      out = out.replace(/<head>/i, '<head>\n' + newTag);
+function dropBtnRules(css) {
+  let out = '';
+  let pos = 0;
+  while (pos < css.length) {
+    const open = css.indexOf('{', pos);
+    if (open === -1) { out += css.slice(pos); break; }
+    let d = 1, j = open + 1;
+    while (j < css.length && d) {
+      const c = css[j];
+      if (c === '{') d++;
+      else if (c === '}') d--;
+      j++;
+    }
+    const sel = css.slice(pos, open).trim();
+    const body = css.slice(open + 1, j - 1);
+    pos = j;
+    if (/^@media/i.test(sel) || /^@supports/i.test(sel)) {
+      const inner = dropBtnRules(body);
+      if (inner.trim()) out += sel + ' {' + inner + '}\n';
+    } else if (/^@/.test(sel)) {
+      out += sel + ' {' + body + '}\n';
     } else {
-      warnings.push('index.html: не найдено место для вставки TG-OFFLOAD v3');
+      const parts = sel.split(',')
+        .map(function (p) { return p.trim(); })
+        .filter(function (p) { return p && !/^\.addr-book-btn\b/.test(stripComments(p)); });
+      if (parts.length) out += parts.join(',\n') + ' {' + body + '}\n';
     }
   }
-
   return out;
 }
 
-function patchBaselineSpec(text) {
-  if (text.indexOf("process.env.ZERNO_STAFF_CODE") !== -1) return text;
-  const out = text.replace(/(['"])1234\1/g, "(process.env.ZERNO_STAFF_CODE || '1234') /* SYNTAX-FIX v1 */");
-  if (out === text) warnings.push('ui-baseline.spec.js: литерал 1234 не найден');
-  return out;
-}
-
-const HELPER = `
-/** TEST-FIX v2: гарантированная видимость .cartFab с ретраями добавления */
-async function ensureCartFabVisible(page) {
-  let ok = await page.evaluate(() => (window.cart || []).length > 0).catch(() => false);
-  if (!ok) {
-    const addBtn = page.locator('#deliveryGrid [data-add], #deliveryGrid .cta').first();
-    for (let i = 0; i < 3 && !ok; i++) {
-      const opt = page.locator('#deliveryGrid .opts button').first();
-      if (await opt.isVisible().catch(() => false)) await opt.click().catch(() => {});
-      await addBtn.click({ timeout: 3000 }).catch(() => {});
-      await page.waitForTimeout(250);
-      ok = await page.evaluate(() => (window.cart || []).length > 0).catch(() => false);
-    }
-  }
-  await page.evaluate(() => {
-    if (window.updateCartFab) window.updateCartFab();
-    if (window.cartFabShow) window.cartFabShow();
-  });
-  await page.locator('.cartFab').waitFor({ state: 'visible', timeout: 5000 });
+const BTN_CANON = `
+/* ── ADDR-BTN-NATIVE v1: «Мои адреса» = системная .btn.ghost, здесь только геометрия ── */
+.addr-book-btn {
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 8px;
 }
 `;
-function patchResponsiveSpec(text) {
-  if (text.indexOf('TEST-FIX v2') !== -1) return text;
-  let out = text;
-  const pagesAnchor = /(const PAGES = \[[\s\S]*?\];)/;
-  if (pagesAnchor.test(out)) {
-    out = out.replace(pagesAnchor, function (m) { return m + '\n' + HELPER; });
-  } else {
-    out = HELPER + '\n' + out;
-  }
-  out = out.replace(/await cartFab\.waitFor\(\{ state: 'visible', timeout: 3000 \}\);/g, 'await ensureCartFabVisible(page);');
+
+function patchThemeCss(text) {
+  let out = dropBtnRules(text);
+  if (out.indexOf('ADDR-BTN-NATIVE v1') === -1) out = out.trimEnd() + '\n' + BTN_CANON;
   return out;
 }
 
 try {
-  console.log('Task: TG-OFFLOAD v3 (полная перезапись) + все фиксы тестов...\n');
+  console.log('Task: ADDR-BTN-NATIVE v1 (родной стиль кнопки «Мои адреса»)...\n');
 
-  console.log('index.html: полная перезапись TG-OFFLOAD на v3...');
-  modifyFile('public/index.html', patchIndexHtml);
+  console.log('address-book.js: системные классы btn ghost...');
+  modifyFile('public/app/core/address-book.js', patchAddressBook);
 
-  console.log('ui-baseline.spec.js: ZERNO_STAFF_CODE из env...');
-  modifyFile('tests/ui-baseline.spec.js', patchBaselineSpec);
-
-  console.log('pwa-responsive.spec.js: ensureCartFabVisible хелпер...');
-  modifyFile('tests/pwa-responsive.spec.js', patchResponsiveSpec);
+  console.log('theme-v2.css: вырез цветов кнопки + геометрия...');
+  modifyFile('public/app/ui/theme-v2.css', patchThemeCss);
 
   console.log('sw.js: bump STATIC_CACHE...');
   modifyFile('public/sw.js', patchSwCache);
 
   if (warnings.length) { console.warn('\nПредупреждения:'); warnings.forEach(function (w) { console.warn(' - ' + w); }); }
   if (changed.length) { console.log('\nИзменённые файлы:'); changed.forEach(function (f) { console.log(' - ' + f); }); }
-  console.log('\nГотово. Далее: npx playwright test\n');
+  console.log('\nГотово.\n');
   process.exit(0);
 } catch (err) {
   console.error('\n❌ Ошибка скрипта:');

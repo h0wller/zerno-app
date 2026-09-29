@@ -82,10 +82,12 @@ textarea {
     grid-template-columns: repeat(4, 1fr);
   }
 
+
 }
 @media (max-width: 900px) {.grid {
     grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
   }
+
 
 }
 .card {
@@ -121,6 +123,7 @@ textarea {
 .card:hover .media img {
     transform: scale(1.07);
   }
+
 
 }
 body.editing .card {
@@ -579,11 +582,13 @@ views.js) ── */
     animation: none
   }
 
+
 }
 @media(max-width:400px) {#tickerTrack span {
     font-size: 10px;
     padding: .35rem 1rem
   }
+
 
 }
 /* ── Сплэш бренда: база в СЛОЕ 1 (Ф3.54) — без FOUC в медленных WebView ── */
@@ -675,6 +680,7 @@ views.js) ── */
 #brandSplashStatic .spBtns {
     grid-template-columns: 1fr 1fr
   }
+
 
 }
 /* ── Ф3.55: компенсация плавающей шапки Telegram-WebView ── */
@@ -1002,6 +1008,7 @@ label.chk {
     padding: 18px
   }
 
+
 }
 #promoModal .form label small {
   margin-top: 4px
@@ -1034,6 +1041,7 @@ label.chk {
     transform: scale(1.08) rotate(-6deg);
     background: #3E8FD0
   }
+
 
 }
 .chat-fab:active {
@@ -1272,10 +1280,12 @@ label.chk {
     grid-template-columns: repeat(4, 1fr);
   }
 
+
 }
 @media (max-width: 900px) {.grid {
     grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
   }
+
 
 }
 .card {
@@ -1483,6 +1493,7 @@ body.editing .card:hover {
 @media (min-width: 1181px) {.tabs .btn-back {
     display: none;
   }
+
 
 }
 .pv {
@@ -2181,6 +2192,7 @@ body.is-cashier .cust .acts {
     text-align: center;
   }
 
+
 }
 @media (max-width: 640px) {.topbar {
     flex-wrap: wrap;
@@ -2193,10 +2205,12 @@ body.is-cashier .cust .acts {
     white-space: nowrap;
   }
 
+
 }
 @media (max-width: 360px) {.brand small {
     display: none;
   }
+
 
 }
 .cartItem .qty button {
@@ -2491,10 +2505,12 @@ body.is-cashier .cust .acts {
     --topbar-h: 60px;
   }
 
+
 }
 @media (min-width: 1024px) {:root {
     --topbar-h: 96px;
   }
+
 
 }
 /* F5.12: база layout марки; габаритный FOUC-сброс остаётся в critical-блоке Слоя 0 */
@@ -2912,6 +2928,7 @@ sticky слева на весь скролл
     max-width: 100%;
   }
 
+
 }
 /* ── F5.16b: рейл-кнопки block (ellipsis не живёт во flex),
 .on-типографика ── */
@@ -2995,6 +3012,7 @@ sticky слева на весь скролл
     transform: translateY(8px);
   }
 
+
 }
 /* ── F5.18: бейдж бонусов слева + рейл Пятницы ×2 + .on-типографика через body-префикс ── */
 body .wrap .rail button.on,
@@ -3032,6 +3050,7 @@ body .wrap #deliveryRail button.on {
 .mbonus .mb-free[hidden] {
   display: none !important;
 }
+
 
 }
 /* ── Ф6.1: CLS-резервы (трейс 27.09): модалка стафф-чата не прыгает при loadScList ── */
@@ -3170,6 +3189,7 @@ body .wrap #deliveryRail button.on {
     transform: translateY(8px);
   }
 
+
 }
 /* ── Ф5.29: бейдж = ::before «🎁 0/10» + чип «🎁 N»; длинный span скрыт везде ── */
 #mbonusBtn>span:not(.mb-free) {
@@ -3195,6 +3215,7 @@ body .wrap #deliveryRail button.on {
     padding: 5px 10px;
   }
 
+
 }
 @media (max-width: 820px) {#mbonusBtn {
     width: 64px;
@@ -3209,6 +3230,7 @@ body .wrap #deliveryRail button.on {
     font-size: 9px;
     padding: 3px 4px;
   }
+
 
 }
 /* ── Ф5.31: док шапки ≥821: ширина из JS-уравнения,
@@ -3284,6 +3306,7 @@ body .wrap #deliveryRail button.on {
     font-size: 13px;
   }
 
+
 }
 /* ── Ф5.34: створ рейла по брейкпоинтам (wrap padding 14px на ≤640 из Слоя 2) ── */
 @media (max-width: 640px) {
@@ -3298,6 +3321,7 @@ body .wrap #deliveryRail button.on {
     width: 64px;
     max-width: 64px;
   }
+
 
 }
 /* ── Ф5.34: menu-head flush с кромками карточек на мобиле ── */
@@ -3333,6 +3357,7 @@ body .wrap #deliveryRail button.on {
     width: 56px;
     max-width: 56px;
   }
+
 
 }
 /* ── Ф5.36: menu-head во всю ширину включая колонку рейла (мёртвая зона над рейлом уходит) ── */
@@ -3403,6 +3428,7 @@ body .wrap #deliveryRail button.on {
     margin-top: 0;
     max-height: calc(100dvh - 16px);
   }
+
 
 }
 @media (max-width: 820px) {/* Компактный бейдж бонусов: виден гостям (🫘 0/10) и профилю (🫘 X/10 + 🎁 N) */
@@ -3488,6 +3514,7 @@ body .wrap #deliveryRail button.on {
     box-sizing: border-box;
   }
 
+
 }
 /* ── Ф5.51: Компактная сетка 2х2 для adminBar (все кнопки видны на экране) ── */
 .adminBar {
@@ -3551,6 +3578,7 @@ body .wrap #deliveryRail button.on {
     pointer-events: auto;
   }
 
+
 }
 /* tg-auth-badge-redesign-v2 */
 html body .auth-badge-confirmed.auth-badge-confirmed {
@@ -3586,6 +3614,7 @@ html body #authModal.tg-mode .frow:has(input[type="checkbox"]) {
 html body #authModal input {
     font-size: 16px; /* защита от авто-зума на iOS */
   }
+
 
 }
 /* CART-PILL-PATCH v2: плавающая корзина-пилюля */
@@ -3736,6 +3765,7 @@ html.is-tg-app [id*="pwaInstall"] {
     opacity: 0.7;
   }
 
+
 }
 /* SKELETON-EMPTY-PATCH v2: пустые состояния (эмодзи в крафтовых блюдцах) */
 .empty-state {
@@ -3836,6 +3866,7 @@ html.is-tg-app [id*="pwaInstall"] {
     opacity: 0.7;
   }
 
+
 }
 /* SKELETON-EMPTY-PATCH v3: пустые состояния (эмодзи в крафтовых блюдцах) */
 .empty-state {
@@ -3909,6 +3940,7 @@ html.is-tg-app [id*="pwaInstall"] {
     transition: none;
   }
 
+
 }
 /* PTR-PATCH v3 */
 /* ── PTR-PATCH v3: Pull-to-refresh индикатор ── */
@@ -3962,6 +3994,7 @@ html.is-tg-app [id*="pwaInstall"] {
     animation: none;
   }
 
+
 }
 #checkoutStreet.field-error {
   border-color: #B3372B;
@@ -3985,6 +4018,7 @@ html.is-tg-app [id*="pwaInstall"] {
     animation: none;
   }
 
+
 }
 @keyframes addr-menu-in {
   from { opacity: 0; transform: translateY(-4px) scale(0.97); }
@@ -4002,18 +4036,6 @@ html.is-tg-app [id*="pwaInstall"] {
   font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 8px;
 }
 #checkoutStreet.field-error { border-color: var(--status-danger, #B3372B); background: var(--tint-danger, #FDE8E8); }
-
-/* ── FINAL-DEDUP v2: единый блок адресной книги (токены Слоя 1) ── */
-.addr-book-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  align-self: flex-start; width: fit-content; max-width: 100%;
-  padding: 8px 14px; border-radius: 999px;
-  background: var(--panel, #F3F8FC);
-  border: 1.5px solid var(--line, #D8DFE4);
-  color: var(--flame, #123A6B);
-  font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 8px;
-}
-.addr-book-btn:hover { border-color: var(--flame, #123A6B); }
 .addr-book-sheet {
   position: fixed; left: 50%;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -4060,7 +4082,8 @@ html.is-tg-app [id*="pwaInstall"] {
   max-height: 240px; overflow-y: auto; overscroll-behavior: contain; padding: 4px;
 }
 .addr-item { display: block; width: 100%; text-align: left; padding: 10px 14px; font: 500 14px "Golos Text", system-ui, sans-serif; color: var(--ink, #101418); background: transparent; border: none; border-radius: 10px; cursor: pointer; }
-.addr-item:hover, .addr-item-active { background: var(--panel, #F3F8FC); color: var(--flame, #123A6B); }
+.addr-item:hover,
+.addr-item-active { background: var(--panel, #F3F8FC); color: var(--flame, #123A6B); }
 #checkoutStreet.field-error,
 .abs-edit input.field-error { border-color: var(--status-danger, #B3372B); background: var(--tint-danger, #FDE8E8); animation: addr-shake 0.4s; }
 /* ── FINAL-DEDUP v2: единый блок таймера предзаказа ── */
@@ -4095,8 +4118,18 @@ html.is-tg-app [id*="pwaInstall"] {
   20%, 60% { transform: translateX(-4px); }
   40%, 80% { transform: translateX(4px); }
 }
-@media (prefers-reduced-motion: reduce) {
-  .addr-book-sheet { transition: none; }
-  .preorder-timer, .preorder-timer-waiting { animation: none; }
-  #checkoutStreet.field-error, .abs-edit input.field-error { animation: none; }
+@media (prefers-reduced-motion: reduce) {.addr-book-sheet { transition: none; }
+.preorder-timer,
+.preorder-timer-waiting { animation: none; }
+#checkoutStreet.field-error,
+.abs-edit input.field-error { animation: none; }
+
+}
+
+/* ── ADDR-BTN-NATIVE v1: «Мои адреса» = системная .btn.ghost, здесь только геометрия ── */
+.addr-book-btn {
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 8px;
 }
