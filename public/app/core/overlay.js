@@ -2,302 +2,7 @@
 Было fix-views.js: setInterval (овлей над шторкой), v66, v67. */
 (function(){
 'use strict';
-/* TG-UX-PATCH v1: Telegram BackButton / MainButton / HapticFeedback */
-(function () {
-  if (window.TgUx) return;
 
-  function tg() {
-    return (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
-  }
-
-  function isMini() {
-    var app = tg();
-    return !!(
-      window.__isTgMiniApp ||
-      window.__tgInitData ||
-      (app && app.initData) ||
-      (app && app.initDataUnsafe && app.initDataUnsafe.query_id)
-    );
-  }
-
-  function haptic(style) {
-    var app = tg();
-    if (!app || !app.HapticFeedback) return;
-    try {
-      if (style === 'success' || style === 'error' || style === 'warning') {
-        app.HapticFeedback.notificationOccurred(style);
-      } else {
-        app.HapticFeedback.impactOccurred(style || 'light');
-      }
-    } catch (e) {}
-  }
-
-  function state() {
-    var modal = document.querySelector('.modal.show');
-    var cart = document.getElementById('cartPanel');
-    var panel = document.getElementById('panel');
-    return {
-      modal: modal,
-      cartOpen: !!(cart && cart.classList.contains('open')),
-      panelOpen: !!(panel && panel.classList.contains('open'))
-    };
-  }
-
-  function closeTop() {
-    var s = state();
-
-    if (s.modal) {
-      var CLOSE = {
-        emModal: 'closeEditor',
-        authModal: 'closeAuth',
-        pinModal: 'closePin',
-        setPinModal: 'closeSetPin',
-        qrModal: 'closeQRFull',
-        promoModal: 'closePromo',
-        dashModal: 'closeDash',
-        staffChatModal: 'closeStaffChat'
-      };
-
-      if (s.modal.id === 'settingsModal') {
-        s.modal.classList.remove('show');
-      } else {
-        var fn = CLOSE[s.modal.id];
-        if (fn && typeof window[fn] === 'function') {
-          window[fn]();
-        } else {
-          s.modal.classList.remove('show');
-        }
-      }
-    } else if (s.cartOpen) {
-      var c = document.getElementById('cartPanel');
-      if (c) c.classList.remove('open');
-    } else if (s.panelOpen) {
-      var p = document.getElementById('panel');
-      if (p) p.classList.remove('open');
-    }
-
-    if (typeof window.syncOverlay === 'function') window.syncOverlay();
-    sync();
-  }
-
-  function ensureCss() {
-    if (document.getElementById('tgUxCss')) return;
-    var st = document.createElement('style');
-    st.id = 'tgUxCss';
-    st.textContent = 'html.tg-native-back .tabs .btn-back,html.tg-native-back .btn-back{display:none!important}';
-    document.head.appendChild(st);
-  }
-
-  function backButton() {
-    var app = tg();
-    return app && app.BackButton ? app.BackButton : null;
-  }
-
-  function mainButton() {
-    var app = tg();
-    return app && app.MainButton ? app.MainButton : null;
-  }
-
-  function bindBack() {
-    var b = backButton();
-    if (!b || b.__tgBound) return;
-
-    try {
-      var handler = function () {
-        closeTop();
-      };
-
-      if (typeof b.onClick === 'function') {
-        b.onClick(handler);
-      } else if (typeof b.onEvent === 'function') {
-        b.onEvent('clicked', handler);
-      }
-
-      b.__tgBound = true;
-    } catch (e) {}
-  }
-
-  function bindMain() {
-    var m = mainButton();
-    if (!m || m.__tgBound) return;
-
-    try {
-      var handler = function () {
-        haptic('medium');
-
-        var cp = document.getElementById('cartPanel');
-        if (cp && !cp.classList.contains('open')) {
-          cp.classList.add('open');
-          if (typeof window.renderCart === 'function') window.renderCart();
-          if (typeof window.syncOverlay === 'function') window.syncOverlay();
-          sync();
-          return;
-        }
-
-        var btn = document.getElementById('checkoutBtn');
-        if (btn) btn.click();
-      };
-
-      if (typeof m.onClick === 'function') {
-        m.onClick(handler);
-      } else if (typeof m.onEvent === 'function') {
-        m.onEvent('clicked', handler);
-      }
-
-      m.__tgBound = true;
-    } catch (e) {}
-  }
-
-  function money(n) {
-    return Number(n || 0).toLocaleString('ru-RU');
-  }
-
-  function cartCount() {
-    var list = (typeof window.cart !== 'undefined' && window.cart) ? window.cart : [];
-    if (!list || !Array.isArray(list)) return 0;
-    return list.reduce(function (a, c) {
-      return a + (Number(c.qty) || 1);
-    }, 0);
-  }
-
-  function totalNow() {
-    var t = null;
-
-    if (typeof window.totalsNow === 'function') {
-      try {
-        t = window.totalsNow();
-      } catch (e) {}
-    }
-
-    if (t && typeof t.total !== 'undefined') {
-      return Number(t.total) || 0;
-    }
-
-    var el = document.getElementById('cartTotal');
-    if (el) {
-      var raw = String(el.textContent || '').replace(/[^0-9]/g, '');
-      if (raw) return Number(raw) || 0;
-    }
-
-    var list = (typeof window.cart !== 'undefined' && window.cart) ? window.cart : [];
-    if (!list || !Array.isArray(list)) return 0;
-
-    return list.reduce(function (a, c) {
-      return a + ((Number(c.price) || 0) * (Number(c.qty) || 1));
-    }, 0);
-  }
-
-  function updateMainButton() {
-    if (!isMini()) return;
-
-    var m = mainButton();
-    if (!m) return;
-
-    var count = cartCount();
-    var total = totalNow();
-    var show = !!(count > 0 && total > 0);
-
-    try {
-      if (show) {
-        m.setText('Оформить заказ за ' + money(total) + ' ₽');
-        m.show();
-      } else {
-        m.hide();
-      }
-    } catch (e) {}
-  }
-
-  function sync() {
-    if (!isMini()) return;
-
-    ensureCss();
-    bindBack();
-    bindMain();
-
-    var s = state();
-    var open = !!(s.modal || s.cartOpen || s.panelOpen);
-    var b = backButton();
-
-    if (b) {
-      try {
-        if (open) {
-          b.show();
-          document.documentElement.classList.add('tg-native-back');
-        } else {
-          b.hide();
-          document.documentElement.classList.remove('tg-native-back');
-        }
-      } catch (e) {}
-    }
-
-    updateMainButton();
-  }
-
-  var pending = false;
-
-  function schedule() {
-    if (pending) return;
-    pending = true;
-    setTimeout(function () {
-      pending = false;
-      sync();
-    }, 80);
-  }
-
-  function observe() {
-    if (!document.body) return;
-
-    try {
-      new MutationObserver(schedule).observe(document.body, {
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['class', 'hidden'],
-        childList: true,
-        characterData: true
-      });
-    } catch (e) {}
-  }
-
-  if (document.body) {
-    observe();
-  } else {
-    document.addEventListener('DOMContentLoaded', observe);
-  }
-
-  document.addEventListener('click', function (e) {
-    var target = e.target;
-    if (!target || typeof target.closest !== 'function') return;
-
-    if (target.closest('[data-step], .qty button, #deliveryRail [data-dcat], #brandSeg button')) {
-      haptic('light');
-    }
-
-    if (target.closest('[data-addon]')) {
-      haptic('medium');
-    }
-  }, true);
-
-  window.TgUx = {
-    haptic: haptic,
-    success: function () {
-      haptic('success');
-    },
-    notify: function (type) {
-      haptic(type || 'success');
-    },
-    sync: sync,
-    updateMainButton: updateMainButton,
-    closeTop: closeTop
-  };
-
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(sync, 0);
-  } else {
-    document.addEventListener('DOMContentLoaded', function () {
-      setTimeout(sync, 0);
-    });
-  }
-})();
 
 /* оверлей: поднимать над шторкой, когда открыта модалка; убирать залипший show */
 setInterval(function(){
@@ -380,10 +85,10 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
 })();
 })();
 
-// [tg-ux-controller-robust-v3]
+// [tg-ux-controller-final-v1]
 (function initTgNativeUx() {
-  if (window.__tgUxV3Active) return;
-  window.__tgUxV3Active = true;
+  if (window.__tgUxActive) return;
+  window.__tgUxActive = true;
 
   function tg() {
     return (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
@@ -428,8 +133,8 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
     var panel = document.getElementById('panel');
     return {
       modal: modal,
-      cartOpen: !!(cart && (cart.classList.contains('open') || cart.classList.contains('show'))),
-      panelOpen: !!(panel && (panel.classList.contains('open') || panel.classList.contains('show')))
+      cartOpen: !!(cart && cart.classList.contains('open')),
+      panelOpen: !!(panel && panel.classList.contains('open'))
     };
   }
 
@@ -467,7 +172,7 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
     if (document.getElementById('tgUxCss')) return;
     var st = document.createElement('style');
     st.id = 'tgUxCss';
-    st.textContent = 'html.tg-native-back .tabs .btn-back, html.tg-native-back .btn-back { display: none !important; }';
+    st.textContent = 'html.tg-native-back .tabs .btn-back, html.tg-native-back .btn-back { display: none !important; } html.tg-native-main #checkoutBtn { display: none !important; }';
     document.head.appendChild(st);
   }
 
@@ -535,9 +240,12 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
     if (!isTg()) return;
     var app = tg();
     var m = app && app.MainButton;
+    var s = state();
     var count = cartCount();
     var total = totalNow();
-    var show = count > 0 && total > 0;
+
+    // Кнопка появляется ТОЛЬКО когда открыта корзина
+    var show = !!(s.cartOpen && count > 0 && total > 0);
     var text = show ? ('Оформить заказ за ' + total.toLocaleString('ru-RU') + ' ₽') : '';
 
     if (window.__tgEvents) {
@@ -548,9 +256,14 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
     if (!m) return;
     try {
       if (show) {
+        document.documentElement.classList.add('tg-native-main');
+        if (typeof m.setParams === 'function') {
+          try { m.setParams({ color: '#A93226', text_color: '#FFFFFF' }); } catch (e) {}
+        }
         m.setText(text);
         m.show();
       } else {
+        document.documentElement.classList.remove('tg-native-main');
         m.hide();
       }
     } catch (e) {}
@@ -587,7 +300,6 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
     updateMainButton();
   }
 
-  // Мгновенный вызов sync() при любых операциях с оверлеями
   var origSyncOverlay = window.syncOverlay;
   window.syncOverlay = function () {
     var res = typeof origSyncOverlay === 'function' ? origSyncOverlay.apply(this, arguments) : undefined;

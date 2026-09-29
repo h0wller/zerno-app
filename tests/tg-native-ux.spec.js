@@ -86,10 +86,21 @@ test('Telegram Mini App: BackButton, MainButton и Haptic', async ({ page }) => 
   const haptics = await page.evaluate(() => window.__tgEvents.hapticCalls);
   expect(haptics.length).toBeGreaterThan(0);
 
-  // 7. Тест MainButton: при добавлении товара в корзину кнопка активируется с суммой (с доставкой 850 ₽)
+  // 7. Тест MainButton: на витрине скрыт, а при открытии корзины активируется
   await page.evaluate(() => {
     window.cart = [{ id: 'test_pizza', name: 'Маргарита', price: 650, qty: 1 }];
     if (typeof window.renderCart === 'function') window.renderCart();
+    window.TgUx.sync();
+  });
+  await page.waitForTimeout(100);
+  // На витрине каталога MainButton ДОЛЖЕН быть скрыт
+  const shownOnCatalog = await page.evaluate(() => window.__tgEvents.mainShown);
+  expect(shownOnCatalog).toBe(false);
+
+  // Открываем корзину — MainButton появляется
+  await page.evaluate(() => {
+    const cp = document.getElementById('cartPanel');
+    if (cp) cp.classList.add('open');
     window.TgUx.sync();
   });
   await page.waitForTimeout(150);
