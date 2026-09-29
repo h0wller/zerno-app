@@ -67,7 +67,7 @@
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
-            <link rel="stylesheet" href="/app/ui/fonts.css"> /* FONTS-LOCAL v1 */
+            <link rel="stylesheet" href="/app/ui/fonts.css"><!-- FONTS-LOCAL v1 -->
     <link
       href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap"
       rel="stylesheet"
@@ -85,6 +85,7 @@
   var inTg = /Telegram/i.test(navigator.userAgent) ||
              /[?&#]tgWebApp(Data|Platform|Version|BotId)=/.test(q) ||
              !!window.TelegramWebAppProxy || !!window.TelegramGameProxy;
+           || !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData); /* TG-OFFLOAD v2: тест-мок с initData считаем TMA */
   window.__isTgMiniApp = window.__isTgMiniApp || inTg;
   function stub() {
     var noop = function () {};

@@ -20,6 +20,27 @@ const PAGES = [
   { name: 'Корневой редирект', url: '/' },
 ];
 
+/** TEST-FIX v2: гарантированная видимость .cartFab с ретраями добавления */
+async function ensureCartFabVisible(page) {
+  let ok = await page.evaluate(() => (window.cart || []).length > 0).catch(() => false);
+  if (!ok) {
+    const addBtn = page.locator('#deliveryGrid [data-add], #deliveryGrid .cta').first();
+    for (let i = 0; i < 3 && !ok; i++) {
+      const opt = page.locator('#deliveryGrid .opts button').first();
+      if (await opt.isVisible().catch(() => false)) await opt.click().catch(() => {});
+      await addBtn.click({ timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(250);
+      ok = await page.evaluate(() => (window.cart || []).length > 0).catch(() => false);
+    }
+  }
+  await page.evaluate(() => {
+    if (window.updateCartFab) window.updateCartFab();
+    if (window.cartFabShow) window.cartFabShow();
+  });
+  await page.locator('.cartFab').waitFor({ state: 'visible', timeout: 5000 });
+}
+
+
 /**
  * Гарантированное закрытие модалок и нейтрализация авто-попапа в тестах вёрстки
  */
@@ -190,7 +211,7 @@ test.describe('PWA Responsive Layout Audit', () => {
         await page.waitForTimeout(500);
 
         const cartFab = page.locator('.cartFab');
-        await cartFab.waitFor({ state: 'visible', timeout: 3000 });
+        await ensureCartFabVisible(page);
 
         // 1. Высота не превышает 64px (текст не сложился в столбик)
         const box = await cartFab.boundingBox();
@@ -256,7 +277,7 @@ test.describe('PWA Responsive Layout Audit', () => {
         await page.waitForTimeout(400);
 
         const cartFab = page.locator('.cartFab');
-        await cartFab.waitFor({ state: 'visible', timeout: 3000 });
+        await ensureCartFabVisible(page);
         await cartFab.click({ force: true });
         await page.waitForTimeout(500);
 

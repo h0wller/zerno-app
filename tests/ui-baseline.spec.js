@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const OUT = path.join('artifacts', 'ui-baseline');
-const ADMIN = process.env.UI_ADMIN_CODE || '1234';
+const ADMIN = process.env.UI_ADMIN_CODE || '3364';
 const CASHIER = process.env.UI_CASHIER_CODE || '2468';
 
 /* SW кеширует /api/* и ломает авторизацию между тестами — блокируем целиком */
@@ -54,7 +54,7 @@ async function loginAs(page, { code } = {}) {
     // Уникальный номер: 7 цифр времени + 2 случайные → не коллидирует в параллельных воркерах
     digits = '9' + String(Date.now()).slice(-7) + String(Math.floor(Math.random() * 100)).padStart(2, '0');
     const res = await page.request.post('/api/auth/register', {
-      data: { name: 'Baseline ' + digits.slice(-4), phone: '+7' + digits, pin: '1234', consent: 1 },
+      data: { name: 'Baseline ' + digits.slice(-4), phone: '+7' + digits, pin: (process.env.ZERNO_STAFF_CODE || '1234') /* TEST-FIX v2 */, consent: 1 },
     });
     if (res.ok()) { token = (await res.json()).token; break; }
     if (res.status() === 409) { await page.waitForTimeout(30 + attempt * 40); continue; }
@@ -113,7 +113,7 @@ test('baseline: гостевые экраны', async ({ page }) => {
   // Генерируем гостевой токен, так как бэкенд требует 401 без него
   const d = '9' + String(Date.now()).slice(-9);
   const res = await page.request.post('/api/auth/register', {
-    data: { name: 'Guest ' + d.slice(-4), phone: '+7' + d, pin: '1234', consent: 1 },
+    data: { name: 'Guest ' + d.slice(-4), phone: '+7' + d, pin: (process.env.ZERNO_STAFF_CODE || '1234') /* TEST-FIX v2 */, consent: 1 },
   });
   if (res.ok()) {
     const { token } = await res.json();
