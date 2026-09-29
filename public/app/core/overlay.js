@@ -109,6 +109,7 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
     if (appInit) {
       if (typeof appInit.ready === 'function') appInit.ready();
       if (typeof appInit.expand === 'function') appInit.expand();
+      document.documentElement.classList.add('is-tg-app');
     }
   } catch (e) {}
 

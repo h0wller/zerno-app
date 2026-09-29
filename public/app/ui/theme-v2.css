@@ -4145,3 +4145,15 @@ html body #authModal.tg-mode .frow:has(input[type="checkbox"]) {
   }
 }
 
+/* [tg-rudiments-cleanup-v1] */
+#authModal.tg-mode small,
+#authModal.tg-mode .mhint,
+#authModal.tg-mode .subhint,
+html.is-tg-app #pwaInstall,
+html.is-tg-app .pwa-banner,
+html.is-tg-app #pwaBanner,
+html.is-tg-app #pwaPrompt,
+html.is-tg-app .pwa-badge,
+html.is-tg-app [id*="pwaInstall"] {
+  display: none !important;
+}
