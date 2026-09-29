@@ -5,6 +5,27 @@
 
 var QS = new URLSearchParams(location.search);
 
+  // [tg-web-seamless-auth-v1]
+  (function initAuthTokenLogin() {
+    var at = QS.get('auth_token');
+    if (!at) return;
+    var t0 = Date.now(), iv = setInterval(function() {
+      if (typeof api === 'function' && typeof setUser === 'function') {
+        clearInterval(iv);
+        api('/me', { headers: { Authorization: 'Bearer ' + at } })
+          .then(function(res) {
+            if (res && res.customer) {
+              setUser(at, res.customer);
+              if (typeof renderAll === 'function') renderAll();
+              if (typeof toast === 'function') toast('Вход выполнен! С возвращением, ' + res.customer.name, '👋');
+            }
+          })
+          .catch(function() {});
+      }
+      if (Date.now() - t0 > 4000) clearInterval(iv);
+    }, 150);
+  })();
+
 /* ── v10-support: диплинк выбора темы поддержки (?support=choose) ── */
 (function initSupportChoose() {
   if (QS.get('support') !== 'choose') return;

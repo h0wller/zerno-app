@@ -122,8 +122,9 @@ authRouter.post('/api/auth/request-reg-otp', (req, res) => {
   if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
   if (via === 'tg') {
     const token = crypto.randomBytes(6).toString('hex');
-    otpStore.set('regtg:' + token, { phone: p, expires: Date.now() + 10 * 60 * 1000 });
-    otpStore.set('reg:' + p, { code: null, confirmed: false,expires: Date.now() + 10 * 60 * 1000 });
+    const reqName = String(req.body.name || '').trim();
+    otpStore.set('regtg:' + token, { phone: p, name: reqName, expires: Date.now() + 10 * 60 * 1000 });
+    otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
     return res.json({ ok: true, tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}` });
   }
   const st = otpStore.get('reg:' + p);
@@ -135,10 +136,15 @@ authRouter.post('/api/auth/request-reg-otp', (req, res) => {
   res.json({ ok: true });
 });
 
+// [tg-web-seamless-auth-v1]
 authRouter.get('/api/auth/check-reg', (req, res) => {
   const p = fmtPhone(req.query.phone || '');
   const st = otpStore.get('reg:' + p);
-  res.json({ confirmed: !!(st && st.confirmed && Date.now() < st.expires) });
+  const isOk = !!(st && st.confirmed && Date.now() < st.expires);
+  if (isOk && st.token && st.customer) {
+    return res.json({ confirmed: true, token: st.token, customer: st.customer });
+  }
+  res.json({ confirmed: isOk });
 });
 
 authRouter.post('/api/auth/register', (req, res) => {

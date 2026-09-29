@@ -276,11 +276,12 @@
     if (regTgBtn) {
       regTgBtn.onclick = async function () {
         var ph = (document.getElementById('regPhone') || {}).value;
+        var nm = ((document.getElementById('regName') || {}).value || '').trim();
         if (ph10(ph).length < 10) return toast('Введите номер полностью', '📵');
         try {
           var r = await api('/auth/request-reg-otp', {
             method: 'POST',
-            body: { phone: ph, via: 'tg' }
+            body: { phone: ph, name: nm, via: 'tg' }
           });
           window.open(r.tgUrl, '_blank');
           toast('Подтвердите номер в Telegram', '🤖');
@@ -289,15 +290,22 @@
           regPoll = setInterval(async function () {
             try {
               var c = await api('/auth/check-reg?phone=' + encodeURIComponent(ph));
-              if (c.confirmed) {
+              if (c && c.confirmed) {
                 clearInterval(regPoll);
                 regPoll = null;
+                if (c.token && c.customer) {
+                  setUser(c.token, c.customer);
+                  closeAuth();
+                  if (typeof renderAll === 'function') renderAll();
+                  toast('Добро пожаловать, ' + c.customer.name + '! Бонусы активированы 🎉', '🎁');
+                  return;
+                }
                 var row = document.getElementById('regTgRow');
                 if (row) row.hidden = false;
                 toast('Номер подтверждён через Telegram', '🎉');
               }
             } catch (_) {}
-          }, 3000);
+          }, 2500);
         } catch (e) {
           toast(e.message, '⚠️');
         }

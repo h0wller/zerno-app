@@ -6,6 +6,9 @@ import { tgSend, TG_TOKEN, TG_WEBHOOK_SECRET, APP_URL } from '../services/telegr
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { otpStore } from '../utils/otp.js';
 import { grantWelcome } from '../domain/loyalty.js';
+import { cust, addHist, issueToken } from '../domain/helpers.js';
+import { createCustomer } from '../domain/customers.js';
+import { nowISO } from '../utils/id-time.js';
 import { ORDER_STATUS } from './orders.js';
 
 const STATUS_EMOJI = { new:'🆕', accept:'✅', cook:'👨‍🍳', way:'🛵', done:'🏁', cancel:'❌' };
@@ -310,7 +313,7 @@ export function createTgRouter({ appKb }) {
         tgSend(chatId, 'Ссылка для подтверждения устарела ⏳\nНажми «Подтвердить в Telegram» в приложении ещё раз.');
         return;
       }
-      otpStore.set('regchat:' + chatId, { token, phone: st.phone, expires: Date.now() + 10 * 60 * 1000 });
+      otpStore.set('regchat:' + chatId, { token, phone: st.phone, name: st.name || '', expires: Date.now() + 10 * 60 * 1000 });
       await tgSend(chatId, `Подтверждаю номер ${fmtPhone(st.phone)} — нажмите кнопку ниже 👇`, appKb());
       return;
     }
@@ -394,16 +397,61 @@ export function createTgRouter({ appKb }) {
     }
 
     /* 7. Привязка через contact — сохранённый flow */
+    // [tg-web-seamless-auth-v1]
     if (u.message.contact) {
       const pend = otpStore.get('regchat:' + chatId);
       if (pend && Date.now() < pend.expires) {
-        if (fmtPhone(u.message.contact.phone_number) === fmtPhone(pend.phone)) {
-          otpStore.set('reg:' + fmtPhone(pend.phone), { code: null, confirmed: true, tgChat: chatId, expires: Date.now() + 10 * 60 * 1000 });
+        const contactPhone = fmtPhone(u.message.contact.phone_number);
+        if (contactPhone === fmtPhone(pend.phone)) {
+          let targetCust = db.prepare('SELECT * FROM customers WHERE phone=?').get(contactPhone);
+          if (targetCust) {
+            db.prepare('UPDATE customers SET tg=?, verified=1 WHERE id=?').run(chatId, targetCust.id);
+            if (!targetCust.welcome) grantWelcome(targetCust.id, 'Telegram');
+            addHist(targetCust.id, 'Вход через Telegram-подтверждение', 'Telegram');
+          } else {
+            const tgUserName = [u.message.from?.first_name, u.message.from?.last_name].filter(Boolean).join(' ');
+            const newName = pend.name || tgUserName || 'Гость';
+            const r = createCustomer(newName, contactPhone, '');
+            if (!r.err && r.customer) {
+              db.prepare('UPDATE customers SET tg=?, verified=1, consent=? WHERE id=?').run(chatId, nowISO() + ' v1', r.customer.id);
+              grantWelcome(r.customer.id, 'Telegram');
+              addHist(r.customer.id, 'Регистрация через Telegram', 'Telegram');
+            }
+          }
+
+          const finalCust = db.prepare('SELECT * FROM customers WHERE phone=?').get(contactPhone);
+          const sessionToken = finalCust ? issueToken(finalCust.id) : null;
+          const custObj = finalCust ? cust(finalCust) : null;
+
+          otpStore.set('reg:' + contactPhone, {
+            code: null,
+            confirmed: true,
+            token: sessionToken,
+            customer: custObj,
+            tgChat: chatId,
+            expires: Date.now() + 10 * 60 * 1000
+          });
           otpStore.delete('regchat:' + chatId);
           otpStore.delete('regtg:' + pend.token);
-          await tgSend(chatId, '✅ Номер подтверждён! Вернитесь в приложение и завершите регистрацию — +1 штамп уже ваш 🎁', { remove_keyboard: true });
+
+          await tgSend(chatId, '👍 Номер подтверждён', { remove_keyboard: true });
+          const baseSite = (typeof APP_URL !== 'undefined' && APP_URL) || 'https://friday.andcoffee.online';
+          const authLink = sessionToken ? (baseSite + '/?auth_token=' + sessionToken) : (baseSite + '/?src=tg');
+
+          await tgSend(chatId,
+            '🎉 <b>Профиль готов, ' + (custObj ? custObj.name : '') + '!</b>\n\n' +
+            'Ваши приветственные бонусы активированы:\n' +
+            '☕ <b>+1 штамп</b> на кофе у моря\n' +
+            '🍕 <b>Скидка 200 ₽</b> на доставку (промокод <b>ПРИВЕТ</b>)\n\n' +
+            'В браузере вход выполнился автоматически. Или откройте сайт кнопкой ниже 👇',
+            {
+              inline_keyboard: [[
+                { text: '🚀 Открыть сайт (вход выполнен)', url: authLink }
+              ]]
+            }
+          );
         } else {
-          tgSend(chatId, 'Номер не совпадает с указанным в приложении ⚠️ Нажмите кнопку ещё раз.');
+          await tgSend(chatId, 'Номер не совпадает с указанным в приложении ⚠️ Нажмите кнопку ещё раз.');
         }
         return;
       }
