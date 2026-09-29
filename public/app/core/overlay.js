@@ -379,3 +379,272 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
 }
 })();
 })();
+
+// [tg-ux-controller-robust-v3]
+(function initTgNativeUx() {
+  if (window.__tgUxV3Active) return;
+  window.__tgUxV3Active = true;
+
+  function tg() {
+    return (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+  }
+
+  function isTg() {
+    var app = tg();
+    return !!(
+      window.__isTgMiniApp ||
+      window.__tgInitData ||
+      (app && app.initData) ||
+      (app && app.initDataUnsafe && (app.initDataUnsafe.query_id || app.initDataUnsafe.user))
+    );
+  }
+
+  try {
+    var appInit = tg();
+    if (appInit) {
+      if (typeof appInit.ready === 'function') appInit.ready();
+      if (typeof appInit.expand === 'function') appInit.expand();
+    }
+  } catch (e) {}
+
+  function haptic(style) {
+    if (window.__tgEvents && Array.isArray(window.__tgEvents.hapticCalls)) {
+      window.__tgEvents.hapticCalls.push(style || 'light');
+    }
+    var app = tg();
+    if (!app || !app.HapticFeedback) return;
+    try {
+      if (style === 'success' || style === 'error' || style === 'warning') {
+        app.HapticFeedback.notificationOccurred(style);
+      } else {
+        app.HapticFeedback.impactOccurred(style || 'light');
+      }
+    } catch (e) {}
+  }
+
+  function state() {
+    var modal = document.querySelector('.modal.show, [id$="Modal"].show, .modal-wrap.show, .popup.show, [class*="modal"].show');
+    var cart = document.getElementById('cartPanel');
+    var panel = document.getElementById('panel');
+    return {
+      modal: modal,
+      cartOpen: !!(cart && (cart.classList.contains('open') || cart.classList.contains('show'))),
+      panelOpen: !!(panel && (panel.classList.contains('open') || panel.classList.contains('show')))
+    };
+  }
+
+  function closeTop() {
+    var s = state();
+    if (s.modal) {
+      var CLOSE = {
+        emModal: 'closeEditor',
+        authModal: 'closeAuth',
+        pinModal: 'closePin',
+        setPinModal: 'closeSetPin',
+        qrModal: 'closeQRFull',
+        promoModal: 'closePromo',
+        dashModal: 'closeDash',
+        staffChatModal: 'closeStaffChat'
+      };
+      var fn = CLOSE[s.modal.id];
+      if (fn && typeof window[fn] === 'function') {
+        window[fn]();
+      } else {
+        s.modal.classList.remove('show');
+      }
+    } else if (s.cartOpen) {
+      var c = document.getElementById('cartPanel');
+      if (c) c.classList.remove('open');
+    } else if (s.panelOpen) {
+      var p = document.getElementById('panel');
+      if (p) p.classList.remove('open');
+    }
+    if (typeof window.syncOverlay === 'function') window.syncOverlay();
+    sync();
+  }
+
+  function ensureCss() {
+    if (document.getElementById('tgUxCss')) return;
+    var st = document.createElement('style');
+    st.id = 'tgUxCss';
+    st.textContent = 'html.tg-native-back .tabs .btn-back, html.tg-native-back .btn-back { display: none !important; }';
+    document.head.appendChild(st);
+  }
+
+  function bindBack() {
+    var app = tg();
+    var b = app && app.BackButton;
+    if (!b || b.__tgBound) return;
+    try {
+      var handler = function () { closeTop(); };
+      if (typeof b.onClick === 'function') b.onClick(handler);
+      else if (typeof b.onEvent === 'function') b.onEvent('clicked', handler);
+      b.__tgBound = true;
+    } catch (e) {}
+  }
+
+  function totalNow() {
+    if (typeof window.totalsNow === 'function') {
+      try {
+        var t = window.totalsNow();
+        if (t && typeof t.total !== 'undefined' && Number(t.total) > 0) return Number(t.total);
+      } catch (e) {}
+    }
+    var el = document.getElementById('cartTotal');
+    if (el) {
+      var raw = String(el.textContent || '').replace(/[^0-9]/g, '');
+      var num = Number(raw) || 0;
+      if (num > 0) return num;
+    }
+    var list = (typeof window.cart !== 'undefined' && Array.isArray(window.cart)) ? window.cart : [];
+    return list.reduce(function (a, c) {
+      return a + ((Number(c.price) || 0) * (Number(c.qty) || 1));
+    }, 0);
+  }
+
+  function cartCount() {
+    var list = (typeof window.cart !== 'undefined' && Array.isArray(window.cart)) ? window.cart : [];
+    return list.reduce(function (a, c) { return a + (Number(c.qty) || 1); }, 0);
+  }
+
+  function bindMain() {
+    var app = tg();
+    var m = app && app.MainButton;
+    if (!m || m.__tgBound) return;
+    try {
+      var handler = function () {
+        haptic('medium');
+        var cp = document.getElementById('cartPanel');
+        if (cp && !cp.classList.contains('open')) {
+          cp.classList.add('open');
+          if (typeof window.renderCart === 'function') window.renderCart();
+          if (typeof window.syncOverlay === 'function') window.syncOverlay();
+          sync();
+          return;
+        }
+        var btn = document.getElementById('checkoutBtn');
+        if (btn) btn.click();
+      };
+      if (typeof m.onClick === 'function') m.onClick(handler);
+      else if (typeof m.onEvent === 'function') m.onEvent('clicked', handler);
+      m.__tgBound = true;
+    } catch (e) {}
+  }
+
+  function updateMainButton() {
+    if (!isTg()) return;
+    var app = tg();
+    var m = app && app.MainButton;
+    var count = cartCount();
+    var total = totalNow();
+    var show = count > 0 && total > 0;
+    var text = show ? ('Оформить заказ за ' + total.toLocaleString('ru-RU') + ' ₽') : '';
+
+    if (window.__tgEvents) {
+      window.__tgEvents.mainShown = show;
+      window.__tgEvents.mainText = text;
+    }
+
+    if (!m) return;
+    try {
+      if (show) {
+        m.setText(text);
+        m.show();
+      } else {
+        m.hide();
+      }
+    } catch (e) {}
+  }
+
+  function sync() {
+    if (!isTg()) return;
+    ensureCss();
+    bindBack();
+    bindMain();
+    var s = state();
+    var open = !!(s.modal || s.cartOpen || s.panelOpen);
+
+    if (window.__tgEvents) {
+      window.__tgEvents.backShown = open;
+    }
+
+    var app = tg();
+    var b = app && app.BackButton;
+    if (b) {
+      try {
+        if (open) {
+          b.show();
+          document.documentElement.classList.add('tg-native-back');
+        } else {
+          b.hide();
+          document.documentElement.classList.remove('tg-native-back');
+        }
+      } catch (e) {}
+    } else {
+      if (open) document.documentElement.classList.add('tg-native-back');
+      else document.documentElement.classList.remove('tg-native-back');
+    }
+    updateMainButton();
+  }
+
+  // Мгновенный вызов sync() при любых операциях с оверлеями
+  var origSyncOverlay = window.syncOverlay;
+  window.syncOverlay = function () {
+    var res = typeof origSyncOverlay === 'function' ? origSyncOverlay.apply(this, arguments) : undefined;
+    sync();
+    return res;
+  };
+
+  var pending = false;
+  function scheduleSync() {
+    if (pending) return;
+    pending = true;
+    setTimeout(function () {
+      pending = false;
+      sync();
+    }, 40);
+  }
+
+  if (document.body) {
+    try {
+      new MutationObserver(scheduleSync).observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'hidden'],
+        childList: true
+      });
+    } catch (e) {}
+  }
+
+  document.addEventListener('click', function (e) {
+    var target = e.target;
+    if (!target || typeof target.closest !== 'function') return;
+
+    if (target.closest('.qty button, [data-step], .step, [data-act], #deliveryRail button, #brandSeg button, .rail button')) {
+      haptic('light');
+    }
+    if (target.closest('.addBtn, .cta.add, [data-addon], #deliveryGrid .card .cta')) {
+      haptic('medium');
+    }
+  }, true);
+
+  var originalToast = window.toast;
+  window.toast = function (msg, icon) {
+    if (icon === '🎉' || (msg && /оформлен|успешно|принят/i.test(msg))) {
+      haptic('success');
+    }
+    if (typeof originalToast === 'function') {
+      return originalToast.apply(this, arguments);
+    }
+  };
+
+  window.TgUx = {
+    haptic: haptic,
+    sync: sync,
+    updateMainButton: updateMainButton,
+    closeTop: closeTop,
+    success: function () { haptic('success'); }
+  };
+
+  setTimeout(sync, 50);
+})();

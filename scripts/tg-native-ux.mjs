@@ -1,55 +1,69 @@
-#!/usr/bin/env node
-/**
- * scripts/tg-native-ux.mjs
- * Задача 1: нативный Telegram Mini App UX.
- *
- * Что делает:
- * - инжектит Telegram UX controller в public/app/core/overlay.js;
- * - связывает Telegram.WebApp.BackButton с #panel, #cartPanel, .modal.show;
- * - прячет веб-кнопку "Назад", если показан нативный BackButton;
- * - добавляет HapticFeedback:
- *   - light: степперы +/-, категории доставки, переключение брендов;
- *   - medium: успешное добавление в корзину / добавки;
- *   - success: успешный checkout;
- * - дублирует чекаут в Telegram.WebApp.MainButton;
- * - создаёт бэкапы .bak-*;
- * - CRLF-safe;
- * - node --check для изменённых JS;
- * - инкрементирует STATIC_CACHE в public/sw.js.
- *
- * Запуск:
- *   node scripts/tg-native-ux.mjs
- */
+// scripts/fix-tg-native-ux-robust.mjs
+// Полная и надёжная интеграция Telegram WebApp SDK (BackButton, MainButton, Haptic)
+// Запуск: node scripts/fix-tg-native-ux-robust.mjs
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, '..');
+const INDEX_FILE = path.resolve('public/index.html');
+const OVERLAY_FILE = path.resolve('public/app/core/overlay.js');
+const SW_FILE = path.resolve('public/sw.js');
 
-const stamp = new Date()
-  .toISOString()
-  .replace(/[:T]/g, '-')
-  .replace(/\..+$/, '');
+const BAK_INDEX = INDEX_FILE + '.bak-tg-ux-robust';
+const BAK_OVERLAY = OVERLAY_FILE + '.bak-tg-ux-robust';
+const BAK_SW = SW_FILE + '.bak-tg-ux-robust';
 
-const changed = [];
-const warnings = [];
+const MARKER = '// [tg-ux-controller-robust-v2]';
 
-/**
- * Единый Telegram UX runtime.
- * Вставляется в overlay.js, чтобы не трогать index.html.
- */
-const TG_UX_CODE = `/* TG-UX-PATCH v1: Telegram BackButton / MainButton / HapticFeedback */
-(function () {
-  if (window.TgUx) return;
+function readNorm(P) {
+  const raw = fs.readFileSync(P, 'utf8');
+  const isCRLF = raw.indexOf('\r\n') !== -1;
+  return { content: raw.replace(/\r\n/g, '\n'), isCRLF, raw };
+}
+
+function writeNorm(P, content, isCRLF) {
+  fs.writeFileSync(P, isCRLF ? content.replace(/\n/g, '\r\n') : content, 'utf8');
+}
+
+if (!fs.existsSync(INDEX_FILE) || !fs.existsSync(OVERLAY_FILE) || !fs.existsSync(SW_FILE)) {
+  console.error('Ошибка: не найдены обязательные файлы в public/');
+  process.exit(1);
+}
+
+const indexData = readNorm(INDEX_FILE);
+const overlayData = readNorm(OVERLAY_FILE);
+const swData = readNorm(SW_FILE);
+
+// ── 1. Подключение Telegram SDK в public/index.html ──
+let patchedIndex = indexData.content;
+if (!patchedIndex.includes('telegram-web-app.js')) {
+  const FROM_INDEX = '<link rel="stylesheet" href="app/ui/theme-v2.css" />';
+  const TO_INDEX = '<script src="https://telegram.org/js/telegram-web-app.js"></script>\n    <link rel="stylesheet" href="app/ui/theme-v2.css" />';
+  if (patchedIndex.split(FROM_INDEX).length - 1 !== 1) {
+    console.error('Якорь theme-v2.css не найден в public/index.html.');
+    process.exit(1);
+  }
+  patchedIndex = patchedIndex.split(FROM_INDEX).join(TO_INDEX);
+  fs.writeFileSync(BAK_INDEX, indexData.raw, 'utf8');
+  writeNorm(INDEX_FILE, patchedIndex, indexData.isCRLF);
+  console.log('✔ public/index.html: добавлен Telegram WebApp SDK.');
+} else {
+  console.log('✔ public/index.html: Telegram SDK уже подключён.');
+}
+
+// ── 2. Внедрение контроллера TgUx в public/app/core/overlay.js ──
+const TG_CONTROLLER_CODE = `
+${MARKER}
+(function initTgNativeUx() {
+  if (window.__tgUxReady) return;
+  window.__tgUxReady = true;
 
   function tg() {
     return (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
   }
 
-  function isMini() {
+  function isTg() {
     var app = tg();
     return !!(
       window.__isTgMiniApp ||
@@ -58,6 +72,15 @@ const TG_UX_CODE = `/* TG-UX-PATCH v1: Telegram BackButton / MainButton / Haptic
       (app && app.initDataUnsafe && app.initDataUnsafe.query_id)
     );
   }
+
+  // Автоматический expand при входе
+  try {
+    var appInit = tg();
+    if (appInit) {
+      if (typeof appInit.ready === 'function') appInit.ready();
+      if (typeof appInit.expand === 'function') appInit.expand();
+    }
+  } catch (e) {}
 
   function haptic(style) {
     var app = tg();
@@ -84,7 +107,6 @@ const TG_UX_CODE = `/* TG-UX-PATCH v1: Telegram BackButton / MainButton / Haptic
 
   function closeTop() {
     var s = state();
-
     if (s.modal) {
       var CLOSE = {
         emModal: 'closeEditor',
@@ -96,16 +118,11 @@ const TG_UX_CODE = `/* TG-UX-PATCH v1: Telegram BackButton / MainButton / Haptic
         dashModal: 'closeDash',
         staffChatModal: 'closeStaffChat'
       };
-
-      if (s.modal.id === 'settingsModal') {
-        s.modal.classList.remove('show');
+      var fn = CLOSE[s.modal.id];
+      if (fn && typeof window[fn] === 'function') {
+        window[fn]();
       } else {
-        var fn = CLOSE[s.modal.id];
-        if (fn && typeof window[fn] === 'function') {
-          window[fn]();
-        } else {
-          s.modal.classList.remove('show');
-        }
+        s.modal.classList.remove('show');
       }
     } else if (s.cartOpen) {
       var c = document.getElementById('cartPanel');
@@ -114,7 +131,6 @@ const TG_UX_CODE = `/* TG-UX-PATCH v1: Telegram BackButton / MainButton / Haptic
       var p = document.getElementById('panel');
       if (p) p.classList.remove('open');
     }
-
     if (typeof window.syncOverlay === 'function') window.syncOverlay();
     sync();
   }
@@ -123,47 +139,46 @@ const TG_UX_CODE = `/* TG-UX-PATCH v1: Telegram BackButton / MainButton / Haptic
     if (document.getElementById('tgUxCss')) return;
     var st = document.createElement('style');
     st.id = 'tgUxCss';
-    st.textContent = 'html.tg-native-back .tabs .btn-back,html.tg-native-back .btn-back{display:none!important}';
+    st.textContent = 'html.tg-native-back .tabs .btn-back, html.tg-native-back .btn-back { display: none !important; }';
     document.head.appendChild(st);
   }
 
-  function backButton() {
-    var app = tg();
-    return app && app.BackButton ? app.BackButton : null;
-  }
-
-  function mainButton() {
-    var app = tg();
-    return app && app.MainButton ? app.MainButton : null;
-  }
-
   function bindBack() {
-    var b = backButton();
+    var app = tg();
+    var b = app && app.BackButton;
     if (!b || b.__tgBound) return;
-
     try {
-      var handler = function () {
-        closeTop();
-      };
-
-      if (typeof b.onClick === 'function') {
-        b.onClick(handler);
-      } else if (typeof b.onEvent === 'function') {
-        b.onEvent('clicked', handler);
-      }
-
+      var handler = function () { closeTop(); };
+      if (typeof b.onClick === 'function') b.onClick(handler);
+      else if (typeof b.onEvent === 'function') b.onEvent('clicked', handler);
       b.__tgBound = true;
     } catch (e) {}
   }
 
-  function bindMain() {
-    var m = mainButton();
-    if (!m || m.__tgBound) return;
+  function totalNow() {
+    var el = document.getElementById('cartTotal');
+    if (el) {
+      var raw = String(el.textContent || '').replace(/[^0-9]/g, '');
+      if (raw) return Number(raw) || 0;
+    }
+    var list = (typeof window.cart !== 'undefined' && Array.isArray(window.cart)) ? window.cart : [];
+    return list.reduce(function (a, c) {
+      return a + ((Number(c.price) || 0) * (Number(c.qty) || 1));
+    }, 0);
+  }
 
+  function cartCount() {
+    var list = (typeof window.cart !== 'undefined' && Array.isArray(window.cart)) ? window.cart : [];
+    return list.reduce(function (a, c) { return a + (Number(c.qty) || 1); }, 0);
+  }
+
+  function bindMain() {
+    var app = tg();
+    var m = app && app.MainButton;
+    if (!m || m.__tgBound) return;
     try {
       var handler = function () {
         haptic('medium');
-
         var cp = document.getElementById('cartPanel');
         if (cp && !cp.classList.contains('open')) {
           cp.classList.add('open');
@@ -172,73 +187,25 @@ const TG_UX_CODE = `/* TG-UX-PATCH v1: Telegram BackButton / MainButton / Haptic
           sync();
           return;
         }
-
         var btn = document.getElementById('checkoutBtn');
         if (btn) btn.click();
       };
-
-      if (typeof m.onClick === 'function') {
-        m.onClick(handler);
-      } else if (typeof m.onEvent === 'function') {
-        m.onEvent('clicked', handler);
-      }
-
+      if (typeof m.onClick === 'function') m.onClick(handler);
+      else if (typeof m.onEvent === 'function') m.onEvent('clicked', handler);
       m.__tgBound = true;
     } catch (e) {}
   }
 
-  function money(n) {
-    return Number(n || 0).toLocaleString('ru-RU');
-  }
-
-  function cartCount() {
-    var list = (typeof window.cart !== 'undefined' && window.cart) ? window.cart : [];
-    if (!list || !Array.isArray(list)) return 0;
-    return list.reduce(function (a, c) {
-      return a + (Number(c.qty) || 1);
-    }, 0);
-  }
-
-  function totalNow() {
-    var t = null;
-
-    if (typeof window.totalsNow === 'function') {
-      try {
-        t = window.totalsNow();
-      } catch (e) {}
-    }
-
-    if (t && typeof t.total !== 'undefined') {
-      return Number(t.total) || 0;
-    }
-
-    var el = document.getElementById('cartTotal');
-    if (el) {
-      var raw = String(el.textContent || '').replace(/[^0-9]/g, '');
-      if (raw) return Number(raw) || 0;
-    }
-
-    var list = (typeof window.cart !== 'undefined' && window.cart) ? window.cart : [];
-    if (!list || !Array.isArray(list)) return 0;
-
-    return list.reduce(function (a, c) {
-      return a + ((Number(c.price) || 0) * (Number(c.qty) || 1));
-    }, 0);
-  }
-
   function updateMainButton() {
-    if (!isMini()) return;
-
-    var m = mainButton();
+    if (!isTg()) return;
+    var app = tg();
+    var m = app && app.MainButton;
     if (!m) return;
-
     var count = cartCount();
     var total = totalNow();
-    var show = !!(count > 0 && total > 0);
-
     try {
-      if (show) {
-        m.setText('Оформить заказ за ' + money(total) + ' ₽');
+      if (count > 0 && total > 0) {
+        m.setText('Оформить заказ за ' + total.toLocaleString('ru-RU') + ' ₽');
         m.show();
       } else {
         m.hide();
@@ -247,16 +214,14 @@ const TG_UX_CODE = `/* TG-UX-PATCH v1: Telegram BackButton / MainButton / Haptic
   }
 
   function sync() {
-    if (!isMini()) return;
-
+    if (!isTg()) return;
     ensureCss();
     bindBack();
     bindMain();
-
     var s = state();
     var open = !!(s.modal || s.cartOpen || s.panelOpen);
-    var b = backButton();
-
+    var app = tg();
+    var b = app && app.BackButton;
     if (b) {
       try {
         if (open) {
@@ -268,292 +233,104 @@ const TG_UX_CODE = `/* TG-UX-PATCH v1: Telegram BackButton / MainButton / Haptic
         }
       } catch (e) {}
     }
-
     updateMainButton();
   }
 
   var pending = false;
-
-  function schedule() {
+  function scheduleSync() {
     if (pending) return;
     pending = true;
     setTimeout(function () {
       pending = false;
       sync();
-    }, 80);
+    }, 60);
   }
 
-  function observe() {
-    if (!document.body) return;
-
+  // Наблюдатель за DOM для автоматического обновления кнопок
+  if (document.body) {
     try {
-      new MutationObserver(schedule).observe(document.body, {
+      new MutationObserver(scheduleSync).observe(document.body, {
         subtree: true,
         attributes: true,
         attributeFilter: ['class', 'hidden'],
-        childList: true,
-        characterData: true
+        childList: true
       });
     } catch (e) {}
   }
 
-  if (document.body) {
-    observe();
-  } else {
-    document.addEventListener('DOMContentLoaded', observe);
-  }
-
+  // Глобальное делегирование Haptic на действия гостя
   document.addEventListener('click', function (e) {
     var target = e.target;
     if (!target || typeof target.closest !== 'function') return;
 
-    if (target.closest('[data-step], .qty button, #deliveryRail [data-dcat], #brandSeg button')) {
+    // Степперы и переключатели: light
+    if (target.closest('.qty button, [data-step], .step, [data-act], #deliveryRail button, #brandSeg button, .rail button')) {
       haptic('light');
     }
-
-    if (target.closest('[data-addon]')) {
+    // Добавление в корзину: medium
+    if (target.closest('.addBtn, .cta.add, [data-addon], #deliveryGrid .card .cta')) {
       haptic('medium');
     }
   }, true);
 
-  window.TgUx = {
-    haptic: haptic,
-    success: function () {
+  // Перехват window.toast для success-haptic при оформлении заказа
+  var originalToast = window.toast;
+  window.toast = function (msg, icon) {
+    if (icon === '🎉' || (msg && /оформлен|успешно|принят/i.test(msg))) {
       haptic('success');
-    },
-    notify: function (type) {
-      haptic(type || 'success');
-    },
-    sync: sync,
-    updateMainButton: updateMainButton,
-    closeTop: closeTop
+    }
+    if (typeof originalToast === 'function') {
+      return originalToast.apply(this, arguments);
+    }
   };
 
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(sync, 0);
-  } else {
-    document.addEventListener('DOMContentLoaded', function () {
-      setTimeout(sync, 0);
-    });
-  }
-})();`;
+  window.TgUx = {
+    haptic: haptic,
+    sync: sync,
+    updateMainButton: updateMainButton,
+    closeTop: closeTop,
+    success: function () { haptic('success'); }
+  };
 
-function resolvePath(relPath) {
-  return path.join(root, relPath);
+  setTimeout(sync, 100);
+})();
+`;
+
+let patchedOverlay = overlayData.content;
+if (!patchedOverlay.includes(MARKER)) {
+  fs.writeFileSync(BAK_OVERLAY, overlayData.raw, 'utf8');
+  patchedOverlay = patchedOverlay + '\n' + TG_CONTROLLER_CODE;
+  writeNorm(OVERLAY_FILE, patchedOverlay, overlayData.isCRLF);
+  console.log('✔ public/app/core/overlay.js: внедрён надёжный TgUx контроллер.');
+} else {
+  console.log('✔ public/app/core/overlay.js: TgUx контроллер уже актуален.');
 }
 
-function backupFile(absPath) {
-  if (!fs.existsSync(absPath)) return null;
-
-  let candidate = `${absPath}.bak-${stamp}`;
-  let i = 1;
-
-  while (fs.existsSync(candidate)) {
-    candidate = `${absPath}.bak-${stamp}-${i}`;
-    i += 1;
-  }
-
-  fs.copyFileSync(absPath, candidate);
-  return candidate;
-}
-
-function readLf(absPath) {
-  const raw = fs.readFileSync(absPath, 'utf8');
-  const eol = raw.includes('\r\n') ? '\r\n' : '\n';
-  const text = raw.replace(/\r\n/g, '\n');
-  return { text, eol };
-}
-
-function writeEol(absPath, text, eol) {
-  const out = eol === '\r\n' ? text.replace(/\n/g, '\r\n') : text;
-  fs.writeFileSync(absPath, out, 'utf8');
-}
-
-function checkSyntax(absPath) {
-  const res = spawnSync(process.execPath, ['--check', absPath], {
-    encoding: 'utf8',
-  });
-
-  if (res.status !== 0) {
-    throw new Error(
-      `node --check failed for ${absPath}\n${res.stderr || res.stdout || ''}`
-    );
-  }
-}
-
-function modifyJs(relPath, transformer) {
-  const absPath = resolvePath(relPath);
-
-  if (!fs.existsSync(absPath)) {
-    warnings.push(`Файл не найден: ${relPath}`);
-    return false;
-  }
-
-  const { text, eol } = readLf(absPath);
-  const out = transformer(text);
-
-  if (typeof out !== 'string' || out === text) {
-    return false;
-  }
-
-  const bak = backupFile(absPath);
-  writeEol(absPath, out, eol);
-
-  try {
-    checkSyntax(absPath);
-  } catch (err) {
-    if (bak) fs.copyFileSync(bak, absPath);
-    throw err;
-  }
-
-  changed.push(relPath);
-  console.log(`✔ Изменён: ${relPath}${bak ? ` (backup: ${path.basename(bak)})` : ''}`);
-  return true;
-}
-
-function patchOverlay(text) {
-  if (text.includes('TG-UX-PATCH v1')) return text;
-
-  const markers = [
-    "'use strict';",
-    '"use strict";'
-  ];
-
-  for (const marker of markers) {
-    const idx = text.indexOf(marker);
-    if (idx !== -1) {
-      const pos = idx + marker.length;
-      return `${text.slice(0, pos)}\n${TG_UX_CODE}\n${text.slice(pos)}`;
-    }
-  }
-
-  return `${TG_UX_CODE}\n${text}`;
-}
-
-function patchPanel(text) {
-  if (text.includes('TG-UX-PATCH panel')) return text;
-
-  let found = false;
-
-  const out = text.replace(
-    /([ \t]*)if \(typeof syncOverlay === 'function'\) syncOverlay\(\);/g,
-    (m, indent) => {
-      found = true;
-      return `${m}\n${indent}if (window.TgUx) window.TgUx.sync(); /* TG-UX-PATCH panel */`;
-    }
-  );
-
-  if (!found) {
-    warnings.push('public/app/core/panel.js: не найден вызов syncOverlay()');
-    return text;
-  }
-
-  return out;
-}
-
-function patchDelivery(text) {
-  if (text.includes('TG-UX-PATCH add')) return text;
-
-  let found = false;
-
-  const out = text.replace(
-    /addBtn\.classList\.add\((['"])added\1\)\s*;/,
-    (m) => {
-      found = true;
-      return `${m}\n        if (window.TgUx) window.TgUx.haptic('medium'); /* TG-UX-PATCH add */`;
-    }
-  );
-
-  if (!found) {
-    warnings.push('public/app/delivery.js: не найдено успешное добавление в корзину (addBtn.classList.add("added"))');
-    return text;
-  }
-
-  return out;
-}
-
-function patchCart(text) {
-  if (text.includes('TG-UX-PATCH checkout')) return text;
-
-  let found = false;
-
-  const out = text.replace(
-    /toast\(\s*(['"])Заказ #\1\s*\+\s*r\.order\.no\s*\+\s*(['"]) оформлен!\2\s*,\s*(['"])🎉\3\s*\)\s*;/u,
-    (m) => {
-      found = true;
-      return `${m}\n      if (window.TgUx) window.TgUx.success(); /* TG-UX-PATCH checkout */`;
-    }
-  );
-
-  if (!found) {
-    warnings.push('public/app/cart.js: не найден toast успешного заказа');
-    return text;
-  }
-
-  return out;
-}
-
-function patchSw(text) {
-  const re = /(STATIC_CACHE\s*=\s*['"])([^'"]+)(['"])/;
-  let found = false;
-
-  const out = text.replace(re, (m, pre, val, quote) => {
-    found = true;
-
-    let next;
-    if (/\d/.test(val)) {
-      next = val.replace(/(\d+)(?=[^\d]*$)/, (mm, num) => String(Number(num) + 1));
-    } else {
-      next = `${val}-2`;
-    }
-
-    console.log(`   STATIC_CACHE: ${val} -> ${next}`);
-    return `${pre}${next}${quote}`;
-  });
-
-  if (!found) {
-    warnings.push('public/sw.js: не найден STATIC_CACHE');
-    return text;
-  }
-
-  return out;
-}
-
-try {
-  console.log('Task 1: Telegram native UX patch...');
-
-  modifyJs('public/app/core/overlay.js', patchOverlay);
-  modifyJs('public/app/core/panel.js', patchPanel);
-  modifyJs('public/app/delivery.js', patchDelivery);
-  modifyJs('public/app/cart.js', patchCart);
-
-  if (changed.length > 0) {
-    modifyJs('public/sw.js', patchSw);
-  } else {
-    console.log('Изменений нет: патчи уже применены или паттерны не найдены.');
-  }
-
-  if (warnings.length) {
-    console.warn('\nПредупреждения:');
-    for (const w of warnings) {
-      console.warn(` - ${w}`);
-    }
-  }
-
-  if (warnings.some((w) => w.startsWith('Файл не найден:'))) {
-    console.error('\nКритично: не найдены обязательные файлы.');
-    process.exit(1);
-  }
-
-  console.log('\nГотово.');
-  if (changed.length) {
-    console.log('Изменённые файлы:');
-    for (const f of changed) {
-      console.log(` - ${f}`);
-    }
-  }
-} catch (err) {
-  console.error('\nОшибка скрипта:');
-  console.error(err);
+// ── 3. Инкремент STATIC_CACHE в public/sw.js ──
+const swMatch = swData.content.match(/zerno-static-v(\d+)/);
+if (!swMatch) {
+  console.error('Не найден токен STATIC_CACHE в public/sw.js.');
   process.exit(1);
 }
+const oldVer = swMatch[0];
+const newVer = 'zerno-static-v' + (parseInt(swMatch[1], 10) + 1);
+const patchedSw = swData.content.replace(oldVer, newVer);
+
+fs.writeFileSync(BAK_SW, swData.raw, 'utf8');
+writeNorm(SW_FILE, patchedSw, swData.isCRLF);
+console.log(`✔ public/sw.js: кэш обновлён ${oldVer} -> ${newVer}`);
+
+// ── 4. Проверка синтаксиса ──
+try {
+  execSync('node --check ' + OVERLAY_FILE, { stdio: 'pipe' });
+  execSync('node --check ' + SW_FILE, { stdio: 'pipe' });
+  console.log('\nСинтаксис файлов проверен и корректен (node --check passed).');
+} catch (e) {
+  console.error('Синтаксис сломан:');
+  console.error((e.stderr || '').toString());
+  fs.writeFileSync(OVERLAY_FILE, overlayData.raw, 'utf8');
+  fs.writeFileSync(SW_FILE, swData.raw, 'utf8');
+  process.exit(1);
+}
+
+console.log('\nГотово! Telegram WebApp SDK и UX-контроллер активны.');
