@@ -401,7 +401,7 @@ export function createTgRouter({ appKb }) {
           otpStore.set('reg:' + fmtPhone(pend.phone), { code: null, confirmed: true, tgChat: chatId, expires: Date.now() + 10 * 60 * 1000 });
           otpStore.delete('regchat:' + chatId);
           otpStore.delete('regtg:' + pend.token);
-          tgSend(chatId, '✅ Номер подтверждён! Вернитесь в приложение и завершите регистрацию — +1 штамп уже ваш 🎁');
+          await tgSend(chatId, '✅ Номер подтверждён! Вернитесь в приложение и завершите регистрацию — +1 штамп уже ваш 🎁', { remove_keyboard: true });
         } else {
           tgSend(chatId, 'Номер не совпадает с указанным в приложении ⚠️ Нажмите кнопку ещё раз.');
         }
@@ -410,9 +410,13 @@ export function createTgRouter({ appKb }) {
     }
 
     // [tg-smart-replies-v1]
+    // [tg-remove-keyboard-clean-v1]
     // 8. Проверка, прислан ли номер телефона (контакт или 10 цифр)
     const isPhoneInput = !!u.message.contact || (text && ph10(text).length === 10);
     if (isPhoneInput) {
+      if (u.message.contact) {
+        await tgSend(chatId, '👍 Номер получен', { remove_keyboard: true });
+      }
       const rawPhone = u.message.contact ? u.message.contact.phone_number : text;
       const formatted = fmtPhone(rawPhone);
       const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(formatted);

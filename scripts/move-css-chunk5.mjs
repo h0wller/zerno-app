@@ -1,38 +1,14 @@
-// scripts/add-welcome-offer.mjs
-// Исправленный скрипт: добавление промокода ПРИВЕТ на 200 ₽ без несуществующих колонок
-// Запуск из корня: node scripts/add-welcome-offer.mjs
+// scripts/fix-tg-remove-keyboard.mjs
+// Скрытие нативной кнопки «Поделиться номером» после получения контакта
+// Запуск из корня: node scripts/fix-tg-remove-keyboard.mjs
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
-import Database from 'better-sqlite3';
 
-// Определяем путь к БД (учитываем .env или стандартные пути)
-function getDbPath() {
-  if (process.env.DB_PATH) return process.env.DB_PATH;
-  const envPath = path.resolve('.env');
-  if (fs.existsSync(envPath)) {
-    const raw = fs.readFileSync(envPath, 'utf8');
-    for (const line of raw.split(/\r?\n/)) {
-      if (line.startsWith('DB_PATH=')) {
-        return line.slice(8).trim().replace(/^['"]|['"]$/g, '');
-      }
-    }
-  }
-  return '/var/www/data/zerno.db';
-}
-
-const dbPath = getDbPath();
-const resolvedDbPath = fs.existsSync(dbPath) ? dbPath : './zerno.db';
-console.log('[db] Открываем базу данных:', resolvedDbPath);
-
-const db = new Database(resolvedDbPath);
-
-const TG_FILE = path.resolve('server/routes/tg.js');
-const LOYALTY_FILE = path.resolve('server/domain/loyalty.js');
-const BAK_TG = TG_FILE + '.bak-welcome-offer';
-const BAK_LOYALTY = LOYALTY_FILE + '.bak-welcome-offer';
-const MARKER = '// [tg-welcome-offer-200-v1]';
+const TARGET_FILE = path.resolve('server/routes/tg.js');
+const BAK_FILE = TARGET_FILE + '.bak-remove-keyboard';
+const MARKER = '// [tg-remove-keyboard-clean-v1]';
 
 function readNorm(P) {
   const raw = fs.readFileSync(P, 'utf8');
@@ -44,106 +20,60 @@ function writeNorm(P, content, isCRLF) {
   fs.writeFileSync(P, isCRLF ? content.replace(/\n/g, '\r\n') : content, 'utf8');
 }
 
-if (!fs.existsSync(TG_FILE)) {
-  console.error('Файл не найден: ' + TG_FILE);
-  process.exit(1);
-}
-if (!fs.existsSync(LOYALTY_FILE)) {
-  console.error('Файл не найден: ' + LOYALTY_FILE);
+if (!fs.existsSync(TARGET_FILE)) {
+  console.error('Файл не найден: ' + TARGET_FILE);
   process.exit(1);
 }
 
-// ── 1. Создание / обновление промокодов ПРИВЕТ и PRIVET в БД ──
-function upsertPromo(code) {
-  const row = db.prepare('SELECT id FROM promos WHERE code=?').get(code);
-  if (!row) {
-    db.prepare(`
-      INSERT INTO promos (id, code, kind, value, maxuses, uses, active, scope, created)
-      VALUES (?, ?, 'money', 200, 0, 0, 1, 'delivery', datetime('now'))
-    `).run('promo_' + code.toLowerCase(), code);
-    console.log('[db] Промокод ' + code + ' создан (скидка 200 ₽ на доставку).');
-  } else {
-    db.prepare(`
-      UPDATE promos SET kind='money', value=200, active=1, scope='delivery' WHERE code=?
-    `).run(code);
-    console.log('[db] Промокод ' + code + ' обновлен (200 ₽, active, delivery).');
-  }
-}
+const { content, isCRLF, raw } = readNorm(TARGET_FILE);
 
-upsertPromo('ПРИВЕТ');
-upsertPromo('PRIVET');
-
-const tgData = readNorm(TG_FILE);
-const loyaltyData = readNorm(LOYALTY_FILE);
-
-if (tgData.content.indexOf(MARKER) !== -1) {
+if (content.indexOf(MARKER) !== -1) {
   console.log('server/routes/tg.js: уже пропатчено (' + MARKER + ').');
   process.exit(0);
 }
 
-// ── 2. Патч server/routes/tg.js (анонс в /start и при привязке номера) ──
-const FROM_TG_START = "        : '☕ Привет! Я бот «…и кофе» и доставки «Пятница».\\n\\nЗдесь: штампы, бонусы, заказы и поддержка.\\nНачнём?';";
-const TO_TG_START = [
-  "        : '☕ Привет! Я бот «…и кофе» и доставки «Пятница» 🌊🍕\\n\\n' +",
-  "          'Привяжите номер и заберите приветственные бонусы:\\n' +",
-  "          '☕ <b>+1 штамп</b> на кофе у моря\\n' +",
-  "          '🍕 <b>Скидка 200 ₽</b> на первый заказ доставки (промокод <b>ПРИВЕТ</b>)\\n\\n' +",
-  "          'Штампы, меню, заказы и чат поддержки — всё здесь 👇';"
+// 1. Проверяем якорь в секции 7 (подтверждение reg_<token>)
+const FROM_SEC_7 = "tgSend(chatId, '✅ Номер подтверждён! Вернитесь в приложение и завершите регистрацию — +1 штамп уже ваш 🎁');";
+const TO_SEC_7 = "await tgSend(chatId, '✅ Номер подтверждён! Вернитесь в приложение и завершите регистрацию — +1 штамп уже ваш 🎁', { remove_keyboard: true });";
+
+if (content.split(FROM_SEC_7).length - 1 !== 1) {
+  console.error('Якорь секции 7 не найден в server/routes/tg.js.');
+  process.exit(1);
+}
+
+// 2. Проверяем якорь в секции 8 (получение номера)
+const FROM_SEC_8 = "    // 8. Проверка, прислан ли номер телефона (контакт или 10 цифр)\n    const isPhoneInput = !!u.message.contact || (text && ph10(text).length === 10);\n    if (isPhoneInput) {";
+const TO_SEC_8 = [
+  "    " + MARKER,
+  "    // 8. Проверка, прислан ли номер телефона (контакт или 10 цифр)",
+  "    const isPhoneInput = !!u.message.contact || (text && ph10(text).length === 10);",
+  "    if (isPhoneInput) {",
+  "      if (u.message.contact) {",
+  "        await tgSend(chatId, '👍 Номер получен', { remove_keyboard: true });",
+  "      }"
 ].join('\n');
 
-if (tgData.content.split(FROM_TG_START).length - 1 !== 1) {
-  console.error('Якорь /start не найден в server/routes/tg.js.');
+if (content.split(FROM_SEC_8).length - 1 !== 1) {
+  console.error('Якорь секции 8 не найден в server/routes/tg.js.');
   process.exit(1);
 }
 
-const FROM_TG_LINKED = "          await tgSend(chatId, '✅ Готово, ' + c.name + '! Профиль привязан.\\n🎁 Приветственный бонус начислен: +1 штамп!', welcomeKeyboard(c));";
-const TO_TG_LINKED = [
-  "          " + MARKER,
-  "          await tgSend(chatId,",
-  "            '✅ Готово, ' + c.name + '! Профиль привязан 🎉\\n\\n' +",
-  "            '🎁 <b>Ваши приветственные бонусы:</b>\\n' +",
-  "            '☕ +1 штамп на кофе (уже в вашей карте бонусов)\\n' +",
-  "            '🍕 Скидка 200 ₽ на заказ доставки по промокоду <b>ПРИВЕТ</b>',",
-  "            welcomeKeyboard(c)",
-  "          );"
-].join('\n');
+fs.writeFileSync(BAK_FILE, raw, 'utf8');
 
-if (tgData.content.split(FROM_TG_LINKED).length - 1 !== 1) {
-  console.error('Якорь подтверждения номера не найден в server/routes/tg.js.');
-  process.exit(1);
-}
+let patched = content.split(FROM_SEC_7).join(TO_SEC_7);
+patched = patched.split(FROM_SEC_8).join(TO_SEC_8);
 
-// ── 3. Патч server/domain/loyalty.js (история бонусов) ──
-const FROM_LOYALTY_HIST = "  addHist(cid, '🎁 Приветственный бонус: +1 штамп', 'Система');";
-const TO_LOYALTY_HIST = "  addHist(cid, '🎁 Приветственные бонусы: +1 штамп и скидка 200 ₽ на доставку (код ПРИВЕТ)', 'Система');";
+writeNorm(TARGET_FILE, patched, isCRLF);
 
-if (loyaltyData.content.split(FROM_LOYALTY_HIST).length - 1 !== 1) {
-  console.error('Якорь addHist не найден в server/domain/loyalty.js.');
-  process.exit(1);
-}
-
-// ── Запись бэкапов и применение патчей ──
-fs.writeFileSync(BAK_TG, tgData.raw, 'utf8');
-let patchedTg = tgData.content.split(FROM_TG_START).join(TO_TG_START);
-patchedTg = patchedTg.split(FROM_TG_LINKED).join(TO_TG_LINKED);
-writeNorm(TG_FILE, patchedTg, tgData.isCRLF);
-
-fs.writeFileSync(BAK_LOYALTY, loyaltyData.raw, 'utf8');
-const patchedLoyalty = loyaltyData.content.split(FROM_LOYALTY_HIST).join(TO_LOYALTY_HIST);
-writeNorm(LOYALTY_FILE, patchedLoyalty, loyaltyData.isCRLF);
-
-// ── Проверка синтаксиса ──
 try {
-  execSync('node --check ' + TG_FILE, { stdio: 'pipe' });
-  execSync('node --check ' + LOYALTY_FILE, { stdio: 'pipe' });
-  console.log('Синтаксис tg.js и loyalty.js корректен (node --check passed).');
+  execSync('node --check ' + TARGET_FILE, { stdio: 'pipe' });
+  console.log('Синтаксис server/routes/tg.js корректен (node --check passed).');
 } catch (e) {
   console.error('Синтаксис сломан:');
   console.error((e.stderr || '').toString());
-  fs.writeFileSync(TG_FILE, tgData.raw, 'utf8');
-  fs.writeFileSync(LOYALTY_FILE, loyaltyData.raw, 'utf8');
+  fs.writeFileSync(TARGET_FILE, raw, 'utf8');
   process.exit(1);
 }
 
-console.log('Успешно: промокод ПРИВЕТ активирован, тексты бота обновлены.');
-console.log('Бэкапы: ' + BAK_TG + ', ' + BAK_LOYALTY);
+console.log('Успешно: скрытие клавиатуры настроено.');
+console.log('Бэкап: ' + BAK_FILE);
