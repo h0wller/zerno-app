@@ -1,24 +1,38 @@
-// scripts/fix-tg-splash-and-review.mjs
-// 1. Диплинк tab=review: открытие профиля и фокус на отзыве
-// 2. Сплэш-экран выбора заведения при клике на «Меню и штампы»
-// 3. Инкремент кэша sw.js и вызов setChatMenuButton в Telegram API
-// Запуск: node scripts/fix-tg-splash-and-review.mjs
+// scripts/add-welcome-offer.mjs
+// Исправленный скрипт: добавление промокода ПРИВЕТ на 200 ₽ без несуществующих колонок
+// Запуск из корня: node scripts/add-welcome-offer.mjs
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import Database from 'better-sqlite3';
 
-const INDEX_FILE = path.resolve('public/index.html');
-const DEEP_FILE = path.resolve('public/app/core/deeplink.js');
-const ORDERS_FILE = path.resolve('server/routes/orders.js');
-const SETUP_FILE = path.resolve('scripts/tg-bot-setup.mjs');
-const SW_FILE = path.resolve('public/sw.js');
+// Определяем путь к БД (учитываем .env или стандартные пути)
+function getDbPath() {
+  if (process.env.DB_PATH) return process.env.DB_PATH;
+  const envPath = path.resolve('.env');
+  if (fs.existsSync(envPath)) {
+    const raw = fs.readFileSync(envPath, 'utf8');
+    for (const line of raw.split(/\r?\n/)) {
+      if (line.startsWith('DB_PATH=')) {
+        return line.slice(8).trim().replace(/^['"]|['"]$/g, '');
+      }
+    }
+  }
+  return '/var/www/data/zerno.db';
+}
 
-const BAK_INDEX = INDEX_FILE + '.bak-splash-review';
-const BAK_DEEP = DEEP_FILE + '.bak-splash-review';
-const BAK_ORDERS = ORDERS_FILE + '.bak-splash-review';
-const BAK_SW = SW_FILE + '.bak-splash-review';
-const MARKER = '// [tg-splash-and-review-v1]';
+const dbPath = getDbPath();
+const resolvedDbPath = fs.existsSync(dbPath) ? dbPath : './zerno.db';
+console.log('[db] Открываем базу данных:', resolvedDbPath);
+
+const db = new Database(resolvedDbPath);
+
+const TG_FILE = path.resolve('server/routes/tg.js');
+const LOYALTY_FILE = path.resolve('server/domain/loyalty.js');
+const BAK_TG = TG_FILE + '.bak-welcome-offer';
+const BAK_LOYALTY = LOYALTY_FILE + '.bak-welcome-offer';
+const MARKER = '// [tg-welcome-offer-200-v1]';
 
 function readNorm(P) {
   const raw = fs.readFileSync(P, 'utf8');
@@ -30,216 +44,106 @@ function writeNorm(P, content, isCRLF) {
   fs.writeFileSync(P, isCRLF ? content.replace(/\n/g, '\r\n') : content, 'utf8');
 }
 
-function loadEnv() {
-  const envPath = path.resolve('.env');
-  if (!fs.existsSync(envPath)) return {};
-  const raw = fs.readFileSync(envPath, 'utf8');
-  const env = {};
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx !== -1) {
-      const k = trimmed.slice(0, eqIdx).trim();
-      let v = trimmed.slice(eqIdx + 1).trim();
-      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
-        v = v.slice(1, -1);
-      }
-      env[k] = v;
-      if (!process.env[k]) process.env[k] = v;
-    }
+if (!fs.existsSync(TG_FILE)) {
+  console.error('Файл не найден: ' + TG_FILE);
+  process.exit(1);
+}
+if (!fs.existsSync(LOYALTY_FILE)) {
+  console.error('Файл не найден: ' + LOYALTY_FILE);
+  process.exit(1);
+}
+
+// ── 1. Создание / обновление промокодов ПРИВЕТ и PRIVET в БД ──
+function upsertPromo(code) {
+  const row = db.prepare('SELECT id FROM promos WHERE code=?').get(code);
+  if (!row) {
+    db.prepare(`
+      INSERT INTO promos (id, code, kind, value, maxuses, uses, active, scope, created)
+      VALUES (?, ?, 'money', 200, 0, 0, 1, 'delivery', datetime('now'))
+    `).run('promo_' + code.toLowerCase(), code);
+    console.log('[db] Промокод ' + code + ' создан (скидка 200 ₽ на доставку).');
+  } else {
+    db.prepare(`
+      UPDATE promos SET kind='money', value=200, active=1, scope='delivery' WHERE code=?
+    `).run(code);
+    console.log('[db] Промокод ' + code + ' обновлен (200 ₽, active, delivery).');
   }
-  return env;
 }
 
-const env = loadEnv();
+upsertPromo('ПРИВЕТ');
+upsertPromo('PRIVET');
 
-// ── 1. Патч public/index.html (показ сплэша при splash=1 и в Telegram) ──
-const indexData = readNorm(INDEX_FILE);
-const FROM_INDEX = [
-  '    <script>',
-  '      (function () {',
-  '        var need = false;',
-  '        try {',
-  '          var q = new URLSearchParams(location.search);',
-  '          var done = false;',
-  '          try { done = !!sessionStorage.getItem("splashDone"); } catch (e) {}',
-  '          need = !(',
-  '            done ||',
-  '            q.get("brand") ||',
-  '            q.get("tab") ||',
-  '            q.get("src") ||',
-  '            /Telegram/i.test(navigator.userAgent)',
-  '          );',
-  '        } catch (e) {}',
-  '        document.documentElement.classList.add(need ? "need-splash" : "no-splash");',
-  '      })();',
-  '    </script>'
+const tgData = readNorm(TG_FILE);
+const loyaltyData = readNorm(LOYALTY_FILE);
+
+if (tgData.content.indexOf(MARKER) !== -1) {
+  console.log('server/routes/tg.js: уже пропатчено (' + MARKER + ').');
+  process.exit(0);
+}
+
+// ── 2. Патч server/routes/tg.js (анонс в /start и при привязке номера) ──
+const FROM_TG_START = "        : '☕ Привет! Я бот «…и кофе» и доставки «Пятница».\\n\\nЗдесь: штампы, бонусы, заказы и поддержка.\\nНачнём?';";
+const TO_TG_START = [
+  "        : '☕ Привет! Я бот «…и кофе» и доставки «Пятница» 🌊🍕\\n\\n' +",
+  "          'Привяжите номер и заберите приветственные бонусы:\\n' +",
+  "          '☕ <b>+1 штамп</b> на кофе у моря\\n' +",
+  "          '🍕 <b>Скидка 200 ₽</b> на первый заказ доставки (промокод <b>ПРИВЕТ</b>)\\n\\n' +",
+  "          'Штампы, меню, заказы и чат поддержки — всё здесь 👇';"
 ].join('\n');
 
-if (indexData.content.split(FROM_INDEX).length - 1 !== 1) {
-  console.error('Якорь сплэша не найден в public/index.html.');
+if (tgData.content.split(FROM_TG_START).length - 1 !== 1) {
+  console.error('Якорь /start не найден в server/routes/tg.js.');
   process.exit(1);
 }
 
-const TO_INDEX = [
-  '    <!-- [tg-splash-menu-fix-v1] -->',
-  '    <script>',
-  '      (function () {',
-  '        var need = false;',
-  '        try {',
-  '          var q = new URLSearchParams(location.search);',
-  '          var done = false;',
-  '          try { done = !!sessionStorage.getItem("splashDone"); } catch (e) {}',
-  '          if (q.get("splash") === "1" || q.get("splash") === "true") {',
-  '            try { sessionStorage.removeItem("splashDone"); } catch (e) {}',
-  '            need = true;',
-  '          } else {',
-  '            need = !(done || q.get("brand") || q.get("tab"));',
-  '          }',
-  '        } catch (e) {}',
-  '        document.documentElement.classList.add(need ? "need-splash" : "no-splash");',
-  '      })();',
-  '    </script>'
+const FROM_TG_LINKED = "          await tgSend(chatId, '✅ Готово, ' + c.name + '! Профиль привязан.\\n🎁 Приветственный бонус начислен: +1 штамп!', welcomeKeyboard(c));";
+const TO_TG_LINKED = [
+  "          " + MARKER,
+  "          await tgSend(chatId,",
+  "            '✅ Готово, ' + c.name + '! Профиль привязан 🎉\\n\\n' +",
+  "            '🎁 <b>Ваши приветственные бонусы:</b>\\n' +",
+  "            '☕ +1 штамп на кофе (уже в вашей карте бонусов)\\n' +",
+  "            '🍕 Скидка 200 ₽ на заказ доставки по промокоду <b>ПРИВЕТ</b>',",
+  "            welcomeKeyboard(c)",
+  "          );"
 ].join('\n');
 
-// ── 2. Патч public/app/core/deeplink.js (поддержка tab=review и tab=profile) ──
-const deepData = readNorm(DEEP_FILE);
-const FROM_DEEP_APPLY = [
-  "      if (tab === 'orders') {",
-  "        if (me) { openOrdersView(); }",
-  "        else { window.__ztPendingDeep = 'orders'; openAuth(); }",
-  "      }"
-].join('\n');
-
-if (deepData.content.split(FROM_DEEP_APPLY).length - 1 !== 1) {
-  console.error('Якорь tab === orders не найден в public/app/core/deeplink.js.');
+if (tgData.content.split(FROM_TG_LINKED).length - 1 !== 1) {
+  console.error('Якорь подтверждения номера не найден в server/routes/tg.js.');
   process.exit(1);
 }
 
-const TO_DEEP_APPLY = [
-  MARKER,
-  "      function openReviewView(forReview) {",
-  "        try {",
-  "          openPanel('profile');",
-  "          setTab('profile');",
-  "          if (typeof renderProfile === 'function') renderProfile();",
-  "          setTimeout(function() {",
-  "            var pv = document.getElementById('pvProfile');",
-  "            if (pv && !pv.hidden) {",
-  "              var nu = document.getElementById('profileNoUser'), pb = document.getElementById('profileBox');",
-  "              if (nu && nu.hidden && pb && pb.hidden && typeof renderProfile === 'function') { renderProfile(); }",
-  "            }",
-  "            var btn = document.getElementById('reviewBtn');",
-  "            if (btn) {",
-  "              btn.scrollIntoView({ behavior: 'smooth', block: 'center' });",
-  "              btn.classList.add('glow');",
-  "            }",
-  "          }, 500);",
-  "        } catch(e) {}",
-  "      }",
-  "      if (tab === 'orders') {",
-  "        if (me) { openOrdersView(); }",
-  "        else { window.__ztPendingDeep = 'orders'; openAuth(); }",
-  "      }",
-  "      if (tab === 'profile' || tab === 'review') {",
-  "        if (me) { openReviewView(tab === 'review'); }",
-  "        else { window.__ztPendingDeep = tab; openAuth(); }",
-  "      }"
-].join('\n');
+// ── 3. Патч server/domain/loyalty.js (история бонусов) ──
+const FROM_LOYALTY_HIST = "  addHist(cid, '🎁 Приветственный бонус: +1 штамп', 'Система');";
+const TO_LOYALTY_HIST = "  addHist(cid, '🎁 Приветственные бонусы: +1 штамп и скидка 200 ₽ на доставку (код ПРИВЕТ)', 'Система');";
 
-const FROM_DEEP_SETUSER = "        if (pend === 'bonus') setTimeout(function() { openPanel('profile'); setTab('bonus'); }, 150);";
-const TO_DEEP_SETUSER = [
-  "        if (pend === 'bonus') setTimeout(function() { openPanel('profile'); setTab('bonus'); }, 150);",
-  "        if (pend === 'profile' || pend === 'review') setTimeout(function() { openReviewView(pend === 'review'); }, 150);"
-].join('\n');
-
-if (deepData.content.split(FROM_DEEP_SETUSER).length - 1 !== 1) {
-  console.error('Якорь setUser в public/app/core/deeplink.js не найден.');
+if (loyaltyData.content.split(FROM_LOYALTY_HIST).length - 1 !== 1) {
+  console.error('Якорь addHist не найден в server/domain/loyalty.js.');
   process.exit(1);
 }
 
-// ── 3. Патч server/routes/orders.js (кнопка отзыва с tab=review) ──
-const ordersData = readNorm(ORDERS_FILE);
-const FROM_ORDERS_REVIEW = "tab=profile";
-const TO_ORDERS_REVIEW = "tab=review";
+// ── Запись бэкапов и применение патчей ──
+fs.writeFileSync(BAK_TG, tgData.raw, 'utf8');
+let patchedTg = tgData.content.split(FROM_TG_START).join(TO_TG_START);
+patchedTg = patchedTg.split(FROM_TG_LINKED).join(TO_TG_LINKED);
+writeNorm(TG_FILE, patchedTg, tgData.isCRLF);
 
-if (ordersData.content.split(FROM_ORDERS_REVIEW).length - 1 < 1) {
-  console.error('Якорь tab=profile не найден в server/routes/orders.js.');
-  process.exit(1);
-}
+fs.writeFileSync(BAK_LOYALTY, loyaltyData.raw, 'utf8');
+const patchedLoyalty = loyaltyData.content.split(FROM_LOYALTY_HIST).join(TO_LOYALTY_HIST);
+writeNorm(LOYALTY_FILE, patchedLoyalty, loyaltyData.isCRLF);
 
-// ── Запись бэкапов и применение замен ──
-fs.writeFileSync(BAK_INDEX, indexData.raw, 'utf8');
-const patchedIndex = indexData.content.split(FROM_INDEX).join(TO_INDEX);
-writeNorm(INDEX_FILE, patchedIndex, indexData.isCRLF);
-
-fs.writeFileSync(BAK_DEEP, deepData.raw, 'utf8');
-let patchedDeep = deepData.content.split(FROM_DEEP_APPLY).join(TO_DEEP_APPLY);
-patchedDeep = patchedDeep.split(FROM_DEEP_SETUSER).join(TO_DEEP_SETUSER);
-writeNorm(DEEP_FILE, patchedDeep, deepData.isCRLF);
-
-fs.writeFileSync(BAK_ORDERS, ordersData.raw, 'utf8');
-const patchedOrders = ordersData.content.split(FROM_ORDERS_REVIEW).join(TO_ORDERS_REVIEW);
-writeNorm(ORDERS_FILE, patchedOrders, ordersData.isCRLF);
-
-// ── 4. Инкремент STATIC_CACHE в sw.js ──
-const swData = readNorm(SW_FILE);
-const swMatch = swData.content.match(/zerno-static-v(\d+)/);
-if (!swMatch) {
-  console.error('Не найден токен STATIC_CACHE в public/sw.js.');
-  process.exit(1);
-}
-
-const oldVer = swMatch[0];
-const newVer = 'zerno-static-v' + (parseInt(swMatch[1], 10) + 1);
-const patchedSw = swData.content.replace(oldVer, newVer);
-
-fs.writeFileSync(BAK_SW, swData.raw, 'utf8');
-writeNorm(SW_FILE, patchedSw, swData.isCRLF);
-
-// ── Валидация синтаксиса ──
+// ── Проверка синтаксиса ──
 try {
-  execSync('node --check ' + DEEP_FILE, { stdio: 'pipe' });
-  execSync('node --check ' + ORDERS_FILE, { stdio: 'pipe' });
-  execSync('node --check ' + SW_FILE, { stdio: 'pipe' });
-  console.log('Синтаксис файлов корректен (node --check passed).');
+  execSync('node --check ' + TG_FILE, { stdio: 'pipe' });
+  execSync('node --check ' + LOYALTY_FILE, { stdio: 'pipe' });
+  console.log('Синтаксис tg.js и loyalty.js корректен (node --check passed).');
 } catch (e) {
   console.error('Синтаксис сломан:');
   console.error((e.stderr || '').toString());
-  fs.writeFileSync(INDEX_FILE, indexData.raw, 'utf8');
-  fs.writeFileSync(DEEP_FILE, deepData.raw, 'utf8');
-  fs.writeFileSync(ORDERS_FILE, ordersData.raw, 'utf8');
-  fs.writeFileSync(SW_FILE, swData.raw, 'utf8');
+  fs.writeFileSync(TG_FILE, tgData.raw, 'utf8');
+  fs.writeFileSync(LOYALTY_FILE, loyaltyData.raw, 'utf8');
   process.exit(1);
 }
 
-// ── 5. Обновление Menu Button в Telegram Bot API ──
-const token = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || process.env.TG_TOKEN;
-const appUrl = (process.env.APP_URL || process.env.PUBLIC_URL || 'https://friday.andcoffee.online').replace(/\/+$/, '');
-
-if (token) {
-  console.log('Обновление Menu Button в Telegram API для URL:', appUrl + '/?src=tg&splash=1');
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${token}/setChatMenuButton`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        menu_button: {
-          type: 'web_app',
-          text: 'Меню и штампы',
-          web_app: { url: appUrl + '/?src=tg&splash=1' }
-        }
-      })
-    });
-    const j = await res.json().catch(() => ({}));
-    console.log('[tg] setChatMenuButton:', j.ok ? 'OK' : j.description);
-  } catch (err) {
-    console.warn('[tg] Не удалось обновить кнопку меню через API:', err.message);
-  }
-} else {
-  console.log('Токен не найден в .env — пропуск вызова setChatMenuButton.');
-}
-
-console.log('Успешно: сплэш-экран и диплинк отзыва настроены.');
-console.log('Кэш обновлён: ' + oldVer + ' → ' + newVer);
+console.log('Успешно: промокод ПРИВЕТ активирован, тексты бота обновлены.');
+console.log('Бэкапы: ' + BAK_TG + ', ' + BAK_LOYALTY);

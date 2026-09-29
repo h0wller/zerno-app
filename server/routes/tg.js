@@ -321,7 +321,11 @@ export function createTgRouter({ appKb }) {
       const hello = c
         ? `С возвращением, <b>${c.name}</b>!\n\n${stampBar(c.stamps)}\nШтампов: <b>${c.stamps}/10</b>` +
           (c.free ? `\n🎁 Бесплатных кофе: <b>${c.free}</b>` : '')
-        : '☕ Привет! Я бот «…и кофе» и доставки «Пятница».\n\nЗдесь: штампы, бонусы, заказы и поддержка.\nНачнём?';
+        : '☕ Привет! Я бот «…и кофе» и доставки «Пятница» 🌊🍕\n\n' +
+          'Привяжите номер и заберите приветственные бонусы:\n' +
+          '☕ <b>+1 штамп</b> на кофе у моря\n' +
+          '🍕 <b>Скидка 200 ₽</b> на первый заказ доставки (промокод <b>ПРИВЕТ</b>)\n\n' +
+          'Штампы, меню, заказы и чат поддержки — всё здесь 👇';
       await tgSend(chatId, hello, welcomeKeyboard(c));
       return;
     }
@@ -416,7 +420,14 @@ export function createTgRouter({ appKb }) {
         db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);
         if (!c.welcome) {
           grantWelcome(c.id, 'Telegram');
-          await tgSend(chatId, '✅ Готово, ' + c.name + '! Профиль привязан.\n🎁 Приветственный бонус начислен: +1 штамп!', welcomeKeyboard(c));
+          // [tg-welcome-offer-200-v1]
+          await tgSend(chatId,
+            '✅ Готово, ' + c.name + '! Профиль привязан 🎉\n\n' +
+            '🎁 <b>Ваши приветственные бонусы:</b>\n' +
+            '☕ +1 штамп на кофе (уже в вашей карте бонусов)\n' +
+            '🍕 Скидка 200 ₽ на заказ доставки по промокоду <b>ПРИВЕТ</b>',
+            welcomeKeyboard(c)
+          );
         } else {
           await tgSend(chatId, '✅ Готово, ' + c.name + '! Профиль привязан.', welcomeKeyboard(c));
         }

@@ -94,6 +94,6 @@ export function grantWelcome(cid, by) {
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
   if (!c || c.welcome) return null;
   db.prepare('UPDATE customers SET welcome=1, verified=1 WHERE id=?').run(cid);
-  addHist(cid, '🎁 Приветственный бонус: +1 штамп', 'Система');
+  addHist(cid, '🎁 Приветственные бонусы: +1 штамп и скидка 200 ₽ на доставку (код ПРИВЕТ)', 'Система');
   return grant(cid, by || 'Система');
 }
