@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v173'; // ← поставь своё текущее значение +1
+const STATIC_CACHE = 'zerno-static-v174'; // ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
@@ -35,6 +35,7 @@ const STATIC_ASSETS = [
   '/app/core/address-dict.js',
   '/app/core/address-autocomplete.js',
   '/app/core/preorder-timer.js',
+  '/app/core/address-book.js',
   '/app/core/overlay.js',
   '/app/core/swipe.js',
   '/app/core/notify.js',

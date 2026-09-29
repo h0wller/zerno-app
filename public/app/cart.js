@@ -249,14 +249,16 @@ function cartFabShow() {
       };
       sessionStorage.setItem('zt_checkout_draft', JSON.stringify(draft));
 
-      // Сохраняем адрес навсегда для будущих заказов
-      if (draft.place || draft.street || draft.house) {
+      // ADDRESS-BOOK v2: сохраняем адрес в книгу (до 5, дедупликация)
+    if (draft.place || draft.street || draft.house) {
+      if (window.AddressBook && typeof window.AddressBook.autoAdd === 'function') {
+        window.AddressBook.autoAdd({ place: draft.place, street: draft.street, house: draft.house });
+      } else {
         localStorage.setItem('zt_saved_address', JSON.stringify({
-          place: draft.place,
-          street: draft.street,
-          house: draft.house
+          place: draft.place, street: draft.street, house: draft.house
         }));
       }
+    }
     } catch (e) { }
   }
 
