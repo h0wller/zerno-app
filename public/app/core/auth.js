@@ -15,7 +15,32 @@
 
   /* ── Брендовая адаптация модалки (Вариант 3) ── */
   /* ── Брендовая адаптация модалки ── */
-  function applyAuthBrand() {
+  // [tg-auth-modal-redesign-v2]
+function adaptAuthForTelegram(modal) {
+  var isTg = !!(window.__isTgMiniApp || window.__tgInitData || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData));
+  if (!isTg || !modal) return;
+
+  modal.classList.add('tg-mode');
+  // Скрываем кнопку перехода в Telegram (мы уже внутри него)
+  var tgBtn = document.getElementById('regTgBtn');
+  if (tgBtn) tgBtn.style.display = 'none';
+
+  // Скрываем подсказку про кассира под кнопкой
+  var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
+  if (hint) hint.style.display = 'none';
+
+  // Скрываем чекбокс согласия ПД (акцепт нативно через Telegram ID)
+  var consentRow = modal.querySelector('label:has(input[type="checkbox"]), .consent-row');
+  if (consentRow) consentRow.style.display = 'none';
+
+  // Предзаполняем имя
+  if (window.__tgUser && window.__tgUser.name) {
+    var rn = document.getElementById('regName');
+    if (rn && !rn.value) rn.value = window.__tgUser.name;
+  }
+}
+
+function applyAuthBrand() {
     var isDeliv = (typeof brand !== 'undefined' && brand === 'delivery');
     var modal = document.getElementById('authModal');
     if (!modal) return;
@@ -44,6 +69,7 @@
     }
 
     var msub = modal.querySelector('.msub');
+    adaptAuthForTelegram(modal);
     if (msub) {
       msub.innerHTML = isDeliv
         ? 'Единый профиль: сохранение адресов, подарки от 2 000 ₽ и штампы на кофе у моря.'
@@ -301,7 +327,11 @@
                   return;
                 }
                 var row = document.getElementById('regTgRow');
-                if (row) row.hidden = false;
+                if (row) {
+                  row.hidden = false;
+                  row.className = 'auth-badge-confirmed';
+                  row.innerHTML = '<span>✅ Номер подтверждён в Telegram</span>';
+                }
                 toast('Номер подтверждён через Telegram', '🎉');
               }
             } catch (_) {}

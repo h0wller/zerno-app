@@ -4035,3 +4035,45 @@ body .wrap #deliveryRail button.on {
   }
 }
 
+
+
+/* tg-auth-badge-redesign-v2 */
+.auth-badge-confirmed {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(24, 106, 67, 0.12);
+  border: 1.5px solid #186A43;
+  color: #186A43;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 10px 0;
+  animation: badgeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes badgeSlideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Упрощённый вид формы внутри Telegram Mini App */
+#authModal.tg-mode #regTgBtn,
+#authModal.tg-mode .mhint {
+  display: none !important;
+}
+
+#authModal.tg-mode .frow:has(input[type="checkbox"]) {
+  display: none !important;
+}
+
+@media (max-width: 375px) {
+  #authModal .modal-body {
+    padding: 16px 14px;
+  }
+  #authModal input {
+    font-size: 16px !important; /* защита от авто-зума на iOS */
+  }
+}
