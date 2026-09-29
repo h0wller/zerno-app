@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v183'; // ← поставь своё текущее значение +1
+const STATIC_CACHE = 'zerno-static-v184'; // ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
@@ -47,7 +47,7 @@ const STATIC_ASSETS = [
   '/app/ui/fonts/prata-400-latin.woff2',
   '/app/ui/fonts/unbounded-700-cyrillic.woff2',
   '/app/ui/fonts/unbounded-700-latin.woff2',
-    '/app/early/lcp-preload.js',
+
   '/app/ui/theme-v2.min.css',
   '/app/core/overlay.js',
   '/app/core/swipe.js',

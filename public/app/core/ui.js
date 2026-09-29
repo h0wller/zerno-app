@@ -111,3 +111,22 @@
   window.toast = toast;
   window.renderUpd = renderUpd;
 })();
+
+/* PERF-P0 v3: in-flight дедуп одинаковых GET (4× /api/orders/mine и т.п.) */
+(function () {
+  if (typeof api !== 'function' || api.__dedup) return;
+  var orig = api;
+  var inflight = {};
+  var wrapped = function (path, opts) {
+    var m = (opts && opts.method) || 'GET';
+    if (m !== 'GET' || (opts && opts.headers)) return orig.apply(this, arguments);
+    var k = String(path);
+    if (inflight[k]) return inflight[k];
+    var p = orig.apply(this, arguments);
+    p.then(function () { delete inflight[k]; }, function () { delete inflight[k]; });
+    inflight[k] = p;
+    return p;
+  };
+  wrapped.__dedup = true;
+  window.api = wrapped;
+})();

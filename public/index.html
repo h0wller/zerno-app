@@ -2,7 +2,10 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-<script src="/app/early/lcp-preload.js"></script><!-- PERF-P0 v1 -->
+<script>/* PERF-P0 v4: critical inline №4 — preload LCP-логотипа доставки без внешнего запроса */
+(function(){var b='coffee';try{var q=(location.search.match(/[?&]brand=([^&]+)/)||[])[1];if(q==='delivery'||q==='coffee'){b=q;}else{var l=localStorage.getItem('zt_brand')||'';if(l==='delivery'||l==='coffee'){b=l;}}}catch(e){}
+if(b!=='delivery')return;var l=document.createElement('link');l.rel='preload';l.as='image';l.href='/friday-logo.svg';l.setAttribute('fetchpriority','high');document.head.appendChild(l);})();
+</script>
 <script>(function () {
   /* TG-OFFLOAD v3: SDK грузится ТОЛЬКО внутри Mini App; снаружи — stub, 0 запросов */
   var q = location.search + location.hash;
