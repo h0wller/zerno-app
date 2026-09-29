@@ -84,6 +84,9 @@
   }
 
   function ensureButton() {
+
+    /* UI-DEDUP v4: purge legacy-кнопок и меню перед созданием своей */
+    document.querySelectorAll('.addr-book-menu, .addr-book-btn').forEach(function (n) { n.remove(); });
     var place = document.getElementById('checkoutPlace');
     if (!place) return;
     if (document.getElementById('addrBookBtn')) return;
@@ -234,7 +237,8 @@
     renderList();
   }
 
-  function openSheet() { ensureSheet(); stopEdit(); renderList(); sheet.hidden = false; sheet.classList.add('open'); }
+  function openSheet() { ensureSheet();
+    document.querySelectorAll('.addr-book-menu').forEach(function (n) { n.remove(); }); /* UI-DEDUP v4 */ stopEdit(); renderList(); sheet.hidden = false; sheet.classList.add('open'); }
   function closeSheet() { if (!sheet) return; sheet.hidden = true; sheet.classList.remove('open'); stopEdit(); }
 
   function init() {

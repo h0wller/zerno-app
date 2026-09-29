@@ -76,91 +76,8 @@
     });
   }
 
-  function getSavedAddresses() {
-    var addrList = [];
-    try { addrList = JSON.parse(localStorage.getItem('zt_saved_addresses') || '[]'); } catch (e) {}
-    if (!Array.isArray(addrList) || !addrList.length) {
-      try {
-        var single = JSON.parse(localStorage.getItem('zt_saved_address') || 'null');
-        if (single && (single.place || single.street)) addrList = [single];
-      } catch (e) {}
-    }
-    return Array.isArray(addrList) ? addrList : [];
-  }
-
-  function renderAddressBook() {
-    var addrList = getSavedAddresses();
-    var placeInput = document.getElementById('checkoutPlace');
-    if (!placeInput) return;
-
-    var oldWrap = document.getElementById('addrBookWrap');
-    if (!addrList.length) {
-      if (oldWrap) oldWrap.remove();
-      return;
-    }
-    if (oldWrap) return;
-
-    var wrap = document.createElement('div');
-    wrap.id = 'addrBookWrap';
-    wrap.className = 'addr-book-wrap';
-
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'addr-book-btn';
-    btn.innerHTML = '<span>📍</span> <span>Мои адреса</span>';
-
-    var menu = document.createElement('div');
-    menu.className = 'addr-book-menu';
-    menu.hidden = true;
-
-    addrList.forEach(function (addr) {
-      var item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'addr-book-item';
-      var textParts = [addr.place, addr.street, addr.house].filter(Boolean);
-      item.textContent = textParts.join(', ');
-      item.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var cp = document.getElementById('checkoutPlace');
-        var cs = document.getElementById('checkoutStreet');
-        var ch = document.getElementById('checkoutHouse');
-        if (cp && addr.place) {
-          cp.value = addr.place;
-          cp.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-        if (cs && addr.street) {
-          cs.value = addr.street;
-          cs.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        if (ch && addr.house) {
-          ch.value = addr.house;
-          ch.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        menu.hidden = true;
-      });
-      menu.appendChild(item);
-    });
-
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      menu.hidden = !menu.hidden;
-    });
-
-    document.addEventListener('click', function (e) {
-      if (!wrap.contains(e.target)) menu.hidden = true;
-    });
-
-    wrap.appendChild(btn);
-    wrap.appendChild(menu);
-
-    var targetContainer = placeInput.closest('.frow, label') || placeInput.parentElement;
-    if (targetContainer && targetContainer.parentElement) {
-      targetContainer.parentElement.insertBefore(wrap, targetContainer);
-    }
-  }
-
+  
+  
   function restoreSavedAddress() {
     if (addressRestored) return;
     try {
@@ -281,7 +198,6 @@
     var streetInput = document.getElementById('checkoutStreet');
     if (streetInput) attachToInput(streetInput);
     attachToPlaceSelect();
-    renderAddressBook();
     restoreSavedAddress();
 
     window.addEventListener('resize', function () {
@@ -313,7 +229,6 @@
         var si = document.getElementById('checkoutStreet');
         if (si && !si.dataset.addrBound) attachToInput(si);
         attachToPlaceSelect();
-        renderAddressBook();
         restoreSavedAddress();
       }, 150);
     });
@@ -332,3 +247,4 @@
     init();
   }
 })();
+/* UI-DEDUP v4: legacy-книга адресов вырезана, владелец — address-book.js */

@@ -42,7 +42,15 @@ function closePanel() {
 /* ── Слушатели ── */
 document.addEventListener('DOMContentLoaded', function () {
     /* Переключение вкладок по клику */
-    var tabs = document.querySelector('.tabs');
+    /* UI-DEDUP v4: защита от дублей таб-кнопок («Мои заказы» и др.) */
+  (function () {
+    var seen = {};
+    document.querySelectorAll('.tabs [data-tab]').forEach(function (b) {
+      if (seen[b.dataset.tab]) { b.remove(); return; }
+      seen[b.dataset.tab] = 1;
+    });
+  })();
+  var tabs = document.querySelector('.tabs');
     if (tabs) {
         tabs.addEventListener('click', function (e) {
             var b = e.target.closest('[data-tab]');
