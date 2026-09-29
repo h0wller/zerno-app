@@ -117,3 +117,4 @@ docs/inline-core-dump.txt
 # Backups от скриптов
 *.bak
 *.bak-*
+repomix-output.xml
