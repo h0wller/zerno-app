@@ -118,3 +118,4 @@ docs/inline-core-dump.txt
 *.bak
 *.bak-*
 repomix-output.xml
+lh-cold-.json

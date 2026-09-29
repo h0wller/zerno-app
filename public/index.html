@@ -6,6 +6,9 @@
 (function(){var b='coffee';try{var q=(location.search.match(/[?&]brand=([^&]+)/)||[])[1];if(q==='delivery'||q==='coffee'){b=q;}else{var l=localStorage.getItem('zt_brand')||'';if(l==='delivery'||l==='coffee'){b=l;}}}catch(e){}
 if(b!=='delivery')return;var l=document.createElement('link');l.rel='preload';l.as='image';l.href='/friday-logo.svg';l.setAttribute('fetchpriority','high');document.head.appendChild(l);})();
 </script>
+<script>/* PERF-MEASURE v2: флаг ?nosw=1 для замеров без SW */
+window.__ztNoSW = /[?&]nosw=1/.test(location.search);
+</script>
 <script>(function () {
   /* TG-OFFLOAD v3: SDK грузится ТОЛЬКО внутри Mini App; снаружи — stub, 0 запросов */
   var q = location.search + location.hash;
@@ -1548,7 +1551,53 @@ body[data-brand="delivery"] #menuView {
       </button>
     </div>
 
-                            <script type="module" src="./app/main.js"></script>
+                            <script>/* PERF-P1 v1: список ленивых модулей */
+window.__ztLazyModules = [
+  {
+    "path": "/app/core/editor.js",
+    "name": "editor",
+    "roles": [
+      "admin"
+    ],
+    "trigger": "#emModal, #openEditorBtn, [data-modal=\"emModal\"]"
+  },
+  {
+    "path": "/app/admin-extra.js",
+    "name": "adminExtra",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "path": "/app/ui/cashier-log.js",
+    "name": "cashierLog",
+    "roles": [
+      "cashier"
+    ]
+  },
+  {
+    "path": "/app/core/dash.js",
+    "name": "dash",
+    "trigger": "#dashToggle, #dashBtn, [data-modal=\"dashModal\"]"
+  },
+  {
+    "path": "/app/core/promo.js",
+    "name": "promo",
+    "trigger": "#promoToggle, #promoBtn, [data-modal=\"promoModal\"]"
+  },
+  {
+    "path": "/app/core/staffpin.js",
+    "name": "staffpin",
+    "trigger": "#setPinBtn, #pinBtn, #staffPinBtn, [data-modal=\"pinModal\"]"
+  },
+  {
+    "path": "/app/scanner.js",
+    "name": "scanner",
+    "trigger": "#scanFab, #scanBtn, [data-action=\"scan\"]"
+  }
+];
+</script>
+<script type="module" src="./app/main.js"></script>
         </script>
     </script>
     </script>
