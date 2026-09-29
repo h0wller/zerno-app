@@ -6,7 +6,7 @@
    Правила и чеклист: docs/css-architecture.md
    ========================================================================== */
 
-:root {
+:root{
   /* F5.13: токен из растворённого Слоя 0 */
   --amber: #c2935f;
   /* F5.12: токен высоты шапки (было инлайном в Слое 0, P2) */
@@ -37,15 +37,15 @@
 /* ── Базовые сбросы ─────────────────────────────────────────────────────── */
 *,
 *::before,
-*::after {
+*::after{
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
-[hidden] {
+[hidden]{
   display: none !important;
 }
-body {
+body{
   font: 400 15px/1.5 "Golos Text", system-ui, sans-serif;
   color: var(--ink);
   background: var(--paper);
@@ -55,7 +55,7 @@ body {
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
 }
-button {
+button{
   font-family: inherit;
   cursor: pointer;
   border: none;
@@ -64,33 +64,35 @@ button {
 }
 input,
 select,
-textarea {
+textarea{
   font-family: inherit;
 }
-:focus-visible {
+:focus-visible{
   outline: 3px solid rgba(18, 58, 107, 0.45);
   outline-offset: 2px;
   border-radius: 8px;
 }
 /* ── Карточки и сетка (стабилизация CLS и памяти под iOS) ──────────────── */
-.grid {
+.grid{
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
-@media (min-width: 1600px) {.grid {
+@media (min-width: 1600px){.grid{
     grid-template-columns: repeat(4, 1fr);
   }
 
 
+
 }
-@media (max-width: 900px) {.grid {
+@media (max-width: 900px){.grid{
     grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
   }
 
 
+
 }
-.card {
+.card{
   background: #FFFFFF;
   border: 1.5px solid rgba(62, 143, 208, 0.25);
   border-radius: 18px;
@@ -104,7 +106,7 @@ textarea {
   box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
   min-height: 340px;
 }
-@keyframes pop {
+@keyframes pop{
   from {
     opacity: 0;
     transform: translateY(16px) scale(0.97);
@@ -115,26 +117,27 @@ textarea {
     transform: none;
   }
 }
-@media (hover: hover) and (pointer: fine) {.card:hover {
+@media (hover: hover) and (pointer: fine){.card:hover{
     transform: translateY(-4px);
     box-shadow: 0 10px 28px rgba(18, 58, 107, 0.15);
     border-color: #3E8FD0;
   }
-.card:hover .media img {
+.card:hover .media img{
     transform: scale(1.07);
   }
 
 
+
 }
-body.editing .card {
+body.editing .card{
   border-style: dashed;
   border-color: #9FB4C8;
 }
-body.editing .card:hover {
+body.editing .card:hover{
   transform: none;
 }
 /* ── Медиа-зона карточки ────────────────────────────────────────────────── */
-.media {
+.media{
   height: 150px;
   min-height: 150px;
   position: relative;
@@ -143,19 +146,19 @@ body.editing .card:hover {
   display: grid;
   place-items: center;
 }
-.media img {
+.media img{
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform .5s;
 }
-.media .em {
+.media .em{
   font-size: 56px;
   text-shadow: 0 8px 10px rgba(16, 20, 24, 0.22);
   transition: transform .3s;
 }
 /* ── Метки / Теги (WCAG AA для .tag.hit) ────────────────────────────────── */
-.tag {
+.tag{
   position: absolute;
   top: 10px;
   left: 10px;
@@ -168,22 +171,22 @@ body.editing .card:hover {
   z-index: 2;
   background: #1B4F8A;
 }
-.tag.hit {
+.tag.hit{
   background: #1B5E8A;
   color: #FFFFFF;
 }
-.tag.new {
+.tag.new{
   background: var(--green);
 }
-.tag.vegan {
+.tag.vegan{
   background: #7BA05B;
 }
 .stopped .media img,
-.stopped .media .em {
+.stopped .media .em{
   filter: grayscale(1);
   opacity: 0.5;
 }
-.stopbadge {
+.stopbadge{
   position: absolute;
   top: 10px;
   right: 10px;
@@ -196,28 +199,28 @@ body.editing .card:hover {
   z-index: 2;
 }
 /* ── Тело карточки ──────────────────────────────────────────────────────── */
-.cbody {
+.cbody{
   padding: 13px 14px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   flex: 1;
 }
-.cbody h3 {
+.cbody h3{
   font: 700 15.5px/1.3 "Golos Text", sans-serif;
   color: #123A6B;
 }
-.cbody .desc {
+.cbody .desc{
   font-size: 12.5px;
   color: var(--soft);
 }
-.comp {
+.comp{
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 2px;
 }
-.comp i {
+.comp i{
   font-style: normal;
   background: #EAF1F9;
   border: 1px solid rgba(62, 143, 208, 0.25);
@@ -226,25 +229,25 @@ body.editing .card:hover {
   font: 600 10.5px "Golos Text";
   color: #123A6B;
 }
-.cbody .vol {
+.cbody .vol{
   font: 600 11px "Golos Text";
   color: #5B6874;
   letter-spacing: 0.04em;
   margin-top: auto;
 }
-.cfoot {
+.cfoot{
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 6px;
 }
-.price {
+.price{
   font: 700 16px "Golos Text";
   font-variant-numeric: tabular-nums;
   color: #123A6B;
 }
 /* ── Корзина: тач-таргеты степпера (>= 44x44px) ────────────────────────── */
-.cartItem .qty button {
+.cartItem .qty button{
   position: relative;
   min-width: 44px;
   min-height: 44px;
@@ -260,21 +263,21 @@ body.editing .card:hover {
   cursor: pointer;
 }
 /* ── Утилиты ────────────────────────────────────────────────────────────── */
-.gempty {
+.gempty{
   text-align: center;
   padding: 60px 20px;
   color: var(--soft);
 }
-.gempty .ee {
+.gempty .ee{
   font-size: 52px;
   display: block;
   margin-bottom: 12px;
 }
 /* ══ АУДИТ 21.09: недостающие keyframes / переменные / классы ══ */
-:root {
+:root{
   --shadow-sheet: 0 -10px 40px -12px rgba(16, 20, 24, .25);
 }
-@keyframes ping {
+@keyframes ping{
   0% {
     transform: scale(1);
     opacity: .6;
@@ -290,7 +293,7 @@ body.editing .card:hover {
     opacity: 0;
   }
 }
-@keyframes stampin {
+@keyframes stampin{
   from {
     transform: scale(.4);
     opacity: 0;
@@ -301,7 +304,7 @@ body.editing .card:hover {
     opacity: 1;
   }
 }
-@keyframes shimmer {
+@keyframes shimmer{
   from {
     background-position: 200% 0;
   }
@@ -310,7 +313,7 @@ body.editing .card:hover {
     background-position: -200% 0;
   }
 }
-.vh {
+.vh{
   position: absolute;
   width: 1px;
   height: 1px;
@@ -319,7 +322,7 @@ body.editing .card:hover {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
-.placebox {
+.placebox{
   margin-top: 12px;
   padding: 12px 14px;
   border: 1.5px dashed var(--line);
@@ -329,27 +332,27 @@ body.editing .card:hover {
   color: var(--soft);
   line-height: 1.5;
 }
-.placebox b {
+.placebox b{
   display: block;
   color: var(--ink);
   font-size: 13px;
   margin-bottom: 4px;
 }
-.skeleton-card {
+.skeleton-card{
   pointer-events: none;
 }
 .skeleton-shimmer,
-.skeleton-line {
+.skeleton-line{
   background: linear-gradient(90deg, #EDF2F6 25%, #F7FAFC 50%, #EDF2F6 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
 }
-.skeleton-line {
+.skeleton-line{
   border-radius: 8px;
 }
 /* ── Тумблер режима правки (единый для обоих брендов,
 Ф3.35) ── */
-.donoff {
+.donoff{
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -359,7 +362,7 @@ body.editing .card:hover {
   cursor: pointer;
   user-select: none;
 }
-.donoff input {
+.donoff input{
   appearance: none;
   -webkit-appearance: none;
   width: 34px;
@@ -372,10 +375,10 @@ body.editing .card:hover {
   margin: 0;
   flex: 0 0 auto;
 }
-.donoff input:checked {
+.donoff input:checked{
   background: #2F7D4F;
 }
-.donoff input::after {
+.donoff input::after{
   content: "";
   position: absolute;
   top: 2px;
@@ -387,12 +390,12 @@ body.editing .card:hover {
   transition: left .2s;
   box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
 }
-.donoff input:checked::after {
+.donoff input:checked::after{
   left: 16px;
 }
 /* ── Тумблер режима правки (база,
 оба бренда; было styles.js Ф3.21) ─── */
-.donoff {
+.donoff{
   position: absolute;
   top: 8px;
   left: 8px;
@@ -408,7 +411,7 @@ body.editing .card:hover {
   font-weight: 700;
   cursor: pointer
 }
-.donoff input {
+.donoff input{
   appearance: none;
   -webkit-appearance: none;
   width: 34px;
@@ -420,7 +423,7 @@ body.editing .card:hover {
   cursor: pointer;
   margin: 0
 }
-.donoff input::after {
+.donoff input::after{
   content: "";
   position: absolute;
   top: 2.5px;
@@ -431,21 +434,21 @@ body.editing .card:hover {
   background: #fff;
   transition: left .25s
 }
-.donoff input:checked {
+.donoff input:checked{
   background: var(--status-success)
 }
-.donoff input:checked::after {
+.donoff input:checked::after{
   left: 17px
 }
 /* в режиме правки метка (hit/new/vegan) не спорит с тумблем за левый верхний угол */
-body.editing .card .tag {
+body.editing .card .tag{
   display: none
 }
 /* ══ АУДИТ 21.09: недостающие keyframes / переменные / классы ══ */
-:root {
+:root{
   --shadow-sheet: 0 -10px 40px -12px rgba(16, 20, 24, .25);
 }
-@keyframes ping {
+@keyframes ping{
   0% {
     transform: scale(1);
     opacity: .6;
@@ -461,7 +464,7 @@ body.editing .card .tag {
     opacity: 0;
   }
 }
-@keyframes stampin {
+@keyframes stampin{
   from {
     transform: scale(.4);
     opacity: 0;
@@ -472,7 +475,7 @@ body.editing .card .tag {
     opacity: 1;
   }
 }
-@keyframes shimmer {
+@keyframes shimmer{
   from {
     background-position: 200% 0;
   }
@@ -481,7 +484,7 @@ body.editing .card .tag {
     background-position: -200% 0;
   }
 }
-.vh {
+.vh{
   position: absolute;
   width: 1px;
   height: 1px;
@@ -490,7 +493,7 @@ body.editing .card .tag {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
-.placebox {
+.placebox{
   margin-top: 12px;
   padding: 12px 14px;
   border: 1.5px dashed var(--line);
@@ -500,28 +503,28 @@ body.editing .card .tag {
   color: var(--soft);
   line-height: 1.5;
 }
-.placebox b {
+.placebox b{
   display: block;
   color: var(--ink);
   font-size: 13px;
   margin-bottom: 4px;
 }
-.skeleton-card {
+.skeleton-card{
   pointer-events: none;
 }
 .skeleton-shimmer,
-.skeleton-line {
+.skeleton-line{
   background: linear-gradient(90deg, #EDF2F6 25%, #F7FAFC 50%, #EDF2F6 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
 }
-.skeleton-line {
+.skeleton-line{
   border-radius: 8px;
 }
 /* ── Фаза 4,
 чанк 1: база,
 перенесённая из index.html inline-<style> ── */
-.cartPanel {
+.cartPanel{
   position: fixed;
   bottom: 0;
   left: 0;
@@ -537,12 +540,12 @@ body.editing .card .tag {
   transform: translateY(100%);
   transition: .3s
 }
-.cartPanel.open {
+.cartPanel.open{
   transform: none
 }
 /* ── Тикер: база (брендовые цвета — СЛОЙ 2,
 views.js) ── */
-.ticker {
+.ticker{
   overflow: hidden;
   max-width: 100%;
   height: 30px;
@@ -553,7 +556,7 @@ views.js) ── */
   position: relative;
   z-index: 1
 }
-#tickerTrack span {
+#tickerTrack span{
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -564,12 +567,12 @@ views.js) ── */
   text-transform: uppercase;
   white-space: nowrap
 }
-#tickerTrack span::after {
+#tickerTrack span::after{
   content: "〜";
   margin-left: 1.4rem;
   color: var(--azure, #3E8FD0)
 }
-@keyframes zt-marquee {
+@keyframes zt-marquee{
   from {
     transform: translate3d(0, 0, 0)
   }
@@ -578,21 +581,23 @@ views.js) ── */
     transform: translate3d(-50%, 0, 0)
   }
 }
-@media(prefers-reduced-motion:reduce) {#tickerTrack {
+@media(prefers-reduced-motion:reduce){#tickerTrack{
     animation: none
   }
 
 
+
 }
-@media(max-width:400px) {#tickerTrack span {
+@media(max-width:400px){#tickerTrack span{
     font-size: 10px;
     padding: .35rem 1rem
   }
 
 
+
 }
 /* ── Сплэш бренда: база в СЛОЕ 1 (Ф3.54) — без FOUC в медленных WebView ── */
-#brandSplash {
+#brandSplash{
   position: fixed;
   inset: 0;
   z-index: 400;
@@ -603,35 +608,35 @@ views.js) ── */
   padding: 16px;
   overflow: auto
 }
-#brandSplashStatic {
+#brandSplashStatic{
   background: #FFFFFF
 }
 #brandSplash .spInner,
-#brandSplashStatic .spInner {
+#brandSplashStatic .spInner{
   width: 100%;
   max-width: 560px;
   text-align: center
 }
 #brandSplash .spTitle,
-#brandSplashStatic .spTitle {
+#brandSplashStatic .spTitle{
   font: 400 clamp(20px, 5.5vw, 30px)/1.25 Prata, serif;
   margin-bottom: 6px;
   overflow-wrap: break-word
 }
 #brandSplash .spSub,
-#brandSplashStatic .spSub {
+#brandSplashStatic .spSub{
   color: var(--soft);
   font-size: 14px;
   margin-bottom: 22px
 }
 #brandSplash .spBtns,
-#brandSplashStatic .spBtns {
+#brandSplashStatic .spBtns{
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px
 }
 #brandSplash .spBtn,
-#brandSplashStatic .spBtn {
+#brandSplashStatic .spBtn{
   border-radius: 22px;
   padding: 22px 16px;
   font: 700 16px Unbounded, sans-serif;
@@ -639,58 +644,59 @@ views.js) ── */
   width: 100%
 }
 #brandSplash .spBtn small,
-#brandSplashStatic .spBtn small {
+#brandSplashStatic .spBtn small{
   display: block;
   font: 400 12px Golos Text, sans-serif;
   margin-top: 6px
 }
 #brandSplash .spPizza,
-#brandSplashStatic .spPizza {
+#brandSplashStatic .spPizza{
   border: 2px solid #F2D9A5;
   background: #FFF6E5;
   color: #6B4E0E
 }
 #brandSplash .spPizza small,
-#brandSplashStatic .spPizza small {
+#brandSplashStatic .spPizza small{
   color: #8A6D3B
 }
 #brandSplash .spCoffee,
-#brandSplashStatic .spCoffee {
+#brandSplashStatic .spCoffee{
   border: 2px solid var(--line);
   background: #fff;
   color: var(--ink)
 }
 #brandSplash .spCoffee small,
-#brandSplashStatic .spCoffee small {
+#brandSplashStatic .spCoffee small{
   color: var(--soft)
 }
 #brandSplash .spBtn .em,
-#brandSplashStatic .spBtn .em {
+#brandSplashStatic .spBtn .em{
   display: block;
   font-size: 30px;
   line-height: 1;
   margin-bottom: 10px
 }
 #brandSplash .spBtn .bt,
-#brandSplashStatic .spBtn .bt {
+#brandSplashStatic .spBtn .bt{
   display: block;
   font: 700 16px Unbounded, sans-serif
 }
-@media(min-width:560px) {#brandSplash .spBtns,
-#brandSplashStatic .spBtns {
+@media(min-width:560px){#brandSplash .spBtns,
+#brandSplashStatic .spBtns{
     grid-template-columns: 1fr 1fr
   }
 
 
+
 }
 /* ── Ф3.55: компенсация плавающей шапки Telegram-WebView ── */
-body.in-tg .topbar {
+body.in-tg .topbar{
   height: auto;
   min-height: calc(var(--topbar-h, 64px) + env(safe-area-inset-top, 0px) + 56px);
   padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
 }
 /* ── Ф5.7 чанк 2: база модалок и полноэкранного QR (было inline <style> index.html) ── */
-.overlay {
+.overlay{
   position: fixed;
   inset: 0;
   background: rgba(58, 42, 28, .45);
@@ -700,11 +706,11 @@ body.in-tg .topbar {
   pointer-events: none;
   transition: .3s
 }
-.overlay.show {
+.overlay.show{
   opacity: 1;
   pointer-events: auto
 }
-.modal {
+.modal{
   position: fixed;
   inset: 0;
   z-index: 340;
@@ -713,7 +719,7 @@ body.in-tg .topbar {
   padding: 18px;
   pointer-events: none
 }
-.modal-card {
+.modal-card{
   width: min(480px, 100%);
   max-height: 90vh;
   overflow-y: auto;
@@ -727,12 +733,12 @@ body.in-tg .topbar {
   opacity: 0;
   transition: opacity .35s cubic-bezier(.2, 1, .3, 1), transform .35s cubic-bezier(.2, 1, .3, 1)
 }
-.modal.show .modal-card {
+.modal.show .modal-card{
   transform: none;
   opacity: 1;
   pointer-events: auto
 }
-.mclose {
+.mclose{
   position: absolute;
   top: 14px;
   right: 14px;
@@ -749,25 +755,25 @@ body.in-tg .topbar {
   display: grid;
   place-items: center
 }
-.mclose:hover {
+.mclose:hover{
   transform: rotate(90deg) scale(1.1)
 }
-.modal-card h3 {
+.modal-card h3{
   font: 400 24px Prata, serif;
   margin-bottom: 4px;
   color: #123A6B
 }
-.modal-card .msub {
+.modal-card .msub{
   color: var(--soft);
   font-size: 12.5px;
   margin-bottom: 16px
 }
-.form {
+.form{
   display: flex;
   flex-direction: column;
   gap: 11px
 }
-.form label {
+.form label{
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -777,14 +783,14 @@ body.in-tg .topbar {
   text-transform: uppercase;
   color: #8B98A5
 }
-.form label small {
+.form label small{
   text-transform: none;
   font-weight: 600;
   letter-spacing: 0
 }
 .form input:not([type="checkbox"]),
 .form select,
-.form textarea {
+.form textarea{
   border: 1.5px solid var(--line);
   border-radius: 12px;
   padding: 10px 13px;
@@ -794,19 +800,19 @@ body.in-tg .topbar {
   transition: .2s;
   font-weight: 500
 }
-.form textarea {
+.form textarea{
   resize: vertical;
   min-height: 44px
 }
 .form input:focus,
 .form select:focus,
-.form textarea:focus {
+.form textarea:focus{
   outline: none;
   border-color: var(--flame)
 }
 /* Ф5.7: .chk перебивает .form label специфичностью и порядком — important в Слое 1 запрещён */
 .form label.chk,
-label.chk {
+label.chk{
   flex-direction: row;
   align-items: center;
   gap: 9px;
@@ -815,27 +821,27 @@ label.chk {
   text-transform: none;
   letter-spacing: 0
 }
-.chk input {
+.chk input{
   width: 19px;
   height: 19px;
   accent-color: var(--flame);
   cursor: pointer
 }
-.frow {
+.frow{
   display: flex;
   gap: 9px
 }
-.f1 {
+.f1{
   flex: 1
 }
-.f2 {
+.f2{
   flex: 2
 }
 .frow>.f1,
-.frow>.f2 {
+.frow>.f2{
   min-width: 0
 }
-.zone {
+.zone{
   border: 2px dashed #9FB4C8;
   border-radius: 16px;
   height: 132px;
@@ -848,36 +854,36 @@ label.chk {
   background: #fff
 }
 .zone:hover,
-.zone.over {
+.zone.over{
   border-color: var(--flame);
   background: #EAF1F9
 }
-.zone img {
+.zone img{
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover
 }
-.zempty {
+.zempty{
   text-align: center;
   color: #8B98A5;
   pointer-events: none
 }
-.zempty span {
+.zempty span{
   font-size: 26px;
   display: block;
   margin-bottom: 4px
 }
-.zempty b {
+.zempty b{
   font-size: 13px
 }
-.zempty small {
+.zempty small{
   display: block;
   font-size: 11px;
   margin-top: 2px
 }
-.zdel {
+.zdel{
   position: absolute;
   bottom: 8px;
   right: 8px;
@@ -889,17 +895,17 @@ label.chk {
   font-weight: 700;
   z-index: 2
 }
-.zdel:hover {
+.zdel:hover{
   background: var(--status-danger)
 }
-.acts {
+.acts{
   margin-top: 4px
 }
-.authcard {
+.authcard{
   text-align: center;
   width: min(400px, 100%)
 }
-.alogo {
+.alogo{
   width: 66px;
   height: 66px;
   border-radius: 20px;
@@ -910,19 +916,19 @@ label.chk {
   box-shadow: 0 12px 26px -8px rgba(18, 58, 107, .6);
   animation: stampin .6s cubic-bezier(.2, 1.6, .4, 1)
 }
-.alt {
+.alt{
   font-size: 12.5px;
   color: var(--soft);
   margin-top: 13px;
   text-align: center
 }
-.alt button {
+.alt button{
   color: var(--flame);
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 3px
 }
-.pin {
+.pin{
   font: 900 28px Unbounded;
   letter-spacing: .45em;
   text-align: center;
@@ -935,15 +941,15 @@ label.chk {
   background: #fff;
   color: #101418
 }
-.pin:focus {
+.pin:focus{
   outline: none;
   border-color: var(--flame)
 }
-.pin.err {
+.pin.err{
   animation: shakePin .4s;
   border-color: var(--status-danger)
 }
-@keyframes shakePin {
+@keyframes shakePin{
 
   20%,
   60% {
@@ -955,20 +961,20 @@ label.chk {
     transform: translateX(7px)
   }
 }
-.pinhint {
+.pinhint{
   font-size: 11.5px;
   color: #8B98A5;
   text-align: center;
   margin-top: 10px
 }
-.qrcard {
+.qrcard{
   width: min(430px, 100%);
   text-align: center;
   background: #fff;
   cursor: pointer;
   user-select: none
 }
-.qrcard canvas {
+.qrcard canvas{
   width: min(330px, 74vw);
   height: auto;
   display: block;
@@ -978,46 +984,47 @@ label.chk {
   image-rendering: pixelated;
   animation: stampin .45s cubic-bezier(.2, 1.4, .4, 1)
 }
-.qrttl {
+.qrttl{
   font: 700 11px Unbounded;
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--soft)
 }
-.qrname {
+.qrname{
   font: 400 24px Prata, serif;
   margin-top: 10px;
   color: #123A6B
 }
-.qrmeta {
+.qrmeta{
   color: var(--soft);
   font-size: 13.5px;
   margin-top: 4px
 }
-.qrhint {
+.qrhint{
   color: #8B98A5;
   font-size: 11.5px;
   margin-top: 16px
 }
-@media (max-width:560px) {#promoModal .frow,
-#emModal .frow {
+@media (max-width:560px){#promoModal .frow,
+#emModal .frow{
     flex-direction: column;
     gap: 11px
   }
-#emModal .modal-card {
+#emModal .modal-card{
     padding: 18px
   }
 
 
+
 }
-#promoModal .form label small {
+#promoModal .form label small{
   margin-top: 4px
 }
-#pmList .logrow {
+#pmList .logrow{
   flex-wrap: wrap
 }
 /* ── Ф5.8 чанк 3: база чата и FAB (было inline <style> index.html + views.js) ── */
-.chat-fab {
+.chat-fab{
   position: fixed;
   right: 20px;
   bottom: calc(20px + env(safe-area-inset-bottom));
@@ -1032,25 +1039,26 @@ label.chk {
   border: 2px solid #3E8FD0;
   transition: left .25s
 }
-.chat-fab svg {
+.chat-fab svg{
   width: 26px;
   height: 26px;
   fill: #fff
 }
-@media (hover:hover) {.chat-fab:hover {
+@media (hover:hover){.chat-fab:hover{
     transform: scale(1.08) rotate(-6deg);
     background: #3E8FD0
   }
 
 
+
 }
-.chat-fab:active {
+.chat-fab:active{
   transform: scale(.95)
 }
-.chat-fab.open {
+.chat-fab.open{
   background: #3E8FD0
 }
-.chat-fab::before {
+.chat-fab::before{
   content: "";
   position: absolute;
   inset: -4px;
@@ -1059,7 +1067,7 @@ label.chk {
   opacity: .6;
   animation: ping 2.4s infinite
 }
-.chat-fab .ub {
+.chat-fab .ub{
   position: absolute;
   top: -3px;
   right: -3px;
@@ -1074,7 +1082,7 @@ label.chk {
   padding: 0 5px;
   border: 2px solid #fff
 }
-.chat {
+.chat{
   position: fixed;
   right: 20px;
   bottom: calc(90px + env(safe-area-inset-bottom));
@@ -1096,12 +1104,12 @@ label.chk {
   pointer-events: none;
   transition: .3s cubic-bezier(.2, 1, .3, 1)
 }
-.chat.open {
+.chat.open{
   transform: none;
   opacity: 1;
   pointer-events: auto
 }
-.chat-h {
+.chat-h{
   background: #101418;
   color: #fff;
   padding: 14px 16px;
@@ -1109,7 +1117,7 @@ label.chk {
   align-items: center;
   gap: 11px
 }
-.chat-h .op {
+.chat-h .op{
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -1118,34 +1126,34 @@ label.chk {
   place-items: center;
   font-size: 18px
 }
-.chat-h b {
+.chat-h b{
   font-size: 14.5px;
   color: #fff
 }
-.chat-h small {
+.chat-h small{
   display: flex;
   align-items: center;
   gap: 6px;
   color: #fff;
   font-size: 11.5px
 }
-.chat-h small i {
+.chat-h small i{
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #4ADE80;
   display: inline-block
 }
-.chat-h button {
+.chat-h button{
   margin-left: auto;
   color: #9FB4C8;
   font-size: 20px;
   padding: 4px
 }
-.chat-h button:hover {
+.chat-h button:hover{
   color: #fff
 }
-.chat-m {
+.chat-m{
   flex: 1;
   overflow-y: auto;
   background: #F0F4F8;
@@ -1155,7 +1163,7 @@ label.chk {
   gap: 9px;
   scrollbar-width: thin
 }
-.msg {
+.msg{
   max-width: 82%;
   padding: 9px 13px;
   border-radius: 16px;
@@ -1163,38 +1171,38 @@ label.chk {
   line-height: 1.45;
   animation: msgin .3s cubic-bezier(.2, 1.2, .4, 1) both
 }
-@keyframes msgin {
+@keyframes msgin{
   from {
     opacity: 0;
     transform: translateY(8px) scale(.96)
   }
 }
-.msg.bot {
+.msg.bot{
   align-self: flex-start;
   background: #fff;
   color: #101418;
   border: 1px solid #D8DFE4;
   border-bottom-left-radius: 5px
 }
-.msg.me {
+.msg.me{
   align-self: flex-end;
   background: #123A6B;
   color: #fff;
   border-bottom-right-radius: 5px
 }
-.msg.staff {
+.msg.staff{
   align-self: flex-start;
   background: #EAF1F9;
   border: 1px solid #B9CDE4;
   border-bottom-left-radius: 5px
 }
-.msg time {
+.msg time{
   display: block;
   font-size: 10px;
   opacity: .55;
   margin-top: 3px
 }
-.msg.sys {
+.msg.sys{
   align-self: center;
   background: transparent;
   border: none;
@@ -1202,7 +1210,7 @@ label.chk {
   font-size: 12px;
   text-align: center
 }
-.chatHint {
+.chatHint{
   display: inline-block;
   background: #EDF2F6;
   border: 1.5px solid var(--line);
@@ -1213,17 +1221,17 @@ label.chk {
   color: var(--ink);
   cursor: pointer
 }
-.chatHint:active {
+.chatHint:active{
   background: #D6E4F0
 }
-.chat-i {
+.chat-i{
   display: flex;
   gap: 8px;
   padding: 11px 12px;
   border-top: 1px solid var(--line);
   background: #fff
 }
-.chat-i input {
+.chat-i input{
   flex: 1;
   border: 1.5px solid var(--line);
   border-radius: 999px;
@@ -1231,11 +1239,11 @@ label.chk {
   font-size: 13.5px;
   color: #101418
 }
-.chat-i input:focus {
+.chat-i input:focus{
   outline: none;
   border-color: var(--flame)
 }
-.chat-i button {
+.chat-i button{
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -1245,18 +1253,18 @@ label.chk {
   transition: .2s;
   flex-shrink: 0
 }
-.chat-i button:hover {
+.chat-i button:hover{
   background: #0B2446;
   transform: scale(1.07)
 }
-.chat-i svg {
+.chat-i svg{
   width: 18px;
   height: 18px;
   fill: #fff
 }
 /* ── F5.9 чанк 4: база карточек и правой панели (было inline <style> index.html) ── */
 /* ══ карточки меню ══ */
-@media (hover: hover) and (pointer: fine) {
+@media (hover: hover) and (pointer: fine){
   .card:hover {
     transform: translateY(-4px);
     box-shadow: 0 10px 28px rgba(18, 58, 107, 0.15);
@@ -1271,24 +1279,26 @@ label.chk {
     transform: scale(1.14) rotate(-5deg);
   }
 }
-.grid {
+.grid{
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
-@media (min-width: 1600px) {.grid {
+@media (min-width: 1600px){.grid{
     grid-template-columns: repeat(4, 1fr);
   }
 
 
+
 }
-@media (max-width: 900px) {.grid {
+@media (max-width: 900px){.grid{
     grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
   }
 
 
+
 }
-.card {
+.card{
   background: #ffffff;
   border: 1.5px solid rgba(62, 143, 208, 0.25);
   border-radius: 18px;
@@ -1304,7 +1314,7 @@ label.chk {
   position: relative;
   box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
 }
-@keyframes pop {
+@keyframes pop{
   from {
     opacity: 0;
     transform: translateY(16px) scale(0.97);
@@ -1315,19 +1325,19 @@ label.chk {
     transform: none;
   }
 }
-.card:hover {
+.card:hover{
   transform: translateY(-4px);
   box-shadow: 0 10px 28px rgba(18, 58, 107, 0.15);
   border-color: #3e8fd0;
 }
-body.editing .card {
+body.editing .card{
   border-style: dashed;
   border-color: #9fb4c8;
 }
-body.editing .card:hover {
+body.editing .card:hover{
   transform: none;
 }
-.media {
+.media{
   height: 150px;
   position: relative;
   overflow: hidden;
@@ -1337,19 +1347,19 @@ body.editing .card:hover {
   display: grid;
   place-items: center;
 }
-.media img {
+.media img{
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s;
 }
-.card:hover .media img {
+.card:hover .media img{
   transform: scale(1.07);
 }
-.card:hover .media .em {
+.card:hover .media .em{
   transform: scale(1.14) rotate(-5deg);
 }
-.tag {
+.tag{
   position: absolute;
   top: 10px;
   left: 10px;
@@ -1362,22 +1372,22 @@ body.editing .card:hover {
   z-index: 2;
   background: #1b4f8a;
 }
-.card .tag.hit {
+.card .tag.hit{
   background: #1b5e8a;
   color: #ffffff;
 }
-.tag.new {
+.tag.new{
   background: var(--green);
 }
-.tag.vegan {
+.tag.vegan{
   background: #7ba05b;
 }
 .stopped .media img,
-.stopped .media .em {
+.stopped .media .em{
   filter: grayscale(1);
   opacity: 0.5;
 }
-.stopbadge {
+.stopbadge{
   position: absolute;
   top: 10px;
   right: 10px;
@@ -1389,30 +1399,30 @@ body.editing .card:hover {
   border-radius: 999px;
   z-index: 2;
 }
-.cbody {
+.cbody{
   padding: 13px 14px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   flex: 1;
 }
-.cbody h3 {
+.cbody h3{
   font:
     700 15.5px/1.3 "Golos Text",
     sans-serif;
   color: #123a6b;
 }
-.cbody .desc {
+.cbody .desc{
   font-size: 12.5px;
   color: var(--soft);
 }
-.comp {
+.comp{
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 2px;
 }
-.comp i {
+.comp i{
   font-style: normal;
   background: #eaf3fb;
   border: 1px solid rgba(62, 143, 208, 0.25);
@@ -1421,35 +1431,35 @@ body.editing .card:hover {
   font: 600 10.5px "Golos Text";
   color: #123a6b;
 }
-.cbody .vol {
+.cbody .vol{
   font: 600 11px "Golos Text";
   color: #5b6874;
   letter-spacing: 0.04em;
   margin-top: auto;
 }
-.cfoot {
+.cfoot{
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 6px;
 }
-.price {
+.price{
   font: 700 16px "Golos Text";
   font-variant-numeric: tabular-nums;
   color: #123a6b;
 }
-.gempty {
+.gempty{
   text-align: center;
   padding: 60px 20px;
   color: var(--soft);
 }
-.gempty .ee {
+.gempty .ee{
   font-size: 52px;
   display: block;
   margin-bottom: 12px;
 }
 /* ══ правая панель ══ */
-.panel {
+.panel{
   position: sticky;
   top: 118px;
   max-height: calc(100vh - 140px);
@@ -1461,12 +1471,12 @@ body.editing .card:hover {
   overflow: hidden;
   box-shadow: 0 14px 40px -12px rgba(18, 58, 107, 0.18);
 }
-.tabs {
+.tabs{
   display: flex;
   gap: 6px;
   padding: 12px 12px 0;
 }
-.tabs button {
+.tabs button{
   flex: 1;
   padding: 9px 4px;
   border-radius: 12px;
@@ -1475,51 +1485,52 @@ body.editing .card:hover {
   color: var(--soft);
   transition: 0.2s;
 }
-.tabs button:hover {
+.tabs button:hover{
   background: #edf2f6;
 }
-.tabs button.on {
+.tabs button.on{
   background: #123a6b;
   color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(18, 58, 107, 0.25);
 }
-.tabs .btn-back {
+.tabs .btn-back{
   flex: 0 0 auto;
   padding: 9px 12px;
   color: var(--flame);
   font-weight: 800;
 }
-@media (min-width: 1181px) {.tabs .btn-back {
+@media (min-width: 1181px){.tabs .btn-back{
     display: none;
   }
 
 
+
 }
-.pv {
+.pv{
   overflow-y: auto;
   padding: 14px;
   flex: 1;
   scrollbar-width: thin;
 }
-.pv::-webkit-scrollbar {
+.pv::-webkit-scrollbar{
   width: 6px;
 }
-.pv::-webkit-scrollbar-thumb {
+.pv::-webkit-scrollbar-thumb{
   background: #c9d3dc;
   border-radius: 3px;
 }
-.pv h4 {
+.pv h4{
   font: 700 12px "Unbounded";
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8b98a5;
   margin: 14px 2px 9px;
 }
-.pv h4:first-child {
+.pv h4:first-child{
   margin-top: 2px;
 }
-.stamps {
+.stamps{
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 9px;
@@ -1529,12 +1540,12 @@ body.editing .card:hover {
   padding: 16px;
 }
 .stamp svg,
-.cdot svg {
+.cdot svg{
   width: 72%;
   height: 72%;
   display: block;
 }
-.stamp {
+.stamp{
   aspect-ratio: 1;
   border-radius: 50%;
   display: grid;
@@ -1542,35 +1553,35 @@ body.editing .card:hover {
   font-size: 15px;
   transition: 0.3s;
 }
-#pvBonus .stamp.f {
+#pvBonus .stamp.f{
   background: #ffffff;
   border: 1.5px solid rgba(107, 74, 47, 0.18);
   border-radius: 50%;
   color: #6b4a2f;
   box-shadow: 0 2px 6px rgba(107, 74, 47, 0.08);
 }
-.stamp.n {
+.stamp.n{
   border: 2px dashed var(--amber);
   animation: nextp 1.6s infinite;
 }
-@keyframes nextp {
+@keyframes nextp{
   50% {
     box-shadow: 0 0 0 5px rgba(200, 155, 106, 0.25);
   }
 }
-#pvBonus .stamp.e {
+#pvBonus .stamp.e{
   border: 1.5px dashed rgba(62, 143, 208, 0.35);
   background: transparent;
 }
-.prog {
+.prog{
   margin-top: 11px;
   font-size: 13.5px;
   color: var(--soft);
 }
-.prog b {
+.prog b{
   color: var(--ink);
 }
-#pvBonus .freeCard {
+#pvBonus .freeCard{
   margin-top: 12px;
   background: linear-gradient(120deg, #f5e5c9, #e6cfa8);
   border: 2px solid var(--amber);
@@ -1581,11 +1592,11 @@ body.editing .card:hover {
   align-items: center;
   box-shadow: 0 8px 24px rgba(194, 147, 95, 0.35);
 }
-.freeCard .fe {
+.freeCard .fe{
   font-size: 30px;
   animation: sway 2.6s infinite;
 }
-@keyframes sway {
+@keyframes sway{
 
   0%,
   100% {
@@ -1596,16 +1607,16 @@ body.editing .card:hover {
     transform: rotate(6deg);
   }
 }
-#pvBonus .freeCard b {
+#pvBonus .freeCard b{
   display: block;
   font: 700 14px "Unbounded";
   color: #4a3100;
 }
-.freeCard small {
+.freeCard small{
   color: #6b4e0e;
   font-size: 11.5px;
 }
-#pvBonus .freeCard button {
+#pvBonus .freeCard button{
   margin-left: auto;
   background: #4a3100;
   color: #f5e5c9;
@@ -1615,11 +1626,11 @@ body.editing .card:hover {
   font-weight: 800;
   transition: 0.2s;
 }
-.freeCard button:hover {
+.freeCard button:hover{
   transform: scale(1.05);
 }
 .demoBtn,
-.resetBtn {
+.resetBtn{
   width: 100%;
   margin-top: 12px;
   border: 1.5px dashed var(--line);
@@ -1631,19 +1642,19 @@ body.editing .card:hover {
   transition: 0.2s;
   background: #fff;
 }
-.demoBtn:hover {
+.demoBtn:hover{
   border-color: var(--flame);
   color: var(--flame);
 }
-.resetBtn {
+.resetBtn{
   font-size: 12px;
   color: #8b98a5;
 }
-.resetBtn:hover {
+.resetBtn:hover{
   border-color: #b3372b;
   color: #b3372b;
 }
-.qrbox {
+.qrbox{
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -1651,17 +1662,17 @@ body.editing .card:hover {
   text-align: center;
   margin-top: 12px;
 }
-.qrbox canvas {
+.qrbox canvas{
   image-rendering: pixelated;
   border-radius: 8px;
 }
-.qrbox small {
+.qrbox small{
   display: block;
   margin-top: 8px;
   font-size: 11.5px;
   color: var(--soft);
 }
-.authPrompt {
+.authPrompt{
   background: linear-gradient(135deg, #eaf1f9, #d8e6f4);
   border: 1px dashed #7fb2d9;
   border-radius: 18px;
@@ -1669,23 +1680,23 @@ body.editing .card:hover {
   text-align: center;
   animation: rise 0.4s both;
 }
-.authPrompt .ap {
+.authPrompt .ap{
   font-size: 34px;
   display: block;
   margin-bottom: 8px;
 }
-.authPrompt b {
+.authPrompt b{
   font: 700 14.5px "Unbounded";
   color: #163b6b;
   display: block;
   margin-bottom: 6px;
 }
-.authPrompt p {
+.authPrompt p{
   font-size: 12.5px;
   color: #33507a;
   margin-bottom: 12px;
 }
-.authPrompt button {
+.authPrompt button{
   background: #163b6b;
   color: #eaf1f9;
   border-radius: 999px;
@@ -1694,21 +1705,21 @@ body.editing .card:hover {
   font-weight: 800;
   transition: 0.2s;
 }
-.authPrompt button:hover {
+.authPrompt button:hover{
   transform: scale(1.04);
 }
-.phead {
+.phead{
   display: flex;
   gap: 12px;
   align-items: center;
 }
-.phead .ava {
+.phead .ava{
   width: 52px;
   height: 52px;
   font-size: 19px;
   border: none;
 }
-.phead input {
+.phead input{
   border: none;
   border-bottom: 2px solid var(--line);
   background: transparent;
@@ -1717,22 +1728,22 @@ body.editing .card:hover {
   padding: 3px 0;
   transition: 0.2s;
 }
-.phead input:focus {
+.phead input:focus{
   outline: none;
   border-color: var(--flame);
 }
-.phead .ph {
+.phead .ph{
   font-size: 12px;
   color: #5b6874;
   margin-top: 2px;
 }
-.stats {
+.stats{
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-top: 14px;
 }
-.stats .stat {
+.stats .stat{
   background: #ffffff;
   border: 1px solid rgba(62, 143, 208, 0.2);
   border-radius: 14px;
@@ -1740,15 +1751,15 @@ body.editing .card:hover {
   text-align: center;
   transition: 0.2s;
 }
-.stat:hover {
+.stat:hover{
   transform: translateY(-2px);
   box-shadow: var(--sh);
 }
-.stat b {
+.stat b{
   font: 900 19px "Unbounded";
   color: #123a6b;
 }
-.stat span {
+.stat span{
   display: block;
   font-size: 10.5px;
   color: var(--soft);
@@ -1757,24 +1768,24 @@ body.editing .card:hover {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.hmini {
+.hmini{
   font-size: 11.5px;
   color: var(--soft);
   padding: 6px 2px;
   border-bottom: 1px dashed var(--line);
   animation: rise 0.3s both;
 }
-.hmini b {
+.hmini b{
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.hmini i {
+.hmini i{
   font-style: normal;
   opacity: 0.75;
 }
 /* ── F5.10 чанк 5: база кассира (было inline <style> index.html) ── */
 /* ══ кассир ══ */
-.cashier {
+.cashier{
   max-width: 880px;
   margin: 0 auto;
   display: flex;
@@ -1782,36 +1793,36 @@ body.editing .card:hover {
   gap: 18px;
   animation: rise 0.4s both;
 }
-.cash-top {
+.cash-top{
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
-.cash-top h2 {
+.cash-top h2{
   font:
     400 24px "Prata",
     serif;
   margin-right: auto;
 }
-.cash-top h2 em {
+.cash-top h2 em{
   font-style: normal;
   color: var(--flame);
 }
-.cash-card {
+.cash-card{
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 20px;
   box-shadow: var(--sh);
 }
-.scan {
+.scan{
   display: grid;
   grid-template-columns: 200px 1fr;
   gap: 22px;
   align-items: center;
 }
-.scanbox {
+.scanbox{
   width: 200px;
   height: 200px;
   border-radius: 22px;
@@ -1820,41 +1831,41 @@ body.editing .card:hover {
   overflow: hidden;
   border: 1px solid #2a3540;
 }
-.scanbox .corn {
+.scanbox .corn{
   position: absolute;
   width: 26px;
   height: 26px;
   border: 3px solid #7fb2d9;
 }
-.c1 {
+.c1{
   top: 12px;
   left: 12px;
   border-right: 0;
   border-bottom: 0;
   border-radius: 8px 0 0 0;
 }
-.c2 {
+.c2{
   top: 12px;
   right: 12px;
   border-left: 0;
   border-bottom: 0;
   border-radius: 0 8px 0 0;
 }
-.c3 {
+.c3{
   bottom: 12px;
   left: 12px;
   border-right: 0;
   border-top: 0;
   border-radius: 0 0 0 8px;
 }
-.c4 {
+.c4{
   bottom: 12px;
   right: 12px;
   border-left: 0;
   border-top: 0;
   border-radius: 0 0 8px 0;
 }
-.scanbox .qrph {
+.scanbox .qrph{
   position: absolute;
   inset: 0;
   display: grid;
@@ -1862,7 +1873,7 @@ body.editing .card:hover {
   font-size: 58px;
   opacity: 0.85;
 }
-.scanbox .line {
+.scanbox .line{
   position: absolute;
   left: 8%;
   right: 8%;
@@ -1873,7 +1884,7 @@ body.editing .card:hover {
   box-shadow: 0 0 16px 3px rgba(127, 178, 217, 0.8);
   animation: scan 2.2s ease-in-out infinite;
 }
-@keyframes scan {
+@keyframes scan{
 
   0%,
   100% {
@@ -1884,20 +1895,20 @@ body.editing .card:hover {
     top: 84%;
   }
 }
-.scan .hint b {
+.scan .hint b{
   font-size: 16px;
 }
-.scan .hint p {
+.scan .hint p{
   color: var(--soft);
   font-size: 13px;
   margin: 6px 0 14px;
 }
-.findrow {
+.findrow{
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
-.findrow input {
+.findrow input{
   flex: 1;
   min-width: 150px;
   border: 1.5px solid var(--line);
@@ -1907,34 +1918,34 @@ body.editing .card:hover {
   background: #fff;
   transition: 0.2s;
 }
-.findrow input:focus {
+.findrow input:focus{
   outline: none;
   border-color: var(--flame);
 }
-.cash-findrow {
+.cash-findrow{
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-.cash-findrow input {
+.cash-findrow input{
   flex: 1 1 100%;
   min-width: 0;
   font-size: 16px;
   padding: 12px 14px;
 }
-.find-actions {
+.find-actions{
   display: flex;
   gap: 8px;
   width: 100%;
 }
-.find-actions button {
+.find-actions button{
   flex: 1 1 50%;
   padding: 12px;
 }
 .btn,
 button.cta,
 .btn.fire,
-#checkoutBtn {
+#checkoutBtn{
   border-radius: 12px;
   padding: 11px 17px;
   font-size: 13.5px;
@@ -1944,47 +1955,47 @@ button.cta,
   color: #ffffff;
   cursor: pointer;
 }
-.btn.dark {
+.btn.dark{
   background: var(--esp);
   color: var(--cream);
 }
-.btn.dark:hover {
+.btn.dark:hover{
   background: #000;
   transform: translateY(-1px);
 }
-.btn.fire {
+.btn.fire{
   background: #123a6b;
   color: #fff;
   box-shadow: 0 6px 16px -6px rgba(18, 58, 107, 0.5);
 }
-.btn.fire:hover {
+.btn.fire:hover{
   background: #0b2446;
   transform: translateY(-1px);
 }
-.btn.ghost {
+.btn.ghost{
   border: 1.5px solid var(--line);
   background: #fff;
   color: var(--soft);
 }
-.btn.ghost:hover {
+.btn.ghost:hover{
   border-color: var(--esp);
   color: var(--ink);
 }
-.btn.ghost.danger:hover {
+.btn.ghost.danger:hover{
   border-color: #b3372b;
   color: #b3372b;
 }
-.cust {
+.cust{
   display: none;
   gap: 18px;
   align-items: flex-start;
   flex-wrap: wrap;
 }
-.cust.show {
+.cust.show{
   display: flex;
   animation: rise 0.35s both;
 }
-.cust .big {
+.cust .big{
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -1995,25 +2006,25 @@ button.cta,
   place-items: center;
   flex-shrink: 0;
 }
-.cust .info {
+.cust .info{
   flex: 1;
   min-width: 220px;
 }
-.cust .info b {
+.cust .info b{
   font: 700 18px "Unbounded";
 }
-.cust .info .cp {
+.cust .info .cp{
   color: var(--soft);
   font-size: 13px;
   margin: 3px 0 11px;
 }
-.cdots {
+.cdots{
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
   margin-bottom: 6px;
 }
-.cdot {
+.cdot{
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -2022,30 +2033,30 @@ button.cta,
   display: grid;
   place-items: center;
 }
-.cdot.f {
+.cdot.f{
   background: transparent;
   border: none;
   color: #6b4a2f;
 }
-.cdot.last {
+.cdot.last{
   animation: stampin 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
 }
-.cust .acts {
+.cust .acts{
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.cust .note {
+.cust .note{
   font-size: 12px;
   color: var(--soft);
   margin-bottom: 8px;
 }
-.chist {
+.chist{
   border-top: 1px dashed var(--line);
   margin-top: 8px;
   padding-top: 4px;
 }
-.logrow {
+.logrow{
   display: flex;
   gap: 10px;
   font-size: 13px;
@@ -2053,23 +2064,23 @@ button.cta,
   border-bottom: 1px dashed var(--line);
   animation: rise 0.3s both;
 }
-.logrow .lt {
+.logrow .lt{
   font: 700 10.5px "Unbounded";
   color: #8b98a5;
   min-width: 0;
   white-space: nowrap;
 }
-.cashlog {
+.cashlog{
   flex-direction: column;
   gap: 3px;
   align-items: flex-start;
 }
-.cashlog .la {
+.cashlog .la{
   font-size: 13.5px;
 }
 /* ── F5.11 чанк 6: служебный кластер (было inline <style> index.html) ── */
 /* ══ служебное ══ */
-.toasts {
+.toasts{
   position: fixed;
   top: calc(74px + env(safe-area-inset-top));
   right: 18px;
@@ -2078,7 +2089,7 @@ button.cta,
   flex-direction: column;
   gap: 8px;
 }
-.toast {
+.toast{
   background: var(--esp);
   color: var(--cream);
   border-radius: 14px;
@@ -2092,28 +2103,28 @@ button.cta,
   animation: tin 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both;
   max-width: 330px;
 }
-.toast.out {
+.toast.out{
   animation: tout 0.3s forwards;
 }
-@keyframes tin {
+@keyframes tin{
   from {
     opacity: 0;
     transform: translateX(60px);
   }
 }
-@keyframes tout {
+@keyframes tout{
   to {
     opacity: 0;
     transform: translateX(60px);
   }
 }
-#fx {
+#fx{
   position: fixed;
   inset: 0;
   z-index: 200;
   pointer-events: none;
 }
-.mbonus {
+.mbonus{
   display: none;
   position: fixed;
   left: 50%;
@@ -2129,34 +2140,34 @@ button.cta,
   gap: 10px;
   box-shadow: 0 16px 40px -10px rgba(16, 20, 24, 0.6);
 }
-body.is-cashier .cashier {
+body.is-cashier .cashier{
   max-width: 1100px;
 }
-body.is-cashier .scan {
+body.is-cashier .scan{
   gap: 40px;
 }
-body.is-cashier .cust .info {
+body.is-cashier .cust .info{
   min-width: 280px;
 }
-body.is-cashier .cust .acts {
+body.is-cashier .cust .acts{
   min-width: 260px;
 }
-@media (max-width: 1180px) {.wrap {
+@media (max-width: 1180px){.wrap{
     grid-template-columns: 1fr;
     gap: 14px;
   }
-.rail {
+.rail{
     position: static;
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: 4px;
   }
-.rail button {
+.rail button{
     flex-direction: row;
     padding: 9px 15px;
     white-space: nowrap;
   }
-.panel {
+.panel{
     position: fixed;
     top: 0;
     right: 0;
@@ -2169,51 +2180,54 @@ body.is-cashier .cust .acts {
     transition: 0.35s cubic-bezier(0.2, 1, 0.3, 1);
     padding-top: calc(env(safe-area-inset-top) + 6px);
   }
-.tabs {
+.tabs{
     order: 99;
     margin-top: auto;
     background: var(--panel);
     border-top: 1px solid var(--line);
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
   }
-.tabs button {
+.tabs button{
     padding: 13px 6px;
     font-size: 14px;
   }
-.panel.open {
+.panel.open{
     transform: none;
   }
-.mbonus {
+.mbonus{
     display: flex;
   }
-.scan {
+.scan{
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;
   }
 
 
+
 }
-@media (max-width: 640px) {.topbar {
+@media (max-width: 640px){.topbar{
     flex-wrap: wrap;
     gap: 6px;
     padding-left: 14px;
     padding-right: 14px;
   }
-.brand b {
+.brand b{
     font-size: 15px;
     white-space: nowrap;
   }
 
 
+
 }
-@media (max-width: 360px) {.brand small {
+@media (max-width: 360px){.brand small{
     display: none;
   }
 
 
+
 }
-.cartItem .qty button {
+.cartItem .qty button{
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -2221,7 +2235,7 @@ body.is-cashier .cust .acts {
   font-weight: 700;
   position: relative;
 }
-.cartItem .qty button::before {
+.cartItem .qty button::before{
   content: "";
   position: absolute;
   top: 50%;
@@ -2230,7 +2244,7 @@ body.is-cashier .cust .acts {
   min-width: 44px;
   min-height: 44px;
 }
-@keyframes pulse-hint {
+@keyframes pulse-hint{
   0% {
     box-shadow: 0 0 0 0 rgba(232, 161, 58, 0.7);
   }
@@ -2243,7 +2257,7 @@ body.is-cashier .cust .acts {
     box-shadow: 0 0 0 0 rgba(232, 161, 58, 0);
   }
 }
-.mbonus .mb-free {
+.mbonus .mb-free{
   background: linear-gradient(120deg, #f3e3ce, #e4c9a5);
   color: #4a3100;
   border-radius: 999px;
@@ -2253,7 +2267,7 @@ body.is-cashier .cust .acts {
   box-shadow: 0 0 0 2px rgba(228, 201, 165, 0.4);
   animation: freePulse 2.2s infinite;
 }
-@keyframes freePulse {
+@keyframes freePulse{
 
   0%,
   100% {
@@ -2264,7 +2278,7 @@ body.is-cashier .cust .acts {
     transform: scale(1.07);
   }
 }
-.pushHint {
+.pushHint{
   position: fixed;
   top: calc(env(safe-area-inset-top) + 70px);
   right: 14px;
@@ -2280,7 +2294,7 @@ body.is-cashier .cust .acts {
   cursor: pointer;
   max-width: calc(100vw - 28px);
 }
-.pushHint::before {
+.pushHint::before{
   content: "";
   position: absolute;
   top: -5px;
@@ -2291,13 +2305,13 @@ body.is-cashier .cust .acts {
   transform: rotate(45deg);
   border-radius: 3px;
 }
-.demoBtn.glow {
+.demoBtn.glow{
   border: 2px dashed #e8a13a;
   color: #b26a05;
   background: #fff6e5;
   animation: glowPulse 1.5s infinite;
 }
-@keyframes glowPulse {
+@keyframes glowPulse{
 
   0%,
   100% {
@@ -2308,7 +2322,7 @@ body.is-cashier .cust .acts {
     box-shadow: 0 0 0 10px rgba(232, 161, 58, 0);
   }
 }
-.freeBanner {
+.freeBanner{
   margin: 8px 0 2px;
   background: linear-gradient(120deg, #f3e3ce, #e4c9a5);
   color: #4a3100;
@@ -2319,68 +2333,47 @@ body.is-cashier .cust .acts {
   box-shadow: 0 6px 16px -6px rgba(200, 155, 106, 0.7);
   animation: rise 0.3s both;
 }
-.chips button[data-armed="1"] {
+.chips button[data-armed="1"]{
   border-color: #b3372b;
   color: #b3372b;
   font-weight: 800;
 }
 #profileView img,
-#profileView canvas {
+#profileView canvas{
   cursor: pointer;
 }
-.brandSeg {
-  display: flex;
-  background: var(--esp2);
-  border: 1px solid #2a3540;
-  border-radius: 999px;
-  padding: 3px;
-  margin-left: 10px;
-}
-.brandSeg button {
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #9fb4c8;
-  transition: 0.25s;
-}
-.brandSeg button.on {
-  background: var(--flame);
-  color: #fff;
-  box-shadow: 0 3px 10px -3px rgba(31, 78, 140, 0.8);
-}
-.deliveryView {
+.deliveryView{
   display: none;
 }
-.deliveryView.active {
+.deliveryView.active{
   display: block;
 }
-.cartItem {
+.cartItem{
   display: flex;
   gap: 12px;
   align-items: center;
   padding: 10px 0;
   border-bottom: 1px dashed var(--line);
 }
-.cartItem .qty {
+.cartItem .qty{
   display: flex;
   gap: 6px;
   align-items: center;
 }
-.checkoutForm {
+.checkoutForm{
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-top: 16px;
 }
-.checkoutForm label {
+.checkoutForm label{
   font-size: 13px;
   font-weight: 600;
   color: var(--soft);
 }
 .checkoutForm input,
 .checkoutForm select,
-.checkoutForm textarea {
+.checkoutForm textarea{
   border: 1.5px solid var(--line);
   border-radius: 12px;
   padding: 10px 13px;
@@ -2388,11 +2381,11 @@ body.is-cashier .cust .acts {
   background: #fff;
   color: #101418;
 }
-.checkoutForm textarea {
+.checkoutForm textarea{
   resize: vertical;
   min-height: 60px;
 }
-.deliveryBanner {
+.deliveryBanner{
   background: #fff6e5;
   border: 1.5px dashed #f2d9a5;
   border-radius: 14px;
@@ -2402,83 +2395,83 @@ body.is-cashier .cust .acts {
   font-size: 13px;
   font-weight: 600;
 }
-.orderCard {
+.orderCard{
   border: 1.5px solid var(--line);
   border-radius: 16px;
   padding: 14px;
   margin-bottom: 12px;
   background: #fff;
 }
-.ocHead {
+.ocHead{
   display: flex;
   gap: 10px;
   align-items: center;
   font-size: 15px;
 }
-.ocTime {
+.ocTime{
   margin-left: auto;
   color: var(--soft);
   font-size: 12px;
 }
-.ocStatus {
+.ocStatus{
   font-size: 11px;
   font-weight: 800;
   border-radius: 999px;
   padding: 3px 10px;
 }
-.st-new {
+.st-new{
   background: #fde8e8;
   color: #b3372b;
 }
-.st-accept {
+.st-accept{
   background: #eaf1f9;
   color: #163b6b;
 }
-.st-cook {
+.st-cook{
   background: #fff6e5;
   color: #b26a05;
 }
-.st-way {
+.st-way{
   background: #e4efe2;
   color: #1e7a4e;
 }
-.st-done {
+.st-done{
   background: #edf2f6;
   color: #5b6b7a;
 }
-.st-cancel {
+.st-cancel{
   background: #fde8e8;
   color: #b3372b;
 }
-.ocWho {
+.ocWho{
   font-weight: 700;
   margin-top: 6px;
 }
 .ocAddr,
 .ocItems,
-.ocComment {
+.ocComment{
   font-size: 13px;
   color: var(--soft);
   margin-top: 4px;
 }
-.ocTotal {
+.ocTotal{
   margin-top: 8px;
   font-size: 14px;
 }
-.ocActs {
+.ocActs{
   display: flex;
   gap: 8px;
   margin-top: 10px;
   flex-wrap: wrap;
 }
-.adminBar {
+.adminBar{
   display: flex;
   gap: 9px;
   flex-wrap: wrap;
   justify-content: flex-end;
   margin: 0 0 12px;
 }
-.sr-only {
+.sr-only{
   position: absolute;
   width: 1px;
   height: 1px;
@@ -2489,32 +2482,34 @@ body.is-cashier .cust .acts {
 }
 /* ── F5.11b: подсветка-подсказка аватара (состояние; было residual Слоя 0,
 снят: специфичность .ava.pulse-hint выше .ava и бренд-правил) ── */
-.ava.pulse-hint {
+.ava.pulse-hint{
   animation: pulse-hint 2s infinite;
   border: 2px solid #e8a13a;
   background: #e8a13a;
   color: #fff
 }
 /* F5.12: ступени токена (было critical-блоком Ф3.51) */
-@media (max-width: 820px) {
+@media (max-width: 820px){
   :root {
     --topbar-h: 56px;
   }
 }
-@media (max-width: 480px) {:root {
+@media (max-width: 480px){:root{
     --topbar-h: 60px;
   }
 
 
+
 }
-@media (min-width: 1024px) {:root {
+@media (min-width: 1024px){:root{
     --topbar-h: 96px;
   }
 
 
+
 }
 /* F5.12: база layout марки; габаритный FOUC-сброс остаётся в critical-блоке Слоя 0 */
-.topbar .brand .mark {
+.topbar .brand .mark{
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2523,7 +2518,7 @@ body.is-cashier .cust .acts {
 }
 /* F5.14: база .wrap (была в critical-блоке,
 перебивала медиа) */
-.wrap {
+.wrap{
   display: grid;
   grid-template-columns: 92px 1fr 350px;
   gap: 22px;
@@ -2533,7 +2528,7 @@ body.is-cashier .cust .acts {
   align-items: start
 }
 /* ── F5.13: база из растворённого большого <style> (порядок = прежний каскад) ── */
-:root {
+:root{
   --paper: #ffffff;
   --card: #ffffff;
   --panel: #f3f8fc;
@@ -2550,12 +2545,12 @@ body.is-cashier .cust .acts {
   --r: 18px;
   --sh: 0 10px 30px -12px rgba(16, 20, 24, 0.18);
 }
-* {
+*{
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
-body {
+body{
   font:
     400 15px/1.5 "Golos Text",
     system-ui,
@@ -2569,7 +2564,7 @@ body {
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
 }
-button {
+button{
   font-family: inherit;
   cursor: pointer;
   border: none;
@@ -2578,16 +2573,16 @@ button {
 }
 input,
 select,
-textarea {
+textarea{
   font-family: inherit;
 }
-:focus-visible {
+:focus-visible{
   outline: 3px solid rgba(18, 58, 107, 0.45);
   outline-offset: 2px;
   border-radius: 8px;
 }
 /* ══ шапка ══ */
-.topbar {
+.topbar{
   height: var(--topbar-h, 64px);
   padding: 0 12px;
   position: sticky;
@@ -2602,35 +2597,35 @@ textarea {
   border-bottom: 1px solid rgba(62, 143, 208, 0.25);
   box-shadow: 0 4px 16px -4px rgba(18, 58, 107, 0.08);
 }
-.brand {
+.brand{
   display: flex;
   align-items: center;
   gap: 11px;
   margin-right: auto;
   cursor: pointer;
 }
-.brand b {
+.brand b{
   font:
     400 19px "Prata",
     serif;
   letter-spacing: 0.04em;
   color: #123a6b;
 }
-.brand small {
+.brand small{
   display: block;
   font: 600 11px "Golos Text";
   color: #3e8fd0;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-.modeSeg {
+.modeSeg{
   display: flex;
   background: var(--esp2);
   border: 1px solid #2a3540;
   border-radius: 999px;
   padding: 3px;
 }
-.modeSeg button {
+.modeSeg button{
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 12.5px;
@@ -2638,12 +2633,12 @@ textarea {
   color: #9fb4c8;
   transition: 0.25s;
 }
-.modeSeg button.on {
+.modeSeg button.on{
   background: var(--flame);
   color: #fff;
   box-shadow: 0 3px 10px -3px rgba(31, 78, 140, 0.8);
 }
-.ava {
+.ava{
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -2656,17 +2651,17 @@ textarea {
   box-shadow: 0 3px 8px rgba(18, 58, 107, 0.25);
   transition: 0.25s;
 }
-.ava:hover {
+.ava:hover{
   transform: scale(1.08);
 }
-.rail {
+.rail{
   position: sticky;
   top: 118px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.rail button {
+.rail button{
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2680,43 +2675,43 @@ textarea {
   color: #475462;
   transition: 0.25s;
 }
-.rail .re {
+.rail .re{
   font-size: 23px;
   transition: transform 0.25s;
 }
-.rail button:hover {
+.rail button:hover{
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(18, 58, 107, 0.1);
 }
-.rail button.on {
+.rail button.on{
   background: linear-gradient(145deg, #123a6b, #1d5c9b);
   color: #fff;
   border-color: transparent;
   box-shadow: 0 6px 16px rgba(18, 58, 107, 0.28);
 }
-.menu-head {
+.menu-head{
   margin: 2px 0 18px;
   animation: rise 0.6s both;
 }
-.mh-top {
+.mh-top{
   display: flex;
   align-items: flex-end;
   gap: 14px;
   flex-wrap: wrap;
 }
-.menu-head h1 {
+.menu-head h1{
   font:
     400 clamp(26px, 3.2vw, 40px)/1.15 "Prata",
     serif;
   color: #123a6b;
 }
-.menu-head h1 em {
+.menu-head h1 em{
   font-style: normal;
   color: #3e8fd0;
   border-bottom: 2px solid rgba(62, 143, 208, 0.4);
   padding-bottom: 2px;
 }
-.menu-head .upd {
+.menu-head .upd{
   color: var(--soft);
   margin-top: 6px;
   font:
@@ -2725,10 +2720,10 @@ textarea {
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-.menu-head .upd b {
+.menu-head .upd b{
   color: var(--green);
 }
-.adminBadge {
+.adminBadge{
   background: #eaf1f9;
   color: #123a6b;
   border: 1px solid #b9d4f0;
@@ -2741,14 +2736,14 @@ textarea {
   margin-left: 6px;
   white-space: nowrap;
 }
-.mh-right {
+.mh-right{
   margin-left: auto;
   display: flex;
   gap: 9px;
   align-items: center;
   flex-wrap: wrap;
 }
-.search {
+.search{
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2760,11 +2755,11 @@ textarea {
   min-width: 210px;
   box-shadow: 0 2px 8px rgba(18, 58, 107, 0.05);
 }
-.search:focus-within {
+.search:focus-within{
   border-color: #3e8fd0;
   box-shadow: 0 0 0 3px rgba(62, 143, 208, 0.18);
 }
-.search input {
+.search input{
   border: none;
   outline: none;
   flex: 1;
@@ -2776,7 +2771,7 @@ textarea {
 #editToggle,
 #promoToggle,
 #dashToggle,
-#chatsToggle2 {
+#chatsToggle2{
   border-radius: 999px;
   padding: 10px 18px;
   font-size: 13px;
@@ -2785,15 +2780,15 @@ textarea {
   transition: 0.25s;
   background: #fff;
 }
-#editToggle:hover {
+#editToggle:hover{
   transform: translateY(-1px);
   box-shadow: var(--sh);
 }
-#editToggle.on {
+#editToggle.on{
   background: var(--esp);
   color: var(--cream);
 }
-@keyframes rise {
+@keyframes rise{
   from {
     opacity: 0;
     transform: translateY(14px);
@@ -2805,7 +2800,7 @@ textarea {
   }
 }
 /* F5.14 P5: пилюля бонусов слева от круглого FAB чата на ≤820px */
-@media (max-width: 820px) {
+@media (max-width: 820px){
   .mbonus {
     left: 50%;
     right: auto;
@@ -2830,7 +2825,7 @@ sticky слева на весь скролл
    .wrap .rail (0,
 2,
 0) перебивает горизонтальный padding/overflow Слоя 2. ── */
-@media (max-width: 1180px) {
+@media (max-width: 1180px){
   .wrap {
     grid-template-columns: 64px minmax(0, 1fr);
     gap: 8px;
@@ -2894,11 +2889,11 @@ sticky слева на весь скролл
 компакт активаций,
 тосты) ── */
 .wrap .rail,
-.wrap #deliveryRail {
+.wrap #deliveryRail{
   align-self: start;
 }
 .wrap .rail button,
-.wrap #deliveryRail button {
+.wrap #deliveryRail button{
   font-size: 10.5px;
   font-weight: 600;
   line-height: 1.15;
@@ -2908,20 +2903,20 @@ sticky слева на весь скролл
   padding: 7px 3px;
 }
 #pendingBox,
-#pendingBoxD {
+#pendingBoxD{
   max-height: 264px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
-@media (max-width: 640px) {.toasts {
+@media (max-width: 640px){.toasts{
     left: 12px;
     right: 12px;
     top: calc(env(safe-area-inset-top, 0px) + 8px);
     transform: none;
     align-items: stretch;
   }
-.toast {
+.toast{
     font-size: 12.5px;
     padding: 10px 14px;
     border-radius: 14px;
@@ -2929,21 +2924,22 @@ sticky слева на весь скролл
   }
 
 
+
 }
 /* ── F5.16b: рейл-кнопки block (ellipsis не живёт во flex),
 .on-типографика ── */
 .wrap .rail button,
-.wrap #deliveryRail button {
+.wrap #deliveryRail button{
   display: block;
   text-align: center;
 }
 .wrap .rail .re,
-.wrap #deliveryRail .re {
+.wrap #deliveryRail .re{
   display: block;
   margin: 0 0 2px;
 }
 .wrap .rail button.on,
-.wrap #deliveryRail button.on {
+.wrap #deliveryRail button.on{
   font-size: 10.5px;
   font-weight: 600;
   line-height: 1.15;
@@ -2951,7 +2947,7 @@ sticky слева на весь скролл
 /* ── F5.17: рейл по центру вертикали; кнопки крупнее,
 шрифт мельче,
 весь текст виден ── */
-@media (max-width: 1180px) {
+@media (max-width: 1180px){
   .wrap {
     grid-template-columns: 72px minmax(0, 1fr);
   }
@@ -2986,15 +2982,15 @@ sticky слева на весь скролл
   }
 }
 /* ── F5.17: бонус-пилюля компакт справа над FAB; у футера растворяется ── */
-.mbonus {
+.mbonus{
   transition: opacity .25s, transform .25s;
 }
-.mbonus.near-footer {
+.mbonus.near-footer{
   opacity: 0;
   pointer-events: none;
   transform: translateY(8px);
 }
-@media (max-width: 820px) {.mbonus {
+@media (max-width: 820px){.mbonus{
     left: auto;
     right: 12px;
     transform: none;
@@ -3003,25 +2999,26 @@ sticky слева на весь скролл
     padding: 6px 10px;
     gap: 6px;
   }
-.mbonus>* {
+.mbonus>*{
     font-size: 10px;
     padding: 3px 6px;
     border-radius: 8px;
   }
-.mbonus.near-footer {
+.mbonus.near-footer{
     transform: translateY(8px);
   }
+
 
 
 }
 /* ── F5.18: бейдж бонусов слева + рейл Пятницы ×2 + .on-типографика через body-префикс ── */
 body .wrap .rail button.on,
-body .wrap #deliveryRail button.on {
+body .wrap #deliveryRail button.on{
   font-size: 9.5px;
   font-weight: 700;
   line-height: 1.1;
 }
-@media (max-width: 820px) {.mbonus {
+@media (max-width: 820px){.mbonus{
     left: 8px;
     right: auto;
     transform: none;
@@ -3033,42 +3030,43 @@ body .wrap #deliveryRail button.on {
     border-radius: 16px;
     max-width: 64px;
   }
-.mbonus>span:not(.mb-free) {
+.mbonus>span:not(.mb-free){
     display: none;
   }
-.mbonus::before {
+.mbonus::before{
     content: "🎁 " attr(data-st);
     font-size: 11px;
     font-weight: 800;
     color: #fff;
   }
-.mbonus .mb-free {
+.mbonus .mb-free{
     font-size: 9px;
     padding: 3px 5px;
     border-radius: 8px;
   }
-.mbonus .mb-free[hidden] {
+.mbonus .mb-free[hidden]{
   display: none !important;
 }
 
 
+
 }
 /* ── Ф6.1: CLS-резервы (трейс 27.09): модалка стафф-чата не прыгает при loadScList ── */
-#scModal .modal-card {
+#scModal .modal-card{
   min-height: min(70vh, 380px);
   box-sizing: border-box;
 }
-.skeleton-foot {
+.skeleton-foot{
   height: 46px;
   margin-top: 10px;
   border-radius: 12px;
 }
 /* ── Ф6.2: фокус промо-поля не анимирует font-size (микро-CLS/джанк) ── */
-#cartPromo {
+#cartPromo{
   transition: none
 }
 /* ── Ф5.26: бонус-бейдж выровнен с рейлом (продукт 28.09): геометрия = колонка рейла ── */
-@media (max-width: 1180px) {
+@media (max-width: 1180px){
   .mbonus {
     left: 6px;
     right: auto;
@@ -3106,7 +3104,7 @@ body .wrap #deliveryRail button.on {
 }
 /* ── Ф5.26: лендскейп-телефон — рейл без центрирующего translate,
 ничего не обрезается ── */
-@media (max-width: 1180px) and (max-height: 480px) {
+@media (max-width: 1180px) and (max-height: 480px){
 
   .wrap .rail,
   .wrap #deliveryRail {
@@ -3125,14 +3123,14 @@ body .wrap #deliveryRail button.on {
 /* ── Ф5.28: семья FAB: одна ось right:10,
 базы 14/80,
 диаметры 56 ── */
-.chat-fab {
+.chat-fab{
   right: 10px;
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   width: 56px;
   height: 56px;
 }
 /* ── Ф5.28: бейдж бонусов: ≥821 в потоке шапки слева от аватара; <821 вертикальная колонка в створе рейла ── */
-@media (min-width: 821px) {
+@media (min-width: 821px){
   #mbonusBtn {
     position: static;
     grid-column: 3;
@@ -3158,7 +3156,7 @@ body .wrap #deliveryRail button.on {
     transform: none;
   }
 }
-@media (max-width: 820px) {#mbonusBtn {
+@media (max-width: 820px){#mbonusBtn{
     position: fixed;
     left: 6px;
     right: auto;
@@ -3174,7 +3172,7 @@ body .wrap #deliveryRail button.on {
     border-radius: 16px;
     transform: none;
   }
-#mbonusBtn .mb-free {
+#mbonusBtn .mb-free{
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3183,59 +3181,62 @@ body .wrap #deliveryRail button.on {
     padding: 3px 5px;
     border-radius: 8px;
   }
-#mbonusBtn.near-footer {
+#mbonusBtn.near-footer{
     opacity: 0;
     pointer-events: none;
     transform: translateY(8px);
   }
 
 
+
 }
 /* ── Ф5.29: бейдж = ::before «🎁 0/10» + чип «🎁 N»; длинный span скрыт везде ── */
-#mbonusBtn>span:not(.mb-free) {
+#mbonusBtn>span:not(.mb-free){
   display: none;
 }
-#mbonusBtn::before {
+#mbonusBtn::before{
   content: "🎁 " attr(data-st);
   font-weight: 800;
   color: var(--cream);
   font-size: 12px;
 }
-@media (min-width: 821px) {#mbonusBtn {
+@media (min-width: 821px){#mbonusBtn{
     height: 56px;
     padding: 0 14px;
     gap: 8px;
     justify-content: center;
   }
-#mbonusBtn::before {
+#mbonusBtn::before{
     font-size: 13px;
   }
-#mbonusBtn .mb-free {
+#mbonusBtn .mb-free{
     font-size: 11px;
     padding: 5px 10px;
   }
 
 
+
 }
-@media (max-width: 820px) {#mbonusBtn {
+@media (max-width: 820px){#mbonusBtn{
     width: 64px;
     max-width: 64px;
     padding: 8px 4px;
     gap: 4px;
   }
-#mbonusBtn::before {
+#mbonusBtn::before{
     font-size: 11px;
   }
-#mbonusBtn .mb-free {
+#mbonusBtn .mb-free{
     font-size: 9px;
     padding: 3px 4px;
   }
 
 
+
 }
 /* ── Ф5.31: док шапки ≥821: ширина из JS-уравнения,
 без капа 72px и колонки Ф5.26 ── */
-@media (min-width: 821px) {
+@media (min-width: 821px){
   #mbonusBtn {
     width: auto;
     max-width: none;
@@ -3243,7 +3244,7 @@ body .wrap #deliveryRail button.on {
   }
 }
 /* ── Ф5.32: бейдж в створе рейл-кнопок (10…74px) ── */
-@media (max-width: 820px) {
+@media (max-width: 820px){
   #mbonusBtn {
     left: 10px;
     width: 64px;
@@ -3251,12 +3252,12 @@ body .wrap #deliveryRail button.on {
   }
 }
 /* ── Ф5.32: зерно штампов вместо 🎁 в счётчике бейджа ── */
-#mbonusBtn::before {
+#mbonusBtn::before{
   content: attr(data-bean) " " attr(data-st);
 }
 /* ── Ф5.33: menu-head на мобиле в одну колонку,
 без правых/нижних пустот ── */
-@media (max-width: 820px) {
+@media (max-width: 820px){
 
   .mh-top,
   .mh,
@@ -3285,10 +3286,10 @@ body .wrap #deliveryRail button.on {
   }
 }
 /* ── Ф5.34: зерно штампов = DOM-svg в span (content:attr текст-only); ::before off ── */
-#mbonusBtn::before {
+#mbonusBtn::before{
   content: none;
 }
-#mbonusBtn>span:not(.mb-free) {
+#mbonusBtn>span:not(.mb-free){
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -3296,36 +3297,38 @@ body .wrap #deliveryRail button.on {
   color: var(--cream);
   font-size: 12px;
 }
-#mbonusBtn>span:not(.mb-free) svg {
+#mbonusBtn>span:not(.mb-free) svg{
   width: 12px;
   height: 12px;
   flex: 0 0 12px;
   display: block;
 }
-@media (min-width: 821px) {#mbonusBtn>span:not(.mb-free) {
+@media (min-width: 821px){#mbonusBtn>span:not(.mb-free){
     font-size: 13px;
   }
 
 
+
 }
 /* ── Ф5.34: створ рейла по брейкпоинтам (wrap padding 14px на ≤640 из Слоя 2) ── */
-@media (max-width: 640px) {
+@media (max-width: 640px){
   #mbonusBtn {
     left: 18px;
     width: 64px;
     max-width: 64px;
   }
 }
-@media (min-width: 641px) and (max-width: 820px) {#mbonusBtn {
+@media (min-width: 641px) and (max-width: 820px){#mbonusBtn{
     left: 10px;
     width: 64px;
     max-width: 64px;
   }
 
 
+
 }
 /* ── Ф5.34: menu-head flush с кромками карточек на мобиле ── */
-@media (max-width: 820px) {
+@media (max-width: 820px){
 
   .mh-top,
   .mh,
@@ -3334,7 +3337,7 @@ body .wrap #deliveryRail button.on {
   }
 }
 /* ── Ф5.35: зерно бейджа как штамп профиля (белый круг + коричневое зерно) ── */
-#mbonusBtn>span:not(.mb-free) svg {
+#mbonusBtn>span:not(.mb-free) svg{
   width: 22px;
   height: 22px;
   flex: 0 0 22px;
@@ -3345,30 +3348,31 @@ body .wrap #deliveryRail button.on {
   color: #7B5233;
 }
 /* ── Ф5.35: бейдж = 1:1 бокс рейл-кнопки (отступ до карточек как у рейла) ── */
-@media (max-width: 640px) {
+@media (max-width: 640px){
   #mbonusBtn {
     left: 18px;
     width: 56px;
     max-width: 56px;
   }
 }
-@media (min-width: 641px) and (max-width: 820px) {#mbonusBtn {
+@media (min-width: 641px) and (max-width: 820px){#mbonusBtn{
     left: 10px;
     width: 56px;
     max-width: 56px;
   }
 
 
+
 }
 /* ── Ф5.36: menu-head во всю ширину включая колонку рейла (мёртвая зона над рейлом уходит) ── */
-@media (max-width: 820px) {
+@media (max-width: 820px){
   .menu-head {
     margin-left: calc(-1 * (72px + 8px));
     width: calc(100% + 72px + 8px);
   }
 }
 /* ── Ф5.36: контент бейджа уплотнён под идеальную кнопку 56px (размер/позиция не тронуты) ── */
-@media (max-width: 820px) {
+@media (max-width: 820px){
   #mbonusBtn {
     padding: 4px;
     gap: 2px;
@@ -3392,7 +3396,7 @@ body .wrap #deliveryRail button.on {
   }
 }
 /* ── Ф5.37: строка поиска во всю ширину колонки на мобиле ── */
-@media (max-width: 820px) {
+@media (max-width: 820px){
 
   .mh-top .mh-right,
   .mh-top .search {
@@ -3401,7 +3405,7 @@ body .wrap #deliveryRail button.on {
   }
 }
 /* ── Ф5.39: бейдж показывает зерно (перебиваем display:none из Ф5.29) ── */
-#mbonusBtn > span:not(.mb-free) {
+#mbonusBtn > span:not(.mb-free){
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -3409,7 +3413,7 @@ body .wrap #deliveryRail button.on {
 /* ── Ф5.39: поиск во всю ширину на мобиле (перебиваем базовый width:320px) ── */
 
 /* ── Ф5.45: Финальная геометрия рейла и бейджа бонусов ── */
-@media (max-width: 1180px) {
+@media (max-width: 1180px){
   .wrap .rail,
   .wrap #deliveryRail {
     position: sticky;
@@ -3422,17 +3426,18 @@ body .wrap #deliveryRail button.on {
     transition: none;
   }
 }
-@media (max-width: 1180px) and (max-height: 480px) {.wrap .rail,
-.wrap #deliveryRail {
+@media (max-width: 1180px) and (max-height: 480px){.wrap .rail,
+.wrap #deliveryRail{
     top: calc(env(safe-area-inset-top, 0px) + 8px);
     margin-top: 0;
     max-height: calc(100dvh - 16px);
   }
 
 
+
 }
-@media (max-width: 820px) {/* Компактный бейдж бонусов: виден гостям (🫘 0/10) и профилю (🫘 X/10 + 🎁 N) */
-  #mbonusBtn {
+@media (max-width: 820px){/* Компактный бейдж бонусов: виден гостям (🫘 0/10) и профилю (🫘 X/10 + 🎁 N) */
+  #mbonusBtn{
     display: flex;
     position: fixed;
     left: 8px;
@@ -3451,15 +3456,15 @@ body .wrap #deliveryRail button.on {
     cursor: pointer;
     transition: opacity 0.25s, transform 0.25s;
   }
-#mbonusBtn.near-footer {
+#mbonusBtn.near-footer{
     opacity: 0;
     pointer-events: none;
     transform: translateY(8px);
   }
-#mbonusBtn::before {
+#mbonusBtn::before{
     content: none;
   }
-#mbonusBtn .mb-stamps {
+#mbonusBtn .mb-stamps{
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -3468,7 +3473,7 @@ body .wrap #deliveryRail button.on {
     color: #ffffff;
     white-space: nowrap;
   }
-#mbonusBtn .mb-bean {
+#mbonusBtn .mb-bean{
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3479,12 +3484,12 @@ body .wrap #deliveryRail button.on {
     color: #7B5233;
     flex-shrink: 0;
   }
-#mbonusBtn .mb-bean svg {
+#mbonusBtn .mb-bean svg{
     width: 13px;
     height: 13px;
     display: block;
   }
-#mbonusBtn .mb-free {
+#mbonusBtn .mb-free{
     font-size: 9px;
     font-weight: 800;
     padding: 2px 6px;
@@ -3495,7 +3500,7 @@ body .wrap #deliveryRail button.on {
 /* Поиск на 100% ширины */
   .mh-top.mh-top .mh-right,
 #menuView .menu-head .mh-top .mh-right,
-#deliveryView .menu-head .mh-top .mh-right {
+#deliveryView .menu-head .mh-top .mh-right{
     width: 100%;
     max-width: 100%;
     margin-left: 0;
@@ -3505,7 +3510,7 @@ body .wrap #deliveryRail button.on {
 #deliveryView .mh-top.mh-top .search,
 #menuView .menu-head .mh-top .search,
 #deliveryView .menu-head .mh-top .search,
-.mh-top.mh-top .search {
+.mh-top.mh-top .search{
     width: 100%;
     max-width: 100%;
     flex: 1 1 100%;
@@ -3515,16 +3520,17 @@ body .wrap #deliveryRail button.on {
   }
 
 
+
 }
 /* ── Ф5.51: Компактная сетка 2х2 для adminBar (все кнопки видны на экране) ── */
-.adminBar {
+.adminBar{
   display: flex;
   gap: 8px;
   align-items: center;
   margin: 0 0 12px;
   flex-wrap: wrap;
 }
-@media (max-width: 820px) {.adminBar {
+@media (max-width: 820px){.adminBar{
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 6px;
@@ -3536,7 +3542,7 @@ body .wrap #deliveryRail button.on {
 #editToggle,
 #promoToggle,
 #dashToggle,
-#chatsToggle2 {
+#chatsToggle2{
     width: 100%;
     height: 34px;
     padding: 0 8px;
@@ -3554,12 +3560,12 @@ body .wrap #deliveryRail button.on {
     justify-content: center;
     box-sizing: border-box;
   }
-#chatsToggle2 {
+#chatsToggle2{
     grid-column: span 2;
   }
 /* Тосты строго под шапкой,
 не перекрывают админку */
-  .toasts {
+  .toasts{
     top: calc(var(--topbar-h, 56px) + env(safe-area-inset-top, 0px) + 12px);
     left: 50%;
     right: auto;
@@ -3569,7 +3575,7 @@ body .wrap #deliveryRail button.on {
     pointer-events: none;
     z-index: 1100;
   }
-.toast {
+.toast{
     padding: 6px 12px;
     font-size: 11.5px;
     border-radius: 10px;
@@ -3579,9 +3585,10 @@ body .wrap #deliveryRail button.on {
   }
 
 
+
 }
 /* tg-auth-badge-redesign-v2 */
-html body .auth-badge-confirmed.auth-badge-confirmed {
+html body .auth-badge-confirmed.auth-badge-confirmed{
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3596,29 +3603,30 @@ html body .auth-badge-confirmed.auth-badge-confirmed {
   margin: 10px 0;
   animation: badgeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
-@keyframes badgeSlideIn {
+@keyframes badgeSlideIn{
   from { opacity: 0; transform: translateY(-8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 /* Упрощённый вид формы внутри Telegram Mini App */
 html body #authModal.tg-mode #regTgBtn,
-html body #authModal.tg-mode .mhint {
+html body #authModal.tg-mode .mhint{
   display: none;
 }
-html body #authModal.tg-mode .frow:has(input[type="checkbox"]) {
+html body #authModal.tg-mode .frow:has(input[type="checkbox"]){
   display: none;
 }
-@media (max-width: 375px) {#authModal .modal-body {
+@media (max-width: 375px){#authModal .modal-body{
     padding: 16px 14px;
   }
-html body #authModal input {
+html body #authModal input{
     font-size: 16px; /* защита от авто-зума на iOS */
   }
 
 
+
 }
 /* CART-PILL-PATCH v2: плавающая корзина-пилюля */
-.cartFab {
+.cartFab{
   position: fixed;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
@@ -3642,23 +3650,23 @@ html body #authModal input {
   transition: opacity 0.3s cubic-bezier(0.2, 1, 0.3, 1),
               transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
 }
-.cartFab.visible {
+.cartFab.visible{
   opacity: 1;
   pointer-events: auto;
   transform: translateX(-50%) scale(1);
 }
-.cartFab:hover {
+.cartFab:hover{
   background: #8B2A21;
   transform: translateX(-50%) scale(1.03);
 }
-.cartFab:active {
+.cartFab:active{
   transform: translateX(-50%) scale(0.97);
 }
-.cartFab .cf-icon {
+.cartFab .cf-icon{
   font-size: 18px;
   flex-shrink: 0;
 }
-.cartFab .cf-badge {
+.cartFab .cf-badge{
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3671,20 +3679,20 @@ html body #authModal input {
   font: 800 11px/1 "Unbounded", system-ui, sans-serif;
   flex-shrink: 0;
 }
-.cartFab .cf-sep {
+.cartFab .cf-sep{
   width: 1px;
   height: 20px;
   background: rgba(255, 255, 255, 0.3);
   flex-shrink: 0;
 }
-.cartFab .cf-total {
+.cartFab .cf-total{
   font: 700 14px/1 "Golos Text", system-ui, sans-serif;
   color: #FFFFFF;
   letter-spacing: 0.02em;
 }
 /* Планшет/Десктоп: прижимаем справа от каталога,
 не перекрывая чат */
-@media (min-width: 821px) {
+@media (min-width: 821px){
   .cartFab {
     left: auto;
     right: 80px;
@@ -3709,66 +3717,67 @@ html.is-tg-app .pwa-banner,
 html.is-tg-app #pwaBanner,
 html.is-tg-app #pwaPrompt,
 html.is-tg-app .pwa-badge,
-html.is-tg-app [id*="pwaInstall"] {
+html.is-tg-app [id*="pwaInstall"]{
   display: none;
 }
 /* SKELETON-PULSE-PATCH v1: мягкая пульсация для скелетонов доставки */
-.skeleton-pulse {
+.skeleton-pulse{
   animation: skeleton-pulse-opacity 1.4s ease-in-out infinite;
   will-change: opacity;
 }
-@keyframes skeleton-pulse-opacity {
+@keyframes skeleton-pulse-opacity{
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
 /* Карточки-скелетоны для сетки доставки */
-.skeleton-card.skeleton-pulse {
+.skeleton-card.skeleton-pulse{
   pointer-events: none;
   user-select: none;
 }
-.skeleton-card.skeleton-pulse .media {
+.skeleton-card.skeleton-pulse .media{
   background: linear-gradient(180deg, rgba(62, 143, 208, 0.08), transparent);
 }
-.skeleton-card.skeleton-pulse .skeleton-line {
+.skeleton-card.skeleton-pulse .skeleton-line{
   background: #EDF2F6;
   border-radius: 8px;
 }
 /* Уважение к prefers-reduced-motion */
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce){
   .skeleton-pulse {
     animation: none;
     opacity: 0.7;
   }
 }
 /* SKELETON-EMPTY-PATCH v2: мягкая пульсация для скелетонов доставки */
-.skeleton-pulse {
+.skeleton-pulse{
   animation: skeleton-pulse-opacity 1.4s ease-in-out infinite;
   will-change: opacity;
 }
-@keyframes skeleton-pulse-opacity {
+@keyframes skeleton-pulse-opacity{
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
-.skeleton-card.skeleton-pulse {
+.skeleton-card.skeleton-pulse{
   pointer-events: none;
   user-select: none;
 }
-.skeleton-card.skeleton-pulse .media {
+.skeleton-card.skeleton-pulse .media{
   background: linear-gradient(180deg, rgba(62, 143, 208, 0.08), transparent);
 }
-.skeleton-card.skeleton-pulse .skeleton-line {
+.skeleton-card.skeleton-pulse .skeleton-line{
   background: #EDF2F6;
   border-radius: 8px;
 }
-@media (prefers-reduced-motion: reduce) {.skeleton-pulse {
+@media (prefers-reduced-motion: reduce){.skeleton-pulse{
     animation: none;
     opacity: 0.7;
   }
 
 
+
 }
 /* SKELETON-EMPTY-PATCH v2: пустые состояния (эмодзи в крафтовых блюдцах) */
-.empty-state {
+.empty-state{
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3777,7 +3786,7 @@ html.is-tg-app [id*="pwaInstall"] {
   padding: 48px 24px;
   animation: empty-state-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-@keyframes empty-state-in {
+@keyframes empty-state-in{
   from {
     opacity: 0;
     transform: translateY(12px);
@@ -3787,7 +3796,7 @@ html.is-tg-app [id*="pwaInstall"] {
     transform: none;
   }
 }
-.empty-state-icon {
+.empty-state-icon{
   width: 72px;
   height: 72px;
   border-radius: 50%;
@@ -3799,18 +3808,18 @@ html.is-tg-app [id*="pwaInstall"] {
   background: rgba(169, 50, 38, 0.08);
   box-shadow: 0 4px 16px rgba(169, 50, 38, 0.12);
 }
-.empty-state-title {
+.empty-state-title{
   font: 700 18px/1.3 "Golos Text", system-ui, sans-serif;
   color: var(--ink, #101418);
   margin-bottom: 6px;
 }
-.empty-state-sub {
+.empty-state-sub{
   font-size: 14px;
   color: var(--soft, #586470);
   margin-bottom: 20px;
   max-width: 280px;
 }
-.empty-state-btn {
+.empty-state-btn{
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -3824,16 +3833,16 @@ html.is-tg-app [id*="pwaInstall"] {
   transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
   box-shadow: 0 4px 12px rgba(169, 50, 38, 0.3);
 }
-.empty-state-btn:hover {
+.empty-state-btn:hover{
   background: #8B2A21;
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(169, 50, 38, 0.4);
 }
-.empty-state-btn:active {
+.empty-state-btn:active{
   transform: translateY(0);
 }
 /* Уважение к prefers-reduced-motion */
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce){
   .empty-state {
     animation: none;
   }
@@ -3842,34 +3851,35 @@ html.is-tg-app [id*="pwaInstall"] {
   }
 }
 /* SKELETON-EMPTY-PATCH v3: мягкая пульсация для скелетонов доставки */
-.skeleton-pulse {
+.skeleton-pulse{
   animation: skeleton-pulse-opacity 1.4s ease-in-out infinite;
   will-change: opacity;
 }
-@keyframes skeleton-pulse-opacity {
+@keyframes skeleton-pulse-opacity{
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
-.skeleton-card.skeleton-pulse {
+.skeleton-card.skeleton-pulse{
   pointer-events: none;
   user-select: none;
 }
-.skeleton-card.skeleton-pulse .media {
+.skeleton-card.skeleton-pulse .media{
   background: linear-gradient(180deg, rgba(62, 143, 208, 0.08), transparent);
 }
-.skeleton-card.skeleton-pulse .skeleton-line {
+.skeleton-card.skeleton-pulse .skeleton-line{
   background: #EDF2F6;
   border-radius: 8px;
 }
-@media (prefers-reduced-motion: reduce) {.skeleton-pulse {
+@media (prefers-reduced-motion: reduce){.skeleton-pulse{
     animation: none;
     opacity: 0.7;
   }
 
 
+
 }
 /* SKELETON-EMPTY-PATCH v3: пустые состояния (эмодзи в крафтовых блюдцах) */
-.empty-state {
+.empty-state{
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3878,7 +3888,7 @@ html.is-tg-app [id*="pwaInstall"] {
   padding: 48px 24px;
   animation: empty-state-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-@keyframes empty-state-in {
+@keyframes empty-state-in{
   from {
     opacity: 0;
     transform: translateY(12px);
@@ -3888,7 +3898,7 @@ html.is-tg-app [id*="pwaInstall"] {
     transform: none;
   }
 }
-.empty-state-icon {
+.empty-state-icon{
   width: 72px;
   height: 72px;
   border-radius: 50%;
@@ -3900,18 +3910,18 @@ html.is-tg-app [id*="pwaInstall"] {
   background: rgba(169, 50, 38, 0.08);
   box-shadow: 0 4px 16px rgba(169, 50, 38, 0.12);
 }
-.empty-state-title {
+.empty-state-title{
   font: 700 18px/1.3 "Golos Text", system-ui, sans-serif;
   color: var(--ink, #101418);
   margin-bottom: 6px;
 }
-.empty-state-sub {
+.empty-state-sub{
   font-size: 14px;
   color: var(--soft, #586470);
   margin-bottom: 20px;
   max-width: 280px;
 }
-.empty-state-btn {
+.empty-state-btn{
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -3925,26 +3935,27 @@ html.is-tg-app [id*="pwaInstall"] {
   transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
   box-shadow: 0 4px 12px rgba(169, 50, 38, 0.3);
 }
-.empty-state-btn:hover {
+.empty-state-btn:hover{
   background: #8B2A21;
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(169, 50, 38, 0.4);
 }
-.empty-state-btn:active {
+.empty-state-btn:active{
   transform: translateY(0);
 }
-@media (prefers-reduced-motion: reduce) {.empty-state {
+@media (prefers-reduced-motion: reduce){.empty-state{
     animation: none;
   }
-.empty-state-btn {
+.empty-state-btn{
     transition: none;
   }
+
 
 
 }
 /* PTR-PATCH v3 */
 /* ── PTR-PATCH v3: Pull-to-refresh индикатор ── */
-.ptr-loader {
+.ptr-loader{
   position: fixed;
   top: -48px;
   left: 50%;
@@ -3961,11 +3972,11 @@ html.is-tg-app [id*="pwaInstall"] {
   pointer-events: none;
   transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
 }
-.ptr-loader.visible {
+.ptr-loader.visible{
   top: 16px;
   animation: ptr-spin-in 0.3s cubic-bezier(0.2, 1, 0.3, 1);
 }
-.ptr-spinner {
+.ptr-spinner{
   width: 24px;
   height: 24px;
   border: 3px solid rgba(18, 58, 107, 0.2);
@@ -3973,10 +3984,10 @@ html.is-tg-app [id*="pwaInstall"] {
   border-radius: 50%;
   animation: ptr-spin 0.8s linear infinite;
 }
-@keyframes ptr-spin {
+@keyframes ptr-spin{
   to { transform: rotate(360deg); }
 }
-@keyframes ptr-spin-in {
+@keyframes ptr-spin-in{
   from {
     opacity: 0;
     transform: translateY(-20px) scale(0.8);
@@ -3986,22 +3997,23 @@ html.is-tg-app [id*="pwaInstall"] {
     transform: translateY(0) scale(1);
   }
 }
-@media (prefers-reduced-motion: reduce) {.ptr-spinner {
+@media (prefers-reduced-motion: reduce){.ptr-spinner{
     animation: none;
     border-top-color: var(--flame, #123A6B);
   }
-.ptr-loader.visible {
+.ptr-loader.visible{
     animation: none;
   }
 
 
+
 }
-#checkoutStreet.field-error {
+#checkoutStreet.field-error{
   border-color: #B3372B;
   background: #FDE8E8;
   animation: addr-shake 0.4s;
 }
-.addr-fee-hint {
+.addr-fee-hint{
   display: flex;
   align-items: center;
   gap: 6px;
@@ -4013,21 +4025,22 @@ html.is-tg-app [id*="pwaInstall"] {
   color: #123A6B;
   font-weight: 600;
 }
-@media (prefers-reduced-motion: reduce) {#checkoutStreet.field-error {
+@media (prefers-reduced-motion: reduce){#checkoutStreet.field-error{
     transition: none;
     animation: none;
   }
 
 
+
 }
-@keyframes addr-menu-in {
+@keyframes addr-menu-in{
   from { opacity: 0; transform: translateY(-4px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 /* ── ADDRESS-BOOK v4-final: ЕДИНЫЙ блок (кнопка,
 шторка,
 дропдаун) на токенах Слоя 1 ── */
-.addr-book-btn {
+.addr-book-btn{
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 14px; border-radius: 999px;
   background: var(--panel, #F3F8FC);
@@ -4035,8 +4048,8 @@ html.is-tg-app [id*="pwaInstall"] {
   color: var(--flame, #123A6B);
   font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 8px;
 }
-#checkoutStreet.field-error { border-color: var(--status-danger, #B3372B); background: var(--tint-danger, #FDE8E8); }
-.addr-book-sheet {
+#checkoutStreet.field-error{ border-color: var(--status-danger, #B3372B); background: var(--tint-danger, #FDE8E8); }
+.addr-book-sheet{
   position: fixed; left: 50%;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%) translateY(12px);
@@ -4050,86 +4063,87 @@ html.is-tg-app [id*="pwaInstall"] {
   opacity: 0; pointer-events: none;
   transition: opacity 0.25s, transform 0.25s;
 }
-.addr-book-sheet.open { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
-.abs-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.abs-head b { font: 700 15px "Golos Text", system-ui, sans-serif; color: var(--flame, #123A6B); }
-.abs-close { width: 32px; height: 32px; border-radius: 50%; background: var(--panel, #F3F8FC); color: var(--soft, #586470); font-size: 14px; }
-.abs-close:hover { color: var(--ink, #101418); }
-.abs-list { display: flex; flex-direction: column; gap: 6px; }
-.abs-empty { font-size: 12.5px; color: var(--soft, #586470); text-align: center; padding: 14px 8px; line-height: 1.5; }
-.abs-row { display: flex; align-items: center; gap: 6px; border: 1.5px solid var(--line, #D8DFE4); border-radius: 14px; padding: 4px; background: var(--card, #FFFFFF); }
-.abs-pick { flex: 1; min-width: 0; text-align: left; padding: 10px; border-radius: 10px; color: var(--ink, #101418); }
-.abs-pick:hover { background: var(--panel, #F3F8FC); }
-.abs-title { display: block; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.abs-ico { width: 34px; height: 34px; border-radius: 10px; background: var(--panel, #F3F8FC); color: var(--soft, #586470); font-size: 14px; flex: 0 0 auto; }
-.abs-ico:hover { color: var(--flame, #123A6B); }
-.abs-ico[data-abs="del"]:hover { color: var(--status-danger, #B3372B); }
-.abs-edit { margin-top: 10px; border-top: 1px dashed var(--line, #D8DFE4); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-.abs-edit label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--soft, #586470); display: flex; flex-direction: column; gap: 4px; }
-.abs-edit input { border: 1.5px solid var(--line, #D8DFE4); border-radius: 10px; padding: 9px 12px; font-size: 14px; background: var(--card, #FFFFFF); color: var(--ink, #101418); }
-.abs-edit input:focus { outline: none; border-color: var(--flame, #123A6B); }
-.abs-fee { font-size: 12.5px; font-weight: 600; color: var(--flame, #123A6B); background: var(--panel, #F3F8FC); border-radius: 10px; padding: 8px 12px; }
-.abs-edit-acts { display: flex; gap: 8px; }
-.abs-save { flex: 1; background: var(--flame, #123A6B); color: var(--cream, #FFFFFF); border-radius: 10px; padding: 10px; font-weight: 800; font-size: 13px; }
-.abs-save:hover { background: var(--flame-d, #0B2446); }
-.abs-cancel { flex: 0 0 auto; background: var(--panel, #F3F8FC); color: var(--soft, #586470); border-radius: 10px; padding: 10px 14px; font-weight: 700; font-size: 13px; }
-.abs-add { margin-top: 10px; width: 100%; background: var(--tint-alert, #FFF6E5); border: 1.5px dashed var(--amber, #C2935F); color: var(--ink, #101418); border-radius: 12px; padding: 10px; font-weight: 800; font-size: 13px; }
-.addr-dropdown {
+.addr-book-sheet.open{ opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+.abs-head{ display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.abs-head b{ font: 700 15px "Golos Text", system-ui, sans-serif; color: var(--flame, #123A6B); }
+.abs-close{ width: 32px; height: 32px; border-radius: 50%; background: var(--panel, #F3F8FC); color: var(--soft, #586470); font-size: 14px; }
+.abs-close:hover{ color: var(--ink, #101418); }
+.abs-list{ display: flex; flex-direction: column; gap: 6px; }
+.abs-empty{ font-size: 12.5px; color: var(--soft, #586470); text-align: center; padding: 14px 8px; line-height: 1.5; }
+.abs-row{ display: flex; align-items: center; gap: 6px; border: 1.5px solid var(--line, #D8DFE4); border-radius: 14px; padding: 4px; background: var(--card, #FFFFFF); }
+.abs-pick{ flex: 1; min-width: 0; text-align: left; padding: 10px; border-radius: 10px; color: var(--ink, #101418); }
+.abs-pick:hover{ background: var(--panel, #F3F8FC); }
+.abs-title{ display: block; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.abs-ico{ width: 34px; height: 34px; border-radius: 10px; background: var(--panel, #F3F8FC); color: var(--soft, #586470); font-size: 14px; flex: 0 0 auto; }
+.abs-ico:hover{ color: var(--flame, #123A6B); }
+.abs-ico[data-abs="del"]:hover{ color: var(--status-danger, #B3372B); }
+.abs-edit{ margin-top: 10px; border-top: 1px dashed var(--line, #D8DFE4); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.abs-edit label{ font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--soft, #586470); display: flex; flex-direction: column; gap: 4px; }
+.abs-edit input{ border: 1.5px solid var(--line, #D8DFE4); border-radius: 10px; padding: 9px 12px; font-size: 14px; background: var(--card, #FFFFFF); color: var(--ink, #101418); }
+.abs-edit input:focus{ outline: none; border-color: var(--flame, #123A6B); }
+.abs-fee{ font-size: 12.5px; font-weight: 600; color: var(--flame, #123A6B); background: var(--panel, #F3F8FC); border-radius: 10px; padding: 8px 12px; }
+.abs-edit-acts{ display: flex; gap: 8px; }
+.abs-save{ flex: 1; background: var(--flame, #123A6B); color: var(--cream, #FFFFFF); border-radius: 10px; padding: 10px; font-weight: 800; font-size: 13px; }
+.abs-save:hover{ background: var(--flame-d, #0B2446); }
+.abs-cancel{ flex: 0 0 auto; background: var(--panel, #F3F8FC); color: var(--soft, #586470); border-radius: 10px; padding: 10px 14px; font-weight: 700; font-size: 13px; }
+.abs-add{ margin-top: 10px; width: 100%; background: var(--tint-alert, #FFF6E5); border: 1.5px dashed var(--amber, #C2935F); color: var(--ink, #101418); border-radius: 12px; padding: 10px; font-weight: 800; font-size: 13px; }
+.addr-dropdown{
   position: absolute; z-index: 1700;
   background: var(--card, #FFFFFF); color: var(--ink, #101418);
   border: 1.5px solid var(--line, #D8DFE4); border-radius: 14px;
   box-shadow: var(--sh, 0 10px 30px -12px rgba(16, 20, 24, 0.18));
   max-height: 240px; overflow-y: auto; overscroll-behavior: contain; padding: 4px;
 }
-.addr-item { display: block; width: 100%; text-align: left; padding: 10px 14px; font: 500 14px "Golos Text", system-ui, sans-serif; color: var(--ink, #101418); background: transparent; border: none; border-radius: 10px; cursor: pointer; }
+.addr-item{ display: block; width: 100%; text-align: left; padding: 10px 14px; font: 500 14px "Golos Text", system-ui, sans-serif; color: var(--ink, #101418); background: transparent; border: none; border-radius: 10px; cursor: pointer; }
 .addr-item:hover,
-.addr-item-active { background: var(--panel, #F3F8FC); color: var(--flame, #123A6B); }
+.addr-item-active{ background: var(--panel, #F3F8FC); color: var(--flame, #123A6B); }
 #checkoutStreet.field-error,
-.abs-edit input.field-error { border-color: var(--status-danger, #B3372B); background: var(--tint-danger, #FDE8E8); animation: addr-shake 0.4s; }
+.abs-edit input.field-error{ border-color: var(--status-danger, #B3372B); background: var(--tint-danger, #FDE8E8); animation: addr-shake 0.4s; }
 /* ── FINAL-DEDUP v2: единый блок таймера предзаказа ── */
-.preorder-timer {
+.preorder-timer{
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 12px; border-radius: 999px;
   font-size: 12px; font-weight: 700; margin-top: 8px;
   animation: preorder-timer-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   transition: background 0.3s, color 0.3s;
 }
-.preorder-timer-waiting {
+.preorder-timer-waiting{
   background: var(--tint-alert, #FFF6E5);
   color: var(--status-alert, #B26A05);
   border: 1.5px dashed var(--amber, #F2D9A5);
   animation: preorder-timer-in 0.3s both, preorder-pulse 2s ease-in-out infinite;
 }
 .preorder-timer-active,
-.preorder-timer-way {
+.preorder-timer-way{
   background: var(--tint-success, #E4EFE2);
   color: var(--status-success, #1E7A4E);
   border: 1.5px solid var(--status-success, #A8D5A0);
 }
-@keyframes preorder-timer-in {
+@keyframes preorder-timer-in{
   from { opacity: 0; transform: translateY(6px) scale(0.96); }
   to { opacity: 1; transform: none; }
 }
-@keyframes preorder-pulse {
+@keyframes preorder-pulse{
   0%, 100% { opacity: 1; }
   50% { opacity: 0.8; }
 }
-@keyframes addr-shake {
+@keyframes addr-shake{
   20%, 60% { transform: translateX(-4px); }
   40%, 80% { transform: translateX(4px); }
 }
-@media (prefers-reduced-motion: reduce) {.addr-book-sheet { transition: none; }
+@media (prefers-reduced-motion: reduce){.addr-book-sheet{ transition: none; }
 .preorder-timer,
-.preorder-timer-waiting { animation: none; }
+.preorder-timer-waiting{ animation: none; }
 #checkoutStreet.field-error,
-.abs-edit input.field-error { animation: none; }
+.abs-edit input.field-error{ animation: none; }
+
 
 }
-
 /* ── ADDR-BTN-NATIVE v1: «Мои адреса» = системная .btn.ghost, здесь только геометрия ── */
-.addr-book-btn {
+.addr-book-btn{
   align-self: flex-start;
   width: fit-content;
   max-width: 100%;
   margin-bottom: 8px;
 }
+/* PERF-P0 v1: мёртвые селекторы удалены */
