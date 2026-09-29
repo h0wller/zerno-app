@@ -52,7 +52,7 @@ if (!('serviceWorker' in navigator)) return;
 addEventListener('load', () => {
 let refreshing = false;
 const hadController = !!navigator.serviceWorker.controller;
-/* NOSW-HOOK v2 */ (!window.__ztNoSW && navigator.serviceWorker) && navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
 .then((reg) => {
 reg.update();
 reg.addEventListener('updatefound', () => {
@@ -162,108 +162,4 @@ console.info(
 'font-weight:bold;font-size:14px',
 '| меню v2 | штампы-зёрна',
 );
-})();
-
-/* PERF-P1 v1: ролевой лоадер не-гостевых модулей */
-(function () {
-  var modules = window.__ztLazyModules || [{"path":"/app/core/editor.js","name":"editor","roles":["admin"],"trigger":"#emModal, #openEditorBtn, [data-modal=\"emModal\"]"},{"path":"/app/admin-extra.js","name":"adminExtra","roles":["admin"]},{"path":"/app/ui/cashier-log.js","name":"cashierLog","roles":["cashier"]},{"path":"/app/core/dash.js","name":"dash","trigger":"#dashToggle, #dashBtn, [data-modal=\"dashModal\"]"},{"path":"/app/core/promo.js","name":"promo","trigger":"#promoToggle, #promoBtn, [data-modal=\"promoModal\"]"},{"path":"/app/core/staffpin.js","name":"staffpin","trigger":"#setPinBtn, #pinBtn, #staffPinBtn, [data-modal=\"pinModal\"]"},{"path":"/app/scanner.js","name":"scanner","trigger":"#scanFab, #scanBtn, [data-action=\"scan\"]"}];
-  var inflight = {};
-  var loaded = {};
-
-  function loadModule(url) {
-    if (loaded[url]) return Promise.resolve();
-    if (inflight[url]) return inflight[url];
-    var p = new Promise(function (resolve, reject) {
-      var s = document.createElement('script');
-      s.src = url;
-      s.async = false; // Сохраняем строгий порядок выполнения зависимых скриптов
-      var timer = setTimeout(function () {
-        delete inflight[url];
-        reject(new Error('Lazy module timeout: ' + url));
-      }, 5000);
-      s.onload = function () {
-        clearTimeout(timer);
-        loaded[url] = true;
-        delete inflight[url];
-        resolve();
-      };
-      s.onerror = function () {
-        clearTimeout(timer);
-        delete inflight[url];
-        reject(new Error('Lazy module failed: ' + url));
-      };
-      document.head.appendChild(s);
-    });
-    inflight[url] = p;
-    return p;
-  }
-
-  function loadModulesByRole(role) {
-    if (!role) return Promise.resolve();
-    var targets = modules.filter(function (m) {
-      return m.roles && m.roles.indexOf(role) !== -1;
-    });
-    if (!targets.length) return Promise.resolve();
-    return Promise.all(targets.map(function (m) { return loadModule(m.path); })).catch(function (e) {
-      if (window.toast) window.toast('Ошибка загрузки компонентов персонала', '⚠️');
-    });
-  }
-
-  function bindTrigger(selector, url) {
-    document.addEventListener('click', function (e) {
-      var btn = e.target && e.target.closest && e.target.closest(selector);
-      if (!btn) return;
-      if (loaded[url]) return; // Модуль уже на месте, клик идет штатно
-
-      // Останавливаем пустой клик до загрузки скрипта
-      e.preventDefault();
-      e.stopImmediatePropagation();
-
-      loadModule(url).then(function () {
-        // Воспроизводим клик с уже зарегистрированным обработчиком
-        btn.click();
-      }).catch(function () {
-        if (window.toast) window.toast('Не удалось загрузить модуль', '⚠️');
-      });
-    }, true);
-  }
-
-  function detectRole() {
-    try {
-      var r = localStorage.getItem('zt_role');
-      if (r) return r;
-      var u = JSON.parse(localStorage.getItem('zt_user') || '{}');
-      if (u && u.role) return u.role;
-      var p = JSON.parse(localStorage.getItem('zt_profile') || '{}');
-      if (p && p.role) return p.role;
-    } catch (e) {}
-    return '';
-  }
-
-  /* Ранняя загрузка, если роль сохранена в сессии */
-  var currentRole = detectRole();
-  if (currentRole === 'admin' || currentRole === 'cashier') {
-    loadModulesByRole(currentRole);
-  }
-
-  /* Регистрация клик-триггеров */
-  modules.forEach(function (m) {
-    if (m.trigger) bindTrigger(m.trigger, m.path);
-  });
-
-  /* Слушатель динамического переключения режимов */
-  document.addEventListener('click', function (e) {
-    var btn = e.target && e.target.closest && e.target.closest('#modeSeg button[data-mode], [data-set-mode]');
-    if (!btn) return;
-    var mode = btn.getAttribute('data-mode') || btn.getAttribute('data-set-mode');
-    if (mode === 'admin' || mode === 'cashier') {
-      loadModulesByRole(mode);
-    }
-  }, true);
-
-  window.__ztLazyLoad = {
-    loadModule: loadModule,
-    loadModulesByRole: loadModulesByRole,
-    loaded: loaded
-  };
 })();
