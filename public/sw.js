@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v176'; // ← поставь своё текущее значение +1
+const STATIC_CACHE = 'zerno-static-v177'; // ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
@@ -36,6 +36,17 @@ const STATIC_ASSETS = [
   '/app/core/address-autocomplete.js',
   '/app/core/preorder-timer.js',
   '/app/core/address-book.js',
+  '/app/ui/fonts.css',
+  '/app/ui/fonts/golos-text-400-cyrillic.woff2',
+  '/app/ui/fonts/golos-text-400-latin.woff2',
+  '/app/ui/fonts/golos-text-600-cyrillic.woff2',
+  '/app/ui/fonts/golos-text-600-latin.woff2',
+  '/app/ui/fonts/golos-text-700-cyrillic.woff2',
+  '/app/ui/fonts/golos-text-700-latin.woff2',
+  '/app/ui/fonts/prata-400-cyrillic.woff2',
+  '/app/ui/fonts/prata-400-latin.woff2',
+  '/app/ui/fonts/unbounded-700-cyrillic.woff2',
+  '/app/ui/fonts/unbounded-700-latin.woff2',
   '/app/core/overlay.js',
   '/app/core/swipe.js',
   '/app/core/notify.js',

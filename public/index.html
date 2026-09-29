@@ -67,11 +67,7 @@
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap" rel="stylesheet">
+            <link rel="stylesheet" href="/app/ui/fonts.css"> /* FONTS-LOCAL v1 */
     <link
       href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap"
       rel="stylesheet"
@@ -83,7 +79,51 @@
         href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;600;700&family=Prata&display=swap"
         rel="stylesheet"
     /></noscript>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>/* TG-OFFLOAD v1: SDK только внутри Mini App; снаружи — stub, 0 запросов */
+(function () {
+  var q = location.search + location.hash;
+  var inTg = /Telegram/i.test(navigator.userAgent) ||
+             /[?&#]tgWebApp(Data|Platform|Version|BotId)=/.test(q) ||
+             !!window.TelegramWebAppProxy || !!window.TelegramGameProxy;
+  window.__isTgMiniApp = window.__isTgMiniApp || inTg;
+  function stub() {
+    var noop = function () {};
+    var btn = function () {
+      return { text: '', isVisible: false, show: noop, hide: noop, enable: noop, disable: noop, setText: noop, setColor: noop, onClick: noop, offClick: noop };
+    };
+    return {
+      isStub: true, readyState: 'ready', isExpanded: true,
+      initData: '', initDataUnsafe: {}, version: '0.0', platform: 'web',
+      colorScheme: 'light', themeParams: {},
+      ready: noop, expand: noop, close: noop,
+      enableClosingConfirmation: noop, disableVerticalSwipes: noop,
+      setHeaderColor: noop, setBackgroundColor: noop,
+      showPopup: noop, showAlert: noop,
+      showConfirm: function () { return false; },
+      openLink: noop, openTelegramLink: noop, openInvoice: noop,
+      onEvent: noop, offEvent: noop,
+      MainButton: btn(),
+      BackButton: btn(),
+      HapticFeedback: { impactOccurred: noop, notificationOccurred: noop, selectionChanged: noop }
+    };
+  }
+  function installStub() {
+    window.Telegram = window.Telegram || {};
+    if (!window.Telegram.WebApp || window.Telegram.WebApp.isStub) {
+      window.Telegram.WebApp = stub();
+    }
+  }
+  if (inTg) {
+    var s = document.createElement('script');
+    s.src = 'https://telegram.org/js/telegram-web-app.js';
+    s.async = false;
+    s.onerror = installStub;
+    document.head.appendChild(s);
+  } else {
+    installStub();
+  }
+})();
+</script>
     <link rel="stylesheet" href="app/ui/theme-v2.css" />
     
         <!-- [tg-splash-menu-fix-v1] -->
