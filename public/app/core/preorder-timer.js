@@ -177,6 +177,14 @@
   }
 
   function init() {
+    // Hook on profile click
+    document.addEventListener('click', function(e) {
+      if (e.target && e.target.closest && e.target.closest('#profileTopBtn, .ava, #mbonusBtn, [data-tab="profile"]')) {
+        setTimeout(updateAllTimers, 50);
+        setTimeout(updateAllTimers, 400);
+        setTimeout(updateAllTimers, 1200);
+      }
+    });
     autoInjectBadges();
     updateAllTimers();
 
@@ -185,25 +193,26 @@
     // MutationObserver следит за появлением новых карточек
     var observer = new MutationObserver(function (mutations) {
       var needUpdate = false;
-      mutations.forEach(function (m) {
-        m.addedNodes.forEach(function (node) {
-          if (node.nodeType === 1) {
-            if (node.classList) {
-              if (node.classList.contains('orderCard') ||
-                  node.classList.contains('order-card') ||
-                  node.classList.contains('history-item') ||
-                  node.classList.contains('oc')) {
-                needUpdate = true;
-              }
-            }
-            if (node.querySelector &&
-                node.querySelector('.orderCard, .order-card, .history-item, .oc')) {
+      for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        if (m.target && (m.target.id === 'myOrders' || (m.target.closest && m.target.closest('#myOrders, #panel, .modal')))) {
+          needUpdate = true;
+          break;
+        }
+        for (var j = 0; j < m.addedNodes.length; j++) {
+          var n = m.addedNodes[j];
+          if (n.nodeType === 1) {
+            if (n.id === 'myOrders' || /order/i.test(n.className || '') || (n.querySelector && n.querySelector('[class*="order" i], #myOrders'))) {
               needUpdate = true;
+              break;
             }
           }
-        });
-      });
-      if (needUpdate) updateAllTimers();
+        }
+        if (needUpdate) break;
+      }
+      if (needUpdate) {
+        updateAllTimers();
+      }
     });
 
     if (document.body) {
