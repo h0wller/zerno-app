@@ -71,14 +71,17 @@ if (cartLen && method === "delivery" && typeof deliveryInfo !== 'undefined' && d
     renderGifts(); /* Ф5.21b */
 }
 
-  function cartFabShow() {
-    var cf = document.getElementById("cartFab");
-    if (cf) {
-      var isDel = checkIsDelivery();
-      var isGuestOrAdmin = (typeof mode === 'undefined') || mode === "guest" || mode === "admin";
-      cf.style.display = (isGuestOrAdmin && isDel && typeof cart !== 'undefined' && cart.length > 0) ? "" : "none";
-    }
-  }
+  /* CART-PILL-PATCH v2: pill-bubble видимость через класс .visible */
+function cartFabShow() {
+  var cf = document.getElementById('cartFab');
+  if (!cf) return;
+  var isDel = checkIsDelivery();
+  var isGuestOrAdmin = (typeof mode === 'undefined') || mode === 'guest' || mode === 'admin';
+  var hasItems = typeof cart !== 'undefined' && cart.length > 0;
+  var shouldShow = isGuestOrAdmin && isDel && hasItems;
+  cf.classList.toggle('visible', shouldShow);
+  cf.hidden = !shouldShow;
+}
 
   async function refreshPromoLine(sum) {
     var line = document.getElementById("cartPromoLine");
@@ -351,14 +354,28 @@ function renderCartBase() {
   window.clearPromo = clearPromo;
   window.updateDeliveryPromoBar = updateDeliveryPromoBar;
 
-  window.updateCartFab = function () {
-    var t = totalsNow();
-    var fab = document.getElementById('cartFab');
-    if (fab) fab.hidden = (t.sum === 0);
-    paintTotals();
-    if (typeof syncAddButtons === 'function') syncAddButtons();
-    cartFabShow();
-  };
+  /* CART-PILL-PATCH v2: обновление содержимого пилюли */
+window.updateCartFab = function () {
+  var t = totalsNow();
+  var fab = document.getElementById('cartFab');
+  if (!fab) return;
+
+  var hasItems = t.sum > 0;
+  var cnt = (typeof cart !== 'undefined' ? cart : []).reduce(function (a, c) { return a + (c.qty || 1); }, 0);
+
+  // Управление видимостью через класс .visible (для анимации scale/opacity)
+  fab.classList.toggle('visible', hasItems);
+  fab.hidden = !hasItems;
+
+  // Обновляем содержимое пилюли
+  var badge = fab.querySelector('.cf-badge');
+  var total = fab.querySelector('.cf-total');
+  if (badge) badge.textContent = cnt;
+  if (total) total.textContent = Number(t.total).toLocaleString('ru-RU') + ' ₽';
+
+  paintTotals();
+  if (typeof syncAddButtons === 'function') syncAddButtons();
+};
 
   renderGifts(); /* Ф5.21b */
 /* ── Слушатели событий корзины ── */

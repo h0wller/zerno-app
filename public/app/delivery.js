@@ -442,18 +442,7 @@ s.textContent = '#checkoutSlot.need-slot{border:2px solid var(--flame);backgroun
 document.head.appendChild(s);
 })();
 
-window.updateCartFab = function(){
-  var t = totalsNow();
-  var fab = document.getElementById('cartFab');
-  if (fab) fab.hidden = (t.sum === 0);
-  paintTotals();
-  if (typeof syncAddButtons === 'function') syncAddButtons();
-  cartFabShow();
-  var cb = document.getElementById('checkoutBtn');
-if (cb) {
-var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : null;
-}
-}
+/* CART-PILL-PATCH v2: updateCartFab делегирован в cart.js */
 
 
 window.totalsNow = function(){
@@ -478,10 +467,7 @@ window.paintTotals = function(){
   if (s) s.textContent = cnt + ' поз · ' + Number(t.total).toLocaleString('ru-RU');
 };
 
-window.cartFabShow = function(){
-  var cf = document.getElementById('cartFab');
-  if (cf) cf.style.display = ((mode === 'guest' || mode === 'admin') && brand === 'delivery') ? '' : 'none';
-};
+/* CART-PILL-PATCH v2: cartFabShow делегирован в cart.js */
 
 function promoDisc(sum, info){
 return info.kind === 'percent' ? Math.round(sum * Math.min(90, info.value) / 100) : Math.min(info.value || 0, sum);

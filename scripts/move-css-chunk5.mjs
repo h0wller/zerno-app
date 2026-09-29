@@ -1,18 +1,21 @@
 #!/usr/bin/env node
 /**
- * scripts/fix-css-tech-debt.mjs
- * Задача 3: CSS-аудит и очистка стилей
+ * scripts/fix-floating-cart-pill.mjs
+ * Багфикс плавающей кнопки корзины → pill-bubble
  * 
  * Что делает:
- * - Устраняет !important вне [hidden] в theme-v2.css (замена на специфичность)
- * - Убирает дубли селекторов (объединяет правила)
- * - Создаёт бэкап *.bak-*
+ * - Трансформирует public/index.html: заменяет старую разметку #cartFab
+ *   на новую пилюлю с .cf-badge / .cf-sep / .cf-total
+ * - Переписывает стили .cartFab в theme-v2.css под горизонтальную капсулу
+ * - Убирает #cartFab из правила .chat-fab,#cartFab (корень бага: 56×56)
+ * - Нормализует updateCartFab() и cartFabShow() в cart.js и delivery.js
+ * - Создаёт бэкапы *.bak-*
  * - CRLF-safe
+ * - node --check для изменённых JS
  * - Инкрементирует STATIC_CACHE в public/sw.js
- * - Запускает повторный аудит для проверки
  * 
  * Запуск:
- *   node scripts/fix-css-tech-debt.mjs
+ *   node scripts/fix-floating-cart-pill.mjs
  */
 
 import fs from 'node:fs';
@@ -37,15 +40,12 @@ function resolvePath(relPath) {
 
 function backupFile(absPath) {
   if (!fs.existsSync(absPath)) return null;
-  
   let candidate = `${absPath}.bak-${stamp}`;
   let i = 1;
-  
   while (fs.existsSync(candidate)) {
     candidate = `${absPath}.bak-${stamp}-${i}`;
     i += 1;
   }
-  
   fs.copyFileSync(absPath, candidate);
   return candidate;
 }
@@ -63,36 +63,25 @@ function writeEol(absPath, text, eol) {
 }
 
 function checkSyntax(absPath) {
-  const res = spawnSync(process.execPath, ['--check', absPath], {
-    encoding: 'utf8',
-  });
-  
+  const res = spawnSync(process.execPath, ['--check', absPath], { encoding: 'utf8' });
   if (res.status !== 0) {
-    throw new Error(
-      `node --check failed for ${absPath}\n${res.stderr || res.stdout || ''}`
-    );
+    throw new Error(`node --check failed for ${absPath}\n${res.stderr || res.stdout || ''}`);
   }
 }
 
 function modifyFile(relPath, transformer) {
   const absPath = resolvePath(relPath);
-  
   if (!fs.existsSync(absPath)) {
     warnings.push(`Файл не найден: ${relPath}`);
     return false;
   }
-  
   const { text, eol } = readLf(absPath);
   const out = transformer(text);
-  
-  if (typeof out !== 'string' || out === text) {
-    return false;
-  }
-  
+  if (typeof out !== 'string' || out === text) return false;
+
   const bak = backupFile(absPath);
   writeEol(absPath, out, eol);
-  
-  // Для JS-файлов проверяем синтаксис
+
   if (relPath.endsWith('.js') || relPath.endsWith('.mjs')) {
     try {
       checkSyntax(absPath);
@@ -101,7 +90,7 @@ function modifyFile(relPath, transformer) {
       throw err;
     }
   }
-  
+
   changed.push(relPath);
   console.log(`✔ Изменён: ${relPath}${bak ? ` (backup: ${path.basename(bak)})` : ''}`);
   return true;
@@ -110,251 +99,392 @@ function modifyFile(relPath, transformer) {
 function patchSw(text) {
   const re = /(STATIC_CACHE\s*=\s*['"])([^'"]+)(['"])/;
   let found = false;
-  
   const out = text.replace(re, (m, pre, val, quote) => {
     found = true;
-    
     let next;
     if (/\d/.test(val)) {
-      next = val.replace(/(\d+)(?=[^\d]*$)/, (mm, num) => String(Number(num) + 1));
+      next = val.replace(/(\d+)(?=[^\d]*$)/, (_, num) => String(Number(num) + 1));
     } else {
       next = `${val}-2`;
     }
-    
     console.log(`   STATIC_CACHE: ${val} -> ${next}`);
     return `${pre}${next}${quote}`;
   });
-  
-  if (!found) {
-    warnings.push('public/sw.js: не найден STATIC_CACHE');
-    return text;
-  }
-  
-  return out;
+  if (!found) warnings.push('public/sw.js: не найден STATIC_CACHE');
+  return found ? out : text;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   НОВАЯ РАЗМЕТКА КОРЗИНЫ-ПИЛЮЛИ
+   ═══════════════════════════════════════════════════════════ */
+const NEW_CART_FAB_HTML = `<button type="button" id="cartFab" class="cartFab" hidden aria-label="Открыть корзину">
+  <span class="cf-icon">🛒</span>
+  <span class="cf-badge">0</span>
+  <span class="cf-sep"></span>
+  <span class="cf-total">0 ₽</span>
+</button>`;
+
+/* ═══════════════════════════════════════════════════════════
+   ТРАНСФОРМЕРЫ
+   ═══════════════════════════════════════════════════════════ */
+
 /**
- * Убирает !important из CSS, заменяя на специфичность
+ * Патч public/index.html:
+ * Находит старую разметку #cartFab и заменяет на новую пилюлю.
+ * Поддерживает варианты:
+ * - <button id="cartFab" ...>...</button>
+ * - <div id="cartFab" ...>...</div>
+ * - <button id="cartFab" ... /> (самозакрывающийся)
+ * - Просто <... id="cartFab" ...> без закрывающего тега (заменяем до следующего >)
  */
-function removeImportant(cssText) {
-  // Паттерн 1: .auth-badge-confirmed { display: flex !important; }
-  // Заменяем на: html body .auth-badge-confirmed { display: flex; }
-  
-  // Паттерн 2: #authModal.tg-mode ... { display: none !important; }
-  // Заменяем на: html body #authModal.tg-mode ... { display: none; }
-  
-  // Паттерн 3: #authModal input { font-size: 16px !important; }
-  // Заменяем на: html body #authModal input { font-size: 16px; }
-  
-  let result = cssText;
-  let removedCount = 0;
-  
-  // Удаляем !important из .auth-badge-confirmed
-  result = result.replace(
-    /(\.auth-badge-confirmed\s*\{[^}]*?)display:\s*flex\s*!important/g,
-    (match, before) => {
-      removedCount++;
-      return before + 'display: flex';
+function patchIndexHtml(text) {
+  if (text.includes('class="cartFab"') && text.includes('cf-badge')) {
+    return text; // уже обновлено
+  }
+
+  let result = text;
+  let replaced = false;
+
+  // Вариант 1: <button id="cartFab" ...>...</button>
+  const btnPattern = /<button[^>]*id=["']cartFab["'][^>]*>[\s\S]*?<\/button>/;
+  if (btnPattern.test(result)) {
+    result = result.replace(btnPattern, NEW_CART_FAB_HTML);
+    replaced = true;
+  }
+
+  // Вариант 2: <div id="cartFab" ...>...</div>
+  if (!replaced) {
+    const divPattern = /<div[^>]*id=["']cartFab["'][^>]*>[\s\S]*?<\/div>/;
+    if (divPattern.test(result)) {
+      result = result.replace(divPattern, NEW_CART_FAB_HTML);
+      replaced = true;
     }
-  );
-  
-  // Добавляем специфичность для .auth-badge-confirmed
-  result = result.replace(
-    /\.auth-badge-confirmed\s*\{/g,
-    'html body .auth-badge-confirmed {'
-  );
-  
-  // Удаляем !important из #authModal.tg-mode #regTgBtn, #authModal.tg-mode .mhint
-  result = result.replace(
-    /(#authModal\.tg-mode\s+#regTgBtn,\s*#authModal\.tg-mode\s+\.mhint\s*\{[^}]*?)display:\s*none\s*!important/g,
-    (match, before) => {
-      removedCount++;
-      return before + 'display: none';
+  }
+
+  // Вариант 3: одиночный тег без контента (например, <div id="cartFab"></div> в одну строку)
+  if (!replaced) {
+    const singlePattern = /<(button|div)[^>]*id=["']cartFab["'][^>]*><\/\1>/;
+    if (singlePattern.test(result)) {
+      result = result.replace(singlePattern, NEW_CART_FAB_HTML);
+      replaced = true;
     }
-  );
-  
-  // Добавляем специфичность для #authModal.tg-mode #regTgBtn, #authModal.tg-mode .mhint
-  result = result.replace(
-    /#authModal\.tg-mode\s+#regTgBtn,\s*#authModal\.tg-mode\s+\.mhint\s*\{/g,
-    'html body #authModal.tg-mode #regTgBtn,\nhtml body #authModal.tg-mode .mhint {'
-  );
-  
-  // Удаляем !important из #authModal.tg-mode .frow:has(input[type="checkbox"])
-  result = result.replace(
-    /(#authModal\.tg-mode\s+\.frow:has\(input\[type="checkbox"\]\)\s*\{[^}]*?)display:\s*none\s*!important/g,
-    (match, before) => {
-      removedCount++;
-      return before + 'display: none';
+  }
+
+  // Вариант 4: ищем любой тег с id="cartFab" и заменяем его целиком
+  if (!replaced) {
+    const anyTagPattern = /<[a-zA-Z][^>]*id=["']cartFab["'][^>]*>/;
+    const match = result.match(anyTagPattern);
+    if (match) {
+      const tagMatch = match[0];
+      const tagNameMatch = tagMatch.match(/^<([a-zA-Z]+)/);
+      const tagName = tagNameMatch ? tagNameMatch[1] : 'div';
+
+      // Если тег не самозакрывающийся, пробуем найти закрывающий
+      if (!tagMatch.endsWith('/>')) {
+        const closeTag = `</${tagName}>`;
+        const startIdx = result.indexOf(tagMatch);
+        const closeIdx = result.indexOf(closeTag, startIdx);
+        if (closeIdx > startIdx) {
+          result = result.slice(0, startIdx) + NEW_CART_FAB_HTML + result.slice(closeIdx + closeTag.length);
+          replaced = true;
+        } else {
+          // Закрывающего тега нет — заменяем только открывающий
+          result = result.replace(tagMatch, NEW_CART_FAB_HTML);
+          replaced = true;
+        }
+      } else {
+        result = result.replace(tagMatch, NEW_CART_FAB_HTML);
+        replaced = true;
+      }
     }
-  );
-  
-  // Добавляем специфичность для #authModal.tg-mode .frow:has(input[type="checkbox"])
-  result = result.replace(
-    /#authModal\.tg-mode\s+\.frow:has\(input\[type="checkbox"\]\)\s*\{/g,
-    'html body #authModal.tg-mode .frow:has(input[type="checkbox"]) {'
-  );
-  
-  // Удаляем !important из #authModal input
-  result = result.replace(
-    /(#authModal\s+input\s*\{[^}]*?)font-size:\s*16px\s*!important/g,
-    (match, before) => {
-      removedCount++;
-      return before + 'font-size: 16px';
-    }
-  );
-  
-  // Добавляем специфичность для #authModal input
-  result = result.replace(
-    /#authModal\s+input\s*\{/g,
-    'html body #authModal input {'
-  );
-  
-  console.log(`   Удалено !important: ${removedCount}`);
-  
+  }
+
+  if (!replaced) {
+    warnings.push('public/index.html: элемент #cartFab не найден — разметка не изменена');
+    return text;
+  }
+
   return result;
 }
 
 /**
- * Удаляет дубли селекторов (базовая реализация)
- * ВНИМАНИЕ: это упрощённая версия — полная дедупликация требует парсера CSS
+ * Патч theme-v2.css:
+ * 1. Убирает #cartFab из правила .chat-fab,#cartFab (корень бага: 56×56)
+ * 2. Заменяет старые стили .cartFab на pill-bubble
  */
-function removeDuplicateSelectors(cssText) {
-  // Для простоты удаляем только явные полные дубли блоков
-  // (когда один и тот же селектор встречается дважды с одинаковым содержимым)
-  
-  const lines = cssText.split('\n');
-  const seen = new Map();
-  const result = [];
-  let currentSelector = '';
-  let currentBlock = [];
-  let inBlock = false;
-  let depth = 0;
-  
-  for (const line of lines) {
-    if (!inBlock) {
-      // Ищем начало блока
-      const match = line.match(/^([^{]+)\{/);
-      if (match) {
-        currentSelector = match[1].trim();
-        inBlock = true;
-        depth = 1;
-        currentBlock = [line];
-      } else {
-        result.push(line);
-      }
-    } else {
-      currentBlock.push(line);
-      // Считаем скобки
-      for (const ch of line) {
-        if (ch === '{') depth++;
-        if (ch === '}') depth--;
-      }
-      
-      if (depth === 0) {
-        // Блок завершён
-        inBlock = false;
-        const blockKey = currentSelector + '\n' + currentBlock.join('\n');
-        
-        if (!seen.has(blockKey)) {
-          seen.set(blockKey, true);
-          result.push(...currentBlock);
-        } else {
-          console.log(`   Удалён дубль: ${currentSelector}`);
-        }
-        
-        currentBlock = [];
-      }
-    }
-  }
-  
-  return result.join('\n');
-}
-
 function patchThemeCss(text) {
-  console.log('\nОчистка theme-v2.css...');
-  
-  // Шаг 1: Убираем !important
-  let cleaned = removeImportant(text);
-  
-  // Шаг 2: Удаляем дубли (опционально)
-  // cleaned = removeDuplicateSelectors(cleaned);
-  
-  // Удаляем лишние пустые строки
-  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-  
-  return cleaned;
+  if (text.includes('CART-PILL-PATCH v2')) return text;
+
+  let result = text;
+
+  // ── 1. Убираем #cartFab из правила .chat-fab, #cartFab ──
+  // Это правило делает кнопку круглой 56×56, ломая текст в столбик
+  result = result.replace(
+    /\.chat-fab,\s*\n\s*#cartFab\s*\{/g,
+    '.chat-fab {'
+  );
+  // Также на случай, если они на одной строке
+  result = result.replace(
+    /\.chat-fab,\s*#cartFab\s*\{/g,
+    '.chat-fab {'
+  );
+
+  // ── 2. Удаляем старые правила .cartFab ──
+  result = result.replace(/\.cartFab\s*\{[^}]*\}\s*\n?/g, '');
+  result = result.replace(/\.cartFab:hover\s*\{[^}]*\}\s*\n?/g, '');
+
+  // ── 3. Вставляем новые стили пилюли ──
+  const pillStyles = `
+/* CART-PILL-PATCH v2: плавающая корзина-пилюля */
+.cartFab {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) scale(0.92);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  min-height: 48px;
+  max-height: 64px;
+  background: #A93226;
+  color: #FFFFFF;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font: 700 14px/1 "Golos Text", system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.2, 1, 0.3, 1),
+              transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
 }
 
-function runAudit() {
-  console.log('\nЗапуск CSS-аудита...\n');
-  
-  const auditScript = resolvePath('scripts/css-audit.mjs');
-  if (!fs.existsSync(auditScript)) {
-    console.error('Скрипт scripts/css-audit.mjs не найден');
-    return { warnings: [], errors: ['audit-script-missing'], exitCode: 1 };
-  }
-  
-  const result = spawnSync(process.execPath, ['scripts/css-audit.mjs'], {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe']
-  });
-  
-  if (result.stdout) console.log(result.stdout);
-  if (result.stderr) console.error(result.stderr);
-  
-  return {
-    exitCode: result.status,
-    stdout: result.stdout,
-    stderr: result.stderr
-  };
+.cartFab.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) scale(1);
 }
+
+.cartFab:hover {
+  background: #8B2A21;
+  transform: translateX(-50%) scale(1.03);
+}
+
+.cartFab:active {
+  transform: translateX(-50%) scale(0.97);
+}
+
+.cartFab .cf-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.cartFab .cf-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: #A93226;
+  font: 800 11px/1 "Unbounded", system-ui, sans-serif;
+  flex-shrink: 0;
+}
+
+.cartFab .cf-sep {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.cartFab .cf-total {
+  font: 700 14px/1 "Golos Text", system-ui, sans-serif;
+  color: #FFFFFF;
+  letter-spacing: 0.02em;
+}
+
+/* Планшет/Десктоп: прижимаем справа от каталога, не перекрывая чат */
+@media (min-width: 821px) {
+  .cartFab {
+    left: auto;
+    right: 80px;
+    transform: scale(0.92);
+  }
+  .cartFab.visible {
+    transform: scale(1);
+  }
+  .cartFab:hover {
+    transform: scale(1.03);
+  }
+  .cartFab:active {
+    transform: scale(0.97);
+  }
+}
+
+`;
+
+  result = result.trimEnd() + '\n' + pillStyles;
+
+  // Удаляем лишние пустые строки
+  result = result.replace(/\n{3,}/g, '\n\n');
+
+  return result;
+}
+
+/**
+ * Патч cart.js:
+ * Заменяет cartFabShow() и window.updateCartFab на pill-версии
+ */
+function patchCartJs(text) {
+  if (text.includes('CART-PILL-PATCH v2')) return text;
+
+  let result = text;
+
+  // ── 1. Заменяем cartFabShow() ──
+  const oldCartFabShow = /function cartFabShow\(\)\s*\{[\s\S]*?cf\.style\.display[\s\S]*?\}\s*\}/;
+  const newCartFabShow = `/* CART-PILL-PATCH v2: pill-bubble видимость через класс .visible */
+function cartFabShow() {
+  var cf = document.getElementById('cartFab');
+  if (!cf) return;
+  var isDel = checkIsDelivery();
+  var isGuestOrAdmin = (typeof mode === 'undefined') || mode === 'guest' || mode === 'admin';
+  var hasItems = typeof cart !== 'undefined' && cart.length > 0;
+  var shouldShow = isGuestOrAdmin && isDel && hasItems;
+  cf.classList.toggle('visible', shouldShow);
+  cf.hidden = !shouldShow;
+}`;
+
+  if (oldCartFabShow.test(result)) {
+    result = result.replace(oldCartFabShow, newCartFabShow);
+  } else {
+    warnings.push('public/app/cart.js: cartFabShow() не найден');
+  }
+
+  // ── 2. Заменяем window.updateCartFab ──
+  const oldUpdateCartFab = /window\.updateCartFab\s*=\s*function\s*\(\)\s*\{[\s\S]*?cartFabShow\(\);\s*\};/;
+  const newUpdateCartFab = `/* CART-PILL-PATCH v2: обновление содержимого пилюли */
+window.updateCartFab = function () {
+  var t = totalsNow();
+  var fab = document.getElementById('cartFab');
+  if (!fab) return;
+
+  var hasItems = t.sum > 0;
+  var cnt = (typeof cart !== 'undefined' ? cart : []).reduce(function (a, c) { return a + (c.qty || 1); }, 0);
+
+  // Управление видимостью через класс .visible (для анимации scale/opacity)
+  fab.classList.toggle('visible', hasItems);
+  fab.hidden = !hasItems;
+
+  // Обновляем содержимое пилюли
+  var badge = fab.querySelector('.cf-badge');
+  var total = fab.querySelector('.cf-total');
+  if (badge) badge.textContent = cnt;
+  if (total) total.textContent = Number(t.total).toLocaleString('ru-RU') + ' ₽';
+
+  paintTotals();
+  if (typeof syncAddButtons === 'function') syncAddButtons();
+};`;
+
+  if (oldUpdateCartFab.test(result)) {
+    result = result.replace(oldUpdateCartFab, newUpdateCartFab);
+  } else {
+    warnings.push('public/app/cart.js: window.updateCartFab не найден');
+  }
+
+  return result;
+}
+
+/**
+ * Патч delivery.js:
+ * Убирает дублирующее определение window.updateCartFab и window.cartFabShow,
+ * которые перебивают корректные из cart.js
+ */
+function patchDeliveryJs(text) {
+  if (text.includes('CART-PILL-PATCH v2')) return text;
+
+  let result = text;
+
+  // ── 1. Удаляем дублирующее window.updateCartFab из delivery.js ──
+  const dupUpdateCartFab = /window\.updateCartFab\s*=\s*function\s*\(\)\s*\{[\s\S]*?var cb = document\.getElementById\('checkoutBtn'\);[\s\S]*?\}\s*\}/;
+  if (dupUpdateCartFab.test(result)) {
+    result = result.replace(dupUpdateCartFab, '/* CART-PILL-PATCH v2: updateCartFab делегирован в cart.js */');
+  } else {
+    warnings.push('public/app/delivery.js: дубль window.updateCartFab не найден (возможно, уже удалён)');
+  }
+
+  // ── 2. Удаляем дублирующее window.cartFabShow из delivery.js ──
+  const dupCartFabShow = /window\.cartFabShow\s*=\s*function\s*\(\)\s*\{[\s\S]*?cf\.style\.display[\s\S]*?\};/;
+  if (dupCartFabShow.test(result)) {
+    result = result.replace(dupCartFabShow, '/* CART-PILL-PATCH v2: cartFabShow делегирован в cart.js */');
+  }
+
+  return result;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN
+   ═══════════════════════════════════════════════════════════ */
 
 try {
-  console.log('Task 3: CSS audit and cleanup...\n');
-  
-  // Шаг 1: Первый запуск аудита (до исправлений)
-  console.log('=== ПЕРВЫЙ АУДИТ (до исправлений) ===');
-  const auditBefore = runAudit();
-  
+  console.log('Task 1: Floating cart pill redesign...\n');
+
+  // Проверяем обязательные файлы
+  const requiredFiles = [
+    'public/index.html',
+    'public/app/ui/theme-v2.css',
+    'public/app/cart.js',
+    'public/app/delivery.js',
+    'public/sw.js'
+  ];
+  for (const f of requiredFiles) {
+    if (!fs.existsSync(resolvePath(f))) {
+      console.error(`❌ Критично: файл не найден: ${f}`);
+      process.exit(1);
+    }
+  }
+
+  // Шаг 1: Трансформация index.html
+  console.log('\nТрансформация public/index.html...');
+  modifyFile('public/index.html', patchIndexHtml);
+
   // Шаг 2: Исправление theme-v2.css
+  console.log('\nИсправление theme-v2.css...');
   modifyFile('public/app/ui/theme-v2.css', patchThemeCss);
-  
-  // Шаг 3: Инкремент STATIC_CACHE
+
+  // Шаг 3: Нормализация cart.js
+  console.log('\nНормализация cart.js...');
+  modifyFile('public/app/cart.js', patchCartJs);
+
+  // Шаг 4: Очистка delivery.js
+  console.log('\nОчистка delivery.js...');
+  modifyFile('public/app/delivery.js', patchDeliveryJs);
+
+  // Шаг 5: Инкремент STATIC_CACHE
   if (changed.length > 0) {
     console.log('\nИнкремент STATIC_CACHE...');
     modifyFile('public/sw.js', patchSw);
   }
-  
-  // Шаг 4: Повторный запуск аудита (после исправлений)
-  console.log('\n=== ВТОРОЙ АУДИТ (после исправлений) ===');
-  const auditAfter = runAudit();
-  
-  if (auditAfter.exitCode === 0) {
-    console.log('\n✅ Успех! Все warnings устранены.');
-  } else {
-    console.warn('\n⚠️ Остались нарушения — требуется ручная доработка.');
-  }
-  
+
   if (warnings.length) {
-    console.warn('\nПредупреждения скрипта:');
-    for (const w of warnings) {
-      console.warn(` - ${w}`);
-    }
+    console.warn('\nПредупреждения:');
+    warnings.forEach(w => console.warn(` - ${w}`));
   }
-  
-  console.log('\nГотово.');
+
   if (changed.length) {
-    console.log('Изменённые файлы:');
-    for (const f of changed) {
-      console.log(` - ${f}`);
-    }
+    console.log('\nИзменённые файлы:');
+    changed.forEach(f => console.log(` - ${f}`));
   }
-  
-  process.exit(auditAfter.exitCode);
-  
+
+  console.log('\nГотово.\n');
+  process.exit(0);
+
 } catch (err) {
-  console.error('\nОшибка скрипта:');
+  console.error('\n❌ Ошибка скрипта:');
   console.error(err);
   process.exit(1);
 }

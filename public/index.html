@@ -1400,9 +1400,12 @@ body[data-brand="delivery"] #menuView {
 
     <div class="toasts" id="toasts"></div>
     <canvas id="fx"></canvas>
-    <button class="cartFab" id="cartFab" hidden>
-      🛒 <span id="cartSum">0</span> ₽
-    </button>
+    <button type="button" id="cartFab" class="cartFab" hidden aria-label="Открыть корзину">
+  <span class="cf-icon">🛒</span>
+  <span class="cf-badge">0</span>
+  <span class="cf-sep"></span>
+  <span class="cf-total">0 ₽</span>
+</button>
     <div class="cartPanel" id="cartPanel">
       <h3 style="margin-bottom: 16px">Корзина</h3>
       <div id="cartItems"></div>
