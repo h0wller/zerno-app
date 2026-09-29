@@ -99,18 +99,23 @@ textarea{
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform .25s, box-shadow .25s, border-color .25s;
+  transition: transform 0.2s ease, opacity 0.2s ease;
   animation: pop .5s both;
   animation-delay: var(--d);
   position: relative;
   box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
   min-height: 340px;
 }
-@keyframes pop{
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.97);
-  }
+/* PERF: Аппаратно-ускоренная анимация карточек без рефлоу */
+@keyframes pop {
+  0% { transform: scale(0.97); opacity: 0.85; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.card {
+  will-change: transform;
+  transform: translateZ(0);
+}
 
   to {
     opacity: 1;
@@ -1305,10 +1310,7 @@ label.chk{
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition:
-    transform 0.25s,
-    box-shadow 0.25s,
-    border-color 0.25s;
+  transition: transform 0.2s ease, opacity 0.2s ease;
   animation: pop 0.5s both;
   animation-delay: var(--d);
   position: relative;
