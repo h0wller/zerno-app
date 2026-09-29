@@ -428,7 +428,11 @@ window.__dlReq = 1;
 window.loadDelivery();
 }
 /* Ф3.25: синхронизируем брендовый хром (тикер + логотип) прямым вызовом владельца */
-if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
+if (typeof applyBrandChrome === 'function') {
+  applyBrandChrome();
+} else if (typeof window.applyBrandChrome === 'function') {
+  window.applyBrandChrome();
+}
 }
 window.syncBrandViews = sv;
 /* ── Ф3.57: снятие инлайн-стилей, которые admin-extra ставит на логотип.
@@ -496,6 +500,8 @@ var ct = document.getElementById('chatsToggle2');
 if (ct) ct.hidden = !(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
 var bd = document.getElementById('adminBadge'); if (bd) bd.hidden = (m !== 'admin');
 if (m !== 'admin' && typeof exitEdit === 'function') exitEdit();
+/* CASHIER-PENDING-ROBUST v1: pending грузим независимо от renderLog */
+if (m === 'cashier' && typeof window.loadPending === 'function') window.loadPending();
 if (m === 'cashier' && typeof renderLog === 'function') renderLog();
 if (m === 'orders') {
 if (typeof renderOrders === 'function') renderOrders();

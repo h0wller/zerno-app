@@ -80,7 +80,7 @@ document.body.classList.toggle("is-admin", m === "admin"); /* F5.14 */
           m === "cashier" || m === "orders" ? "none" : "";
         const cf = $("#cartFab");
         if (cf) cf.style.display = m === "guest" ? "" : "none";
-        if (m === "cashier") renderLog();
+        if (m === "cashier") window.renderLog(); /* CASHIER-PENDING v1 */
         if (m === "orders") {
           renderOrders();
           if (!window.ordersPoll)

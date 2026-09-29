@@ -1,94 +1,86 @@
-#!/usr/bin/env node
-/**
- * scripts/perf-p1-composited-animations.mjs
- * Оптимизация анимаций: перевод .card и кнопок на композитные свойства (transform / opacity)
- * Устраняет 59 предупреждений Lighthouse о non-composited animations и снижает Style & Layout.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
-function resolvePath(p) { return path.join(root, p); }
+const stamp = new Date().toISOString().replace(/[:T]/g, '-').replace(/\..+$/, '');
+const changed = [];
 
-const themeCssPath = resolvePath('public/app/ui/theme-v2.css');
-if (!fs.existsSync(themeCssPath)) {
-  console.error('Файл theme-v2.css не найден');
-  process.exit(1);
+function backup(abs) {
+  const b = `${abs}.bak-${stamp}`;
+  fs.copyFileSync(abs, b);
+  return path.basename(b);
 }
 
-let css = fs.readFileSync(themeCssPath, 'utf8');
-
-// 1. Оптимизация анимации pop для карточек: убираем border-color, box-shadow из keyframes
-const COMPOSITED_POP_CSS = `
-/* PERF: Аппаратно-ускоренная анимация карточек без рефлоу */
-@keyframes pop {
-  0% { transform: scale(0.97); opacity: 0.85; }
-  100% { transform: scale(1); opacity: 1; }
+function modify(rel, fn) {
+  const abs = path.join(root, rel);
+  if (!fs.existsSync(abs)) { console.warn('⚠️ не найден:', rel); return; }
+  const src = fs.readFileSync(abs, 'utf8');
+  const eol = src.includes('\r\n') ? '\r\n' : '\n';
+  const out = fn(src.replace(/\r\n/g, '\n'));
+  if (out === src.replace(/\r\n/g, '\n')) { console.log('· без изменений:', rel); return; }
+  const bak = backup(abs);
+  fs.writeFileSync(abs, eol === '\r\n' ? out.replace(/\n/g, '\r\n') : out, 'utf8');
+  const chk = spawnSync(process.execPath, ['--check', abs], { encoding: 'utf8' });
+  if (chk.status !== 0) { fs.copyFileSync(path.join(root, rel + '.bak-' + stamp), abs); throw new Error('syntax: ' + rel + '\n' + chk.stderr); }
+  console.log('✔ Изменён:', rel, '| backup:', bak);
+  changed.push(rel);
 }
 
-.card {
-  will-change: transform;
-  transform: translateZ(0);
-}
-`;
-
-// Заменяем старую анимацию pop, если она есть
-if (/@keyframes\s+pop\s*\{[\s\S]*?\}/.test(css)) {
-  css = css.replace(/@keyframes\s+pop\s*\{[\s\S]*?\}/, COMPOSITED_POP_CSS.trim());
-} else {
-  css += '\n' + COMPOSITED_POP_CSS;
-}
-
-// 2. Убираем transition по border-color и box-shadow на карточках
-css = css.replace(/transition:\s*([^;}]*?)border-color([^;}]*?);/g, 'transition: transform 0.2s ease, opacity 0.2s ease;');
-
-fs.writeFileSync(themeCssPath, css, 'utf8');
-console.log('✔ theme-v2.css: анимации переведены на композитный слой');
-
-// 3. Быстрая зачистка forced reflow в scrolltop.js
-const scrollTopPath = resolvePath('public/app/ui/scrolltop.js');
-if (fs.existsSync(scrollTopPath)) {
-  let stJs = fs.readFileSync(scrollTopPath, 'utf8');
-  // Оборачиваем обработчик скролла в rAF-тикер, если его там ещё нет
-  if (stJs.indexOf('requestAnimationFrame') === -1) {
-    stJs = `/* Оптимизированный scrolltop без forced reflow */
-(function() {
-  var ticking = false;
-  window.addEventListener('scroll', function() {
-    if (!ticking) {
-      window.requestAnimationFrame(function() {
-        var btn = document.getElementById('scrollTopBtn');
-        if (btn) {
-          if (window.scrollY > 300) {
-            btn.classList.add('show');
-          } else {
-            btn.classList.remove('show');
-          }
-        }
-        ticking = false;
-      });
-      ticking = true;
-    }
-  }, { passive: true });
-})();`;
-    fs.writeFileSync(scrollTopPath, stJs, 'utf8');
-    console.log('✔ scrolltop.js: внедрен rAF батчинг скролла (устранен layout thrashing)');
+/* ── 1. views.js: setMode('cashier') → loadPending отдельно от renderLog ── */
+modify('public/app/core/views.js', (t) => {
+  if (t.includes('CASHIER-PENDING-ROBUST v1')) return t;
+  // Ищем: if (m === 'cashier' && typeof renderLog === 'function') renderLog();
+  // Допускаем вариации с двойными/одинарными кавычками и пробелами
+  const re = /(\n\s*)if\s*\(\s*m\s*===\s*['"]cashier['"]\s*&&\s*typeof\s+renderLog\s*===\s*['"]function['"]\s*\)\s*renderLog\s*\(\s*\)\s*;/;
+  if (!re.test(t)) {
+    console.warn('⚠️ views.js: не найден шаблон вызова renderLog() в setMode');
+    return t;
   }
-}
+  return t.replace(re, (m, indent) =>
+    `${indent}/* CASHIER-PENDING-ROBUST v1: pending грузим независимо от renderLog */` +
+    `${indent}if (m === 'cashier' && typeof window.loadPending === 'function') window.loadPending();` +
+    `${indent}if (m === 'cashier' && typeof renderLog === 'function') renderLog();`
+  );
+});
 
-// 4. Bump SW Cache
-const swPath = resolvePath('public/sw.js');
-if (fs.existsSync(swPath)) {
-  let sw = fs.readFileSync(swPath, 'utf8');
-  sw = sw.replace(/(STATIC_CACHE\s*=\s*['"])([^'"]+)(['"])/, (_, pre, val, post) => {
-    const next = val.replace(/(\d+)(?=[^\d]*$)/, (_, n) => String(Number(n) + 1));
-    console.log(`✔ STATIC_CACHE: ${val} -> ${next}`);
-    return `${pre}${next}${post}`;
-  });
-  fs.writeFileSync(swPath, sw, 'utf8');
-}
+/* ── 2. cashier.js: loadPending() ВНЕ try/catch, до api('/staff/log') ── */
+modify('public/app/cashier.js', (t) => {
+  if (t.includes('CASHIER-LOG-PENDING-DECOUPLE v1')) return t;
+  // Ищем строку "window.loadPending();" вместе с комментарием внутри try в renderLog
+  const re = /(\n\s*)window\.loadPending\(\);\s*\/\*\s*Ф5\.6-финал[^\n]*\*\//;
+  if (!re.test(t)) {
+    console.warn('⚠️ cashier.js: не найден window.loadPending() в renderLog');
+    return t;
+  }
+  return t.replace(re, (m, indent) => `${indent}/* CASHIER-LOG-PENDING-DECOUPLE v1: вынесено из try */`);
+  // Дополнительно: добавляем early вызов перед try
+});
 
-console.log('\nГотово к сборке и тестированию.');
+/* ── 3. cashier.js: добавить ранний вызов loadPending перед try в renderLog ── */
+modify('public/app/cashier.js', (t) => {
+  if (t.includes('/* EARLY-PENDING v1 */')) return t;
+  const re = /(async\s+function\s+renderLog\s*\(\s*\)\s*\{\s*)(\n\s*)try\s*\{/;
+  if (!re.test(t)) {
+    console.warn('⚠️ cashier.js: не найден "async function renderLog() { try {"');
+    return t;
+  }
+  return t.replace(re, (m, head, nl) =>
+    `${head}${nl}  /* EARLY-PENDING v1: pending рисуем до api('/staff/log'), не зависит от его успеха */` +
+    `${nl}  try { if (typeof window.loadPending === 'function') await window.loadPending(); } catch (_) {}` +
+    `${nl}  try {`
+  );
+});
+
+/* ── 4. sw.js: bump STATIC_CACHE ── */
+modify('public/sw.js', (t) => {
+  let found = false;
+  const out = t.replace(/(zerno-static-v)(\d+)/, (m, p, n) => { found = true; const nn = Number(n) + 1; console.log(`   STATIC_CACHE: ${p}${n} → ${p}${nn}`); return p + nn; });
+  return found ? out : t;
+});
+
+console.log('\nИзменённые файлы:');
+changed.forEach(f => console.log(' - ' + f));
+console.log('\nДалее: npx playwright test tests/ui-baseline.spec.js -g "pending"\n');

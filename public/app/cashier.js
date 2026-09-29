@@ -114,22 +114,10 @@ $('#ngSave').onclick = async () => {
   }
 };
 
-async function loadPending() {
-  const host = $('#pendingBox');
-  if (!host) return;
-  try {
-    const r = await api('/staff/pending');
-    host.innerHTML = r.pending.length
-      ? r.pending.map(p => `<div class="hmini"><b>${esc(p.name)}</b> · ${esc(p.phone)} · код: <b style="font-size:15px">${p.actcode}</b></div>`).join('')
-      : '<div class="hmini">Все гости активированы ✅</div>';
-  } catch (e) {}
-}
-
 async function renderLog() {
+  if (typeof window.loadPending === 'function') window.loadPending();   // ← вне try
   try {
     const r = await api('/staff/log?scope=coffee');
-    window.loadPending(); /* Ф5.6-финал шаг 4-fix2: версия orders.js с кнопками */
-
     const rows = r.log || [];
     $('#cashLog').innerHTML = rows.length
       ? rows.map(l =>

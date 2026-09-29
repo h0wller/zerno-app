@@ -36,6 +36,7 @@ $('#deliveryRail').addEventListener('click', e => {
 });
 
 function renderDeliveryMenu() {
+  console.log("[DIAGNOSE] renderDeliveryMenu() called");
   const list = DMENU.filter(p => p.cat === dcat);
   let html = list.map(p => {
     const opts = p.opts || [];
@@ -319,7 +320,8 @@ function renderDeliverySkeleton() {
   if (!grid) return;
   grid.innerHTML = skelCards(6);
 }
-window.loadDelivery = async function(){
+window.loadDelivery = async function() {
+  console.log("[DIAGNOSE] loadDelivery() started");
 try {
 var g=document.getElementById('deliveryGrid');
 if(g && !DMENU.length){ g.innerHTML=skelCards(6); }
