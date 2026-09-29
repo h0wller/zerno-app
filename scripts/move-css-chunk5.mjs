@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 /**
- * scripts/add-preorder-timer.mjs
- * Этап 2: Детализация предзаказов — таймер обратного отсчёта до слота доставки
- * v5: фильтр инфо-карточек заведения («Ежедневно 11:00–22:00») и блоков без слова «заказ»
+ * scripts/fix-checkout-ux-and-timer.mjs
+ * Финальный багфикс чекаута, тарифов, адресов и таймеров:
+ *   1. Дропдаун улиц закрывается после выбора (justSelected + blur)
+ *   2. Безусловный override тарифа доставки (Синявино 250 ₽)
+ *   3. Полноценный TreeWalker для таймера предзаказа (с поддержкой дат с цифрами)
+ *   4. Фича «Мои адреса»: кнопка, компактное меню (до 3 адресов), fallback на zt_saved_address
+ *
+ * Запуск:
+ *   node scripts/fix-checkout-ux-and-timer.mjs
  */
 
 import fs from 'node:fs';
@@ -73,22 +79,6 @@ function modifyFile(relPath, transformer) {
   return true;
 }
 
-function createFile(relPath, content) {
-  const absPath = resolvePath(relPath);
-  if (fs.existsSync(absPath)) {
-    warnings.push(`Файл уже существует: ${relPath}`);
-    return false;
-  }
-  writeEol(absPath, content, '\n');
-  if (relPath.endsWith('.js') || relPath.endsWith('.mjs')) {
-    try { checkSyntax(absPath); }
-    catch (err) { fs.unlinkSync(absPath); throw err; }
-  }
-  changed.push(relPath);
-  console.log(`✔ Создан: ${relPath}`);
-  return true;
-}
-
 function patchSw(text) {
   const re = /(STATIC_CACHE\s*=\s*['"])([^'"]+)(['"])/;
   let found = false;
@@ -105,383 +95,357 @@ function patchSw(text) {
   return found ? out : text;
 }
 
-function patchSwAssets(text) {
-  if (text.includes("'/app/core/preorder-timer.js'")) return text;
-  const re = /(const STATIC_ASSETS = \[[\s\S]*?)('\/app\/core\/overlay\.js',)/;
-  const out = text.replace(re, (m, before, overlayLine) => {
-    return before + "'/app/core/preorder-timer.js',\n  " + overlayLine;
-  });
-  return out === text ? text : out;
-}
+/* ═══════════════════════════════════════════════════════════
+   ЗАДАЧА 1 + ЗАДАЧА 4: Патч address-autocomplete.js
+   ═══════════════════════════════════════════════════════════ */
 
-const PREORDER_TIMER_JS = `/* public/app/core/preorder-timer.js — Этап 2: таймер обратного отсчёта до слота доставки
-   PREORDER-TIMER v5 — фильтр инфо-карточек заведения и блоков без слова «заказ» */
-(function () {
-  'use strict';
-
-  var UPDATE_INTERVAL = 30000;
-  var timerId = null;
-
-  /**
-   * Парсит строку слота. Поддерживает форматы:
-   *   "29.09 | 14:00–14:30"
-   *   "29.09.2026 | 14:00–14:30"
-   *   "Сегодня (29.09) · 13:00 – 13:30"
-   *   "Завтра (30.09) · 14:00 – 14:30"
-   *   "13:00 – 13:30" (только время)
-   */
-  function parseSlot(slotStr) {
-    if (!slotStr || slotStr === 'asap' || slotStr === 'Как можно скорее (~45 мин)') return null;
-
-    var raw = String(slotStr).trim();
-
-    // Убираем префиксы «Сегодня»/«Завтра» со скобками с датой
-    raw = raw.replace(/^(Сегодня|Завтра)\\s*\\(\\s*([^)]+)\\s*\\)\\s*[·•|.\\-\\s]+/i, '$2 | ');
-    // Префиксы без скобок
-    raw = raw.replace(/^(Сегодня|Завтра)\\s*[·•|.\\-\\s]+/i, '');
-
-    // Разделяем по «|» или «·»
-    var parts = raw.split(/[|·•]/);
-    var datePart = '';
-    var timePart = '';
-
-    if (parts.length >= 2) {
-      datePart = parts[0].trim();
-      timePart = parts.slice(1).join('·').trim();
-    } else {
-      datePart = '';
-      timePart = raw;
-    }
-
-    var timeMatch = timePart.match(/(\\d{1,2}):(\\d{2})\\s*[–\\-\\s]+\\s*(\\d{1,2}):(\\d{2})/);
-    if (!timeMatch) return null;
-
-    var startH = parseInt(timeMatch[1], 10);
-    var startM = parseInt(timeMatch[2], 10);
-    var endH = parseInt(timeMatch[3], 10);
-    var endM = parseInt(timeMatch[4], 10);
-
-    var now = new Date();
-    var year = now.getFullYear();
-    var month = now.getMonth();
-    var day = now.getDate();
-
-    if (datePart) {
-      var dateMatch = datePart.match(/(\\d{1,2})[.\\-\\/](\\d{1,2})(?:[.\\-\\/](\\d{2,4}))?/);
-      if (dateMatch) {
-        day = parseInt(dateMatch[1], 10);
-        month = parseInt(dateMatch[2], 10) - 1;
-        if (dateMatch[3]) {
-          year = parseInt(dateMatch[3], 10);
-          if (year < 100) year += 2000;
-        } else {
-          var testDate = new Date(year, month, day);
-          if (testDate < new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)) {
-            year += 1;
-          }
-        }
-      }
-    }
-
-    var start = new Date(year, month, day, startH, startM, 0, 0);
-    var end = new Date(year, month, day, endH, endM, 0, 0);
-
-    if (end <= start) {
-      end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
-    }
-
-    return { start: start, end: end };
-  }
-
-  function formatRemaining(ms) {
-    if (ms <= 0) return null;
-    var totalMin = Math.floor(ms / 60000);
-    var hours = Math.floor(totalMin / 60);
-    var mins = totalMin % 60;
-    if (hours > 0) return '~' + hours + ' ч ' + mins + ' мин';
-    if (mins <= 0) return 'меньше минуты';
-    return '~' + mins + ' мин';
-  }
-
-  /**
-   * PREORDER-TIMER v5: АВТОПОИСК карточек с предзаказами прямо в DOM.
-   * Ищет по тексту карточки время в формате "14:00 – 14:30" / "14:00–14:30".
-   * Игнорирует:
-   *   - неактивные заказы (отменён, доставлен, выполнен, завершён)
-   *   - инфо-карточки заведения («Ежедневно 11:00–22:00», «Режим работы», «Работаем»)
-   *   - блоки без слова «заказ»
-   */
-  function autoInjectBadges() {
-    var cardSelectors = [
-      '.orderCard',
-      '.order-card',
-      '.history-item',
-      '#panel [class*="order"]',
-      '.oc',
-      '#panel .card'
-    ];
-
-    cardSelectors.forEach(function (sel) {
-      document.querySelectorAll(sel).forEach(function (card) {
-        // Уже есть бейдж — пропускаем
-        if (card.querySelector('.preorder-timer')) return;
-
-        var txt = card.textContent || '';
-
-        /* PREORDER-TIMER v5: игнорируем неактивные заказы */
-        if (/отмен|доставлен|выполнен|завершен/i.test(txt)) return;
-
-        /* PREORDER-TIMER v5: игнорируем инфо-карточки заведения и блоки без слова "заказ" */
-        if (/ежедневно|режим\\s+работы|работаем/i.test(txt) || !/заказ/i.test(txt)) return;
-
-        // Ищем слот: опциональная дата + интервал времени
-        var slotMatch = txt.match(
-          /(?:Сегодня|Завтра|\\d{1,2}[.\\-\\/]\\d{1,2}(?:[.\\-\\/]\\d{2,4})?)?[^0-9\\n]*\\d{1,2}:\\d{2}\\s*[–\\-]\\s*\\d{1,2}:\\d{2}/i
-        );
-
-        if (slotMatch) {
-          var badgeHtml = createTimerBadge(slotMatch[0]);
-          if (badgeHtml) {
-            var t = document.createElement('div');
-            t.innerHTML = badgeHtml;
-            if (t.firstElementChild) {
-              card.appendChild(t.firstElementChild);
-            }
-          }
-        }
-      });
-    });
-  }
-
-  function updateAllTimers() {
-    // Сначала автопоиск новых карточек (PREORDER-TIMER v5)
-    autoInjectBadges();
-
-    var badges = document.querySelectorAll('.preorder-timer[data-slot]');
-    var now = Date.now();
-
-    badges.forEach(function (badge) {
-      var slotStr = badge.dataset.slot;
-      var parsed = parseSlot(slotStr);
-      if (!parsed) {
-        badge.hidden = true;
-        return;
-      }
-
-      var msToStart = parsed.start.getTime() - now;
-      var msToEnd = parsed.end.getTime() - now;
-
-      if (msToStart > 0) {
-        var remaining = formatRemaining(msToStart);
-        if (remaining) {
-          badge.hidden = false;
-          badge.textContent = '⏱ До доставки ' + remaining;
-          badge.classList.remove('preorder-timer-active', 'preorder-timer-way');
-          badge.classList.add('preorder-timer-waiting');
-        } else {
-          badge.hidden = true;
-        }
-      } else if (msToEnd > 0) {
-        badge.hidden = false;
-        badge.textContent = '🚗 Курьер уже в пути';
-        badge.classList.remove('preorder-timer-waiting');
-        badge.classList.add('preorder-timer-active', 'preorder-timer-way');
-      } else {
-        badge.hidden = true;
-      }
-    });
-  }
-
-  function createTimerBadge(slotStr) {
-    if (!slotStr || slotStr === 'asap') return '';
-    var parsed = parseSlot(slotStr);
-    if (!parsed) return '';
-    var now = Date.now();
-    if (parsed.end.getTime() - now <= 0) return '';
-    return '<div class="preorder-timer preorder-timer-waiting" data-slot="' +
-      String(slotStr).replace(/"/g, '&quot;').replace(/</g, '&lt;') +
-      '">⏱ Загрузка...</div>';
-  }
-
-  function init() {
-    autoInjectBadges();
-    updateAllTimers();
-
-    timerId = setInterval(updateAllTimers, UPDATE_INTERVAL);
-
-    // MutationObserver следит за появлением новых карточек
-    var observer = new MutationObserver(function (mutations) {
-      var needUpdate = false;
-      mutations.forEach(function (m) {
-        m.addedNodes.forEach(function (node) {
-          if (node.nodeType === 1) {
-            if (node.classList) {
-              if (node.classList.contains('orderCard') ||
-                  node.classList.contains('order-card') ||
-                  node.classList.contains('history-item') ||
-                  node.classList.contains('oc')) {
-                needUpdate = true;
-              }
-            }
-            if (node.querySelector &&
-                node.querySelector('.orderCard, .order-card, .history-item, .oc')) {
-              needUpdate = true;
-            }
-          }
-        });
-      });
-      if (needUpdate) updateAllTimers();
-    });
-
-    if (document.body) {
-      observer.observe(document.body, { childList: true, subtree: true });
-    }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-
-  window.PreorderTimer = {
-    parseSlot: parseSlot,
-    formatRemaining: formatRemaining,
-    createTimerBadge: createTimerBadge,
-    updateAll: updateAllTimers
-  };
-})();
-`;
-
-const PREORDER_TIMER_CSS = `
-/* ── PREORDER-TIMER v5: бейдж таймера предзаказа ── */
-.preorder-timer {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  margin-top: 8px;
-  animation: preorder-timer-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: background 0.3s, color 0.3s;
-}
-
-.preorder-timer-waiting {
-  background: #FFF6E5;
-  color: #B26A05;
-  border: 1.5px dashed #F2D9A5;
-}
-
-.preorder-timer-active,
-.preorder-timer-way {
-  background: #E4EFE2;
-  color: #1E7A4E;
-  border: 1.5px solid #A8D5A0;
-}
-
-@keyframes preorder-timer-in {
-  from { opacity: 0; transform: translateY(6px) scale(0.96); }
-  to   { opacity: 1; transform: none; }
-}
-
-.preorder-timer-waiting {
-  animation: preorder-timer-in 0.3s both, preorder-pulse 2s ease-in-out infinite;
-}
-
-@keyframes preorder-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.8; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .preorder-timer,
-  .preorder-timer-waiting {
-    animation: none;
-  }
-}
-`;
-
-function patchThemeCss(text) {
-  if (text.includes('PREORDER-TIMER v5')) return text;
-  return text.trimEnd() + `\n/* PREORDER-TIMER v5 */${PREORDER_TIMER_CSS}`;
-}
-
-function patchIndexHtml(text) {
-  if (text.includes('/app/core/preorder-timer.js')) return text;
-  const re = /(<script[^>]*src=["'][^"']*overlay\.js["'][^>]*><\/script>)/;
-  const match = text.match(re);
-  if (match) {
-    const insertPoint = match.index + match[0].length;
-    return text.slice(0, insertPoint) + '\n<script src="/app/core/preorder-timer.js" defer></script>' + text.slice(insertPoint);
-  }
-  if (text.includes('</body>')) {
-    return text.replace('</body>', '<script src="/app/core/preorder-timer.js" defer></script>\n</body>');
-  }
-  warnings.push('public/index.html: не найдено место для вставки preorder-timer.js');
-  return text;
-}
-
-/**
- * Патч cart.js: безопасная проверка слота БЕЗ isPreorder
- */
-function patchCartJs(text) {
-  if (text.includes('PREORDER-TIMER v5')) return text;
+function patchAddressAutocomplete(text) {
+  if (text.includes('CHECKOUT-UX-FIX v2')) return text;
 
   let result = text;
 
-  const checkoutSuccess = /toast\(["']Заказ #["']\s*\+\s*r\.order\.no\s*\+\s*["'] оформлен!["'],\s*["']🎉["']\);/;
+  // 1. Флаг justSelected
+  if (!result.includes('var justSelected = false;')) {
+    result = result.replace(
+      /\(function \(\) \{\s*'use strict';/,
+      `(function () {\n  'use strict';\n  var justSelected = false;`
+    );
+  }
 
-  if (checkoutSuccess.test(result)) {
-    result = result.replace(checkoutSuccess, (match) => {
-      return match + `
-      /* PREORDER-TIMER v5: если предзаказ — запускаем обновление таймеров */
+  // 2. selectItem: blur + hideDropdown + блокировка повторного фокуса
+  const selectItemRegex = /function selectItem\(input, value\) \{[\s\S]*?input\.(?:focus|blur)\(\);[\s\S]*?\}/;
+  const newSelectItem = `function selectItem(input, value) {
+    justSelected = true;
+    input.value = value;
+    hideDropdown();
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    try { input.blur(); } catch (e) {}
+    setTimeout(function () { justSelected = false; }, 350);
+  }`;
+  if (selectItemRegex.test(result)) {
+    result = result.replace(selectItemRegex, newSelectItem);
+  }
+
+  // 3. Блокировка открытия по focus при выборе
+  const focusRegex = /input\.addEventListener\('focus', function \(\) \{/;
+  if (focusRegex.test(result) && !result.includes('if (justSelected) return;')) {
+    result = result.replace(focusRegex, `input.addEventListener('focus', function () {\n      if (justSelected) return;`);
+  }
+
+  // 4. Фича «Мои адреса» с fallback на zt_saved_address и надёжным DOM-враппером
+  const addressBookBlock = `
+  /* ══ CHECKOUT-UX-FIX v2: Фича «Мои адреса» ══ */
+  function getSavedAddresses() {
+    var addrList = [];
+    try { addrList = JSON.parse(localStorage.getItem('zt_saved_addresses') || '[]'); } catch (e) {}
+    if (!Array.isArray(addrList) || !addrList.length) {
       try {
-        var preorderSlot = document.getElementById('checkoutSlot') ? document.getElementById('checkoutSlot').value : '';
-        if (preorderSlot && preorderSlot !== 'asap' && window.PreorderTimer && typeof window.PreorderTimer.updateAll === 'function') {
-          setTimeout(window.PreorderTimer.updateAll, 500);
+        var single = JSON.parse(localStorage.getItem('zt_saved_address') || 'null');
+        if (single && (single.place || single.street)) addrList = [single];
+      } catch (e) {}
+    }
+    return Array.isArray(addrList) ? addrList : [];
+  }
+
+  function renderAddressBook() {
+    var addrList = getSavedAddresses();
+    var placeInput = document.getElementById('checkoutPlace');
+    if (!placeInput) return;
+
+    var oldWrap = document.getElementById('addrBookWrap');
+    if (!addrList.length) {
+      if (oldWrap) oldWrap.remove();
+      return;
+    }
+    if (oldWrap) return; // Уже отрисован
+
+    var wrap = document.createElement('div');
+    wrap.id = 'addrBookWrap';
+    wrap.className = 'addr-book-wrap';
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'addr-book-btn';
+    btn.innerHTML = '<span>📍</span> <span>Мои адреса</span>';
+
+    var menu = document.createElement('div');
+    menu.className = 'addr-book-menu';
+    menu.hidden = true;
+
+    addrList.forEach(function (addr) {
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'addr-book-item';
+      var textParts = [addr.place, addr.street, addr.house].filter(Boolean);
+      item.textContent = textParts.join(', ');
+      item.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var cp = document.getElementById('checkoutPlace');
+        var cs = document.getElementById('checkoutStreet');
+        var ch = document.getElementById('checkoutHouse');
+        if (cp && addr.place) {
+          cp.value = addr.place;
+          cp.dispatchEvent(new Event('change', { bubbles: true }));
         }
-      } catch (e) {}`;
+        if (cs && addr.street) {
+          cs.value = addr.street;
+          cs.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (ch && addr.house) {
+          ch.value = addr.house;
+          ch.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        menu.hidden = true;
+      });
+      menu.appendChild(item);
     });
+
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      menu.hidden = !menu.hidden;
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!wrap.contains(e.target)) menu.hidden = true;
+    });
+
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
+
+    var targetContainer = placeInput.closest('.frow, label') || placeInput.parentElement;
+    if (targetContainer && targetContainer.parentElement) {
+      targetContainer.parentElement.insertBefore(wrap, targetContainer);
+    }
+  }
+`;
+
+  if (!result.includes('CHECKOUT-UX-FIX v2: Фича «Мои адреса»')) {
+    result = result.replace(/function init\(\) \{/, addressBookBlock + '\n  function init() {');
+    result = result.replace(/function init\(\) \{/, 'function init() {\n    renderAddressBook();');
+  }
+
+  // Обновление кнопки в MutationObserver
+  if (!result.includes('renderAddressBook(); /* observer */')) {
+    result = result.replace(
+      /attachToPlaceSelect\(\);/g,
+      'attachToPlaceSelect();\n    renderAddressBook(); /* observer */'
+    );
   }
 
   return result;
 }
 
-try {
-  console.log('Task 2.2: Preorder timer (v5 — фильтр инфо-карточек заведения)...\n');
+/* ═══════════════════════════════════════════════════════════
+   ЗАДАЧА 2 + ЗАДАЧА 4: Патч cart.js
+   ═══════════════════════════════════════════════════════════ */
 
-  const requiredFiles = [
-    'public/app/ui/theme-v2.css',
-    'public/app/cart.js',
-    'public/index.html',
-    'public/sw.js'
-  ];
-  for (const f of requiredFiles) {
-    if (!fs.existsSync(resolvePath(f))) {
-      console.error(`❌ Критично: файл не найден: ${f}`);
-      process.exit(1);
+function patchCartJs(text) {
+  if (text.includes('CHECKOUT-UX-FIX v2')) return text;
+
+  let result = text;
+
+  // 1. Безусловный override тарифа доставки (Синявино 250 ₽)
+  const feeRegex = /(?:\/\* ADDR-PATCH[^*]*\*\/)?\s*if \(!fee && window\.AddressModule[\s\S]*?fee = Number\(window\.AddressModule\.getFee\(curPlace\)\) \|\| 0;\s*\}/;
+  const newFeeCode = `/* CHECKOUT-UX-FIX v2: безусловный override тарифа из справочника */
+    if (window.AddressModule && typeof window.AddressModule.getFee === 'function') {
+      var curPlace = (typeof placeVal !== 'undefined' ? placeVal : (document.getElementById('checkoutPlace') ? document.getElementById('checkoutPlace').value : ''));
+      var zoneFee = Number(window.AddressModule.getFee(curPlace));
+      if (zoneFee > 0) fee = zoneFee;
+    }`;
+
+  if (feeRegex.test(result)) {
+    result = result.replace(feeRegex, newFeeCode);
+  } else {
+    // Fallback: замена стандартного fee = z ? ...
+    result = result.replace(
+      /fee = z \? Number\(z\.fee\) \|\| 0 : 0;/,
+      `fee = z ? Number(z.fee) || 0 : 0;\n    ${newFeeCode}`
+    );
+  }
+
+  // 2. Сохранение массива уникальных адресов (до 3 шт)
+  const saveAddrRegex = /\/\* ADDR-PATCH[^*]*\*\/[\s\S]*?localStorage\.setItem\('zt_saved_address'[\s\S]*?\}\s*\}\s*catch\s*\(e\)\s*\{\}/;
+  const newSaveAddrCode = `/* CHECKOUT-UX-FIX v2: сохраняем адреса в массив (до 3 уникальных) */
+      try {
+        var cpEl = document.getElementById('checkoutPlace');
+        var csEl = document.getElementById('checkoutStreet');
+        var chEl = document.getElementById('checkoutHouse');
+        var addrToSave = {
+          place: cpEl ? cpEl.value : '',
+          street: csEl ? csEl.value : '',
+          house: chEl ? chEl.value : ''
+        };
+        if (addrToSave.place || addrToSave.street) {
+          var addrList = [];
+          try { addrList = JSON.parse(localStorage.getItem('zt_saved_addresses') || '[]'); } catch (e) {}
+          if (!Array.isArray(addrList)) addrList = [];
+          addrList = addrList.filter(function (a) {
+            return !(a.place === addrToSave.place && a.street === addrToSave.street && a.house === addrToSave.house);
+          });
+          addrList.unshift(addrToSave);
+          addrList = addrList.slice(0, 3);
+          localStorage.setItem('zt_saved_addresses', JSON.stringify(addrList));
+          localStorage.setItem('zt_saved_address', JSON.stringify(addrToSave));
+        }
+      } catch (e) {}`;
+
+  if (saveAddrRegex.test(result)) {
+    result = result.replace(saveAddrRegex, newSaveAddrCode);
+  } else {
+    // Вставка после оформления заказа
+    const toastOrderRegex = /(toast\(["']Заказ #["']\s*\+\s*r\.order\.no\s*\+\s*["'] оформлен!["'],\s*["']🎉["']\);)/;
+    if (toastOrderRegex.test(result)) {
+      result = result.replace(toastOrderRegex, `$1\n      ${newSaveAddrCode}`);
     }
   }
 
-  const coreDir = resolvePath('public/app/core');
-  if (!fs.existsSync(coreDir)) fs.mkdirSync(coreDir, { recursive: true });
+  return result;
+}
 
-  console.log('\nСоздание public/app/core/preorder-timer.js (v5)...');
-  createFile('public/app/core/preorder-timer.js', PREORDER_TIMER_JS);
+/* ═══════════════════════════════════════════════════════════
+   ЗАДАЧА 3: Патч preorder-timer.js
+   ═══════════════════════════════════════════════════════════ */
 
-  console.log('\nДобавление CSS для бейджа таймера...');
-  modifyFile('public/app/ui/theme-v2.css', patchThemeCss);
+function patchPreorderTimer(text) {
+  if (text.includes('CHECKOUT-UX-FIX v2')) return text;
 
-  console.log('\nПодключение в public/index.html...');
-  modifyFile('public/index.html', patchIndexHtml);
+  let result = text;
 
-  console.log('\nПатч public/app/cart.js (безопасная проверка слота)...');
+  const autoInjectRegex = /function autoInjectBadges\(\) \{[\s\S]*?\n  \}/;
+  const newAutoInjectCode = `function autoInjectBadges() {
+    /* CHECKOUT-UX-FIX v2: всеядный TreeWalker по слову "предзаказ" */
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    var targetNodes = [];
+    while (walker.nextNode()) {
+      var node = walker.currentNode;
+      if (node.nodeValue && /предзаказ/i.test(node.nodeValue)) {
+        targetNodes.push(node.parentElement);
+      }
+    }
+    targetNodes.forEach(function (el) {
+      if (!el || el.dataset.preorderTimerBound) return;
+      var card = el.closest('.orderCard, .order-card, .history-item, .card, .oc, [class*="order"]') || el.parentElement;
+      var txt = card ? (card.textContent || '') : (el.textContent || '');
+      
+      // Игнорируем архивные заказы и блок графика работы
+      if (/отмен|доставлен|выполнен|завершен/i.test(txt)) return;
+      if (/ежедневно|режим\\s+работы|работаем/i.test(txt)) return;
+
+      var slotMatch = txt.match(/(?:Сегодня|Завтра|\\d{1,2}\\.\\d{2})?[^0-9\\n]*\\d{1,2}:\\d{2}\\s*[–—\\-]\\s*\\d{1,2}:\\d{2}/i);
+      if (slotMatch) {
+        el.dataset.preorderTimerBound = '1';
+        var badge = document.createElement('div');
+        badge.innerHTML = createTimerBadge(slotMatch[0]);
+        if (badge.firstElementChild) {
+          el.parentNode.insertBefore(badge.firstElementChild, el.nextSibling);
+        }
+      }
+    });
+  }`;
+
+  if (autoInjectRegex.test(result)) {
+    result = result.replace(autoInjectRegex, newAutoInjectCode);
+  }
+
+  return result;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Стили для кнопки и меню «Мои адреса»
+   ═══════════════════════════════════════════════════════════ */
+
+const ADDR_BOOK_CSS = `
+/* ── CHECKOUT-UX-FIX v2: меню и кнопка «Мои адреса» ── */
+.addr-book-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.addr-book-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #EAF1F9;
+  border: 1.5px solid rgba(62, 143, 208, 0.3);
+  color: #123A6B;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addr-book-btn:active {
+  transform: scale(0.96);
+  background: #D6E4F0;
+}
+
+.addr-book-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 2000;
+  min-width: 250px;
+  max-width: 320px;
+  background: #FFFFFF;
+  border: 1.5px solid rgba(62, 143, 208, 0.25);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(18, 58, 107, 0.2);
+  padding: 4px;
+  animation: addr-menu-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes addr-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.addr-book-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #101418;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.addr-book-item:hover,
+.addr-book-item:active {
+  background: #EAF1F9;
+  color: #123A6B;
+}
+
+.addr-book-item + .addr-book-item {
+  margin-top: 2px;
+}
+`;
+
+function patchThemeCss(text) {
+  if (text.includes('CHECKOUT-UX-FIX v2')) return text;
+  return text.trimEnd() + `\n/* CHECKOUT-UX-FIX v2 */${ADDR_BOOK_CSS}`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN
+   ═══════════════════════════════════════════════════════════ */
+
+try {
+  console.log('Applying Checkout UX polish & universal preorder timer (v2)...\n');
+
+  modifyFile('public/app/core/address-autocomplete.js', patchAddressAutocomplete);
   modifyFile('public/app/cart.js', patchCartJs);
-
-  console.log('\nДобавление в STATIC_ASSETS...');
-  modifyFile('public/sw.js', patchSwAssets);
+  modifyFile('public/app/core/preorder-timer.js', patchPreorderTimer);
+  modifyFile('public/app/ui/theme-v2.css', patchThemeCss);
 
   if (changed.length > 0) {
     console.log('\nИнкремент STATIC_CACHE...');
@@ -502,7 +466,6 @@ try {
   process.exit(0);
 
 } catch (err) {
-  console.error('\n❌ Ошибка скрипта:');
-  console.error(err);
+  console.error('\n❌ Ошибка скрипта:', err);
   process.exit(1);
 }

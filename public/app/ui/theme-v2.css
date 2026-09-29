@@ -4596,3 +4596,75 @@ html.is-tg-app [id*="pwaInstall"] {
     animation: none;
   }
 }
+/* CHECKOUT-UX-FIX v2 */
+/* ── CHECKOUT-UX-FIX v2: меню и кнопка «Мои адреса» ── */
+.addr-book-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.addr-book-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #EAF1F9;
+  border: 1.5px solid rgba(62, 143, 208, 0.3);
+  color: #123A6B;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addr-book-btn:active {
+  transform: scale(0.96);
+  background: #D6E4F0;
+}
+
+.addr-book-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 2000;
+  min-width: 250px;
+  max-width: 320px;
+  background: #FFFFFF;
+  border: 1.5px solid rgba(62, 143, 208, 0.25);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(18, 58, 107, 0.2);
+  padding: 4px;
+  animation: addr-menu-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes addr-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.addr-book-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #101418;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.addr-book-item:hover,
+.addr-book-item:active {
+  background: #EAF1F9;
+  color: #123A6B;
+}
+
+.addr-book-item + .addr-book-item {
+  margin-top: 2px;
+}

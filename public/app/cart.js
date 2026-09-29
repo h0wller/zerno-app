@@ -42,10 +42,11 @@ if (cartLen && method === "delivery" && typeof deliveryInfo !== 'undefined' && d
         return zone.places && zone.places.includes(placeVal);
       });
       fee = z ? Number(z.fee) || 0 : 0;
-    /* ADDR-PATCH v5: fallback на локальный справочник (безопасный curPlace) */
-    if (!fee && window.AddressModule && typeof window.AddressModule.getFee === 'function') {
+    /* CHECKOUT-UX-FIX v2: безусловный override тарифа из справочника */
+    if (window.AddressModule && typeof window.AddressModule.getFee === 'function') {
       var curPlace = (typeof placeVal !== 'undefined' ? placeVal : (document.getElementById('checkoutPlace') ? document.getElementById('checkoutPlace').value : ''));
-      fee = Number(window.AddressModule.getFee(curPlace)) || 0;
+      var zoneFee = Number(window.AddressModule.getFee(curPlace));
+      if (zoneFee > 0) fee = zoneFee;
     }
     }
 
@@ -576,14 +577,26 @@ try {
           setTimeout(window.PreorderTimer.updateAll, 500);
         }
       } catch (e) {}
-      /* ADDR-PATCH v5: сохраняем адрес в профиль */
+      /* CHECKOUT-UX-FIX v2: сохраняем адреса в массив (до 3 уникальных) */
       try {
+        var cpEl = document.getElementById('checkoutPlace');
+        var csEl = document.getElementById('checkoutStreet');
+        var chEl = document.getElementById('checkoutHouse');
         var addrToSave = {
-          place: document.getElementById('checkoutPlace') ? document.getElementById('checkoutPlace').value : '',
-          street: document.getElementById('checkoutStreet') ? document.getElementById('checkoutStreet').value : '',
-          house: document.getElementById('checkoutHouse') ? document.getElementById('checkoutHouse').value : ''
+          place: cpEl ? cpEl.value : '',
+          street: csEl ? csEl.value : '',
+          house: chEl ? chEl.value : ''
         };
         if (addrToSave.place || addrToSave.street) {
+          var addrList = [];
+          try { addrList = JSON.parse(localStorage.getItem('zt_saved_addresses') || '[]'); } catch (e) {}
+          if (!Array.isArray(addrList)) addrList = [];
+          addrList = addrList.filter(function (a) {
+            return !(a.place === addrToSave.place && a.street === addrToSave.street && a.house === addrToSave.house);
+          });
+          addrList.unshift(addrToSave);
+          addrList = addrList.slice(0, 3);
+          localStorage.setItem('zt_saved_addresses', JSON.stringify(addrList));
           localStorage.setItem('zt_saved_address', JSON.stringify(addrToSave));
         }
       } catch (e) {}

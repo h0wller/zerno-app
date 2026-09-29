@@ -96,44 +96,33 @@
    *   - блоки без слова «заказ»
    */
   function autoInjectBadges() {
-    var cardSelectors = [
-      '.orderCard',
-      '.order-card',
-      '.history-item',
-      '#panel [class*="order"]',
-      '.oc',
-      '#panel .card'
-    ];
+    /* CHECKOUT-UX-FIX v2: всеядный TreeWalker по слову "предзаказ" */
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    var targetNodes = [];
+    while (walker.nextNode()) {
+      var node = walker.currentNode;
+      if (node.nodeValue && /предзаказ/i.test(node.nodeValue)) {
+        targetNodes.push(node.parentElement);
+      }
+    }
+    targetNodes.forEach(function (el) {
+      if (!el || el.dataset.preorderTimerBound) return;
+      var card = el.closest('.orderCard, .order-card, .history-item, .card, .oc, [class*="order"]') || el.parentElement;
+      var txt = card ? (card.textContent || '') : (el.textContent || '');
+      
+      // Игнорируем архивные заказы и блок графика работы
+      if (/отмен|доставлен|выполнен|завершен/i.test(txt)) return;
+      if (/ежедневно|режим\s+работы|работаем/i.test(txt)) return;
 
-    cardSelectors.forEach(function (sel) {
-      document.querySelectorAll(sel).forEach(function (card) {
-        // Уже есть бейдж — пропускаем
-        if (card.querySelector('.preorder-timer')) return;
-
-        var txt = card.textContent || '';
-
-        /* PREORDER-TIMER v5: игнорируем неактивные заказы */
-        if (/отмен|доставлен|выполнен|завершен/i.test(txt)) return;
-
-        /* PREORDER-TIMER v5: игнорируем инфо-карточки заведения и блоки без слова "заказ" */
-        if (/ежедневно|режим\s+работы|работаем/i.test(txt) || !/заказ/i.test(txt)) return;
-
-        // Ищем слот: опциональная дата + интервал времени
-        var slotMatch = txt.match(
-          /(?:Сегодня|Завтра|\d{1,2}[.\-\/]\d{1,2}(?:[.\-\/]\d{2,4})?)?[^0-9\n]*\d{1,2}:\d{2}\s*[–\-]\s*\d{1,2}:\d{2}/i
-        );
-
-        if (slotMatch) {
-          var badgeHtml = createTimerBadge(slotMatch[0]);
-          if (badgeHtml) {
-            var t = document.createElement('div');
-            t.innerHTML = badgeHtml;
-            if (t.firstElementChild) {
-              card.appendChild(t.firstElementChild);
-            }
-          }
+      var slotMatch = txt.match(/(?:Сегодня|Завтра|\d{1,2}\.\d{2})?[^0-9\n]*\d{1,2}:\d{2}\s*[–—\-]\s*\d{1,2}:\d{2}/i);
+      if (slotMatch) {
+        el.dataset.preorderTimerBound = '1';
+        var badge = document.createElement('div');
+        badge.innerHTML = createTimerBadge(slotMatch[0]);
+        if (badge.firstElementChild) {
+          el.parentNode.insertBefore(badge.firstElementChild, el.nextSibling);
         }
-      });
+      }
     });
   }
 
