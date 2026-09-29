@@ -25,6 +25,7 @@ function openPanel(tab) {
         var p = document.getElementById('panel');
         if (p) p.classList.add('open');
         if (typeof syncOverlay === 'function') syncOverlay();
+        if (window.TgUx) window.TgUx.sync(); /* TG-UX-PATCH panel */
     }
 }
 
@@ -34,6 +35,7 @@ function closePanel() {
         var p = document.getElementById('panel');
         if (p) p.classList.remove('open');
         if (typeof syncOverlay === 'function') syncOverlay();
+        if (window.TgUx) window.TgUx.sync(); /* TG-UX-PATCH panel */
     }
 }
 

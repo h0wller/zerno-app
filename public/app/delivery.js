@@ -240,6 +240,7 @@ const oi = selOpt ? parseInt(selOpt.dataset.oi, 10) : -1;
     /* Обратная связь: CSS-вспышка без смены текста → без reflow/CLS */
     if (typeof syncAddButtons === 'function') syncAddButtons();
     addBtn.classList.add('added');
+        if (window.TgUx) window.TgUx.haptic('medium'); /* TG-UX-PATCH add */
     setTimeout(() => addBtn.classList.remove('added'), 700);
     
     if (typeof updateCartFab === 'function') updateCartFab();

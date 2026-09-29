@@ -1,8 +1,47 @@
-/* public/app/core/overlay.js — Ф3.17: единый контроллер оверлея + тап по фону + сброс.
-Было fix-views.js: setInterval (овлей над шторкой), v66, v67. */
-(function(){
-'use strict';
-/* TG-UX-PATCH v1: Telegram BackButton / MainButton / HapticFeedback */
+#!/usr/bin/env node
+/**
+ * scripts/tg-native-ux.mjs
+ * Задача 1: нативный Telegram Mini App UX.
+ *
+ * Что делает:
+ * - инжектит Telegram UX controller в public/app/core/overlay.js;
+ * - связывает Telegram.WebApp.BackButton с #panel, #cartPanel, .modal.show;
+ * - прячет веб-кнопку "Назад", если показан нативный BackButton;
+ * - добавляет HapticFeedback:
+ *   - light: степперы +/-, категории доставки, переключение брендов;
+ *   - medium: успешное добавление в корзину / добавки;
+ *   - success: успешный checkout;
+ * - дублирует чекаут в Telegram.WebApp.MainButton;
+ * - создаёт бэкапы .bak-*;
+ * - CRLF-safe;
+ * - node --check для изменённых JS;
+ * - инкрементирует STATIC_CACHE в public/sw.js.
+ *
+ * Запуск:
+ *   node scripts/tg-native-ux.mjs
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '..');
+
+const stamp = new Date()
+  .toISOString()
+  .replace(/[:T]/g, '-')
+  .replace(/\..+$/, '');
+
+const changed = [];
+const warnings = [];
+
+/**
+ * Единый Telegram UX runtime.
+ * Вставляется в overlay.js, чтобы не трогать index.html.
+ */
+const TG_UX_CODE = `/* TG-UX-PATCH v1: Telegram BackButton / MainButton / HapticFeedback */
 (function () {
   if (window.TgUx) return;
 
@@ -297,85 +336,224 @@
       setTimeout(sync, 0);
     });
   }
-})();
+})();`;
 
-/* оверлей: поднимать над шторкой, когда открыта модалка; убирать залипший show */
-setInterval(function(){
-  var ov=document.getElementById('overlay');if(!ov)return;
-  var modalOpen=!!document.querySelector('.modal.show');
-  var panelOpen=document.getElementById('panel').classList.contains('open');
-  if(ov.classList.contains('show')&&!modalOpen&&!panelOpen)ov.classList.remove('show');
-  ov.classList.toggle('ov-high',modalOpen);
-},400);
-/* ══ v66: ЕДИНЫЙ контроллер оверлея (модалка 340 / корзина 120 / шторка 320) ══ */
-(function(){
-var css=document.createElement('style');
-css.textContent=
-'.modal{z-index:340!important}'+
-'#settingsModal,#ordersModal,#redeemPick{z-index:345!important}'+
-'#panel.open{z-index:320!important}'+
-'.cartPanel{z-index:120!important}';
-document.head.appendChild(css);
-var histPushed66=false;
-function state(){
-var modal=document.querySelector('.modal.show');
-var cart=document.getElementById('cartPanel');
-var panel=document.getElementById('panel');
-return {modal:modal,
-cartOpen:!!(cart&&cart.classList.contains('open')),
-panelOpen:!!(panel&&panel.classList.contains('open'))};
+function resolvePath(relPath) {
+  return path.join(root, relPath);
 }
-function apply(){
-var ov=document.getElementById('overlay');if(!ov)return;
-var s=state();
-var on=!!s.modal||s.cartOpen||s.panelOpen;
-ov.classList.toggle('show',on);
-ov.style.pointerEvents=on?'auto':'none';
-ov.style.zIndex=s.modal?330:(s.cartOpen?110:310);
-if(on&&!histPushed66){histPushed66=true;try{history.pushState({zerno:1},'');}catch(e){}}
-else if(!on&&histPushed66){histPushed66=false;try{history.back();}catch(e){}}
+
+function backupFile(absPath) {
+  if (!fs.existsSync(absPath)) return null;
+
+  let candidate = `${absPath}.bak-${stamp}`;
+  let i = 1;
+
+  while (fs.existsSync(candidate)) {
+    candidate = `${absPath}.bak-${stamp}-${i}`;
+    i += 1;
+  }
+
+  fs.copyFileSync(absPath, candidate);
+  return candidate;
 }
-window.syncOverlay=apply;
-var ov=document.getElementById('overlay');
-if(ov){var oldClick=ov.onclick;
-ov.onclick=function(e){
-var s=state();
-if(s.cartOpen&&!s.modal&&!s.panelOpen)document.getElementById('cartPanel').classList.remove('open');
-if(typeof oldClick==='function')oldClick.call(this,e);
-apply();
-};}
-new MutationObserver(apply).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
-apply();
-})();
-/* ══ v67: тап по фону закрывает только верхнюю модалку; сброс только в шестерёнке ══ */
-(function(){
-var ov=document.getElementById('overlay');
-if(ov){
-var prev=ov.onclick;
-var CLOSE={emModal:'closeEditor',authModal:'closeAuth',pinModal:'closePin',setPinModal:'closeSetPin',qrModal:'closeQRFull',promoModal:'closePromo',dashModal:'closeDash',staffChatModal:'closeStaffChat'};
-ov.onclick=function(e){
-var m=document.querySelector('.modal.show');
-if(m){
-if(m.id==='settingsModal'){m.classList.remove('show');}
-else{var fn=CLOSE[m.id];if(typeof window[fn]==='function')window[fn]();else m.classList.remove('show');}
-if(typeof window.syncOverlay==='function')window.syncOverlay();
-return;
+
+function readLf(absPath) {
+  const raw = fs.readFileSync(absPath, 'utf8');
+  const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+  const text = raw.replace(/\r\n/g, '\n');
+  return { text, eol };
 }
-if(typeof prev==='function')return prev.call(this,e);
-};
+
+function writeEol(absPath, text, eol) {
+  const out = eol === '\r\n' ? text.replace(/\n/g, '\r\n') : text;
+  fs.writeFileSync(absPath, out, 'utf8');
 }
-var rb=document.getElementById('resetBtn');
-if(rb){
-rb.style.display='none';
-rb.onclick=function(){
-if(!confirm('Выйти из профиля и очистить кэш на этом устройстве?\nШтаммы, заказы и подарки останутся на сервере.'))return;
-localStorage.clear();location.reload();
-};
+
+function checkSyntax(absPath) {
+  const res = spawnSync(process.execPath, ['--check', absPath], {
+    encoding: 'utf8',
+  });
+
+  if (res.status !== 0) {
+    throw new Error(
+      `node --check failed for ${absPath}\n${res.stderr || res.stdout || ''}`
+    );
+  }
 }
-var rg=document.getElementById('resetGo2');
-if(rg){
-var row=rg.closest('.set-row');
-if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти и очистить данные этого устройства';}
+
+function modifyJs(relPath, transformer) {
+  const absPath = resolvePath(relPath);
+
+  if (!fs.existsSync(absPath)) {
+    warnings.push(`Файл не найден: ${relPath}`);
+    return false;
+  }
+
+  const { text, eol } = readLf(absPath);
+  const out = transformer(text);
+
+  if (typeof out !== 'string' || out === text) {
+    return false;
+  }
+
+  const bak = backupFile(absPath);
+  writeEol(absPath, out, eol);
+
+  try {
+    checkSyntax(absPath);
+  } catch (err) {
+    if (bak) fs.copyFileSync(bak, absPath);
+    throw err;
+  }
+
+  changed.push(relPath);
+  console.log(`✔ Изменён: ${relPath}${bak ? ` (backup: ${path.basename(bak)})` : ''}`);
+  return true;
 }
-})();
-})();
+
+function patchOverlay(text) {
+  if (text.includes('TG-UX-PATCH v1')) return text;
+
+  const markers = [
+    "'use strict';",
+    '"use strict";'
+  ];
+
+  for (const marker of markers) {
+    const idx = text.indexOf(marker);
+    if (idx !== -1) {
+      const pos = idx + marker.length;
+      return `${text.slice(0, pos)}\n${TG_UX_CODE}\n${text.slice(pos)}`;
+    }
+  }
+
+  return `${TG_UX_CODE}\n${text}`;
+}
+
+function patchPanel(text) {
+  if (text.includes('TG-UX-PATCH panel')) return text;
+
+  let found = false;
+
+  const out = text.replace(
+    /([ \t]*)if \(typeof syncOverlay === 'function'\) syncOverlay\(\);/g,
+    (m, indent) => {
+      found = true;
+      return `${m}\n${indent}if (window.TgUx) window.TgUx.sync(); /* TG-UX-PATCH panel */`;
+    }
+  );
+
+  if (!found) {
+    warnings.push('public/app/core/panel.js: не найден вызов syncOverlay()');
+    return text;
+  }
+
+  return out;
+}
+
+function patchDelivery(text) {
+  if (text.includes('TG-UX-PATCH add')) return text;
+
+  let found = false;
+
+  const out = text.replace(
+    /addBtn\.classList\.add\((['"])added\1\)\s*;/,
+    (m) => {
+      found = true;
+      return `${m}\n        if (window.TgUx) window.TgUx.haptic('medium'); /* TG-UX-PATCH add */`;
+    }
+  );
+
+  if (!found) {
+    warnings.push('public/app/delivery.js: не найдено успешное добавление в корзину (addBtn.classList.add("added"))');
+    return text;
+  }
+
+  return out;
+}
+
+function patchCart(text) {
+  if (text.includes('TG-UX-PATCH checkout')) return text;
+
+  let found = false;
+
+  const out = text.replace(
+    /toast\(\s*(['"])Заказ #\1\s*\+\s*r\.order\.no\s*\+\s*(['"]) оформлен!\2\s*,\s*(['"])🎉\3\s*\)\s*;/u,
+    (m) => {
+      found = true;
+      return `${m}\n      if (window.TgUx) window.TgUx.success(); /* TG-UX-PATCH checkout */`;
+    }
+  );
+
+  if (!found) {
+    warnings.push('public/app/cart.js: не найден toast успешного заказа');
+    return text;
+  }
+
+  return out;
+}
+
+function patchSw(text) {
+  const re = /(STATIC_CACHE\s*=\s*['"])([^'"]+)(['"])/;
+  let found = false;
+
+  const out = text.replace(re, (m, pre, val, quote) => {
+    found = true;
+
+    let next;
+    if (/\d/.test(val)) {
+      next = val.replace(/(\d+)(?=[^\d]*$)/, (mm, num) => String(Number(num) + 1));
+    } else {
+      next = `${val}-2`;
+    }
+
+    console.log(`   STATIC_CACHE: ${val} -> ${next}`);
+    return `${pre}${next}${quote}`;
+  });
+
+  if (!found) {
+    warnings.push('public/sw.js: не найден STATIC_CACHE');
+    return text;
+  }
+
+  return out;
+}
+
+try {
+  console.log('Task 1: Telegram native UX patch...');
+
+  modifyJs('public/app/core/overlay.js', patchOverlay);
+  modifyJs('public/app/core/panel.js', patchPanel);
+  modifyJs('public/app/delivery.js', patchDelivery);
+  modifyJs('public/app/cart.js', patchCart);
+
+  if (changed.length > 0) {
+    modifyJs('public/sw.js', patchSw);
+  } else {
+    console.log('Изменений нет: патчи уже применены или паттерны не найдены.');
+  }
+
+  if (warnings.length) {
+    console.warn('\nПредупреждения:');
+    for (const w of warnings) {
+      console.warn(` - ${w}`);
+    }
+  }
+
+  if (warnings.some((w) => w.startsWith('Файл не найден:'))) {
+    console.error('\nКритично: не найдены обязательные файлы.');
+    process.exit(1);
+  }
+
+  console.log('\nГотово.');
+  if (changed.length) {
+    console.log('Изменённые файлы:');
+    for (const f of changed) {
+      console.log(` - ${f}`);
+    }
+  }
+} catch (err) {
+  console.error('\nОшибка скрипта:');
+  console.error(err);
+  process.exit(1);
+}

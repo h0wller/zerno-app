@@ -542,6 +542,7 @@ if (b.dataset.act === '+') it.qty++; else if (it.qty > 1) it.qty--; else cart.sp
 try {
         var r = await api("/orders", { method: "POST", body: body });
         toast("Заказ #" + r.order.no + " оформлен!", "🎉");
+      if (window.TgUx) window.TgUx.success(); /* TG-UX-PATCH checkout */
 
         // 1. Очищаем корзину in-place для всех модулей
         if (typeof cart !== 'undefined' && Array.isArray(cart)) cart.length = 0;
