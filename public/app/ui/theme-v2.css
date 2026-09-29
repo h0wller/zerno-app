@@ -3672,8 +3672,6 @@ body .wrap #deliveryRail button.on {
   }
 }
 
-
-
 /* ── Ф5.32: бейдж в створе рейл-кнопок (10…74px) ── */
 @media (max-width: 820px) {
   #mbonusBtn {
@@ -4035,11 +4033,9 @@ body .wrap #deliveryRail button.on {
   }
 }
 
-
-
 /* tg-auth-badge-redesign-v2 */
-.auth-badge-confirmed {
-  display: flex !important;
+html body .auth-badge-confirmed {
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -4060,20 +4056,20 @@ body .wrap #deliveryRail button.on {
 }
 
 /* Упрощённый вид формы внутри Telegram Mini App */
-#authModal.tg-mode #regTgBtn,
-#authModal.tg-mode .mhint {
-  display: none !important;
+html body #authModal.tg-mode #regTgBtn,
+html body #authModal.tg-mode .mhint {
+  display: none;
 }
 
-#authModal.tg-mode .frow:has(input[type="checkbox"]) {
-  display: none !important;
+html body #authModal.tg-mode .frow:has(input[type="checkbox"]) {
+  display: none;
 }
 
 @media (max-width: 375px) {
   #authModal .modal-body {
     padding: 16px 14px;
   }
-  #authModal input {
-    font-size: 16px !important; /* защита от авто-зума на iOS */
+  html body #authModal input {
+    font-size: 16px; /* защита от авто-зума на iOS */
   }
 }
