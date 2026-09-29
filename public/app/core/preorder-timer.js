@@ -1,30 +1,19 @@
-/* public/app/core/preorder-timer.js — Этап 2: таймер обратного отсчёта до слота доставки
-   PREORDER-TIMER v5 — фильтр инфо-карточек заведения и блоков без слова «заказ» */
+/* public/app/core/preorder-timer.js — Безопасный таймер предзаказов без циклов */
 (function () {
   'use strict';
 
   var UPDATE_INTERVAL = 30000;
   var timerId = null;
+  var isUpdating = false;
+  var debounceTimer = null;
 
-  /**
-   * Парсит строку слота. Поддерживает форматы:
-   *   "29.09 | 14:00–14:30"
-   *   "29.09.2026 | 14:00–14:30"
-   *   "Сегодня (29.09) · 13:00 – 13:30"
-   *   "Завтра (30.09) · 14:00 – 14:30"
-   *   "13:00 – 13:30" (только время)
-   */
   function parseSlot(slotStr) {
     if (!slotStr || slotStr === 'asap' || slotStr === 'Как можно скорее (~45 мин)') return null;
 
     var raw = String(slotStr).trim();
-
-    // Убираем префиксы «Сегодня»/«Завтра» со скобками с датой
     raw = raw.replace(/^(Сегодня|Завтра)\s*\(\s*([^)]+)\s*\)\s*[·•|.\-\s]+/i, '$2 | ');
-    // Префиксы без скобок
     raw = raw.replace(/^(Сегодня|Завтра)\s*[·•|.\-\s]+/i, '');
 
-    // Разделяем по «|» или «·»
     var parts = raw.split(/[|·•]/);
     var datePart = '';
     var timePart = '';
@@ -87,82 +76,78 @@
     return '~' + mins + ' мин';
   }
 
-  /**
-   * PREORDER-TIMER v5: АВТОПОИСК карточек с предзаказами прямо в DOM.
-   * Ищет по тексту карточки время в формате "14:00 – 14:30" / "14:00–14:30".
-   * Игнорирует:
-   *   - неактивные заказы (отменён, доставлен, выполнен, завершён)
-   *   - инфо-карточки заведения («Ежедневно 11:00–22:00», «Режим работы», «Работаем»)
-   *   - блоки без слова «заказ»
-   */
   function autoInjectBadges() {
-    /* CHECKOUT-UX-FIX v2: всеядный TreeWalker по слову "предзаказ" */
-    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-    var targetNodes = [];
-    while (walker.nextNode()) {
-      var node = walker.currentNode;
-      if (node.nodeValue && /предзаказ/i.test(node.nodeValue)) {
-        targetNodes.push(node.parentElement);
-      }
-    }
-    targetNodes.forEach(function (el) {
-      if (!el || el.dataset.preorderTimerBound) return;
-      var card = el.closest('.orderCard, .order-card, .history-item, .card, .oc, [class*="order"]') || el.parentElement;
-      var txt = card ? (card.textContent || '') : (el.textContent || '');
-      
-      // Игнорируем архивные заказы и блок графика работы
-      if (/отмен|доставлен|выполнен|завершен/i.test(txt)) return;
-      if (/ежедневно|режим\s+работы|работаем/i.test(txt)) return;
+    var containers = document.querySelectorAll('#myOrders, #panel, .modal');
+    if (!containers.length) return;
 
-      var slotMatch = txt.match(/(?:Сегодня|Завтра|\d{1,2}\.\d{2})?[^0-9\n]*\d{1,2}:\d{2}\s*[–—\-]\s*\d{1,2}:\d{2}/i);
-      if (slotMatch) {
-        el.dataset.preorderTimerBound = '1';
-        var badge = document.createElement('div');
-        badge.innerHTML = createTimerBadge(slotMatch[0]);
-        if (badge.firstElementChild) {
-          el.parentNode.insertBefore(badge.firstElementChild, el.nextSibling);
+    containers.forEach(function (cont) {
+      var cards = cont.querySelectorAll('.myorderCard, .orderCard, .order-card, .history-item, .card, .oc');
+      cards.forEach(function (card) {
+        if (card.querySelector('.preorder-timer')) return;
+
+        var txt = card.textContent || '';
+        if (/отмен|доставлен|выполнен|завершен/i.test(txt)) return;
+        if (/ежедневно|режим\s+работы|работаем/i.test(txt) || !/предзаказ/i.test(txt)) return;
+
+        var slotMatch = txt.match(/(?:Сегодня|Завтра|\d{1,2}\.\d{2})?[^0-9\n]*\d{1,2}:\d{2}\s*[–—\-]\s*\d{1,2}:\d{2}/i);
+        if (slotMatch) {
+          var badgeHtml = createTimerBadge(slotMatch[0]);
+          if (badgeHtml) {
+            var t = document.createElement('div');
+            t.innerHTML = badgeHtml;
+            if (t.firstElementChild) {
+              card.appendChild(t.firstElementChild);
+            }
+          }
         }
-      }
+      });
     });
   }
 
   function updateAllTimers() {
-    // Сначала автопоиск новых карточек (PREORDER-TIMER v5)
-    autoInjectBadges();
+    if (isUpdating) return;
+    isUpdating = true;
+    try {
+      autoInjectBadges();
 
-    var badges = document.querySelectorAll('.preorder-timer[data-slot]');
-    var now = Date.now();
+      var badges = document.querySelectorAll('.preorder-timer[data-slot]');
+      var now = Date.now();
 
-    badges.forEach(function (badge) {
-      var slotStr = badge.dataset.slot;
-      var parsed = parseSlot(slotStr);
-      if (!parsed) {
-        badge.hidden = true;
-        return;
-      }
-
-      var msToStart = parsed.start.getTime() - now;
-      var msToEnd = parsed.end.getTime() - now;
-
-      if (msToStart > 0) {
-        var remaining = formatRemaining(msToStart);
-        if (remaining) {
-          badge.hidden = false;
-          badge.textContent = '⏱ До доставки ' + remaining;
-          badge.classList.remove('preorder-timer-active', 'preorder-timer-way');
-          badge.classList.add('preorder-timer-waiting');
-        } else {
-          badge.hidden = true;
+      badges.forEach(function (badge) {
+        var slotStr = badge.dataset.slot;
+        var parsed = parseSlot(slotStr);
+        if (!parsed) {
+          if (!badge.hidden) badge.hidden = true;
+          return;
         }
-      } else if (msToEnd > 0) {
-        badge.hidden = false;
-        badge.textContent = '🚗 Курьер уже в пути';
-        badge.classList.remove('preorder-timer-waiting');
-        badge.classList.add('preorder-timer-active', 'preorder-timer-way');
-      } else {
-        badge.hidden = true;
-      }
-    });
+
+        var msToStart = parsed.start.getTime() - now;
+        var msToEnd = parsed.end.getTime() - now;
+
+        if (msToStart > 0) {
+          var remaining = formatRemaining(msToStart);
+          if (remaining) {
+            var newText = '⏱ До доставки ' + remaining;
+            if (badge.textContent !== newText) badge.textContent = newText;
+            if (badge.hidden) badge.hidden = false;
+            badge.classList.remove('preorder-timer-active', 'preorder-timer-way');
+            badge.classList.add('preorder-timer-waiting');
+          } else {
+            if (!badge.hidden) badge.hidden = true;
+          }
+        } else if (msToEnd > 0) {
+          var wayText = '🚗 Курьер уже в пути';
+          if (badge.textContent !== wayText) badge.textContent = wayText;
+          if (badge.hidden) badge.hidden = false;
+          badge.classList.remove('preorder-timer-waiting');
+          badge.classList.add('preorder-timer-active', 'preorder-timer-way');
+        } else {
+          if (!badge.hidden) badge.hidden = true;
+        }
+      });
+    } finally {
+      setTimeout(function () { isUpdating = false; }, 50);
+    }
   }
 
   function createTimerBadge(slotStr) {
@@ -177,42 +162,33 @@
   }
 
   function init() {
-    // Hook on profile click
-    document.addEventListener('click', function(e) {
-      if (e.target && e.target.closest && e.target.closest('#profileTopBtn, .ava, #mbonusBtn, [data-tab="profile"]')) {
-        setTimeout(updateAllTimers, 50);
-        setTimeout(updateAllTimers, 400);
-        setTimeout(updateAllTimers, 1200);
-      }
-    });
-    autoInjectBadges();
     updateAllTimers();
-
     timerId = setInterval(updateAllTimers, UPDATE_INTERVAL);
 
-    // MutationObserver следит за появлением новых карточек
+    document.addEventListener('click', function (e) {
+      if (e.target && e.target.closest && e.target.closest('#profileTopBtn, .ava, #mbonusBtn, [data-tab="profile"]')) {
+        setTimeout(updateAllTimers, 100);
+        setTimeout(updateAllTimers, 600);
+      }
+    });
+
     var observer = new MutationObserver(function (mutations) {
-      var needUpdate = false;
+      if (isUpdating) return;
+      var relevant = false;
       for (var i = 0; i < mutations.length; i++) {
-        var m = mutations[i];
-        if (m.target && (m.target.id === 'myOrders' || (m.target.closest && m.target.closest('#myOrders, #panel, .modal')))) {
-          needUpdate = true;
+        var t = mutations[i].target;
+        if (!t) continue;
+        if (t.classList && t.classList.contains('preorder-timer')) continue;
+        if (t.closest && t.closest('.preorder-timer')) continue;
+        if (t.id === 'myOrders' || (t.closest && t.closest('#myOrders, #panel, .modal'))) {
+          relevant = true;
           break;
         }
-        for (var j = 0; j < m.addedNodes.length; j++) {
-          var n = m.addedNodes[j];
-          if (n.nodeType === 1) {
-            if (n.id === 'myOrders' || /order/i.test(n.className || '') || (n.querySelector && n.querySelector('[class*="order" i], #myOrders'))) {
-              needUpdate = true;
-              break;
-            }
-          }
-        }
-        if (needUpdate) break;
       }
-      if (needUpdate) {
-        updateAllTimers();
-      }
+      if (!relevant) return;
+
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(updateAllTimers, 250);
     });
 
     if (document.body) {
