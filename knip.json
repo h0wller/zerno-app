@@ -1,0 +1,52 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+
+  "entry": [
+    "server.js",
+    "public/app/main.js",
+    "public/sw.js",
+
+    "public/app/core/ptr.js",
+    "public/app/core/address-dict.js",
+    "public/app/core/address-autocomplete.js",
+    "public/app/core/address-book.js",
+    "public/app/core/preorder-timer.js",
+
+    "test-api.mjs",
+    "tests/*.spec.js",
+    "scripts/contract-smoke.mjs",
+    "scripts/css-audit.mjs",
+    "scripts/fetch-streets.mjs",
+    "scripts/probe-tg-webhook.mjs",
+    "scripts/test-tg-suite.mjs",
+    "scripts/tg-native-ux.mjs"
+  ],
+
+  "project": [
+    "server/**/*.js",
+    "public/app/**/*.js",
+    "scripts/**/*.mjs",
+    "tests/**/*.js"
+  ],
+
+  "ignore": [
+    "public/app/vendor/**",
+    "public/app/ui/dropdowns.js",
+    "public/jsqr.js",
+    "public/qrcode.js",
+    "public/qrcode.min.js",
+    "public/debug.js",
+    "scripts/fix-*.mjs",
+    "scripts/move-*.mjs",
+    "fix_views.py"
+  ],
+
+  "ignoreDependencies": [
+    "@capacitor/*",
+    "ts-api-utils"
+  ],
+  "ignoreFiles": ["public/app/core/overlay.js"
+  ],
+
+  "ignoreExportsUsedInFile": true
+}

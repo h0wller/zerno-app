@@ -1,13 +1,14 @@
 name: Deploy to Timeweb
-
 on:
-  push:
-    branches:
-      - pizza
+  workflow_run:
+    workflows: ["CI"]
+    branches: [pizza]
+    types: [completed]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3

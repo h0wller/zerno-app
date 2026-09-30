@@ -1,6 +1,20 @@
 <!doctype html>
 <html lang="ru">
   <head>
+    <script>
+  // Безопасный глобальный контракт TgUx (защита от потери sync)
+  window.TgUx = window.TgUx || {};
+  window.TgUx.sync = window.TgUx.sync || function() {
+    try {
+      var hasModals = !!document.querySelector('.modal.show, #panel.open, #cartPanel.open, #chatPanel.open');
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (tg && tg.BackButton) {
+        if (hasModals) tg.BackButton.show();
+        else tg.BackButton.hide();
+      }
+    } catch(e) {}
+  };
+</script>
     <meta charset="UTF-8" />
 <script>/* PERF-P0 v5: preload LCP-логотипа доставки + потребление предзагрузки на DCL */
 (function(){var b='coffee';try{var q=(location.search.match(/[?&]brand=([^&]+)/)||[])[1];if(q==='delivery'||q==='coffee'){b=q;}else{var l=localStorage.getItem('zt_brand')||'';if(l==='delivery'||l==='coffee'){b=l;}}}catch(e){}

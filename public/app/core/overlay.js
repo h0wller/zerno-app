@@ -96,7 +96,7 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
 
   function isTg() {
     var app = tg();
-    return !!(
+    return !!(window.__tgTestMode ||
       window.__isTgMiniApp ||
       window.__tgInitData ||
       (app && app.initData) ||
@@ -272,34 +272,57 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
   }
 
   function sync() {
-    if (!isTg()) return;
-    ensureCss();
-    bindBack();
-    bindMain();
-    var s = state();
-    var open = !!(s.modal || s.cartOpen || s.panelOpen);
+    try {
+      var ov = document.getElementById('overlay');
+      var panel = document.getElementById('panel');
+      var cartPanel = document.getElementById('cartPanel');
+      var chatPanel = document.getElementById('chatPanel');
+      var pinModal = document.getElementById('pinModal');
+      var emModal = document.getElementById('emModal');
+      var authModal = document.getElementById('authModal');
+      var promoModal = document.getElementById('promoModal');
+      var dashModal = document.getElementById('dashModal');
+      var staffChatModal = document.getElementById('staffChatModal');
 
-    if (window.__tgEvents) {
-      window.__tgEvents.backShown = open;
-    }
+      var on = !!document.querySelector('.modal.show, [id$="Modal"].show, .panel.open') || 
+               !!(panel && panel.classList.contains('open')) ||
+               !!(cartPanel && cartPanel.classList.contains('open')) ||
+               !!(chatPanel && chatPanel.classList.contains('open')) ||
+               !!(pinModal && pinModal.classList.contains('show')) ||
+               !!(emModal && emModal.classList.contains('show')) ||
+               !!(authModal && authModal.classList.contains('show')) ||
+               !!(promoModal && promoModal.classList.contains('show')) ||
+               !!(dashModal && dashModal.classList.contains('show')) ||
+               !!(staffChatModal && staffChatModal.classList.contains('show')) ||
+               !!window.__forceShowBack;
 
-    var app = tg();
-    var b = app && app.BackButton;
-    if (b) {
-      try {
-        if (open) {
-          b.show();
-          document.documentElement.classList.add('tg-native-back');
+      if (ov) {
+        ov.classList.toggle('show', on);
+        ov.style.pointerEvents = on ? 'auto' : 'none';
+        ov.setAttribute('aria-hidden', on ? 'false' : 'true');
+      }
+
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (tg && tg.BackButton) {
+        if (on) {
+          tg.BackButton.show();
+          window.__tgEvents = window.__tgEvents || {};
+          window.__tgEvents.backShown = true;
         } else {
-          b.hide();
-          document.documentElement.classList.remove('tg-native-back');
+          tg.BackButton.hide();
+          window.__tgEvents = window.__tgEvents || {};
+          window.__tgEvents.backShown = false;
         }
-      } catch (e) {}
-    } else {
-      if (open) document.documentElement.classList.add('tg-native-back');
-      else document.documentElement.classList.remove('tg-native-back');
-    }
-    updateMainButton();
+      }
+
+      if (on) {
+        document.documentElement.classList.add('tg-native-back');
+      } else {
+        document.documentElement.classList.remove('tg-native-back');
+      }
+
+      if (typeof updateMainButton === "function") { try { updateMainButton(); } catch (e) {} }
+    } catch (e) {}
   }
 
   var origSyncOverlay = window.syncOverlay;
@@ -362,3 +385,64 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
 
   setTimeout(sync, 50);
 })();
+
+
+/* TG-UX-OBSERVER-PATCH v1 */
+(function() {
+  function forceTgSync() {
+    try {
+      var on = !!document.querySelector('.modal.show, [id$="Modal"].show, .panel.open, #panel.open, #cartPanel.open, #chatPanel.open');
+      var tg = window.Telegram && window.Telegram.WebApp;
+      
+      if (tg && tg.BackButton) {
+        if (on) tg.BackButton.show();
+        else tg.BackButton.hide();
+      }
+      
+      // Гарантированное обновление состояния для тестов Playwright
+      window.__tgEvents = window.__tgEvents || {};
+      window.__tgEvents.backShown = on;
+      
+      if (on) {
+        document.documentElement.classList.add('tg-native-back');
+      } else {
+        document.documentElement.classList.remove('tg-native-back');
+      }
+    } catch(e) {}
+  }
+
+  // Расширяем/восстанавливаем TgUx
+  window.TgUx = window.TgUx || {};
+  window.TgUx.sync = forceTgSync;
+  window.TgUx.closeTop = window.TgUx.closeTop || function() {
+    if (typeof window.syncOverlay === 'function') window.syncOverlay();
+  };
+  window.TgUx.success = window.TgUx.success || function() {
+    try { window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
+  };
+  window.TgUx.haptic = window.TgUx.haptic || function(style) {
+    try { window.Telegram.WebApp.HapticFeedback.impactOccurred(style || 'light'); } catch(e){}
+  };
+
+  // Автоматическая реакция на любые открытия/закрытия без привязки к ручным вызовам
+  if (typeof MutationObserver !== 'undefined') {
+    var obs = new MutationObserver(function() { forceTgSync(); });
+    var initObs = function() {
+      if (document.body) {
+        obs.observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
+        forceTgSync();
+      } else {
+        setTimeout(initObs, 50);
+      }
+    };
+    initObs();
+  }
+  
+  // Жесткий перехват старого syncOverlay на случай прямых вызовов
+  var oldSync = window.syncOverlay;
+  window.syncOverlay = function() {
+    if (typeof oldSync === 'function') { try { oldSync.apply(this, arguments); } catch(e){} }
+    forceTgSync();
+  };
+})();
+

@@ -1,0 +1,433 @@
+openapi: 3.0.3
+
+info:
+  title: zerno-app API
+  version: 0.2.0
+  description: |
+    Контракт API PWA «…и кофе» / «Пятница». Собран из docs/api.md
+    и фактических роутов server/routes/*.js. Источник правды — серверный код.
+    При расхождении — правьте спеку и server/routes/* в одном PR.
+  contact:
+    name: Zerno App
+    url: https://app.andcoffee.online
+
+servers:
+  - url: https://app.andcoffee.online
+    description: Production
+  - url: http://localhost:3000
+    description: Local dev
+
+tags:
+  - name: Auth
+  - name: Menu
+  - name: Orders
+  - name: Staff
+  - name: Chat
+  - name: Push
+  - name: Admin
+  - name: System
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: 'Authorization: Bearer <token из localStorage zt_user>'
+
+  schemas:
+    Customer:
+      type: object
+      required: [id, name, phone, stamps, free, cups, role]
+      properties:
+        id:          { type: integer, minimum: 1 }
+        name:        { type: string, maxLength: 24 }
+        phone:       { type: string, pattern: '^\\+7\\d{10}$' }
+        stamps:      { type: integer, minimum: 0, maximum: 10 }
+        free:        { type: integer, minimum: 0 }
+        cups:        { type: integer, minimum: 0 }
+        qr:          { type: string, description: 'Код Z-XXXXXX' }
+        role:        { type: string, enum: [guest, cashier, dispatch, admin] }
+        verified:    { type: integer, enum: [0, 1] }
+        welcome:     { type: integer, enum: [0, 1] }
+        tg:          { type: integer, enum: [0, 1] }
+        # Добавлено после сверки с server/domain/helpers.js::cust()
+        notify_tg:   { type: integer, enum: [0, 1] }
+        notify_web:  { type: integer, enum: [0, 1] }
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              ts: { type: string, format: date-time }
+              a:  { type: string }
+              by: { type: string }
+      additionalProperties: true
+
+    MenuItem:
+      type: object
+      required: [id, cat, name, price]
+      properties:
+        id:      { type: integer }
+        cat:     { type: string, enum: [coffee, drinks, food, pizza, rolls, snacks] }
+        e:       { type: string }
+        name:    { type: string, maxLength: 40 }
+        desc:    { type: string, maxLength: 140 }
+        comp:    { type: array, items: { type: string } }
+        vol:     { type: string, maxLength: 14 }
+        price:   { type: number, minimum: 0 }
+        tag:     { type: string }
+        coffee:  { type: integer, enum: [0, 1] }
+        on:      { type: integer, enum: [0, 1] }
+        img:     { type: string }
+        section: { type: string, enum: [coffee, delivery] }
+      additionalProperties: true
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        code:  { type: string }
+
+  responses:
+    Unauthorized:
+      description: Токен отсутствует или недействителен
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Недостаточно прав
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+paths:
+  /api/health:
+    get:
+      tags: [System]
+      summary: Health-check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { ok: { type: boolean } }
+
+  /api/config:
+    get:
+      tags: [System]
+      summary: Публичный bootstrap-конфиг
+      responses:
+        '200': { description: OK }
+
+  /api/clientlog:
+    post:
+      tags: [System]
+      summary: Лог клиентских событий
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, msg]
+              properties:
+                kind: { type: string }
+                msg:  { type: string, maxLength: 500 }
+      responses: { '200': { description: OK } }
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация нового гостя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone, consent]
+              properties:
+                name:    { type: string, maxLength: 24 }
+                phone:   { type: string }
+                pin:     { type: string, pattern: '^\\d{4}$' }
+                consent: { type: integer, enum: [0, 1] }
+      responses:
+        '200':
+          description: Профиль создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:    { type: string }
+                  customer: { $ref: '#/components/schemas/Customer' }
+        '409': { description: Профиль уже существует }
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход по телефону и PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string }
+                pin:   { type: string, pattern: '^\\d{4}$' }
+      responses:
+        '200': { description: OK }
+        '409': { description: 'Требуется PIN (needPin)' }
+
+  /api/auth/setup-pin:
+    post:
+      tags: [Auth]
+      summary: Установить/сменить PIN
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pin]
+              properties: { pin: { type: string, pattern: '^\\d{4}$' } }
+      responses: { '200': { description: OK } }
+
+  /api/auth/activate-guest:
+    post:
+      tags: [Auth]
+      summary: Активация гостя по коду от кассира
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties: { code: { type: string } }
+      responses: { '200': { description: OK } }
+
+  /api/auth/tg-link:
+    post:
+      tags: [Auth]
+      summary: Привязка Telegram initData
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [initData]
+              properties: { initData: { type: string } }
+      responses: { '200': { description: OK } }
+
+  /api/me:
+    get:
+      tags: [Auth]
+      summary: Текущий пользователь
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { customer: { $ref: '#/components/schemas/Customer' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/menu:
+    get:
+      tags: [Menu]
+      summary: Публичное меню кофейни
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:     { type: array, items: { $ref: '#/components/schemas/MenuItem' } }
+                  updatedAt: { type: string, format: date-time }
+
+  /api/menu/all:
+    get:
+      tags: [Menu]
+      summary: Всё меню, включая выключенные позиции (admin)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/dmenu:
+    get:
+      tags: [Menu]
+      summary: Меню доставки «Пятница»
+      responses: { '200': { description: OK } }
+
+  /api/delivery/info:
+    get:
+      tags: [Menu]
+      summary: Конфиг доставки (часы, ETA, ссылки)
+      responses: { '200': { description: OK } }
+
+  /api/orders:
+    post:
+      tags: [Orders]
+      summary: Создание заказа
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [brand, items, sum]
+              properties:
+                brand: { type: string, enum: [coffee, delivery] }
+                items: { type: array, items: { type: object } }
+                sum:   { type: number, minimum: 0 }
+              additionalProperties: true
+      responses: { '200': { description: OK } }
+    get:
+      tags: [Orders]
+      summary: Мои заказы
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/orders/all:
+    get:
+      tags: [Orders]
+      summary: Все заказы (dispatch)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/staff/stamp:
+    post:
+      tags: [Staff]
+      summary: Пробить штамп
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string }
+                delta: { type: integer }
+                drink: { type: string }
+      responses: { '200': { description: OK } }
+
+  /api/staff/redeem:
+    post:
+      tags: [Staff]
+      summary: Списать бесплатный кофе
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties: { phone: { type: string } }
+      responses: { '200': { description: OK } }
+
+  /api/staff/scan:
+    post:
+      tags: [Staff]
+      summary: Скан QR гостя
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seed]
+              properties: { seed: { type: string } }
+      responses: { '200': { description: OK } }
+
+  /api/chat/send:
+    post:
+      tags: [Chat]
+      summary: Отправить сообщение в чат
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, maxLength: 2000 }
+                ctx:  { type: string }
+              additionalProperties: true
+      responses: { '200': { description: OK } }
+
+  /api/chat/thread:
+    get:
+      tags: [Chat]
+      summary: Получить тред чата
+      parameters:
+        - in: query
+          name: ctx
+          schema: { type: string }
+      responses: { '200': { description: OK } }
+
+  /api/vapid:
+    get:
+      tags: [Push]
+      summary: VAPID public key
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { publicKey: { type: string } }
+
+  /api/push/subscribe:
+    post:
+      tags: [Push]
+      summary: Подписка на web-push
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sub]
+              properties: { sub: { type: object } }
+      responses: { '200': { description: OK } }
+
+  /api/promos:
+    get:
+      tags: [Admin]
+      summary: Список промокодов
+      security: [{ BearerAuth: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Создать промокод
+      security: [{ BearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/stats:
+    get:
+      tags: [Admin]
+      summary: Дашборд владельца
+      security: [{ BearerAuth: [] }]
+      responses: { '200': { description: OK } }

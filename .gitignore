@@ -119,3 +119,5 @@ docs/inline-core-dump.txt
 *.bak-*
 repomix-output.xml
 lh-cold-.json
+.env.example
+.env.example
