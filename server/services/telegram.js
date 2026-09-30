@@ -8,7 +8,7 @@ export const TG_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'and_coffee_
 export const TG_WEBHOOK_SECRET = process.env.TG_WEBHOOK_SECRET || '';
 const _normalizeUrl = (u) => String(u || '').replace(/\/+$/, '');
 export const PUBLIC_URL = _normalizeUrl(process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : ''));
-export const APP_URL = PUBLIC_URL || 'https://app.andcoffee.online';
+export const APP_URL = PUBLIC_URL || 'https://friday.andcoffee.online';
 
 export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
   const token = process.env.TEST_TOKEN || TG_TOKEN;

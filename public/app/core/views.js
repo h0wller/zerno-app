@@ -45,18 +45,6 @@ document.body.classList.add('support-pending');
 var ov0 = document.getElementById('supportChooseOverlay');
 if (ov0) { ov0.style.display = 'flex'; ov0.style.zIndex = '10002'; }
 }
-/* Ф3.56: safe-area фолбэк — если iOS standalone отдаёт inset 0 (баг env), ставим константу */
-(function () {
-  var probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;top:0;left:0;height:var(--sat, env(safe-area-inset-top,0px));visibility:hidden';
-  document.body.appendChild(probe);
-  var inset = probe.getBoundingClientRect().height;
-  probe.remove();
-  var standalone = (navigator.standalone === true) || matchMedia('(display-mode: standalone)').matches;
-  var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
-  var sat = inset > 0 ? inset : (standalone && ios ? 47 : 0);
-  document.documentElement.style.setProperty('--sat', sat + 'px');
-})();
 /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
 var css = document.createElement('style');
 var rules = [

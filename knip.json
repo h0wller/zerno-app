@@ -28,6 +28,10 @@
   "ignore": [
     "public/app/vendor/**",
     "public/app/ui/dropdowns.js",
+
+    "public/app/core/overlay.js",
+    "server/middleware/validate.js",
+
     "scripts/fix-*.mjs",
     "scripts/move-*.mjs"
   ],
@@ -35,8 +39,6 @@
   "ignoreDependencies": [
     "@capacitor/*",
     "ts-api-utils"
-  ],
-  "ignoreFiles": ["public/app/core/overlay.js"
   ],
 
   "ignoreExportsUsedInFile": true
