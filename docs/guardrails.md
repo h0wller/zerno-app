@@ -111,3 +111,36 @@ npx knip
 | 2 | OpenAPI-спецификация | без изменений |
 | 3 | validate.js + 3 auth-роута + e2e-прогон | без изменений |
 | 4 | quality-gates обязателен, `--max-warnings 0` | блокирующий |
+### Baseline (2026-10-01)
+
+| Инструмент | Факт | Стартовый порог | Целевой |
+|---|---|---|---|
+| jscpd strict | 2.64% (21 клон) | 3% (уже проходит) | 3% |
+| ESLint warnings | 48 | 60 | 0 |
+| ESLint errors | 0 | 0 | 0 |
+| Knip candidates | 1 (`validate.js`, до PR 3) | — | 0 |
+| depcruise violations | 0 | 0 | 0 |
+
+Известный технический долг (не блокирует CI, чинится в PR 2+):
+
+- **Cognitive Complexity > 25**:
+  - `views.js:332` — 77
+  - `delivery.js:150` — 91
+  - `cart.js:489` — 74
+  - `delivery.js:345` — 41
+  - `catalog.js:45` — 39
+  - `auth.js:241` — 31
+  - `chat-core.js:117` — 31
+  - `preorder-timer.js:51` — 44
+  - `delivery.js:96` — 30
+  - `overlay.js:274`, `deeplink.js:191`, `orders.js:26`, `profile.js:88` — 26
+
+- **Дубли строк/функций**:
+  - `ui/cashier-log.js:26` — identical to line 3
+  - `server/domain/loyalty.js:7` ↔ `server/routes/tg.js:46` — `stampBar` дублируется
+  - `public/app/address.js` — 8× дубль строки
+
+- **Orphan/unused**:
+  - `public/app/core/overlay.js` — не подключён к `main.js`, проверить статус
+  - `public/app/ui/dropdowns.js` — пустой файл, вероятно на удаление
+  - `server/middleware/validate.js` — подключится в PR 3

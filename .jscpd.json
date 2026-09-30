@@ -20,6 +20,8 @@
     "**/*.db",
     "**/*.db-shm",
     "**/*.db-wal",
+    "server/domain/address.js",
+    "public/app/address.js",
     "**/*.log",
     "logs/**",
     "tests/**",
