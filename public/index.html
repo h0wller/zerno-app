@@ -10,16 +10,19 @@ if(b!=='delivery')return;var l=document.createElement('link');l.rel='preload';l.
 window.__ztNoSW = /[?&]nosw=1/.test(location.search);
 </script>
 <script>(function () {
-  /* TG-OFFLOAD v3: SDK грузится ТОЛЬКО внутри Mini App; снаружи — stub, 0 запросов */
+  /* TG-OFFLOAD v4: надёжный детект Telegram Mini App */
   var q = location.search + location.hash;
   var inTg = false;
   try {
     inTg = /Telegram/i.test(navigator.userAgent) ||
-      /[?&#]tgWebApp(Data|Platform|Version|BotId)=/.test(q) ||
-      !!(window.TelegramWebAppProxy || window.TelegramGameProxy) ||
-      !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+      /[?&#]tgWebApp(Data|Platform|Version|BotId)=/i.test(q) ||
+      Boolean(window.TelegramWebviewProxy) ||
+      Boolean(window.TelegramGameProxy) ||
+      Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.webApp) ||
+      Boolean(window.Telegram && window.Telegram.WebApp && (window.Telegram.WebApp.initData || window.Telegram.WebApp.platform));
   } catch (e) { inTg = false; }
-  window.__isTgMiniApp = window.__isTgMiniApp || inTg;
+  window.__isTgMiniApp = inTg;
+
   function makeStub() {
     var noop = function () {};
     var btn = function () {
@@ -41,16 +44,26 @@ window.__ztNoSW = /[?&]nosw=1/.test(location.search);
       HapticFeedback: { impactOccurred: noop, notificationOccurred: noop, selectionChanged: noop }
     };
   }
+
   function installStub() {
     window.Telegram = window.Telegram || {};
     if (!window.Telegram.WebApp || window.Telegram.WebApp.isStub) {
       window.Telegram.WebApp = makeStub();
     }
   }
+
   if (inTg) {
     var s = document.createElement('script');
     s.src = 'https://telegram.org/js/telegram-web-app.js';
     s.async = false;
+    s.onload = function() {
+      try {
+        if (window.Telegram && window.Telegram.WebApp) {
+          window.Telegram.WebApp.ready();
+          window.Telegram.WebApp.expand();
+        }
+      } catch(err) {}
+    };
     s.onerror = installStub;
     document.head.appendChild(s);
   } else {

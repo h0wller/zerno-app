@@ -170,6 +170,7 @@ if(row){var sp=row.querySelector('span');if(sp)sp.textContent='🚪 Выйти �
   }
 
   function ensureCss() {
+    try { if (isTg()) { window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); } } catch(e){}
     if (document.getElementById('tgUxCss')) return;
     var st = document.createElement('style');
     st.id = 'tgUxCss';
