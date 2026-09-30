@@ -94,22 +94,18 @@ window.syncOverlay = syncOverlay;
   const TgUx = {
     closeTop: function() {
       try { TgUx.impact('light'); } catch (_) {}
-      // 1. Iserra dagiti modals
       const openModal = document.querySelector('.modal.show');
       if (openModal) {
         openModal.classList.remove('show');
       }
-      // 2. Iserra ti panel
       const panel = document.getElementById('panel');
       if (panel && panel.classList.contains('open')) {
         panel.classList.remove('open');
       }
-      // 3. Iserra ti cartPanel
       const cartPanel = document.getElementById('cartPanel');
       if (cartPanel && cartPanel.classList.contains('open')) {
         cartPanel.classList.remove('open');
       }
-      // 4. Iserra ti chatPanel
       const chatPanel = document.getElementById('chatPanel');
       if (chatPanel && chatPanel.classList.contains('open')) {
         chatPanel.classList.remove('open');
@@ -139,6 +135,22 @@ window.syncOverlay = syncOverlay;
     }
   };
 
+  /* TG-UX-HAPTIC-ALIAS v1: haptic() — публичный алиас impact().
+     Совместимость с panel.js/delivery.js/ptr.js, которые зовут TgUx.haptic('light'|'medium'). */
+  TgUx.haptic = function(style) {
+    try {
+      window.__tgEvents = window.__tgEvents || {};
+      if (!Array.isArray(window.__tgEvents.hapticCalls)) window.__tgEvents.hapticCalls = [];
+      window.__tgEvents.hapticCalls.push(style || 'light');
+    } catch (_) {}
+    TgUx.impact(style || 'light');
+  };
+
+  /* TG-UX-NOTIFY-ALIAS v1: notify(type) — алиас haptic для уведомлений. */
+  TgUx.notify = function(type) {
+    TgUx.haptic(type || 'success');
+  };
+
   TgUx.syncMainButton = function() {
       try {
         const tg = getTg();
@@ -153,7 +165,19 @@ window.syncOverlay = syncOverlay;
         }
       } catch (_) {}
     };
-    window.TgUx = TgUx;
+
+  /* TG-UX-SYNC-ALIAS v1: sync() — публичный метод.
+     panel.js зовёт window.TgUx.sync() после syncOverlay(); если метода нет — TypeError. */
+  TgUx.sync = function() {
+    try {
+      if (typeof window.syncOverlay === 'function') window.syncOverlay();
+    } catch (_) {}
+    try { TgUx.syncMainButton(); } catch (_) {}
+  };
+
+  TgUx.updateMainButton = TgUx.syncMainButton;
+
+  window.TgUx = TgUx;
 
   /* TG-HAPTIC-MAINBTN-PATCH v1 */
   try {
@@ -176,4 +200,21 @@ window.syncOverlay = syncOverlay;
       });
     }
   } catch (_) {}
+})();
+
+/* TG-UX-GATE v3: контракт window.TgUx.* выполняется всегда.
+   Дописывает noop ТОЛЬКО по отсутствующим методам; реальные не трогает.
+   Вне miniApp основной гейт отдаёт noop-API => фичи неактивны (требование сохранено). */
+(function () {
+  var NEED = ['haptic', 'success', 'notify', 'sync', 'updateMainButton', 'closeTop'];
+  function noop() {}
+  function ensure() {
+    window.TgUx = window.TgUx || {};
+    NEED.forEach(function (k) {
+      if (typeof window.TgUx[k] !== 'function') window.TgUx[k] = noop;
+    });
+  }
+  ensure();
+  document.addEventListener('DOMContentLoaded', ensure);
+  window.addEventListener('load', ensure);
 })();

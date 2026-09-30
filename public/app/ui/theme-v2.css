@@ -121,7 +121,7 @@ textarea{
     opacity: 1;
     transform: none;
   }
-}
+
 @media (hover: hover) and (pointer: fine){.card:hover{
     transform: translateY(-4px);
     box-shadow: 0 10px 28px rgba(18, 58, 107, 0.15);
