@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v222'; // ← поставь своё текущее значение +1
+const STATIC_CACHE = 'zerno-static-v223'; // ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
@@ -49,7 +49,7 @@ const STATIC_ASSETS = [
   '/app/ui/fonts/unbounded-700-latin.woff2',
 
   '/app/ui/theme-v2.min.css',
-  '/app/core/overlay.js',
+  '/app/core/overlay-core.js',
   '/app/core/swipe.js',
   '/app/core/notify.js',
   '/app/core/splash.js',

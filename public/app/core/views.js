@@ -602,40 +602,82 @@ setTimeout(ensure, 300); setTimeout(ensure, 1200); setTimeout(window.__syncHeade
 })();
 /* ========== Пуш-баббл «Включите пуши» ========== */
 (function () {
-function findPush() {
-    return document.getElementById('pushHint') ||
+  function findPush() {
+    return (
+      document.getElementById('pushHint') ||
       document.getElementById('pushBubble') ||
-      document.querySelector('.pushHint, .push-bubble, .pushBubble');
+      document.querySelector('.pushHint, .push-bubble, .pushBubble')
+    );
   }
-function pulsePushBtn(open) {
-var btn = pushBtnEl();
-if (!btn) return;
-var need = !!open && /Включить уведомления/.test(btn.textContent || '');
-if (need && !btn.classList.contains('pulse')) {
-btn.classList.remove('pulse');
-void btn.offsetWidth;
-btn.classList.add('pulse');
-} else if (!need) {
-btn.classList.remove('pulse');
-}
-}
-var panelEl = document.getElementById('panel');
-if (panelEl && typeof MutationObserver !== 'undefined') {
-new MutationObserver(refresh).observe(panelEl, {
-attributes: true,
-attributeFilter: ['class', 'hidden', 'style']
-});
-}
-document.addEventListener('click', function () { setTimeout(refresh, 0); });
-window.addEventListener('resize', place);
-if (document.readyState === 'loading') {
-document.addEventListener('DOMContentLoaded', refresh);
-} else {
-refresh();
-}
-setTimeout(refresh, 400);
-setTimeout(refresh, 1500);
-})();
+
+  function place() {
+    var b = findPush();
+    var av = document.getElementById('profileTopBtn');
+    if (!b || !av || b.style.display === 'none') return;
+    var r = av.getBoundingClientRect();
+    b.style.position = 'fixed';
+    b.style.top = r.bottom + 10 + 'px';
+    b.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+    b.style.left = 'auto';
+    b.style.margin = '0';
+    b.style.zIndex = '1200';
+  }
+
+  function refresh() {
+    var p = document.getElementById('panel');
+    var open = p && p.classList.contains('open');
+    var b = findPush();
+    if (b) {
+      b.style.display = open ? 'none' : '';
+      if (!open) place();
+    }
+    pulsePushBtn(open);
+  }
+
+  function pushBtnEl() {
+    var byId = document.getElementById('pushBtn');
+    if (byId) return byId;
+    var all = document.querySelectorAll('#profileBox button, .panel button');
+    for (var i = 0; i < all.length; i++) {
+      if (/Включить уведомления/.test(all[i].textContent || '')) return all[i];
+    }
+    return null;
+  }
+
+  function pulsePushBtn(open) {
+    var btn = pushBtnEl();
+    if (!btn) return;
+    var need = !!open && /Включить уведомления/.test(btn.textContent || '');
+    if (need && !btn.classList.contains('pulse')) {
+      btn.classList.remove('pulse');
+      void btn.offsetWidth;
+      btn.classList.add('pulse');
+    } else if (!need) {
+      btn.classList.remove('pulse');
+    }
+  }
+
+  var panelEl = document.getElementById('panel');
+  if (panelEl && typeof MutationObserver !== 'undefined') {
+    new MutationObserver(refresh).observe(panelEl, {
+      attributes: true,
+      attributeFilter: ['class', 'hidden', 'style'],
+    });
+  }
+
+  document.addEventListener('click', function () {
+    setTimeout(refresh, 0);
+  });
+  window.addEventListener('resize', place);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', refresh);
+  } else {
+    refresh();
+  }
+
+  setTimeout(refresh, 400);
+  setTimeout(refresh, 1500);
 })();
 /* ── Ф3.49: кнопка authPrompt через делегирование (переживает перерендеры) ── */
 document.addEventListener('click', function (e) {
@@ -685,4 +727,5 @@ if (typeof window.__fitSearch === 'function') {
     window.__fitSearch();
   }
 }
+})();
 })();
