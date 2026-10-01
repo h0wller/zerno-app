@@ -164,13 +164,13 @@
   }
 
   function init() {
-    var hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    if (!hasTouch) return;
-
-    document.addEventListener('touchstart', onTouchStart, { passive: true });
-    document.addEventListener('touchmove', onTouchMove, { passive: false });
-    document.addEventListener('touchend', onTouchEnd, { passive: true });
-  }
+  var hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if (!hasTouch) return;
+  document.addEventListener('touchstart', onTouchStart, { passive: true });
+  // Заменить { passive: false } на { passive: true }
+  document.addEventListener('touchmove', onTouchMove, { passive: true });
+  document.addEventListener('touchend', onTouchEnd, { passive: true });
+}
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

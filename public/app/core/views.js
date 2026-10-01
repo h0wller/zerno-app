@@ -600,15 +600,9 @@ setTimeout(ensure, 300); setTimeout(ensure, 1200); setTimeout(window.__syncHeade
 /* ========== Пуш-баббл «Включите пуши» ========== */
 (function () {
 function findPush() {
-var el = document.getElementById('pushHint') || document.getElementById('pushBubble') ||
-document.querySelector('.pushHint, .push-bubble, .pushBubble');
-if (el) return el;
-var all = document.querySelectorAll('body *');
-for (var i = 0; i < all.length; i++) {
-var t = (all[i].textContent || '');
-if (t.indexOf('Включите пуши') > -1 && t.length < 40 && all[i].children.length <= 2) return all[i];
-}
-return null;
+  return document.getElementById('pushHint') || 
+         document.getElementById('pushBubble') || 
+         document.querySelector('.pushHint, .push-bubble, .pushBubble');
 }
 function place() {
 var b = findPush();

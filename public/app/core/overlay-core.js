@@ -18,37 +18,29 @@ function syncOverlay() {
 
   ov.classList.toggle("show", on);
 
-  /* TG-BACKBUTTON-PATCH v2: показываем нативную кнопку «Назад» только в Mini App */
+  const isMiniApp = window.TgUx && typeof window.TgUx.isTg === "function" ? window.TgUx.isTg() : false;
+
+  // Нативная кнопка Telegram — строго внутри Mini App
   try {
     const tg = window.Telegram && window.Telegram.WebApp;
-    const isMiniApp =
-      window.TgUx && typeof window.TgUx.isTg === "function"
-        ? window.TgUx.isTg()
-        : false;
     if (tg && tg.BackButton && isMiniApp) {
-      if (on) {
-        tg.BackButton.show();
-        document.documentElement.classList.add("tg-native-back");
-      } else {
-        tg.BackButton.hide();
-        document.documentElement.classList.remove("tg-native-back");
-      }
+      if (on) tg.BackButton.show();
+      else tg.BackButton.hide();
     }
   } catch (_) {}
 
   ov.style.pointerEvents = on ? "auto" : "none";
   ov.setAttribute("aria-hidden", on ? "false" : "true");
 
-  if (on && !histPushed) {
-    histPushed = true;
-    try {
-      history.pushState({ zerno: 1 }, "");
-    } catch (e) {}
-  } else if (!on && histPushed) {
-    histPushed = false;
-    try {
-      history.back();
-    } catch (e) {}
+  // Манипулируем history только внутри Telegram, чтобы не ломать Safari / PWA
+  if (isMiniApp) {
+    if (on && !histPushed) {
+      histPushed = true;
+      try { history.pushState({ zerno: 1 }, ""); } catch (e) {}
+    } else if (!on && histPushed) {
+      histPushed = false;
+      try { history.back(); } catch (e) {}
+    }
   }
 }
 
@@ -142,16 +134,15 @@ window.syncOverlay = syncOverlay;
       } catch (_) {}
     }
 
-    if (!document.getElementById("tgUxNativeCss")) {
-      const st = document.createElement("style");
-      st.id = "tgUxNativeCss";
-      st.textContent = `
-        html.tg-native-main #checkoutBtn { display: none !important; }
-        html.tg-native-back .tabs .btn-back,
-        html.tg-native-back .btn-back { display: none !important; }
-      `;
-      document.head.appendChild(st);
-    }
+    // Замените блок инъекции стилей:
+if (!document.getElementById("tgUxNativeCss")) {
+  const st = document.createElement("style");
+  st.id = "tgUxNativeCss";
+  st.textContent = `
+    html.tg-native-main #checkoutBtn { display: none !important; }
+  `;
+  document.head.appendChild(st);
+}
   }
 
   // Корректная тактильная отдача: разделение impactOccurred и notificationOccurred

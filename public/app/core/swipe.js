@@ -18,12 +18,34 @@ var sx=0,sy=0,dx=0,dy=0,axis=null,tracking=false,active=false,lastX=0,lastT=0,ve
 function setT(x){p.style.setProperty('transform','translateX('+x+'px)','important');}
 function setOv(op){if(ov){ov.style.transition='none';ov.style.opacity=String(op);}}
 function cleanup(){p.style.removeProperty('transform');p.style.transition='';if(ov){ov.style.transition='';ov.style.opacity='';}}
-p.addEventListener('touchstart',function(e){
-if(window.innerWidth>1180||!p.classList.contains('open'))return;
-if(e.touches.length!==1)return;
-var t=e.touches[0];sx=t.clientX;sy=t.clientY;lastX=sx;lastT=Date.now();
-dx=0;dy=0;axis=null;active=false;tracking=true;vel=0;
-},{passive:true});
+var cachedWidth = 0;
+
+p.addEventListener('touchstart', function(e) {
+  if (window.innerWidth > 1180 || !p.classList.contains('open')) return;
+  if (e.touches.length !== 1) return;
+  cachedWidth = p.offsetWidth || innerWidth; // Кэшируем ширину 1 раз
+  var t = e.touches[0]; sx = t.clientX; sy = t.clientY; lastX = sx; lastT = Date.now();
+  dx = 0; dy = 0; axis = null; active = false; tracking = true; vel = 0;
+}, { passive: true });
+
+p.addEventListener('touchmove', function(e) {
+  if (!tracking) return;
+  var t = e.touches[0]; dx = t.clientX - sx; dy = t.clientY - sy;
+  if (!axis) {
+    if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+    axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    if (axis === 'y') { tracking = false; return; }
+    active = true; p.style.transition = 'none';
+  }
+  if (!active) return;
+  if (dx < 0) dx = 0;
+  if (dx > cachedWidth) dx = cachedWidth;
+  setT(dx);
+  setOv(1 - dx / cachedWidth);
+  var now = Date.now(), dt = now - lastT;
+  if (dt > 0) vel = 0.8 * vel + 0.2 * ((t.clientX - lastX) / dt);
+  lastX = t.clientX; lastT = now;
+}, { passive: true });
 p.addEventListener('touchmove',function(e){
 if(!tracking)return;
 var t=e.touches[0];dx=t.clientX-sx;dy=t.clientY-sy;
@@ -65,14 +87,16 @@ setTimeout(cleanup,330);
 }
 },{passive:true});
 /* одноразовая подсказка «свайп есть» */
-function hint(){
-if(window.innerWidth>1180)return;
-if(sessionStorage.getItem('zt_swipehint'))return;
-sessionStorage.setItem('zt_swipehint','1');
-p.classList.add('swipe-hint');
-var c=document.createElement('div');c.className='swipeHintChip';c.textContent='← свайп закроет профиль';
-document.body.appendChild(c);
-setTimeout(function(){c.remove();},1700);
+function hint() {
+  if (window.innerWidth > 1180) return;
+  if (sessionStorage.getItem('zt_swipehint')) return;
+  sessionStorage.setItem('zt_swipehint', '1');
+  p.classList.add('swipe-hint');
+  var c = document.createElement('div');
+  c.className = 'swipeHintChip';
+  c.textContent = '→ свайп вправо закроет профиль';
+  document.body.appendChild(c);
+  setTimeout(function() { c.remove(); }, 1700);
 p.addEventListener('animationend',function h(){p.classList.remove('swipe-hint');p.removeEventListener('animationend',h);});
 }
 new MutationObserver(function(){if(p.classList.contains('open'))setTimeout(hint,350);})
