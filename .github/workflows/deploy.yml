@@ -4,12 +4,17 @@ on:
     workflows: ["CI"]
     branches: [pizza]
     types: [completed]
+  workflow_dispatch: # <-- Добавлено для ручного запуска с телефона
+
+permissions:
+  actions: read # <-- Обязательно для workflow_run
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Проверяем, что CI именно успешен
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Проверяем, что CI именно успешен (для ручного запуска condition пропускается)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -17,15 +22,13 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          # Важно: останавливаем скрипт при любой ошибке
           script_stop: true 
           script: |
             cd /var/www/app
-            # Жестко переходим на коммит, который прошел CI
             git fetch origin
-            git reset --hard ${{ github.event.workflow_run.head_sha }}
+            # Если ручной запуск - берем последний коммит из pizza
+            # Если автоматический - берем SHA, который прошел CI
+            git reset --hard ${{ github.event_name == 'workflow_dispatch' && 'origin/pizza' || github.event.workflow_run.head_sha }}
             npm ci --omit=dev
-            # Исправленная команда PM2 (без name: CI)
             pm2 reload zerno-app
-            # Проверяем, что процесс жив
             pm2 status zerno-app
