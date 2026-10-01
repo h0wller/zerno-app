@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-collapsible-if */
 /* public/app/core/promo.js — Ф5.7: кластер "promo" из legacy-core.js (вербатим, порядок сохранён). Top-level = global. */
 /* ── промокоды ── */
       $("#promoBtn").onclick = async () => {

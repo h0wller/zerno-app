@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-identical-functions */
 /* Ф3.4: перенесено из fix-views.js (журнал кассира) */
 (function(){
   function filterCashLog(){
@@ -9,7 +8,7 @@
     });
   }
   
-  setMode=(function(_sm){return function(_m){var r=_sm.apply(this,arguments);
+  setMode=(function(_sm){return function(m){var r=_sm.apply(this,arguments);
     setTimeout(function(){
       var cl=document.getElementById('cashLog');
       if(cl){var card=cl.closest('.cash-card');if(card)card.style.display='';filterCashLog();}
@@ -23,7 +22,6 @@
     var cl=document.getElementById('cashLog');if(!cl)return;
     var card=cl.closest('.cash-card');
     if(card&&card.style.display==='none')card.style.display='';
-   
   }
   function filterCashRows(){
     document.querySelectorAll('#cashLog .logrow').forEach(function(r){

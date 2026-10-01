@@ -93,7 +93,7 @@
     var btn = document.createElement('button');
     btn.type = 'button'; btn.id = 'addrBookBtn';
     btn.className = 'btn ghost addr-book-btn'; /* ADDR-BTN-NATIVE v1 */ btn.textContent = '📍 Мои адреса';
-    btn.addEventListener('click', function(_e) { e.stopPropagation(); openSheet(); });
+    btn.addEventListener('click', function (e) { e.stopPropagation(); openSheet(); });
     var label = place.closest('label') || place.parentElement;
     var parent = (label && label.parentElement) || place.parentElement;
     if (parent) parent.insertBefore(btn, label || place);
@@ -123,7 +123,7 @@
       '<button type="button" class="abs-add" data-abs="add">＋ Сохранить текущий адрес</button>';
     document.body.appendChild(sheet);
 
-    sheet.addEventListener('click', function(_e) {
+    sheet.addEventListener('click', function (e) {
       var act = e.target.closest ? e.target.closest('[data-abs]') : null;
       if (!act) {
         var row = e.target.closest ? e.target.closest('.abs-row') : null;
@@ -148,18 +148,18 @@
     });
 
     /* v3: автоподстановки при вводе населённого пункта в форме редактирования */
-    sheet.addEventListener('input', function (_e) {
+    sheet.addEventListener('input', function (e) {
       if (e.target && e.target.getAttribute && e.target.getAttribute('data-abs-f') === 'place') syncPlace();
     });
 
     /* v3: клик вне — detachment-safe (closest работает по отцепленной цепочке родителей) */
-    document.addEventListener('click', function(_e) {
+    document.addEventListener('click', function (e) {
       if (!sheet || sheet.hidden) return;
       var t = e.target;
       if (t && t.closest && t.closest('#addrBookSheet, #addrBookBtn')) return;
       closeSheet();
     });
-    document.addEventListener('keydown', function (_e) {
+    document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && sheet && !sheet.hidden) closeSheet();
     });
     return sheet;
@@ -244,7 +244,7 @@
   function init() {
     ensureButton();
     /* кнопка переживает перерендер корзины — восстанавливаем по открытию шторки */
-    document.addEventListener('click', function(_e) {
+    document.addEventListener('click', function (e) {
       if (e.target.closest && e.target.closest('#cartFab')) setTimeout(ensureButton, 50);
     }, true);
   }

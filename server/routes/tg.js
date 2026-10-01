@@ -403,7 +403,7 @@ export function createTgRouter({ appKb }) {
       if (pend && Date.now() < pend.expires) {
         const contactPhone = fmtPhone(u.message.contact.phone_number);
         if (contactPhone === fmtPhone(pend.phone)) {
-          const targetCust = db.prepare('SELECT * FROM customers WHERE phone=?').get(contactPhone);
+          let targetCust = db.prepare('SELECT * FROM customers WHERE phone=?').get(contactPhone);
           if (targetCust) {
             db.prepare('UPDATE customers SET tg=?, verified=1 WHERE id=?').run(chatId, targetCust.id);
             if (!targetCust.welcome) grantWelcome(targetCust.id, 'Telegram');

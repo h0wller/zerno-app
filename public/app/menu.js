@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-nested-template-literals */
 /* public/app/menu.js — F2.6a: гостевое меню — рейл, поиск, сетка, редактор-зум.
    Без IIFE: fix-views.js оборачивает window.renderMenu(499) и window.renderRail(502),
    читает CATS лексически (406). Все объявления — top-level var/function. */

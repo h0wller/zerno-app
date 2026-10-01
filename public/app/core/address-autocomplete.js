@@ -45,7 +45,7 @@
     positionDropdown(input);
 
     dropdown.querySelectorAll('.addr-item').forEach(function (btn) {
-      btn.addEventListener('mousedown', function (_e) {
+      btn.addEventListener('mousedown', function (e) {
         e.preventDefault();
         var idx = parseInt(btn.dataset.idx, 10);
         selectItem(input, items[idx]);
@@ -144,7 +144,7 @@
       }
     });
 
-    input.addEventListener('keydown', function (_e) {
+    input.addEventListener('keydown', function (e) {
       if (!items.length) return;
       if (e.key === 'ArrowDown') {
         e.preventDefault();
