@@ -422,7 +422,10 @@ if (typeof applyBrandChrome === 'function') {
   window.applyBrandChrome();
 }
 }
-window.syncBrandViews = sv;
+window.syncBrandViews = function() {
+        sv();
+        if (typeof window.alignRailWithCard === 'function') window.alignRailWithCard();
+      };
 /* ── Ф3.57: снятие инлайн-стилей, которые admin-extra ставит на логотип.
    !important перебивает aspect-ratio:1/1 и width:100%, которые admin-extra 
    навешивает на <img> при каждой смене бренда. MutationObserver ловит 
@@ -600,41 +603,10 @@ setTimeout(ensure, 300); setTimeout(ensure, 1200); setTimeout(window.__syncHeade
 /* ========== Пуш-баббл «Включите пуши» ========== */
 (function () {
 function findPush() {
-  return document.getElementById('pushHint') || 
-         document.getElementById('pushBubble') || 
-         document.querySelector('.pushHint, .push-bubble, .pushBubble');
-}
-function place() {
-var b = findPush();
-var av = document.getElementById('profileTopBtn');
-if (!b || !av || b.style.display === 'none') return;
-var r = av.getBoundingClientRect();
-b.style.position = 'fixed';
-b.style.top = (r.bottom + 10) + 'px';
-b.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
-b.style.left = 'auto';
-b.style.margin = '0';
-b.style.zIndex = '1200';
-}
-function refresh() {
-var p = document.getElementById('panel');
-var open = p && p.classList.contains('open');
-var b = findPush();
-if (b) {
-b.style.display = open ? 'none' : '';
-if (!open) place();
-}
-pulsePushBtn(open);
-}
-function pushBtnEl() {
-var byId = document.getElementById('pushBtn');
-if (byId) return byId;
-var all = document.querySelectorAll('#profileBox button, .panel button');
-for (var i = 0; i < all.length; i++) {
-if (/Включить уведомления/.test(all[i].textContent || '')) return all[i];
-}
-return null;
-}
+    return document.getElementById('pushHint') ||
+      document.getElementById('pushBubble') ||
+      document.querySelector('.pushHint, .push-bubble, .pushBubble');
+  }
 function pulsePushBtn(open) {
 var btn = pushBtnEl();
 if (!btn) return;

@@ -1,3 +1,22 @@
+
+function getKaliningradHour() {
+  try {
+    var str = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Europe/Kaliningrad',
+      hour: 'numeric',
+      hour12: false
+    }).format(new Date());
+    return parseInt(str, 10);
+  } catch (e) {
+    var now = new Date();
+    return (now.getUTCHours() + 2) % 24;
+  }
+}
+function isDeliveryServiceOpen() {
+  var h = getKaliningradHour();
+  return h >= 11 && h < 22;
+}
+
 /* public/app/delivery.js — F2.5: доставка — state, рендер меню и корзины. */
 
 window.DMENU = [];

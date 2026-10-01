@@ -57,7 +57,7 @@ active=true;p.style.transition='none';
 }
 if(!active)return;
 if(dx<0)dx=0;
-var w=W();if(dx>w)dx=w;
+var w=cachedW||W();if(dx>w)dx=w;
 setT(dx);
 setOv(1-dx/w);                          // подложка гаснет за пальцем
 var now=Date.now(),dt=now-lastT;

@@ -1,4 +1,4 @@
-/* public/app/core/overlay-core.js — Ф5.7: кластер "overlay-core" из legacy-core.js (вербатим, порядок сохранён). Top-level = global. */
+/* public/app/core/overlay-core.js — Ф5.7: кластер "overlay-core" из legacy-core.js. Top-level = global. */
 let histPushed = false;
 
 function syncOverlay() {
@@ -18,28 +18,39 @@ function syncOverlay() {
 
   ov.classList.toggle("show", on);
 
-  const isMiniApp = window.TgUx && typeof window.TgUx.isTg === "function" ? window.TgUx.isTg() : false;
+  const isMiniApp =
+    window.TgUx && typeof window.TgUx.isTg === "function"
+      ? window.TgUx.isTg()
+      : false;
 
-  // Нативная кнопка Telegram — строго внутри Mini App
   try {
     const tg = window.Telegram && window.Telegram.WebApp;
     if (tg && tg.BackButton && isMiniApp) {
-      if (on) tg.BackButton.show();
-      else tg.BackButton.hide();
+      if (on) {
+        tg.BackButton.show();
+        document.documentElement.classList.add("tg-native-back");
+      } else {
+        tg.BackButton.hide();
+        document.documentElement.classList.remove("tg-native-back");
+      }
     }
   } catch (_) {}
 
   ov.style.pointerEvents = on ? "auto" : "none";
   ov.setAttribute("aria-hidden", on ? "false" : "true");
 
-  // Манипулируем history только внутри Telegram, чтобы не ломать Safari / PWA
+  // Управление history pushState/back вызывается ТОЛЬКО внутри Telegram Mini App
   if (isMiniApp) {
     if (on && !histPushed) {
       histPushed = true;
-      try { history.pushState({ zerno: 1 }, ""); } catch (e) {}
+      try {
+        history.pushState({ zerno: 1 }, "");
+      } catch (e) {}
     } else if (!on && histPushed) {
       histPushed = false;
-      try { history.back(); } catch (e) {}
+      try {
+        history.back();
+      } catch (e) {}
     }
   }
 }
@@ -97,7 +108,6 @@ $("#brandSeg").addEventListener("click", (e) => {
   if (brand === "delivery" && !DMENU.length) loadDelivery();
 });
 
-/* ── Ф5.6.2h: ESM-шим (на случай чтения до инъекта overlay.js) ── */
 window.syncOverlay = syncOverlay;
 
 /* TG-UX-OBJECT-PATCH v2 */
@@ -108,7 +118,6 @@ window.syncOverlay = syncOverlay;
       window.Telegram.WebApp) ||
     null;
 
-  // Строгий детектор Telegram Mini App
   function isTg() {
     if (window.__isTgMiniApp) return true;
     const tg = getTg();
@@ -123,7 +132,6 @@ window.syncOverlay = syncOverlay;
     );
   }
 
-  // Инъекция стилей скрытия стандартной кнопки корзины и регистрация WebApp
   function ensureTgEnvironment() {
     if (!isTg()) return;
     const tg = getTg();
@@ -134,18 +142,16 @@ window.syncOverlay = syncOverlay;
       } catch (_) {}
     }
 
-    // Замените блок инъекции стилей:
-if (!document.getElementById("tgUxNativeCss")) {
-  const st = document.createElement("style");
-  st.id = "tgUxNativeCss";
-  st.textContent = `
-    html.tg-native-main #checkoutBtn { display: none !important; }
-  `;
-  document.head.appendChild(st);
-}
+    if (!document.getElementById("tgUxNativeCss")) {
+      const st = document.createElement("style");
+      st.id = "tgUxNativeCss";
+      st.textContent = `
+        html.tg-native-main #checkoutBtn { display: none !important; }
+      `;
+      document.head.appendChild(st);
+    }
   }
 
-  // Корректная тактильная отдача: разделение impactOccurred и notificationOccurred
   function haptic(style = "light") {
     if (!isTg()) return;
 
@@ -173,7 +179,6 @@ if (!document.getElementById("tgUxNativeCss")) {
     } catch (_) {}
   }
 
-  // Расчет актуального состояния корзины
   function getCartSummary() {
     const list =
       typeof window.cart !== "undefined" && Array.isArray(window.cart)
@@ -203,7 +208,6 @@ if (!document.getElementById("tgUxNativeCss")) {
     return { count, total };
   }
 
-  // Обновление состояния кнопки MainButton
   function updateMainButton() {
     if (!isTg()) {
       document.documentElement.classList.remove("tg-native-main");
@@ -247,7 +251,6 @@ if (!document.getElementById("tgUxNativeCss")) {
     }
   }
 
-  // Закрытие активных модальных окон и панелей
   function closeTop() {
     haptic("light");
     const openModal = document.querySelector(".modal.show");
@@ -277,18 +280,10 @@ if (!document.getElementById("tgUxNativeCss")) {
   const TgUx = {
     isTg: isTg,
     closeTop: closeTop,
-    success: function () {
-      haptic("success");
-    },
-    impact: function (style = "light") {
-      haptic(style);
-    },
-    haptic: function (style) {
-      haptic(style || "light");
-    },
-    notify: function (type) {
-      haptic(type || "success");
-    },
+    success: () => haptic("success"),
+    impact: (style = "light") => haptic(style),
+    haptic: (style = "light") => haptic(style),
+    notify: (type = "success") => haptic(type),
     syncMainButton: updateMainButton,
     updateMainButton: updateMainButton,
     sync: function () {
@@ -299,7 +294,6 @@ if (!document.getElementById("tgUxNativeCss")) {
 
   window.TgUx = TgUx;
 
-  // Клик по MainButton делегирует клик на реальную кнопку оформления заказа
   try {
     const tg = getTg();
     if (tg && tg.MainButton) {
@@ -316,7 +310,6 @@ if (!document.getElementById("tgUxNativeCss")) {
     }
   } catch (_) {}
 
-  // Клик по BackButton
   try {
     const tg = getTg();
     if (tg && tg.BackButton) {
@@ -331,7 +324,6 @@ if (!document.getElementById("tgUxNativeCss")) {
     }
   } catch (_) {}
 
-  // Тактильная отдача для элементов интерфейса
   document.addEventListener(
     "click",
     function (e) {
@@ -339,7 +331,6 @@ if (!document.getElementById("tgUxNativeCss")) {
       const t = e.target;
       if (!t || typeof t.closest !== "function") return;
 
-      // Легкий клик на счетчиках, переключателях и табах
       if (
         t.closest(
           ".qty button, [data-step], .step, [data-act], #deliveryRail button, #brandSeg button, .rail button, .tabs button, [data-brand]"
@@ -348,7 +339,7 @@ if (!document.getElementById("tgUxNativeCss")) {
         haptic("light");
         return;
       }
-      // Средний клик при добавлении в корзину
+
       if (
         t.closest(
           ".addBtn, .cta.add, [data-addon], #deliveryGrid .card .cta, #deliveryGrid .opts button, .cfoot button"
@@ -361,7 +352,6 @@ if (!document.getElementById("tgUxNativeCss")) {
     true
   );
 
-  // Тактильная отдача при появлении тостов
   if (typeof window.toast === "function") {
     const rawToast = window.toast;
     window.toast = function (msg, icon) {
@@ -384,7 +374,6 @@ if (!document.getElementById("tgUxNativeCss")) {
     };
   }
 
-  // Наблюдатель за корзиной для автоматического вызова MainButton
   function initTgEnvironment() {
     ensureTgEnvironment();
     updateMainButton();
@@ -408,7 +397,6 @@ if (!document.getElementById("tgUxNativeCss")) {
   }
 })();
 
-/* TG-UX-GATE v3: гарантирует наличие методов-заглушек вне Telegram Mini App */
 (function () {
   var NEED = [
     "haptic",

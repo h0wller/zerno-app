@@ -1,3 +1,11 @@
+function getKlgHour() {
+  try {
+    const str = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Kaliningrad', hour: 'numeric', hour12: false }).format(new Date());
+    return parseInt(str, 10);
+  } catch (_) {
+    return (new Date().getUTCHours() + 2) % 24;
+  }
+}
 /* server/routes/orders.js — module-07: заказы доставки + delivery-конфиг */
 import { Router } from 'express';
 import { db, WEBAPP_URL } from '../config.js';

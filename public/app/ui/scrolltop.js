@@ -1,4 +1,4 @@
-/* public/app/ui/scrolltop.js — кнопка «вверх» и синхронизация положения рейла */
+/* public/app/ui/scrolltop.js — синхронизация положения рейла и бонусов */
 function alignRailWithCard() {
   if (window.innerWidth > 1180) {
     var rAll = document.querySelectorAll('.wrap .rail, .wrap #deliveryRail');
@@ -7,16 +7,37 @@ function alignRailWithCard() {
   }
   var rail = document.querySelector('.wrap .rail:not([style*="display: none"]), .wrap #deliveryRail:not([style*="display: none"])');
   if (!rail || !rail.parentElement) return;
-  var card = document.querySelector('#menuView:not([hidden]) .card:not(.skeleton-card), #deliveryView.active .card:not(.skeleton-card), #grid .card:not(.skeleton-card), #deliveryGrid .card:not(.skeleton-card)');
+
+  var card = document.querySelector('#deliveryGrid .card, #grid .card, #deliveryView .card, #menuView .card');
   if (!card) return;
 
-  var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-  var cardTop = card.getBoundingClientRect().top + scrollY;
-  var parentTop = rail.parentElement.getBoundingClientRect().top + scrollY;
-  var diff = Math.max(0, Math.round(cardTop - parentTop));
+  rail.style.marginTop = '0px';
+  var cardTop = card.getBoundingClientRect().top;
+  var railTop = rail.getBoundingClientRect().top;
+  var diff = Math.max(0, Math.round(cardTop - railTop));
   rail.style.marginTop = diff + 'px';
+
+  if (typeof alignMbonusWithRail === 'function') alignMbonusWithRail();
 }
+
+function alignMbonusWithRail() {
+  if (window.innerWidth > 1180) return;
+  var mb = document.getElementById('mbonusBtn');
+  var railBtn = document.querySelector('.wrap .rail button, .wrap #deliveryRail button');
+  if (!mb || !railBtn) return;
+  var rRect = railBtn.getBoundingClientRect();
+  if (rRect.width > 0) {
+    mb.style.left = Math.round(rRect.left) + 'px';
+    mb.style.width = Math.round(rRect.width) + 'px';
+    mb.style.minWidth = Math.round(rRect.width) + 'px';
+    mb.style.maxWidth = Math.round(rRect.width) + 'px';
+    mb.style.margin = '0';
+  }
+}
+
 window.alignRailWithCard = alignRailWithCard;
+window.alignMbonusWithRail = alignMbonusWithRail;
+
 
 (function () {
   'use strict';

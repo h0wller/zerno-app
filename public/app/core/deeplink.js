@@ -239,6 +239,20 @@ var QS = new URLSearchParams(location.search);
         }
         else { window.__ztPendingDeep = 'bonus'; openAuth(); }
       }
+      
+      if (tab === 'staff_chat') {
+        const targetKey = QS.get('key');
+        setTimeout(() => {
+          if (typeof window.openStaffChat === 'function') {
+            window.openStaffChat();
+            if (targetKey && typeof window.openScDialog === 'function') {
+              window.scKey = targetKey;
+              setTimeout(window.openScDialog, 200);
+            }
+          }
+        }, 300);
+      }
+  
       if (tab === 'chat') {
         var cp = document.getElementById('chatPanel');
         if (cp && QS.get('support') !== 'choose') cp.classList.add('open');
