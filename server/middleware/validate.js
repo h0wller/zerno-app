@@ -1,80 +1,49 @@
 // server/middleware/validate.js
-// Лёгкий контракт-валидатор тел запросов. Ноль внешних зависимостей.
-//
-// Задача — не заменить JSON Schema, а поставить дешёвый барьер против слопа в API:
-// неизвестные поля, отсутствующие required, не тот тип. Схемы — source of truth
-// для docs/openapi.yaml.
-//
-// Внедряется инкрементально: сначала только auth-роуты (login/register/setup-pin).
-// Для волатильных роутов (/orders, /chat/send) — opts.strict:false, чтобы фронт
-// не отваливался на каждом новом поле.
+import { z } from 'zod';
 
-const TYPE_CHECK = {
-  string:  (v) => typeof v === 'string',
-  number:  (v) => typeof v === 'number' && Number.isFinite(v),
-  integer: (v) => Number.isInteger(v),
-  boolean: (v) => typeof v === 'boolean',
-  object:  (v) => v !== null && typeof v === 'object' && !Array.isArray(v),
-  array:   (v) => Array.isArray(v)
-};
-
-function describeType(expected, actual) {
-  if (Array.isArray(actual)) return expected + ' (получен array)';
-  if (actual === null) return expected + ' (получен null)';
-  return expected + ' (получен ' + typeof actual + ')';
-}
-
-export function validate(schema, opts = {}) {
-  const strict = opts.strict !== false;
-  const fields = Object.entries(schema);
-
-  return function validateBody(req, res, next) {
-    const body = req.body;
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
-      return res.status(400).json({ error: 'Тело запроса должно быть объектом' });
+/**
+ * Express middleware для валидации payload
+ * @param {import('zod').ZodTypeAny} schema
+ * @param {'body'|'query'|'params'} [source='body']
+ */
+export function validate(schema, source = 'body') {
+  return (req, res, next) => {
+    const result = schema.safeParse(req[source]);
+    if (!result.success) {
+      const issues = result.error.issues.map((i) => ({
+        field: i.path.join('.'),
+        message: i.message
+      }));
+      return res.status(400).json({
+        error: issues[0]?.message || 'Ошибка валидации данных',
+        details: issues
+      });
     }
-
-    for (const [key, rule] of fields) {
-      const value = body[key];
-
-      if (value === undefined || value === null || value === '') {
-        if (rule.required) {
-          return res.status(400).json({ error: 'Поле «' + key + '» обязательно' });
-        }
-        continue;
-      }
-
-      const check = TYPE_CHECK[rule.type];
-      if (check && !check(value)) {
-        return res.status(400).json({ error: 'Поле «' + key + '»: ожидалось ' + describeType(rule.type, value) });
-      }
-
-      if (rule.max && typeof value === 'string' && value.length > rule.max) {
-        return res.status(400).json({ error: 'Поле «' + key + '»: длина превышает ' + rule.max });
-      }
-      if (rule.min !== undefined && typeof value === 'number' && value < rule.min) {
-        return res.status(400).json({ error: 'Поле «' + key + '»: значение меньше ' + rule.min });
-      }
-      if (rule.max !== undefined && typeof value === 'number' && value > rule.max) {
-        return res.status(400).json({ error: 'Поле «' + key + '»: значение больше ' + rule.max });
-      }
-      if (rule.enum && !rule.enum.includes(value)) {
-        return res.status(400).json({ error: 'Поле «' + key + '»: допустимые значения — ' + rule.enum.join(', ') });
-      }
-      if (rule.pattern && typeof value === 'string' && !rule.pattern.test(value)) {
-        return res.status(400).json({ error: 'Поле «' + key + '»: не соответствует формату' });
-      }
-    }
-
-    if (strict) {
-      const allowed = new Set(Object.keys(schema));
-      for (const key of Object.keys(body)) {
-        if (!allowed.has(key) && !key.startsWith('_')) {
-          return res.status(400).json({ error: 'Неизвестное поле «' + key + '»' });
-        }
-      }
-    }
-
+    req[source] = result.data;
     next();
   };
 }
+
+// Схемы, используемые в server/routes/auth.js
+export const RegisterSchema = z.object({
+  name: z.string().trim().min(2, 'Имя должно содержать от 2 символов').max(24, 'Имя не должно превышать 24 символов').optional(),
+  phone: z.string().trim().min(10, 'Укажите корректный номер телефона'),
+  pin: z.string().regex(/^\d{4}$/, 'PIN-код должен состоять ровно из 4 цифр').optional(),
+  code: z.string().optional(),
+  consent: z.union([z.literal(0), z.literal(1), z.boolean()]).optional()
+}).passthrough();
+
+export const LoginSchema = z.object({
+  phone: z.string().trim().min(10, 'Укажите номер телефона'),
+  pin: z.string().regex(/^\d{4}$/, 'PIN-код должен состоять из 4 цифр').optional(),
+  otp: z.string().optional()
+}).passthrough();
+
+export const SetupPinSchema = z.object({
+  phone: z.string().trim().optional(),
+  pin: z.string().regex(/^\d{4}$/, 'PIN — ровно 4 цифры')
+}).passthrough();
+
+export const ActivateCodeSchema = z.object({
+  code: z.string().trim().min(1, 'Введите код активации')
+}).passthrough();

@@ -5,39 +5,51 @@ function alignRailWithCard() {
     rAll.forEach(function (r) { r.style.marginTop = ''; });
     return;
   }
-  var rail = document.querySelector('.wrap .rail:not([style*="display: none"]), .wrap #deliveryRail:not([style*="display: none"])');
-  if (!rail || !rail.parentElement) return;
 
-  var card = document.querySelector('#deliveryGrid .card, #grid .card, #deliveryView .card, #menuView .card');
+  var isDel = (typeof brand !== 'undefined' && brand === 'delivery') || document.documentElement.getAttribute('data-brand') === 'delivery';
+  var rail = isDel
+    ? (document.getElementById('deliveryRail') || document.querySelector('.wrap .rail'))
+    : (document.getElementById('rail') || document.querySelector('.wrap .rail'));
+  if (!rail) return;
+
+  var card = isDel
+    ? document.querySelector('#deliveryGrid .card:not(.skeleton-card)')
+    : document.querySelector('#grid .card:not(.skeleton-card)');
   if (!card) return;
 
+  // Сбрасываем margin перед расчетом
   rail.style.marginTop = '0px';
   var cardTop = card.getBoundingClientRect().top;
   var railTop = rail.getBoundingClientRect().top;
   var diff = Math.max(0, Math.round(cardTop - railTop));
   rail.style.marginTop = diff + 'px';
 
-  if (typeof alignMbonusWithRail === 'function') alignMbonusWithRail();
+  alignMbonusWithRail();
 }
 
 function alignMbonusWithRail() {
   if (window.innerWidth > 1180) return;
   var mb = document.getElementById('mbonusBtn');
-  var railBtn = document.querySelector('.wrap .rail button, .wrap #deliveryRail button');
-  if (!mb || !railBtn) return;
+  var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
+  if (!mb || isDel) return;
+
+  var rail = document.querySelector('.wrap .rail:not([style*="display: none"])') || document.getElementById('rail');
+  var railBtn = rail && rail.querySelector('button');
+  if (!railBtn) return;
+
   var rRect = railBtn.getBoundingClientRect();
   if (rRect.width > 0) {
-    mb.style.left = Math.round(rRect.left) + 'px';
-    mb.style.width = Math.round(rRect.width) + 'px';
-    mb.style.minWidth = Math.round(rRect.width) + 'px';
-    mb.style.maxWidth = Math.round(rRect.width) + 'px';
-    mb.style.margin = '0';
+    mb.style.setProperty('left', Math.round(rRect.left) + 'px', 'important');
+    mb.style.setProperty('width', Math.round(rRect.width) + 'px', 'important');
+    mb.style.setProperty('min-width', Math.round(rRect.width) + 'px', 'important');
+    mb.style.setProperty('max-width', Math.round(rRect.width) + 'px', 'important');
+    mb.style.setProperty('margin', '0', 'important');
+    mb.style.setProperty('box-sizing', 'border-box', 'important');
   }
 }
 
 window.alignRailWithCard = alignRailWithCard;
 window.alignMbonusWithRail = alignMbonusWithRail;
-
 
 (function () {
   'use strict';
@@ -83,15 +95,24 @@ window.alignMbonusWithRail = alignMbonusWithRail;
     onScroll();
     alignRailWithCard();
   });
+
   if (typeof MutationObserver !== 'undefined') {
     var cp = document.getElementById('chatPanel');
     if (cp) new MutationObserver(onScroll).observe(cp, { attributes: true, attributeFilter: ['class'] });
+
+    var dg = document.getElementById('deliveryGrid');
+    if (dg) new MutationObserver(alignRailWithCard).observe(dg, { childList: true });
+
+    var g = document.getElementById('grid');
+    if (g) new MutationObserver(alignRailWithCard).observe(g, { childList: true });
   }
+
   btn.addEventListener('click', function () {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   update();
-  setTimeout(alignRailWithCard, 40);
-  setTimeout(alignRailWithCard, 250);
+  setTimeout(alignRailWithCard, 50);
+  setTimeout(alignRailWithCard, 300);
+  setTimeout(alignRailWithCard, 1000);
 })();

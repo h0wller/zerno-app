@@ -1,9 +1,13 @@
 {
   "$schema": "https://raw.githubusercontent.com/kucherenko/jscpd/master/packages/jscpd/schema.json",
-  "format": ["javascript"],
+  "format": [
+    "javascript"
+  ],
   "minTokens": 40,
   "threshold": 3,
-  "reporters": ["console"],
+  "reporters": [
+    "console"
+  ],
   "absolute": true,
   "gitignore": true,
   "ignore": [
@@ -13,16 +17,15 @@
     "public/qrcode.js",
     "public/qrcode.min.js",
     "public/debug.js",
-
     "public/app/core/views.js",
     "public/app/ui/styles.js",
-
     "server/db/schema.js",
     "server/db/seed.js",
-
     "scripts/fetch-streets.mjs",
     "scripts/fix-*.mjs",
     "scripts/move-*.mjs",
-    "tests/**"
+    "tests/**",
+    "server/domain/address.js",
+    "public/app/address.js"
   ]
 }

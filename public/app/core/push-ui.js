@@ -83,7 +83,7 @@ function urlBase64ToUint8Array(s) {
       }
 
       function togglePushHint(show) {
-        let h = document.getElementById("pushHint");
+        const h = document.getElementById("pushHint");
         if (!show && h) {
           h.remove();
           return;

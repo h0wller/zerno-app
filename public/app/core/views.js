@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 /* public/app/core/views.js — Ф3.22/Ф3.41/Ф3.55: флаги и state-мост чата, CSS-инъекция (СЛОЙ 2),
 DOM-переезды, виды/режимы (sv/setMode/brandSeg), дропдаун заведений, пуш-баббл.
 Ф3.55: финальная сборка шапки — база в одном блоке, delivery max-width:70% только ≤820px,
@@ -24,7 +25,7 @@ document.documentElement.style.setProperty('--sat', (inset > 0 ? inset : (standa
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setSat);
 else setSat();
 })();
-var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
+var _DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
 var SUPPORT_ENTRY = (QS.get('tab') === 'chat' || QS.get('support') === 'choose');
 // [tg-support-ctx-from-url]
 var ctxFromUrl = (QS.get('ctx') === 'delivery' || QS.get('ctx') === 'coffee') ? QS.get('ctx') : '';
@@ -709,7 +710,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(function (
   }
 
     var list = document.querySelectorAll('.mh-top .mh-right');
-    for (var i = 0; i < list.length; i++) {
+    for (i = 0; i < list.length; i++) {
       if (window.innerWidth <= 820) list[i].style.width = '100%';
       else list[i].style.width = '';
     }

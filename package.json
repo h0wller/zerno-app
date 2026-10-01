@@ -10,7 +10,7 @@
     "test:e2e": "playwright test",
     "ui:baseline": "npx playwright test tests/ui-baseline.spec.js --update-snapshots",
     "check": "node --check server.js",
-    "lint:code": "eslint public/ server/ scripts/ --max-warnings 200",
+    "lint:code": "eslint public/ server/ scripts/ --max-warnings 50",
     "lint:dup": "jscpd --config .jscpd.json public/ && jscpd --config .jscpd.strict.json server/ public/app/",
     "lint:dead": "knip",
     "lint:layers": "depcruise --config .dependency-cruiser.js public server",
@@ -30,6 +30,7 @@
     "compression": "^1.8.2",
     "express": "^4.19.2",
     "firebase-admin": "^14.3.0",
+    "zod": "^3.23.8",
     "web-push": "^3.6.7"
   },
   "devDependencies": {

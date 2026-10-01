@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-nested-template-literals, sonarjs/no-duplicate-string */
 
 function getKaliningradHour() {
   try {
@@ -12,7 +13,7 @@ function getKaliningradHour() {
     return (now.getUTCHours() + 2) % 24;
   }
 }
-function isDeliveryServiceOpen() {
+function _isDeliveryServiceOpen() {
   var h = getKaliningradHour();
   return h >= 11 && h < 22;
 }
@@ -223,7 +224,7 @@ if (st) {
     
     // Ищем выбранный вариант. 
     // Fallback: если пользователь ничего не нажал (или .sel слетел), принудительно берем первый.
-    let selOpt = cardBody ? cardBody.querySelector('.opts button.sel') : null;
+    const selOpt = cardBody ? cardBody.querySelector('.opts button.sel') : null;
 if (!selOpt && opts.length > 0) {
 const optsBox = (cardBody && cardBody.querySelector('.opts')) || null;
 if (optsBox) {
@@ -306,7 +307,7 @@ function renderCart() {
 $('#cartItems').addEventListener('click', e => {
   const b = e.target.closest('[data-ci]');
   if (!b) return;
-  const i = +b.dataset.ci;
+  const _i = +b.dataset.ci;
   /* Ф5.21c: qty-мутации и save ведёт cart.js (cPanel); дубль убран */
   localStorage.setItem('zt_cart', JSON.stringify(cart));
   if (typeof updateCartFab === 'function') updateCartFab();

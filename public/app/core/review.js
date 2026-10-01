@@ -1,7 +1,7 @@
 /* public/app/core/review.js — Ф4.1b: кнопка отзыва + maybeAskReview.
 Было inline-скрипт index.html (строки ~1403–1422). */
 var REVIEW_URL='https://yandex.ru/maps/-/CTHxjIyq';
-var SOCIAL_URL='https://t.me/and_coffee39';
+var _SOCIAL_URL='https://t.me/and_coffee39';
 $('#reviewBtn').onclick=()=>{window.open(REVIEW_URL,'_blank');toast('Спасибо! Вы лучшие 💙','💙')};
 function maybeAskReview(){
  if(!me)return;

@@ -12,6 +12,7 @@ import { sendSms } from '../services/sms.js';
 import { tgSend, TG_TOKEN } from '../services/telegram.js';
 import { sendPush } from '../services/push.js';
 import { userGuard, pendingGuard } from '../middleware/auth.js';
+import { validate, RegisterSchema, LoginSchema, SetupPinSchema, ActivateCodeSchema } from '../middleware/validate.js';
 import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from '../config.js';
 
 export const authRouter = express.Router();
@@ -147,7 +148,7 @@ authRouter.get('/api/auth/check-reg', (req, res) => {
   res.json({ confirmed: isOk });
 });
 
-authRouter.post('/api/auth/register', (req, res) => {
+authRouter.post('/api/auth/register', validate(RegisterSchema),  validate(RegisterSchema), (req, res) => {
 const p = fmtPhone(req.body.phone || '');
 const code = String(req.body.code || '').trim();
 const st = otpStore.get('reg:' + p);
@@ -202,7 +203,7 @@ authRouter.post('/api/auth/activate-guest', userGuard, (req, res) => {
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
 });
 
-authRouter.post('/api/auth/login', (req, res) => {
+authRouter.post('/api/auth/login', validate(LoginSchema),  validate(LoginSchema), (req, res) => {
 const p = fmtPhone(req.body.phone || '');
 const pin = String(req.body.pin || '').trim();
 const otp = String(req.body.otp || '').trim();
@@ -232,7 +233,7 @@ addHist(c.id, 'Вход по PIN', 'Приложение');
 res.json({ token: issueToken(c.id), customer: cust(c) });
 });
 
-authRouter.post('/api/auth/setup-pin', (req, res) => {
+authRouter.post('/api/auth/setup-pin', validate(SetupPinSchema),  validate(SetupPinSchema), (req, res) => {
 const p = fmtPhone(req.body.phone || '');
 const pin = String(req.body.pin || '').trim();
 if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
@@ -265,7 +266,7 @@ tgSend(c.tg, `🔑 Код для входа в приложение: ${code}\nД
 res.json({ ok: true });
 });
 
-authRouter.post('/api/auth/activate', userGuard, (req, res) => {
+authRouter.post('/api/auth/activate', userGuard, validate(ActivateCodeSchema),  validate(ActivateCodeSchema), (req, res) => {
   const wait = lockedSeconds(req);
   if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
   const code = String(req.body.code || '').trim();

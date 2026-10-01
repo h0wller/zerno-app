@@ -1,3 +1,9 @@
+
+function _isDeliveryOpenKlg(req) {
+  const h = getKlgHour(req);
+  return h >= 11 && h < 22;
+}
+
 function getKlgHour() {
   try {
     const str = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Kaliningrad', hour: 'numeric', hour12: false }).format(new Date());

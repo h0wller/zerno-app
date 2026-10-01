@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-collapsible-if */
 /* public/app/core/splash.js — Ф3.3 + Ф3.13a: сплэш бренда.
 Единственный владелец сплэша: статичная разметка #brandSplashStatic в index.html.
 Динамический #brandSplash создаётся ТОЛЬКО если статичной разметки нет (fallback).

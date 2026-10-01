@@ -69,8 +69,6 @@ export default {
     // Пустой placeholder / известный orphan — разберём отдельно:
     '(^|/)public/app/ui/dropdowns\\.js$',
     '(^|/)public/app/core/overlay\\.js$',
-    // Новые модули, не подключённые пока (PR 3 подключит validate.js):
-    '(^|/)server/middleware/validate\\.js$',
     '\\.d\\.ts$'
   ]
 }
