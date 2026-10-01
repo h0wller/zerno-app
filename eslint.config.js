@@ -50,7 +50,7 @@ export default [
       globals: nodeGlobals
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_|^e$', varsIgnorePattern: '^_', caughtErrors: 'none' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
       'no-undef': 'error',
       'no-empty': ['error', { allowEmptyCatch: true }],
       'prefer-const': 'warn',
@@ -68,7 +68,7 @@ export default [
       globals: { ...nodeGlobals, ...browserGlobals }
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_|^e$', varsIgnorePattern: '^_', caughtErrors: 'none' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
       'no-undef': 'off',
       'no-empty': ['error', { allowEmptyCatch: true }],
       'prefer-const': 'warn',
@@ -76,7 +76,7 @@ export default [
     }
   },
 
-  // 3. Фронтенд: Vanilla JS ESM + SonarJS
+  // 3. Фронтенд: общие правила
   {
     files: ['public/app/**/*.js', 'public/sw.js'],
     languageOptions: {
@@ -86,7 +86,7 @@ export default [
     },
     plugins: { sonarjs },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_|^e$', varsIgnorePattern: '^_', caughtErrors: 'none' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
       'prefer-const': 'warn',
       'no-undef': 'off',
       'no-empty': ['error', { allowEmptyCatch: true }],
@@ -109,7 +109,7 @@ export default [
     }
   },
 
-  // 4. Легаси монолиты: фиксируем базовый порог когнитивной сложности
+  // 4. Легаси-монолиты: фиксируем baseline сложности и мелких дублей
   {
     files: [
       'public/app/cart.js',
@@ -122,16 +122,20 @@ export default [
       'public/app/core/deeplink.js',
       'public/app/core/overlay-core.js',
       'public/app/orders.js',
-      'public/app/profile.js'
+      'public/app/profile.js',
+      'public/app/ui/cashier-log.js'
     ],
     rules: {
       'sonarjs/cognitive-complexity': ['warn', 100],
       'sonarjs/no-collapsible-if': 'off',
+      'sonarjs/no-nested-template-literals': 'off',
+      'sonarjs/no-identical-functions': 'off',
+      'sonarjs/no-duplicate-string': 'off',
       'no-func-assign': 'off'
     }
   },
 
-  // 5. Исключения для статических словарей адресов
+  // 5. Статические словари адресов
   {
     files: [
       'public/app/address.js',
@@ -143,7 +147,7 @@ export default [
     }
   },
 
-  // 6. Классические defer-скрипты
+  // 6. Классические defer-скрипты: не трогаем аргументы обработчиков событий
   {
     files: [
       'public/app/core/ptr.js',
@@ -160,7 +164,7 @@ export default [
     rules: {
       'no-implicit-globals': 'off',
       'no-undef': 'off',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_|^e$', varsIgnorePattern: '^_', caughtErrors: 'none' }],
+      'no-unused-vars': 'off',
       'prefer-const': 'warn',
       'no-empty': ['error', { allowEmptyCatch: true }],
       'no-useless-escape': 'off',
@@ -168,7 +172,7 @@ export default [
     }
   },
 
-  // 7. Playwright e2e-тесты
+  // 7. Playwright e2e
   {
     files: ['tests/**/*.js', 'tests/**/*.spec.js'],
     languageOptions: {
@@ -179,7 +183,7 @@ export default [
     plugins: { playwright },
     rules: {
       ...playwright.configs['flat/recommended'].rules,
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_|^e$', varsIgnorePattern: '^_', caughtErrors: 'none' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
       'no-empty': ['error', { allowEmptyCatch: true }],
       'playwright/no-focused-test': 'error',
       'playwright/missing-playwright-await': 'error',

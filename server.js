@@ -1,3 +1,8 @@
+// Защита от крэша процесса Node 22 при сбоях фоновых пушей и вебхуков
+process.on('unhandledRejection', (reason) => {
+  console.error('[Background Rejection]:', (reason && reason.message) || reason);
+});
+
 import { initDatabase, getVapidPublicKey } from './server/db/index.js';
 initDatabase();
 import express from 'express';

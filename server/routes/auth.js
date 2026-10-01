@@ -186,7 +186,9 @@ if (okTg || okSms) {
   while (db.prepare('SELECT 1 FROM customers WHERE actcode=?AND verified=0').get(ac));
   db.prepare('UPDATE customers SET actcode=? WHERE id=?').run(ac, r.customer.id);
   const staff = db.prepare("SELECT id FROM customers WHERE role IN ('cashier','admin')").all();
-  for (const s of staff) sendPush(s.id, '🆕 Новый гость ждёт активации', `${r.customer.name}, ${r.customer.phone} — код ${ac}`);
+  for (const s of staff) {
+    sendPush(s.id, '🆕 Новый гость ждёт активации', `${r.customer.name}, ${r.customer.phone} — код ${ac}`).catch(() => {});
+  }
   logEv(r.customer.name, 'регистрация без TG, ждёт код кассира');
 }
 res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
