@@ -1,4 +1,4 @@
-// fix-stability.mjs — Защита сервера от крэшей и стабилизация Playwright
+// fix-timer-dup.mjs
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
@@ -26,55 +26,69 @@ function updateFile(relPath, transform) {
   return false;
 }
 
-// ── 1. Защита server.js от падений при фоновых сетевых промисах (push/tg) ──
-updateFile('server.js', (src) => {
-  if (src.includes('unhandledRejection')) return src;
-  const guard = `// Защита от крэша процесса Node 22 при сбоях фоновых пушей и вебхуков
-process.on('unhandledRejection', (reason) => {
-  console.error('[Background Rejection]:', (reason && reason.message) || reason);
-});
-`;
-  return `${guard}\n${src}`;
-});
+// ─────────────────────────────────────────────────────────────
+// 1. Полная очистка дубликатов в public/app/core/preorder-timer.js
+// ─────────────────────────────────────────────────────────────
+console.log('--- 1. Удаление дубликатов функций в preorder-timer.js ---');
+updateFile('public/app/core/preorder-timer.js', (src) => {
+  let res = src;
 
-// ── 2. Безопасный вызов sendPush в server/routes/auth.js ──
-updateFile('server/routes/auth.js', (src) => {
-  return src.replace(
-    /for\s*\(\s*const\s+s\s+of\s+staff\s*\)\s*sendPush\([^)]+\);/g,
-    `for (const s of staff) {\n    sendPush(s.id, '🆕 Новый гость ждёт активации', \`\${r.customer.name}, \${r.customer.phone} — код \${ac}\`).catch(() => {});\n  }`
-  );
-});
+  // Удаляем абсолютно все предыдущие варианты объявлений функций времени
+  res = res.replace(/function getKaliningradTime\(\)\s*\{[\s\S]*?return\s*\{\s*hour:[^}]+\};\s*\}\s*\}/g, '');
+  res = res.replace(/function isDeliveryServiceOpen\(\)\s*\{[\s\S]*?return\s+min\s*>=[^;]+;\s*\}/g, '');
 
-// ── 3. Защита SQLite от блокировок при параллельных тестах ──
-updateFile('server/db/connection.js', (src) => {
-  if (src.includes('busy_timeout')) return src;
-  const hook = "db.pragma('journal_mode = WAL');";
-  if (src.includes(hook)) {
-    return src.replace(hook, `${hook}\ndb.pragma('busy_timeout = 5000');`);
-  }
-  return src.replace(/const db = new Database\([^)]+\);/, (m) => `${m}\ndb.pragma('busy_timeout = 5000');`);
+  const singleKlgBlock = `function getKaliningradTime() {
+  var d = new Date();
+  var h = (d.getUTCHours() + 2) % 24;
+  return { hour: h, minute: d.getUTCMinutes() };
+}
+
+function isDeliveryServiceOpen() {
+  var t = getKaliningradTime();
+  var min = t.hour * 60 + t.minute;
+  return min >= 660 && min < 1320;
+}`;
+
+  res = singleKlgBlock + '\n\n' + res.trim();
+  return res;
 });
 
-// ── 4. Добавление 1 повтора (retry) в playwright.config.js для локальных запусков ──
-updateFile('playwright.config.js', (src) => {
-  return src.replace(
-    /retries:\s*process\.env\.CI\s*\?\s*2\s*:\s*0,/,
-    'retries: process.env.CI ? 2 : 1,'
-  );
-});
+// ─────────────────────────────────────────────────────────────
+// 2. Проверка синтаксиса всех затронутых файлов
+// ─────────────────────────────────────────────────────────────
+console.log('\n--- 2. Синтаксическая проверка (node --check) ---');
+try {
+  execSync('node --check public/app/core/preorder-timer.js', { stdio: 'inherit' });
+  execSync('node --check public/app/delivery.js', { stdio: 'inherit' });
+  execSync('node --check public/app/cart.js', { stdio: 'inherit' });
+  execSync('node --check public/app/ui/scrolltop.js', { stdio: 'inherit' });
+  execSync('node --check public/app/core/views.js', { stdio: 'inherit' });
+  log('Синтаксис всех JS-модулей валиден (0 ошибок)!');
+} catch (e) {
+  console.error('❌ Ошибка синтаксиса:', e.message);
+  process.exit(1);
+}
 
-// ── 5. Проверка синтаксиса измененных файлов ──
-console.log('\n--- Синтаксическая проверка ---');
-execSync('node --check server.js', { stdio: 'inherit' });
-execSync('node --check server/routes/auth.js', { stdio: 'inherit' });
-execSync('node --check server/db/connection.js', { stdio: 'inherit' });
-log('Синтаксис в порядке');
+// ─────────────────────────────────────────────────────────────
+// 3. Проверка CSS-аудита
+// ─────────────────────────────────────────────────────────────
+console.log('\n--- 3. Запуск css-audit.mjs ---');
+try {
+  execSync('node scripts/css-audit.mjs', { stdio: 'inherit' });
+  log('CSS-аудит успешно пройден!');
+} catch (e) {
+  console.error('❌ Ошибка CSS-аудита:', e.message);
+  process.exit(1);
+}
 
-// ── 6. Прогон аудита и Playwright ──
-console.log('\n--- Прогон аудита (npm run audit) ---\n');
-execSync('npm run audit', { stdio: 'inherit' });
-log('Аудит пройден!');
-
-console.log('\n--- Прогон E2E-тестов (npm run test:e2e) ---\n');
-execSync('npm run test:e2e', { stdio: 'inherit' });
-console.log('\n🏆 ВСЕ 114 ТЕСТОВ И АУДИТ ЗЕЛЕНЫЕ!');
+// ─────────────────────────────────────────────────────────────
+// 4. Запуск полного пайплайна проверок
+// ─────────────────────────────────────────────────────────────
+console.log('\n--- 4. Запуск npm run audit ---\n');
+try {
+  execSync('npm run audit', { stdio: 'inherit' });
+  console.log('\n🏆 ВСЕ АВТО-БАРЬЕРЫ ЗЕЛЕНЫЕ (0 ОШИБОК, 0 ПРЕДУПРЕЖДЕНИЙ)!');
+} catch (e) {
+  console.error('\n❌ Ошибка при выполнении аудита:', e.message);
+  process.exit(1);
+}

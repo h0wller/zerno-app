@@ -1,3 +1,15 @@
+function getKaliningradTime() {
+  var d = new Date();
+  var h = (d.getUTCHours() + 2) % 24;
+  return { hour: h, minute: d.getUTCMinutes() };
+}
+
+function isDeliveryServiceOpen() {
+  var t = getKaliningradTime();
+  var min = t.hour * 60 + t.minute;
+  return min >= 660 && min < 1320;
+}
+
 /* public/app/core/preorder-timer.js — Легковесный таймер (без обсерверов и циклов) */
 (function () {
   'use strict';

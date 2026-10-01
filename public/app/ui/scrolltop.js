@@ -1,23 +1,20 @@
 /* public/app/ui/scrolltop.js — синхронизация положения рейла и бонусов */
 function alignRailWithCard() {
-  if (window.innerWidth > 1180) {
-    var rAll = document.querySelectorAll('.wrap .rail, .wrap #deliveryRail');
-    rAll.forEach(function (r) { r.style.marginTop = ''; });
+  var rail = document.getElementById('rail') || document.querySelector('.rail, #deliveryRail');
+  if (!rail) return;
+  if (window.innerWidth >= 821) {
+    rail.style.marginTop = '';
     return;
   }
-  var rail = document.querySelector('.wrap .rail:not([style*="display: none"]), .wrap #deliveryRail:not([style*="display: none"])');
-  if (!rail || !rail.parentElement) return;
-
-  var card = document.querySelector('#deliveryGrid .card, #grid .card, #deliveryView .card, #menuView .card');
+  var card = document.querySelector('#deliveryView:not([hidden]) .card, #menuView:not([hidden]) .card, .card');
   if (!card) return;
-
-  rail.style.marginTop = '0px';
-  var cardTop = card.getBoundingClientRect().top;
-  var railTop = rail.getBoundingClientRect().top;
-  var diff = Math.max(0, Math.round(cardTop - railTop));
-  rail.style.marginTop = diff + 'px';
-
-  if (typeof alignMbonusWithRail === 'function') alignMbonusWithRail();
+  var wrap = rail.closest('.wrap') || document.querySelector('.wrap');
+  if (wrap) {
+    var wrapTop = wrap.getBoundingClientRect().top + window.scrollY;
+    var cardTop = card.getBoundingClientRect().top + window.scrollY;
+    var offset = Math.max(0, Math.round(cardTop - wrapTop));
+    rail.style.marginTop = offset + 'px';
+  }
 }
 
 function alignMbonusWithRail() {
@@ -27,10 +24,10 @@ function alignMbonusWithRail() {
   if (!mb || !railBtn) return;
   var rRect = railBtn.getBoundingClientRect();
   if (rRect.width > 0) {
-    mb.style.left = Math.round(rRect.left) + 'px';
-    mb.style.width = Math.round(rRect.width) + 'px';
-    mb.style.minWidth = Math.round(rRect.width) + 'px';
-    mb.style.maxWidth = Math.round(rRect.width) + 'px';
+    if (window.innerWidth >= 821) { mb.style.left = Math.round(rRect.left) + 'px'; } else { mb.style.left = ""; mb.style.width = ""; mb.style.minWidth = ""; mb.style.maxWidth = ""; }
+    if (window.innerWidth >= 821) { mb.style.width = Math.round(rRect.width) + 'px'; } else { mb.style.left = ""; mb.style.width = ""; mb.style.minWidth = ""; mb.style.maxWidth = ""; }
+    if (window.innerWidth >= 821) { mb.style.minWidth = Math.round(rRect.width) + 'px'; } else { mb.style.left = ""; mb.style.width = ""; mb.style.minWidth = ""; mb.style.maxWidth = ""; }
+    if (window.innerWidth >= 821) { mb.style.maxWidth = Math.round(rRect.width) + 'px'; } else { mb.style.left = ""; mb.style.width = ""; mb.style.minWidth = ""; mb.style.maxWidth = ""; }
     mb.style.margin = '0';
   }
 }

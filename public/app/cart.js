@@ -1,20 +1,12 @@
-
-function getKaliningradHour() {
-  try {
-    var str = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Europe/Kaliningrad',
-      hour: 'numeric',
-      hour12: false
-    }).format(new Date());
-    return parseInt(str, 10);
-  } catch (e) {
-    var now = new Date();
-    return (now.getUTCHours() + 2) % 24;
-  }
+function getKaliningradTime() {
+  var d = new Date();
+  var h = (d.getUTCHours() + 2) % 24;
+  return { hour: h, minute: d.getUTCMinutes() };
 }
 function isDeliveryServiceOpen() {
-  var h = getKaliningradHour();
-  return h >= 11 && h < 22;
+  var t = getKaliningradTime();
+  var min = t.hour * 60 + t.minute;
+  return min >= 660 && min < 1320;
 }
 
 /* public/app/cart.js — Корзина доставки, промокоды, адрес и чекаут */
@@ -356,6 +348,7 @@ function renderCartBase() {
     // Плашка режима предзаказа вне рабочих часов (11:00–22:00)
     var pmNotice = document.getElementById('preorderNotice');
     var isOffHours = !isDeliveryServiceOpen();
+    if (!isOffHours && typeof window !== "undefined") { window.__forcePreorderOff = true; }
     if (isOffHours && checkIsDelivery()) {
       if (!pmNotice) {
         pmNotice = document.createElement('div');

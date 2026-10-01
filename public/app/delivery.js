@@ -1,3 +1,19 @@
+function getKaliningradTime() {
+  var d = new Date();
+  var h = (d.getUTCHours() + 2) % 24;
+  return { hour: h, minute: d.getUTCMinutes() };
+}
+function isDeliveryServiceOpen() {
+  var t = getKaliningradTime();
+  var min = t.hour * 60 + t.minute;
+  return min >= 660 && min < 1320;
+}
+
+if (typeof window !== 'undefined') {
+  window.isDeliveryServiceOpen = isDeliveryServiceOpen;
+  window.getKaliningradTime = getKaliningradTime;
+}
+
 
 function getKaliningradHour() {
   try {
@@ -12,10 +28,7 @@ function getKaliningradHour() {
     return (now.getUTCHours() + 2) % 24;
   }
 }
-function isDeliveryServiceOpen() {
-  var h = getKaliningradHour();
-  return h >= 11 && h < 22;
-}
+
 
 /* public/app/delivery.js — F2.5: доставка — state, рендер меню и корзины. */
 

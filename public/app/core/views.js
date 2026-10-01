@@ -105,6 +105,7 @@ var rules = [
 '[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 8px);max-height:calc(var(--topbar-h,64px) - 8px);max-width:min(60vw,420px);flex: 0 1 auto;border-radius:8px}',
 '[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}','@media(max-width:360px){[data-brand="coffee"] .topbar .brand .mark{width:32px;height:32px}}',
 /* --- Шапка: грид-центрирование ≥821px (после всех brand-правил) --- */
+'@media(max-width:820px){#mbonusBtn,.mbonus{position:fixed!important;left:16px!important;bottom:calc(14px + env(safe-area-inset-bottom,0px))!important;width:56px!important;min-width:56px!important;max-width:56px!important;height:56px!important;margin:0!important;z-index:95!important;transform:none!important}}',
 '@media(min-width:821px){.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;align-content:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0;min-width:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;max-width:100%}.topbar #profileTopBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}}','[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
 '[data-brand="delivery"] .venueToggle:hover{background:#EFE6D8;box-shadow:3px 3px 0 var(--fr-choc);transform:translate(-1px,-1px)}',
 '[data-brand="delivery"] .venueWrap #brandSeg{background:#F6EEE1;border:2px solid #3A2A1C;box-shadow:3px 3px 0 #3A2A1C;border-radius:12px}',
@@ -589,9 +590,9 @@ function syncHeaderCluster() {
   var mb = document.getElementById('mbonusBtn');
   if (!vt || !av || !mb) return;
   var inHeader = window.innerWidth > 820 && getComputedStyle(mb).position === 'static';
-  if (!inHeader || mb.style.display === 'none' || mb.hidden) { if (mb.style.width) mb.style.width = ''; return; }
+  if (!inHeader || mb.style.display === 'none' || mb.hidden) { if (mb.style.width) if (window.innerWidth >= 821) { mb.style.width = ''; } else { mb.style.left = ""; mb.style.width = ""; mb.style.minWidth = ""; mb.style.maxWidth = ""; } return; }
   var w = vt.offsetWidth - av.offsetWidth - 8;
-  mb.style.width = (w >= 120 ? w : 120) + 'px';
+  if (window.innerWidth >= 821) { mb.style.width = (w >= 120 ? w : 120) + 'px'; } else { mb.style.left = ""; mb.style.width = ""; mb.style.minWidth = ""; mb.style.maxWidth = ""; }
 }
 window.__syncHeaderCluster = syncHeaderCluster;
 window.__ensureVenueToggle = ensure;
@@ -618,7 +619,7 @@ setTimeout(ensure, 300); setTimeout(ensure, 1200); setTimeout(window.__syncHeade
     b.style.position = 'fixed';
     b.style.top = r.bottom + 10 + 'px';
     b.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
-    b.style.left = 'auto';
+    if (window.innerWidth >= 821) { b.style.left = 'auto'; } else { b.style.left = ""; b.style.width = ""; b.style.minWidth = ""; b.style.maxWidth = ""; }
     b.style.margin = '0';
     b.style.zIndex = '1200';
   }
