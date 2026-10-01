@@ -6,15 +6,17 @@ function alignRailWithCard() {
     rail.style.marginTop = '';
     return;
   }
-  var card = document.querySelector('#deliveryView:not([hidden]) .card, #menuView:not([hidden]) .card, .card');
-  if (!card) return;
-  var wrap = rail.closest('.wrap') || document.querySelector('.wrap');
-  if (wrap) {
-    var wrapTop = wrap.getBoundingClientRect().top + window.scrollY;
-    var cardTop = card.getBoundingClientRect().top + window.scrollY;
-    var offset = Math.max(0, Math.round(cardTop - wrapTop));
-    rail.style.marginTop = offset + 'px';
-  }
+  requestAnimationFrame(function() {
+    var card = document.querySelector('#deliveryView:not([hidden]) .card, #menuView:not([hidden]) .card, .card');
+    if (!card) return;
+    var wrap = rail.closest('.wrap') || document.querySelector('.wrap');
+    if (wrap) {
+      var wrapTop = wrap.getBoundingClientRect().top + window.scrollY;
+      var cardTop = card.getBoundingClientRect().top + window.scrollY;
+      var offset = Math.max(0, Math.round(cardTop - wrapTop));
+      rail.style.marginTop = offset + 'px';
+    }
+  });
 }
 
 function alignMbonusWithRail() {

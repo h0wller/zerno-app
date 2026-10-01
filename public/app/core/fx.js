@@ -9,7 +9,11 @@ const fx = $("#fx"),
         fx.height = innerHeight;
       }
       fitFx(); /* Ф5.8a-fix: локальный инициализационный вызов — шим присваивается ниже */
-      addEventListener("resize", fitFx);
+      let __fitTimer;
+addEventListener("resize", function() {
+  clearTimeout(__fitTimer);
+  __fitTimer = setTimeout(fitFx, 250);
+});
 
 function confetti() {
         const C = ["#1F4E8C", "#7FB2D9", "#C89B6A", "#BBD6EE", "#F5F2EC"];

@@ -32,23 +32,20 @@ if(typeof loadMenu==='function'){loadMenu=(function(_lm){return async function()
 
 var __chromeLast=null;
 function padTicker(){
-var t = document.getElementById('tickerTrack');
-if (!t) return;
-var vw = window.innerWidth || 1024;
-var guard = 0;
-while (t.scrollWidth < vw * 2 && guard < 4) { t.innerHTML += t.innerHTML; guard++; }
-setTickerSpeed();
+  setTickerSpeed();
 }
-/* Ф3.48: скорость тикера постоянна (px/s) независимо от числа копий и веб-шрифтов */
 function setTickerSpeed(){
-var t = document.getElementById('tickerTrack');
-if (!t) return;
-var half = t.scrollWidth / 2;
-t.style.animationDuration = Math.max(20, Math.round(half / 55)) + 's';
+  var t = document.getElementById('tickerTrack');
+  if (!t) return;
+  requestAnimationFrame(function(){
+    var half = t.scrollWidth / 2;
+    if (half > 0) {
+      t.style.animationDuration = Math.max(20, Math.round(half / 55)) + 's';
+    }
+  });
 }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(setTickerSpeed);
-window.addEventListener('resize', function(){ clearTimeout(window.__tsT); window.__tsT = setTimeout(setTickerSpeed, 200); });
-window.addEventListener('resize', function(){ clearTimeout(window.__padT); window.__padT = setTimeout(padTicker, 200); });
+window.addEventListener('resize', function(){ clearTimeout(window.__tsT); window.__tsT = setTimeout(setTickerSpeed, 300); });
 function applyBrandChrome(){
 var deliv=(brand==='delivery');
 /* Ф3.27: пересборка DOM тикера/марки только при СМЕНЕ бренда.
@@ -59,7 +56,7 @@ var track=document.getElementById('tickerTrack');
 if(track){
 var L=deliv?['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']
 :['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с 8:00–21:00'];
-track.innerHTML = L.concat(L).map(function (x) { return '<span>' + x + '</span>'; }).join('');
+var L4 = L.concat(L, L, L); track.innerHTML = L4.map(function (x) { return '<span>' + x + '</span>'; }).join('');
 padTicker();
 }
 /* Ф3.24: меняем только src внутри марки — #brandTitle/#brandSub не трогаем,
