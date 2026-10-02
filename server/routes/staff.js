@@ -3,7 +3,7 @@ import { db } from '../db/connection.js';
 import { cust, addHist, logEv } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { grant, redeem } from '../domain/loyalty.js';
-import { _ph10 } from '../utils/phone.js';
+
 import { staffGuard } from '../middleware/auth.js';
 
 export const staffRouter = express.Router();
