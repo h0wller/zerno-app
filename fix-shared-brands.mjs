@@ -1,177 +1,156 @@
-#!/usr/bin/env node
-/**
- * fix-all-v6.mjs — центрируем логотип в шапке.
- *
- * Причина: grid-template-columns: minmax(0,1fr) auto auto auto
- *          → col-2 (brand) сдвинут вправо от центра, если левая
- *          группа шире правой.
- * Решение: 1fr auto 1fr + .topbar-right (mbonus+profile) как cluster.
- *          Обёртка .topbar-right живёт ТОЛЬКО на ≥821px; на мобиле
- *          разворачивается обратно (иначе в v2 пропадал профиль).
- */
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+// fix-smoke-and-sw.mjs
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
 
-const ROOT  = path.dirname(fileURLToPath(import.meta.url));
-const APPLY = process.argv.includes('--apply');
-const STAMP = new Date().toISOString().replace(/[-:T]/g, '')
-  .slice(0, 15).replace(/(\d{8})(\d{6})/, '$1-$2');
+const ROOT = process.cwd();
 
-const log = [];
-const ok = (s)   => log.push('  ✓ ' + s);
-const warn = (s) => log.push('  ⚠ ' + s);
-const skip = (s) => log.push('  · ' + s);
-
-function readUtf8(rel) {
-  const full = path.join(ROOT, rel);
-  if (!fs.existsSync(full)) { warn('не найден: ' + rel); return null; }
-  return { full, raw: fs.readFileSync(full, 'utf8') };
-}
-function writeUtf8(full, text, hadCRLF) {
-  if (hadCRLF) text = text.replace(/\n/g, '\r\n');
-  if (APPLY) {
-    const b = full + '.pre-fix-' + STAMP;
-    fs.copyFileSync(full, b);
-    fs.writeFileSync(full, text, 'utf8');
-    log.push('    backup: ' + path.relative(ROOT, b));
-  }
+function log(msg, ok = true) {
+  console.log(`${ok ? '✅' : '⚠️️'} ${msg}`);
 }
 
-/* ═══ [1] theme-v2.css — F5.63 центрирование brand ═════════════════════ */
-{
-  const r = readUtf8('public/app/ui/theme-v2.css');
-  if (r) {
-    let text = r.raw.replace(/\r\n/g, '\n');
-    const hadCRLF = r.raw.includes('\r\n');
-    const MARKER = '/* [fix-all v6] F5.63 */';
-    if (text.includes(MARKER)) {
-      skip('F5.63 уже присутствует');
-    } else {
-      const block = `
-
-${MARKER}
-/* ─────────────────────────────────────────────────────────────────────────
-   F5.63 BRAND-CENTER: 1fr auto 1fr → brand всегда по центру topbar.
-   mbonus+profile живут в .topbar-right (JS-обёртка, только ≥821px). */
-
-@media (min-width: 821px) {
-  body[data-brand] .topbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 8px;
+function updateFile(relPath, transform) {
+  const absPath = path.join(ROOT, relPath);
+  if (!fs.existsSync(absPath)) {
+    log(`Файл не найден: ${relPath}`, false);
+    return false;
   }
-  body[data-brand] .topbar .venueWrap {
-    grid-column: 1; grid-row: 1; justify-self: start; min-width: 0;
+  const original = fs.readFileSync(absPath, 'utf8');
+  const updated = transform(original);
+  if (original !== updated) {
+    fs.writeFileSync(absPath, updated, 'utf8');
+    log(`Обновлен: ${relPath}`);
+    return true;
   }
-  body[data-brand] .topbar .brand {
-    grid-column: 2; grid-row: 1; justify-self: center; min-width: 0;
-  }
-  body[data-brand] .topbar .topbar-right {
-    grid-column: 3; grid-row: 1; justify-self: end;
-    display: flex; align-items: center; gap: 8px; min-width: 0;
-  }
-  body[data-brand] .topbar #modeSeg {
-    grid-column: 1 / -1; grid-row: 2;
-  }
-  /* если JS не успел обернуть — не даём упасть раскладке */
-  body[data-brand] .topbar #mbonusBtn { grid-column: 3; grid-row: 1; justify-self: end; margin-right: 56px; }
-  body[data-brand] .topbar #profileTopBtn { grid-column: 3; grid-row: 1; justify-self: end; }
-}
-/* [fix-all v6] END F5.63 */
-`;
-      if (!text.endsWith('\n')) text += '\n';
-      text += block;
-      writeUtf8(r.full, text, hadCRLF);
-      ok('[1] F5.63 добавлен в theme-v2.css');
-    }
-  }
+  log(`Без изменений: ${relPath}`);
+  return false;
 }
 
-/* ═══ [2] scrolltop.js — wrap .topbar-right только на ≥821 ═════════════ */
-{
-  const rel = 'public/app/ui/scrolltop.js';
-  const r = readUtf8(rel);
-  if (r) {
-    let text = r.raw.replace(/\r\n/g, '\n');
-    const hadCRLF = r.raw.includes('\r\n');
-    const MARKER = '/* [fix-all v6] topbar-right wrap-toggle */';
+// ─────────────────────────────────────────────────────────────
+// 1. Исправление scripts/contract-smoke.mjs (позиция шебанга и автостарт)
+// ─────────────────────────────────────────────────────────────
+console.log('--- 1. Исправление scripts/contract-smoke.mjs ---');
+updateFile('scripts/contract-smoke.mjs', (src) => {
+  let res = src;
 
-    if (text.includes(MARKER)) {
-      skip('wrap-toggle уже присутствует');
-    } else {
-      const block = `
+  // 1. Полностью вырезаем все дубли шебанга со всех строк
+  res = res.replace(/^#!.*$/gm, '').trim();
 
-${MARKER}
-(function topbarRightToggle() {
-  function unwrap() {
-    var w = document.querySelector('.topbar-right');
-    if (!w || !w.parentNode) return;
-    var topbar = w.parentNode;
-    while (w.firstChild) topbar.insertBefore(w.firstChild, w);
-    w.remove();
-  }
-  function wrap() {
-    var topbar = document.querySelector('.topbar');
-    var profile = document.getElementById('profileTopBtn');
-    var mbonus = document.getElementById('mbonusBtn');
-    if (!topbar || !profile || !mbonus) return;
-    if (mbonus.parentElement && mbonus.parentElement.classList.contains('topbar-right')) return;
-    var w = document.createElement('div');
-    w.className = 'topbar-right';
-    mbonus.parentNode.insertBefore(w, mbonus);
-    w.appendChild(mbonus);
-    w.appendChild(profile);
-  }
-  function apply() {
-    if (window.innerWidth >= 821) wrap();
-    else unwrap();
-  }
-  if (document.readyState === 'loading')
-    document.addEventListener('DOMContentLoaded', apply);
-  else apply();
-  window.addEventListener('resize', function () {
-    clearTimeout(window.__tbT);
-    window.__tbT = setTimeout(apply, 100);
+  // 2. Если автозапуск сервера ещё не был оформлен корректно
+  if (!res.includes('spawnServerIfNeeded')) {
+    const autoServerCode = `
+import { spawn } from 'node:child_process';
+
+let __serverProc = null;
+async function spawnServerIfNeeded(url) {
+  try {
+    const ping = await fetch(url + '/api/health');
+    if (ping.ok) return;
+  } catch (_) {}
+
+  console.log('⚡ Сервер не обнаружен на ' + url + '. Автозапуск для смоук-тестов...');
+  __serverProc = spawn('node', ['server.js'], {
+    env: {
+      ...process.env,
+      PORT: '3000',
+      DB_PATH: process.env.DB_PATH || './zerno.db',
+      ADMIN_CODE: process.env.ADMIN_CODE || '3364',
+      CASHIER_CODE: process.env.CASHIER_CODE || '2468',
+      DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
+    },
+    stdio: 'ignore'
   });
-  setTimeout(apply, 200);
-  setTimeout(apply, 1000);
-})();
+
+  const start = Date.now();
+  while (Date.now() - start < 15000) {
+    try {
+      const ping = await fetch(url + '/api/health');
+      if (ping.ok) {
+        console.log('✅ Сервер успешно поднят для тестов');
+        return;
+      }
+    } catch (_) {}
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  throw new Error('Не удалось запустить сервер за 15 секунд');
+}
+
+function cleanupServer() {
+  if (__serverProc) {
+    try {
+      __serverProc.kill();
+    } catch (_) {}
+  }
+}
+process.on('exit', cleanupServer);
+process.on('SIGINT', () => { cleanupServer(); process.exit(1); });
+process.on('SIGTERM', () => { cleanupServer(); process.exit(1); });
 `;
-      if (!text.endsWith('\n')) text += '\n';
-      text += block;
-      writeUtf8(r.full, text, hadCRLF);
-      ok('[2] topbar-right wrap-toggle добавлен в scrolltop.js');
-    }
+    res = autoServerCode.trim() + '\n\n' + res;
+    res = res.replace(
+      /(console\.log\(["']Контракт-смоук[^"']*["']\);?)/,
+      '$1\nawait spawnServerIfNeeded("http://localhost:3000");'
+    );
   }
+
+  // 3. Ставим шебанг строго на первую строку файла
+  return '#!/usr/bin/env node\n' + res.trim() + '\n';
+});
+
+// ─────────────────────────────────────────────────────────────
+// 2. Очистка public/sw.js от несуществующего overlay.js
+// ─────────────────────────────────────────────────────────────
+console.log('\n--- 2. Очистка кэша sw.js от overlay.js ---');
+updateFile('public/sw.js', (src) => {
+  let res = src;
+  
+  // Удаляем строку с overlay.js (сохраняя overlay-core.js)
+  res = res.replace(/[^\n]*overlay\.js[^\n]*,?\n?/g, (line) => {
+    if (line.includes('overlay-core.js')) return line;
+    log(`Удалена строка из кэша: ${line.trim()}`);
+    return '';
+  });
+
+  // Инкремент STATIC_CACHE
+  res = res.replace(/STATIC_CACHE\s*=\s*['"]zerno-static-v(\d+)['"]/, (_m, num) => {
+    const next = parseInt(num, 10) + 1;
+    log(`STATIC_CACHE: v${num} -> v${next}`);
+    return `STATIC_CACHE = 'zerno-static-v${next}'`;
+  });
+
+  return res;
+});
+
+// ─────────────────────────────────────────────────────────────
+// 3. Проверка синтаксиса и запуск смоук-тестов
+// ─────────────────────────────────────────────────────────────
+console.log('\n--- 3. Проверка синтаксиса (node --check) ---');
+try {
+  execSync('node --check scripts/contract-smoke.mjs', { stdio: 'inherit' });
+  execSync('node --check public/sw.js', { stdio: 'inherit' });
+  log('Синтаксис файлов корректен!');
+} catch (e) {
+  console.error('❌ Ошибка синтаксиса:', e.message);
+  process.exit(1);
 }
 
-/* ═══ [3] sw.js bump ═══════════════════════════════════════════════════ */
-{
-  const rel = 'public/sw.js';
-  const r = readUtf8(rel);
-  if (r) {
-    const hadCRLF = r.raw.includes('\r\n');
-    let text = r.raw.replace(/\r\n/g, '\n');
-    const before = text;
-    text = text.replace(/zerno-static-v(\d+)/g, (_, n) => 'zerno-static-v' + (+n + 1));
-    if (text !== before) {
-      writeUtf8(r.full, text, hadCRLF);
-      ok('[3] STATIC_CACHE +1');
-    } else {
-      skip('[3] sw.js — без изменений');
-    }
-  }
+console.log('\n--- 4. Запуск контракт-смоука (node scripts/contract-smoke.mjs) ---');
+try {
+  execSync('node scripts/contract-smoke.mjs', { stdio: 'inherit' });
+  log('Контракт-смоук успешно пройден!');
+} catch (e) {
+  console.error('❌ Ошибка смоука:', e.message);
+  process.exit(1);
 }
 
-console.log('\n' + log.join('\n'));
-console.log('');
-if (!APPLY) { console.log('ℹ️  Dry-run. Применить: node fix-all-v6.mjs --apply\n'); process.exit(0); }
-console.log('✅ v6 применено. Ctrl+Shift+R и проверить:');
-console.log('   • 1243 / 1440, coffee и delivery: логотип ровно по центру шапки');
-console.log('   • 821-1180: то же');
-console.log('   • 390 / 512 / 554: как было — venue слева, brand центр, профиль справа');
-console.log('');
-console.log('   node --check public/app/ui/scrolltop.js');
-console.log('   npm run pretest');
+// ─────────────────────────────────────────────────────────────
+// 5. Запуск npm run audit
+// ─────────────────────────────────────────────────────────────
+console.log('\n--- 5. Полный аудит барьеров (npm run audit) ---');
+try {
+  execSync('npm run audit', { stdio: 'inherit' });
+  console.log('\n🏆 ВСЕ БАРЬЕРЫ ЗЕЛЕНЫЕ (0 ОШИБОК, 0 ПРЕДУПРЕЖДЕНИЙ)!');
+} catch (e) {
+  console.error('❌ Ошибка аудита:', e.message);
+  process.exit(1);
+}

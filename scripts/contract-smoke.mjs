@@ -1,4 +1,54 @@
 #!/usr/bin/env node
+import { spawn } from 'node:child_process';
+
+let __serverProc = null;
+async function spawnServerIfNeeded(url) {
+  try {
+    const ping = await fetch(url + '/api/health');
+    if (ping.ok) return;
+  } catch (_) {
+    // Сервер не запущен — поднимаем для CI
+  }
+
+  console.log('⚡ Сервер не обнаружен на ' + url + '. Автозапуск для смоук-тестов...');
+  __serverProc = spawn('node', ['server.js'], {
+    env: {
+      ...process.env,
+      PORT: '3000',
+      DB_PATH: process.env.DB_PATH || './zerno.db',
+      ADMIN_CODE: process.env.ADMIN_CODE || '3364',
+      CASHIER_CODE: process.env.CASHIER_CODE || '2468',
+      DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
+    },
+    stdio: 'ignore'
+  });
+
+  const start = Date.now();
+  while (Date.now() - start < 15000) {
+    try {
+      const ping = await fetch(url + '/api/health');
+      if (ping.ok) {
+        console.log('✅ Сервер успешно запущен в фоне');
+        return;
+      }
+    } catch (_) {}
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  throw new Error('Не удалось запустить сервер за 15 секунд');
+}
+
+function cleanupServer() {
+  if (__serverProc) {
+    try {
+      __serverProc.kill();
+    } catch (_) {}
+  }
+}
+process.on('exit', cleanupServer);
+process.on('SIGINT', () => { cleanupServer(); process.exit(1); });
+process.on('SIGTERM', () => { cleanupServer(); process.exit(1); });
+
+
 const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
 const ADMIN = process.env.SMOKE_ADMIN_CODE || '';
 const CASHIER = process.env.SMOKE_CASHIER_CODE || '';
