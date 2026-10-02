@@ -18,9 +18,10 @@ function setTab(t) {
     if (bonusBox) bonusBox.hidden = t !== 'bonus';
 }
 
-/* ── Открытие шторки (мобильная версия ≤1180px) ── */
+/* ── Открытие шторки (мобильная версия ≤820px) ── */
 function openPanel(tab) {
     setTab(tab);
+    /* [fix-all v3] 820 → 1180: панель как overlay на планшете. */
     if (window.innerWidth <= 1180) {
         var p = document.getElementById('panel');
         if (p) p.classList.add('open');

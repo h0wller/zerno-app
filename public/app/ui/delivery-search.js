@@ -14,9 +14,13 @@
   (function(){
     var dv=document.getElementById('deliveryView');if(!dv||dv.querySelector('#dSearch'))return;
     var mh=dv.querySelector('.mh-top');if(!mh)return;
+    /* fix-shared-brands: .search внутри .mh-right, иначе __fitSearch()
+       не находит контейнер и поиск разрастается на мобиле. */
+    var right=document.createElement('div');right.className='mh-right';
     var wrap=document.createElement('div');wrap.className='search';
     wrap.innerHTML='🔍 <input id="dSearch" placeholder="Найти в меню…">';
-    mh.appendChild(wrap);
+    right.appendChild(wrap);
+    mh.appendChild(right);
     document.getElementById('dSearch').addEventListener('input',function(e){dQuery=e.target.value.trim().toLowerCase();applyDFilter();});
   })();
 })();

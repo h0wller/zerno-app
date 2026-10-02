@@ -8,10 +8,10 @@
   var css = document.createElement("style");
 css.textContent =
 ".chat-fab{z-index:95!important} " +
-"@media(max-width:1180px){body.panel-open .chat-fab{display:none}} " +
+"@media(max-width:820px){body.panel-open .chat-fab{display:none}} " +
 /* Ф3.63: открытая шторка = документ не скроллится (убирает «скролл-призрак» и конфликты скроллов) */
 /* Ф3.62+F3.63: открытая шторка — документ не скроллится (дубль убран) */
-"@media(max-width:1180px){body.panel-open{overflow:hidden}} " +
+"@media(max-width:820px){body.panel-open{overflow:hidden}} " +
 /* ленты не передают скролл дальше себя (overscroll-цепочка) */
 ".pv,#chatMsgs,.cartPanel{overscroll-behavior:contain}" +
     ".modal{z-index:340!important} " +

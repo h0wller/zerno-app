@@ -121,3 +121,5 @@ repomix-output.xml
 lh-cold-.json
 .env.example
 .env.example
+# Pre-fix бэкапы от fix-all*.mjs
+*.pre-fix-*
