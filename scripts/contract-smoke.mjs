@@ -3,14 +3,22 @@ import { spawn } from 'node:child_process';
 
 let __ciServer = null;
 async function _ensureServerUp() {
-  const target = 'http://localhost:3000/api/health';
-  try {
-    const ping = await fetch(target);
-    if (ping.ok) return; // Сервер уже запущен (например, локально в VS Code)
-  } catch (_) {}
+  const checkHealth = async () => {
+    try {
+      const res = await fetch('http://127.0.0.1:3000/api/health');
+      if (res.ok) return true;
+    } catch (_) {}
+    try {
+      const res = await fetch('http://localhost:3000/api/health');
+      if (res.ok) return true;
+    } catch (_) {}
+    return false;
+  };
 
-  console.log('⚡ Сервер не найден на localhost:3000. Запуск server.js для смоука...');
-  __ciServer = spawn('node', ['server.js'], {
+  if (await checkHealth()) return;
+
+  console.log('⚡ Сервер не найден на localhost:3000. Запуск server.js...');
+  __ciServer = spawn(process.execPath, ['server.js'], {
     env: {
       ...process.env,
       PORT: '3000',
@@ -19,25 +27,37 @@ async function _ensureServerUp() {
       CASHIER_CODE: process.env.CASHIER_CODE || '2468',
       DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
     },
-    stdio: 'ignore'
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  let serverOutput = '';
+  __ciServer.stdout?.on('data', (d) => { serverOutput += d.toString(); });
+  __ciServer.stderr?.on('data', (d) => { serverOutput += d.toString(); });
+
+  let hasExited = false;
+  let exitCode = null;
+  __ciServer.on('exit', (code) => {
+    hasExited = true;
+    exitCode = code;
   });
 
   const startTime = Date.now();
   while (Date.now() - startTime < 15000) {
-    try {
-      const ping = await fetch(target);
-      if (ping.ok) {
-        console.log('✅ Сервер запущен в фоне (PID: ' + __ciServer.pid + ')');
-        return;
-      }
-    } catch (_) {}
+    if (hasExited) {
+      throw new Error('server.js аварийно завершился при старте (код ' + exitCode + '):\n' + serverOutput);
+    }
+    if (await checkHealth()) {
+      console.log('✅ Сервер запущен в фоне (PID: ' + __ciServer.pid + ')');
+      return;
+    }
     await new Promise((r) => setTimeout(r, 200));
   }
-  throw new Error('Таймаут запуска server.js (15 сек)');
+
+  throw new Error('Таймаут запуска server.js (15 сек). Логи сервера:\n' + (serverOutput || '(пусто)'));
 }
 
 function _killCiServer() {
-  if (__ciServer) {
+  if (__ciServer && !__ciServer.killed) {
     try { __ciServer.kill('SIGTERM'); } catch (_) {}
     __ciServer = null;
   }
@@ -47,7 +67,6 @@ process.on('SIGINT', () => { _killCiServer(); process.exit(1); });
 process.on('SIGTERM', () => { _killCiServer(); process.exit(1); });
 
 await _ensureServerUp();
-
 
 const __serverProc = null;
 

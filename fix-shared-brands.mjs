@@ -1,128 +1,127 @@
-// apply-final-clean.mjs
+// integrate-smoke-audit.mjs
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
 const ROOT = process.cwd();
 
-// 1. Чистый public/app/core/splash.js без синтаксических ошибок и вложенных if
-const cleanSplash = `/* public/app/core/splash.js — Ф3.3 + Ф3.13a: сплэш бренда.
-Единственный владелец сплэша: статичная разметка #brandSplashStatic в index.html.
-Динамический #brandSplash создаётся ТОЛЬКО если статичной разметки нет (fallback).
-Правило: не более одного сплэша; при splashDone/DEEP/IN_TG — ни одного. */
-(function () {
-  'use strict';
-  
-  var bs = document.getElementById('brandSplash');
-  if (bs) bs.remove();
-  var ss = document.getElementById('brandSplashStatic');
-  
-  var done = false;
-  try { done = (()=>{try{return sessionStorage.getItem("splashDone")}catch(e){return null}})() === '1'; } catch (e) {}
-
-  var QS = new URLSearchParams(location.search);
-  var IN_TG = /Telegram/i.test(navigator.userAgent);
-  var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
-
-  function finish(choice) {
-    try { (()=>{try{sessionStorage.setItem("splashDone","1")}catch(e){}})(); } catch (e) {}
-    try { localStorage.setItem('zt_brand', choice); } catch (e) {} // Фолбэк для PWA
-    
-    document.documentElement.classList.remove('need-splash');
-    document.documentElement.classList.add('no-splash');
-    
-    var el = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
-    if (el) el.remove();
-    
-    window.brand = choice; // Безопасная запись в глобал (в strict mode просто brand = choice вызовет ошибку)
-    
-    if ((window.mode === 'cashier' || window.mode === 'orders') && typeof window.setMode === 'function') {
-      window.setMode('guest');
-    }
-    
-    document.querySelectorAll('#brandSeg button').forEach(function (x) {
-      x.classList.toggle('on', x.dataset.brand === choice);
-    });
-    
-    if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
-    if (choice === 'delivery' && typeof window.DMENU !== 'undefined' && window.DMENU.length === 0 && typeof window.loadDelivery === 'function') {
-      window.loadDelivery();
-    }
-    if (window.chatState) window.chatState.setChatCtx(choice);
-    else if (typeof window.setChatCtx === 'function') window.setChatCtx(choice);
-  }
-
-  function bind(root) {
-    root.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-go]');
-      if (!b) return;
-      finish(b.dataset.go);
-    });
-  }
-
-  if (done || DEEP || IN_TG) {
-    if (ss) ss.remove();
-    document.documentElement.classList.remove('need-splash');
-    document.documentElement.classList.add('no-splash');
-    return;
-  }
-
-  if (ss) { 
-    bind(ss); 
-    return; 
-  }
-
-  /* fallback: статичной разметки нет — создаём динамически */
-  var sp = document.createElement('div');
-  sp.id = 'brandSplash';
-  sp.innerHTML = '<div class="spInner">' +
-    '<div class="spTitle">«Пятница» & …и кофе</div>' +
-    '<div class="spSub">Выберите, куда вы сегодня</div>' +
-    '<div class="spBtns">' +
-    '<button class="spBtn spPizza" data-go="delivery"><span class="em">🍕</span><span class="bt">«Пятница»</span><small>доставка пиццы и роллов</small></button>' +
-    '<button class="spBtn spCoffee" data-go="coffee"><span class="em">🌊</span><span class="bt">Кофейня</span><small>меню, штампы и бонусы</small></button>' +
-    '</div></div>';
-  document.body.appendChild(sp);
-  bind(sp);
-})();
-`;
-
-fs.writeFileSync(path.join(ROOT, 'public/app/core/splash.js'), cleanSplash, 'utf8');
-console.log('✅ Записан валидный public/app/core/splash.js');
-
-// 2. Исправление вложенного литерала в public/app/menu.js (строка 72)
-const menuPath = path.join(ROOT, 'public/app/menu.js');
-let menuSrc = fs.readFileSync(menuPath, 'utf8');
-
-menuSrc = menuSrc.replace(
-  /\$\{p\.comp && p\.comp\.length \? `<div class="comp">\$\{p\.comp\.map\(c => `<i>\$\{esc\(c\)\}<\/i>`\)\.join\(''\)\}<\/div>` : ''\}/g,
-  "${p.comp && p.comp.length ? '<div class=\"comp\">' + p.comp.map(c => '<i>' + esc(c) + '</i>').join('') + '</div>' : ''}"
-);
-
-fs.writeFileSync(menuPath, menuSrc, 'utf8');
-console.log('✅ Строка 72 в public/app/menu.js переведена в строковую конкатенацию');
-
-// 3. Проверка синтаксиса
-console.log('\n--- 1. Проверка синтаксиса (node --check) ---');
-execSync('node --check public/app/core/splash.js', { stdio: 'inherit' });
-execSync('node --check public/app/menu.js', { stdio: 'inherit' });
-console.log('✅ Синтаксис splash.js и menu.js валиден!');
-
-// 4. Проверка ESLint
-console.log('\n--- 2. Запуск npm run lint:code ---');
-try {
-  execSync('npm run lint:code', { stdio: 'inherit' });
-  console.log('\n🎉 ESLINT ПОЛНОСТЬЮ ЧИСТ: 0 ОШИБОК, 0 ВОРНИНГОВ!');
-} catch (e) {
-  console.error('Статус линтера:', e.message);
+function log(msg, ok = true) {
+  console.log(`${ok ? '✅' : '⚠️'} ${msg}`);
 }
 
-// 5. Полный аудит барьеров
-console.log('\n--- 3. Запуск npm run audit ---');
+// ─────────────────────────────────────────────────────────────
+// 1. Встраивание `npm run smoke` в `npm run audit` в package.json
+// ─────────────────────────────────────────────────────────────
+console.log('--- 1. Обновление package.json (включение smoke в audit) ---');
+const pkgPath = path.join(ROOT, 'package.json');
+const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+if (!pkg.scripts.audit.includes('npm run smoke')) {
+  pkg.scripts.audit = pkg.scripts.audit + ' && npm run smoke';
+  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+  log('npm run smoke успешно добавлен в цепочку audit!');
+} else {
+  log('npm run smoke уже присутствует в audit');
+}
+
+// ─────────────────────────────────────────────────────────────
+// 2. Улучшение scripts/contract-smoke.mjs (логи сервера + 127.0.0.1)
+// ─────────────────────────────────────────────────────────────
+console.log('\n--- 2. Исправление scripts/contract-smoke.mjs ---');
+const smokePath = path.join(ROOT, 'scripts/contract-smoke.mjs');
+let smokeSrc = fs.readFileSync(smokePath, 'utf8');
+
+// Полностью переписываем блок запуска сервера с перехватом stdout/stderr и двойной проверкой портов
+const reliableServerStarter = `import { spawn } from 'node:child_process';
+
+let __ciServer = null;
+async function _ensureServerUp() {
+  const checkHealth = async () => {
+    try {
+      const res = await fetch('http://127.0.0.1:3000/api/health');
+      if (res.ok) return true;
+    } catch (_) {}
+    try {
+      const res = await fetch('http://localhost:3000/api/health');
+      if (res.ok) return true;
+    } catch (_) {}
+    return false;
+  };
+
+  if (await checkHealth()) return;
+
+  console.log('⚡ Сервер не найден на localhost:3000. Запуск server.js...');
+  __ciServer = spawn(process.execPath, ['server.js'], {
+    env: {
+      ...process.env,
+      PORT: '3000',
+      DB_PATH: process.env.DB_PATH || './zerno.db',
+      ADMIN_CODE: process.env.ADMIN_CODE || '3364',
+      CASHIER_CODE: process.env.CASHIER_CODE || '2468',
+      DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
+    },
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  let serverOutput = '';
+  __ciServer.stdout?.on('data', (d) => { serverOutput += d.toString(); });
+  __ciServer.stderr?.on('data', (d) => { serverOutput += d.toString(); });
+
+  let hasExited = false;
+  let exitCode = null;
+  __ciServer.on('exit', (code) => {
+    hasExited = true;
+    exitCode = code;
+  });
+
+  const startTime = Date.now();
+  while (Date.now() - startTime < 15000) {
+    if (hasExited) {
+      throw new Error('server.js аварийно завершился при старте (код ' + exitCode + '):\\n' + serverOutput);
+    }
+    if (await checkHealth()) {
+      console.log('✅ Сервер запущен в фоне (PID: ' + __ciServer.pid + ')');
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+
+  throw new Error('Таймаут запуска server.js (15 сек). Логи сервера:\\n' + (serverOutput || '(пусто)'));
+}
+
+function _killCiServer() {
+  if (__ciServer && !__ciServer.killed) {
+    try { __ciServer.kill('SIGTERM'); } catch (_) {}
+    __ciServer = null;
+  }
+}
+process.on('exit', _killCiServer);
+process.on('SIGINT', () => { _killCiServer(); process.exit(1); });
+process.on('SIGTERM', () => { _killCiServer(); process.exit(1); });
+
+await _ensureServerUp();
+`;
+
+// Заменяем верхний блок до первого консоль лога
+smokeSrc = smokeSrc.replace(/import\s*\{\s*spawn\s*\}[\s\S]*?await\s+_ensureServerUp\(\);?\n?/m, '');
+if (smokeSrc.startsWith('#!')) {
+  const nl = smokeSrc.indexOf('\n');
+  smokeSrc = smokeSrc.slice(0, nl + 1) + reliableServerStarter + '\n' + smokeSrc.slice(nl + 1).trimStart();
+} else {
+  smokeSrc = reliableServerStarter + '\n' + smokeSrc;
+}
+
+fs.writeFileSync(smokePath, smokeSrc, 'utf8');
+log('scripts/contract-smoke.mjs обновлен: добавлена диагностика и IPv4/IPv6 фолбэк');
+
+// ─────────────────────────────────────────────────────────────
+// 3. Локальный прогон полного аудита с интегрированным смоуком
+// ─────────────────────────────────────────────────────────────
+console.log('\n--- 3. Проверка обновленного npm run audit ---\n');
 try {
   execSync('npm run audit', { stdio: 'inherit' });
-  console.log('\n🏆 ВСЕ АВТО-БАРЬЕРЫ ЗЕЛЕНЫЕ!');
+  console.log('\n🏆 ВСЕ БАРЬЕРЫ ЗЕЛЕНЫЕ (ВКЛЮЧАЯ СМОУК-КОНТРАКТ)!');
 } catch (e) {
-  console.error('Ошибка аудита:', e.message);
+  console.error('\n❌ Ошибка аудита:', e.message);
   process.exit(1);
 }
