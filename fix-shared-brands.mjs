@@ -1,49 +1,37 @@
-// fix-fitsearch.mjs
+// fix-menu-editor-categories.mjs
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
 const ROOT = process.cwd();
-const viewsPath = path.join(ROOT, 'public/app/core/views.js');
 
-if (!fs.existsSync(viewsPath)) {
-  console.error('❌ views.js не найден');
-  process.exit(1);
+function log(msg, ok = true) {
+  console.log(`${ok ? '✅' : '⚠️'} ${msg}`);
 }
 
-let src = fs.readFileSync(viewsPath, 'utf8');
+const menuEditorPath = path.join(ROOT, 'public/app/menu-editor.js');
+if (fs.existsSync(menuEditorPath)) {
+  let src = fs.readFileSync(menuEditorPath, 'utf8');
 
-// Исправляем необъявленную переменную i в fitSearch и по всему views.js
-const fixed = src.replace(/for\s*\(\s*i\s*=\s*0;/g, 'for (let i = 0;');
+  // Добавляем drinks и переименовываем sauces в "Допы и соусы"
+  const targetArray = `var DCATSL=[
+  {id:'pizza',e:'🍕',l:'Пиццы'},
+  {id:'rolls',e:'🍣',l:'Роллы'},
+  {id:'sets',e:'🍱',l:'Сеты'},
+  {id:'drinks',e:'🥤',l:'Напитки'},
+  {id:'sauces',e:'🥫',l:'Допы и соусы'}
+];`;
 
-if (src !== fixed) {
-  fs.writeFileSync(viewsPath, fixed, 'utf8');
-  console.log('✅ views.js: "for (i = 0;" заменено на безопасный блочный "for (let i = 0;"');
-} else {
-  // Если объявление выглядело иначе, находим функцию fitSearch и явно объявляем let i
-  const fitSearchRegex = /function\s+fitSearch\s*\([^)]*\)\s*\{/;
-  if (fitSearchRegex.test(src)) {
-    src = src.replace(fitSearchRegex, '$&\n  let i = 0;');
-    fs.writeFileSync(viewsPath, src, 'utf8');
-    console.log('✅ views.js: переменная let i объявлена в начале fitSearch');
-  }
+  src = src.replace(/var\s+DCATSL\s*=\s*\[[\s\S]*?\];/, targetArray);
+  fs.writeFileSync(menuEditorPath, src, 'utf8');
+  log('Обновлен массив DCATSL в public/app/menu-editor.js');
 }
 
-// 1. Проверка синтаксиса
-console.log('\n--- 1. Проверка синтаксиса (node --check) ---');
-try {
-  execSync('node --check public/app/core/views.js', { stdio: 'inherit' });
-  console.log('✅ Синтаксис views.js корректен!');
-} catch (e) {
-  console.error('❌ Ошибка синтаксиса:', e.message);
-  process.exit(1);
-}
-
-// 2. Проверка линтера и аудита
-console.log('\n--- 2. Запуск npm run audit ---');
+// Проверка линтера и аудита
+console.log('\n--- Запуск npm run audit ---');
 try {
   execSync('npm run audit', { stdio: 'inherit' });
-  console.log('\n🏆 ВСЕ БАРЬЕРЫ ЗЕЛЕНЫЕ (0 ОШИБОК, 0 ВОРНИНГОВ)!');
+  console.log('\n🏆 ВСЕ АВТО-БАРЬЕРЫ ЗЕЛЕНЫЕ (0 ОШИБОК, 0 ВОРНИНГОВ)!');
 } catch (e) {
   console.error('❌ Ошибка аудита:', e.message);
   process.exit(1);

@@ -1,3 +1,5 @@
+
+
 /* CATS-GUARD v1: не падаем, если catalog.js не загрузился (офлайн/ISP-блок/старый кэш) */
 if (typeof window.CATS === 'undefined') { window.CATS = []; }
 /* public/app/core/editor.js — Ф5.7: кластер "editor" из legacy-core.js (вербатим, порядок сохранён). Top-level = global. */

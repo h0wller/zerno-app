@@ -43,7 +43,13 @@ window.deliveryInfo = null;
 window.promoInfo = null;
 window.cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
 
-const DCATS = [{ id: 'pizza', e: '🍕', l: 'Пиццы' }, { id: 'rolls', e: '🍣', l: 'Роллы' }, { id: 'sets', e: '🍱', l: 'Сеты' }, { id: 'sauces', e: '🥫', l: 'Соусы' }];
+const DCATS = [
+  { id: 'pizza', e: '🍕', l: 'Пиццы' },
+  { id: 'rolls', e: '🍣', l: 'Роллы' },
+  { id: 'sets', e: '🍱', l: 'Сеты' },
+  { id: 'drinks', e: '🥤', l: 'Напитки' },
+  { id: 'sauces', e: '🥫', l: 'Допы и соусы' }
+];
 window.dcat = 'pizza';
 
 function renderDeliveryRail() {
@@ -72,31 +78,38 @@ function renderDeliveryMenu() {
   const list = DMENU.filter(p => p.cat === dcat);
   let html = list.map(p => {
     const opts = p.opts || [];
-    
-    // Генерируем чипсы опций. Первый вариант (i === 0) по умолчанию выбран (.sel).
-    // ВАЖНО: оборачиваем текст в .ol и .op, чтобы CSS из views.js корректно красил веса/цены.
-    const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0); /* Ф5.23 */
-const optsHTML = opts.length
-      ? `<div class="opts">
-          
-          ${opts.map((o, i) => {
-            // Без автоподсветки: .sel вешается только тапом пользователя
-            // (или кнопкой «Добавить» как обратная связь)
-            return `<button type="button" data-id="${p.id}" data-oi="${i}">
-              <span class="ol">${esc(o.l)}</span> <span class="op">${esc(o.w)} · ${fmt(o.p)}</span>
-            </button>`;
-          }).join('')}
+    const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
 
-        </div>`
-      : '';
+    // Вариант 1: Позиция с выбором размера/теста (Пицца)
+    let bodyMiddleHTML = '';
+    if (opts.length > 0) {
+      bodyMiddleHTML = `<div class="opts">
+        ${opts.map((o, i) => `<button type="button" data-id="${p.id}" data-oi="${i}">
+          <span class="ol">${esc(o.l)}</span> <span class="op">${esc(o.w)} · ${fmt(o.p)}</span>
+        </button>`).join('')}
+      </div>`;
+    } else {
+      // Вариант 2: Обычная позиция (роллы, сеты, напитки, соусы) — выводим граммовку/объем и цену
+      const priceStr = fmt(Number(p.price) || 0);
+      const volStr = p.vol ? esc(String(p.vol).trim()) : '';
+      bodyMiddleHTML = `<div class="single-meta" style="display:flex;align-items:baseline;justify-content:space-between;margin:8px 0 12px;padding:4px 0;border-bottom:1px solid rgba(18,58,107,0.06)">
+        ${volStr ? `<span class="vol" style="font-size:13px;font-weight:600;color:#8E9AA5">${volStr}</span>` : '<span></span>'}
+        <span class="price" style="font-size:18px;font-weight:800;color:var(--fr-choc,#123A6B)">${priceStr}</span>
+      </div>`;
+    }
 
     return `<article class="card" data-product-id="${p.id}">
       <div class="media" style="--tint:#F3E2CE"><span class="em">${p.e || '🍕'}</span></div>
       <div class="cbody">
         <h3>${esc(p.name)}</h3>
-        ${p.desc ? `<div class="desc">${esc(p.desc)}</div>` : ''}${p.comp && p.comp.length ? `<div class="comp">${p.comp.map(c => `<i>${esc(c)}</i>`).join('')}</div>` : ''}
-        ${optsHTML}
-        <div class="steprow"><button type="button" class="step" data-step="-1" data-sid="${p.id}" ${n0 ? '' : 'hidden'}>−</button><button class="cta" data-add="${p.id}">${n0 ? 'В корзине · ' + n0 : 'Добавить'}</button><button type="button" class="step" data-step="1" data-sid="${p.id}" ${n0 ? '' : 'hidden'}>+</button></div>
+        ${p.desc ? `<div class="desc">${esc(p.desc)}</div>` : ''}
+        ${p.comp && p.comp.length ? `<div class="comp">${p.comp.map(c => `<i>${esc(c)}</i>`).join('')}</div>` : ''}
+        ${bodyMiddleHTML}
+        <div class="steprow">
+          <button type="button" class="step" data-step="-1" data-sid="${p.id}" ${n0 ? '' : 'hidden'}>−</button>
+          <button class="cta" data-add="${p.id}">${n0 ? 'В корзине · ' + n0 : 'Добавить'}</button>
+          <button type="button" class="step" data-step="1" data-sid="${p.id}" ${n0 ? '' : 'hidden'}>+</button>
+        </div>
       </div>
     </article>`;
   }).join('');
@@ -112,7 +125,7 @@ const optsHTML = opts.length
     html += '<div class="gempty">В этой категории пока пусто</div>';
   }
 
-   $('#deliveryGrid').innerHTML = html;
+  $('#deliveryGrid').innerHTML = html;
   patchDeliveryCards(list);
 
   const addCard = document.getElementById('addDelivCard');
@@ -137,7 +150,11 @@ function patchDeliveryCards(list) {
       if (p.img && !media.querySelector('img')) {
         const em = media.querySelector('.em'); if (em) em.remove();
         const im = document.createElement('img');
-        im.src = p.img; im.alt = p.name || ''; im.loading = 'lazy';
+        im.src = p.img;
+        im.alt = p.name || '';
+        im.loading = 'lazy';
+        im.dataset.zoom = 'true';
+        im.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in';
         media.appendChild(im);
       }
     }
@@ -180,22 +197,41 @@ const row = b.closest('.steprow'); if (row) row.querySelectorAll('.step').forEac
 }
 
 $('#deliveryGrid').addEventListener('click', e => {
-/* Ф5.23: ветка степпера — раньше card-tap, иначе тап по «−» уйдёт в shake/add */
-const st = e.target.closest('[data-step]');
-if (st) {
-  const id = st.dataset.sid; const delta = +st.dataset.step;
-  const item = cart.find(c => String(c.id) === String(id));
-  if (!item && delta < 0) return;
-  if (item) { if (delta > 0) item.qty++; else if (item.qty > 1) item.qty--; else cart.splice(cart.indexOf(item), 1); }
-  localStorage.setItem('zt_cart', JSON.stringify(cart));
-  if (typeof window.updateCartFab === 'function') window.updateCartFab();
-  if (typeof window.renderCart === 'function') window.renderCart();
-  const n = cart.reduce((a, c) => (String(c.id) === String(id) ? a + c.qty : a), 0);
-  const row = st.closest('.steprow'); const mid = row && row.querySelector('[data-add]');
-  if (mid) { mid.textContent = n ? ('В корзине · ' + n) : 'Добавить'; mid.classList.toggle('incart', n > 0); }
-  if (row) row.querySelectorAll('.step').forEach(s => { s.hidden = !n; });
-  return;
-}
+  // 1. Клик по фото или медиа-зоне — ТОЛЬКО полноэкранный Zoom
+  const zoomImg = e.target.closest('[data-zoom], .media img');
+  if (zoomImg) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+    const card = zoomImg.closest('.card, article');
+    const title = card ? (card.querySelector('h3') || {}).textContent : '';
+    const price = card ? (card.querySelector('.price') || {}).textContent : '';
+    if (typeof window.openZoom === 'function') {
+      window.openZoom(zoomImg.src, title, price);
+    }
+    return;
+  }
+
+  // Режим редактирования (карандаш, тумблер стоп-листа) не обрабатывает клики добавления
+  if (e.target.closest('.edBtn') || e.target.closest('.donoff')) return;
+
+  // Степпер
+  const st = e.target.closest('[data-step]');
+  if (st) {
+    const id = st.dataset.sid; const delta = +st.dataset.step;
+    const item = cart.find(c => String(c.id) === String(id));
+    if (!item && delta < 0) return;
+    if (item) { if (delta > 0) item.qty++; else if (item.qty > 1) item.qty--; else cart.splice(cart.indexOf(item), 1); }
+    localStorage.setItem('zt_cart', JSON.stringify(cart));
+    if (typeof window.updateCartFab === 'function') window.updateCartFab();
+    if (typeof window.renderCart === 'function') window.renderCart();
+    const n = cart.reduce((a, c) => (String(c.id) === String(id) ? a + c.qty : a), 0);
+    const row = st.closest('.steprow'); const mid = row && row.querySelector('[data-add]');
+    if (mid) { mid.textContent = n ? ('В корзине · ' + n) : 'Добавить'; mid.classList.toggle('incart', n > 0); }
+    if (row) row.querySelectorAll('.step').forEach(s => { s.hidden = !n; });
+    return;
+  }
+
   // 0. Тап по карточке (мимо чипсов и кнопок) — режим выбора размера
   const card = e.target.closest('#deliveryGrid .card');
   if (card && !e.target.closest('.opts button') && !e.target.closest('[data-add]') && !e.target.closest('.edBtn') && !e.target.closest('.donoff')) {

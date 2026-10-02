@@ -6,7 +6,8 @@ var DCATSL=[
   {id:'pizza',e:'🍕',l:'Пиццы'},
   {id:'rolls',e:'🍣',l:'Роллы'},
   {id:'sets',e:'🍱',l:'Сеты'},
-  {id:'sauces',e:'🥫',l:'Соусы'}
+  {id:'drinks',e:'🥤',l:'Напитки'},
+  {id:'sauces',e:'🥫',l:'Допы и соусы'}
 ];
 
 function editorFields(){
