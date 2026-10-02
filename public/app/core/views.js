@@ -642,7 +642,7 @@ setTimeout(ensure, 300); setTimeout(ensure, 1200); setTimeout(window.__syncHeade
     var byId = document.getElementById('pushBtn');
     if (byId) return byId;
     var all = document.querySelectorAll('#profileBox button, .panel button');
-    for (i = 0; i < all.length; i++) {
+    for (let i = 0; i < all.length; i++) {
       if (/Включить уведомления/.test(all[i].textContent || '')) return all[i];
     }
     return null;
@@ -702,7 +702,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(function (
   function fitSearch() {
   /* Ф5.40: принудительная установка inline width для поиска */
   var mhRights = document.querySelectorAll('.mh-top .mh-right');
-  for (i = 0; i < mhRights.length; i++) {
+  for (let i = 0; i < mhRights.length; i++) {
     if (window.innerWidth <= 820) {
       mhRights[i].style.setProperty('width', '100%', 'important');
       mhRights[i].style.setProperty('max-width', '100%', 'important');
@@ -713,7 +713,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(function (
   }
 
     var list = document.querySelectorAll('.mh-top .mh-right');
-    for (i = 0; i < list.length; i++) {
+    for (let i = 0; i < list.length; i++) {
       if (window.innerWidth <= 820) list[i].style.width = '100%';
       else list[i].style.width = '';
     }
