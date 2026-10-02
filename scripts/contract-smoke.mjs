@@ -1,6 +1,54 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 
+let __ciServer = null;
+async function _ensureServerUp() {
+  const target = 'http://localhost:3000/api/health';
+  try {
+    const ping = await fetch(target);
+    if (ping.ok) return; // Сервер уже запущен (например, локально в VS Code)
+  } catch (_) {}
+
+  console.log('⚡ Сервер не найден на localhost:3000. Запуск server.js для смоука...');
+  __ciServer = spawn('node', ['server.js'], {
+    env: {
+      ...process.env,
+      PORT: '3000',
+      DB_PATH: process.env.DB_PATH || './zerno.db',
+      ADMIN_CODE: process.env.ADMIN_CODE || '3364',
+      CASHIER_CODE: process.env.CASHIER_CODE || '2468',
+      DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
+    },
+    stdio: 'ignore'
+  });
+
+  const startTime = Date.now();
+  while (Date.now() - startTime < 15000) {
+    try {
+      const ping = await fetch(target);
+      if (ping.ok) {
+        console.log('✅ Сервер запущен в фоне (PID: ' + __ciServer.pid + ')');
+        return;
+      }
+    } catch (_) {}
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  throw new Error('Таймаут запуска server.js (15 сек)');
+}
+
+function _killCiServer() {
+  if (__ciServer) {
+    try { __ciServer.kill('SIGTERM'); } catch (_) {}
+    __ciServer = null;
+  }
+}
+process.on('exit', _killCiServer);
+process.on('SIGINT', () => { _killCiServer(); process.exit(1); });
+process.on('SIGTERM', () => { _killCiServer(); process.exit(1); });
+
+await _ensureServerUp();
+
+
 let __serverProc = null;
 async function spawnServerIfNeeded(url) {
   try {

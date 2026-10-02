@@ -1,4 +1,4 @@
-// fix-smoke-and-sw.mjs
+// fix-ci-smoke.mjs
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
@@ -6,7 +6,7 @@ import { execSync } from 'child_process';
 const ROOT = process.cwd();
 
 function log(msg, ok = true) {
-  console.log(`${ok ? '✅' : '⚠️️'} ${msg}`);
+  console.log(`${ok ? '✅' : '⚠️'} ${msg}`);
 }
 
 function updateFile(relPath, transform) {
@@ -27,29 +27,30 @@ function updateFile(relPath, transform) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 1. Исправление scripts/contract-smoke.mjs (позиция шебанга и автостарт)
+// 1. Автозапуск сервера в scripts/contract-smoke.mjs для GitHub CI
 // ─────────────────────────────────────────────────────────────
-console.log('--- 1. Исправление scripts/contract-smoke.mjs ---');
+console.log('--- 1. Надежное внедрение автозапуска в contract-smoke.mjs ---');
 updateFile('scripts/contract-smoke.mjs', (src) => {
   let res = src;
 
-  // 1. Полностью вырезаем все дубли шебанга со всех строк
-  res = res.replace(/^#!.*$/gm, '').trim();
+  // Очищаем старые попытки внедрения функции
+  res = res.replace(/let __serverProc[\s\S]*?process\.on\('SIGTERM', cleanupServer\);\n?/g, '');
+  res = res.replace(/await spawnServerIfNeeded\([^)]*\);\n?/g, '');
+  res = res.replace(/import\s*\{\s*spawn\s*\}\s*from\s*['"]node:child_process['"];?\n?/g, '');
 
-  // 2. Если автозапуск сервера ещё не был оформлен корректно
-  if (!res.includes('spawnServerIfNeeded')) {
-    const autoServerCode = `
-import { spawn } from 'node:child_process';
+  // Формируем чистый блок гарантированного старта сервера
+  const autoServerCode = `import { spawn } from 'node:child_process';
 
-let __serverProc = null;
-async function spawnServerIfNeeded(url) {
+let __ciServer = null;
+async function _ensureServerUp() {
+  const target = 'http://localhost:3000/api/health';
   try {
-    const ping = await fetch(url + '/api/health');
-    if (ping.ok) return;
+    const ping = await fetch(target);
+    if (ping.ok) return; // Сервер уже запущен (например, локально в VS Code)
   } catch (_) {}
 
-  console.log('⚡ Сервер не обнаружен на ' + url + '. Автозапуск для смоук-тестов...');
-  __serverProc = spawn('node', ['server.js'], {
+  console.log('⚡ Сервер не найден на localhost:3000. Запуск server.js для смоука...');
+  __ciServer = spawn('node', ['server.js'], {
     env: {
       ...process.env,
       PORT: '3000',
@@ -61,95 +62,86 @@ async function spawnServerIfNeeded(url) {
     stdio: 'ignore'
   });
 
-  const start = Date.now();
-  while (Date.now() - start < 15000) {
+  const startTime = Date.now();
+  while (Date.now() - startTime < 15000) {
     try {
-      const ping = await fetch(url + '/api/health');
+      const ping = await fetch(target);
       if (ping.ok) {
-        console.log('✅ Сервер успешно поднят для тестов');
+        console.log('✅ Сервер запущен в фоне (PID: ' + __ciServer.pid + ')');
         return;
       }
     } catch (_) {}
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => setTimeout(r, 200));
   }
-  throw new Error('Не удалось запустить сервер за 15 секунд');
+  throw new Error('Таймаут запуска server.js (15 сек)');
 }
 
-function cleanupServer() {
-  if (__serverProc) {
-    try {
-      __serverProc.kill();
-    } catch (_) {}
+function _killCiServer() {
+  if (__ciServer) {
+    try { __ciServer.kill('SIGTERM'); } catch (_) {}
+    __ciServer = null;
   }
 }
-process.on('exit', cleanupServer);
-process.on('SIGINT', () => { cleanupServer(); process.exit(1); });
-process.on('SIGTERM', () => { cleanupServer(); process.exit(1); });
+process.on('exit', _killCiServer);
+process.on('SIGINT', () => { _killCiServer(); process.exit(1); });
+process.on('SIGTERM', () => { _killCiServer(); process.exit(1); });
+
+await _ensureServerUp();
 `;
-    res = autoServerCode.trim() + '\n\n' + res;
-    res = res.replace(
-      /(console\.log\(["']Контракт-смоук[^"']*["']\);?)/,
-      '$1\nawait spawnServerIfNeeded("http://localhost:3000");'
-    );
+
+  // Вставляем строго после шебанга (если есть) на первую исполняемую строку
+  if (res.startsWith('#!')) {
+    const nl = res.indexOf('\n');
+    res = res.slice(0, nl + 1) + autoServerCode + '\n' + res.slice(nl + 1);
+  } else {
+    res = autoServerCode + '\n' + res;
   }
-
-  // 3. Ставим шебанг строго на первую строку файла
-  return '#!/usr/bin/env node\n' + res.trim() + '\n';
-});
-
-// ─────────────────────────────────────────────────────────────
-// 2. Очистка public/sw.js от несуществующего overlay.js
-// ─────────────────────────────────────────────────────────────
-console.log('\n--- 2. Очистка кэша sw.js от overlay.js ---');
-updateFile('public/sw.js', (src) => {
-  let res = src;
-  
-  // Удаляем строку с overlay.js (сохраняя overlay-core.js)
-  res = res.replace(/[^\n]*overlay\.js[^\n]*,?\n?/g, (line) => {
-    if (line.includes('overlay-core.js')) return line;
-    log(`Удалена строка из кэша: ${line.trim()}`);
-    return '';
-  });
-
-  // Инкремент STATIC_CACHE
-  res = res.replace(/STATIC_CACHE\s*=\s*['"]zerno-static-v(\d+)['"]/, (_m, num) => {
-    const next = parseInt(num, 10) + 1;
-    log(`STATIC_CACHE: v${num} -> v${next}`);
-    return `STATIC_CACHE = 'zerno-static-v${next}'`;
-  });
 
   return res;
 });
 
 // ─────────────────────────────────────────────────────────────
-// 3. Проверка синтаксиса и запуск смоук-тестов
+// 2. Очистка public/sw.js от несуществующего /app/core/overlay.js
 // ─────────────────────────────────────────────────────────────
-console.log('\n--- 3. Проверка синтаксиса (node --check) ---');
+console.log('\n--- 2. Удаление битого overlay.js из кэша sw.js ---');
+updateFile('public/sw.js', (src) => {
+  let res = src;
+  res = res.replace(/[^\n]*\/app\/core\/overlay\.js[^\n]*,?\n?/g, '');
+  return res;
+});
+
+// ─────────────────────────────────────────────────────────────
+// 3. Бамп версии STATIC_CACHE в sw.js
+// ─────────────────────────────────────────────────────────────
+console.log('\n--- 3. Бамп версии кэша в sw.js ---');
+updateFile('public/sw.js', (src) => {
+  return src.replace(/STATIC_CACHE\s*=\s*['"]zerno-static-v(\d+)['"]/, (_m, num) => {
+    const next = parseInt(num, 10) + 1;
+    log(`STATIC_CACHE: v${num} -> v${next}`);
+    return `STATIC_CACHE = 'zerno-static-v${next}'`;
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// 4. Проверка синтаксиса и локальный прогон смоука
+// ─────────────────────────────────────────────────────────────
+console.log('\n--- 4. Проверка запуска смоук-теста ---');
 try {
   execSync('node --check scripts/contract-smoke.mjs', { stdio: 'inherit' });
-  execSync('node --check public/sw.js', { stdio: 'inherit' });
-  log('Синтаксис файлов корректен!');
-} catch (e) {
-  console.error('❌ Ошибка синтаксиса:', e.message);
-  process.exit(1);
-}
-
-console.log('\n--- 4. Запуск контракт-смоука (node scripts/contract-smoke.mjs) ---');
-try {
   execSync('node scripts/contract-smoke.mjs', { stdio: 'inherit' });
-  log('Контракт-смоук успешно пройден!');
+  log('Смоук-тест успешно пройден!');
 } catch (e) {
   console.error('❌ Ошибка смоука:', e.message);
   process.exit(1);
 }
 
 // ─────────────────────────────────────────────────────────────
-// 5. Запуск npm run audit
+// 5. Полный аудит перед пушем
 // ─────────────────────────────────────────────────────────────
 console.log('\n--- 5. Полный аудит барьеров (npm run audit) ---');
 try {
   execSync('npm run audit', { stdio: 'inherit' });
-  console.log('\n🏆 ВСЕ БАРЬЕРЫ ЗЕЛЕНЫЕ (0 ОШИБОК, 0 ПРЕДУПРЕЖДЕНИЙ)!');
+  console.log('\n🏆 ВСЕ БАРЬЕРЫ ЗЕЛЕНЫЕ (0 ОШИБОК)!');
 } catch (e) {
   console.error('❌ Ошибка аудита:', e.message);
   process.exit(1);
