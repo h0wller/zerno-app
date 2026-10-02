@@ -24,7 +24,7 @@ document.documentElement.style.setProperty('--sat', (inset > 0 ? inset : (standa
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setSat);
 else setSat();
 })();
-var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
+var _DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
 var SUPPORT_ENTRY = (QS.get('tab') === 'chat' || QS.get('support') === 'choose');
 // [tg-support-ctx-from-url]
 var ctxFromUrl = (QS.get('ctx') === 'delivery' || QS.get('ctx') === 'coffee') ? QS.get('ctx') : '';
@@ -642,7 +642,7 @@ setTimeout(ensure, 300); setTimeout(ensure, 1200); setTimeout(window.__syncHeade
     var byId = document.getElementById('pushBtn');
     if (byId) return byId;
     var all = document.querySelectorAll('#profileBox button, .panel button');
-    for (var i = 0; i < all.length; i++) {
+    for (i = 0; i < all.length; i++) {
       if (/Включить уведомления/.test(all[i].textContent || '')) return all[i];
     }
     return null;
@@ -702,7 +702,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(function (
   function fitSearch() {
   /* Ф5.40: принудительная установка inline width для поиска */
   var mhRights = document.querySelectorAll('.mh-top .mh-right');
-  for (var i = 0; i < mhRights.length; i++) {
+  for (i = 0; i < mhRights.length; i++) {
     if (window.innerWidth <= 820) {
       mhRights[i].style.setProperty('width', '100%', 'important');
       mhRights[i].style.setProperty('max-width', '100%', 'important');
@@ -713,7 +713,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(function (
   }
 
     var list = document.querySelectorAll('.mh-top .mh-right');
-    for (var i = 0; i < list.length; i++) {
+    for (i = 0; i < list.length; i++) {
       if (window.innerWidth <= 820) list[i].style.width = '100%';
       else list[i].style.width = '';
     }

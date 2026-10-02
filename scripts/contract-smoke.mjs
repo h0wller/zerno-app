@@ -49,41 +49,8 @@ process.on('SIGTERM', () => { _killCiServer(); process.exit(1); });
 await _ensureServerUp();
 
 
-let __serverProc = null;
-async function spawnServerIfNeeded(url) {
-  try {
-    const ping = await fetch(url + '/api/health');
-    if (ping.ok) return;
-  } catch (_) {
-    // Сервер не запущен — поднимаем для CI
-  }
+const __serverProc = null;
 
-  console.log('⚡ Сервер не обнаружен на ' + url + '. Автозапуск для смоук-тестов...');
-  __serverProc = spawn('node', ['server.js'], {
-    env: {
-      ...process.env,
-      PORT: '3000',
-      DB_PATH: process.env.DB_PATH || './zerno.db',
-      ADMIN_CODE: process.env.ADMIN_CODE || '3364',
-      CASHIER_CODE: process.env.CASHIER_CODE || '2468',
-      DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
-    },
-    stdio: 'ignore'
-  });
-
-  const start = Date.now();
-  while (Date.now() - start < 15000) {
-    try {
-      const ping = await fetch(url + '/api/health');
-      if (ping.ok) {
-        console.log('✅ Сервер успешно запущен в фоне');
-        return;
-      }
-    } catch (_) {}
-    await new Promise((r) => setTimeout(r, 250));
-  }
-  throw new Error('Не удалось запустить сервер за 15 секунд');
-}
 
 function cleanupServer() {
   if (__serverProc) {

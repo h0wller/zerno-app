@@ -38,12 +38,10 @@
           await api("/promos/" + t.dataset.pt + "/toggle", { method: "POST" });
           loadPromos();
         }
-        if (d) {
-          if (confirm("Удалить промокод?")) {
+        if ((d) && (confirm("Удалить промокод?"))) {
             await api("/promos/" + d.dataset.pd, { method: "DELETE" });
             loadPromos();
           }
-        }
       });
 
       $("#pmCreate").onclick = async () => {

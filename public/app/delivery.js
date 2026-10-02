@@ -15,7 +15,7 @@ if (typeof window !== 'undefined') {
 }
 
 
-function getKaliningradHour() {
+function _getKaliningradHour() {
   try {
     var str = new Intl.DateTimeFormat('en-US', {
       timeZone: 'Europe/Kaliningrad',
@@ -236,7 +236,7 @@ if (st) {
     
     // Ищем выбранный вариант. 
     // Fallback: если пользователь ничего не нажал (или .sel слетел), принудительно берем первый.
-    let selOpt = cardBody ? cardBody.querySelector('.opts button.sel') : null;
+    const selOpt = cardBody ? cardBody.querySelector('.opts button.sel') : null;
 if (!selOpt && opts.length > 0) {
 const optsBox = (cardBody && cardBody.querySelector('.opts')) || null;
 if (optsBox) {
@@ -319,7 +319,7 @@ function renderCart() {
 $('#cartItems').addEventListener('click', e => {
   const b = e.target.closest('[data-ci]');
   if (!b) return;
-  const i = +b.dataset.ci;
+  const _i = +b.dataset.ci;
   /* Ф5.21c: qty-мутации и save ведёт cart.js (cPanel); дубль убран */
   localStorage.setItem('zt_cart', JSON.stringify(cart));
   if (typeof updateCartFab === 'function') updateCartFab();

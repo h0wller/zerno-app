@@ -199,7 +199,7 @@ var QS = new URLSearchParams(location.search);
         if (brand === 'delivery' && !DMENU.length) loadDelivery();
       }
 // [tg-splash-and-review-v1]
-      function openReviewView(forReview) {
+      function openReviewView(_forReview) {
         try {
           openPanel('profile');
           setTab('profile');
@@ -274,7 +274,7 @@ var QS = new URLSearchParams(location.search);
 
   if (typeof setUser === 'function' && !setUser.__deepWrap) {
     setUser = (function(_su) {
-      return function(t, c) {
+      return function (_t, _c) {
         var r = _su.apply(this, arguments);
         var pend = window.__ztPendingDeep; window.__ztPendingDeep = null;
         if (pend === 'orders') setTimeout(openOrdersView, 150);

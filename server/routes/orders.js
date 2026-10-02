@@ -1,4 +1,4 @@
-function getKlgHour() {
+function _getKlgHour() {
   try {
     const str = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Kaliningrad', hour: 'numeric', hour12: false }).format(new Date());
     return parseInt(str, 10);

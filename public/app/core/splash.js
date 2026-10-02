@@ -28,8 +28,8 @@
     
     window.brand = choice; // Безопасная запись в глобал (в strict mode просто brand = choice вызовет ошибку)
     
-    if (window.mode === 'cashier' || window.mode === 'orders') {
-      if (typeof window.setMode === 'function') window.setMode('guest');
+    if ((window.mode === 'cashier' || window.mode === 'orders') && typeof window.setMode === 'function') {
+      window.setMode('guest');
     }
     
     document.querySelectorAll('#brandSeg button').forEach(function (x) {
@@ -37,8 +37,8 @@
     });
     
     if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
-    if (choice === 'delivery' && typeof window.DMENU !== 'undefined' && window.DMENU.length === 0) {
-      if (typeof window.loadDelivery === 'function') window.loadDelivery();
+    if (choice === 'delivery' && typeof window.DMENU !== 'undefined' && window.DMENU.length === 0 && typeof window.loadDelivery === 'function') {
+      window.loadDelivery();
     }
     if (window.chatState) window.chatState.setChatCtx(choice);
     else if (typeof window.setChatCtx === 'function') window.setChatCtx(choice);
