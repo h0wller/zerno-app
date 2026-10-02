@@ -309,7 +309,12 @@ function applyAuthBrand() {
             method: 'POST',
             body: { phone: ph, name: nm, via: 'tg' }
           });
-          window.open(r.tgUrl, '_blank');
+          if (r && r.tgUrl) {
+          toast('Открываем Telegram...', '🤖');
+          setTimeout(function() {
+            window.location.href = r.tgUrl;
+          }, 250);
+        }
           toast('Подтвердите номер в Telegram', '🤖');
 
           if (regPoll) clearInterval(regPoll);
