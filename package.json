@@ -22,7 +22,7 @@
   "dependencies": {
     "@capacitor/android": "^8.5.0",
     "@capacitor/app": "^8.1.1",
-    "@capacitor/cli": "^8.5.0",
+    "@capacitor/cli": "^8.4.3",
     "@capacitor/core": "^8.5.0",
     "@capacitor/ios": "^8.5.0",
     "@capacitor/push-notifications": "^8.1.2",
@@ -30,8 +30,8 @@
     "compression": "^1.8.2",
     "express": "^4.21.2",
     "firebase-admin": "^14.3.0",
-    "zod": "^3.23.8",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
@@ -41,8 +41,10 @@
     "eslint-plugin-playwright": "^2.1.0",
     "eslint-plugin-sonarjs": "^3.0.1",
     "globals": "^15.12.0",
-    "jscpd": "^4.0.5",
-    "knip": "^5.40.0",
+    "jscpd": "^5.4.0",
+    "knip": "^6.39.0",
+    "sharp": "^0.35.5",
+    "svgo": "^4.1.0",
     "ts-api-utils": "^2.5.0"
   },
   "overrides": {

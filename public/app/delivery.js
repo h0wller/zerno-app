@@ -152,7 +152,8 @@ function patchDeliveryCards(list) {
         const im = document.createElement('img');
         im.src = p.img;
         im.alt = p.name || '';
-        im.loading = 'lazy';
+        im.loading = (i === 0) ? 'eager' : 'lazy';
+        if (i === 0) { try { im.fetchPriority = 'high'; } catch (e) {} }
         im.dataset.zoom = 'true';
         im.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in';
         media.appendChild(im);

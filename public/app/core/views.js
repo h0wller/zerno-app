@@ -696,7 +696,8 @@ if (m) { m.classList.add('open'); m.style.display = 'flex'; }
 /* Ф5.30: пересчёт кластера шапки */
 window.addEventListener('resize', function () { setTimeout(window.__syncHeaderCluster, 60); });
 window.addEventListener('orientationchange', function () { setTimeout(window.__syncHeaderCluster, 120); });
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { window.__syncHeaderCluster(); });
+/* LATE-TIMERS v1: fonts.ready → DOMContentLoaded */
+document.addEventListener("DOMContentLoaded", function () { window.__syncHeaderCluster(); });
 
 /* ── Ф5.38: fitSearch — мобайл-поиск во всю ширину, cascade-immune (inline) ── */
 (function () {

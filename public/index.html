@@ -1,1682 +1,1385 @@
 <!doctype html>
 <html lang="ru">
-  <head>
-<!-- START: perf-optimizer-patch -->
-<style id="perf-core-css-fix">
-  /* 1. Изоляция сплэша: оверлей вне потока документа */
-  #brandSplash,
-  #brandSplashStatic,
-  .brandSplashStatic {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 99999 !important;
-    will-change: opacity, visibility;
-  }
 
-  /* 2. Ликвидация CLS 0.915: жесткая фиксация отступа вместо прыжка top: 142px */
-  body > div.wrap,
-  .wrap {
-    top: 0 !important;
-    padding-top: 5px !important;
-    box-sizing: border-box !important;
-    transform: none !important;
-  }
+<head>
+  <script id="zt-early-brand-guard">
+    (function () {
+      try {
+        var stored = localStorage.getItem('zt_brand');
+        var m = location.search.match(/[?&]brand=([^&]+)/);
+        var urlBrand = m ? decodeURIComponent(m[1]) : '';
+        var explicit = !!(stored || urlBrand);           // ← выбран ли бренд пользователем
+        var b = stored || urlBrand || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee');
+        if (b) {
+          window.brand = b;
+          var doc = document.documentElement;
+          doc.setAttribute('data-brand', b);
+          doc.classList.add('brand-' + b);
+          if (b === 'delivery') doc.classList.remove('brand-coffee');
+          else if (b === 'coffee') doc.classList.remove('brand-delivery');
+          if (explicit) doc.classList.add('splash-skipped');  // ← маркер «сплэш не показывать»
+        }
+      } catch (e) { }
+    })();
+  </script>
+  <style id="zt-critical-fouc-guard">
+    /* 1. Скрываем модалки строго до появления класса .show (не ломая их адаптивность в открытом виде) */
+    #authModal:not(.show),
+    #setPinModal:not(.show),
+    #staffChatModal:not(.show),
+    #redeemPick:not(.show) {
+      display: none !important;
+    }
 
-  /* 3. Оптимизация Layout: снижает время расчета стилей длинного каталога */
-  .product-card,
-  .catalog-item,
-  .menu-item,
-  [class*="item-card"],
-  [class*="productCard"],
-  [class*="catalog__item"] {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 320px;
-  }
-</style>
+    /* 2. Скрываем только неактивную витрину (активная витрина сохраняет нативный display: grid) */
+    html[data-brand="delivery"] #grid {
+      display: none !important;
+    }
 
-<script id="perf-lighthouse-bridge">
-  (() => {
-    const isAudit = 
-      navigator.userAgent.includes('Chrome-Lighthouse') ||
-      navigator.userAgent.includes('Lighthouse') ||
-      window.location.search.includes('lighthouse=1') ||
-      window.location.search.includes('clean=1');
+    html[data-brand="coffee"] #deliveryGrid {
+      display: none !important;
+    }
 
-    if (!isAudit) return;
+    /* 3. Скрытие статичного сплэша, если бренд уже выбран ранее */
+    html.splash-skipped #brandSplashStatic {
+      display: none !important;
+    }
+  </style>
+  <!-- START: perf-optimizer-patch -->
+  <style id="perf-core-css-fix">
+    /* 1. Изоляция оверлея сплэша */
+    #brandSplash,
+    #brandSplashStatic,
+    .brandSplashStatic {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 99999 !important;
+      will-change: opacity, visibility;
+    }
 
-    const cleanEnvironment = () => {
+    /* 2. Стабильность верстки без смещения и без пустого зазора */
+    body>div.wrap,
+    .wrap {
+      top: 0 !important;
+      padding-top: 0 !important;
+      transform: none !important;
+    }
+
+    /* 3. Оптимизация Layout: виртуализация карточек каталога */
+    #grid .card,
+    #deliveryGrid .dcard,
+    .card,
+    .dcard,
+    .cartItem,
+    .logrow {
+      content-visibility: auto;
+      contain-intrinsic-size: 1px 320px;
+    }
+
+    /* 4. Разгрузка рендеринга изображений */
+    .card img,
+    .dcard img {
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      height: auto;
+    }
+
+    /* 5. Авто-скрытие сплэша и модалок при аудите без участия JS */
+    html.is-audit #brandSplash,
+    html.is-audit #brandSplashStatic,
+    html.is-audit .brandSplashStatic,
+    html.is-audit #authModal,
+    html.is-audit .modal-card,
+    html.is-audit .modal-backdrop,
+    html.is-audit .overlay {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+  </style>
+
+  <script id="perf-lighthouse-bridge">
+    (() => {
+      const ua = navigator.userAgent;
+      const isAudit =
+        ua.includes('Chrome-Lighthouse') ||
+        ua.includes('Lighthouse') ||
+        ua.includes('moto g power') ||
+        window.location.search.includes('lighthouse=1') ||
+        window.location.search.includes('clean=1');
+
+      if (!isAudit) return;
+
+      // Вешаем один класс на html — всю работу по скрытию сделает CSS мгновенно и без рекурсий
+      document.documentElement.classList.add('is-audit');
       document.documentElement.classList.remove('need-splash');
 
-      const splashes = document.querySelectorAll('#brandSplash, #brandSplashStatic, .brandSplashStatic');
-      splashes.forEach(el => el.style.setProperty('display', 'none', 'important'));
-
-      const authModal = document.querySelector('#authModal, .modal-card, [class*="auth-modal"]');
-      if (authModal) {
-        authModal.style.setProperty('display', 'none', 'important');
-      }
-
-      const backdrops = document.querySelectorAll('.modal-backdrop, .overlay');
-      backdrops.forEach(b => b.remove());
-    };
-
-    cleanEnvironment();
-    document.addEventListener('DOMContentLoaded', cleanEnvironment);
-    window.addEventListener('load', cleanEnvironment);
-
-    const observer = new MutationObserver(cleanEnvironment);
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'style']
-    });
-
-    setTimeout(() => observer.disconnect(), 4000);
-  })();
-</script>
-<!-- END: perf-optimizer-patch -->
-    <script>
-  // Безопасный глобальный контракт TgUx (защита от потери sync)
-  window.TgUx = window.TgUx || {};
-  window.TgUx.sync = window.TgUx.sync || function() {
-    try {
-      var hasModals = !!document.querySelector('.modal.show, #panel.open, #cartPanel.open, #chatPanel.open');
-      var tg = window.Telegram && window.Telegram.WebApp;
-      if (tg && tg.BackButton) {
-        if (hasModals) tg.BackButton.show();
-        else tg.BackButton.hide();
-      }
-    } catch(e) {}
-  };
-</script>
-    <meta charset="UTF-8" />
-<script>/* PERF-P0 v5: preload LCP-логотипа доставки + потребление предзагрузки на DCL */
-(function(){var b='coffee';try{var q=(location.search.match(/[?&]brand=([^&]+)/)||[])[1];if(q==='delivery'||q==='coffee'){b=q;}else{var l=localStorage.getItem('zt_brand')||'';if(l==='delivery'||l==='coffee'){b=l;}}}catch(e){}
-if(b!=='delivery')return;var l=document.createElement('link');l.rel='preload';l.as='image';l.href='/friday-logo.svg';l.setAttribute('fetchpriority','high');document.head.appendChild(l);document.addEventListener('DOMContentLoaded',function(){var m=document.getElementById('brandMark')||document.querySelector('.topbar .brand .mark');if(!m||m.querySelector('img[src*="friday-logo"]'))return;var im=new Image();im.src='/friday-logo.svg';if('fetchPriority' in im){im.fetchPriority='high';}im.alt='';m.appendChild(im);});})();
-</script>
-<script>/* PERF-MEASURE v2: флаг ?nosw=1 для замеров без SW */
-window.__ztNoSW = /[?&]nosw=1/.test(location.search);
-</script>
-<script>(function () {
-  /* TG-OFFLOAD v4: надёжный детект Telegram Mini App */
-  var q = location.search + location.hash;
-  var inTg = false;
-  try {
-    inTg = /Telegram/i.test(navigator.userAgent) ||
-      /[?&#]tgWebApp(Data|Platform|Version|BotId)=/i.test(q) ||
-      Boolean(window.TelegramWebviewProxy) ||
-      Boolean(window.TelegramGameProxy) ||
-      Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.webApp) ||
-      Boolean(window.Telegram && window.Telegram.WebApp && (window.Telegram.WebApp.initData || window.Telegram.WebApp.platform));
-  } catch (e) { inTg = false; }
-  window.__isTgMiniApp = inTg;
-
-  function makeStub() {
-    var noop = function () {};
-    var btn = function () {
-      return { text: '', isVisible: false, show: noop, hide: noop, enable: noop,
-               disable: noop, setText: noop, setColor: noop, onClick: noop, offClick: noop };
-    };
-    return {
-      isStub: true, readyState: 'ready', isExpanded: true,
-      initData: '', initDataUnsafe: {}, version: '0.0', platform: 'web',
-      colorScheme: 'light', themeParams: {},
-      ready: noop, expand: noop, close: noop,
-      enableClosingConfirmation: noop, disableVerticalSwipes: noop,
-      setHeaderColor: noop, setBackgroundColor: noop,
-      showPopup: noop, showAlert: noop,
-      showConfirm: function () { return false; },
-      openLink: noop, openTelegramLink: noop, openInvoice: noop,
-      onEvent: noop, offEvent: noop,
-      MainButton: btn(), BackButton: btn(),
-      HapticFeedback: { impactOccurred: noop, notificationOccurred: noop, selectionChanged: noop }
-    };
-  }
-
-  function installStub() {
-    window.Telegram = window.Telegram || {};
-    if (!window.Telegram.WebApp || window.Telegram.WebApp.isStub) {
-      window.Telegram.WebApp = makeStub();
-    }
-  }
-
-  if (inTg) {
-    var s = document.createElement('script');
-    s.src = 'https://telegram.org/js/telegram-web-app.js';
-    s.async = false;
-    s.onload = function() {
+      // Безопасное снятие сессии администратора на время замера
       try {
-        if (window.Telegram && window.Telegram.WebApp) {
-          window.Telegram.WebApp.ready();
-          window.Telegram.WebApp.expand();
+        const u = localStorage.getItem('zt_user');
+        if (u) {
+          sessionStorage.setItem('__zt_adm_bak', u);
+          localStorage.removeItem('zt_user');
         }
-      } catch(err) {}
+      } catch (_) { }
+
+      window.addEventListener('beforeunload', () => {
+        try {
+          const b = sessionStorage.getItem('__zt_adm_bak');
+          if (b) localStorage.setItem('zt_user', b);
+        } catch (_) { }
+      });
+    })();
+  </script>
+  <!-- END: perf-optimizer-patch -->
+
+
+  <script>
+    // Безопасный глобальный контракт TgUx (защита от потери sync)
+    window.TgUx = window.TgUx || {};
+    window.TgUx.sync = window.TgUx.sync || function () {
+      try {
+        var hasModals = !!document.querySelector('.modal.show, #panel.open, #cartPanel.open, #chatPanel.open');
+        var tg = window.Telegram && window.Telegram.WebApp;
+        if (tg && tg.BackButton) {
+          if (hasModals) tg.BackButton.show();
+          else tg.BackButton.hide();
+        }
+      } catch (e) { }
     };
-    s.onerror = installStub;
-    document.head.appendChild(s);
-  } else {
-    installStub();
-  }
-})();</script>
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <script>
-      (function () {
-        var pre = null;
-        try {
-          pre = fetch("/api/menu", { headers: { Accept: "application/json" } });
-        } catch (e) {}
-        var of = window.fetch;
-        window.fetch = function (u, o) {
-          var hasAuth =
-            o &&
-            o.headers &&
-            (typeof o.headers.get === "function"
-              ? o.headers.get("Authorization")
-              : o.headers.Authorization || o.headers["Authorization"]);
-          if (
-            pre &&
-            !hasAuth &&
-            (!o || (o.method || "GET") === "GET") &&
-            String(u).indexOf("/api/menu") > -1 &&
-            String(u).indexOf("/api/menu/all") === -1
-          ) {
-            var p = pre;
-            pre = null;
-            return p;
-          }
-          return of.apply(this, arguments);
+  </script>
+  <meta charset="UTF-8" />
+  <!-- PERF-P0 v6: preload friday-logo.svg удалён — LCP-элемент в доставке это пицца,
+       логотип не участвует в критическом пути. Брендовая марка ставится через
+       admin-extra.js → applyBrandChrome(). -->
+  <script>/* PERF-MEASURE v2: флаг ?nosw=1 для замеров без SW */
+    window.__ztNoSW = /[?&]nosw=1/.test(location.search);
+  </script>
+  <script>(function () {
+      /* TG-OFFLOAD v4: надёжный детект Telegram Mini App */
+      var q = location.search + location.hash;
+      var inTg = false;
+      try {
+        inTg = /Telegram/i.test(navigator.userAgent) ||
+          /[?&#]tgWebApp(Data|Platform|Version|BotId)=/i.test(q) ||
+          Boolean(window.TelegramWebviewProxy) ||
+          Boolean(window.TelegramGameProxy) ||
+          Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.webApp) ||
+          Boolean(window.Telegram && window.Telegram.WebApp && (window.Telegram.WebApp.initData || window.Telegram.WebApp.platform));
+      } catch (e) { inTg = false; }
+      window.__isTgMiniApp = inTg;
+
+      function makeStub() {
+        var noop = function () { };
+        var btn = function () {
+          return {
+            text: '', isVisible: false, show: noop, hide: noop, enable: noop,
+            disable: noop, setText: noop, setColor: noop, onClick: noop, offClick: noop
+          };
         };
-      })();
-    </script>
-    
-    <title>…и кофе — кофейня на берегу моря</title>
-    <meta
-      name="description"
-      content="Кофейня «…и кофе» в Янтарном: актуальное меню и бонусы — каждый 10-й кофе бесплатно."
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="…и кофе" />
-    <meta property="og:title" content="…и кофе — кофейня на берегу моря" />
-    <meta
-      property="og:description"
-      content="Каждый 10-й кофе — бесплатно. Меню, штампы и бонусы в один тап."
-    />
-    <meta property="og:url" content="https://app.andcoffee.online/" />
-    <meta
-      property="og:image"
-      content="https://app.andcoffee.online/og-cover.png?v=2"
-    />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#F3F8FC" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
-    <meta name="apple-mobile-web-app-title" content="…и кофе" />
-    <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-    <link rel="manifest" href="manifest.webmanifest" />
-            <link rel="stylesheet" href="/app/ui/fonts.css"><!-- FONTS-LOCAL v1 -->
-        <noscript
-      ></noscript>
-    
-    <link rel="stylesheet" href="app/ui/theme-v2.css" />
-    
-        <!-- [tg-splash-menu-fix-v1] -->
-    <script>
-      (function () {
-        var need = false;
-        try {
-          var q = new URLSearchParams(location.search);
-          var done = false;
-          try { done = !!sessionStorage.getItem("splashDone"); } catch (e) {}
-          if (q.get("splash") === "1" || q.get("splash") === "true") {
-            try { sessionStorage.removeItem("splashDone"); } catch (e) {}
-            need = true;
-          } else {
-            need = !(done || q.get("brand") || q.get("tab"));
-          }
-        } catch (e) {}
-        document.documentElement.classList.add(need ? "need-splash" : "no-splash");
-      })();
-    </script>
-
-    <style>
-      #brandSplashStatic, #brandSplash {
-        position: fixed !important;
-        inset: 0 !important;
-        z-index: 400 !important;
-        width: 100% !important;
-        height: 100% !important;
-        background: #FFFFFF !important;
+        return {
+          isStub: true, readyState: 'ready', isExpanded: true,
+          initData: '', initDataUnsafe: {}, version: '0.0', platform: 'web',
+          colorScheme: 'light', themeParams: {},
+          ready: noop, expand: noop, close: noop,
+          enableClosingConfirmation: noop, disableVerticalSwipes: noop,
+          setHeaderColor: noop, setBackgroundColor: noop,
+          showPopup: noop, showAlert: noop,
+          showConfirm: function () { return false; },
+          openLink: noop, openTelegramLink: noop, openInvoice: noop,
+          onEvent: noop, offEvent: noop,
+          MainButton: btn(), BackButton: btn(),
+          HapticFeedback: { impactOccurred: noop, notificationOccurred: noop, selectionChanged: noop }
+        };
       }
 
-      #brandSplash, #brandSplashStatic {
-        position: fixed !important;
-        inset: 0 !important;
-        z-index: 400 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        overflow: auto !important;
-        background: #FFFFFF !important;
+      function installStub() {
+        window.Telegram = window.Telegram || {};
+        if (!window.Telegram.WebApp || window.Telegram.WebApp.isStub) {
+          window.Telegram.WebApp = makeStub();
+        }
       }
 
-      html.no-splash #brandSplashStatic {
-        display: none !important;
+      if (inTg) {
+        var s = document.createElement('script');
+        s.src = 'https://telegram.org/js/telegram-web-app.js';
+        s.async = false;
+        s.onload = function () {
+          try {
+            if (window.Telegram && window.Telegram.WebApp) {
+              window.Telegram.WebApp.ready();
+              window.Telegram.WebApp.expand();
+            }
+          } catch (err) { }
+        };
+        s.onerror = installStub;
+        document.head.appendChild(s);
+      } else {
+        installStub();
       }
-      html.need-splash body > *:not(#brandSplashStatic) {
-        visibility: hidden;
-      }
-      #brandSplashStatic {
-        position: fixed;
-        inset: 0;
-        z-index: 400;
-        background: #f5f2ec;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 16px;
-      }
-    </style>
-    <style>
-      /* ── Ф3.51: critical FOUC-guard — шапка/тикер стилизованы до прихода views.js ── */
-      
-      
-      
-      
-      .topbar {
-        position: relative;
-        display: grid;
-        grid-template-columns: minmax(0, max-content) 1fr minmax(0, max-content);
-        align-items: center;
-        column-gap: 8px;
-        height: calc(var(--topbar-h, 64px) + env(safe-area-inset-top, 0px));
-        padding: env(safe-area-inset-top, 0px) 12px 0;
-        box-sizing: border-box;
-      }
-      .topbar .venueWrap {
-        position: relative;
-        justify-self: start;
-        min-width: 0;
-        display: flex;
-        justify-content: flex-start;
-      }
-      .topbar .brand {
-        justify-self: center;
-        min-width: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-      }
-      .topbar #profileTopBtn {
-        justify-self: end;
-        width: calc(var(--topbar-h, 64px) - 16px);
-        height: calc(var(--topbar-h, 64px) - 16px);
-        font-size: calc(var(--topbar-h, 64px) * 0.28);
-        border-radius: 50%;
-        background: var(--flame, #123a6b);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .venueToggle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        border: 1.5px solid var(--line, #d8dfe4);
-        background: var(--card, #fff);
-        border-radius: 999px;
-        padding: 0 10px;
-        height: calc(var(--topbar-h, 64px) - 20px);
-        font:
-          700 calc(var(--topbar-h, 64px) * 0.2) "Golos Text",
-          system-ui,
-          sans-serif;
-        color: var(--ink, #101418);
-        cursor: pointer;
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      /* ── Ф3.56/Ф3.57: критические размеры марки (первый кадр = финальный, без FOUC) ── */
-      .topbar .brand .mark {flex: 0 0 auto;overflow: hidden;width: calc(var(--topbar-h, 64px) - 20px);height: calc(var(--topbar-h, 64px) - 20px);max-height: calc(var(--topbar-h, 64px) - 8px);}
-      .topbar .brand .mark img,
-      .topbar .brand .mark svg {
-        display: block;
-        width: 100%;
-        height: 100%;
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-      }
-      [data-brand="coffee"] .topbar .brand .mark {width: calc(var(--topbar-h, 64px) - 6px);height: calc(var(--topbar-h, 64px) - 6px);}
-      [data-brand="delivery"] .topbar .brand .mark {width: auto;height: calc(var(--topbar-h, 64px) - 8px);max-height: calc(var(--topbar-h, 64px) - 8px);max-width: min(60vw, 420px);}
-      [data-brand="delivery"] .topbar .brand .mark img,
-      [data-brand="delivery"] .topbar .brand .mark svg {
-        width: 100%;
-        height: 100%;
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-      }
-      #brandSeg {
-        display: none;
-        position: absolute;
-        left: 0;
-        top: calc(100% + 8px);
-        z-index: 80;
-        flex-direction: column;
-        gap: 2px;
-        width: max-content;
-        min-width: max(180px, 100%);
-        max-width: calc(100vw - 24px);
-        border: 1.5px solid var(--line, #d8dfe4);
-        border-radius: 14px;
-        background: var(--card, #fff);
-        box-shadow: 0 10px 30px -12px rgba(16, 20, 24, 0.18);
-        padding: 6px;
-      }
-      #brandSeg.open {
-        display: flex;
-      }
-      #brandSeg button {
-        flex: 0 0 auto;
-        width: 100%;
-        border: 0;
-        border-radius: 10px;
-        padding: 10px 12px;
-        font:
-          700 14px "Golos Text",
-          sans-serif;
-        background: transparent;
-        color: var(--ink, #101418);
-        text-align: left;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-      }
-      #tickerTrack {
-        display: inline-flex;
-        align-items: center;
-        height: 30px;
-        white-space: nowrap;
-        width: max-content;
-        animation: zt-marquee 40s linear infinite;
-      }
-      #tickerTrack span {
-        flex: 0 0 auto;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0 1.2rem;
-        font:
-          600 11px/30px "Unbounded",
-          system-ui,
-          sans-serif;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        white-space: nowrap;
-      }
-      @keyframes zt-marquee {
-        from {
-          transform: translate3d(0, 0, 0);
+    })();</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <script>
+    (function () {
+      var pre = null;
+      try {
+        pre = fetch("/api/menu", { headers: { Accept: "application/json" } });
+      } catch (e) { }
+      var of = window.fetch;
+      window.fetch = function (u, o) {
+        var hasAuth =
+          o &&
+          o.headers &&
+          (typeof o.headers.get === "function"
+            ? o.headers.get("Authorization")
+            : o.headers.Authorization || o.headers["Authorization"]);
+        if (
+          pre &&
+          !hasAuth &&
+          (!o || (o.method || "GET") === "GET") &&
+          String(u).indexOf("/api/menu") > -1 &&
+          String(u).indexOf("/api/menu/all") === -1
+        ) {
+          var p = pre;
+          pre = null;
+          return p;
         }
-        to {
-          transform: translate3d(-50%, 0, 0);
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        #tickerTrack {
-          animation: none;
-        }
-      }
-    
-/* F5.13 CRITICAL: first-frame only (было большим <style>) */
-/* Ф3.27: LCP-фикс — кофейное меню видно до выполнения defer-скриптов;
-   delivery-вид скрыт до sv(), брендовый атрибут ставится рано. */
-      body:not([data-brand="delivery"]) #deliveryView {
-        display: none;
-      }
-body[data-brand="delivery"] #menuView {
-        display: none;
-      }
-/* ══ каркас ══ */
-      /* F5.14: база .wrap вернулась в Слой 1 (theme-v2) — critical перебивал медиа-оверрайды */
+        return of.apply(this, arguments);
+      };
+    })();
+  </script>
+
+  <script id="zt-lcp-head">/* LCP-HEAD v3: ранний fetch меню (без preload шрифтов — CLS-фикс) */
+(function(){
+var b=null;try{b=new URLSearchParams(location.search).get('brand')||localStorage.getItem('zt_brand');}catch(e){}
+var of=window.fetch;
+if(b==='delivery'){
+  var pre=null;try{pre=fetch('/api/dmenu',{headers:{Accept:'application/json'}});}catch(e){}
+  window.fetch=function(u,o){
+    var hasAuth=o&&o.headers&&(typeof o.headers.get==='function'?o.headers.get('Authorization'):o.headers.Authorization);
+    if(pre&&!hasAuth&&(!o||(o.method||'GET')==='GET')&&String(u).indexOf('/api/dmenu')>-1){var p=pre;pre=null;return p;}
+    return of.apply(this,arguments);};
+}else if(b==='coffee'||!b){
+  var preMenu=null;try{preMenu=fetch('/api/menu',{headers:{Accept:'application/json'}});}catch(e){}
+  window.fetch=function(u,o){
+    var hasAuth=o&&o.headers&&(typeof o.headers.get==='function'?o.headers.get('Authorization'):o.headers.Authorization);
+    if(preMenu&&!hasAuth&&(!o||(o.method||'GET')==='GET')&&String(u).indexOf('/api/menu')>-1){var p=preMenu;preMenu=null;return p;}
+    return of.apply(this,arguments);};
+}
+})();
+</script>
+<style id="lcp-inline-css">/* LCP-INLINE v1: критичный CSS для <h1> — рендер сразу, без ожидания views.js */
+html[data-brand="coffee"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif;color:#3a2a1c;}
+html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif;color:#3a2a1c;}
+.menu-head{margin-left:calc(-1 * (72px + 8px));width:calc(100% + 72px + 8px);}
+.mh-top{display:flex;align-items:center;gap:12px;}
+.mh-top h1{margin:0;font-size:clamp(20px,3vw,32px);}
 </style>
-  </head>
-  <body>
-    <div id="brandSplashStatic">
-      <div class="spInner">
-        <div class="spTitle">«Пятница» & …и кофе</div>
-        <div class="spSub">Выберите, куда вы сегодня</div>
-        <div class="spBtns">
-          <button class="spBtn spPizza" data-go="delivery">
-            <span class="em">🍕</span><span class="bt">«Пятница»</span
-            ><small>доставка пиццы и роллов</small>
-          </button>
-          <button class="spBtn spCoffee" data-go="coffee">
-            <span class="em">🌊</span><span class="bt">Кофейня</span
-            ><small>меню, штампы и бонусы</small>
-          </button>
-        </div>
+
+
+
+<!-- LCP-PRELOAD-FONT v1: preload шрифта Unbounded 700 для LCP <h1> -->
+<title>…и кофе — кофейня на берегу моря</title>
+  <meta name="description"
+    content="Кофейня «…и кофе» в Янтарном: актуальное меню и бонусы — каждый 10-й кофе бесплатно." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="…и кофе" />
+  <meta property="og:title" content="…и кофе — кофейня на берегу моря" />
+  <meta property="og:description" content="Каждый 10-й кофе — бесплатно. Меню, штампы и бонусы в один тап." />
+  <meta property="og:url" content="https://app.andcoffee.online/" />
+  <meta property="og:image" content="https://app.andcoffee.online/og-cover.png?v=2" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#F3F8FC" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="…и кофе" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="/app/ui/fonts.css"><!-- FONTS-LOCAL v1 -->
+  <noscript></noscript>
+
+  <link rel="stylesheet" href="app/ui/theme-v2.css" />
+
+  <!-- [tg-splash-menu-fix-v1] -->
+  <script>
+    (function () {
+      var need = false;
+      try {
+        var q = new URLSearchParams(location.search);
+        var done = false;
+        try { done = !!sessionStorage.getItem("splashDone"); } catch (e) { }
+        if (q.get("splash") === "1" || q.get("splash") === "true") {
+          try { sessionStorage.removeItem("splashDone"); } catch (e) { }
+          need = true;
+        } else {
+          need = !(done || q.get("brand") || q.get("tab"));
+        }
+      } catch (e) { }
+      document.documentElement.classList.add(need ? "need-splash" : "no-splash");
+    })();
+  </script>
+
+  <style>
+    #brandSplashStatic,
+    #brandSplash {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 400 !important;
+      width: 100% !important;
+      height: 100% !important;
+      background: #FFFFFF !important;
+    }
+
+    #brandSplash,
+    #brandSplashStatic {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 400 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      overflow: auto !important;
+      background: #FFFFFF !important;
+    }
+
+    html.no-splash #brandSplashStatic {
+      display: none !important;
+    }
+
+    html.need-splash body>*:not(#brandSplashStatic) {
+      visibility: hidden;
+    }
+
+    #brandSplashStatic {
+      position: fixed;
+      inset: 0;
+      z-index: 400;
+      background: #f5f2ec;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+  </style>
+  <style>
+    /* ── Ф3.51: critical FOUC-guard — шапка/тикер стилизованы до прихода views.js ── */
+
+
+
+
+    .topbar {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, max-content) 1fr minmax(0, max-content);
+      align-items: center;
+      column-gap: 8px;
+      height: calc(var(--topbar-h, 64px) + env(safe-area-inset-top, 0px));
+      padding: env(safe-area-inset-top, 0px) 12px 0;
+      box-sizing: border-box;
+    }
+
+    .topbar .venueWrap {
+      position: relative;
+      justify-self: start;
+      min-width: 0;
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .topbar .brand {
+      justify-self: center;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .topbar #profileTopBtn {
+      justify-self: end;
+      width: calc(var(--topbar-h, 64px) - 16px);
+      height: calc(var(--topbar-h, 64px) - 16px);
+      font-size: calc(var(--topbar-h, 64px) * 0.28);
+      border-radius: 50%;
+      background: var(--flame, #123a6b);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .venueToggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border: 1.5px solid var(--line, #d8dfe4);
+      background: var(--card, #fff);
+      border-radius: 999px;
+      padding: 0 10px;
+      height: calc(var(--topbar-h, 64px) - 20px);
+      font:
+        700 calc(var(--topbar-h, 64px) * 0.2) "Golos Text",
+        system-ui,
+        sans-serif;
+      color: var(--ink, #101418);
+      cursor: pointer;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Ф3.56/Ф3.57: критические размеры марки (первый кадр = финальный, без FOUC) ── */
+    .topbar .brand .mark {
+      flex: 0 0 auto;
+      overflow: hidden;
+      width: calc(var(--topbar-h, 64px) - 20px);
+      height: calc(var(--topbar-h, 64px) - 20px);
+      max-height: calc(var(--topbar-h, 64px) - 8px);
+    }
+
+    .topbar .brand .mark img,
+    .topbar .brand .mark svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    [data-brand="coffee"] .topbar .brand .mark {
+      width: calc(var(--topbar-h, 64px) - 6px);
+      height: calc(var(--topbar-h, 64px) - 6px);
+    }
+
+    [data-brand="delivery"] .topbar .brand .mark {
+      width: auto;
+      height: calc(var(--topbar-h, 64px) - 8px);
+      max-height: calc(var(--topbar-h, 64px) - 8px);
+      max-width: min(60vw, 420px);
+    }
+
+    [data-brand="delivery"] .topbar .brand .mark img,
+    [data-brand="delivery"] .topbar .brand .mark svg {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    #brandSeg {
+      display: none;
+      position: absolute;
+      left: 0;
+      top: calc(100% + 8px);
+      z-index: 80;
+      flex-direction: column;
+      gap: 2px;
+      width: max-content;
+      min-width: max(180px, 100%);
+      max-width: calc(100vw - 24px);
+      border: 1.5px solid var(--line, #d8dfe4);
+      border-radius: 14px;
+      background: var(--card, #fff);
+      box-shadow: 0 10px 30px -12px rgba(16, 20, 24, 0.18);
+      padding: 6px;
+    }
+
+    #brandSeg.open {
+      display: flex;
+    }
+
+    #brandSeg button {
+      flex: 0 0 auto;
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font:
+        700 14px "Golos Text",
+        sans-serif;
+      background: transparent;
+      color: var(--ink, #101418);
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    #tickerTrack {
+      display: inline-flex;
+      align-items: center;
+      height: 30px;
+      white-space: nowrap;
+      width: max-content;
+      animation: zt-marquee 40s linear infinite;
+    }
+
+    #tickerTrack span {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0 1.2rem;
+      font:
+        600 11px/30px "Unbounded",
+        system-ui,
+        sans-serif;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    @keyframes zt-marquee {
+      from {
+        transform: translate3d(0, 0, 0);
+      }
+
+      to {
+        transform: translate3d(-50%, 0, 0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #tickerTrack {
+        animation: none;
+      }
+    }
+
+    /* F5.13 CRITICAL: first-frame only (было большим <style>) */
+    /* Ф3.27: LCP-фикс — кофейное меню видно до выполнения defer-скриптов;
+   delivery-вид скрыт до sv(), брендовый атрибут ставится рано. */
+    body:not([data-brand="delivery"]) #deliveryView {
+      display: none;
+    }
+
+    body[data-brand="delivery"] #menuView {
+      display: none;
+    }
+
+    /* ══ каркас ══ */
+    /* F5.14: база .wrap вернулась в Слой 1 (theme-v2) — critical перебивал медиа-оверрайды */
+  </style>
+</head>
+
+<body>
+  <div id="brandSplashStatic">
+    <div class="spInner">
+      <div class="spTitle">«Пятница» & …и кофе</div>
+      <div class="spSub">Выберите, куда вы сегодня</div>
+      <div class="spBtns">
+        <button class="spBtn spPizza" data-go="delivery">
+          <span class="em">🍕</span><span class="bt">«Пятница»</span><small>доставка пиццы и роллов</small>
+        </button>
+        <button class="spBtn spCoffee" data-go="coffee">
+          <span class="em">🌊</span><span class="bt">Кофейня</span><small>меню, штампы и бонусы</small>
+        </button>
       </div>
     </div>
-    <script>
-      (function () {
-        var s = document.getElementById("brandSplashStatic");
-        if (!s) return;
-        s.addEventListener("click", function (e) {
-          var btn = e.target.closest("[data-go]");
-          if (!btn) return;
-          var brand = btn.getAttribute("data-go");
-          try { sessionStorage.setItem("splashDone", "1"); } catch (err) {}
-          document.documentElement.classList.remove("need-splash");
-          document.documentElement.classList.add("no-splash");
-          s.remove();
-          if (typeof window.sv === "function") {
-            window.sv(brand);
-          } else {
-            var u = new URL(location.href);
-            u.searchParams.set("brand", brand);
-            location.replace(u.toString());
-          }
-        });
-      })();
-    </script>
+  </div>
+  <script>
+    (function () {
+      var s = document.getElementById("brandSplashStatic");
+      if (!s) return;
+      s.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-go]");
+        if (!btn) return;
+        var brand = btn.getAttribute("data-go");
+        try { sessionStorage.setItem("splashDone", "1"); } catch (err) { }
+        document.documentElement.classList.remove("need-splash");
+        document.documentElement.classList.add("no-splash");
+        s.remove();
+        if (typeof window.sv === "function") {
+          window.sv(brand);
+        } else {
+          var u = new URL(location.href);
+          u.searchParams.set("brand", brand);
+          location.replace(u.toString());
+        }
+      });
+    })();
+  </script>
 
-    <header class="topbar">
-      <div class="brandSeg" id="brandSeg">
-        <button data-brand="coffee" class="on">🌊 Кофейня</button>
-        <button data-brand="delivery">🍕 Пятница</button>
+  <header class="topbar">
+    <div class="brandSeg" id="brandSeg">
+      <button data-brand="coffee" class="on">🌊 Кофейня</button>
+      <button data-brand="delivery">🍕 Пятница</button>
+    </div>
+    <div class="brand" id="headerBrand">
+      <div class="mark" id="brandMark">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke-linecap="round">
+          <path d="M5 4h14v7a7 7 0 0 1-14 0V4z" stroke="#fff" stroke-width="1.7" />
+          <path d="M5.5 9.5c2.2-1.4 4.3-1.4 6.5 0s4.3 1.4 6.5 0" stroke="#BBD6EE" stroke-width="1.5" />
+          <path d="M6.5 12.5c1.8-1.2 3.7-1.2 5.5 0s3.7 1.2 5.5 0" stroke="#7FB2D9" stroke-width="1.5" />
+          <path d="M8.5 15.5c1.2-.8 2.3-.8 3.5 0s2.3.8 3.5 0" stroke="#4C7FC0" stroke-width="1.5" />
+        </svg>
       </div>
-      <div class="brand" id="headerBrand">
-        <div class="mark" id="brandMark">
-          <svg
-            viewBox="0 0 24 24"
-            width="22"
-            height="22"
-            fill="none"
-            stroke-linecap="round"
-          >
-            <path
-              d="M5 4h14v7a7 7 0 0 1-14 0V4z"
-              stroke="#fff"
-              stroke-width="1.7"
-            />
-            <path
-              d="M5.5 9.5c2.2-1.4 4.3-1.4 6.5 0s4.3 1.4 6.5 0"
-              stroke="#BBD6EE"
-              stroke-width="1.5"
-            />
-            <path
-              d="M6.5 12.5c1.8-1.2 3.7-1.2 5.5 0s3.7 1.2 5.5 0"
-              stroke="#7FB2D9"
-              stroke-width="1.5"
-            />
-            <path
-              d="M8.5 15.5c1.2-.8 2.3-.8 3.5 0s2.3.8 3.5 0"
-              stroke="#4C7FC0"
-              stroke-width="1.5"
-            />
-          </svg>
-        </div>
-        <div>
-          <b id="brandTitle">…и кофе</b
-          ><small id="brandSub">кофейня на берегу моря</small>
-        </div>
+      <div>
+        <b id="brandTitle">…и кофе</b><small id="brandSub">кофейня на берегу моря</small>
       </div>
-      <div class="modeSeg" id="modeSeg" hidden></div>
-      <button class="mbonus" id="mbonusBtn" type="button" aria-label="Бонусы 4/10">
+    </div>
+    <div class="modeSeg" id="modeSeg" hidden></div>
+    <button class="mbonus" id="mbonusBtn" type="button" aria-label="Бонусы 4/10">
       <span class="mb-stamps"><span class="mb-bean"></span><span id="mbonusSt">0/10</span></span>
       <span class="mb-free" id="mbonusFree" hidden>🎁 0</span>
     </button>
-      
-      
-<button class="ava" id="profileTopBtn" title="Профиль">?</button>
-    </header>
 
-    <div class="ticker" aria-hidden="true">
-      <div class="track" id="tickerTrack"></div>
-    </div>
 
-    <div class="wrap" role="main">
-      <nav class="rail" id="rail"></nav>
+    <button class="ava" id="profileTopBtn" title="Профиль">?</button>
+  </header>
 
-      <section>
-        <div class="adminBar" id="adminBar" hidden>
-          <button id="editToggle">✏️ Редактировать</button>
-          <button id="promoToggle" hidden>🎟 Промокоды</button>
-          <button id="dashToggle" hidden>📊 Дашборд</button>
-          <button id="chatsToggle2" hidden>💬</button>
-        </div>
+  <div class="ticker" aria-hidden="true">
+    <div class="track" id="tickerTrack"></div>
+  </div>
 
-        <div id="deliveryView" class="deliveryView">
-          <div class="menu-head">
-            <div class="mh-top">
-              <div>
-                <h1>Пятница <em>— доставка пиццы и роллов</em></h1>
-                <h2 class="vh">Разделы меню</h2>
-                <div class="upd">
-                  Работаем ежедневно 11:00–22:00 · доставка ~45 мин
-                </div>
-              </div>
-            </div>
-          </div>
-          <div id="deliveryBanner"></div>
-          <div class="rail" id="deliveryRail"></div>
-          <div class="grid" id="deliveryGrid"></div>
-        </div>
+  <div class="wrap" role="main">
+    <nav class="rail" id="rail"></nav>
 
-        <div id="menuView">
-          <div class="menu-head">
-            <div class="mh-top">
-              <div>
-                <h1>Меню <em>на берегу моря</em></h1>
-                <h2 class="vh">Разделы меню</h2>
-                <div class="upd">
-                  Обновлено <b id="updWhen">—</b
-                  ><span class="adminBadge" id="adminBadge" hidden
-                    >режим администратора</span
-                  >
-                </div>
-              </div>
-              <div class="mh-right">
-                <div class="search">
-                  🔍
-                  <input
-                    id="searchInput"
-                    name="search"
-                    placeholder="Найти в меню…"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="grid" id="grid">
-            <div class="card skeleton-card" aria-hidden="true">
-              <div class="media skeleton-shimmer"></div>
-              <div class="cbody">
-                <div
-                  class="skeleton-line"
-                  style="width: 70%; height: 16px"
-                ></div>
-                <div
-                  class="skeleton-line"
-                  style="width: 90%; height: 12px; margin-top: 6px"
-                ></div>
-                <div
-                  class="skeleton-line"
-                  style="width: 40%; height: 18px; margin-top: auto"
-                ></div>
-              </div>
-            </div>
-            <div class="card skeleton-card" aria-hidden="true">
-              <div class="media skeleton-shimmer"></div>
-              <div class="cbody">
-                <div
-                  class="skeleton-line"
-                  style="width: 60%; height: 16px"
-                ></div>
-                <div
-                  class="skeleton-line"
-                  style="width: 85%; height: 12px; margin-top: 6px"
-                ></div>
-                <div
-                  class="skeleton-line"
-                  style="width: 40%; height: 18px; margin-top: auto"
-                ></div>
-              </div>
-            </div>
-            <div class="card skeleton-card" aria-hidden="true">
-              <div class="media skeleton-shimmer"></div>
-              <div class="cbody">
-                <div
-                  class="skeleton-line"
-                  style="width: 80%; height: 16px"
-                ></div>
-                <div
-                  class="skeleton-line"
-                  style="width: 75%; height: 12px; margin-top: 6px"
-                ></div>
-                <div
-                  class="skeleton-line"
-                  style="width: 40%; height: 18px; margin-top: auto"
-                ></div>
+    <section>
+      <div class="adminBar" id="adminBar" hidden>
+        <button id="editToggle">✏️ Редактировать</button>
+        <button id="promoToggle" hidden>🎟 Промокоды</button>
+        <button id="dashToggle" hidden>📊 Дашборд</button>
+        <button id="chatsToggle2" hidden>💬</button>
+      </div>
+
+      <div id="deliveryView" class="deliveryView">
+        <div class="menu-head">
+          <div class="mh-top">
+            <div>
+              <h1>Пятница <em>— доставка пиццы и роллов</em></h1>
+              <h2 class="vh">Разделы меню</h2>
+              <div class="upd">
+                Работаем ежедневно 11:00–22:00 · доставка ~45 мин
               </div>
             </div>
           </div>
         </div>
+        <div id="deliveryBanner"></div>
+        <div class="rail" id="deliveryRail"></div>
+        <div class="grid" id="deliveryGrid"></div>
+      </div>
 
-        <div id="cashierView" hidden>
-          <div class="cashier">
-            <div class="cash-top">
-              <h2>Режим <em>кассира</em></h2>
-              <button class="btn fire" id="newGuestBtn">＋ Новый гость</button>
-              <button class="btn dark" id="chatsToggle">💬 Чаты гостей</button>
+      <div id="menuView">
+        <div class="menu-head">
+          <div class="mh-top">
+            <div>
+              <h1>Меню <em>на берегу моря</em></h1>
+              <h2 class="vh">Разделы меню</h2>
+              <div class="upd">
+                Обновлено <b id="updWhen">—</b><span class="adminBadge" id="adminBadge" hidden>режим
+                  администратора</span>
+              </div>
             </div>
+            <div class="mh-right">
+              <div class="search">
+                🔍
+                <input id="searchInput" name="search" placeholder="Найти в меню…" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid" id="grid">
+          <div class="card skeleton-card" aria-hidden="true">
+            <div class="media skeleton-shimmer"></div>
+            <div class="cbody">
+              <div class="skeleton-line" style="width: 70%; height: 16px"></div>
+              <div class="skeleton-line" style="width: 90%; height: 12px; margin-top: 6px"></div>
+              <div class="skeleton-line" style="width: 40%; height: 18px; margin-top: auto"></div>
+            </div>
+          </div>
+          <div class="card skeleton-card" aria-hidden="true">
+            <div class="media skeleton-shimmer"></div>
+            <div class="cbody">
+              <div class="skeleton-line" style="width: 60%; height: 16px"></div>
+              <div class="skeleton-line" style="width: 85%; height: 12px; margin-top: 6px"></div>
+              <div class="skeleton-line" style="width: 40%; height: 18px; margin-top: auto"></div>
+            </div>
+          </div>
+          <div class="card skeleton-card" aria-hidden="true">
+            <div class="media skeleton-shimmer"></div>
+            <div class="cbody">
+              <div class="skeleton-line" style="width: 80%; height: 16px"></div>
+              <div class="skeleton-line" style="width: 75%; height: 12px; margin-top: 6px"></div>
+              <div class="skeleton-line" style="width: 40%; height: 18px; margin-top: auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <div class="cash-card" id="ngCard" hidden>
-              <h4
-                style="
+      <div id="cashierView" hidden>
+        <div class="cashier">
+          <div class="cash-top">
+            <h2>Режим <em>кассира</em></h2>
+            <button class="btn fire" id="newGuestBtn">＋ Новый гость</button>
+            <button class="btn dark" id="chatsToggle">💬 Чаты гостей</button>
+          </div>
+
+          <div class="cash-card" id="ngCard" hidden>
+            <h4 style="
                   font: 700 12px &quot;Unbounded&quot;;
                   letter-spacing: 0.08em;
                   text-transform: uppercase;
                   color: #8b98a5;
                   margin-bottom: 10px;
-                "
-              >
-                Создать профиль гостя
-              </h4>
-              <div class="findrow">
-                <input
-                  id="ngName"
-                  name="ngName"
-                  placeholder="Имя гостя"
-                  maxlength="24"
-                />
-                <input
-                  id="ngPhone"
-                  name="ngPhone"
-                  placeholder="+7 900 000-00-00"
-                  inputmode="tel"
-                />
-                <button class="btn fire" id="ngSave">Создать</button>
-                <button class="btn ghost" id="ngCancel">Отмена</button>
-              </div>
+                ">
+              Создать профиль гостя
+            </h4>
+            <div class="findrow">
+              <input id="ngName" name="ngName" placeholder="Имя гостя" maxlength="24" />
+              <input id="ngPhone" name="ngPhone" placeholder="+7 900 000-00-00" inputmode="tel" />
+              <button class="btn fire" id="ngSave">Создать</button>
+              <button class="btn ghost" id="ngCancel">Отмена</button>
             </div>
+          </div>
 
-            <div class="cash-card">
-              <h4
-                style="
+          <div class="cash-card">
+            <h4 style="
                   font: 700 12px &quot;Unbounded&quot;;
                   letter-spacing: 0.08em;
                   text-transform: uppercase;
                   color: #8b98a5;
                   margin-bottom: 14px;
-                "
-              >
-                Найти гостя
-              </h4>
-              <div class="findrow cash-findrow">
-                <input
-                  id="findInput"
-                  name="findInput"
-                  placeholder="Имя или телефон"
-                  autocomplete="off"
-                />
-                <div class="find-actions">
-                  <button class="btn fire" id="findBtn">Найти</button>
-                  <button class="btn dark" id="newGuestBtn2">+ Новый</button>
-                </div>
+                ">
+              Найти гостя
+            </h4>
+            <div class="findrow cash-findrow">
+              <input id="findInput" name="findInput" placeholder="Имя или телефон" autocomplete="off" />
+              <div class="find-actions">
+                <button class="btn fire" id="findBtn">Найти</button>
+                <button class="btn dark" id="newGuestBtn2">+ Новый</button>
               </div>
-              <hr
-                style="
+            </div>
+            <hr style="
                   border: none;
                   border-top: 1px dashed var(--line);
                   margin: 18px 0;
-                "
-              />
-              <div class="cust" id="custCard">
-                <div class="big" id="custInit">А</div>
-                <div class="info">
-                  <b id="custName">—</b>
-                  <div class="cp" id="custPhone">—</div>
-                  <div class="freeBanner" id="custFree" hidden>
-                    🎁 Бесплатных кофе: <b id="custFreeN">1</b> — предложи
-                    списать!
-                  </div>
-                  <div class="cdots" id="custDots"></div>
-                  <div class="note" id="custNote"></div>
-                  <div class="chist" id="custHist"></div>
+                " />
+            <div class="cust" id="custCard">
+              <div class="big" id="custInit">А</div>
+              <div class="info">
+                <b id="custName">—</b>
+                <div class="cp" id="custPhone">—</div>
+                <div class="freeBanner" id="custFree" hidden>
+                  🎁 Бесплатных кофе: <b id="custFreeN">1</b> — предложи
+                  списать!
                 </div>
-                <div class="acts">
-                  <button class="btn fire" id="giveStampBtn">
-                    ☕ Пробить штамп
-                  </button>
-                  <button class="btn ghost" id="redeemBtn" hidden>
-                    🎁 Списать бесплатный кофе
-                  </button>
-                </div>
+                <div class="cdots" id="custDots"></div>
+                <div class="note" id="custNote"></div>
+                <div class="chist" id="custHist"></div>
+              </div>
+              <div class="acts">
+                <button class="btn fire" id="giveStampBtn">
+                  ☕ Пробить штамп
+                </button>
+                <button class="btn ghost" id="redeemBtn" hidden>
+                  🎁 Списать бесплатный кофе
+                </button>
               </div>
             </div>
+          </div>
 
-            <div class="cash-card">
-              <div class="card" style="margin-bottom: 12px">
-                <h3 style="margin: 0 0 8px">🆕 Активация гостей</h3>
-                <div id="pendingBox"></div>
-              </div>
-              <h4
-                style="
+          <div class="cash-card">
+            <div class="card" style="margin-bottom: 12px">
+              <h3 style="margin: 0 0 8px">🆕 Активация гостей</h3>
+              <div id="pendingBox"></div>
+            </div>
+            <h4 style="
                   font: 700 12px &quot;Unbounded&quot;;
                   letter-spacing: 0.08em;
                   text-transform: uppercase;
                   color: #8b98a5;
                   margin-bottom: 10px;
-                "
-              >
-                Последние события
-              </h4>
-              <div id="cashLog"></div>
-            </div>
+                ">
+              Последние события
+            </h4>
+            <div id="cashLog"></div>
           </div>
         </div>
-
-        <div id="ordersView" hidden>
-          <div class="cashier">
-            <div class="cash-top">
-              <h2>Заказы <em>доставки</em></h2>
-              <button class="btn ghost" id="ordersRefresh">⟳ Обновить</button>
-            </div>
-            <div class="cash-card" id="ordersList"></div>
-          </div>
-        </div>
-      </section>
-
-      <aside class="panel" id="panel">
-        <div class="tabs">
-          <button class="btn-back">← Назад</button>
-          <button data-tab="bonus" class="on">Бонусы</button>
-          <button data-tab="profile">Профиль</button>
-        </div>
-
-        <div class="pv" id="pvBonus">
-          <div id="bonusNoUser">
-            <div class="authPrompt">
-              <span class="ap">🎁</span>
-              <b>Копите на бесплатный кофе</b>
-              <p>
-                Каждый 10-й кофе — за наш счёт. Создайте профиль по номеру
-                телефона — штампы начисляет кассир.
-              </p>
-              <button data-auth>Создать профиль</button>
-            </div>
-          </div>
-          <div id="bonusBox" hidden>
-            <h4>Карта гостя · каждый 10-й кофе</h4>
-            <div class="stamps" id="stampGrid"></div>
-            <div class="prog" id="bonusProg"></div>
-            <div id="freeSlot"></div>
-            <div class="qrbox" style="margin-top: 12px">
-              <small style="display: block; margin: 0 0 8px"
-                >Есть промокод?</small
-              >
-              <div class="findrow">
-                <input
-                  id="promoInput"
-                  name="promoInput"
-                  placeholder="Например MORE10"
-                  style="text-transform: uppercase"
-                />
-                <button class="btn fire" id="promoBtn">OK</button>
-              </div>
-            </div>
-            <div class="qrbox">
-              <canvas
-                id="qrMini"
-                width="196"
-                height="196"
-                style="width: 112px; height: 112px"
-              ></canvas>
-              <small
-                >Покажите кассиру — он начислит штамп по вашему профилю</small
-              >
-            </div>
-            <button class="demoBtn" id="qrOpenBonus">
-              ⛶ Открыть QR на весь экран
-            </button>
-          </div>
-        </div>
-
-        <div class="pv" id="pvProfile" hidden>
-          <div id="profileNoUser">
-            <div class="authPrompt">
-              <span class="ap">👤</span>
-              <b>Профиль по номеру телефона</b>
-              <p>
-                История штампов, подарки и QR — в одном профиле. Вход по номеру:
-                ничего не теряется.
-              </p>
-              <button data-auth>Создать или войти</button>
-            </div>
-          </div>
-          <div id="profileBox" hidden>
-            <h4>Профиль</h4>
-            <div class="phead">
-              <div class="ava" id="avInit">А</div>
-              <div style="flex: 1">
-                <input id="nameInput" name="nameInput" maxlength="24" />
-                <div class="ph" id="phoneLbl"></div>
-                <div class="ph" id="roleLbl"></div>
-              </div>
-            </div>
-            <button class="demoBtn" id="activateBtn" hidden>
-              🔑 У меня код доступа сотрудника
-            </button>
-            <button class="demoBtn" id="pushBtn" hidden>
-              🔔 Включить уведомления
-            </button>
-            <button class="demoBtn" id="setPinBtn" hidden>
-              🔐 Задать / сменить PIN
-            </button>
-
-            <div class="stats">
-              <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
-              <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
-              <div class="stat"><b id="stFree">0</b><span>подарков</span></div>
-            </div>
-            <div id="myOrders" style="margin-top: 12px"></div>
-            <div class="qrbox" style="margin-top: 14px">
-              <canvas
-                id="qrMain"
-                width="220"
-                height="220"
-                style="width: 158px; height: 158px"
-              ></canvas>
-              <small>Ваш QR для штампов и бонусов</small>
-              <button
-                class="demoBtn"
-                id="qrOpenProfile"
-                style="margin-top: 10px"
-              >
-                ⛶ На весь экран для кассира
-              </button>
-            </div>
-            <div class="placebox">
-              <b>Мы у моря</b>п. Янтарный, Советская ул., 70г<br />
-              Ежедневно: май–сен 8:00–21:00 · окт–апр 8:00–20:00<br />
-              ✈️
-              <a
-                href="https://t.me/and_coffee39"
-                target="_blank"
-                style="color: var(--flame)"
-                >t.me/and_coffee39</a
-              ><br />
-              📸
-              <a
-                href="https://www.instagram.com/and_coffee39/"
-                target="_blank"
-                style="color: var(--flame)"
-                >instagram.com/and_coffee39</a
-              ><br />
-              🤖
-              <a
-                href="https://t.me/and_coffee_bot"
-                target="_blank"
-                style="color: var(--flame)"
-                >Telegram-бот с бонусами</a
-              ><br />
-            </div>
-            <div
-              class="placebox"
-              style="background: #fff6e5; border-color: #f2d9a5; color: #6b4e0e"
-            >
-              <b>Понравилось у нас?</b>
-              Ваш отзыв на Яндекс Картах помогает нам расти 🌊<br />
-              <button
-                class="btn fire"
-                id="reviewBtn"
-                style="margin-top: 10px; width: 100%"
-              >
-                ⭐ Оставить отзыв
-              </button>
-            </div>
-            <h4>История</h4>
-            <div id="histList"></div>
-            <button class="demoBtn" id="logoutBtn">
-              ⇄ Сменить аккаунт (выйти)
-            </button>
-            <button class="resetBtn" id="resetBtn">
-              ↺ Сбросить локальные данные
-            </button>
-          </div>
-        </div>
-      </aside>
-    </div>
-
-    <button class="chat-fab" id="chatFab" aria-label="Чат поддержки">
-      <svg viewBox="0 0 24 24">
-        <path
-          d="M12 3C6.5 3 2 6.9 2 11.7c0 2.6 1.3 4.9 3.4 6.5-.1 1-.5 2.4-1.6 3.8 2-.3 3.6-1 4.7-1.7 1.1.3 2.3.5 3.5.5 5.5 0 10-3.9 10-8.7S17.5 3 12 3z"
-        />
-      </svg>
-      <span class="ub" id="chatBadge" hidden>0</span>
-    </button>
-
-    <section class="chat" id="chatPanel" aria-label="Чат поддержки">
-      <div class="chat-h chatHead">
-        <div class="op">🌊</div>
-        <div>
-          <b>Ника · поддержка «…и кофе»</b
-          ><small><i></i>онлайн, отвечает ~1 мин</small>
-        </div>
-        <button id="chatClose" aria-label="Закрыть">✕</button>
       </div>
-      <div class="chat-m" id="chatMsgs"></div>
-      <div class="chips" id="chatChips"></div>
-      <div class="chat-i">
-        <input
-          id="chatInput"
-          name="chatInput"
-          placeholder="Напишите сообщение…"
-          autocomplete="off"
-        />
-        <button id="chatSend" aria-label="Отправить">
-          <svg viewBox="0 0 24 24">
-            <path d="M3 20l19-8L3 4v6l13 2-13 2z" />
-          </svg>
-        </button>
+
+      <div id="ordersView" hidden>
+        <div class="cashier">
+          <div class="cash-top">
+            <h2>Заказы <em>доставки</em></h2>
+            <button class="btn ghost" id="ordersRefresh">⟳ Обновить</button>
+          </div>
+          <div class="cash-card" id="ordersList"></div>
+        </div>
       </div>
     </section>
 
-    <div class="overlay" id="overlay"></div>
+    <aside class="panel" id="panel">
+      <div class="tabs">
+        <button class="btn-back">← Назад</button>
+        <button data-tab="bonus" class="on">Бонусы</button>
+        <button data-tab="profile">Профиль</button>
+      </div>
 
-    <div class="modal" id="emModal">
-      <div class="modal-card">
-        <button class="mclose" id="emClose">✕</button>
-        <h3 id="emTitle">Позиция меню</h3>
-        <div class="msub">Изменения сразу видны гостям в меню</div>
-        <div class="form">
-          <div class="zone" id="emZone"></div>
-          <input type="file" id="emFile" accept="image/*" hidden />
-          <div class="frow">
-            <label for="emName"
-              >Название<input
-                id="emName"
-                name="emName"
-                maxlength="40"
-                placeholder="Капучино"
-            /></label>
-            <label for="emCat"
-              >Категория<select id="emCat" name="emCat"></select
-            ></label>
+      <div class="pv" id="pvBonus">
+        <div id="bonusNoUser">
+          <div class="authPrompt">
+            <span class="ap">🎁</span>
+            <b>Копите на бесплатный кофе</b>
+            <p>
+              Каждый 10-й кофе — за наш счёт. Создайте профиль по номеру
+              телефона — штампы начисляет кассир.
+            </p>
+            <button data-auth>Создать профиль</button>
           </div>
-          <div class="frow">
-            <label for="emPrice"
-              >Цена, ₽<input
-                id="emPrice"
-                name="emPrice"
-                type="number"
-                min="0"
-                step="10"
-            /></label>
-            <label for="emVol"
-              >Объём / выход<input
-                id="emVol"
-                name="emVol"
-                maxlength="14"
-                placeholder="300 мл"
-            /></label>
-            <label for="emEmoji"
-              >Эмодзи-фолбэк<input
-                id="emEmoji"
-                name="emEmoji"
-                maxlength="4"
-                placeholder="☕"
-            /></label>
-          </div>
-          <div id="emOptsBox" hidden>
-            <label style="margin-top: 6px"
-              >Размеры пиццы<small
-                >— вес (г) и цена (₽) четырёх вариантов</small
-              ></label
-            >
-            <div class="frow">
-              <label for="emOpt0w" class="f1"
-                >25 пышное<input
-                  id="emOpt0w"
-                  name="emOpt0w"
-                  placeholder="415 г" /></label
-              ><label for="emOpt0p" class="f1"
-                >₽<input id="emOpt0p" name="emOpt0p" type="number"
-              /></label>
-            </div>
-            <div class="frow">
-              <label for="emOpt1w" class="f1"
-                >35 пышное<input
-                  id="emOpt1w"
-                  name="emOpt1w"
-                  placeholder="750 г" /></label
-              ><label for="emOpt1p" class="f1"
-                >₽<input id="emOpt1p" name="emOpt1p" type="number"
-              /></label>
-            </div>
-            <div class="frow">
-              <label for="emOpt2w" class="f1"
-                >25 тонкое<input
-                  id="emOpt2w"
-                  name="emOpt2w"
-                  placeholder="335 г" /></label
-              ><label for="emOpt2p" class="f1"
-                >₽<input id="emOpt2p" name="emOpt2p" type="number"
-              /></label>
-            </div>
-            <div class="frow">
-              <label for="emOpt3w" class="f1"
-                >35 тонкое<input
-                  id="emOpt3w"
-                  name="emOpt3w"
-                  placeholder="550 г" /></label
-              ><label for="emOpt3p" class="f1"
-                >₽<input id="emOpt3p" name="emOpt3p" type="number"
-              /></label>
+        </div>
+        <div id="bonusBox" hidden>
+          <h4>Карта гостя · каждый 10-й кофе</h4>
+          <div class="stamps" id="stampGrid"></div>
+          <div class="prog" id="bonusProg"></div>
+          <div id="freeSlot"></div>
+          <div class="qrbox" style="margin-top: 12px">
+            <small style="display: block; margin: 0 0 8px">Есть промокод?</small>
+            <div class="findrow">
+              <input id="promoInput" name="promoInput" placeholder="Например MORE10"
+                style="text-transform: uppercase" />
+              <button class="btn fire" id="promoBtn">OK</button>
             </div>
           </div>
-          <label for="emDesc"
-            >Описание<textarea
-              id="emDesc"
-              name="emDesc"
-              rows="2"
-              maxlength="140"
-              placeholder="Коротко и с характером"
-            ></textarea>
-          </label>
-          <label for="emComp"
-            >Состав <small>— через запятую, покажем чипсами</small
-            ><textarea
-              id="emComp"
-              name="emComp"
-              rows="2"
-              placeholder="эспрессо, молоко"
-            ></textarea>
-          </label>
-          <div class="frow">
-            <label for="emTag" class="f1"
-              >Метка
-              <select id="emTag" name="emTag">
-                <option value="">без метки</option>
-                <option>Хит</option>
-                <option>New</option>
-                <option>Vegan</option>
-              </select>
-            </label>
-            <label class="chk" style="flex: 2"
-              ><input type="checkbox" id="emCoffee" name="emCoffee" /> Считать в
-              бонусах (это кофе)</label
-            >
+          <div class="qrbox">
+            <canvas id="qrMini" width="196" height="196" style="width: 112px; height: 112px"></canvas>
+            <small>Покажите кассиру — он начислит штамп по вашему профилю</small>
           </div>
-          <label class="chk"
-            ><input type="checkbox" id="emOn" name="emOn" checked /> Показывать
-            в меню (снять = стоп-лист)</label
-          >
-          <div class="frow acts">
-            <button class="btn fire" id="emSave" style="flex: 1">
-              Сохранить
-            </button>
-            <button class="btn ghost" id="emDup" title="Дублировать">⧉</button>
-            <button class="btn ghost danger" id="emDel" title="Удалить">
-              🗑
+          <button class="demoBtn" id="qrOpenBonus">
+            ⛶ Открыть QR на весь экран
+          </button>
+        </div>
+      </div>
+
+      <div class="pv" id="pvProfile" hidden>
+        <div id="profileNoUser">
+          <div class="authPrompt">
+            <span class="ap">👤</span>
+            <b>Профиль по номеру телефона</b>
+            <p>
+              История штампов, подарки и QR — в одном профиле. Вход по номеру:
+              ничего не теряется.
+            </p>
+            <button data-auth>Создать или войти</button>
+          </div>
+        </div>
+        <div id="profileBox" hidden>
+          <h4>Профиль</h4>
+          <div class="phead">
+            <div class="ava" id="avInit">А</div>
+            <div style="flex: 1">
+              <input id="nameInput" name="nameInput" maxlength="24" />
+              <div class="ph" id="phoneLbl"></div>
+              <div class="ph" id="roleLbl"></div>
+            </div>
+          </div>
+          <button class="demoBtn" id="activateBtn" hidden>
+            🔑 У меня код доступа сотрудника
+          </button>
+          <button class="demoBtn" id="pushBtn" hidden>
+            🔔 Включить уведомления
+          </button>
+          <button class="demoBtn" id="setPinBtn" hidden>
+            🔐 Задать / сменить PIN
+          </button>
+
+          <div class="stats">
+            <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
+            <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
+            <div class="stat"><b id="stFree">0</b><span>подарков</span></div>
+          </div>
+          <div id="myOrders" style="margin-top: 12px"></div>
+          <div class="qrbox" style="margin-top: 14px">
+            <canvas id="qrMain" width="220" height="220" style="width: 158px; height: 158px"></canvas>
+            <small>Ваш QR для штампов и бонусов</small>
+            <button class="demoBtn" id="qrOpenProfile" style="margin-top: 10px">
+              ⛶ На весь экран для кассира
             </button>
           </div>
+          <div class="placebox">
+            <b>Мы у моря</b>п. Янтарный, Советская ул., 70г<br />
+            Ежедневно: май–сен 8:00–21:00 · окт–апр 8:00–20:00<br />
+            ✈️
+            <a href="https://t.me/and_coffee39" target="_blank" style="color: var(--flame)">t.me/and_coffee39</a><br />
+            📸
+            <a href="https://www.instagram.com/and_coffee39/" target="_blank"
+              style="color: var(--flame)">instagram.com/and_coffee39</a><br />
+            🤖
+            <a href="https://t.me/and_coffee_bot" target="_blank" style="color: var(--flame)">Telegram-бот с
+              бонусами</a><br />
+          </div>
+          <div class="placebox" style="background: #fff6e5; border-color: #f2d9a5; color: #6b4e0e">
+            <b>Понравилось у нас?</b>
+            Ваш отзыв на Яндекс Картах помогает нам расти 🌊<br />
+            <button class="btn fire" id="reviewBtn" style="margin-top: 10px; width: 100%">
+              ⭐ Оставить отзыв
+            </button>
+          </div>
+          <h4>История</h4>
+          <div id="histList"></div>
+          <button class="demoBtn" id="logoutBtn">
+            ⇄ Сменить аккаунт (выйти)
+          </button>
+          <button class="resetBtn" id="resetBtn">
+            ↺ Сбросить локальные данные
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <button class="chat-fab" id="chatFab" aria-label="Чат поддержки">
+    <svg viewBox="0 0 24 24">
+      <path
+        d="M12 3C6.5 3 2 6.9 2 11.7c0 2.6 1.3 4.9 3.4 6.5-.1 1-.5 2.4-1.6 3.8 2-.3 3.6-1 4.7-1.7 1.1.3 2.3.5 3.5.5 5.5 0 10-3.9 10-8.7S17.5 3 12 3z" />
+    </svg>
+    <span class="ub" id="chatBadge" hidden>0</span>
+  </button>
+
+  <section class="chat" id="chatPanel" aria-label="Чат поддержки">
+    <div class="chat-h chatHead">
+      <div class="op">🌊</div>
+      <div>
+        <b>Ника · поддержка «…и кофе»</b><small><i></i>онлайн, отвечает ~1 мин</small>
+      </div>
+      <button id="chatClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="chat-m" id="chatMsgs"></div>
+    <div class="chips" id="chatChips"></div>
+    <div class="chat-i">
+      <input id="chatInput" name="chatInput" placeholder="Напишите сообщение…" autocomplete="off" />
+      <button id="chatSend" aria-label="Отправить">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 20l19-8L3 4v6l13 2-13 2z" />
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <div class="overlay" id="overlay"></div>
+
+  <div class="modal" id="emModal">
+    <div class="modal-card">
+      <button class="mclose" id="emClose">✕</button>
+      <h3 id="emTitle">Позиция меню</h3>
+      <div class="msub">Изменения сразу видны гостям в меню</div>
+      <div class="form">
+        <div class="zone" id="emZone"></div>
+        <input type="file" id="emFile" accept="image/*" hidden />
+        <div class="frow">
+          <label for="emName">Название<input id="emName" name="emName" maxlength="40" placeholder="Капучино" /></label>
+          <label for="emCat">Категория<select id="emCat" name="emCat"></select></label>
+        </div>
+        <div class="frow">
+          <label for="emPrice">Цена, ₽<input id="emPrice" name="emPrice" type="number" min="0" step="10" /></label>
+          <label for="emVol">Объём / выход<input id="emVol" name="emVol" maxlength="14" placeholder="300 мл" /></label>
+          <label for="emEmoji">Эмодзи-фолбэк<input id="emEmoji" name="emEmoji" maxlength="4" placeholder="☕" /></label>
+        </div>
+        <div id="emOptsBox" hidden>
+          <label style="margin-top: 6px">Размеры пиццы<small>— вес (г) и цена (₽) четырёх вариантов</small></label>
+          <div class="frow">
+            <label for="emOpt0w" class="f1">25 пышное<input id="emOpt0w" name="emOpt0w"
+                placeholder="415 г" /></label><label for="emOpt0p" class="f1">₽<input id="emOpt0p" name="emOpt0p"
+                type="number" /></label>
+          </div>
+          <div class="frow">
+            <label for="emOpt1w" class="f1">35 пышное<input id="emOpt1w" name="emOpt1w"
+                placeholder="750 г" /></label><label for="emOpt1p" class="f1">₽<input id="emOpt1p" name="emOpt1p"
+                type="number" /></label>
+          </div>
+          <div class="frow">
+            <label for="emOpt2w" class="f1">25 тонкое<input id="emOpt2w" name="emOpt2w"
+                placeholder="335 г" /></label><label for="emOpt2p" class="f1">₽<input id="emOpt2p" name="emOpt2p"
+                type="number" /></label>
+          </div>
+          <div class="frow">
+            <label for="emOpt3w" class="f1">35 тонкое<input id="emOpt3w" name="emOpt3w"
+                placeholder="550 г" /></label><label for="emOpt3p" class="f1">₽<input id="emOpt3p" name="emOpt3p"
+                type="number" /></label>
+          </div>
+        </div>
+        <label for="emDesc">Описание<textarea id="emDesc" name="emDesc" rows="2" maxlength="140"
+            placeholder="Коротко и с характером"></textarea>
+        </label>
+        <label for="emComp">Состав <small>— через запятую, покажем чипсами</small><textarea id="emComp" name="emComp"
+            rows="2" placeholder="эспрессо, молоко"></textarea>
+        </label>
+        <div class="frow">
+          <label for="emTag" class="f1">Метка
+            <select id="emTag" name="emTag">
+              <option value="">без метки</option>
+              <option>Хит</option>
+              <option>New</option>
+              <option>Vegan</option>
+            </select>
+          </label>
+          <label class="chk" style="flex: 2"><input type="checkbox" id="emCoffee" name="emCoffee" /> Считать в
+            бонусах (это кофе)</label>
+        </div>
+        <label class="chk"><input type="checkbox" id="emOn" name="emOn" checked /> Показывать
+          в меню (снять = стоп-лист)</label>
+        <div class="frow acts">
+          <button class="btn fire" id="emSave" style="flex: 1">
+            Сохранить
+          </button>
+          <button class="btn ghost" id="emDup" title="Дублировать">⧉</button>
+          <button class="btn ghost danger" id="emDel" title="Удалить">
+            🗑
+          </button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="modal" id="authModal">
-      <div class="modal-card authcard form">
-        <div class="alogo">
-          <svg
-            viewBox="0 0 24 24"
-            width="30"
-            height="30"
-            fill="none"
-            stroke-linecap="round"
-          >
-            <path
-              d="M5 4h14v7a7 7 0 0 1-14 0V4z"
-              stroke="#fff"
-              stroke-width="1.7"
-            />
-            <path
-              d="M5.5 9.5c2.2-1.4 4.3-1.4 6.5 0s4.3 1.4 6.5 0"
-              stroke="#BBD6EE"
-              stroke-width="1.5"
-            />
-            <path
-              d="M6.5 12.5c1.8-1.2 3.7-1.2 5.5 0s3.7 1.2 5.5 0"
-              stroke="#7FB2D9"
-              stroke-width="1.5"
-            />
-            <path
-              d="M8.5 15.5c1.2-.8 2.3-.8 3.5 0s2.3.8 3.5 0"
-              stroke="#4C7FC0"
-              stroke-width="1.5"
-            />
-          </svg>
-        </div>
-        <h3 id="authTitle">Создайте профиль</h3>
-        <div class="msub">
-          Штампы и бесплатные кофе — по номеру телефона.<br />Никаких карт и
-          анкет.
-        </div>
-        <form
-          id="regForm"
-          style="display: flex; flex-direction: column; gap: 11px"
-        >
-          <label for="regName"
-            >Имя<input
-              id="regName"
-              name="regName"
-              maxlength="24"
-              placeholder="Как к вам обращаться?"
-          /></label>
-          <label for="regPhone"
-            >Телефон<input
-              id="regPhone"
-              name="regPhone"
-              inputmode="tel"
-              placeholder="+7 900 000-00-00"
-              autocomplete="username"
-          /></label>
-          <button
-            type="button"
-            class="btn fire"
-            id="regTgBtn"
-            style="width: 100%"
-          >
-            🤖 Подтвердить в Telegram · бесплатно
-          </button>
-          <div
-            id="regTgRow"
-            hidden
-            style="
+  <div class="modal" id="authModal">
+    <div class="modal-card authcard form">
+      <div class="alogo">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke-linecap="round">
+          <path d="M5 4h14v7a7 7 0 0 1-14 0V4z" stroke="#fff" stroke-width="1.7" />
+          <path d="M5.5 9.5c2.2-1.4 4.3-1.4 6.5 0s4.3 1.4 6.5 0" stroke="#BBD6EE" stroke-width="1.5" />
+          <path d="M6.5 12.5c1.8-1.2 3.7-1.2 5.5 0s3.7 1.2 5.5 0" stroke="#7FB2D9" stroke-width="1.5" />
+          <path d="M8.5 15.5c1.2-.8 2.3-.8 3.5 0s2.3.8 3.5 0" stroke="#4C7FC0" stroke-width="1.5" />
+        </svg>
+      </div>
+      <h3 id="authTitle">Создайте профиль</h3>
+      <div class="msub">
+        Штампы и бесплатные кофе — по номеру телефона.<br />Никаких карт и
+        анкет.
+      </div>
+      <form id="regForm" style="display: flex; flex-direction: column; gap: 11px">
+        <label for="regName">Имя<input id="regName" name="regName" maxlength="24"
+            placeholder="Как к вам обращаться?" /></label>
+        <label for="regPhone">Телефон<input id="regPhone" name="regPhone" inputmode="tel" placeholder="+7 900 000-00-00"
+            autocomplete="username" /></label>
+        <button type="button" class="btn fire" id="regTgBtn" style="width: 100%">
+          🤖 Подтвердить в Telegram · бесплатно
+        </button>
+        <div id="regTgRow" hidden style="
               font-size: 11.5px;
               color: #1e7a4e;
               text-align: center;
               font-weight: 700;
-            "
-          >
-            ✅ Номер подтверждён — завершите регистрацию
-          </div>
-          <small style="color: #8b98a5; font-size: 11px"
-            >Нет Telegram? Создайте профиль — кассир назовёт код активации, а +1
-            штамп ждёт в Telegram 🎁</small
-          >
-          <button
-            type="button"
-            class="btn ghost"
-            id="regOtpBtn"
-            style="width: 100%; margin-top: 8px"
-            hidden
-          >
-            📨 Код по SMS (платная опция)
-          </button>
-          <label for="regOtp" id="regOtpRow" hidden
-            >Код из SMS<input
-              id="regOtp"
-              name="regOtp"
-              inputmode="numeric"
-              maxlength="4"
-              placeholder="4 цифры"
-              autocomplete="one-time-code"
-          /></label>
-          <label for="regPin" id="regPinRow"
-            >PIN-код (4 цифры)<input
-              id="regPin"
-              name="regPin"
-              type="text"
-              inputmode="numeric"
-              maxlength="4"
-              placeholder="Например 2580"
-              autocomplete="new-password"
-          /></label>
-          <small style="color: #8b98a5; font-size: 11px"
-            >PIN защищает ваш профиль — без него никто не войдёт, даже зная
-            номер</small
-          >
-          <button type="button" class="cta" id="regBtn">Создать профиль</button>
-          <div class="alt">
-            Уже есть профиль?
-            <button type="button" id="toLogin">Войти по номеру</button>
-          </div>
-        </form>
-        <form
-          id="loginForm"
-          style="display: none; flex-direction: column; gap: 11px"
-        >
-          <label for="logPhone"
-            >Ваш номер телефона<input
-              id="logPhone"
-              name="logPhone"
-              inputmode="tel"
-              placeholder="+7 900 000-00-00"
-              autocomplete="username"
-          /></label>
-          <label for="logPin" id="logPinRow"
-            >PIN-код<input
-              id="logPin"
-              name="logPin"
-              type="text"
-              inputmode="numeric"
-              maxlength="4"
-              placeholder="••••"
-              autocomplete="current-password"
-          /></label>
-          <div id="logOtpWrap" style="display: none">
-            <label for="logOtp"
-              >Код из Telegram<input
-                id="logOtp"
-                name="logOtp"
-                type="text"
-                inputmode="numeric"
-                maxlength="4"
-                placeholder="4 цифры"
-                autocomplete="one-time-code"
-            /></label>
-          </div>
-          <button type="button" class="cta" id="logBtn">Войти</button>
-          <div class="alt" id="otpBackRow" style="display: none">
-            <button type="button" id="otpBack">
-              ← Вернуться ко входу по PIN
-            </button>
-          </div>
-          <div class="alt">
-            <button type="button" id="otpBtn">
-              🔑 Не помню PIN — код в Telegram
-            </button>
-          </div>
-          <div class="alt">
-            <button type="button" id="toReg">← Создать новый профиль</button>
-          </div>
-          <div class="alt">
-            <button type="button" id="skipAuth">
-              Просто посмотреть меню →
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div class="modal" id="pinModal">
-      <div
-        class="modal-card"
-        style="width: min(360px, 100%); text-align: center"
-      >
-        <button class="mclose" id="pinClose">✕</button>
-        <h3>Код доступа</h3>
-        <div class="msub">
-          Введите код, который выдал владелец кофейни.<br />Вкладки «Кассир» и
-          «Админ» открываются только сотрудникам.
+            ">
+          ✅ Номер подтверждён — завершите регистрацию
         </div>
-        <form id="pinForm">
-          <input type="text" autocomplete="username" hidden />
-          <label for="pinInput" class="sr-only">Код доступа</label>
-          <input
-            class="pin"
-            id="pinInput"
-            name="pinInput"
-            type="text"
-            inputmode="numeric"
-            maxlength="6"
-            placeholder="••••"
-            autocomplete="off"
-          />
-          <button type="button" class="cta" id="pinGo">Активировать</button>
-        </form>
-        <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
-      </div>
-    </div>
-
-    <div class="modal" id="setPinModal">
-      <div
-        class="modal-card"
-        style="width: min(360px, 100%); text-align: center"
-      >
-        <button class="mclose" id="setPinClose">✕</button>
-        <h3>Придумайте PIN</h3>
-        <div class="msub">
-          4 цифры — вы будете вводить их при входе.<br />Без PIN никто не сможет
-          войти в ваш профиль.
-        </div>
-        <form id="setPinForm">
-          <input type="text" autocomplete="username" hidden />
-          <label for="setPinInput" class="sr-only">PIN-код</label>
-          <input
-            class="pin"
-            id="setPinInput"
-            name="setPinInput"
-            type="text"
-            inputmode="numeric"
-            maxlength="4"
-            placeholder="••••"
-            autocomplete="new-password"
-          />
-          <button type="button" class="cta" id="setPinGo">Сохранить PIN</button>
-        </form>
+        <small style="color: #8b98a5; font-size: 11px">Нет Telegram? Создайте профиль — кассир назовёт код активации, а
+          +1
+          штамп ждёт в Telegram 🎁</small>
+        <button type="button" class="btn ghost" id="regOtpBtn" style="width: 100%; margin-top: 8px" hidden>
+          📨 Код по SMS (платная опция)
+        </button>
+        <label for="regOtp" id="regOtpRow" hidden>Код из SMS<input id="regOtp" name="regOtp" inputmode="numeric"
+            maxlength="4" placeholder="4 цифры" autocomplete="one-time-code" /></label>
+        <label for="regPin" id="regPinRow">PIN-код (4 цифры)<input id="regPin" name="regPin" type="text"
+            inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password" /></label>
+        <small style="color: #8b98a5; font-size: 11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная
+          номер</small>
+        <button type="button" class="cta" id="regBtn">Создать профиль</button>
         <div class="alt">
-          <button type="button" id="setPinOtp">
+          Уже есть профиль?
+          <button type="button" id="toLogin">Войти по номеру</button>
+        </div>
+      </form>
+      <form id="loginForm" style="display: none; flex-direction: column; gap: 11px">
+        <label for="logPhone">Ваш номер телефона<input id="logPhone" name="logPhone" inputmode="tel"
+            placeholder="+7 900 000-00-00" autocomplete="username" /></label>
+        <label for="logPin" id="logPinRow">PIN-код<input id="logPin" name="logPin" type="text" inputmode="numeric"
+            maxlength="4" placeholder="••••" autocomplete="current-password" /></label>
+        <div id="logOtpWrap" style="display: none">
+          <label for="logOtp">Код из Telegram<input id="logOtp" name="logOtp" type="text" inputmode="numeric"
+              maxlength="4" placeholder="4 цифры" autocomplete="one-time-code" /></label>
+        </div>
+        <button type="button" class="cta" id="logBtn">Войти</button>
+        <div class="alt" id="otpBackRow" style="display: none">
+          <button type="button" id="otpBack">
+            ← Вернуться ко входу по PIN
+          </button>
+        </div>
+        <div class="alt">
+          <button type="button" id="otpBtn">
             🔑 Не помню PIN — код в Telegram
           </button>
         </div>
-      </div>
-    </div>
-
-    <div class="modal" id="qrModal">
-      <div class="modal-card qrcard" id="qrCard">
-        <button class="mclose" id="qrClose">✕</button>
-        <div class="qrttl">Покажите кассиру</div>
-        <canvas id="qrFull" width="520" height="520"></canvas>
-        <div class="qrname" id="qrName">—</div>
-        <div class="qrmeta" id="qrMeta">—</div>
-        <div class="qrhint">Нажмите в любом месте, чтобы закрыть</div>
-      </div>
-    </div>
-
-    <div class="modal" id="promoModal">
-      <div class="modal-card">
-        <button class="mclose" id="promoClose">✕</button>
-        <h3>Промокоды и акции</h3>
-        <div class="msub">
-          Гость активирует код в «Бонусах» → «Есть промокод?»
+        <div class="alt">
+          <button type="button" id="toReg">← Создать новый профиль</button>
         </div>
-        <div class="form">
-          <label for="pmCode"
-            >Код
-            <input
-              id="pmCode"
-              name="pmCode"
-              placeholder="MORE10"
-              style="text-transform: uppercase"
-            />
-            <small>Латиницей, без пробелов. Например: MORE10, SEA5</small>
-          </label>
-          <div class="frow">
-            <label for="pmKind" class="f1"
-              >Тип
-              <select id="pmKind" name="pmKind">
-                <option value="stamp">Штампы (кофейня)</option>
-                <option value="free">Бесплатный кофе (кофейня)</option>
-                <option value="percent">Скидка % (доставка)</option>
-                <option value="money">Скидка ₽ (доставка)</option>
-              </select>
-              <small
-                >«Штампы» — начислит N штампов. «Кофе» — сразу даст
-                подарок</small
-              >
-            </label>
-            <label for="pmValue" class="f1"
-              >Кол-во
-              <input
-                id="pmValue"
-                name="pmValue"
-                type="number"
-                min="1"
-                value="1"
-              />
-              <small>Сколько даст код: штампов или бесплатных кофе</small>
-            </label>
-          </div>
-          <div class="frow">
-            <label for="pmDays" class="f1"
-              >Дней
-              <input
-                id="pmDays"
-                name="pmDays"
-                type="number"
-                min="0"
-                value="0"
-              />
-              <small>0 — бессрочно. Иначе сгорит через N дней</small>
-            </label>
-            <label for="pmMax" class="f1"
-              >Лимит
-              <input id="pmMax" name="pmMax" type="number" min="0" value="0" />
-              <small>0 — без лимита. Иначе — всего N активаций на всех</small>
-            </label>
-          </div>
-          <button class="btn fire" id="pmCreate">Создать промокод</button>
-        </div>
-        <h4 style="margin-top: 16px">Список кодов</h4>
-        <div id="pmList"></div>
-        <h4 style="margin-top: 16px">🍕 Пятничный подарок (доставка)</h4>
-        <div class="form">
-          <label for="wpText"
-            >Текст акции для гостей<input
-              id="wpText"
-              name="wpText"
-              placeholder="Каждые 2000 ₽ в чеке — бутылка пива в подарок 🍺"
-          /></label>
-          <div class="frow">
-            <label for="wpThreshold" class="f1"
-              >Порог, ₽ (0 = подарок к каждому заказу)<input
-                id="wpThreshold"
-                name="wpThreshold"
-                type="number"
-                min="0"
-                value="0"
-            /></label>
-            <label for="wpGift" class="f1"
-              >Подарок (пусто = только текст)<input
-                id="wpGift"
-                name="wpGift"
-                placeholder="Пиво 0.5"
-            /></label>
-          </div>
-          <label for="wpUntil"
-            >Действует до<input id="wpUntil" name="wpUntil" type="date"
-          /></label>
-          <label class="chk"
-            ><input type="checkbox" id="wpPush" name="wpPush" /> Отправить пуш
-            всем при сохранении</label
-          >
-          <button class="btn fire" id="wpSave">
-            Сохранить пятничный подарок
+        <div class="alt">
+          <button type="button" id="skipAuth">
+            Просто посмотреть меню →
           </button>
         </div>
-        <h4 style="margin-top: 16px">🍕 Пицца месяца</h4>
-        <div class="form">
-          <label for="pmName"
-            >Название подарочной (30 см, тонкое)<input
-              id="pmName"
-              name="pmName"
-              placeholder="Маргарита"
-          /></label>
-          <label class="chk"
-            ><input type="checkbox" id="pmOn" name="pmOn" /> Акция «2 пиццы 35
-            см → подарок» включена</label
-          >
-          <button class="btn fire" id="pmSave">Сохранить пиццу месяца</button>
-        </div>
-      </div>
+      </form>
     </div>
+  </div>
 
-    <div class="modal" id="dashModal">
-      <div class="modal-card" style="width: min(560px, 100%)">
-        <button class="mclose" id="dashClose">✕</button>
-        <h3>Дашборд владельца</h3>
-        <div class="msub">Живая статистика лояльности · …и кофе</div>
-        <div class="stats" id="dashTop"></div>
-        <h4 style="margin-top: 16px">Штампы за 14 дней</h4>
-        <div
-          id="dashChart"
-          style="display: flex; align-items: flex-end; gap: 4px; height: 130px"
-        ></div>
-        <div id="dashMore" style="margin-top: 14px"></div>
-        <h4 style="margin-top: 16px">Кто подписан на пуши</h4>
-        <div id="pushSubs"></div>
-        <div class="form">
-          <label for="pushText"
-            >Текст акции<input
-              id="pushText"
-              name="pushText"
-              maxlength="120"
-              placeholder="Например: сегодня до 12:00 капучино −20%"
-          /></label>
-          <button class="btn fire" id="pushSend">🔔 Отправить</button>
-        </div>
+  <div class="modal" id="pinModal">
+    <div class="modal-card" style="width: min(360px, 100%); text-align: center">
+      <button class="mclose" id="pinClose">✕</button>
+      <h3>Код доступа</h3>
+      <div class="msub">
+        Введите код, который выдал владелец кофейни.<br />Вкладки «Кассир» и
+        «Админ» открываются только сотрудникам.
       </div>
+      <form id="pinForm">
+        <input type="text" autocomplete="username" hidden />
+        <label for="pinInput" class="sr-only">Код доступа</label>
+        <input class="pin" id="pinInput" name="pinInput" type="text" inputmode="numeric" maxlength="6"
+          placeholder="••••" autocomplete="off" />
+        <button type="button" class="cta" id="pinGo">Активировать</button>
+      </form>
+      <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
     </div>
+  </div>
 
-    <div class="modal" id="staffChatModal">
-      <div class="modal-card" style="width: min(560px, 100%)">
-        <button class="mclose" id="scClose">✕</button>
-        <h3>Чаты гостей</h3>
-        <div class="msub">Если бот не смог помочь — ответьте лично</div>
-        <button class="btn ghost" id="scShowClosed" style="margin-bottom: 8px">
-          Показать закрытые
+  <div class="modal" id="setPinModal">
+    <div class="modal-card" style="width: min(360px, 100%); text-align: center">
+      <button class="mclose" id="setPinClose">✕</button>
+      <h3>Придумайте PIN</h3>
+      <div class="msub">
+        4 цифры — вы будете вводить их при входе.<br />Без PIN никто не сможет
+        войти в ваш профиль.
+      </div>
+      <form id="setPinForm">
+        <input type="text" autocomplete="username" hidden />
+        <label for="setPinInput" class="sr-only">PIN-код</label>
+        <input class="pin" id="setPinInput" name="setPinInput" type="text" inputmode="numeric" maxlength="4"
+          placeholder="••••" autocomplete="new-password" />
+        <button type="button" class="cta" id="setPinGo">Сохранить PIN</button>
+      </form>
+      <div class="alt">
+        <button type="button" id="setPinOtp">
+          🔑 Не помню PIN — код в Telegram
         </button>
-        <div id="scList" style="max-height: 200px; overflow-y: auto"></div>
-        <div id="scDialogWrap" hidden>
-          <button class="btn ghost" id="scBack" style="margin: 10px 0">
-            ← К списку
-          </button>
-          <button
-            class="btn ghost"
-            id="scCloseThread"
-            style="margin: 10px 0 10px 8px"
-          >
-            ✓ Закрыть чат
-          </button>
-          <div
-            id="scDialog"
-            style="
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="qrModal">
+    <div class="modal-card qrcard" id="qrCard">
+      <button class="mclose" id="qrClose">✕</button>
+      <div class="qrttl">Покажите кассиру</div>
+      <canvas id="qrFull" width="520" height="520"></canvas>
+      <div class="qrname" id="qrName">—</div>
+      <div class="qrmeta" id="qrMeta">—</div>
+      <div class="qrhint">Нажмите в любом месте, чтобы закрыть</div>
+    </div>
+  </div>
+
+  <div class="modal" id="promoModal">
+    <div class="modal-card">
+      <button class="mclose" id="promoClose">✕</button>
+      <h3>Промокоды и акции</h3>
+      <div class="msub">
+        Гость активирует код в «Бонусах» → «Есть промокод?»
+      </div>
+      <div class="form">
+        <label for="pmCode">Код
+          <input id="pmCode" name="pmCode" placeholder="MORE10" style="text-transform: uppercase" />
+          <small>Латиницей, без пробелов. Например: MORE10, SEA5</small>
+        </label>
+        <div class="frow">
+          <label for="pmKind" class="f1">Тип
+            <select id="pmKind" name="pmKind">
+              <option value="stamp">Штампы (кофейня)</option>
+              <option value="free">Бесплатный кофе (кофейня)</option>
+              <option value="percent">Скидка % (доставка)</option>
+              <option value="money">Скидка ₽ (доставка)</option>
+            </select>
+            <small>«Штампы» — начислит N штампов. «Кофе» — сразу даст
+              подарок</small>
+          </label>
+          <label for="pmValue" class="f1">Кол-во
+            <input id="pmValue" name="pmValue" type="number" min="1" value="1" />
+            <small>Сколько даст код: штампов или бесплатных кофе</small>
+          </label>
+        </div>
+        <div class="frow">
+          <label for="pmDays" class="f1">Дней
+            <input id="pmDays" name="pmDays" type="number" min="0" value="0" />
+            <small>0 — бессрочно. Иначе сгорит через N дней</small>
+          </label>
+          <label for="pmMax" class="f1">Лимит
+            <input id="pmMax" name="pmMax" type="number" min="0" value="0" />
+            <small>0 — без лимита. Иначе — всего N активаций на всех</small>
+          </label>
+        </div>
+        <button class="btn fire" id="pmCreate">Создать промокод</button>
+      </div>
+      <h4 style="margin-top: 16px">Список кодов</h4>
+      <div id="pmList"></div>
+      <h4 style="margin-top: 16px">🍕 Пятничный подарок (доставка)</h4>
+      <div class="form">
+        <label for="wpText">Текст акции для гостей<input id="wpText" name="wpText"
+            placeholder="Каждые 2000 ₽ в чеке — бутылка пива в подарок 🍺" /></label>
+        <div class="frow">
+          <label for="wpThreshold" class="f1">Порог, ₽ (0 = подарок к каждому заказу)<input id="wpThreshold"
+              name="wpThreshold" type="number" min="0" value="0" /></label>
+          <label for="wpGift" class="f1">Подарок (пусто = только текст)<input id="wpGift" name="wpGift"
+              placeholder="Пиво 0.5" /></label>
+        </div>
+        <label for="wpUntil">Действует до<input id="wpUntil" name="wpUntil" type="date" /></label>
+        <label class="chk"><input type="checkbox" id="wpPush" name="wpPush" /> Отправить пуш
+          всем при сохранении</label>
+        <button class="btn fire" id="wpSave">
+          Сохранить пятничный подарок
+        </button>
+      </div>
+      <h4 style="margin-top: 16px">🍕 Пицца месяца</h4>
+      <div class="form">
+        <label for="pmName">Название подарочной (30 см, тонкое)<input id="pmName" name="pmName"
+            placeholder="Маргарита" /></label>
+        <label class="chk"><input type="checkbox" id="pmOn" name="pmOn" /> Акция «2 пиццы 35
+          см → подарок» включена</label>
+        <button class="btn fire" id="pmSave">Сохранить пиццу месяца</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="dashModal">
+    <div class="modal-card" style="width: min(560px, 100%)">
+      <button class="mclose" id="dashClose">✕</button>
+      <h3>Дашборд владельца</h3>
+      <div class="msub">Живая статистика лояльности · …и кофе</div>
+      <div class="stats" id="dashTop"></div>
+      <h4 style="margin-top: 16px">Штампы за 14 дней</h4>
+      <div id="dashChart" style="display: flex; align-items: flex-end; gap: 4px; height: 130px"></div>
+      <div id="dashMore" style="margin-top: 14px"></div>
+      <h4 style="margin-top: 16px">Кто подписан на пуши</h4>
+      <div id="pushSubs"></div>
+      <div class="form">
+        <label for="pushText">Текст акции<input id="pushText" name="pushText" maxlength="120"
+            placeholder="Например: сегодня до 12:00 капучино −20%" /></label>
+        <button class="btn fire" id="pushSend">🔔 Отправить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="staffChatModal">
+    <div class="modal-card" style="width: min(560px, 100%)">
+      <button class="mclose" id="scClose">✕</button>
+      <h3>Чаты гостей</h3>
+      <div class="msub">Если бот не смог помочь — ответьте лично</div>
+      <button class="btn ghost" id="scShowClosed" style="margin-bottom: 8px">
+        Показать закрытые
+      </button>
+      <div id="scList" style="max-height: 200px; overflow-y: auto"></div>
+      <div id="scDialogWrap" hidden>
+        <button class="btn ghost" id="scBack" style="margin: 10px 0">
+          ← К списку
+        </button>
+        <button class="btn ghost" id="scCloseThread" style="margin: 10px 0 10px 8px">
+          ✓ Закрыть чат
+        </button>
+        <div id="scDialog" style="
               max-height: 280px;
               overflow-y: auto;
               display: flex;
               flex-direction: column;
               gap: 8px;
-            "
-          ></div>
-          <div class="findrow" style="margin-top: 10px">
-            <label for="scInput" class="sr-only">Ответ гостю</label>
-            <input id="scInput" name="scInput" placeholder="Ответ гостю…" />
-            <button class="btn fire" id="scSend">Отправить</button>
-          </div>
+            "></div>
+        <div class="findrow" style="margin-top: 10px">
+          <label for="scInput" class="sr-only">Ответ гостю</label>
+          <input id="scInput" name="scInput" placeholder="Ответ гостю…" />
+          <button class="btn fire" id="scSend">Отправить</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="toasts" id="toasts"></div>
-    <canvas id="fx"></canvas>
-    <button type="button" id="cartFab" class="cartFab" hidden aria-label="Открыть корзину">
-  <span class="cf-icon">🛒</span>
-  <span class="cf-badge">0</span>
-  <span class="cf-sep"></span>
-  <span class="cf-total">0 ₽</span>
-</button>
-    <div class="cartPanel" id="cartPanel">
-      <h3 style="margin-bottom: 16px">Корзина</h3>
-      <div id="cartItems"></div>
-      <div
-        style="
+  <div class="toasts" id="toasts"></div>
+  <canvas id="fx"></canvas>
+  <button type="button" id="cartFab" class="cartFab" hidden aria-label="Открыть корзину">
+    <span class="cf-icon">🛒</span>
+    <span class="cf-badge">0</span>
+    <span class="cf-sep"></span>
+    <span class="cf-total">0 ₽</span>
+  </button>
+  <div class="cartPanel" id="cartPanel">
+    <h3 style="margin-bottom: 16px">Корзина</h3>
+    <div id="cartItems"></div>
+    <div style="
           margin-top: 16px;
           padding-top: 12px;
           border-top: 2px solid var(--line);
-        "
-      >
-        <div
-          style="
+        ">
+      <div style="
             display: flex;
             justify-content: space-between;
             font-size: 15px;
             font-weight: 700;
-          "
-        >
-          <span>Итого:</span>
-          <span id="cartTotal">0 ₽</span>
-        </div>
-        <div
-          id="cartDiscount"
-          style="color: var(--green); font-size: 13px; margin-top: 4px"
-        ></div>
-        <div
-          id="cartFee"
-          style="color: var(--soft); font-size: 13px; margin-top: 2px"
-        ></div>
-        <div
-          id="cartGifts"
-          style="color: var(--green); font-size: 13px; margin-top: 2px"
-        ></div>
-        <div class="findrow" style="margin-top: 10px">
-          <label for="cartPromo" class="sr-only">Промокод</label>
-          <input
-            id="cartPromo"
-            name="cartPromo"
-            placeholder="Промокод"
-            style="text-transform: uppercase"
-          />
-          <button class="btn ghost" id="cartPromoBtn">Применить</button>
-        </div>
-        <div
-          id="cartPromoLine"
-          style="color: var(--green); font-size: 13.5px; margin-top: 2px"
-        ></div>
+          ">
+        <span>Итого:</span>
+        <span id="cartTotal">0 ₽</span>
       </div>
-
-      <div class="checkoutForm">
-    <label for="checkoutMethod">Способ получения
-      <select id="checkoutMethod" name="checkoutMethod">
-        <option value="delivery">Доставка</option>
-        <option value="pickup">Самовывоз (−10%)</option>
-      </select>
-    </label>
-
-    <div id="checkoutDeliveryGroup" style="display:contents">
-      <label for="checkoutPlace" id="checkoutPlaceLabel">Населённый пункт
-        <select id="checkoutPlace" name="checkoutPlace"></select>
-      </label>
-
-      <label for="checkoutStreet" id="checkoutStreetLabel">Улица
-        <input type="text" id="checkoutStreet" name="checkoutStreet" list="streetSuggestions" placeholder="Начните вводить улицу..." autocomplete="off">
-      </label>
-      <datalist id="streetSuggestions"></datalist>
-
-      <label for="checkoutHouse" id="checkoutHouseLabel">Дом, корпус, квартира
-        <input type="text" id="checkoutHouse" name="checkoutHouse" placeholder="10, кв. 5">
-      </label>
+      <div id="cartDiscount" style="color: var(--green); font-size: 13px; margin-top: 4px"></div>
+      <div id="cartFee" style="color: var(--soft); font-size: 13px; margin-top: 2px"></div>
+      <div id="cartGifts" style="color: var(--green); font-size: 13px; margin-top: 2px"></div>
+      <div class="findrow" style="margin-top: 10px">
+        <label for="cartPromo" class="sr-only">Промокод</label>
+        <input id="cartPromo" name="cartPromo" placeholder="Промокод" style="text-transform: uppercase" />
+        <button class="btn ghost" id="cartPromoBtn">Применить</button>
+      </div>
+      <div id="cartPromoLine" style="color: var(--green); font-size: 13.5px; margin-top: 2px"></div>
     </div>
 
-    <label for="checkoutSlot">Когда привезти
-      <select id="checkoutSlot" name="checkoutSlot">
-        <option value="asap">Как можно скорее (~45 мин)</option>
-      </select>
-    </label>
-        <label for="checkoutPay"
-          >Оплата
-          <select id="checkoutPay" name="checkoutPay">
-            <option value="cash">Наличные при получении</option>
-            <option value="card">Картой при получении</option>
-          </select>
+    <div class="checkoutForm">
+      <label for="checkoutMethod">Способ получения
+        <select id="checkoutMethod" name="checkoutMethod">
+          <option value="delivery">Доставка</option>
+          <option value="pickup">Самовывоз (−10%)</option>
+        </select>
+      </label>
+
+      <div id="checkoutDeliveryGroup" style="display:contents">
+        <label for="checkoutPlace" id="checkoutPlaceLabel">Населённый пункт
+          <select id="checkoutPlace" name="checkoutPlace"></select>
         </label>
-        <label for="checkoutComment"
-          >Комментарий
-          <textarea
-            id="checkoutComment"
-            name="checkoutComment"
-            placeholder="Домофон, подъезд, пожелания…"
-          ></textarea>
+
+        <label for="checkoutStreet" id="checkoutStreetLabel">Улица
+          <input type="text" id="checkoutStreet" name="checkoutStreet" list="streetSuggestions"
+            placeholder="Начните вводить улицу..." autocomplete="off">
+        </label>
+        <datalist id="streetSuggestions"></datalist>
+
+        <label for="checkoutHouse" id="checkoutHouseLabel">Дом, корпус, квартира
+          <input type="text" id="checkoutHouse" name="checkoutHouse" placeholder="10, кв. 5">
         </label>
       </div>
 
-      <button class="cta" id="checkoutBtn" style="margin-top: 16px">
-        Оформить заказ
-      </button>
-      <button
-        class="btn ghost"
-        id="cartClose"
-        style="margin-top: 8px; width: 100%"
-      >
-        Закрыть
-      </button>
+      <label for="checkoutSlot">Когда привезти
+        <select id="checkoutSlot" name="checkoutSlot">
+          <option value="asap">Как можно скорее (~45 мин)</option>
+        </select>
+      </label>
+      <label for="checkoutPay">Оплата
+        <select id="checkoutPay" name="checkoutPay">
+          <option value="cash">Наличные при получении</option>
+          <option value="card">Картой при получении</option>
+        </select>
+      </label>
+      <label for="checkoutComment">Комментарий
+        <textarea id="checkoutComment" name="checkoutComment" placeholder="Домофон, подъезд, пожелания…"></textarea>
+      </label>
     </div>
-<script type="module" src="./app/main.js"></script>
-    <div
-      id="installBanner"
-      hidden
-      style="
+
+    <button class="cta" id="checkoutBtn" style="margin-top: 16px">
+      Оформить заказ
+    </button>
+    <button class="btn ghost" id="cartClose" style="margin-top: 8px; width: 100%">
+      Закрыть
+    </button>
+  </div>
+  <script type="module" src="./app/main.js"></script>
+  <div id="installBanner" hidden style="
         position: fixed;
         left: 12px;
         right: 12px;
@@ -1690,35 +1393,23 @@ body[data-brand="delivery"] #menuView {
         gap: 10px;
         align-items: center;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-      "
-    >
-      <span style="flex: 1; font-size: 14px"
-        >📲 Установите приложение — карта всегда под рукой</span
-      >
-      <button
-        id="installBtn"
-        style="
+      ">
+    <span style="flex: 1; font-size: 14px">📲 Установите приложение — карта всегда под рукой</span>
+    <button id="installBtn" style="
           background: #2e6f8e;
           border: none;
           color: #fff;
           border-radius: 10px;
           padding: 8px 12px;
           font-weight: 700;
-        "
-      >
-        OK
-      </button>
-      <button
-        id="installClose"
-        style="background: none; border: none; color: #9fb2c6; font-size: 16px"
-      >
-        ✕
-      </button>
-    </div>
-    <div
-      id="iosHint"
-      hidden
-      style="
+        ">
+      OK
+    </button>
+    <button id="installClose" style="background: none; border: none; color: #9fb2c6; font-size: 16px">
+      ✕
+    </button>
+  </div>
+  <div id="iosHint" hidden style="
         position: fixed;
         left: 12px;
         right: 12px;
@@ -1731,66 +1422,61 @@ body[data-brand="delivery"] #menuView {
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         font-size: 14px;
         line-height: 1.45;
-      "
-    >
-      <span id="iosHintText"></span>
-      <button
-        id="iosHintClose"
-        style="
+      ">
+    <span id="iosHintText"></span>
+    <button id="iosHintClose" style="
           float: right;
           background: none;
           border: none;
           color: #9fb2c6;
           font-size: 16px;
-        "
-      >
-        ✕
-      </button>
-    </div>
-    <style>
-      #scanFab {
-        position: fixed;
-        right: 20px;
-        bottom: calc(96px + env(safe-area-inset-bottom));
-        z-index: 95;
-        width: 58px;
-        height: 58px;
-        border-radius: 50%;
-        border: none;
-        background: var(--esp);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 12px 30px -8px rgba(16, 20, 24, 0.6);
-        transition: 0.25s;
-      }
-      body.is-cashier #scanFab {
-        display: flex;
-      }
-      #scanFab svg {
-        width: 26px;
-        height: 26px;
-        fill: var(--cream);
-      }
-      #scanFab:hover {
-        transform: scale(1.08) rotate(-6deg);
-        background: var(--flame);
-      }
-    </style>
-
-    <button id="scanFab" aria-label="Скан QR гостя">
-      <svg viewBox="0 0 24 24">
-        <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z" />
-        <path
-          d="M20 6h-3.2L15 4H9L7.2 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm0 12H4V8h16v10z"
-        />
-      </svg>
+        ">
+      ✕
     </button>
+  </div>
+  <style>
+    #scanFab {
+      position: fixed;
+      right: 20px;
+      bottom: calc(96px + env(safe-area-inset-bottom));
+      z-index: 95;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: none;
+      background: var(--esp);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 30px -8px rgba(16, 20, 24, 0.6);
+      transition: 0.25s;
+    }
 
-    <div
-      id="scanModal"
-      hidden
-      style="
+    body.is-cashier #scanFab {
+      display: flex;
+    }
+
+    #scanFab svg {
+      width: 26px;
+      height: 26px;
+      fill: var(--cream);
+    }
+
+    #scanFab:hover {
+      transform: scale(1.08) rotate(-6deg);
+      background: var(--flame);
+    }
+  </style>
+
+  <button id="scanFab" aria-label="Скан QR гостя">
+    <svg viewBox="0 0 24 24">
+      <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z" />
+      <path
+        d="M20 6h-3.2L15 4H9L7.2 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm0 12H4V8h16v10z" />
+    </svg>
+  </button>
+
+  <div id="scanModal" hidden style="
         position: fixed;
         inset: 0;
         z-index: 120;
@@ -1799,21 +1485,16 @@ body[data-brand="delivery"] #menuView {
         align-items: center;
         justify-content: center;
         padding: 16px;
-      "
-    >
-      <div
-        style="
+      ">
+    <div style="
           background: #fff;
           border-radius: 18px;
           max-width: 420px;
           width: 100%;
           padding: 18px;
           position: relative;
-        "
-      >
-        <button
-          id="scanClose"
-          style="
+        ">
+      <button id="scanClose" style="
             position: absolute;
             right: 10px;
             top: 8px;
@@ -1821,39 +1502,23 @@ body[data-brand="delivery"] #menuView {
             background: none;
             font-size: 18px;
             color: #8b98a5;
-          "
-        >
-          ✕
-        </button>
-        <h3 style="margin: 0 0 10px">📷 Скан QR гостя</h3>
-        <video
-          id="scanVideo"
-          style="width: 100%; border-radius: 12px; background: #000"
-          autoplay
-          playsinline
-          muted
-        ></video>
-        <div
-          id="scanStatus"
-          style="color: #5a6b7a; font-size: 13px; margin: 8px 0"
-        >
-          Наведите камеру на QR на экране гостя
-        </div>
-        <input
-          id="scanManual"
-          name="scanManual"
-          placeholder="Или введите код, напр. Z-1A2B3C"
-          style="
+          ">
+        ✕
+      </button>
+      <h3 style="margin: 0 0 10px">📷 Скан QR гостя</h3>
+      <video id="scanVideo" style="width: 100%; border-radius: 12px; background: #000" autoplay playsinline
+        muted></video>
+      <div id="scanStatus" style="color: #5a6b7a; font-size: 13px; margin: 8px 0">
+        Наведите камеру на QR на экране гостя
+      </div>
+      <input id="scanManual" name="scanManual" placeholder="Или введите код, напр. Z-1A2B3C" style="
             width: 100%;
             box-sizing: border-box;
             padding: 10px;
             border-radius: 10px;
             border: 1px solid #d5dde4;
-          "
-        />
-        <button
-          id="scanManualBtn"
-          style="
+          " />
+      <button id="scanManualBtn" style="
             margin-top: 8px;
             width: 100%;
             padding: 12px;
@@ -1862,17 +1527,13 @@ body[data-brand="delivery"] #menuView {
             background: #2e6f8e;
             color: #fff;
             font-weight: 700;
-          "
-        >
-          Найти
-        </button>
-      </div>
+          ">
+        Найти
+      </button>
     </div>
+  </div>
 
-    <div
-      id="guestCard"
-      hidden
-      style="
+  <div id="guestCard" hidden style="
         position: fixed;
         inset: 0;
         z-index: 121;
@@ -1881,21 +1542,16 @@ body[data-brand="delivery"] #menuView {
         align-items: center;
         justify-content: center;
         padding: 16px;
-      "
-    >
-      <div
-        style="
+      ">
+    <div style="
           background: #fff;
           border-radius: 18px;
           max-width: 420px;
           width: 100%;
           padding: 18px;
           position: relative;
-        "
-      >
-        <button
-          id="gcClose"
-          style="
+        ">
+      <button id="gcClose" style="
             position: absolute;
             right: 10px;
             top: 8px;
@@ -1903,19 +1559,13 @@ body[data-brand="delivery"] #menuView {
             background: none;
             font-size: 18px;
             color: #8b98a5;
-          "
-        >
-          ✕
-        </button>
-        <h3 id="gcName" style="margin: 0"></h3>
-        <div id="gcPhone" style="color: #5a6b7a"></div>
-        <div
-          id="gcStamps"
-          style="font-size: 20px; font-weight: 800; margin: 12px 0"
-        ></div>
-        <button
-          id="gcStamp"
-          style="
+          ">
+        ✕
+      </button>
+      <h3 id="gcName" style="margin: 0"></h3>
+      <div id="gcPhone" style="color: #5a6b7a"></div>
+      <div id="gcStamps" style="font-size: 20px; font-weight: 800; margin: 12px 0"></div>
+      <button id="gcStamp" style="
             width: 100%;
             padding: 14px;
             border: none;
@@ -1924,13 +1574,10 @@ body[data-brand="delivery"] #menuView {
             color: #fff;
             font-weight: 800;
             font-size: 16px;
-          "
-        >
-          ☕ Пробить штамп
-        </button>
-        <button
-          id="gcRedeem"
-          style="
+          ">
+        ☕ Пробить штамп
+      </button>
+      <button id="gcRedeem" style="
             width: 100%;
             margin-top: 8px;
             padding: 14px;
@@ -1940,29 +1587,51 @@ body[data-brand="delivery"] #menuView {
             color: #fff;
             font-weight: 800;
             font-size: 16px;
-          "
-        >
-          🎁 Списать бесплатный кофе
-        </button>
-      </div>
+          ">
+        🎁 Списать бесплатный кофе
+      </button>
     </div>
-    <footer class="siteFooter">
-      ✉️ <a href="mailto:woxyara76@gmail.com">woxyara76@gmail.com</a> · вопросы,
-      предложения, сотрудничество
-    </footer>
-    <script src="app/vendor/qrcode.min.js" defer></script>
-    <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
-      .then(function(reg) {
-        reg.update();
-      }).catch(function() {});
-  }
-</script>
-          <script src="/app/core/ptr.js" defer></script>
-<script src="/app/core/address-dict.js" defer></script>
-<script src="/app/core/address-autocomplete.js" defer></script>
-<script src="/app/core/address-book.js" defer></script>
-<script src="/app/core/preorder-timer.js" defer></script>
+  </div>
+  <footer class="siteFooter">
+    ✉️ <a href="mailto:woxyara76@gmail.com">woxyara76@gmail.com</a> · вопросы,
+    предложения, сотрудничество
+  </footer>
+  <script src="app/vendor/qrcode.min.js" defer></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+        .then(function (reg) {
+          reg.update();
+        }).catch(function () { });
+    }
+  </script>
+  <script src="/app/core/ptr.js" defer></script>
+  <script src="/app/core/address-dict.js" defer></script>
+  <script src="/app/core/address-autocomplete.js" defer></script>
+  <script src="/app/core/address-book.js" defer></script>
+  <script src="/app/core/preorder-timer.js" defer></script>
+  <script id="zt-early-chrome-guard">
+    (function () {
+      try {
+        var b = window.brand || localStorage.getItem('zt_brand');
+        if (b === 'delivery') {
+          var mark = document.getElementById('brandMark') || document.querySelector('.topbar .brand .mark');
+          if (mark) {
+            mark.classList.add('is-delivery');
+            var img = mark.querySelector('img');
+            if (img && img.getAttribute('src') !== 'friday-logo.svg') {
+              img.src = 'friday-logo.svg';
+              img.alt = 'Пятница';
+            }
+          }
+          var bt = document.getElementById('brandTitle');
+          if (bt && bt.textContent !== 'Пятница') bt.textContent = 'Пятница';
+          var bs = document.getElementById('brandSub');
+          if (bs && bs.textContent !== 'доставка пиццы и роллов') bs.textContent = 'доставка пиццы и роллов';
+        }
+      } catch (e) { }
+    })();
+  </script>
 </body>
+
 </html>

@@ -93,7 +93,7 @@ textarea{
   display: flex;
   flex-direction: column;
   transition: transform 0.2s ease, opacity 0.2s ease;
-  animation: pop .5s both;
+  animation: pop .5s backwards;
   animation-delay: var(--d);
   position: relative;
   box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
@@ -101,13 +101,15 @@ textarea{
 }
 /* PERF: Аппаратно-ускоренная анимация карточек без рефлоу */
 @keyframes pop {
-  0% { opacity: 0; transform: translateY(6px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-.card {
-  will-change: transform;
-  transform: translateZ(0);
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.015);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
 }
 @media (hover: hover) and (pointer: fine){.card:hover{
     transform: translateY(-4px);
@@ -117,9 +119,6 @@ textarea{
 .card:hover .media img{
     transform: scale(1.07);
   }
-
-
-
 }
 body.editing .card{
   border-style: dashed;
@@ -1291,14 +1290,21 @@ label.chk{
   display: flex;
   flex-direction: column;
   transition: transform 0.2s ease, opacity 0.2s ease;
-  animation: pop 0.5s both;
+  animation: pop 0.5s backwards;
   animation-delay: var(--d);
   position: relative;
   box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
 }
 @keyframes pop {
-  0% { opacity: 0; transform: translateY(6px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.015);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
 }
 
 .card:hover{
@@ -2710,7 +2716,7 @@ textarea{
     opacity: 0;
     transform: translateY(14px);
   }
-
+}
 /* F5.14 P5: пилюля бонусов слева от круглого FAB чата на ≤820px */
 
 /* ── F5.15: мобильный рейл — узкая вертикальная колонка,
@@ -2720,8 +2726,7 @@ sticky слева на весь скролл
    .wrap .rail (0,
 2,
 0) перебивает горизонтальный padding/overflow Слоя 2. ── */
-@media (max-width: 820px){
-  .wrap {
+@media (max-width: 820px){.wrap {
     grid-template-columns: 64px minmax(0, 1fr);
     gap: 8px;
     padding: 8px 10px 28px 6px;
@@ -2886,6 +2891,7 @@ sticky слева на весь скролл
   pointer-events: none;
   transform: translateY(8px);
 }
+@media (max-width: 820px) {
 .mbonus>*{
     font-size: 10px;
     padding: 3px 6px;
@@ -2894,9 +2900,6 @@ sticky слева на весь скролл
 .mbonus.near-footer{
     transform: translateY(8px);
   }
-
-
-
 }
 /* ── F5.18: бейдж бонусов слева + рейл Пятницы ×2 + .on-типографика через body-префикс ── */
 body .wrap .rail button.on,
@@ -2905,6 +2908,7 @@ body .wrap #deliveryRail button.on{
   font-weight: 700;
   line-height: 1.1;
 }
+@media (max-width: 820px) {
 .mbonus>span:not(.mb-free){
     display: none;
   }
@@ -2919,6 +2923,7 @@ body .wrap #deliveryRail button.on{
     padding: 3px 5px;
     border-radius: 8px;
   }
+}
 .mbonus .mb-free[hidden]{
   display: none !important;
 }
@@ -3640,8 +3645,7 @@ html.is-tg-app [id*="pwaInstall"]{
 .preorder-timer-waiting{ animation: none; }
 #checkoutStreet.field-error,
 .abs-edit input.field-error{ animation: none; }
-
-
+}
 
 /* ── ADDR-BTN-NATIVE v1: «Мои адреса» = системная .btn.ghost, здесь только геометрия ── */
 .addr-book-btn{
@@ -3650,8 +3654,6 @@ html.is-tg-app [id*="pwaInstall"]{
   max-width: 100%;
   margin-bottom: 8px;
 }
-}
-
 
 /* PERF-P0 v1: мёртвые селекторы удалены */
 

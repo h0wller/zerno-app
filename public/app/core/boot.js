@@ -7,6 +7,18 @@ renderChips (chat.js), renderVerifyNote (profile-brand.js), drawQR (qr.js),
 showBadge/initChatPointer (chat.js), maybeAskReview (review.js), openAuth (auth.js). */
 (function () {
 'use strict';
+/* IMG-FB v1: универсальный фолбэк брендовых webp→svg (capture: error не всплывает) */
+document.addEventListener('error', function (e) {
+  var t = e.target;
+  if (!t || t.tagName !== 'IMG' || t.dataset.imgFb === '1') return;
+  var s = t.currentSrc || t.src || '';
+  if (!/\.webp(\?|$)/i.test(s)) return;
+  t.dataset.imgFb = '1';
+  var p = t.parentElement;
+  if (p && p.tagName === 'PICTURE') { while (p.firstChild) p.removeChild(p.firstChild); p.appendChild(t); }
+  t.src = s.replace(/\.webp(\?|$)/i, '.svg$1');
+}, true);
+
 
 /* ── 1. Агрегатная перерисовка всех видов ── */
 function renderAll() {

@@ -63,7 +63,15 @@ padTicker();
     их тексты обновляет sv() из views.js. Один владелец на элемент. */
 var mark=document.getElementById('brandMark')||document.querySelector('.topbar .brand .mark');
 if(mark){
-mark.innerHTML='<img class="brandLogo" src="'+(deliv?'friday-logo.svg':'andCoffee.svg')+'" alt="'+(deliv?'Пятница':'…и кофе')+'" onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>'+(deliv?'🍕':'☕')+'</span>\'">';
+/* [optimize.mjs/rasterize] <picture>: WebP для современных, SVG как fallback. */
+mark.innerHTML =
+  '<picture>' +
+    '<source type="image/webp" srcset="/' + (deliv ? 'friday-logo-256.webp 1x, /friday-logo-512.webp 2x' : 'andCoffee-256.webp 1x, /andCoffee-512.webp 2x') + '">' +
+    '<img class="brandLogo" src="' + (deliv ? 'friday-logo.svg' : 'andCoffee.svg') + '" alt="' + (deliv ? 'Пятница' : '…и кофе') + '"' +
+      ' width="' + (deliv ? 96 : 48) + '" height="' + (deliv ? 96 : 48) + '"' +
+      ' decoding="async" fetchpriority="high"' +
+      ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>' + (deliv ? '🍕' : '☕') + '</span>\'">' +
+  '</picture>';
 }
 }
 window.applyBrandChrome=applyBrandChrome;
