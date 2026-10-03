@@ -28,7 +28,7 @@
     "@capacitor/push-notifications": "^8.1.2",
     "better-sqlite3": "^13.0.3",
     "compression": "^1.8.2",
-    "express": "^4.19.2",
+    "express": "^4.21.2",
     "firebase-admin": "^14.3.0",
     "zod": "^3.23.8",
     "web-push": "^3.6.7"
@@ -48,6 +48,8 @@
   "overrides": {
     "eslint-plugin-sonarjs": {
       "minimatch": "^10.2.3"
-    }
+    },
+    "braces": "^3.0.3",
+    "micromatch": "^4.0.8"
   }
 }

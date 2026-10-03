@@ -1,51 +1,51 @@
-// optimize-prod-and-fix.mjs
+// fix-padding.mjs
 import fs from 'fs';
 import path from 'path';
-import Database from 'better-sqlite3';
 
 const ROOT = process.cwd();
 
-console.log('=== 1. ОПТИМИЗАЦИЯ ФОТОГРАФИЙ В SQLite (БОРЬБА С 2.7 МБ) ===');
-const dbPath = path.join(ROOT, 'zerno.db');
-
-if (fs.existsSync(dbPath)) {
-  const db = new Database(dbPath);
-  
-  // Создаем резервную копию базы перед модификацией
-  fs.copyFileSync(dbPath, path.join(ROOT, `zerno.db.backup-${Date.now()}`));
-  console.log('✅ Сделан бэкап zerno.db');
-
-  const rows = db.prepare('SELECT id, name, img FROM menu WHERE img IS NOT NULL').all();
-  let optimizedCount = 0;
-
-  const updateStmt = db.prepare('UPDATE menu SET img = ? WHERE id = ?');
-
-  for (const row of rows) {
-    if (typeof row.img === 'string' && row.img.startsWith('data:image') && row.img.length > 80000) {
-      const origSizeKb = (row.img.length / 1024).toFixed(1);
-      
-      // Если изображение слишком тяжелое, мы уменьшаем качество base64 строки
-      // (на сервере Node без sharp пережимаем буфер)
-      try {
-        const parts = row.img.split(',');
-        if (parts.length === 2) {
-          const buf = Buffer.from(parts[1], 'base64');
-          // Если файл больше 120 КБ, сохраняем оптимизированную заглушку или ужимаем
-          if (buf.length > 100000) {
-            console.log(`  Сжимаем [#${row.id}] ${row.name}: было ${origSizeKb} КБ`);
-            optimizedCount++;
-          }
-        }
-      } catch (e) {}
-    }
-  }
-
-  console.log(`\nОбработано позиций с фото: ${rows.length}, требовали оптимизации: ${optimizedCount}`);
-  db.close();
-} else {
-  console.log('⚠️ Файл zerno.db не найден в текущей папке');
+function log(msg, ok = true) {
+  console.log(`${ok ? '✅' : '⚠️'} ${msg}`);
 }
 
-console.log('\n=== 2. ПРОВЕРКА И ПЕРЕЗАПУСК PM2 ===');
-console.log('Выполните в консоли Timeweb:');
-console.log('  pm2 restart all && pm2 logs --lines 20');
+// 1. Убираем лишний отступ в public/index.html
+const htmlPath = path.join(ROOT, 'public/index.html');
+if (fs.existsSync(htmlPath)) {
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  if (html.includes('padding-top: 142px !important;')) {
+    html = html.replace(/padding-top:\s*142px\s*!important;/g, 'padding-top: 0 !important;');
+    fs.writeFileSync(htmlPath, html, 'utf8');
+    log('Отступ 142px убран из public/index.html');
+  } else {
+    log('В public/index.html отступ 142px не обнаружен (возможно, уже исправлен)');
+  }
+} else {
+  console.error('❌ public/index.html не найден');
+}
+
+// 2. Обновляем шаблон в apply-perf-patch.mjs (чтобы при повторном запуске отступ не возвращался)
+const patchScriptPath = path.join(ROOT, 'apply-perf-patch.mjs');
+if (fs.existsSync(patchScriptPath)) {
+  let scriptContent = fs.readFileSync(patchScriptPath, 'utf8');
+  if (scriptContent.includes('padding-top: 142px !important;')) {
+    scriptContent = scriptContent.replace(/padding-top:\s*142px\s*!important;/g, 'padding-top: 0 !important;');
+    fs.writeFileSync(patchScriptPath, scriptContent, 'utf8');
+    log('Шаблон в apply-perf-patch.mjs синхронизирован');
+  }
+}
+
+// 3. Бампаем версию STATIC_CACHE в public/sw.js
+const swPath = path.join(ROOT, 'public/sw.js');
+if (fs.existsSync(swPath)) {
+  const swContent = fs.readFileSync(swPath, 'utf8');
+  const updatedSw = swContent.replace(/STATIC_CACHE\s*=\s*['"]zerno-static-v(\d+)['"]/, (_m, num) => {
+    const next = parseInt(num, 10) + 1;
+    log(`STATIC_CACHE в sw.js: v${num} -> v${next}`);
+    return `STATIC_CACHE = 'zerno-static-v${next}'`;
+  });
+  if (swContent !== updatedSw) {
+    fs.writeFileSync(swPath, updatedSw, 'utf8');
+  }
+}
+
+log('Готово! Обновите страницу в браузере (Ctrl + F5)');
