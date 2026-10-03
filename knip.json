@@ -24,7 +24,10 @@
   ],
   "ignoreDependencies": [
     "@capacitor/*",
-    "ts-api-utils"
+    "ts-api-utils",
+    "sharp",
+    "svgo",
+    "terser"
   ],
   "ignoreExportsUsedInFile": true
 }

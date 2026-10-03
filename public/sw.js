@@ -1,5 +1,21 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v267'; // ← поставь своё текущее значение +1
+const STATIC_CACHE = 'zerno-static-v276'; 
+/* SW-PRECACHE v1: precache критичных ресурсов */
+const PRECACHE_URLS = [
+  '/',
+  '/index.html',
+  '/app/ui/theme-v2.css',
+  '/app/ui/fonts/unbounded-700-cyrillic.woff2',
+  '/app/core/views.js',
+  '/app/core/boot.js',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
+  );
+});
+// ← поставь своё текущее значение +1
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
@@ -47,8 +63,6 @@ const STATIC_ASSETS = [
   '/app/ui/fonts/prata-400-latin.woff2',
   '/app/ui/fonts/unbounded-700-cyrillic.woff2',
   '/app/ui/fonts/unbounded-700-latin.woff2',
-
-  '/app/ui/theme-v2.min.css',
   '/app/core/overlay-core.js',
   '/app/core/swipe.js',
   '/app/core/notify.js',
@@ -67,8 +81,7 @@ const STATIC_ASSETS = [
   '/app/cart.js',
   '/app/live.js',
   '/app/admin-extra.js',
-  '/app/scanner.js',
-  '/app/vendor/qrcode.min.js',
+  '/app/scanner.js','/app/vendor/qrcode.min.js',
   '/app/ui/styles.js',
   '/app/ui/dropdowns.js',
   '/app/ui/settings.js',

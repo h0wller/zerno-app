@@ -45,6 +45,7 @@
     "knip": "^6.39.0",
     "sharp": "^0.35.5",
     "svgo": "^4.1.0",
+    "terser": "^5.51.2",
     "ts-api-utils": "^2.5.0"
   },
   "overrides": {

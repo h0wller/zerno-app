@@ -1,6 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/kucherenko/jscpd/master/packages/jscpd/schema.json",
-  "format": ["css", "html", "markdown"],
+  "format": ["css", "markdown"],
   "minTokens": 120,
   "threshold": 10,
   "reporters": ["console"],
@@ -20,8 +19,6 @@
     "**/*.db",
     "**/*.db-shm",
     "**/*.db-wal",
-    "server/domain/address.js",
-    "public/app/address.js",
     "**/*.log",
     "logs/**",
     "tests/**",

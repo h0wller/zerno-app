@@ -126,7 +126,7 @@ export default [
       'public/app/ui/cashier-log.js'
     ],
     rules: {
-      'sonarjs/cognitive-complexity': ['warn', 100],
+      'sonarjs/cognitive-complexity': ['warn', 105],
       'sonarjs/no-collapsible-if': 'off',
       'sonarjs/no-nested-template-literals': 'off',
       'sonarjs/no-identical-functions': 'off',

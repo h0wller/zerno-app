@@ -137,6 +137,7 @@ app.delete('/api/menu/:id', adminGuard, (req, res) => {
 });
 
 /* ── статика с кэшированием (7 дней для JS/CSS, 1 год для медиа) ── */
+
 app.use(express.static(PUBLIC_DIR, {
   maxAge: '7d',
   etag: true,
