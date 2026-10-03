@@ -123,3 +123,4 @@ lh-cold-.json
 .env.example
 # Pre-fix бэкапы от fix-all*.mjs
 *.pre-fix-*
+fix-shared-brands.mjs
