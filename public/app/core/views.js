@@ -48,6 +48,7 @@ if (ov0) { ov0.style.display = 'flex'; ov0.style.zIndex = '10002'; }
 /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
 var css = document.createElement('style');
 var rules = [
+' /* ── F6.5: Брендовый теплый фон стафф-режимов доставки и терракотовые цены ── */ html[data-brand="delivery"], body[data-brand="delivery"] {   --panel: #FAF5EE;   --line: #E5DACB; } html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView {   background: var(--fr-paper, #F6EEE1) !important; } html[data-brand="delivery"] .cash-card, html[data-brand="delivery"] #ordersView .card, html[data-brand="delivery"] #ordersView article {   background: #FFFDF9 !important;   border-color: #E8DCCB !important; } html[data-brand="delivery"] .price, html[data-brand="delivery"] .single-meta .price, html[data-brand="delivery"] #itemZoomOverlay b + span {   color: var(--flame, #C03B2A) !important; } ',
 /* --- Layout: сетка wrap + safe-area --- */
 '@media(min-width:821px){body:not(.is-cashier):not(.is-admin) .wrap > .rail{grid-column:1}body:not(.is-cashier):not(.is-admin) .wrap > section{grid-column:2;min-width:0}body:not(.is-cashier):not(.is-admin) .wrap > .panel{grid-column:3}}',
 'html,body{overflow-x:hidden;overflow-x:clip;max-width:100%}',

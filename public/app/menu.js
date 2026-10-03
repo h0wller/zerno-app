@@ -200,6 +200,7 @@ function openItemModifiersModal(product) {
 
 function openZoom(src, name, price) {
   const w = document.createElement('div');
+    w.id = 'itemZoomOverlay';
   w.style.cssText = 'position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(16,24,32,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);opacity:0;transition:opacity .25s';
   const card = document.createElement('div');
   card.style.cssText = 'width:min(430px,94vw);background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.45);transform:scale(.92) translateY(14px);transition:transform .3s cubic-bezier(.2,1.25,.35,1)';
@@ -208,7 +209,7 @@ function openZoom(src, name, price) {
   im.style.cssText = 'display:block;width:100%;height:min(62vh,430px);object-fit:cover;background:#E7ECF0';
   const cap = document.createElement('div');
   cap.style.cssText = 'display:flex;align-items:baseline;gap:10px;padding:14px 18px calc(14px + env(safe-area-inset-bottom))';
-  cap.innerHTML = '<b style="flex:1;font:700 16px -apple-system,\'Segoe UI\',Roboto,sans-serif;color:#12303E">' + (name || '') + '</b>' + (price ? '<span style="font:800 15px -apple-system,\'Segoe UI\',Roboto,sans-serif;color:#2E6F8E">' + price + '</span>' : '');
+  cap.innerHTML = '<b style="flex:1;font:700 16px -apple-system,\'Segoe UI\',Roboto,sans-serif;color:#12303E">' + (name || '') + '</b>' + (price ? '<span style="font:800 15px -apple-system,\'Segoe UI\',Roboto,sans-serif;color:' + ((typeof brand !== 'undefined' && brand === 'delivery') ? '#C03B2A' : '#2E6F8E') + '">' + price + '</span>' : '');
   card.appendChild(im); card.appendChild(cap);
   const x = document.createElement('button');
   x.setAttribute('aria-label', 'Закрыть');

@@ -407,6 +407,13 @@ window.updateCartFab = function () {
   var cPanel = document.getElementById("cartPanel");
   if (cPanel) {
     cPanel.addEventListener('click', function (e) {
+      var tabBtn = e.target.closest('[data-atab]');
+      if (tabBtn) {
+        activeAddonTab = tabBtn.dataset.atab;
+        renderAddons();
+        return;
+      }
+
       var b = e.target.closest('[data-ci]');
       if (b) {
         var i = +b.dataset.ci;

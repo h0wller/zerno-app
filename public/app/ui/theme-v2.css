@@ -4012,3 +4012,35 @@ body #mbonusBtn .mb-free {
   cursor: zoom-in;
   transition: transform 0.3s ease;
 }
+
+
+/* ── F6.5: Стабилизация геометрии карточек для CLS = 0 ── */
+.card .media {
+  height: 160px;
+  min-height: 160px;
+  aspect-ratio: 16 / 10;
+  contain: layout size;
+}
+.skeleton-card .media {
+  height: 160px;
+  min-height: 160px;
+  aspect-ratio: 16 / 10;
+}
+.addon-tabs .atab {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.addon-tabs .atab.on {
+  background: var(--flame);
+  color: #fff;
+  border-color: var(--flame);
+}
+.addon-rail::-webkit-scrollbar {
+  display: none;
+}

@@ -94,7 +94,7 @@ function renderDeliveryMenu() {
       const volStr = p.vol ? esc(String(p.vol).trim()) : '';
       bodyMiddleHTML = `<div class="single-meta" style="display:flex;align-items:baseline;justify-content:space-between;margin:8px 0 12px;padding:4px 0;border-bottom:1px solid rgba(18,58,107,0.06)">
         ${volStr ? `<span class="vol" style="font-size:13px;font-weight:600;color:#8E9AA5">${volStr}</span>` : '<span></span>'}
-        <span class="price" style="font-size:18px;font-weight:800;color:var(--fr-choc,#123A6B)">${priceStr}</span>
+        <span class="price" style="font-size:18px;font-weight:800;color:var(--flame,#C03B2A)">${priceStr}</span>
       </div>`;
     }
 
