@@ -175,6 +175,25 @@ window.__ztNoSW = /[?&]nosw=1/.test(location.search);
     </script>
 
     <style>
+      #brandSplashStatic, #brandSplash {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 400 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: #FFFFFF !important;
+      }
+
+      #brandSplash, #brandSplashStatic {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 400 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        overflow: auto !important;
+        background: #FFFFFF !important;
+      }
+
       html.no-splash #brandSplashStatic {
         display: none !important;
       }

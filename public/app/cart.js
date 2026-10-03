@@ -13,7 +13,9 @@ function isDeliveryServiceOpen() {
 (function () {
   "use strict";
 
-  function checkIsDelivery() {
+  
+  var activeAddonTab = 'all';
+function checkIsDelivery() {
     if (typeof brand !== 'undefined' && brand) {
       return brand === 'delivery';
     }
@@ -135,6 +137,15 @@ function cartFabShow() {
     paintTotals();
   }
 
+  
+  function getAddonType(item) {
+    if (item.cat === 'drinks') return 'drinks';
+    var nm = (item.name || '').toLowerCase();
+    if (/соев|имбир|васаб|палочк/.test(nm)) return 'rolls';
+    if (/соус/.test(nm)) return 'sauce';
+    return 'pizza';
+  }
+
   function renderAddons() {
     var host = document.getElementById("cartAddons");
     if (!host) {
@@ -150,27 +161,78 @@ function cartFabShow() {
       host.innerHTML = "";
       return;
     }
-    var list = (typeof DMENU !== 'undefined' && DMENU) ? DMENU.filter(function (p) {
-      return p.cat === "sauces" && p.on;
+
+    var sauces = (typeof DMENU !== 'undefined' && DMENU) ? DMENU.filter(function (p) {
+      return (p.cat === "sauces" || p.cat === "drinks") && p.on;
     }) : [];
 
-    if (!list.length) {
+    if (!sauces.length) {
       host.innerHTML = "";
       return;
     }
+
+    var cartList = (typeof cart !== 'undefined' ? cart : []);
+    var hasPizza = cartList.some(function (c) {
+      var it = (typeof DMENU !== 'undefined' && DMENU) ? DMENU.find(function(x){ return String(x.id) === String(c.id); }) : null;
+      return it && it.cat === 'pizza';
+    });
+    var hasRolls = cartList.some(function (c) {
+      var it = (typeof DMENU !== 'undefined' && DMENU) ? DMENU.find(function(x){ return String(x.id) === String(c.id); }) : null;
+      return it && (it.cat === 'rolls' || it.cat === 'sets');
+    });
+
+    var sorted = sauces.slice().sort(function (a, b) {
+      var typeA = getAddonType(a);
+      var typeB = getAddonType(b);
+      if (hasRolls && !hasPizza) {
+        if (typeA === 'rolls' && typeB !== 'rolls') return -1;
+        if (typeA !== 'rolls' && typeB === 'rolls') return 1;
+      }
+      if (hasPizza && !hasRolls) {
+        if ((typeA === 'sauce' || typeA === 'pizza') && (typeB !== 'sauce' && typeB !== 'pizza')) return -1;
+        if ((typeA !== 'sauce' && typeA !== 'pizza') && (typeB === 'sauce' || typeB === 'pizza')) return 1;
+      }
+      return 0;
+    });
+
+    var filtered = sorted.filter(function (p) {
+      if (activeAddonTab === 'all') return true;
+      return getAddonType(p) === activeAddonTab;
+    });
+
+    var tabs = [
+      { id: 'all', l: 'Все' },
+      { id: 'sauce', l: '🥫 Соусы' },
+      { id: 'pizza', l: '🍕 К пицце' },
+      { id: 'rolls', l: '🍣 К роллам' },
+      { id: 'drinks', l: '🥤 Напитки' }
+    ];
+
+    var tabsHtml = tabs.map(function(t) {
+      var isOn = activeAddonTab === t.id;
+      return '<button type="button" class="atab ' + (isOn ? 'on' : '') + '" data-atab="' + t.id + '" style="flex:0 0 auto;border:1px solid ' + (isOn ? 'var(--flame,#C03B2A)' : 'var(--line,#E5DACB)') + ';background:' + (isOn ? 'var(--flame,#C03B2A)' : '#fff') + ';color:' + (isOn ? '#fff' : '#12303E') + ';border-radius:10px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">' + t.l + '</button>';
+    }).join('');
+
+    var itemsHtml = filtered.map(function (p) {
+      var inCart = cartList.find(function (c) { return String(c.id) === String(p.id); });
+      return '<button type="button" class="addonChip" data-addon="' + p.id + '" style="flex:0 0 auto;white-space:nowrap;margin:0;">' +
+        (inCart ? '<b>×' + inCart.qty + '</b> ' : '') +
+        esc(p.name) + ' · ' + fmt(parseInt(p.price, 10) || 0) +
+      '</button>';
+    }).join('');
+
     host.innerHTML =
-      '<div style="font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8B98A5;margin:0 0 6px">Добавить к заказу</div>' +
-      list.map(function (p) {
-        var inCart = (typeof cart !== 'undefined' ? cart : []).find(function (c) {
-          return String(c.id) === String(p.id);
-        });
-        return (
-          '<button type="button" class="addonChip" data-addon="' + p.id + '">' +
-          (inCart ? "<b>×" + inCart.qty + "</b> " : "") +
-          esc(p.name) + " · " + fmt(parseInt(p.price, 10) || 0) +
-          "</button>"
-        );
-      }).join("");
+      '<div style="margin:8px 0 10px;padding:8px 10px;background:rgba(18,58,107,0.03);border-radius:12px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">' +
+          '<span style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8B98A5;white-space:nowrap;">Добавить к заказу</span>' +
+          '<div class="addon-tabs" style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">' +
+            tabsHtml +
+          '</div>' +
+        '</div>' +
+        '<div class="addon-rail" style="display:flex;gap:8px;overflow-x:auto;flex-wrap:nowrap;padding:4px 2px 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">' +
+          itemsHtml +
+        '</div>' +
+      '</div>';
   }
 
   function updateDeliveryPromoBar() {
@@ -409,10 +471,14 @@ window.updateCartFab = function () {
     cPanel.addEventListener('click', function (e) {
       var tabBtn = e.target.closest('[data-atab]');
       if (tabBtn) {
+        e.preventDefault();
+        e.stopPropagation();
         activeAddonTab = tabBtn.dataset.atab;
         renderAddons();
         return;
       }
+
+      
 
       var b = e.target.closest('[data-ci]');
       if (b) {
