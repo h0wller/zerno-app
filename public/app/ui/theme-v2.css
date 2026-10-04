@@ -4072,7 +4072,7 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* /* ── CLS-AND-HEADER-SEARCH-STABILIZATION ── */
+/* ── CLS-AND-HEADER-SEARCH-STABILIZATION ── */
 
 /* 1. Мобильная шапка (<= 690px) */
 @media (max-width: 690px) {
@@ -4091,56 +4091,55 @@ body #mbonusBtn .mb-free {
     box-sizing: border-box;
   }
 
-  /* Кнопка смены бренда на мобилке: компактная иконка 40x40px без текста */
+  /* Компактная кнопка выбора бренда: иконка + стрелочка [🌊 ▾] */
   header.topbar div.venueWrap {
     position: static;
     transform: none;
-    flex: 0 0 40px;
-    width: 40px;
+    flex: 0 0 auto;
     order: 1;
     z-index: 2;
   }
   header.topbar button#venueToggle.venueToggle {
-    width: 40px;
-    max-width: 40px;
-    height: 40px;
-    min-width: 40px;
-    padding: 0;
-    border-radius: 50%;
-    overflow: hidden;
-    white-space: nowrap;
-    justify-content: center;
-    font-size: 18px;
+    height: 36px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 14px;
+    gap: 4px;
     background: #FFFFFF;
     border: 1.5px solid var(--line);
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
   }
-  header.topbar button#venueToggle.venueToggle span.vt-label,
-  header.topbar button#venueToggle.venueToggle span.vt-arrow {
+  header.topbar button#venueToggle.venueToggle span.vt-label {
     display: none;
   }
+  header.topbar button#venueToggle.venueToggle span.vt-arrow {
+    display: inline-block;
+    font-size: 10px;
+    opacity: 0.7;
+    margin-left: 2px;
+  }
 
-  /* Аватарка профиля справа: 40x40px */
   header.topbar button#profileTopBtn.ava {
     position: static;
     transform: none;
-    flex: 0 0 40px;
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
     margin: 0;
     order: 3;
     z-index: 2;
   }
 
-  /* Центр шапки: строго по центру между двумя кнопками 40px */
+  /* Центр шапки: строго по центру между кнопками */
   header.topbar div#headerBrand.brand {
     position: static;
     transform: none;
     margin: 0 auto;
     flex: 1 1 auto;
-    max-width: calc(100% - 96px);
+    max-width: calc(100% - 110px);
     height: 40px;
     display: flex;
     flex-direction: row;
@@ -4149,33 +4148,42 @@ body #mbonusBtn .mb-free {
     gap: 6px;
     order: 2;
     z-index: 1;
-    overflow: visible;
+    overflow: hidden;
   }
 
-  /* Логотип кофейни (щит 36x36px) и Пятницы (широкий до 170px) */
   header.topbar div#headerBrand.brand div.mark {
-    width: auto;
-    max-width: 170px;
     height: 36px;
     max-height: 36px;
-    flex: 0 1 auto;
+    width: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: visible;
+    overflow: hidden;
+    border-radius: 10px;
   }
-  header.topbar div#headerBrand.brand div.mark img,
-  header.topbar div#headerBrand.brand div.mark svg,
-  header.topbar div#headerBrand.brand img.brandLogo {
+
+  /* Фиксация логотипа кофейни строго 36x36px без залезания на часы */
+  header.topbar div#headerBrand.brand div.mark img[src*="andCoffee"],
+  header.topbar div#headerBrand.brand div.mark img[alt*="кофе"] {
+    width: 36px;
+    height: 36px;
+    max-width: 36px;
+    max-height: 36px;
+    object-fit: contain;
+    display: block;
+  }
+
+  /* Широкий логотип Пятницы */
+  header.topbar div#headerBrand.brand div.mark img[src*="friday"],
+  header.topbar div#headerBrand.brand div.mark img[alt*="Пятница"] {
     height: 36px;
     max-height: 36px;
-    max-width: 170px;
+    max-width: 160px;
     width: auto;
     object-fit: contain;
     display: block;
   }
 
-  /* Текст названия кофейни рядом со щитом */
   header.topbar div#headerBrand.brand .brand-text,
   header.topbar div#headerBrand.brand .title,
   header.topbar div#headerBrand.brand span:not(.mark) {
@@ -4191,7 +4199,6 @@ body #mbonusBtn .mb-free {
     text-overflow: ellipsis;
   }
 
-  /* Переключатель ролей (кассир/админ) на второй строке */
   header.topbar #modeSeg {
     order: 10;
     flex: 1 1 100%;
@@ -4201,12 +4208,11 @@ body #mbonusBtn .mb-free {
     z-index: 5;
   }
 
-  /* Всплывающий список смены заведения */
   header.topbar .venueWrap #brandSeg {
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    width: 200px;
+    width: 190px;
     max-width: 85vw;
     background: #FFFFFF;
     border: 1.5px solid var(--line);
@@ -4222,7 +4228,6 @@ body #mbonusBtn .mb-free {
     display: flex;
   }
 
-  /* Подсказка пушей */
   #pushPrompt,
   .push-prompt,
   .pushPromptBubble {
@@ -4235,7 +4240,19 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* 2. Поиск на мобильных и планшетах (<= 1024px): всегда на отдельной аккуратной строке во всю ширину */
+/* 2. Вертикальное центрирование текста и иконок в рейле */
+.rail button,
+#deliveryRail button,
+.wrap .rail button,
+.wrap #deliveryRail button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* 3. Поиск на мобильных и планшетах (<= 1024px): аккуратно на отдельной строке без сдвигов */
 @media (max-width: 1024px) {
   div#menuView div.menu-head,
   div#deliveryView div.menu-head,
@@ -4262,15 +4279,7 @@ body #mbonusBtn .mb-free {
   }
   div#menuView div.mh-top div.mh-right,
   div#deliveryView div.mh-top div.mh-right,
-  div.menu-head div.mh-top div.mh-right {
-    width: 100%;
-    height: auto;
-    min-height: 0;
-    margin: 0;
-    display: block;
-  }
-  div#menuView div.mh-top div.mh-right div.search,
-  div#deliveryView div.mh-top div.mh-right div.search,
+  div.menu-head div.mh-top div.mh-right,
   div#menuView div.mh-top div.search,
   div#deliveryView div.mh-top div.search,
   div.menu-head div.search {
@@ -4279,6 +4288,7 @@ body #mbonusBtn .mb-free {
     min-width: 0;
     height: auto;
     margin: 0;
+    display: block;
     box-sizing: border-box;
   }
   div#menuView div.search input,
@@ -4289,7 +4299,41 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* 3. Десктоп (> 1024px): заголовок и поиск в одну линию */
+/* 4. Планшетный режим (691px - 1180px): убираем пустую 3-ю колонку и включаем 2-3 колонки карточек */
+@media (min-width: 691px) and (max-width: 1180px) {
+  html body div.wrap {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 16px;
+    padding: 16px;
+  }
+  html body div.wrap > section {
+    grid-column: 2;
+    min-width: 0;
+    width: 100%;
+  }
+  html body div.wrap > aside#panel.panel {
+    grid-column: auto;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(400px, 100%);
+    max-height: none;
+    z-index: 120;
+    transform: translateX(105%);
+    transition: transform 0.35s cubic-bezier(0.2, 1, 0.3, 1);
+  }
+  html body div.wrap > aside#panel.panel.open {
+    transform: none;
+  }
+  html body div#grid,
+  html body div#deliveryGrid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+}
+
+/* 5. Десктоп (> 1024px): заголовок и поиск в одну линию */
 @media (min-width: 1025px) {
   div#menuView div.menu-head div.mh-top,
   div#deliveryView div.menu-head div.mh-top,
@@ -4332,7 +4376,7 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* 4. Фотографии блюд: естественная четкость */
+/* 6. Карточки меню */
 .media {
   height: 175px;
   min-height: 175px;
