@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v281'; 
+const STATIC_CACHE = 'zerno-static-v282'; 
 /* SW-PRECACHE v1: precache критичных ресурсов */
 const PRECACHE_URLS = [
   '/',
