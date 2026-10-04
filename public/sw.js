@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v295';
+const STATIC_CACHE = 'zerno-static-v297 ';
 const MEDIA_CACHE = 'zerno-media-v13';
 const API_CACHE = 'zerno-api-v7';
 
@@ -12,6 +12,8 @@ const STATIC_ASSETS = [
   '/friday-logo.svg',
   '/app/main.js',
   '/app/ui/theme-v2.css',
+  '/app/ui/brand-tokens.css',
+  '/app/brands/registry.js',
   '/app/ui/fonts.css',
   '/app/core/state.js',
   '/app/core/utils.js',

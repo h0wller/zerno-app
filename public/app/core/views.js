@@ -48,7 +48,7 @@ if (ov0) { ov0.style.display = 'flex'; ov0.style.zIndex = '10002'; }
 /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
 var css = document.createElement('style');
 var rules = [
-' /* ── F6.5: Брендовый теплый фон стафф-режимов доставки и терракотовые цены ── */ html[data-brand="delivery"], body[data-brand="delivery"] {   --panel: #FAF5EE;   --line: #E5DACB; } html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView {   background: var(--fr-paper, #F6EEE1) !important; } html[data-brand="delivery"] .cash-card, html[data-brand="delivery"] #ordersView .card, html[data-brand="delivery"] #ordersView article {   background: #FFFDF9 !important;   border-color: #E8DCCB !important; } html[data-brand="delivery"] .price, html[data-brand="delivery"] .single-meta .price, html[data-brand="delivery"] #itemZoomOverlay b + span {   color: var(--flame, #C03B2A) !important; } ',
+' /* ── F6.5: Брендовый теплый фон стафф-режимов доставки и терракотовые цены ── */ html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView {   background: var(--fr-paper, #F6EEE1) !important; } html[data-brand="delivery"] .cash-card, html[data-brand="delivery"] #ordersView .card, html[data-brand="delivery"] #ordersView article {   background: #FFFDF9 !important;   border-color: #E8DCCB !important; } html[data-brand="delivery"] .price, html[data-brand="delivery"] .single-meta .price, html[data-brand="delivery"] #itemZoomOverlay b + span {   color: var(--flame, #C03B2A) !important; } ',
 /* --- Layout: сетка wrap + safe-area --- */
 '@media(min-width:821px){body:not(.is-cashier):not(.is-admin) .wrap > .rail{grid-column:1}body:not(.is-cashier):not(.is-admin) .wrap > section{grid-column:2;min-width:0}body:not(.is-cashier):not(.is-admin) .wrap > .panel{grid-column:3}}',
 'html,body{overflow-x:hidden;overflow-x:clip;max-width:100%}',
@@ -194,7 +194,6 @@ var rules = [
 '[data-brand="delivery"] .panel,[data-brand="delivery"] .placebox{background:var(--fr-rice);border-color:var(--fr-choc);color:var(--fr-choc)}',
 '[data-brand="delivery"] .panel .btn.fire,[data-brand="delivery"] #profileBox .btn.fire,[data-brand="delivery"] .authBtn{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc);color:#fff}',
 /* ══ БРЕНД: Пятница — терракотовый стикер-арт по гайдлайну ══ */
-'html[data-brand="delivery"],body[data-brand="delivery"]{--flame:#C03B2A;--flame-d:#8E3716;--esp:#3A2A1C;--esp2:#241812;--fr-choc:#3A2A1C;--fr-tan:#C99E6E;--fr-rice:#EFE6D8;--fr-paper:#F6EEE1;--paper:#F3EDE6;--tint-cool:#F3E2CE;--tint-warm:#F3E2CE}',
 'html[data-brand="delivery"] body{background-color:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.1) 1px,transparent 1.5px);background-size:12px 12px}',
 '[data-brand="delivery"] h1,[data-brand="delivery"] h2,[data-brand="delivery"] h3,[data-brand="delivery"] .cbody h3{font-family:Unbounded,sans-serif;color:var(--fr-choc)}',
 '[data-brand="delivery"] .card{border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);background:var(--fr-paper)}',

@@ -3,7 +3,7 @@
    Запуск: node scripts/css-audit.mjs
    Интеграция в CI: добавь в package.json → "pretest": "node scripts/css-audit.mjs" */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 
 const THEME = readFileSync('public/app/ui/theme-v2.css', 'utf8');
 /* F5.7b: комментарии не участвуют в проверках — считаем только реальный CSS */
@@ -145,6 +145,35 @@ const idx = (critStart >= 0 && critEnd > critStart)
   else ok('views.js: эмитуемый CSS структурно корректен');
 }
 
+/* ── ПРАВИЛО 9: brand-tokens.css — чистота данных Слоя 2 (только токены на брендовых селекторах) ── */
+const TOKENS_PATH = 'public/app/ui/brand-tokens.css';
+if (existsSync(TOKENS_PATH)) {
+  const tRaw = readFileSync(TOKENS_PATH, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const blocks = tRaw.match(/[^{}]+\{[^{}]*\}/g) || [];
+  let bad9 = 0;
+  for (const b of blocks) {
+    const sel = b.slice(0, b.indexOf('{')).trim().replace(/\s+/g, ' ');
+    const body = b.slice(b.indexOf('{') + 1, b.lastIndexOf('}'));
+    const selOk = /^(html|body)\[data-brand="[^"]+"\](, (html|body)\[data-brand="[^"]+"\])?$/.test(sel);
+    if (!selOk) { bad9++; fail(`brand-tokens.css: запрещённый селектор: ${sel}`); continue; }
+    for (const decl of body.split(';').map(s => s.trim()).filter(Boolean)) {
+      if (!/^--[\w-]+\s*:/.test(decl) || /!important/.test(decl)) {
+        bad9++; fail(`brand-tokens.css: декларация не токен: ${decl}`);
+      }
+    }
+  }
+  if (!bad9) ok('brand-tokens.css: чистые данные Слоя 2 (только --* на [data-brand])');
+} else {
+  ok('brand-tokens.css: отсутствует (до Фазы A не требуется)');
+}
+
+/* ── ПРАВИЛО 10: views.js не определяет токены (их дом — brand-tokens.css) ── */
+const tokenDefs = viewsCSS.match(/--[a-z0-9-]+\s*:/gi) || [];
+if (tokenDefs.length) {
+  fail(`views.js: найдены определения custom properties (${tokenDefs.length}) — токены только в brand-tokens.css`);
+} else {
+  ok('views.js: определений токенов нет (данные брендов вынесены)');
+}
 /* ── Итог ── */
 console.log('\n' + '='.repeat(60));
 if (failures === 0) {

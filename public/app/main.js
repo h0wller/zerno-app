@@ -1,6 +1,7 @@
 /* public/app/main.js — единая module-точка входа приложения.
    ТОЛЬКО статические импорты. boot.js импортируется ПОСЛЕДНИМ. */
 
+import './brands/registry.js';   /* манифест брендов: window.BRANDS до всех потребителей */
 import './core/state.js';
 import './core/utils.js';
 import './core/api.js';
