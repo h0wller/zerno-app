@@ -1,5 +1,4 @@
-// public/sw.js
-const STATIC_CACHE = 'zerno-static-v284';
+const STATIC_CACHE = 'zerno-static-v285';
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
@@ -74,15 +73,14 @@ const STATIC_ASSETS = [
   '/app/ui/fonts/unbounded-700-latin.woff2'
 ];
 
-const API_TTL = 5 * 60 * 1000; // 5 минут
+const API_TTL = 5 * 60 * 1000;
 
-// Установка: один слушатель, независимая предзагрузка
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(STATIC_CACHE).then((cache) =>
       Promise.allSettled(
         STATIC_ASSETS.map((url) =>
-          cache.add(url).catch((err) => console.warn('[SW] Ошибка предзагрузки ресурса:', url, err))
+          cache.add(url).catch((err) => console.warn('[SW] Ошибка предзагрузки:', url, err))
         )
       )
     )
@@ -90,7 +88,6 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 
-// Активация: очистка старых версий
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
@@ -114,7 +111,6 @@ self.addEventListener('fetch', (e) => {
   const { request } = e;
   const url = new URL(request.url);
 
-  // Игнорируем не-GET, внешние домены и мутации API
   if (
     request.method !== 'GET' ||
     url.origin !== location.origin ||
@@ -125,7 +121,6 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 1. SWR для меню
   if (url.pathname.startsWith('/api/menu')) {
     e.respondWith(
       caches.open(API_CACHE).then(async (cache) => {
@@ -161,7 +156,6 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 2. SVG (логотипы, иконки): Network-first
   if (/\.svg$/.test(url.pathname)) {
     e.respondWith(
       fetch(request, { cache: 'no-cache' })
@@ -177,7 +171,6 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 3. Растровые медиа: Stale-While-Revalidate
   if (/\.(png|jpg|jpeg|webp|ico)$/.test(url.pathname)) {
     e.respondWith(
       caches.open(MEDIA_CACHE).then(async (cache) => {
@@ -194,7 +187,6 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 4. App Shell (HTML, JS, CSS): Network-first с fallback на кэш
   if (
     request.destination === 'document' ||
     url.pathname.startsWith('/app/') ||
@@ -212,20 +204,16 @@ self.addEventListener('fetch', (e) => {
         .catch(async () => {
           const cached = await caches.match(request);
           if (cached) return cached;
-
-          // Если это навигация по сайту, возвращаем сохраненный корень/HTML
           if (request.destination === 'document') {
             const fallbackHtml = await caches.match('/index.html');
             if (fallbackHtml) return fallbackHtml;
           }
-
           return new Response('', { status: 503, statusText: 'offline' });
         })
     );
     return;
   }
 
-  // 5. Остальные запросы: Cache-first
   e.respondWith(
     caches.match(request).then((res) =>
       res || fetch(request).catch(() => new Response('', { status: 503, statusText: 'offline' }))
