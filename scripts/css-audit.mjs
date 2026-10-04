@@ -183,7 +183,7 @@ if (/\bstripLogoInlineStyles\b/.test(viewsCSS) || /style\.setProperty\([^)]+['"]
 
 /* ── ПРАВИЛО 12: рэтчет [data-brand] правил в views.js (Фаза C) ── */
 const brandRulesCount = (viewsCSS.match(/\[data-brand=/g) || []).length;
-const MAX_BRAND_RULES = 88;
+const MAX_BRAND_RULES = 85;
 if (brandRulesCount > MAX_BRAND_RULES) {
   fail(`views.js: превышен рэтчет [data-brand] правил (${brandRulesCount} > ${MAX_BRAND_RULES})`);
 } else {

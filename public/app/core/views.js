@@ -194,9 +194,6 @@ var rules = [
 /* ══ БРЕНД: Пятница — терракотовый стикер-арт по гайдлайну ══ */
 'html[data-brand="delivery"] body{background-color:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.1) 1px,transparent 1.5px);background-size:12px 12px}',
 '[data-brand="delivery"] h1,[data-brand="delivery"] h2,[data-brand="delivery"] h3,[data-brand="delivery"] .cbody h3{font-family:Unbounded,sans-serif;color:var(--fr-choc)}',
-'[data-brand="delivery"] .price{color:var(--flame)}',
-'[data-brand="delivery"] .tag{background:var(--flame)}',
-'[data-brand="delivery"] .tag.hit{background:var(--flame-d)}',
 '[data-brand="delivery"] .comp i{background:var(--fr-rice);border-color:var(--fr-tan);color:var(--fr-choc)}',
 '[data-brand="delivery"] #deliveryGrid .opts button{border:2px solid var(--fr-tan);background:#fff}',
 '[data-brand="delivery"] #deliveryGrid .opts button.sel{background:var(--fr-tan);border-color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:var(--fr-choc)}',
@@ -229,8 +226,6 @@ var rules = [
 '[data-brand="delivery"] #scrollTopBtn{background:var(--fr-paper);border:2px solid var(--fr-choc);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
 /* ── Ф5.7 чанк 2: брендовые модалки (было inline <style> index.html) ── */
 /* ── Ф5.9 чанк 4: брендовые карточки/панель (было inline <style> index.html) ── */
-'[data-brand="delivery"] .stat { border: 2px solid #3a2a1c !important; border-radius: 10px !important; box-shadow: 2px 2px 0 #3a2a1c !important; }',
-'[data-brand="delivery"] .stat b { color: #3a2a1c !important; }',
 /* ── F5.10 чанк 5: брендовый кассир (было inline <style> index.html) ── */
 /* ── F5.11 чанк 6: брендовый служебный кластер (было inline <style> index.html) ── */
 '[data-brand="delivery"] .cartFab { background: #c03b2a !important; }',
@@ -303,7 +298,7 @@ cp.insertBefore(d, ci);
 /* ========== 3. Виды и режимы ========== */
 function sv() {
 try {
-var bName = (typeof brand !== 'undefined' && brand === 'delivery') ? 'delivery' : 'coffee';
+var bName = (typeof brand !== 'undefined' && (brand === 'delivery' || brand === 'test')) ? brand : 'coffee';
 var isDel = (bName === 'delivery');
 document.documentElement.setAttribute('data-brand', bName);
 document.body.setAttribute('data-brand', bName);
@@ -352,7 +347,7 @@ var vt2 = document.getElementById('venueToggle');
 if (vt2) vt2.innerHTML = '<span class="vt-label">Сменить заведение</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
 } catch (e) {}
 var showGuest = (typeof mode !== 'undefined' && (mode === 'guest' || mode === 'admin'));
-var bName2 = (typeof brand !== 'undefined' && brand === 'delivery') ? 'delivery' : 'coffee';
+var bName2 = (typeof brand !== 'undefined' && (brand === 'delivery' || brand === 'test')) ? brand : 'coffee';
 var showCoffee = showGuest && bName2 === 'coffee';
 var showDeliv = showGuest && bName2 === 'delivery';
 var mv = document.getElementById('menuView');

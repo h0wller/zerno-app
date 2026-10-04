@@ -32,8 +32,6 @@ export const BRANDS = {
     tokensFrom: 'brand-tokens',
     menuSection: 'delivery',
     loyalty: 'gifts',
-    /* Горизонтальный логотип: ТОЛЬКО SVG с явной пропорцией 4:1.
-       Урок F5.39: квадратный webp-растр + object-fit:contain сжимал наклейку в полоску. */
     logo: { src: '/friday-logo.svg', w: 160, h: 40, alt: 'Пятница' },
     authLogo: { src: '/friday-logo.svg', box: 140, wide: true },
     ticker: [
@@ -48,6 +46,26 @@ export const BRANDS = {
       hints: ['Зоны и стоимость доставки', 'Сколько ждать заказ?', 'Какие сейчас акции?', 'Где мой заказ?']
     },
     splash: { title: '«Пятница»', sub: 'доставка пиццы и роллов' }
+  },
+  test: {
+    id: 'test',
+    label: 'Тестовый бренд',
+    emoji: '🧪',
+    tokensFrom: 'brand-tokens',
+    menuSection: 'coffee',
+    loyalty: 'stamps',
+    logo: { src: '/test-brand.svg', w: 60, h: 60, alt: 'Тестовый бренд' },
+    authLogo: { src: '/test-brand.svg', box: 60, wide: false },
+    ticker: [
+      'Тестовый бренд — проверка масштабируемости Фазы D',
+      'Палитра из brand-tokens.css',
+      'Третий независимый контекст'
+    ],
+    chat: {
+      greet: 'Привет! Я тестовый ассистент 🧪 Готов к проверке.',
+      hints: ['Как дела?', 'Тест масштабирования', 'Проверка токенов']
+    },
+    splash: { title: 'Тестовый бренд', sub: 'демонстрация Фазы D' }
   }
 };
 

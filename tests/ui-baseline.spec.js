@@ -255,3 +255,22 @@ test('baseline: геометрия марки соответствует ман�
   expect(box.width).toBeGreaterThanOrEqual(140);
   expect(box.height).toBeGreaterThanOrEqual(32);
 });
+
+/* Фаза D: проверка масштабируемости системы на третьем бренде test */
+test('baseline: масштабирование Фазы D (бренд test)', async ({ page }) => {
+  await page.goto('/?brand=test');
+  await page.waitForFunction(() => typeof window.sv === 'function');
+
+  await page.evaluate(() => { window.brand = 'test'; window.sv(); });
+  await page.waitForTimeout(100);
+
+  const brandAttr = await page.evaluate(() => document.documentElement.getAttribute('data-brand'));
+  expect(brandAttr).toBe('test');
+
+  const box = await page.locator('#brandMark img, #brandMark svg').first().boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.width).toBeGreaterThanOrEqual(50);
+  expect(box.width).toBeLessThanOrEqual(64);
+  expect(box.height).toBeGreaterThanOrEqual(50);
+  expect(box.height).toBeLessThanOrEqual(64);
+});

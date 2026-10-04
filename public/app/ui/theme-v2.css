@@ -160,12 +160,9 @@ body.editing .card:hover{
   border-radius: 999px;
   color: #fff;
   z-index: 2;
-  background: #1B4F8A;
+  background: var(--tag-bg, #1B4F8A);
 }
-.tag.hit{
-  background: #1B5E8A;
-  color: #FFFFFF;
-}
+.tag.hit{ background: var(--tag-hit-bg, #1B5E8A); color: #FFFFFF; }
 .tag.new{
   background: var(--green);
 }
@@ -232,11 +229,7 @@ body.editing .card:hover{
   justify-content: space-between;
   margin-top: 6px;
 }
-.price{
-  font: 700 16px "Golos Text";
-  font-variant-numeric: tabular-nums;
-  color: #123A6B;
-}
+.price{ font: 700 16px "Golos Text"; font-variant-numeric: tabular-nums; color: var(--price-color, #123A6B); }
 /* ── Корзина: тач-таргеты степпера (>= 44x44px) ────────────────────────── */
 .cartItem .qty button{
   position: relative;
@@ -4152,12 +4145,16 @@ body #mbonusBtn .mb-free {
   }
 
   header.topbar div#headerBrand.brand {
+
+
     position: static;
     transform: none;
     margin: 0 auto;
     flex: 1 1 auto;
     max-width: calc(100% - 116px);
-    height: 44px;
+    min-min-height: 44px;
+    height: auto;
+    height: auto;
     display: flex;
     flex-direction: row;
     align-items: center;

@@ -1,50 +1,100 @@
-#!/usr/bin/env node
-/* fix-redeclare.mjs — устранение warning no-redeclare в public/app/admin-extra.js */
+#!/usr/end/env node
+/* fix-phase-d-safe.mjs — безопасная проверка синтаксиса (только JS) */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 
-const p = path.join(process.cwd(), 'public', 'app', 'admin-extra.js');
-let s = readFileSync(p, 'utf8');
-
-const targetRe = /function\s+applyBrandChrome\s*\(\)\s*\{[\s\S]*?\n\}\s*window\.applyBrandChrome\s*=/;
-
-const cleanFunction = `function applyBrandChrome(){
-  if(__chromeLast===brand)return;
-  __chromeLast=brand;
-
-  var bConfig = (typeof window.BRANDS !== 'undefined')
-    ? window.BRANDS[brand] || window.BRANDS.coffee
-    : { ticker: ['…и кофе'], logo: { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' }, emoji: '☕' };
-
-  var track = document.getElementById('tickerTrack');
-  if(track){
-    var L = bConfig.ticker || ['…и кофе'];
-    var L4 = L.concat(L, L, L);
-    track.innerHTML = L4.map(function (x) { return '<span>' + x + '</span>'; }).join('');
-    padTicker();
-  }
-
-  var mark = document.getElementById('brandMark') || document.querySelector('.topbar .brand .mark');
-  if (mark) {
-    var lg = bConfig.logo || { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' };
-    mark.innerHTML =
-      '<img class="brandLogo" id="brandLogoImg" src="' + lg.src + '" alt="' + lg.alt + '"' +
-      ' width="' + lg.w + '" height="' + lg.h + '"' +
-      ' decoding="async" fetchpriority="high"' +
-      ' onerror="this.outerHTML=\\'<span style=&quot;font-size:26px&quot;>' + (bConfig.emoji || '☕') + '</span>\\'">';
-  }
+const __filename = fileURLToPath(import.meta.url);
+let cur = path.dirname(__filename);
+let ROOT = null;
+for (let i = 0; i < 10; i++) {
+  if (existsSync(path.join(cur, 'public', 'index.html'))) { ROOT = cur; break; }
+  const parent = path.dirname(cur);
+  if (parent === cur) break;
+  cur = parent;
 }
-window.applyBrandChrome =`;
+if (!ROOT) { console.error('❌ Не найден корень проекта'); process.exit(1); }
 
-if (targetRe.test(s)) {
-  s = s.replace(targetRe, cleanFunction);
-  writeFileSync(p, s, 'utf8');
-  console.log('✅ admin-extra.js: applyBrandChrome() очищена от повторных объявлений var');
-} else {
-  console.log('⏭ Шаблон applyBrandChrome не найден или уже исправлен');
+let changes = 0;
+const ok = (m) => { changes++; console.log('✅', m); };
+const skip = (m) => console.log('⏭ ', m);
+
+function read(p) { return readFileSync(p, 'utf8'); }
+function write(p, content) { writeFileSync(p, content, 'utf8'); }
+
+/* 1. theme-v2.css: адаптивная высота контейнера бренда */
+(function fixMobileBrandContainer() {
+  const p = path.join(ROOT, 'public', 'app', 'ui', 'theme-v2.css');
+  let s = read(p);
+
+  const oldBrandRule = /header\.topbar div#headerBrand\.brand\s*\{([\s\S]*?)height:\s*44px;/;
+  if (oldBrandRule.test(s)) {
+    s = s.replace(oldBrandRule, 'header.topbar div#headerBrand.brand {\n$1min-height: 44px;\n    height: auto;');
+    write(p, s);
+    ok('theme-v2.css: headerBrand.brand переведён на min-height: 44px; height: auto');
+  } else {
+    skip('theme-v2.css: контейнер бренда уже адаптирован');
+  }
+})();
+
+/* 2. tests/ui-baseline.spec.js: корректный assertion геометрии */
+(function fixTestAssertion() {
+  const p = path.join(ROOT, 'tests', 'ui-baseline.spec.js');
+  if (!existsSync(p)) return;
+  let s = read(p);
+
+  const oldTest = /test\('baseline: масштабирование Фазы D \(бренд test\)'[\s\S]*?\n\}\);/;
+  const cleanTest = `test('baseline: масштабирование Фазы D (бренд test)', async ({ page }) => {
+  await page.goto('/?brand=test');
+  await page.waitForFunction(() => typeof window.sv === 'function');
+
+  await page.evaluate(() => { window.brand = 'test'; window.sv(); });
+  await page.waitForTimeout(100);
+
+  const brandAttr = await page.evaluate(() => document.documentElement.getAttribute('data-brand'));
+  expect(brandAttr).toBe('test');
+
+  const box = await page.locator('#brandMark img, #brandMark svg').first().boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.width).toBeGreaterThanOrEqual(50);
+  expect(box.width).toBeLessThanOrEqual(64);
+  expect(box.height).toBeGreaterThanOrEqual(50);
+  expect(box.height).toBeLessThanOrEqual(64);
+});`;
+
+  if (oldTest.test(s)) {
+    s = s.replace(oldTest, cleanTest);
+    write(p, s);
+    ok('tests/ui-baseline.spec.js: тест Фазы D обновлён');
+  } else {
+    skip('tests/ui-baseline.spec.js: тест уже актуален');
+  }
+})();
+
+/* 3. sw.js: бамп STATIC_CACHE */
+(function bumpSw() {
+  const p = path.join(ROOT, 'public', 'sw.js');
+  let s = read(p);
+  const cacheRe = /const\s+STATIC_CACHE\s*=\s*['"]zerno-static-v(\d+)['"]/;
+  const m = s.match(cacheRe);
+  if (m) {
+    const next = parseInt(m[1], 10) + 1;
+    s = s.replace(cacheRe, `const STATIC_CACHE = 'zerno-static-v${next}'`);
+    write(p, s);
+    ok(`sw.js: STATIC_CACHE инкрементирован до v${next}`);
+  }
+})();
+
+console.log('\n🔍 Валидация синтаксиса JS-файлов...');
+// Проверяем ТОЛЬКО JavaScript файлы, исключая CSS
+for (const f of ['public/sw.js']) {
+  execSync('node --check ' + f, { stdio: 'inherit', cwd: ROOT });
 }
+console.log('✅ Синтаксис JS валиден.');
 
-console.log('\n🔍 Запуск npm run lint:code...');
-execSync('npm run lint:code', { stdio: 'inherit' });
+console.log('\n🚀 Запуск npm run pretest & npm run test:e2e...');
+execSync('npm run pretest', { stdio: 'inherit', cwd: ROOT });
+execSync('npm run test:e2e', { stdio: 'inherit', cwd: ROOT });
+console.log('\n🎉 Фаза D полностью завершена, все тесты пройдены!');
