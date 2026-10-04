@@ -82,13 +82,11 @@ var rules = [
 '.venueToggle:hover{background:#F5F5F5;transform:translateY(-1px)}',
 '.venueToggle .vt-arrow{font-size:9px;opacity:.7;transition:transform .2s}',
 '.venueToggle[aria-expanded="true"] .vt-arrow{transform:rotate(180deg)}',
-'.venueWrap #brandSeg{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:80;flex-direction:column;gap:2px;width:max-content;min-width:max(180px,100%);max-width:calc(100vw - 24px);border:1.5px solid var(--line);border-radius:14px;background:var(--card,#fff);box-shadow:var(--sh);padding:6px;overflow:visible;animation:fadeIn .2s ease}',
+'.venueWrap #brandSeg{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:100;flex-direction:column;gap:4px;width:190px;min-width:180px;max-width:85vw;border:1.5px solid var(--line);border-radius:14px;background:var(--card,#fff);box-shadow:0 12px 28px rgba(16,20,24,.18);padding:6px;animation:fadeIn .2s ease}',
 '.venueWrap #brandSeg.open{display:flex}',
-'.venueWrap #brandSeg button{flex:0 0 auto;width:100%;border:0;border-radius:10px;padding:10px 12px;font:700 14px "Golos Text",sans-serif;background:transparent;color:var(--ink);text-align:left;box-shadow:none;display:flex;align-items:center;gap:8px;transition:all .15s;cursor:pointer}',
-'.venueWrap #brandSeg button:hover{background:rgba(0,0,0,.06);transform:translateX(2px)}',
-'.venueWrap #brandSeg button .re,.venueWrap #brandSeg button span{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;font-size:16px}',
-'.venueWrap #brandSeg button.on{background:var(--flame);color:#fff}',
-'.venueWrap #brandSeg button.on span{color:#fff!important}',
+'.venueWrap #brandSeg button{width:100%;border:0;border-radius:10px;padding:9px 12px;font:600 13.5px "Golos Text",sans-serif;background:transparent;color:var(--ink);text-align:left;display:flex;align-items:center;gap:8px;cursor:pointer}',
+'.venueWrap #brandSeg button:hover{background:rgba(0,0,0,.05)}',
+'.venueWrap #brandSeg button.on{background:var(--tint-cool,#EAF1F9);color:var(--flame);font-weight:700}',
 '@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}',
 /* --- Шапка: адаптив --- */
 '@media(max-width:820px){#brandSeg{overflow-x:auto;scrollbar-width:none}#modeSeg{overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}',
@@ -438,11 +436,12 @@ window.syncBrandViews = function() {
 function stripLogoInlineStyles() {
   var wrap = document.querySelector('.topbar .brand .mark');
   var img  = document.querySelector('.topbar .brand .mark img, .topbar .brand .mark svg');
+  var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
   if (img) {
-    img.style.setProperty('width', '100%', 'important');
+    img.style.setProperty('width', 'auto', 'important');
     img.style.setProperty('height', '100%', 'important');
-    img.style.setProperty('max-width', '100%', 'important');
-    img.style.setProperty('max-height', '100%', 'important');
+    img.style.setProperty('max-width', isDel ? '180px' : '42px', 'important');
+    img.style.setProperty('max-height', '42px', 'important');
     img.style.setProperty('aspect-ratio', 'auto', 'important');
     img.style.setProperty('object-fit', 'contain', 'important');
     img.style.removeProperty('position');
@@ -451,12 +450,13 @@ function stripLogoInlineStyles() {
     img.removeAttribute('height');
   }
   if (wrap) {
-    wrap.style.setProperty('aspect-ratio', 'auto', 'important');
-    wrap.style.setProperty('max-height', 'calc(var(--topbar-h,64px) - 8px)', 'important');
-    wrap.style.removeProperty('width');
-    wrap.style.removeProperty('height');
+    wrap.style.setProperty('width', 'auto', 'important');
+    wrap.style.setProperty('max-width', isDel ? '180px' : '42px', 'important');
+    wrap.style.setProperty('height', '42px', 'important');
+    wrap.style.setProperty('max-height', '42px', 'important');
   }
 }
+
 window.stripLogoInlineStyles = stripLogoInlineStyles;
 
 (function () {
@@ -701,11 +701,10 @@ document.addEventListener("DOMContentLoaded", function () { window.__syncHeaderC
 
 /* ── Ф5.38: fitSearch — мобайл-поиск во всю ширину, cascade-immune (inline) ── */
 (function () {
-  function fitSearch() {
-  /* Ф5.40: принудительная установка inline width для поиска */
+function fitSearch() {
   var mhRights = document.querySelectorAll('.mh-top .mh-right');
   for (let i = 0; i < mhRights.length; i++) {
-    if (window.innerWidth <= 820) {
+    if (window.innerWidth <= 690) {
       mhRights[i].style.setProperty('width', '100%', 'important');
       mhRights[i].style.setProperty('max-width', '100%', 'important');
     } else {
@@ -713,7 +712,7 @@ document.addEventListener("DOMContentLoaded", function () { window.__syncHeaderC
       mhRights[i].style.maxWidth = '';
     }
   }
-
+}
     var list = document.querySelectorAll('.mh-top .mh-right');
     for (let i = 0; i < list.length; i++) {
       if (window.innerWidth <= 820) list[i].style.width = '100%';
