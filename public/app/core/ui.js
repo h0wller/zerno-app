@@ -65,6 +65,7 @@
 
     const t = document.createElement('div');
     t.className = 'toast';
+    t.style.pointerEvents = (typeof action === 'function') ? 'auto' : 'none';
     const ic = icon !== undefined ? icon : 'ℹ️';
     const safeMsg = typeof esc === 'function' ? esc(msg) : String(msg);
 
