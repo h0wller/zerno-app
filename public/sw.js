@@ -1,4 +1,5 @@
-const STATIC_CACHE = 'zerno-static-v288';
+// public/sw.js
+const STATIC_CACHE = 'zerno-static-v286';
 const MEDIA_CACHE = 'zerno-media-v11';
 const API_CACHE = 'zerno-api-v7';
 
@@ -9,6 +10,7 @@ const STATIC_ASSETS = [
   '/icon.svg',
   '/andCoffee.svg',
   '/friday-logo.svg',
+  '/app/main.js',
   '/app/ui/theme-v2.css',
   '/app/ui/fonts.css',
   '/app/core/state.js',
@@ -187,29 +189,26 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
+  // App Shell: Cache-First с фоновым обновлением для мгновенного старта PWA
   if (
     request.destination === 'document' ||
     url.pathname.startsWith('/app/') ||
     /\.(js|css)$/.test(url.pathname)
   ) {
     e.respondWith(
-      fetch(request, { cache: 'reload' })
-        .then((netRes) => {
-          if (netRes.ok) {
-            const clone = netRes.clone();
-            caches.open(STATIC_CACHE).then((c) => c.put(request, clone)).catch(() => {});
-          }
-          return netRes;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          if (cached) return cached;
-          if (request.destination === 'document') {
-            const fallbackHtml = await caches.match('/index.html');
-            if (fallbackHtml) return fallbackHtml;
-          }
-          return new Response('', { status: 503, statusText: 'offline' });
-        })
+      caches.match(request).then((cached) => {
+        const networkFetch = fetch(request, { cache: 'reload' })
+          .then((netRes) => {
+            if (netRes.ok) {
+              const clone = netRes.clone();
+              caches.open(STATIC_CACHE).then((c) => c.put(request, clone)).catch(() => {});
+            }
+            return netRes;
+          })
+          .catch(() => cached || new Response('', { status: 503, statusText: 'offline' }));
+
+        return cached || networkFetch;
+      })
     );
     return;
   }
