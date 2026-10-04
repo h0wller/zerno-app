@@ -1,21 +1,22 @@
-/* public/app/core/splash.js — Ф3.3 + Ф3.13a: сплэш бренда.
-Единственный владелец сплэша: статичная разметка #brandSplashStatic в index.html.
-Динамический #brandSplash создаётся ТОЛЬКО если статичной разметки нет (fallback).
-Правило: не более одного сплэша; при splashDone/DEEP/IN_TG — ни одного. */
+/* public/app/core/splash.js — сплэш бренда */
 (function () {
   'use strict';
   var bs = document.getElementById('brandSplash');
   if (bs) bs.remove();
   var ss = document.getElementById('brandSplashStatic');
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   var done = false;
-  try { done = (() => { try { return sessionStorage.getItem("splashDone"); } catch (e) { return null; } })() === '1'; } catch (e) {}
+  try {
+    done = sessionStorage.getItem("splashDone") === '1' || (isStandalone && !!localStorage.getItem("zt_brand"));
+  } catch (e) {}
+
   var QS = new URLSearchParams(location.search);
   var IN_TG = /Telegram/i.test(navigator.userAgent);
   var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
 
   function finish(choice) {
-    try { (() => { try { sessionStorage.setItem("splashDone", "1"); } catch (e) {} })(); } catch (e) {}
-    try { localStorage.setItem('zt_brand', choice); } catch (e) {} // Фолбэк для PWA
+    try { sessionStorage.setItem("splashDone", "1"); } catch (e) {}
+    try { localStorage.setItem("zt_brand", choice); } catch (e) {}
     document.documentElement.classList.remove('need-splash');
     document.documentElement.classList.add('no-splash');
     var el = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
@@ -58,7 +59,6 @@
     return; 
   }
 
-  /* fallback: статичной разметки нет — создаём динамически */
   var sp = document.createElement('div');
   sp.id = 'brandSplash';
   sp.innerHTML = '<div class="spInner">' +
