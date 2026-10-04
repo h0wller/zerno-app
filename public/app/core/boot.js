@@ -53,7 +53,8 @@ showBadge();
 initChatPointer();
 maybeAskReview();
 const _qsSrc = new URLSearchParams(location.search).get("src");
-if (!onboarded && _qsSrc !== "tg") setTimeout(() => openAuth(false), 600);
+const _hasSplash = !sessionStorage.getItem("splashDone") && document.getElementById("brandSplashStatic");
+if (!onboarded && _qsSrc !== "tg" && !_hasSplash) setTimeout(() => openAuth(false), 600);
 }
 
 /* ── 3. Service Worker: ЕДИНАЯ регистрация (F3.58, дедупликация двух инлайн-блоков).
