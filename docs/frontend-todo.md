@@ -110,6 +110,7 @@ Inline-скрипт `public/index.html` по-прежнему содержит �
 4. npm run test:e2e -> ожидание: 20 passed
 5. Инкремент STATIC_CACHE в public/sw.js при правках фронтенда
 6. Формат коммита: fix(scope): F3.XX - описание изменений
+7. Создание/переименование/удаление модуля → обновить docs/module-map.md тем же PR
 
 ---
 
@@ -238,3 +239,8 @@ e2e были слепы, потому что при 0 штампов вызов�
 ### [x] продуктовое решение 28.09: бейдж = элемент шапки на ≥821 (ширина кластера = venueToggle), вертикальная колонка рейла на мобиле; вопрос формы закрыт, мокап не нужен
 
 `npx repomix --remote 'https://github.com/h0wller/zerno-app/tree/pizza' --remove-empty-lines --output-show-line-numbers --compress`
+### [x] Ф5.39 - логотип Пятницы на мобиле: квадратный webp убран из марки, горизонтальный SVG 160×40 в admin-extra.js; STATIC_CACHE v292→v293, MEDIA_CACHE v12 (purge квадратных растров)
+
+### [x] Ф5.40 - admin-extra.js: восстановлен парсинг после ручного слияния веток (eslint Parsing error 110:2), файл заменён целиком выверенной версией
+
+### [x] Ф5.41 - документация: каноническая карта владения docs/module-map.md; public/app/README.md из пустого → индекс; css-architecture.md + правило растров Ф5.39; ui-checklist.md + проверки логотипа и PWA cold-start
