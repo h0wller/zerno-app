@@ -4073,11 +4073,12 @@ body #mbonusBtn .mb-free {
 }
 
 /* ── CLS-AND-HEADER-SEARCH-STABILIZATION ── */
-
-/* 1. Мобильная шапка (<= 690px): фиксация элементов для исключения CLS */
 @media (max-width: 690px) {
   header.topbar {
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   header.topbar div.venueWrap {
     position: absolute;
@@ -4089,9 +4090,10 @@ body #mbonusBtn .mb-free {
   header.topbar button#venueToggle.venueToggle {
     width: 44px;
     max-width: 44px;
+    height: 44px;
+    padding: 0;
     overflow: hidden;
     white-space: nowrap;
-    padding: 0;
     justify-content: center;
   }
   header.topbar button#venueToggle.venueToggle span.vt-label {
@@ -4105,23 +4107,52 @@ body #mbonusBtn .mb-free {
     z-index: 2;
     margin: 0;
   }
+  
+  /* 1. Нормальный размер логотипа (автоматический ресайз) */
   header.topbar div#headerBrand.brand {
     margin: 0 auto;
-    width: fit-content;
-    min-height: 44px;
+    max-width: calc(100% - 120px);
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    z-index: 1;
   }
   header.topbar div#headerBrand.brand div.mark {
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
+    width: auto;
+    height: 38px;
+    max-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 1 auto;
+  }
+  header.topbar div#headerBrand.brand img,
+  header.topbar div#headerBrand.brand .brandLogo,
+  header.topbar div#headerBrand.brand svg {
+    max-height: 38px;
+    max-width: 140px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
+
+  /* 2. Привязка плашки «Включите пуши тут» строго под аватарку профиля */
+  #pushPrompt,
+  .push-prompt,
+  .pushPromptBubble {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 8px;
+    z-index: 100;
+    margin: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   }
 }
 
-/* 2. Адаптив поиска: перенос под заголовок только на истинных мобильных (<= 820px), на планшетах/десктопе — в строку */
+/* 3. Мобильный поиск (<= 820px) — в колонку */
 @media (max-width: 820px) {
   div#menuView div.menu-head div.mh-top,
   div#deliveryView div.menu-head div.mh-top,
@@ -4166,4 +4197,31 @@ body #mbonusBtn .mb-free {
     box-sizing: border-box;
   }
 }
+
+/* 4. Десктопный поиск (> 820px) — строго в одну строку справа */
+@media (min-width: 821px) {
+  div#menuView div.menu-head div.mh-top,
+  div#deliveryView div.menu-head div.mh-top,
+  div.menu-head div.mh-top {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  div#menuView div.mh-top div.mh-right,
+  div#deliveryView div.mh-top div.mh-right,
+  div.menu-head div.mh-top div.mh-right {
+    width: auto;
+    display: flex;
+    align-items: center;
+    margin: 0;
+  }
+  div#menuView div.mh-top div.mh-right div.search,
+  div#deliveryView div.mh-top div.mh-right div.search,
+  div.menu-head div.search {
+    width: 280px;
+    max-width: 320px;
+  }
+}
 /* ── END STABILIZATION ── */
+
