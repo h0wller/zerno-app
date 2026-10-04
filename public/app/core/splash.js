@@ -4,29 +4,23 @@
 Правило: не более одного сплэша; при splashDone/DEEP/IN_TG — ни одного. */
 (function () {
   'use strict';
-  
   var bs = document.getElementById('brandSplash');
   if (bs) bs.remove();
   var ss = document.getElementById('brandSplashStatic');
-  
   var done = false;
-  try { done = (()=>{try{return sessionStorage.getItem("splashDone")}catch(e){return null}})() === '1'; } catch (e) {}
-
+  try { done = (() => { try { return sessionStorage.getItem("splashDone"); } catch (e) { return null; } })() === '1'; } catch (e) {}
   var QS = new URLSearchParams(location.search);
   var IN_TG = /Telegram/i.test(navigator.userAgent);
   var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
 
   function finish(choice) {
-    try { (()=>{try{sessionStorage.setItem("splashDone","1")}catch(e){}})(); } catch (e) {}
+    try { (() => { try { sessionStorage.setItem("splashDone", "1"); } catch (e) {} })(); } catch (e) {}
     try { localStorage.setItem('zt_brand', choice); } catch (e) {} // Фолбэк для PWA
-    
     document.documentElement.classList.remove('need-splash');
     document.documentElement.classList.add('no-splash');
-    
     var el = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
     if (el) el.remove();
-    
-        window.brand = choice;
+    window.brand = choice;
     if ((window.mode === 'cashier' || window.mode === 'orders') && typeof window.setMode === 'function') {
       window.setMode('guest');
     }
@@ -43,6 +37,7 @@
     if (!window.onboarded && !window.me && QS.get('src') !== 'tg') {
       setTimeout(function () { if (typeof openAuth === 'function') openAuth(false); }, 350);
     }
+  }
 
   function bind(root) {
     root.addEventListener('click', function (e) {
@@ -58,7 +53,6 @@
     document.documentElement.classList.add('no-splash');
     return;
   }
-
   if (ss) { 
     bind(ss); 
     return; 
