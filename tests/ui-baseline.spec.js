@@ -236,3 +236,22 @@ test('baseline: админ — редактор открывается и сох
   await expect(page.locator('.toast', { hasText: 'not defined' })).toHaveCount(0);
   expect(errs).toEqual([]);
 });
+test('baseline: геометрия марки соответствует манифесту', async ({ page }) => {
+  // Кофейня
+  await page.evaluate(() => { window.brand = 'coffee'; window.sv(); });
+  await page.waitForTimeout(100);
+  let box = await page.locator('#brandMark img, #brandMark svg').first().boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.width).toBeGreaterThanOrEqual(38);
+  expect(box.width).toBeLessThanOrEqual(46);
+  expect(box.height).toBeGreaterThanOrEqual(38);
+  
+  // Пятница (Mobile Chrome эмуляция, реальный кейс Ф5.39)
+  await page.evaluate(() => { window.brand = 'delivery'; window.sv(); });
+  await page.waitForTimeout(100);
+  box = await page.locator('#brandMark img, #brandMark svg').first().boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.width).toBeGreaterThanOrEqual(140);
+  expect(box.height).toBeGreaterThanOrEqual(32);
+  expect(box.height).toBeLessThanOrEqual(44);
+});

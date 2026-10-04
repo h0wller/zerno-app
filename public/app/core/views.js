@@ -73,9 +73,8 @@ var rules = [
 '.topbar{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:8px;height:auto;min-height:calc(var(--topbar-h,64px) + var(--sat, env(safe-area-inset-top,0px)));padding:var(--sat, env(safe-area-inset-top,0px)) 12px 0;box-sizing:border-box}',
 '.topbar .venueWrap{position:relative;order:1;flex:0 0 auto;min-width:0;display:flex;justify-content:flex-start}',
 '.topbar .brand{order:2;flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;position:static;transform:none}',
-'.topbar .brand .mark{display:flex;align-items:center;justify-content:center;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent}',
-'.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}',
-'.topbar #profileTopBtn{order:3;flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);font-size:calc(var(--topbar-h,64px) * 0.28)}',
+'.topbar .brand .mark{width:var(--mark-w,42px);height:var(--mark-h,42px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent;display:flex;align-items:center;justify-content:center}',
+'.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}','.topbar #profileTopBtn{order:3;flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);font-size:calc(var(--topbar-h,64px) * 0.28)}',
 '.topbar #modeSeg{order:10;flex:1 1 100%}',
 '.topbar #clock{display:none!important}',
 '.venueToggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line);background:var(--card,#fff);border-radius:999px;padding:0 12px;height:calc(var(--topbar-h,64px) - 20px);font:700 calc(var(--topbar-h,64px) * 0.22) "Golos Text",system-ui,sans-serif;color:var(--ink);cursor:pointer;transition:background .2s,transform .2s,border-color .2s;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
@@ -338,8 +337,6 @@ if (window.__ensureVenueToggle) window.__ensureVenueToggle();
 if (window.__labelVenueToggle) window.__labelVenueToggle();
 var mark = document.getElementById('brandMark') || document.querySelector('.brand .mark');
 if (mark) mark.classList.toggle('is-delivery', isDel);
-/* Страховка: снимаем инлайновые размеры/aspect-ratio с логотипа и марки */
-stripLogoInlineStyles();
 var op = document.querySelector('.chat-h .op, .chatHead .op');
 if (op) {
 if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
@@ -428,59 +425,7 @@ window.syncBrandViews = function() {
         sv();
         if (typeof window.alignRailWithCard === 'function') window.alignRailWithCard();
       };
-/* ── Ф3.57: снятие инлайн-стилей, которые admin-extra ставит на логотип.
-   !important перебивает aspect-ratio:1/1 и width:100%, которые admin-extra
-   навешивает на 
 
- ![]( при каждой смене бренда. MutationObserver ловит
-   повторные инъекции после sv(). */
-function stripLogoInlineStyles() {
-  var wrap = document.querySelector('.topbar .brand .mark');
-  var img  = document.querySelector('.topbar .brand .mark img, .topbar .brand .mark svg');
-  var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
-  if (img) {
-    img.style.setProperty('width', '100%', 'important');
-    img.style.setProperty('height', '100%', 'important');
-    img.style.setProperty('max-width', isDel ? '180px' : '42px', 'important');
-    img.style.setProperty('max-height', '42px', 'important');
-    img.style.setProperty('aspect-ratio', 'auto', 'important');
-    img.style.setProperty('object-fit', 'contain', 'important');
-    img.style.removeProperty('position');
-    img.style.removeProperty('inset');
-    img.removeAttribute('width');
-    img.removeAttribute('height');
-  }
-  if (wrap) {
-    wrap.style.setProperty('width', isDel ? '160px' : '42px', 'important');
-    wrap.style.setProperty('max-width', isDel ? '180px' : '42px', 'important');
-    wrap.style.setProperty('height', '42px', 'important');
-    wrap.style.setProperty('max-height', '42px', 'important');
-    wrap.style.setProperty('flex', isDel ? '0 0 auto' : '0 0 42px', 'important');
-    wrap.style.setProperty('overflow', isDel ? 'visible' : 'hidden', 'important');
-  }
-}
-
-window.stripLogoInlineStyles = stripLogoInlineStyles;
-
-(function () {
-  function observe() {
-    var target = document.querySelector('.topbar .brand');
-    if (!target || !window.MutationObserver) { stripLogoInlineStyles(); return; }
-    new MutationObserver(function () {
-      stripLogoInlineStyles();
-    }).observe(target, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['style']
-    });
-    stripLogoInlineStyles();
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observe);
-  else observe();
-  setTimeout(stripLogoInlineStyles, 500);
-  setTimeout(stripLogoInlineStyles, 1500);
-})();
 window.setMode = function (m) {
 var role = (typeof me !== 'undefined' && me) ? me.role : 'guest';
 if (m === 'cashier' && role !== 'cashier' && role !== 'admin') return;

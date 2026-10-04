@@ -41,41 +41,30 @@ function adaptAuthForTelegram(modal) {
 }
 
 function applyAuthBrand() {
-    var isDeliv = (typeof brand !== 'undefined' && brand === 'delivery');
-    var modal = document.getElementById('authModal');
-    if (!modal) return;
-
-    var logoContainer = modal.querySelector('.alogo');
-    if (logoContainer) {
-      if (isDeliv) {
-        // Пятница: без рамки, крупно, на всю ширину контейнера
-        logoContainer.style.background = 'transparent';
-        logoContainer.style.border = 'none';
-        logoContainer.style.boxShadow = 'none';
-        logoContainer.style.width = '140px';
-        logoContainer.style.height = 'auto';
-        logoContainer.style.margin = '0 auto 12px';
-        logoContainer.innerHTML = '<img src="friday-logo.svg" alt="Пятница" style="width:100%;height:auto;object-fit:contain;display:block;">';
-      } else {
-        // Кофейня: на белом фоне в аккуратном квадрате с скруглением
-        logoContainer.style.background = '#FFFFFF';
-        logoContainer.style.border = '1.5px solid var(--line, #D8DFE4)';
-        logoContainer.style.boxShadow = '0 6px 20px rgba(18, 58, 107, 0.12)';
-        logoContainer.style.width = '66px';
-        logoContainer.style.height = '66px';
-        logoContainer.style.margin = '0 auto 16px';
-        logoContainer.innerHTML = '<img src="andCoffee.svg" alt="…и кофе" style="width:75%;height:75%;object-fit:contain;display:block;margin:auto;">';
-      }
-    }
-
-    var msub = modal.querySelector('.msub');
-    adaptAuthForTelegram(modal);
-    if (msub) {
-      msub.innerHTML = isDeliv
-        ? 'Единый профиль: сохранение адресов, подарки от 2 000 ₽ и штампы на кофе у моря.'
-        : 'Копите зёрна на бесплатный кофе на кассе и заказывайте пиццу с подарками и сохранёнными адресами.';
-    }
+  var isDeliv = (typeof brand !== 'undefined' && brand === 'delivery');
+  var modeName = isDeliv ? 'delivery' : 'coffee';
+  
+  // Читаем из манифеста
+  var b = (typeof window.BRANDS !== 'undefined')
+    ? window.BRANDS[modeName] || window.BRANDS.coffee
+    : { label: '…и кофе', authLogo: { src: '/andCoffee.svg', box: 66, wide: false } };
+  
+  var al = b.authLogo || { src: '/andCoffee.svg', box: 66, wide: false };
+  
+  var alogo = document.querySelector('.alogo');
+  if (alogo) {
+    alogo.style.width = al.box + 'px';
+    alogo.style.height = (al.wide ? (al.box * 0.25) : al.box) + 'px';
+    alogo.innerHTML = '<img src="' + al.src + '" alt="' + b.label + '" style="width:100%;height:100%;object-fit:contain">';
   }
+  
+  var msub = document.querySelector('#authModal .msub');
+  if (msub) {
+    msub.innerHTML = isDeliv
+      ? 'Единый профиль: сохранение адресов, подарки от 2 000 ₽ и штампы на кофе у моря.'
+      : 'Копите зёрна на бесплатный кофе на кассе и заказывайте пиццу с подарками и сохранёнными адресами.';
+  }
+}
 
   function openAuth(login) {
     if (typeof login === 'undefined') login = false;

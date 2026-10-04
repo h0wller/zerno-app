@@ -54,35 +54,31 @@ if(__chromeLast===brand)return;
 __chromeLast=brand;
 var track=document.getElementById('tickerTrack');
 if(track){
-var L=deliv?['Пятница — доставка пиццы и роллов','Ежедневно 11:00–22:00','Доставка ~45 мин','vk.ru/fridaypizza39','Каждые 2000 ₽ в чеке — 0,5 пива в подарок']
-:['кофейня на берегу моря …и кофе','каждый 10-й кофе — бесплатно','п. Янтарный, Советская 70г','t.me/and_coffee39','ежедневно с 8:00–21:00'];
-var L4 = L.concat(L, L, L); track.innerHTML = L4.map(function (x) { return '<span>' + x + '</span>'; }).join('');
-padTicker();
+  var b = (typeof window.BRANDS !== 'undefined')
+    ? window.BRANDS[brand] || window.BRANDS.coffee
+    : { ticker: ['…и кофе'] };
+  var L = b.ticker || ['…и кофе'];
+  var L4 = L.concat(L, L, L);
+  track.innerHTML = L4.map(function (x) { return '<span>' + x + '</span>'; }).join('');
+  padTicker();
 }
 /* Ф3.24: меняем только src внутри марки — #brandTitle/#brandSub не трогаем,
     их тексты обновляет sv() из views.js. Один владелец на элемент. */
 var mark=document.getElementById('brandMark')||document.querySelector('.topbar .brand .mark');
-if(mark){
-  if(deliv){
-    /* Ф5.39-fix: Пятница — только горизонтальный SVG с явной пропорцией 160×40.
-       Квадратный webp-растр под object-fit:contain сжимал наклейку в полоску
-       58×14 (iOS-скрин 04.10). SVG векторный, SW отдаёт его network-first. */
-    mark.innerHTML =
-      '<img class="brandLogo" src="friday-logo.svg" alt="Пятница"' +
-      ' width="160" height="40"' +
-      ' decoding="async" fetchpriority="high"' +
-      ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>🍕</span>\'">';
-  } else {
-    /* [optimize.mjs/rasterize] <picture>: WebP для современных, SVG как fallback.
-       Марка кофейни квадратная — форма растра совпадает с формой бокса. */
-    mark.innerHTML =
-      '<picture>' +
-        '<source type="image/webp" srcset="/andCoffee-256.webp 1x, /andCoffee-512.webp 2x">' +
-        '<img class="brandLogo" src="andCoffee.svg" alt="…и кофе" width="48" height="48"' +
-        ' decoding="async" fetchpriority="high"' +
-        ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>☕</span>\'">' +
-      '</picture>';
-  }
+/* Ф5.43: марка рендерится из манифеста BRANDS.
+   Контракты для e2e-тестов: класс .brandLogo, id #brandMark (родитель),
+   атрибут alt из манифеста — сохраняются неизменно.
+   Геометрия --mark-w/--mark-h в brand-tokens.css, не в inline-стилях. */
+if (mark) {
+  var b = (typeof window.BRANDS !== 'undefined')
+    ? window.BRANDS[brand] || window.BRANDS.coffee
+    : { logo: { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' }, emoji: '☕' };
+  var lg = b.logo || { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' };
+  mark.innerHTML =
+    '<img class="brandLogo" id="brandLogoImg" src="' + lg.src + '" alt="' + lg.alt + '"' +
+    ' width="' + lg.w + '" height="' + lg.h + '"' +
+    ' decoding="async" fetchpriority="high"' +
+    ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>' + (b.emoji || '☕') + '</span>\'">';
 }
 }
 window.applyBrandChrome=applyBrandChrome;

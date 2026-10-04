@@ -174,6 +174,12 @@ if (tokenDefs.length) {
 } else {
   ok('views.js: определений токенов нет (данные брендов вынесены)');
 }
+/* ── ПРАВИЛО 11: views.js не содержит stripLogoInlineStyles (Фаза B) ── */
+if (/\bstripLogoInlineStyles\b/.test(viewsCSS) || /style\.setProperty\([^)]+['"]important['"]\)/.test(viewsCSS)) {
+  fail('views.js: обнаружена inline-страховка !important (удалена в Фазе B)');
+} else {
+  ok('views.js: inline-страховки !important удалены (Фаза B)');
+}
 /* ── Итог ── */
 console.log('\n' + '='.repeat(60));
 if (failures === 0) {

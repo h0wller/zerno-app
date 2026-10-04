@@ -23,6 +23,25 @@
     })();
   </script>
   <style id="zt-critical-fouc-guard">
+     /* Critical above-the-fold: шапка до первого тика JS.
+     Размеры .mark на CSS-переменных из brand-tokens.css (без инлайн-костылей). */
+  .topbar .brand .mark {
+    width: var(--mark-w, 42px);
+    height: var(--mark-h, 42px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+  .topbar .brand .mark img,
+  .topbar .brand .mark svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
     /* 1. Скрываем модалки строго до появления класса .show (не ломая их адаптивность в открытом виде) */
     #authModal:not(.show),
     #setPinModal:not(.show),

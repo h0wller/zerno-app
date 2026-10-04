@@ -40,3 +40,25 @@ body[data-brand="delivery"] {
   --panel: #FAF5EE;
   --line: #E5DACB;
 }
+/* ── Геометрия марки шапки (СЛОЙ 2-данные) ── */
+html[data-brand="coffee"],
+body[data-brand="coffee"] {
+  --mark-w: 42px;
+  --mark-h: 42px;
+}
+
+html[data-brand="delivery"],
+body[data-brand="delivery"] {
+  --mark-w: 160px;
+  --mark-h: 40px;
+}
+
+/* dev-бренд для Фазы D (приёмочный тест архитектуры) */
+html[data-brand="test"],
+body[data-brand="test"] {
+  --mark-w: 60px;
+  --mark-h: 60px;
+  --flame: #FF6B9D;
+  --esp: #2D3047;
+  --paper: #FFF5F7;
+}

@@ -25,6 +25,9 @@ for (const [key, b] of Object.entries(BRANDS)) {
   }
   if (!MENU_SECTIONS.includes(b.menuSection)) bad(`бренд "${key}": menuSection вне схемы`);
   if (!LOYALTY.includes(b.loyalty)) bad(`бренд "${key}": loyalty вне схемы`);
+  if (!b.authLogo || !b.authLogo.src || !b.authLogo.box) {
+  bad('бренд "' + key + '": authLogo неполный (нужны src, box)');
+}
 
   const lg = b.logo || {};
   if (!lg.src || !lg.w || !lg.h || !lg.alt) bad(`бренд "${key}": logo неполный (нужны src,w,h,alt)`);
