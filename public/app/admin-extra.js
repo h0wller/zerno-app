@@ -61,21 +61,20 @@ padTicker();
 }
 /* Ф3.24: меняем только src внутри марки — #brandTitle/#brandSub не трогаем,
     их тексты обновляет sv() из views.js. Один владелец на элемент. */
-var mark = document.getElementById('brandMark') || document.querySelector('.topbar .brand .mark');
-if (mark) {
-  if (deliv) {
-    /* Ф5.39-fix: Пятница — только горизонтальный SVG с явными пропорциями 4:1.
-       Квадратный webp-растр 256/512 под object-fit:contain превращал наклейку
-       в полоску 58×14 (iOS-скрин 04.10). SVG векторный, корректный viewBox,
-       SW отдаёт его network-first (no-cache) — всегда свежий. */
+var mark=document.getElementById('brandMark')||document.querySelector('.topbar .brand .mark');
+if(mark){
+  if(deliv){
+    /* Ф5.39-fix: Пятница — только горизонтальный SVG с явной пропорцией 160×40.
+       Квадратный webp-растр под object-fit:contain сжимал наклейку в полоску
+       58×14 (iOS-скрин 04.10). SVG векторный, SW отдаёт его network-first. */
     mark.innerHTML =
       '<img class="brandLogo" src="friday-logo.svg" alt="Пятница"' +
       ' width="160" height="40"' +
       ' decoding="async" fetchpriority="high"' +
       ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>🍕</span>\'">';
   } else {
-    /* Кофейня: марка квадратная — picture/webp оставляем как было
-       (форма растра совпадает с формой бокса, экономим трафик). */
+    /* [optimize.mjs/rasterize] <picture>: WebP для современных, SVG как fallback.
+       Марка кофейни квадратная — форма растра совпадает с формой бокса. */
     mark.innerHTML =
       '<picture>' +
         '<source type="image/webp" srcset="/andCoffee-256.webp 1x, /andCoffee-512.webp 2x">' +
@@ -84,6 +83,7 @@ if (mark) {
         ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>☕</span>\'">' +
       '</picture>';
   }
+}
 }
 window.applyBrandChrome=applyBrandChrome;
 document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(applyBrandChrome,60);});
