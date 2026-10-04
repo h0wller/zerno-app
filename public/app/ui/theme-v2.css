@@ -4072,7 +4072,7 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* ── CLS-AND-HEADER-SEARCH-STABILIZATION ── */
+/* /* ── CLS-AND-HEADER-SEARCH-STABILIZATION ── */
 
 /* 1. Мобильная шапка (<= 690px) */
 @media (max-width: 690px) {
@@ -4115,7 +4115,7 @@ body #mbonusBtn .mb-free {
     z-index: 2;
   }
 
-  /* Центр шапки: гибкий контейнер без обрезки */
+  /* Центр шапки: свободный контейнер без зажатия */
   header.topbar div#headerBrand.brand {
     position: static;
     transform: none;
@@ -4131,7 +4131,7 @@ body #mbonusBtn .mb-free {
     overflow: visible;
   }
 
-  /* Гибкая марка: квадратная для кофейни, широкая до 180px для Пятницы */
+  /* Гибкая марка: квадратная для кофейни, широкая (до 180px) для Пятницы */
   header.topbar div#headerBrand.brand div.mark {
     width: auto;
     max-width: 180px;
@@ -4144,7 +4144,7 @@ body #mbonusBtn .mb-free {
     overflow: visible;
   }
 
-  /* Картинка внутри марки масштабируется по высоте 38px */
+  /* Логотипы масштабируются пропорционально по высоте 38px */
   header.topbar div#headerBrand.brand div.mark img,
   header.topbar div#headerBrand.brand div.mark svg,
   header.topbar div#headerBrand.brand img.brandLogo {
@@ -4156,7 +4156,7 @@ body #mbonusBtn .mb-free {
     display: block;
   }
 
-  /* Текст бренда кофейни рядом со щитом */
+  /* Текст кофейни рядом с эмблемой */
   header.topbar div#headerBrand.brand .brand-text,
   header.topbar div#headerBrand.brand .title,
   header.topbar div#headerBrand.brand span:not(.mark) {
@@ -4168,14 +4168,6 @@ body #mbonusBtn .mb-free {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  /* В доставке скрываем пустые текстовые обертки, оставляя только сочный логотип */
-  body[data-brand="delivery"] header.topbar div#headerBrand.brand .brand-text,
-  body[data-brand="delivery"] header.topbar div#headerBrand.brand .title,
-  body[data-brand="delivery"] header.topbar div#headerBrand.brand b,
-  body[data-brand="delivery"] header.topbar div#headerBrand.brand small {
-    display: none;
   }
 
   /* Плашка пушей */
@@ -4245,7 +4237,7 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* 3. Десктоп и планшет (> 820px) */
+/* 3. Десктоп и планшет (> 820px): поиск ровно по центру строки напротив H1 */
 @media (min-width: 821px) {
   div#menuView div.menu-head,
   div#deliveryView div.menu-head,
@@ -4295,7 +4287,7 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* 4. Оптимизация отображения фотографий в карточках меню */
+/* 4. Карточки меню: чистые пропорции и рендер фото */
 .media {
   height: 175px;
   min-height: 175px;
