@@ -41,24 +41,22 @@ function adaptAuthForTelegram(modal) {
 }
 
 function applyAuthBrand() {
+  var modal = document.getElementById('authModal');
+  if (!modal) return;
   var isDeliv = (typeof brand !== 'undefined' && brand === 'delivery');
   var modeName = isDeliv ? 'delivery' : 'coffee';
-  
-  // Читаем из манифеста
   var b = (typeof window.BRANDS !== 'undefined')
     ? window.BRANDS[modeName] || window.BRANDS.coffee
     : { label: '…и кофе', authLogo: { src: '/andCoffee.svg', box: 66, wide: false } };
-  
   var al = b.authLogo || { src: '/andCoffee.svg', box: 66, wide: false };
-  
-  var alogo = document.querySelector('.alogo');
+  var alogo = modal.querySelector('.alogo');
   if (alogo) {
     alogo.style.width = al.box + 'px';
-    alogo.style.height = (al.wide ? (al.box * 0.25) : al.box) + 'px';
-    alogo.innerHTML = '<img src="' + al.src + '" alt="' + b.label + '" style="width:100%;height:100%;object-fit:contain">';
+    alogo.style.height = (al.wide ? Math.round(al.box * 0.25) : al.box) + 'px';
+    alogo.innerHTML = '<img src="' + al.src + '" alt="' + b.label + '" style="width:100%;height:100%;object-fit:contain;display:block;">';
   }
-  
-  var msub = document.querySelector('#authModal .msub');
+  adaptAuthForTelegram(modal);
+  var msub = modal.querySelector('.msub');
   if (msub) {
     msub.innerHTML = isDeliv
       ? 'Единый профиль: сохранение адресов, подарки от 2 000 ₽ и штампы на кофе у моря.'

@@ -100,8 +100,8 @@ var rules = [
 /* ≥821px (1024, 1440): кнопки по краям компактные, не гигантские */
 '@media(min-width:821px){.topbar #profileTopBtn{width:56px!important;height:56px!important;font-size:22px!important}.topbar .venueToggle{height:56px!important;font-size:15px!important;padding:0 18px!important;gap:8px!important}}',
 /* --- Шапка: марки брендов (70% ТОЛЬКО внутри ≤820px — не бьёт грид) --- */
-'[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 8px);max-height:calc(var(--topbar-h,64px) - 8px);max-width:min(60vw,420px);flex: 0 1 auto;border-radius:8px}',
-'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}','@media(max-width:360px){[data-brand="coffee"] .topbar .brand .mark{width:32px;height:32px}}',
+'[data-brand="delivery"] .topbar .brand .mark{width:var(--mark-w,160px);height:var(--mark-h,40px);max-height:var(--mark-h,40px);max-width:min(60vw,420px);flex: 0 1 auto;border-radius:8px}',
+'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}',
 /* --- Шапка: грид-центрирование ≥821px (после всех brand-правил) --- */
 '@media(max-width:820px){#mbonusBtn,.mbonus{position:fixed!important;left:12px!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;width:56px!important;min-width:56px!important;max-width:56px!important;height:56px!important;margin:0!important;z-index:95!important;transform:none!important}}',
 '@media(min-width:821px) and (max-width:1180px){.wrap{grid-template-columns:92px minmax(0,1fr) 350px;gap:18px;padding:18px}.wrap > .rail{grid-column:1}.wrap > section{grid-column:2;min-width:0}.wrap > .panel{grid-column:3;position:sticky;top:118px;transform:none;max-height:calc(100vh - 140px)}.tabs .btn-back{display:none}}',
@@ -190,13 +190,10 @@ var rules = [
 '[data-brand="delivery"] #deliveryRail{background:transparent}',
 '[data-brand="delivery"] #deliveryRail button{background:var(--panel);border:1.5px solid var(--line);color:var(--ink)}',
 '[data-brand="delivery"] #rail button,[data-brand="delivery"] #deliveryRail button{background:var(--fr-paper);border:2px solid var(--fr-tan);color:var(--fr-choc)}',
-'[data-brand="delivery"] .panel,[data-brand="delivery"] .placebox{background:var(--fr-rice);border-color:var(--fr-choc);color:var(--fr-choc)}',
 '[data-brand="delivery"] .panel .btn.fire,[data-brand="delivery"] #profileBox .btn.fire,[data-brand="delivery"] .authBtn{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc);color:#fff}',
 /* ══ БРЕНД: Пятница — терракотовый стикер-арт по гайдлайну ══ */
 'html[data-brand="delivery"] body{background-color:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.1) 1px,transparent 1.5px);background-size:12px 12px}',
 '[data-brand="delivery"] h1,[data-brand="delivery"] h2,[data-brand="delivery"] h3,[data-brand="delivery"] .cbody h3{font-family:Unbounded,sans-serif;color:var(--fr-choc)}',
-'[data-brand="delivery"] .card{border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);background:var(--fr-paper)}',
-'[data-brand="delivery"] .cta,[data-brand="delivery"] #checkoutBtn,[data-brand="delivery"] .btn.fire{border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc);background:var(--flame);color:#fff}',
 '[data-brand="delivery"] .price{color:var(--flame)}',
 '[data-brand="delivery"] .tag{background:var(--flame)}',
 '[data-brand="delivery"] .tag.hit{background:var(--flame-d)}',
@@ -216,12 +213,7 @@ var rules = [
 '#deliveryGrid .cbody .opts{margin-top:auto}',
 '[data-brand="delivery"] .chatHead .op{background:#F6EEE1!important;border:0!important;display:flex;align-items:center;justify-content:center;font-size:20px}',
 '[data-brand="delivery"] .chat-fab::before{border-color:#C03B2A!important}',
-'[data-brand="delivery"] #chatPanel .chatHead{background:var(--fr-choc);color:#fff}',
 '[data-brand="delivery"] .chatHead .av{background:var(--fr-paper);background-image:none;color:var(--fr-choc)}',
-'[data-brand="delivery"] #chatMsgs{background:var(--fr-paper)}',
-'[data-brand="delivery"] #chatMsgs .msg.me,[data-brand="delivery"] #chatMsgs .me{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff}',
-'[data-brand="delivery"] #chatMsgs .chatHint{background:var(--fr-rice);border-color:var(--fr-tan);color:var(--fr-choc)}',
-'[data-brand="delivery"] #chatSend{background:var(--flame);border:2px solid var(--fr-choc);color:#fff}',
 '[data-brand="delivery"] .mo-new,[data-brand="delivery"] .mo-accept,[data-brand="delivery"] .mo-way{background:var(--fr-rice);color:var(--flame)}',
 /* --- Тикер: брендовые цвета (база — theme-v2) --- */
 '[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{background:var(--fr-choc);color:#E8A33D;border-bottom:2px solid var(--fr-choc)}',
@@ -229,7 +221,6 @@ var rules = [
 '[data-brand="delivery"] #tickerTrack span::after{color:#C03B2A}',
 /* --- Панели --- */
 '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
-'[data-brand="delivery"] #panel,[data-brand="delivery"] .panel{background:var(--fr-paper);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
 /* ── Ф3.57: профиль без двойного скролла ── */
 '#panel .pv{overscroll-behavior:contain}',
 '@media(max-width:820px){body.panel-open{overflow:hidden}}',
@@ -237,17 +228,10 @@ var rules = [
 '[data-brand="coffee"] #scrollTopBtn{background:#fff;border:1.5px solid var(--line);color:var(--flame);box-shadow:0 10px 26px -10px rgba(18,58,107,.45)}',
 '[data-brand="delivery"] #scrollTopBtn{background:var(--fr-paper);border:2px solid var(--fr-choc);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
 /* ── Ф5.7 чанк 2: брендовые модалки (было inline <style> index.html) ── */
-'[data-brand="delivery"] .modal-card{background-color:#EFE6D8!important;background-image:radial-gradient(rgba(58,42,28,.08) 1px,transparent 1.5px)!important;background-size:10px 10px!important;border:3px solid #3A2A1C!important;border-radius:18px!important;box-shadow:6px 6px 0 #3A2A1C,0 20px 50px rgba(0,0,0,.35)!important}',
-'[data-brand="delivery"] .mclose{background:#C99E6E!important;border:2px solid #3A2A1C!important;box-shadow:2px 2px 0 #3A2A1C!important;color:#3A2A1C!important}',
-'[data-brand="delivery"] .modal-card h3{font:900 20px Unbounded,sans-serif!important;color:#3A2A1C!important}',
-'[data-brand="delivery"] .modal-card input:not([type="checkbox"]),[data-brand="delivery"] .modal-card select,[data-brand="delivery"] .modal-card textarea{background:#fff!important;border:2px solid #3A2A1C!important;color:#3A2A1C!important;font-weight:600!important}',
 /* ── Ф5.9 чанк 4: брендовые карточки/панель (было inline <style> index.html) ── */
-'[data-brand="delivery"] .panel { background: #efe6d8 !important; border: 3px solid #3a2a1c !important; box-shadow: -8px 0 30px rgba(58, 42, 28, 0.2) !important; }',
-'[data-brand="delivery"] .tabs button.on { background: #c99e6e !important; color: #3a2a1c !important; border: 2px solid #3a2a1c !important; border-radius: 10px !important; box-shadow: 2px 2px 0 #3a2a1c !important; transform: rotate(-0.8deg); }',
 '[data-brand="delivery"] .stat { border: 2px solid #3a2a1c !important; border-radius: 10px !important; box-shadow: 2px 2px 0 #3a2a1c !important; }',
 '[data-brand="delivery"] .stat b { color: #3a2a1c !important; }',
 /* ── F5.10 чанк 5: брендовый кассир (было inline <style> index.html) ── */
-'[data-brand="delivery"] .btn.fire, [data-brand="delivery"] button.cta, [data-brand="delivery"] #checkoutBtn { background: #c03b2a !important; color: #ffffff !important; border: 2px solid #3a2a1c !important; box-shadow: 3px 3px 0 #3a2a1c !important; }',
 /* ── F5.11 чанк 6: брендовый служебный кластер (было inline <style> index.html) ── */
 '[data-brand="delivery"] .cartFab { background: #c03b2a !important; }',
 /* ── F5.11b: системные правила из residual Слоя 0 (кассир-десктоп, мобильный компакт, анти-zoom iOS) ── */
@@ -257,7 +241,6 @@ var rules = [
 /* ── F5.13: бренд/layout из растворённого большого <style> ── */
 '[data-brand="delivery"] body { background-color: #f3ede6 !important; }',
 '[data-brand="delivery"] .topbar { background: #c99e6e !important; color: #3a2a1c !important; border-bottom: 3px solid #3a2a1c !important; }',
-'[data-brand="coffee"] .topbar .brand .mark { width: calc(var(--topbar-h, 64px) - 6px); height: calc(var(--topbar-h, 64px) - 6px); border-radius: 14px; }',
 '[data-brand="delivery"] .topbar .brand .mark img, [data-brand="delivery"] .topbar .brand .mark svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; }',
 '@media (max-width: 600px) { .topbar { padding: 8px 12px !important; gap: 6px; } .topbar .brand { font-size: 18px !important; } .topbar .brand small { font-size: 10px !important; } }',
 '[data-brand="coffee"] .topbar .brand .mark img, [data-brand="coffee"] .topbar .brand .mark svg { width: 100% !important; max-width: 100% !important; }',
@@ -421,10 +404,11 @@ if (typeof applyBrandChrome === 'function') {
   window.applyBrandChrome();
 }
 }
+window.sv = sv; /* Фаза B: экспорт для e2e-тестов (переключение бренда в рантайме) */
 window.syncBrandViews = function() {
-        sv();
-        if (typeof window.alignRailWithCard === 'function') window.alignRailWithCard();
-      };
+  sv();
+  if (typeof window.alignRailWithCard === 'function') window.alignRailWithCard();
+};
 
 window.setMode = function (m) {
 var role = (typeof me !== 'undefined' && me) ? me.role : 'guest';

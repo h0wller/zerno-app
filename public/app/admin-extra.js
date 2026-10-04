@@ -47,41 +47,32 @@ function setTickerSpeed(){
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(setTickerSpeed);
 window.addEventListener('resize', function(){ clearTimeout(window.__tsT); window.__tsT = setTimeout(setTickerSpeed, 300); });
 function applyBrandChrome(){
-var deliv=(brand==='delivery');
-/* Ф3.27: пересборка DOM тикера/марки только при СМЕНЕ бренда.
-   Иначе каждый sv() перезаписывает track.innerHTML и сбрасывает CSS-анимацию. */
-if(__chromeLast===brand)return;
-__chromeLast=brand;
-var track=document.getElementById('tickerTrack');
-if(track){
-  var b = (typeof window.BRANDS !== 'undefined')
+  if(__chromeLast===brand)return;
+  __chromeLast=brand;
+
+  var bConfig = (typeof window.BRANDS !== 'undefined')
     ? window.BRANDS[brand] || window.BRANDS.coffee
-    : { ticker: ['…и кофе'] };
-  var L = b.ticker || ['…и кофе'];
-  var L4 = L.concat(L, L, L);
-  track.innerHTML = L4.map(function (x) { return '<span>' + x + '</span>'; }).join('');
-  padTicker();
+    : { ticker: ['…и кофе'], logo: { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' }, emoji: '☕' };
+
+  var track = document.getElementById('tickerTrack');
+  if(track){
+    var L = bConfig.ticker || ['…и кофе'];
+    var L4 = L.concat(L, L, L);
+    track.innerHTML = L4.map(function (x) { return '<span>' + x + '</span>'; }).join('');
+    padTicker();
+  }
+
+  var mark = document.getElementById('brandMark') || document.querySelector('.topbar .brand .mark');
+  if (mark) {
+    var lg = bConfig.logo || { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' };
+    mark.innerHTML =
+      '<img class="brandLogo" id="brandLogoImg" src="' + lg.src + '" alt="' + lg.alt + '"' +
+      ' width="' + lg.w + '" height="' + lg.h + '"' +
+      ' decoding="async" fetchpriority="high"' +
+      ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>' + (bConfig.emoji || '☕') + '</span>\'">';
+  }
 }
-/* Ф3.24: меняем только src внутри марки — #brandTitle/#brandSub не трогаем,
-    их тексты обновляет sv() из views.js. Один владелец на элемент. */
-var mark=document.getElementById('brandMark')||document.querySelector('.topbar .brand .mark');
-/* Ф5.43: марка рендерится из манифеста BRANDS.
-   Контракты для e2e-тестов: класс .brandLogo, id #brandMark (родитель),
-   атрибут alt из манифеста — сохраняются неизменно.
-   Геометрия --mark-w/--mark-h в brand-tokens.css, не в inline-стилях. */
-if (mark) {
-  var b = (typeof window.BRANDS !== 'undefined')
-    ? window.BRANDS[brand] || window.BRANDS.coffee
-    : { logo: { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' }, emoji: '☕' };
-  var lg = b.logo || { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' };
-  mark.innerHTML =
-    '<img class="brandLogo" id="brandLogoImg" src="' + lg.src + '" alt="' + lg.alt + '"' +
-    ' width="' + lg.w + '" height="' + lg.h + '"' +
-    ' decoding="async" fetchpriority="high"' +
-    ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>' + (b.emoji || '☕') + '</span>\'">';
-}
-}
-window.applyBrandChrome=applyBrandChrome;
+window.applyBrandChrome =applyBrandChrome;
 document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(applyBrandChrome,60);});
 /* ── R6: согласие с политикой при регистрации ── */
 (function(){

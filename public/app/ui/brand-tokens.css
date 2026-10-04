@@ -62,3 +62,174 @@ body[data-brand="test"] {
   --esp: #2D3047;
   --paper: #FFF5F7;
 }
+
+/* jscpd:ignore-start */
+/* ── Фаза C: Семантические токены компонентов ── */
+html[data-brand="coffee"],
+body[data-brand="coffee"] {
+  --card-bg: #FFFFFF;
+  --card-border: 1.5px solid rgba(62, 143, 208, 0.25);
+  --card-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
+  --card-radius: 18px;
+
+  --btn-fire-bg: var(--flame, #123A6B);
+  --btn-fire-color: #FFFFFF;
+  --btn-fire-border: none;
+  --btn-fire-shadow: none;
+  --cta-bg: var(--flame, #123A6B);
+  --cta-color: #FFFFFF;
+  --cta-border: none;
+  --cta-shadow: none;
+
+  --panel-bg: var(--panel, #F3F8FC);
+  --panel-border: none;
+  --panel-shadow: -8px 0 30px rgba(16, 20, 24, 0.08);
+  --tab-on-bg: #FFFFFF;
+  --tab-on-color: var(--ink, #101418);
+  --tab-on-border: none;
+  --tab-on-shadow: none;
+  --tab-on-transform: none;
+
+  --modal-bg: #FFFFFF;
+  --modal-bg-image: none;
+  --modal-bg-size: auto;
+  --modal-border: none;
+  --modal-radius: 18px;
+  --modal-shadow: var(--sh);
+  --mclose-bg: #EDF2F6;
+  --mclose-border: none;
+  --mclose-shadow: none;
+  --mclose-color: var(--ink, #101418);
+  --modal-title-font: inherit;
+  --modal-title-color: var(--ink, #101418);
+  --modal-input-bg: #FFFFFF;
+  --modal-input-border: 1.5px solid var(--line, #D8DFE4);
+  --modal-input-color: var(--ink, #101418);
+
+  --chat-head-bg: #FFFFFF;
+  --chat-head-color: var(--ink, #101418);
+  --chat-msgs-bg: #FFFFFF;
+  --chat-msg-me-bg: var(--flame, #123A6B);
+  --chat-msg-me-border: none;
+  --chat-msg-me-shadow: none;
+  --chat-msg-me-color: #FFFFFF;
+  --chat-hint-bg: #FFFFFF;
+  --chat-hint-border: 1.5px solid var(--line, #D8DFE4);
+  --chat-hint-color: var(--ink, #101418);
+  --chat-send-bg: var(--flame, #123A6B);
+  --chat-send-border: none;
+  --chat-send-color: #FFFFFF;
+}
+
+html[data-brand="delivery"],
+body[data-brand="delivery"] {
+  --card-bg: var(--fr-paper, #F6EEE1);
+  --card-border: 2px solid var(--fr-choc, #3A2A1C);
+  --card-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --card-radius: 18px;
+
+  --btn-fire-bg: var(--flame, #C03B2A);
+  --btn-fire-color: #FFFFFF;
+  --btn-fire-border: 2px solid var(--fr-choc, #3A2A1C);
+  --btn-fire-shadow: 3px 3px 0 var(--fr-choc, #3A2A1C);
+  --cta-bg: var(--flame, #C03B2A);
+  --cta-color: #FFFFFF;
+  --cta-border: 2px solid var(--fr-choc, #3A2A1C);
+  --cta-shadow: 3px 3px 0 var(--fr-choc, #3A2A1C);
+
+  --panel-bg: var(--fr-paper, #F6EEE1);
+  --panel-border: 3px solid var(--fr-choc, #3A2A1C);
+  --panel-shadow: -8px 0 30px rgba(58, 42, 28, 0.2);
+  --tab-on-bg: var(--fr-tan, #C99E6E);
+  --tab-on-color: var(--fr-choc, #3A2A1C);
+  --tab-on-border: 2px solid var(--fr-choc, #3A2A1C);
+  --tab-on-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --tab-on-transform: rotate(-0.8deg);
+
+  --modal-bg: var(--fr-rice, #EFE6D8);
+  --modal-bg-image: radial-gradient(rgba(58, 42, 28, 0.08) 1px, transparent 1.5px);
+  --modal-bg-size: 10px 10px;
+  --modal-border: 3px solid var(--fr-choc, #3A2A1C);
+  --modal-radius: 18px;
+  --modal-shadow: 6px 6px 0 var(--fr-choc, #3A2A1C), 0 20px 50px rgba(0, 0, 0, 0.35);
+  --mclose-bg: var(--fr-tan, #C99E6E);
+  --mclose-border: 2px solid var(--fr-choc, #3A2A1C);
+  --mclose-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --mclose-color: var(--fr-choc, #3A2A1C);
+  --modal-title-font: "Unbounded", sans-serif;
+  --modal-title-color: var(--fr-choc, #3A2A1C);
+  --modal-input-bg: #FFFFFF;
+  --modal-input-border: 2px solid var(--fr-choc, #3A2A1C);
+  --modal-input-color: var(--fr-choc, #3A2A1C);
+
+  --chat-head-bg: var(--fr-choc, #3A2A1C);
+  --chat-head-color: #FFFFFF;
+  --chat-msgs-bg: var(--fr-paper, #F6EEE1);
+  --chat-msg-me-bg: var(--flame, #C03B2A);
+  --chat-msg-me-border: 2px solid var(--fr-choc, #3A2A1C);
+  --chat-msg-me-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --chat-msg-me-color: #FFFFFF;
+  --chat-hint-bg: var(--fr-rice, #EFE6D8);
+  --chat-hint-border: 1px solid var(--fr-tan, #C99E6E);
+  --chat-hint-color: var(--fr-choc, #3A2A1C);
+  --chat-send-bg: var(--flame, #C03B2A);
+  --chat-send-border: 2px solid var(--fr-choc, #3A2A1C);
+  --chat-send-color: #FFFFFF;
+}
+
+html[data-brand="test"],
+body[data-brand="test"] {
+  --card-bg: #FFF5F7;
+  --card-border: 2px solid #2D3047;
+  --card-shadow: 3px 3px 0 #2D3047;
+  --card-radius: 16px;
+
+  --btn-fire-bg: #FF6B9D;
+  --btn-fire-color: #FFFFFF;
+  --btn-fire-border: 2px solid #2D3047;
+  --btn-fire-shadow: 3px 3px 0 #2D3047;
+  --cta-bg: #FF6B9D;
+  --cta-color: #FFFFFF;
+  --cta-border: 2px solid #2D3047;
+  --cta-shadow: 3px 3px 0 #2D3047;
+
+  --panel-bg: #FFF5F7;
+  --panel-border: 2px solid #2D3047;
+  --panel-shadow: 0 10px 30px rgba(45, 48, 71, 0.15);
+  --tab-on-bg: #FF6B9D;
+  --tab-on-color: #FFFFFF;
+  --tab-on-border: 2px solid #2D3047;
+  --tab-on-shadow: 2px 2px 0 #2D3047;
+  --tab-on-transform: none;
+
+  --modal-bg: #FFFFFF;
+  --modal-bg-image: none;
+  --modal-bg-size: auto;
+  --modal-border: 2px solid #2D3047;
+  --modal-radius: 16px;
+  --modal-shadow: 0 20px 40px rgba(45, 48, 71, 0.2);
+  --mclose-bg: #FF6B9D;
+  --mclose-border: 2px solid #2D3047;
+  --mclose-shadow: none;
+  --mclose-color: #FFFFFF;
+  --modal-title-font: inherit;
+  --modal-title-color: #2D3047;
+  --modal-input-bg: #FFFFFF;
+  --modal-input-border: 1.5px solid #2D3047;
+  --modal-input-color: #2D3047;
+
+  --chat-head-bg: #2D3047;
+  --chat-head-color: #FFFFFF;
+  --chat-msgs-bg: #FFF5F7;
+  --chat-msg-me-bg: #FF6B9D;
+  --chat-msg-me-border: 2px solid #2D3047;
+  --chat-msg-me-shadow: none;
+  --chat-msg-me-color: #FFFFFF;
+  --chat-hint-bg: #FFFFFF;
+  --chat-hint-border: 1px solid #2D3047;
+  --chat-hint-color: #2D3047;
+  --chat-send-bg: #FF6B9D;
+  --chat-send-border: 2px solid #2D3047;
+  --chat-send-color: #FFFFFF;
+}
+/* jscpd:ignore-end */

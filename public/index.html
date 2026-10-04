@@ -459,8 +459,8 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
     .topbar .brand .mark {
       flex: 0 0 auto;
       overflow: hidden;
-      width: calc(var(--topbar-h, 64px) - 20px);
-      height: calc(var(--topbar-h, 64px) - 20px);
+      width: var(--mark-w, 42px);
+      height: var(--mark-h, 42px);
       max-height: calc(var(--topbar-h, 64px) - 8px);
     }
 
@@ -475,14 +475,14 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
     }
 
     [data-brand="coffee"] .topbar .brand .mark {
-      width: calc(var(--topbar-h, 64px) - 6px);
-      height: calc(var(--topbar-h, 64px) - 6px);
+      width: var(--mark-w, 42px);
+      height: var(--mark-h, 42px);
     }
 
     [data-brand="delivery"] .topbar .brand .mark {
-      width: auto;
-      height: calc(var(--topbar-h, 64px) - 8px);
-      max-height: calc(var(--topbar-h, 64px) - 8px);
+      width: var(--mark-w, 160px);
+      height: var(--mark-h, 40px);
+      max-height: var(--mark-h, 40px);
       max-width: min(60vw, 420px);
     }
 
@@ -1654,6 +1654,23 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
       } catch (e) { }
     })();
   </script>
+<script>
+/* Ф5.43: обработчик клика на сплэше — навигация через location.href */
+(function () {
+  var s = document.getElementById("brandSplashStatic");
+  if (!s) return;
+  s.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-go]");
+    if (!btn) return;
+    var brand = btn.getAttribute("data-go");
+    try { sessionStorage.setItem("splashDone", "1"); } catch (err) { }
+    document.documentElement.classList.remove("need-splash");
+    document.documentElement.classList.add("no-splash");
+    s.remove();
+    location.href = '/?brand=' + brand;
+  });
+})();
+</script>
 </body>
 
 </html>

@@ -10,7 +10,7 @@ export const BRANDS = {
     tokensFrom: 'root',            /* палитра кофейни = :root дефолты theme-v2.css (СЛОЙ 1) */
     menuSection: 'coffee',         /* семантический флаг вместо brand === '...' (Фаза D) */
     loyalty: 'stamps',
-    logo: { src: '/andCoffee.svg', w: 48, h: 48, alt: '…и кофе' },
+    logo: { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' },
     authLogo: { src: '/andCoffee.svg', box: 66, wide: false },
     ticker: [
       'кофейня на берегу моря …и кофе',

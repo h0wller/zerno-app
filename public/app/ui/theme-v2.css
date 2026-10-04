@@ -86,9 +86,9 @@ textarea{
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 .card{
-  background: #FFFFFF;
-  border: 1.5px solid rgba(62, 143, 208, 0.25);
-  border-radius: 18px;
+  background: var(--card-bg, #FFFFFF);
+  border: var(--card-border, 1.5px solid rgba(62, 143, 208, 0.25));
+  border-radius: var(--card-radius, 18px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -96,7 +96,7 @@ textarea{
   animation: pop .5s backwards;
   animation-delay: var(--d);
   position: relative;
-  box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
+  box-shadow: var(--card-shadow, 0 6px 20px rgba(18, 58, 107, 0.08));
   min-height: 340px;
 }
 /* PERF: Аппаратно-ускоренная анимация карточек без рефлоу */
@@ -4091,7 +4091,6 @@ body #mbonusBtn .mb-free {
     box-sizing: border-box;
   }
 
-  /* Кнопка смены заведения [🌊 ▾] или [🍕 ▾] */
   header.topbar div.venueWrap {
     position: relative;
     transform: none;
@@ -4121,6 +4120,25 @@ body #mbonusBtn .mb-free {
     margin-left: 2px;
   }
 
+  header.topbar .venueWrap #brandSeg {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 175px;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 14px;
+    padding: 5px;
+    box-shadow: 0 10px 26px rgba(16, 20, 24, 0.16);
+    display: none;
+    flex-direction: column;
+    gap: 3px;
+    z-index: 1000;
+  }
+  header.topbar .venueWrap #brandSeg.open {
+    display: flex;
+  }
+
   header.topbar button#profileTopBtn.ava {
     position: static;
     transform: none;
@@ -4133,7 +4151,6 @@ body #mbonusBtn .mb-free {
     z-index: 2;
   }
 
-  /* Центр шапки */
   header.topbar div#headerBrand.brand {
     position: static;
     transform: none;
@@ -4152,11 +4169,19 @@ body #mbonusBtn .mb-free {
   }
 
   header.topbar div#headerBrand.brand div.mark {
-    height: 40px;
-    max-height: 40px;
+    width: var(--mark-w, 42px);
+    height: var(--mark-h, 42px);
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  header.topbar div#headerBrand.brand div.mark img,
+  header.topbar div#headerBrand.brand div.mark svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
   }
 
   header.topbar div#headerBrand.brand .brand-text,
@@ -4196,7 +4221,7 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* 2. Строка поиска строго в одну строку */
+/* 2. Строка поиска строго в одну горизонтальную строку */
 div#menuView div.search,
 div#deliveryView div.search,
 div.menu-head div.search {
@@ -4223,7 +4248,7 @@ div.menu-head div.search input {
   margin: 0;
 }
 
-/* 3. Устранение дыры под шапкой */
+/* 3. Устранение дыры: сжатие шапки каталога */
 div#menuView div.menu-head,
 div#deliveryView div.menu-head,
 div.menu-head {
@@ -4239,7 +4264,7 @@ div.menu-head div.mh-top {
   min-height: 0;
 }
 
-/* 4. Адаптив поиска: до 690px — под H1, от 691px — в одну линию справа */
+/* 4. Адаптив поиска: до 690px — под H1, от 691px — справа */
 @media (max-width: 690px) {
   div#menuView div.menu-head div.mh-top,
   div#deliveryView div.menu-head div.mh-top,
@@ -4295,7 +4320,6 @@ div.menu-head div.mh-top {
   div.menu-head div.mh-top div.mh-right {
     width: auto;
     height: auto;
-    min-height: 0;
     margin: 0;
     display: flex;
     align-items: center;
@@ -4310,7 +4334,7 @@ div.menu-head div.mh-top {
   }
 }
 
-/* 5. Планшет (691–1180px): 2–3 колонки меню без белой дыры */
+/* 5. Планшет (691–1180px): 2–3 колонки меню */
 @media (min-width: 691px) and (max-width: 1180px) {
   html body div.wrap {
     grid-template-columns: 80px minmax(0, 1fr);
@@ -4363,10 +4387,10 @@ div.menu-head div.mh-top {
   text-align: center;
 }
 
-/* 7. Карточки меню: четкое отображение фото без мыла */
+/* 7. Четкие фотографии блюд */
 .media {
-  height: 185px;
-  min-height: 185px;
+  height: 180px;
+  min-height: 180px;
   background: #FFFFFF;
 }
 .media img {

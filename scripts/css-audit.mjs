@@ -180,12 +180,22 @@ if (/\bstripLogoInlineStyles\b/.test(viewsCSS) || /style\.setProperty\([^)]+['"]
 } else {
   ok('views.js: inline-страховки !important удалены (Фаза B)');
 }
-/* ── Итог ── */
+
+/* ── ПРАВИЛО 12: рэтчет [data-brand] правил в views.js (Фаза C) ── */
+const brandRulesCount = (viewsCSS.match(/\[data-brand=/g) || []).length;
+const MAX_BRAND_RULES = 88;
+if (brandRulesCount > MAX_BRAND_RULES) {
+  fail(`views.js: превышен рэтчет [data-brand] правил (${brandRulesCount} > ${MAX_BRAND_RULES})`);
+} else {
+  ok(`views.js: рэтчет [data-brand] правил соблюдён (${brandRulesCount} <= ${MAX_BRAND_RULES})`);
+}
+
 console.log('\n' + '='.repeat(60));
-if (failures === 0) {
-  console.log('🎉 Архитектурных нарушений не найдено!');
+const _totalViolations = (typeof failures !== 'undefined' ? failures : 0);
+if (_totalViolations === 0) {
+  console.log('🎉 Архитектурных нарушений не найдено!\n');
   process.exit(0);
 } else {
-  console.error(`\n💥 Найдено нарушений: ${failures}`);
+  console.error(`\n💥 Найдено нарушений: ${_totalViolations}\n`);
   process.exit(1);
 }
