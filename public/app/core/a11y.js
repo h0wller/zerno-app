@@ -1,10 +1,9 @@
 /* lazy-img: loading=lazy + decoding=async, кроме LCP-картинки первого экрана. */
-/* lazy-img: loading=lazy + decoding=async, кроме LCP-картинки первого экрана. */
 function applyLazy(img) {
   if (img.dataset.lazyDone) return;
   img.dataset.lazyDone = '1';
-  // Не трогаем брендовые логотипы — у них свои размеры в CSS (.topbar .brand .mark)
-  if (img.closest('.topbar') || img.classList.contains('brandLogo')) {
+  // Не трогаем брендовые логотипы и карточки меню (у них свои пропорции в CSS)
+  if (img.closest('.topbar') || img.classList.contains('brandLogo') || img.closest('.media') || img.closest('.card')) {
     return;
   }
   var g = img.closest && img.closest('#grid, #deliveryGrid');
@@ -18,7 +17,6 @@ function applyLazy(img) {
     img.loading = 'lazy';
     img.decoding = 'async';
   }
-  // Фикс CLS для ленивых картинок без размеров
   if (!img.getAttribute('width') && !img.getAttribute('height') && !img.style.aspectRatio) {
     img.style.aspectRatio = '1 / 1';
     img.style.width = '100%';
