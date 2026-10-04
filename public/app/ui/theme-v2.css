@@ -4091,7 +4091,7 @@ body #mbonusBtn .mb-free {
     box-sizing: border-box;
   }
 
-  /* Компактная кнопка выбора бренда: иконка + стрелочка [🌊 ▾] */
+  /* Компактная круглая кнопка со стрелочкой [🌊 ▾] или [🍕 ▾] */
   header.topbar div.venueWrap {
     position: static;
     transform: none;
@@ -4133,7 +4133,7 @@ body #mbonusBtn .mb-free {
     z-index: 2;
   }
 
-  /* Центр шапки: строго по центру между кнопками */
+  /* Центр шапки: аккуратный прямоугольный блок (квадратная марка + текст) */
   header.topbar div#headerBrand.brand {
     position: static;
     transform: none;
@@ -4145,48 +4145,42 @@ body #mbonusBtn .mb-free {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     order: 2;
     z-index: 1;
     overflow: hidden;
   }
 
+  /* Квадратный контейнер эмблемы строго 38x38px */
   header.topbar div#headerBrand.brand div.mark {
-    height: 36px;
-    max-height: 36px;
-    width: auto;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    max-width: 38px;
+    max-height: 38px;
+    flex: 0 0 38px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     border-radius: 10px;
   }
-
-  /* Фиксация логотипа кофейни строго 36x36px без залезания на часы */
-  header.topbar div#headerBrand.brand div.mark img[src*="andCoffee"],
-  header.topbar div#headerBrand.brand div.mark img[alt*="кофе"] {
-    width: 36px;
-    height: 36px;
-    max-width: 36px;
-    max-height: 36px;
+  header.topbar div#headerBrand.brand div.mark img,
+  header.topbar div#headerBrand.brand div.mark svg {
+    width: 100%;
+    height: 100%;
+    max-width: 38px;
+    max-height: 38px;
     object-fit: contain;
     display: block;
   }
 
-  /* Широкий логотип Пятницы */
-  header.topbar div#headerBrand.brand div.mark img[src*="friday"],
-  header.topbar div#headerBrand.brand div.mark img[alt*="Пятница"] {
-    height: 36px;
-    max-height: 36px;
-    max-width: 160px;
-    width: auto;
-    object-fit: contain;
-    display: block;
-  }
-
+  /* Текст рядом с эмблемой (не обрезается и гармонично дополняет логотип) */
   header.topbar div#headerBrand.brand .brand-text,
   header.topbar div#headerBrand.brand .title,
-  header.topbar div#headerBrand.brand span:not(.mark) {
+  header.topbar div#headerBrand.brand span:not(.mark),
+  header.topbar div#headerBrand.brand div:not(.mark) {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -4240,25 +4234,42 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* 2. Вертикальное центрирование текста и иконок в рейле */
-.rail button,
-#deliveryRail button,
-.wrap .rail button,
-.wrap #deliveryRail button {
+/* 2. Строка поиска строго в одну линию (лупа и текст рядом) */
+div#menuView div.search,
+div#deliveryView div.search,
+div.menu-head div.search {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  box-sizing: border-box;
+}
+div#menuView div.search input,
+div#deliveryView div.search input,
+div.menu-head div.search input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  padding: 0;
+  margin: 0;
 }
 
-/* 3. Поиск на мобильных и планшетах (<= 1024px): аккуратно на отдельной строке без сдвигов */
+/* 3. Адаптив поиска: до 1024px — на всю ширину под H1 без лишних дыр и отступов */
 @media (max-width: 1024px) {
   div#menuView div.menu-head,
   div#deliveryView div.menu-head,
   div.menu-head {
     height: auto;
     min-height: 0;
+    margin-bottom: 12px;
+    padding-bottom: 0;
   }
   div#menuView div.menu-head div.mh-top,
   div#deliveryView div.menu-head div.mh-top,
@@ -4286,20 +4297,13 @@ body #mbonusBtn .mb-free {
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    height: auto;
+    height: 44px;
     margin: 0;
-    display: block;
-    box-sizing: border-box;
-  }
-  div#menuView div.search input,
-  div#deliveryView div.search input,
-  div.menu-head div.search input {
-    width: 100%;
     box-sizing: border-box;
   }
 }
 
-/* 4. Планшетный режим (691px - 1180px): убираем пустую 3-ю колонку и включаем 2-3 колонки карточек */
+/* 4. Планшет и ландшафт (691px–1180px): устраняем гигантскую дыру и включаем 2-3 колонки */
 @media (min-width: 691px) and (max-width: 1180px) {
   html body div.wrap {
     grid-template-columns: 80px minmax(0, 1fr);
@@ -4310,6 +4314,12 @@ body #mbonusBtn .mb-free {
     grid-column: 2;
     min-width: 0;
     width: 100%;
+    margin-top: 0;
+    padding-top: 0;
+  }
+  html body div.wrap > nav.rail,
+  html body div.wrap > nav#deliveryRail {
+    margin-top: 0;
   }
   html body div.wrap > aside#panel.panel {
     grid-column: auto;
@@ -4328,6 +4338,7 @@ body #mbonusBtn .mb-free {
   }
   html body div#grid,
   html body div#deliveryGrid {
+    min-height: 0;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 16px;
   }
@@ -4365,18 +4376,26 @@ body #mbonusBtn .mb-free {
   }
   div#menuView div.mh-top div.mh-right div.search,
   div#deliveryView div.mh-top div.mh-right div.search,
-  div#menuView div.mh-top div.search,
-  div#deliveryView div.mh-top div.search,
   div.menu-head div.search {
     width: 280px;
     max-width: 320px;
     margin: 0;
-    display: flex;
-    align-items: center;
   }
 }
 
-/* 6. Карточки меню */
+/* 6. Вертикальное центрирование рейла */
+.rail button,
+#deliveryRail button,
+.wrap .rail button,
+.wrap #deliveryRail button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* 7. Карточки меню */
 .media {
   height: 175px;
   min-height: 175px;
