@@ -4073,19 +4073,24 @@ body #mbonusBtn .mb-free {
 }
 
 /* ── CLS-AND-HEADER-SEARCH-STABILIZATION ── */
+
+/* 1. Мобильная шапка (<= 690px) */
 @media (max-width: 690px) {
   header.topbar {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding-left: 12px;
+    padding-right: 12px;
+    box-sizing: border-box;
   }
   header.topbar div.venueWrap {
     position: absolute;
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 2;
+    z-index: 3;
   }
   header.topbar button#venueToggle.venueToggle {
     width: 44px;
@@ -4104,55 +4109,67 @@ body #mbonusBtn .mb-free {
     right: 12px;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 2;
+    z-index: 3;
     margin: 0;
   }
   
-  /* 1. Нормальный размер логотипа (автоматический ресайз) */
+  /* Бренд по центру: не обрезает логотипы, оставляет место для текста кофейни */
   header.topbar div#headerBrand.brand {
     margin: 0 auto;
-    max-width: calc(100% - 120px);
-    height: 44px;
+    max-width: calc(100% - 110px);
+    height: auto;
+    min-height: 44px;
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 8px;
     z-index: 1;
+    overflow: visible;
   }
   header.topbar div#headerBrand.brand div.mark {
     width: auto;
-    height: 38px;
-    max-height: 38px;
+    height: auto;
+    max-height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
   }
   header.topbar div#headerBrand.brand img,
   header.topbar div#headerBrand.brand .brandLogo,
   header.topbar div#headerBrand.brand svg {
-    max-height: 38px;
-    max-width: 140px;
+    max-height: 40px;
+    max-width: 160px;
     width: auto;
     height: auto;
     object-fit: contain;
     display: block;
   }
+  header.topbar div#headerBrand.brand .brand-text,
+  header.topbar div#headerBrand.brand .title,
+  header.topbar div#headerBrand.brand span {
+    font-size: 13px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-  /* 2. Привязка плашки «Включите пуши тут» строго под аватарку профиля */
+  /* Плашка подписки на пуши привязана строго под кнопкой профиля */
   #pushPrompt,
   .push-prompt,
   .pushPromptBubble {
     position: absolute;
     top: calc(100% + 4px);
-    right: 8px;
+    right: 12px;
     z-index: 100;
     margin: 0;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   }
 }
 
-/* 3. Мобильный поиск (<= 820px) — в колонку */
+/* 2. Мобильный поиск (<= 820px) */
 @media (max-width: 820px) {
   div#menuView div.menu-head div.mh-top,
   div#deliveryView div.menu-head div.mh-top,
@@ -4198,7 +4215,7 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* 4. Десктопный поиск (> 820px) — строго в одну строку справа */
+/* 3. Десктоп и планшет (> 820px): поиск ровно по центру строки напротив H1 */
 @media (min-width: 821px) {
   div#menuView div.menu-head div.mh-top,
   div#deliveryView div.menu-head div.mh-top,
@@ -4207,6 +4224,16 @@ body #mbonusBtn .mb-free {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
+    height: auto;
+  }
+  div#menuView div.mh-top h1,
+  div#deliveryView div.mh-top h1,
+  div.menu-head div.mh-top h1 {
+    margin: 0;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
   }
   div#menuView div.mh-top div.mh-right,
   div#deliveryView div.mh-top div.mh-right,
@@ -4215,13 +4242,18 @@ body #mbonusBtn .mb-free {
     display: flex;
     align-items: center;
     margin: 0;
+    flex: 0 0 auto;
   }
   div#menuView div.mh-top div.mh-right div.search,
   div#deliveryView div.mh-top div.mh-right div.search,
+  div#menuView div.mh-top div.search,
+  div#deliveryView div.mh-top div.search,
   div.menu-head div.search {
     width: 280px;
     max-width: 320px;
+    margin: 0;
+    display: flex;
+    align-items: center;
   }
 }
 /* ── END STABILIZATION ── */
-
