@@ -101,8 +101,8 @@ var rules = [
 /* ≥821px (1024, 1440): кнопки по краям компактные, не гигантские */
 '@media(min-width:821px){.topbar #profileTopBtn{width:56px!important;height:56px!important;font-size:22px!important}.topbar .venueToggle{height:56px!important;font-size:15px!important;padding:0 18px!important;gap:8px!important}}',
 /* --- Шапка: марки брендов (70% ТОЛЬКО внутри ≤820px — не бьёт грид) --- */
-'[data-brand="delivery"] .topbar .brand .mark{width:auto;height:calc(var(--topbar-h,64px) - 8px);max-height:calc(var(--topbar-h,64px) - 8px);max-width:min(60vw,420px);flex: 0 1 auto;border-radius:8px}',
-'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}','@media(max-width:360px){[data-brand="coffee"] .topbar .brand .mark{width:32px;height:32px}}',
+'[data-brand="delivery"] .topbar .brand .mark{width:160px!important;min-width:140px!important;max-width:180px!important;height:38px!important;max-height:38px!important;flex:0 0 160px!important;display:flex!important;align-items:center!important;justify-content:center!important}',
+'[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:160px!important;max-width:160px!important;height:36px!important;max-height:36px!important;object-fit:contain!important;display:block!important}',
 /* --- Шапка: грид-центрирование ≥821px (после всех brand-правил) --- */
 '@media(max-width:820px){#mbonusBtn,.mbonus{position:fixed!important;left:12px!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;width:56px!important;min-width:56px!important;max-width:56px!important;height:56px!important;margin:0!important;z-index:95!important;transform:none!important}}',
 '@media(min-width:821px) and (max-width:1180px){.wrap{grid-template-columns:92px minmax(0,1fr) 350px;gap:18px;padding:18px}.wrap > .rail{grid-column:1}.wrap > section{grid-column:2;min-width:0}.wrap > .panel{grid-column:3;position:sticky;top:118px;transform:none;max-height:calc(100vh - 140px)}.tabs .btn-back{display:none}}',
@@ -438,24 +438,22 @@ function stripLogoInlineStyles() {
   var img  = document.querySelector('.topbar .brand .mark img, .topbar .brand .mark svg');
   var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
   if (img) {
-    img.style.setProperty('width', '100%', 'important');
-    img.style.setProperty('height', '100%', 'important');
-    img.style.setProperty('max-width', isDel ? '180px' : '42px', 'important');
-    img.style.setProperty('max-height', '42px', 'important');
-    img.style.setProperty('aspect-ratio', 'auto', 'important');
+    img.style.setProperty('width', isDel ? '160px' : '38px', 'important');
+    img.style.setProperty('height', isDel ? '36px' : '38px', 'important');
+    img.style.setProperty('max-width', isDel ? '170px' : '38px', 'important');
+    img.style.setProperty('max-height', '40px', 'important');
     img.style.setProperty('object-fit', 'contain', 'important');
     img.style.removeProperty('position');
     img.style.removeProperty('inset');
-    img.removeAttribute('width');
-    img.removeAttribute('height');
   }
   if (wrap) {
-    wrap.style.setProperty('width', isDel ? '160px' : '42px', 'important');
+    wrap.style.setProperty('width', isDel ? '160px' : '38px', 'important');
+    wrap.style.setProperty('min-width', isDel ? '140px' : '38px', 'important');
     wrap.style.setProperty('max-width', isDel ? '180px' : '42px', 'important');
-    wrap.style.setProperty('height', '42px', 'important');
-    wrap.style.setProperty('max-height', '42px', 'important');
-    wrap.style.setProperty('flex', isDel ? '0 0 auto' : '0 0 42px', 'important');
-    wrap.style.setProperty('overflow', isDel ? 'visible' : 'hidden', 'important');
+    wrap.style.setProperty('height', '40px', 'important');
+    wrap.style.setProperty('display', 'flex', 'important');
+    wrap.style.setProperty('align-items', 'center', 'important');
+    wrap.style.setProperty('justify-content', 'center', 'important');
   }
 }
 
