@@ -86,16 +86,16 @@ window.edit = null; /* Ф5.6.2f: разделяемое состояние с me
         e.target.value = "";
       });
 
-      function loadImg(file) {
+            function loadImg(file) {
         const u = URL.createObjectURL(file),
           img = new Image();
         img.onload = () => {
-          const m = Math.min(1, 640 / Math.max(img.width, img.height));
+          const m = Math.min(1, 1280 / Math.max(img.width, img.height));
           const c = document.createElement("canvas");
           c.width = Math.round(img.width * m);
           c.height = Math.round(img.height * m);
           c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-          edit.img = c.toDataURL("image/jpeg", 0.82);
+          edit.img = c.toDataURL("image/jpeg", 0.88);
           URL.revokeObjectURL(u);
           window.renderZone();
         };
