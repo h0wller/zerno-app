@@ -701,36 +701,30 @@ document.addEventListener("DOMContentLoaded", function () { window.__syncHeaderC
 
 /* ── Ф5.38: fitSearch — мобайл-поиск во всю ширину, cascade-immune (inline) ── */
 (function () {
-function fitSearch() {
-  var mhRights = document.querySelectorAll('.mh-top .mh-right');
-  for (let i = 0; i < mhRights.length; i++) {
-    if (window.innerWidth <= 690) {
-      mhRights[i].style.setProperty('width', '100%', 'important');
-      mhRights[i].style.setProperty('max-width', '100%', 'important');
-    } else {
-      mhRights[i].style.width = '';
-      mhRights[i].style.maxWidth = '';
-    }
-  }
-}
-    var list = document.querySelectorAll('.mh-top .mh-right');
-    for (let i = 0; i < list.length; i++) {
-      if (window.innerWidth <= 820) list[i].style.width = '100%';
-      else list[i].style.width = '';
+  function fitSearch() {
+    var mhRights = document.querySelectorAll('.mh-top .mh-right');
+    for (var i = 0; i < mhRights.length; i++) {
+      if (window.innerWidth <= 690) {
+        mhRights[i].style.setProperty('width', '100%', 'important');
+        mhRights[i].style.setProperty('max-width', '100%', 'important');
+      } else {
+        mhRights[i].style.width = '';
+        mhRights[i].style.maxWidth = '';
+      }
     }
   }
   window.__fitSearch = fitSearch;
   window.addEventListener('resize', fitSearch);
   window.addEventListener('orientationchange', fitSearch);
-  setTimeout(fitSearch, 0); setTimeout(fitSearch, 350); setTimeout(fitSearch, 1200);
-
-/* ── Ф5.39: fitSearch после DOMContentLoaded (поиск во всю ширину) ── */
-if (typeof window.__fitSearch === 'function') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.__fitSearch);
-  } else {
-    window.__fitSearch();
+  setTimeout(fitSearch, 0);
+  setTimeout(fitSearch, 350);
+  setTimeout(fitSearch, 1200);
+  if (typeof window.__fitSearch === 'function') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', window.__fitSearch);
+    } else {
+      window.__fitSearch();
+    }
   }
-}
 })();
 })();
