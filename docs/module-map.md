@@ -123,7 +123,6 @@
 | `ui/settings.js` | `#settingsModal` (PIN, каналы, сброс), шестерёнки профиля | — |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |
-| `core/ptr.js` | Pull-to-refresh (`#ptrLoader`) | — |
 | `core/deeplink.js` | Диплинки: brand/tab/no/support/reorder/auth_token | — |
 | `ui/styles.js` | Глобальные инжекции СЛОЯ 3: z-index, body.panel-open, пульсы чата, футер, cartPanel ≥900px, бар подсказок | — |
 
