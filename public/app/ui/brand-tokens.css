@@ -63,6 +63,10 @@ body[data-brand="coffee"] {
   --alogo-bg: #FFFFFF;
   --alogo-border: 1.5px solid var(--line, #D8DFE4);
   --alogo-shadow: 0 6px 20px rgba(18, 58, 107, 0.12);
+  --ava-bg: linear-gradient(135deg, #3e8fd0, #123a6b);
+  --ava-color: #FFFFFF;
+  --ava-border: 1px solid #FFFFFF;
+  --ava-shadow: 0 3px 8px rgba(18, 58, 107, 0.25);
 
   /* Статистика и инфо-блоки */
   --stat-border: 1.5px solid var(--line);
@@ -162,6 +166,11 @@ body[data-brand="delivery"] {
   --alogo-bg: transparent;
   --alogo-border: none;
   --alogo-shadow: none;
+  --ava-bg: var(--fr-tan, #C99E6E);
+  --ava-color: var(--fr-choc, #3A2A1C);
+  --ava-border: 2px solid var(--fr-choc, #3A2A1C);
+  --ava-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+
 
   /* Статистика */
   --stat-border: 2px solid #3A2A1C;
@@ -239,6 +248,10 @@ body[data-brand="test"] {
   --alogo-bg: transparent;
   --alogo-border: none;
   --alogo-shadow: none;
+  --ava-bg: #FF6B9D;
+  --ava-color: #FFFFFF;
+  --ava-border: 2px solid #2D3047;
+  --ava-shadow: 2px 2px 0 #2D3047;
 
   --stat-border: 2px solid #2D3047;
   --stat-shadow: none;
