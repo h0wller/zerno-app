@@ -129,13 +129,14 @@ body.editing .card:hover{
 }
 /* ── Медиа-зона карточки ────────────────────────────────────────────────── */
 .media{
-  height: 150px;
-  min-height: 150px;
+  height: 180px;
+  min-height: 180px;
   position: relative;
   overflow: hidden;
   background: linear-gradient(180deg, rgba(62, 143, 208, 0.08), transparent);
   display: grid;
   place-items: center;
+  contain: layout style;
 }
 .media img{
   width: 100%;
