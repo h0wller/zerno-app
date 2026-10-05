@@ -3966,7 +3966,6 @@ div.menu-head div.mh-top {
   justify-content: center;
   text-align: center;
 }
-
 /* 7. Четкие фотографии блюд */
 .media {
   height: 180px;
@@ -3978,6 +3977,7 @@ div.menu-head div.mh-top {
   height: 100%;
   object-fit: cover;
   object-position: center;
-  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+  transform: translateZ(0);
 }
 /* ── END STABILIZATION ── */
