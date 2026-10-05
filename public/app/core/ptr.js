@@ -1,12 +1,11 @@
-/* public/app/core/ptr.js — Волна 1.3: Pull-to-refresh (v3)
-   PTR-PATCH v3: сброс трансформа, минимальная задержка лоадера, только тач */
+/* public/app/core/ptr.js — Волна 1.3: Pull-to-refresh (v4)
+   Плавное вытягивание лоадера ниже чёлки/Dynamic Island, адаптивная анимация */
 (function () {
   'use strict';
 
-  var PULL_THRESHOLD = 65;
+  var PULL_THRESHOLD = 70;
   var TIMEOUT_MS = 5000;
-  var RESISTANCE = 0.4;
-  var MIN_SPINNER_MS = 400; /* минимальное время показа лоадера */
+  var MIN_SPINNER_MS = 400; /* минимальное время показа спиннера */
 
   var startY = 0;
   var pulling = false;
@@ -36,10 +35,10 @@
     return loader;
   }
 
-    function showLoader() {
+  function showLoader() {
     var loader = getLoader();
     loader.style.opacity = '1';
-    loader.style.transform = 'translateY(44px) scale(1)';
+    loader.style.transform = 'translateY(50px) scale(1)';
     loader.classList.add('visible');
   }
 
@@ -47,15 +46,15 @@
     var loader = getLoader();
     loader.classList.remove('visible');
     loader.style.opacity = '0';
-    loader.style.transform = 'translateY(-20px) scale(0.65)';
+    loader.style.transform = 'translateY(-20px) scale(0.6)';
   }
 
   function setLoaderPosition(offsetY) {
     var loader = getLoader();
     var progress = Math.min(offsetY / PULL_THRESHOLD, 1);
-    var translateY = -20 + (progress * 64);
-    loader.style.opacity = String(Math.max(0.1, progress));
-    loader.style.transform = 'translateY(' + translateY + 'px) scale(' + (0.65 + 0.35 * progress) + ')';
+    loader.style.opacity = String(progress);
+    var y = -20 + (progress * 70);
+    loader.style.transform = 'translateY(' + y + 'px) scale(' + (0.6 + progress * 0.4) + ')';
   }
 
   function findRefreshFn() {
@@ -97,7 +96,6 @@
       var refreshFn = findRefreshFn();
       if (refreshFn) {
         var result = refreshFn();
-        /* PTR-PATCH v3: минимум 400 мс показа лоадера, даже если рендер синхронный */
         await Promise.all([
           Promise.resolve(result),
           new Promise(function (r) { setTimeout(r, MIN_SPINNER_MS); })
@@ -167,13 +165,12 @@
   }
 
   function init() {
-  var hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-  if (!hasTouch) return;
-  document.addEventListener('touchstart', onTouchStart, { passive: true });
-  // Заменить { passive: false } на { passive: true }
-  document.addEventListener('touchmove', onTouchMove, { passive: true });
-  document.addEventListener('touchend', onTouchEnd, { passive: true });
-}
+    var hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (!hasTouch) return;
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd, { passive: true });
+  }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
