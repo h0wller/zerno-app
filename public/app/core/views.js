@@ -46,47 +46,6 @@ var ov0 = document.getElementById('supportChooseOverlay');
 if (ov0) { ov0.style.display = 'flex'; ov0.style.zIndex = '10002'; }
 }
 /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
-var css = document.createElement('style');
-var rules = [
-' /* ── F6.5: Брендовый теплый фон стафф-режимов доставки и терракотовые цены ── */ html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView {   background: var(--fr-paper, #F6EEE1) !important; } html[data-brand="delivery"] .cash-card, html[data-brand="delivery"] #ordersView .card, html[data-brand="delivery"] #ordersView article {   background: #FFFDF9 !important;   border-color: #E8DCCB !important; } html[data-brand="delivery"] .price, html[data-brand="delivery"] .single-meta .price, html[data-brand="delivery"] #itemZoomOverlay b + span {   color: var(--flame, #C03B2A) !important; } ',
-/* --- Layout: сетка wrap + safe-area --- */
-'@media(min-width:821px){body:not(.is-cashier):not(.is-admin) .wrap > .rail{grid-column:1}body:not(.is-cashier):not(.is-admin) .wrap > section{grid-column:2;min-width:0}body:not(.is-cashier):not(.is-admin) .wrap > .panel{grid-column:3}}',
-'html,body{overflow-x:hidden;overflow-x:clip;max-width:100%}',
-'img,canvas,svg,video{max-width:100%}',
-/* --- Delivery grid + опции --- */
-'#deliveryGrid{grid-template-columns:1fr;padding-bottom:120px}',
-'@media(min-width:560px){#deliveryGrid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}}',
-'#deliveryGrid .opts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}',
-'@media(max-width:400px){#deliveryGrid .opts{grid-template-columns:1fr}}',
-'#deliveryGrid .opts button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:2px solid var(--line);border-radius:12px;font-size:11px;font-weight:600;background:#fff;line-height:1.3;white-space:normal;text-align:left;width:100%;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}',
-'#deliveryGrid .opts button:active{transform:translateY(1px)}',
-'@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}',
-'#deliveryGrid .opts button .op{color:var(--soft);font-weight:700}',
-'#deliveryGrid .opts button.sel{background:var(--flame);border-color:var(--flame);color:#fff}',
-'#deliveryGrid .opts button.sel .op{color:var(--tint-warm)}',
-'#deliveryGrid .opts.shake{animation:shake .4s}',
-/* --- FAB корзины + addons --- */
-'#cartFab{background:var(--flame);box-shadow:0 12px 30px -8px rgba(58,42,28,.45);bottom:calc(84px + env(safe-area-inset-bottom))}',
-'.addonChip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}',
-'.addonChip b{color:var(--flame)}',
-/* --- ШАПКА: база (единственный блок, Ф3.55) --- */
-'.topbar{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:8px;height:auto;min-height:calc(var(--topbar-h,64px) + var(--sat, env(safe-area-inset-top,0px)));padding:var(--sat, env(safe-area-inset-top,0px)) 12px 0;box-sizing:border-box}',
-'.topbar .venueWrap{position:relative;order:1;flex:0 0 auto;min-width:0;display:flex;justify-content:flex-start}',
-'.topbar .brand{order:2;flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;position:static;transform:none}',
-'.topbar .brand .mark{width:var(--mark-w,42px);height:var(--mark-h,42px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent;display:flex;align-items:center;justify-content:center}',
-'.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}','.topbar #profileTopBtn{order:3;flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);font-size:calc(var(--topbar-h,64px) * 0.28)}',
-'.topbar #modeSeg{order:10;flex:1 1 100%}',
-'.topbar #clock{display:none!important}',
-'.venueToggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line);background:var(--card,#fff);border-radius:999px;padding:0 12px;height:calc(var(--topbar-h,64px) - 20px);font:700 calc(var(--topbar-h,64px) * 0.22) "Golos Text",system-ui,sans-serif;color:var(--ink);cursor:pointer;transition:background .2s,transform .2s,border-color .2s;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-'.venueToggle:hover{background:#F5F5F5;transform:translateY(-1px)}',
-'.venueToggle .vt-arrow{font-size:9px;opacity:.7;transition:transform .2s}',
-'.venueToggle[aria-expanded="true"] .vt-arrow{transform:rotate(180deg)}',
-'.venueWrap #brandSeg{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:100;flex-direction:column;gap:4px;width:190px;min-width:180px;max-width:85vw;border:1.5px solid var(--line);border-radius:14px;background:var(--card,#fff);box-shadow:0 12px 28px rgba(16,20,24,.18);padding:6px;animation:fadeIn .2s ease}',
-'.venueWrap #brandSeg.open{display:flex}',
-'.venueWrap #brandSeg button{width:100%;border:0;border-radius:10px;padding:9px 12px;font:600 13.5px "Golos Text",sans-serif;background:transparent;color:var(--ink);text-align:left;display:flex;align-items:center;gap:8px;cursor:pointer}',
-'.venueWrap #brandSeg button:hover{background:rgba(0,0,0,.05)}',
-'.venueWrap #brandSeg button.on{background:var(--tint-cool,#EAF1F9);color:var(--flame);font-weight:700}',
-'@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}',
 var rules = [
  ' /* ── F6.5: Брендовый теплый фон стафф-режимов доставки и терракотовые цены ── */ html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView {   background: var(--fr-paper, #F6EEE1) !important; } html[data-brand="delivery"] .cash-card, html[data-brand="delivery"] #ordersView .card, html[data-brand="delivery"] #ordersView article {   background: #FFFDF9 !important;   border-color: #E8DCCB !important; } html[data-brand="delivery"] .price, html[data-brand="delivery"] .single-meta .price, html[data-brand="delivery"] #itemZoomOverlay b + span {   color: var(--flame, #C03B2A) !important; } ',
  /* --- Layout: сетка wrap + safe-area --- */
@@ -114,7 +73,8 @@ var rules = [
  '.topbar .venueWrap{position:relative;order:1;flex:0 0 auto;min-width:0;display:flex;justify-content:flex-start}',
  '.topbar .brand{order:2;flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;position:static;transform:none}',
  '.topbar .brand .mark{width:var(--mark-w,42px);height:var(--mark-h,42px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent;display:flex;align-items:center;justify-content:center}',
- '.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}','.topbar #profileTopBtn{order:3;flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);font-size:calc(var(--topbar-h,64px) * 0.28)}',
+ '.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}',
+ '.topbar #profileTopBtn{order:3;flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);font-size:calc(var(--topbar-h,64px) * 0.28)}',
  '.topbar #modeSeg{order:10;flex:1 1 100%}',
  '.topbar #clock{display:none!important}',
  '.venueToggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line);background:var(--card,#fff);border-radius:999px;padding:0 12px;height:calc(var(--topbar-h,64px) - 20px);font:700 calc(var(--topbar-h,64px) * 0.22) "Golos Text",system-ui,sans-serif;color:var(--ink);cursor:pointer;transition:background .2s,transform .2s,border-color .2s;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
@@ -147,7 +107,8 @@ var rules = [
  '@media(min-width:821px) and (max-width:1180px){.wrap{grid-template-columns:92px minmax(0,1fr) 350px;gap:18px;padding:18px}.wrap > .rail{grid-column:1}.wrap > section{grid-column:2;min-width:0}.wrap > .panel{grid-column:3;position:sticky;top:118px;transform:none;max-height:calc(100vh - 140px)}.tabs .btn-back{display:none}}',
  '@media(min-width:821px){#mbonusBtn{height:40px;min-width:0;max-width:180px;display:inline-flex;flex-direction:row;align-items:center;gap:8px;padding:0 12px;border-radius:999px;background:#101418;color:#fff;box-shadow:0 4px 12px rgba(16,20,24,.15);white-space:nowrap;overflow:hidden}}',
  '@media(max-width:820px){.wrap{grid-template-columns:64px minmax(0,1fr);gap:8px;padding:8px 10px 28px 6px}.wrap .rail,.wrap #deliveryRail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);height:calc(100dvh - env(safe-area-inset-top,0px) - 16px);display:flex;flex-direction:column;gap:6px;width:64px;min-width:64px;padding:4px;margin:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}.wrap .rail::-webkit-scrollbar,.wrap #deliveryRail::-webkit-scrollbar{display:none}.wrap .rail button,.wrap #deliveryRail button{flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:54px;padding:6px 2px;margin:0;border-radius:12px;font-size:9.5px;line-height:1.1;white-space:normal;text-align:center}.wrap .rail .re,.wrap #deliveryRail .re{font-size:19px;margin:0}.panel{position:fixed;top:0;right:0;bottom:0;z-index:120;width:min(400px,100%);max-height:none;border-radius:22px 0 0 22px;transform:translateX(105%);transition:.35s cubic-bezier(.2,1,.3,1);padding-top:calc(env(safe-area-inset-top) + 6px)}.panel.open{transform:none}.tabs{order:99;margin-top:auto;background:var(--panel);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom))}.tabs button{padding:13px 6px;font-size:14px}.mbonus.near-footer{opacity:0;pointer-events:none;transform:translateY(8px)}#mbonusBtn{position:fixed;left:8px;right:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:60px;max-width:60px;height:auto;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border-radius:16px;background:#101418;z-index:94;box-shadow:0 10px 24px -6px rgba(16,20,24,.45);transform:none}.wrap .rail,.wrap #deliveryRail{align-self:start}.scan{grid-template-columns:1fr;justify-items:center;text-align:center}body.is-cashier .wrap,body.is-admin .wrap{grid-template-columns:1fr;max-width:900px;padding:14px 16px 40px}body.is-cashier .wrap > .rail,body.is-admin .wrap > .rail{display:none}}',
- '@media(min-width:821px){.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto minmax(0,1fr);align-items:center;align-content:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0;min-width:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;min-width:0;max-width:100%}.topbar #mbonusBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin:0;position:static}.topbar #profileTopBtn{grid-column:4;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}}','[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
+ '@media(min-width:821px){.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto minmax(0,1fr);align-items:center;align-content:center;gap:8px}.topbar .venueWrap{grid-column:1;grid-row:1;justify-self:start;order:0;min-width:0}.topbar .brand{grid-column:2;grid-row:1;justify-self:center;order:0;flex:none;min-width:0;max-width:100%}.topbar #mbonusBtn{grid-column:3;grid-row:1;justify-self:end;order:0;margin:0;position:static}.topbar #profileTopBtn{grid-column:4;grid-row:1;justify-self:end;order:0;margin-left:0}.topbar #modeSeg{grid-column:1/-1;grid-row:2}}',
+ '[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
  '[data-brand="delivery"] .venueToggle:hover{background:#EFE6D8;box-shadow:3px 3px 0 var(--fr-choc);transform:translate(-1px,-1px)}',
  '[data-brand="delivery"] .venueWrap #brandSeg{background:#FFFDF9;border:1px solid #C99E6E;box-shadow:0 10px 25px rgba(58,42,28,0.18);border-radius:14px}',
  '[data-brand="delivery"] .venueWrap #brandSeg button:hover{background:#F6EEE1;transform:none}',
@@ -181,9 +142,9 @@ var rules = [
  '@media(min-width:560px){#brandSplash .spBtns,#brandSplashStatic .spBtns{grid-template-columns:1fr 1fr}}',
  '#brandSplash,#brandSplashStatic{background:#FFFFFF}',
  '#brandSplash .spBtn .em,#brandSplashStatic .spBtn .em{display:block;font-size:30px;line-height:1;margin-bottom:10px}',
- '#brandSplash .spBtn .bt,#brandSplashStatic .spBtn .bt{display:block;font:700 16px Unbounded,sans-serif}',
- /* --- Чат --- */
+ '#brandSplash .spBtn .bt,#brandSplashStatic .spBtn .bt{display:block;font-weight:700;font-family:"Unbounded",sans-serif}'
 ];
+/* --- Чат --- */
 '#chatPanel [class="chip"],#chatPanel #chips,#chatPanel .chips{display:none}',
 '#supportChooseOverlay .ctxPick,#chatPanel .ctxPick{display:flex;gap:8px;margin:8px 0}',
 '#supportChooseOverlay .ctxPick button,#chatPanel .ctxPick button{flex:1;padding:10px;border-radius:14px;font-size:14px;font-weight:700;border:1.5px solid var(--line);background:#fff;cursor:pointer}',
