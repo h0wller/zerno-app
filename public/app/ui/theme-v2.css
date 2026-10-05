@@ -3088,7 +3088,6 @@ html.is-tg-app [id*="pwaInstall"]{
     transition: none;
   }
 }
-}
 #checkoutStreet.field-error{
   border-color: #B3372B;
   background: #FDE8E8;
