@@ -62,7 +62,7 @@ export default {
     '(^|/)public/sw\\.js$',
     '(^|/)public/debug\\.js$',
     // Классические скрипты из index.html:
-    '(^|/)public/app/core/(ptr|address-dict|address-autocomplete|address-book|preorder-timer)\\.js$',
+    '(^|/)public/app/core/(address-dict|address-autocomplete|address-book|preorder-timer)\\.js$',
     // Динамически подгружаемые в рантайме (scanner.js → loadJsqr):
     '(^|/)public/jsqr\\.js$',
     '(^|/)public/qrcode\\.js$',
