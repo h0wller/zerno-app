@@ -292,6 +292,7 @@ async function updateStaffBadge() {
   $('#chatFab').onclick = async () => {
     const p = $('#chatPanel'); p.classList.toggle('open');
     $('#chatFab').classList.toggle('open', p.classList.contains('open'));
+    if (typeof window.sv === 'function') window.sv(); /* <── ДОБАВЛЕНО */
     if (p.classList.contains('open')) {
       if (!lastChatId) { try { const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(chatKey()) + '&after=0')).json(); for (const m of r.msgs) lastChatId = Math.max(lastChatId, m.id); } catch (e) {} }
       localStorage.setItem(unreadKey(), '0'); showBadge(); localStorage.setItem('zt_read_' + chatKey(), lastChatId);
@@ -302,7 +303,11 @@ async function updateStaffBadge() {
       }
     }
   };
-  $('#chatClose').onclick = () => { $('#chatPanel').classList.remove('open'); $('#chatFab').classList.remove('open'); };
+  $('#chatClose').onclick = () => {
+    $('#chatPanel').classList.remove('open');
+    $('#chatFab').classList.remove('open');
+    if (typeof window.sv === 'function') window.sv(); /* <── ДОБАВЛЕНО */
+  };
 
   /* ── стафф: подписки ── */
   $('#chatsToggle').onclick = openStaffChat;
