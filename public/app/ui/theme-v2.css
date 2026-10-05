@@ -938,34 +938,34 @@ label.chk{
 /* ── Ф5.8 чанк 3: база чата и FAB (было inline <style> index.html + views.js) ── */
 .chat-fab{
   position: fixed;
-  right: 20px;
-  bottom: calc(20px + env(safe-area-inset-bottom));
+  right: 10px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   z-index: 10001;
-  width: 58px;
-  height: 58px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background: #123A6B;
+  background: var(--chat-fab-bg, #123A6B);
+  border: var(--chat-fab-border, 2px solid #3E8FD0);
+  box-shadow: var(--chat-fab-shadow, 0 12px 30px rgba(18, 58, 107, .45));
   display: grid;
   place-items: center;
-  box-shadow: 0 12px 30px rgba(18, 58, 107, .45);
-  border: 2px solid #3E8FD0;
-  transition: left .25s
+  transition: transform .2s ease, background-color .2s ease, box-shadow .2s ease;
 }
 .chat-fab svg{
   width: 26px;
   height: 26px;
-  fill: #fff
+  fill: #fff;
 }
-@media (hover:hover){.chat-fab:hover{
+@media (hover: hover) and (pointer: fine){
+  .chat-fab:hover,
+  body[data-brand] .chat-fab:hover{
     transform: scale(1.08) rotate(-6deg);
-    background: #3E8FD0
+    background: var(--chat-fab-hover-bg, #3E8FD0) !important;
   }
-
-
-
 }
-.chat-fab:active{
-  transform: scale(.95)
+.chat-fab:active,
+body[data-brand] .chat-fab:active{
+  transform: scale(0.92);
 }
 .chat-fab.open{
   background: #3E8FD0
