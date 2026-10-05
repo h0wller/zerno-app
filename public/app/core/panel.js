@@ -84,12 +84,15 @@ window.setTab = setTab;
 window.openPanel = openPanel;
 window.closePanel = closePanel;
 })();
-/* ── F5.17: бонус-пилюля не закрывает футер ── */
+/* ── F5.17: бонус-пилюля не закрывает футер при скролле вниз ── */
 (function () {
   var mb = document.getElementById("mbonusBtn");
   var ft = document.querySelector(".siteFooter");
   if (!mb || !ft || typeof IntersectionObserver === "undefined") return;
   new IntersectionObserver(function (es) {
-    es.forEach(function (en) { mb.classList.toggle("near-footer", en.isIntersecting); });
-  }, { threshold: 0.05 }).observe(ft);
+    es.forEach(function (en) {
+      var scrolled = (window.scrollY || document.documentElement.scrollTop || 0) > 250;
+      mb.classList.toggle("near-footer", en.isIntersecting && scrolled);
+    });
+  }, { threshold: 0.2 }).observe(ft);
 })();
