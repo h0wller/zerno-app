@@ -4,74 +4,27 @@
    Никаких layout-правил, никаких !important, никаких селекторов без data-brand.
    ========================================================================== */
 
+/* jscpd:ignore-start */
+
 /* ═══════════════════════════════════════
    ☕ Кофейня («…и кофе»)
-   Токены по умолчанию заданы в theme-v2.css :root
-   Здесь только переопределения, если нужны.
    ═══════════════════════════════════════ */
-
-/* (пока пусто — кофейня использует базовые токены из :root) */
-
-
-/* ═══════════════════════════════════════
-   🍕 Пятница (delivery)
-   Терракотово-крафтовая палитра
-   ═══════════════════════════════════════ */
-html[data-brand="delivery"],
-body[data-brand="delivery"] {
-  /* основные */
-  --flame: #C03B2A;
-  --flame-d: #8E3716;
-  --esp: #3A2A1C;
-  --esp2: #241812;
-  --paper: #F3EDE6;
-
-  /* крафтовые */
-  --fr-choc: #3A2A1C;
-  --fr-tan: #C99E6E;
-  --fr-rice: #EFE6D8;
-  --fr-paper: #F6EEE1;
-
-  /* тинты */
-  --tint-cool: #F3E2CE;
-  --tint-warm: #F3E2CE;
-
-  /* переопределения базовых (F6.5) */
-  --panel: #FAF5EE;
-  --line: #E5DACB;
-}
-/* ── Геометрия марки шапки (СЛОЙ 2-данные) ── */
 html[data-brand="coffee"],
 body[data-brand="coffee"] {
+  /* Геометрия марки в шапке */
   --mark-w: 42px;
   --mark-h: 42px;
-}
 
-html[data-brand="delivery"],
-body[data-brand="delivery"] {
-  --mark-w: 160px;
-  --mark-h: 40px;
-}
-
-/* dev-бренд для Фазы D (приёмочный тест архитектуры) */
-html[data-brand="test"],
-body[data-brand="test"] {
-  --mark-w: 60px;
-  --mark-h: 60px;
-  --flame: #FF6B9D;
-  --esp: #2D3047;
-  --paper: #FFF5F7;
-}
-
-/* jscpd:ignore-start */
-/* ── Фаза C: Семантические токены компонентов ── */
-html[data-brand="coffee"],
-body[data-brand="coffee"] {
+  /* Карточки меню и бейджи */
   --card-bg: #FFFFFF;
   --card-border: 1.5px solid rgba(62, 143, 208, 0.25);
   --card-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
   --card-radius: 18px;
+  --tag-bg: #1B4F8A;
+  --tag-hit-bg: #1B5E8A;
+  --price-color: #123A6B;
 
+  /* Кнопки действий */
   --btn-fire-bg: var(--flame, #123A6B);
   --btn-fire-color: #FFFFFF;
   --btn-fire-border: none;
@@ -81,6 +34,7 @@ body[data-brand="coffee"] {
   --cta-border: none;
   --cta-shadow: none;
 
+  /* Шторка и табы */
   --panel-bg: var(--panel, #F3F8FC);
   --panel-border: none;
   --panel-shadow: -8px 0 30px rgba(16, 20, 24, 0.08);
@@ -90,6 +44,7 @@ body[data-brand="coffee"] {
   --tab-on-shadow: none;
   --tab-on-transform: none;
 
+  /* Модальные окна и окно авторизации */
   --modal-bg: #FFFFFF;
   --modal-bg-image: none;
   --modal-bg-size: auto;
@@ -105,7 +60,16 @@ body[data-brand="coffee"] {
   --modal-input-bg: #FFFFFF;
   --modal-input-border: 1.5px solid var(--line, #D8DFE4);
   --modal-input-color: var(--ink, #101418);
+  --alogo-bg: #FFFFFF;
+  --alogo-border: 1.5px solid var(--line, #D8DFE4);
+  --alogo-shadow: 0 6px 20px rgba(18, 58, 107, 0.12);
 
+  /* Статистика и инфо-блоки */
+  --stat-border: 1.5px solid var(--line);
+  --stat-shadow: none;
+  --stat-num-color: var(--ink);
+
+  /* Чат поддержки */
   --chat-head-bg: #FFFFFF;
   --chat-head-color: var(--ink, #101418);
   --chat-msgs-bg: #FFFFFF;
@@ -121,13 +85,45 @@ body[data-brand="coffee"] {
   --chat-send-color: #FFFFFF;
 }
 
+/* ═══════════════════════════════════════
+   🍕 Пятница (delivery)
+   Терракотово-крафтовая палитра
+   ═══════════════════════════════════════ */
 html[data-brand="delivery"],
 body[data-brand="delivery"] {
+  /* Геометрия марки в шапке */
+  --mark-w: 160px;
+  --mark-h: 40px;
+
+  /* Основная палитра */
+  --flame: #C03B2A;
+  --flame-d: #8E3716;
+  --esp: #3A2A1C;
+  --esp2: #241812;
+  --paper: #F3EDE6;
+
+  /* Крафтовые тона */
+  --fr-choc: #3A2A1C;
+  --fr-tan: #C99E6E;
+  --fr-rice: #EFE6D8;
+  --fr-paper: #F6EEE1;
+
+  /* Тинты и фон панелей */
+  --tint-cool: #F3E2CE;
+  --tint-warm: #F3E2CE;
+  --panel: #FAF5EE;
+  --line: #E5DACB;
+
+  /* Карточки доставки: крафтовый фон и шоколадная обводка */
   --card-bg: var(--fr-paper, #F6EEE1);
   --card-border: 2px solid var(--fr-choc, #3A2A1C);
   --card-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
   --card-radius: 18px;
+  --tag-bg: var(--flame, #C03B2A);
+  --tag-hit-bg: var(--flame-d, #8E3716);
+  --price-color: var(--flame, #C03B2A);
 
+  /* Кнопки «Добавить» и «Оформить заказ» */
   --btn-fire-bg: var(--flame, #C03B2A);
   --btn-fire-color: #FFFFFF;
   --btn-fire-border: 2px solid var(--fr-choc, #3A2A1C);
@@ -137,6 +133,7 @@ body[data-brand="delivery"] {
   --cta-border: 2px solid var(--fr-choc, #3A2A1C);
   --cta-shadow: 3px 3px 0 var(--fr-choc, #3A2A1C);
 
+  /* Шторка и вкладки */
   --panel-bg: var(--fr-paper, #F6EEE1);
   --panel-border: 3px solid var(--fr-choc, #3A2A1C);
   --panel-shadow: -8px 0 30px rgba(58, 42, 28, 0.2);
@@ -146,6 +143,7 @@ body[data-brand="delivery"] {
   --tab-on-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
   --tab-on-transform: rotate(-0.8deg);
 
+  /* Модальные окна и окно авторизации (без синего квадрата) */
   --modal-bg: var(--fr-rice, #EFE6D8);
   --modal-bg-image: radial-gradient(rgba(58, 42, 28, 0.08) 1px, transparent 1.5px);
   --modal-bg-size: 10px 10px;
@@ -161,7 +159,16 @@ body[data-brand="delivery"] {
   --modal-input-bg: #FFFFFF;
   --modal-input-border: 2px solid var(--fr-choc, #3A2A1C);
   --modal-input-color: var(--fr-choc, #3A2A1C);
+  --alogo-bg: transparent;
+  --alogo-border: none;
+  --alogo-shadow: none;
 
+  /* Статистика */
+  --stat-border: 2px solid #3A2A1C;
+  --stat-shadow: 2px 2px 0 #3A2A1C;
+  --stat-num-color: #3A2A1C;
+
+  /* Чат поддержки */
   --chat-head-bg: var(--fr-choc, #3A2A1C);
   --chat-head-color: #FFFFFF;
   --chat-msgs-bg: var(--fr-paper, #F6EEE1);
@@ -177,12 +184,24 @@ body[data-brand="delivery"] {
   --chat-send-color: #FFFFFF;
 }
 
+/* ═══════════════════════════════════════
+   🧪 dev-бренд test (Фаза D)
+   ═══════════════════════════════════════ */
 html[data-brand="test"],
 body[data-brand="test"] {
+  --mark-w: 60px;
+  --mark-h: 60px;
+  --flame: #FF6B9D;
+  --esp: #2D3047;
+  --paper: #FFF5F7;
+
   --card-bg: #FFF5F7;
   --card-border: 2px solid #2D3047;
   --card-shadow: 3px 3px 0 #2D3047;
   --card-radius: 16px;
+  --tag-bg: #FF6B9D;
+  --tag-hit-bg: #C73866;
+  --price-color: #FF6B9D;
 
   --btn-fire-bg: #FF6B9D;
   --btn-fire-color: #FFFFFF;
@@ -217,6 +236,13 @@ body[data-brand="test"] {
   --modal-input-bg: #FFFFFF;
   --modal-input-border: 1.5px solid #2D3047;
   --modal-input-color: #2D3047;
+  --alogo-bg: transparent;
+  --alogo-border: none;
+  --alogo-shadow: none;
+
+  --stat-border: 2px solid #2D3047;
+  --stat-shadow: none;
+  --stat-num-color: #2D3047;
 
   --chat-head-bg: #2D3047;
   --chat-head-color: #FFFFFF;
@@ -232,4 +258,5 @@ body[data-brand="test"] {
   --chat-send-border: 2px solid #2D3047;
   --chat-send-color: #FFFFFF;
 }
+
 /* jscpd:ignore-end */
