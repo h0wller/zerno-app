@@ -3095,32 +3095,31 @@ html.is-tg-app [id*="pwaInstall"]{
 /* ── PTR-PATCH v3: Pull-to-refresh индикатор ── */
 .ptr-loader{
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
   left: 50%;
   margin-left: -20px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
   background: #FFFFFF;
-  box-shadow: 0 4px 16px rgba(18, 58, 107, 0.22);
+  box-shadow: 0 4px 16px rgba(18, 58, 107, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10005;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-20px) scale(0.65);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(-20px) scale(0.6);
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .ptr-loader.visible{
   opacity: 1;
-  transform: translateY(44px) scale(1);
-  animation: ptr-spin-in 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+  transform: translateY(50px) scale(1);
 }
 .ptr-spinner{
-  width: 24px;
-  height: 24px;
-  border: 3px solid rgba(18, 58, 107, 0.2);
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(18, 58, 107, 0.2);
   border-top-color: var(--flame, #123A6B);
   border-radius: 50%;
   animation: ptr-spin 0.8s linear infinite;
