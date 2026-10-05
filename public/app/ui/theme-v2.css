@@ -958,9 +958,9 @@ label.chk{
 }
 @media (hover: hover) and (pointer: fine){
   .chat-fab:hover,
-  body[data-brand] .chat-fab:hover{
+  html body[data-brand] .chat-fab:hover{
     transform: scale(1.08) rotate(-6deg);
-    background: var(--chat-fab-hover-bg, #3E8FD0) !important;
+    background: var(--chat-fab-hover-bg, #3E8FD0);
   }
 }
 .chat-fab:active,
