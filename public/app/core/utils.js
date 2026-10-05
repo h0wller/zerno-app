@@ -56,4 +56,16 @@
  };
 
   Object.assign(window, { $, clone, esc, fmt, fmtTs, ph10, fmtPhone, bindMask, hoursNow, hashStr, rng, fmtMulti });
+  function getKaliningradTime() {
+    var d = new Date();
+    var h = (d.getUTCHours() + 2) % 24;
+    return { hour: h, minute: d.getUTCMinutes() };
+  }
+  function isDeliveryServiceOpen() {
+    var t = getKaliningradTime();
+    var min = t.hour * 60 + t.minute;
+    return min >= 660 && min < 1320;
+  }
+  window.getKaliningradTime = getKaliningradTime;
+  window.isDeliveryServiceOpen = isDeliveryServiceOpen;
 })();

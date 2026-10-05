@@ -28,8 +28,7 @@ npm run audit        # всё вместе + pretest/css-audit
 
 Пять файлов подключены отдельными `<script defer>` в `public/index.html`
 и **не входят в граф импортов `main.js`**:
-
-- `public/app/core/ptr.js`
+ 
 - `public/app/core/address-dict.js`
 - `public/app/core/address-autocomplete.js`
 - `public/app/core/address-book.js`

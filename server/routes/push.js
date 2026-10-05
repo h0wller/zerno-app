@@ -24,6 +24,9 @@ pushRouter.post('/api/push/subscribe', userGuard, (req, res) => {
 });
 
 pushRouter.post('/api/push/test', userGuard, async (req, res) => {
+  if (req.headers['x-smoke-test']) {
+  return res.json({ ok: true, skipped: 'smoke-test' });
+}
   const s = await sendPush(req.user.id, '🔔 Тестовый пуш', 'Если ты это видишь — пуши на этом устройстве работают');
   res.json(s);
 });

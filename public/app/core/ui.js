@@ -102,9 +102,8 @@
     const pad = (n) => String(n).padStart(2, '0');
     const formatted = pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + ' в ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
 
-    const text = 'Меню актуально на <b>' + formatted + '</b>';
-    if (u) u.innerHTML = text;
-    if (ud) ud.innerHTML = text;
+    if (u) u.textContent = formatted;
+    if (ud) ud.textContent = formatted;
   }
 
   /* ── Экспорт в глобальную область видимости (контракт F1.3) ── */

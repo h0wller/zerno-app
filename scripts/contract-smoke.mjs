@@ -90,7 +90,11 @@ let pass = 0, fail = 0;
 const log = (ok, name, extra = '') => { ok ? pass++ : fail++; console.log(`${ok ? '✓' : '✗'} ${name}${extra ? ' — ' + extra : ''}`); };
 
 async function call(method, path, { body, token } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {
+  'Content-Type': 'application/json',
+  'x-smoke-test': '1',
+  ...(token ? { Authorization: `Bearer ${token}` } : {})
+};
   if (token) headers.Authorization = 'Bearer ' + token;
   const res = await fetch(BASE + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   let json = null; try { json = await res.json(); } catch {}

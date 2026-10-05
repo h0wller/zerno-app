@@ -1,7 +1,7 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v318';
-const MEDIA_CACHE = 'zerno-media-v13';
-const API_CACHE = 'zerno-api-v7';
+const STATIC_CACHE = 'zerno-static-v329';
+const MEDIA_CACHE = 'zerno-media-v14';
+const API_CACHE = 'zerno-api-v8';
 
 const STATIC_ASSETS = [
   '/',
@@ -35,7 +35,6 @@ const STATIC_ASSETS = [
   '/app/core/chat-state.js',
   '/app/core/push.js',
   '/app/core/deeplink.js',
-  '/app/core/ptr.js',
   '/app/core/address-dict.js',
   '/app/core/address-autocomplete.js',
   '/app/core/preorder-timer.js',

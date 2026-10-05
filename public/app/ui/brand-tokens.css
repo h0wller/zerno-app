@@ -23,7 +23,8 @@ body[data-brand="coffee"] {
   --tag-bg: #1B4F8A;
   --tag-hit-bg: #1B5E8A;
   --price-color: #123A6B;
-
+  --card-hover-border: #3E8FD0;
+  --card-hover-shadow: 0 10px 28px rgba(18, 58, 107, 0.15);
   /* Кнопки действий */
   --btn-fire-bg: var(--flame, #123A6B);
   --btn-fire-color: #FFFFFF;
@@ -131,7 +132,8 @@ body[data-brand="delivery"] {
   --tag-bg: var(--flame, #C03B2A);
   --tag-hit-bg: var(--flame-d, #8E3716);
   --price-color: var(--flame, #C03B2A);
-
+  --card-hover-border: var(--fr-choc, #3A2A1C);
+  --card-hover-shadow: 4px 4px 0 var(--fr-choc, #3A2A1C);
   /* Кнопки «Добавить» и «Оформить заказ» */
   --btn-fire-bg: var(--flame, #C03B2A);
   --btn-fire-color: #FFFFFF;
@@ -213,7 +215,8 @@ body[data-brand="test"] {
   --flame: #FF6B9D;
   --esp: #2D3047;
   --paper: #FFF5F7;
-
+  --card-hover-border: #2D3047;
+  --card-hover-shadow: 4px 4px 0 #2D3047;
   --card-bg: #FFF5F7;
   --card-border: 2px solid #2D3047;
   --card-shadow: 3px 3px 0 #2D3047;

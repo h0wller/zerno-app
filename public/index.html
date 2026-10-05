@@ -292,7 +292,7 @@ if(b==='delivery'){
 <style id="lcp-inline-css">/* LCP-INLINE v1: критичный CSS для <h1> — рендер сразу, без ожидания views.js */
 html[data-brand="coffee"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif;color:#3a2a1c;}
 html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif;color:#3a2a1c;}
-.menu-head{margin-left:calc(-1 * (72px + 8px));width:calc(100% + 72px + 8px);}
+.menu-head{margin-left:0;width:100%;}
 .mh-top{display:flex;align-items:center;gap:12px;}
 .mh-top h1{margin:0;font-size:clamp(20px,3vw,32px);}
 </style>
@@ -681,12 +681,19 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
               <h1>Пятница <em>— доставка пиццы и роллов</em></h1>
               <h2 class="vh">Разделы меню</h2>
               <div class="upd">
-                Работаем ежедневно 11:00–22:00 · доставка ~45 мин
+                Обновлено: <b id="updWhenD">-</b>
+              </div>
+            </div>
+            <div class="mh-right">
+              <div class="search">
+                🔍
+                <input id="dSearch" name="dSearch" placeholder="Найти в меню…" />
               </div>
             </div>
           </div>
         </div>
         <div id="deliveryBanner"></div>
+        <div id="deliverySubFilter" class="subfilter-bar" hidden></div>
         <div class="rail" id="deliveryRail"></div>
         <div class="grid" id="deliveryGrid"></div>
       </div>
@@ -698,10 +705,9 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
               <h1>Меню <em>на берегу моря</em></h1>
               <h2 class="vh">Разделы меню</h2>
               <div class="upd">
-                Обновлено <b id="updWhen">—</b><span class="adminBadge" id="adminBadge" hidden>режим
-                  администратора</span>
+                Обновлено: <b id="updWhen">-</b><span class="adminBadge" id="adminBadge" hidden>режим администратора</span>
               </div>
-            </div>
+              </div>
             <div class="mh-right">
               <div class="search">
                 🔍
@@ -1326,79 +1332,84 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
     <span class="cf-total">0 ₽</span>
   </button>
   <div class="cartPanel" id="cartPanel">
-    <h3 style="margin-bottom: 16px">Корзина</h3>
-    <div id="cartItems"></div>
-    <div style="
-          margin-top: 16px;
-          padding-top: 12px;
-          border-top: 2px solid var(--line);
-        ">
-      <div style="
-            display: flex;
-            justify-content: space-between;
-            font-size: 15px;
-            font-weight: 700;
-          ">
-        <span>Итого:</span>
-        <span id="cartTotal">0 ₽</span>
+    <!-- 1. Закреплённая шапка -->
+    <div class="cart-panel-header" id="cartPanelHeader">
+      <div class="cph-title-wrap">
+        <h3>Корзина</h3>
+        <span id="cartHeadCount" class="cph-count"></span>
       </div>
-      <div id="cartDiscount" style="color: var(--green); font-size: 13px; margin-top: 4px"></div>
-      <div id="cartFee" style="color: var(--soft); font-size: 13px; margin-top: 2px"></div>
-      <div id="cartGifts" style="color: var(--green); font-size: 13px; margin-top: 2px"></div>
-      <div class="findrow" style="margin-top: 10px">
-        <label for="cartPromo" class="sr-only">Промокод</label>
-        <input id="cartPromo" name="cartPromo" placeholder="Промокод" style="text-transform: uppercase" />
-        <button class="btn ghost" id="cartPromoBtn">Применить</button>
-      </div>
-      <div id="cartPromoLine" style="color: var(--green); font-size: 13.5px; margin-top: 2px"></div>
+      <button type="button" class="cart-top-close" id="cartTopClose" aria-label="Закрыть корзину">✕</button>
     </div>
 
-    <div class="checkoutForm">
-      <label for="checkoutMethod">Способ получения
-        <select id="checkoutMethod" name="checkoutMethod">
-          <option value="delivery">Доставка</option>
-          <option value="pickup">Самовывоз (−10%)</option>
-        </select>
-      </label>
+    <!-- 2. Скроллируемая область -->
+    <div class="cart-scroll-body" id="cartScrollBody">
+      <div id="cartAddons"></div>
+      <div id="cartItems"></div>
 
-      <div id="checkoutDeliveryGroup" style="display:contents">
-        <label for="checkoutPlace" id="checkoutPlaceLabel">Населённый пункт
-          <select id="checkoutPlace" name="checkoutPlace"></select>
+      <div class="checkoutForm">
+        <label for="checkoutMethod">Способ получения
+          <select id="checkoutMethod" name="checkoutMethod">
+            <option value="delivery">Доставка</option>
+            <option value="pickup">Самовывоз (−10%)</option>
+          </select>
         </label>
 
-        <label for="checkoutStreet" id="checkoutStreetLabel">Улица
-          <input type="text" id="checkoutStreet" name="checkoutStreet" list="streetSuggestions"
-            placeholder="Начните вводить улицу..." autocomplete="off">
-        </label>
-        <datalist id="streetSuggestions"></datalist>
+        <div id="checkoutDeliveryGroup" style="display:contents">
+          <label for="checkoutPlace" id="checkoutPlaceLabel">Населённый пункт
+            <select id="checkoutPlace" name="checkoutPlace"></select>
+          </label>
 
-        <label for="checkoutHouse" id="checkoutHouseLabel">Дом, корпус, квартира
-          <input type="text" id="checkoutHouse" name="checkoutHouse" placeholder="10, кв. 5">
+          <label for="checkoutStreet" id="checkoutStreetLabel">Улица
+            <input type="text" id="checkoutStreet" name="checkoutStreet" list="streetSuggestions"
+              placeholder="Начните вводить улицу..." autocomplete="off">
+          </label>
+          <datalist id="streetSuggestions"></datalist>
+
+          <label for="checkoutHouse" id="checkoutHouseLabel">Дом, корпус, квартира
+            <input type="text" id="checkoutHouse" name="checkoutHouse" placeholder="10, кв. 5">
+          </label>
+        </div>
+
+        <label for="checkoutSlot">Когда привезти
+          <select id="checkoutSlot" name="checkoutSlot">
+            <option value="asap">Как можно скорее (~45 мин)</option>
+          </select>
+        </label>
+        <label for="checkoutPay">Оплата
+          <select id="checkoutPay" name="checkoutPay">
+            <option value="cash">Наличные при получении</option>
+            <option value="card">Картой при получении</option>
+          </select>
+        </label>
+        <label for="checkoutComment">Комментарий
+          <textarea id="checkoutComment" name="checkoutComment" rows="2" placeholder="Домофон, подъезд, пожелания…"></textarea>
         </label>
       </div>
 
-      <label for="checkoutSlot">Когда привезти
-        <select id="checkoutSlot" name="checkoutSlot">
-          <option value="asap">Как можно скорее (~45 мин)</option>
-        </select>
-      </label>
-      <label for="checkoutPay">Оплата
-        <select id="checkoutPay" name="checkoutPay">
-          <option value="cash">Наличные при получении</option>
-          <option value="card">Картой при получении</option>
-        </select>
-      </label>
-      <label for="checkoutComment">Комментарий
-        <textarea id="checkoutComment" name="checkoutComment" placeholder="Домофон, подъезд, пожелания…"></textarea>
-      </label>
+      <div class="cart-promo-section">
+        <div class="findrow">
+          <label for="cartPromo" class="sr-only">Промокод</label>
+          <input id="cartPromo" name="cartPromo" placeholder="ПРОМОКОД" style="text-transform: uppercase" />
+          <button class="btn ghost" id="cartPromoBtn">Применить</button>
+        </div>
+        <div id="cartPromoLine" class="cart-promo-line"></div>
+      </div>
+      <div id="cartGifts" class="cart-gifts-line"></div>
     </div>
 
-    <button class="cta" id="checkoutBtn" style="margin-top: 16px">
-      Оформить заказ
-    </button>
-    <button class="btn ghost" id="cartClose" style="margin-top: 8px; width: 100%">
-      Закрыть
-    </button>
+    <!-- 3. Закреплённый подвал (всегда перед глазами) -->
+    <div class="cart-footer-bar" id="cartFooterBar">
+      <div class="cart-summary-lines">
+        <div id="cartDiscount" class="csl-row discount"></div>
+        <div id="cartFee" class="csl-row fee"></div>
+        <div class="csl-total-row">
+          <span>Итого к оплате:</span>
+          <span id="cartTotal">0 ₽</span>
+        </div>
+      </div>
+      <button class="cta" id="checkoutBtn">Оформить заказ</button>
+      <button class="btn ghost cart-continue-btn" id="cartClose">Продолжить покупки</button>
+    </div>
   </div>
   <script type="module" src="./app/main.js"></script>
   <div id="installBanner" hidden style="

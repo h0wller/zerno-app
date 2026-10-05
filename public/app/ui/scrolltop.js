@@ -1,63 +1,14 @@
-/* public/app/ui/scrolltop.js — синхронизация положения рейла и бонусов */
-
-/* [fix-all v5] Единственный владелец positioning рейла.
-   — sticky-top = центр экрана (срабатывает, когда natural-top уходит вверх).
-   — margin-top  = верх ВИДИМОЙ сетки (#grid либо #deliveryGrid).
-   На y=0 rail визуально совпадает с верхом первой карточки,
-   при скролле — фиксируется по центру. Без условий на y. */
+/* public/app/ui/scrolltop.js — сброс легаси-отступов и кнопка «Наверх» */
 function alignRailWithCard() {
-  var rail = visibleRail();
-  if (!rail) return;
-
-  if (window.innerWidth >= 1181) {
-    rail.style.top = '';
-    rail.style.marginTop = '';
-    return;
-  }
-
-  var railH = rail.offsetHeight || 0;
-  rail.style.top = Math.max(8, Math.round((window.innerHeight - railH) / 2)) + 'px';
-
-  var wrap = rail.parentElement;
-  var grid = visibleGrid(rail);
-  if (!wrap || !grid) { rail.style.marginTop = ''; return; }
-
-  var wrapStyle = window.getComputedStyle(wrap);
-  var wrapInnerTop = wrap.getBoundingClientRect().top + (parseFloat(wrapStyle.paddingTop) || 0);
-  var gridTop = grid.getBoundingClientRect().top;
-  rail.style.marginTop = Math.max(0, Math.round(gridTop - wrapInnerTop)) + 'px';
-}
-
-function visibleRail() {
-  var ids = ['rail', 'deliveryRail'];
-  for (var i = 0; i < ids.length; i++) {
-    var el = document.getElementById(ids[i]);
-    if (!el) continue;
-    if (el.hidden) continue;
-    if (window.getComputedStyle(el).display === 'none') continue;
-    return el;
-  }
-  return null;
-}
-
-function visibleGrid(rail) {
-  function ok(el) {
-    if (!el) return false;
-    if (el.hidden) return false;
-    if (el.closest && el.closest('[hidden]')) return false;
-    if (window.getComputedStyle(el).display === 'none') return false;
-    return true;
-  }
-  var scope = (rail && rail.closest && rail.closest('section')) || document;
-  var g = scope.querySelector('#grid');           if (ok(g)) return g;
-  g = scope.querySelector('#deliveryGrid');       if (ok(g)) return g;
-  g = document.getElementById('grid');            if (ok(g)) return g;
-  g = document.getElementById('deliveryGrid');     if (ok(g)) return g;
-  return null;
+  var r1 = document.getElementById('rail');
+  var r2 = document.getElementById('deliveryRail');
+  var p = document.getElementById('panel');
+  if (r1) { r1.style.marginTop = ''; r1.style.top = ''; }
+  if (r2) { r2.style.marginTop = ''; r2.style.top = ''; }
+  if (p) { p.style.marginTop = ''; }
 }
 
 function alignMbonusWithRail() {
-  /* [fix-all v5] Отключено: mbonusBtn выравнивается гридом в F5.62. */
   var mb = document.getElementById('mbonusBtn');
   if (!mb) return;
   mb.style.left = '';
@@ -70,27 +21,6 @@ function alignMbonusWithRail() {
 window.alignRailWithCard = alignRailWithCard;
 window.alignMbonusWithRail = alignMbonusWithRail;
 
-(function railScrollLoop() {
-  var raf = false;
-  function tick() {
-    if (raf) return;
-    raf = true;
-    requestAnimationFrame(function () { raf = false; alignRailWithCard(); });
-  }
-  window.addEventListener('scroll', tick, { passive: true });
-  window.addEventListener('resize', tick);
-  window.addEventListener('orientationchange', tick);
-  if (typeof MutationObserver !== 'undefined' && document.body) {
-    var mo = new MutationObserver(tick);
-    ['#menuView', '#deliveryView', '#grid', '#deliveryGrid'].forEach(function (sel) {
-      var el = document.querySelector(sel);
-      if (el) mo.observe(el, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
-    });
-  }
-  setTimeout(alignRailWithCard, 40);
-  setTimeout(alignRailWithCard, 250);
-  setTimeout(alignRailWithCard, 800);
-})();
 (function () {
   'use strict';
   var css = document.createElement('style');
@@ -131,10 +61,7 @@ window.alignMbonusWithRail = alignMbonusWithRail;
   }
 
   window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', function () {
-    onScroll();
-    alignRailWithCard();
-  });
+  window.addEventListener('resize', onScroll);
   if (typeof MutationObserver !== 'undefined') {
     var cp = document.getElementById('chatPanel');
     if (cp) new MutationObserver(onScroll).observe(cp, { attributes: true, attributeFilter: ['class'] });
@@ -144,10 +71,7 @@ window.alignMbonusWithRail = alignMbonusWithRail;
   });
 
   update();
-  setTimeout(alignRailWithCard, 40);
-  setTimeout(alignRailWithCard, 250);
 })();
-
 
 /* [fix-all v6] topbar-right wrap-toggle */
 (function topbarRightToggle() {

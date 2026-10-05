@@ -247,6 +247,9 @@ var rules = [
 '[data-brand="delivery"] #deliveryView .menu-head h1 { font: 900 clamp(22px, 3.2vw, 36px)/1.15 "Unbounded", sans-serif !important; color: #3a2a1c !important; }',
 '[data-brand="delivery"] #deliveryView .menu-head h1 em { color: #3a2a1c !important; background: linear-gradient(transparent 62%, #fad8c3 62%); }',
 '[data-brand="delivery"] #deliveryView .search { background: #efe6d8 !important; border: 2px solid #3a2a1c !important; border-radius: 12px !important; box-shadow: 3px 3px 0 #3a2a1c !important; }',
+/* Добавь строку в массив rules: */
+'[data-brand="delivery"] .subchip{border:2px solid var(--fr-tan);background:var(--fr-paper);color:var(--fr-choc)}',
+'[data-brand="delivery"] .subchip.on{background:var(--flame);border-color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff}',
 /* ── F5.14 P4: маркетинговый тикер не нужен персоналу ── */
 '@media(min-width:0){body.is-cashier .ticker,body.is-admin .ticker{visibility:hidden}}',
 ];
@@ -293,7 +296,7 @@ if (cp && ci && !document.getElementById('cartAddons')) {
 var d = document.createElement('div');
 d.id = 'cartAddons';
 d.style.margin = '0 0 10px';
-cp.insertBefore(d, ci);
+(ci.parentNode || cp).insertBefore(d, ci);
 }
 })();
 /* ========== 3. Виды и режимы ========== */
@@ -641,32 +644,15 @@ window.addEventListener('orientationchange', function () { setTimeout(window.__s
 /* LATE-TIMERS v1: fonts.ready → DOMContentLoaded */
 document.addEventListener("DOMContentLoaded", function () { window.__syncHeaderCluster(); });
 
-/* ── Ф5.38: fitSearch — мобайл-поиск во всю ширину, cascade-immune (inline) ── */
+/* ── Ф5.38: fitSearch — сброс принудительной 100% ширины поиска ── */
 (function () {
   function fitSearch() {
-    var mhRights = document.querySelectorAll('.mh-top .mh-right');
+    var mhRights = document.querySelectorAll('.mh-top .mh-right, .menu-head .mh-right');
     for (var i = 0; i < mhRights.length; i++) {
-      if (window.innerWidth <= 690) {
-        mhRights[i].style.setProperty('width', '100%', 'important');
-        mhRights[i].style.setProperty('max-width', '100%', 'important');
-      } else {
-        mhRights[i].style.width = '';
-        mhRights[i].style.maxWidth = '';
-      }
+      mhRights[i].style.width = '';
+      mhRights[i].style.maxWidth = '';
     }
   }
   window.__fitSearch = fitSearch;
-  window.addEventListener('resize', fitSearch);
-  window.addEventListener('orientationchange', fitSearch);
-  setTimeout(fitSearch, 0);
-  setTimeout(fitSearch, 350);
-  setTimeout(fitSearch, 1200);
-  if (typeof window.__fitSearch === 'function') {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', window.__fitSearch);
-    } else {
-      window.__fitSearch();
-    }
-  }
 })();
 })();

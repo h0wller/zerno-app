@@ -1,9 +1,3 @@
-function getKaliningradTime() {
-  var d = new Date();
-  var h = (d.getUTCHours() + 2) % 24;
-  return { hour: h, minute: d.getUTCMinutes() };
-}
-
 function isDeliveryServiceOpen() {
   var t = getKaliningradTime();
   var min = t.hour * 60 + t.minute;
