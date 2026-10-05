@@ -891,15 +891,16 @@ label.chk{
   width: min(400px, 100%)
 }
 .alogo{
-  width: 66px;
-  height: 66px;
+  width: 64px;
+  height: 64px;
   border-radius: 20px;
-  background: #123A6B;
-  display: grid;
-  place-items: center;
+  background: var(--alogo-bg, transparent);
+  border: var(--alogo-border, none);
+  box-shadow: var(--alogo-shadow, none);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0 auto 16px;
-  box-shadow: 0 12px 26px -8px rgba(18, 58, 107, .6);
-  animation: stampin .6s cubic-bezier(.2, 1.6, .4, 1)
 }
 .alt{
   font-size: 12.5px;
@@ -1275,19 +1276,6 @@ label.chk{
 }
 .grid{
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-}
-.card{
-  background: #ffffff;
-  border: 1.5px solid rgba(62, 143, 208, 0.25);
-  border-radius: 18px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-  animation: pop 0.5s backwards;
-  animation-delay: var(--d);
-  position: relative;
-  box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
 }
 @keyframes pop {
   0% {
@@ -4399,3 +4387,22 @@ div.menu-head div.mh-top {
   image-rendering: -webkit-optimize-contrast;
 }
 /* ── END STABILIZATION ── */
+/* Мобильная кнопка бонусов: всегда плавающая пилюля в левом нижнем углу */
+@media (max-width: 820px) {
+  #mbonusBtn,
+  .mbonus,
+  body #mbonusBtn,
+  body[data-brand] .topbar #mbonusBtn {
+    position: fixed !important;
+    left: 12px !important;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    width: 56px !important;
+    min-width: 56px !important;
+    max-width: 56px !important;
+    height: 56px !important;
+    margin: 0 !important;
+    z-index: 95 !important;
+    transform: none !important;
+    display: flex;
+  }
+}
