@@ -718,7 +718,7 @@ body.in-tg .topbar{
   box-shadow: var(--modal-shadow, 0 25px 60px rgba(18, 58, 107, .2));
   transform: translateY(20px) scale(.97);
   opacity: 0;
-  transition: opacity .35s cubic-bezier(.2, 1, .3, 1), transform .35s cubic-bezier(.2, 1, .3, 1)
+  transition: opacity .35s cubic-bezier(.2, 1, .3, 1), transform .35s cubic-bezier(.2, 1, .3, 1);
 }
 .modal.show .modal-card{
   transform: none;
@@ -740,10 +740,10 @@ body.in-tg .topbar{
   transition: .2s;
   z-index: 2;
   display: grid;
-  place-items: center
+  place-items: center;
 }
 .mclose:hover{
-  transform: rotate(90deg) scale(1.1)
+  transform: rotate(90deg) scale(1.1);
 }
 .modal-card h3{
   font: var(--modal-title-font, 400 24px Prata, serif);
@@ -1131,8 +1131,9 @@ label.chk{
   color: var(--chat-msg-me-color, #fff);
   border: var(--chat-msg-me-border, none);
   box-shadow: var(--chat-msg-me-shadow, none);
-  border-bottom-right-radius: 5px
+  border-bottom-right-radius: 5px;
 }
+
 .chatHint{
   display: inline-block;
   background: var(--chat-hint-bg, #EDF2F6);
@@ -1153,7 +1154,7 @@ label.chk{
   display: grid;
   place-items: center;
   transition: .2s;
-  flex-shrink: 0
+  flex-shrink: 0;
 }
 .chat-h button:hover{
   color: #fff
@@ -1191,8 +1192,10 @@ label.chk{
 }
 .msg.me{
   align-self: flex-end;
-  background: #123A6B;
-  color: #fff;
+  background: var(--chat-msg-me-bg, #123A6B);
+  color: var(--chat-msg-me-color, #fff);
+  border: var(--chat-msg-me-border, none);
+  box-shadow: var(--chat-msg-me-shadow, none);
   border-bottom-right-radius: 5px
 }
 .msg.staff{
@@ -1252,7 +1255,8 @@ label.chk{
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #123A6B;
+  background: var(--chat-send-bg, #123A6B);
+  border: var(--chat-send-border, none);
   display: grid;
   place-items: center;
   transition: .2s;
