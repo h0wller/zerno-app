@@ -46,6 +46,7 @@ var ov0 = document.getElementById('supportChooseOverlay');
 if (ov0) { ov0.style.display = 'flex'; ov0.style.zIndex = '10002'; }
 }
 /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
+var css = document.createElement('style');
 var rules = [
  ' /* ── F6.5: Брендовый теплый фон стафф-режимов доставки и терракотовые цены ── */ html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView {   background: var(--fr-paper, #F6EEE1) !important; } html[data-brand="delivery"] .cash-card, html[data-brand="delivery"] #ordersView .card, html[data-brand="delivery"] #ordersView article {   background: #FFFDF9 !important;   border-color: #E8DCCB !important; } html[data-brand="delivery"] .price, html[data-brand="delivery"] .single-meta .price, html[data-brand="delivery"] #itemZoomOverlay b + span {   color: var(--flame, #C03B2A) !important; } ',
  /* --- Layout: сетка wrap + safe-area --- */
@@ -142,8 +143,7 @@ var rules = [
  '@media(min-width:560px){#brandSplash .spBtns,#brandSplashStatic .spBtns{grid-template-columns:1fr 1fr}}',
  '#brandSplash,#brandSplashStatic{background:#FFFFFF}',
  '#brandSplash .spBtn .em,#brandSplashStatic .spBtn .em{display:block;font-size:30px;line-height:1;margin-bottom:10px}',
- '#brandSplash .spBtn .bt,#brandSplashStatic .spBtn .bt{display:block;font-weight:700;font-family:"Unbounded",sans-serif}'
-];
+ '#brandSplash .spBtn .bt,#brandSplashStatic .spBtn .bt{display:block;font-weight:700;font-family:"Unbounded",sans-serif}',
 /* --- Чат --- */
 '#chatPanel [class="chip"],#chatPanel #chips,#chatPanel .chips{display:none}',
 '#supportChooseOverlay .ctxPick,#chatPanel .ctxPick{display:flex;gap:8px;margin:8px 0}',
@@ -238,7 +238,6 @@ var rules = [
 /* ── F5.13: бренд/layout из растворённого большого <style> ── */
 '[data-brand="delivery"] body { background-color: #f3ede6 !important; }',
 '[data-brand="delivery"] .topbar { background: #c99e6e !important; color: #3a2a1c !important; border-bottom: 3px solid #3a2a1c !important; }',
-'[data-brand="delivery"] .topbar .brand .mark img, [data-brand="delivery"] .topbar .brand .mark svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; }',
 '@media (max-width: 600px) { .topbar { padding: 8px 12px !important; gap: 6px; } .topbar .brand { font-size: 18px !important; } .topbar .brand small { font-size: 10px !important; } }',
 '[data-brand="coffee"] .topbar .brand .mark img, [data-brand="coffee"] .topbar .brand .mark svg { width: 100% !important; max-width: 100% !important; }',
 '[data-brand="delivery"] .brand b { font: 900 18px "Unbounded", sans-serif !important; color: #3a2a1c !important; }',
