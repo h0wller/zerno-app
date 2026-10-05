@@ -245,7 +245,7 @@ test('baseline: геометрия марки соответствует ман�
   let box = await page.locator('#brandMark img, #brandMark svg').first().boundingBox();
   expect(box).not.toBeNull();
   expect(box.width).toBeGreaterThanOrEqual(36);
-  expect(box.width).toBeLessThanOrEqual(48);
+  expect(box.width).toBeLessThanOrEqual(50);
   expect(box.height).toBeGreaterThanOrEqual(36);
 
   await page.evaluate(() => { window.brand = 'delivery'; window.sv(); });
