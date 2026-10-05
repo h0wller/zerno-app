@@ -77,7 +77,7 @@ if (badLines.length) {
 
 /* ── ПРАВИЛО 5: CSS в theme-v2.css парсится без ошибок (базовая проверка баланса скобок) ── */
 let depth = 0;
-for (const ch of THEME) {
+for (const ch of THEME_CSS) { // ✅ Исправлено: игнорируем скобки внутри комментариев
   if (ch === '{') depth++;
   if (ch === '}') depth--;
   if (depth < 0) break;
