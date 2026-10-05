@@ -36,23 +36,26 @@
     return loader;
   }
 
-  function showLoader() {
+    function showLoader() {
     var loader = getLoader();
-    /* PTR-PATCH v3: сбрасываем инлайн-трансформ, чтобы не складывался с top: 16px */
-    loader.style.transform = '';
+    loader.style.opacity = '1';
+    loader.style.transform = 'translateY(44px) scale(1)';
     loader.classList.add('visible');
   }
 
   function hideLoader() {
     var loader = getLoader();
     loader.classList.remove('visible');
-    loader.style.transform = '';
+    loader.style.opacity = '0';
+    loader.style.transform = 'translateY(-20px) scale(0.65)';
   }
 
   function setLoaderPosition(offsetY) {
     var loader = getLoader();
-    var translateY = Math.min(offsetY * RESISTANCE, PULL_THRESHOLD);
-    loader.style.transform = 'translateY(' + translateY + 'px)';
+    var progress = Math.min(offsetY / PULL_THRESHOLD, 1);
+    var translateY = -20 + (progress * 64);
+    loader.style.opacity = String(Math.max(0.1, progress));
+    loader.style.transform = 'translateY(' + translateY + 'px) scale(' + (0.65 + 0.35 * progress) + ')';
   }
 
   function findRefreshFn() {
