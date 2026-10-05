@@ -150,7 +150,6 @@ export default [
   // 6. Классические defer-скрипты: не трогаем аргументы обработчиков событий
   {
     files: [
-      'public/app/core/ptr.js',
       'public/app/core/address-dict.js',
       'public/app/core/address-autocomplete.js',
       'public/app/core/address-book.js',
