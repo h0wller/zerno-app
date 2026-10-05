@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v305';
+const STATIC_CACHE = 'zerno-static-v306';
 const MEDIA_CACHE = 'zerno-media-v13';
 const API_CACHE = 'zerno-api-v7';
 
