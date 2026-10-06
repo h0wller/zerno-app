@@ -1,4 +1,4 @@
-/* scripts/clean-css-dups.mjs — удаление устаревших правил корзины из theme-v2.css */
+/* scripts/optimize-dishes.mjs — оптимизация изображений блюд */
 import fs from 'node:fs';
 
 const file = 'public/app/ui/theme-v2.css';
