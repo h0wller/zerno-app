@@ -72,19 +72,15 @@ function getSafeAddonType(item) {
   var n = ((item.name || '') + ' ' + (item.desc || '')).toLowerCase();
   var c = (item.cat || '').toLowerCase();
 
-  // Напитки — для чекаута в корзине
   if (c === 'drinks' || /напиток|сок|кола|морс|вода|чай|лимонад|добрый/i.test(n)) return 'drinks';
 
-  // К роллам: имбирь, васаби, соевый соус, палочки
   if (/васаби|имбир|палочк|к роллам/i.test(n)) return 'rolls';
   if (/соев/i.test(n)) return 'rolls';
 
-  // Соусы (начинаются на слово «соус» или классические названия)
   if (/^соус|соус красный|соус розовый|соус чесночный|соус белый|сырный соус|кетчуп|барбекю|майонез|тар-тар|кисло-сладк/i.test(n)) {
     return 'sauces';
   }
 
-  // К пицце: топпинги, сыры, мясо, овощи, бортики
   if (/ветчин|пепперони|чеддер|перец|лук|огурец|халапень|куриц|шампиньон|гриб|ананас|моцарелл|тунец|фарш|мяс|помидор|томат|борт|сыр|к пицце/i.test(n)) {
     return 'pizza';
   }
@@ -216,7 +212,6 @@ $('#deliveryRail').addEventListener('click', e => {
     }
     requestAnimationFrame(() => {
       window.renderDeliveryMenu();
-      // На ПК и мобильных плавно скроллим к шапке витрины при переключении раздела
       const grid = document.getElementById('deliveryGrid');
       if (grid) {
         const topOffset = grid.getBoundingClientRect().top + window.scrollY - 110;
@@ -338,7 +333,7 @@ document.addEventListener('click', function (e) {
   }
 });
 
-/* ── состояния карточек: стоп-лист + кнопка «Добавить» ── */
+/* ── Состояния карточек: поддержка Retina и авто-зум ── */
 function patchDeliveryCards(list) {
   const cards = $('#deliveryGrid').querySelectorAll('.card');
   const editing = (typeof editMode !== 'undefined' && editMode);
@@ -350,15 +345,19 @@ function patchDeliveryCards(list) {
       let sb = media.querySelector('.stopbadge');
       if (!p.on && !sb) { sb = document.createElement('span'); sb.className = 'stopbadge'; sb.textContent = 'СТОП'; media.appendChild(sb); }
       if (p.on && sb) sb.remove();
+
       if (p.img && !media.querySelector('img')) {
         const em = media.querySelector('.em'); if (em) em.remove();
         const im = document.createElement('img');
         im.src = p.img;
         im.alt = p.name || '';
         im.loading = (i === 0) ? 'eager' : 'lazy';
+        im.decoding = 'async';
         if (i === 0) { try { im.fetchPriority = 'high'; } catch (e) {} }
         im.dataset.zoom = 'true';
-        im.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in';
+        // Автоматически подменяем -card.webp на -zoom.webp для модалки
+        im.dataset.zoomSrc = p.img.replace('-card.webp', '-zoom.webp');
+        im.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in;';
         media.appendChild(im);
       }
     }
@@ -399,7 +398,7 @@ function syncAddButtons() {
 }
 
 $('#deliveryGrid').addEventListener('click', e => {
-  // Zoom фото
+  // Полноэкранный Zoom фото с высоким разрешением
   const zoomImg = e.target.closest('[data-zoom], .media img');
   if (zoomImg) {
     e.preventDefault();
@@ -408,8 +407,9 @@ $('#deliveryGrid').addEventListener('click', e => {
     const card = zoomImg.closest('.card, article');
     const title = card ? (card.querySelector('h3') || {}).textContent : '';
     const price = card ? (card.querySelector('.price') || {}).textContent : '';
+    const fullSrc = zoomImg.dataset.zoomSrc || zoomImg.src;
     if (typeof window.openZoom === 'function') {
-      window.openZoom(zoomImg.src, title, price);
+      window.openZoom(fullSrc, title, price);
     }
     return;
   }
@@ -511,14 +511,13 @@ $('#deliveryGrid').addEventListener('click', e => {
     
     localStorage.setItem('zt_cart', JSON.stringify(cart));
     
-    /* Обратная связь: CSS-вспышка без смены текста */
     if (typeof syncAddButtons === 'function') syncAddButtons();
     addBtn.classList.add('added');
     if (window.TgUx) window.TgUx.haptic('medium');
     setTimeout(() => addBtn.classList.remove('added'), 700);
     
     if (typeof updateCartFab === 'function') updateCartFab();
-    if (typeof window.renderCart === 'function') window.renderCart(); // ← ФИКС БАГА: мгновенный рендер в корзине
+    if (typeof window.renderCart === 'function') window.renderCart();
     if (typeof toast === 'function') toast('Добавлено в корзину', '🛒');
   }
 });
@@ -776,7 +775,7 @@ window.setupSlotDisplayToggle = setupSlotDisplayToggle;
 window.promoDisc = promoDisc;
 window.renderCart = renderCart;
 
-/* ── СЛОЙ 3: изолированные стили доставки (без дублирования theme-v2.css) ── */
+/* ── СЛОЙ 3: изолированные стили доставки ── */
 (function(){
   var existing = document.getElementById('deliverySubStyles');
   if (existing) existing.remove();

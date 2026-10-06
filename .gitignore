@@ -124,3 +124,4 @@ lh-cold-.json
 # Pre-fix бэкапы от fix-all*.mjs
 *.pre-fix-*
 fix-shared-brands.mjs
+media/raw/
