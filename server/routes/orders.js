@@ -51,17 +51,39 @@ export const ORDER_STATUS = {
   cancel: '❌ Отменён',
 };
 
-// [tg-chat-url-dedup-v1]
+// [tg-order-buttons-v1]
+function orderActionKb(no) {
+  const base = APP_URL || WEBAPP_URL || 'https://friday.andcoffee.online';
+  return {
+    inline_keyboard: [
+      [{ text: '📦 Детали заказа #' + no, web_app: { url: base + '/?src=tg&brand=delivery&tab=orders&no=' + no } }],
+      [{ text: '💬 Чат с поддержкой', web_app: { url: base + '/?src=tg&brand=delivery&tab=chat&ctx=delivery' } }],
+    ]
+  };
+}
+
+// [tg-chat-url-dedup-v1] Оповещение персонала (кухня/диспетчер)
 function orderNotifyStaff(o) {
-  const lines = o.items.map(i => `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${i.qty * i.price} ₽`);
-  const gifts = o.gifts.map(g => `🎁 ${g.name} ×${g.qty}`);
+  const itemsList = Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]');
+  const lines = itemsList.map(i => {
+    const modsSum = (i.modifiers || []).reduce((mA, m) => mA + (Number(m.price) || 0), 0);
+    const itemTotal = ((Number(i.price) || 0) + modsSum) * (Number(i.qty) || 1);
+    let line = `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${itemTotal} ₽`;
+    if (i.modifiers && i.modifiers.length) {
+      const modsLines = i.modifiers.map(m => `   └ ＋ <i>${m.name}</i> (+${m.price} ₽)`).join('\n');
+      line += '\n' + modsLines;
+    }
+    return line;
+  });
+
+  const giftsList = Array.isArray(o.gifts) ? o.gifts : JSON.parse(o.gifts || '[]');
+  const gifts = giftsList.map(g => `🎁 ${g.name} ×${g.qty}`);
   const timeLabel = o.is_preorder ? `⏰ ПРЕДЗАКАЗ: ${o.slot}` : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot}`;
   const txt = `👨‍🍳 <b>[Кухня] Заказ #${o.no}</b>\n\n👤 ${o.name} (${o.phone})\n${o.method === 'pickup' ? '🛍 Самовывоз: Советская 38А' : '🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr}\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n\n${lines.concat(gifts).join('\n')}\n\nИтого: <b>${o.total} ₽</b>${o.comment ? '\n💬 ' + o.comment : ''}`;
 
   const staff = db.prepare("SELECT id, tg FROM customers WHERE role IN ('cashier','admin','dispatch')").all();
   const sentTg = new Set();
 
-  // Исключаем покупателя, если он сам является сотрудником (он уже получает чек покупателя)
   const buyer = db.prepare('SELECT tg FROM customers WHERE id=?').get(o.cid);
   if (buyer && buyer.tg) sentTg.add(String(buyer.tg));
 
@@ -80,9 +102,43 @@ function orderNotifyStaff(o) {
   logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);
 }
 
+// [tg-order-receipt-v1] Чек для покупателя
+function orderNotifyCustomer(o) {
+  try {
+    const isPickup = o.method === 'pickup';
+    const timeLabel = o.is_preorder ? ('⏰ Предзаказ на: <b>' + o.slot + '</b>') : '⏰ Доставка: ~45 мин';
+    const dest = isPickup ? '🛍 Самовывоз: ул. Советская, 38А' : ('🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr);
+    const itemsList = Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]');
+    
+    const lines = itemsList.map(i => {
+      let line = '• ' + i.name + (i.opt ? ' (' + i.opt + ')' : '') + ' × ' + i.qty;
+      if (i.modifiers && i.modifiers.length) {
+        line += '\n' + i.modifiers.map(m => '   └ ＋ ' + m.name + ' (+' + m.price + ' ₽)').join('\n');
+      }
+      return line;
+    }).join('\n');
+
+    const giftsList = Array.isArray(o.gifts) ? o.gifts : JSON.parse(o.gifts || '[]');
+    const gifts = giftsList.map(g => '🎁 ' + g.name + ' × ' + g.qty).join('\n');
+    const itemsText = gifts ? (lines + '\n' + gifts) : lines;
+    const payText = o.pay === 'cash' ? 'наличные' : 'картой при получении';
+
+    const text =
+      '🍕 <b>Заказ #' + o.no + ' принят!</b>\n\n' +
+      itemsText + '\n\n' +
+      'Итого: <b>' + o.total + ' ₽</b> · 💳 ' + payText + '\n' +
+      dest + '\n' + timeLabel + '\n\n' +
+      'Мы уже передали заказ на кухню. Статус обновится здесь автоматически 👇';
+
+    const kb = typeof orderActionKb === 'function' ? orderActionKb(o.no) : undefined;
+    sendPush(o.cid, '', text, kb);
+  } catch (err) {
+    console.error('[orders] orderNotifyCustomer error:', err.message);
+  }
+}
+
 /* ── публичный конфиг доставки + занятые слоты ── */
 ordersRouter.get('/api/delivery/info', (req, res) => {
-  // Находим интервалы, где лимит предзаказов уже исчерпан
   const busyRows = db.prepare(`
     SELECT slot, COUNT(*) as cnt 
     FROM orders 
@@ -130,32 +186,7 @@ ordersRouter.get('/api/delivery/addr', (req, res) => {
   res.json({ suggestions });
 });
 
-/* ── заказы ── */
-// [tg-order-receipt-v1]
-function orderNotifyCustomer(o) {
-  try {
-    const isPickup = o.method === 'pickup';
-    const timeLabel = o.is_preorder ? ('⏰ Предзаказ на: <b>' + o.slot + '</b>') : '⏰ Доставка: ~45 мин';
-    const dest = isPickup ? '🛍 Самовывоз: ул. Советская, 38А' : ('🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr);
-    const lines = (o.items || []).map(i => '• ' + i.name + (i.opt ? ' (' + i.opt + ')' : '') + ' × ' + i.qty).join('\n');
-    const gifts = (o.gifts || []).map(g => '🎁 ' + g.name + ' × ' + g.qty).join('\n');
-    const itemsText = gifts ? (lines + '\n' + gifts) : lines;
-    const payText = o.pay === 'cash' ? 'наличные' : 'картой при получении';
-
-    const text =
-      '🍕 <b>Заказ #' + o.no + ' принят!</b>\n\n' +
-      itemsText + '\n\n' +
-      'Итого: <b>' + o.total + ' ₽</b> · 💳 ' + payText + '\n' +
-      dest + '\n' + timeLabel + '\n\n' +
-      'Мы уже передали заказ на кухню. Статус обновится здесь автоматически 👇';
-
-    const kb = typeof orderActionKb === 'function' ? orderActionKb(o.no) : undefined;
-    sendPush(o.cid, '', text, kb);
-  } catch (err) {
-    console.error('[orders] orderNotifyCustomer error:', err.message);
-  }
-}
-
+/* ── Создание заказа с валидацией модификаторов ── */
 ordersRouter.post('/api/orders', userGuard, (req, res) => {
   const b = req.body || {};
   const method = b.method === 'pickup' ? 'pickup' : 'delivery';
@@ -184,17 +215,52 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
 
   const raw = Array.isArray(b.items) ? b.items.slice(0, 50) : [];
   if (!raw.length) return res.status(400).json({ error: 'Корзина пуста' });
-  const items = []; let sum = 0;
+
+  const items = [];
+  let sum = 0;
+
   for (const li of raw) {
     const m = db.prepare("SELECT * FROM menu WHERE id=? AND section='delivery' AND is_on=1").get(String(li.id || ''));
     if (!m) return res.status(400).json({ error: 'Позиция недоступна' });
+
     const opts = JSON.parse(m.opts || '[]');
     const oi = Number.isInteger(li.oi) ? li.oi : -1;
     if (oi >= 0 && !opts[oi]) return res.status(400).json({ error: 'Вариант недоступен' });
-    const price = oi >= 0 ? opts[oi].p : (parseInt(m.price) || 0);
+
+    const price = oi >= 0 ? Number(opts[oi].p) : (parseInt(m.price, 10) || 0);
     const qty = Math.max(1, Math.min(99, +li.qty || 1));
-    items.push({ id: m.id, name: m.name, opt: oi >= 0 ? opts[oi].l : null, sz: oi >= 0 ? (opts[oi].sz || 0) : 0, price, qty });
-    sum += price * qty;
+
+    // Серверная валидация цен прикреплённых модификаторов по БД
+    const validatedMods = [];
+    let modsSum = 0;
+
+    if (Array.isArray(li.modifiers)) {
+      for (const mod of li.modifiers) {
+        if (!mod || !mod.id) continue;
+        const modProd = db.prepare("SELECT * FROM menu WHERE id=? AND section='delivery' AND is_on=1").get(String(mod.id));
+        if (modProd) {
+          const mPrice = Number(modProd.price) || 0;
+          validatedMods.push({
+            id: modProd.id,
+            name: modProd.name,
+            price: mPrice
+          });
+          modsSum += mPrice;
+        }
+      }
+    }
+
+    items.push({
+      id: m.id,
+      name: m.name,
+      opt: oi >= 0 ? opts[oi].l : null,
+      sz: oi >= 0 ? (opts[oi].sz || 0) : 0,
+      price,
+      qty,
+      modifiers: validatedMods
+    });
+
+    sum += (price + modsSum) * qty;
   }
 
   // ── Предзаказы и проверка лимитов слота ──
@@ -223,7 +289,7 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     isPreorder = 1;
   }
 
-  // Защита от переполнения: проверяем квоту на сервере
+  // Защита от переполнения: проверяем квоту слота на сервере
   if (isPreorder && slotStr && slotStr !== 'asap' && !isTestEnv) {
     const slotCheck = db.prepare(`
       SELECT COUNT(*) as cnt 
@@ -260,7 +326,7 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(p.id);
   }
 
-  const total = sum - discount - promoDiscount + fee;
+  const total = Math.max(0, sum - discount - promoDiscount + fee);
   const no = ((db.prepare("SELECT value FROM meta WHERE key='order_no'").get()?.value | 0) + 1);
   db.prepare("INSERT INTO meta(key,value) VALUES('order_no',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(String(no));
   
@@ -296,17 +362,6 @@ ordersRouter.get('/api/orders', dispatchGuard, (req, res) => {
     : db.prepare("SELECT * FROM orders WHERE created>? ORDER BY no DESC LIMIT 50").all(new Date(Date.now() - 3 * 86400000).toISOString());
   res.json({ orders: rows.map(o => ({ ...o, items: JSON.parse(o.items || '[]'), gifts: JSON.parse(o.gifts || '[]') })) });
 });
-
-// [tg-order-buttons-v1]
-function orderActionKb(no) {
-  const base = APP_URL || WEBAPP_URL || 'https://friday.andcoffee.online';
-  return {
-    inline_keyboard: [
-      [{ text: '📦 Детали заказа #' + no, web_app: { url: base + '/?src=tg&brand=delivery&tab=orders&no=' + no } }],
-      [{ text: '💬 Чат с поддержкой', web_app: { url: base + '/?src=tg&brand=delivery&tab=chat&ctx=delivery' } }],
-    ]
-  };
-}
 
 ordersRouter.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
   const s = String(req.body.status || '');

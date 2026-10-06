@@ -30,9 +30,16 @@ function orderCard(o) {
     : o.status === 'way' ? ['done']
     : [];
 
-  var items = o.items.map(function(i) {
-    return i.qty + '× ' + esc(i.name) + (i.opt ? ' (' + esc(i.opt) + ')' : '');
-  }).join('<br>');
+  // Рендер позиций заказа с вложенными модификаторами для кухни и диспетчера
+  var items = (o.items || []).map(function(i) {
+    var line = '<div>' + i.qty + '× ' + esc(i.name) + (i.opt ? ' (' + esc(i.opt) + ')' : '') + '</div>';
+    if (i.modifiers && i.modifiers.length) {
+      line += i.modifiers.map(function(m) {
+        return '<div style="color:var(--soft,#586470);font-size:12px;padding-left:14px;line-height:1.35">└ ＋ ' + esc(m.name) + ' (+' + fmt(m.price) + ')</div>';
+      }).join('');
+    }
+    return line;
+  }).join('<div style="height:4px"></div>');
 
   var gifts = (o.gifts || []).map(function(g) {
     return '🎁 ' + esc(g.name) + ' ×' + g.qty;
@@ -172,5 +179,6 @@ document.addEventListener('click', async function (e) {
     renderOrders(true);
   } catch (err) { toast(err.message, '⚠️'); }
 }, true);
+
 /* ── Ф5.8f: ESM-шим: catalog.js setMode и views.js sv() ── */
 window.renderOrders = renderOrders;
