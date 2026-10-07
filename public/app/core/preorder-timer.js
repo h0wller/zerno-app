@@ -54,9 +54,12 @@ function isDeliveryServiceOpen() {
     return '~' + Math.max(1, mins) + ' мин';
   }
 
-  function renderTimers() {
-    // Ищем все элементы, где отображён предзаказ
-    var elements = document.querySelectorAll('b, span, div');
+ function renderTimers() {
+    // Сканируем только контейнеры заказов, а не весь DOM
+    var host = document.querySelector('#myOrders, #ordersList, #pvProfile');
+    if (!host) return;
+
+    var elements = host.querySelectorAll('b, span, div');
     var now = Date.now();
 
     for (var i = 0; i < elements.length; i++) {

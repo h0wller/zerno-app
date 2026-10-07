@@ -125,3 +125,5 @@ lh-cold-.json
 *.pre-fix-*
 fix-shared-brands.mjs
 media/raw/
+lighthouse-report.report.html
+lighthouse-report.report.json
