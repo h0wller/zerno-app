@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v339';
+const STATIC_CACHE = 'zerno-static-v340';
 const MEDIA_CACHE = 'zerno-media-v19';
 const API_CACHE = 'zerno-api-v13';
 
@@ -124,8 +124,8 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  if (url.pathname.startsWith('/api/menu')) {
-    e.respondWith(
+if (url.pathname.startsWith('/api/menu') || url.pathname.startsWith('/api/dmenu')) {
+      e.respondWith(
       caches.open(API_CACHE).then(async (cache) => {
         const cachedRes = await cache.match(request);
         const fetchPromise = fetch(request)

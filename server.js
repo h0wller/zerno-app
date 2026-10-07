@@ -190,9 +190,53 @@ app.post('/api/menu/upload', async (req, res) => {
     res.status(500).json({ error: 'Ошибка сохранения изображения' });
   }
 });
+// ── Автомиграция base64 картинок меню в компактные WebP на диск ──
+async function migrateBase64ImagesToWebP() {
+  try {
+    const dishesDir = path.resolve('public/media/dishes');
+    if (!fs.existsSync(dishesDir)) fs.mkdirSync(dishesDir, { recursive: true });
 
-const server = app.listen(PORT, () => {
+    const rows = db.prepare("SELECT id, img FROM menu WHERE img LIKE 'data:image/%'").all();
+    if (!rows.length) return;
+
+    console.log(`[migrate] Найдено ${rows.length} base64-изображений в БД. Конвертируем в WebP...`);
+    const updateStmt = db.prepare("UPDATE menu SET img = ? WHERE id = ?");
+
+    for (const r of rows) {
+      const cleanId = String(r.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const base64Str = r.img.split(',')[1]?.replace(/\s+/g, '');
+      if (!base64Str) continue;
+
+      const buffer = Buffer.from(base64Str, 'base64');
+      const cardFile = `${cleanId}-card.webp`;
+      const zoomFile = `${cleanId}-zoom.webp`;
+
+      // Нарезка 600x600 WebP для карточки
+      await sharp(buffer)
+        .rotate()
+        .resize(600, 600, { fit: 'cover', position: 'center' })
+        .webp({ quality: 80 })
+        .toFile(path.join(dishesDir, cardFile));
+
+      // Нарезка 1200x1200 WebP для зума
+      await sharp(buffer)
+        .rotate()
+        .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toFile(path.join(dishesDir, zoomFile));
+
+      const newUrl = `/media/dishes/${cardFile}`;
+      updateStmt.run(newUrl, r.id);
+    }
+    touch();
+    console.log('[migrate] Миграция успешно завершена! JSON теперь весит ~5-8 KB.');
+  } catch (err) {
+    console.error('[migrate] Ошибка миграции изображений:', err);
+  }
+}
+const server = app.listen(PORT, async () => {
   console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`);
+  await migrateBase64ImagesToWebP();
   tgEnsureWebhook();
 });
 

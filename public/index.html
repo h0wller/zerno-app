@@ -18,12 +18,14 @@
           if (b === 'delivery') doc.classList.remove('brand-coffee');
           else if (b === 'coffee') doc.classList.remove('brand-delivery');
           if (explicit) doc.classList.add('splash-skipped');
-          // LCP-PRELOAD v2
+          // LCP-PRELOAD v2 new
           if (b === 'delivery') {
             var lp = document.createElement('link');
             lp.rel = 'preload';
             lp.as = 'image';
-            lp.href = '/media/dishes/1-card.webp';
+            lp.href = '/media/dishes/resized/1-card-600.webp';
+            lp.setAttribute('imagesrcset', '/media/dishes/resized/1-card-300.webp 300w, /media/dishes/resized/1-card-600.webp 600w');
+            lp.setAttribute('imagesizes', '(max-width: 412px) 292px, 292px');
             lp.type = 'image/webp';
             lp.setAttribute('fetchpriority', 'high');
             document.head.appendChild(lp);
