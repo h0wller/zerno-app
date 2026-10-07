@@ -25,6 +25,13 @@
   <style id="zt-critical-fouc-guard">
      /* Critical above-the-fold: шапка до первого тика JS.
      Размеры .mark на CSS-переменных из brand-tokens.css (без инлайн-костылей). */
+     /* public/index.html — critical FOUC-guard */
+html[data-brand="delivery"] .topbar .brand .mark,
+body[data-brand="delivery"] .topbar .brand .mark {
+  width: 160px;
+  height: 40px;
+  flex: 0 0 160px;
+}
   .topbar .brand .mark {
     width: var(--mark-w, 42px);
     height: var(--mark-h, 42px);

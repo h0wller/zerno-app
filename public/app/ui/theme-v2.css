@@ -1176,6 +1176,9 @@ body[data-brand] .chat-fab:active{
   background: #3E8FD0
 }
 .chat-fab::before{
+  will-change: transform, opacity;
+  contain: strict;
+  pointer-events: none;
   content: "";
   position: absolute;
   inset: -4px;
@@ -4527,4 +4530,8 @@ div.menu-head div.search {
     font-size: 24px;
     margin-bottom: 2px;
   }
+  .skeleton-card {
+  min-height: 380px;
+  contain: layout size;
+}
 }

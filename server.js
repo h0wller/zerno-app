@@ -152,6 +152,34 @@ app.use(express.static(PUBLIC_DIR, {
 }
   }
 }));
+/* Временный обработчик сохранения маппинга картинок */
+app.post('/save-mapping', express.urlencoded({ extended: true }), (req, res) => {
+  const mapping = req.body || {};
+  const stmt = db.prepare("UPDATE menu SET img = ? WHERE id = ?");
+  let count = 0;
 
+  const saveTx = db.transaction(() => {
+    for (const [imgFile, dishId] of Object.entries(mapping)) {
+      if (!dishId || !imgFile.endsWith('-card.webp')) continue;
+      const imgPath = `/media/dishes/${imgFile}`;
+      stmt.run(imgPath, dishId);
+      count++;
+    }
+  });
+
+  saveTx();
+  db.pragma('vacuum;');
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="ru">
+    <body style="font-family:system-ui,sans-serif;text-align:center;padding:60px 20px;background:#F4EFE6;">
+      <h1 style="color:#186A43;font-size:28px;">🎉 Успешно привязано ${count} блюд!</h1>
+      <p style="font-size:16px;color:#3A2A1C;">Все фотографии записаны в SQLite лёгкими путями, Base64 полностью уничтожен.</p>
+      <a href="/" style="display:inline-block;margin-top:24px;padding:12px 28px;background:#C03B2A;color:#fff;text-decoration:none;border-radius:10px;font-weight:bold;">Перейти в витрину</a>
+    </body>
+    </html>
+  `);
+});
 const server = app.listen(PORT, () => { console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`); tgEnsureWebhook(); });
 process.on('SIGTERM', () => { console.log('[srv] SIGTERM, корректно закрываюсь…'); server.close(() => process.exit(0)); setTimeout(() => process.exit(0), 3000); });
