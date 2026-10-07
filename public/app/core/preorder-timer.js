@@ -111,17 +111,23 @@ function isDeliveryServiceOpen() {
   }
 
   function init() {
-    // Запуск строго по открытию профиля и кликам
+    // Запуск строго при переходе в профиль/заказы
     document.addEventListener('click', function (e) {
       if (e.target && e.target.closest && e.target.closest('#profileTopBtn, .ava, #mbonusBtn, [data-tab="profile"], #myOrders')) {
         setTimeout(renderTimers, 100);
-        setTimeout(renderTimers, 500);
       }
     });
 
-    // Редкий фоновый интервал (раз в 30 секунд)
-    setInterval(renderTimers, 30000);
-    setTimeout(renderTimers, 500);
+    // Ленивый фоновый запуск: активируется только когда страница свободна (Idle)
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(function () {
+        setInterval(renderTimers, 30000);
+      });
+    } else {
+      setTimeout(function () {
+        setInterval(renderTimers, 30000);
+      }, 3000);
+    }
   }
 
   if (document.readyState === 'loading') {

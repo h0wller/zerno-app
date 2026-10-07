@@ -12,7 +12,17 @@ export const APP_URL = PUBLIC_URL || 'https://friday.andcoffee.online';
 
 export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
   const token = process.env.TEST_TOKEN || TG_TOKEN;
-  if (!token) { console.log('[tg] tgSend: NO TOKEN'); return; }
+  if (!token) { return; }
+  if (!chatId) return;
+
+  // Блокируем отправку в рабочий канал/группу на localhost и во время тестов
+  if (TG_CHANNEL && String(chatId) === String(TG_CHANNEL)) {
+    if (process.env.NODE_ENV !== 'production' && !process.env.TELEGRAM_FORCE_SEND) {
+      console.log('[tg-dev-skip channel]:', String(text).slice(0, 70));
+      return;
+    }
+  }
+
   const body = { chat_id: chatId, text, parse_mode: 'HTML' };
   if (kb) body.reply_markup = kb;
   try {
@@ -24,8 +34,6 @@ export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
     const j = await r.json().catch(() => ({}));
     if (!j.ok) {
       console.error('[tg] tgSend FAIL → chat=' + chatId + '  err=' + (j.description || r.status));
-      console.error('[tg] tgSend text was: ' + String(text).slice(0, 80));
-      if (kb) console.error('[tg] tgSend kb was: ' + JSON.stringify(kb).slice(0, 200));
     }
   } catch (e) {
     console.error('[tg] tgSend NETWORK ERR: ' + e.message);
