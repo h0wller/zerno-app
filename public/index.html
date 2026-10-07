@@ -10,34 +10,35 @@
         var urlBrand = m ? decodeURIComponent(m[1]) : '';
         var explicit = !!(stored || urlBrand);
         var b = stored || urlBrand || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee');
+
         if (b) {
           window.brand = b;
           var doc = document.documentElement;
           doc.setAttribute('data-brand', b);
           doc.classList.add('brand-' + b);
-          if (b === 'delivery') doc.classList.remove('brand-coffee');
-          else if (b === 'coffee') doc.classList.remove('brand-delivery');
-          if (explicit) doc.classList.add('splash-skipped');
-          // LCP-PRELOAD v2 new
+
           if (b === 'delivery') {
-  var lp = document.createElement('link');
-  lp.rel = 'preload';
-  lp.as = 'image';
-  lp.href = '/media/dishes/pz-marg-card.webp';
-  lp.type = 'image/webp';
-  lp.setAttribute('fetchpriority', 'high');
-  document.head.appendChild(lp);
-}
-  lp.setAttribute('imagesrcset', '/media/dishes/resized/1-card-300.webp 300w, /media/dishes/resized/1-card-600.webp 600w');
-  lp.setAttribute('imagesizes', '(max-width: 412px) 292px, 292px');
-  lp.type = 'image/webp';
-  lp.setAttribute('fetchpriority', 'high');
-  document.head.appendChild(lp);
-}
+            doc.classList.remove('brand-coffee');
+          } else if (b === 'coffee') {
+            doc.classList.remove('brand-delivery');
+          }
+
+          if (explicit) doc.classList.add('splash-skipped');
+
+          // LCP preload for delivery brand (только актуальный pz-marg)
+          if (b === 'delivery') {
+            var lp = document.createElement('link');
+            lp.rel = 'preload';
+            lp.as = 'image';
+            lp.href = '/media/dishes/pz-marg-card.webp';
+            lp.type = 'image/webp';
+            lp.setAttribute('fetchpriority', 'high');
+            document.head.appendChild(lp);
+          }
         }
       } catch (e) { }
     })();
-  </script>
+    </script>
   <style id="zt-critical-fouc-guard">
      /* Critical above-the-fold: шапка до первого тика JS.
      Размеры .mark на CSS-переменных из brand-tokens.css (без инлайн-костылей). */
