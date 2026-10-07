@@ -1,7 +1,7 @@
 name: Deploy to Timeweb
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: ["CI Quality Gates"]
     branches: [pizza]
     types: [completed]
   workflow_dispatch: # <-- Добавлено для ручного запуска с телефона
