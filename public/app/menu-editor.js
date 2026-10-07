@@ -31,7 +31,7 @@ function openEditor(id){
     cat:brand==='delivery'?'pizza':'coffee',
     e:brand==='delivery'?'🍕':'☕',
     name:'',desc:'',comp:[],vol:'',price:0,tag:'',coffee:0,
-    on:1,img:null,
+    on:1,img:'',
     section:brand==='delivery'?'delivery':'coffee',
     opts:[]
   };
@@ -95,6 +95,12 @@ document.getElementById('emSave').onclick=async function(){
   edit.coffee=document.getElementById('emCoffee').checked?1:0;
   edit.on=document.getElementById('emOn').checked?1:0;
   edit.cat=document.getElementById('emCat').value;
+
+  // ПРЕДОХРАНИТЕЛЬ: блокировка сохранения Base64 в базу
+  if(edit.img && String(edit.img).startsWith('data:image')){
+    toast('Нельзя сохранять фото как Base64! Дождитесь загрузки WebP на сервер.', '⚠️');
+    return;
+  }
 
   if(brand==='delivery'){
     edit.section='delivery';

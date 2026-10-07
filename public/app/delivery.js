@@ -275,8 +275,7 @@ function renderDeliveryMenu() {
       const priceStr = fmt(Number(p.price) || 0);
       const volStr = p.vol ? esc(String(p.vol).trim()) : '';
       bodyMiddleHTML = `<div class="single-meta" style="display:flex;align-items:baseline;justify-content:space-between;margin:8px 0 12px;padding:4px 0;border-bottom:1px solid rgba(18,58,107,0.06)">
-        ${volStr ? `<span class="vol" style="font-size:13px;font-weight:600;color:#8E9AA5">${volStr}</span>` : '<span></span>'}
-        <span class="price" style="font-size:18px;font-weight:800;color:var(--flame,#C03B2A)">${priceStr}</span>
+      ${volStr ? `<span class="vol" style="font-size:13px;font-weight:600;color:#5B6670">${volStr}</span>` : '<span></span>'}        <span class="price" style="font-size:18px;font-weight:800;color:var(--flame,#C03B2A)">${priceStr}</span>
       </div>`;
     }
 
@@ -800,8 +799,7 @@ window.renderCart = renderCart;
     '#deliveryGrid .opts .opt-row{display:flex;justify-content:space-between;align-items:baseline;width:100%;line-height:1.2}' +
     '#deliveryGrid .opts .opt-size{font-size:11.5px;font-weight:800;color:var(--fr-choc,#3A2A1C)}' +
     '#deliveryGrid .opts .opt-crust{font-size:11px;font-weight:700;color:var(--fr-choc,#3A2A1C);text-transform:capitalize}' +
-    '#deliveryGrid .opts .opt-weight{font-size:10.5px;font-weight:500;color:#8E9AA5}' +
-    '#deliveryGrid .opts .opt-price{font-size:12.5px;font-weight:800;color:var(--flame,#C03B2A);font-variant-numeric:tabular-nums}' +
+    '#deliveryGrid .opts .opt-weight{font-size:10.5px;font-weight:500;color:#5B6670}' +    '#deliveryGrid .opts .opt-price{font-size:12.5px;font-weight:800;color:var(--flame,#C03B2A);font-variant-numeric:tabular-nums}' +
     '#deliveryGrid .opts button.sel{background:var(--fr-tan,#C99E6E);border-color:var(--fr-choc,#3A2A1C);box-shadow:2px 2px 0 var(--fr-choc,#3A2A1C)}' +
     '#deliveryGrid .opts button.sel .opt-size,#deliveryGrid .opts button.sel .opt-crust,#deliveryGrid .opts button.sel .opt-weight,#deliveryGrid .opts button.sel .opt-price{color:var(--fr-choc,#3A2A1C)}' +
     /* Расширение рейла до 80px на мобильных */

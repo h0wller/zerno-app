@@ -3,33 +3,35 @@ process.on('unhandledRejection', (reason) => {
   console.error('[Background Rejection]:', (reason && reason.message) || reason);
 });
 
-import { initDatabase, getVapidPublicKey } from './server/db/index.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import sharp from 'sharp';
+
+import { initDatabase } from './server/db/index.js';
 initDatabase();
 import express from 'express';
 import compression from 'compression';
-import webpush from 'web-push';
 
 // ── Конфигурация и БД ──
-import { db, PORT, PUBLIC_DIR, WEBAPP_URL } from './server/config.js';
+import { db, PORT, PUBLIC_DIR } from './server/config.js';
 // ── Утилиты ──
-import { nowISO, uid } from './server/utils/id-time.js';
+import { uid } from './server/utils/id-time.js';
 import {
-  userGuard, chatGuard, adminGuard, dispatchGuard,
+  adminGuard,
   securityHeaders, corsMiddleware
 } from './server/middleware/index.js';
 
-import { tgSend, tgEnsureWebhook, TG_BOT_USERNAME, TG_CHANNEL, TG_WEBHOOK_SECRET, APP_URL } from './server/services/telegram.js';
-import { sendPush } from './server/services/push.js';
+import { tgEnsureWebhook, TG_BOT_USERNAME } from './server/services/telegram.js';
 // === domain routes ===
 import { authRouter } from './server/routes/auth.js';
 import { staffRouter } from './server/routes/staff.js';
 import { promosRouter } from './server/routes/promos.js';
-import ordersRouter, { ORDER_STATUS } from './server/routes/orders.js';
+import ordersRouter from './server/routes/orders.js';
 import chatRouter from './server/routes/chat.js';
 import { createTgRouter } from './server/routes/tg.js';
 import pushRouter from './server/routes/push.js';
 import statsRouter from './server/routes/stats.js';
-import { item, cust, addHist, logEv, getMeta, touch, issueToken } from './server/domain/helpers.js';
+import { item, getMeta, touch } from './server/domain/helpers.js';
 
 const app = express();
 function appKb() {
@@ -70,7 +72,7 @@ app.post('/api/clientlog', (req, res) => {
 });
 app.get('/api/config', (req, res) => res.json({ tgUsername: TG_BOT_USERNAME }));
 
-// [tg-diag v1] — диагностика Telegram-бота, добавляется scripts/add-tg-diag.mjs
+// [tg-diag v1] — диагностика Telegram-бота
 app.get('/api/tg/diag', async (req, res) => {
   const token = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
   let me = null, err = null;
@@ -101,7 +103,6 @@ app.get('/api/tg/diag', async (req, res) => {
     },
   });
 });
-
 
 /* ── меню ── */
 app.get('/api/menu', (req, res) => res.json({
@@ -137,7 +138,6 @@ app.delete('/api/menu/:id', adminGuard, (req, res) => {
 });
 
 /* ── статика с кэшированием (7 дней для JS/CSS, 1 год для медиа) ── */
-
 app.use(express.static(PUBLIC_DIR, {
   maxAge: '7d',
   etag: true,
@@ -145,41 +145,59 @@ app.use(express.static(PUBLIC_DIR, {
     // sw.js ОБЯЗАН быть no-store, чтобы iOS не брала его из кэша
     if (p.endsWith('sw.js')) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-} else if (p.endsWith('index.html') || p.endsWith('manifest.webmanifest') || /\.(svg|css|js)$/i.test(p)) {
-  res.setHeader('Cache-Control', 'no-cache');
-} else if (/\.(woff2?|png|jpe?g|ico|webp)$/i.test(p)) {
-  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-}
+    } else if (p.endsWith('index.html') || p.endsWith('manifest.webmanifest') || /\.(svg|css|js)$/i.test(p)) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (/\.(woff2?|png|jpe?g|ico|webp)$/i.test(p)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
   }
 }));
-/* Временный обработчик сохранения маппинга картинок */
-app.post('/save-mapping', express.urlencoded({ extended: true }), (req, res) => {
-  const mapping = req.body || {};
-  const stmt = db.prepare("UPDATE menu SET img = ? WHERE id = ?");
-  let count = 0;
 
-  const saveTx = db.transaction(() => {
-    for (const [imgFile, dishId] of Object.entries(mapping)) {
-      if (!dishId || !imgFile.endsWith('-card.webp')) continue;
-      const imgPath = `/media/dishes/${imgFile}`;
-      stmt.run(imgPath, dishId);
-      count++;
+/* POST /api/menu/upload — автоматическая Retina WebP нарезка из админки */
+app.post('/api/menu/upload', async (req, res) => {
+  try {
+    const { id, data } = req.body || {};
+    if (!data || typeof data !== 'string' || !data.includes(',')) {
+      return res.status(400).json({ error: 'Некорректные данные изображения' });
     }
-  });
+    const cleanId = String(id || ('dish_' + Date.now())).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const base64Str = data.split(',')[1].replace(/\s+/g, '');
+    const buffer = Buffer.from(base64Str, 'base64');
 
-  saveTx();
-  db.pragma('vacuum;');
+    const dishesDir = path.resolve('public/media/dishes');
+    if (!fs.existsSync(dishesDir)) fs.mkdirSync(dishesDir, { recursive: true });
 
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="ru">
-    <body style="font-family:system-ui,sans-serif;text-align:center;padding:60px 20px;background:#F4EFE6;">
-      <h1 style="color:#186A43;font-size:28px;">🎉 Успешно привязано ${count} блюд!</h1>
-      <p style="font-size:16px;color:#3A2A1C;">Все фотографии записаны в SQLite лёгкими путями, Base64 полностью уничтожен.</p>
-      <a href="/" style="display:inline-block;margin-top:24px;padding:12px 28px;background:#C03B2A;color:#fff;text-decoration:none;border-radius:10px;font-weight:bold;">Перейти в витрину</a>
-    </body>
-    </html>
-  `);
+    const cardFileName = `${cleanId}-card.webp`;
+    const zoomFileName = `${cleanId}-zoom.webp`;
+
+    // 1. Компактная карточка 600x600 WebP
+    await sharp(buffer)
+      .rotate()
+      .resize(600, 600, { fit: 'cover', position: 'center' })
+      .webp({ quality: 84 })
+      .toFile(path.join(dishesDir, cardFileName));
+
+    // 2. Зум высокого разрешения 1200x1200 WebP
+    await sharp(buffer)
+      .rotate()
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 86 })
+      .toFile(path.join(dishesDir, zoomFileName));
+
+    res.json({ ok: true, url: `/media/dishes/${cardFileName}` });
+  } catch (err) {
+    console.error('Ошибка upload:', err);
+    res.status(500).json({ error: 'Ошибка сохранения изображения' });
+  }
 });
-const server = app.listen(PORT, () => { console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`); tgEnsureWebhook(); });
-process.on('SIGTERM', () => { console.log('[srv] SIGTERM, корректно закрываюсь…'); server.close(() => process.exit(0)); setTimeout(() => process.exit(0), 3000); });
+
+const server = app.listen(PORT, () => {
+  console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`);
+  tgEnsureWebhook();
+});
+
+process.on('SIGTERM', () => {
+  console.log('[srv] SIGTERM, корректно закрываюсь…');
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 3000);
+});

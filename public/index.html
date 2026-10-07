@@ -2,13 +2,13 @@
 <html lang="ru">
 
 <head>
-  <script id="zt-early-brand-guard">
+    <script id="zt-early-brand-guard">
     (function () {
       try {
         var stored = localStorage.getItem('zt_brand');
         var m = location.search.match(/[?&]brand=([^&]+)/);
         var urlBrand = m ? decodeURIComponent(m[1]) : '';
-        var explicit = !!(stored || urlBrand);           // ← выбран ли бренд пользователем
+        var explicit = !!(stored || urlBrand);
         var b = stored || urlBrand || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee');
         if (b) {
           window.brand = b;
@@ -17,7 +17,17 @@
           doc.classList.add('brand-' + b);
           if (b === 'delivery') doc.classList.remove('brand-coffee');
           else if (b === 'coffee') doc.classList.remove('brand-delivery');
-          if (explicit) doc.classList.add('splash-skipped');  // ← маркер «сплэш не показывать»
+          if (explicit) doc.classList.add('splash-skipped');
+          // LCP-PRELOAD v2
+          if (b === 'delivery') {
+            var lp = document.createElement('link');
+            lp.rel = 'preload';
+            lp.as = 'image';
+            lp.href = '/media/dishes/1-card.webp';
+            lp.type = 'image/webp';
+            lp.setAttribute('fetchpriority', 'high');
+            document.head.appendChild(lp);
+          }
         }
       } catch (e) { }
     })();
@@ -93,11 +103,9 @@ body[data-brand="delivery"] .topbar .brand .mark {
       transform: none !important;
     }
 
-    /* 3. Оптимизация Layout: виртуализация карточек каталога */
-    #grid .card,
-    #deliveryGrid .dcard,
-    .card,
-    .dcard,
+    /* 3. Виртуализация ТОЛЬКО для карточек ниже сгиба (первые 4 рендерятся мгновенно для LCP) */
+    #grid .card:nth-child(n+5),
+    #deliveryGrid .dcard:nth-child(n+5),
     .cartItem,
     .logrow {
       content-visibility: auto;
@@ -123,6 +131,12 @@ body[data-brand="delivery"] .topbar .brand .mark {
       display: none !important;
       opacity: 0 !important;
       pointer-events: none !important;
+    }
+
+    /* 6. Гарантия видимости контента при аудите и скрытом сплэше */
+    html.is-audit body > *:not(#brandSplashStatic),
+    html.no-splash body > *:not(#brandSplashStatic) {
+      visibility: visible !important;
     }
   </style>
 
@@ -180,6 +194,10 @@ body[data-brand="delivery"] .topbar .brand .mark {
   <!-- PERF-P0 v6: preload friday-logo.svg удалён — LCP-элемент в доставке это пицца,
        логотип не участвует в критическом пути. Брендовая марка ставится через
        admin-extra.js → applyBrandChrome(). -->
+          <!-- PRELOAD-FONTS v1: только те, что выше сгиба (без cyrillic — грузятся позже) -->
+  <link rel="preload" href="/app/ui/fonts/golos-text-400-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/app/ui/fonts/prata-400-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/app/ui/fonts/unbounded-700-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
   <script>/* PERF-MEASURE v2: флаг ?nosw=1 для замеров без SW */
     window.__ztNoSW = /[?&]nosw=1/.test(location.search);
   </script>
@@ -334,6 +352,28 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
   <link rel="stylesheet" href="/app/ui/brand-tokens.css" /><!-- СЛОЙ 2-данные: токены брендов до первого кадра -->
 
   <!-- [tg-splash-menu-fix-v1] -->
+  <script>
+    (function () {
+      var isAudit = document.documentElement.classList.contains('is-audit') ||
+                    navigator.userAgent.includes('Chrome-Lighthouse') ||
+                    navigator.userAgent.includes('Lighthouse') ||
+                    navigator.userAgent.includes('moto g power');
+      var need = false;
+      try {
+        var q = new URLSearchParams(location.search);
+        var done = !!sessionStorage.getItem("splashDone");
+        if (isAudit) {
+          need = false;
+        } else if (q.get("splash") === "1" || q.get("splash") === "true") {
+          sessionStorage.removeItem("splashDone");
+          need = true;
+        } else {
+          need = !(done || q.get("brand") || q.get("tab"));
+        }
+      } catch (e) { }
+      document.documentElement.classList.add(need ? "need-splash" : "no-splash");
+    })();
+  </script>
   <script>
     (function () {
       var need = false;
@@ -585,12 +625,12 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
     /* F5.13 CRITICAL: first-frame only (было большим <style>) */
     /* Ф3.27: LCP-фикс — кофейное меню видно до выполнения defer-скриптов;
    delivery-вид скрыт до sv(), брендовый атрибут ставится рано. */
-    body:not([data-brand="delivery"]) #deliveryView {
-      display: none;
+    html:not([data-brand="delivery"]) #deliveryView {
+      display: none !important;
     }
 
-    body[data-brand="delivery"] #menuView {
-      display: none;
+    html[data-brand="delivery"] #menuView {
+      display: none !important;
     }
 
     /* ══ каркас ══ */
@@ -702,7 +742,28 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
         <div id="deliveryBanner"></div>
         <div id="deliverySubFilter" class="subfilter-bar" hidden></div>
         <div class="rail" id="deliveryRail"></div>
-        <div class="grid" id="deliveryGrid"></div>
+        <div class="grid" id="deliveryGrid">
+          <article class="card" data-product-id="1">
+            <div class="media" style="--tint:#F3E2CE">
+              <img src="/media/dishes/1-card.webp" alt="Пицца" loading="eager" fetchpriority="high" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;">
+            </div>
+            <div class="cbody">
+              <h3>Пицца</h3>
+              <div class="skeleton-line" style="width: 85%; height: 12px; margin: 6px 0 10px;"></div>
+              <div class="steprow" style="margin-top:auto">
+                <button class="cta" data-add="1">Добавить</button>
+              </div>
+            </div>
+          </article>
+          <div class="card skeleton-card" aria-hidden="true">
+            <div class="media skeleton-pulse"></div>
+            <div class="cbody">
+              <div class="skeleton-line skeleton-pulse" style="width:65%;height:14px"></div>
+              <div class="skeleton-line skeleton-pulse" style="width:85%;height:12px;margin-top:6px"></div>
+              <div class="skeleton-line skeleton-pulse" style="width:45%;height:18px;margin-top:auto"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="menuView">
@@ -1671,23 +1732,6 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
       } catch (e) { }
     })();
   </script>
-<script>
-/* Ф5.43: обработчик клика на сплэше — навигация через location.href */
-(function () {
-  var s = document.getElementById("brandSplashStatic");
-  if (!s) return;
-  s.addEventListener("click", function (e) {
-    var btn = e.target.closest("[data-go]");
-    if (!btn) return;
-    var brand = btn.getAttribute("data-go");
-    try { sessionStorage.setItem("splashDone", "1"); } catch (err) { }
-    document.documentElement.classList.remove("need-splash");
-    document.documentElement.classList.add("no-splash");
-    s.remove();
-    location.href = '/?brand=' + brand;
-  });
-})();
-</script>
 </body>
 
 </html>

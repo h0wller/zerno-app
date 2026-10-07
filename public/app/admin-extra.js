@@ -38,10 +38,12 @@ function setTickerSpeed(){
   var t = document.getElementById('tickerTrack');
   if (!t) return;
   requestAnimationFrame(function(){
-    var half = t.scrollWidth / 2;
-    if (half > 0) {
-      t.style.animationDuration = Math.max(20, Math.round(half / 55)) + 's';
-    }
+    requestAnimationFrame(function(){         // ← двойной rAF
+      var half = t.scrollWidth / 2;           // читаем после стабилизации
+      if (half > 0) {
+        t.style.animationDuration = Math.max(20, Math.round(half / 55)) + 's';
+      }
+    });
   });
 }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(setTickerSpeed);
