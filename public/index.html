@@ -20,16 +20,14 @@
           if (explicit) doc.classList.add('splash-skipped');
           // LCP-PRELOAD v2 new
           if (b === 'delivery') {
-            var lp = document.createElement('link');
-            lp.rel = 'preload';
-            lp.as = 'image';
-            lp.href = '/media/dishes/resized/1-card-600.webp';
-            lp.setAttribute('imagesrcset', '/media/dishes/resized/1-card-300.webp 300w, /media/dishes/resized/1-card-600.webp 600w');
-            lp.setAttribute('imagesizes', '(max-width: 412px) 292px, 292px');
-            lp.type = 'image/webp';
-            lp.setAttribute('fetchpriority', 'high');
-            document.head.appendChild(lp);
-          }
+  var lp = document.createElement('link');
+  lp.rel = 'preload';
+  lp.as = 'image';
+  lp.href = '/media/dishes/pz-marg-card.webp';
+  lp.type = 'image/webp';
+  lp.setAttribute('fetchpriority', 'high');
+  document.head.appendChild(lp);
+}
         }
       } catch (e) { }
     })();
@@ -730,19 +728,16 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
         <div id="deliverySubFilter" class="subfilter-bar" hidden></div>
         <div class="rail" id="deliveryRail"></div>
         <div class="grid" id="deliveryGrid">
-          <article class="card" data-product-id="1">
-            <div class="media" style="--tint:#F3E2CE">
-<img
-  src="/media/dishes/resized/1-card-600.webp"
-  srcset="/media/dishes/resized/1-card-300.webp 300w,
-          /media/dishes/resized/1-card-600.webp 600w"
-  sizes="(max-width: 412px) 292px, 292px"
-  alt="Пицца"
-  loading="eager" fetchpriority="high" decoding="async"
-  width="292" height="292"
-  style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;">            </div>
-            <div class="cbody">
-              <h3>Пицца</h3>
+          <article class="card" data-product-id="pz-marg">
+  <div class="media" style="--tint:#F3E2CE">
+    <img src="/media/dishes/pz-marg-card.webp"
+         alt="Маргарита"
+         loading="eager" fetchpriority="high" decoding="async"
+         width="292" height="292"
+         style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;">
+  </div>
+  <div class="cbody">
+    <h3>Маргарита</h3>
               <div class="skeleton-line" style="width: 85%; height: 12px; margin: 6px 0 10px;"></div>
               <div class="steprow" style="margin-top:auto">
                 <button class="cta" data-add="1">Добавить</button>
