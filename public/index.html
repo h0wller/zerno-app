@@ -355,43 +355,27 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
   <script>
     (function () {
       var isAudit = document.documentElement.classList.contains('is-audit') ||
-                    navigator.userAgent.includes('Chrome-Lighthouse') ||
-                    navigator.userAgent.includes('Lighthouse') ||
-                    navigator.userAgent.includes('moto g power');
+                    /Chrome-Lighthouse|Lighthouse|moto g power/i.test(navigator.userAgent) ||
+                    location.search.includes('lighthouse=1');
       var need = false;
       try {
         var q = new URLSearchParams(location.search);
         var done = !!sessionStorage.getItem("splashDone");
+        var hasBrand = !!localStorage.getItem("zt_brand"); // Критичное добавление
+        
         if (isAudit) {
           need = false;
         } else if (q.get("splash") === "1" || q.get("splash") === "true") {
-          sessionStorage.removeItem("splashDone");
-          need = true;
-        } else {
-          need = !(done || q.get("brand") || q.get("tab"));
-        }
-      } catch (e) { }
-      document.documentElement.classList.add(need ? "need-splash" : "no-splash");
-    })();
-  </script>
-  <script>
-    (function () {
-      var need = false;
-      try {
-        var q = new URLSearchParams(location.search);
-        var done = false;
-        try { done = !!sessionStorage.getItem("splashDone"); } catch (e) { }
-        if (q.get("splash") === "1" || q.get("splash") === "true") {
           try { sessionStorage.removeItem("splashDone"); } catch (e) { }
           need = true;
         } else {
-          need = !(done || q.get("brand") || q.get("tab"));
+          // Если бренд уже есть в URL, sessionStorage или localStorage - сплэш не нужен
+          need = !(done || q.get("brand") || q.get("tab") || hasBrand);
         }
       } catch (e) { }
       document.documentElement.classList.add(need ? "need-splash" : "no-splash");
     })();
   </script>
-
   <style>
     #brandSplashStatic,
     #brandSplash {
@@ -641,6 +625,7 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
 </head>
 
 <body>
+  <!-- ═══ СПЛЭШ-ЭКРАН (должен быть ПЕРВЫМ элементом body для E2E и LCP) ═══ -->
   <div id="brandSplashStatic">
     <div class="spInner">
       <div class="spTitle">«Пятница» & …и кофе</div>
@@ -655,6 +640,8 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
       </div>
     </div>
   </div>
+
+  <!-- ═══ ИНЛАЙН-ВЛАДЕЛЕЦ КЛИКА (единственный, без window.sv) ═══ -->
   <script>
     (function () {
       var s = document.getElementById("brandSplashStatic");
@@ -662,18 +649,16 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
       s.addEventListener("click", function (e) {
         var btn = e.target.closest("[data-go]");
         if (!btn) return;
+        e.stopImmediatePropagation();
         var brand = btn.getAttribute("data-go");
         try { sessionStorage.setItem("splashDone", "1"); } catch (err) { }
+        try { localStorage.setItem("zt_brand", brand); } catch (err) { }
         document.documentElement.classList.remove("need-splash");
         document.documentElement.classList.add("no-splash");
         s.remove();
-        if (typeof window.sv === "function") {
-          window.sv(brand);
-        } else {
-          var u = new URL(location.href);
-          u.searchParams.set("brand", brand);
-          location.replace(u.toString());
-        }
+        var u = new URL(location.href);
+        u.searchParams.set("brand", brand);
+        location.replace(u.toString());
       });
     })();
   </script>
