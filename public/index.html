@@ -39,114 +39,266 @@
       } catch (e) { }
     })();
     </script>
-  <style id="zt-critical-fouc-guard">
-     /* Critical above-the-fold: шапка до первого тика JS.
-     Размеры .mark на CSS-переменных из brand-tokens.css (без инлайн-костылей). */
-     /* public/index.html — critical FOUC-guard */
+    <style id="critical-css">
+/* ═══ CRITICAL ABOVE-THE-FOLD CSS ═══
+   Консолидировано из 5 inline-блоков <head>.
+   Остальные CSS грузятся async через <link rel="preload" as="style">. */
+
+/* ─── FOUC-guard (ex zt-critical-fouc-guard) ─── */
 html[data-brand="delivery"] .topbar .brand .mark,
 body[data-brand="delivery"] .topbar .brand .mark {
   width: 160px;
   height: 40px;
   flex: 0 0 160px;
 }
-  .topbar .brand .mark {
-    width: var(--mark-w, 42px);
-    height: var(--mark-h, 42px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    overflow: hidden;
-    border-radius: 12px;
-  }
-  .topbar .brand .mark img,
-  .topbar .brand .mark svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-    /* 1. Скрываем модалки строго до появления класса .show (не ломая их адаптивность в открытом виде) */
-    #authModal:not(.show),
-    #setPinModal:not(.show),
-    #staffChatModal:not(.show),
-    #redeemPick:not(.show) {
-      display: none !important;
-    }
+.topbar .brand .mark {
+  width: var(--mark-w, 42px);
+  height: var(--mark-h, 42px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.topbar .brand .mark img,
+.topbar .brand .mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+#authModal:not(.show),
+#setPinModal:not(.show),
+#staffChatModal:not(.show),
+#redeemPick:not(.show) {
+  display: none !important;
+}
+html[data-brand="delivery"] #grid {
+  display: none !important;
+}
+html[data-brand="coffee"] #deliveryGrid {
+  display: none !important;
+}
+html.splash-skipped #brandSplashStatic {
+  display: none !important;
+}
 
-    /* 2. Скрываем только неактивную витрину (активная витрина сохраняет нативный display: grid) */
-    html[data-brand="delivery"] #grid {
-      display: none !important;
-    }
+/* ─── Perf-core (ex perf-core-css-fix) ─── */
+#brandSplash,
+#brandSplashStatic,
+.brandSplashStatic {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+  will-change: opacity, visibility;
+}
+body>div.wrap,
+.wrap {
+  top: 0 !important;
+  padding-top: 0 !important;
+  transform: none !important;
+}
+#grid .card:nth-child(n+5),
+#deliveryGrid .dcard:nth-child(n+5),
+.cartItem,
+.logrow {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 320px;
+}
+html.is-audit #brandSplash,
+html.is-audit #brandSplashStatic,
+html.is-audit .brandSplashStatic,
+html.is-audit #authModal,
+html.is-audit .modal-card,
+html.is-audit .modal-backdrop,
+html.is-audit .overlay {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+html.is-audit body > *:not(#brandSplashStatic),
+html.no-splash body > *:not(#brandSplashStatic) {
+  visibility: visible !important;
+}
 
-    html[data-brand="coffee"] #deliveryGrid {
-      display: none !important;
-    }
+/* ─── LCP inline (ex lcp-inline-css) ─── */
+html[data-brand="coffee"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif;color:#3a2a1c;}
+html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif;color:#3a2a1c;}
+.menu-head{margin-left:0;width:100%;}
+.mh-top{display:flex;align-items:center;gap:12px;}
+.mh-top h1{margin:0;font-size:clamp(20px,3vw,32px);}
 
-    /* 3. Скрытие статичного сплэша, если бренд уже выбран ранее */
-    html.splash-skipped #brandSplashStatic {
-      display: none !important;
-    }
-  </style>
-  <!-- START: perf-optimizer-patch -->
-  <style id="perf-core-css-fix">
-    /* 1. Изоляция оверлея сплэша */
-    #brandSplash,
-    #brandSplashStatic,
-    .brandSplashStatic {
-      position: fixed !important;
-      inset: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      z-index: 99999 !important;
-      will-change: opacity, visibility;
-    }
+/* ─── Splash isolation ─── */
+#brandSplashStatic,
+#brandSplash {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 400 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #FFFFFF !important;
+}
+html.no-splash #brandSplashStatic {
+  display: none !important;
+}
+html.need-splash body>*:not(#brandSplashStatic) {
+  visibility: hidden;
+}
+#brandSplashStatic {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: #f5f2ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
 
-    /* 2. Стабильность верстки без смещения и без пустого зазора */
-    body>div.wrap,
-    .wrap {
-      top: 0 !important;
-      padding-top: 0 !important;
-      transform: none !important;
-    }
-
-    /* 3. Виртуализация ТОЛЬКО для карточек ниже сгиба (первые 4 рендерятся мгновенно для LCP) */
-    #grid .card:nth-child(n+5),
-    #deliveryGrid .dcard:nth-child(n+5),
-    .cartItem,
-    .logrow {
-      content-visibility: auto;
-      contain-intrinsic-size: 1px 320px;
-    }
-
-    /* 4. Разгрузка рендеринга изображений */
-    .card img,
-    .dcard img {
-      aspect-ratio: 1 / 1;
-      width: 100%;
-      height: auto;
-    }
-
-    /* 5. Авто-скрытие сплэша и модалок при аудите без участия JS */
-    html.is-audit #brandSplash,
-    html.is-audit #brandSplashStatic,
-    html.is-audit .brandSplashStatic,
-    html.is-audit #authModal,
-    html.is-audit .modal-card,
-    html.is-audit .modal-backdrop,
-    html.is-audit .overlay {
-      display: none !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
-    /* 6. Гарантия видимости контента при аудите и скрытом сплэше */
-    html.is-audit body > *:not(#brandSplashStatic),
-    html.no-splash body > *:not(#brandSplashStatic) {
-      visibility: visible !important;
-    }
-  </style>
-
+/* ─── Шапка/тикер (ex большой Ф3.51 блок) ─── */
+.topbar {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, max-content) 1fr minmax(0, max-content);
+  align-items: center;
+  column-gap: 8px;
+  height: calc(var(--topbar-h, 64px) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 12px 0;
+  box-sizing: border-box;
+}
+.topbar .venueWrap {
+  position: relative;
+  justify-self: start;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-start;
+}
+.topbar .brand {
+  justify-self: center;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.topbar #profileTopBtn {
+  justify-self: end;
+  width: calc(var(--topbar-h, 64px) - 16px);
+  height: calc(var(--topbar-h, 64px) - 16px);
+  font-size: calc(var(--topbar-h, 64px) * 0.28);
+  border-radius: 50%;
+  background: var(--flame, #123a6b);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.venueToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1.5px solid var(--line, #d8dfe4);
+  background: var(--card, #fff);
+  border-radius: 999px;
+  padding: 0 10px;
+  height: calc(var(--topbar-h, 64px) - 20px);
+  font: 700 calc(var(--topbar-h, 64px) * 0.2) "Golos Text", system-ui, sans-serif;
+  color: var(--ink, #101418);
+  cursor: pointer;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar .brand .mark {
+  flex: 0 0 auto;
+  overflow: hidden;
+  width: var(--mark-w, 42px);
+  height: var(--mark-h, 42px);
+  max-height: calc(var(--topbar-h, 64px) - 8px);
+}
+[data-brand="coffee"] .topbar .brand .mark {
+  width: var(--mark-w, 42px);
+  height: var(--mark-h, 42px);
+}
+[data-brand="delivery"] .topbar .brand .mark {
+  width: var(--mark-w, 160px);
+  height: var(--mark-h, 40px);
+  max-height: var(--mark-h, 40px);
+  max-width: min(60vw, 420px);
+}
+#brandSeg {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 80;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  min-width: max(180px, 100%);
+  max-width: calc(100vw - 24px);
+  border: 1.5px solid var(--line, #d8dfe4);
+  border-radius: 14px;
+  background: var(--card, #fff);
+  box-shadow: 0 10px 30px -12px rgba(16, 20, 24, 0.18);
+  padding: 6px;
+}
+#brandSeg.open {
+  display: flex;
+}
+#brandSeg button {
+  flex: 0 0 auto;
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: 700 14px "Golos Text", sans-serif;
+  background: transparent;
+  color: var(--ink, #101418);
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+#tickerTrack {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  white-space: nowrap;
+  width: max-content;
+  animation: zt-marquee 40s linear infinite;
+}
+#tickerTrack span {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.2rem;
+  font: 600 11px/30px "Unbounded", system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+@keyframes zt-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #tickerTrack { animation: none; }
+}
+html:not([data-brand="delivery"]) #deliveryView {
+  display: none !important;
+}
+html[data-brand="delivery"] #menuView {
+  display: none !important;
+}
+</style>
   <script id="perf-lighthouse-bridge">
     (() => {
       const ua = navigator.userAgent;
@@ -320,17 +472,7 @@ if(b==='delivery'){
     return of.apply(this,arguments);};
 }
 })();
-</script>
-<style id="lcp-inline-css">/* LCP-INLINE v1: критичный CSS для <h1> — рендер сразу, без ожидания views.js */
-html[data-brand="coffee"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif;color:#3a2a1c;}
-html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif;color:#3a2a1c;}
-.menu-head{margin-left:0;width:100%;}
-.mh-top{display:flex;align-items:center;gap:12px;}
-.mh-top h1{margin:0;font-size:clamp(20px,3vw,32px);}
-</style>
-
-
-
+</script> 
 <!-- LCP-PRELOAD-FONT v1: preload шрифта Unbounded 700 для LCP <h1> -->
 <title>…и кофе — кофейня на берегу моря</title>
   <meta name="description"
@@ -352,12 +494,15 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="/app/ui/fonts.css"><!-- FONTS-LOCAL v1 -->
-  <noscript></noscript>
-
-  <link rel="stylesheet" href="app/ui/theme-v2.css" />
-  <link rel="stylesheet" href="/app/ui/brand-tokens.css" /><!-- СЛОЙ 2-данные: токены брендов до первого кадра -->
-
+  <!-- Async CSS: preload + swap to stylesheet -->
+  <link rel="preload" href="/app/ui/fonts.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="app/ui/theme-v2.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="/app/ui/brand-tokens.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="/app/ui/fonts.css">
+    <link rel="stylesheet" href="app/ui/theme-v2.css" />
+    <link rel="stylesheet" href="/app/ui/brand-tokens.css" />
+  </noscript>
   <!-- [tg-splash-menu-fix-v1] -->
   <script>
     (function () {
@@ -383,252 +528,6 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
       document.documentElement.classList.add(need ? "need-splash" : "no-splash");
     })();
   </script>
-  <style>
-    #brandSplashStatic,
-    #brandSplash {
-      position: fixed !important;
-      inset: 0 !important;
-      z-index: 400 !important;
-      width: 100% !important;
-      height: 100% !important;
-      background: #FFFFFF !important;
-    }
-
-    #brandSplash,
-    #brandSplashStatic {
-      position: fixed !important;
-      inset: 0 !important;
-      z-index: 400 !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      overflow: auto !important;
-      background: #FFFFFF !important;
-    }
-
-    html.no-splash #brandSplashStatic {
-      display: none !important;
-    }
-
-    html.need-splash body>*:not(#brandSplashStatic) {
-      visibility: hidden;
-    }
-
-    #brandSplashStatic {
-      position: fixed;
-      inset: 0;
-      z-index: 400;
-      background: #f5f2ec;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-  </style>
-  <style>
-    /* ── Ф3.51: critical FOUC-guard — шапка/тикер стилизованы до прихода views.js ── */
-
-
-
-
-    .topbar {
-      position: relative;
-      display: grid;
-      grid-template-columns: minmax(0, max-content) 1fr minmax(0, max-content);
-      align-items: center;
-      column-gap: 8px;
-      height: calc(var(--topbar-h, 64px) + env(safe-area-inset-top, 0px));
-      padding: env(safe-area-inset-top, 0px) 12px 0;
-      box-sizing: border-box;
-    }
-
-    .topbar .venueWrap {
-      position: relative;
-      justify-self: start;
-      min-width: 0;
-      display: flex;
-      justify-content: flex-start;
-    }
-
-    .topbar .brand {
-      justify-self: center;
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .topbar #profileTopBtn {
-      justify-self: end;
-      width: calc(var(--topbar-h, 64px) - 16px);
-      height: calc(var(--topbar-h, 64px) - 16px);
-      font-size: calc(var(--topbar-h, 64px) * 0.28);
-      border-radius: 50%;
-      background: var(--flame, #123a6b);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .venueToggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      border: 1.5px solid var(--line, #d8dfe4);
-      background: var(--card, #fff);
-      border-radius: 999px;
-      padding: 0 10px;
-      height: calc(var(--topbar-h, 64px) - 20px);
-      font:
-        700 calc(var(--topbar-h, 64px) * 0.2) "Golos Text",
-        system-ui,
-        sans-serif;
-      color: var(--ink, #101418);
-      cursor: pointer;
-      max-width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* ── Ф3.56/Ф3.57: критические размеры марки (первый кадр = финальный, без FOUC) ── */
-    .topbar .brand .mark {
-      flex: 0 0 auto;
-      overflow: hidden;
-      width: var(--mark-w, 42px);
-      height: var(--mark-h, 42px);
-      max-height: calc(var(--topbar-h, 64px) - 8px);
-    }
-
-    .topbar .brand .mark img,
-    .topbar .brand .mark svg {
-      display: block;
-      width: 100%;
-      height: 100%;
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-
-    [data-brand="coffee"] .topbar .brand .mark {
-      width: var(--mark-w, 42px);
-      height: var(--mark-h, 42px);
-    }
-
-    [data-brand="delivery"] .topbar .brand .mark {
-      width: var(--mark-w, 160px);
-      height: var(--mark-h, 40px);
-      max-height: var(--mark-h, 40px);
-      max-width: min(60vw, 420px);
-    }
-
-    [data-brand="delivery"] .topbar .brand .mark img,
-    [data-brand="delivery"] .topbar .brand .mark svg {
-      width: 100%;
-      height: 100%;
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-
-    #brandSeg {
-      display: none;
-      position: absolute;
-      left: 0;
-      top: calc(100% + 8px);
-      z-index: 80;
-      flex-direction: column;
-      gap: 2px;
-      width: max-content;
-      min-width: max(180px, 100%);
-      max-width: calc(100vw - 24px);
-      border: 1.5px solid var(--line, #d8dfe4);
-      border-radius: 14px;
-      background: var(--card, #fff);
-      box-shadow: 0 10px 30px -12px rgba(16, 20, 24, 0.18);
-      padding: 6px;
-    }
-
-    #brandSeg.open {
-      display: flex;
-    }
-
-    #brandSeg button {
-      flex: 0 0 auto;
-      width: 100%;
-      border: 0;
-      border-radius: 10px;
-      padding: 10px 12px;
-      font:
-        700 14px "Golos Text",
-        sans-serif;
-      background: transparent;
-      color: var(--ink, #101418);
-      text-align: left;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
-
-    #tickerTrack {
-      display: inline-flex;
-      align-items: center;
-      height: 30px;
-      white-space: nowrap;
-      width: max-content;
-      animation: zt-marquee 40s linear infinite;
-    }
-
-    #tickerTrack span {
-      flex: 0 0 auto;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0 1.2rem;
-      font:
-        600 11px/30px "Unbounded",
-        system-ui,
-        sans-serif;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    @keyframes zt-marquee {
-      from {
-        transform: translate3d(0, 0, 0);
-      }
-
-      to {
-        transform: translate3d(-50%, 0, 0);
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      #tickerTrack {
-        animation: none;
-      }
-    }
-
-    /* F5.13 CRITICAL: first-frame only (было большим <style>) */
-    /* Ф3.27: LCP-фикс — кофейное меню видно до выполнения defer-скриптов;
-   delivery-вид скрыт до sv(), брендовый атрибут ставится рано. */
-    html:not([data-brand="delivery"]) #deliveryView {
-      display: none !important;
-    }
-
-    html[data-brand="delivery"] #menuView {
-      display: none !important;
-    }
-
-    /* ══ каркас ══ */
-    /* F5.14: база .wrap вернулась в Слой 1 (theme-v2) — critical перебивал медиа-оверрайды */
-  </style>
-
-<!-- PRELOAD-FONTS v1: preload критичного шрифта Unbounded 700 -->
 </head>
 
 <body>
@@ -739,17 +638,19 @@ html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "
   <div class="media" style="--tint:#F3E2CE">
     <img src="/media/dishes/pz-marg-card.webp"
          alt="Маргарита"
-         loading="eager" fetchpriority="high" decoding="async"
+         loading="eager" fetchpriority="high"
          width="292" height="292"
+         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 292px"
          style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;">
   </div>
   <div class="cbody">
     <h3>Маргарита</h3>
-              <div class="skeleton-line" style="width: 85%; height: 12px; margin: 6px 0 10px;"></div>
-              <div class="steprow" style="margin-top:auto">
-                <button class="cta" data-add="1">Добавить</button>
-              </div>
-            </div>
+    <div class="desc">Красный соус, моцарелла, томаты</div>  <!-- ✅ Реальное описание -->
+    <div class="steprow" style="margin-top:auto">
+        <span class="price">535 ₽</span>
+        <button class="cta" data-add="pz-marg">Добавить</button>
+    </div>
+</div>
           </article>
           <div class="card skeleton-card" aria-hidden="true">
             <div class="media skeleton-pulse"></div>
