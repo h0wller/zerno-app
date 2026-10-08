@@ -30,6 +30,7 @@ export default [
       'public/app/ui/theme-v2.min.css',
       'public/debug.js',
       'public/dump-schema.mjs',
+      'public/dist/**',
       'scripts/fix-*.mjs',
       'scripts/move-*.mjs',
       'scripts/reshoot*.mjs',
