@@ -417,106 +417,77 @@
     el.innerHTML = gifts.join("<br>");
   }
 
-  /* ── Рендер корзины: точные модификаторы блюд и защита от оверфлоу ── */
-  function renderCartBase() {
-    var cItems = document.getElementById("cartItems");
-    if (!cItems) return;
-    var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
-    var allMenu = typeof DMENU !== "undefined" && Array.isArray(DMENU) ? DMENU : [];
-
-    // Топпинги пиццы и допы к роллам берутся ИСКЛЮЧИТЕЛЬНО из cat === 'sauces'
-    var pizzaToppings = allMenu.filter(function (p) { return isPizzaTopping(p) && p.on !== 0; });
-    var rollAddons = allMenu.filter(function (p) { return isRollAddon(p) && p.on !== 0; });
-
-    cItems.innerHTML = list.map(function (c, i) {
-      var optLabel = c.opt ? (typeof c.opt === "object" ? c.opt.name || "" : c.opt) : "";
-      
-      var origProd = allMenu.find(function (x) { return String(x.id) === String(c.id); });
-      var isPizza = origProd ? (origProd.cat === "pizza" || (origProd.opts && origProd.opts.length > 0)) : false;
-      var isRollOrSet = origProd ? (origProd.cat === "rolls" || origProd.cat === "sets") : false;
-
-      var modSum = (c.modifiers || []).reduce(function (mA, m) { return mA + (Number(m.price) || 0); }, 0);
-      var lineTotal = ((Number(c.price) || 0) + modSum) * (Number(c.qty) || 1);
-
-      // Прикреплённые к блюду допы со значком удаления ✕
-      var modsHtml = "";
-      if (c.modifiers && c.modifiers.length) {
-        modsHtml = '<div class="ci-mods-list">' +
-          c.modifiers.map(function (m, mIdx) {
-            return '<div class="ci-mod-badge">' +
-              '<span>└ ＋ ' + esc(m.name) + ' (' + fmt(m.price) + ')</span>' +
-              '<button type="button" class="ci-mod-del" data-del-mod="' + i + '" data-mod-idx="' + mIdx + '" title="Убрать из блюда">✕</button>' +
-            '</div>';
-          }).join("") +
+    /* ── Хелперы рендеринга модификаторов и карточек позиций ── */
+  function renderAttachedModifiers(modifiers, itemIndex) {
+    if (!modifiers || !modifiers.length) return "";
+    return '<div class="ci-mods-list">' +
+      modifiers.map(function (m, mIdx) {
+        return '<div class="ci-mod-badge">' +
+          '<span>└ ＋ ' + esc(m.name) + ' (' + fmt(m.price) + ')</span>' +
+          '<button type="button" class="ci-mod-del" data-del-mod="' + itemIndex + '" data-mod-idx="' + mIdx + '" title="Убрать из блюда">✕</button>' +
         '</div>';
-      }
+      }).join("") +
+    '</div>';
+  }
 
-      // Блок добавления ингредиентов (раскрывается / сворачивается по клику)
-      var addModSection = "";
-      var isBlockOpen = !!openModsMap[i];
+  function renderModChips(availableMods, attachedModifiers, itemIndex) {
+    return '<div class="ci-mod-chips-wrap">' +
+      '<div class="ci-mod-chips-scroll">' +
+        availableMods.map(function (mod) {
+          var isSelected = (attachedModifiers || []).some(function (m) { return String(m.id) === String(mod.id); });
+          return '<button type="button" class="ci-mod-chip' + (isSelected ? " selected" : "") + '" data-toggle-mod-item="' + itemIndex + '" data-mod-id="' + mod.id + '">' +
+            (isSelected ? "✓ " : "＋ ") + esc(mod.name) + " · " + fmt(mod.price) +
+          '</button>';
+        }).join("") +
+      '</div>' +
+    '</div>';
+  }
 
-      if (isPizza && pizzaToppings.length) {
-        var toggleLabel = isBlockOpen ? "− Скрыть добавки" : "＋ Добавить ингредиенты в эту пиццу";
-        addModSection =
-          '<div class="ci-add-mod-box">' +
-            '<button type="button" class="ci-toggle-mods-btn" data-toggle-mods="' + i + '">' + toggleLabel + '</button>' +
-            (isBlockOpen ? (
-              '<div class="ci-mod-chips-wrap">' +
-                '<div class="ci-mod-chips-scroll">' +
-                  pizzaToppings.map(function (top) {
-                    var isSelected = (c.modifiers || []).some(function (m) { return String(m.id) === String(top.id); });
-                    return '<button type="button" class="ci-mod-chip' + (isSelected ? " selected" : "") + '" data-toggle-mod-item="' + i + '" data-mod-id="' + top.id + '">' +
-                      (isSelected ? "✓ " : "＋ ") + esc(top.name) + " · " + fmt(top.price) +
-                    '</button>';
-                  }).join("") +
-                '</div>' +
-              '</div>'
-            ) : '') +
-          '</div>';
-      } else if (isRollOrSet && rollAddons.length) {
-        var toggleRollLabel = isBlockOpen ? "− Скрыть добавки" : "＋ Добавить к этим роллам";
-        addModSection =
-          '<div class="ci-add-mod-box">' +
-            '<button type="button" class="ci-toggle-mods-btn" data-toggle-mods="' + i + '">' + toggleRollLabel + '</button>' +
-            (isBlockOpen ? (
-              '<div class="ci-mod-chips-wrap">' +
-                '<div class="ci-mod-chips-scroll">' +
-                  rollAddons.map(function (ra) {
-                    var isSelected = (c.modifiers || []).some(function (m) { return String(m.id) === String(ra.id); });
-                    return '<button type="button" class="ci-mod-chip' + (isSelected ? " selected" : "") + '" data-toggle-mod-item="' + i + '" data-mod-id="' + ra.id + '">' +
-                      (isSelected ? "✓ " : "＋ ") + esc(ra.name) + " · " + fmt(ra.price) +
-                    '</button>';
-                  }).join("") +
-                '</div>' +
-              '</div>'
-            ) : '') +
-          '</div>';
-      }
+  function renderItemAddModSection(c, itemIndex, origProd, pizzaToppings, rollAddons, isBlockOpen) {
+    var isPizza = origProd ? (origProd.cat === "pizza" || (origProd.opts && origProd.opts.length > 0)) : false;
+    var isRollOrSet = origProd ? (origProd.cat === "rolls" || origProd.cat === "sets") : false;
 
-      return '<div class="cartItem" data-cart-idx="' + i + '">' +
-        '<div class="ci-main-row">' +
-          '<div class="ci-left">' +
-            '<b class="ci-name">' + esc(c.name) + '</b>' +
-            (optLabel ? '<div class="ci-opt">' + esc(optLabel) + '</div>' : '') +
-            '<div class="ci-price">' + fmt(lineTotal) + '</div>' +
-          '</div>' +
-          '<div class="qty">' +
-            '<button type="button" data-ci="' + i + '" data-act="-">−</button>' +
-            '<span>' + c.qty + '</span>' +
-            '<button type="button" data-ci="' + i + '" data-act="+">+</button>' +
-          '</div>' +
+    var targetMods = isPizza ? pizzaToppings : (isRollOrSet ? rollAddons : null);
+    if (!targetMods || !targetMods.length) return "";
+
+    var defaultLabel = isPizza ? "＋ Добавить ингредиенты в эту пиццу" : "＋ Добавить к этим роллам";
+    var toggleLabel = isBlockOpen ? "− Скрыть добавки" : defaultLabel;
+
+    return '<div class="ci-add-mod-box">' +
+      '<button type="button" class="ci-toggle-mods-btn" data-toggle-mods="' + itemIndex + '">' + toggleLabel + '</button>' +
+      (isBlockOpen ? renderModChips(targetMods, c.modifiers, itemIndex) : '') +
+    '</div>';
+  }
+
+  function renderCartItemRow(c, itemIndex, allMenu, pizzaToppings, rollAddons) {
+    var optLabel = c.opt ? (typeof c.opt === "object" ? c.opt.name || "" : c.opt) : "";
+    var origProd = allMenu.find(function (x) { return String(x.id) === String(c.id); });
+
+    var modSum = (c.modifiers || []).reduce(function (mA, m) { return mA + (Number(m.price) || 0); }, 0);
+    var lineTotal = ((Number(c.price) || 0) + modSum) * (Number(c.qty) || 1);
+
+    var modsHtml = renderAttachedModifiers(c.modifiers, itemIndex);
+    var addModSection = renderItemAddModSection(c, itemIndex, origProd, pizzaToppings, rollAddons, !!openModsMap[itemIndex]);
+
+    return '<div class="cartItem" data-cart-idx="' + itemIndex + '">' +
+      '<div class="ci-main-row">' +
+        '<div class="ci-left">' +
+          '<b class="ci-name">' + esc(c.name) + '</b>' +
+          (optLabel ? '<div class="ci-opt">' + esc(optLabel) + '</div>' : '') +
+          '<div class="ci-price">' + fmt(lineTotal) + '</div>' +
         '</div>' +
-        modsHtml +
-        addModSection +
-      '</div>';
-    }).join("") ||
-      '<div class="empty-state">' +
-        '<div class="empty-state-icon">🍕</div>' +
-        '<div class="empty-state-title">Корзина пуста</div>' +
-        '<div class="empty-state-sub">Добавьте пиццу, роллы или напитки из меню</div>' +
-        '<button type="button" class="empty-state-btn" data-goto-menu>Перейти в меню</button>' +
-      '</div>';
+        '<div class="qty">' +
+          '<button type="button" data-ci="' + itemIndex + '" data-act="-">−</button>' +
+          '<span>' + c.qty + '</span>' +
+          '<button type="button" data-ci="' + itemIndex + '" data-act="+">+</button>' +
+        '</div>' +
+      '</div>' +
+      modsHtml +
+      addModSection +
+    '</div>';
+  }
 
+  function syncPreorderNotice(cItems) {
     var pmNotice = document.getElementById("preorderNotice");
     var isOffHours = !isServiceOpen();
     if (isOffHours && checkIsDelivery()) {
@@ -534,7 +505,31 @@
     } else if (pmNotice) {
       pmNotice.style.display = "none";
     }
+  }
 
+  /* ── Рендер корзины ── */
+  function renderCartBase() {
+    var cItems = document.getElementById("cartItems");
+    if (!cItems) return;
+    var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
+    var allMenu = typeof DMENU !== "undefined" && Array.isArray(DMENU) ? DMENU : [];
+
+    var pizzaToppings = allMenu.filter(function (p) { return isPizzaTopping(p) && p.on !== 0; });
+    var rollAddons = allMenu.filter(function (p) { return isRollAddon(p) && p.on !== 0; });
+
+    var itemsHtml = list.map(function (c, i) {
+      return renderCartItemRow(c, i, allMenu, pizzaToppings, rollAddons);
+    }).join("");
+
+    cItems.innerHTML = itemsHtml ||
+      '<div class="empty-state">' +
+        '<div class="empty-state-icon">🍕</div>' +
+        '<div class="empty-state-title">Корзина пуста</div>' +
+        '<div class="empty-state-sub">Добавьте пиццу, роллы или напитки из меню</div>' +
+        '<button type="button" class="empty-state-btn" data-goto-menu>Перейти в меню</button>' +
+      '</div>';
+
+    syncPreorderNotice(cItems);
     renderAddons();
     updateDeliveryPromoBar();
     paintTotals();

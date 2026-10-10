@@ -272,39 +272,33 @@ if (sec && ab0 && ab0.parentNode !== sec) sec.insertBefore(ab0, sec.firstChild);
 /* ========== 3. Виды и режимы ========== */
 var _lastCfabState = '';
 
-function sv() {
-  try {
-    var bName = (typeof brand !== 'undefined' && (brand === 'delivery' || brand === 'test')) ? brand : 'coffee';
-    var isDel = (bName === 'delivery');
-    document.documentElement.setAttribute('data-brand', bName);
-    document.body.setAttribute('data-brand', bName);
-    var seg = document.getElementById('brandSeg');
-    if (seg) {
-      var cBtn = seg.querySelector('[data-brand="coffee"]');
-      var dBtn = seg.querySelector('[data-brand="delivery"]');
-      if (cBtn) cBtn.classList.toggle('on', bName === 'coffee');
-      if (dBtn) dBtn.classList.toggle('on', bName === 'delivery');
-      seg.classList.toggle('is-delivery', isDel);
-    }
-    if (window.__ensureVenueToggle) window.__ensureVenueToggle();
-    if (window.__labelVenueToggle) window.__labelVenueToggle();
-    var mark = document.getElementById('brandMark') || document.querySelector('.brand .mark');
-    if (mark) mark.classList.toggle('is-delivery', isDel);
-    var op = document.querySelector('.chat-h .op, .chatHead .op');
-    if (op) {
-      if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
-      op.innerHTML = isDel ? '🍕' : (op.getAttribute('data-orig') || '');
-    }
-    var bTitle = document.getElementById('brandTitle');
-    var bSub = document.getElementById('brandSub');
-    if (bTitle) bTitle.textContent = isDel ? 'Пятница' : '…и кофе';
-    if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
-  } catch (e) {}
+function syncBrandChromeState(bName, isDel) {
+  document.documentElement.setAttribute('data-brand', bName);
+  document.body.setAttribute('data-brand', bName);
+  var seg = document.getElementById('brandSeg');
+  if (seg) {
+    var cBtn = seg.querySelector('[data-brand="coffee"]');
+    var dBtn = seg.querySelector('[data-brand="delivery"]');
+    if (cBtn) cBtn.classList.toggle('on', bName === 'coffee');
+    if (dBtn) dBtn.classList.toggle('on', bName === 'delivery');
+    seg.classList.toggle('is-delivery', isDel);
+  }
+  if (window.__ensureVenueToggle) window.__ensureVenueToggle();
+  if (window.__labelVenueToggle) window.__labelVenueToggle();
+  var mark = document.getElementById('brandMark') || document.querySelector('.brand .mark');
+  if (mark) mark.classList.toggle('is-delivery', isDel);
+  var op = document.querySelector('.chat-h .op, .chatHead .op');
+  if (op) {
+    if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
+    op.innerHTML = isDel ? '🍕' : (op.getAttribute('data-orig') || '');
+  }
+  var bTitle = document.getElementById('brandTitle');
+  var bSub = document.getElementById('brandSub');
+  if (bTitle) bTitle.textContent = isDel ? 'Пятница' : '…и кофе';
+  if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
+}
 
-  var showGuest = (typeof mode !== 'undefined' && (mode === 'guest' || mode === 'admin'));
-  var bName2 = (typeof brand !== 'undefined' && (brand === 'delivery' || brand === 'test')) ? brand : 'coffee';
-  var showCoffee = showGuest && bName2 === 'coffee';
-  var showDeliv = showGuest && bName2 === 'delivery';
+function syncViewsVisibility(showCoffee, showDeliv) {
   var mv = document.getElementById('menuView');
   var dv = document.getElementById('deliveryView');
   var rl = document.getElementById('rail');
@@ -313,6 +307,9 @@ function sv() {
   if (dv) { dv.hidden = false; dv.style.display = showDeliv ? 'block' : 'none'; }
   if (rl) rl.style.display = showCoffee ? '' : 'none';
   if (dr) dr.style.display = showDeliv ? '' : 'none';
+}
+
+function syncStaffAndGuestControls(bName2) {
   var et = document.getElementById('editToggle');
   if (et) et.hidden = (typeof mode === 'undefined' || mode !== 'admin');
   var ab = document.getElementById('adminBar');
@@ -329,34 +326,55 @@ function sv() {
   if (bt) bt.style.display = (bName2 === 'delivery') ? 'none' : '';
   if (bName2 === 'delivery' && typeof setTab === 'function') setTab('profile');
   if (typeof me !== 'undefined' && me && typeof renderProfile === 'function') renderProfile();
-  var staff = (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders'));
+}
+
+function syncChatFab(staff, bName2) {
   var cfab = document.getElementById('chatFab');
-  if (cfab) cfab.style.display = staff ? 'none' : '';
-  if (cfab && !staff) {
-    var cp = document.getElementById('chatPanel');
-    var isOpen = !!(cp && cp.classList.contains('open'));
-    var curState = (isOpen ? 'open' : (bName2 === 'delivery' ? 'deliv' : 'coffee'));
-    if (_lastCfabState !== curState) {
-      _lastCfabState = curState;
-      var badge = document.getElementById('chatBadge');
-      var badgeHtml = badge ? badge.outerHTML : '<span class="ub" id="chatBadge" hidden></span>';
-      if (isOpen) {
-        cfab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/></svg>' + badgeHtml;
-      } else if (bName2 === 'delivery') {
-        cfab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 2C8.43 2 5.23 3.54 3.01 6L12 22l8.99-16C18.78 3.55 15.57 2 12 2zM7.5 7c.83 0 1.5.67 1.5 1.5S8.33 10 7.5 10 6 9.33 6 8.5 6.67 7 7.5 7zm4.5 7c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-4.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5z" fill="#fff"/></svg>' + badgeHtml;
-      } else {
-        cfab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z" fill="#fff"/></svg>' + badgeHtml;
-      }
-    }
-  }
+  if (!cfab) return;
+  cfab.style.display = staff ? 'none' : '';
   if (staff) {
     var p = document.getElementById('chatPanel');
     if (p) p.classList.remove('open');
+    return;
   }
+  var cp = document.getElementById('chatPanel');
+  var isOpen = !!(cp && cp.classList.contains('open'));
+  var curState = (isOpen ? 'open' : (bName2 === 'delivery' ? 'deliv' : 'coffee'));
+  if (_lastCfabState === curState) return;
+  _lastCfabState = curState;
+  var badge = document.getElementById('chatBadge');
+  var badgeHtml = badge ? badge.outerHTML : '<span class="ub" id="chatBadge" hidden></span>';
+  if (isOpen) {
+    cfab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/></svg>' + badgeHtml;
+  } else if (bName2 === 'delivery') {
+    cfab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 2C8.43 2 5.23 3.54 3.01 6L12 22l8.99-16C18.78 3.55 15.57 2 12 2zM7.5 7c.83 0 1.5.67 1.5 1.5S8.33 10 7.5 10 6 9.33 6 8.5 6.67 7 7.5 7zm4.5 7c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-4.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5z" fill="#fff"/></svg>' + badgeHtml;
+  } else {
+    cfab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z" fill="#fff"/></svg>' + badgeHtml;
+  }
+}
+
+function sv() {
+  var bName = (typeof brand !== 'undefined' && (brand === 'delivery' || brand === 'test')) ? brand : 'coffee';
+  var isDel = (bName === 'delivery');
+  try {
+    syncBrandChromeState(bName, isDel);
+  } catch (e) {}
+
+  var showGuest = (typeof mode !== 'undefined' && (mode === 'guest' || mode === 'admin'));
+  var showCoffee = showGuest && bName === 'coffee';
+  var showDeliv = showGuest && bName === 'delivery';
+
+  syncViewsVisibility(showCoffee, showDeliv);
+  syncStaffAndGuestControls(bName);
+
+  var staff = (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders'));
+  syncChatFab(staff, bName);
+
   var showScan = (typeof mode !== 'undefined' && mode === 'cashier');
   document.querySelectorAll('#scanBtn,#scanFab,#qrFab,#scanToggle,.fab-scan').forEach(function (b) {
     b.style.display = showScan ? '' : 'none';
   });
+
   if (typeof cartFabShow === 'function') cartFabShow();
   if (showDeliv && typeof window.DMENU !== 'undefined' && !window.DMENU.length &&
       typeof window.loadDelivery === 'function' && !window.__dlReq) {
