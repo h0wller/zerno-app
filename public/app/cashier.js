@@ -174,7 +174,6 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
 })();
 
 (function(){
-  acts.appendChild(b);
 window.renderLog = renderLog; /* Ф5.6-финал шаг 2-fix: голый вызов из catalog setMode */
 })();
 /* ── Ф5.8f: ESM-шимы: scanner.js/views.js/cashier-card/admin-extra ── */
