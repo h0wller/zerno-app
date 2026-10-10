@@ -2,20 +2,9 @@ import { db } from '../db/connection.js';
 import { addHist, logEv, cust } from './helpers.js';
 import { sendPush } from '../services/push.js';
 import { APP_URL } from '../services/telegram.js';
+import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
 
-// [tg-loyalty-push-v1]
-function stampBar(n) {
-  return '🫘'.repeat(Math.min(10, Math.max(0, n))) +
-         '⚪'.repeat(Math.max(0, 10 - Math.min(10, Math.max(0, n))));
-}
-
-function cupWord(n) {
-  const m10 = n % 10;
-  const m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return 'чашка';
-  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'чашки';
-  return 'чашек';
-}
+export { stampBar, cupWord };
 
 export function grant(cid, by) {
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);

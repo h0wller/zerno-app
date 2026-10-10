@@ -9,10 +9,10 @@ info:
     При расхождении — правьте спеку и server/routes/* в одном PR.
   contact:
     name: Zerno App
-    url: https://app.andcoffee.online
+    url: https://friday.andcoffee.online
 
 servers:
-  - url: https://app.andcoffee.online
+  - url: https://friday.andcoffee.online
     description: Production
   - url: http://localhost:3000
     description: Local dev
@@ -24,6 +24,7 @@ tags:
   - name: Staff
   - name: Chat
   - name: Push
+  - name: Promos
   - name: Admin
   - name: System
 
@@ -166,6 +167,56 @@ paths:
                   customer: { $ref: '#/components/schemas/Customer' }
         '409': { description: Профиль уже существует }
 
+  /api/auth/request-reg-otp:
+    post:
+      tags: [Auth]
+      summary: Запрос OTP для регистрации (SMS или Telegram)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string }
+                name:  { type: string }
+                via:   { type: string, enum: [tg, sms] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:    { type: boolean }
+                  tgUrl: { type: string }
+        '400': { description: Неверный номер }
+        '409': { description: Номер уже зарегистрирован }
+        '429': { description: Слишком частые запросы }
+
+  /api/auth/check-reg:
+    get:
+      tags: [Auth]
+      summary: Проверка статуса регистрации через Telegram
+      parameters:
+        - in: query
+          name: phone
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  confirmed: { type: boolean }
+                  token:     { type: string }
+                  customer:  { $ref: '#/components/schemas/Customer' }
+
   /api/auth/login:
     post:
       tags: [Auth]
@@ -303,11 +354,39 @@ paths:
         '200': { description: OK }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /api/orders/mine:
+    get:
+      tags: [Orders]
+      summary: История заказов текущего пользователя
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /api/orders/all:
     get:
       tags: [Orders]
       summary: Все заказы (dispatch)
       security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/orders/delay-all:
+    post:
+      tags: [Orders]
+      summary: Массовая задержка активных заказов диспетчером
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [min]
+              properties:
+                min:    { type: integer, minimum: 1 }
+                reason: { type: string }
       responses:
         '200': { description: OK }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -387,6 +466,24 @@ paths:
           schema: { type: string }
       responses: { '200': { description: OK } }
 
+  /api/chat/open:
+    post:
+      tags: [Chat]
+      summary: Переоткрытие закрытого диалога (персонал)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key]
+              properties:
+                key: { type: string }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /api/vapid:
     get:
       tags: [Push]
@@ -413,6 +510,45 @@ paths:
               properties: { sub: { type: object } }
       responses: { '200': { description: OK } }
 
+  /api/promo/redeem:
+    post:
+      tags: [Promos]
+      summary: Активация промокода гостем
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+      responses:
+        '200':
+          description: Промокод применён
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:      { type: string }
+                  customer: { $ref: '#/components/schemas/Customer' }
+        '400': { description: Ошибка применения }
+
+  /api/promo/info:
+    get:
+      tags: [Promos]
+      summary: Проверка условий промокода для корзины
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+        '404': { description: Промокод не найден }
+
   /api/promos:
     get:
       tags: [Admin]
@@ -431,3 +567,12 @@ paths:
       summary: Дашборд владельца
       security: [{ BearerAuth: [] }]
       responses: { '200': { description: OK } }
+
+  /api/tg/diag:
+    get:
+      tags: [System]
+      summary: Диагностика вебхука и соединения с Telegram Bot API
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
