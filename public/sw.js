@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v351';
+const STATIC_CACHE = 'zerno-static-v352';
 const MEDIA_CACHE = 'zerno-media-v20';
 const API_CACHE = 'zerno-api-v14';
 
@@ -10,70 +10,21 @@ const STATIC_ASSETS = [
   '/icon.svg',
   '/andCoffee.svg',
   '/friday-logo.svg',
-  '/app/main.js',
+  '/dist/main.bundle.js',
+  '/app/brands/registry.js',
   '/app/ui/theme-v2.css',
   '/app/ui/brand-tokens.css',
-  '/app/brands/registry.js',
   '/app/ui/fonts.css',
-  '/app/core/state.js',
-  '/app/core/utils.js',
-  '/app/core/api.js',
-  '/app/core/panel.js',
-  '/app/core/catalog.js',
-  '/app/core/staffpin.js',
-  '/app/core/editor.js',
-  '/app/core/promo.js',
-  '/app/core/dash.js',
-  '/app/core/push-ui.js',
-  '/app/core/fx.js',
-  '/app/core/overlay-core.js',
-  '/app/core/boot.js',
-  '/app/core/views.js',
-  '/app/core/config.js',
-  '/app/core/a11y.js',
-  '/app/core/chat-head.js',
-  '/app/core/chat-state.js',
-  '/app/core/push.js',
-  '/app/core/deeplink.js',
   '/app/core/address-dict.js',
   '/app/core/address-autocomplete.js',
-  '/app/core/preorder-timer.js',
   '/app/core/address-book.js',
-  '/app/core/swipe.js',
-  '/app/core/notify.js',
-  '/app/core/splash.js',
-  '/app/core/qr.js',
-  '/app/core/review.js',
-  '/app/chat.js',
-  '/app/chat-core.js',
-  '/app/profile.js',
-  '/app/profile-brand.js',
-  '/app/cashier.js',
-  '/app/orders.js',
-  '/app/menu.js',
-  '/app/menu-editor.js',
-  '/app/delivery.js',
-  '/app/cart.js',
-  '/app/live.js',
-  '/app/admin-extra.js',
-  '/app/scanner.js',
+  '/app/core/preorder-timer.js',
   '/app/vendor/qrcode.min.js',
-  '/app/ui/styles.js',
-  '/app/ui/dropdowns.js',
-  '/app/ui/settings.js',
-  '/app/ui/delivery-search.js',
-  '/app/ui/cashier-log.js',
-  '/app/ui/cashier-card.js',
   '/app/ui/fonts/golos-text-400-cyrillic.woff2',
-  '/app/ui/fonts/golos-text-400-latin.woff2',
   '/app/ui/fonts/golos-text-600-cyrillic.woff2',
-  '/app/ui/fonts/golos-text-600-latin.woff2',
   '/app/ui/fonts/golos-text-700-cyrillic.woff2',
-  '/app/ui/fonts/golos-text-700-latin.woff2',
   '/app/ui/fonts/prata-400-cyrillic.woff2',
-  '/app/ui/fonts/prata-400-latin.woff2',
-  '/app/ui/fonts/unbounded-700-cyrillic.woff2',
-  '/app/ui/fonts/unbounded-700-latin.woff2'
+  '/app/ui/fonts/unbounded-700-cyrillic.woff2'
 ];
 
 const API_TTL = 5 * 60 * 1000;
@@ -124,8 +75,8 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-if (url.pathname.startsWith('/api/menu') || url.pathname.startsWith('/api/dmenu')) {
-      e.respondWith(
+  if (url.pathname.startsWith('/api/menu') || url.pathname.startsWith('/api/dmenu')) {
+    e.respondWith(
       caches.open(API_CACHE).then(async (cache) => {
         const cachedRes = await cache.match(request);
         const fetchPromise = fetch(request)
@@ -190,9 +141,10 @@ if (url.pathname.startsWith('/api/menu') || url.pathname.startsWith('/api/dmenu'
     return;
   }
 
-  // App Shell: Cache-First с фоновым обновлением для мгновенного старта PWA
+  // App Shell: Cache-First с фоновым обновлением
   if (
     request.destination === 'document' ||
+    url.pathname.startsWith('/dist/') ||
     url.pathname.startsWith('/app/') ||
     /\.(js|css)$/.test(url.pathname)
   ) {

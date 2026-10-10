@@ -364,10 +364,10 @@ html[data-brand="delivery"] #menuView {
   <!-- PERF-P0 v6: preload friday-logo.svg удалён — LCP-элемент в доставке это пицца,
        логотип не участвует в критическом пути. Брендовая марка ставится через
        admin-extra.js → applyBrandChrome(). -->
-          <!-- PRELOAD-FONTS v1: только те, что выше сгиба (без cyrillic — грузятся позже) -->
-  <link rel="preload" href="/app/ui/fonts/golos-text-400-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/app/ui/fonts/prata-400-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/app/ui/fonts/unbounded-700-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Было: предзагрузка 400-го шрифта, который не использовался на старте -->
+<!-- Стало: предзагрузка только тех шрифтов, которые нужны для первого экрана -->
+<link rel="preload" href="/app/ui/fonts/prata-400-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/app/ui/fonts/unbounded-700-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
   <script>/* PERF-MEASURE v2: флаг ?nosw=1 для замеров без SW */
     window.__ztNoSW = /[?&]nosw=1/.test(location.search);
   </script>
@@ -1617,14 +1617,6 @@ if(b==='delivery'){
     предложения, сотрудничество
   </footer>
   <script src="app/vendor/qrcode.min.js" defer></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
-        .then(function (reg) {
-          reg.update();
-        }).catch(function () { });
-    }
-  </script>
   <script src="/app/core/address-dict.js" defer></script>
   <script src="/app/core/address-autocomplete.js" defer></script>
   <script src="/app/core/address-book.js" defer></script>
