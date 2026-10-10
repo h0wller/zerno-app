@@ -1,4 +1,4 @@
-/* server/routes/tg.js — module-08: Telegram bot webhook. tg-refactor: v1 — добавлены /bonus, /orders с кнопками, callback_query. */
+/* server/routes/tg.js — module-08: Telegram bot webhook. */
 
 import { Router } from 'express';
 import { db } from '../db/connection.js';
@@ -9,14 +9,9 @@ import { grantWelcome } from '../domain/loyalty.js';
 import { cust, addHist, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { nowISO } from '../utils/id-time.js';
-import { ORDER_STATUS } from './orders.js';
 import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
 
-const STATUS_EMOJI = { new:'🆕', accept:'✅', cook:'👨‍🍳', way:'🛵', done:'🏁', cancel:'❌' };
-const STEPS = ['new', 'accept', 'cook', 'way', 'done'];
-
-/* Inline-клавиатура для приветствия. c — customer или null. */
-function welcomeKeyboard(c) { // [tg-ux-v1]
+function welcomeKeyboard(c) {
   const rows = [
     [{ text: '☕ Кофейня — меню и штампы', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }],
     [{ text: '🍕 Пятница — доставка',     web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],
@@ -24,7 +19,6 @@ function welcomeKeyboard(c) { // [tg-ux-v1]
   if (c) {
     rows.push([
       { text: '📦 Мои заказы',    web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } },
-      // [tg-support-clean-v1]
       { text: '💬 Задать вопрос', callback_data: 'support_choose' },
     ]);
   } else {
@@ -33,7 +27,6 @@ function welcomeKeyboard(c) { // [tg-ux-v1]
   return { inline_keyboard: rows };
 }
 
-/* Answer на callback — обязательно, иначе у гостя крутится часик на кнопке. */
 async function answerCallback(cbId) {
   if (!cbId || !TG_TOKEN) return;
   await fetch(`https://api.telegram.org/bot${TG_TOKEN}/answerCallbackQuery`, {
@@ -43,7 +36,6 @@ async function answerCallback(cbId) {
   }).catch(() => {});
 }
 
-/* Клавиатура с QR и обновлением. */
 function bonusKeyboard() {
   return { inline_keyboard: [
     [{ text: '📱 Показать QR кассиру', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=bonus' } }],
@@ -54,6 +46,87 @@ function bonusKeyboard() {
 export function createTgRouter({ appKb }) {
   const tgRouter = Router();
 
+  async function sendBonusInfo(targetChatId) {
+    const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(targetChatId);
+    if (!c) {
+      await tgSend(targetChatId, 'Сначала привяжите номер — нажмите кнопку ниже 👇', appKb());
+      return;
+    }
+    const left = 10 - c.stamps;
+    const line = c.free
+      ? ('🎁 Бесплатных кофе: <b>' + c.free + '</b>')
+      : ('До подарка: <b>' + left + '</b> ' + cupWord(left));
+    await tgSend(targetChatId,
+      '☕ <b>' + c.name + '</b>\n\n' + stampBar(c.stamps) + '\n\nШтампов: <b>' + c.stamps + '/10</b>\n' + line,
+      bonusKeyboard()
+    );
+  }
+
+  async function sendLinkPhonePrompt(targetChatId) {
+    await tgSend(targetChatId,
+      'Привяжите номер телефона, чтобы копить штампы и получать бонусы.\n\n' +
+      'Если у вас <b>уже есть профиль</b> в приложении — нажмите кнопку ниже и поделитесь номером 👇',
+      appKb()
+    );
+    await tgSend(targetChatId,
+      'Если профиля ещё нет — создайте его в приложении (10 секунд):',
+      { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }
+    );
+  }
+
+  async function sendSupportMenu(targetChatId) {
+    await tgSend(targetChatId, '💬 Служба заботы на связи. По какой теме вопрос?', {
+      inline_keyboard: [
+        [{ text: '🍕 Доставка — «Пятница»', callback_data: 'support_delivery' }],
+        [{ text: '☕ Кофейня — «…и кофе»',  callback_data: 'support_coffee' }],
+      ]
+    });
+  }
+
+  async function sendMenuButtons(targetChatId) {
+    await tgSend(targetChatId, 'Меню открывается прямо в Telegram 🍕☕', {
+      inline_keyboard: [
+        [{ text: '☕ Кофейня', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }],
+        [{ text: '🍕 Доставка', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],
+      ],
+    });
+  }
+
+  async function sendSupportChatLink(targetChatId, ctx, msgIdToEdit = null) {
+    const label = ctx === 'delivery' ? '🍕 Доставка' : '☕ Кофейня';
+    const openBtn = {
+      inline_keyboard: [[
+        { text: '💬 Открыть чат с поддержкой', web_app: { url: APP_URL + '/?src=tg&brand=' + ctx + '&tab=chat&ctx=' + ctx } }
+      ]]
+    };
+    if (msgIdToEdit && TG_TOKEN) {
+      await fetch('https://api.telegram.org/bot' + TG_TOKEN + '/editMessageText', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: targetChatId,
+          message_id: msgIdToEdit,
+          text: 'Открываю чат: ' + label,
+          reply_markup: openBtn,
+        }),
+      }).catch(() => {});
+    } else {
+      await tgSend(targetChatId, 'Открываю чат: ' + label, openBtn);
+    }
+  }
+
+  async function sendOrdersInfo(targetChatId) {
+    const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(targetChatId);
+    if (!c) {
+      await tgSend(targetChatId, 'Сначала привяжите профиль 👇', appKb());
+      return;
+    }
+    await tgSend(targetChatId,
+      '📦 Мои заказы открываются в приложении — статусы, состав и повтор одним тапом:',
+      { inline_keyboard: [[{ text: '📦 Открыть мои заказы', web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } }]] }
+    );
+  }
+
   tgRouter.post('/api/tg/webhook', async (req, res) => {
     if (TG_WEBHOOK_SECRET && req.header('x-telegram-bot-api-secret-token') !== TG_WEBHOOK_SECRET)
       return res.status(403).json({ error: 'bad secret' });
@@ -61,16 +134,14 @@ export function createTgRouter({ appKb }) {
     const u = req.body;
     res.json({ ok: true });
     if (!u) return;
-    // [tg-logging-v1]
-    // Логируем всё входящее — по update_id и типу сразу видно, что прислал Telegram.
+
     try {
       var _kind = u.callback_query ? 'callback' : (u.message ? (u.message.contact ? 'contact' : 'message') : 'other');
       var _body = u.callback_query ? (u.callback_query.data || '') : (u.message ? (u.message.text || (u.message.contact ? 'phone' : '')) : '');
       console.log('[tg] in  kind=' + _kind + '  body=' + JSON.stringify(_body) + '  from=' + (u.message ? u.message.chat.id : (u.callback_query ? u.callback_query.from.id : '?')));
     } catch (e) {}
 
-    /* ────────────────────────── CALLBACK QUERY ──────────────────────────
-       Нажатия на inline-кнопки. Обрабатываем ДО всего остального. */
+    /* ────────────────────────── CALLBACK QUERY ────────────────────────── */
     if (u.callback_query) {
       const cb = u.callback_query;
       const chatId = String(cb.message?.chat?.id || cb.from?.id || '');
@@ -78,40 +149,14 @@ export function createTgRouter({ appKb }) {
       await answerCallback(cb.id);
       if (!chatId) return;
 
-      /* 🎁 Мои бонусы */
       if (data === 'bonus') {
-        const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
-        if (!c) {
-          await tgSend(chatId, 'Сначала привяжите номер — нажмите кнопку ниже 👇', appKb());
-          return;
-        }
-        const left = 10 - c.stamps;
-        const line = c.free
-          ? `🎁 Бесплатных кофе: <b>${c.free}</b>`
-          : `До подарка: <b>${left}</b> ${cupWord(left)}`;
-        await tgSend(chatId,
-          `☕ <b>${c.name}</b>\n\n${stampBar(c.stamps)}\n\n` +
-          `Штампов: <b>${c.stamps}/10</b>\n${line}`,
-          bonusKeyboard()
-        );
+        await sendBonusInfo(chatId);
         return;
       }
-
-      /* 📦 Мои заказы */
-      if (data === 'orders') { // [tg-ux-v1]
-        const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
-        if (!c) {
-          await tgSend(chatId, 'Сначала привяжите номер — нажмите кнопку ниже 👇', appKb());
-          return;
-        }
-        await tgSend(chatId,
-          '📦 Мои заказы открываются в приложении:',
-          { inline_keyboard: [[{ text: '📦 Открыть мои заказы', web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } }]] }
-        );
+      if (data === 'orders') {
+        await sendOrdersInfo(chatId);
         return;
       }
-
-      /* 🔁 Повторить заказ — открываем WebApp с параметром */
       if (data.startsWith('reorder_')) {
         const orderId = data.slice(8);
         await tgSend(chatId, 'Открываю корзину с тем же составом 🛒', {
@@ -119,8 +164,6 @@ export function createTgRouter({ appKb }) {
         });
         return;
       }
-
-      /* 💬 Позвать оператора — открываем чат */
       if (data.startsWith('call_')) {
         const orderId = data.slice(5);
         await tgSend(chatId, 'Открываю чат поддержки 💬', {
@@ -128,71 +171,18 @@ export function createTgRouter({ appKb }) {
         });
         return;
       }
-
-      /* 🔗 Привязать номер */
-      // [tg-support-flow-v1]
-      /* 💬 Поддержка: выбор темы в Telegram, потом открытие WebApp */
       if (data === 'support_choose') {
-        await tgSend(chatId, '💬 По какой теме вопрос?', {
-          inline_keyboard: [
-            [{ text: '🍕 Доставка — «Пятница»', callback_data: 'support_delivery' }],
-            [{ text: '☕ Кофейня — «…и кофе»',  callback_data: 'support_coffee' }],
-          ]
-        });
+        await sendSupportMenu(chatId);
         return;
       }
       if (data === 'support_delivery' || data === 'support_coffee') {
-        const ctx = data === 'support_delivery' ? 'delivery' : 'coffee';
-        const label = ctx === 'delivery' ? '🍕 Доставка' : '☕ Кофейня';
-        const cbMsgId = cb.message && cb.message.message_id;
-        const openBtn = {
-          inline_keyboard: [[
-            { text: '💬 Открыть чат с поддержкой', web_app: { url: APP_URL + '/?src=tg&brand=' + ctx + '&tab=chat&ctx=' + ctx } }
-          ]]
-        };
-        if (cbMsgId && TG_TOKEN) {
-          await fetch('https://api.telegram.org/bot' + TG_TOKEN + '/editMessageText', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: chatId,
-              message_id: cbMsgId,
-              text: 'Открываю чат: ' + label,
-              reply_markup: openBtn,
-            }),
-          }).catch(function () {});
-        } else {
-          await tgSend(chatId, 'Открываю чат: ' + label, openBtn);
-        }
+        await sendSupportChatLink(chatId, data === 'support_delivery' ? 'delivery' : 'coffee', cb.message?.message_id);
         return;
       }
-
       if (data === 'link_phone') {
-        const existing = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
-        if (existing) {
-          const left = 10 - existing.stamps;
-          const line = existing.free
-            ? '🎁 Бесплатных кофе: <b>' + existing.free + '</b>'
-            : 'До подарка: <b>' + left + '</b> ' + cupWord(left);
-          await tgSend(chatId,
-            'Профиль уже привязан ✅\n\n<b>' + existing.name + '</b> · ' + fmtPhone(existing.phone) + '\n\n' +
-            stampBar(existing.stamps) + '\nШтампов: <b>' + existing.stamps + '/10</b>\n' + line,
-            bonusKeyboard()
-          );
-          return;
-        }
-        await tgSend(chatId,
-          'Привяжите номер телефона, чтобы копить штампы и получать бонусы.\n\n' +
-          'Если у вас <b>уже есть профиль</b> в приложении — нажмите кнопку ниже и поделитесь номером 👇',
-          appKb()
-        );
-        await tgSend(chatId,
-          'Если профиля ещё нет — создайте его в приложении (10 секунд):',
-          { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }
-        );
+        await sendLinkPhonePrompt(chatId);
         return;
       }
-
       return;
     }
 
@@ -201,106 +191,32 @@ export function createTgRouter({ appKb }) {
     const chatId = String(u.message.chat.id);
     const text = String(u.message.text || '').trim();
 
-    // [fallback-text-callback-v1]
-    // Telegram Desktop (некоторые версии) отправляет callback_data обычным текстом.
-    // Перехватываем и обрабатываем как callback, чтобы кнопки работали везде.
-    // [support-fallback-v1]
     if (text === 'link_phone' || text === 'bonus' || text === 'orders' ||
         text === 'support_choose' || text === 'support_delivery' || text === 'support_coffee') {
       const cbChatId = String(u.message.chat.id);
 
-      // ── Поддержка: тема в Telegram, чат в PWA ──
       if (text === 'support_choose') {
-        await tgSend(cbChatId, '💬 По какой теме вопрос?', {
-          inline_keyboard: [
-            [{ text: '🍕 Доставка — «Пятница»', callback_data: 'support_delivery' }],
-            [{ text: '☕ Кофейня — «…и кофе»',  callback_data: 'support_coffee' }],
-          ]
-        });
+        await sendSupportMenu(cbChatId);
         return;
       }
       if (text === 'support_delivery' || text === 'support_coffee') {
-        const ctx = text === 'support_delivery' ? 'delivery' : 'coffee';
-        const label = ctx === 'delivery' ? '🍕 Доставка' : '☕ Кофейня';
-        await tgSend(cbChatId, 'Открываю чат: ' + label, {
-          inline_keyboard: [[
-            { text: '💬 Открыть чат с поддержкой', web_app: { url: APP_URL + '/?src=tg&brand=' + ctx + '&tab=chat&ctx=' + ctx } }
-          ]]
-        });
+        await sendSupportChatLink(cbChatId, text === 'support_delivery' ? 'delivery' : 'coffee');
         return;
       }
-
       if (text === 'link_phone') {
-        const existing = db.prepare('SELECT * FROM customers WHERE tg=?').get(cbChatId);
-        if (existing) {
-          const left = 10 - existing.stamps;
-          const line = existing.free
-            ? '🎁 Бесплатных кофе: <b>' + existing.free + '</b>'
-            : 'До подарка: <b>' + left + '</b> ' + cupWord(left);
-          await tgSend(cbChatId,
-            'Профиль уже привязан ✅\n\n<b>' + existing.name + '</b> · ' + fmtPhone(existing.phone) + '\n\n' +
-            stampBar(existing.stamps) + '\nШтампов: <b>' + existing.stamps + '/10</b>\n' + line,
-            bonusKeyboard()
-          );
-          return;
-        }
-        await tgSend(cbChatId,
-          'Привяжите номер телефона — копите штампы и получайте бонусы.\n\n' +
-          'Если у вас <b>уже есть профиль</b> — нажмите кнопку ниже и поделитесь номером 👇',
-          appKb()
-        );
-        await tgSend(cbChatId,
-          'Если профиля ещё нет — создайте его в приложении:',
-          { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }
-        );
+        await sendLinkPhonePrompt(cbChatId);
         return;
       }
       if (text === 'bonus') {
-        const existing = db.prepare('SELECT * FROM customers WHERE tg=?').get(cbChatId);
-        if (!existing) {
-          await tgSend(cbChatId, 'Сначала привяжите номер — нажмите кнопку ниже 👇', appKb());
-          return;
-        }
-        const left = 10 - existing.stamps;
-        const line = existing.free
-          ? '🎁 Бесплатных кофе: <b>' + existing.free + '</b>'
-          : 'До подарка: <b>' + left + '</b> ' + cupWord(left);
-        await tgSend(cbChatId,
-          '☕ <b>' + existing.name + '</b>\n\n' + stampBar(existing.stamps) + '\n\nШтампов: <b>' + existing.stamps + '/10</b>\n' + line,
-          bonusKeyboard()
-        );
+        await sendBonusInfo(cbChatId);
         return;
       }
       if (text === 'orders') {
-        const existing = db.prepare('SELECT * FROM customers WHERE tg=?').get(cbChatId);
-        if (!existing) {
-          await tgSend(cbChatId, 'Сначала привяжите профиль 👇', appKb());
-          return;
-        }
-        const rows = db.prepare('SELECT id,no,status,total FROM orders WHERE cid=? ORDER BY no DESC LIMIT 5').all(existing.id);
-        if (!rows.length) {
-          await tgSend(cbChatId, 'Заказов пока нет 🍕', {
-            inline_keyboard: [[{ text: '🍕 Открыть меню', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }]],
-          });
-          return;
-        }
-        for (const o of rows) {
-          const idx = STEPS.indexOf(o.status);
-          const bar = STEPS.map((s, i) => i <= idx && idx >= 0 ? '●' : '○').join('─');
-          const emoji = STATUS_EMOJI[o.status] || '•';
-          await tgSend(cbChatId,
-            '<b>#' + o.no + '</b> · ' + emoji + ' ' + (ORDER_STATUS[o.status] || o.status) + '\n' + bar + '\nИтого: <b>' + o.total + ' ₽</b>',
-            { inline_keyboard: [
-              [{ text: '📦 Детали', web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders&no=' + o.no } }],
-              [{ text: '🔁 Повторить', callback_data: 'reorder_' + o.id }],
-            ]}
-          );
-        }
+        await sendOrdersInfo(cbChatId);
         return;
       }
     }
 
-    /* 1. Регистрация через одноразовую ссылку (фронт шлёт reg_<token>) */
     if (text.startsWith('/start reg_')) {
       const token = text.slice(11).trim();
       const st = otpStore.get('regtg:' + token);
@@ -313,7 +229,6 @@ export function createTgRouter({ appKb }) {
       return;
     }
 
-    /* 2. Обычный /start — приветствие с WebApp-кнопками */
     if (text === '/start') {
       const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
       const hello = c
@@ -328,52 +243,22 @@ export function createTgRouter({ appKb }) {
       return;
     }
 
-    /* 3. /menu — WebApp-кнопка (а не обманчивый текст) */
     if (text === '/menu') {
-      await tgSend(chatId, 'Меню открывается прямо в Telegram 🍕☕', {
-        inline_keyboard: [
-          [{ text: '☕ Кофейня', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }],
-          [{ text: '🍕 Доставка', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],
-        ],
-      });
+      await sendMenuButtons(chatId);
       return;
     }
 
-    /* 4. /bonus — прогресс-бар штампов */
     if (text === '/bonus') {
-      const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
-      if (!c) {
-        await tgSend(chatId, 'Сначала привяжите номер — нажмите кнопку ниже 👇', appKb());
-        return;
-      }
-      const left = 10 - c.stamps;
-      const line = c.free
-        ? `🎁 Бесплатных кофе: <b>${c.free}</b>`
-        : `До подарка: <b>${left}</b> ${cupWord(left)}`;
-      await tgSend(chatId,
-        `☕ <b>${c.name}</b>\n\n${stampBar(c.stamps)}\n\n` +
-        `Штампов: <b>${c.stamps}/10</b>\n${line}`,
-        bonusKeyboard()
-      );
+      await sendBonusInfo(chatId);
       return;
     }
 
-    /* 5. /orders — список с action-кнопками */
-    if (text === '/orders') { // [tg-ux-v1]
-      const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
-      if (!c) {
-        await tgSend(chatId, 'Сначала привяжите профиль 👇', appKb());
-        return;
-      }
-      await tgSend(chatId,
-        '📦 Мои заказы открываются в приложении — статусы, состав и повтор одним тапом:',
-        { inline_keyboard: [[{ text: '📦 Открыть мои заказы', web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } }]] }
-      );
+    if (text === '/orders') {
+      await sendOrdersInfo(chatId);
       return;
     }
 
-    /* 6. /help */
-    if (text === '/help') { // [tg-ux-v1]
+    if (text === '/help') {
       await tgSend(chatId,
         '🤖 <b>Чем я могу помочь:</b>\n\n' +
         '• <b>Команды:</b>\n' +
@@ -391,8 +276,6 @@ export function createTgRouter({ appKb }) {
       return;
     }
 
-    /* 7. Привязка через contact — сохранённый flow */
-    // [tg-web-seamless-auth-v1]
     if (u.message.contact) {
       const pend = otpStore.get('regchat:' + chatId);
       if (pend && Date.now() < pend.expires) {
@@ -452,9 +335,6 @@ export function createTgRouter({ appKb }) {
       }
     }
 
-    // [tg-smart-replies-v1]
-    // [tg-remove-keyboard-clean-v1]
-    // 8. Проверка, прислан ли номер телефона (контакт или 10 цифр)
     const isPhoneInput = !!u.message.contact || (text && ph10(text).length === 10);
     if (isPhoneInput) {
       if (u.message.contact) {
@@ -467,7 +347,6 @@ export function createTgRouter({ appKb }) {
         db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);
         if (!c.welcome) {
           grantWelcome(c.id, 'Telegram');
-          // [tg-welcome-offer-200-v1]
           await tgSend(chatId,
             '✅ Готово, ' + c.name + '! Профиль привязан 🎉\n\n' +
             '🎁 <b>Ваши приветственные бонусы:</b>\n' +
@@ -492,51 +371,23 @@ export function createTgRouter({ appKb }) {
       return;
     }
 
-    // 9. Умные ответы на естественные вопросы гостей
     const lower = text.toLowerCase();
 
-    // а) Вызов поддержки / оператора
     if (/(оператор|человек|помощь|поддержк|админ|связаться|проблем|жалоб|ошибк|позови)/i.test(lower)) {
-      await tgSend(chatId, '💬 Служба заботы на связи. По какой теме вопрос?', {
-        inline_keyboard: [
-          [{ text: '🍕 Доставка — «Пятница»', callback_data: 'support_delivery' }],
-          [{ text: '☕ Кофейня — «…и кофе»',  callback_data: 'support_coffee' }],
-        ]
-      });
+      await sendSupportMenu(chatId);
       return;
     }
 
-    // б) Штампы / бонусы / бесплатный кофе
     if (/(штамп|бонус|бесплатн|подарок|зерн|зёрн|промокод|баллы|qr)/i.test(lower)) {
-      const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
-      if (c) {
-        const left = 10 - c.stamps;
-        const line = c.free
-          ? ('🎁 Бесплатных кофе: <b>' + c.free + '</b>')
-          : ('До подарка: <b>' + left + '</b> ' + cupWord(left));
-        await tgSend(chatId,
-          '☕ <b>' + c.name + '</b>\n\n' + stampBar(c.stamps) + '\n\nШтампов: <b>' + c.stamps + '/10</b>\n' + line,
-          bonusKeyboard()
-        );
-      } else {
-        await tgSend(chatId,
-          '🎁 <b>Программа лояльности «…и кофе»:</b>\n\nКаждый 10-й кофе — бесплатно!\nПривяжите номер телефона, чтобы видеть свои штампы и копить бонусы 👇',
-          welcomeKeyboard(null)
-        );
-      }
+      await sendBonusInfo(chatId);
       return;
     }
 
-    // в) Заказы / статус доставки
     if (/(заказ|где курьер|где доставка|доставк|статус заказа)/i.test(lower)) {
-      await tgSend(chatId,
-        '📦 Все ваши заказы со статусами и составом доступны в приложении:',
-        { inline_keyboard: [[{ text: '📦 Открыть мои заказы', web_app: { url: APP_URL + '/?src=tg&brand=delivery&tab=orders' } }]] }
-      );
+      await sendOrdersInfo(chatId);
       return;
     }
 
-    // г) Адрес / график работы
     if (/(где вы|адрес|находит|как добраться|время работ|режим работ|часы работ|до скольки|со скольки|янтарн)/i.test(lower)) {
       await tgSend(chatId,
         '📍 <b>Наши заведения в пгт Янтарный:</b>\n\n' +
@@ -558,18 +409,11 @@ export function createTgRouter({ appKb }) {
       return;
     }
 
-    // д) Меню / пицца / напитки
     if (/(меню|пицц|ролл|кофе|напитк|десерт)/i.test(lower)) {
-      await tgSend(chatId, 'Меню открывается прямо в Telegram 🍕☕', {
-        inline_keyboard: [
-          [{ text: '☕ Кофейня', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }],
-          [{ text: '🍕 Доставка', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],
-        ]
-      });
+      await sendMenuButtons(chatId);
       return;
     }
 
-    // е) Мягкий ответ по умолчанию с кнопками действий
     const custCur = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
     await tgSend(chatId,
       'Я подскажу по меню, заказам и бонусам 🌊\nВыберите действие в меню ниже или напишите свой вопрос:',

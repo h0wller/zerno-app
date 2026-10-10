@@ -395,7 +395,7 @@ html[data-brand="delivery"] #menuView {
         };
         return {
           isStub: true, readyState: 'ready', isExpanded: true,
-          initData: '', initDataUnsafe: {}, version: '0.0', platform: 'web',
+          initData: '', initDataUnsafe: {}, version: '0.0', platform: 'unknown', isStub: true,
           colorScheme: 'light', themeParams: {},
           ready: noop, expand: noop, close: noop,
           enableClosingConfirmation: noop, disableVerticalSwipes: noop,
@@ -558,7 +558,7 @@ if(b==='delivery'){
     </div>
   </div>
 
-  <!-- ═══ ИНЛАЙН-ВЛАДЕЛЕЦ КЛИКА (единственный, без window.sv) ═══ -->
+  <!-- ═══ ИНЛАЙН-ВЛАДЕЛЕЦ КЛИКА (контракт Playwright и чистая навигация) ═══ -->
   <script>
     (function () {
       var s = document.getElementById("brandSplashStatic");
@@ -567,14 +567,14 @@ if(b==='delivery'){
         var btn = e.target.closest("[data-go]");
         if (!btn) return;
         e.stopImmediatePropagation();
-        var brand = btn.getAttribute("data-go");
+        var choice = btn.getAttribute("data-go");
         try { sessionStorage.setItem("splashDone", "1"); } catch (err) { }
-        try { localStorage.setItem("zt_brand", brand); } catch (err) { }
+        try { localStorage.setItem("zt_brand", choice); } catch (err) { }
         document.documentElement.classList.remove("need-splash");
         document.documentElement.classList.add("no-splash");
         s.remove();
         var u = new URL(location.href);
-        u.searchParams.set("brand", brand);
+        u.searchParams.set("brand", choice);
         location.replace(u.toString());
       });
     })();

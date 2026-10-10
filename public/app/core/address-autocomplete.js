@@ -113,53 +113,37 @@
     input.setAttribute('autocomplete', 'off');
     input.setAttribute('spellcheck', 'false');
 
-    input.addEventListener('focus', function () {
-      if (justSelected) return;
-      var placeInput = document.getElementById('checkoutPlace');
-      var place = placeInput ? placeInput.value : '';
-      var list = (window.AddressModule && window.AddressModule.getStreets)
+    
+    
+    function updateStreetList(inputElem, onlyIfActive) {
+      if (onlyIfActive && document.activeElement !== inputElem) {
+        hideDropdown();
+        return;
+      }
+      var pInput = document.getElementById('checkoutPlace');
+      var place = pInput ? pInput.value : '';
+      var streets = (window.AddressModule && window.AddressModule.getStreets)
         ? window.AddressModule.getStreets(place) : [];
-      if (!list.length) return;
-
-      var q = (input.value || '').toLowerCase().trim();
-      var filtered = q
-        ? list.filter(function (s) { return s.toLowerCase().indexOf(q) > -1; })
-        : list;
-      showDropdown(input, filtered);
-    });
-
-    input.addEventListener('input', function () {
-      var placeInput = document.getElementById('checkoutPlace');
-      var place = placeInput ? placeInput.value : '';
-      var list = (window.AddressModule && window.AddressModule.getStreets)
-        ? window.AddressModule.getStreets(place) : [];
-      var q = (input.value || '').toLowerCase().trim();
-      var filtered = q
-        ? list.filter(function (s) { return s.toLowerCase().indexOf(q) > -1; })
-        : list;
-      if (filtered.length && document.activeElement === input) {
-        showDropdown(input, filtered.slice(0, 8));
+      if (!streets.length) {
+        hideDropdown();
+        return;
+      }
+      var q = (inputElem.value || '').toLowerCase().trim();
+      var filtered = q ? streets.filter(function (s) { return s.toLowerCase().indexOf(q) > -1; }) : streets;
+      if (filtered.length) {
+        showDropdown(inputElem, onlyIfActive ? filtered.slice(0, 8) : filtered);
       } else {
         hideDropdown();
       }
+    }
+
+    
+    input.addEventListener('focus', function () {
+      if (!justSelected) updateStreetList(input, false);
     });
 
-    input.addEventListener('keydown', function (e) {
-      if (!items.length) return;
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        activeIndex = Math.min(activeIndex + 1, items.length - 1);
-        highlightItem(activeIndex);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        activeIndex = Math.max(activeIndex - 1, 0);
-        highlightItem(activeIndex);
-      } else if (e.key === 'Enter' && activeIndex >= 0) {
-        e.preventDefault();
-        selectItem(input, items[activeIndex]);
-      } else if (e.key === 'Escape') {
-        hideDropdown();
-      }
+    input.addEventListener('input', function () {
+      updateStreetList(input, true);
     });
 
     input.addEventListener('blur', function () {

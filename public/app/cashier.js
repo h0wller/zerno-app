@@ -74,16 +74,18 @@ $('#redeemBtn').onclick = async () => {
   } catch (e) { toast(e.message, '⚠️'); }
 };
 
-$('#newGuestBtn').onclick = () => {
-  $('#ngCard').hidden = !$('#ngCard').hidden;
-  if (!$('#ngCard').hidden) $('#ngName').focus();
+const toggleNgModal = () => {
+  const c = $('#ngCard');
+  if (!c) return;
+  c.hidden = !c.hidden;
+  if (!c.hidden) {
+    const f = $('#ngName');
+    if (f) f.focus();
+  }
 };
-
+$('#newGuestBtn').onclick = toggleNgModal;
 const ng2 = $('#newGuestBtn2');
-if (ng2) ng2.onclick = () => {
-  $('#ngCard').hidden = !$('#ngCard').hidden;
-  if (!$('#ngCard').hidden) $('#ngName').focus();
-};
+if (ng2) ng2.onclick = toggleNgModal;
 
 $('#ngCancel').onclick = () => { $('#ngCard').hidden = true; };
 
@@ -172,10 +174,6 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
 })();
 
 (function(){
-  var acts=document.querySelector('#custCard .acts');
-  if(!acts||document.getElementById('custClose'))return;
-  var b=document.createElement('button');b.id='custClose';b.className='btn ghost';b.textContent='✕ Закрыть карточку';
-  b.onclick=function(){document.getElementById('custCard').classList.remove('show');try{found=null;}catch(e){}};
   acts.appendChild(b);
 window.renderLog = renderLog; /* Ф5.6-финал шаг 2-fix: голый вызов из catalog setMode */
 })();

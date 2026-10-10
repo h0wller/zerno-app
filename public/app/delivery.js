@@ -1,16 +1,17 @@
 function getKaliningradTime() {
-  if (typeof window.getKaliningradTime === 'function' && window.getKaliningradTime !== getKaliningradTime) {
+  if (typeof window !== "undefined" && typeof window.getKaliningradTime === "function" && window.getKaliningradTime !== getKaliningradTime) {
     return window.getKaliningradTime();
   }
-  var d = new Date();
-  var h = (d.getUTCHours() + 2) % 24;
-  return { hour: h, minute: d.getUTCMinutes() };
+  var dt = new Date(Date.now() + 2 * 3600000);
+  return { hour: dt.getUTCHours(), minute: dt.getUTCMinutes() };
 }
 
 function isDeliveryServiceOpen() {
+  if (typeof window !== 'undefined' && typeof window.isDeliveryServiceOpen === 'function' && window.isDeliveryServiceOpen !== isDeliveryServiceOpen) {
+    return window.isDeliveryServiceOpen();
+  }
   var t = getKaliningradTime();
-  var min = t.hour * 60 + t.minute;
-  return min >= 660 && min < 1320;
+  return t.hour >= 11 && t.hour < 22;
 }
 
 if (typeof window !== 'undefined') {
@@ -18,19 +19,7 @@ if (typeof window !== 'undefined') {
   window.getKaliningradTime = getKaliningradTime;
 }
 
-function _getKaliningradHour() {
-  try {
-    var str = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Europe/Kaliningrad',
-      hour: 'numeric',
-      hour12: false
-    }).format(new Date());
-    return parseInt(str, 10);
-  } catch (e) {
-    var now = new Date();
-    return (now.getUTCHours() + 2) % 24;
-  }
-}
+
 
 /* public/app/delivery.js — F2.5: доставка — state, рендер меню, субфильтры и корзина */
 
@@ -45,7 +34,7 @@ window.deliveryInfo = null;
 window.promoInfo = null;
 window.cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
 
-const DCATS = [
+const DCATS = window.DCATS = [
   { id: 'pizza', e: '🍕', l: 'Пиццы' },
   { id: 'rolls', e: '🍣', l: 'Роллы' },
   { id: 'sets', e: '🍱', l: 'Сеты' },

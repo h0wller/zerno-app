@@ -68,13 +68,7 @@ async function boot() {
     if (typeof maybeAskReview === 'function') maybeAskReview();
   }
 
-  const _qsSrc = new URLSearchParams(location.search).get("src");
-  const _hasSplash = !sessionStorage.getItem("splashDone") && document.getElementById("brandSplashStatic");
-  if (!window.onboarded && _qsSrc !== "tg" && !_hasSplash && !isAudit) {
-    setTimeout(() => {
-      if (typeof openAuth === 'function') openAuth(false);
-    }, 600);
-  }
+  // За открытие регистрации отвечает выбор бренда на сплэше
 }
 
 /* ── 3. Service Worker: ЕДИНАЯ регистрация ── */

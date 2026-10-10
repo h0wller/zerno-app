@@ -508,7 +508,13 @@
   }
 
   /* ── Рендер корзины ── */
-  function renderCartBase() {
+  function persistCartUpdate() {
+  localStorage.setItem("zt_cart", JSON.stringify(cart));
+  if (typeof window.updateCartFab === 'function') window.updateCartFab();
+  renderCartBase();
+}
+
+function renderCartBase() {
     var cItems = document.getElementById("cartItems");
     if (!cItems) return;
     var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
@@ -623,9 +629,7 @@
             if (window.TgUx) window.TgUx.haptic("medium");
           }
 
-          localStorage.setItem("zt_cart", JSON.stringify(cart));
-          window.updateCartFab();
-          renderCartBase();
+          persistCartUpdate();
         }
         return;
       }
@@ -638,9 +642,7 @@
         var mIdx = +delModBtn.dataset.modIdx;
         if (cart[cIdx] && cart[cIdx].modifiers) {
           cart[cIdx].modifiers.splice(mIdx, 1);
-          localStorage.setItem("zt_cart", JSON.stringify(cart));
-          window.updateCartFab();
-          renderCartBase();
+          persistCartUpdate();
         }
         return;
       }
@@ -658,9 +660,7 @@
           delete openModsMap[i];
         }
 
-        localStorage.setItem("zt_cart", JSON.stringify(cart));
-        window.updateCartFab();
-        renderCartBase();
+        persistCartUpdate();
         return;
       }
 
@@ -698,9 +698,7 @@
           if (window.TgUx) window.TgUx.haptic("medium");
         }
 
-        localStorage.setItem("zt_cart", JSON.stringify(cart));
-        window.updateCartFab();
-        renderCartBase();
+        persistCartUpdate();
       }
     });
   }

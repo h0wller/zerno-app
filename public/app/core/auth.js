@@ -6,6 +6,32 @@
   var setPinCtx = null;
   var regPoll = null;
 
+  function setAuthFormMode(login) {
+    var rf = document.getElementById('regForm');
+    var lf = document.getElementById('loginForm');
+    var at = document.getElementById('authTitle');
+    if (rf) rf.style.display = login ? 'none' : 'flex';
+    if (lf) lf.style.display = login ? 'flex' : 'none';
+    if (at) at.textContent = login ? 'Вход по номеру' : 'Создайте профиль';
+  }
+
+  function resetLoginPinState() {
+    loginMode = 'pin';
+    var pr = document.getElementById('logPinRow'); if (pr) pr.style.display = '';
+    var ow = document.getElementById('logOtpWrap'); if (ow) ow.style.display = 'none';
+    var bk = document.getElementById('otpBackRow'); if (bk) bk.style.display = 'none';
+    var lb = document.getElementById('logBtn'); if (lb) lb.textContent = 'Войти';
+  }
+
+  function getValidatedLoginPhone() {
+    var phone = (document.getElementById('logPhone') || {}).value;
+    if (ph10(phone).length < 10) {
+      toast('Введите номер полностью', '📵');
+      return null;
+    }
+    return phone;
+  }
+
   function armPw() {
     ['regPin', 'logPin', 'logOtp', 'setPinInput', 'pinInput'].forEach(function (id) {
       var el = document.getElementById(id);
@@ -13,56 +39,49 @@
     });
   }
 
-  /* ── Брендовая адаптация модалки (Вариант 3) ── */
-  /* ── Брендовая адаптация модалки ── */
-  // [tg-auth-modal-redesign-v2]
-function adaptAuthForTelegram(modal) {
-  var isTg = !!(window.__isTgMiniApp || window.__tgInitData || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData));
-  if (!isTg || !modal) return;
+  function adaptAuthForTelegram(modal) {
+    var isTg = !!(window.__isTgMiniApp || window.__tgInitData || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData));
+    if (!isTg || !modal) return;
 
-  modal.classList.add('tg-mode');
-  // Скрываем кнопку перехода в Telegram (мы уже внутри него)
-  var tgBtn = document.getElementById('regTgBtn');
-  if (tgBtn) tgBtn.style.display = 'none';
+    modal.classList.add('tg-mode');
+    var tgBtn = document.getElementById('regTgBtn');
+    if (tgBtn) tgBtn.style.display = 'none';
 
-  // Скрываем подсказку про кассира под кнопкой
-  var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
-  if (hint) hint.style.display = 'none';
+    var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
+    if (hint) hint.style.display = 'none';
 
-  // Скрываем чекбокс согласия ПД (акцепт нативно через Telegram ID)
-  var consentRow = modal.querySelector('label:has(input[type="checkbox"]), .consent-row');
-  if (consentRow) consentRow.style.display = 'none';
+    var consentRow = modal.querySelector('label:has(input[type="checkbox"]), .consent-row');
+    if (consentRow) consentRow.style.display = 'none';
 
-  // Предзаполняем имя
-  if (window.__tgUser && window.__tgUser.name) {
-    var rn = document.getElementById('regName');
-    if (rn && !rn.value) rn.value = window.__tgUser.name;
+    if (window.__tgUser && window.__tgUser.name) {
+      var rn = document.getElementById('regName');
+      if (rn && !rn.value) rn.value = window.__tgUser.name;
+    }
   }
-}
 
-function applyAuthBrand() {
-  var modal = document.getElementById('authModal');
-  if (!modal) return;
-  var isDeliv = (typeof brand !== 'undefined' && brand === 'delivery');
-  var modeName = isDeliv ? 'delivery' : 'coffee';
-  var b = (typeof window.BRANDS !== 'undefined')
-    ? window.BRANDS[modeName] || window.BRANDS.coffee
-    : { label: '…и кофе', authLogo: { src: '/andCoffee.svg', box: 66, wide: false } };
-  var al = b.authLogo || { src: '/andCoffee.svg', box: 66, wide: false };
-  var alogo = modal.querySelector('.alogo');
-  if (alogo) {
-    alogo.style.width = al.box + 'px';
-    alogo.style.height = (al.wide ? Math.round(al.box * 0.25) : al.box) + 'px';
-    alogo.innerHTML = '<img src="' + al.src + '" alt="' + b.label + '" style="width:100%;height:100%;object-fit:contain;display:block;">';
+  function applyAuthBrand() {
+    var modal = document.getElementById('authModal');
+    if (!modal) return;
+    var isDeliv = (typeof brand !== 'undefined' && brand === 'delivery');
+    var modeName = isDeliv ? 'delivery' : 'coffee';
+    var b = (typeof window.BRANDS !== 'undefined')
+      ? window.BRANDS[modeName] || window.BRANDS.coffee
+      : { label: '…и кофе', authLogo: { src: '/andCoffee.svg', box: 66, wide: false } };
+    var al = b.authLogo || { src: '/andCoffee.svg', box: 66, wide: false };
+    var alogo = modal.querySelector('.alogo');
+    if (alogo) {
+      alogo.style.width = al.box + 'px';
+      alogo.style.height = (al.wide ? Math.round(al.box * 0.25) : al.box) + 'px';
+      alogo.innerHTML = '<img src="' + al.src + '" alt="' + b.label + '" style="width:100%;height:100%;object-fit:contain;display:block;">';
+    }
+    adaptAuthForTelegram(modal);
+    var msub = modal.querySelector('.msub');
+    if (msub) {
+      msub.innerHTML = isDeliv
+        ? 'Единый профиль: сохранение адресов, подарки от 2 000 ₽ и штампы на кофе у моря.'
+        : 'Копите зёрна на бесплатный кофе на кассе и заказывайте пиццу с подарками и сохранёнными адресами.';
+    }
   }
-  adaptAuthForTelegram(modal);
-  var msub = modal.querySelector('.msub');
-  if (msub) {
-    msub.innerHTML = isDeliv
-      ? 'Единый профиль: сохранение адресов, подарки от 2 000 ₽ и штампы на кофе у моря.'
-      : 'Копите зёрна на бесплатный кофе на кассе и заказывайте пиццу с подарками и сохранёнными адресами.';
-  }
-}
 
   function openAuth(login) {
     if (typeof login === 'undefined') login = false;
@@ -72,13 +91,7 @@ function applyAuthBrand() {
     var am = document.getElementById('authModal');
     if (am) am.classList.add('show');
 
-    var rf = document.getElementById('regForm');
-    var lf = document.getElementById('loginForm');
-    var at = document.getElementById('authTitle');
-
-    if (rf) rf.style.display = login ? 'none' : 'flex';
-    if (lf) lf.style.display = login ? 'flex' : 'none';
-    if (at) at.textContent = login ? 'Вход по номеру' : 'Создайте профиль';
+    setAuthFormMode(login);
 
     if (typeof syncOverlay === 'function') syncOverlay();
     setTimeout(function () {
@@ -95,25 +108,8 @@ function applyAuthBrand() {
 
   function authSwap(login) {
     applyAuthBrand();
-    var rf = document.getElementById('regForm');
-    var lf = document.getElementById('loginForm');
-    var at = document.getElementById('authTitle');
-
-    if (rf) rf.style.display = login ? 'none' : 'flex';
-    if (lf) lf.style.display = login ? 'flex' : 'none';
-    if (at) at.textContent = login ? 'Вход по номеру' : 'Создайте профиль';
-
-    if (login) {
-      loginMode = 'pin';
-      var pr = document.getElementById('logPinRow');
-      if (pr) pr.style.display = '';
-      var ow = document.getElementById('logOtpWrap');
-      if (ow) ow.style.display = 'none';
-      var bk = document.getElementById('otpBackRow');
-      if (bk) bk.style.display = 'none';
-      var lb = document.getElementById('logBtn');
-      if (lb) lb.textContent = 'Войти';
-    }
+    setAuthFormMode(login);
+    if (login) resetLoginPinState();
   }
 
   function setUser(token, customer) {
@@ -177,9 +173,7 @@ function applyAuthBrand() {
     if (typeof syncOverlay === 'function') syncOverlay();
   }
 
-  /* ── Инициализация слушателей при загрузке DOM ── */
   document.addEventListener('DOMContentLoaded', function () {
-    // [tg-initdata-fast-auth-v1]
     async function checkTgAutoLogin() {
       if (localStorage.getItem('zt_user')) return;
       var tg = window.Telegram && window.Telegram.WebApp;
@@ -207,6 +201,7 @@ function applyAuthBrand() {
       } catch (_) {}
     }
     checkTgAutoLogin();
+
     var toLogin = document.getElementById('toLogin');
     if (toLogin) toLogin.onclick = function () { authSwap(true); };
 
@@ -233,7 +228,7 @@ function applyAuthBrand() {
 
         if (name.length < 2) return toast('Введите имя', '✍️');
         if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
-        if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
+        if (!/^d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
 
         if (window.__tgInitData) {
           try {
@@ -297,11 +292,9 @@ function applyAuthBrand() {
             body: { phone: ph, name: nm, via: 'tg' }
           });
           if (r && r.tgUrl) {
-          toast('Открываем Telegram...', '🤖');
-          setTimeout(function() {
-            window.location.href = r.tgUrl;
-          }, 250);
-        }
+            toast('Открываем Telegram...', '🤖');
+            setTimeout(function() { window.location.href = r.tgUrl; }, 250);
+          }
           toast('Подтвердите номер в Telegram', '🤖');
 
           if (regPoll) clearInterval(regPoll);
@@ -337,8 +330,8 @@ function applyAuthBrand() {
     var logBtn = document.getElementById('logBtn');
     if (logBtn) {
       logBtn.onclick = async function () {
-        var phone = (document.getElementById('logPhone') || {}).value;
-        if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
+        var phone = getValidatedLoginPhone();
+        if (!phone) return;
 
         try {
           if (loginMode === 'otp') {
@@ -376,8 +369,8 @@ function applyAuthBrand() {
     var otpBtn = document.getElementById('otpBtn');
     if (otpBtn) {
       otpBtn.onclick = async function () {
-        var phone = (document.getElementById('logPhone') || {}).value;
-        if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
+        var phone = getValidatedLoginPhone();
+        if (!phone) return;
         try {
           await api('/auth/request-otp', { method: 'POST', body: { phone: phone } });
           loginMode = 'otp';
@@ -393,15 +386,7 @@ function applyAuthBrand() {
     }
 
     var otpBack = document.getElementById('otpBack');
-    if (otpBack) {
-      otpBack.onclick = function () {
-        loginMode = 'pin';
-        var pr = document.getElementById('logPinRow'); if (pr) pr.style.display = '';
-        var ow = document.getElementById('logOtpWrap'); if (ow) ow.style.display = 'none';
-        var bk = document.getElementById('otpBackRow'); if (bk) bk.style.display = 'none';
-        var lb = document.getElementById('logBtn'); if (lb) lb.textContent = 'Войти';
-      };
-    }
+    if (otpBack) otpBack.onclick = resetLoginPinState;
 
     var setPinClose = document.getElementById('setPinClose');
     if (setPinClose) setPinClose.onclick = closeSetPin;
@@ -410,7 +395,7 @@ function applyAuthBrand() {
     if (setPinGo) {
       setPinGo.onclick = async function () {
         var pin = (document.getElementById('setPinInput') || {}).value.trim();
-        if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
+        if (!/^d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
         try {
           if (setPinCtx && setPinCtx.mode === 'claim') {
             var r = await api('/auth/setup-pin', {
@@ -437,6 +422,7 @@ function applyAuthBrand() {
         }
       };
     }
+
     var profileTopBtn = document.getElementById('profileTopBtn');
     if (profileTopBtn) {
       profileTopBtn.onclick = function () {
@@ -448,7 +434,7 @@ function applyAuthBrand() {
       };
     }
 
-    var brandLogo = document.querySelector('.brand');
+    var brandLogo = document.querySelector('.topbar .brand');
     if (brandLogo) {
       brandLogo.onclick = function () {
         if (typeof mode !== 'undefined' && mode !== 'guest') {
@@ -458,6 +444,7 @@ function applyAuthBrand() {
         }
       };
     }
+
     var logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.onclick = async function () {
@@ -483,7 +470,6 @@ function applyAuthBrand() {
     }
   });
 
-  /* ── Экспорт в глобальную область видимости ── */
   window.openAuth = openAuth;
   window.closeAuth = closeAuth;
   window.authSwap = authSwap;

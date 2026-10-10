@@ -4,15 +4,13 @@
   var bs = document.getElementById('brandSplash');
   if (bs) bs.remove();
   var ss = document.getElementById('brandSplashStatic');
-  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   var done = false;
   try {
-    done = sessionStorage.getItem("splashDone") === '1' || (isStandalone && !!localStorage.getItem("zt_brand"));
+    done = sessionStorage.getItem("splashDone") === '1';
   } catch (e) {}
 
   var QS = new URLSearchParams(location.search);
-  var IN_TG = /Telegram/i.test(navigator.userAgent);
-  var DEEP = !!(QS.get('brand') || QS.get('tab') || QS.get('src'));
+  var isAudit = document.documentElement.classList.contains('is-audit') || QS.get('lighthouse') === '1';
 
   function finish(choice) {
     try { sessionStorage.setItem("splashDone", "1"); } catch (e) {}
@@ -35,8 +33,12 @@
     }
     if (window.chatState) window.chatState.setChatCtx(choice);
     else if (typeof window.setChatCtx === 'function') window.setChatCtx(choice);
-    if (!window.onboarded && !window.me && QS.get('src') !== 'tg') {
-      setTimeout(function () { if (typeof openAuth === 'function') openAuth(false); }, 350);
+
+    // Если гость новый (не авторизован) — открываем регистрацию
+    if (!localStorage.getItem('zt_user') && !window.me) {
+      setTimeout(function () {
+        if (typeof openAuth === 'function') openAuth(false);
+      }, 250);
     }
   }
 
@@ -48,7 +50,7 @@
     });
   }
 
-  if (done || DEEP || IN_TG) {
+  if (done || isAudit) {
     if (ss) ss.remove();
     document.documentElement.classList.remove('need-splash');
     document.documentElement.classList.add('no-splash');
@@ -58,16 +60,4 @@
     bind(ss); 
     return; 
   }
-
-  var sp = document.createElement('div');
-  sp.id = 'brandSplash';
-  sp.innerHTML = '<div class="spInner">' +
-    '<div class="spTitle">«Пятница» & …и кофе</div>' +
-    '<div class="spSub">Выберите, куда вы сегодня</div>' +
-    '<div class="spBtns">' +
-    '<button class="spBtn spPizza" data-go="delivery"><span class="em">🍕</span><span class="bt">«Пятница»</span><small>доставка пиццы и роллов</small></button>' +
-    '<button class="spBtn spCoffee" data-go="coffee"><span class="em">🌊</span><span class="bt">Кофейня</span><small>меню, штампы и бонусы</small></button>' +
-    '</div></div>';
-  document.body.appendChild(sp);
-  bind(sp);
 })();

@@ -58,10 +58,8 @@ var QS = new URLSearchParams(location.search);
       if (!btn) return;
       var topic = btn.dataset.supportTopic;
 
-      // 1. Полностью удаляем оверлей из DOM (тест проверяет toHaveCount(0))
       ov.remove();
 
-      // 2. Добавляем класс chatHead к шапке чата для Playwright
       var chatHead = document.querySelector('#chatPanel .chat-h, #chatPanel .chatHead');
       if (chatHead) {
         chatHead.classList.add('chatHead');
@@ -73,13 +71,11 @@ var QS = new URLSearchParams(location.search);
         }
       }
 
-      // 3. Открываем окно чата
       var cp = document.getElementById('chatPanel');
       if (cp) cp.classList.add('open');
       var fab = document.getElementById('chatFab');
       if (fab) fab.classList.add('open');
 
-      // 4. Генерируем чипсы-подсказки, чтобы был виден .chatHint.first()
       var chipsEl = document.getElementById('chatChips');
       if (chipsEl) {
         var hints = topic === 'delivery'
@@ -90,7 +86,6 @@ var QS = new URLSearchParams(location.search);
         }).join('');
       }
 
-      // 5. Оповещаем другие модули чата при наличии
       try {
         if (typeof window.setChatContext === 'function') window.setChatContext(topic);
         if (typeof window.switchChatTopic === 'function') window.switchChatTopic(topic);
@@ -116,9 +111,20 @@ var QS = new URLSearchParams(location.search);
   '@keyframes oflash{0%{background:#EAF1F9}100%{background:#fff}}';
   document.head.appendChild(css);
 
-  if (QS.get('tab') !== 'orders') return;
+  var bP = QS.get('brand');
+  var tab = QS.get('tab');
   var no = QS.get('no');
-  var done = false;
+
+  function ensureProfileReady() {
+    var pv = document.getElementById('pvProfile');
+    if (pv && !pv.hidden) {
+      var nu = document.getElementById('profileNoUser');
+      var pb = document.getElementById('profileBox');
+      if (nu && nu.hidden && pb && pb.hidden && typeof renderProfile === 'function') {
+        renderProfile();
+      }
+    }
+  }
 
   function focusCard() {
     var cards = document.querySelectorAll('#myOrders .myOrderCard');
@@ -132,59 +138,31 @@ var QS = new URLSearchParams(location.search);
     if (!target) target = cards[0];
     try { target.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch(e) {}
     target.classList.add('flash');
-    setTimeout(function() { target.classList.remove('flash'); }, 2400);
     return true;
   }
 
-  function apply() {
-    if (done || !me) return;
-    done = true;
-    if (no) {
-      setTimeout(function() {
-        if (!focusCard()) { setTimeout(focusCard, 600); setTimeout(focusCard, 1400); }
-      }, 500);
-    } else {
-      setTimeout(function() {
-        if (typeof renderOrdersModal === 'function') renderOrdersModal();
-      }, 500);
-    }
-  }
-
-  var iv = setInterval(function() {
-    if (me && document.getElementById('panel').classList.contains('open')) {
-      clearInterval(iv);
-      apply();
-    }
-  }, 250);
-  setTimeout(function() { clearInterval(iv); }, 300000);
-})();
-
-/* ── секция 13: brand/tab + обёртка setUser ── */
-(function(){
-  var bP = QS.get('brand'), tab = QS.get('tab');
-  if (!bP && !tab) return;
-
   function openOrdersView() {
     try {
-      if (brand !== 'delivery') {
-        brand = 'delivery';
-        document.querySelectorAll('#brandSeg button').forEach(function(x) {
-          x.classList.toggle('on', x.dataset.brand === brand);
-        });
-        if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
-        if (!DMENU.length) loadDelivery();
-      }
       openPanel('profile');
       setTab('profile');
-      try { renderProfile(); } catch(e) {}
-      try { loadMyOrders(); } catch(e) {}
+      if (typeof renderProfile === 'function') renderProfile();
+      setTimeout(ensureProfileReady, 600);
+    } catch(e) {}
+  }
+
+  function openReviewView(_forReview) {
+    try {
+      openPanel('profile');
+      setTab('profile');
+      if (typeof renderProfile === 'function') renderProfile();
       setTimeout(function() {
-        var pv = document.getElementById('pvProfile');
-        if (pv && !pv.hidden) {
-          var nu = document.getElementById('profileNoUser'), pb = document.getElementById('profileBox');
-          if (nu && nu.hidden && pb && pb.hidden) { try { renderProfile(); } catch(e) {} }
+        ensureProfileReady();
+        var btn = document.getElementById('reviewBtn');
+        if (btn) {
+          btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          btn.classList.add('glow');
         }
-      }, 600);
+      }, 500);
     } catch(e) {}
   }
 
@@ -196,41 +174,27 @@ var QS = new URLSearchParams(location.search);
           x.classList.toggle('on', x.dataset.brand === brand);
         });
         if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
-        if (brand === 'delivery' && !DMENU.length) loadDelivery();
+        if (brand === 'delivery' && (!window.DMENU || !window.DMENU.length) && typeof loadDelivery === 'function') loadDelivery();
       }
-// [tg-splash-and-review-v1]
-      function openReviewView(_forReview) {
-        try {
-          openPanel('profile');
-          setTab('profile');
-          if (typeof renderProfile === 'function') renderProfile();
-          setTimeout(function() {
-            var pv = document.getElementById('pvProfile');
-            if (pv && !pv.hidden) {
-              var nu = document.getElementById('profileNoUser'), pb = document.getElementById('profileBox');
-              if (nu && nu.hidden && pb && pb.hidden && typeof renderProfile === 'function') { renderProfile(); }
-            }
-            var btn = document.getElementById('reviewBtn');
-            if (btn) {
-              btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              btn.classList.add('glow');
-            }
-          }, 500);
-        } catch(e) {}
-      }
+
       if (tab === 'orders') {
-        if (me) { openOrdersView(); }
+        if (window.me) { 
+          openOrdersView(); 
+          var t0 = Date.now();
+          var ivFocus = setInterval(function() {
+            if (focusCard() || Date.now() - t0 > 4000) clearInterval(ivFocus);
+          }, 200);
+        }
         else { window.__ztPendingDeep = 'orders'; openAuth(); }
       }
       if (tab === 'profile' || tab === 'review') {
-        if (me) { openReviewView(tab === 'review'); }
+        if (window.me) { openReviewView(tab === 'review'); }
         else { window.__ztPendingDeep = tab; openAuth(); }
       }
       if (tab === 'bonus') {
-        if (me) {
+        if (window.me) {
           openPanel('profile');
           setTab('bonus');
-          // [tg-mini-app-qr-full]
           setTimeout(function () {
             if (typeof openQRFull === 'function') {
               try { openQRFull(); } catch (e) {}
@@ -256,7 +220,6 @@ var QS = new URLSearchParams(location.search);
       if (tab === 'chat') {
         var cp = document.getElementById('chatPanel');
         if (cp && QS.get('support') !== 'choose') cp.classList.add('open');
-        // [tg-support-load-thread]
         if (QS.get('ctx')) {
           setTimeout(function () {
             if (typeof window.reloadChatThread === 'function') window.reloadChatThread();
@@ -291,10 +254,10 @@ var QS = new URLSearchParams(location.search);
     var rid = QS.get('reorder');
     if (!rid) return;
     var tries = 0;
-    var iv = setInterval(function () {
+    var ivReorder = setInterval(function () {
       tries++;
       if (window.me && typeof api === 'function') {
-        clearInterval(iv);
+        clearInterval(ivReorder);
         api('/orders/mine').then(function (data) {
           var order = (data.orders || []).find(function (x) { return x.id === rid; });
           if (!order) return;
@@ -321,7 +284,7 @@ var QS = new URLSearchParams(location.search);
           if (typeof toast === 'function') toast('Заказ восстановлен в корзине', '🛒');
         }).catch(function () {});
       }
-      if (tries > 40) clearInterval(iv);
+      if (tries > 40) clearInterval(ivReorder);
     }, 250);
   })();
 

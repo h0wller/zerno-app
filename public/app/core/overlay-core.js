@@ -121,12 +121,11 @@ window.syncOverlay = syncOverlay;
   function isTg() {
     if (window.__isTgMiniApp) return true;
     const tg = getTg();
-    if (!tg) return false;
+    if (!tg || tg.isStub) return false;
     return !!(
       (tg.initData && tg.initData.length > 0) ||
-      (tg.initDataUnsafe &&
-        (tg.initDataUnsafe.query_id || tg.initDataUnsafe.user)) ||
-      (tg.platform && tg.platform !== "unknown") ||
+      (tg.initDataUnsafe && (tg.initDataUnsafe.query_id || tg.initDataUnsafe.user)) ||
+      (tg.platform && tg.platform !== "unknown" && tg.platform !== "web") ||
       /tgWebAppData=/.test(location.hash) ||
       new URLSearchParams(location.search).get("src") === "tg"
     );

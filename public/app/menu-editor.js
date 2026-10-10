@@ -2,13 +2,15 @@
 (function(){
 'use strict';
 
-var DCATSL=[
-  {id:'pizza',e:'🍕',l:'Пиццы'},
-  {id:'rolls',e:'🍣',l:'Роллы'},
-  {id:'sets',e:'🍱',l:'Сеты'},
-  {id:'drinks',e:'🥤',l:'Напитки'},
-  {id:'sauces',e:'🥫',l:'Допы и соусы'}
-];
+var DCATSL = (typeof window !== 'undefined' && window.DCATS)
+  ? window.DCATS
+  : [
+      ['pizza', '🍕', 'Пиццы'],
+      ['rolls', '🍣', 'Роллы'],
+      ['sets', '🍱', 'Сеты'],
+      ['drinks', '🥤', 'Напитки'],
+      ['sauces', '🥫', 'Допы и соусы']
+    ].map(function (c) { return { id: c[0], e: c[1], l: c[2] }; });
 
 function editorFields(){
   var isDeliv=(brand==='delivery');
