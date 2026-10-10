@@ -17,9 +17,7 @@
     "tests/**/*.js"
   ],
   "ignore": [
-    "public/app/vendor/**",
-    "public/app/ui/dropdowns.js",
-    "public/app/core/overlay.js"
+    "public/app/vendor/**"
   ],
   "ignoreDependencies": [
     "@capacitor/*",

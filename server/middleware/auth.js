@@ -3,52 +3,42 @@
 import { db } from '../config.js';
 
 export function authUser(req) {
-  const t = (req.header('Authorization') || '').replace('Bearer ', '');
+  const t = (req.header('Authorization') || '').replace('Bearer ', '').trim();
+  if (!t) return null;
   const row = db.prepare("SELECT * FROM tokens WHERE token=? AND kind='user'").get(t);
   return row ? db.prepare('SELECT * FROM customers WHERE id=?').get(row.ref) : null;
 }
 
+function checkRole(req, res, next, allowedRoles, errorMsg = 'Недостаточно прав') {
+  req.user = authUser(req);
+  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
+  if (allowedRoles && !allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ error: errorMsg });
+  }
+  next();
+}
+
 export const userGuard = (req, res, next) => {
   req.user = authUser(req);
-  req.user ? next() : res.status(401).json({ error: 'Нужен вход по номеру' });
+  return req.user ? next() : res.status(401).json({ error: 'Нужен вход по номеру' });
 };
 
 export const staffGuard = (req, res, next) => {
-  req.user = authUser(req);
-  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
-  if (req.user.role !== 'cashier' && req.user.role !== 'admin')
-    return res.status(403).json({ error: 'Недостаточно прав: нужна роль кассира' });
-  next();
-};
-
-export const chatGuard = (req, res, next) => {
-  req.user = authUser(req);
-  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
-  if (!['cashier', 'admin', 'dispatch'].includes(req.user.role))
-    return res.status(403).json({ error: 'Недостаточно прав' });
-  next();
+  return checkRole(req, res, next, ['cashier', 'admin'], 'Недостаточно прав: нужна роль кассира');
 };
 
 export const adminGuard = (req, res, next) => {
-  req.user = authUser(req);
-  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
-  if (req.user.role !== 'admin')
-    return res.status(403).json({ error: 'Недостаточно прав: нужна роль администратора' });
-  next();
+  return checkRole(req, res, next, ['admin'], 'Недостаточно прав: нужна роль администратора');
+};
+
+export const chatGuard = (req, res, next) => {
+  return checkRole(req, res, next, ['cashier', 'admin', 'dispatch']);
 };
 
 export const pendingGuard = (req, res, next) => {
-  req.user = authUser(req);
-  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
-  if (!['cashier', 'admin', 'dispatch'].includes(req.user.role))
-    return res.status(403).json({ error: 'Недостаточно прав' });
-  next();
+  return checkRole(req, res, next, ['cashier', 'admin', 'dispatch']);
 };
 
 export const dispatchGuard = (req, res, next) => {
-  req.user = authUser(req);
-  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
-  if (!['cashier', 'admin', 'dispatch'].includes(req.user.role))
-    return res.status(403).json({ error: 'Недостаточно прав' });
-  next();
+  return checkRole(req, res, next, ['cashier', 'admin', 'dispatch']);
 };
