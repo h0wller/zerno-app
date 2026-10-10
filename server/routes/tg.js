@@ -10,6 +10,7 @@ import { cust, addHist, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { nowISO } from '../utils/id-time.js';
 import { ORDER_STATUS } from './orders.js';
+import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
 
 const STATUS_EMOJI = { new:'🆕', accept:'✅', cook:'👨‍🍳', way:'🛵', done:'🏁', cancel:'❌' };
 const STEPS = ['new', 'accept', 'cook', 'way', 'done'];
@@ -40,12 +41,6 @@ async function answerCallback(cbId) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ callback_query_id: cbId }),
   }).catch(() => {});
-}
-
-/* Прогресс-бар штампов: 🫘 🫘 🫘 ⚪ ⚪ ⚪ ⚪ ⚪ ⚪ ⚪ */
-function stampBar(n) {
-  return '🫘'.repeat(Math.min(10, Math.max(0, n))) +
-         '⚪'.repeat(Math.max(0, 10 - Math.min(10, Math.max(0, n))));
 }
 
 /* Клавиатура с QR и обновлением. */
@@ -93,7 +88,7 @@ export function createTgRouter({ appKb }) {
         const left = 10 - c.stamps;
         const line = c.free
           ? `🎁 Бесплатных кофе: <b>${c.free}</b>`
-          : `До подарка: <b>${left}</b> ${left === 1 ? 'чашка' : (left >= 2 && left <= 4 ? 'чашки' : 'чашек')}`;
+          : `До подарка: <b>${left}</b> ${cupWord(left)}`;
         await tgSend(chatId,
           `☕ <b>${c.name}</b>\n\n${stampBar(c.stamps)}\n\n` +
           `Штампов: <b>${c.stamps}/10</b>\n${line}`,
@@ -178,7 +173,7 @@ export function createTgRouter({ appKb }) {
           const left = 10 - existing.stamps;
           const line = existing.free
             ? '🎁 Бесплатных кофе: <b>' + existing.free + '</b>'
-            : 'До подарка: <b>' + left + '</b> ' + (left === 1 ? 'чашка' : (left >= 2 && left <= 4 ? 'чашки' : 'чашек'));
+            : 'До подарка: <b>' + left + '</b> ' + cupWord(left);
           await tgSend(chatId,
             'Профиль уже привязан ✅\n\n<b>' + existing.name + '</b> · ' + fmtPhone(existing.phone) + '\n\n' +
             stampBar(existing.stamps) + '\nШтампов: <b>' + existing.stamps + '/10</b>\n' + line,
@@ -241,7 +236,7 @@ export function createTgRouter({ appKb }) {
           const left = 10 - existing.stamps;
           const line = existing.free
             ? '🎁 Бесплатных кофе: <b>' + existing.free + '</b>'
-            : 'До подарка: <b>' + left + '</b> ' + (left === 1 ? 'чашка' : (left >= 2 && left <= 4 ? 'чашки' : 'чашек'));
+            : 'До подарка: <b>' + left + '</b> ' + cupWord(left);
           await tgSend(cbChatId,
             'Профиль уже привязан ✅\n\n<b>' + existing.name + '</b> · ' + fmtPhone(existing.phone) + '\n\n' +
             stampBar(existing.stamps) + '\nШтампов: <b>' + existing.stamps + '/10</b>\n' + line,
@@ -269,7 +264,7 @@ export function createTgRouter({ appKb }) {
         const left = 10 - existing.stamps;
         const line = existing.free
           ? '🎁 Бесплатных кофе: <b>' + existing.free + '</b>'
-          : 'До подарка: <b>' + left + '</b> ' + (left === 1 ? 'чашка' : (left >= 2 && left <= 4 ? 'чашки' : 'чашек'));
+          : 'До подарка: <b>' + left + '</b> ' + cupWord(left);
         await tgSend(cbChatId,
           '☕ <b>' + existing.name + '</b>\n\n' + stampBar(existing.stamps) + '\n\nШтампов: <b>' + existing.stamps + '/10</b>\n' + line,
           bonusKeyboard()
@@ -354,7 +349,7 @@ export function createTgRouter({ appKb }) {
       const left = 10 - c.stamps;
       const line = c.free
         ? `🎁 Бесплатных кофе: <b>${c.free}</b>`
-        : `До подарка: <b>${left}</b> ${left === 1 ? 'чашка' : (left >= 2 && left <= 4 ? 'чашки' : 'чашек')}`;
+        : `До подарка: <b>${left}</b> ${cupWord(left)}`;
       await tgSend(chatId,
         `☕ <b>${c.name}</b>\n\n${stampBar(c.stamps)}\n\n` +
         `Штампов: <b>${c.stamps}/10</b>\n${line}`,
@@ -518,7 +513,7 @@ export function createTgRouter({ appKb }) {
         const left = 10 - c.stamps;
         const line = c.free
           ? ('🎁 Бесплатных кофе: <b>' + c.free + '</b>')
-          : ('До подарка: <b>' + left + '</b> ' + (left === 1 ? 'чашка' : (left >= 2 && left <= 4 ? 'чашки' : 'чашек')));
+          : ('До подарка: <b>' + left + '</b> ' + cupWord(left));
         await tgSend(chatId,
           '☕ <b>' + c.name + '</b>\n\n' + stampBar(c.stamps) + '\n\nШтампов: <b>' + c.stamps + '/10</b>\n' + line,
           bonusKeyboard()

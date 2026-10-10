@@ -221,6 +221,59 @@ $('#deliveryRail').addEventListener('click', e => {
   }
 });
 
+function renderPizzaOptsHtml(p, opts) {
+  return '<div class="opts">' +
+    opts.map(function (o, i) {
+      var lStr = String(o.l || '');
+      var parts = lStr.split(',').map(function (s) { return s.trim(); });
+      var sizeText = parts[0] || lStr;
+      var crustText = parts[1] || '';
+      var weightText = o.w ? esc(o.w) : '';
+      var priceText = fmt(o.p);
+
+      return '<button type="button" class="opt-btn" data-id="' + p.id + '" data-oi="' + i + '">' +
+        '<div class="opt-row opt-top">' +
+          '<span class="opt-size">' + esc(sizeText) + '</span>' +
+          '<span class="opt-crust">' + esc(crustText) + '</span>' +
+        '</div>' +
+        '<div class="opt-row opt-bottom">' +
+          '<span class="opt-weight">' + weightText + '</span>' +
+          '<span class="opt-price">' + priceText + '</span>' +
+        '</div>' +
+      '</button>';
+    }).join('') +
+  '</div>';
+}
+
+function renderSingleMetaHtml(p) {
+  var priceStr = fmt(Number(p.price) || 0);
+  var volStr = p.vol ? esc(String(p.vol).trim()) : '';
+  return '<div class="single-meta" style="display:flex;align-items:baseline;justify-content:space-between;margin:8px 0 12px;padding:4px 0;border-bottom:1px solid rgba(18,58,107,0.06)">' +
+    (volStr ? '<span class="vol" style="font-size:13px;font-weight:600;color:#5B6670">' + volStr + '</span>' : '<span></span>') +
+    '<span class="price" style="font-size:18px;font-weight:800;color:var(--flame,#C03B2A)">' + priceStr + '</span>' +
+  '</div>';
+}
+
+function renderDeliveryCard(p, n0) {
+  var opts = p.opts || [];
+  var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
+
+  return '<article class="card" data-product-id="' + p.id + '">' +
+    '<div class="media" style="--tint:#F3E2CE"><span class="em">' + (p.e || '🍕') + '</span></div>' +
+    '<div class="cbody">' +
+      '<h3>' + esc(p.name) + '</h3>' +
+      (p.desc ? '<div class="desc">' + esc(p.desc) + '</div>' : '') +
+      (p.comp && p.comp.length ? '<div class="comp">' + p.comp.map(function (c) { return '<i>' + esc(c) + '</i>'; }).join('') + '</div>' : '') +
+      bodyMiddleHTML +
+      '<div class="steprow">' +
+        '<button type="button" class="step" data-step="-1" data-sid="' + p.id + '" ' + (n0 ? '' : 'hidden') + '>−</button>' +
+        '<button class="cta" data-add="' + p.id + '">' + (n0 ? 'В корзине · ' + n0 : 'Добавить') + '</button>' +
+        '<button type="button" class="step" data-step="1" data-sid="' + p.id + '" ' + (n0 ? '' : 'hidden') + '>+</button>' +
+      '</div>' +
+    '</div>' +
+  '</article>';
+}
+
 function renderDeliveryMenu() {
   const catItems = DMENU.filter(p => p.cat === dcat);
 
@@ -243,63 +296,15 @@ function renderDeliveryMenu() {
   }
 
   let html = list.map(p => {
-    const opts = p.opts || [];
     const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
-
-    // Вариант 1: Пицца (2 строки: размер/тесто вверху, вес/цена внизу)
-    let bodyMiddleHTML = '';
-    if (opts.length > 0) {
-      bodyMiddleHTML = `<div class="opts">
-        ${opts.map((o, i) => {
-          const lStr = String(o.l || '');
-          const parts = lStr.split(',').map(s => s.trim());
-          const sizeText = parts[0] || lStr;
-          const crustText = parts[1] || '';
-          const weightText = o.w ? esc(o.w) : '';
-          const priceText = fmt(o.p);
-
-          return `<button type="button" class="opt-btn" data-id="${p.id}" data-oi="${i}">
-            <div class="opt-row opt-top">
-              <span class="opt-size">${esc(sizeText)}</span>
-              <span class="opt-crust">${esc(crustText)}</span>
-            </div>
-            <div class="opt-row opt-bottom">
-              <span class="opt-weight">${weightText}</span>
-              <span class="opt-price">${priceText}</span>
-            </div>
-          </button>`;
-        }).join('')}
-      </div>`;
-    } else {
-      // Вариант 2: Роллы, сеты, напитки, соусы
-      const priceStr = fmt(Number(p.price) || 0);
-      const volStr = p.vol ? esc(String(p.vol).trim()) : '';
-      bodyMiddleHTML = `<div class="single-meta" style="display:flex;align-items:baseline;justify-content:space-between;margin:8px 0 12px;padding:4px 0;border-bottom:1px solid rgba(18,58,107,0.06)">
-      ${volStr ? `<span class="vol" style="font-size:13px;font-weight:600;color:#5B6670">${volStr}</span>` : '<span></span>'}        <span class="price" style="font-size:18px;font-weight:800;color:var(--flame,#C03B2A)">${priceStr}</span>
-      </div>`;
-    }
-
-    return `<article class="card" data-product-id="${p.id}">
-      <div class="media" style="--tint:#F3E2CE"><span class="em">${p.e || '🍕'}</span></div>
-      <div class="cbody">
-        <h3>${esc(p.name)}</h3>
-        ${p.desc ? `<div class="desc">${esc(p.desc)}</div>` : ''}
-        ${p.comp && p.comp.length ? `<div class="comp">${p.comp.map(c => `<i>${esc(c)}</i>`).join('')}</div>` : ''}
-        ${bodyMiddleHTML}
-        <div class="steprow">
-          <button type="button" class="step" data-step="-1" data-sid="${p.id}" ${n0 ? '' : 'hidden'}>−</button>
-          <button class="cta" data-add="${p.id}">${n0 ? 'В корзине · ' + n0 : 'Добавить'}</button>
-          <button type="button" class="step" data-step="1" data-sid="${p.id}" ${n0 ? '' : 'hidden'}>+</button>
-        </div>
-      </div>
-    </article>`;
+    return renderDeliveryCard(p, n0);
   }).join('');
 
   if (typeof editMode !== 'undefined' && editMode) {
-    html += `<article class="card add-card" id="addDelivCard">
-      <div style="font-size:32px">➕</div>
-      <div>Добавить позицию в доставку</div>
-    </article>`;
+    html += '<article class="card add-card" id="addDelivCard">' +
+      '<div style="font-size:32px">➕</div>' +
+      '<div>Добавить позицию в доставку</div>' +
+    '</article>';
   }
 
   if (list.length === 0 && (typeof editMode === 'undefined' || !editMode)) {
@@ -601,6 +606,68 @@ window.loadDelivery = async function() {
   } catch(e) {}
 };
 
+function buildSlotItem(now, d, m, busyList, pad) {
+  var t = new Date(now);
+  t.setDate(t.getDate() + d);
+  t.setHours(Math.floor(m / 60), m % 60, 0, 0);
+
+  var tEnd = new Date(t.getTime() + 30 * 60 * 1000);
+  if (d === 0 && (t.getTime() - now.getTime() < 45 * 60 * 1000)) return null;
+
+  var datePart = pad(t.getDate()) + '.' + pad(t.getMonth() + 1);
+  var startPart = pad(t.getHours()) + ':' + pad(t.getMinutes());
+  var endPart = pad(tEnd.getHours()) + ':' + pad(tEnd.getMinutes());
+
+  var slotVal = datePart + ' | ' + startPart + '–' + endPart;
+  var slotShort = startPart + ' – ' + endPart;
+  var dayPrefix = (d === 0 ? 'Сегодня' : 'Завтра');
+  var slotFull = dayPrefix + ' (' + datePart + ') · ' + slotShort;
+  var isBusy = busyList.indexOf(slotVal) > -1;
+
+  return { 
+    v: slotVal, 
+    shortLabel: slotShort + (isBusy ? ' (мест нет)' : ''),
+    fullLabel: slotFull + (isBusy ? ' (мест нет)' : ''),
+    disabled: isBusy 
+  };
+}
+
+function buildDaySlots(now, d, busyList, pad) {
+  var items = [];
+  for (var m = 690; m < 1320; m += 30) {
+    var item = buildSlotItem(now, d, m, busyList, pad);
+    if (item) items.push(item);
+  }
+  if (!items.length) return null;
+  var dt = new Date(now);
+  dt.setDate(dt.getDate() + d);
+  return {
+    label: (d === 0 ? 'Сегодня' : 'Завтра') + ' (' + pad(dt.getDate()) + '.' + pad(dt.getMonth() + 1) + ')',
+    items: items
+  };
+}
+
+function renderSlotGroupOptions(days, pm) {
+  var html = '';
+  if (pm) {
+    html += '<option value="" disabled selected data-short="⏰ Выберите время доставки…" data-full="⏰ Выберите время доставки…">⏰ Выберите время доставки…</option>';
+  } else {
+    html += '<option value="asap" data-short="Как можно скорее (~45 мин)" data-full="Как можно скорее (~45 мин)">Как можно скорее (~45 мин)</option>';
+  }
+
+  Object.keys(days).forEach(function (k) {
+    html += '<optgroup label="' + days[k].label + '">' + 
+      days[k].items.map(function (s) { 
+        return '<option value="' + s.v + '" data-short="' + esc(s.shortLabel) + '" data-full="' + esc(s.fullLabel) + '"' + 
+          (s.disabled ? ' disabled style="color:#8E9AA5;background:#F0F4F8"' : '') + '>' + 
+          esc(s.shortLabel) + 
+        '</option>'; 
+      }).join('') + 
+    '</optgroup>';
+  });
+  return html;
+}
+
 window.populateSlots = function(){
   var now = new Date();
   var pad = function(n){ return String(n).padStart(2, '0'); };
@@ -614,59 +681,12 @@ window.populateSlots = function(){
   var busyList = (deliveryInfo && Array.isArray(deliveryInfo.busySlots)) ? deliveryInfo.busySlots : [];
 
   for (var d = dFrom; d < dTo; d++) {
-    var items = [];
-    for (var m = 690; m < 1320; m += 30) {
-      var t = new Date(now);
-      t.setDate(t.getDate() + d);
-      t.setHours(Math.floor(m / 60), m % 60, 0, 0);
-
-      var tEnd = new Date(t.getTime() + 30 * 60 * 1000);
-      if (d === 0 && (t.getTime() - now.getTime() < 45 * 60 * 1000)) continue;
-
-      var datePart = pad(t.getDate()) + '.' + pad(t.getMonth() + 1);
-      var startPart = pad(t.getHours()) + ':' + pad(t.getMinutes());
-      var endPart = pad(tEnd.getHours()) + ':' + pad(tEnd.getMinutes());
-
-      var slotVal = datePart + ' | ' + startPart + '–' + endPart;
-      var slotShort = startPart + ' – ' + endPart;
-      var dayPrefix = (d === 0 ? 'Сегодня' : 'Завтра');
-      var slotFull = dayPrefix + ' (' + datePart + ') · ' + slotShort;
-      var isBusy = busyList.indexOf(slotVal) > -1;
-
-      items.push({ 
-        v: slotVal, 
-        shortLabel: slotShort + (isBusy ? ' (мест нет)' : ''),
-        fullLabel: slotFull + (isBusy ? ' (мест нет)' : ''),
-        disabled: isBusy 
-      });
-    }
-
-    if (items.length) {
-      var dt = new Date(now); dt.setDate(dt.getDate() + d);
-      days[d] = { 
-        label: (d === 0 ? 'Сегодня' : 'Завтра') + ' (' + pad(dt.getDate()) + '.' + pad(dt.getMonth() + 1) + ')', 
-        items: items 
-      };
-    }
+    var dayData = buildDaySlots(now, d, busyList, pad);
+    if (dayData) days[d] = dayData;
   }
 
-  var html = '';
-  if (pm) html += '<option value="" disabled selected data-short="⏰ Выберите время доставки…" data-full="⏰ Выберите время доставки…">⏰ Выберите время доставки…</option>';
-  else html += '<option value="asap" data-short="Как можно скорее (~45 мин)" data-full="Как можно скорее (~45 мин)">Как можно скорее (~45 мин)</option>';
-
-  Object.keys(days).forEach(function (k) {
-    html += '<optgroup label="' + days[k].label + '">' + 
-      days[k].items.map(function (s) { 
-        return '<option value="' + s.v + '" data-short="' + esc(s.shortLabel) + '" data-full="' + esc(s.fullLabel) + '"' + 
-          (s.disabled ? ' disabled style="color:#8E9AA5;background:#F0F4F8"' : '') + '>' + 
-          esc(s.shortLabel) + 
-        '</option>'; 
-      }).join('') + 
-    '</optgroup>';
-  });
-
   if (sel) {
-    sel.innerHTML = html;
+    sel.innerHTML = renderSlotGroupOptions(days, pm);
     if (prev) {
       for (var i = 0; i < sel.options.length; i++) {
         if (sel.options[i].value === prev && !sel.options[i].disabled) { 

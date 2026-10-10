@@ -57,22 +57,18 @@ export default {
         'Модуль не подключён ни к одному графу импортов — вероятный мёртвый код ' +
         'или забытая регистрация в main.js.',
       from: {
-  orphan: true,
-  pathNot: [
-    '(^|/)public/sw\\.js$',
-    '(^|/)public/debug\\.js$',
-    // Классические скрипты из index.html:
-    '(^|/)public/app/core/(address-dict|address-autocomplete|address-book|preorder-timer)\\.js$',
-    // Динамически подгружаемые в рантайме (scanner.js → loadJsqr):
-    '(^|/)public/jsqr\\.js$',
-    '(^|/)public/qrcode\\.js$',
-    // Пустой placeholder / известный orphan — разберём отдельно:
-    '(^|/)public/app/ui/dropdowns\\.js$',
-    '(^|/)public/app/core/overlay\\.js$',
-    '\\.d\\.ts$'
-  ]
-}
-,
+        orphan: true,
+        pathNot: [
+          '(^|/)public/sw\\.js$',
+          '(^|/)public/debug\\.js$',
+          // Классические скрипты из index.html:
+          '(^|/)public/app/core/(address-dict|address-autocomplete|address-book|preorder-timer)\\.js$',
+          // Динамически подгружаемые в рантайме (scanner.js → loadJsqr):
+          '(^|/)public/jsqr\\.js$',
+          '(^|/)public/qrcode\\.js$',
+          '\\.d\\.ts$'
+        ]
+      },
       to: {}
     }
   ],
@@ -80,7 +76,7 @@ export default {
   options: {
     doNotFollow: { path: 'node_modules' },
     exclude: {
-      path: 'node_modules|\\.min\\.js$|^public/app/vendor/'
+      path: 'node_modules|\\.min\\.js$|^public/app/vendor/|^public/dist/'
     },
     enhancedResolveOptions: {
       exportsFields: ['exports'],
