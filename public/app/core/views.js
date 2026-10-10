@@ -559,6 +559,16 @@ sv();
            document.querySelector('.pushHint, .push-bubble, .pushBubble');
   }
 
+  var placeScheduled = false;
+  function schedulePlace() {
+    if (placeScheduled) return;
+    placeScheduled = true;
+    requestAnimationFrame(function () {
+      placeScheduled = false;
+      place();
+    });
+  }
+
   function place() {
     var b = findPush();
     var av = document.getElementById('profileTopBtn');
@@ -578,7 +588,7 @@ sv();
     var b = findPush();
     if (b) {
       b.style.display = open ? 'none' : '';
-      if (!open) place();
+      if (!open) schedulePlace();
     }
     pulsePushBtn(open);
   }
@@ -614,7 +624,7 @@ sv();
     });
   }
 
-  window.addEventListener('resize', place, { passive: true });
+  window.addEventListener('resize', schedulePlace, { passive: true });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', refresh, { once: true });
