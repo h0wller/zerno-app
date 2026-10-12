@@ -4674,3 +4674,25 @@ body {
 body.editing .card .stopbadge {
   right: 52px;
 }
+/* ── Системная база: мобильные инпуты, шторка и кнопка скролла ── */
+@media (pointer: coarse) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+}
+body.panel-open {
+  overflow: hidden;
+}
+#panel {
+  overscroll-behavior: contain;
+}
+#scrollTopBtn {
+  background: #FFFFFF;
+  border: 1.5px solid var(--line);
+  color: var(--ink);
+  box-shadow: var(--sh);
+}
+[data-brand="delivery"] #scrollTopBtn {
+  background: var(--fr-paper, #F6EEE1);
+  border-color: #3a2a1c;
+}
