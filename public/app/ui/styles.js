@@ -24,12 +24,4 @@
     "@keyframes hintPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06);background:#FDE8E8;border-color:var(--status-danger)}}" +
     '#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:var(--tint-danger)!important;border-color:var(--status-danger)!important;color:var(--status-danger)!important;font-weight:700}';
   document.head.appendChild(cssChat);
-
-  /* ── 3. Установка класса panel-open на body ── */
-  var panel = document.getElementById("panel");
-  if (panel) {
-    new MutationObserver(function () {
-      document.body.classList.toggle("panel-open", panel.classList.contains("open"));
-    }).observe(panel, { attributes: true, attributeFilter: ["class"] });
-  }
 })();

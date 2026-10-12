@@ -444,6 +444,7 @@ sv();
   function refresh() {
     var p = document.getElementById('panel');
     var open = p && p.classList.contains('open');
+    document.body.classList.toggle('panel-open', !!open);
     var b = findPush();
     if (b) {
       b.style.display = open ? 'none' : '';
