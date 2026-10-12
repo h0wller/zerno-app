@@ -3665,6 +3665,17 @@ body #mbonusBtn .mb-free {
   body[data-brand] .topbar #modeSeg {
     grid-column: 1 / -1; grid-row: 2;
   }
+    .topbar #profileTopBtn {
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+  }
+  .venueToggle {
+    height: 56px;
+    font-size: 15px;
+    padding: 0 18px;
+    gap: 8px;
+  }
 }
 
 /* [3] Mobile topbar: профиль справа сверху, mbonus = pill снизу-слева */
