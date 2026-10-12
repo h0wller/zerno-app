@@ -4357,7 +4357,7 @@ body {
   box-shadow: var(--card-shadow, none);
 }
 #deliveryGrid .opts button.sel .op {
-  color: var(--tint-warm, #F3E2CE);
+  color: var(--tint-warm);
 }
 
 /* ── База шапки и переключателя заведений (перенос из views.js) ── */
