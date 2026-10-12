@@ -75,15 +75,18 @@ textarea{
 /* ── Карточки и сетка (стабилизация CLS и памяти под iOS) ──────────────── */
 .grid{
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
 }
-@media (min-width: 1600px){.grid{
-    grid-template-columns: repeat(4, 1fr);
+@media (min-width: 1181px){
+  .grid{
+    grid-template-columns: repeat(3, 1fr);
   }
 }
-.grid{
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+@media (min-width: 1600px){
+  .grid{
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 .card{
   background: var(--card-bg, #FFFFFF);
