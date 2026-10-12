@@ -1,6 +1,7 @@
-/* public/app/ui/styles.js — Ф3.2/P3: Runtime CSS-инжекции + panel-open observer.
-Базовые компоненты (.siteFooter, .omCard, #chatHintsBar и др.) вынесены в theme-v2.css (СЛОЙ 1).
-Здесь остаются исключительно runtime-инспекции (z-index, observer шторки, адаптивные сетки и пульсы). */
+/* public/app/ui/styles.js — Ф3.2/P3: Runtime CSS-инжекции.
+   Базовые компоненты вынесены в theme-v2.css.
+   Здесь остаются runtime-инспекции (z-index, адаптивные сетки и пульсы).
+   MutationObserver panel-open перенесён в views.js (Ф5.70). */
 (function () {
   "use strict";
 

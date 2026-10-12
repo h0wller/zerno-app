@@ -280,6 +280,7 @@ function sv() {
   } else if (typeof window.applyBrandChrome === 'function') {
     window.applyBrandChrome();
   }
+  if (typeof window.updateScrollTop === 'function') window.updateScrollTop();
 }
 
 window.sv = sv;

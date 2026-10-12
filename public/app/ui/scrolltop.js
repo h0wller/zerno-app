@@ -1,4 +1,5 @@
-/* public/app/ui/scrolltop.js — сброс легаси-отступов и кнопка «Наверх» */
+/* public/app/ui/scrolltop.js — сброс легаси-отступов и кнопка «Наверх»
+   Ф5.71: CSS в theme-v2.css, устранение MutationObserver в пользу детерминированного updateScrollTop. */
 function alignRailWithCard() {}
 function alignMbonusWithRail() {}
 window.alignRailWithCard = alignRailWithCard;
@@ -9,17 +10,6 @@ window.alignMbonusWithRail = alignMbonusWithRail;
 
   var btn = document.getElementById('scrollTopBtn');
   if (!btn) {
-    var css = document.createElement('style');
-    css.textContent =
-      '#scrollTopBtn{position:fixed;right:20px;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:96;width:48px;height:48px;border-radius:50%;' +
-      'border:1.5px solid var(--line);background:var(--card,#fff);color:var(--ink);font-size:20px;line-height:1;' +
-      'display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px -8px rgba(16,20,24,.4);' +
-      'opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .25s,transform .25s}' +
-      '#scrollTopBtn.show{opacity:1;pointer-events:auto;transform:none}' +
-      '#scrollTopBtn.low{bottom:calc(20px + env(safe-area-inset-bottom,0px))}' +
-      '#scrollTopBtn:active{transform:scale(.94)}';
-    document.head.appendChild(css);
-
     btn = document.createElement('button');
     btn.id = 'scrollTopBtn';
     btn.type = 'button';
@@ -55,14 +45,11 @@ window.alignMbonusWithRail = alignMbonusWithRail;
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
 
-  if (typeof MutationObserver !== 'undefined') {
-    var cp = document.getElementById('chatPanel');
-    if (cp) new MutationObserver(onScroll).observe(cp, { attributes: true, attributeFilter: ['class'] });
-  }
-
   btn.addEventListener('click', function () {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+
+  window.updateScrollTop = update;
 
   // Запуск не блокирует текущий такт парсинга
   requestAnimationFrame(update);

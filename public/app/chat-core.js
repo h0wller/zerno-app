@@ -478,12 +478,12 @@
       setTimeout(window.setBotName, 50);
       setTimeout(window.setBotName, 300);
       setTimeout(window.setBotName, 900);
-      /* Ф5.8c-1-fix (1): открываем панель после выбора темы (deeplink-обработчик мёртв из-за capture+stopPropagation) */
       var cp = document.getElementById("chatPanel");
       if (cp) cp.classList.add("open");
       var fb2 = document.getElementById("chatFab");
       if (fb2) fb2.classList.add("open");
       if (typeof window.syncOverlay === "function") window.syncOverlay();
+      if (typeof window.updateScrollTop === "function") window.updateScrollTop();
       window.reloadChatThread();
     },
     true,

@@ -4686,11 +4686,39 @@ body.panel-open {
 #panel {
   overscroll-behavior: contain;
 }
+/* ── Кнопка «Наверх» (перенос геометрии из scrolltop.js) ── */
 #scrollTopBtn {
-  background: #FFFFFF;
+  position: fixed;
+  right: 20px;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  z-index: 96;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   border: 1.5px solid var(--line);
+  background: var(--card, #FFFFFF);
   color: var(--ink);
-  box-shadow: var(--sh);
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 24px -8px rgba(16, 20, 24, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 0.25s, transform 0.25s;
+}
+#scrollTopBtn.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+#scrollTopBtn.low {
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+#scrollTopBtn:active {
+  transform: scale(0.94);
 }
 /* ── Стили корзины, модификаторов и кросс-сейла (перенос из cart.js) ── */
 .cartItem {
