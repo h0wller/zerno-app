@@ -154,20 +154,7 @@ var rules = [
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
 
-/* ========== 2. DOM-переезды ========== */
-var wrapEl = document.querySelector('.wrap');
-var sec = wrapEl ? wrapEl.querySelector(':scope > section') : null;
-['deliveryView', 'ordersView', 'cashierView'].forEach(function (id) {
-  var el = document.getElementById(id);
-  if (sec && el && el.parentNode !== sec) sec.appendChild(el);
-});
-var dRail = document.getElementById('deliveryRail');
-if (wrapEl && dRail && dRail.parentNode !== wrapEl) {
-  wrapEl.insertBefore(dRail, sec);
-  dRail.classList.add('rail');
-}
-var ab0 = document.getElementById('adminBar');
-if (sec && ab0 && ab0.parentNode !== sec) sec.insertBefore(ab0, sec.firstChild);
+/* ========== 2. DOM-инъекции стафф-панелей ========== */
 
 (function () {
   var ov = document.getElementById('ordersView');
