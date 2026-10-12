@@ -49,7 +49,10 @@ window.alignMbonusWithRail = alignMbonusWithRail;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  window.updateScrollTop = update;
+ if (window.ztBus) {
+    window.ztBus.on('ui:update-scrolltop', update);
+  }
+  window.updateScrollTop = update; // временно для обратной совместимости
 
   // Запуск не блокирует текущий такт парсинга
   requestAnimationFrame(update);

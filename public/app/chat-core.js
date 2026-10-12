@@ -483,7 +483,11 @@
       var fb2 = document.getElementById("chatFab");
       if (fb2) fb2.classList.add("open");
       if (typeof window.syncOverlay === "function") window.syncOverlay();
-      if (typeof window.updateScrollTop === "function") window.updateScrollTop();
+      if (window.ztBus) {
+        window.ztBus.emit('ui:update-scrolltop');
+      } else if (typeof window.updateScrollTop === "function") {
+        window.updateScrollTop();
+      }
       window.reloadChatThread();
     },
     true,

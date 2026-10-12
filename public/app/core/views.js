@@ -280,7 +280,13 @@ function sv() {
   } else if (typeof window.applyBrandChrome === 'function') {
     window.applyBrandChrome();
   }
-  if (typeof window.updateScrollTop === 'function') window.updateScrollTop();
+
+  // Обновление кнопки скролла через bus с безопасным фолбэком
+  if (window.ztBus) {
+    window.ztBus.emit('ui:update-scrolltop');
+  } else if (typeof window.updateScrollTop === 'function') {
+    window.updateScrollTop();
+  }
 }
 
 window.sv = sv;
