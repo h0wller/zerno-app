@@ -49,3 +49,11 @@ armed/pulse — styles.js; пульс бара подсказок теперь 3
 14 бренд/layout → views.js, 3 → critical CRITICAL-first-frame, 3 DROP марка, --amber смерджен).
 F5.13b: дубль delivery-марки слит union-слиянием деклараций (старое правило перебивает конфликты).
 P1/P2 = закрыто; Слой 0 = splash-guard + critical-блок.
+
+### чанк 9 (F5.43–F5.51) — ФИНАЛ P2/P3 и ликвидация Specificity War
+- **F5.43–F5.44**: Token Inversion Pattern — введены токены `--topbar-*`, `--venue-toggle-*`, `--cart-qty-*`, `--cashier-bg` в `brand-tokens.css` (Слой 2а). База `#deliveryGrid`, `.opts`, `.venueToggle`, `.topbar` перенесена в `theme-v2.css` (Слой 1) без единого `!important`.
+- **F5.45**: Из `views.js` (Слой 2б) удалены дубли модалки сплэша, `#deliveryGrid` и селекторы с `!important`.
+- **F5.46**: Из `styles.js` (Слой 3) полностью удалён блок десктопной корзины `.cartPanel ≥900px !important`. Сетка `.grid` нормализована в Слое 1.
+- **F5.47**: Из `<style id="critical-css">` в `index.html` (Слой 0) удалены дубли шапки, тикера и сплэша. Оставлен чистый FOUC-скелет.
+- **F5.49–F5.51**: Устранён дубль-владелец марки `.brand .mark`. Базовые стили `#myOrders`, `.myOrderCard`, `.addonChip`, `.cta` перенесены в Слой 1.
+- **Итог**: P1, P2 и P3 полностью ЗАКРЫТЫ. Конфликтов между 4 слоями нет.
