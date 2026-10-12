@@ -4692,7 +4692,3 @@ body.panel-open {
   color: var(--ink);
   box-shadow: var(--sh);
 }
-[data-brand="delivery"] #scrollTopBtn {
-  background: var(--fr-paper, #F6EEE1);
-  border-color: #3a2a1c;
-}
