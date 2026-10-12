@@ -822,6 +822,8 @@ function renderCartBase() {
   var checkBtn = document.getElementById("checkoutBtn");
   if (checkBtn) {
     checkBtn.onclick = async function () {
+      if (checkBtn.disabled || checkBtn.getAttribute("data-busy") === "1") return;
+
       if (!me) {
         toast("Сначала войдите по номеру", "👤");
         if (typeof openAuth === "function") openAuth();
@@ -908,6 +910,20 @@ function renderCartBase() {
       };
       if (cartPromoCode) body.promo = cartPromoCode;
 
+      // 1. Идемпотентный ID: защита от дублей при сетевом сбое
+      body.client_order_id = "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+
+      // 2. Блокируем кнопку физически и визуально ДО отправки запроса
+      var origBtnHtml = checkBtn.innerHTML;
+      checkBtn.disabled = true;
+      checkBtn.setAttribute("data-busy", "1");
+      checkBtn.style.pointerEvents = "none";
+      checkBtn.innerHTML = '<span>⏳ Оформляем заказ...</span>';
+
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
+        try { window.Telegram.WebApp.MainButton.showProgress(); } catch (tgErr) {}
+      }
+
       try {
         var r = await api("/orders", { method: "POST", body: body });
         toast("Заказ #" + r.order.no + " оформлен!", "🎉");
@@ -966,7 +982,17 @@ function renderCartBase() {
         if (typeof syncOverlay === "function") syncOverlay();
         if (typeof loadMyOrders === "function") loadMyOrders();
       } catch (e) {
-        toast(e.message, "⚠️");
+        toast(e.message || "Ошибка оформления заказа", "⚠️");
+      } finally {
+        // 3. Разблокировка при любом исходе (успех, 500, таймаут)
+        checkBtn.disabled = false;
+        checkBtn.removeAttribute("data-busy");
+        checkBtn.style.pointerEvents = "";
+        checkBtn.innerHTML = origBtnHtml;
+
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
+          try { window.Telegram.WebApp.MainButton.hideProgress(); } catch (tgErr) {}
+        }
       }
     };
   }

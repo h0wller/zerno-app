@@ -94,14 +94,22 @@ async function loadImg(file) {
   
   img.onload = async () => {
     try {
-      const m = Math.min(1, 1600 / Math.max(img.width, img.height));
+      // Максимальный зум на сервере — 1200px. Ограничиваем ресайз без потери деталей
+      const m = Math.min(1, 1200 / Math.max(img.width, img.height));
       const c = document.createElement("canvas");
       c.width = Math.round(img.width * m);
       c.height = Math.round(img.height * m);
-      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-      const dataUrl = c.toDataURL("image/jpeg", 0.9);
-      URL.revokeObjectURL(u);
+      const ctx = c.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, c.width, c.height);
 
+      // Сжатие в WebP с фолбэком на JPEG для старых браузеров
+      let dataUrl = c.toDataURL("image/webp", 0.84);
+      if (!dataUrl.startsWith("data:image/webp")) {
+        dataUrl = c.toDataURL("image/jpeg", 0.85);
+      }
+      URL.revokeObjectURL(u);
       const dishId = (edit && edit.id) ? edit.id : ('dish_' + Date.now());
       
       const res = await api("/menu/upload", {
