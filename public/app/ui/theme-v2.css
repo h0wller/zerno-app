@@ -4378,4 +4378,130 @@ body {
   color: var(--profile-btn-color, var(--ink));
   box-shadow: var(--profile-btn-shadow, none);
 }
+/* ── Кнопки заказа доставки и чипсы добавок (перенос из views.js) ── */
+#deliveryGrid .cta {
+  background: var(--card-bg, #FFFFFF);
+  border: var(--card-border, 1.5px solid var(--line));
+  color: var(--ink, #101418);
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 44px;
+  font: 700 14px "Golos Text", system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background .15s, border-color .15s, color .15s;
+}
+#deliveryGrid .cta:active {
+  transform: translateY(1px);
+}
+#deliveryGrid .cta:disabled {
+  background: #EDF2F6;
+  border-color: var(--line);
+  color: #8B98A5;
+  cursor: not-allowed;
+  transform: none;
+}
+#deliveryGrid .cta.incart {
+  border-color: var(--flame);
+  color: var(--flame);
+}
+#deliveryGrid .cta.added {
+  background: var(--btn-fire-bg, var(--flame));
+  border-color: var(--btn-fire-bg, var(--flame));
+  color: var(--btn-fire-color, #FFFFFF);
+}
+.addonChip {
+  display: inline-block;
+  border: 1.5px solid var(--line);
+  background: #FFFFFF;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 6px 6px 0;
+}
+.addonChip b {
+  color: var(--flame);
+}
 
+/* ── Карточки заказов гостя в профиле (перенос из views.js) ── */
+#myOrders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 4px;
+}
+#myOrders .hmini {
+  margin: 0;
+  background: #FFFFFF;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.myOrderCard {
+  background: #FFFFFF;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: var(--sh);
+}
+.myOrderCard .moTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.moSt {
+  font: 800 11px/1 "Unbounded", sans-serif;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #EDF2F6;
+  color: #33507A;
+  white-space: nowrap;
+}
+.mo-new,
+.mo-accept,
+.mo-way {
+  background: var(--tint-cool);
+  color: var(--flame);
+}
+.mo-cook {
+  background: var(--tint-alert);
+  color: var(--status-alert);
+}
+.mo-done {
+  background: var(--tint-success);
+  color: var(--status-success);
+}
+.mo-cancel {
+  background: var(--tint-danger);
+  color: var(--status-danger);
+}
+.myOrderCard .moSum {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.myOrderCard .moItems {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--soft);
+}
+.myOrderCard .moGifts {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--status-success);
+  font-weight: 700;
+}
+
+/* ── Состояния стоп-листа карточек ── */
+.card.stopped {
+  opacity: 0.75;
+}
+body.editing .card .stopbadge {
+  right: 52px;
+}
