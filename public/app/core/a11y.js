@@ -1,6 +1,7 @@
-/* lazy-img: loading=lazy + decoding=async, кроме LCP-картинки первого экрана. */
+/* lazy-img: loading=lazy + decoding=async, кроме LCP-картинки первого экрана.
+   F5.68: детерминированный lazify без фонового MutationObserver на document.body. */
 function applyLazy(img) {
-  if (img.dataset.lazyDone) return;
+  if (!img || img.dataset.lazyDone) return;
   img.dataset.lazyDone = '1';
   // Не трогаем брендовые логотипы и карточки меню (у них свои пропорции в CSS)
   if (img.closest('.topbar') || img.classList.contains('brandLogo') || img.closest('.media') || img.closest('.card')) {
@@ -23,15 +24,17 @@ function applyLazy(img) {
     img.style.height = 'auto';
   }
 }
+
 function lazify(root) {
-  if (root.nodeType === 1 && root.tagName === 'IMG') applyLazy(root);
-  (root || document).querySelectorAll('img').forEach(applyLazy);
+  var target = root || document;
+  if (target.nodeType === 1 && target.tagName === 'IMG') applyLazy(target);
+  target.querySelectorAll('img').forEach(applyLazy);
 }
-lazify(document);
-new MutationObserver(function (ms) {
-  ms.forEach(function (m) {
-    m.addedNodes && m.addedNodes.forEach(function (n) {
-      if (n.nodeType === 1) lazify(n);
-    });
-  });
-}).observe(document.body, { childList: true, subtree: true });
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () { lazify(document); }, { once: true });
+} else {
+  lazify(document);
+}
+
+window.lazify = lazify;

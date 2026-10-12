@@ -29,5 +29,14 @@
   setTimeout(norm, 3000);
   document.addEventListener('click', function () { setTimeout(norm, 60); }, true);
   var p0 = document.getElementById('chatPanel');
-  if (p0 && window.MutationObserver) new MutationObserver(function () { norm(); }).observe(p0, { childList: true, subtree: true });
+  if (p0 && window.MutationObserver) {
+    if (p0.querySelector('.chatHead .chName')) return;
+    var obs = new MutationObserver(function () {
+      norm();
+      if (p0.querySelector('.chatHead .chName')) {
+        obs.disconnect();
+      }
+    });
+    obs.observe(p0, { childList: true, subtree: true });
+  }
 })();
