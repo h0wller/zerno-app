@@ -924,21 +924,16 @@ function renderCartBase() {
           var csEl2 = document.getElementById("checkoutStreet");
           var chEl2 = document.getElementById("checkoutHouse");
           var addrToSave = {
-            place: cpEl2 ? cpEl2.value : "",
-            street: csEl2 ? csEl2.value : "",
-            house: chEl2 ? chEl2.value : ""
+            place: cpEl2 ? cpEl2.value.trim() : "",
+            street: csEl2 ? csEl2.value.trim() : "",
+            house: chEl2 ? chEl2.value.trim() : ""
           };
           if (addrToSave.place || addrToSave.street) {
-            var addrList = [];
-            try { addrList = JSON.parse(localStorage.getItem("zt_saved_addresses") || "[]"); } catch (e) { }
-            if (!Array.isArray(addrList)) addrList = [];
-            addrList = addrList.filter(function (a) {
-              return !(a.place === addrToSave.place && a.street === addrToSave.street && a.house === addrToSave.house);
-            });
-            addrList.unshift(addrToSave);
-            addrList = addrList.slice(0, 3);
-            localStorage.setItem("zt_saved_addresses", JSON.stringify(addrList));
-            localStorage.setItem("zt_saved_address", JSON.stringify(addrToSave));
+            if (window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
+              window.AddressBook.autoAdd(addrToSave);
+            } else {
+              localStorage.setItem("zt_saved_address", JSON.stringify(addrToSave));
+            }
           }
         } catch (e) { }
 
