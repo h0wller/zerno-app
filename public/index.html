@@ -40,276 +40,69 @@
     })();
     </script>
     <style id="critical-css">
-/* ═══ CRITICAL ABOVE-THE-FOLD CSS ═══
-   Консолидировано из 5 inline-блоков <head>.
-   Остальные CSS грузятся async через <link rel="preload" as="style">. */
-   /* Сплэш скрыт по умолчанию и отображается ТОЛЬКО если требуется выбор */
-#brandSplashStatic {
-  display: none !important;
-}
-html.need-splash #brandSplashStatic {
-  display: flex !important;
-}
-/* Мгновенно скрываем сплэш, если определено, что он не нужен или идет аудит */
-html.no-splash #brandSplashStatic,
-html.is-audit #brandSplashStatic {
-  display: none !important;
-}
-/* ─── FOUC-guard (ex zt-critical-fouc-guard) ─── */
-html[data-brand="delivery"] .topbar .brand .mark,
-body[data-brand="delivery"] .topbar .brand .mark {
-  width: 160px;
-  height: 40px;
-  flex: 0 0 160px;
-}
-.topbar .brand .mark {
-  width: var(--mark-w, 42px);
-  height: var(--mark-h, 42px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  overflow: hidden;
-  border-radius: 12px;
-}
-.topbar .brand .mark img,
-.topbar .brand .mark svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-#authModal:not(.show),
-#setPinModal:not(.show),
-#staffChatModal:not(.show),
-#redeemPick:not(.show) {
-  display: none !important;
-}
-html[data-brand="delivery"] #grid {
-  display: none !important;
-}
-html[data-brand="coffee"] #deliveryGrid {
-  display: none !important;
-}
-html.splash-skipped #brandSplashStatic {
-  display: none !important;
-}
+      /* ── 1. Системные сбросы первого кадра ── */
+      [hidden] {
+        display: none !important;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+        overflow-x: clip;
+      }
 
-/* ─── Perf-core (ex perf-core-css-fix) ─── */
-#brandSplash,
-#brandSplashStatic,
-.brandSplashStatic {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 99999 !important;
-  will-change: opacity, visibility;
-}
-body>div.wrap,
-.wrap {
-  top: 0 !important;
-  padding-top: 0 !important;
-  transform: none !important;
-}
-#grid .card:nth-child(n+5),
-#deliveryGrid .dcard:nth-child(n+5),
-.cartItem,
-.logrow {
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 320px;
-}
-html.is-audit #brandSplash,
-html.is-audit #brandSplashStatic,
-html.is-audit .brandSplashStatic,
-html.is-audit #authModal,
-html.is-audit .modal-card,
-html.is-audit .modal-backdrop,
-html.is-audit .overlay {
-  display: none !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-html.is-audit body > *:not(#brandSplashStatic),
-html.no-splash body > *:not(#brandSplashStatic) {
-  visibility: visible !important;
-}
+      /* ── 2. Брендовый фон подложки ── */
+      html[data-brand="delivery"],
+      html[data-brand="delivery"] body {
+        background-color: #F3EDE6;
+      }
 
-/* ─── LCP inline (ex lcp-inline-css) ─── */
-html[data-brand="coffee"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif;color:#3a2a1c;}
-html[data-brand="delivery"] .menu-head h1{font:900 clamp(22px,3.2vw,36px)/1.15 "Unbounded",sans-serif;color:#3a2a1c;}
-.menu-head{margin-left:0;width:100%;}
-.mh-top{display:flex;align-items:center;gap:12px;}
-.mh-top h1{margin:0;font-size:clamp(20px,3vw,32px);}
+      /* ── 3. Изоляция сплэш-экрана ── */
+      #brandSplashStatic {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 400;
+        background: #FFFFFF;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+      html.need-splash #brandSplashStatic {
+        display: flex;
+      }
+      html.no-splash #brandSplashStatic,
+      html.is-audit #brandSplashStatic {
+        display: none !important;
+      }
 
-/* ─── Splash isolation ─── */
-#brandSplashStatic,
-#brandSplash {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 400 !important;
-  width: 100% !important;
-  height: 100% !important;
-  background: #FFFFFF !important;
-}
-html.no-splash #brandSplashStatic {
-  display: none !important;
-}
-html.need-splash body>*:not(#brandSplashStatic) {
-  visibility: hidden;
-}
-#brandSplashStatic {
-  position: fixed;
-  inset: 0;
-  z-index: 400;
-  background: #f5f2ec;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
+      /* ── 4. Защита от мигания модалок до инициализации CSS ── */
+      .modal:not(.show),
+      #authModal:not(.show),
+      #setPinModal:not(.show),
+      #staffChatModal:not(.show),
+      #redeemPick:not(.show) {
+        display: none !important;
+      }
 
-/* ─── Шапка/тикер (ex большой Ф3.51 блок) ─── */
-.topbar {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, max-content) 1fr minmax(0, max-content);
-  align-items: center;
-  column-gap: 8px;
-  height: calc(var(--topbar-h, 64px) + env(safe-area-inset-top, 0px));
-  padding: env(safe-area-inset-top, 0px) 12px 0;
-  box-sizing: border-box;
-}
-.topbar .venueWrap {
-  position: relative;
-  justify-self: start;
-  min-width: 0;
-  display: flex;
-  justify-content: flex-start;
-}
-.topbar .brand {
-  justify-self: center;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-.topbar #profileTopBtn {
-  justify-self: end;
-  width: calc(var(--topbar-h, 64px) - 16px);
-  height: calc(var(--topbar-h, 64px) - 16px);
-  font-size: calc(var(--topbar-h, 64px) * 0.28);
-  border-radius: 50%;
-  background: var(--flame, #123a6b);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.venueToggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border: 1.5px solid var(--line, #d8dfe4);
-  background: var(--card, #fff);
-  border-radius: 999px;
-  padding: 0 10px;
-  height: calc(var(--topbar-h, 64px) - 20px);
-  font: 700 calc(var(--topbar-h, 64px) * 0.2) "Golos Text", system-ui, sans-serif;
-  color: var(--ink, #101418);
-  cursor: pointer;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.topbar .brand .mark {
-  flex: 0 0 auto;
-  overflow: hidden;
-  width: var(--mark-w, 42px);
-  height: var(--mark-h, 42px);
-  max-height: calc(var(--topbar-h, 64px) - 8px);
-}
-[data-brand="coffee"] .topbar .brand .mark {
-  width: var(--mark-w, 42px);
-  height: var(--mark-h, 42px);
-}
-[data-brand="delivery"] .topbar .brand .mark {
-  width: var(--mark-w, 160px);
-  height: var(--mark-h, 40px);
-  max-height: var(--mark-h, 40px);
-  max-width: min(60vw, 420px);
-}
-#brandSeg {
-  display: none;
-  position: absolute;
-  left: 0;
-  top: calc(100% + 8px);
-  z-index: 80;
-  flex-direction: column;
-  gap: 2px;
-  width: max-content;
-  min-width: max(180px, 100%);
-  max-width: calc(100vw - 24px);
-  border: 1.5px solid var(--line, #d8dfe4);
-  border-radius: 14px;
-  background: var(--card, #fff);
-  box-shadow: 0 10px 30px -12px rgba(16, 20, 24, 0.18);
-  padding: 6px;
-}
-#brandSeg.open {
-  display: flex;
-}
-#brandSeg button {
-  flex: 0 0 auto;
-  width: 100%;
-  border: 0;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font: 700 14px "Golos Text", sans-serif;
-  background: transparent;
-  color: var(--ink, #101418);
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-#tickerTrack {
-  display: inline-flex;
-  align-items: center;
-  height: 30px;
-  white-space: nowrap;
-  width: max-content;
-  animation: zt-marquee 40s linear infinite;
-}
-#tickerTrack span {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0 1.2rem;
-  font: 600 11px/30px "Unbounded", system-ui, sans-serif;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-@keyframes zt-marquee {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(-50%, 0, 0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  #tickerTrack { animation: none; }
-}
-html:not([data-brand="delivery"]) #deliveryView {
-  display: none !important;
-}
-html[data-brand="delivery"] #menuView {
-  display: none !important;
-}
-</style>
+      /* ── 5. Мгновенное переключение видов меню в первом кадре ── */
+      body.is-cashier #deliveryView,
+      body.is-cashier #deliveryRail,
+      body.is-cashier #menuView,
+      body.is-cashier #rail {
+        display: none !important;
+      }
+      html:not([data-brand="delivery"]) #deliveryView,
+      html[data-brand="coffee"] #deliveryView,
+      html:not([data-brand="delivery"]) #deliveryRail,
+      html[data-brand="coffee"] #deliveryRail {
+        display: none !important;
+      }
+      html[data-brand="delivery"] #menuView,
+      html[data-brand="delivery"] #rail {
+        display: none !important;
+      }
+    </style>
   <script id="perf-lighthouse-bridge">
     (() => {
       const ua = navigator.userAgent;
@@ -502,16 +295,16 @@ if(b==='delivery'){
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="…и кофе" />
-  <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <!-- Async CSS: preload + swap to stylesheet -->
   <link rel="preload" href="/app/ui/fonts.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <link rel="preload" href="app/ui/theme-v2.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="/app/ui/theme-v2.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <link rel="preload" href="/app/ui/brand-tokens.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript>
     <link rel="stylesheet" href="/app/ui/fonts.css">
-    <link rel="stylesheet" href="app/ui/theme-v2.css" />
+    <link rel="stylesheet" href="/app/ui/theme-v2.css" />
     <link rel="stylesheet" href="/app/ui/brand-tokens.css" />
   </noscript>
   <!-- [tg-splash-menu-fix-v1] -->
@@ -735,20 +528,14 @@ if(b==='delivery'){
         <div class="cashier">
           <div class="cash-top">
             <h2>Режим <em>кассира</em></h2>
-            <button class="btn fire" id="newGuestBtn">＋ Новый гость</button>
-            <button class="btn dark" id="chatsToggle">💬 Чаты гостей</button>
+            <div class="cash-top-actions">
+              <button class="btn fire" id="newGuestBtn">＋ Новый гость</button>
+              <button class="btn dark" id="chatsToggle">💬 Чаты гостей</button>
+            </div>
           </div>
 
           <div class="cash-card" id="ngCard" hidden>
-            <h4 style="
-                  font: 700 12px &quot;Unbounded&quot;;
-                  letter-spacing: 0.08em;
-                  text-transform: uppercase;
-                  color: #8b98a5;
-                  margin-bottom: 10px;
-                ">
-              Создать профиль гостя
-            </h4>
+            <h4 style="font: 700 12px 'Unbounded'; letter-spacing: 0.08em; text-transform: uppercase; color: #8b98a5; margin-bottom: 10px;">Создать профиль гостя</h4>
             <div class="findrow">
               <input id="ngName" name="ngName" placeholder="Имя гостя" maxlength="24" />
               <input id="ngPhone" name="ngPhone" placeholder="+7 900 000-00-00" inputmode="tel" />
@@ -757,16 +544,9 @@ if(b==='delivery'){
             </div>
           </div>
 
-          <div class="cash-card">
-            <h4 style="
-                  font: 700 12px &quot;Unbounded&quot;;
-                  letter-spacing: 0.08em;
-                  text-transform: uppercase;
-                  color: #8b98a5;
-                  margin-bottom: 14px;
-                ">
-              Найти гостя
-            </h4>
+          <!-- ЛЕВАЯ КОЛОНКА ДЕСКТОПА: Поиск и профиль гостя -->
+          <div class="cash-card" id="cashierSearchCard">
+            <h4 style="font: 700 12px 'Unbounded'; letter-spacing: 0.08em; text-transform: uppercase; color: #8b98a5; margin-bottom: 14px;">Найти гостя</h4>
             <div class="findrow cash-findrow">
               <input id="findInput" name="findInput" placeholder="Имя или телефон" autocomplete="off" />
               <div class="find-actions">
@@ -774,49 +554,31 @@ if(b==='delivery'){
                 <button class="btn dark" id="newGuestBtn2">+ Новый</button>
               </div>
             </div>
-            <hr style="
-                  border: none;
-                  border-top: 1px dashed var(--line);
-                  margin: 18px 0;
-                " />
+            <hr style="border: none; border-top: 1px dashed var(--line); margin: 18px 0;" />
             <div class="cust" id="custCard">
               <div class="big" id="custInit">А</div>
               <div class="info">
                 <b id="custName">—</b>
                 <div class="cp" id="custPhone">—</div>
-                <div class="freeBanner" id="custFree" hidden>
-                  🎁 Бесплатных кофе: <b id="custFreeN">1</b> — предложи
-                  списать!
-                </div>
+                <div class="freeBanner" id="custFree" hidden>🎁 Бесплатных кофе: <b id="custFreeN">1</b> — предложи списать!</div>
                 <div class="cdots" id="custDots"></div>
                 <div class="note" id="custNote"></div>
                 <div class="chist" id="custHist"></div>
               </div>
               <div class="acts">
-                <button class="btn fire" id="giveStampBtn">
-                  ☕ Пробить штамп
-                </button>
-                <button class="btn ghost" id="redeemBtn" hidden>
-                  🎁 Списать бесплатный кофе
-                </button>
+                <button class="btn fire" id="giveStampBtn">☕ Пробить штамп</button>
+                <button class="btn ghost" id="redeemBtn" hidden>🎁 Списать бесплатный кофе</button>
               </div>
             </div>
           </div>
 
-          <div class="cash-card">
+          <!-- ПРАВАЯ КОЛОНКА ДЕСКТОПА: Очередь активации и лог -->
+          <div class="cash-card" id="cashierActivityCard">
             <div class="card" style="margin-bottom: 12px">
               <h3 style="margin: 0 0 8px">🆕 Активация гостей</h3>
               <div id="pendingBox"></div>
             </div>
-            <h4 style="
-                  font: 700 12px &quot;Unbounded&quot;;
-                  letter-spacing: 0.08em;
-                  text-transform: uppercase;
-                  color: #8b98a5;
-                  margin-bottom: 10px;
-                ">
-              Последние события
-            </h4>
+            <h4 style="font: 700 12px 'Unbounded'; letter-spacing: 0.08em; text-transform: uppercase; color: #8b98a5; margin-bottom: 10px;">Последние события</h4>
             <div id="cashLog"></div>
           </div>
         </div>
@@ -1641,6 +1403,46 @@ if(b==='delivery'){
           if (bs && bs.textContent !== 'доставка пиццы и роллов') bs.textContent = 'доставка пиццы и роллов';
         }
       } catch (e) { }
+    })();
+  </script>
+  <script>
+    (function () {
+      function ensureCoffeeMenuLoaded() {
+        if (window.brand === 'coffee' && (!window.MENU || !window.MENU.length)) {
+          if (typeof window.loadMenu === 'function') {
+            window.loadMenu();
+          } else {
+            fetch('/api/menu', { headers: { Accept: 'application/json' } })
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                window.MENU = (data && data.items) || [];
+                if (typeof window.renderRail === 'function') window.renderRail();
+                if (typeof window.renderMenu === 'function') window.renderMenu();
+                var upd = document.getElementById('updWhen');
+                if (upd && data && data.updatedAt) upd.textContent = data.updatedAt;
+              })
+              .catch(function () {});
+          }
+        }
+      }
+
+      // Отслеживаем смену бренда в рантайме без перезагрузки страницы
+      var brandObserver = new MutationObserver(function (mutations) {
+        mutations.forEach(function (m) {
+          if (m.attributeName === 'data-brand') {
+            ensureCoffeeMenuLoaded();
+          }
+        });
+      });
+      brandObserver.observe(document.documentElement, { attributes: true });
+
+      // Страховка по клику на кнопку смены заведения
+      document.addEventListener('click', function (e) {
+        var btn = e.target.closest('#brandSeg [data-brand="coffee"]');
+        if (btn) {
+          setTimeout(ensureCoffeeMenuLoaded, 50);
+        }
+      });
     })();
   </script>
 </body>

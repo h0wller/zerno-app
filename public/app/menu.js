@@ -44,43 +44,41 @@ function renderMenu() {
 
   const gridEl = $('#grid');
   if (!gridEl) return;
-  
-  gridEl.innerHTML = '';
-  requestAnimationFrame(() => {
-    gridEl.innerHTML = list.map((p, i) => {
-      const tg = p.tag ? `<span class="tag ${p.tag === 'Хит' ? 'hit' : p.tag === 'New' ? 'new' : 'vegan'}">${esc(p.tag)}</span>` : '';
-      const priceStr = fmtMulti(p.price);
-      const volStr = fmtVol(p.vol);
-      return `<article class="card ${p.on ? '' : 'stopped'}" style="--d:${Math.min(i, 10) * 35}ms" data-item-id="${p.id}">
-       <div class="media" style="--tint:${TINT[p.cat] || '#E7ECF0'}">
-                  ${p.img ? `<img src="${p.img}" alt="${esc(p.name)}" data-zoom="${p.img}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="lazy" decoding="async">` : `<span class="em">${p.e || '☕'}</span>`}
-         ${tg}${p.on ? '' : '<span class="stopbadge">СТОП</span>'}
-          ${editMode ?`<button class="edBtn" data-ed="${p.id}" title="Редактировать">✏️</button>`: ''}
-       </div>
-       <div class="cbody">
-         <h3>${esc(p.name)}</h3>
-         ${p.desc ? `<div class="desc">${esc(p.desc)}</div>` : ''}
-         ${(() => {
-           try {
-             const arr = typeof p.opts === 'string' ? JSON.parse(p.opts) : (p.opts || []);
-             if (!arr.length) return '';
-             return `<div style="margin: 6px 0; font-size: 11px; color: #666;">
-               ${arr.map(o => `<span style="display: inline-block; background: #EFE9DE; padding: 2px 6px; border-radius: 4px; margin-right: 4px;">${esc(o.name)}${o.price_delta ? ' +' + o.price_delta + ' ₽' : ''}</span>`).join('')}
-             </div>`;
-           } catch(e) { return ''; }
-         })()}
-         ${p.comp && p.comp.length ? '<div class="comp">' + p.comp.map(c => '<i>' + esc(c) + '</i>').join('') + '</div>' : ''}
-         ${volStr ? `<span class="vol">${esc(volStr)}</span>` : ''}
-         <div class="cfoot"><span class="price">${priceStr}</span>
-          ${editMode ? `<label class="donoff"><input type="checkbox" data-onoff="${p.id}" ${p.on ? 'checked' : ''}>в меню</label>` : ''}
-         </div></div></article>`;
-    }).join('')
-    + (editMode ? `<button class="addcard" id="addCard"><span>＋</span>Добавить позицию</button>` : '')
-    + (list.length === 0 ? `<div class="gempty" style="grid-column:1/-1"><span class="ee">${query ? '🔍' : ''}</span>${query ? 'Ничего не нашлось. Попробуйте другой запрос.' : 'В этой категории пока пусто.'}</div>` : '');
 
-    const a = $('#addCard');
-    if (a) a.onclick = () => openEditor(null);
-  });
+  // Синхронный рендер без очистки и без requestAnimationFrame: устраняет скачок CLS
+  const cardsHtml = list.map((p, i) => {
+    const tg = p.tag ? `<span class="tag ${p.tag === 'Хит' ? 'hit' : p.tag === 'New' ? 'new' : 'vegan'}">${esc(p.tag)}</span>` : '';
+    const priceStr = fmtMulti(p.price);
+    const volStr = fmtVol(p.vol);
+    return `<article class="card ${p.on ? '' : 'stopped'}" style="--d:${Math.min(i, 10) * 35}ms" data-item-id="${p.id}">
+     <div class="media" style="--tint:${TINT[p.cat] || '#E7ECF0'}">
+       ${p.img ? `<img src="${p.img}" alt="${esc(p.name)}" data-zoom="${p.img}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="lazy" decoding="async">` : `<span class="em">${p.e || '☕'}</span>`}
+       ${tg}${p.on ? '' : '<span class="stopbadge">СТОП</span>'}
+       ${editMode ? `<button class="edBtn" data-ed="${p.id}" title="Редактировать">✏️</button>` : ''}
+     </div>
+     <div class="cbody">
+       <h3>${esc(p.name)}</h3>
+       ${p.desc ? `<div class="desc">${esc(p.desc)}</div>` : ''}
+       ${(() => {
+         try {
+           const arr = typeof p.opts === 'string' ? JSON.parse(p.opts) : (p.opts || []);
+           if (!arr.length) return '';
+           return `<div style="margin: 6px 0; font-size: 11px; color: #666;">
+             ${arr.map(o => `<span style="display: inline-block; background: #EFE9DE; padding: 2px 6px; border-radius: 4px; margin-right: 4px;">${esc(o.name)}${o.price_delta ? ' +' + o.price_delta + ' ₽' : ''}</span>`).join('')}
+           </div>`;
+         } catch(e) { return ''; }
+       })()}
+       ${p.comp && p.comp.length ? '<div class="comp">' + p.comp.map(c => '<i>' + esc(c) + '</i>').join('') + '</div>' : ''}
+       ${volStr ? `<span class="vol">${esc(volStr)}</span>` : ''}
+       <div class="cfoot"><span class="price">${priceStr}</span>
+        ${editMode ? `<label class="donoff"><input type="checkbox" data-onoff="${p.id}" ${p.on ? 'checked' : ''}>в меню</label>` : ''}
+       </div></div></article>`;
+  }).join('')
+  + (editMode ? `<button class="addcard" id="addCard"><span>＋</span>Добавить позицию</button>` : '')
+  + (list.length === 0 ? `<div class="gempty" style="grid-column:1/-1"><span class="ee">${query ? '🔍' : ''}</span>${query ? 'Ничего не нашлось. Попробуйте другой запрос.' : 'В этой категории пока пусто.'}</div>` : '');
+
+  gridEl.innerHTML = cardsHtml;
+
   const a = $('#addCard');
   if (a) a.onclick = () => openEditor(null);
 }

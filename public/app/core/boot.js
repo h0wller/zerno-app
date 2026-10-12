@@ -1,6 +1,4 @@
 /* public/app/core/boot.js — Ф5.5: точка входа и жизненный цикл приложения.
-Было: inline-скрипт index.html (renderAll, boot-IIFE, SW-регистрация №1)
-+ три инлайн-скрипта в <body> (install-баннер, iOS-хинт, SW-регистрация №2).
 Зависимости на момент DOMContentLoaded: loadMenu/renderModes (inline-ядро),
 renderRail/renderMenu (menu.js), renderBonus/renderProfile (profile.js),
 renderChips (chat.js), renderVerifyNote (profile-brand.js), drawQR (qr.js),
@@ -25,22 +23,30 @@ document.addEventListener('error', function (e) {
   t.src = s.replace(/\.webp(\?|$)/i, '.svg$1');
 }, true);
 
-
-/* ── 1. Агрегатная перерисовка всех видов ── */
+/* ── 1. Агрегатная перерисовка (только критичный UI в первом кадре) ── */
 function renderAll() {
+  // В первом кадре отрисовываем только видимое меню и навигацию
   if (typeof renderRail === 'function') renderRail();
   if (typeof renderMenu === 'function') renderMenu();
-  if (typeof renderBonus === 'function') renderBonus();
-  if (typeof renderProfile === 'function') renderProfile();
   if (typeof renderModes === 'function') renderModes();
-  if (typeof renderChips === 'function') renderChips();
-  if (typeof renderVerifyNote === 'function') renderVerifyNote();
 
-  const s = (window.me && window.me.qr) || 'guest';
-  const qm = $('#qrMini');
-  const qmain = $('#qrMain');
-  if (qm && typeof drawQR === 'function') drawQR(qm, s);
-  if (qmain && typeof drawQR === 'function') drawQR(qmain, s);
+  // Отрисовку скрытых профилей, бонусов и QR откладываем, чтобы сберечь TBT
+  const deferBg = (typeof window.requestIdleCallback === 'function')
+    ? (cb) => window.requestIdleCallback(cb, { timeout: 2000 })
+    : (cb) => setTimeout(cb, 400);
+
+  deferBg(() => {
+    if (typeof renderBonus === 'function') renderBonus();
+    if (typeof renderProfile === 'function') renderProfile();
+    if (typeof renderChips === 'function') renderChips();
+    if (typeof renderVerifyNote === 'function') renderVerifyNote();
+
+    const s = (window.me && window.me.qr) || 'guest';
+    const qm = document.getElementById('qrMini');
+    const qmain = document.getElementById('qrMain');
+    if (qm && typeof drawQR === 'function') drawQR(qm, s);
+    if (qmain && typeof drawQR === 'function') drawQR(qmain, s);
+  });
 
   if (window.mode === 'cashier' && typeof renderLog === 'function') renderLog();
 }
@@ -56,25 +62,46 @@ async function boot() {
       localStorage.removeItem(typeof T_USER !== 'undefined' ? T_USER : 'zt_user');
     }
   }
+
+  const isDelivery = (typeof window.brand !== 'undefined' && window.brand === 'delivery') ||
+    (document.documentElement.getAttribute('data-brand') === 'delivery');
+
   try {
-    if (typeof loadMenu === 'function') await loadMenu();
+    if (isDelivery) {
+      if (typeof window.loadDelivery === 'function') {
+        await window.loadDelivery();
+      }
+    } else {
+      if (typeof loadMenu === 'function') {
+        await loadMenu();
+      }
+    }
   } catch (err) {
     console.warn('[BOOT] Ошибка загрузки меню:', err);
   } finally {
     renderAll();
     if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
-    if (typeof showBadge === 'function') showBadge();
-    if (typeof initChatPointer === 'function') initChatPointer();
-    if (typeof maybeAskReview === 'function') maybeAskReview();
-  }
 
-  // За открытие регистрации отвечает выбор бренда на сплэше
+    // Тяжелые фоновые службы (чат, таймеры, опрос) уводим глубоко в idle
+    const deferIdle = (typeof window.requestIdleCallback === 'function')
+      ? (cb) => window.requestIdleCallback(cb, { timeout: 3000 })
+      : (cb) => setTimeout(cb, 1200);
+
+    deferIdle(() => {
+      if (typeof showBadge === 'function') showBadge();
+      if (typeof initChatPointer === 'function') initChatPointer();
+      if (typeof maybeAskReview === 'function') maybeAskReview();
+      if (typeof window.initPreorderTimer === 'function') window.initPreorderTimer();
+      // Опрос чата стартуем только когда страница полностью успокоилась
+      if (typeof window.pollChatThread === 'function') window.pollChatThread();
+    });
+  }
 }
 
 /* ── 3. Service Worker: ЕДИНАЯ регистрация ── */
 function registerSW() {
   if (!('serviceWorker' in navigator) || isAudit) return;
-  addEventListener('load', () => {
+  window.addEventListener('load', () => {
     let refreshing = false;
     const hadController = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
@@ -104,7 +131,6 @@ function registerSW() {
 let _defPrompt = null;
 function initInstallBanner() {
   const b = document.getElementById('installBanner');
-  // В режиме аудита жестко скрываем баннер, чтобы он не перехватывал LCP
   if (isAudit) {
     if (b) b.hidden = true;
     return;
@@ -172,7 +198,7 @@ function initIosHint() {
         : '🍏 Установите приложение: нажмите <b>Поделиться</b> (квадрат со стрелкой) → <b>На экран «Домой»</b> → <b>Добавить</b> — карта гостя всегда под рукой!';
     }
     if (h) h.hidden = false;
-  }, 800);
+  }, 1200);
 
   const cl = document.getElementById('iosHintClose');
   if (cl) cl.onclick = function () {
@@ -189,20 +215,14 @@ function onReady(fn) {
 }
 
 onReady(function () {
+  boot();
   initInstallBanner();
   initIosHint();
-  boot();
 });
 
 registerSW();
 
-/* ── Экспорт (контракт F1.3) ── */
+/* ── Экспорт ── */
 window.renderAll = renderAll;
 window.boot = boot;
-
-console.info(
-  '%c🌊 …и кофе · ребрендинг',
-  'font-weight:bold;font-size:14px',
-  '| меню v2 | штампы-зёрна',
-);
 })();

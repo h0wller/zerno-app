@@ -21,22 +21,20 @@ function setTab(t) {
 /* ── Открытие шторки (мобильная версия ≤820px) ── */
 function openPanel(tab) {
     setTab(tab);
-    /* [fix-all v3] 820 → 1180: панель как overlay на планшете. */
+    var p = document.getElementById('panel');
+    if (p) p.classList.add('open');
     if (window.innerWidth <= 1180) {
-        var p = document.getElementById('panel');
-        if (p) p.classList.add('open');
         if (typeof syncOverlay === 'function') syncOverlay();
-        if (window.TgUx) window.TgUx.sync(); /* TG-UX-PATCH panel */
+        if (window.TgUx) window.TgUx.sync();
     }
 }
 
-/* ── Закрытие шторки ── */
 function closePanel() {
+    var p = document.getElementById('panel');
+    if (p) p.classList.remove('open');
     if (window.innerWidth <= 1180) {
-        var p = document.getElementById('panel');
-        if (p) p.classList.remove('open');
         if (typeof syncOverlay === 'function') syncOverlay();
-        if (window.TgUx) window.TgUx.sync(); /* TG-UX-PATCH panel */
+        if (window.TgUx) window.TgUx.sync();
     }
 }
 

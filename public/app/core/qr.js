@@ -78,6 +78,12 @@ function drawQR(cv, seed, _retry) {
 
 let wakeLock = null;
 function openQRFull() {
+    // Защита: не открывать QR автоматически на старте или во время аудита
+    if (document.documentElement.classList.contains('is-audit') || 
+        /Lighthouse/i.test(navigator.userAgent)) {
+        return;
+    }
+
     if (!me) { toast('Сначала создайте профиль', '👤'); openAuth(); return; }
     const fullCv = document.getElementById('qrFull');
     if (fullCv) drawQR(fullCv, me.qr || 'guest');

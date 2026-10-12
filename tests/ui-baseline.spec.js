@@ -51,10 +51,9 @@ async function loginAs(page, { code } = {}) {
   let digits = '';
 
   for (let attempt = 0; attempt < 5 && !token; attempt++) {
-    // Уникальный номер: 7 цифр времени + 2 случайные → не коллидирует в параллельных воркерах
     digits = '9' + String(Date.now()).slice(-7) + String(Math.floor(Math.random() * 100)).padStart(2, '0');
     const res = await page.request.post('/api/auth/register', {
-      data: { name: 'Baseline ' + digits.slice(-4), phone: '+7' + digits, pin: (process.env.ZERNO_STAFF_CODE || '1234') /* TEST-FIX v2 */, consent: 1 },
+      data: { name: 'Baseline ' + digits.slice(-4), phone: '+7' + digits, pin: (process.env.ZERNO_STAFF_CODE || '1234'), consent: 1 },
     });
     if (res.ok()) { token = (await res.json()).token; break; }
     if (res.status() === 409) { await page.waitForTimeout(30 + attempt * 40); continue; }
@@ -110,10 +109,9 @@ const modeBtn = (page, mode, text) =>
   page.locator(`#modeSeg [data-mode="${mode}"], #modeSeg button:has-text("${text}")`).first();
 
 test('baseline: гостевые экраны', async ({ page }) => {
-  // Генерируем гостевой токен, так как бэкенд требует 401 без него
   const d = '9' + String(Date.now()).slice(-9);
   const res = await page.request.post('/api/auth/register', {
-    data: { name: 'Guest ' + d.slice(-4), phone: '+7' + d, pin: (process.env.ZERNO_STAFF_CODE || '1234') /* TEST-FIX v2 */, consent: 1 },
+    data: { name: 'Guest ' + d.slice(-4), phone: '+7' + d, pin: (process.env.ZERNO_STAFF_CODE || '1234'), consent: 1 },
   });
   if (res.ok()) {
     const { token } = await res.json();
@@ -123,7 +121,6 @@ test('baseline: гостевые экраны', async ({ page }) => {
     }, token);
   }
 
-  // tests/ui-baseline.spec.js (строка 121)
   const menuPromise = page.waitForResponse(r => /\/api\/menu(\/all)?/.test(r.url()));
   await page.goto('/');
   const menuResponse = await menuPromise;
@@ -172,7 +169,6 @@ test('baseline: кассир', async ({ page }) => {
 });
 
 test('baseline: стафф-режим прячет delivery-меню сразу (бренд Пятница)', async ({ page }) => {
-  // бренд Пятница — через localStorage, URL-параметр state.js не читает
   await page.addInitScript(() => {
     localStorage.setItem('zt_brand', 'delivery');
   });
@@ -205,12 +201,13 @@ test('baseline: оверлей поддержки', async ({ page }) => {
   await expect(page.locator('#supportChooseOverlay')).toBeVisible({ timeout: 6000 });
   await shot(page, '08-support-overlay');
 });
+
 test('baseline: кассир — pending-кнопки «Активировать» на месте', async ({ page }) => {
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
   await loginAs(page, { code: CASHIER });
   await waitModeSeg(page);
-  /* сид неактивированного гостя: verified=0 + actcode → строка в /staff/pending */
+
   const phone = '+7 9' + String(Date.now()).slice(-7) + Math.floor(10 + Math.random() * 89);
   await page.request.post('/api/auth/register', { data: { name: 'Pending Guest', phone } });
   await modeBtn(page, 'cashier', 'Кассир').click();
@@ -232,10 +229,11 @@ test('baseline: админ — редактор открывается и сох
   const save = page.locator('#emSave');
   if (await save.count()) await save.click();
   else await page.locator('#emModal button', { hasText: 'Сохранить' }).click();
-  await expect.poll(async () => page.evaluate(() => !document.getElementById('emModal').classList.contains('show')), { timeout: 8000 }).toBe(true); /* opacity:0 ≠ hidden для Playwright */
+  await expect.poll(async () => page.evaluate(() => !document.getElementById('emModal').classList.contains('show')), { timeout: 8000 }).toBe(true);
   await expect(page.locator('.toast', { hasText: 'not defined' })).toHaveCount(0);
   expect(errs).toEqual([]);
 });
+
 test('baseline: геометрия марки соответствует манифесту', async ({ page }) => {
   await page.goto('/?brand=coffee');
   await page.waitForFunction(() => typeof window.sv === 'function');
@@ -256,7 +254,6 @@ test('baseline: геометрия марки соответствует ман�
   expect(box.height).toBeGreaterThanOrEqual(32);
 });
 
-/* Фаза D: проверка масштабируемости системы на третьем бренде test */
 test('baseline: масштабирование Фазы D (бренд test)', async ({ page }) => {
   await page.goto('/?brand=test');
   await page.waitForFunction(() => typeof window.sv === 'function');

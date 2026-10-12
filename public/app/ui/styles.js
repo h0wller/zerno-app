@@ -8,13 +8,13 @@
   var css = document.createElement("style");
   css.id = "runtimeStyles";
   css.textContent =
-    ".chat-fab{z-index:95!important}" +
+    
     "@media(max-width:820px){body.panel-open .chat-fab{display:none}}" +
-    "@media(max-width:820px){body.panel-open{overflow:hidden}}" +
-    ".modal{z-index:340!important}" +
+    
+    
     /* Десктопная сетка кофейни */
-    "@media(min-width:1181px){#grid{grid-template-columns:repeat(3,1fr)!important}}" +
-    "@media(min-width:1600px){#grid{grid-template-columns:repeat(4,1fr)!important}}" +
+    
+    
     /* Корзина на широких мониторах (≥900px) */
     "@media(min-width:900px){" +
     ".cartPanel{max-width:860px!important;margin:0 auto!important;padding:28px 32px!important;font-size:15px}" +

@@ -37,13 +37,21 @@ function padTicker(){
 function setTickerSpeed(){
   var t = document.getElementById('tickerTrack');
   if (!t) return;
-  requestAnimationFrame(function(){
-    requestAnimationFrame(function(){         // ← двойной rAF
-      var half = t.scrollWidth / 2;           // читаем после стабилизации
-      if (half > 0) {
-        t.style.animationDuration = Math.max(20, Math.round(half / 55)) + 's';
-      }
-    });
+  // Устанавливаем базовую плавную скорость сразу без чтения геометрии DOM
+  if (!t.style.animationDuration) {
+    t.style.animationDuration = '25s';
+  }
+  // Точный замер ширины откладываем в idle, чтобы не блокировать LCP
+  var schedule = (typeof window.requestIdleCallback === 'function')
+    ? window.requestIdleCallback
+    : function(cb) { setTimeout(cb, 1000); };
+
+  schedule(function() {
+    if (!t) return;
+    var half = t.scrollWidth / 2;
+    if (half > 0) {
+      t.style.animationDuration = Math.max(20, Math.round(half / 55)) + 's';
+    }
   });
 }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(setTickerSpeed);

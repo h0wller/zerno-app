@@ -72,18 +72,34 @@ textarea{
   outline-offset: 2px;
   border-radius: 8px;
 }
-/* ── Карточки и сетка (стабилизация CLS и памяти под iOS) ──────────────── */
-.grid{
+/* ── Карточки и сетка (колонки зависят ТОЛЬКО от ширины экрана) ── */
+.grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 14px;
+  width: 100%;
+  grid-template-columns: 1fr;
 }
-@media (min-width: 1600px){.grid{
-    grid-template-columns: repeat(4, 1fr);
+.grid .card {
+  min-width: 0;
+  width: 100%;
+}
+.grid .card .cbody h3 {
+  overflow-wrap: break-word;
+}
+@media (min-width: 560px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-.grid{
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+@media (min-width: 821px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1500px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 .card{
   background: var(--card-bg, #FFFFFF);
@@ -93,8 +109,7 @@ textarea{
   display: flex;
   flex-direction: column;
   transition: transform 0.2s ease, opacity 0.2s ease;
-  animation: pop .5s backwards;
-  animation-delay: var(--d);
+  /* animation: pop .5s backwards; */
   position: relative;
   box-shadow: var(--card-shadow, 0 6px 20px rgba(18, 58, 107, 0.08));
   min-height: 340px;
@@ -291,13 +306,8 @@ body.editing .card:hover{
   }
 }
 @keyframes shimmer{
-  from {
-    background-position: 200% 0;
-  }
-
-  to {
-    background-position: -200% 0;
-  }
+  0%, 100% { opacity: 0.95; }
+  50% { opacity: 0.45; }
 }
 .vh{
   position: absolute;
@@ -439,8 +449,15 @@ body.editing .card .tag{
   flex-direction: column;
   overflow: hidden;
   box-shadow: var(--shadow-sheet);
-  transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+  transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1), visibility 0.3s;
   box-sizing: border-box;
+  visibility: hidden;         /* В закрытом виде не создает фантомов */
+  pointer-events: none;       /* и не кликается */
+}
+
+.cartPanel.open {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 /* Десктоп и планшет (>= 821px): фиксированная шторка 430px справа на всю высоту экрана */
@@ -658,7 +675,7 @@ body.editing .card .tag{
 .cart-gifts-line { font-size: 12.5px; color: var(--status-success, #2F7D4F); font-weight: 700; margin-top: 6px; }
 /* ── Тикер: база (брендовые цвета — СЛОЙ 2,
 views.js) ── */
-.ticker{
+.ticker {
   overflow: hidden;
   max-width: 100%;
   height: 30px;
@@ -667,9 +684,19 @@ views.js) ── */
   align-items: center;
   margin-top: -1px;
   position: relative;
-  z-index: 1
+  z-index: 1;
 }
-#tickerTrack span{
+
+#tickerTrack {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  white-space: nowrap;
+  width: max-content;
+  animation: zt-marquee 35s linear infinite;
+}
+
+#tickerTrack span {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -678,36 +705,22 @@ views.js) ── */
   font: 600 11px/30px "Unbounded", system-ui, sans-serif;
   letter-spacing: .12em;
   text-transform: uppercase;
-  white-space: nowrap
+  white-space: nowrap;
 }
-#tickerTrack span::after{
+
+#tickerTrack span::after {
   content: "〜";
   margin-left: 1.4rem;
-  color: var(--azure, #3E8FD0)
+  color: var(--azure, #3E8FD0);
 }
-@keyframes zt-marquee{
-  from {
-    transform: translate3d(0, 0, 0)
-  }
 
-  to {
-    transform: translate3d(-50%, 0, 0)
-  }
+@keyframes zt-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
 }
-@media(prefers-reduced-motion:reduce){#tickerTrack{
-    animation: none
-  }
 
-
-
-}
-@media(max-width:400px){#tickerTrack span{
-    font-size: 10px;
-    padding: .35rem 1rem
-  }
-
-
-
+@media (prefers-reduced-motion: reduce) {
+  #tickerTrack { animation: none; }
 }
 /* ── Сплэш бренда: база в СЛОЕ 1 (Ф3.54) — без FOUC в медленных WebView ── */
 #brandSplash{
@@ -913,7 +926,7 @@ body.in-tg .topbar{
   font-size: 14px;
   background: #fff;
   color: var(--ink);
-  transition: .2s;
+  transition: border-color 0.15s ease;
   font-weight: 500
 }
 .form textarea{
@@ -1429,7 +1442,7 @@ body[data-brand] .chat-fab:active{
   font-size: 13px;
   font-weight: 700;
   color: var(--soft);
-  transition: 0.2s;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .tabs button:hover{
   background: #edf2f6;
@@ -1514,7 +1527,7 @@ body[data-brand] .chat-fab:active{
 }
 @keyframes nextp{
   50% {
-    box-shadow: 0 0 0 5px rgba(200, 155, 106, 0.25);
+    transform: scale(1.08);
   }
 }
 #pvBonus .stamp.e{
@@ -1898,7 +1911,7 @@ button.cta,
   padding: 11px 17px;
   font-size: 13.5px;
   font-weight: 800;
-  transition: 0.22s;
+  transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease;
   background: var(--btn-fire-bg, #123a6b);
   color: var(--btn-fire-color, #ffffff);
   border: var(--btn-fire-border, none);
@@ -2565,7 +2578,7 @@ textarea{
   font-size: 11px;
   font-weight: 700;
   color: #475462;
-  transition: 0.25s;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 .rail .re{
   font-size: 23px;
@@ -2972,30 +2985,22 @@ body .wrap #deliveryRail button.on{
   font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 8px;
   background: linear-gradient(120deg, #f3e3ce, #e4c9a5); color: #4a3100;
 }
-@media (max-width: 820px){
-  .mh-top, .mh, #menuHead{
-    display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+@media (max-width: 820px) {
+  .mh-top, .mh, #menuHead {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
-  .mh-top .mh-right, .mh .mh-right, #menuHead .mh-right{
-    width: 100%; margin-left: 0;
+  .mh-top .mh-right, .mh .mh-right, #menuHead .mh-right {
+    width: auto;
+    margin-left: 0;
   }
-  .mh-top h1, .mh h1, #menuHead h1,
-  .mh-top .mh-sub, .mh .mh-sub, #menuHead .mh-sub{ max-width: 100%; }
-  .menu-head{
-    margin-left: calc(-1 * (72px + 8px));
-    width: calc(100% + 72px + 8px);
-  }
-  .mh-top .mh-right, .mh-top .search,
-  #menuView .menu-head .mh-top .mh-right,
-  #deliveryView .menu-head .mh-top .mh-right{
-    width: 100%; max-width: 100%; margin-left: 0; flex: 1 1 100%;
-  }
-  #menuView .mh-top .search,
-  #deliveryView .mh-top .search,
-  #menuView .menu-head .mh-top .search,
-  #deliveryView .menu-head .mh-top .search,
-  .mh-top .search{
-    min-width: 0; margin: 8px 0 0; box-sizing: border-box;
+  .search {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 }
 /* ── Ф5.51: Компактная сетка 2х2 для adminBar (все кнопки видны на экране) ── */
@@ -3438,45 +3443,18 @@ html.is-tg-app [id*="pwaInstall"]{
 
 /* PERF-P0 v1: мёртвые селекторы удалены */
 
+body .wrap > .rail,
+body .wrap > #deliveryRail {
+  position: sticky;
+  top: calc(50dvh - 150px);
+  margin-top: clamp(0px, calc(50dvh - 240px), 160px);
+  align-self: start;
+  height: auto;
+  max-height: calc(100dvh - 24px);
+  transform: none;
+  transition: none;
+}
 
-/* [fix-all v1] F5.60 FIX-RAIL + FIX-MBONUS */
-/* ─────────────────────────────────────────────────────────────────────────
-   F5.60 FIX-RAIL — единый владелец позиции .rail / #deliveryRail
-   ─────────────────────────────────────────────────────────────────────────
-   До этого правила о sticky-top писались в четырёх media-блоках
-   (Слой 1 base, F5.15, F5.17, F5.45). Побеждало последнее (F5.45:
-   top: calc(50dvh - 160px); margin-top: 140px), но inline-запись из
-   scrolltop.js (rail.style.marginTop = offset) его обнуляла.
-   Теперь: один владелец здесь, с body-префиксом и в самом конце каскада.
-   scrolltop.js больше не пишет inline top/marginTop — только чистит legacy.
-   Rail и section — соседи в grid row 1, tops выровнены через align-self:start. */
-@media (max-width: 820px) {
-  body .wrap > .rail,
-  body .wrap > #deliveryRail {
-    position: sticky;
-    top: calc(env(safe-area-inset-top, 0px) + 8px);
-    margin-top: 0;
-    margin-bottom: 0;
-    align-self: start;
-    height: auto;
-    max-height: calc(100dvh - 24px);
-    transform: none;
-    transition: none;
-  }
-}
-@media (max-width: 1180px) and (min-width: 821px) {
-  body .wrap > .rail,
-  body .wrap > #deliveryRail {
-    position: sticky;
-    top: calc(env(safe-area-inset-top, 0px) + 8px);
-    margin-top: 0;
-    align-self: start;
-    height: auto;
-    max-height: calc(100dvh - 24px);
-    transform: none;
-    transition: none;
-  }
-}
 @media (max-height: 480px) {
   body .wrap > .rail,
   body .wrap > #deliveryRail {
@@ -3727,27 +3705,6 @@ body #mbonusBtn .mb-free {
     min-width: 0;
   }
 }
-
-/* [6] Рейл: sticky, центрируется при скролле (top = center).
-   marginTop при y<20 ставит JS (alignRailWithCard) — выравнивает
-   с верхом #grid на первом кадре. */
-@media (max-width: 1180px) {
-  body .wrap > .rail,
-  body .wrap > #deliveryRail {
-    position: sticky;
-    top: calc(50dvh - 160px);
-    margin: 0;
-    align-self: start;
-    height: auto;
-    max-height: calc(100dvh - 24px);
-    transform: none;
-    transition: none;
-  }
-}
-/* [fix-all v3] END F5.62 */
-
-
-/* [fix-all v6] F5.63 */
 /* ─────────────────────────────────────────────────────────────────────────
    F5.63 BRAND-CENTER: 1fr auto 1fr → brand всегда по центру topbar.
    mbonus+profile живут в .topbar-right (JS-обёртка, только ≥821px). */
@@ -4023,21 +3980,6 @@ body #mbonusBtn .mb-free {
   min-height: 380px;
   contain: layout size;
 }
-/* Вынос шторки корзины из потока документа без ломки анимаций */
-.cartPanel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(440px, 100%);
-  max-width: 100%;
-  transform: translateX(105%);
-  transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
-  z-index: 330;
-}
-.cartPanel.open {
-  transform: none;
-}
 
 /* Вынос шторки профиля из потока документа ТОЛЬКО на мобильных */
 @media (max-width: 820px) {
@@ -4304,3 +4246,56 @@ body {
   padding: 6px 10px;
   border-radius: 12px;
 }
+/* ── Стили каталога и опций доставки ── */
+#deliveryGrid .card .cbody { display: flex; flex-direction: column; }
+.steprow { display: flex; gap: 6px; align-items: stretch; margin-top: auto; padding-top: 8px; }
+.steprow .cta { flex: 1; margin-top: 0; }
+.steprow .step { width: 44px; border: 2px solid var(--fr-choc, #222); background: #fff; border-radius: 12px; font: 800 18px/1 "Golos Text",system-ui,sans-serif; color: var(--fr-choc, #222); cursor: pointer; }
+
+.subfilter-bar { display: flex; align-items: center; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; margin-bottom: 12px; padding: 2px 2px 6px 2px; min-height: 38px; }
+.subfilter-bar::-webkit-scrollbar { display: none; }
+.subchip { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 999px; background: var(--fr-paper, #eee); border: 1.5px solid var(--fr-tan, #ccc); color: var(--fr-choc, #222); font: 600 12.5px/1 "Golos Text",system-ui,sans-serif; white-space: nowrap; cursor: pointer; transition: background .15s ease, border-color .15s ease, color .15s ease; flex-shrink: 0; }
+.subchip:hover { background: var(--fr-rice, #ddd); }
+.subchip.on { background: var(--flame); border-color: var(--fr-choc, #222); color: #fff; font-weight: 700; box-shadow: 2px 2px 0 var(--fr-choc, #222); }
+
+#deliveryGrid .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+@media(max-width: 400px) { #deliveryGrid .opts { grid-template-columns: 1fr; } }
+#deliveryGrid .opts .opt-btn { display: flex; flex-direction: column; justify-content: space-between; gap: 3px; padding: 7px 9px; border: 2px solid var(--fr-tan, #ccc); border-radius: 12px; background: #fff; min-height: 50px; text-align: left; cursor: pointer; box-sizing: border-box; transition: background .15s ease, border-color .15s ease, box-shadow .15s ease; }
+#deliveryGrid .opts .opt-row { display: flex; justify-content: space-between; align-items: baseline; width: 100%; line-height: 1.2; }
+#deliveryGrid .opts .opt-size { font-size: 11.5px; font-weight: 800; color: var(--fr-choc, #222); }
+#deliveryGrid .opts .opt-crust { font-size: 11px; font-weight: 700; color: var(--fr-choc, #222); text-transform: capitalize; }
+#deliveryGrid .opts .opt-weight { font-size: 10.5px; font-weight: 500; color: #5B6670; }
+#deliveryGrid .opts .opt-price { font-size: 12.5px; font-weight: 800; color: var(--flame); font-variant-numeric: tabular-nums; }
+#deliveryGrid .opts button.sel { background: var(--fr-tan, #ccc); border-color: var(--fr-choc, #222); box-shadow: 2px 2px 0 var(--fr-choc, #222); }
+#deliveryGrid .opts button.sel .opt-size, #deliveryGrid .opts button.sel .opt-crust, #deliveryGrid .opts button.sel .opt-weight, #deliveryGrid .opts button.sel .opt-price { color: var(--fr-choc, #222); }
+
+@media(max-width: 820px) {
+  html body div.wrap { grid-template-columns: 80px minmax(0,1fr); }
+  html body div.wrap > nav.rail, html body div.wrap > nav#deliveryRail { width: 80px; min-width: 80px; }
+  html body div.wrap > nav.rail button, html body div.wrap > nav#deliveryRail button { width: 100%; min-height: 56px; padding: 6px 2px; font-size: 9.5px; line-height: 1.15; word-break: normal; white-space: normal; }
+}
+/* ─── Десктопная раскладка кассы: 2 параллельные колонки без пустот ─── */
+@media (min-width: 821px) {
+  #cashierView .cashier {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  #cashierView .cash-top,
+  #cashierView #ngCard {
+    grid-column: 1 / -1;
+  }
+
+  #ordersView .cashier {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+}
+/* ── css-dedup-step1: перенесено из ui/styles.js ── */
+@media(max-width:820px){body.panel-open .chat-fab{display:none}}
+@media(min-width:900px){.cartPanel{max-width:860px;margin:0 auto;padding:28px 32px;font-size:15px}.cartPanel h3{font-size:20px;margin-bottom:20px}.cartPanel #cartItems{margin-bottom:20px}.cartPanel .checkoutForm{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-top:20px}.cartPanel .checkoutForm label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)}.cartPanel .checkoutForm label:nth-child(3),.cartPanel .checkoutForm label:nth-child(6){grid-column:1/-1}.cartPanel .checkoutForm select,.cartPanel .checkoutForm input,.cartPanel .checkoutForm textarea{font-size:15px;padding:12px 14px}.cartPanel .checkoutForm textarea{min-height:80px}.cartPanel button.cta{margin-top:24px;font-size:16px;padding:16px}.cartPanel .findrow{display:flex;gap:8px;margin-top:14px}.cartPanel .findrow input{flex:1;font-size:14px}}
+

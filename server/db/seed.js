@@ -107,7 +107,7 @@ export function initVapid() {
     vapidRow = { value: JSON.stringify(keys) };
   }
   const VAPID = JSON.parse(vapidRow.value);
-  webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
+  webpush.setVapidDetails('mailto:woxyara76@gmail.com', VAPID.publicKey, VAPID.privateKey);
 }
 export function getVapidPublicKey() {
   const vapidRow = db.prepare("SELECT value FROM meta WHERE key='vapid'").get();

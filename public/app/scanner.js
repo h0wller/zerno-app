@@ -3,10 +3,16 @@
   'use strict';
   let scanStream = null, scanTimer = null, curGuest = null, busy = false, frames = 0;
 
-  $('#scanFab').onclick = () => { $('#scanModal').hidden = false; startCam(); };
-  $('#scanClose').onclick = closeScan;
+  const on = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el) el.onclick = fn;
+  };
 
-  function closeScan() { $('#scanModal').hidden = true; stopCam(); }
+  function closeScan() {
+    const m = document.getElementById('scanModal');
+    if (m) m.hidden = true;
+    stopCam();
+  }
 
   function stopCam() {
     if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
@@ -25,9 +31,12 @@
   }
 
   async function startCam() {
-    const v = $('#scanVideo');
+    const v = document.getElementById('scanVideo');
+    const status = document.getElementById('scanStatus');
+    if (!v) return;
+
     frames = 0;
-    $('#scanStatus').textContent = 'Включаю камеру…';
+    if (status) status.textContent = 'Включаю камеру…';
     await loadJsqr();
     try {
       scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
@@ -38,8 +47,8 @@
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-      if (!det && !window.jsQR) {
-        $('#scanStatus').textContent = 'Сканер не поддерживается — введите код вручную';
+      if (!det && !window.jsQR && status) {
+        status.textContent = 'Сканер не поддерживается — введите код вручную';
       }
 
       scanTimer = setInterval(async () => {
@@ -70,19 +79,20 @@
               if (q && q.data) return found(q.data);
             }
           }
-          $('#scanStatus').textContent = 'Держите камеру параллельно QR, поднесите ближе · кадров: ' + frames;
+          if (status) status.textContent = 'Держите камеру параллельно QR, поднесите ближе · кадров: ' + frames;
         } catch (e) {}
         busy = false;
       }, 250);
     } catch (e) {
-      $('#scanStatus').textContent = 'Камера недоступна — введите код вручную';
+      if (status) status.textContent = 'Камера недоступна — введите код вручную';
     }
   }
 
   function found(raw) {
     busy = false;
     stopCam();
-    $('#scanModal').hidden = true;
+    const m = document.getElementById('scanModal');
+    if (m) m.hidden = true;
     onScanned(raw);
   }
 
@@ -94,49 +104,73 @@
       const r = await api('/staff/scan', { method: 'POST', body: { code } });
       showGuest(r.customer);
     } catch (e) {
-      toast('QR не найден 🤷', '');
+      if (typeof toast === 'function') toast('QR не найден 🤷', '');
     }
   }
 
-  $('#scanManualBtn').onclick = () => onScanned($('#scanManual').value);
-
   function showGuest(c) {
     curGuest = c;
-    $('#guestCard').hidden = false;
-    $('#gcName').textContent = c.name;
-    $('#gcPhone').textContent = c.phone;
+    const gc = document.getElementById('guestCard');
+    if (gc) gc.hidden = false;
+    const name = document.getElementById('gcName');
+    if (name) name.textContent = c.name;
+    const phone = document.getElementById('gcPhone');
+    if (phone) phone.textContent = c.phone;
     renderGuest();
   }
 
   function renderGuest() {
-    $('#gcStamps').textContent = '☕ Штамп(а): ' + curGuest.stamps + ' из 10 · 🎁 Бесплатных: ' + curGuest.free;
-    $('#gcRedeem').style.opacity = curGuest.free > 0 ? '1' : '.4';
+    if (!curGuest) return;
+    const st = document.getElementById('gcStamps');
+    if (st) st.textContent = '☕ Штамп(а): ' + curGuest.stamps + ' из 10 · 🎁 Бесплатных: ' + curGuest.free;
+    const red = document.getElementById('gcRedeem');
+    if (red) red.style.opacity = curGuest.free > 0 ? '1' : '.4';
   }
 
-  $('#gcStamp').onclick = async () => {
-    try {
-      const r = await api('/staff/stamp', { method: 'POST', body: { id: curGuest.id } });
-      curGuest = r.customer;
-      renderGuest();
-      toast(r.msg, r.ten ? '🎁' : '');
-    } catch (e) {
-      toast('Ошибка', '❌');
-    }
-  };
+  // Безопасная инициализация кликов (не падает, если элементов нет в DOM)
+  function initBindings() {
+    on('scanFab', () => {
+      const m = document.getElementById('scanModal');
+      if (m) m.hidden = false;
+      startCam();
+    });
+    on('scanClose', closeScan);
+    on('scanManualBtn', () => {
+      const inp = document.getElementById('scanManual');
+      if (inp) onScanned(inp.value);
+    });
+    on('gcStamp', async () => {
+      if (!curGuest) return;
+      try {
+        const r = await api('/staff/stamp', { method: 'POST', body: { id: curGuest.id } });
+        curGuest = r.customer;
+        renderGuest();
+        if (typeof toast === 'function') toast(r.msg, r.ten ? '🎁' : '');
+      } catch (e) {
+        if (typeof toast === 'function') toast('Ошибка', '❌');
+      }
+    });
+    on('gcRedeem', async () => {
+      if (!curGuest) return;
+      try {
+        const r = await api('/staff/redeem', { method: 'POST', body: { id: curGuest.id } });
+        curGuest = r.customer;
+        renderGuest();
+        if (typeof toast === 'function') toast('Бесплатный кофе списан 🎁');
+      } catch (e) {
+        if (typeof toast === 'function') toast('Нет доступных подарков', '❌');
+      }
+    });
+    on('gcClose', () => {
+      const gc = document.getElementById('guestCard');
+      if (gc) gc.hidden = true;
+      curGuest = null;
+    });
+  }
 
-  $('#gcRedeem').onclick = async () => {
-    try {
-      const r = await api('/staff/redeem', { method: 'POST', body: { id: curGuest.id } });
-      curGuest = r.customer;
-      renderGuest();
-      toast('Бесплатный кофе списан 🎁');
-    } catch (e) {
-      toast('Нет доступных подарков', '❌');
-    }
-  };
-
-  $('#gcClose').onclick = () => {
-    $('#guestCard').hidden = true;
-    curGuest = null;
-  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBindings);
+  } else {
+    initBindings();
+  }
 })();
