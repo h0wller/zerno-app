@@ -1,24 +1,6 @@
 /* public/app/ui/scrolltop.js — сброс легаси-отступов и кнопка «Наверх» */
-function alignRailWithCard() {
-  var r1 = document.getElementById('rail');
-  var r2 = document.getElementById('deliveryRail');
-  var p = document.getElementById('panel');
-  if (r1 && (r1.style.marginTop || r1.style.top)) { r1.style.marginTop = ''; r1.style.top = ''; }
-  if (r2 && (r2.style.marginTop || r2.style.top)) { r2.style.marginTop = ''; r2.style.top = ''; }
-  if (p && p.style.marginTop) { p.style.marginTop = ''; }
-}
-
-function alignMbonusWithRail() {
-  var mb = document.getElementById('mbonusBtn');
-  if (mb && (mb.style.left || mb.style.width || mb.style.minWidth || mb.style.maxWidth || mb.style.margin)) {
-    mb.style.left = '';
-    mb.style.width = '';
-    mb.style.minWidth = '';
-    mb.style.maxWidth = '';
-    mb.style.margin = '';
-  }
-}
-
+function alignRailWithCard() {}
+function alignMbonusWithRail() {}
 window.alignRailWithCard = alignRailWithCard;
 window.alignMbonusWithRail = alignMbonusWithRail;
 
