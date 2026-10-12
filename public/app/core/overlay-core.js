@@ -368,7 +368,7 @@ window.syncOverlay = syncOverlay;
     ensureTgEnvironment();
     updateMainButton();
 
-    const obsTarget = document.getElementById("cartPanel") || document.body;
+    const obsTarget = document.getElementById("cartPanel");
     if (obsTarget && typeof MutationObserver !== "undefined") {
       const obs = new MutationObserver(() => updateMainButton());
       obs.observe(obsTarget, {

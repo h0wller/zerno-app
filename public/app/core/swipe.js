@@ -87,9 +87,15 @@ function hint() {
   });
 }
 
-new MutationObserver(function() {
-  if (p.classList.contains('open')) setTimeout(hint, 350);
-}).observe(p, { attributes: true, attributeFilter: ['class'] });
+if (!sessionStorage.getItem('zt_swipehint') && typeof MutationObserver !== 'undefined') {
+  var swipeObs = new MutationObserver(function() {
+    if (p.classList.contains('open')) {
+      setTimeout(hint, 350);
+      swipeObs.disconnect();
+    }
+  });
+  swipeObs.observe(p, { attributes: true, attributeFilter: ['class'] });
+}
 })();
 
 (function() {

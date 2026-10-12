@@ -32,14 +32,15 @@
     if (card && card.style.display === 'none') card.style.display = '';
   }
 
-  new MutationObserver(function () {
-    if (window.__clRaf) return;
-    window.__clRaf = requestAnimationFrame(function () {
-      window.__clRaf = 0;
-      unhideCashLog();
-      filterCashLog();
-    });
-  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  window.filterCashLog = function () {
+    unhideCashLog();
+    filterCashLog();
+  };
 
-  setTimeout(function () { unhideCashLog(); filterCashLog(); }, 300);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.filterCashLog, { once: true });
+  } else {
+    window.filterCashLog();
+  }
+  setTimeout(window.filterCashLog, 300);
 })();

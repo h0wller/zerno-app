@@ -129,6 +129,7 @@ async function renderLog() {
 
     const h = $('#cashLog').previousElementSibling;
     if (h && h.tagName === 'H4') h.style.display = '';
+    if (typeof window.filterCashLog === 'function') window.filterCashLog();
   } catch (e) {
     $('#cashLog').innerHTML = '';
   }
