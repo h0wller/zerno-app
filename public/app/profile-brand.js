@@ -52,12 +52,12 @@ if (bSegEl) {
   });
 }
 
-var brQueued=false;
-new MutationObserver(function(){
-  if(brQueued)return;brQueued=true;
-  requestAnimationFrame(function(){brQueued=false;brandRules();});
-}).observe(document.getElementById('myOrders')||document.body,{childList:true,subtree:true});
-setTimeout(brandRules,300);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', brandRules, { once: true });
+} else {
+  brandRules();
+}
+setTimeout(brandRules, 300);
 /* ── relink + verifyNote (было секция 6) ── */
 function relink(){document.querySelectorAll('a[href*="t.me/and_coffee_bot"]').forEach(function(a){a.href='https://t.me/'+(window.TG_USERNAME||'and_coffee_bot');});}
 window.renderVerifyNote=function(){
