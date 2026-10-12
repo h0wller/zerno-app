@@ -53,7 +53,7 @@ function renderMenu() {
       const volStr = fmtVol(p.vol);
       return `<article class="card ${p.on ? '' : 'stopped'}" style="--d:${Math.min(i, 10) * 35}ms" data-item-id="${p.id}">
        <div class="media" style="--tint:${TINT[p.cat] || '#E7ECF0'}">
-                  ${p.img ? `<img src="${p.img}" alt="${esc(p.name)}" data-zoom="${p.img}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="lazy" decoding="async">` : `<span class="em">${p.e || '☕'}</span>`}
+                  ${p.img ? `<img src="${p.img}" alt="${esc(p.name)}" data-zoom="${p.img}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="${i < 4 ? 'eager' : 'lazy'}" fetchpriority="${i < 4 ? 'high' : 'auto'}" decoding="async">` : `<span class="em">${p.e || '☕'}</span>`}
          ${tg}${p.on ? '' : '<span class="stopbadge">СТОП</span>'}
           ${editMode ?`<button class="edBtn" data-ed="${p.id}" title="Редактировать">✏️</button>`: ''}
        </div>

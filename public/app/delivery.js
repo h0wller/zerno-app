@@ -243,12 +243,20 @@ function renderSingleMetaHtml(p) {
   '</div>';
 }
 
-function renderDeliveryCard(p, n0) {
+function renderDeliveryCard(p, n0, i) {
   var opts = p.opts || [];
   var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
+  var isAboveFold = typeof i === 'number' && i < 4;
 
-  return '<article class="card" data-product-id="' + p.id + '">' +
-    '<div class="media" style="--tint:#F3E2CE"><span class="em">' + (p.e || '🍕') + '</span></div>' +
+  var mediaContent = p.img
+    ? '<img src="' + p.img + '" alt="' + esc(p.name) + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="' + (isAboveFold ? 'eager' : 'lazy') + '" fetchpriority="' + (isAboveFold ? 'high' : 'auto') + '" decoding="async">'
+    : '<span class="em">' + (p.e || '🍕') + '</span>';
+
+  return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '">' +
+    '<div class="media" style="--tint:#F3E2CE;position:relative;overflow:hidden;">' +
+      mediaContent +
+      (p.on ? '' : '<span class="stopbadge">СТОП</span>') +
+    '</div>' +
     '<div class="cbody">' +
       '<h3>' + esc(p.name) + '</h3>' +
       (p.desc ? '<div class="desc">' + esc(p.desc) + '</div>' : '') +
@@ -284,10 +292,10 @@ function renderDeliveryMenu() {
     list = list.filter(p => matchesIngredient(p, activeIngredient));
   }
 
-  let html = list.map(p => {
-    const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
-    return renderDeliveryCard(p, n0);
-  }).join('');
+  let html = list.map((p, i) => {
+  const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
+  return renderDeliveryCard(p, n0, i);
+}).join('');
 
   if (typeof editMode !== 'undefined' && editMode) {
     html += '<article class="card add-card" id="addDelivCard">' +
