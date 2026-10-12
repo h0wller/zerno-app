@@ -99,15 +99,6 @@ addEventListener("keydown", (e) => {
   }
 });
 
-$("#brandSeg").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-brand]");
-  if (!b) return;
-  brand = b.dataset.brand;
-  if (mode === "cashier" || mode === "orders") setMode("guest");
-  syncBrandViews();
-  if (brand === "delivery" && !DMENU.length) loadDelivery();
-});
-
 window.syncOverlay = syncOverlay;
 
 /* TG-UX-OBJECT-PATCH v2 */

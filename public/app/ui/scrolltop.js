@@ -1,24 +1,6 @@
 /* public/app/ui/scrolltop.js — сброс легаси-отступов и кнопка «Наверх» */
-function alignRailWithCard() {
-  var r1 = document.getElementById('rail');
-  var r2 = document.getElementById('deliveryRail');
-  var p = document.getElementById('panel');
-  if (r1 && (r1.style.marginTop || r1.style.top)) { r1.style.marginTop = ''; r1.style.top = ''; }
-  if (r2 && (r2.style.marginTop || r2.style.top)) { r2.style.marginTop = ''; r2.style.top = ''; }
-  if (p && p.style.marginTop) { p.style.marginTop = ''; }
-}
-
-function alignMbonusWithRail() {
-  var mb = document.getElementById('mbonusBtn');
-  if (mb && (mb.style.left || mb.style.width || mb.style.minWidth || mb.style.maxWidth || mb.style.margin)) {
-    mb.style.left = '';
-    mb.style.width = '';
-    mb.style.minWidth = '';
-    mb.style.maxWidth = '';
-    mb.style.margin = '';
-  }
-}
-
+function alignRailWithCard() {}
+function alignMbonusWithRail() {}
 window.alignRailWithCard = alignRailWithCard;
 window.alignMbonusWithRail = alignMbonusWithRail;
 
@@ -84,44 +66,4 @@ window.alignMbonusWithRail = alignMbonusWithRail;
 
   // Запуск не блокирует текущий такт парсинга
   requestAnimationFrame(update);
-})();
-
-/* [fix-all v6] topbar-right wrap-toggle */
-(function topbarRightToggle() {
-  function unwrap() {
-    var w = document.querySelector('.topbar-right');
-    if (!w || !w.parentNode) return;
-    var topbar = w.parentNode;
-    while (w.firstChild) topbar.insertBefore(w.firstChild, w);
-    w.remove();
-  }
-
-  function wrap() {
-    var topbar = document.querySelector('.topbar');
-    var profile = document.getElementById('profileTopBtn');
-    var mbonus = document.getElementById('mbonusBtn');
-    if (!topbar || !profile || !mbonus) return;
-    if (mbonus.parentElement && mbonus.parentElement.classList.contains('topbar-right')) return;
-    var w = document.createElement('div');
-    w.className = 'topbar-right';
-    mbonus.parentNode.insertBefore(w, mbonus);
-    w.appendChild(mbonus);
-    w.appendChild(profile);
-  }
-
-  function apply() {
-    if (window.innerWidth >= 821) wrap();
-    else unwrap();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', apply, { once: true });
-  } else {
-    apply();
-  }
-
-  window.addEventListener('resize', function () {
-    clearTimeout(window.__tbT);
-    window.__tbT = setTimeout(apply, 150);
-  }, { passive: true });
 })();

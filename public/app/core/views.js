@@ -154,20 +154,7 @@ var rules = [
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
 
-/* ========== 2. DOM-переезды ========== */
-var wrapEl = document.querySelector('.wrap');
-var sec = wrapEl ? wrapEl.querySelector(':scope > section') : null;
-['deliveryView', 'ordersView', 'cashierView'].forEach(function (id) {
-  var el = document.getElementById(id);
-  if (sec && el && el.parentNode !== sec) sec.appendChild(el);
-});
-var dRail = document.getElementById('deliveryRail');
-if (wrapEl && dRail && dRail.parentNode !== wrapEl) {
-  wrapEl.insertBefore(dRail, sec);
-  dRail.classList.add('rail');
-}
-var ab0 = document.getElementById('adminBar');
-if (sec && ab0 && ab0.parentNode !== sec) sec.insertBefore(ab0, sec.firstChild);
+/* ========== 2. DOM-инъекции стафф-панелей ========== */
 
 (function () {
   var ov = document.getElementById('ordersView');
@@ -323,7 +310,6 @@ function sv() {
 window.sv = sv;
 window.syncBrandViews = function() {
   sv();
-  if (typeof window.alignRailWithCard === 'function') window.alignRailWithCard();
 };
 
 window.setMode = function (m) {
@@ -333,6 +319,7 @@ window.setMode = function (m) {
   if (m === 'admin' && role !== 'admin') return;
   window.mode = m;
   document.body.classList.toggle('is-cashier', m === 'cashier' || m === 'orders');
+  document.body.classList.toggle('is-admin', m === 'admin');
   var cv = document.getElementById('cashierView');
   if (cv) { cv.hidden = (m !== 'cashier'); cv.style.display = ''; }
   var ov = document.getElementById('ordersView');
@@ -436,46 +423,11 @@ sv();
     var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
     vt.innerHTML = '<span class="vt-label">Сменить заведение</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
   }
-
-  function syncHeaderCluster() {
-    if (window.innerWidth < 821) {
-      var mbMobile = document.getElementById('mbonusBtn');
-      if (mbMobile && (mbMobile.style.width || mbMobile.style.left)) {
-        mbMobile.style.left = '';
-        mbMobile.style.width = '';
-        mbMobile.style.minWidth = '';
-        mbMobile.style.maxWidth = '';
-        mbMobile.style.margin = '';
-      }
-      return;
-    }
-
-    var vt = document.getElementById('venueToggle');
-    var av = document.getElementById('profileTopBtn');
-    var mb = document.getElementById('mbonusBtn');
-    if (!vt || !av || !mb || mb.hidden || mb.style.display === 'none') return;
-
-    var vtW = vt.offsetWidth;
-    var avW = av.offsetWidth;
-    if (!vtW || !avW) return;
-
-    var w = vtW - avW - 8;
-    var targetW = (w >= 120 ? w : 120) + 'px';
-
-    if (mb.style.width !== targetW) {
-      requestAnimationFrame(function () {
-        mb.style.width = targetW;
-      });
-    }
-  }
-
-  window.__syncHeaderCluster = syncHeaderCluster;
+  window.__syncHeaderCluster = function () {};
   window.__ensureVenueToggle = ensure;
   window.__labelVenueToggle = function () { 
     label(); 
-    syncHeaderCluster(); 
   };
-
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', ensure, { once: true });
   } else {
