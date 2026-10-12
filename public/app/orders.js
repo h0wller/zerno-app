@@ -81,6 +81,7 @@ async function renderOrders(silent) {
     if (!silent && lastOrderNo && maxNo > lastOrderNo) { toast(`Новый заказ #${maxNo}!`, '🍕'); beep(); }
     if (maxNo) lastOrderNo = maxNo;
     $('#ordersList').innerHTML = list.map(orderCard).join('') || '<div class="hmini">Заказов за последние 3 дня нет</div>';
+    injectDelay();
   } catch (e) { if (!silent) toast(e.message, '⚠️'); }
 }
 
@@ -164,9 +165,6 @@ function injectDelay() {
     card.appendChild(d);
   });
 }
-
-new MutationObserver(function () { injectDelay(); }).observe(document.getElementById('ordersList') || document.body, { childList: true, subtree: true });
-
 document.addEventListener('click', async function (e) {
   var b = e.target.closest('[data-dly],[data-dlyall]'); if (!b) return;
   e.stopPropagation(); e.preventDefault();
