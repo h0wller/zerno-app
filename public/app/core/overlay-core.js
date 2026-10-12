@@ -122,13 +122,15 @@ window.syncOverlay = syncOverlay;
     );
   }
 
-  function ensureTgEnvironment() {
+function ensureTgEnvironment() {
     if (!isTg()) return;
     const tg = getTg();
     if (tg) {
       try {
         if (typeof tg.ready === "function") tg.ready();
         if (typeof tg.expand === "function") tg.expand();
+        if (typeof tg.enableClosingConfirmation === "function") tg.enableClosingConfirmation();
+        if (typeof tg.disableVerticalSwipes === "function") tg.disableVerticalSwipes();
       } catch (_) {}
     }
 
