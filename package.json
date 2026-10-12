@@ -14,7 +14,7 @@
     "lint:dup": "jscpd --config .jscpd.json public/ && jscpd --config .jscpd.strict.json server/ public/app/",
     "lint:dead": "knip",
     "lint:layers": "depcruise --config .dependency-cruiser.js public server",
-    "audit": "npm run check && npm run pretest && npm run lint:code && npm run lint:dup && npm run lint:dead && npm run lint:layers && npm run smoke",
+    "audit": "npm run check && npm run pretest && npm run lint:code && npm run lint:dup && npm run lint:dead && npm run lint:layers && npm run smoke && npm run test:e2e",
     "build:client": "esbuild public/app/main.js --bundle --minify --sourcemap --format=esm --target=es2022 --outfile=public/dist/main.bundle.js"
   },
   "engines": {

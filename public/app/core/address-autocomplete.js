@@ -196,35 +196,7 @@
         hideDropdown();
       }
     }, { passive: true });
-
-    var observer = new MutationObserver(function (mutations) {
-      var relevant = false;
-      for (var i = 0; i < mutations.length; i++) {
-        var t = mutations[i].target;
-        if (t && (t.id === 'cartPanel' || (t.closest && t.closest('#cartPanel')))) {
-          relevant = true;
-          break;
-        }
-      }
-      if (!relevant) return;
-
-      clearTimeout(addrBookTimer);
-      addrBookTimer = setTimeout(function () {
-        var si = document.getElementById('checkoutStreet');
-        if (si && !si.dataset.addrBound) attachToInput(si);
-        attachToPlaceSelect();
-        restoreSavedAddress();
-      }, 150);
-    });
-
-    var cp = document.getElementById('cartPanel');
-    if (cp) {
-      observer.observe(cp, { childList: true, subtree: true });
-    } else if (document.body) {
-      observer.observe(document.body, { childList: true, subtree: true });
-    }
   }
-
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
