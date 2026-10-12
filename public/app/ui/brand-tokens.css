@@ -92,6 +92,25 @@ body[data-brand="coffee"] {
   --chat-fab-hover-bg: #3E8FD0;
   --chat-fab-border: 2px solid #3E8FD0;
   --chat-fab-shadow: 0 12px 30px rgba(18, 58, 107, 0.45);
+  /* Токены хрома и корзины (дедупликация Слоя 2) */
+  --topbar-bg: transparent;
+  --topbar-color: var(--ink, #101418);
+  --topbar-border: none;
+  --venue-toggle-bg: var(--card, #FFFFFF);
+  --venue-toggle-border: 1.5px solid var(--line, #D8DFE4);
+  --venue-toggle-color: var(--ink, #101418);
+  --venue-toggle-shadow: none;
+  --profile-btn-bg: #FFFFFF;
+  --profile-btn-border: 1.5px solid var(--line, #D8DFE4);
+  --profile-btn-color: var(--ink, #101418);
+  --profile-btn-shadow: none;
+  --cart-panel-bg: var(--card, #FFFFFF);
+  --cart-panel-border: 2px solid var(--line, #D8DFE4);
+  --cart-qty-bg: var(--panel, #F3F8FC);
+  --cart-qty-border: 1.5px solid var(--line, #D8DFE4);
+  --cart-qty-color: var(--ink, #101418);
+  --cart-item-border: 1.5px dashed var(--line, #D8DFE4);
+  --cashier-bg: var(--paper, #FFFFFF);
 
 }
 
@@ -202,6 +221,25 @@ body[data-brand="delivery"] {
   --chat-fab-hover-bg: var(--flame-d, #8E3716);
   --chat-fab-border: 2px solid var(--fr-choc, #3A2A1C);
   --chat-fab-shadow: 3px 3px 0 var(--fr-choc, #3A2A1C);
+  /* Токены хрома и корзины (дедупликация Слоя 2) */
+  --topbar-bg: #C99E6E;
+  --topbar-color: #3A2A1C;
+  --topbar-border: 3px solid #3A2A1C;
+  --venue-toggle-bg: var(--fr-paper, #F6EEE1);
+  --venue-toggle-border: 2px solid var(--fr-choc, #3A2A1C);
+  --venue-toggle-color: var(--fr-choc, #3A2A1C);
+  --venue-toggle-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --profile-btn-bg: #E8A33D;
+  --profile-btn-border: 2px solid var(--fr-choc, #3A2A1C);
+  --profile-btn-color: #3A2A1C;
+  --profile-btn-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --cart-panel-bg: var(--fr-rice, #EFE6D8);
+  --cart-panel-border: 3px solid var(--fr-choc, #3A2A1C);
+  --cart-qty-bg: #C99E6E;
+  --cart-qty-border: 1.5px solid #3A2A1C;
+  --cart-qty-color: #3A2A1C;
+  --cart-item-border: 1.5px dashed rgba(58, 42, 28, 0.3);
+  --cashier-bg: var(--fr-paper, #F6EEE1);
 
 }
 
@@ -287,6 +325,25 @@ body[data-brand="test"] {
   --chat-fab-hover-bg: #C73866;
   --chat-fab-border: 2px solid #2D3047;
   --chat-fab-shadow: 3px 3px 0 #2D3047;
+  /* Токены хрома и корзины (дедупликация Слоя 2) */
+  --topbar-bg: transparent;
+  --topbar-color: #2D3047;
+  --topbar-border: none;
+  --venue-toggle-bg: #FFFFFF;
+  --venue-toggle-border: 2px solid #2D3047;
+  --venue-toggle-color: #2D3047;
+  --venue-toggle-shadow: none;
+  --profile-btn-bg: #FF6B9D;
+  --profile-btn-border: 2px solid #2D3047;
+  --profile-btn-color: #FFFFFF;
+  --profile-btn-shadow: none;
+  --cart-panel-bg: #FFF5F7;
+  --cart-panel-border: 2px solid #2D3047;
+  --cart-qty-bg: #FFF5F7;
+  --cart-qty-border: 1.5px solid #2D3047;
+  --cart-qty-color: #2D3047;
+  --cart-item-border: 1.5px dashed #2D3047;
+  --cashier-bg: #FFF5F7;
 
 }
 
