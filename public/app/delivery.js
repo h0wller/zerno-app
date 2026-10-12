@@ -300,8 +300,9 @@ function renderDeliveryMenu() {
     html += '<div class="gempty">В этой категории пока пусто</div>';
   }
 
-  $('#deliveryGrid').innerHTML = html;
+$('#deliveryGrid').innerHTML = html;
   patchDeliveryCards(list);
+  if (typeof window.fixLcp === 'function') window.fixLcp();
 
   const addCard = document.getElementById('addDelivCard');
   if (addCard) {

@@ -78,8 +78,9 @@ function renderMenu() {
     + (editMode ? `<button class="addcard" id="addCard"><span>＋</span>Добавить позицию</button>` : '')
     + (list.length === 0 ? `<div class="gempty" style="grid-column:1/-1"><span class="ee">${query ? '🔍' : ''}</span>${query ? 'Ничего не нашлось. Попробуйте другой запрос.' : 'В этой категории пока пусто.'}</div>` : '');
 
-    const a = $('#addCard');
+const a = $('#addCard');
     if (a) a.onclick = () => openEditor(null);
+    if (typeof fixLcp === 'function') fixLcp();
   });
   const a = $('#addCard');
   if (a) a.onclick = () => openEditor(null);
@@ -267,14 +268,20 @@ await loadMenu();
 });
 
 /* ── Ф6.2: LCP-картинка первого экрана — eager + fetchpriority ── */
-(function(){
-function fixLcp(){
-var f=document.querySelector('#grid img, #deliveryGrid img');
-if(f&&!f.dataset.lcp){f.dataset.lcp='1';f.loading='eager';try{f.fetchPriority='high';}catch(e){}}
+function fixLcp() {
+  var f = document.querySelector('#grid img, #deliveryGrid img');
+  if (f && !f.dataset.lcp) {
+    f.dataset.lcp = '1';
+    f.loading = 'eager';
+    try { f.fetchPriority = 'high'; } catch (e) {}
+  }
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixLcp);else fixLcp();
-new MutationObserver(function(){fixLcp();}).observe(document.body,{childList:true,subtree:true});
-})();
+window.fixLcp = fixLcp;
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', fixLcp);
+} else {
+  fixLcp();
+}
 
 /* ── Ф5.8g: ESM-шимы (boot/catalog/editor/menu-editor + обёртки admin-extra/delivery-search) ── */
 window.renderMenu = renderMenu;
