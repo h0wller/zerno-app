@@ -4760,7 +4760,7 @@ body.panel-open {
   padding: 3px 8px;
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--fr-choc, #3A2A1C);
+  color: var(--fr-choc, var(--ink));
   box-sizing: border-box;
 }
 .ci-mod-del {
@@ -4832,7 +4832,7 @@ body.panel-open {
   padding: 4px 10px;
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--fr-choc, #3A2A1C);
+  color: var(--fr-choc, var(--ink));
   cursor: pointer;
   white-space: nowrap;
   transition: all .15s ease;
@@ -4844,9 +4844,9 @@ body.panel-open {
 .ci-mod-chip.selected {
   background: var(--flame, #C03B2A);
   color: #FFFFFF;
-  border-color: var(--fr-choc, #3A2A1C);
+  border-color: var(--fr-choc, var(--flame));
   font-weight: 700;
-  box-shadow: 1.5px 1.5px 0 var(--fr-choc, #3A2A1C);
+  box-shadow: 1.5px 1.5px 0 var(--fr-choc, rgba(0, 0, 0, 0.2));
 }
 
 /* Верхняя карусель «Рекомендуем к заказу» */
@@ -4872,7 +4872,7 @@ body.panel-open {
   font-weight: 800;
   letter-spacing: .05em;
   text-transform: uppercase;
-  color: var(--fr-choc, #3A2A1C);
+  color: var(--fr-choc, var(--ink));
   white-space: nowrap;
 }
 .ca-tabs-scroll {
@@ -4900,7 +4900,7 @@ body.panel-open {
 }
 .addon-tab-btn.on {
   background: var(--flame, #C03B2A);
-  border-color: var(--fr-choc, #3A2A1C);
+  border-color: var(--fr-choc, var(--flame));
   color: #FFFFFF;
 }
 .ca-cards-scroll {
@@ -4992,7 +4992,7 @@ body.panel-open {
 }
 .ac-add-btn:hover {
   background: var(--flame, #C03B2A);
-  border-color: var(--fr-choc, #3A2A1C);
+  border-color: var(--fr-choc, var(--flame));
   color: #FFFFFF;
 }
 .ac-stepper {
@@ -5002,7 +5002,7 @@ body.panel-open {
   height: 28px;
   border-radius: 8px;
   background: var(--flame, #C03B2A);
-  border: 1px solid var(--fr-choc, #3A2A1C);
+  border: 1px solid var(--fr-choc, var(--flame));
   color: #FFFFFF;
   padding: 0 3px;
   gap: 2px;
