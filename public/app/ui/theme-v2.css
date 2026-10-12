@@ -628,9 +628,9 @@ body.editing .card .tag{
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--panel, #F3F8FC);
-  border: 1.5px solid var(--line, #D8DFE4);
-  color: var(--ink, #101418);
+  background: var(--cart-qty-bg, var(--panel, #F3F8FC));
+  border: var(--cart-qty-border, 1.5px solid var(--line, #D8DFE4));
+  color: var(--cart-qty-color, var(--ink, #101418));
   font-size: 18px;
   font-weight: 800;
   display: grid;
@@ -4304,3 +4304,75 @@ body {
   padding: 6px 10px;
   border-radius: 12px;
 }
+/* ── Сетка доставки и опции блюд (перенос из views.js) ── */
+#deliveryGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding-bottom: 120px;
+}
+@media (min-width: 560px) {
+  #deliveryGrid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+#deliveryGrid .opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: auto;
+}
+@media (max-width: 400px) {
+  #deliveryGrid .opts {
+    grid-template-columns: 1fr;
+  }
+}
+#deliveryGrid .opts button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border: var(--card-border, 1.5px solid var(--line));
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--card-bg, #FFFFFF);
+  color: var(--ink, #101418);
+  line-height: 1.3;
+  width: 100%;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+}
+#deliveryGrid .opts button .op {
+  color: var(--soft, #586470);
+  font-weight: 700;
+}
+#deliveryGrid .opts button.sel {
+  background: var(--btn-fire-bg, var(--flame));
+  border-color: var(--card-hover-border, var(--flame));
+  color: var(--btn-fire-color, #FFFFFF);
+  box-shadow: var(--card-shadow, none);
+}
+#deliveryGrid .opts button.sel .op {
+  color: var(--tint-warm, #F3E2CE);
+}
+
+/* ── База шапки и переключателя заведений (перенос из views.js) ── */
+.topbar {
+  background: var(--topbar-bg, transparent);
+  color: var(--topbar-color, var(--ink));
+  border-bottom: var(--topbar-border, none);
+}
+.venueToggle {
+  border: var(--venue-toggle-border, 1.5px solid var(--line));
+  background: var(--venue-toggle-bg, var(--card, #FFFFFF));
+  color: var(--venue-toggle-color, var(--ink));
+  box-shadow: var(--venue-toggle-shadow, none);
+}
+.topbar #profileTopBtn {
+  background: var(--profile-btn-bg, #FFFFFF);
+  border: var(--profile-btn-border, 1.5px solid var(--line));
+  color: var(--profile-btn-color, var(--ink));
+  box-shadow: var(--profile-btn-shadow, none);
+}
+
