@@ -243,10 +243,6 @@
 
   function init() {
     ensureButton();
-    /* кнопка переживает перерендер корзины — восстанавливаем по открытию шторки */
-    document.addEventListener('click', function (e) {
-      if (e.target.closest && e.target.closest('#cartFab')) setTimeout(ensureButton, 50);
-    }, true);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
