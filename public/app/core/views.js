@@ -320,6 +320,7 @@ window.setMode = function (m) {
   if (m === 'admin' && role !== 'admin') return;
   window.mode = m;
   document.body.classList.toggle('is-cashier', m === 'cashier' || m === 'orders');
+  document.body.classList.toggle('is-admin', m === 'admin');
   var cv = document.getElementById('cashierView');
   if (cv) { cv.hidden = (m !== 'cashier'); cv.style.display = ''; }
   var ov = document.getElementById('ordersView');
