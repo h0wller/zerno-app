@@ -465,7 +465,7 @@ if(b==='delivery'){
     </button>
 
 
-    <button class="ava" id="profileTopBtn" title="Профиль">?</button>
+    <button class="ava" id="profileTopBtn" title="Профиль" aria-label="Профиль пользователя">?</button>
   </header>
 
   <div class="ticker" aria-hidden="true">
@@ -481,7 +481,7 @@ if(b==='delivery'){
         <button id="editToggle">✏️ Редактировать</button>
         <button id="promoToggle" hidden>🎟 Промокоды</button>
         <button id="dashToggle" hidden>📊 Дашборд</button>
-        <button id="chatsToggle2" hidden>💬</button>
+        <button id="chatsToggle2" hidden aria-label="Чаты гостей">💬</button>
       </div>
 
       <div id="deliveryView" class="deliveryView">
@@ -844,7 +844,7 @@ if(b==='delivery'){
 
   <div class="modal" id="emModal">
     <div class="modal-card">
-      <button class="mclose" id="emClose">✕</button>
+      <button class="mclose" id="emClose" aria-label="Закрыть">✕</button>
       <h3 id="emTitle">Позиция меню</h3>
       <div class="msub">Изменения сразу видны гостям в меню</div>
       <div class="form">
@@ -998,7 +998,7 @@ if(b==='delivery'){
 
   <div class="modal" id="pinModal">
     <div class="modal-card" style="width: min(360px, 100%); text-align: center">
-      <button class="mclose" id="pinClose">✕</button>
+      <button class="mclose" id="pinClose" aria-label="Закрыть">✕</button>
       <h3>Код доступа</h3>
       <div class="msub">
         Введите код, который выдал владелец кофейни.<br />Вкладки «Кассир» и
@@ -1017,7 +1017,7 @@ if(b==='delivery'){
 
   <div class="modal" id="setPinModal">
     <div class="modal-card" style="width: min(360px, 100%); text-align: center">
-      <button class="mclose" id="setPinClose">✕</button>
+      <button class="mclose" id="setPinClose" aria-label="Закрыть">✕</button>
       <h3>Придумайте PIN</h3>
       <div class="msub">
         4 цифры — вы будете вводить их при входе.<br />Без PIN никто не сможет
@@ -1040,7 +1040,7 @@ if(b==='delivery'){
 
   <div class="modal" id="qrModal">
     <div class="modal-card qrcard" id="qrCard">
-      <button class="mclose" id="qrClose">✕</button>
+      <button class="mclose" id="qrClose" aria-label="Закрыть">✕</button>
       <div class="qrttl">Покажите кассиру</div>
       <canvas id="qrFull" width="520" height="520"></canvas>
       <div class="qrname" id="qrName">—</div>
@@ -1051,7 +1051,7 @@ if(b==='delivery'){
 
   <div class="modal" id="promoModal">
     <div class="modal-card">
-      <button class="mclose" id="promoClose">✕</button>
+      <button class="mclose" id="promoClose" aria-label="Закрыть">✕</button>
       <h3>Промокоды и акции</h3>
       <div class="msub">
         Гость активирует код в «Бонусах» → «Есть промокод?»
@@ -1121,7 +1121,7 @@ if(b==='delivery'){
 
   <div class="modal" id="dashModal">
     <div class="modal-card" style="width: min(560px, 100%)">
-      <button class="mclose" id="dashClose">✕</button>
+      <button class="mclose" id="dashClose" aria-label="Закрыть">✕</button>
       <h3>Дашборд владельца</h3>
       <div class="msub">Живая статистика лояльности · …и кофе</div>
       <div class="stats" id="dashTop"></div>
@@ -1140,7 +1140,7 @@ if(b==='delivery'){
 
   <div class="modal" id="staffChatModal">
     <div class="modal-card" style="width: min(560px, 100%)">
-      <button class="mclose" id="scClose">✕</button>
+      <button class="mclose" id="scClose" aria-label="Закрыть">✕</button>
       <h3>Чаты гостей</h3>
       <div class="msub">Если бот не смог помочь — ответьте лично</div>
       <button class="btn ghost" id="scShowClosed" style="margin-bottom: 8px">
@@ -1285,7 +1285,7 @@ if(b==='delivery'){
         ">
       OK
     </button>
-    <button id="installClose" style="background: none; border: none; color: #9fb2c6; font-size: 16px">
+    <button id="installClose" aria-label="Закрыть уведомление об установке" style="background: none; border: none; color: #9fb2c6; font-size: 16px">
       ✕
     </button>
   </div>
