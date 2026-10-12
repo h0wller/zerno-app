@@ -310,7 +310,6 @@ function sv() {
 window.sv = sv;
 window.syncBrandViews = function() {
   sv();
-  if (typeof window.alignRailWithCard === 'function') window.alignRailWithCard();
 };
 
 window.setMode = function (m) {
@@ -424,46 +423,11 @@ sv();
     var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
     vt.innerHTML = '<span class="vt-label">Сменить заведение</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
   }
-
-  function syncHeaderCluster() {
-    if (window.innerWidth < 821) {
-      var mbMobile = document.getElementById('mbonusBtn');
-      if (mbMobile && (mbMobile.style.width || mbMobile.style.left)) {
-        mbMobile.style.left = '';
-        mbMobile.style.width = '';
-        mbMobile.style.minWidth = '';
-        mbMobile.style.maxWidth = '';
-        mbMobile.style.margin = '';
-      }
-      return;
-    }
-
-    var vt = document.getElementById('venueToggle');
-    var av = document.getElementById('profileTopBtn');
-    var mb = document.getElementById('mbonusBtn');
-    if (!vt || !av || !mb || mb.hidden || mb.style.display === 'none') return;
-
-    var vtW = vt.offsetWidth;
-    var avW = av.offsetWidth;
-    if (!vtW || !avW) return;
-
-    var w = vtW - avW - 8;
-    var targetW = (w >= 120 ? w : 120) + 'px';
-
-    if (mb.style.width !== targetW) {
-      requestAnimationFrame(function () {
-        mb.style.width = targetW;
-      });
-    }
-  }
-
-  window.__syncHeaderCluster = syncHeaderCluster;
+  window.__syncHeaderCluster = function () {};
   window.__ensureVenueToggle = ensure;
   window.__labelVenueToggle = function () { 
     label(); 
-    syncHeaderCluster(); 
   };
-
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', ensure, { once: true });
   } else {
