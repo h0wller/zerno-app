@@ -6,6 +6,7 @@
     "start": "node --env-file=.env server.js",
     "smoke": "node scripts/contract-smoke.mjs",
     "test": "node test-api.mjs",
+    "prepare": "git config core.hooksPath .githooks",
     "pretest": "node --check public/app/core/views.js && node scripts/css-audit.mjs && node scripts/brands-check.mjs && node scripts/audit-observers.mjs",    "test:e2e": "playwright test",
     "ui:baseline": "npx playwright test tests/ui-baseline.spec.js --update-snapshots",
     "check": "node --check server.js",
@@ -14,8 +15,9 @@
     "lint:dead": "knip",
     "lint:layers": "depcruise --config .dependency-cruiser.js public server",
     "lint:observers": "node scripts/audit-observers.mjs",
+    "bump:sw": "node scripts/bump-sw.mjs",
     "audit": "npm run check && npm run pretest && npm run lint:code && npm run lint:dup && npm run lint:dead && npm run lint:layers && npm run smoke && npm run test:e2e",
-    "build:client": "esbuild public/app/main.js --bundle --minify --sourcemap --format=esm --target=es2022 --outfile=public/dist/main.bundle.js"
+    "build:client": "npm run bump:sw && esbuild public/app/main.js --bundle --minify --sourcemap --format=esm --target=es2022 --outfile=public/dist/main.bundle.js"
   },
   "engines": {
     "node": "22.x"
