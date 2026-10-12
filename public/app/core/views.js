@@ -43,9 +43,9 @@ if (supportPending) {
 /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
 var css = document.createElement('style');
 var rules = [
- 'html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView { background: var(--fr-paper, #F6EEE1) !important; }',
- 'html[data-brand="delivery"] .cash-card, html[data-brand="delivery"] #ordersView .card, html[data-brand="delivery"] #ordersView article { background: #FFFDF9 !important; border-color: #E8DCCB !important; }',
- 'html[data-brand="delivery"] .price, html[data-brand="delivery"] .single-meta .price, html[data-brand="delivery"] #itemZoomOverlay b + span { color: var(--flame, #C03B2A) !important; }',
+ 'html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView { background: var(--cashier-bg, #F6EEE1); }',
+ 'html[data-brand="delivery"] .cash-card, html[data-brand="delivery"] #ordersView .card, html[data-brand="delivery"] #ordersView article { background: #FFFDF9; border-color: #E8DCCB; }',
+ 'html[data-brand="delivery"] .single-meta .price, html[data-brand="delivery"] #itemZoomOverlay b + span { color: var(--price-color, #C03B2A); }',
  '@media(min-width:821px){body:not(.is-cashier):not(.is-admin) .wrap > .rail{grid-column:1}body:not(.is-cashier):not(.is-admin) .wrap > section{grid-column:2;min-width:0}body:not(.is-cashier):not(.is-admin) .wrap > .panel{grid-column:3}}',
  'html,body{overflow-x:hidden;overflow-x:clip;max-width:100%}',
  'img,canvas,svg,video{max-width:100%}',
@@ -58,7 +58,6 @@ var rules = [
  '.topbar{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:8px;height:auto;min-height:calc(var(--topbar-h,64px) + var(--sat, env(safe-area-inset-top,0px)));padding:var(--sat, env(safe-area-inset-top,0px)) 12px 0;box-sizing:border-box}',
  '.topbar .venueWrap{position:relative;order:1;flex:0 0 auto;min-width:0;display:flex;justify-content:flex-start}',
  '.topbar .brand{order:2;flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;position:static;transform:none}',
- '.topbar .brand .mark{width:var(--mark-w,42px);height:var(--mark-h,42px);flex:0 0 auto;overflow:hidden;border-radius:12px;background:transparent;display:flex;align-items:center;justify-content:center}',
  '.topbar .brand .mark img,.topbar .brand .mark svg{display:block;width:100%;height:100%;object-fit:contain}',
  '.topbar #profileTopBtn{order:3;flex:0 0 auto;margin-left:auto;width:calc(var(--topbar-h,64px) - 20px);height:calc(var(--topbar-h,64px) - 20px);font-size:calc(var(--topbar-h,64px) * 0.28)}',
  '.topbar #modeSeg{order:10;flex:1 1 100%}',
@@ -169,7 +168,6 @@ var rules = [
  '@media(min-width:1181px){body.is-cashier .panel{display:none}body.is-cashier .wrap{grid-template-columns:1fr}.topbar > :last-child{margin-left:0!important}#profileTopBtn{margin-left:auto;width:46px;height:46px;font-size:18px}}',
  '@media(max-width:640px){#modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}#profileTopBtn{width:44px!important;height:44px!important;min-width:44px!important;flex:0 0 44px!important}.wrap{padding:14px}.grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:11px}.media{position:relative;overflow:hidden;height:120px}.chat{right:8px}.mh-right{margin-left:0;width:100%}}',
  '@media(hover:none) and (pointer:coarse){input,select,textarea{font-size:16px!important}}',
- '[data-brand="delivery"] body { background-color: #f3ede6 !important; }',
  '@media (max-width: 600px) { .topbar { padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 8px !important; min-height: calc(52px + env(safe-area-inset-top, 0px)) !important; gap: 6px; } .topbar .brand { font-size: 18px !important; } .topbar .brand small { font-size: 10px !important; } }',
  '[data-brand="delivery"] #deliveryView .menu-head { margin: 14px 0 8px !important; width: 100% !important; }',
  '[data-brand="delivery"] #deliveryView .menu-head h1 { font: 900 clamp(18px, 4.5vw, 24px)/1.2 "Unbounded", sans-serif !important; color: #3a2a1c !important; margin: 0 !important; word-break: break-word !important; }',
