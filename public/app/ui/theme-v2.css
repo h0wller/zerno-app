@@ -279,7 +279,7 @@ body.editing .card:hover{
 }
 .card .steprow .step[hidden],
 .card .steprow [data-step][hidden] {
-  display: none !important;
+  display: none;
 }
 .cartItem .qty button{
   position: relative;
@@ -912,12 +912,17 @@ body.in-tg .topbar{
 #ordersModal {
   z-index: 1000;
 }
-.ava,
-#profileTopBtn {
-  color: var(--ava-color, var(--c-text-on-accent, #FFFFFF));
+button#profileTopBtn,
+.topbar .ava,
+.ava {
+  color: var(--c-text-on-accent, #FFFFFF);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  text-decoration: none;
 }
 .mclose{
   position: absolute;
