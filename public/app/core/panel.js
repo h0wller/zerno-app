@@ -76,13 +76,18 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         if (typeof window.openOrdersModal === 'function') {
           window.openOrdersModal();
-        } else {
-          var m = document.getElementById('ordersModal');
-          if (m) {
-            m.classList.add('show');
-            if (typeof window.syncOverlay === 'function') window.syncOverlay();
-            if (typeof window.loadMyOrders === 'function') window.loadMyOrders();
+        } else if (typeof window.renderOrdersModal === 'function') {
+          window.renderOrdersModal();
+        }
+        var m = document.getElementById('ordersModal');
+        if (m) {
+          if (m.parentElement !== document.body) {
+            document.body.appendChild(m);
           }
+          m.classList.add('show');
+          m.hidden = false;
+          if (typeof window.loadMyOrders === 'function') window.loadMyOrders();
+          if (typeof window.syncOverlay === 'function') window.syncOverlay();
         }
       }
     });

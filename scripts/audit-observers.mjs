@@ -17,7 +17,7 @@ function stripComments(code) {
 }
 
 function scanDir(dir) {
-  let files = [];
+  const files = [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);

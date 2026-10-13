@@ -4,6 +4,9 @@
 'use strict';
 
 var QS = new URLSearchParams(location.search);
+if (typeof window.__initialSearch === 'undefined') {
+  window.__initialSearch = location.search;
+}
 
   // [tg-web-seamless-auth-v1]
   (function initAuthTokenLogin() {

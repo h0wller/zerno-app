@@ -127,6 +127,14 @@
     window.onboarded = true;
     localStorage.setItem('zt_onb', '1');
 
+    var initChar = (customer && customer.name && customer.name.trim())
+      ? customer.name.trim().charAt(0).toUpperCase()
+      : '?';
+    var topAva = document.getElementById('profileTopBtn');
+    if (topAva) topAva.textContent = initChar;
+    var profAva = document.getElementById('avInit');
+    if (profAva) profAva.textContent = initChar;
+
     var qm = document.getElementById('qrMini');
     var qmain = document.getElementById('qrMain');
     if (customer && customer.qr && typeof drawQR === 'function') {

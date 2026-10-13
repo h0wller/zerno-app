@@ -28,6 +28,14 @@ document.addEventListener('error', function (e) {
 
 /* ── 1. Агрегатная перерисовка всех видов ── */
 function renderAll() {
+  const initChar = (window.me && window.me.name && window.me.name.trim())
+    ? window.me.name.trim().charAt(0).toUpperCase()
+    : '?';
+  const topAva = document.getElementById('profileTopBtn');
+  if (topAva) topAva.textContent = initChar;
+  const profAva = document.getElementById('avInit');
+  if (profAva) profAva.textContent = initChar;
+
   if (typeof renderRail === 'function') renderRail();
   if (typeof renderMenu === 'function') renderMenu();
   if (typeof renderBonus === 'function') renderBonus();

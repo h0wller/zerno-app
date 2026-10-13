@@ -13,7 +13,7 @@ function syncOverlay() {
 
   const isCartOpen = !!(cartPanel && cartPanel.classList.contains("open"));
   const on =
-    !!document.querySelector(".modal.show") ||
+    !!document.querySelector(".modal.show, #ordersModal.show, #redeemPick.show") ||
     !!(panel && panel.classList.contains("open")) ||
     isCartOpen;
   ov.classList.toggle("show", on);
@@ -246,7 +246,7 @@ function ensureTgEnvironment() {
 
   function closeTop() {
     haptic("light");
-    const openModal = document.querySelector(".modal.show");
+    const openModal = document.querySelector(".modal.show, #ordersModal.show, #redeemPick.show");
     if (openModal) {
       openModal.classList.remove("show");
     } else {

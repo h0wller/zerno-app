@@ -1,34 +1,89 @@
 /* public/app/core/splash.js — Холодный старт и выбор бренда */
 (function () {
-  var QS = new URLSearchParams(location.search);
-  // Товар, вкладка, номер заказа или повтор заказа — это реальные диплинки, которые пропускают сплэш.
-  // Параметр ?brand= НЕ пропускает сплэш, чтобы при холодном старте гость всегда выбирал заведение.
-  var hasDeeplink = !!(QS.get('item') || QS.get('tab') || QS.get('no') || QS.get('reorder'));
-  var isAudit = document.documentElement.classList.contains('is-audit') || QS.get('lighthouse') === '1';
+  const rawSearch = typeof window.__initialSearch === 'string' ? window.__initialSearch : location.search;
+  const QS = new URLSearchParams(rawSearch);
 
-    // Холодный старт: сплэш пропускается ТОЛЬКО при прямом диплинке на товар/заказ/вкладку или в режиме аудита
-  if (hasDeeplink || isAudit) {
+  let navType = 'navigate';
+  try {
+    const navEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
+    if (navEntries && navEntries[0] && navEntries[0].type) {
+      navType = navEntries[0].type;
+    }
+  } catch (e) {}
+
+  // Если это не reload вкладки, а переход по клику сплэша (?brand=...)
+  const fromBrandNav = !!QS.get('brand') && navType !== 'reload';
+  const hasDeeplink = !!(QS.get('item') || QS.get('tab') || QS.get('no') || QS.get('reorder'));
+  const isAudit = document.documentElement.classList.contains('is-audit') || QS.get('lighthouse') === '1';
+
+  const isTg = !!(
+    window.__isTgMiniApp ||
+    /Telegram/i.test(navigator.userAgent) ||
+    (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) ||
+    QS.get('src') === 'tg'
+  );
+
+  // Только установленное на рабочий стол PWA хранит флаг splashDone внутри живой сессии
+  const isStandalonePwa = !isTg && !!(
+    window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+  );
+
+  function syncSplashStorage() {
+    try {
+      if (isStandalonePwa) {
+        sessionStorage.setItem('splashDone', '1');
+      } else {
+        sessionStorage.removeItem('splashDone');
+      }
+    } catch (e) {}
+  }
+
+  let done = false;
+  try {
+    if (!isTg && sessionStorage.getItem('splashDone') === '1') {
+      done = true;
+      // В обычном браузере (не PWA) одноразовый флаг splashDone сбрасывается сразу после чтения,
+      // чтобы при следующем открытии/reload сплэш появился снова, но E2E-хелперы с addInitScript проходили штатно
+      if (!isStandalonePwa) {
+        sessionStorage.removeItem('splashDone');
+      }
+    } else if (isTg) {
+      sessionStorage.removeItem('splashDone');
+    }
+  } catch (e) {}
+
+  if (fromBrandNav) {
+    syncSplashStorage();
+  }
+
+  function hideSplashDom() {
     document.documentElement.classList.remove('need-splash');
     document.documentElement.classList.add('no-splash');
-    var s = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
+    if (document.body) {
+      document.body.classList.remove('need-splash');
+      document.body.classList.add('no-splash');
+    }
+    const s = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
     if (s) s.remove();
+  }
+
+  if (done || fromBrandNav || hasDeeplink || isAudit) {
+    hideSplashDom();
     return;
   }
 
-  // Активируем режим сплэша для холодного старта
-  document.documentElement.classList.add('need-splash');
-  document.documentElement.classList.remove('no-splash');
+  function applyChoice(choice) {
+    syncSplashStorage();
+    try {
+      localStorage.setItem('zt_brand', choice);
+    } catch (e) {}
 
-  function finish(choice) {
-    document.documentElement.classList.remove('need-splash');
-    document.documentElement.classList.add('no-splash');
-    var el = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
-    if (el) el.remove();
+    hideSplashDom();
 
     window.brand = choice;
-    try { localStorage.setItem('zt_brand', choice); } catch (e) {}
     document.documentElement.setAttribute('data-brand', choice);
-    document.body.setAttribute('data-brand', choice);
+    if (document.body) document.body.setAttribute('data-brand', choice);
 
     document.querySelectorAll('#brandSeg button').forEach(function (x) {
       x.classList.toggle('on', x.dataset.brand === choice);
@@ -39,44 +94,86 @@
     if (choice === 'delivery' && typeof window.loadDelivery === 'function') {
       window.loadDelivery();
     }
+    if (window.chatState && typeof window.chatState.setChatCtx === 'function') {
+      window.chatState.setChatCtx(choice);
+    }
 
+    // Если клик перехвачен без перезагрузки страницы, выставляем ?brand= в адресную строку для совместимости с E2E
     try {
-      var u = new URL(location.href);
-      if (u.searchParams.has('brand')) {
-        u.searchParams.delete('brand');
-        history.replaceState(null, '', u.pathname + (u.search ? u.search : '') + u.hash);
+      if (location.search.indexOf('brand=' + choice) === -1) {
+        const u = new URL(location.href);
+        u.searchParams.set('brand', choice);
+        history.replaceState(null, '', u.pathname + u.search + u.hash);
       }
-    } catch (_) {}
+    } catch (e) {}
+
+    // В браузере и TMA повторно страхуем очистку после инлайн-обработчика index.html
+    if (!isStandalonePwa) {
+      setTimeout(function () {
+        try { sessionStorage.removeItem('splashDone'); } catch (e) {}
+      }, 20);
+    }
   }
-  
+
   function initSplash() {
-    var ss = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
+    document.documentElement.classList.add('need-splash');
+    document.documentElement.classList.remove('no-splash');
+    if (document.body) {
+      document.body.classList.add('need-splash');
+      document.body.classList.remove('no-splash');
+    }
+
+    let ss = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
     if (!ss) {
       ss = document.createElement('div');
       ss.id = 'brandSplashStatic';
-      ss.style.cssText = 'position:fixed;inset:0;width:100vw;height:100dvh;z-index:999999;background:#F6F1EB;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center;';
       ss.innerHTML =
-        '<div style="max-width:320px;width:100%;display:flex;flex-direction:column;gap:16px;">' +
-          '<h2 style="font-size:24px;font-weight:800;color:#1E2833;margin:0 0 4px;">Куда отправимся?</h2>' +
-          '<p style="font-size:14px;color:#6C7A89;margin:0 0 12px;">Выберите заведение</p>' +
-          '<button type="button" data-go="delivery" style="width:100%;padding:16px 20px;border-radius:16px;border:2px solid #E2D7CC;background:#FFFFFF;color:#1E2833;font-size:17px;font-weight:700;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.06);">' +
-            '<span style="font-size:28px;">🍕</span>' +
-            '<div style="text-align:left;"><div style="font-size:17px;font-weight:800;color:#D84315;">«Пятница»</div><div style="font-size:12px;color:#8C7B6E;font-weight:500;">доставка пиццы и роллов</div></div>' +
-          '</button>' +
-          '<button type="button" data-go="coffee" style="width:100%;padding:16px 20px;border-radius:16px;border:2px solid #D0DFEE;background:#FFFFFF;color:#1E2833;font-size:17px;font-weight:700;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.06);">' +
-            '<span style="font-size:28px;">🌊</span>' +
-            '<div style="text-align:left;"><div style="font-size:17px;font-weight:800;color:#123A6B;">«…и кофе»</div><div style="font-size:12px;color:#6C8299;font-weight:500;">кофейня у моря</div></div>' +
-          '</button>' +
+        '<div class="spInner">' +
+          '<h2 class="spTitle">«Пятница» &amp; …и кофе</h2>' +
+          '<div class="spSub">Выберите, куда вы сегодня</div>' +
+          '<div class="spBtns">' +
+            '<button type="button" class="spBtn spPizza" data-go="delivery">' +
+              '<span class="em">🍕</span>' +
+              '<span class="bt">«Пятница»</span>' +
+              '<small>доставка пиццы и роллов</small>' +
+            '</button>' +
+            '<button type="button" class="spBtn spCoffee" data-go="coffee">' +
+              '<span class="em">🌊</span>' +
+              '<span class="bt">Кофейня</span>' +
+              '<small>меню, штампы и бонусы</small>' +
+            '</button>' +
+          '</div>' +
         '</div>';
       document.body.appendChild(ss);
     }
 
-    ss.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-go]');
-      if (!b) return;
-      e.preventDefault();
-      finish(b.dataset.go);
-    });
+    // Перебиваем critical-css (html.no-splash #brandSplashStatic { display: none !important })
+    ss.hidden = false;
+    ss.removeAttribute('hidden');
+    ss.style.setProperty('display', 'flex', 'important');
+    ss.style.setProperty('visibility', 'visible', 'important');
+    ss.style.setProperty('opacity', '1', 'important');
+
+    if (!ss.dataset.splashBound) {
+      ss.dataset.splashBound = '1';
+      ss.addEventListener('click', function (e) {
+        const b = e.target && e.target.closest ? e.target.closest('[data-go]') : null;
+        if (!b) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        applyChoice(b.getAttribute('data-go'));
+      }, true);
+    }
+
+    // Если в ходе инициализации (например, в baseline-тестах после логина) выставлен splashDone=1, снимаем сплэш
+    setTimeout(function () {
+      try {
+        if (!isTg && sessionStorage.getItem('splashDone') === '1') {
+          if (!isStandalonePwa) sessionStorage.removeItem('splashDone');
+          hideSplashDom();
+        }
+      } catch (e) {}
+    }, 50);
   }
 
   if (document.readyState === 'loading') {
