@@ -16,6 +16,10 @@
   function finish(choice) {
     try { sessionStorage.setItem("splashDone", "1"); } catch (e) {}
     try { localStorage.setItem("zt_brand", choice); } catch (e) {}
+    var s1 = document.getElementById('brandSplashStatic');
+    if (s1) s1.remove();
+    var s2 = document.getElementById('brandSplash');
+    if (s2) s2.remove();
     document.documentElement.classList.remove('need-splash');
     document.documentElement.classList.add('no-splash');
     var el = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
@@ -61,7 +65,7 @@
   document.documentElement.classList.remove('no-splash');
   if (!ss) {
     var splashEl = document.createElement('div');
-    splashEl.id = 'brandSplash';
+    splashEl.id = 'brandSplashStatic';
     splashEl.innerHTML =
       '<div class="spInner">' +
         '<h2 class="spTitle">Выберите заведение</h2>' +
