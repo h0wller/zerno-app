@@ -250,8 +250,7 @@ body.editing .card:hover{
   min-width: 0;
   text-align: center;
 }
-.steprow .step,
-.step {
+.card .steprow .step {
   width: 40px;
   height: 40px;
   min-width: 40px;
@@ -275,15 +274,12 @@ body.editing .card:hover{
   touch-action: manipulation;
   transition: transform 0.1s ease;
 }
-.steprow .step:active,
-.step:active {
+.card .steprow .step:active {
   transform: scale(0.92);
 }
-.steprow .step[hidden],
-.steprow [data-step][hidden],
-.step[hidden],
-[data-step][hidden] {
-  display: none;
+.card .steprow .step[hidden],
+.card .steprow [data-step][hidden] {
+  display: none !important;
 }
 .cartItem .qty button{
   position: relative;
