@@ -11,12 +11,13 @@ function syncOverlay() {
     window.TgUx.updateMainButton();
   }
 
+  const isCartOpen = !!(cartPanel && cartPanel.classList.contains("open"));
   const on =
     !!document.querySelector(".modal.show") ||
     !!(panel && panel.classList.contains("open")) ||
-    !!(cartPanel && cartPanel.classList.contains("open"));
-
+    isCartOpen;
   ov.classList.toggle("show", on);
+  document.body.classList.toggle("cart-open", isCartOpen);
 
   const isMiniApp =
     window.TgUx && typeof window.TgUx.isTg === "function"
