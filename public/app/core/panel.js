@@ -65,6 +65,28 @@ document.addEventListener('DOMContentLoaded', function () {
         backBtn.addEventListener('click', closePanel);
     }
 
+    /* Делегирование кнопки открытия модалки «Мои заказы» в TMA и профиле */
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('#myOrdersBtn, [data-tab="my-orders"], .my-orders-btn');
+      if (!btn && e.target.closest('button')) {
+        var b = e.target.closest('button');
+        if (/мои заказы/i.test(b.textContent || '')) btn = b;
+      }
+      if (btn) {
+        e.preventDefault();
+        if (typeof window.openOrdersModal === 'function') {
+          window.openOrdersModal();
+        } else {
+          var m = document.getElementById('ordersModal');
+          if (m) {
+            m.classList.add('show');
+            if (typeof window.syncOverlay === 'function') window.syncOverlay();
+            if (typeof window.loadMyOrders === 'function') window.loadMyOrders();
+          }
+        }
+      }
+    });
+
     /* Плавающая кнопка «Мои бонусы» */
     var mbonusBtn = document.getElementById('mbonusBtn');
   if (mbonusBtn && window.me && !mbonusBtn.dataset.st) mbonusBtn.dataset.st = '0/10'; /* F5.18b */

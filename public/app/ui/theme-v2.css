@@ -238,23 +238,25 @@ body.editing .card:hover{
 }
 .price{ font: 700 16px "Golos Text"; font-variant-numeric: tabular-nums; color: var(--price-color, #123A6B); }
 /* ── Корзина: тач-таргеты степпера (>= 44x44px) ────────────────────────── */
-/* ── Степпер в карточках товаров (.steprow, .step) ── */
-.steprow {
+/* ── Степпер строго внутри карточек товаров (.card .steprow) ── */
+.card .steprow {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
 }
-.steprow .cta {
+.card .steprow .cta {
   flex: 1;
   min-width: 0;
   text-align: center;
 }
-.card .steprow .step {
+.card .steprow .step,
+.card .steprow [data-step] {
   width: 40px;
   height: 40px;
   min-width: 40px;
   min-height: 40px;
+  flex: 0 0 40px;
   border-radius: var(--radius-sm, 10px);
   display: inline-flex;
   align-items: center;
@@ -264,7 +266,6 @@ body.editing .card:hover{
   line-height: 1;
   text-align: center;
   cursor: pointer;
-  flex: 0 0 40px;
   padding: 0;
   border: var(--cta-border, 1.5px solid var(--line));
   background: var(--cart-qty-bg, var(--panel));
@@ -274,12 +275,13 @@ body.editing .card:hover{
   touch-action: manipulation;
   transition: transform 0.1s ease;
 }
-.card .steprow .step:active {
+.card .steprow .step:active,
+.card .steprow [data-step]:active {
   transform: scale(0.92);
 }
 .card .steprow .step[hidden],
 .card .steprow [data-step][hidden] {
-  display: none;
+  display: none !important;
 }
 .cartItem .qty button{
   position: relative;
@@ -355,6 +357,47 @@ body.editing .card:hover{
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+/* ── Сабфильтры каталога (.subchips, .subchip) ── */
+.subchips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 2px 10px;
+  margin: 0 0 12px;
+  white-space: nowrap;
+}
+.subchips::-webkit-scrollbar {
+  display: none;
+}
+.subchip {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  color: var(--soft);
+  user-select: none;
+  transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.subchip:active {
+  transform: scale(0.95);
+}
+.subchip.on {
+  background: var(--flame);
+  color: var(--c-text-on-accent, #FFFFFF);
+  border-color: var(--flame);
 }
 .placebox{
   margin-top: 12px;
@@ -904,6 +947,9 @@ body.in-tg .topbar{
   opacity: 0;
   transition: opacity .35s cubic-bezier(.2, 1, .3, 1), transform .35s cubic-bezier(.2, 1, .3, 1);
 }
+.modal.show {
+  pointer-events: auto;
+}
 .modal.show .modal-card{
   transform: none;
   opacity: 1;
@@ -914,8 +960,12 @@ body.in-tg .topbar{
 }
 button#profileTopBtn,
 .topbar .ava,
+#avInit,
 .ava {
-  color: var(--c-text-on-accent, #FFFFFF);
+  background: var(--ava-bg, var(--panel));
+  color: var(--ava-color, var(--c-text-on-accent, #FFFFFF));
+  border: var(--ava-border, 1.5px solid var(--line));
+  box-shadow: var(--ava-shadow, none);
   font-size: 17px;
   font-weight: 700;
   line-height: 1;
@@ -1155,22 +1205,47 @@ label.chk{
   text-align: center;
   margin-top: 10px
 }
+#qrModal {
+  z-index: 2000;
+  padding: 0;
+  background: #FFFFFF;
+}
+#qrModal.show {
+  pointer-events: auto;
+}
+#qrModal .modal-card,
+#qrModal .qrcard {
+  width: 100vw;
+  height: 100dvh;
+  max-width: 100vw;
+  max-height: 100dvh;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+}
 .qrcard{
   width: min(430px, 100%);
   text-align: center;
   background: #fff;
   cursor: pointer;
-  user-select: none
+  user-select: none;
 }
 .qrcard canvas{
   width: min(330px, 74vw);
+  max-height: 48dvh;
   height: auto;
   display: block;
   margin: 10px auto 4px;
   border-radius: 16px;
   border: 1px solid var(--line);
   image-rendering: pixelated;
-  animation: stampin .45s cubic-bezier(.2, 1.4, .4, 1)
+  animation: stampin .45s cubic-bezier(.2, 1.4, .4, 1);
 }
 .qrttl{
   font: 700 11px Unbounded;

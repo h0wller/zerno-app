@@ -77,6 +77,22 @@ function drawQR(cv, seed, _retry) {
 }
 
 let wakeLock = null;
+async function requestScreenWakeLock() {
+  try {
+    if ('wakeLock' in navigator && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', function () { wakeLock = null; });
+    }
+  } catch (_) {}
+}
+
+function releaseScreenWakeLock() {
+  if (wakeLock) {
+    try { wakeLock.release(); } catch (_) {}
+    wakeLock = null;
+  }
+}
+
 function openQRFull() {
     if (!me) { toast('Сначала создайте профиль', '👤'); openAuth(); return; }
     const fullCv = document.getElementById('qrFull');
@@ -85,13 +101,13 @@ function openQRFull() {
     $('#qrMeta').textContent = `${me.phone || ''} · штампов: ${me.stamps || 0} из 10` + (me.free ? ` · 🎁 подарок: ${me.free}` : '');
     $('#qrModal').classList.add('show');
     syncOverlay();
-    if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w => wakeLock = w).catch(() => {});
+    requestScreenWakeLock();
 }
 
 function closeQRFull() {
     $('#qrModal').classList.remove('show');
     syncOverlay();
-    if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
+    releaseScreenWakeLock();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
