@@ -11,10 +11,13 @@ function syncOverlay() {
     window.TgUx.updateMainButton();
   }
 
+  const addrSheet = document.getElementById("addrBookSheet");
   const isCartOpen = !!(cartPanel && cartPanel.classList.contains("open"));
+  const isAddrOpen = !!(addrSheet && !addrSheet.hidden && addrSheet.classList.contains("open"));
   const on =
-    !!document.querySelector(".modal.show, #ordersModal.show, #redeemPick.show") ||
+    !!document.querySelector(".modal.show, #ordersModal.show, #redeemPick.show, #orderTrackModal.show") ||
     !!(panel && panel.classList.contains("open")) ||
+    isAddrOpen ||
     isCartOpen;
   ov.classList.toggle("show", on);
   document.body.classList.toggle("cart-open", isCartOpen);
@@ -26,13 +29,22 @@ function syncOverlay() {
 
   try {
     const tg = window.Telegram && window.Telegram.WebApp;
+    if (isMiniApp) {
+      document.documentElement.classList.toggle("tg-native-back", on);
+      window.__tgEvents = window.__tgEvents || {};
+      window.__tgEvents.backButtonVisible = on;
+      window.__backBtnVisible = on;
+    }
     if (tg && tg.BackButton && isMiniApp) {
+      if (!tg.BackButton.__zernoBound && window.TgUx && typeof window.TgUx.bindBackButton === "function") {
+        window.TgUx.bindBackButton();
+      }
       if (on) {
+        tg.BackButton.isVisible = true;
         tg.BackButton.show();
-        document.documentElement.classList.add("tg-native-back");
       } else {
+        tg.BackButton.isVisible = false;
         tg.BackButton.hide();
-        document.documentElement.classList.remove("tg-native-back");
       }
     }
   } catch (_) {}
@@ -246,21 +258,29 @@ function ensureTgEnvironment() {
 
   function closeTop() {
     haptic("light");
-    const openModal = document.querySelector(".modal.show, #ordersModal.show, #redeemPick.show");
-    if (openModal) {
-      openModal.classList.remove("show");
+    const addrSheet = document.getElementById("addrBookSheet");
+    if (addrSheet && !addrSheet.hidden && addrSheet.classList.contains("open")) {
+      addrSheet.hidden = true;
+      addrSheet.classList.remove("open");
     } else {
-      const cartPanel = document.getElementById("cartPanel");
-      if (cartPanel && cartPanel.classList.contains("open")) {
-        cartPanel.classList.remove("open");
-      }
-      const panel = document.getElementById("panel");
-      if (panel && panel.classList.contains("open")) {
-        panel.classList.remove("open");
-      }
-      const chatPanel = document.getElementById("chatPanel");
-      if (chatPanel && chatPanel.classList.contains("open")) {
-        chatPanel.classList.remove("open");
+      const openModal = document.querySelector("#orderTrackModal.show, #ordersModal.show, #qrModal.show, #redeemPick.show, .modal.show");
+      if (openModal) {
+        openModal.classList.remove("show");
+      } else {
+        const cartPanel = document.getElementById("cartPanel");
+        if (cartPanel && cartPanel.classList.contains("open")) {
+          cartPanel.classList.remove("open");
+        } else {
+          const panel = document.getElementById("panel");
+          if (panel && panel.classList.contains("open")) {
+            panel.classList.remove("open");
+          } else {
+            const chatPanel = document.getElementById("chatPanel");
+            if (chatPanel && chatPanel.classList.contains("open")) {
+              chatPanel.classList.remove("open");
+            }
+          }
+        }
       }
     }
 
@@ -270,9 +290,27 @@ function ensureTgEnvironment() {
     updateMainButton();
   }
 
+  function bindBackButton() {
+    try {
+      const tg = getTg();
+      if (tg && tg.BackButton && !tg.BackButton.__zernoBound) {
+        tg.BackButton.__zernoBound = true;
+        const onBackClick = function () {
+          closeTop();
+        };
+        if (typeof tg.BackButton.onClick === "function") {
+          tg.BackButton.onClick(onBackClick);
+        } else if (typeof tg.BackButton.onEvent === "function") {
+          tg.BackButton.onEvent("clicked", onBackClick);
+        }
+      }
+    } catch (_) {}
+  }
+
   const TgUx = {
     isTg: isTg,
     closeTop: closeTop,
+    bindBackButton: bindBackButton,
     success: () => haptic("success"),
     impact: (style = "light") => haptic(style),
     haptic: (style = "light") => haptic(style),
@@ -303,19 +341,7 @@ function ensureTgEnvironment() {
     }
   } catch (_) {}
 
-  try {
-    const tg = getTg();
-    if (tg && tg.BackButton) {
-      const onBackClick = function () {
-        closeTop();
-      };
-      if (typeof tg.BackButton.onClick === "function") {
-        tg.BackButton.onClick(onBackClick);
-      } else if (typeof tg.BackButton.onEvent === "function") {
-        tg.BackButton.onEvent("clicked", onBackClick);
-      }
-    }
-  } catch (_) {}
+  bindBackButton();
 
   document.addEventListener(
     "click",
@@ -326,7 +352,7 @@ function ensureTgEnvironment() {
 
       if (
         t.closest(
-          ".qty button, [data-step], .step, [data-act], #deliveryRail button, #brandSeg button, .rail button, .tabs button, [data-brand]"
+          ".qty button, [data-step], .step, [data-act], [data-ci], .ac-step, #deliveryRail button, #brandSeg button, .rail button, .tabs button, [data-brand]"
         )
       ) {
         haptic("light");
@@ -335,7 +361,7 @@ function ensureTgEnvironment() {
 
       if (
         t.closest(
-          ".addBtn, .cta.add, [data-addon], #deliveryGrid .card .cta, #deliveryGrid .opts button, .cfoot button"
+          "[data-add], .addBtn, .cta, [data-addon], [data-addon-id], #deliveryGrid .card .cta, #deliveryGrid .opts button, .cfoot button"
         )
       ) {
         haptic("medium");
@@ -373,7 +399,10 @@ function ensureTgEnvironment() {
 
     const obsTarget = document.getElementById("cartPanel");
     if (obsTarget && typeof MutationObserver !== "undefined") {
-      const obs = new MutationObserver(() => updateMainButton());
+      const obs = new MutationObserver(() => {
+        if (typeof window.syncOverlay === "function") window.syncOverlay();
+        updateMainButton();
+      });
       obs.observe(obsTarget, {
         attributes: true,
         attributeFilter: ["class"],

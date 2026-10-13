@@ -82,33 +82,44 @@
     var pickup = method === "pickup" ? Math.round(sum * 0.1) : 0;
     var fee = 0;
 
-    if (list.length && method === "delivery") {
-      var placeEl = document.getElementById("checkoutPlace");
-      var placeVal = placeEl ? placeEl.value : "";
+    var minOrder = 0;
+    var freeFrom = 0;
+    var baseZoneFee = 0;
+    var placeEl = document.getElementById("checkoutPlace");
+    var placeVal = (placeEl && placeEl.value && placeEl.value.trim()) ? placeEl.value.trim() : "Янтарный";
+    var normP = String(placeVal).toLowerCase().trim();
+
+    if (method === "delivery") {
       if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
         var z = deliveryInfo.zones.find(function (zone) {
           return zone.places && zone.places.includes(placeVal);
         });
-        fee = z ? Number(z.fee) || 0 : 0;
+        if (z) {
+          baseZoneFee = Number(z.fee) || 0;
+          if (Number(z.min) > 0) minOrder = Number(z.min);
+          if (Number(z.freeFrom) > 0) freeFrom = Number(z.freeFrom);
+        }
       }
       if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
         var zoneFee = Number(window.AddressModule.getFee(placeVal));
-        if (zoneFee > 0) fee = zoneFee;
+        if (zoneFee > 0) baseZoneFee = zoneFee;
       }
-    }
-
-    var minOrder = 0;
-    if (list.length && method === "delivery") {
-      var placeElMin = document.getElementById("checkoutPlace");
-      var placeValMin = placeElMin ? placeElMin.value : "Янтарный";
-      if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
-        var zMin = deliveryInfo.zones.find(function (zone) {
-          return zone.places && zone.places.includes(placeValMin);
-        });
-        if (zMin && Number(zMin.min) > 0) minOrder = Number(zMin.min);
+      if (!baseZoneFee) {
+        baseZoneFee = /синявино|покровское/i.test(normP) ? 250 : (/куликово|яблоновка/i.test(normP) ? 300 : 200);
       }
-      if (!minOrder && Number(window.MIN_DELIVERY_ORDER) > 0) {
+      if (!freeFrom) {
+        freeFrom = /синявино|покровское/i.test(normP) ? 2000 : (/куликово|яблоновка/i.test(normP) ? 2500 : 1500);
+      }
+      if (!minOrder) {
+        minOrder = Number(window.MIN_DELIVERY_ORDER) > 0
+          ? Number(window.MIN_DELIVERY_ORDER)
+          : (/синявино|покровское/i.test(normP) ? 1000 : (/куликово|яблоновка/i.test(normP) ? 1200 : 0));
+      } else if (Number(window.MIN_DELIVERY_ORDER) > 0) {
         minOrder = Number(window.MIN_DELIVERY_ORDER);
+      }
+
+      if (list.length) {
+        fee = (freeFrom > 0 && sum >= freeFrom) ? 0 : baseZoneFee;
       }
     }
 
@@ -117,9 +128,12 @@
       sum: sum,
       pickup: pickup,
       fee: fee,
+      baseZoneFee: baseZoneFee,
+      freeFrom: freeFrom,
+      placeVal: placeVal,
       pd: pd,
       minOrder: minOrder,
-      belowMin: minOrder > 0 && sum > 0 && sum < minOrder,
+      belowMin: method === "delivery" && minOrder > 0 && sum > 0 && sum < minOrder,
       total: Math.max(0, sum - pickup - pd + fee),
     };
   }
@@ -146,9 +160,18 @@
 
     var feeEl = document.getElementById("cartFee");
     if (feeEl) {
-      feeEl.textContent = t.fee ? "Доставка: " + fmt(t.fee) : "";
-      feeEl.style.display = t.fee ? "flex" : "none";
+      var isDelMethod = ((document.getElementById("checkoutMethod") || {}).value || "delivery") === "delivery";
+      if (list.length && isDelMethod) {
+        feeEl.textContent = t.fee > 0 ? "Доставка (" + t.placeVal + "): " + fmt(t.fee) : "Доставка (" + t.placeVal + "): Бесплатно 🎉";
+        feeEl.style.display = "flex";
+      } else {
+        feeEl.textContent = "";
+        feeEl.style.display = "none";
+      }
     }
+
+    syncZoneFeeHint(t);
+    syncCheckoutGuestAutofill();
 
     var checkBtnEl = document.getElementById("checkoutBtn");
     if (checkBtnEl && checkBtnEl.getAttribute("data-busy") !== "1") {
@@ -358,11 +381,153 @@
     el.__flagT = setTimeout(function () { el.classList.remove("field-error"); }, 4000);
   }
 
+  function syncZoneFeeHint(t) {
+    var placeEl = document.getElementById("checkoutPlace");
+    if (!placeEl) return;
+    var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
+    var hint = document.getElementById("zoneFeeHint");
+    if (method === "pickup") {
+      if (hint) hint.hidden = true;
+      return;
+    }
+    if (!hint) {
+      hint = document.createElement("div");
+      hint.id = "zoneFeeHint";
+      hint.className = "addr-fee-hint";
+      var parent = placeEl.closest("label") || placeEl.parentElement;
+      if (parent && parent.parentNode) {
+        parent.parentNode.insertBefore(hint, parent.nextSibling);
+      }
+    }
+    hint.hidden = false;
+    var info = t || totalsNow();
+    if (info.freeFrom > 0 && info.sum >= info.freeFrom) {
+      hint.innerHTML = "✅ <span><b>" + esc(info.placeVal) + ":</b> бесплатная доставка!</span>";
+    } else {
+      var needForFree = Math.max(0, info.freeFrom - info.sum);
+      hint.innerHTML = "🚗 <span><b>" + esc(info.placeVal) + ":</b> доставка " + fmt(info.baseZoneFee) +
+        (info.freeFrom > 0 ? " · бесплатно от " + fmt(info.freeFrom) + (info.sum > 0 ? " (ещё " + fmt(needForFree) + ")" : "") : "") +
+        " · мин. заказ " + fmt(info.minOrder) + "</span>";
+    }
+  }
+
+  function syncCheckoutGuestAutofill() {
+    var cPanelEl = document.getElementById("cartPanel");
+    if (!cPanelEl) return;
+    var gBar = document.getElementById("checkoutGuestBar");
+    var user = typeof window.me !== "undefined" ? window.me : null;
+    if (!user || (!user.name && !user.phone)) {
+      if (gBar) gBar.hidden = true;
+      return;
+    }
+    var methodEl = document.getElementById("checkoutMethod");
+    if (!gBar && methodEl) {
+      var wrapLabel = methodEl.closest("label") || methodEl.parentElement;
+      if (wrapLabel && wrapLabel.parentNode) {
+        gBar = document.createElement("div");
+        gBar.id = "checkoutGuestBar";
+        gBar.className = "checkout-guest-bar";
+        wrapLabel.parentNode.insertBefore(gBar, wrapLabel);
+      }
+    }
+    if (gBar) {
+      gBar.hidden = false;
+      gBar.innerHTML =
+        '<span class="cgb-label">👤 Получатель:</span>' +
+        '<b class="cgb-val" id="checkoutGuestName">' + esc(user.name || "Гость") + "</b>" +
+        (user.phone ? '<span class="cgb-phone" id="checkoutGuestPhone">' + esc(user.phone) + "</span>" : "");
+    }
+    var nameInp = document.getElementById("checkoutName");
+    if (nameInp && !nameInp.value && user.name) nameInp.value = user.name;
+    var phoneInp = document.getElementById("checkoutPhone");
+    if (phoneInp && !phoneInp.value && user.phone) phoneInp.value = user.phone;
+  }
+
+  function ensureTimeModeToggle() {
+    var slotEl = document.getElementById("checkoutSlot");
+    if (!slotEl || document.getElementById("checkoutTimeModeSeg")) return;
+    var labelEl = slotEl.closest("label") || slotEl.parentElement;
+    if (!labelEl) return;
+
+    // Гарантируем, что у селекта слотов есть варианты выбора времени, если они ещё не подгружены
+    if (slotEl.options.length <= 1) {
+      var defaultSlots = ["12:00–13:00", "13:00–14:00", "14:00–15:00", "16:00–17:00", "18:00–19:00", "19:00–20:00", "20:00–21:00"];
+      defaultSlots.forEach(function (sl) {
+        var opt = document.createElement("option");
+        opt.value = sl;
+        opt.textContent = "Ко времени: " + sl;
+        slotEl.appendChild(opt);
+      });
+    }
+
+    var seg = document.createElement("div");
+    seg.id = "checkoutTimeModeSeg";
+    seg.className = "time-mode-seg";
+    var isScheduled = slotEl.value && slotEl.value !== "asap";
+    seg.innerHTML =
+      '<button type="button" class="tms-btn' + (!isScheduled ? " on" : "") + '" data-tmode="asap">⚡ Как можно скорее</button>' +
+      '<button type="button" class="tms-btn' + (isScheduled ? " on" : "") + '" data-tmode="slot">⏰ Ко времени</button>';
+
+    labelEl.parentNode.insertBefore(seg, labelEl);
+
+    function syncSlotVisibility(modeVal) {
+      seg.querySelectorAll(".tms-btn").forEach(function (b) {
+        b.classList.toggle("on", b.dataset.tmode === modeVal);
+      });
+      if (modeVal === "asap") {
+        slotEl.value = "asap";
+        labelEl.hidden = true;
+      } else {
+        labelEl.hidden = false;
+        if (!slotEl.value || slotEl.value === "asap") {
+          for (var i = 0; i < slotEl.options.length; i++) {
+            if (slotEl.options[i].value && slotEl.options[i].value !== "asap") {
+              slotEl.value = slotEl.options[i].value;
+              break;
+            }
+          }
+        }
+      }
+      slotEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    if (!isScheduled) labelEl.hidden = true;
+
+    seg.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-tmode]");
+      if (!btn) return;
+      e.preventDefault();
+      syncSlotVisibility(btn.dataset.tmode);
+    });
+  }
+
+  function ensurePlaceOptions() {
+    var placeEl = document.getElementById("checkoutPlace");
+    if (!placeEl || placeEl.tagName !== "SELECT") return;
+    var defaultPlaces = ["Янтарный", "Синявино", "Покровское", "Куликово", "Яблоновка", "Донское"];
+    var existing = Array.from(placeEl.options).map(function (o) { return o.value.toLowerCase().trim(); });
+    defaultPlaces.forEach(function (p) {
+      if (!existing.includes(p.toLowerCase())) {
+        var opt = document.createElement("option");
+        opt.value = p;
+        opt.textContent = p;
+        placeEl.appendChild(opt);
+      }
+    });
+    if (!placeEl.value) {
+      placeEl.value = "Янтарный";
+    }
+  }
+
   function toggleDeliveryGroup() {
     var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
     var isPickup = method === "pickup";
     var grp = document.getElementById("checkoutDeliveryGroup");
     if (grp) grp.hidden = isPickup;
+    ensurePlaceOptions();
+    ensureTimeModeToggle();
+    syncZoneFeeHint();
+    syncCheckoutGuestAutofill();
   }
 
   function saveDraft() {
@@ -950,7 +1115,7 @@ function renderCartBase() {
             qty: c.qty,
             modifiers: c.modifiers || []
           };
-        }),
+        })
       };
       if (cartPromoCode) body.promo = cartPromoCode;
 
@@ -968,34 +1133,10 @@ function renderCartBase() {
         try { window.Telegram.WebApp.MainButton.showProgress(); } catch (tgErr) {}
       }
 
+      var r = null;
       try {
-        var r = await api("/orders", { method: "POST", body: body });
-        toast("Заказ #" + r.order.no + " оформлен!", "🎉");
-
-        try {
-          var preorderSlot = document.getElementById("checkoutSlot") ? document.getElementById("checkoutSlot").value : "";
-          if (preorderSlot && preorderSlot !== "asap" && window.PreorderTimer && typeof window.PreorderTimer.updateAll === "function") {
-            setTimeout(window.PreorderTimer.updateAll, 500);
-          }
-        } catch (e) { }
-
-        try {
-          var cpEl2 = document.getElementById("checkoutPlace");
-          var csEl2 = document.getElementById("checkoutStreet");
-          var chEl2 = document.getElementById("checkoutHouse");
-          var addrToSave = {
-            place: cpEl2 ? cpEl2.value.trim() : "",
-            street: csEl2 ? csEl2.value.trim() : "",
-            house: chEl2 ? chEl2.value.trim() : ""
-          };
-          if (addrToSave.place || addrToSave.street) {
-            if (window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
-              window.AddressBook.autoAdd(addrToSave);
-            } else {
-              localStorage.setItem("zt_saved_address", JSON.stringify(addrToSave));
-            }
-          }
-        } catch (e) { }
+        r = await api("/orders", { method: "POST", body: body });
+        toast("Заказ #" + (r.order && r.order.no ? r.order.no : "") + " оформлен!", "🎉");
 
         if (window.TgUx) window.TgUx.success();
 
@@ -1021,11 +1162,40 @@ function renderCartBase() {
         if (typeof updateCartFab === "function") updateCartFab();
         renderCartBase();
 
-        var cp = document.getElementById("cartPanel");
-        if (cp) cp.classList.remove("open");
-        if (typeof syncOverlay === "function") syncOverlay();
+        var cp2 = document.getElementById("cartPanel");
+        if (cp2) cp2.classList.remove("open");
         if (typeof loadMyOrders === "function") loadMyOrders();
+        if (r && r.order) {
+          openOrderTrackModal(r.order);
+        } else if (typeof syncOverlay === "function") {
+          syncOverlay();
+        }
       } catch (e) {
+        try {
+          var preorderSlot = document.getElementById("checkoutSlot") ? document.getElementById("checkoutSlot").value : "";
+          if (preorderSlot && preorderSlot !== "asap" && window.PreorderTimer && typeof window.PreorderTimer.updateAll === "function") {
+            setTimeout(window.PreorderTimer.updateAll, 500);
+          }
+        } catch (e2) { }
+
+        try {
+          var cpEl2 = document.getElementById("checkoutPlace");
+          var csEl2 = document.getElementById("checkoutStreet");
+          var chEl2 = document.getElementById("checkoutHouse");
+          var addrToSave = {
+            place: cpEl2 ? cpEl2.value.trim() : "",
+            street: csEl2 ? csEl2.value.trim() : "",
+            house: chEl2 ? chEl2.value.trim() : ""
+          };
+          if (addrToSave.place || addrToSave.street) {
+            if (window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
+              window.AddressBook.autoAdd(addrToSave);
+            } else {
+              localStorage.setItem("zt_saved_address", JSON.stringify(addrToSave));
+            }
+          }
+        } catch (e2) { }
+
         toast(e.message || "Ошибка оформления заказа", "⚠️");
       } finally {
         // 3. Разблокировка при любом исходе (успех, 500, таймаут)
@@ -1104,5 +1274,161 @@ function renderCartBase() {
       }
     }, { passive: true });
   })();
+
+  /* ── Спринт 3, Задача 3: Модалка подтверждения и Live Tracking заказа ── */
+  var trackPollTimer = null;
+  var activeTrackOrder = null;
+
+  function statusStepIndex(st) {
+    if (st === "done") return 3;
+    if (st === "way") return 2;
+    if (st === "cook" || st === "accept") return 1;
+    return 0; // new
+  }
+
+  function renderTrackModalContent(order) {
+    if (!order) return;
+    activeTrackOrder = order;
+    var modal = document.getElementById("orderTrackModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "orderTrackModal";
+      modal.className = "modal";
+      document.body.appendChild(modal);
+
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal || e.target.closest("[data-ot-close]")) {
+          closeOrderTrackModal();
+          return;
+        }
+        if (e.target.closest("[data-ot-chat]")) {
+          if (window.chatState && typeof window.chatState.setChatCtx === "function") {
+            window.chatState.setChatCtx("delivery");
+          }
+          var cp = document.getElementById("chatPanel");
+          if (cp) cp.classList.add("open");
+          var fab = document.getElementById("chatFab");
+          if (fab) fab.classList.add("open");
+          closeOrderTrackModal();
+          if (typeof window.setBotName === "function") window.setBotName();
+          return;
+        }
+        if (e.target.closest("[data-ot-repeat]")) {
+          if (activeTrackOrder && Array.isArray(activeTrackOrder.items)) {
+            window.cart = activeTrackOrder.items.map(function (it) {
+              return {
+                key: String(it.id) + "_" + (it.opt || "0"),
+                id: it.id,
+                oi: typeof it.oi === "number" ? it.oi : -1,
+                name: it.name || "Блюдо",
+                opt: it.opt || null,
+                price: Number(it.price) || 0,
+                sz: Number(it.sz) || 0,
+                qty: Number(it.qty) || 1,
+                modifiers: it.modifiers || []
+              };
+            });
+            persistCartUpdate();
+            var cPanelEl = document.getElementById("cartPanel");
+            if (cPanelEl) cPanelEl.classList.add("open");
+            closeOrderTrackModal();
+            toast("Заказ добавлен в корзину", "🛒");
+          }
+        }
+      });
+    }
+
+    var stepIdx = statusStepIndex(order.status || "new");
+    var steps = [
+      { l: "Новый", ic: "📝" },
+      { l: "Готовится", ic: "🔥" },
+      { l: "Курьер в пути", ic: "🛵" },
+      { l: "Выполнен", ic: "✅" }
+    ];
+
+    var stepsHtml = steps.map(function (s, idx) {
+      var cls = idx < stepIdx ? "done" : (idx === stepIdx ? "active" : "");
+      return '<div class="ot-step ' + cls + '">' +
+        '<div class="ot-dot">' + s.ic + "</div>" +
+        '<span class="ot-lbl">' + s.l + "</span>" +
+      "</div>";
+    }).join("");
+
+    var itemsList = Array.isArray(order.items) ? order.items : [];
+    var itemsHtml = itemsList.map(function (it) {
+      return '<div class="ot-item-row">' +
+        '<span>' + esc(it.name || "Позиция") + (it.opt ? " (" + esc(it.opt) + ")" : "") + " × " + (it.qty || 1) + "</span>" +
+        '<b>' + fmt((Number(it.price) || 0) * (Number(it.qty) || 1)) + "</b>" +
+      "</div>";
+    }).join("");
+
+    var totalVal = Number(order.total || order.sum) || 0;
+
+    modal.innerHTML =
+      '<div class="modal-card ot-card">' +
+        '<button type="button" class="mclose" data-ot-close aria-label="Закрыть">✕</button>' +
+        '<div class="ot-head-badge">🎉 Заказ принят</div>' +
+        '<h3 class="ot-title">Заказ #' + esc(order.no || order.id || "—") + "</h3>" +
+        '<div class="msub">' + (order.slot && order.slot !== "asap" ? "Ко времени: " + esc(order.slot) : "Приготовим и доставим как можно скорее") + "</div>" +
+        '<div class="ot-progress" data-step-idx="' + stepIdx + '">' + stepsHtml + "</div>" +
+        '<div class="ot-items-box">' +
+          (itemsHtml || '<div class="ot-item-row"><span>Состав заказа сохранён</span></div>') +
+          (totalVal ? '<div class="ot-total-row"><span>Итого:</span><b>' + fmt(totalVal) + "</b></div>" : "") +
+        "</div>" +
+        '<div class="ot-actions">' +
+          '<button type="button" class="btn fire" data-ot-chat>💬 Связаться с пиццерией</button>' +
+          '<button type="button" class="btn ghost" data-ot-repeat>🔁 Повторить заказ</button>' +
+        "</div>" +
+      "</div>";
+  }
+
+  function pollOrderStatus(orderIdOrNo) {
+    if (trackPollTimer) clearInterval(trackPollTimer);
+    trackPollTimer = setInterval(async function () {
+      var modal = document.getElementById("orderTrackModal");
+      if (!modal || !modal.classList.contains("show")) {
+        clearInterval(trackPollTimer);
+        trackPollTimer = null;
+        return;
+      }
+      try {
+        var res = await api("/orders/mine");
+        var list = (res && res.orders) || [];
+        var found = list.find(function (o) {
+          return String(o.id) === String(orderIdOrNo) || String(o.no) === String(orderIdOrNo);
+        });
+        if (found) {
+          renderTrackModalContent(found);
+          if (found.status === "done" || found.status === "cancel") {
+            clearInterval(trackPollTimer);
+            trackPollTimer = null;
+          }
+        }
+      } catch (_) {}
+    }, 5000);
+  }
+
+  function openOrderTrackModal(order) {
+    renderTrackModalContent(order);
+    var modal = document.getElementById("orderTrackModal");
+    if (modal) {
+      modal.classList.add("show");
+      if (typeof window.syncOverlay === "function") window.syncOverlay();
+      pollOrderStatus(order.id || order.no);
+    }
+  }
+
+  function closeOrderTrackModal() {
+    if (trackPollTimer) {
+      clearInterval(trackPollTimer);
+      trackPollTimer = null;
+    }
+    var modal = document.getElementById("orderTrackModal");
+    if (modal) modal.classList.remove("show");
+    if (typeof window.syncOverlay === "function") window.syncOverlay();
+  }
+
+  window.openOrderTrackModal = openOrderTrackModal;
+  window.closeOrderTrackModal = closeOrderTrackModal;
 
 })();
