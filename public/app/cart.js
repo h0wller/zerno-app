@@ -97,12 +97,29 @@
       }
     }
 
+    var minOrder = 0;
+    if (list.length && method === "delivery") {
+      var placeElMin = document.getElementById("checkoutPlace");
+      var placeValMin = placeElMin ? placeElMin.value : "Янтарный";
+      if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
+        var zMin = deliveryInfo.zones.find(function (zone) {
+          return zone.places && zone.places.includes(placeValMin);
+        });
+        if (zMin && Number(zMin.min) > 0) minOrder = Number(zMin.min);
+      }
+      if (!minOrder && Number(window.MIN_DELIVERY_ORDER) > 0) {
+        minOrder = Number(window.MIN_DELIVERY_ORDER);
+      }
+    }
+
     var pd = promoInfo ? promoDisc(sum, promoInfo) : 0;
     return {
       sum: sum,
       pickup: pickup,
       fee: fee,
       pd: pd,
+      minOrder: minOrder,
+      belowMin: minOrder > 0 && sum > 0 && sum < minOrder,
       total: Math.max(0, sum - pickup - pd + fee),
     };
   }
@@ -131,6 +148,19 @@
     if (feeEl) {
       feeEl.textContent = t.fee ? "Доставка: " + fmt(t.fee) : "";
       feeEl.style.display = t.fee ? "flex" : "none";
+    }
+
+    var checkBtnEl = document.getElementById("checkoutBtn");
+    if (checkBtnEl && checkBtnEl.getAttribute("data-busy") !== "1") {
+      if (t.belowMin) {
+        checkBtnEl.disabled = true;
+        checkBtnEl.classList.add("min-order-locked");
+        checkBtnEl.textContent = "Мин. сумма доставки — " + fmt(t.minOrder) + " (ещё " + fmt(t.minOrder - t.sum) + ")";
+      } else {
+        checkBtnEl.disabled = false;
+        checkBtnEl.classList.remove("min-order-locked");
+        checkBtnEl.textContent = "Оформить заказ";
+      }
     }
 
     renderGifts();
@@ -573,6 +603,14 @@ function renderCartBase() {
   };
 
   /* ── Слушатели событий корзины ── */
+  var cFabBtn = document.getElementById("cartFab");
+  if (cFabBtn) {
+    cFabBtn.addEventListener("click", function () {
+      setTimeout(function () {
+        if (typeof window.syncOverlay === "function") window.syncOverlay();
+      }, 0);
+    });
+  }
   var cPanel = document.getElementById("cartPanel");
   if (cPanel) {
     cPanel.addEventListener("click", function (e) {
@@ -834,6 +872,12 @@ function renderCartBase() {
         return;
       }
 
+      var tCheck = totalsNow();
+      if (tCheck.belowMin) {
+        toast("Минимальная сумма заказа для доставки — " + fmt(tCheck.minOrder), "⚠️");
+        return;
+      }
+
       var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
       var placeV = "";
       var streetV = "";
@@ -1024,5 +1068,41 @@ function renderCartBase() {
       if (grid) grid.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   });
+
+  /* ── ScrollSpy для подсветки активной категории в #deliveryRail при прокрутке витрины ── */
+  (function initDeliveryRailScrollSpy() {
+    var spyTick = false;
+    function syncRailActiveOnScroll() {
+      spyTick = false;
+      if (!checkIsDelivery()) return;
+      var rail = document.getElementById("deliveryRail");
+      var grid = document.getElementById("deliveryGrid");
+      if (!rail || !grid) return;
+      var anchors = grid.querySelectorAll("[data-cat-anchor], .cat-section[data-cat], .card[data-cat]");
+      if (!anchors.length) return;
+
+      var topThreshold = 140;
+      var currentCat = null;
+      for (var i = 0; i < anchors.length; i++) {
+        var r = anchors[i].getBoundingClientRect();
+        if (r.top <= topThreshold && r.bottom > 60) {
+          currentCat = anchors[i].getAttribute("data-cat-anchor") || anchors[i].getAttribute("data-cat");
+          break;
+        }
+      }
+      if (currentCat) {
+        rail.querySelectorAll("button[data-dcat], button[data-cat]").forEach(function (btn) {
+          var bCat = btn.getAttribute("data-dcat") || btn.getAttribute("data-cat");
+          btn.classList.toggle("on", bCat === currentCat);
+        });
+      }
+    }
+    window.addEventListener("scroll", function () {
+      if (!spyTick) {
+        spyTick = true;
+        requestAnimationFrame(syncRailActiveOnScroll);
+      }
+    }, { passive: true });
+  })();
 
 })();

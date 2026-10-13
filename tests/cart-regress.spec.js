@@ -1,3 +1,5 @@
+/* eslint-disable playwright/no-conditional-expect */
+/* eslint-disable playwright/no-conditional-in-test */
 import { test, expect } from '@playwright/test';
 
 test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степпер карточек, Сабфильтры', () => {
@@ -222,4 +224,77 @@ test('Задачи 5 и 6: Модалка «Мои заказы» в TMA и по
 
   const wakeLockActive = await page.evaluate(() => window.__wakeLockRequested);
   expect(wakeLockActive).toBe(true);
+});
+
+test.describe('Спринт 2 — Сетка опций пиццы, отступ корзины, sticky-рейл и чекаут', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('1. Опции пиццы в 2 колонки + подсветка .sel, отступ #deliveryGrid, sticky #deliveryRail и блокировка минимальной суммы', async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem('splashDone', '1');
+    });
+
+    await page.goto('/?brand=delivery');
+
+    const firstPizzaCard = page.locator('#deliveryGrid .card:has(.opts button)').first();
+    await expect(firstPizzaCard).toBeVisible({ timeout: 10000 });
+
+    // ── Задача 1: Сетка опций пиццы (.opts) и активное состояние .sel ──
+    const optsGrid = firstPizzaCard.locator('.opts');
+    const gridStyle = await optsGrid.evaluate((el) => window.getComputedStyle(el).display);
+    expect(gridStyle).toBe('grid');
+
+    const firstOpt = optsGrid.locator('button').first();
+    await firstOpt.click();
+    await expect(firstOpt).toHaveClass(/sel/);
+
+    // Выбранная опция окрашена акцентным цветом кнопки (--flame #C03B2A), а текст белый (#FFFFFF)
+    await expect(firstOpt).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await expect(firstOpt).toHaveCSS('background-color', 'rgb(192, 59, 42)');
+
+    // ── Задача 2: Безопасный нижний отступ #deliveryGrid (>= 88px под плавающую корзину) ──
+    const padBottom = await page.locator('#deliveryGrid').evaluate((el) => parseFloat(window.getComputedStyle(el).paddingBottom));
+    expect(padBottom).toBeGreaterThanOrEqual(88);
+
+    // ── Задача 3: Сайдбар категорий #deliveryRail имеет position: sticky ──
+    const railPos = await page.locator('#deliveryRail').evaluate((el) => window.getComputedStyle(el).position);
+    expect(railPos).toBe('sticky');
+
+    // ── Задача 4: Контраст полей чекаута, прижатие шторки к bottom=viewport.height и скрытие #cartFab ──
+    await firstPizzaCard.locator('.steprow .cta, [data-add]').first().click();
+    await page.locator('#cartFab').click();
+    const cartPanel = page.locator('#cartPanel');
+    await expect(cartPanel).toHaveClass(/open/);
+
+    // Жёсткая проверка геометрии: низ шторки корзины обязан лежать ровно на нижней границе экрана (844px), а не висеть у потолка!
+    await expect.poll(async () => {
+      const box = await cartPanel.boundingBox();
+      return box ? Math.round(box.y + box.height) : 0;
+    }, { timeout: 3000 }).toBe(page.viewportSize().height);
+
+    // Верх шторки должен быть ниже верха экрана (оставляя ~10% шапки/оверлея сверху)
+    const panelBox = await cartPanel.boundingBox();
+    expect(panelBox.y).toBeGreaterThan(40);
+
+    // Плавающая пилюля #cartFab и #chatFab под открытой шторкой обязаны быть скрыты (display: none)
+    await expect(page.locator('#cartFab')).toBeHidden();
+    await expect(page.locator('#chatFab')).toBeHidden();
+
+    // Устанавливаем порог минимального заказа выше текущей корзины (например, 3000 ₽)
+    await page.evaluate(() => {
+      window.MIN_DELIVERY_ORDER = 3000;
+      if (typeof window.paintTotals === 'function') window.paintTotals();
+    });
+
+    const checkoutBtn = page.locator('#checkoutBtn');
+    await expect(checkoutBtn).toBeDisabled();
+    await expect(checkoutBtn).toContainText('Мин. сумма доставки');
+
+    // Снимаем повышенный порог — кнопка снова активна
+    await page.evaluate(() => {
+      window.MIN_DELIVERY_ORDER = 0;
+      if (typeof window.paintTotals === 'function') window.paintTotals();
+    });
+    await expect(checkoutBtn).toBeEnabled();
+  });
 });
