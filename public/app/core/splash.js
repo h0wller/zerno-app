@@ -10,6 +10,7 @@
   } catch (e) {}
 
   var QS = new URLSearchParams(location.search);
+  var hasDeeplink = !!(QS.get('brand') || QS.get('item') || QS.get('tab') || QS.get('no') || QS.get('reorder'));
   var isAudit = document.documentElement.classList.contains('is-audit') || QS.get('lighthouse') === '1';
 
   function finish(choice) {
@@ -50,14 +51,37 @@
     });
   }
 
-  if (done || isAudit) {
+   if (done || hasDeeplink || isAudit) {
     if (ss) ss.remove();
     document.documentElement.classList.remove('need-splash');
     document.documentElement.classList.add('no-splash');
     return;
   }
-  if (ss) { 
-    bind(ss); 
-    return; 
+  document.documentElement.classList.add('need-splash');
+  document.documentElement.classList.remove('no-splash');
+  if (!ss) {
+    var splashEl = document.createElement('div');
+    splashEl.id = 'brandSplash';
+    splashEl.innerHTML =
+      '<div class="spInner">' +
+        '<h2 class="spTitle">Выберите заведение</h2>' +
+        '<div class="spSub">кофейня у моря или доставка пиццы</div>' +
+        '<div class="spBtns">' +
+          '<button type="button" class="spBtn spPizza" data-go="delivery">' +
+            '<span class="em">🍕</span>' +
+            '<span class="bt">«Пятница»</span>' +
+            '<small>доставка пиццы и роллов</small>' +
+          '</button>' +
+          '<button type="button" class="spBtn spCoffee" data-go="coffee">' +
+            '<span class="em">🌊</span>' +
+            '<span class="bt">«…и кофе»</span>' +
+            '<small>кофейня на берегу моря</small>' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(splashEl);
+    bind(splashEl);
+  } else {
+    bind(ss);
   }
 })();
