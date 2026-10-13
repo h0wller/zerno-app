@@ -12,6 +12,7 @@
 html[data-brand="coffee"],
 body[data-brand="coffee"] {
   /* Геометрия марки в шапке */
+  --c-text-on-accent: #FFFFFF;
   --mark-w: 42px;
   --mark-h: 42px;
 
@@ -121,6 +122,7 @@ body[data-brand="coffee"] {
 html[data-brand="delivery"],
 body[data-brand="delivery"] {
   /* Геометрия марки в шапке */
+  --c-text-on-accent: #3A2A1C;
   --mark-w: 160px;
   --mark-h: 40px;
 
