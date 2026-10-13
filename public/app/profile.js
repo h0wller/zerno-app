@@ -381,17 +381,35 @@ function updateMbonusBadge() {
 
 (function () {
     var pb = document.getElementById('profileBox');
-    if (!pb || document.getElementById('myOrdersBtn')) return;
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.id = 'myOrdersBtn';
-    b.className = 'demoBtn';
-    b.textContent = '📦 Мои заказы';
-    var mo = document.getElementById('myOrders');
-    if (mo) pb.insertBefore(b, mo);
-    else pb.appendChild(b);
-    b.onclick = window.renderOrdersModal;
+    if (pb && !document.getElementById('myOrdersBtn')) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.id = 'myOrdersBtn';
+        b.className = 'demoBtn';
+        b.textContent = '📦 Мои заказы';
+        var mo = document.getElementById('myOrders');
+        if (mo) pb.insertBefore(b, mo);
+        else pb.appendChild(b);
+    }
 })();
+
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest('#myOrdersBtn, [data-tab="my-orders"], .my-orders-btn');
+    if (!btn && e.target.closest('button')) {
+        var b = e.target.closest('button');
+        if (/мои заказы/i.test(b.textContent || '')) btn = b;
+    }
+    if (btn) {
+        e.preventDefault();
+        var m = document.getElementById('ordersModal');
+        if (m && m.parentElement !== document.body) {
+            document.body.appendChild(m);
+        }
+        if (typeof window.renderOrdersModal === 'function') {
+            window.renderOrdersModal();
+        }
+    }
+});
 
 (function patchQR() {
     if (typeof window.renderProfile !== 'function') return;
