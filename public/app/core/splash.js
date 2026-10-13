@@ -6,13 +6,8 @@
   var hasDeeplink = !!(QS.get('item') || QS.get('tab') || QS.get('no') || QS.get('reorder'));
   var isAudit = document.documentElement.classList.contains('is-audit') || QS.get('lighthouse') === '1';
 
-  var done = false;
-  try {
-    done = sessionStorage.getItem("splashDone") === '1';
-  } catch (e) {}
-
-  // Если сессия продолжается (теплый старт) или перешли по диплинку на товар — скрываем сплэш
-  if (done || hasDeeplink || isAudit) {
+    // Холодный старт: сплэш пропускается ТОЛЬКО при прямом диплинке на товар/заказ/вкладку или в режиме аудита
+  if (hasDeeplink || isAudit) {
     document.documentElement.classList.remove('need-splash');
     document.documentElement.classList.add('no-splash');
     var s = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
@@ -20,26 +15,40 @@
     return;
   }
 
-  // Холодный старт: активируем режим сплэша
+  // Активируем режим сплэша для холодного старта
   document.documentElement.classList.add('need-splash');
   document.documentElement.classList.remove('no-splash');
 
   function finish(choice) {
-    try { sessionStorage.setItem("splashDone", "1"); } catch (e) {}
-    try { localStorage.setItem("zt_brand", choice); } catch (e) {}
     document.documentElement.classList.remove('need-splash');
     document.documentElement.classList.add('no-splash');
     var el = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
     if (el) el.remove();
-    if (typeof window.applyBrand === 'function') {
-      window.applyBrand(choice);
-    } else if (typeof window.switchBrand === 'function') {
-      window.switchBrand(choice);
-    } else {
-      location.search = '?brand=' + choice;
-    }
-  }
 
+    window.brand = choice;
+    try { localStorage.setItem('zt_brand', choice); } catch (e) {}
+    document.documentElement.setAttribute('data-brand', choice);
+    document.body.setAttribute('data-brand', choice);
+
+    document.querySelectorAll('#brandSeg button').forEach(function (x) {
+      x.classList.toggle('on', x.dataset.brand === choice);
+    });
+
+    if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
+    if (typeof window.applyAuthBrand === 'function') window.applyAuthBrand();
+    if (choice === 'delivery' && typeof window.loadDelivery === 'function') {
+      window.loadDelivery();
+    }
+
+    try {
+      var u = new URL(location.href);
+      if (u.searchParams.has('brand')) {
+        u.searchParams.delete('brand');
+        history.replaceState(null, '', u.pathname + (u.search ? u.search : '') + u.hash);
+      }
+    } catch (_) {}
+  }
+  
   function initSplash() {
     var ss = document.getElementById('brandSplashStatic') || document.getElementById('brandSplash');
     if (!ss) {
