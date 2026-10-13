@@ -27,9 +27,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Anti-AI Slop Audit
-        run: npm run audit
+      # Запускаем только статические проверки и линтеры (без браузера)
+      - name: Run Static Audits & Linters
+        run: npm run check && npm run pretest && npm run lint:code && npm run lint:dup && npm run lint:dead && npm run lint:layers
 
+      # Контрактный смоук API (сервер поднимается в фоне скриптом)
       - name: Run Contract Smoke Tests
         run: npm run smoke
 
@@ -50,7 +52,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright Browsers
+      - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright Tests
