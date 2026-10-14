@@ -418,6 +418,9 @@ test.describe('Спринт 3 — TgUx (BackButton & Haptics), Зоны/Слот
     await expect(page.locator('html')).not.toHaveClass(/tg-native-back/);
     expect(await page.evaluate(() => window.__backBtnVisible)).toBe(false);
 
+    // Дожидаемся загрузки /api/delivery/info, чтобы фоновый рендер слотов не перезаписал выбор в корзине
+    await page.waitForFunction(() => window.deliveryInfo, null, { timeout: 10000 });
+
     // Снова открываем корзину для проверки Задачи 2 (Зоны, слоты, автоподстановка гостя)
     await page.locator('#cartFab').click();
     await expect(page.locator('#cartPanel')).toHaveClass(/open/);
@@ -441,9 +444,10 @@ test.describe('Спринт 3 — TgUx (BackButton & Haptics), Зоны/Слот
     await timeSegSlot.click();
     await expect(page.locator('#checkoutSlot')).toBeVisible();
 
-    // Заполняем улицу и дом из справочника Янтарного
+    // Заполняем улицу и дом из справочника Янтарного и убеждаемся, что #checkoutBtn активна
     await page.locator('#checkoutStreet').fill('Советская');
     await page.locator('#checkoutHouse').fill('70');
+    await expect(page.locator('#checkoutBtn')).toBeEnabled();
 
     // ── Задача 3: Отправка заказа (в TMA #checkoutBtn скрыт под нативной MainButton, кликаем программно как MainButton) ──
     await page.locator('#checkoutBtn').dispatchEvent('click');
@@ -472,5 +476,72 @@ test.describe('Спринт 3 — TgUx (BackButton & Haptics), Зоны/Слот
     await expect(trackModal).not.toHaveClass(/show/);
     await expect(page.locator('#cartPanel')).toHaveClass(/open/);
     await expect(page.locator('#cartItems .cartItem').first()).toContainText('Маргарита');
+  });
+});
+
+test.describe('Спринт 4 — Тикер, геометрия рейла без наезда поиска, центрирование и стабильность шапки', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('1. Пустой тикер скрыт (0px), поиск не наезжает на #deliveryRail, шапка не прыгает и логотип строго по центру', async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem('splashDone', '1');
+    });
+
+    await page.goto('/?brand=delivery');
+    await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible({ timeout: 10000 });
+
+    // ── Задача 1: Тикер при наличии текста компактный (<= 30px), а при очистке текста — скрывается в 0px ──
+    const ticker = page.locator('#ticker, .ticker').first();
+    const activeTickerBox = await ticker.boundingBox();
+    if (activeTickerBox) {
+      expect(activeTickerBox.height).toBeLessThanOrEqual(30);
+    }
+
+    await page.evaluate(() => {
+      const tr = document.getElementById('tickerTrack');
+      if (tr) tr.innerHTML = '';
+    });
+    await expect(ticker).toBeHidden();
+
+    // ── Задача 2: Поиск НЕ наезжает на левый сайдбар #deliveryRail + sticky-позиция при скролле ──
+    const rail = page.locator('#deliveryRail');
+    const search = page.locator('#deliveryView .search, .mh-top .search').first();
+    await expect(rail).toBeVisible();
+    await expect(search).toBeVisible();
+
+    const railBox = await rail.boundingBox();
+    const searchBox = await search.boundingBox();
+    // Левый край поиска должен находиться правее правого края сайдбара категорий!
+    expect(searchBox.x).toBeGreaterThanOrEqual(railBox.x + railBox.width - 1);
+
+    // ── Задача 3: Стабильность высоты .topbar, центрирование логотипа и мгновенная смена иконки 🍕 / 🌊 ──
+    const topbar = page.locator('.topbar');
+    const brandEl = page.locator('.topbar .brand');
+    const venueToggle = page.locator('#venueToggle');
+
+    await expect(venueToggle).toContainText('🍕');
+    const topbarBoxDelivery = await topbar.boundingBox();
+    const brandBoxDelivery = await brandEl.boundingBox();
+
+    // Центр логотипа в доставке строго по центру экрана (390 / 2 = 195px ± 6px)
+    const brandCenterDelivery = brandBoxDelivery.x + brandBoxDelivery.width / 2;
+    expect(Math.abs(brandCenterDelivery - 195)).toBeLessThanOrEqual(6);
+
+    // Переключаем заведение через дропдаун на «Кофейня»
+    await venueToggle.click();
+    await page.locator('#brandSeg button[data-brand="coffee"]').click();
+
+    // Иконка в дропдауне мгновенно стала 🌊
+    await expect(venueToggle).toContainText('🌊');
+
+    const topbarBoxCoffee = await topbar.boundingBox();
+    const brandBoxCoffee = await brandEl.boundingBox();
+
+    // Высота шапки НЕ скачет при переключении брендов!
+    expect(Math.round(topbarBoxCoffee.height)).toBe(Math.round(topbarBoxDelivery.height));
+
+    // Центр логотипа в кофейне также строго по центру экрана (195px ± 6px)
+    const brandCenterCoffee = brandBoxCoffee.x + brandBoxCoffee.width / 2;
+    expect(Math.abs(brandCenterCoffee - 195)).toBeLessThanOrEqual(6);
   });
 });

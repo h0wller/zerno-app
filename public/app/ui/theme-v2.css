@@ -780,13 +780,26 @@ views.js) ── */
 .ticker{
   overflow: hidden;
   max-width: 100%;
-  height: 30px;
-  line-height: 30px;
+  height: 28px;
+  min-height: 0;
+  line-height: 28px;
   display: flex;
   align-items: center;
-  margin-top: -1px;
+  margin: 0;
+  padding: 0;
   position: relative;
-  z-index: 1
+  z-index: 1;
+}
+.ticker[hidden],
+.ticker:empty,
+.ticker:has(#tickerTrack:empty),
+body.is-cashier .ticker,
+body.is-admin .ticker {
+  display: none;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
 }
 #tickerTrack span{
   flex: 0 0 auto;
@@ -3195,8 +3208,9 @@ body .wrap #deliveryRail button.on{
   .mh-top h1, .mh h1, #menuHead h1,
   .mh-top .mh-sub, .mh .mh-sub, #menuHead .mh-sub{ max-width: 100%; }
   .menu-head{
-    margin-left: calc(-1 * (72px + 8px));
-    width: calc(100% + 72px + 8px);
+    margin-left: 0;
+    width: 100%;
+    max-width: 100%;
   }
   .mh-top .mh-right, .mh-top .search,
   #menuView .menu-head .mh-top .mh-right,
@@ -3888,25 +3902,66 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* [3] Mobile topbar: профиль справа сверху, mbonus = pill снизу-слева */
+/* [3] Mobile topbar: строгая 3-колоночная сетка 1fr auto 1fr для идеального центрирования логотипа */
 @media (max-width: 820px) {
-  body[data-brand] .topbar {
-    display: flex;
-    flex-wrap: wrap;
+  body[data-brand] .topbar,
+  header.topbar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 8px;
+    height: calc(60px + env(safe-area-inset-top, 0px));
+    min-height: calc(60px + env(safe-area-inset-top, 0px));
+    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px 4px;
+    box-sizing: border-box;
   }
-  body[data-brand] .topbar .venueWrap { order: 1; flex: 0 0 auto; }
-  body[data-brand] .topbar .brand      { order: 2; flex: 1 1 0; min-width: 0; }
-  body[data-brand] .topbar #profileTopBtn {
+  body.is-cashier header.topbar,
+  body.is-admin header.topbar,
+  header.topbar:has(#modeSeg:not([hidden])) {
+    height: auto;
+  }
+  body[data-brand] .topbar .venueWrap,
+  header.topbar div.venueWrap {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    order: 1;
+    min-width: 0;
+  }
+  body[data-brand] .topbar .brand,
+  header.topbar div#headerBrand.brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    order: 2;
+    margin: 0;
+    min-width: 0;
+    max-width: 100%;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  body[data-brand] .topbar #profileTopBtn,
+  header.topbar button#profileTopBtn.ava {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
     order: 3;
-    margin-left: auto;
-    flex: 0 0 auto;
+    margin: 0;
     position: static;
     display: grid;
     place-items: center;
   }
-  body[data-brand] .topbar #modeSeg { order: 10; flex: 1 1 100%; }
+  body[data-brand] .topbar #modeSeg,
+  header.topbar #modeSeg {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    order: 10;
+    width: 100%;
+  }
   body[data-brand] .topbar #mbonusBtn {
     position: fixed;
     left: 12px; right: auto; top: auto;
@@ -4080,21 +4135,26 @@ body .wrap > #deliveryRail {
 
 /* ── CLS-AND-HEADER-SEARCH-STABILIZATION ── */
 
-/* 1. Мобильная шапка (<= 690px) */
+/* 1. Мобильная шапка (<= 690px): фиксированная геометрия без скачков при смене бренда */
 @media (max-width: 690px) {
   header.topbar {
-    position: relative;
-    display: flex;
+    position: sticky;
+    top: 0;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    padding-top: env(safe-area-inset-top, 0px);
-    height: auto;
-    min-height: calc(54px + env(safe-area-inset-top, 0px));
+    padding-top: calc(env(safe-area-inset-top, 0px) + 4px);
+    height: calc(60px + env(safe-area-inset-top, 0px));
+    min-height: calc(60px + env(safe-area-inset-top, 0px));
     padding-left: 12px;
     padding-right: 12px;
-    padding-bottom: 6px;
+    padding-bottom: 4px;
     box-sizing: border-box;
+  }
+  body.is-cashier header.topbar,
+  body.is-admin header.topbar,
+  header.topbar:has(#modeSeg:not([hidden])) {
+    height: auto;
   }
 
   header.topbar div.venueWrap {
@@ -5428,8 +5488,14 @@ body.panel-open {
 
   html body div.wrap > nav.rail,
   html body div.wrap > nav#deliveryRail {
+    position: sticky;
+    top: calc(var(--topbar-h, 56px) + env(safe-area-inset-top, 0px) + 8px);
     width: 80px;
     min-width: 80px;
+    max-height: calc(100dvh - var(--topbar-h, 56px) - var(--floating-cart-h, 72px) - env(safe-area-inset-top, 0px) - 20px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 10;
   }
 
   html body div.wrap > nav.rail button,

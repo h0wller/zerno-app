@@ -56,9 +56,8 @@ var rules = [
  '@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}',
  '@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
  '@media(max-width:1023px){[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] .topbar .brand > div:not(.mark){display:none!important}}',
- '@media(max-width:690px){[data-brand="coffee"] .topbar .brand b,[data-brand="coffee"] .topbar .brand small,[data-brand="coffee"] .topbar .brand .brand-text{display:none!important}[data-brand="coffee"] .topbar .brand .mark{width:50px!important;height:50px!important;min-width:50px!important}}',
- '@media(max-width:690px){[data-brand="delivery"] .topbar .brand .mark{width:185px!important;max-width:min(60vw,200px)!important;height:46px!important;max-height:46px!important}}',
- '[data-brand="delivery"] .topbar .brand .mark{width:var(--mark-w,160px);height:var(--mark-h,40px);max-height:var(--mark-h,40px);max-width:min(60vw,420px);flex:0 1 auto;border-radius:8px}',
+'@media(max-width:690px){[data-brand="coffee"] .topbar .brand b,[data-brand="coffee"] .topbar .brand small,[data-brand="coffee"] .topbar .brand .brand-text{display:none!important}[data-brand="coffee"] .topbar .brand .mark{width:44px!important;height:44px!important;min-width:44px!important;max-height:44px!important}}',
+ '@media(max-width:690px){[data-brand="delivery"] .topbar .brand .mark{width:160px!important;max-width:min(54vw,176px)!important;height:44px!important;max-height:44px!important}}', '[data-brand="delivery"] .topbar .brand .mark{width:var(--mark-w,160px);height:var(--mark-h,40px);max-height:var(--mark-h,40px);max-width:min(60vw,420px);flex:0 1 auto;border-radius:8px}',
  '[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}',
  '@media(min-width:821px) and (max-width:1180px){.wrap{grid-template-columns:92px minmax(0,1fr) 350px;gap:18px;padding:18px}.wrap > .rail{grid-column:1}.wrap > section{grid-column:2;min-width:0}.wrap > .panel{grid-column:3;position:sticky;top:118px;transform:none;max-height:calc(100vh - 140px)}.tabs .btn-back{display:none}}',
  '@media(min-width:821px){#mbonusBtn{height:40px;min-width:0;max-width:180px;display:inline-flex;flex-direction:row;align-items:center;gap:8px;padding:0 12px;border-radius:999px;background:#101418;color:#fff;box-shadow:0 4px 12px rgba(16,20,24,.15);white-space:nowrap;overflow:hidden}}',
@@ -124,7 +123,7 @@ var rules = [
   '[data-brand="delivery"] .brand small { color: #3a2a1c; }',
  '[data-brand="delivery"] .subchip{border:2px solid var(--fr-tan);background:var(--fr-paper);color:var(--fr-choc)}',
  '[data-brand="delivery"] .subchip.on{background:var(--flame);border-color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff}',
- '@media(min-width:0){body.is-cashier .ticker,body.is-admin .ticker{visibility:hidden}}'
+ '@media(min-width:0){body.is-cashier .ticker,body.is-admin .ticker{display:none}}'
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
@@ -402,8 +401,10 @@ sv();
   function label() {
     var vt = document.getElementById('venueToggle');
     if (!vt) return;
-    var isDel = (typeof brand !== 'undefined' && brand === 'delivery');
-    vt.innerHTML = '<span class="vt-label">Сменить заведение</span> ' + (isDel ? '🍕' : '🌊') + ' <span class="vt-arrow">▾</span>';
+    var curBrand = (typeof brand !== 'undefined' && brand) || document.documentElement.getAttribute('data-brand') || 'coffee';
+    var isDel = (curBrand === 'delivery');
+    vt.setAttribute('data-active-brand', curBrand);
+    vt.innerHTML = '<span class="vt-label">Сменить заведение</span> <span class="vt-icon">' + (isDel ? '🍕' : '🌊') + '</span> <span class="vt-arrow">▾</span>';
   }
   window.__syncHeaderCluster = function () {};
   window.__ensureVenueToggle = ensure;

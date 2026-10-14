@@ -249,7 +249,7 @@ async function updateStaffBadge() {
       $("#chatsToggle").textContent = un
         ? `💬 Чаты гостей · ${un}`
         : "💬 Чаты гостей";
-      $("#chatsToggle2").textContent = un ? `💬 ${un}` : "💬";
+      $("#chatsToggle2").textContent = un ? `💬 Чаты гостей · ${un}` : "💬 Чаты гостей";
     } catch (e) {}
   }
 

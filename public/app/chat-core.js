@@ -340,7 +340,7 @@
         c2 = document.getElementById("chatsToggle2"),
         c3 = document.getElementById("chatsToggleD");
       if (c1) c1.textContent = un ? "💬 Чаты гостей · " + un : "💬 Чаты гостей";
-      if (c2) c2.textContent = un ? "💬 " + un : "💬";
+      if (c2) c2.textContent = un ? "💬 Чаты гостей · " + un : "💬 Чаты гостей";
       if (c3) c3.textContent = un ? "💬 Чаты гостей · " + un : "💬 Чаты гостей";
     } catch (e) {}
   };

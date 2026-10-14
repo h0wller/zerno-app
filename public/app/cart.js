@@ -1022,6 +1022,81 @@ function renderCartBase() {
   });
 
   /* ── Оформление заказа ── */
+  function resolveCheckoutAddress(method) {
+    if (method !== "delivery") {
+      return { ok: true, placeV: "", streetV: "", houseV: "" };
+    }
+
+    var placeEl = document.getElementById("checkoutPlace");
+    var streetEl = document.getElementById("checkoutStreet");
+    var houseEl = document.getElementById("checkoutHouse");
+    var placeV = placeEl ? placeEl.value.trim() : "";
+    if (!placeV) {
+      return { ok: false, field: placeEl, message: "Выберите населённый пункт", icon: "📍" };
+    }
+
+    var streetV = streetEl ? streetEl.value.trim() : "";
+    var houseV = houseEl ? houseEl.value.trim() : "";
+
+    if (!streetV) {
+      return { ok: false, field: streetEl, message: "Укажите улицу", icon: "🏠" };
+    }
+
+    if (window.AddressModule && window.AddressModule.LOCAL_STREETS) {
+      var placeKey = (window.AddressModule.normPlace || function (p) { return String(p || "").toLowerCase().trim(); })(placeV);
+      var validStreets = window.AddressModule.LOCAL_STREETS[placeKey] || [];
+      if (validStreets.length > 0) {
+        var sClean = streetV.toLowerCase().replace(/^(ул\.?|улица|пер\.?|проезд|пр-д)\s+/i, "").replace(/\s+(ул\.?|улица)$/i, "").trim();
+        var found = validStreets.some(function (s) {
+          if (s === "(без улицы)") return true;
+          var candClean = s.toLowerCase().replace(/^(ул\.?|улица|пер\.?|проезд|пр-д)\s+/i, "").replace(/\s+(ул\.?|улица)$/i, "").trim();
+          return candClean === sClean;
+        });
+        if (!found && sClean !== "без улицы" && sClean !== "(без улицы)") {
+          return { ok: false, field: streetEl, message: "В " + placeV + " нет улицы «" + streetV + "»", icon: "⚠️" };
+        }
+      }
+    }
+
+    if (!houseV) {
+      return { ok: false, field: houseEl, message: "Укажите дом и квартиру", icon: "🏠" };
+    }
+
+    return { ok: true, placeV: placeV, streetV: streetV, houseV: houseV };
+  }
+
+  function resolveCheckoutSlot() {
+    var pm = typeof window.preorderMode === "function"
+      ? window.preorderMode()
+      : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);
+    var slotElCheck = document.getElementById("checkoutSlot");
+    var slotModeBtn = document.querySelector('#checkoutTimeModeSeg .tms-btn.on[data-tmode="slot"]');
+    var slotVal = (slotElCheck && slotElCheck.value) || "";
+    if ((pm || slotModeBtn) && (!slotVal || slotVal === "asap") && slotElCheck) {
+      ensureTimeModeToggle();
+      for (var sIdx = 0; sIdx < slotElCheck.options.length; sIdx++) {
+        if (slotElCheck.options[sIdx].value && slotElCheck.options[sIdx].value !== "asap") {
+          slotElCheck.value = slotElCheck.options[sIdx].value;
+          slotVal = slotElCheck.value;
+          break;
+        }
+      }
+    }
+
+    var isPreorder = !!pm || (slotVal && slotVal !== "asap");
+    if (isPreorder && (!slotVal || slotVal === "asap")) {
+      return { ok: false, field: slotElCheck, message: "Выберите время доставки для предзаказа ⏰", icon: "⚠️" };
+    }
+
+    var preorderDate = "";
+    if (slotVal && slotVal !== "asap") {
+      var mDate = slotVal.match(/^(\d{2}[.-]\d{2})/);
+      if (mDate) preorderDate = mDate[1];
+    }
+
+    return { ok: true, slotVal: slotVal, isPreorder: isPreorder, preorderDate: preorderDate };
+  }
+
   var checkBtn = document.getElementById("checkoutBtn");
   if (checkBtn) {
     checkBtn.onclick = async function () {
@@ -1044,59 +1119,24 @@ function renderCartBase() {
       }
 
       var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
-      var placeV = "";
-      var streetV = "";
-      var houseV = "";
-
-      if (method === "delivery") {
-        var placeEl = document.getElementById("checkoutPlace");
-        placeV = placeEl ? placeEl.value.trim() : "";
-        if (!placeV) { flagField(placeEl); return toast("Выберите населённый пункт", "📍"); }
-
-        var streetEl = document.getElementById("checkoutStreet");
-        var houseEl = document.getElementById("checkoutHouse");
-        streetV = streetEl ? streetEl.value.trim() : "";
-        houseV = houseEl ? houseEl.value.trim() : "";
-
-        if (!streetV) { flagField(streetEl); return toast("Укажите улицу", "🏠"); }
-
-        if (window.AddressModule && window.AddressModule.LOCAL_STREETS) {
-          var placeKey = (window.AddressModule.normPlace || function (p) { return String(p || "").toLowerCase().trim(); })(placeV);
-          var validStreets = window.AddressModule.LOCAL_STREETS[placeKey] || [];
-          if (validStreets.length > 0) {
-            var sClean = streetV.toLowerCase().replace(/^(ул\.?|улица|пер\.?|проезд|пр-д)\s+/i, "").replace(/\s+(ул\.?|улица)$/i, "").trim();
-            var found = validStreets.some(function (s) {
-              if (s === "(без улицы)") return true;
-              var candClean = s.toLowerCase().replace(/^(ул\.?|улица|пер\.?|проезд|пр-д)\s+/i, "").replace(/\s+(ул\.?|улица)$/i, "").trim();
-              return candClean === sClean;
-            });
-            if (!found && sClean !== "без улицы" && sClean !== "(без улицы)") {
-              flagField(streetEl);
-              return toast("В " + placeV + " нет улицы «" + streetV + "»", "⚠️");
-            }
-          }
-        }
-
-        if (!houseV) { flagField(houseEl); return toast("Укажите дом и квартиру", "🏠"); }
+      var addressState = resolveCheckoutAddress(method);
+      if (!addressState.ok) {
+        if (addressState.field) flagField(addressState.field);
+        return toast(addressState.message, addressState.icon);
       }
 
-      var pm = typeof window.preorderMode === "function"
-        ? window.preorderMode()
-        : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);
-      var slotVal = (document.getElementById("checkoutSlot") || {}).value || "";
-      var isPreorder = !!pm || (slotVal && slotVal !== "asap");
-
-      if (isPreorder && (!slotVal || slotVal === "asap")) {
-        var sl = document.getElementById("checkoutSlot");
-        if (sl) flagField(sl);
-        return toast("Выберите время доставки для предзаказа ⏰", "⚠️");
+      var slotState = resolveCheckoutSlot();
+      if (!slotState.ok) {
+        if (slotState.field) flagField(slotState.field);
+        return toast(slotState.message, slotState.icon);
       }
 
-      var preorderDate = "";
-      if (slotVal && slotVal !== "asap") {
-        var mDate = slotVal.match(/^(\d{2}[.-]\d{2})/);
-        if (mDate) preorderDate = mDate[1];
-      }
+      var placeV = addressState.placeV;
+      var streetV = addressState.streetV;
+      var houseV = addressState.houseV;
+      var slotVal = slotState.slotVal;
+      var isPreorder = slotState.isPreorder;
+      var preorderDate = slotState.preorderDate;
 
       var body = {
         method: method,
@@ -1242,31 +1282,57 @@ function renderCartBase() {
   /* ── ScrollSpy для подсветки активной категории в #deliveryRail при прокрутке витрины ── */
   (function initDeliveryRailScrollSpy() {
     var spyTick = false;
+    function resolveCardCat(card) {
+      if (!card) return null;
+      var direct = card.getAttribute("data-cat") || card.getAttribute("data-cat-anchor");
+      if (direct) return direct;
+      var addBtn = card.querySelector("[data-add]");
+      var id = addBtn ? addBtn.getAttribute("data-add") : card.getAttribute("data-item-id");
+      if (id && typeof window.DMENU !== "undefined" && Array.isArray(window.DMENU)) {
+        var prod = window.DMENU.find(function (x) { return String(x.id) === String(id); });
+        if (prod && prod.cat) {
+          card.setAttribute("data-cat", prod.cat);
+          return prod.cat;
+        }
+      }
+      return null;
+    }
+
     function syncRailActiveOnScroll() {
       spyTick = false;
       if (!checkIsDelivery()) return;
       var rail = document.getElementById("deliveryRail");
       var grid = document.getElementById("deliveryGrid");
       if (!rail || !grid) return;
-      var anchors = grid.querySelectorAll("[data-cat-anchor], .cat-section[data-cat], .card[data-cat]");
-      if (!anchors.length) return;
 
-      var topThreshold = 140;
+      var cards = Array.from(grid.querySelectorAll("[data-cat-anchor], .cat-section[data-cat], .card:not(.skeleton-card)")).filter(function (el) {
+        return el.offsetParent !== null;
+      });
+      if (!cards.length) return;
+
+      var topThreshold = 160;
       var currentCat = null;
-      for (var i = 0; i < anchors.length; i++) {
-        var r = anchors[i].getBoundingClientRect();
-        if (r.top <= topThreshold && r.bottom > 60) {
-          currentCat = anchors[i].getAttribute("data-cat-anchor") || anchors[i].getAttribute("data-cat");
-          break;
+      for (var i = 0; i < cards.length; i++) {
+        var r = cards[i].getBoundingClientRect();
+        if (r.bottom > 90 && r.top <= topThreshold) {
+          currentCat = resolveCardCat(cards[i]);
+          if (currentCat) break;
         }
       }
+      if (!currentCat && cards.length) {
+        currentCat = resolveCardCat(cards[0]);
+      }
       if (currentCat) {
-        rail.querySelectorAll("button[data-dcat], button[data-cat]").forEach(function (btn) {
-          var bCat = btn.getAttribute("data-dcat") || btn.getAttribute("data-cat");
-          btn.classList.toggle("on", bCat === currentCat);
+        rail.querySelectorAll("button").forEach(function (btn) {
+          var bCat = btn.getAttribute("data-dcat") || btn.getAttribute("data-cat") || btn.dataset.dcat || btn.dataset.cat;
+          if (bCat) {
+            btn.classList.toggle("on", bCat === currentCat);
+          }
         });
       }
     }
+
+    window.__syncDeliveryScrollSpy = syncRailActiveOnScroll;
     window.addEventListener("scroll", function () {
       if (!spyTick) {
         spyTick = true;
