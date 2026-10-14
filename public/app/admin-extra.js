@@ -1,102 +1,291 @@
 /* public/app/admin-extra.js — Ф3.20: админ-кластер — промо-лист, guard'ы кофейного меню,
-брендовый хром (тикер/логотип), согласие с политикой при регистрации.
-Было fix-views.js: остаток секции 4 + R5 + R6. */
-(function(){
-'use strict';
-/* ── список промокодов (модалка админа) ── */
-window.loadPromos=async function(){try{var r=await api('/promos');
-  document.getElementById('pmList').innerHTML=r.promos.map(function(p){
-    var exp=p.expires?new Date(p.expires).toLocaleDateString('ru-RU'):'бессрочно';
-    var dead=p.expires&&new Date(p.expires)<new Date();
-    var kind=p.kind==='stamp'?'+'+p.value+' штамп(а) 🌊':p.kind==='free'?'+'+p.value+' кофе 🌊':p.kind==='percent'?'−'+p.value+'% 🍕':'−'+p.value+' ₽ 🍕';
-    return '<div class="logrow" style="align-items:center;gap:8px;flex-wrap:wrap">'+
-      '<span class="lt">'+esc(p.code)+'</span>'+
-      '<span style="flex:1;min-width:150px">'+kind+' · '+(dead?'истёк':'до '+exp)+' · лимит '+(p.maxuses||'∞')+' · исп. '+p.uses+'</span>'+
-      '<button class="btn ghost" data-pt="'+p.id+'">'+(p.active?'Выкл':'Вкл')+'</button>'+
-      '<button class="btn ghost danger" data-pd="'+p.id+'">🗑</button></div>';}).join('')
-  ||'<div class="hmini">Пока пусто — создайте первый код</div>';}catch(e){}};
-/* ── guard'ы: не рисуем кофейное меню, пока MENU не загружен ── */
-if(typeof renderMenu==='function'){renderMenu=(function(_rm){return function(){
-  if(typeof MENU==='undefined'||!Array.isArray(MENU))return;
-  return _rm.apply(this,arguments);};})(renderMenu);}
-if(typeof renderRail==='function'){renderRail=(function(_rr){return function(){
-  if(typeof MENU==='undefined'||!Array.isArray(MENU))return;
-  return _rr.apply(this,arguments);};})(renderRail);}
-if(typeof loadMenu==='function'){loadMenu=(function(_lm){return async function(){
-  var r=await _lm.apply(this,arguments);
-  try{if(brand==='coffee'){renderRail();renderMenu();}}catch(e){}
-  return r;};})(loadMenu);}
-/* ── R5: тикер и логотип по бренду.
-   Ф3.25: ЕДИНСТВЕННЫЙ владелец mark.innerHTML — applyBrandChrome();
-   views.js только синхронизирует класс .is-delivery и вызывает эту функцию. ── */
+брендовый хром (тикер/логотип), согласие с политикой при регистрации. */
+(function () {
+  'use strict';
 
-var __chromeLast=null;
-function padTicker(){
-  setTickerSpeed();
-}
-function setTickerSpeed(){
-  var t = document.getElementById('tickerTrack');
-  if (!t) return;
-  requestAnimationFrame(function(){
-    requestAnimationFrame(function(){         // ← двойной rAF
-      var half = t.scrollWidth / 2;           // читаем после стабилизации
-      if (half > 0) {
-        t.style.animationDuration = Math.max(20, Math.round(half / 55)) + 's';
-      }
+  /* ── список промокодов (модалка админа) ── */
+  window.loadPromos = async function () {
+    try {
+      var r = await api('/promos');
+      document.getElementById('pmList').innerHTML =
+        r.promos
+          .map(function (p) {
+            var exp = p.expires
+              ? new Date(p.expires).toLocaleDateString('ru-RU')
+              : 'бессрочно';
+            var dead = p.expires && new Date(p.expires) < new Date();
+            var kind =
+              p.kind === 'stamp'
+                ? '+' + p.value + ' штамп(а) 🌊'
+                : p.kind === 'free'
+                  ? '+' + p.value + ' кофе 🌊'
+                  : p.kind === 'percent'
+                    ? '−' + p.value + '% 🍕'
+                    : '−' + p.value + ' ₽ 🍕';
+            return (
+              '<div class="logrow" style="align-items:center;gap:8px;flex-wrap:wrap">' +
+              '<span class="lt">' +
+              esc(p.code) +
+              '</span>' +
+              '<span style="flex:1;min-width:150px">' +
+              kind +
+              ' · ' +
+              (dead ? 'истёк' : 'до ' + exp) +
+              ' · лимит ' +
+              (p.maxuses || '∞') +
+              ' · исп. ' +
+              p.uses +
+              '</span>' +
+              '<button class="btn ghost" data-pt="' +
+              p.id +
+              '">' +
+              (p.active ? 'Выкл' : 'Вкл') +
+              '</button>' +
+              '<button class="btn ghost danger" data-pd="' +
+              p.id +
+              '">🗑</button></div>'
+            );
+          })
+          .join('') || '<div class="hmini">Пока пусто — создайте первый код</div>';
+    } catch (e) {}
+  };
+
+  /* ── guard'ы: не рисуем кофейное меню, пока MENU не загружен ── */
+  if (typeof renderMenu === 'function') {
+    renderMenu = (function (_rm) {
+      return function () {
+        if (typeof MENU === 'undefined' || !Array.isArray(MENU)) return;
+        return _rm.apply(this, arguments);
+      };
+    })(renderMenu);
+  }
+  if (typeof renderRail === 'function') {
+    renderRail = (function (_rr) {
+      return function () {
+        if (typeof MENU === 'undefined' || !Array.isArray(MENU)) return;
+        return _rr.apply(this, arguments);
+      };
+    })(renderRail);
+  }
+  if (typeof loadMenu === 'function') {
+    loadMenu = (function (_lm) {
+      return async function () {
+        var r = await _lm.apply(this, arguments);
+        try {
+          if (brand === 'coffee') {
+            renderRail();
+            renderMenu();
+          }
+        } catch (e) {}
+        return r;
+      };
+    })(loadMenu);
+  }
+
+  /* ── R5: тикер и логотип по бренду ── */
+  var __chromeLast = null;
+
+  function setTickerSpeed() {
+    var t = document.getElementById('tickerTrack');
+    if (!t) return;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        var half = t.scrollWidth / 2;
+        if (half > 0) {
+          var dur = Math.max(18, Math.round(half / 55));
+          t.style.animation = 'zt-marquee ' + dur + 's linear infinite';
+        }
+      });
     });
+  }
+
+  function padTicker() {
+    setTickerSpeed();
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(setTickerSpeed);
+  }
+  window.addEventListener('resize', function () {
+    clearTimeout(window.__tsT);
+    window.__tsT = setTimeout(setTickerSpeed, 300);
   });
-}
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(setTickerSpeed);
-window.addEventListener('resize', function(){ clearTimeout(window.__tsT); window.__tsT = setTimeout(setTickerSpeed, 300); });
-function applyBrandChrome(){
-  if(__chromeLast===brand)return;
-  __chromeLast=brand;
 
-  var bConfig = (typeof window.BRANDS !== 'undefined')
-    ? window.BRANDS[brand] || window.BRANDS.coffee
-    : { ticker: ['…и кофе'], logo: { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' }, emoji: '☕' };
-
-  var track = document.getElementById('tickerTrack');
-  if(track){
-    var L = bConfig.ticker || ['…и кофе'];
-    var L4 = L.concat(L, L, L);
-    track.innerHTML = L4.map(function (x) { return '<span>' + x + '</span>'; }).join('');
-    padTicker();
-  }
-
-  var mark = document.getElementById('brandMark') || document.querySelector('.topbar .brand .mark');
-  if (mark) {
-    var lg = bConfig.logo || { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' };
-    mark.innerHTML =
-      '<img class="brandLogo" id="brandLogoImg" src="' + lg.src + '" alt="' + lg.alt + '"' +
-      ' width="' + lg.w + '" height="' + lg.h + '"' +
-      ' decoding="async" fetchpriority="high"' +
-      ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>' + (bConfig.emoji || '☕') + '</span>\'">';
-  }
-}
-window.applyBrandChrome =applyBrandChrome;
-document.getElementById('brandSeg').addEventListener('click',function(){setTimeout(applyBrandChrome,60);});
-/* ── R6: согласие с политикой при регистрации ── */
-(function(){
-  var form=document.getElementById('regForm');if(!form||document.getElementById('consentRow'))return;
-  var lab=document.createElement('label');lab.id='consentRow';lab.className='chk';
-  lab.innerHTML='<input type="checkbox" id="consentBox"><span>Согласен с <a href="/privacy.html" target="_blank" style="color:#1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных</span>';
-  var btn=document.getElementById('regBtn');if(btn)form.insertBefore(lab,btn);
-})();
-document.addEventListener('click',function(e){
-  var b=e.target.closest('#regBtn');if(!b)return;
-  var cb=document.getElementById('consentBox');
-  if(cb&&!cb.checked){e.stopImmediatePropagation();e.preventDefault();toast('Отметь согласие с политикой конфиденциальности','⚠️');}
-},true);
-(function(){var _f=window.fetch;window.fetch=function(u,o){ /* слой consent поверх fetch-патчей */
-  try{
-    if(o&&o.body&&typeof o.body==='string'&&String(u).indexOf('/api/auth/register')>-1){
-      var b=JSON.parse(o.body);var cb=document.getElementById('consentBox');b.consent=(cb&&cb.checked)?1:0;
-      o=Object.assign({},o,{body:JSON.stringify(b)});
+  function renderTickerItems(bConfig) {
+    var track = document.getElementById('tickerTrack');
+    if (!track) return;
+    var rawList = Array.isArray(bConfig.ticker) ? bConfig.ticker.slice() : [];
+    if (
+      typeof brand !== 'undefined' &&
+      brand === 'delivery' &&
+      window.deliveryInfo
+    ) {
+      var wp = window.deliveryInfo.weekPromo;
+      var pm = window.deliveryInfo.pizzaMonth;
+      var promoItems = [];
+      if (wp && wp.text && String(wp.text).trim()) {
+        promoItems.push('🎁 ' + String(wp.text).trim());
+      } else if (wp && wp.gift && Number(wp.threshold) > 0) {
+        promoItems.push(
+          '🎁 Каждые ' + wp.threshold + ' ₽ в чеке — ' + wp.gift + ' в подарок'
+        );
+      }
+      if (pm && pm.name && String(pm.name).trim()) {
+        promoItems.push(
+          '🍕 2 пиццы 35 см → «' + String(pm.name).trim() + '» в подарок'
+        );
+      }
+      if (promoItems.length) {
+        rawList = promoItems.concat(
+          rawList.filter(function (x) {
+            return !/в подарок/i.test(String(x || ''));
+          })
+        );
+      }
     }
-  }catch(e){}
-  return _f.call(this,u,o);};})();
+    var L = rawList
+      .map(function (x) {
+        return String(x || '').trim();
+      })
+      .filter(Boolean);
+    var tickerBox = track.closest('.ticker');
+    if (!L.length) {
+      track.innerHTML = '';
+      if (tickerBox) tickerBox.hidden = true;
+    } else {
+      if (tickerBox) tickerBox.hidden = false;
+      var L4 = L.concat(L, L, L);
+      track.innerHTML = L4
+        .map(function (x) {
+          return '<span class="ti">' + x + '</span>';
+        })
+        .join('');
+      padTicker();
+    }
+  }
+
+  function applyBrandChrome(force) {
+    if (!force && __chromeLast === brand) return;
+    __chromeLast = brand;
+
+    var bConfig =
+      typeof window.BRANDS !== 'undefined'
+        ? window.BRANDS[brand] || window.BRANDS.coffee
+        : {
+            ticker: ['…и кофе'],
+            logo: { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' },
+            emoji: '☕'
+          };
+
+    renderTickerItems(bConfig);
+
+    if (
+      typeof brand !== 'undefined' &&
+      brand === 'delivery' &&
+      !window.deliveryInfo &&
+      typeof API_BASE !== 'undefined'
+    ) {
+      fetch(API_BASE + '/api/delivery/info')
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (d) {
+          if (d) {
+            window.deliveryInfo = d;
+            renderTickerItems(bConfig);
+          }
+        })
+        .catch(function () {});
+    }
+
+    var mark =
+      document.getElementById('brandMark') ||
+      document.querySelector('.topbar .brand .mark');
+    if (mark) {
+      var lg = bConfig.logo || {
+        src: '/andCoffee.svg',
+        w: 42,
+        h: 42,
+        alt: '…и кофе'
+      };
+      mark.innerHTML =
+        '<img class="brandLogo" id="brandLogoImg" src="' +
+        lg.src +
+        '" alt="' +
+        lg.alt +
+        '"' +
+        ' width="' +
+        lg.w +
+        '" height="' +
+        lg.h +
+        '"' +
+        ' decoding="async" fetchpriority="high"' +
+        ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>' +
+        (bConfig.emoji || '☕') +
+        '</span>\'">';
+    }
+  }
+
+  window.applyBrandChrome = applyBrandChrome;
+  var bs = document.getElementById('brandSeg');
+  if (bs) {
+    bs.addEventListener('click', function () {
+      setTimeout(function () {
+        applyBrandChrome(true);
+      }, 60);
+    });
+  }
+
+  /* ── R6: согласие с политикой при регистрации ── */
+  (function () {
+    var form = document.getElementById('regForm');
+    if (!form || document.getElementById('consentRow')) return;
+    var lab = document.createElement('label');
+    lab.id = 'consentRow';
+    lab.className = 'chk';
+    lab.innerHTML =
+      '<input type="checkbox" id="consentBox"><span>Согласен с <a href="/privacy.html" target="_blank" style="color:#1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных</span>';
+    var btn = document.getElementById('regBtn');
+    if (btn) form.insertBefore(lab, btn);
+  })();
+
+  document.addEventListener(
+    'click',
+    function (e) {
+      var b = e.target.closest('#regBtn');
+      if (!b) return;
+      var cb = document.getElementById('consentBox');
+      if (cb && !cb.checked) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        toast('Отметь согласие с политикой конфиденциальности', '⚠️');
+      }
+    },
+    true
+  );
+
+  (function () {
+    var _f = window.fetch;
+    window.fetch = function (u, o) {
+      try {
+        if (
+          o &&
+          o.body &&
+          typeof o.body === 'string' &&
+          String(u).indexOf('/api/auth/register') > -1
+        ) {
+          var b = JSON.parse(o.body);
+          var cb = document.getElementById('consentBox');
+          b.consent = cb && cb.checked ? 1 : 0;
+          o = Object.assign({}, o, { body: JSON.stringify(b) });
+        }
+      } catch (e) {}
+      return _f.call(this, u, o);
+    };
+  })();
 })();
-/* ── Ф3.23: инициализация брендового хрома (было хвостом fix-views v61) ── */
-if(typeof window.applyBrandChrome==='function')window.applyBrandChrome();
-setTimeout(function(){if(typeof window.applyBrandChrome==='function')window.applyBrandChrome();},400);
+
+if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
+setTimeout(function () {
+  if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
+}, 400);

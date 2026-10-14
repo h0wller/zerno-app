@@ -68,7 +68,10 @@ var scKey = null, scClosedView = false;
   }
 
 function sendChat(text) {
-  if (!text.trim()) return;
+  if (!text || !text.trim()) return;
+  if (typeof window.sendChat === 'function' && window.sendChat !== sendChat) {
+    return window.sendChat(text);
+  }
   addMsg('me', text);
   $('#chatInput').value = '';
   const key = chatKey();
@@ -78,12 +81,15 @@ function sendChat(text) {
   }
   const reply = botReply(text);
   const isFallback = reply.startsWith('Приняла!');
-  const isExplicitHuman = /позов|сотруд|человек|менедж|оператор|живой/i.test(text);
+  const isExplicitHuman = /позов|позови|сотруд|человек|менедж|оператор|диспетчер|живой/i.test(text);
   const human = isExplicitHuman && me ? 1 : 0;
   let out;
   if (isFallback && !isExplicitHuman) {
-    out = 'Хм, не уверена, что поняла 🤔 Хотите, позову сотрудника? Тапните «💬 Позвать сотрудника» ниже.';
-    } else if (isExplicitHuman && !me) {
+    const isDel = (typeof brand !== 'undefined' && brand === 'delivery') || document.documentElement.getAttribute('data-brand') === 'delivery';
+    out = isDel
+      ? 'Я могу подсказать по зонам и стоимости доставки, времени ожидания, акциям и промокодам 🍕 Выберите подсказку ниже или нажмите «💬 Позвать сотрудника», если нужен диспетчер.'
+      : 'Я могу подсказать по меню кофейни, штампам за 10-й кофе, чаям и режиму работы ☕ Выберите подсказку ниже или нажмите «💬 Позвать сотрудника», если нужен сотрудник.';
+  } else if (isExplicitHuman && !me) {
     out = 'Передала бы вопрос сотруднику, но они отвечают только гостям с профилем 🙂 Создайте его за 10 секунд — тапните на аватарку сверху. А я подскажу по меню, бонусам и чаю!';
   } else {
     out = reply;
@@ -100,16 +106,10 @@ function sendChat(text) {
       b.hidden = false;
       b.textContent = unread;
     }
-    if (isFallback && !isExplicitHuman) {
-            const bar = document.getElementById('chatHintsBar');
-      const call = bar && bar.querySelector('.chatHint[data-hint*="Позвать"]');
-      if (call) {
-        if (bar.firstChild !== call) bar.insertBefore(call, bar.firstChild);
-        call.classList.add('armed', 'pulse');
-              }
-    }
-  }, 700);
+  }, 450);
 }
+window.addMsg = addMsg;
+window.loadHistory = loadHistory;
 
 function showBadge() {
     const u = +localStorage.getItem(unreadKey()) || 0;
@@ -168,7 +168,10 @@ function showBadge() {
     }
   }
   /* ── стафф: чаты гостей ── */
-function openStaffChat() {
+function openStaffChat(forceCtx) {
+  window.__staffChatFilter = (typeof forceCtx === 'string' && (forceCtx === 'delivery' || forceCtx === 'coffee'))
+    ? forceCtx
+    : (typeof mode !== 'undefined' && mode === 'orders' ? 'delivery' : (typeof mode !== 'undefined' && mode === 'cashier' ? 'coffee' : null));
   if (me && 'Notification' in window) {
     if (Notification.permission !== 'granted')
       toast('Включите уведомления в профиле — иначе не узнаете о вопросах гостей', '🔔');
@@ -183,11 +186,12 @@ function openStaffChat() {
   syncOverlay();
   $('#scDialogWrap').hidden = true;
   scKey = null;
-  loadScList();
+  if (typeof window.loadScList === 'function') window.loadScList();
 }
   function closeStaffChat() {
     $("#staffChatModal").classList.remove("show");
-    (syncOverlay(), updateStaffBadge());
+    syncOverlay();
+    if (typeof window.updateStaffBadge === 'function') window.updateStaffBadge();
   }
 
   async function loadScList() {
@@ -299,7 +303,15 @@ async function updateStaffBadge() {
       if (!historyLoaded) await loadHistory();
       if (!chatOpened) {
         chatOpened = true;
-        if (!$('#chatMsgs').children.length) setTimeout(() => addMsg('bot', 'Привет! Я Ника, поддержка «…и кофе» 🌊 Если я не смогу ответить — к чату подключится сотрудник.'), 350);
+        if (!$('#chatMsgs').children.length) {
+          setTimeout(() => {
+            const isDel = (typeof brand !== 'undefined' && brand === 'delivery') || document.documentElement.getAttribute('data-brand') === 'delivery';
+            const greet = isDel
+              ? (window.chatState && window.chatState.GREET_D ? window.chatState.GREET_D : 'Привет! Я Ника, поддержка доставки «Пятница» 🍕 Подскажу по меню, зонам доставки и акциям.')
+              : (window.chatState && window.chatState.GREET_C ? window.chatState.GREET_C : 'Привет! Я Ника, поддержка «…и кофе» 🌊 Если я не смогу ответить — к чату подключится сотрудник.');
+            addMsg('bot', greet);
+          }, 350);
+        }
       }
     }
   };
@@ -310,10 +322,11 @@ async function updateStaffBadge() {
   };
 
   /* ── стафф: подписки ── */
-  $('#chatsToggle').onclick = openStaffChat;
-  $('#chatsToggle2').onclick = openStaffChat;
+  $('#chatsToggle').onclick = () => openStaffChat('coffee');
+  $('#chatsToggle2').onclick = () => openStaffChat(null);
+  if ($('#chatsToggleD')) $('#chatsToggleD').onclick = () => openStaffChat('delivery');
   $('#scClose').onclick = closeStaffChat;
-  $('#scShowClosed').onclick = () => { scClosedView = !scClosedView; loadScList(); };
+  $('#scShowClosed').onclick = () => { scClosedView = !scClosedView; if (typeof window.loadScList === 'function') window.loadScList(); };
   $('#scCloseThread').onclick = async () => {
     if (!scKey) return;
     try {

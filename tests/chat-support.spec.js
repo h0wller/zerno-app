@@ -5,11 +5,6 @@ import { test, expect } from '@playwright/test';
    блокируем целиком, как в ui-baseline.spec.js. */
 test.use({ serviceWorkers: 'block' });
 
-async function skipSplash(page){
-  const sp = page.locator('#brandSplashStatic');
-  if (await sp.count()) await sp.locator('[data-go="coffee"]').click();
-}
-
 async function prepare(page, url = '/') {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1'); sessionStorage.setItem('splashDone', '1'); /* шаг 4-fix3: сплэш вне чат-тестов */
@@ -90,12 +85,26 @@ test('обычное открытие чата — без оверлея', async
   await expect(page.locator('.chatHint').first()).toBeVisible({ timeout: 5000 });
 });
 
-test('вызов сотрудника требует подтверждения (два тапа)', async ({ page }) => {
+test('вызов сотрудника появляется по запросу/непонятному тексту, требует подтверждения (два тапа) и исчезает после отправки', async ({ page }) => {
   await prepare(page);
   await page.locator('#chatFab').click();
+
+  // При обычном открытии чата кнопки «Позвать сотрудника» нет
   const call = page.locator('.chatHint', { hasText: 'Позвать сотрудника' });
+  await expect(call).toHaveCount(0);
+
+  // Пишем непонятный боту запрос — бот предлагает позвать сотрудника и показывает кнопку
+  await page.locator('#chatInput').fill('абырвалг');
+  await page.locator('#chatInput').press('Enter');
+  await expect(call).toBeVisible({ timeout: 5000 });
+
+  // 1-й тап — появляется предупреждение (.armed)
   await call.click();
-  await expect(page.locator('.chatHint', { hasText: 'Точно позвать' })).toBeVisible();
-  await page.waitForTimeout(1200);
-await expect(page.locator('.chatHint.armed')).toHaveCount(0);  // чипс разоружён
+  const armedBtn = page.locator('.chatHint.armed', { hasText: 'Точно позвать' });
+  await expect(armedBtn).toBeVisible();
+
+  // 2-й тап — подтверждаем вызов, кнопка исчезает до следующего раза
+  await armedBtn.click();
+  await expect(page.locator('.chatHint', { hasText: 'Позвать сотрудника' })).toHaveCount(0);
+  await expect(page.locator('.chatHint.armed')).toHaveCount(0);
 });

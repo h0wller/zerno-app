@@ -12,9 +12,7 @@ chatRouter.post('/api/chat/send', (req, res) => {
   const text = String(req.body.text || '').slice(0, 2000);
   const ctx = req.body.ctx === 'delivery' ? 'delivery' : 'coffee';
   if (!key || !text) return res.status(400).json({ error: 'bad request' });
-  const base = key.replace(/:[cd]$/, '');
-  const isUser = !!db.prepare('SELECT 1 FROM customers WHERE id=?').get(base);
-  const human = req.body.human && isUser ? 1 : 0;
+  const human = req.body.human ? 1 : 0;
   db.prepare('INSERT INTO chat(key,who,text,ts,human,read_s) VALUES(?,?,?,?,?,0)').run(key, 'guest', text, nowISO(), human);
   db.prepare("INSERT INTO chat_meta(key,closed,ctx) VALUES(?,0,?) ON CONFLICT(key) DO UPDATE SET closed=0, ctx=excluded.ctx").run(key, ctx);
   if (human) {
@@ -79,7 +77,7 @@ chatRouter.post('/api/chat/reply', chatGuard, (req, res) => {
     return res.status(403).json({ error: 'Этот чат ведёт другое заведение' });
   if (!key || !text) return res.status(400).json({ error: 'bad request' });
   db.prepare('INSERT INTO chat(key,who,text,ts,read_g) VALUES(?,?,?,?,0)').run(key, 'staff', text, nowISO());
-  if (!key.startsWith('anon-')) sendPush(key.replace(/:[cd]$/, ''), '💬 Вам ответили из «…и кофе»', text.slice(0, 80));
+  if (!key.startsWith('anon-')) sendPush(key.replace(/:[cd]$/, ''), mctx === 'delivery' ? '💬 Ответ поддержки «Пятница»' : '💬 Вам ответили из «…и кофе»', text.slice(0, 80));
   res.json({ ok: true });
 });
 

@@ -1,14 +1,21 @@
 /* public/app/chat-core.js — Ф3.11: ядро чата (chatKey, kbAnswer, mySend, hints).
-Зависит от chat-state.js, cart.js, delivery.js, fix-views.js. */
+Зависит от chat-state.js, cart.js, delivery.js, views.js. */
 (function () {
   "use strict";
 
   var CS = window.chatState;
 
+  function activeCtxNow() {
+    var c = CS.getChatCtx();
+    if (c === "delivery" || c === "coffee") return c;
+    if (typeof brand !== "undefined" && (brand === "delivery" || brand === "coffee")) return brand;
+    return document.documentElement.getAttribute("data-brand") === "delivery" ? "delivery" : "coffee";
+  }
+
   /* ── chatKey: обёртка над базовой chatKey() из index.html ── */
   window.chatKey = (function (_ck) {
     return function () {
-      return _ck() + (CS.getChatCtx() === "delivery" ? ":d" : ":c");
+      return _ck() + (activeCtxNow() === "delivery" ? ":d" : ":c");
     };
   })(window.chatKey);
 
@@ -24,7 +31,7 @@
           String(u).indexOf("/api/chat/send") > -1
         ) {
           var b = JSON.parse(o.body);
-          b.ctx = CS.getChatCtx() || "coffee";
+          b.ctx = activeCtxNow();
           o = Object.assign({}, o, { body: JSON.stringify(b) });
         }
       } catch (e) {}
@@ -48,7 +55,7 @@
                     (j.errors && j.errors.length
                       ? " (" + j.errors.join(", ") + ")"
                       : ""),
-                  "📬",
+                  "📬"
                 );
               }, 300);
             })
@@ -147,7 +154,7 @@
       if (/оплат|карт|наличн/.test(q))
         return "Оплата при получении: наличными или картой. Предоплаты нет.";
       if (/где.*заказ|статус.*заказ|мой заказ/.test(q))
-        return "Статус заказа виден в профиле → «Мои заказы». Если срочное — нажмите «💬 Позвать сотрудника».";
+        return "Статус заказа виден в профиле → «Мои заказы». Если срочное — напишите «позвать сотрудника».";
       if (/промокод/.test(q))
         return "Промокод доставки вводится в корзине в поле «Промокод» — скидка применится сразу.";
       return null;
@@ -169,55 +176,100 @@
     };
   }
 
-  var callSent = false; /* Ф5.8c-1-fix (2): вызов сотрудника уже выполнен */
+  /* Кнопка «Позвать сотрудника» скрыта по умолчанию и появляется ТОЛЬКО:
+     1) когда гость сам попросил в чате (сотрудник, позовите, оператор...)
+     2) когда гость написал непонятный боту текст (fallback)
+     После подтверждённого нажатия кнопка пропадает до следующего такого вызова. */
+  var callAllowed = false;
+
   /* ── showHints ── */
-  function showHints(){
-  if(CS.getSupportPending())return;
-  var msgs=document.getElementById('chatMsgs');if(!msgs)return;
-  var old=msgs.querySelector('.hintsWrap');if(old)old.remove();
-  var bar=document.getElementById('chatHintsBar');
-  if(!bar){
-    var inp=document.getElementById('chatInput');
-    var foot=inp&&(inp.closest('.chatFoot')||inp.parentElement);
-    if(!foot)return;
-    bar=document.createElement('div');bar.id='chatHintsBar';
-    foot.parentNode.insertBefore(bar,foot);
+  function showHints() {
+    if (CS.getSupportPending()) return;
+    var msgs = document.getElementById("chatMsgs");
+    if (!msgs) return;
+    var old = msgs.querySelector(".hintsWrap");
+    if (old) old.remove();
+    var bar = document.getElementById("chatHintsBar");
+    if (!bar) {
+      var inp = document.getElementById("chatInput");
+      var foot = inp && (inp.closest(".chatFoot") || inp.parentElement);
+      if (!foot) return;
+      bar = document.createElement("div");
+      bar.id = "chatHintsBar";
+      foot.parentNode.insertBefore(bar, foot);
+    }
+    bar.innerHTML = "";
+    var list = (CS.getChatCtx() === "delivery" ? CS.DHINTS : CS.CHINTS).slice();
+    if (callAllowed && !(typeof staffIn !== "undefined" && staffIn)) {
+      list.unshift(CS.CALL_HINT);
+    }
+    list.forEach(function (h) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chatHint";
+      b.textContent = h;
+      b.dataset.hint = h;
+      bar.appendChild(b);
+    });
+    msgs.scrollTop = 1e6;
   }
-  bar.innerHTML='';
-  var list=(CS.getChatCtx()==='delivery'?CS.DHINTS:CS.CHINTS).slice();
-    if(!(typeof staffIn!=='undefined'&&staffIn))list.push(CS.CALL_HINT);
-          list.forEach(function(h){
-    var b=document.createElement('button');b.type='button';b.className='chatHint';b.textContent=h;b.dataset.hint=h;bar.appendChild(b);
-  });
-  msgs.scrollTop=1e6;
-}
 
   /* ── addMsg: обёртка ── */
   window.addMsg = (function (_am) {
     return function (who, text) {
       if (CS.getSupportPending() && who === "bot") return;
+      var activeCtx =
+        CS.getChatCtx() ||
+        (typeof brand !== "undefined" && brand === "delivery" ? "delivery" : "coffee");
       if (who === "bot" && typeof text === "string") {
-        if (CS.getChatCtx() === "delivery" && /поддержка «…и кофе»/.test(text))
+        if (activeCtx === "delivery" && /поддержка.*кофе/i.test(text))
           text = CS.GREET_D;
-        if (CS.getChatCtx() === "coffee" && /поддержка доставки/.test(text))
+        if (activeCtx === "coffee" && /поддержка.*доставк|Пятница/i.test(text))
           text = CS.GREET_C;
       }
       var r = _am(who, text);
-      if (who === "system" && !CS.getSupportPending())
-        setTimeout(showHints, 60);
+      if (who === "system" && !CS.getSupportPending()) setTimeout(showHints, 60);
       return r;
     };
   })(window.addMsg);
 
   /* ── mySend ── */
-  async function mySend(q) {
+  async function mySend(q, confirmedHumanCall) {
     var inp = document.getElementById("chatInput");
     if (inp) inp.value = "";
     var msgs = document.getElementById("chatMsgs");
     var hw = msgs && msgs.querySelector(".hintsWrap");
     if (hw) hw.remove();
+
+    // Если это подтверждённое (второе) нажатие на кнопку «Позвать сотрудника»
+    if (confirmedHumanCall) {
+      callAllowed = false; // Прячем кнопку после подтверждения до следующего запроса
+      window.addMsg("me", q);
+      try {
+        await fetch(API_BASE + "/api/chat/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            key: window.chatKey(),
+            text: q,
+            human: 1,
+            ctx: CS.getChatCtx() || "coffee",
+          }),
+        });
+      } catch (e) {
+        console.log("chat send err", e);
+      }
+      window.addMsg(
+        "bot",
+        CS.getChatCtx() === "delivery"
+          ? "Зову диспетчера доставки 🍕 Он получит уведомление и ответит прямо сюда."
+          : "Зову сотрудника кофейни ☕ Он получит уведомление и ответит сюда."
+      );
+      showHints();
+      return;
+    }
+
     window.addMsg("me", q);
-    var isHuman = /позвать/i.test(q);
     try {
       await fetch(API_BASE + "/api/chat/send", {
         method: "POST",
@@ -225,22 +277,31 @@
         body: JSON.stringify({
           key: window.chatKey(),
           text: q,
-          human: isHuman ? 1 : 0,
+          human: 0,
           ctx: CS.getChatCtx() || "coffee",
         }),
       });
     } catch (e) {
       console.log("chat send err", e);
     }
-    if (isHuman) {
+
+    // Случай 1: Гость явно попросил текстом позвать сотрудника/оператора/диспетчера
+    var isExplicitRequest = /позов|позови|сотрудн|человек|менедж|оператор|диспетчер|живой/i.test(
+      q
+    );
+    if (isExplicitRequest) {
+      callAllowed = true;
       window.addMsg(
         "bot",
-        CS.getChatCtx() === "delivery"
-          ? "Зову диспетчера доставки 🍕 Он получит уведомление и ответит прямо сюда."
-          : "Зову сотрудника кофейни ☕ Он получит уведомление и ответит сюда.",
+        "Хотите подключить к чату сотрудника? Нажмите кнопку «" +
+          CS.CALL_HINT +
+          "» ниже и подтвердите вызов 👇"
       );
+      showHints();
       return;
     }
+
+    // Ищем ответ в базе знаний
     var a = null;
     try {
       a = await kbAnswer(q, CS.getChatCtx() || "coffee");
@@ -250,26 +311,23 @@
         a = await _br(q);
       } catch (e) {}
     }
+
+    // Случай 2: Гость написал белиберду (ответа в базе знаний нет)
     var isFallback = !a || /передаю человеку|Приняла!/i.test(a);
     if (isFallback) {
-                  window.addMsg(
+      callAllowed = true;
+      window.addMsg(
         "bot",
-        "Хм, не уверена, что поняла 🤔 Хотите, позову сотрудника? Тапните «💬 Позвать сотрудника» ниже.",
+        "Хм, не уверена, что поняла 🤔 Хотите, позову сотрудника? Тапните «" +
+          CS.CALL_HINT +
+          "» ниже."
       );
       showHints();
-      setTimeout(function () {
-        var bar = document.getElementById("chatHintsBar");
-        if (!bar) return;
-        var call = bar.querySelector('.chatHint[data-hint*="Позвать"]');
-        if (!call) return;
-        if (bar.firstChild !== call) bar.insertBefore(call, bar.firstChild);
-        if (!callSent) call.classList.add("armed", "pulse");
-        setTimeout(function () {
-          call.classList.remove("pulse");
-        }, 12000);
-      }, 80);
       return;
     }
+
+    // Обычный ответ из базы знаний — кнопка «Позвать сотрудника» не нужна
+    callAllowed = false;
     window.addMsg("bot", a);
     showHints();
   }
@@ -285,13 +343,14 @@
     msgs.innerHTML = "";
     lastChatId = 0;
     historyLoaded = false;
+    callAllowed = false;
     try {
       if (typeof loadHistory === "function") await loadHistory();
     } catch (e) {}
     if (!CS.getSupportPending() && !msgs.children.length)
       window.addMsg(
         "bot",
-        CS.getChatCtx() === "delivery" ? CS.GREET_D : CS.GREET_C,
+        CS.getChatCtx() === "delivery" ? CS.GREET_D : CS.GREET_C
       );
     showHints();
   };
@@ -303,9 +362,17 @@
       document.getElementById("scShowClosed").textContent = scClosedView
         ? "← Активные чаты"
         : "Показать закрытые";
+      var filterCtx = window.__staffChatFilter || null;
+      var threads = (r.threads || []).filter(function (t) {
+        var tCtx = t.ctx || (/:d$/.test(t.key || "") ? "delivery" : "coffee");
+        if (filterCtx === "coffee") return tCtx === "coffee";
+        if (filterCtx === "delivery") return tCtx === "delivery";
+        return true;
+      });
       document.getElementById("scList").innerHTML =
-        r.threads
+        threads
           .map(function (t) {
+            var tCtx = t.ctx || (/:d$/.test(t.key || "") ? "delivery" : "coffee");
             return (
               '<div class="hmini" style="cursor:pointer" data-sck="' +
               esc(t.key) +
@@ -313,7 +380,7 @@
               "<b>" +
               esc(t.name) +
               "</b> " +
-              (t.ctx === "delivery" ? "🍕" : "☕") +
+              (tCtx === "delivery" ? "🍕" : "☕") +
               (t.human && !scClosedView
                 ? '<span class="tag hit" style="position:static;margin-left:6px">нужен ответ</span>'
                 : "") +
@@ -333,50 +400,81 @@
     if (!me || !["admin", "cashier", "dispatch"].includes(me.role)) return;
     try {
       var r = await api("/chat/list");
-      var un = r.threads.reduce(function (a, t) {
-        return a + (+t.unread || 0);
+      var list = r.threads || [];
+      var unCoffee = list.reduce(function (a, t) {
+        var isDel = (t.ctx || (/:d$/.test(t.key || "") ? "delivery" : "coffee")) === "delivery";
+        return a + (!isDel ? (+t.unread || 0) : 0);
       }, 0);
+      var unDelivery = list.reduce(function (a, t) {
+        var isDel = (t.ctx || (/:d$/.test(t.key || "") ? "delivery" : "coffee")) === "delivery";
+        return a + (isDel ? (+t.unread || 0) : 0);
+      }, 0);
+      var unAll = unCoffee + unDelivery;
       var c1 = document.getElementById("chatsToggle"),
         c2 = document.getElementById("chatsToggle2"),
         c3 = document.getElementById("chatsToggleD");
-      if (c1) c1.textContent = un ? "💬 Чаты гостей · " + un : "💬 Чаты гостей";
-      if (c2) c2.textContent = un ? "💬 Чаты гостей · " + un : "💬 Чаты гостей";
-      if (c3) c3.textContent = un ? "💬 Чаты гостей · " + un : "💬 Чаты гостей";
+      if (c1) c1.textContent = unCoffee ? "💬 Чаты гостей · " + unCoffee : "💬 Чаты гостей";
+      if (c2) c2.textContent = unAll ? "💬 Чаты гостей · " + unAll : "💬 Чаты гостей";
+      if (c3) c3.textContent = unDelivery ? "💬 Чаты гостей · " + unDelivery : "💬 Чаты гостей";
     } catch (e) {}
   };
-    /* клики по подсказкам + вызов сотрудника в два тапа */
-  document.addEventListener("click", function (e) {
-    var h = e.target.closest(".chatHint");
-    if (!h) return;
-    if (window.__hintDragUntil && Date.now() < window.__hintDragUntil) return;
-    e.stopPropagation();
-    e.preventDefault();
-    var isCall = (h.dataset.hint || "").indexOf("Позвать") > -1 || h.dataset.hint === CS.CALL_HINT;
-    if (isCall || h.dataset.arm === "1") {
-      if (h.dataset.arm === "1") {
-        h.dataset.arm = "";
-        h.classList.remove("armed");
-        h.textContent = CS.CALL_HINT;
-        mySend(CS.CALL_HINT);
-        callSent = true;
-      } else {
-        h.dataset.arm = "1";
-        h.classList.add("armed");
-                var bar2 = h.parentElement;
-        if (bar2 && bar2.firstChild !== h) bar2.insertBefore(h, bar2.firstChild);
-        h.textContent = "✅ Точно позвать? Нажмите ещё раз";
-        setTimeout(function () {
-          if (h.dataset.arm === "1") {
-            h.dataset.arm = "";
-            h.classList.remove("armed");
-            h.textContent = CS.CALL_HINT;
-          }
-        }, 4000);
+
+  /* клики по подсказкам + двухшаговое подтверждение вызова сотрудника */
+  document.addEventListener(
+    "click",
+    function (e) {
+      var h = e.target.closest(".chatHint");
+      if (!h) return;
+      if (window.__hintDragUntil && Date.now() < window.__hintDragUntil) return;
+      e.stopPropagation();
+      e.preventDefault();
+      var isCall =
+        (h.dataset.hint || "").indexOf("Позвать") > -1 ||
+        h.dataset.hint === CS.CALL_HINT;
+      if (isCall || h.dataset.arm === "1") {
+        if (h.dataset.arm === "1") {
+          // 2-е нажатие (подтверждение): отправляем вызов и скрываем кнопку до следующего раза!
+          h.dataset.arm = "";
+          h.classList.remove("armed");
+          callAllowed = false;
+          h.remove();
+          mySend(CS.CALL_HINT, true);
+        } else {
+          // 1-е нажатие: показываем предупреждение
+          h.dataset.arm = "1";
+          h.classList.add("armed");
+          var bar2 = h.parentElement;
+          if (bar2 && bar2.firstChild !== h) bar2.insertBefore(h, bar2.firstChild);
+          h.textContent = "✅ Точно позвать? Нажмите ещё раз";
+          setTimeout(function () {
+            if (h.dataset.arm === "1") {
+              h.dataset.arm = "";
+              h.classList.remove("armed");
+              h.textContent = CS.CALL_HINT;
+            }
+          }, 4000);
+        }
+        return;
       }
-      return;
-    }
-    mySend(h.dataset.hint || h.textContent);
-  }, true);
+      mySend(h.dataset.hint || h.textContent, false);
+    },
+    true
+  );
+
+  /* синхронизация контекста при смене бренда в шапке */
+  var topBrandSeg = document.getElementById("brandSeg");
+  if (topBrandSeg) {
+    topBrandSeg.addEventListener("click", function () {
+      setTimeout(function () {
+        if (typeof brand !== "undefined" && CS.getChatCtx() !== brand) {
+          CS.setChatCtx(brand);
+          callAllowed = false;
+          window.setBotName();
+          window.reloadChatThread();
+        }
+      }, 60);
+    });
+  }
 
   /* открытие чата: контекст следует за брендом, если не ждём выбор темы */
   (function () {
@@ -404,7 +502,8 @@
       if (!document.querySelector("#chatMsgs .hintsWrap")) showHints();
     };
   })();
-  /* ── Ф3.12: оверлей выбора темы поддержки (было секция 10 fix-views) ── */
+
+  /* ── Ф3.12: оверлей выбора темы поддержки ── */
   function showSupportOverlay() {
     if (document.getElementById("supportChooseOverlay")) return;
     var d = document.createElement("div");
@@ -484,32 +583,45 @@
       if (fb2) fb2.classList.add("open");
       if (typeof window.syncOverlay === "function") window.syncOverlay();
       if (window.ztBus) {
-        window.ztBus.emit('ui:update-scrolltop');
+        window.ztBus.emit("ui:update-scrolltop");
       } else if (typeof window.updateScrollTop === "function") {
         window.updateScrollTop();
       }
       window.reloadChatThread();
     },
-    true,
+    true
   );
 })();
+
 /* ── Ф5.1c: drag-скролл бара подсказок мышью (зажал и потянул) ── */
-(function(){
-  var bar=null,down=false,sx=0,sl=0,moved=0;
-  document.addEventListener('pointerdown',function(e){
-    bar=(e.target.closest&&e.target.closest('#chatHintsBar'))||null;
-    if(!bar||e.pointerType!=='mouse')return;
-    down=true;moved=0;sx=e.clientX;sl=bar.scrollLeft;
+(function () {
+  var bar = null,
+    down = false,
+    sx = 0,
+    sl = 0,
+    moved = 0;
+  document.addEventListener("pointerdown", function (e) {
+    bar = (e.target.closest && e.target.closest("#chatHintsBar")) || null;
+    if (!bar || e.pointerType !== "mouse") return;
+    down = true;
+    moved = 0;
+    sx = e.clientX;
+    sl = bar.scrollLeft;
   });
-  document.addEventListener('pointermove',function(e){
-    if(!down||!bar)return;
-    var dx=e.clientX-sx;moved=Math.max(moved,Math.abs(dx));
-    if(moved>8){bar.scrollLeft=sl-dx;if(e.cancelable)e.preventDefault();}
+  document.addEventListener("pointermove", function (e) {
+    if (!down || !bar) return;
+    var dx = e.clientX - sx;
+    moved = Math.max(moved, Math.abs(dx));
+    if (moved > 8) {
+      bar.scrollLeft = sl - dx;
+      if (e.cancelable) e.preventDefault();
+    }
   });
-  function end(){
-    if(down&&bar&&moved>8)window.__hintDragUntil=Date.now()+80;
-    down=false;bar=null;
+  function end() {
+    if (down && bar && moved > 8) window.__hintDragUntil = Date.now() + 80;
+    down = false;
+    bar = null;
   }
-  document.addEventListener('pointerup',end);
-  document.addEventListener('pointercancel',end);
+  document.addEventListener("pointerup", end);
+  document.addEventListener("pointercancel", end);
 })();

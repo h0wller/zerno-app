@@ -299,12 +299,30 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
   });
 });
 
-test.describe('Спринт 3 — TgUx (BackButton & Haptics), Зоны/Слоты и Live Tracking заказа', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
-
   test('1. Нативный BackButton и Haptics (medium/light/success), зоны Янтарный/Синявино, слоты и Live Tracking с поллингом', async ({ page }) => {
-    await page.addInitScript(() => {
+    // ── РЕАЛЬНАЯ регистрация гостя через API (по образцу ui-baseline.spec.js::loginAs) ──
+    // Раньше был фейковый 'test-token' → live.js::refreshProfileLive раз в 5с дёргал
+    // GET /api/me → 401 → api() вызывал setUser(null, null) → checkoutBtn.onclick выходил
+    // рано на `if (!me) return` → #orderTrackModal не создавался (флейк, подтверждён трейсом).
+    // 10 цифр после +7 (ph10 требует ≥10, иначе 400 «Введите номер полностью»).
+    // Паттерн идентичен ui-baseline.spec.js::loginAs и Sprint 5 этого файла.
+    const digits = '9' + String(Date.now()).slice(-9);
+    const regPhone = '+7' + digits;
+    const reg = await page.request.post('/api/auth/register', {
+      data: { name: 'Мария', phone: regPhone, pin: '1234', consent: 1 },
+    });
+    if (!reg.ok()) throw new Error('register: ' + reg.status() + ' ' + (await reg.text()));
+    const { token, customer } = await reg.json();
+
+    await page.addInitScript((t) => {
+      window.USER_TOKEN = t;
+      localStorage.setItem('zt_user', t);
+      localStorage.setItem('zt_onb', '1');
       sessionStorage.setItem('splashDone', '1');
+    }, token);
+
+    // Telegram stub
+    await page.addInitScript(() => {
       window.__backBtnVisible = false;
       window.__backClickCallbacks = [];
 
@@ -347,7 +365,11 @@ test.describe('Спринт 3 — TgUx (BackButton & Haptics), Зоны/Слот
           })
         });
       } else {
-        await route.continue();
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ orders: [] })
+        });
       }
     });
 
@@ -370,23 +392,26 @@ test.describe('Спринт 3 — TgUx (BackButton & Haptics), Зоны/Слот
       });
     });
 
+    // Пустой ответ на фейковый tg-link (initData не пройдёт HMAC на сервере).
+    // Иначе api() на 401 зовёт setUser(null, null) ДО того, как сработает настоящая авторизация.
+    await page.route('**/api/auth/tg-link', (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ ok: true })
+          })
+        : route.continue()
+    );
+
     await page.goto('/?brand=delivery&src=tg');
 
-    // Авторизуем гостя для проверки автоподстановки me.name и me.phone
-    await page.evaluate(() => {
-      if (typeof window.setUser === 'function') {
-        window.setUser('test-token', {
-          id: 777,
-          name: 'Мария',
-          phone: '+7 999 123-45-67',
-          stamps: 2,
-          free: 0,
-          cups: 2,
-          qr: 'Z-777777',
-          role: 'guest'
-        });
-      }
-    });
+    // Ждём, пока boot() подтвердит реальную роль через /api/me (200 для настоящего токена).
+    await page.waitForFunction(
+      () => window.me && window.me.id && window.me.name === 'Мария',
+      null,
+      { timeout: 15000 }
+    );
 
     const firstCard = page.locator('#deliveryGrid .card:has(.opts button)').first();
     await expect(firstCard).toBeVisible({ timeout: 10000 });
@@ -400,13 +425,13 @@ test.describe('Спринт 3 — TgUx (BackButton & Haptics), Зоны/Слот
     expect(hapticsAfterAdd).toContain('medium');
     expect(hapticsAfterAdd).toContain('light');
 
-    // Открываем корзину и проверяем, что BackButton показался (синхронизирован с оверлеем)
+    // Открываем корзину и проверяем, что BackButton показался
     await page.locator('#cartFab').click();
     await expect(page.locator('#cartPanel')).toHaveClass(/open/);
     await expect(page.locator('html')).toHaveClass(/tg-native-back/);
     expect(await page.evaluate(() => window.__backBtnVisible)).toBe(true);
 
-    // Нажимаем нативную кнопку «Назад» Telegram -> шторка корзины закрывается, BackButton прячется
+    // Нажимаем нативную кнопку «Назад» — шторка корзины закрывается, BackButton прячется
     await page.evaluate(() => {
       if (window.__backClickCallbacks && window.__backClickCallbacks.length) {
         window.__backClickCallbacks.forEach((fn) => fn());
@@ -418,38 +443,36 @@ test.describe('Спринт 3 — TgUx (BackButton & Haptics), Зоны/Слот
     await expect(page.locator('html')).not.toHaveClass(/tg-native-back/);
     expect(await page.evaluate(() => window.__backBtnVisible)).toBe(false);
 
-    // Дожидаемся загрузки /api/delivery/info, чтобы фоновый рендер слотов не перезаписал выбор в корзине
     await page.waitForFunction(() => window.deliveryInfo, null, { timeout: 10000 });
 
-    // Снова открываем корзину для проверки Задачи 2 (Зоны, слоты, автоподстановка гостя)
+    // Снова открываем корзину для проверки Задачи 2
     await page.locator('#cartFab').click();
     await expect(page.locator('#cartPanel')).toHaveClass(/open/);
 
-    // ── Задача 2: Автоподстановка данных гостя, зоны Синявино/Янтарный и выбор времени ──
+    // ── Задача 2: Автоподстановка данных гостя, зоны и выбор времени ──
     await expect(page.locator('#checkoutGuestName')).toHaveText('Мария');
-    await expect(page.locator('#checkoutGuestPhone')).toContainText('+7 999 123-45-67');
+    // Телефон динамический — берём у реально зарегистрированного гостя.
+    // customer.phone имеет формат '+7 9XX XXX-XX-XX'; сверяем последние 5 знаков (уникальны).
+    const last5 = String(customer.phone).slice(-5);
+    await expect(page.locator('#checkoutGuestPhone')).toContainText(last5);
 
-    // Переключаем зону на Синявино (тариф 250 ₽)
     const placeSelect = page.locator('#checkoutPlace');
     await placeSelect.selectOption('Синявино');
     await expect(page.locator('#zoneFeeHint')).toContainText('Синявино');
     await expect(page.locator('#zoneFeeHint')).toContainText('250 ₽');
 
-    // Возвращаем Янтарный (при сумме >= 1500 ₽ доставка бесплатная, иначе 200 ₽)
     await placeSelect.selectOption('Янтарный');
     await expect(page.locator('#zoneFeeHint')).toContainText('Янтарный');
 
-    // Переключатель времени: выбираем «⏰ Ко времени»
     const timeSegSlot = page.locator('#checkoutTimeModeSeg [data-tmode="slot"]');
     await timeSegSlot.click();
     await expect(page.locator('#checkoutSlot')).toBeVisible();
 
-    // Заполняем улицу и дом из справочника Янтарного и убеждаемся, что #checkoutBtn активна
     await page.locator('#checkoutStreet').fill('Советская');
     await page.locator('#checkoutHouse').fill('70');
     await expect(page.locator('#checkoutBtn')).toBeEnabled();
 
-    // ── Задача 3: Отправка заказа (в TMA #checkoutBtn скрыт под нативной MainButton, кликаем программно как MainButton) ──
+    // ── Задача 3: Отправка заказа (в TMA #checkoutBtn скрыт под нативной MainButton) ──
     await page.locator('#checkoutBtn').dispatchEvent('click');
 
     const trackModal = page.locator('#orderTrackModal');
@@ -457,11 +480,9 @@ test.describe('Спринт 3 — TgUx (BackButton & Haptics), Зоны/Слот
     await expect(trackModal).toHaveClass(/show/);
     await expect(trackModal.locator('.ot-title')).toContainText('#777');
 
-    // Проверяем, что сработал notificationOccurred('success')
     const hapticsAfterOrder = await page.evaluate(() => (window.__tgEvents && window.__tgEvents.hapticCalls) || []);
     expect(hapticsAfterOrder).toContain('success');
 
-    // Проверяем смену статуса на прогресс-баре («Курьер в пути» -> индекс 2)
     currentTrackStatus = 'way';
     await page.evaluate(async () => {
       const r = await window.api('/orders/mine');
@@ -471,13 +492,11 @@ test.describe('Спринт 3 — TgUx (BackButton & Haptics), Зоны/Слот
     });
     await expect(trackModal.locator('.ot-progress')).toHaveAttribute('data-step-idx', '2');
 
-    // Проверяем кнопку «🔁 Повторить заказ» в 1 клик
     await trackModal.locator('[data-ot-repeat]').click();
     await expect(trackModal).not.toHaveClass(/show/);
     await expect(page.locator('#cartPanel')).toHaveClass(/open/);
     await expect(page.locator('#cartItems .cartItem').first()).toContainText('Маргарита');
   });
-});
 
 test.describe('Спринт 4 — Тикер, геометрия рейла без наезда поиска, центрирование и стабильность шапки', () => {
   test.use({ viewport: { width: 390, height: 844 } });
@@ -544,4 +563,90 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
     const brandCenterCoffee = brandBoxCoffee.x + brandBoxCoffee.width / 2;
     expect(Math.abs(brandCenterCoffee - 195)).toBeLessThanOrEqual(6);
   });
+});
+
+test.describe('Спринт 5 — Сетка Админа/Заказов, умный чат Ника, цены Кофейни без 0 ₽ и чистый тикер', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+test('1. Чат Ника без ложного вызова сотрудника на «выпьем?», нет нулевых цен в кофейном меню, сетка Админа и Заказов', async ({ page }) => {  // ── РЕАЛЬНАЯ авторизация админа через API ──
+  // Фейковый 'admin-token' → /api/menu/all отвечал 401 → api() звал setUser(null, null)
+  // → me=null → следующий setMode('orders') резался гардом в views.js и #ordersView оставался hidden.
+  const adminCode = process.env.ADMIN_CODE || '3364';
+  const digits = '9' + String(Date.now()).slice(-9);
+  const reg = await page.request.post('/api/auth/register', {
+    data: { name: 'Regress Admin', phone: '+7' + digits, pin: '1234', consent: 1 },
+  });
+  if (!reg.ok()) throw new Error('register: ' + reg.status() + ' ' + (await reg.text()));
+  const { token } = await reg.json();
+
+  const act = await page.request.post('/api/auth/activate', {
+    data: { code: adminCode },
+    headers: { Authorization: 'Bearer ' + token },
+  });
+  if (!act.ok()) throw new Error('activate admin: ' + act.status() + ' ' + (await act.text()));
+
+  await page.addInitScript((t) => {
+    window.USER_TOKEN = t;
+    localStorage.setItem('zt_user', t);
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  }, token);
+
+  await page.goto('/?brand=delivery');
+  // Ждём, пока boot() подтвердит роль admin через /api/me
+  await page.waitForFunction(
+    () => window.me && window.me.id && window.me.role === 'admin',
+    null,
+    { timeout: 15000 },
+  );
+  await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible({ timeout: 10000 });
+
+  // ── Задача 4: В #tickerTrack нет пустых <span> ──
+  const emptySpans = page.locator('#tickerTrack span:empty');
+  await expect(emptySpans).toHaveCount(0);
+
+  // ── Задача 2: Чат «Ника» в Доставке здоровается от «Пятницы» и не взводит красную кнопку на «выпьем?» ──
+  await page.locator('#chatFab').click();
+  await expect(page.locator('#chatPanel')).toHaveClass(/open/);
+  await expect(page.locator('#chatMsgs')).toContainText(/Пятница|доставк/i, { timeout: 5000 });
+
+  await page.locator('#chatInput').fill('выпьем?');
+  await page.locator('#chatInput').press('Enter');
+
+  await expect(page.locator('#chatMsgs .msg.bot').last()).toContainText(/подсказать по зонам|Позвать сотрудника/i, { timeout: 5000 });
+  const armedCount = page.locator('#chatHintsBar .chatHint.armed');
+  await expect(armedCount).toHaveCount(0);
+
+  await page.locator('#chatClose').click();
+
+  // ── Задача 1: Режим Админа (роль уже настоящая, setUser-фейк не нужен) ──
+  await page.evaluate(() => window.setMode('admin'));
+
+  const adminBar = page.locator('#adminBar');
+  await expect(adminBar).toBeVisible();
+  await expect(page.locator('#chatsToggle2')).toContainText('Чаты гостей');
+
+  const delViewBox = await page.locator('#deliveryView').boundingBox();
+  expect(delViewBox.x).toBeLessThan(120);
+  expect(delViewBox.x + delViewBox.width).toBeLessThanOrEqual(392);
+
+  // ── В режиме «Заказы» (#ordersView) список заказов #ordersList находится ВЫШЕ блока «Активация гостей» (#pendingBoxD) ──
+  await page.evaluate(() => window.setMode('orders'));
+  const ordersViewEl = page.locator('#ordersView');
+  await expect(ordersViewEl).toBeVisible({ timeout: 5000 });
+  const ordersListBox = await page.locator('#ordersList').boundingBox();
+  const pendingBoxD = await page.locator('#pendingBoxD').boundingBox();
+  expect(ordersListBox).not.toBeNull();
+  expect(pendingBoxD).not.toBeNull();
+  expect(ordersListBox.y).toBeLessThan(pendingBoxD.y);
+
+  // ── Задача 3: Переключаемся в Кофейню и проверяем, что у Капучино/Латте нет цены «0 ₽» ──
+  await page.evaluate(() => window.setMode('guest'));
+  await page.locator('#venueToggle').click();
+  await page.locator('#brandSeg button[data-brand="coffee"]').click();
+  await expect(page.locator('#grid .card').first()).toBeVisible({ timeout: 10000 });
+
+  const zeroPrices = page.locator('#grid .card .price', { hasText: /^0\s*₽$/ });
+  await expect(zeroPrices).toHaveCount(0);
+});
 });

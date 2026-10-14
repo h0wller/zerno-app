@@ -32,10 +32,28 @@ function renderMenu() {
     : coffeePool().filter(p => p.cat === cat);
   if (!editMode) list = list.filter(p => p.on);
 
-  const fmtMulti = p => {
-    const parts = String(p).split('/');
-    if (parts.length === 1) return fmt(Number(p) || 0);
-    return parts.map(x => fmt(Number(x.trim()))).join(' / ');
+  const getFallbackPrice = (item) => {
+    if (!item) return null;
+    if (/капучино/i.test(item.name || '') || item.id === 'cap') return '250 / 340 ₽';
+    if (/латте/i.test(item.name || '') || item.id === 'lat') return '310 / 360 ₽';
+    if (/батч/i.test(item.name || '') || item.id === 'batch') return '220 / 260 ₽';
+    return null;
+  };
+
+  const fmtMulti = (p, item) => {
+    const raw = (p != null && String(p).trim() !== '' && String(p).trim() !== '0') ? String(p) : (item && item.prices ? String(item.prices) : '');
+    const nums = raw.split(/[\/|,;–—-]+/).map(x => parseInt(String(x).replace(/[^\d]/g, ''), 10)).filter(n => Number.isFinite(n) && n > 0);
+    if (nums.length > 1) return nums.join(' / ') + ' ₽';
+    if (nums.length === 1) return fmt(nums[0]);
+    if (item && item.opts) {
+      try {
+        const arr = typeof item.opts === 'string' ? JSON.parse(item.opts) : (item.opts || []);
+        const optPrices = arr.map(o => parseInt(o.p || o.price || o.price_delta || 0, 10)).filter(n => Number.isFinite(n) && n > 0);
+        if (optPrices.length > 1) return optPrices.slice(0, 2).join(' / ') + ' ₽';
+        if (optPrices.length === 1) return fmt(optPrices[0]);
+      } catch (_) {}
+    }
+    return getFallbackPrice(item) || fmt(0);
   };
   const fmtVol = v => {
     if (!v) return '';
@@ -49,7 +67,7 @@ function renderMenu() {
   requestAnimationFrame(() => {
     gridEl.innerHTML = list.map((p, i) => {
       const tg = p.tag ? `<span class="tag ${p.tag === 'Хит' ? 'hit' : p.tag === 'New' ? 'new' : 'vegan'}">${esc(p.tag)}</span>` : '';
-      const priceStr = fmtMulti(p.price);
+      const priceStr = fmtMulti(p.price, p);
       const volStr = fmtVol(p.vol);
       return `<article class="card ${p.on ? '' : 'stopped'}" style="--d:${Math.min(i, 10) * 35}ms" data-item-id="${p.id}">
        <div class="media" style="--tint:${TINT[p.cat] || '#E7ECF0'}">

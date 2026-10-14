@@ -97,6 +97,20 @@ export function initSeed() {
     for (const s of simple) insD.run(s[0],'delivery',s[2],s[3],s[1],'',JSON.stringify(s[4]),s[5],s[6],'',0,1,null,'[]');
     db.prepare("INSERT INTO meta(key,value) VALUES('dmenu_v',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(DMENU_V);
   }
+
+  // Авто-восстановление мульти-цен кофейни на случай, если они были перезаписаны в '0'
+  const multiPriceFix = {
+    batch: '220/260',
+    cap: '250/340',
+    lat: '310/360',
+    raf: '360/400',
+    matcha: '290/360',
+    cocoa: '290/370'
+  };
+  const healStmt = db.prepare("UPDATE menu SET price=? WHERE id=? AND (price IS NULL OR price='' OR price='0' OR price=0)");
+  for (const [id, price] of Object.entries(multiPriceFix)) {
+    healStmt.run(price, id);
+  }
 }
 
 export function initVapid() {
