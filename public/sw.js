@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v436';
+const STATIC_CACHE = 'zerno-static-v438';
 const MEDIA_CACHE = 'zerno-media-v20';
 const API_CACHE = 'zerno-api-v14';
 
@@ -141,27 +141,26 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // App Shell: Cache-First с фоновым обновлением
+  // App Shell: Network-First (гарантия единой свежей версии в браузере, PWA и TG Mini App)
   if (
+    request.mode === 'navigate' ||
     request.destination === 'document' ||
     url.pathname.startsWith('/dist/') ||
     url.pathname.startsWith('/app/') ||
     /\.(js|css)$/.test(url.pathname)
   ) {
     e.respondWith(
-      caches.match(request).then((cached) => {
-        const networkFetch = fetch(request, { cache: 'reload' })
-          .then((netRes) => {
-            if (netRes.ok) {
-              const clone = netRes.clone();
-              caches.open(STATIC_CACHE).then((c) => c.put(request, clone)).catch(() => {});
-            }
-            return netRes;
-          })
-          .catch(() => cached || new Response('', { status: 503, statusText: 'offline' }));
-
-        return cached || networkFetch;
-      })
+      fetch(request, { cache: 'reload' })
+        .then((netRes) => {
+          if (netRes.ok) {
+            const clone = netRes.clone();
+            caches.open(STATIC_CACHE).then((c) => c.put(request, clone)).catch(() => {});
+          }
+          return netRes;
+        })
+        .catch(() =>
+          caches.match(request).then((cached) => cached || new Response('', { status: 503, statusText: 'offline' }))
+        )
     );
     return;
   }

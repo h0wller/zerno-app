@@ -11,15 +11,15 @@ fi
 
 echo "🔄 [pre-commit] Обновление STATIC_CACHE..."
 
-# 2. Инкремент версии Service Worker
-node scripts/bump-sw.mjs
+# 2. Пересборка клиентского бандла + инкремент версии Service Worker
+npm run build:client
 if [ $? -ne 0 ]; then
-  echo "💥 [pre-commit] Не удалось обновить public/sw.js!"
+  echo "💥 [pre-commit] Не удалось собрать бандл или обновить public/sw.js!"
   exit 1
 fi
 
-# 3. Добавление изменённого sw.js в текущий индекс Git
-git add public/sw.js
+# 3. Добавление свежего бандла и sw.js в текущий индекс Git
+git add public/sw.js public/dist/main.bundle.js public/dist/main.bundle.js.map
 
 echo "✅ [pre-commit] Проверки пройдены, STATIC_CACHE инкрементирован и добавлен в коммит."
 exit 0
