@@ -409,15 +409,10 @@ if(b==='delivery'){
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <!-- Async CSS: preload + swap to stylesheet -->
-  <link rel="preload" href="/app/ui/fonts.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <link rel="preload" href="app/ui/theme-v2.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <link rel="preload" href="/app/ui/brand-tokens.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript>
-    <link rel="stylesheet" href="/app/ui/fonts.css">
-    <link rel="stylesheet" href="app/ui/theme-v2.css" />
-    <link rel="stylesheet" href="/app/ui/brand-tokens.css" />
-  </noscript>
+  <!-- Синхронная загрузка базовых слоёв CSS: 0 FOUC, 0 CLS, 100% надёжность в iOS WebKit / Telegram WebView -->
+  <link rel="stylesheet" href="/app/ui/fonts.css?v=446" />
+  <link rel="stylesheet" href="/app/ui/theme-v2.css?v=446" />
+  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=446" />
   <!-- [tg-splash-menu-fix-v1] -->
   <script>
     (function () {
@@ -1302,7 +1297,7 @@ if(b==='delivery'){
       <button class="btn ghost cart-continue-btn" id="cartClose">Продолжить покупки</button>
     </div>
   </div>
-<script type="module" src="/dist/main.bundle.js"></script>
+<script type="module" src="/dist/main.bundle.js?v=446"></script>
   <div id="installBanner" hidden style="
         position: fixed;
         left: 12px;

@@ -356,10 +356,12 @@
   /* ── loadScList, updateStaffBadge ── */
   window.loadScList = async function () {
     try {
-      var r = await api("/chat/list" + (scClosedView ? "?closed=1" : ""));
-      document.getElementById("scShowClosed").textContent = scClosedView
-        ? "← Активные чаты"
-        : "Показать закрытые";
+      var closedMode = !!window.scClosedView;
+      var r = await api("/chat/list" + (closedMode ? "?closed=1" : ""));
+      var btnClosed = document.getElementById("scShowClosed");
+      if (btnClosed) {
+        btnClosed.textContent = closedMode ? "← Активные чаты" : "Показать закрытые";
+      }
       var filterCtx = window.__staffChatFilter || null;
       var threads = (r.threads || []).filter(function (t) {
         var tCtx = t.ctx || (/:d$/.test(t.key || "") ? "delivery" : "coffee");
@@ -367,7 +369,9 @@
         if (filterCtx === "delivery") return tCtx === "delivery";
         return true;
       });
-      document.getElementById("scList").innerHTML =
+      var listEl = document.getElementById("scList");
+      if (!listEl) return;
+      listEl.innerHTML =
         threads
           .map(function (t) {
             var tCtx = t.ctx || (/:d$/.test(t.key || "") ? "delivery" : "coffee");
@@ -379,7 +383,7 @@
               esc(t.name) +
               "</b> " +
               (tCtx === "delivery" ? "🍕" : "☕") +
-              (t.human && !scClosedView
+              (t.human && !closedMode
                 ? '<span class="tag hit" style="position:static;margin-left:6px">нужен ответ</span>'
                 : "") +
               '<span style="float:right">' +
@@ -389,9 +393,11 @@
           })
           .join("") ||
         '<div class="hmini">' +
-          (scClosedView ? "Закрытых чатов нет" : "Пока тихо") +
+          (closedMode ? "Закрытых чатов нет" : "Пока тихо") +
           "</div>";
-    } catch (e) {}
+    } catch (e) {
+      console.error("[chat] loadScList error:", e);
+    }
   };
 
   window.updateStaffBadge = async function () {
@@ -399,21 +405,21 @@
     try {
       var r = await api("/chat/list");
       var list = r.threads || [];
-      var unCoffee = list.reduce(function (a, t) {
+      var cntCoffee = 0;
+      var cntDelivery = 0;
+      list.forEach(function (t) {
         var isDel = (t.ctx || (/:d$/.test(t.key || "") ? "delivery" : "coffee")) === "delivery";
-        return a + (!isDel ? (+t.unread || 0) : 0);
-      }, 0);
-      var unDelivery = list.reduce(function (a, t) {
-        var isDel = (t.ctx || (/:d$/.test(t.key || "") ? "delivery" : "coffee")) === "delivery";
-        return a + (isDel ? (+t.unread || 0) : 0);
-      }, 0);
-      var unAll = unCoffee + unDelivery;
+        var weight = (+t.unread || 0) > 0 ? (+t.unread) : (t.human ? 1 : 0);
+        if (isDel) cntDelivery += weight;
+        else cntCoffee += weight;
+      });
+      var cntAll = cntCoffee + cntDelivery;
       var c1 = document.getElementById("chatsToggle"),
         c2 = document.getElementById("chatsToggle2"),
         c3 = document.getElementById("chatsToggleD");
-      if (c1) c1.textContent = unCoffee ? "💬 Чаты гостей · " + unCoffee : "💬 Чаты гостей";
-      if (c2) c2.textContent = unAll ? "💬 Чаты гостей · " + unAll : "💬 Чаты гостей";
-      if (c3) c3.textContent = unDelivery ? "💬 Чаты гостей · " + unDelivery : "💬 Чаты гостей";
+      if (c1) c1.textContent = cntCoffee ? "💬 Чаты гостей · " + cntCoffee : "💬 Чаты гостей";
+      if (c2) c2.textContent = cntAll ? "💬 Чаты гостей · " + cntAll : "💬 Чаты гостей";
+      if (c3) c3.textContent = cntDelivery ? "💬 Чаты гостей · " + cntDelivery : "💬 Чаты гостей";
     } catch (e) {}
   };
 

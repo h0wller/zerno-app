@@ -321,25 +321,37 @@ async function updateStaffBadge() {
     if (typeof window.sv === 'function') window.sv(); /* <── ДОБАВЛЕНО */
   };
 
-  /* ── стафф: подписки ── */
+/* ── стафф: подписки ── */
+  window.scClosedView = false;
   $('#chatsToggle').onclick = () => openStaffChat('coffee');
   $('#chatsToggle2').onclick = () => openStaffChat(null);
   if ($('#chatsToggleD')) $('#chatsToggleD').onclick = () => openStaffChat('delivery');
   $('#scClose').onclick = closeStaffChat;
-  $('#scShowClosed').onclick = () => { scClosedView = !scClosedView; if (typeof window.loadScList === 'function') window.loadScList(); };
+  $('#scShowClosed').onclick = () => {
+    scClosedView = !scClosedView;
+    window.scClosedView = scClosedView;
+    if (typeof window.loadScList === 'function') window.loadScList();
+  };
   $('#scCloseThread').onclick = async () => {
     if (!scKey) return;
     try {
-      if (scClosedView) { await api('/chat/open', { method: 'POST', body: { key: scKey } }); toast('Чат снова активен', '↺'); }
-      else { await api('/chat/close', { method: 'POST', body: { key: scKey } }); toast('Чат закрыт', '✅'); }
-      $('#scDialogWrap').hidden = true; scKey = null; loadScList();
+      if (window.scClosedView) { await api('/chat/open', { method: 'POST', body: { key: scKey } }); toast('Чат снова активен', '↺'); }
+      else { await api('/chat/close', { method: 'POST', body: { key: scKey } }); toast('Чат закрыт','✅'); }
+      $('#scDialogWrap').hidden = true; scKey = null;
+      if (typeof window.loadScList === 'function') window.loadScList();
+      if (typeof window.updateStaffBadge === 'function') window.updateStaffBadge();
     } catch (e) { toast(e.message, '⚠️'); }
   };
   $('#scList').addEventListener('click', e => { const el = e.target.closest('[data-sck]'); if (!el) return; scKey = el.dataset.sck; openScDialog(); });
-  $('#scBack').onclick = () => { $('#scDialogWrap').hidden = true; scKey = null; loadScList(), updateStaffBadge(); };
+  $('#scBack').onclick = () => {
+    $('#scDialogWrap').hidden = true;
+    scKey = null;
+    if (typeof window.loadScList === 'function') window.loadScList();
+    if (typeof window.updateStaffBadge === 'function') window.updateStaffBadge();
+  };
   $('#scSend').onclick = scSend;
   $('#scInput').addEventListener('keydown', e => { if (e.key === 'Enter') scSend(); });
-  setInterval(() => { if (document.visibilityState === 'visible') updateStaffBadge(); }, 10000);
+  setInterval(() => { if (document.visibilityState === 'visible' && typeof window.updateStaffBadge === 'function') window.updateStaffBadge(); }, 10000);
 
   /* ── shim в window — контракт F1.3 ── */
   Object.assign(window, {

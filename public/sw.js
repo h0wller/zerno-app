@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v443';
+const STATIC_CACHE = 'zerno-static-v447';
 const MEDIA_CACHE = 'zerno-media-v20';
 const API_CACHE = 'zerno-api-v14';
 
@@ -159,7 +159,7 @@ self.addEventListener('fetch', (e) => {
           return netRes;
         })
         .catch(() =>
-          caches.match(request).then((cached) => cached || new Response('', { status: 503, statusText: 'offline' }))
+          caches.match(request, { ignoreSearch: true }).then((cached) => cached || new Response('', { status: 503, statusText: 'offline' }))
         )
     );
     return;

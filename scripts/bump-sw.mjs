@@ -1,41 +1,33 @@
-import fs from 'node:fs';
-import path from 'node:path';
+#!/usr/bin/env node
+import { readFileSync, writeFileSync } from 'node:fs';
 
-const SW_PATH = path.resolve('public/sw.js');
+const swPath = 'public/sw.js';
+const idxPath = 'public/index.html';
 
-if (!fs.existsSync(SW_PATH)) {
-  console.error(`❌ Файл не найден: ${SW_PATH}`);
-  process.exit(1);
-}
-
-let content = fs.readFileSync(SW_PATH, 'utf8');
-
-// Ищем объявление константы STATIC_CACHE (с любыми кавычками)
-const cacheRegex = /(STATIC_CACHE\s*=\s*['"])([^'"]+)(['"])/;
-const match = content.match(cacheRegex);
+const sw = readFileSync(swPath, 'utf8');
+const match = sw.match(/const STATIC_CACHE = ['"]zerno-static-v(\d+)['"]/);
 
 if (!match) {
-  console.error('❌ Переменная STATIC_CACHE не найдена в public/sw.js');
+  console.error('❌ Не найден STATIC_CACHE в public/sw.js');
   process.exit(1);
 }
 
-const [, prefix, oldVal, suffix] = match;
+const oldVer = parseInt(match[1], 10);
+const newVer = oldVer + 1;
 
-// Находим последнее число в значении версии (например, 'zt-v71' -> '71' или 'static-2026-10' -> '11')
-const numMatch = oldVal.match(/(\d+)(?!.*\d)/);
+const nextSw = sw.replace(
+  /const STATIC_CACHE = ['"]zerno-static-v\d+['"]/,
+  `const STATIC_CACHE = 'zerno-static-v${newVer}'`
+);
+writeFileSync(swPath, nextSw, 'utf8');
 
-let newVal;
-if (numMatch) {
-  const oldNum = numMatch[0];
-  const newNum = String(parseInt(oldNum, 10) + 1).padStart(oldNum.length, '0');
-  const startIdx = numMatch.index;
-  newVal = oldVal.slice(0, startIdx) + newNum + oldVal.slice(startIdx + oldNum.length);
-} else {
-  // Фолбэк, если в строке изначально не было чисел
-  newVal = `${oldVal}-2`;
-}
+// Синхронизируем ?v=newVer в public/index.html для гарантированного сброса кэша в Telegram WebView и iOS PWA
+let idx = readFileSync(idxPath, 'utf8');
+idx = idx
+  .replace(/(\/app\/ui\/fonts\.css)(\?v=\d+)?/g, `$1?v=${newVer}`)
+  .replace(/(\/?app\/ui\/theme-v2\.css)(\?v=\d+)?/g, `/app/ui/theme-v2.css?v=${newVer}`)
+  .replace(/(\/app\/ui\/brand-tokens\.css)(\?v=\d+)?/g, `$1?v=${newVer}`)
+  .replace(/(\.?\/?dist\/main\.bundle\.js)(\?v=\d+)?/g, `/dist/main.bundle.js?v=${newVer}`);
+writeFileSync(idxPath, idx, 'utf8');
 
-content = content.replace(cacheRegex, `${prefix}${newVal}${suffix}`);
-fs.writeFileSync(SW_PATH, content, 'utf8');
-
-console.log(`✅ STATIC_CACHE в public/sw.js обновлён: "${oldVal}" → "${newVal}"`);
+console.log(`✅ STATIC_CACHE и ассеты index.html обновлены: v${oldVer} → v${newVer}`);
