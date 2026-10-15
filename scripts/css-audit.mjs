@@ -189,7 +189,31 @@ if (brandRulesCount > MAX_BRAND_RULES) {
 } else {
   ok(`views.js: рэтчет [data-brand] правил соблюдён (${brandRulesCount} <= ${MAX_BRAND_RULES})`);
 }
+/* ── ПРАВИЛО 13: Мониторинг множественных владельцев селекторов в theme-v2.css (режим предупреждения) ── */
+const themeSelectors = [];
+const themeBlocks = THEME_CSS.match(/[^{}]+\{[^{}]*\}/g) || [];
+themeBlocks.forEach(b => {
+  const selPart = b.slice(0, b.indexOf('{')).trim();
+  selPart.split(',').forEach(s => {
+    const cleanSel = s.trim().replace(/:hover|:active|:focus|::before|::after/g, '');
+    if (cleanSel && !cleanSel.startsWith('@') && !/^\d+%$/.test(cleanSel) && cleanSel !== 'from' && cleanSel !== 'to' && cleanSel !== ':root' && cleanSel !== '*') {
+      themeSelectors.push(cleanSel);
+    }
+  });
+});
 
+const selCounts = {};
+themeSelectors.forEach(s => {
+  selCounts[s] = (selCounts[s] || 0) + 1;
+});
+
+const multiOwners = Object.entries(selCounts).filter(([, count]) => count > 1);
+if (multiOwners.length) {
+  console.warn(`⚠️ [Warning] theme-v2.css: найдено ${multiOwners.length} дублирующихся селекторов (технический долг для будущих рефакторингов).`);
+  ok('theme-v2.css: мониторинг дублей селекторов пройден (warn-mode)');
+} else {
+  ok('theme-v2.css: у каждого элемента ровно один владелец-селектор');
+}
 console.log('\n' + '='.repeat(60));
 const _totalViolations = (typeof failures !== 'undefined' ? failures : 0);
 if (_totalViolations === 0) {
