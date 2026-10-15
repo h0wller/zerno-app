@@ -43,7 +43,7 @@ chatRouter.get('/api/chat/list', chatGuard, (req, res) => {
   const rows = db.prepare(`SELECT c.key, MAX(c.id) mid,
     SUM(CASE WHEN c.who='guest' AND c.read_s=0 THEN 1 ELSE 0 END) unread,
     IFNULL(m.closed,0) closed, IFNULL(m.staff_in,0) staff_in, IFNULL(m.ctx,'coffee') ctx,
-    (SELECT g.human FROM chat g WHERE g.key=c.key AND g.who='guest' ORDER BY g.id DESC LIMIT 1) human
+    MAX(CASE WHEN c.who='guest' AND c.human=1 THEN 1 ELSE 0 END) human
     FROM chat c LEFT JOIN chat_meta m ON m.key=c.key
     GROUP BY c.key ORDER BY mid DESC LIMIT 50`).all();
   res.json({ threads: rows
@@ -87,6 +87,7 @@ chatRouter.post('/api/chat/close', chatGuard, (req, res) => {
   if ((req.user.role === 'dispatch' && mctx !== 'delivery') || (req.user.role === 'cashier' && mctx !== 'coffee'))
     return res.status(403).json({ error: 'Этот чат ведёт другое заведение' });
   db.prepare('INSERT INTO chat_meta(key,closed,staff_in) VALUES(?,1,0) ON CONFLICT(key) DO UPDATE SET closed=1, staff_in=0').run(key);
+  db.prepare("UPDATE chat SET human=0, read_s=1 WHERE key=? AND who='guest'").run(key);
   db.prepare('INSERT INTO chat(key,who,text,ts,read_g) VALUES(?,?,?,?,0)').run(key, 'system', '✅ Чат закрыт. Бот Ника снова на связи.', nowISO());
   res.json({ ok: true });
 });

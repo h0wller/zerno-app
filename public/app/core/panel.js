@@ -65,30 +65,18 @@ document.addEventListener('DOMContentLoaded', function () {
         backBtn.addEventListener('click', closePanel);
     }
 
-    /* Делегирование кнопки открытия модалки «Мои заказы» в TMA и профиле */
+    /* Делегирование кнопки открытия модалки «Мои заказы» владельцу в profile.js */
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('#myOrdersBtn, [data-tab="my-orders"], .my-orders-btn');
-      if (!btn && e.target.closest('button')) {
-        var b = e.target.closest('button');
-        if (/мои заказы/i.test(b.textContent || '')) btn = b;
-      }
-      if (btn) {
-        e.preventDefault();
-        if (typeof window.openOrdersModal === 'function') {
-          window.openOrdersModal();
-        } else if (typeof window.renderOrdersModal === 'function') {
-          window.renderOrdersModal();
-        }
-        var m = document.getElementById('ordersModal');
-        if (m) {
-          if (m.parentElement !== document.body) {
-            document.body.appendChild(m);
-          }
-          m.classList.add('show');
-          m.hidden = false;
-          if (typeof window.loadMyOrders === 'function') window.loadMyOrders();
-          if (typeof window.syncOverlay === 'function') window.syncOverlay();
-        }
+      if (!btn) return;
+      e.preventDefault();
+      if (typeof window.renderOrdersModal === 'function') window.renderOrdersModal();
+      var modalEl = document.getElementById('ordersModal');
+      if (modalEl) {
+        modalEl.classList.add('show');
+        modalEl.hidden = false;
+        if (typeof window.loadMyOrders === 'function') window.loadMyOrders();
+        if (typeof window.syncOverlay === 'function') window.syncOverlay();
       }
     });
 

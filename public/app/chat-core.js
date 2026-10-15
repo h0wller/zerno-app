@@ -6,10 +6,18 @@
   var CS = window.chatState;
 
   function activeCtxNow() {
+    // Если тема выбрана явно через диплинк ?support=choose — используем её
+    var chosen = CS.getChosenSupportCtx && CS.getChosenSupportCtx();
+    if (chosen === "delivery" || chosen === "coffee") return chosen;
+    // Во всех остальных случаях контекст чата строго следует за текущим брендом витрины!
+    if (typeof brand !== "undefined" && (brand === "delivery" || brand === "coffee")) {
+      if (CS.getChatCtx() !== brand) CS.setChatCtx(brand);
+      return brand;
+    }
+    var domBrand = document.documentElement.getAttribute("data-brand");
+    if (domBrand === "delivery" || domBrand === "coffee") return domBrand;
     var c = CS.getChatCtx();
-    if (c === "delivery" || c === "coffee") return c;
-    if (typeof brand !== "undefined" && (brand === "delivery" || brand === "coffee")) return brand;
-    return document.documentElement.getAttribute("data-brand") === "delivery" ? "delivery" : "coffee";
+    return c === "delivery" ? "delivery" : "coffee";
   }
 
   /* ── chatKey: обёртка над базовой chatKey() из index.html ── */
@@ -21,26 +29,22 @@
 
   /* ── fetch-патчи: /api/chat/send и /api/push/send ── */
   (function () {
-    var _f = window.fetch;
-    window.fetch = function (u, o) {
+    var origFetch = window.fetch;
+    window.fetch = function (urlArg, optsArg) {
+      var nextOpts = optsArg;
+      if (nextOpts && typeof nextOpts.body === "string" && String(urlArg).includes("/api/chat/send")) {
+        try {
+          var payload = JSON.parse(nextOpts.body);
+          payload.ctx = activeCtxNow();
+          nextOpts = { ...nextOpts, body: JSON.stringify(payload) };
+        } catch (_) {}
+      }
+      var pr = origFetch.call(this, urlArg, nextOpts);
       try {
         if (
-          o &&
-          o.body &&
-          typeof o.body === "string" &&
-          String(u).indexOf("/api/chat/send") > -1
-        ) {
-          var b = JSON.parse(o.body);
-          b.ctx = activeCtxNow();
-          o = Object.assign({}, o, { body: JSON.stringify(b) });
-        }
-      } catch (e) {}
-      var pr = _f.call(this, u, o);
-      try {
-        if (
-          o &&
-          o.method === "POST" &&
-          String(u).indexOf("/api/push/send") > -1
+          nextOpts &&
+          nextOpts.method === "POST" &&
+          String(urlArg).indexOf("/api/push/send") > -1
         ) {
           pr.then(function (r) {
             return r.clone().json();
@@ -233,6 +237,23 @@
     };
   })(window.addMsg);
 
+  async function sendToChatApi(textVal, humanFlag, ctxVal) {
+    try {
+      await fetch(API_BASE + "/api/chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: window.chatKey(),
+          text: textVal,
+          human: humanFlag ? 1 : 0,
+          ctx: ctxVal,
+        }),
+      });
+    } catch (e) {
+      console.log("chat send err", e);
+    }
+  }
+
   /* ── mySend ── */
   async function mySend(q, confirmedHumanCall) {
     var inp = document.getElementById("chatInput");
@@ -241,49 +262,26 @@
     var hw = msgs && msgs.querySelector(".hintsWrap");
     if (hw) hw.remove();
 
-    // Если это подтверждённое (второе) нажатие на кнопку «Позвать сотрудника»
+    var curCtx = activeCtxNow();
+    CS.setChatCtx(curCtx);
+
     if (confirmedHumanCall) {
-      callAllowed = false; // Прячем кнопку после подтверждения до следующего запроса
+      callAllowed = false;
       window.addMsg("me", q);
-      try {
-        await fetch(API_BASE + "/api/chat/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            key: window.chatKey(),
-            text: q,
-            human: 1,
-            ctx: CS.getChatCtx() || "coffee",
-          }),
-        });
-      } catch (e) {
-        console.log("chat send err", e);
-      }
+      await sendToChatApi(q, 1, curCtx);
       window.addMsg(
         "bot",
-        CS.getChatCtx() === "delivery"
+        curCtx === "delivery"
           ? "Зову диспетчера доставки 🍕 Он получит уведомление и ответит прямо сюда."
           : "Зову сотрудника кофейни ☕ Он получит уведомление и ответит сюда."
       );
+      if (typeof window.updateStaffBadge === "function") window.updateStaffBadge();
       showHints();
       return;
     }
 
     window.addMsg("me", q);
-    try {
-      await fetch(API_BASE + "/api/chat/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: window.chatKey(),
-          text: q,
-          human: 0,
-          ctx: CS.getChatCtx() || "coffee",
-        }),
-      });
-    } catch (e) {
-      console.log("chat send err", e);
-    }
+    await sendToChatApi(q, 0, curCtx);
 
     // Случай 1: Гость явно попросил текстом позвать сотрудника/оператора/диспетчера
     var isExplicitRequest = /позов|позови|сотрудн|человек|менедж|оператор|диспетчер|живой/i.test(

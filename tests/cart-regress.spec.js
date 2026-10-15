@@ -306,11 +306,16 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     // рано на `if (!me) return` → #orderTrackModal не создавался (флейк, подтверждён трейсом).
     // 10 цифр после +7 (ph10 требует ≥10, иначе 400 «Введите номер полностью»).
     // Паттерн идентичен ui-baseline.spec.js::loginAs и Sprint 5 этого файла.
-    const digits = '9' + String(Date.now()).slice(-9);
-    const regPhone = '+7' + digits;
-    const reg = await page.request.post('/api/auth/register', {
+    const digits = String(Math.floor(100000000 + Math.random() * 899999999));
+    const regPhone = '+79' + digits;
+    let reg = await page.request.post('/api/auth/register', {
       data: { name: 'Мария', phone: regPhone, pin: '1234', consent: 1 },
     });
+    if (reg.status() === 409) {
+      reg = await page.request.post('/api/auth/login', {
+        data: { phone: regPhone, pin: '1234' },
+      });
+    }
     if (!reg.ok()) throw new Error('register: ' + reg.status() + ' ' + (await reg.text()));
     const { token, customer } = await reg.json();
 
