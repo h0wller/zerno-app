@@ -112,9 +112,7 @@ html[data-brand="coffee"] #deliveryGrid {
 html:not([data-brand="delivery"]) #deliveryView {
   display: none !important;
 }
-html[data-brand="delivery"] #deliveryView {
-  display: block !important;
-}
+
 html[data-brand="delivery"] #menuView {
   display: none !important;
 }
@@ -424,18 +422,18 @@ if(b==='delivery'){
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <!-- Неблокирующая загрузка слоёв CSS со 100% фолбэк-страховкой для iOS WebKit / Telegram WebView -->
-  <link rel="stylesheet" href="/app/ui/fonts.css?v=469" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme-v2.css?v=469" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=469" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/fonts.css?v=473" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme-v2.css?v=473" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=473" media="print" onload="this.media='all'" />
   <script>
     window.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('link[media="print"]').forEach(function (l) { l.media = 'all'; });
     });
   </script>
   <noscript>
-    <link rel="stylesheet" href="/app/ui/fonts.css?v=469" />
-    <link rel="stylesheet" href="/app/ui/theme-v2.css?v=469" />
-    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=469" />
+    <link rel="stylesheet" href="/app/ui/fonts.css?v=473" />
+    <link rel="stylesheet" href="/app/ui/theme-v2.css?v=473" />
+    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=473" />
   </noscript>
   <!-- [tg-splash-menu-fix-v1] -->
   <script>
@@ -1330,7 +1328,7 @@ if(b==='delivery'){
       <button class="btn ghost cart-continue-btn" id="cartClose">Продолжить покупки</button>
     </div>
   </div>
-<script type="module" src="/dist/main.bundle.js?v=469"></script>
+<script type="module" src="/dist/main.bundle.js?v=473"></script>
   <div id="installBanner" hidden style="
         position: fixed;
         left: 12px;
