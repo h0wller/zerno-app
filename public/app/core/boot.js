@@ -38,19 +38,23 @@ function renderAll() {
 
   if (typeof renderRail === 'function') renderRail();
   if (typeof renderMenu === 'function') renderMenu();
-  if (typeof renderBonus === 'function') renderBonus();
-  if (typeof renderProfile === 'function') renderProfile();
   if (typeof renderModes === 'function') renderModes();
-  if (typeof renderChips === 'function') renderChips();
-  if (typeof renderVerifyNote === 'function') renderVerifyNote();
 
-  const s = (window.me && window.me.qr) || 'guest';
-  const qm = $('#qrMini');
-  const qmain = $('#qrMain');
-  if (qm && typeof drawQR === 'function') drawQR(qm, s);
-  if (qmain && typeof drawQR === 'function') drawQR(qmain, s);
+  const deferSecondary = window.requestIdleCallback || function (fn) { setTimeout(fn, 60); };
+  deferSecondary(function () {
+    if (typeof renderBonus === 'function') renderBonus();
+    if (typeof renderProfile === 'function') renderProfile();
+    if (typeof renderChips === 'function') renderChips();
+    if (typeof renderVerifyNote === 'function') renderVerifyNote();
 
-  if (window.mode === 'cashier' && typeof renderLog === 'function') renderLog();
+    const s = (window.me && window.me.qr) || 'guest';
+    const qm = $('#qrMini');
+    const qmain = $('#qrMain');
+    if (qm && typeof drawQR === 'function') drawQR(qm, s);
+    if (qmain && typeof drawQR === 'function') drawQR(qmain, s);
+
+    if (window.mode === 'cashier' && typeof renderLog === 'function') renderLog();
+  });
 }
 
 /* ── 2. Точка входа: пользователь → меню → виды → бейджи → отзыв ── */
@@ -64,6 +68,7 @@ async function boot() {
       localStorage.removeItem(typeof T_USER !== 'undefined' ? T_USER : 'zt_user');
     }
   }
+  if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
     if (typeof loadMenu === 'function') await loadMenu();
   } catch (err) {
@@ -75,8 +80,6 @@ async function boot() {
     if (typeof initChatPointer === 'function') initChatPointer();
     if (typeof maybeAskReview === 'function') maybeAskReview();
   }
-
-  // За открытие регистрации отвечает выбор бренда на сплэше
 }
 
 /* ── 3. Service Worker: ЕДИНАЯ регистрация ── */

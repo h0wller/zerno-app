@@ -112,6 +112,9 @@ html[data-brand="coffee"] #deliveryGrid {
 html:not([data-brand="delivery"]) #deliveryView {
   display: none !important;
 }
+html[data-brand="delivery"] #deliveryView {
+  display: block !important;
+}
 html[data-brand="delivery"] #menuView {
   display: none !important;
 }
@@ -420,10 +423,20 @@ if(b==='delivery'){
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <!-- Синхронная загрузка базовых слоёв CSS: 0 FOUC, 0 CLS, 100% надёжность в iOS WebKit / Telegram WebView -->
-  <link rel="stylesheet" href="/app/ui/fonts.css?v=457" />
-  <link rel="stylesheet" href="/app/ui/theme-v2.css?v=457" />
-  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=457" />
+  <!-- Неблокирующая загрузка слоёв CSS со 100% фолбэк-страховкой для iOS WebKit / Telegram WebView -->
+  <link rel="stylesheet" href="/app/ui/fonts.css?v=469" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme-v2.css?v=469" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=469" media="print" onload="this.media='all'" />
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('link[media="print"]').forEach(function (l) { l.media = 'all'; });
+    });
+  </script>
+  <noscript>
+    <link rel="stylesheet" href="/app/ui/fonts.css?v=469" />
+    <link rel="stylesheet" href="/app/ui/theme-v2.css?v=469" />
+    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=469" />
+  </noscript>
   <!-- [tg-splash-menu-fix-v1] -->
   <script>
     (function () {
@@ -572,10 +585,10 @@ if(b==='delivery'){
               <div class="desc">Красный соус, моцарелла</div>
               <div class="comp"><i>красный соус</i><i>моцарелла</i></div>
               <div class="opts">
-                <button type="button" class="opt-btn sel"><div class="opt-row"><span class="opt-size">25 см</span><span class="opt-crust">пышное</span></div><div class="opt-row"><span class="opt-weight">415 г</span><span class="opt-price op">535 ₽</span></div></button>
-                <button type="button" class="opt-btn"><div class="opt-row"><span class="opt-size">35 см</span><span class="opt-crust">пышное</span></div><div class="opt-row"><span class="opt-weight">750 г</span><span class="opt-price op">735 ₽</span></div></button>
-                <button type="button" class="opt-btn"><div class="opt-row"><span class="opt-size">25 см</span><span class="opt-crust">тонкое</span></div><div class="opt-row"><span class="opt-weight">335 г</span><span class="opt-price op">435 ₽</span></div></button>
-                <button type="button" class="opt-btn"><div class="opt-row"><span class="opt-size">35 см</span><span class="opt-crust">тонкое</span></div><div class="opt-row"><span class="opt-weight">550 г</span><span class="opt-price op">635 ₽</span></div></button>
+                <button type="button" class="opt-btn sel" data-id="1" data-oi="0"><div class="opt-row"><span class="opt-size">25 см</span><span class="opt-crust">пышное</span></div><div class="opt-row"><span class="opt-weight">415 г</span><span class="opt-price op">535 ₽</span></div></button>
+                <button type="button" class="opt-btn" data-id="1" data-oi="1"><div class="opt-row"><span class="opt-size">35 см</span><span class="opt-crust">пышное</span></div><div class="opt-row"><span class="opt-weight">750 г</span><span class="opt-price op">735 ₽</span></div></button>
+                <button type="button" class="opt-btn" data-id="1" data-oi="2"><div class="opt-row"><span class="opt-size">25 см</span><span class="opt-crust">тонкое</span></div><div class="opt-row"><span class="opt-weight">335 г</span><span class="opt-price op">435 ₽</span></div></button>
+                <button type="button" class="opt-btn" data-id="1" data-oi="3"><div class="opt-row"><span class="opt-size">35 см</span><span class="opt-crust">тонкое</span></div><div class="opt-row"><span class="opt-weight">550 г</span><span class="opt-price op">635 ₽</span></div></button>
               </div>
               <div class="steprow" style="margin-top:auto">
                 <button class="cta" data-add="1">Добавить</button>
@@ -1317,7 +1330,7 @@ if(b==='delivery'){
       <button class="btn ghost cart-continue-btn" id="cartClose">Продолжить покупки</button>
     </div>
   </div>
-<script type="module" src="/dist/main.bundle.js?v=457"></script>
+<script type="module" src="/dist/main.bundle.js?v=469"></script>
   <div id="installBanner" hidden style="
         position: fixed;
         left: 12px;

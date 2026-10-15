@@ -172,10 +172,11 @@ app.post('/api/menu/upload', async (req, res) => {
 
     // 1. Компактная карточка 600x600 WebP
     await sharp(buffer)
-      .rotate()
-      .resize(600, 600, { fit: 'cover', position: 'center' })
-      .webp({ quality: 84 })
-      .toFile(path.join(dishesDir, cardFileName));
+  .rotate()
+  .resize(600, 375, { fit: 'cover', position: 'center' }) // 600 / 1.6 = 375
+  .webp({ quality: 80 })
+  .toFile(path.join(dishesDir, cardFileName));
+      
 
     // 2. Зум высокого разрешения 1200x1200 WebP
     await sharp(buffer)
@@ -214,7 +215,7 @@ async function migrateBase64ImagesToWebP() {
       // Нарезка 600x600 WebP для карточки
       await sharp(buffer)
         .rotate()
-        .resize(600, 600, { fit: 'cover', position: 'center' })
+        .resize(600, 375, { fit: 'cover', position: 'center' }) // 600 / 1.6 = 375
         .webp({ quality: 80 })
         .toFile(path.join(dishesDir, cardFile));
 

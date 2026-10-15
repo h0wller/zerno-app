@@ -292,25 +292,72 @@ function renderDeliveryMenu() {
     list = list.filter(p => matchesIngredient(p, activeIngredient));
   }
 
-  let html = list.map((p, i) => {
-  const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
-  return renderDeliveryCard(p, n0, i);
-}).join('');
+  var gridEl = $('#deliveryGrid');
+  var firstCard = gridEl && gridEl.querySelector('.card:not(.skeleton-card)');
+  var firstImg = firstCard && firstCard.querySelector('.media img[src]');
+  var canKeepFirst = !!(
+    firstCard &&
+    firstImg &&
+    list.length > 0 &&
+    firstImg.getAttribute('src') === list[0].img
+  );
 
-  if (typeof editMode !== 'undefined' && editMode) {
-    html += '<article class="card add-card" id="addDelivCard">' +
-      '<div style="font-size:32px">➕</div>' +
-      '<div>Добавить позицию в доставку</div>' +
-    '</article>';
+  if (canKeepFirst) {
+    // 1. Оставляем первую карточку и её <img> в DOM БЕЗ отсоединения (сохраняем ранний LCP первого кадра!)
+    const p0 = list[0];
+    const n0 = cart.reduce((a, c) => (String(c.id) === String(p0.id) ? a + c.qty : a), 0);
+    firstCard.setAttribute('data-product-id', p0.id);
+    firstCard.classList.toggle('stopped', !p0.on);
+    const cbody0 = firstCard.querySelector('.cbody');
+    if (cbody0) {
+      var opts0 = p0.opts || [];
+      var bodyMid0 = opts0.length > 0 ? renderPizzaOptsHtml(p0, opts0) : renderSingleMetaHtml(p0);
+      cbody0.innerHTML =
+        '<h3>' + esc(p0.name) + '</h3>' +
+        (p0.desc ? '<div class="desc">' + esc(p0.desc) + '</div>' : '') +
+        (p0.comp && p0.comp.length ? '<div class="comp">' + p0.comp.map(function (c) { return '<i>' + esc(c) + '</i>'; }).join('') + '</div>' : '') +
+        bodyMid0 +
+        '<div class="steprow">' +
+          '<button type="button" class="step" data-step="-1" data-sid="' + p0.id + '" ' + (n0 ? '' : 'hidden') + '>−</button>' +
+          '<button type="button" class="cta" data-add="' + p0.id + '">' + (n0 ? 'В корзине · ' + n0 : 'Добавить') + '</button>' +
+          '<button type="button" class="step" data-step="1" data-sid="' + p0.id + '" ' + (n0 ? '' : 'hidden') + '>+</button>' +
+        '</div>';
+    }
+    // 2. Удаляем только скелетоны и старые карточки ПОСЛЕ первой карточки
+    while (firstCard.nextElementSibling) {
+      firstCard.nextElementSibling.remove();
+    }
+    // 3. Дописываем остальные карточки со 2-й по N-ю без трогания первой карточки
+    let restHtml = list.slice(1).map((p, idx) => {
+      const n = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
+      return renderDeliveryCard(p, n, idx + 1);
+    }).join('');
+    if (typeof editMode !== 'undefined' && editMode) {
+      restHtml += '<article class="card add-card" id="addDelivCard">' +
+        '<div style="font-size:32px">➕</div>' +
+        '<div>Добавить позицию в доставку</div>' +
+      '</article>';
+    }
+    if (restHtml) {
+      gridEl.insertAdjacentHTML('beforeend', restHtml);
+    }
+  } else {
+    let html = list.map((p, i) => {
+      const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
+      return renderDeliveryCard(p, n0, i);
+    }).join('');
+    if (typeof editMode !== 'undefined' && editMode) {
+      html += '<article class="card add-card" id="addDelivCard">' +
+        '<div style="font-size:32px">➕</div>' +
+        '<div>Добавить позицию в доставку</div>' +
+      '</article>';
+    }
+    if (list.length === 0 && (typeof editMode === 'undefined' || !editMode)) {
+      html += '<div class="gempty">В этой категории пока пусто</div>';
+    }
+    gridEl.innerHTML = html;
   }
-
-  if (list.length === 0 && (typeof editMode === 'undefined' || !editMode)) {
-    html += '<div class="gempty">В этой категории пока пусто</div>';
-  }
-
-$('#deliveryGrid').innerHTML = html;
   patchDeliveryCards(list);
-  if (typeof window.fixLcp === 'function') window.fixLcp();
 
   const addCard = document.getElementById('addDelivCard');
   if (addCard) {
@@ -586,16 +633,20 @@ function renderDeliverySkeleton() {
 window.loadDelivery = async function() {
   try {
     var g = document.getElementById('deliveryGrid');
-    if (g && !DMENU.length) { g.innerHTML = skelCards(6); }
-    var r;
-    if (me && me.role === 'admin') {
-      var all = await api('/menu/all');
-      r = { items: (all.items || []).filter(function(p){ return p.section === 'delivery'; }) };
-    } else {
-      r = await api('/dmenu');
+    // Ставим скелетоны ТОЛЬКО если нет реальных карточек (SSR или уже загруженных)
+    if (g && !DMENU.length && !g.querySelector('.card:not(.skeleton-card)')) {
+      g.innerHTML = skelCards(6);
     }
+    var menuPromise = (me && me.role === 'admin')
+      ? api('/menu/all').then(function(all) {
+          return { items: (all.items || []).filter(function(p){ return p.section === 'delivery'; }) };
+        })
+      : api('/dmenu');
+    var infoPromise = fetch(API_BASE + '/api/delivery/info').then(function(x){ return x.json(); }).catch(function(){ return null; });
+    var results = await Promise.all([menuPromise, infoPromise]);
+    var r = results[0] || {};
     DMENU = r.items || [];
-    deliveryInfo = await fetch(API_BASE + '/api/delivery/info').then(function(x){ return x.json(); });
+    deliveryInfo = results[1];
     populatePlaces();
     populateSlots();
     renderDeliveryRail();

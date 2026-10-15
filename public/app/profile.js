@@ -1,13 +1,13 @@
 /* public/app/profile.js — F2.2: профиль гостя, бонусы, верификация */
 var cupWord = n => n === 1 ? 'чашка' : (n > 0 && n < 5 ? 'чашки' : 'чашек');
 var BEAN = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
-  '<g transform="rotate(-24 12 12)">' +
+    '<g transform="rotate(-24 12 12)">' +
     '<ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="currentColor"/>' +
     '<path d="M12 3.6 C 8.4 7.8 15.6 16.2 12 20.4" ' +
-      'fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" ' +
-      'stroke-linecap="round"/>' +
+    'fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" ' +
+    'stroke-linecap="round"/>' +
     '<ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/>' +
-  '</g></svg>';
+    '</g></svg>';
 var stampIcon = i => i === 9 ? '☕' : BEAN;
 
 (function () {
@@ -32,7 +32,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
     (function autoResolveMe() {
         var started = Date.now();
         var hasToken = false;
-        try { hasToken = (typeof USER_TOKEN !== 'undefined' && !!USER_TOKEN); } catch (_) {}
+        try { hasToken = (typeof USER_TOKEN !== 'undefined' && !!USER_TOKEN); } catch (_) { }
         if (!hasToken) {
             try {
                 for (var i = 0; i < localStorage.length; i++) {
@@ -41,13 +41,13 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                     var v = localStorage.getItem(k);
                     if (v && v.length > 8) { hasToken = true; break; }
                 }
-            } catch (_) {}
+            } catch (_) { }
         }
         var timeout = hasToken ? 3000 : 300;
         var tick = function () {
             if (_meResolved) return;
             var loaded = false;
-            try { loaded = (typeof me !== 'undefined') && me !== null; } catch (_) {}
+            try { loaded = (typeof me !== 'undefined') && me !== null; } catch (_) { }
             if (loaded || Date.now() - started > timeout) return _resolveMeReady();
             setTimeout(tick, 100);
         };
@@ -59,8 +59,8 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
     })();
 
     /* ── бонусы ── */
-    
-function updateMbonusBadge() {
+
+    function updateMbonusBadge() {
         var mbBtn = document.getElementById("mbonusBtn");
         if (!mbBtn) return;
         var stamps = (window.me && typeof window.me.stamps === 'number') ? window.me.stamps : 0;
@@ -92,7 +92,7 @@ function updateMbonusBadge() {
             var boxEl = document.getElementById('bonusBox');
             if (noUserEl) noUserEl.hidden = true;
             if (boxEl) boxEl.hidden = true;
-            _onMeResolved(function () { try { renderBonus(); } catch (e) {} });
+            _onMeResolved(function () { try { renderBonus(); } catch (e) { } });
             return;
         }
         var bnu = document.getElementById("bonusNoUser");
@@ -167,7 +167,7 @@ function updateMbonusBadge() {
                 var pbx = document.getElementById('profileBox');
                 if (pnu) pnu.hidden = true;
                 if (pbx) pbx.hidden = true;
-                _onMeResolved(function () { try { renderProfile(); } catch (e) {} });
+                _onMeResolved(function () { try { renderProfile(); } catch (e) { } });
                 return;
             }
             $("#profileNoUser").hidden = !!me;
@@ -231,7 +231,7 @@ function updateMbonusBadge() {
                 _verifyNoteQueued = true;
                 _onMeResolved(function () {
                     _verifyNoteQueued = false;
-                    try { renderVerifyNote(); } catch (e) {}
+                    try { renderVerifyNote(); } catch (e) { }
                 });
             }
             return;
@@ -260,10 +260,10 @@ function updateMbonusBadge() {
         }
 
         let html = '<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small>' +
-                '<div style="display:flex;gap:8px;margin-bottom:12px">' +
-                '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1">' +
-                '<button class="btn fire" id="actBtn">Активировать</button>' +
-                '</div>';
+            '<div style="display:flex;gap:8px;margin-bottom:12px">' +
+            '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1">' +
+            '<button class="btn fire" id="actBtn">Активировать</button>' +
+            '</div>';
 
         if (!me.welcome && !me.tg) {
             html += '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>+1 штамп</b> за привязку в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
@@ -317,8 +317,8 @@ function updateMbonusBadge() {
                 var items = (o.items || []).slice(0, 3).map(function (i) { return i.qty + '× ' + i.name; }).join(', ') + ((o.items || []).length > 3 ? '…' : '');
 
                 var timeInfo = o.is_preorder
-                    ? ' · <b style="color:#B26A05">⏰ Предзаказ: ' + esc(o.slot) + '</b>'
-                    : (o.eta ? ' · ⏰ ' + esc(o.eta) : '');
+                    ? ' · <span class="preorder-slot" data-slot="' + esc(o.slot) + '" style="color:#B26A05;font-weight:700">⏰ Предзаказ: ' + esc(o.slot) + '</span>'
+                    : (o.eta ? ' · <span>⏰ ' + esc(o.eta) + '</span>' : '');
 
                 host.innerHTML = '<div class="myOrderCard"><div class="moTop"><span>Заказ #' + o.no + ' <span class="moDate">· ' + d + '</span></span><span class="moSt ' + s[1] + '">' + s[0] + ' ' + s[2] + '</span></div>' +
                     '<div class="moSum">' + fmt(o.total) + timeInfo + '</div>' +
@@ -345,11 +345,12 @@ function updateMbonusBadge() {
                 done: '🏁 Выполнен',
                 cancel: '❌ Отменён'
             };
-            
+
             list.innerHTML = (r.orders || []).map(function (o) {
                 var d = new Date(o.created).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                // СТАЛО:
                 var timeInfo = o.is_preorder
-                    ? ' · <b style="color:#B26A05">⏰ Предзаказ: ' + esc(o.slot) + '</b>'
+                    ? ' · <b class="preorder-marker" data-preorder-slot="' + esc(o.slot) + '" style="color:#B26A05">⏰ Предзаказ: ' + esc(o.slot) + '</b>'
                     : (o.eta ? ' · ⏰ ' + esc(o.eta) : '');
 
                 return '<div class="myOrderCard" style="margin-bottom:8px"><div class="moTop"><span>Заказ #' + o.no + ' <span class="moDate">· ' + d + '</span></span><span class="moSt">' + (ST[o.status] || o.status) + '</span></div>' +
@@ -436,11 +437,11 @@ document.addEventListener('click', function (e) {
 })();
 
 document.addEventListener('click', function (e) {
-  var b = (e.target && e.target.closest) ? e.target.closest('[data-auth]') : null;
-  if (!b) return;
-  e.preventDefault();
-  e.stopPropagation();
-  if (typeof openAuth === 'function') openAuth();
+    var b = (e.target && e.target.closest) ? e.target.closest('[data-auth]') : null;
+    if (!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof openAuth === 'function') openAuth();
 }, true);
 /* ── Ф5.8f: ESM-шимы: catalog.js/profile-brand.js/boot.js/live.js ── */
 window.renderBonus = renderBonus;

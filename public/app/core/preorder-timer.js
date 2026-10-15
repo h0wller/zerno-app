@@ -54,61 +54,54 @@ function isDeliveryServiceOpen() {
     return '~' + Math.max(1, mins) + ' мин';
   }
 
- function renderTimers() {
-    // Сканируем только контейнеры заказов, а не весь DOM
-    var host = document.querySelector('#myOrders, #ordersList, #pvProfile');
-    if (!host) return;
+function renderTimers() {
+  var markers = document.querySelectorAll('.preorder-slot[data-slot]');
+  if (!markers.length) return;
 
-    var elements = host.querySelectorAll('b, span, div');
-    var now = Date.now();
+  var now = Date.now();
 
-    for (var i = 0; i < elements.length; i++) {
-      var el = elements[i];
-      // Проверяем только прямые текстовые элементы, содержащие "Предзаказ:"
-      if (el.children.length === 0 && el.textContent && el.textContent.indexOf('Предзаказ:') !== -1) {
-        var card = el.closest('.myorderCard, .orderCard, .history-item, .card, [class*="order" i]') || el.parentElement;
-        if (!card) continue;
-        var cardText = card.textContent || '';
-        if (/отмен|доставлен|выполнен|завершен/i.test(cardText)) continue;
+  for (var i = 0; i < markers.length; i++) {
+    var marker = markers[i];
+    var slotStr = marker.getAttribute('data-slot');
+    var parsed = parseSlot(slotStr);
+    if (!parsed) continue;
 
-        var m = el.textContent.match(/(?:\d{1,2}\.\d{2})?[^0-9\n]*\d{1,2}:\d{2}\s*[–—\-]\s*\d{1,2}:\d{2}/i);
-        if (!m) continue;
+    var card = marker.closest('.myOrderCard, .orderCard, .history-item, .card');
+    if (!card) continue;
 
-        var parsed = parseSlot(m[0]);
-        if (!parsed) continue;
+    var existing = card.querySelector('.preorder-timer');
 
-        var existing = card.querySelector('.preorder-timer');
-        var msToStart = parsed.start.getTime() - now;
-        var msToEnd = parsed.end.getTime() - now;
+    var statusEl = card.querySelector('.moSt, .ocStatus');
+    var statusText = statusEl ? (statusEl.textContent || '') : '';
+    if (/отмен|доставлен|выполнен|завершен/i.test(statusText)) {
+      if (existing) existing.remove();
+      continue;
+    }
 
-        if (msToEnd <= 0) {
-          if (existing) existing.remove();
-          continue;
-        }
+    var msToStart = parsed.start.getTime() - now;
+    var msToEnd = parsed.end.getTime() - now;
 
-        var badgeText = '';
-        var isWaiting = true;
-        if (msToStart > 0) {
-          badgeText = '⏱ До доставки ' + formatRemaining(msToStart);
-        } else {
-          badgeText = '🚗 Курьер уже в пути';
-          isWaiting = false;
-        }
+    if (msToEnd <= 0) {
+      if (existing) existing.remove();
+      continue;
+    }
 
-        if (!existing) {
-          existing = document.createElement('div');
-          existing.className = 'preorder-timer ' + (isWaiting ? 'preorder-timer-waiting' : 'preorder-timer-active');
-          existing.textContent = badgeText;
-          el.parentNode.insertBefore(existing, el.nextSibling);
-        } else {
-          if (existing.textContent !== badgeText) {
-            existing.textContent = badgeText;
-            existing.className = 'preorder-timer ' + (isWaiting ? 'preorder-timer-waiting' : 'preorder-timer-active');
-          }
-        }
-      }
+    var badgeText = msToStart > 0
+      ? '⏱ До доставки ' + formatRemaining(msToStart)
+      : '🚗 Курьер уже в пути';
+    var isWaiting = msToStart > 0;
+
+    if (!existing) {
+      existing = document.createElement('div');
+      existing.className = 'preorder-timer ' + (isWaiting ? 'preorder-timer-waiting' : 'preorder-timer-active');
+      existing.textContent = badgeText;
+      marker.parentNode.insertBefore(existing, marker.nextSibling);
+    } else if (existing.textContent !== badgeText) {
+      existing.textContent = badgeText;
+      existing.className = 'preorder-timer ' + (isWaiting ? 'preorder-timer-waiting' : 'preorder-timer-active');
     }
   }
+}
 
   function init() {
     // Запуск строго при переходе в профиль/заказы
