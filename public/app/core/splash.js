@@ -11,8 +11,14 @@
     }
   } catch (e) {}
 
-  // Если это не reload вкладки, а переход по клику сплэша (?brand=...)
-  const fromBrandNav = !!QS.get('brand') && navType !== 'reload';
+  let clickedSplashInTab = false;
+  try {
+    clickedSplashInTab = sessionStorage.getItem('zt_splash_clicked') === '1';
+  } catch (e) {}
+
+  const forceSplash = QS.get('splash') === '1' || QS.get('splash') === 'true';
+  // Если в URL есть ?brand=, пропускаем сплэш всегда, КРОМЕ случая reload после клика по сплэшу в этой же вкладке
+  const fromBrandNav = !!QS.get('brand') && !forceSplash && !(navType === 'reload' && clickedSplashInTab);
   const hasDeeplink = !!(QS.get('item') || QS.get('tab') || QS.get('no') || QS.get('reorder'));
   const isAudit = document.documentElement.classList.contains('is-audit') || QS.get('lighthouse') === '1';
 
@@ -77,6 +83,7 @@
     syncSplashStorage();
     try {
       localStorage.setItem('zt_brand', choice);
+      sessionStorage.setItem('zt_splash_clicked', '1');
     } catch (e) {}
 
     hideSplashDom();

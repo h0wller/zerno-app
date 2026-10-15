@@ -129,3 +129,6 @@ lighthouse-report.report.html
 lighthouse-report.report.json
 lh-mobile.json
 lh-desktop.json
+lh-local-1.json
+lh-local-2.json
+lh-local-3.json
