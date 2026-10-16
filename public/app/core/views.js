@@ -37,7 +37,11 @@ window.__fvChatState = {
 if (supportPending) {
   document.body.classList.add('support-pending');
   var ov0 = document.getElementById('supportChooseOverlay');
-  if (ov0) { ov0.style.display = 'flex'; ov0.style.zIndex = '
+  if (ov0) { 
+    ov0.style.display = 'flex'; 
+    ov0.style.zIndex = '10002'; 
+  }
+}
 
 /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
 var css = document.createElement('style');
