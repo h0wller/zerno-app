@@ -13,7 +13,7 @@ if (!match) {
 }
 
 const oldVer = parseInt(match[1], 10);
-const newVer = oldVer + 1;
+const newVer = process.env.BUILD_NUM ? oldVer + Number(process.env.BUILD_NUM) : oldVer + 1;
 
 const nextSw = sw.replace(
   /const STATIC_CACHE = ['"]zerno-static-v\d+['"]/,
