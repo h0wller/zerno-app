@@ -304,6 +304,120 @@ html[data-brand="delivery"] .menu-head h1 {
   font: 900 clamp(22px, 3.2vw, 36px)/1.15 "Unbounded", sans-serif;
   color: #3a2a1c;
 }
+/* ═══ 6. Токены первого кадра (дубль из brand-tokens.css) ═══ */
+html[data-brand="delivery"] {
+  --paper: #F3EDE6;
+  --fr-choc: #3A2A1C;
+  --fr-paper: #F6EEE1;
+  --card-bg: #F6EEE1;
+  --card-border: 2px solid #3A2A1C;
+  --card-shadow: 2px 2px 0 #3A2A1C;
+  --card-radius: 18px;
+}
+body {
+  background: var(--paper, #FFFFFF);
+  color: var(--ink, #101418);
+}
+
+/* ═══ 7. Сплэш: текст и кнопки (зеркало theme-v2.css) ═══ */
+#brandSplashStatic,
+#brandSplash { overflow: auto; }
+#brandSplashStatic *,
+#brandSplash * { box-sizing: border-box; margin: 0; padding: 0; }
+#brandSplashStatic .spInner,
+#brandSplash .spInner { width: 100%; max-width: 560px; text-align: center; }
+#brandSplashStatic .spTitle,
+#brandSplash .spTitle {
+  font: 400 clamp(20px, 5.5vw, 30px)/1.25 Prata, serif;
+  margin-bottom: 6px;
+  overflow-wrap: break-word;
+  color: var(--ink, #101418);
+}
+#brandSplashStatic .spSub,
+#brandSplash .spSub { color: var(--soft, #586470); font-size: 14px; margin-bottom: 22px; }
+#brandSplashStatic .spBtns,
+#brandSplash .spBtns { display: grid; grid-template-columns: 1fr; gap: 12px; }
+#brandSplashStatic .spBtn,
+#brandSplash .spBtn {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  border-radius: 22px;
+  padding: 22px 16px;
+  font: 700 16px Unbounded, sans-serif;
+  box-shadow: var(--sh, 0 10px 30px -12px rgba(16, 20, 24, 0.18));
+  width: 100%;
+}
+#brandSplashStatic .spBtn small,
+#brandSplash .spBtn small {
+  display: block;
+  font: 400 12px "Golos Text", system-ui, sans-serif;
+  margin-top: 6px;
+}
+#brandSplashStatic .spPizza,
+#brandSplash .spPizza { border: 2px solid #F2D9A5; background: #FFF6E5; color: #6B4E0E; }
+#brandSplashStatic .spPizza small,
+#brandSplash .spPizza small { color: #8A6D3B; }
+#brandSplashStatic .spCoffee,
+#brandSplash .spCoffee { border: 2px solid var(--line, #D8DFE4); background: #fff; color: var(--ink, #101418); }
+#brandSplashStatic .spCoffee small,
+#brandSplash .spCoffee small { color: var(--soft, #586470); }
+#brandSplashStatic .spBtn .em,
+#brandSplash .spBtn .em { display: block; font-size: 30px; line-height: 1; margin-bottom: 10px; }
+#brandSplashStatic .spBtn .bt,
+#brandSplash .spBtn .bt { display: block; font: 700 16px Unbounded, sans-serif; }
+@media (min-width: 560px) {
+  #brandSplashStatic .spBtns,
+  #brandSplash .spBtns { grid-template-columns: 1fr 1fr; }
+}
+
+/* ═══ 8. Карточка (Маргарита) и сетки до загрузки theme-v2.css ═══ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+@media (min-width: 1181px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1600px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+#deliveryGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding-bottom: calc(var(--floating-cart-h, 72px) + max(16px, env(safe-area-inset-bottom, 0px)));
+}
+@media (min-width: 560px) {
+  #deliveryGrid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+}
+.card {
+  background: var(--card-bg, #FFFFFF);
+  border: var(--card-border, 1.5px solid rgba(62, 143, 208, 0.25));
+  border-radius: var(--card-radius, 18px);
+  box-shadow: var(--card-shadow, 0 6px 20px rgba(18, 58, 107, 0.08));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 340px;
+}
+.card .media {
+  height: 180px;
+  min-height: 180px;
+  aspect-ratio: 16 / 10;
+  contain: layout size;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card .media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+#deliveryGrid .card .cbody { display: flex; flex-direction: column; }
 </style>
 <script id="perf-lighthouse-bridge">
     (() => {
