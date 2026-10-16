@@ -418,7 +418,57 @@ body {
   display: block;
 }
 #deliveryGrid .card .cbody { display: flex; flex-direction: column; }
-</style>
+/* ═══ 9. Первый кадр: шрифты, сброс, сплэш (зеркало theme-v2.css / fonts.css) ═══ */
+@font-face {
+  font-family: 'Golos Text';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/app/ui/fonts/golos-text-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Prata';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/app/ui/fonts/prata-400-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url('/app/ui/fonts/unbounded-700-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font: 400 15px/1.5 "Golos Text", system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+html[data-brand="delivery"] {
+  --line: #E5DACB;
+}
+    </style>
 <script id="perf-lighthouse-bridge">
     (() => {
       const ua = navigator.userAgent;
