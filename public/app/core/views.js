@@ -60,10 +60,10 @@ var rules = [
  '@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
  '@media(max-width:1023px){[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] .topbar .brand > div:not(.mark){display:none!important}}',
 '@media(max-width:690px){[data-brand="coffee"] .topbar .brand small,[data-brand="coffee"] .topbar .brand .brand-text{display:none!important}[data-brand="coffee"] .topbar .brand .mark{width:44px!important;height:44px!important;min-width:44px!important;max-height:44px!important}[data-brand="coffee"] .topbar .brand > div:not(.mark){overflow:visible!important;padding-right:4px}}',
-'@media(max-width:690px){[data-brand="coffee"] .topbar .brand b#brandTitle{display:block;flex:0 0 auto;font:400 22px/1 Prata,serif;letter-spacing:.01em;white-space:nowrap;color:#2F95F5;-webkit-text-stroke:1.1px #2F95F5;paint-order:stroke fill;text-shadow:1px 1px 0 #2E3238,2px 2px 0 #2E3238,3px 3px 0 #23272C;filter:drop-shadow(0 0 5px rgba(47,149,245,.45))}[data-brand="coffee"] .topbar .brand b#brandTitle::first-letter{text-transform:uppercase}}',
-'@media(max-width:360px){[data-brand="coffee"] .topbar .brand b#brandTitle{font-size:18px}}',
+'@media(max-width:690px){[data-brand="coffee"] .topbar .brand b#brandTitle{display:block;flex:0 0 auto;font:400 22px/1 Prata,serif;letter-spacing:.01em;white-space:nowrap;color:#2F95F5;-webkit-text-stroke:1.1px #2F95F5;paint-order:stroke fill;text-shadow:1px 1px 0 #2E3238,2px 2px 0 #2E3238,3px 3px 0 #23272C;filter:drop-shadow(0 0 5px rgba(47,149,245,.45))}}',
+'[data-brand="coffee"] .topbar .brand b#brandTitle .bean{display:inline-block;width:.62em;height:.86em;margin:0 .04em;vertical-align:-.1em;border-radius:50% 50% 50% 50%/58% 58% 42% 42%;background:linear-gradient(90deg,transparent 44%,#1B4F8A 44% 56%,transparent 56%),#2F95F5;transform:rotate(-18deg);box-shadow:1px 1px 0 #2E3238}',
 '.topbar #profileTopBtn{background:var(--ava-bg,#C99E6E)!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;padding:0!important;width:44px!important;height:44px!important;min-width:44px!important}',
-'.topbar #profileTopBtn, .topbar #profileTopBtn *, #avInit{font-family:"Golos Text",system-ui,-apple-system,sans-serif!important;font-weight:700!important;font-size:16px!important;line-height:1!important;color:var(--ava-fg,#3A2A1C)!important;-webkit-text-fill-color:var(--ava-fg,#3A2A1C)!important;-webkit-text-stroke:0!important;text-indent:0!important;opacity:1!important;visibility:visible!important}',
+'.topbar #profileTopBtn, .topbar #profileTopBtn *, #avInit{font-family:"Golos Text",system-ui,-apple-system,sans-serif!important;font-weight:700!important;font-size:16px!important;line-height:1!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;-webkit-text-stroke:0!important;text-shadow:0 1px 2px rgba(0,0,0,.35)!important;text-indent:0!important;opacity:1!important;visibility:visible!important}',
  '@media(max-width:690px){[data-brand="delivery"] .topbar .brand .mark{width:160px!important;max-width:min(54vw,176px)!important;height:44px!important;max-height:44px!important}}', '[data-brand="delivery"] .topbar .brand .mark{width:var(--mark-w,160px);height:var(--mark-h,40px);max-height:var(--mark-h,40px);max-width:min(60vw,420px);flex:0 1 auto;border-radius:8px}',
  '[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}',
  '@media(min-width:821px) and (max-width:1180px){.wrap{grid-template-columns:92px minmax(0,1fr) 350px;gap:18px;padding:18px}.wrap > .rail{grid-column:1}.wrap > section{grid-column:2;min-width:0}.wrap > .panel{grid-column:3;position:sticky;top:118px;transform:none;max-height:calc(100vh - 140px)}.tabs .btn-back{display:none}}',
@@ -196,7 +196,15 @@ function syncBrandChromeState(bName, isDel) {
   }
   var bTitle = document.getElementById('brandTitle');
   var bSub = document.getElementById('brandSub');
-  if (bTitle) bTitle.textContent = isDel ? 'Пятница' : '…и кофе';
+  if (bTitle) {
+    if (isDel) {
+      bTitle.textContent = 'Пятница';
+      bTitle.removeAttribute('aria-label');
+    } else {
+      bTitle.setAttribute('aria-label', '…и кофе');
+      bTitle.innerHTML = '…и к<span class="bean" aria-hidden="true"></span>фе';
+    }
+  }
   if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
 }
 
