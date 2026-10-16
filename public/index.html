@@ -657,18 +657,18 @@ if(b==='delivery'){
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <!-- Неблокирующая загрузка слоёв CSS со 100% фолбэк-страховкой для iOS WebKit / Telegram WebView -->
-  <link rel="stylesheet" href="/app/ui/fonts.css?v=473" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme-v2.css?v=473" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=473" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/fonts.css?v=481" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme-v2.css?v=481" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=481" media="print" onload="this.media='all'" />
   <script>
     window.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('link[media="print"]').forEach(function (l) { l.media = 'all'; });
     });
   </script>
   <noscript>
-    <link rel="stylesheet" href="/app/ui/fonts.css?v=473" />
-    <link rel="stylesheet" href="/app/ui/theme-v2.css?v=473" />
-    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=473" />
+    <link rel="stylesheet" href="/app/ui/fonts.css?v=481" />
+    <link rel="stylesheet" href="/app/ui/theme-v2.css?v=481" />
+    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=481" />
   </noscript>
   <!-- [tg-splash-menu-fix-v2] решение о сплэше = то же, что в core/splash.js -->
 <script>
@@ -779,8 +779,7 @@ if(b==='delivery'){
         </svg>
       </div>
       <div>
-        <b id="brandTitle" aria-label="…и кофе">…и к<span class="bean" aria-hidden="true"></span>фе</b><small id="brandSub">кофейня на берегу моря</small>
-      </div>
+        <b id="brandTitle" aria-label="…и кофе">…и к<span class="bean" aria-hidden="true"><svg viewBox="3.5 1.5 21 24"><g transform="translate(3 3)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#23272C"/></g></g><g transform="translate(2 2)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="translate(1 1)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="currentColor"/><path d="M12 3.6C8.4 7.8 15.6 16.2 12 20.4" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/></g></svg></span>фе</b><small id="brandSub">кофейня на берегу моря</small>      </div>
     </div>
     <div class="modeSeg" id="modeSeg" hidden></div>
     <button class="mbonus" id="mbonusBtn" type="button" aria-label="Бонусы 0/10">
@@ -812,7 +811,7 @@ if(b==='delivery'){
         <div class="menu-head">
           <div class="mh-top">
             <div>
-              <h1>Пятница <em>— доставка пиццы и роллов</em></h1>
+              <h1>Меню <em>доставка пиццы и роллов</em></h1>
               <h2 class="vh">Разделы меню</h2>
               <div class="upd">
                 Обновлено: <b id="updWhenD">-</b>
@@ -1591,7 +1590,7 @@ if(b==='delivery'){
       <button class="btn ghost cart-continue-btn" id="cartClose">Продолжить покупки</button>
     </div>
   </div>
-<script type="module" src="/dist/main.bundle.js?v=473"></script>
+<script type="module" src="/dist/main.bundle.js?v=481"></script>
   <div id="installBanner" hidden style="
         position: fixed;
         left: 12px;

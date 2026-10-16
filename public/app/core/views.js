@@ -59,13 +59,10 @@ var rules = [
  '@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}',
  '@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
  '@media(max-width:1023px){[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] .topbar .brand > div:not(.mark){display:none!important}}',
-'@media(max-width:690px){[data-brand="coffee"] .topbar .brand small,[data-brand="coffee"] .topbar .brand .brand-text{display:none!important}[data-brand="coffee"] .topbar .brand .mark{width:44px!important;height:44px!important;min-width:44px!important;max-height:44px!important}[data-brand="coffee"] .topbar .brand > div:not(.mark){overflow:visible!important;padding-right:4px}}',
-'@media(max-width:690px){[data-brand="coffee"] .topbar .brand b#brandTitle{display:block;flex:0 0 auto;font:400 22px/1 Prata,serif;letter-spacing:.01em;white-space:nowrap;color:#2F95F5;-webkit-text-stroke:1.1px #2F95F5;paint-order:stroke fill;text-shadow:1px 1px 0 #2E3238,2px 2px 0 #2E3238,3px 3px 0 #23272C;filter:drop-shadow(0 0 5px rgba(47,149,245,.45))}}',
-'[data-brand="coffee"] .topbar .brand b#brandTitle .bean{display:inline-block;width:.8em;height:.72em;margin:0 .02em;vertical-align:-.04em}',
+'@media(max-width:690px){[data-brand="coffee"] .topbar .brand small,[data-brand="coffee"] .topbar .brand .brand-text{display:none!important}[data-brand="coffee"] .topbar .brand .mark{width:52px!important;height:52px!important;min-width:52px!important;max-height:52px!important}[data-brand="coffee"] .topbar .brand > div:not(.mark){overflow:visible!important;padding-right:4px}}',
+'[data-brand="coffee"] .topbar .brand b#brandTitle .bean{display:inline-block;width:.8em;height:.8em;margin:0 .03em;vertical-align:-.04em;color:#2F95F5}',
 '[data-brand="coffee"] .topbar .brand b#brandTitle .bean svg{display:block;width:100%;height:100%;overflow:visible}',
-'.topbar #profileTopBtn{background:var(--ava-bg,#C99E6E)!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;padding:0!important;width:44px!important;height:44px!important;min-width:44px!important}',
-'.topbar #profileTopBtn, .topbar #profileTopBtn *, #avInit{font-family:"Golos Text",system-ui,-apple-system,sans-serif!important;font-weight:700!important;font-size:16px!important;line-height:1!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;-webkit-text-stroke:0!important;text-shadow:0 1px 2px rgba(0,0,0,.35)!important;text-indent:0!important;opacity:1!important;visibility:visible!important}',
- '@media(max-width:690px){[data-brand="delivery"] .topbar .brand .mark{width:160px!important;max-width:min(54vw,176px)!important;height:44px!important;max-height:44px!important}}', '[data-brand="delivery"] .topbar .brand .mark{width:var(--mark-w,160px);height:var(--mark-h,40px);max-height:var(--mark-h,40px);max-width:min(60vw,420px);flex:0 1 auto;border-radius:8px}',
+'@media(max-width:690px){[data-brand="delivery"] .topbar .brand .mark{width:196px!important;max-width:min(60vw,210px)!important;height:48px!important;max-height:48px!important}}', '[data-brand="delivery"] .topbar .brand .mark{width:var(--mark-w,160px);height:var(--mark-h,40px);max-height:var(--mark-h,40px);max-width:min(60vw,420px);flex:0 1 auto;border-radius:8px}',
  '[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}',
  '@media(min-width:821px) and (max-width:1180px){.wrap{grid-template-columns:92px minmax(0,1fr) 350px;gap:18px;padding:18px}.wrap > .rail{grid-column:1}.wrap > section{grid-column:2;min-width:0}.wrap > .panel{grid-column:3;position:sticky;top:118px;transform:none;max-height:calc(100vh - 140px)}.tabs .btn-back{display:none}}',
  '@media(min-width:821px){#mbonusBtn{height:40px;min-width:0;max-width:180px;display:inline-flex;flex-direction:row;align-items:center;gap:8px;padding:0 12px;border-radius:999px;background:#101418;color:#fff;box-shadow:0 4px 12px rgba(16,20,24,.15);white-space:nowrap;overflow:hidden}}',
@@ -120,6 +117,7 @@ var rules = [
  '[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2;border-bottom:1px solid rgba(62,143,208,.25)}',
  '[data-brand="delivery"] #tickerTrack span::after{color:#C03B2A}',
  '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
+ 
 
  '@media(min-width:1181px){body.is-cashier .panel{display:none}body.is-cashier .wrap{grid-template-columns:1fr}.topbar > :last-child{margin-left:0!important}#profileTopBtn{margin-left:auto;width:46px;height:46px;font-size:18px}}',
  '@media(max-width:640px){#modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}#profileTopBtn{width:44px!important;height:44px!important;min-width:44px!important;flex:0 0 44px!important}.chat{right:8px}.mh-right{margin-left:0;width:100%}}',
@@ -224,8 +222,7 @@ function syncBrandChromeState(bName, isDel) {
       bTitle.removeAttribute('aria-label');
     } else {
       bTitle.setAttribute('aria-label', '…и кофе');
-      bTitle.innerHTML = '…и к<span class="bean" aria-hidden="true"><svg viewBox="0 0 44 40"><ellipse cx="23" cy="21" rx="20" ry="18" fill="#2E3238"/><ellipse cx="21" cy="19" rx="20" ry="18" fill="#2F95F5"/><path d="M21 3C13 12 29 27 21 37" fill="none" stroke="#1B4F8A" stroke-width="3.6" stroke-linecap="round"/></svg></span>фе';
-    }
+      bTitle.innerHTML = '…и к<span class="bean" aria-hidden="true"><svg viewBox="3.5 1.5 21 24"><g transform="translate(3 3)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#23272C"/></g></g><g transform="translate(2 2)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="translate(1 1)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="currentColor"/><path d="M12 3.6C8.4 7.8 15.6 16.2 12 20.4" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/></g></svg></span>фе';    }
   }
   if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
 }

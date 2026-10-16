@@ -1359,13 +1359,13 @@ label.chk{
 }
 @media (hover: hover) and (pointer: fine){
   .chat-fab:hover,
-  html body[data-brand] .chat-fab:hover{
+  body .chat-fab:hover{
     transform: scale(1.08) rotate(-6deg);
     background: var(--chat-fab-hover-bg, #3E8FD0);
   }
 }
 .chat-fab:active,
-body[data-brand] .chat-fab:active{
+.chat-fab:active{
   transform: scale(0.92);
 }
 .chat-fab.open{
@@ -3829,16 +3829,16 @@ body #mbonusBtn .mb-free {
 
 /* [fix-all v3] F5.62 */
 /* ─────────────────────────────────────────────────────────────────────────
-   F5.62 — без !important. Специфичность: body[data-brand] поднимает выше
-   [data-brand="…"] и #id из views.js.
+   F5.62 — без !important. Специфичность: поднимает выше
+   брендовые селекторы и #id из views.js.
    ───────────────────────────────────────────────────────────────────────── */
 
 /* [1] Панель: overlay на 821-1180 (как на мобильном), колонка на 1181+ */
 @media (min-width: 821px) and (max-width: 1180px) {
-  body[data-brand] .wrap {
+  .wrap {
     grid-template-columns: 72px minmax(0, 1fr);
   }
-  body[data-brand] .wrap > .panel {
+  .wrap > .panel {
     position: fixed;
     top: 0; right: 0; bottom: 0;
     z-index: 320;
@@ -3850,15 +3850,15 @@ body #mbonusBtn .mb-free {
     padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
     overflow-y: auto;
   }
-  body[data-brand] .wrap > .panel.open { transform: none; }
+  .wrap > .panel.open { transform: none; }
 }
 @media (min-width: 1181px) {
-  body[data-brand] .wrap {
+  .wrap {
     grid-template-columns: 92px minmax(0, 1fr) 350px;
     gap: 22px;
     max-width: 1480px;
   }
-  body[data-brand] .wrap > .panel {
+  .wrap > .panel {
     position: sticky;
     top: 118px;
     max-height: calc(100vh - 140px);
@@ -3866,53 +3866,108 @@ body #mbonusBtn .mb-free {
   }
 }
 
-/* [2] Topbar: 4 колонки venue | brand | mbonus | profile на 821+ */
+/* [2] Desktop topbar (821px+): 4 колонки venue | brand | mbonus | profile, явные размеры, первая строка не сжимается */
 @media (min-width: 821px) {
-  body[data-brand] .topbar {
+  .topbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto auto;
+    grid-template-rows: 64px auto;
     align-items: center;
+    align-content: start;
     gap: 8px;
+    padding: 10px 16px 8px;
+    height: auto;
+    min-height: 96px;
   }
-  body[data-brand] .topbar .venueWrap {
-    grid-column: 1; grid-row: 1; justify-self: start; min-width: 0;
+  .topbar .venueWrap {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    min-width: 0;
   }
-  body[data-brand] .topbar .brand {
-    grid-column: 2; grid-row: 1; justify-self: center;
+  .topbar .brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
   }
-  body[data-brand] .topbar #mbonusBtn {
-    grid-column: 3; grid-row: 1; justify-self: end;
+  .topbar #mbonusBtn {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
     position: static;
-    width: auto; max-width: none; min-width: 120px;
-    height: 56px; padding: 0 14px; margin: 0;
+    width: auto;
+    max-width: none;
+    min-width: 120px;
+    height: 44px;
+    padding: 0 14px;
+    margin: 0;
     flex-direction: row;
     border-radius: 999px;
     align-self: center;
   }
-  body[data-brand] .topbar #profileTopBtn {
-    grid-column: 4; grid-row: 1; justify-self: end;
-    position: static; margin: 0;
+  .topbar #profileTopBtn {
+    grid-column: 4;
+    grid-row: 1;
+    justify-self: end;
+    position: static;
+    margin: 0;
     align-self: center;
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
   }
-  body[data-brand] .topbar #modeSeg {
-    grid-column: 1 / -1; grid-row: 2;
+  .topbar #modeSeg {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
   }
-    .topbar #profileTopBtn {
-    width: 56px;
-    height: 56px;
-    font-size: 22px;
+  .topbar .venueToggle {
+    height: 44px;
+    font-size: 14px;
+    padding: 0 14px;
+    gap: 6px;
   }
-  .venueToggle {
-    height: 56px;
-    font-size: 15px;
-    padding: 0 18px;
-    gap: 8px;
+}
+
+/* Desktop (1181px+): панель вмещается в колонку 350px и не уезжает под шапку */
+@media (min-width: 1181px) {
+  .wrap > .panel {
+    width: 100%;
+    min-width: 0;
+    max-width: 350px;
+    justify-self: stretch;
+    top: 112px;
+    max-height: calc(100vh - 128px);
+    margin-top: 0;
   }
+  .wrap > .panel > * {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .wrap > section {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .wrap > .panel {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
+  }
+  /* Desktop: в «Пятнице» панель всегда видна в колонке, мобильная шторка не применяется */
+html .wrap > #panel:not(.open):not(.show) {
+  position: sticky;
+  top: 112px;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+}
 }
 
 /* [3] Mobile topbar: строгая 3-колоночная сетка 1fr auto 1fr для идеального центрирования логотипа */
 @media (max-width: 820px) {
-  body[data-brand] .topbar,
+  .topbar,
   header.topbar {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -3928,7 +3983,7 @@ body #mbonusBtn .mb-free {
   header.topbar:has(#modeSeg:not([hidden])) {
     height: auto;
   }
-  body[data-brand] .topbar .venueWrap,
+  .topbar .venueWrap,
   header.topbar div.venueWrap {
     grid-column: 1;
     grid-row: 1;
@@ -3936,7 +3991,7 @@ body #mbonusBtn .mb-free {
     order: 1;
     min-width: 0;
   }
-  body[data-brand] .topbar .brand,
+  .topbar .brand,
   header.topbar div#headerBrand.brand {
     grid-column: 2;
     grid-row: 1;
@@ -3952,7 +4007,7 @@ body #mbonusBtn .mb-free {
     align-items: center;
     justify-content: center;
   }
-  body[data-brand] .topbar #profileTopBtn,
+  .topbar #profileTopBtn,
   header.topbar button#profileTopBtn.ava {
     grid-column: 3;
     grid-row: 1;
@@ -3963,14 +4018,14 @@ body #mbonusBtn .mb-free {
     display: grid;
     place-items: center;
   }
-  body[data-brand] .topbar #modeSeg,
+  .topbar #modeSeg,
   header.topbar #modeSeg {
     grid-column: 1 / -1;
     grid-row: 2;
     order: 10;
     width: 100%;
   }
-  body[data-brand] .topbar #mbonusBtn {
+  .topbar #mbonusBtn {
     position: fixed;
     left: 12px; right: auto; top: auto;
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
@@ -3982,17 +4037,16 @@ body #mbonusBtn .mb-free {
     transform: none;
   }
 }
-
 /* [4] Search на 821-1180: не растягивается */
 @media (min-width: 821px) and (max-width: 1180px) {
-  body[data-brand] .mh-top .mh-right {
+  .mh-top .mh-right {
     width: auto;
     max-width: 360px;
     flex: 0 1 360px;
     margin-left: auto;
   }
-  body[data-brand] .mh-top .search,
-  body[data-brand] .mh-top .mh-right .search {
+  .mh-top .search,
+  .mh-top .mh-right .search {
     width: auto;
     min-width: 200px;
     max-width: 360px;
@@ -4001,14 +4055,14 @@ body #mbonusBtn .mb-free {
 }
 /* [5] Search на мобильном = 100% в обоих брендах */
 @media (max-width: 820px) {
-  body[data-brand] #menuView .mh-top .mh-right,
-  body[data-brand] #deliveryView .mh-top .mh-right {
+  #menuView .mh-top .mh-right,
+  #deliveryView .mh-top .mh-right {
     width: 100%; max-width: 100%;
     flex: 1 1 100%;
     margin-left: 0;
   }
-  body[data-brand] #menuView .mh-top .mh-right .search,
-  body[data-brand] #deliveryView .mh-top .mh-right .search {
+  #menuView .mh-top .mh-right .search,
+  #deliveryView .mh-top .mh-right .search {
     width: 100%; max-width: 100%;
     flex: 1 1 100%;
     min-width: 0;
@@ -4038,28 +4092,28 @@ body .wrap > #deliveryRail {
    mbonus+profile живут в .topbar-right (JS-обёртка, только ≥821px). */
 
 @media (min-width: 821px) {
-  body[data-brand] .topbar {
+  .topbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 8px;
   }
-  body[data-brand] .topbar .venueWrap {
+  .topbar .venueWrap {
     grid-column: 1; grid-row: 1; justify-self: start; min-width: 0;
   }
-  body[data-brand] .topbar .brand {
+  .topbar .brand {
     grid-column: 2; grid-row: 1; justify-self: center; min-width: 0;
   }
-  body[data-brand] .topbar .topbar-right {
+  .topbar .topbar-right {
     grid-column: 3; grid-row: 1; justify-self: end;
     display: flex; align-items: center; gap: 8px; min-width: 0;
   }
-  body[data-brand] .topbar #modeSeg {
+  .topbar #modeSeg {
     grid-column: 1 / -1; grid-row: 2;
   }
   /* если JS не успел обернуть — не даём упасть раскладке */
-  body[data-brand] .topbar #mbonusBtn { grid-column: 3; grid-row: 1; justify-self: end; margin-right: 56px; }
-  body[data-brand] .topbar #profileTopBtn { grid-column: 3; grid-row: 1; justify-self: end; }
+  .topbar #mbonusBtn { grid-column: 3; grid-row: 1; justify-self: end; margin-right: 56px; }
+  .topbar #profileTopBtn { grid-column: 3; grid-row: 1; justify-self: end; }
 }
 /* [fix-all v6] END F5.63 */
 
@@ -4746,7 +4800,7 @@ body {
 }
 @media (min-width: 821px) {
   .topbar,
-  body[data-brand] .topbar,
+  .topbar,
   header.topbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -5784,7 +5838,7 @@ body.in-tg .topbar {
 /* 3. Единый каркас .wrap и центрированный без обрезания шапкой рейл (#rail / #deliveryRail) */
 @media (max-width: 1180px) {
   html body div.wrap,
-  body[data-brand] .wrap {
+  .wrap {
     display: grid;
     grid-template-columns: 80px minmax(0, 1fr);
     gap: 10px;
@@ -5957,4 +6011,21 @@ html body div.wrap > section {
   margin: 0;
   flex: 1 1 100%;
   box-sizing: border-box;
+}
+/* Desktop: явные размеры кнопок шапки, перебивают базовые calc(--topbar-h) */
+@media (min-width: 821px) {
+  html header.topbar #profileTopBtn {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+  html header.topbar .venueToggle {
+    height: 44px;
+    font-size: 14px;
+    padding: 0 14px;
+    gap: 6px;
+  }
+  html header.topbar #mbonusBtn {
+    height: 44px;
+  }
 }
