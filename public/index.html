@@ -53,24 +53,35 @@
 /* ═══ CRITICAL ABOVE-THE-FOLD CSS ═══
    Только FOUC-guards, первый кадр сплэша/марки и LCP-каркас.
    Компонентный UI и интерактивные дропдауны вынесены в Слой 1 (theme-v2.css). */
-/* 1. Мгновенно прячем все элементы с атрибутом [hidden], модалки, QR и панель списания кофе до загрузки theme-v2.css */
-[hidden],
-.modal:not(.open),
-.sheet:not(.open),
-.dialog:not(.open),
-#qrModal:not(.open),
-#redeemModal:not(.open),
-#stampModal:not(.open),
-#loyaltyModal:not(.open),
-#cashierView,
-#staffView,
-#adminView,
-#ordersView {
+/* 1. Мгновенно прячем все элементы с атрибутом [hidden], модалки, QR и панель списания кофе до загрузки theme-v2.css *//* 1. Прячем элементы с [hidden] и закрытые модалки (учитываем и .show, и .open) */
+[hidden] {
+  display: none !important;
+}
+
+.modal:not(.show):not(.open),
+.sheet:not(.show):not(.open),
+.dialog:not(.show):not(.open),
+#qrModal:not(.show):not(.open),
+#redeemModal:not(.show):not(.open),
+#stampModal:not(.show):not(.open),
+#loyaltyModal:not(.show):not(.open) {
   display: none;
 }
 
-/* 2. Боковая панель профиля (где лежит блок "История штампов, подарки и QR") не должна мелькать в потоке */
-#panel:not(.open) {
+/* 2. На мобильных экранах (и в режиме доставки) прячем закрытую шторку #panel (с QR и штампами),
+   но НЕ трогаем десктопный сайдбар кофейни */
+@media (max-width: 960px) {
+  #panel:not(.open):not(.show) {
+    position: fixed;
+    top: 0;
+    right: 0;
+    transform: translateX(105%);
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+html[data-brand="delivery"] #panel:not(.open):not(.show) {
   position: fixed;
   top: 0;
   right: 0;
@@ -79,19 +90,14 @@
   pointer-events: none;
 }
 
-#overlay:not(.open) {
-  display: none;
+#overlay:not(.show):not(.open) {
+  opacity: 0;
   pointer-events: none;
 }
 
-/* 3. В режиме доставки Пятницы сразу прячем кофейное меню, рельсу категорий кофейни и блоки штампов/QR */
+/* 3. В режиме доставки Пятницы сразу прячем кофейное меню и рельсу до работы JS */
 html[data-brand="delivery"] #menuView,
-html[data-brand="delivery"] #rail,
-html[data-brand="delivery"] .stamps-card,
-html[data-brand="delivery"] .qr-box,
-html[data-brand="delivery"] .redeem-box,
-html[data-brand="delivery"] [data-tab="qr"],
-html[data-brand="delivery"] [data-tab="stamps"] {
+html[data-brand="delivery"] #rail {
   display: none;
 }
 
@@ -100,10 +106,10 @@ html:not([data-brand="delivery"]) #deliveryView {
   display: none;
 }
 
-/* 4. Фиксируем canvas#fx с первой миллисекунды (убирает 90% CLS — 0.104!) */
+/* 4. Фиксируем canvas#fx с первой миллисекунды (убирает сдвиг макета CLS 0.104) */
 canvas#fx {
   position: fixed;
-   inset: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
