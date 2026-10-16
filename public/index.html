@@ -753,7 +753,7 @@ if(b==='delivery'){
         </svg>
       </div>
       <div>
-        <b id="brandTitle">…и кофе</b><small id="brandSub">кофейня на берегу моря</small>
+        <b id="brandTitle" aria-label="…и кофе">…и к<span class="bean" aria-hidden="true"></span>фе</b><small id="brandSub">кофейня на берегу моря</small>
       </div>
     </div>
     <div class="modeSeg" id="modeSeg" hidden></div>
@@ -1803,10 +1803,22 @@ if(b==='delivery'){
             }
           }
           var bt = document.getElementById('brandTitle');
-          if (bt && bt.textContent !== 'Пятница') bt.textContent = 'Пятница';
+          if (bt) { bt.textContent = 'Пятница'; bt.removeAttribute('aria-label'); }
           var bs = document.getElementById('brandSub');
           if (bs && bs.textContent !== 'доставка пиццы и роллов') bs.textContent = 'доставка пиццы и роллов';
         }
+      } catch (e) { }
+
+      /* Цвет полосы браузера (safe area) следует за data-brand */
+      try {
+        var syncTheme = function () {
+          var cur = document.documentElement.getAttribute('data-brand') || window.brand || localStorage.getItem('zt_brand');
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
+          m.content = cur === 'coffee' ? '#FFFFFF' : '#C99E6E';
+        };
+        syncTheme();
+        new MutationObserver(syncTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-brand'] });
       } catch (e) { }
     })();
   </script>
