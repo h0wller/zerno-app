@@ -182,12 +182,16 @@ function syncBrandChromeState(bName, isDel) {
     m.removeAttribute('media');
     m.setAttribute('content', isDel ? '#C99E6E' : '#FFFFFF');
   });
-    /* Адрес отражает бренд без перезагрузки */
+  /* Адрес отражает бренд без перезагрузки (только в обычном браузере после выбора бренда/сплэша) */
   try {
-    var u = new URL(location.href);
-    if (u.searchParams.get('brand') !== bName) {
-      u.searchParams.set('brand', bName);
-      history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+    var isPwa = (navigator.standalone === true) || matchMedia('(display-mode: standalone)').matches;
+    var splashActive = !sessionStorage.getItem('splashDone') && !document.documentElement.classList.contains('no-splash');
+    if (!IN_TG && !isPwa && !splashActive) {
+      var u = new URL(location.href);
+      if (u.searchParams.get('brand') !== bName) {
+        u.searchParams.set('brand', bName);
+        history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+      }
     }
   } catch (e) {}
   var seg = document.getElementById('brandSeg');
