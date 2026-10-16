@@ -4,16 +4,15 @@ on:
     workflows: ["CI Quality Gates"]
     branches: [pizza]
     types: [completed]
-  workflow_dispatch: # <-- Добавлено для ручного запуска с телефона
+  workflow_dispatch:
 
 permissions:
-  actions: read # <-- Обязательно для workflow_run
+  actions: read
   contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Проверяем, что CI именно успешен (для ручного запуска condition пропускается)
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Deploy to VPS via SSH
@@ -22,8 +21,8 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          script_stop: true 
-              script: |
+          script_stop: true
+          script: |
             cd /var/www/app
             git fetch origin
             git reset --hard ${{ github.event_name == 'workflow_dispatch' && 'origin/pizza' || github.event.workflow_run.head_sha }}
