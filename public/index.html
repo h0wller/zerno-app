@@ -1810,6 +1810,30 @@ if(b==='delivery'){
       } catch (e) { }
     })();
   </script>
+<script>
+if (location.search.indexOf('dbg=1') > -1) setTimeout(function () {
+  var b = document.getElementById('profileTopBtn');
+  if (!b) return;
+  var cs = getComputedStyle(b), r = b.getBoundingClientRect();
+  var av = document.getElementById('avInit');
+  var liveCss = Array.prototype.some.call(document.querySelectorAll('style'), function (s) {
+    return s.textContent.indexOf('#avInit{font-family') > -1;
+  });
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#fff;color:#000;font:12px/1.4 monospace;padding:8px;white-space:pre-wrap;word-break:break-all;max-height:45vh;overflow:auto';
+  d.textContent = [
+    'new css live: ' + liveCss,
+    'text: ' + JSON.stringify(b.textContent) + ' | avInit: ' + (av ? JSON.stringify(av.textContent) : '-'),
+    'color: ' + cs.color + ' | fill: ' + cs.webkitTextFillColor,
+    'bg: ' + cs.backgroundColor + ' | img: ' + cs.backgroundImage.slice(0, 60),
+    'font: ' + cs.fontSize + ' ' + cs.fontFamily,
+    'opacity: ' + cs.opacity + ' | visibility: ' + cs.visibility + ' | display: ' + cs.display,
+    'rect: ' + Math.round(r.width) + 'x' + Math.round(r.height) + ' at ' + Math.round(r.left) + ',' + Math.round(r.top),
+    'overflow: ' + cs.overflow + ' | line-height: ' + cs.lineHeight
+  ].join('\n');
+  document.body.appendChild(d);
+}, 2500);
+</script>
 </body>
 
 </html>
