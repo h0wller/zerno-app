@@ -5,16 +5,25 @@
     <script id="zt-early-brand-guard">
     (function () {
       try {
+        var qs = new URLSearchParams(location.search);
         var stored = localStorage.getItem('zt_brand');
         var m = location.search.match(/[?&]brand=(coffee|delivery|test)\b/i);
-        var urlBrand = m ? decodeURIComponent(m[1]).toLowerCase() : '';
-        var navEntries = window.performance && performance.getEntriesByType && performance.getEntriesByType('navigation');
-        var isReload = !!(navEntries && navEntries[0] && navEntries[0].type === 'reload');
-        var fromSplashClick = sessionStorage.getItem('zt_splash_clicked') === '1';
-        if (urlBrand && !(isReload && fromSplashClick)) {
+        var urlBrand = m ? decodeURIComponent(m[1]).toLowerCase() : (qs.has('delivery') ? 'delivery' : (qs.has('coffee') ? 'coffee' : ''));
+
+        var isPwa = (navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+        var isTg = /Telegram/i.test(navigator.userAgent) || qs.get('src') === 'tg' || !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+        var isActionDeepLink = !!(qs.get('tab') || qs.get('support') || qs.get('order'));
+        var splashDone = sessionStorage.getItem('splashDone') === '1';
+
+        if (urlBrand) {
           try { localStorage.setItem('zt_brand', urlBrand); } catch (e) {}
         }
-        var explicit = !!(urlBrand && !(isReload && fromSplashClick));
+
+        // Сплэш пропускается:
+        // 1) если уже пройден в текущей сессии (splashDone)
+        // 2) если это диплинк на конкретную вкладку/действие (?tab=chat, ?support=choose)
+        // 3) в обычном браузере (!isPwa && !isTg), если в URL явно открыт ?brand=delivery или ?brand=coffee
+        var explicit = splashDone || isActionDeepLink || (!isPwa && !isTg && !!urlBrand);
         var b = urlBrand || stored || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee');
 
         if (b) {
@@ -716,7 +725,7 @@ if(b==='delivery'){
     </div>
   </div>
 
-  <!-- ═══ ИНЛАЙН-ВЛАДЕЛЕЦ КЛИКА (контракт Playwright и чистая навигация) ═══ -->
+    <!-- ═══ ИНЛАЙН-ВЛАДЕЛЕЦ КЛИКА (контракт Playwright и чистая навигация) ═══ -->
   <script>
     (function () {
       var s = document.getElementById("brandSplashStatic");
@@ -727,17 +736,34 @@ if(b==='delivery'){
         e.stopImmediatePropagation();
         var choice = btn.getAttribute("data-go");
         try { sessionStorage.setItem("splashDone", "1"); } catch (err) { }
+        try { sessionStorage.setItem("zt_splash_clicked", "1"); } catch (err) { }
         try { localStorage.setItem("zt_brand", choice); } catch (err) { }
-        document.documentElement.classList.remove("need-splash");
-        document.documentElement.classList.add("no-splash");
+
+        var doc = document.documentElement;
+        doc.setAttribute("data-brand", choice);
+        doc.classList.remove("need-splash", "brand-coffee", "brand-delivery");
+        doc.classList.add("no-splash", "brand-" + choice);
+        if (document.body) document.body.setAttribute("data-brand", choice);
+        window.brand = choice;
         s.remove();
-        var u = new URL(location.href);
-        u.searchParams.set("brand", choice);
-        location.replace(u.toString());
+
+        // Мгновенно обновляем URL без перезагрузки страницы (только в обычном браузере)
+        try {
+          var isPwa = (navigator.standalone === true) || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+          var isTg = /Telegram/i.test(navigator.userAgent) || new URLSearchParams(location.search).get("src") === "tg";
+          if (!isPwa && !isTg) {
+            var u = new URL(location.href);
+            u.searchParams.set("brand", choice);
+            history.replaceState(history.state, "", u.pathname + u.search + u.hash);
+          }
+        } catch (err) { }
+
+        // Переключаем вид SPA без перезагрузки
+        if (typeof window.sv === "function") window.sv();
+        if (typeof window.syncBrandViews === "function") window.syncBrandViews();
       });
     })();
   </script>
-
   <header class="topbar">
     <div class="brandSeg" id="brandSeg">
       <button data-brand="coffee" class="on">🌊 Кофейня</button>
