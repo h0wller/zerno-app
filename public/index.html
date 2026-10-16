@@ -611,31 +611,42 @@ if(b==='delivery'){
     <link rel="stylesheet" href="/app/ui/theme-v2.css?v=473" />
     <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=473" />
   </noscript>
-  <!-- [tg-splash-menu-fix-v1] -->
-  <script>
-    (function () {
-      var isAudit = document.documentElement.classList.contains('is-audit') ||
-                    /Chrome-Lighthouse|Lighthouse|moto g power/i.test(navigator.userAgent) ||
-                    location.search.includes('lighthouse=1');
-      var need = false;
+  <!-- [tg-splash-menu-fix-v2] решение о сплэше = то же, что в core/splash.js -->
+<script>
+  (function () {
+    var de = document.documentElement;
+    var need = false;
+    try {
+      var QS = new URLSearchParams(location.search);
+      var isAudit = de.classList.contains('is-audit') || QS.get('lighthouse') === '1';
+
+      var navType = 'navigate';
       try {
-        var q = new URLSearchParams(location.search);
-        var done = !!sessionStorage.getItem("splashDone");
-        var hasBrand = !!localStorage.getItem("zt_brand"); // Критичное добавление
-        
-        if (isAudit) {
-          need = false;
-        } else if (q.get("splash") === "1" || q.get("splash") === "true") {
-          try { sessionStorage.removeItem("splashDone"); } catch (e) { }
-          need = true;
-        } else {
-          // Если бренд уже есть в URL, sessionStorage или localStorage - сплэш не нужен
-          need = !(done || q.get("brand") || q.get("tab") || hasBrand);
-        }
+        var ne = performance.getEntriesByType('navigation');
+        if (ne && ne[0] && ne[0].type) navType = ne[0].type;
       } catch (e) { }
-      document.documentElement.classList.add(need ? "need-splash" : "no-splash");
-    })();
-  </script>
+
+      var isTg = !!(window.__isTgMiniApp || /Telegram/i.test(navigator.userAgent) || QS.get('src') === 'tg');
+      var done = false;
+      try { done = !isTg && sessionStorage.getItem('splashDone') === '1'; } catch (e) { }
+
+      var fromBrandNav = !!QS.get('brand') && navType !== 'reload';
+      var hasDeeplink = !!(QS.get('item') || QS.get('tab') || QS.get('no') || QS.get('reorder'));
+
+      if (isAudit) {
+        need = false;
+      } else if (QS.get('splash') === '1' || QS.get('splash') === 'true') {
+        try { sessionStorage.removeItem('splashDone'); } catch (e) { }
+        need = true;
+      } else {
+        need = !(done || fromBrandNav || hasDeeplink);
+      }
+    } catch (e) { }
+    de.classList.remove('need-splash', 'no-splash');
+    de.classList.add(need ? 'need-splash' : 'no-splash');
+    if (need) de.classList.remove('splash-skipped');
+  })();
+</script>
 </head>
 
 <body>
