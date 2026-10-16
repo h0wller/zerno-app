@@ -23,12 +23,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script_stop: true 
-          script: |
+              script: |
             cd /var/www/app
             git fetch origin
-            # Если ручной запуск - берем последний коммит из pizza
-            # Если автоматический - берем SHA, который прошел CI
             git reset --hard ${{ github.event_name == 'workflow_dispatch' && 'origin/pizza' || github.event.workflow_run.head_sha }}
-            npm ci --omit=dev
+            npm ci
+            BUILD_NUM=$(git rev-list --count HEAD) npm run build:client
+            npm prune --omit=dev
             pm2 reload zerno-app
             pm2 status zerno-app
