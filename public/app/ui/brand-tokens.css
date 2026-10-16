@@ -1,32 +1,37 @@
 /* ==========================================================================
    brand-tokens.css — СЛОЙ 2 (данные): токены брендов
+
    Только custom properties на [data-brand="..."].
-   Никаких layout-правил, никаких !important, никаких селекторов без data-brand.
+   Без layout-правил, без !important, без селекторов без data-brand.
    ========================================================================== */
 
 /* jscpd:ignore-start */
 
-/* ═══════════════════════════════════════
-   ☕ Кофейня («…и кофе»)
-   ═══════════════════════════════════════ */
+
+/* ==========================================================================
+   ☕ «…и кофе» (coffee)
+   ========================================================================== */
+
 html[data-brand="coffee"],
 body[data-brand="coffee"] {
-  /* Геометрия марки в шапке */
+
+  /* ── Геометрия марки в шапке ─────────────────────────────── */
   --c-text-on-accent: #FFFFFF;
   --mark-w: 42px;
   --mark-h: 42px;
 
-  /* Карточки меню и бейджи */
+  /* ── Карточки меню и бейджи ──────────────────────────────── */
   --card-bg: #FFFFFF;
   --card-border: 1.5px solid rgba(62, 143, 208, 0.25);
   --card-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
   --card-radius: 18px;
+  --card-hover-border: #3E8FD0;
+  --card-hover-shadow: 0 10px 28px rgba(18, 58, 107, 0.15);
   --tag-bg: #1B4F8A;
   --tag-hit-bg: #1B5E8A;
   --price-color: #123A6B;
-  --card-hover-border: #3E8FD0;
-  --card-hover-shadow: 0 10px 28px rgba(18, 58, 107, 0.15);
-  /* Кнопки действий */
+
+  /* ── Кнопки действий ─────────────────────────────────────── */
   --btn-fire-bg: var(--flame, #123A6B);
   --btn-fire-color: #FFFFFF;
   --btn-fire-border: none;
@@ -36,7 +41,7 @@ body[data-brand="coffee"] {
   --cta-border: none;
   --cta-shadow: none;
 
-  /* Шторка и табы */
+  /* ── Шторка и вкладки ────────────────────────────────────── */
   --panel-bg: var(--panel, #F3F8FC);
   --panel-border: none;
   --panel-shadow: -8px 0 30px rgba(16, 20, 24, 0.08);
@@ -46,36 +51,40 @@ body[data-brand="coffee"] {
   --tab-on-shadow: none;
   --tab-on-transform: none;
 
-  /* Модальные окна и окно авторизации */
+  /* ── Модальные окна и авторизация ────────────────────────── */
   --modal-bg: #FFFFFF;
   --modal-bg-image: none;
   --modal-bg-size: auto;
   --modal-border: none;
   --modal-radius: 18px;
   --modal-shadow: var(--sh);
-  --mclose-bg: #EDF2F6;
-  --mclose-border: none;
-  --mclose-shadow: none;
-  --mclose-color: var(--ink, #101418);
   --modal-title-font: inherit;
   --modal-title-color: var(--ink, #101418);
   --modal-input-bg: #FFFFFF;
   --modal-input-border: 1.5px solid var(--line, #D8DFE4);
   --modal-input-color: var(--ink, #101418);
+
+  --mclose-bg: #EDF2F6;
+  --mclose-border: none;
+  --mclose-shadow: none;
+  --mclose-color: var(--ink, #101418);
+
   --alogo-bg: #FFFFFF;
   --alogo-border: 1.5px solid var(--line, #D8DFE4);
   --alogo-shadow: 0 6px 20px rgba(18, 58, 107, 0.12);
+
+  /* ── Аватар в модалке ────────────────────────────────────── */
   --ava-bg: linear-gradient(135deg, #3e8fd0, #123a6b);
   --ava-color: #FFFFFF;
   --ava-border: 1px solid #FFFFFF;
   --ava-shadow: 0 3px 8px rgba(18, 58, 107, 0.25);
 
-  /* Статистика и инфо-блоки */
+  /* ── Статистика и инфо-блоки ─────────────────────────────── */
   --stat-border: 1.5px solid var(--line);
   --stat-shadow: none;
   --stat-num-color: var(--ink);
 
-  /* Чат поддержки */
+  /* ── Чат поддержки ───────────────────────────────────────── */
   --chat-head-bg: #123A6B;
   --chat-head-color: #FFFFFF;
   --chat-msgs-bg: #F0F4F8;
@@ -93,18 +102,22 @@ body[data-brand="coffee"] {
   --chat-fab-hover-bg: #3E8FD0;
   --chat-fab-border: 2px solid #3E8FD0;
   --chat-fab-shadow: 0 12px 30px rgba(18, 58, 107, 0.45);
-  /* Токены хрома и корзины (дедупликация Слоя 2) */
+
+  /* ── Хром и корзина ──────────────────────────────────────── */
   --topbar-bg: transparent;
   --topbar-color: var(--ink, #101418);
   --topbar-border: none;
+
   --venue-toggle-bg: var(--card, #FFFFFF);
   --venue-toggle-border: 1.5px solid var(--line, #D8DFE4);
   --venue-toggle-color: var(--ink, #101418);
   --venue-toggle-shadow: none;
+
   --profile-btn-bg: #FFFFFF;
   --profile-btn-border: 1.5px solid var(--line, #D8DFE4);
   --profile-btn-color: var(--ink, #101418);
   --profile-btn-shadow: none;
+
   --cart-panel-bg: var(--card, #FFFFFF);
   --cart-panel-border: 2px solid var(--line, #D8DFE4);
   --cart-qty-bg: var(--panel, #F3F8FC);
@@ -112,50 +125,53 @@ body[data-brand="coffee"] {
   --cart-qty-color: var(--ink, #101418);
   --cart-item-border: 1.5px dashed var(--line, #D8DFE4);
   --cashier-bg: var(--paper, #FFFFFF);
-
 }
 
-/* ═══════════════════════════════════════
-   🍕 Пятница (delivery)
+
+/* ==========================================================================
+   🍕 «Пятница» (delivery)
    Терракотово-крафтовая палитра
-   ═══════════════════════════════════════ */
+   ========================================================================== */
+
 html[data-brand="delivery"],
 body[data-brand="delivery"] {
-  /* Геометрия марки в шапке */
+
+  /* ── Геометрия марки в шапке ─────────────────────────────── */
   --c-text-on-accent: #3A2A1C;
   --mark-w: 160px;
   --mark-h: 40px;
 
-  /* Основная палитра */
+  /* ── Основная палитра ────────────────────────────────────── */
   --flame: #C03B2A;
   --flame-d: #8E3716;
   --esp: #3A2A1C;
   --esp2: #241812;
   --paper: #F3EDE6;
 
-  /* Крафтовые тона */
+  /* ── Крафтовые тона ──────────────────────────────────────── */
   --fr-choc: #3A2A1C;
   --fr-tan: #C99E6E;
   --fr-rice: #EFE6D8;
   --fr-paper: #F6EEE1;
 
-  /* Тинты и фон панелей */
+  /* ── Тинты и фон панелей ─────────────────────────────────── */
   --tint-cool: #F3E2CE;
   --tint-warm: #F3E2CE;
   --panel: #FAF5EE;
   --line: #E5DACB;
 
-  /* Карточки доставки: крафтовый фон и шоколадная обводка */
+  /* ── Карточки доставки: крафтовый фон, шоколадная обводка ── */
   --card-bg: var(--fr-paper, #F6EEE1);
   --card-border: 2px solid var(--fr-choc, #3A2A1C);
   --card-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
   --card-radius: 18px;
+  --card-hover-border: var(--fr-choc, #3A2A1C);
+  --card-hover-shadow: 4px 4px 0 var(--fr-choc, #3A2A1C);
   --tag-bg: var(--flame, #C03B2A);
   --tag-hit-bg: var(--flame-d, #8E3716);
   --price-color: var(--flame, #C03B2A);
-  --card-hover-border: var(--fr-choc, #3A2A1C);
-  --card-hover-shadow: 4px 4px 0 var(--fr-choc, #3A2A1C);
-  /* Кнопки «Добавить» и «Оформить заказ» */
+
+  /* ── Кнопки «Добавить» и «Оформить заказ» ────────────────── */
   --btn-fire-bg: var(--flame, #C03B2A);
   --btn-fire-color: #FFFFFF;
   --btn-fire-border: 2px solid var(--fr-choc, #3A2A1C);
@@ -165,7 +181,7 @@ body[data-brand="delivery"] {
   --cta-border: 2px solid var(--fr-choc, #3A2A1C);
   --cta-shadow: 3px 3px 0 var(--fr-choc, #3A2A1C);
 
-  /* Шторка и вкладки */
+  /* ── Шторка и вкладки ────────────────────────────────────── */
   --panel-bg: var(--fr-paper, #F6EEE1);
   --panel-border: 3px solid var(--fr-choc, #3A2A1C);
   --panel-shadow: -8px 0 30px rgba(58, 42, 28, 0.2);
@@ -175,37 +191,40 @@ body[data-brand="delivery"] {
   --tab-on-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
   --tab-on-transform: rotate(-0.8deg);
 
-  /* Модальные окна и окно авторизации (без синего квадрата) */
+  /* ── Модальные окна и авторизация (без синего квадрата) ──── */
   --modal-bg: var(--fr-rice, #EFE6D8);
   --modal-bg-image: radial-gradient(rgba(58, 42, 28, 0.08) 1px, transparent 1.5px);
   --modal-bg-size: 10px 10px;
   --modal-border: 3px solid var(--fr-choc, #3A2A1C);
   --modal-radius: 18px;
   --modal-shadow: 6px 6px 0 var(--fr-choc, #3A2A1C), 0 20px 50px rgba(0, 0, 0, 0.35);
-  --mclose-bg: var(--fr-tan, #C99E6E);
-  --mclose-border: 2px solid var(--fr-choc, #3A2A1C);
-  --mclose-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
-  --mclose-color: var(--fr-choc, #3A2A1C);
   --modal-title-font: "Unbounded", sans-serif;
   --modal-title-color: var(--fr-choc, #3A2A1C);
   --modal-input-bg: #FFFFFF;
   --modal-input-border: 2px solid var(--fr-choc, #3A2A1C);
   --modal-input-color: var(--fr-choc, #3A2A1C);
+
+  --mclose-bg: var(--fr-tan, #C99E6E);
+  --mclose-border: 2px solid var(--fr-choc, #3A2A1C);
+  --mclose-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --mclose-color: var(--fr-choc, #3A2A1C);
+
   --alogo-bg: transparent;
   --alogo-border: none;
   --alogo-shadow: none;
+
+  /* ── Аватар в модалке ────────────────────────────────────── */
   --ava-bg: var(--fr-tan, #C99E6E);
   --ava-color: var(--fr-choc, #3A2A1C);
   --ava-border: 2px solid var(--fr-choc, #3A2A1C);
   --ava-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
 
-
-  /* Статистика */
+  /* ── Статистика ──────────────────────────────────────────── */
   --stat-border: 2px solid #3A2A1C;
   --stat-shadow: 2px 2px 0 #3A2A1C;
   --stat-num-color: #3A2A1C;
 
-  /* Чат поддержки */
+  /* ── Чат поддержки ───────────────────────────────────────── */
   --chat-head-bg: var(--fr-choc, #3A2A1C);
   --chat-head-color: #FFFFFF;
   --chat-msgs-bg: var(--fr-paper, #F6EEE1);
@@ -223,18 +242,22 @@ body[data-brand="delivery"] {
   --chat-fab-hover-bg: var(--flame-d, #8E3716);
   --chat-fab-border: 2px solid var(--fr-choc, #3A2A1C);
   --chat-fab-shadow: 3px 3px 0 var(--fr-choc, #3A2A1C);
-  /* Токены хрома и корзины (дедупликация Слоя 2) */
+
+  /* ── Хром и корзина ──────────────────────────────────────── */
   --topbar-bg: #C99E6E;
   --topbar-color: #3A2A1C;
   --topbar-border: 3px solid #3A2A1C;
+
   --venue-toggle-bg: var(--fr-paper, #F6EEE1);
   --venue-toggle-border: 2px solid var(--fr-choc, #3A2A1C);
   --venue-toggle-color: var(--fr-choc, #3A2A1C);
   --venue-toggle-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+
   --profile-btn-bg: #E8A33D;
   --profile-btn-border: 2px solid var(--fr-choc, #3A2A1C);
   --profile-btn-color: #3A2A1C;
   --profile-btn-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+
   --cart-panel-bg: var(--fr-rice, #EFE6D8);
   --cart-panel-border: 3px solid var(--fr-choc, #3A2A1C);
   --cart-qty-bg: #C99E6E;
@@ -242,29 +265,35 @@ body[data-brand="delivery"] {
   --cart-qty-color: #3A2A1C;
   --cart-item-border: 1.5px dashed rgba(58, 42, 28, 0.3);
   --cashier-bg: var(--fr-paper, #F6EEE1);
-
 }
 
-/* ═══════════════════════════════════════
+
+/* ==========================================================================
    🧪 dev-бренд test (Фаза D)
-   ═══════════════════════════════════════ */
+   ========================================================================== */
+
 html[data-brand="test"],
 body[data-brand="test"] {
+
+  /* ── Геометрия и палитра ─────────────────────────────────── */
   --mark-w: 60px;
   --mark-h: 60px;
   --flame: #FF6B9D;
   --esp: #2D3047;
   --paper: #FFF5F7;
-  --card-hover-border: #2D3047;
-  --card-hover-shadow: 4px 4px 0 #2D3047;
+
+  /* ── Карточки ────────────────────────────────────────────── */
   --card-bg: #FFF5F7;
   --card-border: 2px solid #2D3047;
   --card-shadow: 3px 3px 0 #2D3047;
   --card-radius: 16px;
+  --card-hover-border: #2D3047;
+  --card-hover-shadow: 4px 4px 0 #2D3047;
   --tag-bg: #FF6B9D;
   --tag-hit-bg: #C73866;
   --price-color: #FF6B9D;
 
+  /* ── Кнопки действий ─────────────────────────────────────── */
   --btn-fire-bg: #FF6B9D;
   --btn-fire-color: #FFFFFF;
   --btn-fire-border: 2px solid #2D3047;
@@ -274,6 +303,7 @@ body[data-brand="test"] {
   --cta-border: 2px solid #2D3047;
   --cta-shadow: 3px 3px 0 #2D3047;
 
+  /* ── Шторка и вкладки ────────────────────────────────────── */
   --panel-bg: #FFF5F7;
   --panel-border: 2px solid #2D3047;
   --panel-shadow: 0 10px 30px rgba(45, 48, 71, 0.15);
@@ -283,33 +313,40 @@ body[data-brand="test"] {
   --tab-on-shadow: 2px 2px 0 #2D3047;
   --tab-on-transform: none;
 
+  /* ── Модальные окна ──────────────────────────────────────── */
   --modal-bg: #FFFFFF;
   --modal-bg-image: none;
   --modal-bg-size: auto;
   --modal-border: 2px solid #2D3047;
   --modal-radius: 16px;
   --modal-shadow: 0 20px 40px rgba(45, 48, 71, 0.2);
-  --mclose-bg: #FF6B9D;
-  --mclose-border: 2px solid #2D3047;
-  --mclose-shadow: none;
-  --mclose-color: #FFFFFF;
   --modal-title-font: inherit;
   --modal-title-color: #2D3047;
   --modal-input-bg: #FFFFFF;
   --modal-input-border: 1.5px solid #2D3047;
   --modal-input-color: #2D3047;
+
+  --mclose-bg: #FF6B9D;
+  --mclose-border: 2px solid #2D3047;
+  --mclose-shadow: none;
+  --mclose-color: #FFFFFF;
+
   --alogo-bg: transparent;
   --alogo-border: none;
   --alogo-shadow: none;
+
+  /* ── Аватар в модалке ────────────────────────────────────── */
   --ava-bg: #FF6B9D;
   --ava-color: #FFFFFF;
   --ava-border: 2px solid #2D3047;
   --ava-shadow: 2px 2px 0 #2D3047;
 
+  /* ── Статистика ──────────────────────────────────────────── */
   --stat-border: 2px solid #2D3047;
   --stat-shadow: none;
   --stat-num-color: #2D3047;
 
+  /* ── Чат поддержки ───────────────────────────────────────── */
   --chat-head-bg: #2D3047;
   --chat-head-color: #FFFFFF;
   --chat-msgs-bg: #FFF5F7;
@@ -327,18 +364,22 @@ body[data-brand="test"] {
   --chat-fab-hover-bg: #C73866;
   --chat-fab-border: 2px solid #2D3047;
   --chat-fab-shadow: 3px 3px 0 #2D3047;
-  /* Токены хрома и корзины (дедупликация Слоя 2) */
+
+  /* ── Хром и корзина ──────────────────────────────────────── */
   --topbar-bg: transparent;
   --topbar-color: #2D3047;
   --topbar-border: none;
+
   --venue-toggle-bg: #FFFFFF;
   --venue-toggle-border: 2px solid #2D3047;
   --venue-toggle-color: #2D3047;
   --venue-toggle-shadow: none;
+
   --profile-btn-bg: #FF6B9D;
   --profile-btn-border: 2px solid #2D3047;
   --profile-btn-color: #FFFFFF;
   --profile-btn-shadow: none;
+
   --cart-panel-bg: #FFF5F7;
   --cart-panel-border: 2px solid #2D3047;
   --cart-qty-bg: #FFF5F7;
@@ -346,7 +387,6 @@ body[data-brand="test"] {
   --cart-qty-color: #2D3047;
   --cart-item-border: 1.5px dashed #2D3047;
   --cashier-bg: #FFF5F7;
-
 }
 
 /* jscpd:ignore-end */
