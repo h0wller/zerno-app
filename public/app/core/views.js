@@ -177,6 +177,19 @@ var _lastCfabState = '';
 function syncBrandChromeState(bName, isDel) {
   document.documentElement.setAttribute('data-brand', bName);
   document.body.setAttribute('data-brand', bName);
+    /* Цвет полосы браузера (safe area) */
+  document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
+    m.removeAttribute('media');
+    m.setAttribute('content', isDel ? '#C99E6E' : '#FFFFFF');
+  });
+    /* Адрес отражает бренд без перезагрузки */
+  try {
+    var u = new URL(location.href);
+    if (u.searchParams.get('brand') !== bName) {
+      u.searchParams.set('brand', bName);
+      history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+    }
+  } catch (e) {}
   var seg = document.getElementById('brandSeg');
   if (seg) {
     var cBtn = seg.querySelector('[data-brand="coffee"]');
