@@ -236,7 +236,7 @@
 
         if (name.length < 2) return toast('Введите имя', '✍️');
         if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
-        if (!/^d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
+        if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
 
         if (window.__tgInitData) {
           try {
@@ -382,7 +382,7 @@
         try {
           await api('/auth/request-otp', { method: 'POST', body: { phone: phone } });
           loginMode = 'otp';
-          var pr = document.getElementById('logPinRow'); if (pr) pr.style.display = '';
+          var pr = document.getElementById('logPinRow'); if (pr) pr.style.display = 'none';
           var ow = document.getElementById('logOtpWrap'); if (ow) ow.style.display = '';
           var bk = document.getElementById('otpBackRow'); if (bk) bk.style.display = '';
           var lb = document.getElementById('logBtn'); if (lb) lb.textContent = 'Войти по коду';
@@ -403,7 +403,7 @@
     if (setPinGo) {
       setPinGo.onclick = async function () {
         var pin = (document.getElementById('setPinInput') || {}).value.trim();
-        if (!/^d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
+        if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
         try {
           if (setPinCtx && setPinCtx.mode === 'claim') {
             var r = await api('/auth/setup-pin', {
