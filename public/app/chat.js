@@ -83,8 +83,6 @@ function sendChat(text) {
   const isFallback = reply.startsWith('Приняла!');
   const isExplicitHuman = /позов|позови|сотруд|человек|менедж|оператор|диспетчер|живой/i.test(text);
   const human = isExplicitHuman && me ? 1 : 0;
-    if (!isExplicitHuman) window.__lastGuestTopic = text;
-  const topicForStaff = human ? (window.__lastGuestTopic || '') : '';
   let out;
   if (isFallback && !isExplicitHuman) {
     const isDel = (typeof brand !== 'undefined' && brand === 'delivery') || document.documentElement.getAttribute('data-brand') === 'delivery';
@@ -96,7 +94,7 @@ function sendChat(text) {
   } else {
     out = reply;
   }
-  fetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human, topic: topicForStaff }) }).catch(() => {});
+  fetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human }) }).catch(() => {});
   showTyping();
   setTimeout(() => {
     hideTyping();
