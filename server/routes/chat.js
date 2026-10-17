@@ -21,7 +21,7 @@ chatRouter.post('/api/chat/send', (req, res) => {
     const roles = ctx === 'delivery' ? "('dispatch','admin')" : "('cashier','admin')";
     const staff = db.prepare(`SELECT id FROM customers WHERE role IN ${roles}`).all();
     const base = process.env.APP_URL || 'https://friday.andcoffee.online';
-    const kb = { inline_keyboard: [[{ text: '💬 Открыть обращение', web_app: { url: base + '/?src=tg&brand=' + ctx + '&tab=chat&chat=' + encodeURIComponent(key) } }]] };
+    const kb = { inline_keyboard: [[{ text: '💬 Открыть обращение', web_app: { url: base + '/?src=tg&brand=' + ctx + '&staffChat=' + encodeURIComponent(key) } }]] };
     for (const s of staff) sendPush(s.id, ctx === 'delivery' ? '💬 Вопрос по доставке' : '💬 Вопрос по кофейне', text.slice(0, 200), kb);
   }
   res.json({ ok: true });
