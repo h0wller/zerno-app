@@ -9,16 +9,20 @@ const chatRouter = Router();
 
 chatRouter.post('/api/chat/send', (req, res) => {
   const key = String(req.body.key || '').slice(0, 64);
-  const text = String(req.body.text || '').slice(0, 2000);
+  let text = String(req.body.text || '').slice(0, 2000);
   const ctx = req.body.ctx === 'delivery' ? 'delivery' : 'coffee';
   if (!key || !text) return res.status(400).json({ error: 'bad request' });
   const human = req.body.human ? 1 : 0;
+  const topic = String(req.body.topic || '').slice(0, 300).trim();
+  if (human && topic && topic !== text) text = topic + '\n💬 ' + text;
   db.prepare('INSERT INTO chat(key,who,text,ts,human,read_s) VALUES(?,?,?,?,?,0)').run(key, 'guest', text, nowISO(), human);
   db.prepare("INSERT INTO chat_meta(key,closed,ctx) VALUES(?,0,?) ON CONFLICT(key) DO UPDATE SET closed=0, ctx=excluded.ctx").run(key, ctx);
   if (human) {
     const roles = ctx === 'delivery' ? "('dispatch','admin')" : "('cashier','admin')";
     const staff = db.prepare(`SELECT id FROM customers WHERE role IN ${roles}`).all();
-    for (const s of staff) sendPush(s.id, ctx === 'delivery' ? '💬 Вопрос по доставке' : '💬 Вопрос по кофейне', text.slice(0, 80));
+    const base = process.env.APP_URL || 'https://friday.andcoffee.online';
+    const kb = { inline_keyboard: [[{ text: '💬 Открыть обращение', web_app: { url: base + '/?src=tg&brand=' + ctx + '&tab=chat&chat=' + encodeURIComponent(key) } }]] };
+    for (const s of staff) sendPush(s.id, ctx === 'delivery' ? '💬 Вопрос по доставке' : '💬 Вопрос по кофейне', text.slice(0, 200), kb);
   }
   res.json({ ok: true });
 });
