@@ -13,8 +13,10 @@ chatRouter.post('/api/chat/send', (req, res) => {
   const ctx = req.body.ctx === 'delivery' ? 'delivery' : 'coffee';
   if (!key || !text) return res.status(400).json({ error: 'bad request' });
   const human = req.body.human ? 1 : 0;
-  const topic = String(req.body.topic || '').slice(0, 300).trim();
-  if (human && topic && topic !== text) text = topic + '\n💬 ' + text;
+  if (human) {
+    const last = db.prepare("SELECT text FROM chat WHERE key=? AND who='guest' AND human=0 ORDER BY id DESC LIMIT 1").get(key);
+    if (last && last.text) text = last.text + '\n💬 ' + text;
+  }
   db.prepare('INSERT INTO chat(key,who,text,ts,human,read_s) VALUES(?,?,?,?,?,0)').run(key, 'guest', text, nowISO(), human);
   db.prepare("INSERT INTO chat_meta(key,closed,ctx) VALUES(?,0,?) ON CONFLICT(key) DO UPDATE SET closed=0, ctx=excluded.ctx").run(key, ctx);
   if (human) {
