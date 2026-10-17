@@ -363,7 +363,7 @@ async function updateStaffBadge() {
   });
     /* ── открыть конкретное обращение из кнопки в Telegram: ?chat=<key> ── */
   (function openChatFromTg() {
-const key = new URLSearchParams(location.search).get('staffChat');
+const key = new URLSearchParams(window.__initialSearch || location.search).get('staffChat');
     if (!key) return;
     let tries = 0;
     const t = setInterval(() => {
