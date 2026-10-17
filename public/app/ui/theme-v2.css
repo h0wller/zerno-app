@@ -1015,6 +1015,8 @@ button#profileTopBtn,
   justify-content: center;
   text-decoration: none;
   user-select: none;
+  font-family: Unbounded, "Golos Text", system-ui, -apple-system, sans-serif;
+
 }
 .mclose{
   position: absolute;
@@ -1073,7 +1075,7 @@ button#profileTopBtn,
   border: 1.5px solid var(--line);
   border-radius: 12px;
   padding: 10px 13px;
-  font-size: 14px;
+  font-size: 16px;
   background: #fff;
   color: var(--ink);
   transition: .2s;
@@ -1573,7 +1575,7 @@ label.chk{
   border: 1.5px solid var(--line);
   border-radius: 999px;
   padding: 10px 16px;
-  font-size: 13.5px;
+  font-size: 16px;
   color: #101418;
 }
 .chat-i input:focus{
@@ -1877,7 +1879,7 @@ label.chk{
   border-color: var(--flame);
 }
 .phead .ph{
-  font-size: 12px;
+  font-size: 16px;
   color: #5b6874;
   margin-top: 2px;
 }
@@ -2058,7 +2060,7 @@ label.chk{
   border: 1.5px solid var(--line);
   border-radius: 12px;
   padding: 11px 14px;
-  font-size: 14px;
+  font-size: 16px;
   background: #fff;
   transition: 0.2s;
 }
@@ -2468,7 +2470,7 @@ body.is-cashier .cust .acts{
   border: var(--modal-input-border, 1.5px solid var(--line));
   border-radius: 12px;
   padding: 10px 13px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   background: var(--modal-input-bg, #FFFFFF);
   color: var(--modal-input-color, var(--ink, #101418));
@@ -2884,7 +2886,7 @@ textarea{
   border: none;
   outline: none;
   flex: 1;
-  font-size: 13.5px;
+  font-size: 16px;
   background: transparent;
   min-width: 0;
   color: #101418;
@@ -3603,7 +3605,7 @@ html.is-tg-app [id*="pwaInstall"]{
 .abs-ico[data-abs="del"]:hover{ color: var(--status-danger, #B3372B); }
 .abs-edit{ margin-top: 10px; border-top: 1px dashed var(--line, #D8DFE4); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
 .abs-edit label{ font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--soft, #586470); display: flex; flex-direction: column; gap: 4px; }
-.abs-edit input{ border: 1.5px solid var(--line, #D8DFE4); border-radius: 10px; padding: 9px 12px; font-size: 14px; background: var(--card, #FFFFFF); color: var(--ink, #101418); }
+.abs-edit input{ border: 1.5px solid var(--line, #D8DFE4); border-radius: 10px; padding: 9px 12px; font-size: 16px; background: var(--card, #FFFFFF); color: var(--ink, #101418); }
 .abs-edit input:focus{ outline: none; border-color: var(--flame, #123A6B); }
 .abs-fee{ font-size: 12.5px; font-weight: 600; color: var(--flame, #123A6B); background: var(--panel, #F3F8FC); border-radius: 10px; padding: 8px 12px; }
 .abs-edit-acts{ display: flex; gap: 8px; }
@@ -6011,21 +6013,4 @@ html body div.wrap > section {
   margin: 0;
   flex: 1 1 100%;
   box-sizing: border-box;
-}
-/* Desktop: явные размеры кнопок шапки, перебивают базовые calc(--topbar-h) */
-@media (min-width: 821px) {
-  html header.topbar #profileTopBtn {
-    width: 48px;
-    height: 48px;
-    font-size: 18px;
-  }
-  html header.topbar .venueToggle {
-    height: 44px;
-    font-size: 14px;
-    padding: 0 14px;
-    gap: 6px;
-  }
-  html header.topbar #mbonusBtn {
-    height: 44px;
-  }
 }
