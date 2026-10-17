@@ -83,6 +83,8 @@ function sendChat(text) {
   const isFallback = reply.startsWith('Приняла!');
   const isExplicitHuman = /позов|позови|сотруд|человек|менедж|оператор|диспетчер|живой/i.test(text);
   const human = isExplicitHuman && me ? 1 : 0;
+    if (!isExplicitHuman) window.__lastGuestTopic = text;
+  const topicForStaff = human ? (window.__lastGuestTopic || '') : '';
   let out;
   if (isFallback && !isExplicitHuman) {
     const isDel = (typeof brand !== 'undefined' && brand === 'delivery') || document.documentElement.getAttribute('data-brand') === 'delivery';
@@ -94,7 +96,7 @@ function sendChat(text) {
   } else {
     out = reply;
   }
-  fetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human }) }).catch(() => {});
+  fetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human, topic: topicForStaff }) }).catch(() => {});
   showTyping();
   setTimeout(() => {
     hideTyping();
@@ -359,4 +361,17 @@ async function updateStaffBadge() {
     showBadge, initChatPointer, loadHistory,
     openStaffChat, closeStaffChat, loadScList, openScDialog, scSend, updateStaffBadge,
   });
+    /* ── открыть конкретное обращение из кнопки в Telegram: ?chat=<key> ── */
+  (function openChatFromTg() {
+    const key = new URLSearchParams(location.search).get('chat');
+    if (!key) return;
+    let tries = 0;
+    const t = setInterval(() => {
+      if (++tries > 40) return clearInterval(t);
+      if (!me || !['cashier', 'admin', 'dispatch'].includes(me.role)) return;
+      clearInterval(t);
+      openStaffChat(key.endsWith(':d') ? 'delivery' : 'coffee');
+      setTimeout(() => { scKey = key; openScDialog(); }, 600);
+    }, 250);
+  })();
 })();
