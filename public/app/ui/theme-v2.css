@@ -998,8 +998,6 @@ body.in-tg .topbar{
 #ordersModal {
   z-index: 1000;
 }
-button#profileTopBtn,
-.topbar #profileTopBtn,
 .topbar .ava,
 #avInit,
 .ava {
@@ -3914,9 +3912,6 @@ body #mbonusBtn .mb-free {
     position: static;
     margin: 0;
     align-self: center;
-    width: 48px;
-    height: 48px;
-    font-size: 18px;
   }
   .topbar #modeSeg {
     grid-column: 1 / -1;
@@ -4273,10 +4268,6 @@ body .wrap > #deliveryRail {
   header.topbar button#profileTopBtn.ava {
     position: static;
     transform: none;
-    flex: 0 0 40px;
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
     margin: 0;
     order: 3;
     z-index: 2;
@@ -4705,14 +4696,6 @@ body {
   order: 3;
   flex: 0 0 auto;
   margin-left: auto;
-  width: calc(var(--topbar-h, 64px) - 20px);
-  height: calc(var(--topbar-h, 64px) - 20px);
-  font-size: calc(var(--topbar-h, 64px) * 0.28);
-  background: var(--ava-bg, linear-gradient(135deg, #3e8fd0, #123a6b));
-  border: var(--ava-border, 1.5px solid var(--line));
-  color: var(--ava-color, var(--c-text-on-accent, #FFFFFF));
-  box-shadow: var(--ava-shadow, none);
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6013,4 +5996,29 @@ html body div.wrap > section {
   margin: 0;
   flex: 1 1 100%;
   box-sizing: border-box;
+}
+/* Кнопка профиля в шапке (аватар). Единственный владелец внешнего вида.
+   Цвета только из токенов --ava-* (brand-tokens.css). Место в сетке шапки — в топбаре, не здесь. */
+#profileTopBtn {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: Unbounded, "Golos Text", system-ui, sans-serif;
+  font-size: calc(var(--topbar-h, 56px) * 0.28);
+  font-weight: 700;
+  line-height: 1;
+  background: var(--ava-bg, linear-gradient(135deg, #3e8fd0, #123a6b));
+  color: var(--ava-color, #FFFFFF);
+  border: var(--ava-border, 1.5px solid #FFFFFF);
+  box-shadow: var(--ava-shadow, none);
+  transition: transform 0.25s;
+}
+#profileTopBtn:hover { transform: scale(1.08); }
+@media (min-width: 821px) {
+  #profileTopBtn { width: 48px; height: 48px; min-width: 48px; font-size: 18px; }
 }

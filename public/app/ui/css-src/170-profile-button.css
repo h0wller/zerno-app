@@ -1,0 +1,25 @@
+/* Кнопка профиля в шапке (аватар). Единственный владелец внешнего вида.
+   Цвета только из токенов --ava-* (brand-tokens.css). Место в сетке шапки — в топбаре, не здесь. */
+#profileTopBtn {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: Unbounded, "Golos Text", system-ui, sans-serif;
+  font-size: calc(var(--topbar-h, 56px) * 0.28);
+  font-weight: 700;
+  line-height: 1;
+  background: var(--ava-bg, linear-gradient(135deg, #3e8fd0, #123a6b));
+  color: var(--ava-color, #FFFFFF);
+  border: var(--ava-border, 1.5px solid #FFFFFF);
+  box-shadow: var(--ava-shadow, none);
+  transition: transform 0.25s;
+}
+#profileTopBtn:hover { transform: scale(1.08); }
+@media (min-width: 821px) {
+  #profileTopBtn { width: 48px; height: 48px; min-width: 48px; font-size: 18px; }
+}

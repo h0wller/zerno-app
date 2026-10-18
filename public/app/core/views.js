@@ -119,8 +119,8 @@ var rules = [
  '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
  
 
- '@media(min-width:1181px){body.is-cashier .panel{display:none}body.is-cashier .wrap{grid-template-columns:1fr}.topbar > :last-child{margin-left:0!important}#profileTopBtn{margin-left:auto;width:46px;height:46px;font-size:18px}}',
- '@media(max-width:640px){#modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}#profileTopBtn{width:44px!important;height:44px!important;min-width:44px!important;flex:0 0 44px!important}.chat{right:8px}.mh-right{margin-left:0;width:100%}}',
+ '@media(min-width:1181px){body.is-cashier .panel{display:none}body.is-cashier .wrap{grid-template-columns:1fr}.topbar > :last-child{margin-left:0!important}#profileTopBtn{margin-left:auto;}}',
+ '@media(max-width:640px){#modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}.chat{right:8px}.mh-right{margin-left:0;width:100%}}',
  '@media (max-width: 600px) { .topbar { padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 8px !important; min-height: calc(52px + env(safe-area-inset-top, 0px)) !important; gap: 6px; } .topbar .brand { font-size: 18px !important; } .topbar .brand small { font-size: 10px !important; } }',
 '[data-brand="delivery"] #deliveryView .menu-head { margin: 4px 0 12px; width: 100%; background: linear-gradient(135deg, #FFFDF9 0%, #F6EEE1 100%); border: 2px solid var(--fr-tan, #D9C7AD); box-shadow: 3px 3px 0 rgba(58,42,28,0.08); }',
  '[data-brand="delivery"] #deliveryView .menu-head h1 { font: 900 clamp(20px, 3vw, 28px)/1.15 "Unbounded", sans-serif; color: #3a2a1c; margin: 0; }',

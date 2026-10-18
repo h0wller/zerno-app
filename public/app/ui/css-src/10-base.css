@@ -1,0 +1,38 @@
+/* ── Базовые сбросы ─────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+[hidden]{
+  display: none !important;
+}
+body{
+  font: 400 15px/1.5 "Golos Text", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+button{
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+input,
+select,
+textarea{
+  font-family: inherit;
+}
+:focus-visible{
+  outline: 3px solid rgba(18, 58, 107, 0.45);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
