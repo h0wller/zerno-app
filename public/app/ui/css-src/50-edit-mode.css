@@ -1,0 +1,121 @@
+/* ── Тумблер режима правки (единый для обоих брендов,
+Ф3.35) ── */
+.donoff{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+}
+.donoff input{
+  appearance: none;
+  -webkit-appearance: none;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: #C9D3DC;
+  position: relative;
+  transition: background .2s;
+  cursor: pointer;
+  margin: 0;
+  flex: 0 0 auto;
+}
+.donoff input:checked{
+  background: #2F7D4F;
+}
+.donoff input::after{
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left .2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+}
+.donoff input:checked::after{
+  left: 16px;
+}
+/* ── Тумблер режима правки (база,
+оба бренда; было styles.js Ф3.21) ─── */
+.donoff{
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, .94);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px 4px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer
+}
+.donoff input{
+  appearance: none;
+  -webkit-appearance: none;
+  width: 34px;
+  height: 19px;
+  border-radius: 999px;
+  background: #C9D3DC;
+  position: relative;
+  transition: background .25s;
+  cursor: pointer;
+  margin: 0
+}
+.donoff input::after{
+  content: "";
+  position: absolute;
+  top: 2.5px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left .25s
+}
+.donoff input:checked{
+  background: var(--status-success)
+}
+.donoff input:checked::after{
+  left: 17px
+}
+/* в режиме правки метка (hit/new/vegan) не спорит с тумблем за левый верхний угол */
+body.editing .card .tag{
+  display: none
+}
+/* ── Блокировка скролла фона и скрытие плавающих FAB при открытой корзине ── */
+body.cart-open,
+body.sheet-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+body:has(#cartPanel.open),
+body:has(.cartPanel.open) {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+body.cart-open .cartFab,
+body.cart-open #cartFab,
+body.cart-open .chat-fab,
+body.cart-open #chatFab,
+body.cart-open #mbonusBtn,
+body:has(#cartPanel.open) .cartFab,
+body:has(#cartPanel.open) #cartFab,
+body:has(#cartPanel.open) .chat-fab,
+body:has(#cartPanel.open) #chatFab,
+body:has(#cartPanel.open) #mbonusBtn {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+}
