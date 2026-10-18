@@ -1,5 +1,5 @@
 // scripts/split-css.mjs: режет css-src/00-all.css по баннерам на части; порядок сохраняется, текст не меняется
-import { readdir, readFile, writeFile, unlink } from 'node:fs/promises';
+import { readFile, writeFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
