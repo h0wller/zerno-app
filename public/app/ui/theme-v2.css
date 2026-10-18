@@ -3858,12 +3858,7 @@ body #mbonusBtn .mb-free {
     gap: 22px;
     max-width: 1480px;
   }
-  .wrap > .panel {
-    position: sticky;
-    top: 118px;
-    max-height: calc(100vh - 140px);
-    transform: none;
-  }
+
 }
 
 /* [2] Desktop topbar (821px+): 4 колонки venue | brand | mbonus | profile, явные размеры, первая строка не сжимается */
@@ -3897,7 +3892,8 @@ body #mbonusBtn .mb-free {
 
 /* Desktop (1181px+): панель вмещается в колонку 350px и не уезжает под шапку */
 @media (min-width: 1181px) {
-  .wrap > .panel {
+    .wrap > .panel {
+    position: sticky;
     width: 100%;
     min-width: 0;
     max-width: 350px;
@@ -3905,6 +3901,10 @@ body #mbonusBtn .mb-free {
     top: 112px;
     max-height: calc(100vh - 128px);
     margin-top: 0;
+    transform: none;
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
   }
   .wrap > .panel > * {
     max-width: 100%;
@@ -3916,11 +3916,7 @@ body #mbonusBtn .mb-free {
     grid-row: 1;
     min-width: 0;
   }
-  .wrap > .panel {
-    grid-column: 3;
-    grid-row: 1;
-    align-self: start;
-  }
+
   /* Desktop: в «Пятнице» панель всегда видна в колонке, мобильная шторка не применяется */
 html .wrap > #panel:not(.open):not(.show) {
   position: sticky;
