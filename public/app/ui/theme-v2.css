@@ -3879,17 +3879,6 @@ body #mbonusBtn .mb-free {
     height: auto;
     min-height: 96px;
   }
-  .topbar .venueWrap {
-    grid-column: 1;
-    grid-row: 1;
-    justify-self: start;
-    min-width: 0;
-  }
-  .topbar .brand {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: center;
-  }
   .topbar #profileTopBtn {
     grid-column: 4;
     grid-row: 1;
@@ -4063,12 +4052,6 @@ body .wrap > #deliveryRail {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 8px;
-  }
-  .topbar .venueWrap {
-    grid-column: 1; grid-row: 1; justify-self: start; min-width: 0;
-  }
-  .topbar .brand {
-    grid-column: 2; grid-row: 1; justify-self: center; min-width: 0;
   }
   .topbar .topbar-right {
     grid-column: 3; grid-row: 1; justify-self: end;
