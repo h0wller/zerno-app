@@ -3890,20 +3890,6 @@ body #mbonusBtn .mb-free {
     grid-row: 1;
     justify-self: center;
   }
-  .topbar #mbonusBtn {
-    grid-column: 3;
-    grid-row: 1;
-    justify-self: end;
-    position: static;
-    width: auto;
-    max-width: none;
-    height: 44px;
-    padding: 0 14px;
-    margin: 0;
-    flex-direction: row;
-    border-radius: 999px;
-    align-self: center;
-  }
   .topbar #profileTopBtn {
     grid-column: 4;
     grid-row: 1;
@@ -4088,8 +4074,6 @@ body .wrap > #deliveryRail {
     grid-column: 3; grid-row: 1; justify-self: end;
     display: flex; align-items: center; gap: 8px; min-width: 0;
   }
-  /* если JS не успел обернуть — не даём упасть раскладке */
-  .topbar #mbonusBtn { grid-column: 3; grid-row: 1; justify-self: end; }
 }
 /* [fix-all v6] END F5.63 */
 
@@ -4789,11 +4773,6 @@ body {
     min-width: 0;
     max-width: 100%;
   }
-  .topbar #mbonusBtn {
-    grid-column: 3;
-    grid-row: 1;
-    justify-self: end;
-  }
   .topbar #modeSeg:not([hidden]) {
     grid-column: 1 / -1;
     grid-row: 2;
@@ -4807,6 +4786,13 @@ body {
     order: 0;
     margin: 0;
     position: static;
+    width: auto;
+    max-width: none;
+    height: 44px;
+    padding: 0 14px;
+    flex-direction: row;
+    border-radius: 999px;
+    align-self: center;
   }
   .topbar #profileTopBtn {
     grid-column: 4;
