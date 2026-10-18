@@ -1107,7 +1107,6 @@ body .wrap > #deliveryRail {
   }
   /* если JS не успел обернуть — не даём упасть раскладке */
   .topbar #mbonusBtn { grid-column: 3; grid-row: 1; justify-self: end; margin-right: 56px; }
-  .topbar #profileTopBtn { grid-column: 3; grid-row: 1; justify-self: end; }
 }
 /* [fix-all v6] END F5.63 */
 
@@ -1812,12 +1811,6 @@ body {
     grid-row: 1;
     justify-self: end;
     margin-right: 54px;
-  }
-  .topbar #profileTopBtn {
-    grid-column: 3;
-    grid-row: 1;
-    justify-self: end;
-    margin: 0;
   }
   .topbar #modeSeg:not([hidden]) {
     grid-column: 1 / -1;
