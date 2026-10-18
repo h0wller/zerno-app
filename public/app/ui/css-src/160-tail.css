@@ -1106,7 +1106,7 @@ body .wrap > #deliveryRail {
     grid-column: 1 / -1; grid-row: 2;
   }
   /* если JS не успел обернуть — не даём упасть раскладке */
-  .topbar #mbonusBtn { grid-column: 3; grid-row: 1; justify-self: end; margin-right: 56px; }
+  .topbar #mbonusBtn { grid-column: 3; grid-row: 1; justify-self: end; }
 }
 /* [fix-all v6] END F5.63 */
 
@@ -1810,7 +1810,6 @@ body {
     grid-column: 3;
     grid-row: 1;
     justify-self: end;
-    margin-right: 54px;
   }
   .topbar #modeSeg:not([hidden]) {
     grid-column: 1 / -1;
