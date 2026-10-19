@@ -712,13 +712,6 @@ body:has(#cartPanel.open) #mbonusBtn {
   padding: 12px 0;
   border-bottom: 1.5px dashed var(--line, #D8DFE4);
 }
-.ci-left {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
 .ci-name {
   font-size: 14.5px;
   font-weight: 700;
