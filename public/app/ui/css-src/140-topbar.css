@@ -116,25 +116,7 @@
   gap: 14px;
   flex-wrap: wrap;
 }
-.menu-head h1{
-  font:
-    400 clamp(26px, 3.2vw, 40px)/1.15 "Prata",
-    serif;
-  color: #123a6b;
-}
-.menu-head h1 em{
-  font-style: normal;
-  color: #3e8fd0;
-  border-bottom: 2px solid rgba(62, 143, 208, 0.4);
-  padding-bottom: 2px;
-}
-.menu-head .upd{
-  color: var(--soft);
-  margin-top: 5px;
-  font: 500 12px/1.4 "Golos Text", system-ui, sans-serif;
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
+
 .menu-head .upd b,
 #menuView #updWhen,
 #deliveryView #updWhenD{
