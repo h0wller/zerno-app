@@ -9,16 +9,6 @@
 [hidden]{
   display: none !important;
 }
-body{
-  font: 400 15px/1.5 "Golos Text", system-ui, sans-serif;
-  color: var(--ink);
-  background: var(--paper);
-  min-height: 100vh;
-  overflow-x: hidden;
-  overflow-x: clip;
-  -webkit-text-size-adjust: 100%;
-  touch-action: manipulation;
-}
 button{
   font-family: inherit;
   cursor: pointer;

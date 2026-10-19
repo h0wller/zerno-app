@@ -1342,11 +1342,6 @@ body .wrap > #deliveryRail {
   font-weight: 700;
   text-decoration: none;
 }
-body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
 .myOrderCard .moDate {
   font-size: 12px;
   color: var(--soft);
