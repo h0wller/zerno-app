@@ -283,21 +283,6 @@ body.editing .card:hover{
 .card .steprow [data-step]:active {
   transform: scale(0.92);
 }
-.cartItem .qty button{
-  position: relative;
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #E7ECF0;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  cursor: pointer;
-}
 /* ── Утилиты ────────────────────────────────────────────────────────────── */
 .gempty{
   text-align: center;
@@ -644,20 +629,6 @@ body:has(#cartPanel.open) #mbonusBtn {
 }
 
 /* Строки блюд */
-.cartItem .qty button {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--cart-qty-bg, var(--panel, #F3F8FC));
-  border: var(--cart-qty-border, 1.5px solid var(--line, #D8DFE4));
-  color: var(--cart-qty-color, var(--ink, #101418));
-  font-size: 18px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: transform 0.1s ease;
-}
 .cartItem .qty button:active {
   transform: scale(0.92);
 }
@@ -2226,10 +2197,20 @@ body.is-cashier .cust .acts{
 .cartItem .qty button{
   width: 36px;
   height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   background: #e7ecf0;
   font-weight: 700;
   position: relative;
+  display: grid;
+  place-items: center;
+  justify-content: center;
+  border: var(--cart-qty-border, 1.5px solid var(--line, #D8DFE4));
+  color: var(--cart-qty-color, var(--ink, #101418));
+  font-size: 18px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
 }
 .cartItem .qty button::before{
   content: "";

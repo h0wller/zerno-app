@@ -154,20 +154,6 @@
 }
 
 /* Строки блюд */
-.cartItem .qty button {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--cart-qty-bg, var(--panel, #F3F8FC));
-  border: var(--cart-qty-border, 1.5px solid var(--line, #D8DFE4));
-  color: var(--cart-qty-color, var(--ink, #101418));
-  font-size: 18px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: transform 0.1s ease;
-}
 .cartItem .qty button:active {
   transform: scale(0.92);
 }

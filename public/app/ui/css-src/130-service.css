@@ -98,10 +98,20 @@ body.is-cashier .cust .acts{
 .cartItem .qty button{
   width: 36px;
   height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   background: #e7ecf0;
   font-weight: 700;
   position: relative;
+  display: grid;
+  place-items: center;
+  justify-content: center;
+  border: var(--cart-qty-border, 1.5px solid var(--line, #D8DFE4));
+  color: var(--cart-qty-color, var(--ink, #101418));
+  font-size: 18px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
 }
 .cartItem .qty button::before{
   content: "";
