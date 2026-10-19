@@ -1584,7 +1584,6 @@ body {
   background: var(--topbar-bg, transparent);
   color: var(--topbar-color, var(--ink));
   border-bottom: var(--topbar-border, none);
-  height: var(--topbar-h, 64px);
   top: 0;
   z-index: 90;
   box-shadow: 0 4px 16px -4px rgba(18, 58, 107, 0.08);
