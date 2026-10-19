@@ -91,6 +91,14 @@
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    width: 100%;
+    margin: 0;
+    letter-spacing: 0;
+    text-align: center;
   }
 
   .wrap .rail button.on,
@@ -101,6 +109,7 @@
   .wrap .rail .re,
   .wrap #deliveryRail .re {
     font-size: 20px;
+    margin: 0;
   }
 }
 /* ── F5.17: бонус-пилюля компакт справа над FAB; у футера растворяется ── */
