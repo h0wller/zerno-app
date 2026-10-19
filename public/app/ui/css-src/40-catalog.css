@@ -14,31 +14,10 @@
 .subchips::-webkit-scrollbar {
   display: none;
 }
-.subchip {
-  flex: 0 0 auto;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: 1.5px solid var(--line);
-  background: var(--card);
-  color: var(--soft);
-  user-select: none;
-  transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
-}
 .subchip:active {
   transform: scale(0.95);
 }
-.subchip.on {
-  background: var(--flame);
-  color: var(--c-text-on-accent, #FFFFFF);
-  border-color: var(--flame);
-}
+
 .placebox{
   margin-top: 12px;
   padding: 12px 14px;

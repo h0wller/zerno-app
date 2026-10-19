@@ -2376,7 +2376,8 @@ body.panel-open {
   font: 600 13px / 1 "Golos Text", system-ui, sans-serif;
   white-space: nowrap;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  user-select: none;
 }
 
 .subchip:hover {
