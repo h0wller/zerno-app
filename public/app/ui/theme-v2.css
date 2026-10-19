@@ -3739,17 +3739,6 @@ body #mbonusBtn .mb-free {
 
 /* [2] Desktop topbar (821px+): 4 колонки venue | brand | mbonus | profile, явные размеры, первая строка не сжимается */
 @media (min-width: 821px) {
-  .topbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto auto;
-    grid-template-rows: 64px auto;
-    align-items: center;
-    align-content: start;
-    gap: 8px;
-    padding: 10px 16px 8px;
-    height: auto;
-    min-height: 96px;
-  }
   .topbar .venueToggle {
     height: 44px;
     font-size: 14px;
@@ -3914,8 +3903,13 @@ body .wrap > #deliveryRail {
   .topbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: 64px auto;
     align-items: center;
+    align-content: start;
     gap: 8px;
+    padding: 10px 16px 8px;
+    height: auto;
+    min-height: 96px;
   }
   .topbar .topbar-right {
     grid-column: 3; grid-row: 1; justify-self: end;
