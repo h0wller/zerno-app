@@ -242,6 +242,7 @@ body .wrap #deliveryRail button.on{
   align-items: center;
   margin: 0 0 12px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 @media (max-width: 820px){.adminBar{
     display: grid;
