@@ -26,7 +26,6 @@
     background: var(--chat-fab-hover-bg, #3E8FD0);
   }
 }
-.chat-fab:active,
 .chat-fab:active{
   transform: scale(0.92);
 }
