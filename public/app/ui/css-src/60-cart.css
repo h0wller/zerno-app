@@ -154,14 +154,6 @@
 }
 
 /* Строки блюд */
-.cartItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1.5px dashed var(--line, #D8DFE4);
-}
 .cartItem .qty {
   display: flex;
   align-items: center;

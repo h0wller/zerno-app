@@ -209,13 +209,6 @@ body.is-cashier .cust .acts{
 .deliveryView.active{
   display: block;
 }
-.cartItem{
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px dashed var(--line);
-}
 .cartItem .qty{
   display: flex;
   gap: 6px;
