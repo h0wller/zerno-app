@@ -213,6 +213,7 @@ body.is-cashier .cust .acts{
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-shrink: 0;
 }
 .checkoutForm{
   display: flex;

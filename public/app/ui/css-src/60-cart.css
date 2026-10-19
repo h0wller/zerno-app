@@ -154,12 +154,6 @@
 }
 
 /* Строки блюд */
-.cartItem .qty {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
 .cartItem .qty button {
   width: 38px;
   height: 38px;
