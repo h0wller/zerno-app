@@ -113,11 +113,11 @@
   opacity: 0.45;
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
-.ot-step.done,
-.ot-step.active {
+.ot-step.done {
   opacity: 1;
 }
 .ot-step.active {
+  opacity: 1;
   transform: scale(1.05);
 }
 .ot-dot {

@@ -235,10 +235,9 @@ body.is-cashier .cust .acts{
 }
 .checkoutForm input,
 .checkoutForm select,
-.checkoutForm textarea,
 #cartPanel input:not([type="checkbox"]),
 #cartPanel select,
-#cartPanel textarea{
+#cartPanel textarea {
   border: var(--modal-input-border, 1.5px solid var(--line));
   border-radius: 12px;
   padding: 10px 13px;
@@ -247,6 +246,11 @@ body.is-cashier .cust .acts{
   background: var(--modal-input-bg, #FFFFFF);
   color: var(--modal-input-color, var(--ink, #101418));
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.checkoutForm textarea {
+  border: var(--modal-input-border, 1.5px solid var(--line));
+  font-weight: 600;
+  color: var(--modal-input-color, var(--ink, #101418));
 }
 .checkoutForm input::placeholder,
 .checkoutForm textarea::placeholder,
@@ -266,7 +270,12 @@ body.is-cashier .cust .acts{
   border-color: var(--flame);
   box-shadow: 0 0 0 3px rgba(192, 59, 42, 0.14);
 }
-.checkoutForm textarea{
+.checkoutForm textarea {
+  border-radius: 12px;
+  padding: 10px 13px;
+  font-size: 16px;
+  background: var(--modal-input-bg, #FFFFFF);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   resize: vertical;
   min-height: 60px;
 }

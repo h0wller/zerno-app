@@ -126,16 +126,23 @@
   to { opacity: 1; transform: translateY(0); }
 }
 @media (min-width: 821px) {
-  .topbar,
-  .topbar,
   header.topbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    align-content: center;
-    gap: 8px;
-    padding: 8px 18px;
-  }
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 8px 18px;
+}
+.topbar {
+  grid-template-rows: 64px auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 8px 18px;
+}
   .topbar .venueWrap {
     grid-column: 1;
     grid-row: 1;

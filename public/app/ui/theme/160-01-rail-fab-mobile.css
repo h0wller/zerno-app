@@ -228,18 +228,31 @@ body .wrap #deliveryRail button.on{
     width: 100%;
     max-width: 100%;
   }
-  .mh-top .mh-right, .mh-top .search,
-  #menuView .menu-head .mh-top .mh-right,
-  #deliveryView .menu-head .mh-top .mh-right{
-    width: 100%; max-width: 100%; margin-left: 0; flex: 1 1 100%;
-  }
+  .mh-top .mh-right,
+#menuView .menu-head .mh-top .mh-right,
+#deliveryView .menu-head .mh-top .mh-right {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  flex: 1 1 100%;
+}
   #menuView .mh-top .search,
-  #deliveryView .mh-top .search,
-  #menuView .menu-head .mh-top .search,
-  #deliveryView .menu-head .mh-top .search,
-  .mh-top .search{
-    min-width: 0; margin: 8px 0 0; box-sizing: border-box;
-  }
+#deliveryView .mh-top .search,
+#menuView .menu-head .mh-top .search,
+#deliveryView .menu-head .mh-top .search {
+  min-width: 0;
+  margin: 8px 0 0;
+  box-sizing: border-box;
+}
+.mh-top .search {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  flex: 1 1 100%;
+  min-width: 0;
+  margin: 8px 0 0;
+  box-sizing: border-box;
+}
 }
 /* ── Ф5.51: Компактная сетка 2х2 для adminBar (все кнопки видны на экране) ── */
 .adminBar{
@@ -261,28 +274,43 @@ body .wrap #deliveryRail button.on{
 .adminBar button,
 #editToggle,
 #promoToggle,
-#dashToggle,
-#chatsToggle2{
-    width: 100%;
-    height: 34px;
-    padding: 0 8px;
-    font-size: 10.5px;
-    font-weight: 700;
-    border-radius: 8px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    background: #fff;
-    border: 1.5px solid var(--line);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-  }
-#chatsToggle2{
-    grid-column: span 2;
-  }
+#dashToggle {
+  width: 100%;
+  height: 34px;
+  padding: 0 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+#chatsToggle2 {
+  width: 100%;
+  height: 34px;
+  padding: 0 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  grid-column: span 2;
+}
 /* Тосты строго под шапкой,
 не перекрывают админку */
   .toasts{
