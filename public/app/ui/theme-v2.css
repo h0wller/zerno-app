@@ -2591,21 +2591,6 @@ textarea{
   border-radius: 8px;
 }
 /* ══ шапка ══ */
-.topbar{
-  height: var(--topbar-h, 64px);
-  padding: 0 12px;
-  position: sticky;
-  top: 0;
-  z-index: 90;
-  background: #f3f8fc;
-  color: #123a6b;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 20px;
-  border-bottom: 1px solid rgba(62, 143, 208, 0.25);
-  box-shadow: 0 4px 16px -4px rgba(18, 58, 107, 0.08);
-}
 .brand{
   display: flex;
   align-items: center;
@@ -4446,6 +4431,10 @@ body {
   background: var(--topbar-bg, transparent);
   color: var(--topbar-color, var(--ink));
   border-bottom: var(--topbar-border, none);
+  height: var(--topbar-h, 64px);
+  top: 0;
+  z-index: 90;
+  box-shadow: 0 4px 16px -4px rgba(18, 58, 107, 0.08);
 }
 .topbar .venueWrap {
   position: relative;
