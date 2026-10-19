@@ -1920,14 +1920,6 @@ button.cta,
   box-shadow: var(--btn-fire-shadow, none);
   cursor: pointer;
 }
-.btn.fire {
-  border-radius: 12px;
-  padding: 11px 17px;
-  font-size: 13.5px;
-  font-weight: 800;
-  transition: 0.22s;
-  cursor: pointer;
-}
 .btn.dark{
   background: var(--esp);
   color: var(--cream);
@@ -1937,6 +1929,12 @@ button.cta,
   transform: translateY(-1px);
 }
 .btn.fire{
+  border-radius: 12px;
+  padding: 11px 17px;
+  font-size: 13.5px;
+  font-weight: 800;
+  transition: 0.22s;
+  cursor: pointer;
   background: var(--btn-fire-bg, var(--flame));
   color: var(--btn-fire-color, #fff);
   border: var(--btn-fire-border, none);
