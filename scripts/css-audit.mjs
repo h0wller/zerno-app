@@ -190,29 +190,42 @@ if (brandRulesCount > MAX_BRAND_RULES) {
   ok(`views.js: рэтчет [data-brand] правил соблюдён (${brandRulesCount} <= ${MAX_BRAND_RULES})`);
 }
 /* ── ПРАВИЛО 13: Мониторинг множественных владельцев селекторов в theme/*.css (режим предупреждения) ── */
-const themeSelectors = [];
-const themeBlocks = THEME_CSS.match(/[^{}]+\{[^{}]*\}/g) || [];
-themeBlocks.forEach(b => {
-  const selPart = b.slice(0, b.indexOf('{')).trim();
-  selPart.split(',').forEach(s => {
-    const cleanSel = s.trim().replace(/:hover|:active|:focus|::before|::after/g, '');
-    if (cleanSel && !cleanSel.startsWith('@') && !/^\d+%$/.test(cleanSel) && cleanSel !== 'from' && cleanSel !== 'to' && cleanSel !== ':root' && cleanSel !== '*') {
-      themeSelectors.push(cleanSel);
-    }
-  });
-});
-
-const selCounts = {};
-themeSelectors.forEach(s => {
-  selCounts[s] = (selCounts[s] || 0) + 1;
-});
-
-const multiOwners = Object.entries(selCounts).filter(([, count]) => count > 1);
-if (multiOwners.length) {
-  console.warn(`⚠️ [Warning] theme/*.css: найдено ${multiOwners.length} дублирующихся селекторов (технический долг для будущих рефакторингов).`);
-  ok('theme/*.css: мониторинг дублей селекторов пройден (warn-mode)');
+// Реальный дубль = один и тот же селектор повторён в одном и том же контексте (@media / базовый).
+// Послойность (база + @media или :hover/::before у того же селектора) — норма responsive-CSS, не дубль.
+// :root не считаем: переменные по каскаду сознательно объявлены в нескольких частях.
+const realCounts = new Map();
+let layered = 0;
+const stripComments = THEME_CSS.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
+{
+  const stack = []; let buf = '';
+  for (let i = 0; i < stripComments.length; i++) {
+    const c = stripComments[i];
+    if (c === '{') { stack.push(buf.trim().replace(/\s+/g, ' ')); buf = ''; }
+    else if (c === '}') {
+      const pre = stack.pop();
+      if (pre && !pre.startsWith('@') && !stack.some(x => x.startsWith('@keyframes'))) {
+        const ctx = stack.filter(x => x.startsWith('@media')).join(' > ') || '-';
+        for (const sel of pre.split(',').map(x => x.trim().replace(/\s+/g, ' ')).filter(Boolean)) {
+          if (sel === ':root' || sel === '*' || sel === 'from' || sel === 'to' || /^\d+%$/.test(sel)) continue;
+          const key = ctx + ' | ' + sel;
+          realCounts.set(key, (realCounts.get(key) || 0) + 1);
+        }
+      }
+      buf = '';
+    } else buf += c;
+  }
+}
+const realDups = [...realCounts.entries()].filter(([, n]) => n > 1);
+// для информации: сколько селекторов встречаются больше одного раза вообще (включая послойность)
+const anyCount = new Map();
+for (const [k, n] of realCounts) { const sel = k.slice(k.indexOf(' | ') + 3); anyCount.set(sel, (anyCount.get(sel) || 0) + n); }
+layered = [...anyCount.values()].filter(n => n > 1).length - realDups.length;
+if (realDups.length) {
+  console.warn(`⚠️ [Warning] theme/*.css: ${realDups.length} настоящих дублей (один селектор дважды в одном контексте). Послойность (информативно): ${layered}.`);
+  realDups.slice(0, 20).forEach(([k, n]) => console.warn(`   ×${n}  ${k}`));
+  ok('theme/*.css: мониторинг дублей пройден (warn-mode)');
 } else {
-  ok('theme/*.css: у каждого элемента ровно один владелец-селектор');
+  ok('theme/*.css: настоящих дублей нет (послойность: ' + layered + ', норма)');
 }
 console.log('\n' + '='.repeat(60));
 const _totalViolations = (typeof failures !== 'undefined' ? failures : 0);

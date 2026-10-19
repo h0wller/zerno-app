@@ -7,7 +7,7 @@ export const BRANDS = {
     id: 'coffee',
     label: 'Кофейня',
     emoji: '🌊',
-    tokensFrom: 'root',            /* палитра кофейни = :root дефолты theme-v2.css (СЛОЙ 1) */
+    tokensFrom: 'root',            /* палитра кофейни = :root дефолты theme/*.css (СЛОЙ 1) */
     menuSection: 'coffee',         /* семантический флаг вместо brand === '...' (Фаза D) */
     loyalty: 'stamps',
     logo: { src: '/andCoffee.svg', w: 42, h: 42, alt: '…и кофе' },
