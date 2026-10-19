@@ -204,9 +204,6 @@ body .wrap #deliveryRail button.on{
   background: #fff; color: #7B5233; flex-shrink: 0;
 }
 #mbonusBtn .mb-bean svg{ width: 13px; height: 13px; display: block; }
-/* [fix-all-bean] страховка от конфликта с '#mbonusBtn>span:not(.mb-free) svg'
-   (у него box-sizing:content-box + padding:4px, из-за чего SVG раздувается). */
-#mbonusBtn .mb-bean{ overflow: hidden; }
 #mbonusBtn .mb-free{
   font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 8px;
   background: linear-gradient(120deg, #f3e3ce, #e4c9a5); color: #4a3100;
