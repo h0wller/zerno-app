@@ -3032,12 +3032,6 @@ body .wrap #deliveryRail button.on{
   }
 }
 /* ── F5.28: семья FAB: одна ось right:10, базы 14/80, диаметры 56 ── */
-.chat-fab{
-  right: 10px;
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  width: 56px;
-  height: 56px;
-}
 /* ── F5.29+: бонус-бейдж — базовая геометрия/позиционирование принадлежит Layer 2 (views.js).
    Здесь остаются только визуальные стили содержимого компонента. ── */
 #mbonusBtn{ cursor: pointer; }
