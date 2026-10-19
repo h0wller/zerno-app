@@ -1,6 +1,5 @@
 /* ── Сабфильтры каталога (.subchips, .subchip) ── */
 .subchips {
-  padding: 4px 2px 10px;
   margin: 0 0 12px;
   white-space: nowrap;
 }

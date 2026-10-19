@@ -334,7 +334,6 @@ body.editing .card:hover{
 }
 /* ── Сабфильтры каталога (.subchips, .subchip) ── */
 .subchips {
-  padding: 4px 2px 10px;
   margin: 0 0 12px;
   white-space: nowrap;
 }
@@ -792,10 +791,8 @@ body.is-admin .ticker {
 
 }
 /* ── Ф3.55: компенсация плавающей шапки Telegram-WebView ── */
-body.in-tg .topbar{
+body.in-tg .topbar {
   height: auto;
-  min-height: calc(var(--topbar-h, 64px) + env(safe-area-inset-top, 0px) + 56px);
-  padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
 }
 /* ── Ф5.7 чанк 2: база модалок и полноэкранного QR (было inline <style> index.html) ── */
 .overlay{
@@ -862,13 +859,9 @@ body.in-tg .topbar{
   font-family: Unbounded, "Golos Text", system-ui, -apple-system, sans-serif;
 }
 .ava {
-  color: var(--ava-color, var(--c-text-on-accent, #FFFFFF));
-  border: var(--ava-border, 1.5px solid var(--line));
-  box-shadow: var(--ava-shadow, none);
   font-size: 17px;
   font-weight: 700;
   line-height: 1;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
@@ -1632,8 +1625,7 @@ label.chk{
 .freeCard button:hover{
   transform: scale(1.05);
 }
-.demoBtn,
-.resetBtn{
+.demoBtn {
   width: 100%;
   margin-top: 12px;
   border: 1.5px dashed var(--line);
@@ -1642,6 +1634,16 @@ label.chk{
   font-size: 12.5px;
   font-weight: 700;
   color: var(--soft);
+  transition: 0.2s;
+  background: #fff;
+}
+.resetBtn {
+  width: 100%;
+  margin-top: 12px;
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  font-weight: 700;
   transition: 0.2s;
   background: #fff;
 }
@@ -1924,9 +1926,6 @@ button.cta,
   font-size: 13.5px;
   font-weight: 800;
   transition: 0.22s;
-  background: var(--btn-fire-bg, #123a6b);
-  color: var(--btn-fire-color, #ffffff);
-  box-shadow: var(--btn-fire-shadow, none);
   cursor: pointer;
 }
 .btn.dark{
@@ -2576,10 +2575,6 @@ body{
   color: #fff;
   border-color: transparent;
   box-shadow: 0 6px 16px rgba(18, 58, 107, 0.28);
-}
-.menu-head{
-  margin: 2px 0 18px;
-  animation: rise 0.6s both;
 }
 .mh-top{
   display: flex;
@@ -3711,8 +3706,6 @@ body .wrap > #deliveryRail {
 @media (min-width: 821px) {
   .topbar {
   grid-template-rows: 64px auto;
-  align-content: start;
-  padding: 10px 16px 8px;
   height: auto;
   min-height: 96px;
 }
@@ -4156,7 +4149,6 @@ body .wrap > #deliveryRail {
 }
 /* ── Сетка доставки и безопасный отступ под плавающую корзину ── */
 #deliveryGrid {
-  gap: 16px;
   padding-bottom: calc(var(--floating-cart-h, 72px) + max(16px, env(safe-area-inset-bottom, 0px)));
 }
 @media (min-width: 560px) {

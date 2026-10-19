@@ -171,8 +171,7 @@
 .freeCard button:hover{
   transform: scale(1.05);
 }
-.demoBtn,
-.resetBtn{
+.demoBtn {
   width: 100%;
   margin-top: 12px;
   border: 1.5px dashed var(--line);
@@ -181,6 +180,16 @@
   font-size: 12.5px;
   font-weight: 700;
   color: var(--soft);
+  transition: 0.2s;
+  background: #fff;
+}
+.resetBtn {
+  width: 100%;
+  margin-top: 12px;
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  font-weight: 700;
   transition: 0.2s;
   background: #fff;
 }

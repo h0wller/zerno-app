@@ -63,13 +63,9 @@
   font-family: Unbounded, "Golos Text", system-ui, -apple-system, sans-serif;
 }
 .ava {
-  color: var(--ava-color, var(--c-text-on-accent, #FFFFFF));
-  border: var(--ava-border, 1.5px solid var(--line));
-  box-shadow: var(--ava-shadow, none);
   font-size: 17px;
   font-weight: 700;
   line-height: 1;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;

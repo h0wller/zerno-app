@@ -91,10 +91,6 @@
   border-color: transparent;
   box-shadow: 0 6px 16px rgba(18, 58, 107, 0.28);
 }
-.menu-head{
-  margin: 2px 0 18px;
-  animation: rise 0.6s both;
-}
 .mh-top{
   display: flex;
   align-items: flex-end;
