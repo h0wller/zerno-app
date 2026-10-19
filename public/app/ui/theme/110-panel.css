@@ -54,6 +54,7 @@
   padding: 14px;
   flex: 1;
   scrollbar-width: thin;
+  overscroll-behavior: contain;
 }
 .pv::-webkit-scrollbar{
   width: 6px;
