@@ -135,7 +135,7 @@
 
 ## 13. CSS по слоям (подробнее — docs/css-architecture.md)
 
-- СЛОЙ 1 (база): `ui/theme-v2.css`, `ui/fonts.css`.
+- СЛОЙ 1 (база): `ui/theme/*.css`, `ui/fonts.css`.
 - СЛОЙ 2 (layout + бренд): `core/views.js` (массив rules).
 - СЛОЙ 3 (компонентный): инжекции внутри модулей (delivery.js steprow, ui/styles.js, пульсы чата).
 - СЛОЙ 4 (critical): инлайн-`<style>` в `index.html`.

@@ -3,9 +3,9 @@
    Запуск: node scripts/css-audit.mjs
    Интеграция в CI: добавь в package.json → "pretest": "node scripts/css-audit.mjs" */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 
-const THEME = readFileSync('public/app/ui/theme-v2.css', 'utf8');
+const THEME = readdirSync('public/app/ui/theme').filter(f => f.endsWith('.css')).sort((a, b) => parseInt(a, 10) - parseInt(b, 10)).map(f => readFileSync('public/app/ui/theme/' + f, 'utf8')).join('');
 /* F5.7b: комментарии не участвуют в проверках — считаем только реальный CSS */
 const THEME_CSS = THEME.replace(/\/\*[\s\S]*?\*\//g, '');
 const VIEWS = readFileSync('public/app/core/views.js', 'utf8');
@@ -24,29 +24,29 @@ let failures = 0;
 const fail = (msg) => { failures++; console.error('❌', msg); };
 const ok = (msg) => { console.log('✅', msg); };
 
-/* ── ПРАВИЛО 1: в theme-v2.css нет !important (кроме [hidden]) ── */
+/* ── ПРАВИЛО 1: в theme/*.css нет !important (кроме [hidden]) ── */
 const importantMatches = THEME_CSS.match(/!important/g) || [];
 const hiddenMatches = (THEME_CSS.match(/\[hidden\][^}]*!important/g) || []).length;
 if (importantMatches.length > hiddenMatches) {
-  fail(`theme-v2.css: найдено ${importantMatches.length - hiddenMatches} !important вне [hidden]. Базовые стили не должны иметь !important.`);
+  fail(`theme/*.css: найдено ${importantMatches.length - hiddenMatches} !important вне [hidden]. Базовые стили не должны иметь !important.`);
 } else {
-  ok('theme-v2.css: !important только в [hidden] (системное)');
+  ok('theme/*.css: !important только в [hidden] (системное)');
 }
 
-/* ── ПРАВИЛО 2: в theme-v2.css нет [data-brand="..."] селекторов ── */
+/* ── ПРАВИЛО 2: в theme/*.css нет [data-brand="..."] селекторов ── */
 if (/\[data-brand\s*=/.test(THEME_CSS)) {
-  fail('theme-v2.css: найдены [data-brand="..."] селекторы. Брендовые переопределения — в views.js (СЛОЙ 2).');
+  fail('theme/*.css: найдены [data-brand="..."] селекторы. Брендовые переопределения — в views.js (СЛОЙ 2).');
 } else {
-  ok('theme-v2.css: нет брендовых селекторов [data-brand="..."]');
+  ok('theme/*.css: нет брендовых селекторов [data-brand="..."]');
 }
 
-/* ── ПРАВИЛО 3: в theme-v2.css нет хардкода брендовых цветов Пятницы ── */
+/* ── ПРАВИЛО 3: в theme/*.css нет хардкода брендовых цветов Пятницы ── */
 const fridayColors = ['#B4552D', '#8B3E1F', '#3A2A1C', '#241812', '#F3E2CE', '#F3EDE6', '#D9C7AD'];
 const fridayInTheme = fridayColors.filter(c => THEME_CSS.includes(c));
 if (fridayInTheme.length) {
-  fail(`theme-v2.css: найдены крафт-цвета Пятницы: ${fridayInTheme.join(', ')}. Брендовые цвета — в views.js.`);
+  fail(`theme/*.css: найдены крафт-цвета Пятницы: ${fridayInTheme.join(', ')}. Брендовые цвета — в views.js.`);
 } else {
-  ok('theme-v2.css: нет хардкода брендовых цветов Пятницы');
+  ok('theme/*.css: нет хардкода брендовых цветов Пятницы');
 }
 
 /* ── ПРАВИЛО 4: в views.js все правила либо layout, либо начинаются с [data-brand= ── */
@@ -75,7 +75,7 @@ if (badLines.length) {
   ok('views.js: все правила — либо layout/system, либо [data-brand="..."]');
 }
 
-/* ── ПРАВИЛО 5: CSS в theme-v2.css парсится без ошибок (базовая проверка баланса скобок) ── */
+/* ── ПРАВИЛО 5: CSS в theme/*.css парсится без ошибок (базовая проверка баланса скобок) ── */
 let depth = 0;
 for (const ch of THEME_CSS) { // ✅ Исправлено: игнорируем скобки внутри комментариев
   if (ch === '{') depth++;
@@ -83,9 +83,9 @@ for (const ch of THEME_CSS) { // ✅ Исправлено: игнорируем 
   if (depth < 0) break;
 }
 if (depth !== 0) {
-  fail(`theme-v2.css: несбалансированные скобки (разница: ${depth}).`);
+  fail(`theme/*.css: несбалансированные скобки (разница: ${depth}).`);
 } else {
-  ok('theme-v2.css: скобки сбалансированы');
+  ok('theme/*.css: скобки сбалансированы');
 }
 
 /* ── ПРАВИЛО 6: в views.js нет разрывов слов (!importan t, & &, > .) ── */
@@ -189,7 +189,7 @@ if (brandRulesCount > MAX_BRAND_RULES) {
 } else {
   ok(`views.js: рэтчет [data-brand] правил соблюдён (${brandRulesCount} <= ${MAX_BRAND_RULES})`);
 }
-/* ── ПРАВИЛО 13: Мониторинг множественных владельцев селекторов в theme-v2.css (режим предупреждения) ── */
+/* ── ПРАВИЛО 13: Мониторинг множественных владельцев селекторов в theme/*.css (режим предупреждения) ── */
 const themeSelectors = [];
 const themeBlocks = THEME_CSS.match(/[^{}]+\{[^{}]*\}/g) || [];
 themeBlocks.forEach(b => {
@@ -209,10 +209,10 @@ themeSelectors.forEach(s => {
 
 const multiOwners = Object.entries(selCounts).filter(([, count]) => count > 1);
 if (multiOwners.length) {
-  console.warn(`⚠️ [Warning] theme-v2.css: найдено ${multiOwners.length} дублирующихся селекторов (технический долг для будущих рефакторингов).`);
-  ok('theme-v2.css: мониторинг дублей селекторов пройден (warn-mode)');
+  console.warn(`⚠️ [Warning] theme/*.css: найдено ${multiOwners.length} дублирующихся селекторов (технический долг для будущих рефакторингов).`);
+  ok('theme/*.css: мониторинг дублей селекторов пройден (warn-mode)');
 } else {
-  ok('theme-v2.css: у каждого элемента ровно один владелец-селектор');
+  ok('theme/*.css: у каждого элемента ровно один владелец-селектор');
 }
 console.log('\n' + '='.repeat(60));
 const _totalViolations = (typeof failures !== 'undefined' ? failures : 0);

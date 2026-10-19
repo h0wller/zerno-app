@@ -37,7 +37,7 @@
 Стили строго разделены на три изолированных слоя. Нарушение границ слоев блокируется скриптом `scripts/css-audit.mjs`.
 
 ┌────────────────────────────────────────────────────────┐
-│ Слой 1: public/app/ui/theme-v2.css (Базовый UI)        │
+│ Слой 1: public/app/ui/theme/*.css (Базовый UI, 18 частей)│
 ├────────────────────────────────────────────────────────┤
 │ Слой 2: public/app/ui/brand-tokens.css (Токены данных) │
 ├────────────────────────────────────────────────────────┤
@@ -46,7 +46,7 @@
 
 ```
 
-### Слой 1: `theme-v2.css` (Базовая раскладка и нейтральные компоненты)
+### Слой 1: `theme/*.css` (Базовая раскладка и нейтральные компоненты)
 
 * **Запрещены** любые `!important`, кроме системного селектора `[hidden]`.
 * **Запрещены** селекторы брендов вида `[data-brand="..."]`.
@@ -173,9 +173,9 @@ npm run pretest
 
 1. **Проверять влияние на оба бренда** (Coffee и Delivery).
 2. **Не предлагать `MutationObserver**` — использовать прямое управление через `ztBus` или явные вызовы.
-3. **Не использовать `!important**` в `theme-v2.css`.
+3. **Не использовать `!important**` в `theme/*.css`.
 4. **Не добавлять код в `main.js**` кроме деклараций `import`.
 5. **Предоставлять минимальный точечный дифф** без переписывания несвязанных функций.
 Закон №1: Никакого rel="preload" onload="this.rel='stylesheet'" для базовых стилей.
-fonts.css, theme-v2.css и brand-tokens.css подключаются честным <link rel="stylesheet" href="/app/ui/theme-v2.css?v=XXX">. Это 35 КБ в gzip — они скачиваются за 40 мс, зато гарантируют 100% загрузку стилей в iOS Safari, PWA и Telegram WebView и навсегда убивают и FOUC, и CLS 1.365, и «голый HTML» на скринах!   Закон №2: Автоматический Cache-Busting (?v=XXX) в index.html через scripts/bump-sw.mjs.При каждом вызове npm run build:client скрипт bump-sw.mjs обновляет номер версии не только в public/sw.js (zerno-static-v440), но и автоматически проставляет ?v=440 в public/index.html для theme-v2.css?v=440, brand-tokens.css?v=440 и /dist/main.bundle.js?v=440.Результат: Telegram WebView, мобильный PWA и десктопный браузер физически не смогут загрузить старый CSS или старый JS-бандл!Закон №3: В views.js (Слой 2) ЗАПРЕЩЕНЫ layout-правила без [data-brand].Вся геометрия сетки (.wrap, .topbar, .rail, #deliveryRail, .menu-head, .panel, .cartPanel) живёт ТОЛЬКО в theme-v2.css (Слой 1). Во views.js разрешены исключительно брендовые переопределения [data-brand="delivery"] ....Закон №4: Один селектор геометрии — одно место в theme-v2.css.Никаких дописываний «патчей в конец файла» (html body div.wrap > nav.rail). У .wrap, .topbar, .rail, .menu-head есть ровно один канонический блок в theme-v2.css.Закон №5: Нативная шапка Telegram (body.in-tg).
+fonts.css, части theme/*.css (по одному <link> на файл, в порядке номеров) и brand-tokens.css подключаются честным <link rel="stylesheet" href="/app/ui/theme/NN-name.css?v=XXX">. Это 35 КБ в gzip — они скачиваются за 40 мс, зато гарантируют 100% загрузку стилей в iOS Safari, PWA и Telegram WebView и навсегда убивают и FOUC, и CLS 1.365, и «голый HTML» на скринах!   Закон №2: Автоматический Cache-Busting (?v=XXX) в index.html через scripts/bump-sw.mjs.При каждом вызове npm run build:client скрипт bump-sw.mjs обновляет номер версии не только в public/sw.js (zerno-static-v440), но и автоматически проставляет ?v=440 в public/index.html для theme/*.css?v=440, brand-tokens.css?v=440 и /dist/main.bundle.js?v=440.Результат: Telegram WebView, мобильный PWA и десктопный браузер физически не смогут загрузить старый CSS или старый JS-бандл!Закон №3: В views.js (Слой 2) ЗАПРЕЩЕНЫ layout-правила без [data-brand].Вся геометрия сетки (.wrap, .topbar, .rail, #deliveryRail, .menu-head, .panel, .cartPanel) живёт ТОЛЬКО в theme/*.css (Слой 1). Во views.js разрешены исключительно брендовые переопределения [data-brand="delivery"] ....Закон №4: Один селектор геометрии — одно место в theme/*.css.Никаких дописываний «патчей в конец файла» (html body div.wrap > nav.rail). У .wrap, .topbar, .rail, .menu-head есть ровно один канонический блок в theme/*.css.Закон №5: Нативная шапка Telegram (body.in-tg).
 Мы не добавляем искусственный padding-top: 56px к .topbar в body.in-tg, потому что WebView Telegram уже начинается под нативной шапкой мессенджера.

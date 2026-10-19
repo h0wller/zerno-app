@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v512';
+const STATIC_CACHE = 'zerno-static-v513';
 const MEDIA_CACHE = 'zerno-media-v20';
 const API_CACHE = 'zerno-api-v14';
 
@@ -12,7 +12,24 @@ const STATIC_ASSETS = [
   '/friday-logo.svg',
   '/dist/main.bundle.js',
   '/app/brands/registry.js',
-  '/app/ui/theme-v2.css',
+  '/app/ui/theme/00-head.css',
+  '/app/ui/theme/10-base.css',
+  '/app/ui/theme/20-cards.css',
+  '/app/ui/theme/30-utils.css',
+  '/app/ui/theme/40-catalog.css',
+  '/app/ui/theme/50-edit-mode.css',
+  '/app/ui/theme/60-cart.css',
+  '/app/ui/theme/70-ticker.css',
+  '/app/ui/theme/80-splash.css',
+  '/app/ui/theme/90-modals.css',
+  '/app/ui/theme/100-chat.css',
+  '/app/ui/theme/110-panel.css',
+  '/app/ui/theme/120-cashier.css',
+  '/app/ui/theme/130-service.css',
+  '/app/ui/theme/140-topbar.css',
+  '/app/ui/theme/150-rail.css',
+  '/app/ui/theme/160-tail.css',
+  '/app/ui/theme/170-profile-button.css',
   '/app/ui/brand-tokens.css',
   '/app/ui/fonts.css',
   '/app/core/address-dict.js',
