@@ -535,8 +535,8 @@ html.is-tg-app [id*="pwaInstall"]{
   }
 }
 #checkoutStreet.field-error{
-  border-color: #B3372B;
-  background: #FDE8E8;
+  border-color: var(--status-danger, #B3372B);
+  background: var(--tint-danger, #FDE8E8);
   animation: addr-shake 0.4s;
 }
 .addr-fee-hint{
@@ -574,7 +574,6 @@ html.is-tg-app [id*="pwaInstall"]{
   color: var(--flame, #123A6B);
   font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 8px;
 }
-#checkoutStreet.field-error{ border-color: var(--status-danger, #B3372B); background: var(--tint-danger, #FDE8E8); }
 .addr-book-sheet{
   position: fixed; left: 50%;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
