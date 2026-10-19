@@ -118,8 +118,7 @@
 }
 .btn,
 button.cta,
-.btn.fire,
-#checkoutBtn{
+#checkoutBtn {
   border-radius: 12px;
   padding: 11px 17px;
   font-size: 13.5px;
@@ -128,6 +127,17 @@ button.cta,
   background: var(--btn-fire-bg, #123a6b);
   color: var(--btn-fire-color, #ffffff);
   border: var(--btn-fire-border, none);
+  box-shadow: var(--btn-fire-shadow, none);
+  cursor: pointer;
+}
+.btn.fire {
+  border-radius: 12px;
+  padding: 11px 17px;
+  font-size: 13.5px;
+  font-weight: 800;
+  transition: 0.22s;
+  background: var(--btn-fire-bg, #123a6b);
+  color: var(--btn-fire-color, #ffffff);
   box-shadow: var(--btn-fire-shadow, none);
   cursor: pointer;
 }

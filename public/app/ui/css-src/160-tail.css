@@ -217,10 +217,10 @@ body .wrap #deliveryRail button.on{
 .mh {
     display: flex; flex-direction: column; align-items: stretch; gap: 8px;
   }
-  .mh-top .mh-right,
-.mh .mh-right {
-    width: 100%; margin-left: 0;
-  }
+  .mh .mh-right {
+  width: 100%;
+  margin-left: 0;
+}
   .mh-top h1,
 .mh h1 { max-width: 100%; }
   .menu-head{
@@ -532,11 +532,6 @@ html body #authModal.tg-mode .frow:has(input[type="checkbox"]){
     transition: none;
   }
 }
-#checkoutStreet.field-error{
-  border-color: var(--status-danger, #B3372B);
-  background: var(--tint-danger, #FDE8E8);
-  animation: addr-shake 0.4s;
-}
 .addr-fee-hint{
   display: flex;
   align-items: center;
@@ -549,10 +544,9 @@ html body #authModal.tg-mode .frow:has(input[type="checkbox"]){
   color: #123A6B;
   font-weight: 600;
 }
-@media (prefers-reduced-motion: reduce){#checkoutStreet.field-error{
-    transition: none;
-    animation: none;
-  }
+@media (prefers-reduced-motion: reduce){#checkoutStreet.field-error {
+  transition: none;
+}
 
 
 
@@ -1018,16 +1012,12 @@ body .wrap > #deliveryRail {
 
 @media (min-width: 821px) {
   .topbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    grid-template-rows: 64px auto;
-    align-items: center;
-    align-content: start;
-    gap: 8px;
-    padding: 10px 16px 8px;
-    height: auto;
-    min-height: 96px;
-  }
+  grid-template-rows: 64px auto;
+  align-content: start;
+  padding: 10px 16px 8px;
+  height: auto;
+  min-height: 96px;
+}
   }
 /* [fix-all v6] END F5.63 */
 
@@ -1169,25 +1159,22 @@ body .wrap > #deliveryRail {
   }
 
   header.topbar div#headerBrand.brand {
-
-
-    position: static;
-    transform: none;
-    margin: 0 auto;
-    flex: 1 1 auto;
-    max-width: calc(100% - 116px);
-    min-height: 44px;
-    height: auto;
-    height: auto;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    order: 2;
-    z-index: 1;
-    overflow: visible;
-  }
+  position: static;
+  transform: none;
+  margin: 0 auto;
+  flex: 1 1 auto;
+  max-width: calc(100% - 116px);
+  min-height: 44px;
+  height: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  order: 2;
+  z-index: 1;
+  overflow: visible;
+}
 
   header.topbar div#headerBrand.brand div.mark {
     width: var(--mark-w, 42px);
@@ -1471,8 +1458,6 @@ body .wrap > #deliveryRail {
 }
 /* ── Сетка доставки и безопасный отступ под плавающую корзину ── */
 #deliveryGrid {
-  display: grid;
-  grid-template-columns: 1fr;
   gap: 16px;
   padding-bottom: calc(var(--floating-cart-h, 72px) + max(16px, env(safe-area-inset-bottom, 0px)));
 }

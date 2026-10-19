@@ -1,18 +1,8 @@
 /* ── Сабфильтры каталога (.subchips, .subchip) ── */
 .subchips {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
   padding: 4px 2px 10px;
   margin: 0 0 12px;
   white-space: nowrap;
-}
-.subchips::-webkit-scrollbar {
-  display: none;
 }
 .subchip:active {
   transform: scale(0.95);
