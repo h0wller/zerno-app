@@ -572,9 +572,7 @@ html body #authModal.tg-mode .frow:has(input[type="checkbox"]){
   color: #123A6B;
   font-weight: 600;
 }
-@media (prefers-reduced-motion: reduce){#checkoutStreet.field-error {
-  transition: none;
-}
+@media (prefers-reduced-motion: reduce){
 
 
 
@@ -680,7 +678,7 @@ html body #authModal.tg-mode .frow:has(input[type="checkbox"]){
 @media (prefers-reduced-motion: reduce){.addr-book-sheet{ transition: none; }
 .preorder-timer,
 .preorder-timer-waiting{ animation: none; }
-#checkoutStreet.field-error,
 .abs-edit input.field-error{ animation: none; }
+#checkoutStreet.field-error{ animation: none; transition: none; }
 }
 

@@ -183,9 +183,6 @@
   transition: 0.2s;
   background: #fff;
 }
-.resetBtn {
-  border: 1.5px dashed var(--line);
-}
 .demoBtn:hover{
   border-color: var(--flame);
   color: var(--flame);
@@ -193,6 +190,7 @@
 .resetBtn {
   width: 100%;
   margin-top: 12px;
+  border: 1.5px dashed var(--line);
   border-radius: 14px;
   padding: 10px;
   font-weight: 700;
