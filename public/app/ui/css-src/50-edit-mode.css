@@ -54,8 +54,7 @@ body.editing .card .tag{
   display: none
 }
 /* ── Блокировка скролла фона и скрытие плавающих FAB при открытой корзине ── */
-body.cart-open,
-body.sheet-open {
+body.cart-open {
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: none;

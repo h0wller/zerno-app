@@ -210,10 +210,6 @@ body.is-cashier .cust .acts{
   color: #b3372b;
   font-weight: 800;
 }
-#profileView img,
-#profileView canvas{
-  cursor: pointer;
-}
 .deliveryView{
   display: none;
 }
@@ -316,30 +312,6 @@ body.is-cashier .cust .acts{
   font-weight: 800;
   border-radius: 999px;
   padding: 3px 10px;
-}
-.st-new{
-  background: #fde8e8;
-  color: #b3372b;
-}
-.st-accept{
-  background: #eaf1f9;
-  color: #163b6b;
-}
-.st-cook{
-  background: #fff6e5;
-  color: #b26a05;
-}
-.st-way{
-  background: #e4efe2;
-  color: #1e7a4e;
-}
-.st-done{
-  background: #edf2f6;
-  color: #5b6b7a;
-}
-.st-cancel{
-  background: #fde8e8;
-  color: #b3372b;
 }
 .ocWho{
   font-weight: 700;
