@@ -573,6 +573,7 @@ html.is-tg-app [id*="pwaInstall"]{
   border: 1.5px solid var(--line, #D8DFE4);
   color: var(--flame, #123A6B);
   font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 8px;
+  align-self: flex-start; width: fit-content; max-width: 100%;
 }
 .addr-book-sheet{
   position: fixed; left: 50%;
@@ -664,13 +665,7 @@ html.is-tg-app [id*="pwaInstall"]{
 .abs-edit input.field-error{ animation: none; }
 }
 
-/* ── ADDR-BTN-NATIVE v1: «Мои адреса» = системная .btn.ghost, здесь только геометрия ── */
-.addr-book-btn{
-  align-self: flex-start;
-  width: fit-content;
-  max-width: 100%;
-  margin-bottom: 8px;
-}
+/* ── ADDR-BTN-NATIVE v1: геометрия «Мои адреса» объединена с .addr-book-btn выше ── */
 
 /* PERF-P0 v1: мёртвые селекторы удалены */
 
