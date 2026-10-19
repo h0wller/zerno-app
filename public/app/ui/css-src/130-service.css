@@ -59,6 +59,7 @@
   align-items: center;
   gap: 10px;
   box-shadow: 0 16px 40px -10px rgba(16, 20, 24, 0.6);
+  transition: opacity .25s, transform .25s;
 }
 body.is-cashier .cashier{
   max-width: 1100px;

@@ -92,9 +92,6 @@
   }
 }
 /* ── F5.17: бонус-пилюля компакт справа над FAB; у футера растворяется ── */
-.mbonus{
-  transition: opacity .25s, transform .25s;
-}
 .mbonus.near-footer{
   opacity: 0;
   pointer-events: none;
