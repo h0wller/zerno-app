@@ -3005,6 +3005,9 @@ sticky слева на весь скролл
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 7px 3px;
+  /* F5.16b: block, ellipsis не живёт во flex */
+  display: block;
+  text-align: center;
 }
 #pendingBox,
 #pendingBoxD{
@@ -3029,13 +3032,6 @@ sticky слева на весь скролл
 
 
 
-}
-/* ── F5.16b: рейл-кнопки block (ellipsis не живёт во flex),
-.on-типографика ── */
-.wrap .rail button,
-.wrap #deliveryRail button{
-  display: block;
-  text-align: center;
 }
 .wrap .rail .re,
 .wrap #deliveryRail .re{
