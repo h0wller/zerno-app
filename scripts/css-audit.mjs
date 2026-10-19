@@ -5,7 +5,7 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 
-const THEME = readdirSync('public/app/ui/theme').filter(f => f.endsWith('.css')).sort((a, b) => parseInt(a, 10) - parseInt(b, 10)).map(f => readFileSync('public/app/ui/theme/' + f, 'utf8')).join('');
+const THEME = readdirSync('public/app/ui/theme').filter(f => f.endsWith('.css')).sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).map(f => readFileSync('public/app/ui/theme/' + f, 'utf8')).join('');
 /* F5.7b: комментарии не участвуют в проверках — считаем только реальный CSS */
 const THEME_CSS = THEME.replace(/\/\*[\s\S]*?\*\//g, '');
 const VIEWS = readFileSync('public/app/core/views.js', 'utf8');
