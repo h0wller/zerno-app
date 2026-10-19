@@ -49,8 +49,7 @@
 }
 
 /* Субфильтры */
-.subfilter-bar,
-.subchips {
+.subfilter-bar {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -64,8 +63,7 @@
   min-height: 38px;
 }
 
-.subfilter-bar::-webkit-scrollbar,
-.subchips::-webkit-scrollbar {
+.subfilter-bar::-webkit-scrollbar {
   display: none;
 }
 

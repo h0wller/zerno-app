@@ -1,8 +1,4 @@
-/* ── Сабфильтры каталога (.subchips, .subchip) ── */
-.subchips {
-  margin: 0 0 12px;
-  white-space: nowrap;
-}
+/* ── Сабфильтры каталога (.subchip) ── */
 .subchip:active {
   transform: scale(0.95);
 }
