@@ -67,6 +67,18 @@
     top: calc(env(safe-area-inset-top, 0px) + 8px); transform: none;
     height: auto;
     max-height: calc(100dvh - 24px);
+    position: sticky;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 64px;
+    min-width: 64px;
+    padding: 4px;
+    margin: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overflow-x: clip;
+    scrollbar-width: none;
   }
 
   .wrap .rail button,
