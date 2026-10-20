@@ -238,10 +238,11 @@ function syncViewsVisibility(showCoffee, showDeliv) {
 }
 
 function syncStaffAndGuestControls(bName2) {
+  var canEdit = (typeof canEditMenu === 'function') && canEditMenu();
   var et = document.getElementById('editToggle');
-  if (et) et.hidden = (typeof mode === 'undefined' || mode !== 'admin');
+  if (et) et.hidden = !canEdit;
   var ab = document.getElementById('adminBar');
-  if (ab) ab.hidden = (typeof mode === 'undefined' || mode !== 'admin');
+  if (ab) ab.hidden = !(canEdit || (typeof mode !== 'undefined' && mode === 'admin'));
   var ms = document.getElementById('modeSeg');
   var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
   if (ms) ms.hidden = !isStaff;

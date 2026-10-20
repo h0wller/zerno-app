@@ -17,7 +17,7 @@ import { db, PORT, PUBLIC_DIR } from './server/config.js';
 // ── Утилиты ──
 import { uid } from './server/utils/id-time.js';
 import {
-  adminGuard,
+  adminGuard, menuGuard,
   securityHeaders, corsMiddleware
 } from './server/middleware/index.js';
 
@@ -109,14 +109,14 @@ app.get('/api/menu', (req, res) => res.json({
   items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee'").all().map(item),
   updatedAt: getMeta(),
 }));
-app.get('/api/menu/all', adminGuard, (req, res) => res.json({
+app.get('/api/menu/all', menuGuard, (req, res) => res.json({
   items: db.prepare('SELECT * FROM menu').all().map(item),
   updatedAt: getMeta(),
 }));
 app.get('/api/dmenu', (req, res) => res.json({
   items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery'").all().map(item),
 }));
-app.post('/api/menu', adminGuard, (req, res) => {
+app.post('/api/menu', menuGuard, (req, res) => {
   const p = req.body; p.id = p.id || uid('p');
   db.prepare('INSERT INTO menu(id,cat,e,name,descr,comp,vol,price,tag,coffee,is_on,img,section,opts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
     p.id, p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
@@ -124,7 +124,7 @@ app.post('/api/menu', adminGuard, (req, res) => {
     p.section || 'coffee', JSON.stringify(p.opts || []));
   touch(); res.json({ ok: true, id: p.id });
 });
-app.put('/api/menu/:id', adminGuard, (req, res) => {
+app.put('/api/menu/:id', menuGuard, (req, res) => {
   const p = req.body;
   db.prepare('UPDATE menu SET cat=?,e=?,name=?,descr=?,comp=?,vol=?,price=?,tag=?,coffee=?,is_on=?,img=?,section=?,opts=? WHERE id=?').run(
     p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
@@ -132,7 +132,7 @@ app.put('/api/menu/:id', adminGuard, (req, res) => {
     p.section || 'coffee', JSON.stringify(p.opts || []), req.params.id);
   touch(); res.json({ ok: true });
 });
-app.delete('/api/menu/:id', adminGuard, (req, res) => {
+app.delete('/api/menu/:id', menuGuard, (req, res) => {
   db.prepare('DELETE FROM menu WHERE id=?').run(req.params.id);
   touch(); res.json({ ok: true });
 });
@@ -154,7 +154,7 @@ app.use(express.static(PUBLIC_DIR, {
 }));
 
 /* POST /api/menu/upload — автоматическая Retina WebP нарезка из админки */
-app.post('/api/menu/upload', async (req, res) => {
+app.post('/api/menu/upload', menuGuard, async (req, res) => {
   try {
     const { id, data } = req.body || {};
     if (!data || typeof data !== 'string' || !data.includes(',')) {

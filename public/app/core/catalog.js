@@ -5,7 +5,7 @@
       async function loadMenu() {
         try {
           const r = await api(
-            me && me.role === "admin" ? "/menu/all" : "/menu",
+            me && ["admin", "cashier", "dispatch"].indexOf(me.role) !== -1 ? "/menu/all" : "/menu",
           );
           MENU = r.items;
           meta.updatedAt = r.updatedAt;
