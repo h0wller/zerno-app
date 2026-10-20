@@ -229,9 +229,18 @@ body.is-cashier .cust .acts{
   margin-top: 16px;
 }
 .checkoutForm label{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   font-size: 13px;
   font-weight: 700;
   color: var(--ink, #101418);
+}
+.checkoutForm input,
+.checkoutForm select,
+.checkoutForm textarea {
+  width: 100%;
+  box-sizing: border-box;
 }
 .checkoutForm input,
 .checkoutForm select,
