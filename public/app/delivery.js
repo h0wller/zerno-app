@@ -201,9 +201,12 @@ $('#deliveryRail').addEventListener('click', e => {
     }
     requestAnimationFrame(() => {
       window.renderDeliveryMenu();
-      const grid = document.getElementById('deliveryGrid');
-      if (grid) {
-        const topOffset = grid.getBoundingClientRect().top + window.scrollY - 110;
+      /* Прокрутка к шапке с поиском: поиск и сабфильтры остаются в кадре.
+         Раньше прокручивало к сетке (−110px), и поиск уходил выше экрана. */
+      const searchInput = document.getElementById('dSearch');
+      const anchor = (searchInput && searchInput.closest('.menu-head')) || document.getElementById('deliveryGrid');
+      if (anchor) {
+        const topOffset = anchor.getBoundingClientRect().top + window.scrollY - 8;
         window.scrollTo({ top: Math.max(0, topOffset), behavior: 'smooth' });
       }
     });
