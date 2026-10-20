@@ -31,6 +31,11 @@ export const adminGuard = (req, res, next) => {
   return checkRole(req, res, next, ['admin'], 'Недостаточно прав: нужна роль администратора');
 };
 
+// Управление меню (кофейня и доставка): кассир, диспетчер, админ. Промокоды — только adminGuard.
+export const menuGuard = (req, res, next) => {
+  return checkRole(req, res, next, ['cashier', 'dispatch', 'admin'], 'Недостаточно прав: нужна роль сотрудника');
+};
+
 export const chatGuard = (req, res, next) => {
   return checkRole(req, res, next, ['cashier', 'admin', 'dispatch']);
 };

@@ -25,8 +25,14 @@ function editorFields(){
   if(ob)ob.hidden=!isPizza;
 }
 
+/* Редактировать меню могут админ, кассир и диспетчер; в гостевом виде (меню) или в админ-режиме. */
+function canEditMenu(){
+  return !!(me && ['admin','cashier','dispatch'].indexOf(me.role)!==-1 && (mode==='admin'||mode==='guest'));
+}
+window.canEditMenu=canEditMenu;
+
 function openEditor(id){
-  if(mode!=='admin'||!me||me.role!=='admin')return;
+  if(!canEditMenu())return;
   var pool=(brand==='delivery')?DMENU:MENU;
   var src=id?pool.find(function(x){return x.id===id;}):null;
   edit=src?clone(src):{

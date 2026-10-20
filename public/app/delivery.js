@@ -640,7 +640,7 @@ window.loadDelivery = async function() {
     if (g && !DMENU.length && !g.querySelector('.card:not(.skeleton-card)')) {
       g.innerHTML = skelCards(6);
     }
-    var menuPromise = (me && me.role === 'admin')
+    var menuPromise = (me && ['admin','cashier','dispatch'].indexOf(me.role) !== -1)
       ? api('/menu/all').then(function(all) {
           return { items: (all.items || []).filter(function(p){ return p.section === 'delivery'; }) };
         })
