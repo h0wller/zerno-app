@@ -25,7 +25,7 @@ writeFileSync(swPath, nextSw, 'utf8');
 let idx = readFileSync(idxPath, 'utf8');
 idx = idx
   .replace(/(\/app\/ui\/fonts\.css)(\?v=\d+)?/g, `$1?v=${newVer}`)
-  .replace(/(\/?app\/ui\/theme-v2\.css)(\?v=\d+)?/g, `/app/ui/theme-v2.css?v=${newVer}`)
+  .replace(/(\/app\/ui\/theme\/[\w.-]+\.css)(\?v=\d+)?/g, `$1?v=${newVer}`)
   .replace(/(\/app\/ui\/brand-tokens\.css)(\?v=\d+)?/g, `$1?v=${newVer}`)
   .replace(/(\.?\/?dist\/main\.bundle\.js)(\?v=\d+)?/g, `/dist/main.bundle.js?v=${newVer}`);
 writeFileSync(idxPath, idx, 'utf8');

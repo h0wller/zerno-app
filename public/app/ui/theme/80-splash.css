@@ -97,8 +97,6 @@
 
 }
 /* ── Ф3.55: компенсация плавающей шапки Telegram-WebView ── */
-body.in-tg .topbar{
+body.in-tg .topbar {
   height: auto;
-  min-height: calc(var(--topbar-h, 64px) + env(safe-area-inset-top, 0px) + 56px);
-  padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
 }

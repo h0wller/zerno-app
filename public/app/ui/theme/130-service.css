@@ -210,10 +210,6 @@ body.is-cashier .cust .acts{
   color: #b3372b;
   font-weight: 800;
 }
-#profileView img,
-#profileView canvas{
-  cursor: pointer;
-}
 .deliveryView{
   display: none;
 }
@@ -233,16 +229,24 @@ body.is-cashier .cust .acts{
   margin-top: 16px;
 }
 .checkoutForm label{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   font-size: 13px;
   font-weight: 700;
   color: var(--ink, #101418);
 }
 .checkoutForm input,
 .checkoutForm select,
-.checkoutForm textarea,
+.checkoutForm textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+.checkoutForm input,
+.checkoutForm select,
 #cartPanel input:not([type="checkbox"]),
 #cartPanel select,
-#cartPanel textarea{
+#cartPanel textarea {
   border: var(--modal-input-border, 1.5px solid var(--line));
   border-radius: 12px;
   padding: 10px 13px;
@@ -251,6 +255,11 @@ body.is-cashier .cust .acts{
   background: var(--modal-input-bg, #FFFFFF);
   color: var(--modal-input-color, var(--ink, #101418));
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.checkoutForm textarea {
+  border: var(--modal-input-border, 1.5px solid var(--line));
+  font-weight: 600;
+  color: var(--modal-input-color, var(--ink, #101418));
 }
 .checkoutForm input::placeholder,
 .checkoutForm textarea::placeholder,
@@ -270,7 +279,12 @@ body.is-cashier .cust .acts{
   border-color: var(--flame);
   box-shadow: 0 0 0 3px rgba(192, 59, 42, 0.14);
 }
-.checkoutForm textarea{
+.checkoutForm textarea {
+  border-radius: 12px;
+  padding: 10px 13px;
+  font-size: 16px;
+  background: var(--modal-input-bg, #FFFFFF);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   resize: vertical;
   min-height: 60px;
 }
@@ -316,30 +330,6 @@ body.is-cashier .cust .acts{
   font-weight: 800;
   border-radius: 999px;
   padding: 3px 10px;
-}
-.st-new{
-  background: #fde8e8;
-  color: #b3372b;
-}
-.st-accept{
-  background: #eaf1f9;
-  color: #163b6b;
-}
-.st-cook{
-  background: #fff6e5;
-  color: #b26a05;
-}
-.st-way{
-  background: #e4efe2;
-  color: #1e7a4e;
-}
-.st-done{
-  background: #edf2f6;
-  color: #5b6b7a;
-}
-.st-cancel{
-  background: #fde8e8;
-  color: #b3372b;
 }
 .ocWho{
   font-weight: 700;

@@ -46,12 +46,8 @@
   opacity: 1;
   pointer-events: auto;
 }
-#ordersModal {
-  z-index: 1000;
-}
 .topbar .ava,
-#avInit,
-.ava {
+#avInit {
   background: var(--ava-bg, linear-gradient(135deg, #3e8fd0, #123a6b));
   color: var(--ava-color, var(--c-text-on-accent, #FFFFFF));
   border: var(--ava-border, 1.5px solid var(--line));
@@ -65,7 +61,16 @@
   text-decoration: none;
   user-select: none;
   font-family: Unbounded, "Golos Text", system-ui, -apple-system, sans-serif;
-
+}
+.ava {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  user-select: none;
+  font-family: Unbounded, "Golos Text", system-ui, -apple-system, sans-serif;
 }
 .mclose{
   position: absolute;
@@ -119,8 +124,7 @@
   letter-spacing: 0
 }
 .form input:not([type="checkbox"]),
-.form select,
-.form textarea{
+.form select {
   border: 1.5px solid var(--line);
   border-radius: 12px;
   padding: 10px 13px;
@@ -128,11 +132,19 @@
   background: #fff;
   color: var(--ink);
   transition: .2s;
-  font-weight: 500
+  font-weight: 500;
 }
-.form textarea{
+.form textarea {
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 13px;
+  font-size: 16px;
+  background: #fff;
+  color: var(--ink);
+  transition: .2s;
+  font-weight: 500;
   resize: vertical;
-  min-height: 44px
+  min-height: 44px;
 }
 .form input:focus,
 .form select:focus,

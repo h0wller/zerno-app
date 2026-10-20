@@ -1,5 +1,5 @@
 /* public/app/ui/styles.js — Ф3.2/P3: Runtime CSS-инжекции.
-   Базовые компоненты вынесены в theme-v2.css.
+   Базовые компоненты вынесены в theme/*.css.
    Здесь остаются runtime-инспекции (z-index, адаптивные сетки и пульсы).
    MutationObserver panel-open перенесён в views.js (Ф5.70). */
 (function () {

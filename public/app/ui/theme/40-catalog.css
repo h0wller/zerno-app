@@ -1,19 +1,4 @@
-/* ── Сабфильтры каталога (.subchips, .subchip) ── */
-.subchips {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  padding: 4px 2px 10px;
-  margin: 0 0 12px;
-  white-space: nowrap;
-}
-.subchips::-webkit-scrollbar {
-  display: none;
-}
+/* ── Сабфильтры каталога (.subchip) ── */
 .subchip:active {
   transform: scale(0.95);
 }
@@ -37,12 +22,14 @@
 .skeleton-card{
   pointer-events: none;
 }
-.skeleton-shimmer,
-.skeleton-line{
+.skeleton-shimmer {
   background: linear-gradient(90deg, #EDF2F6 25%, #F7FAFC 50%, #EDF2F6 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
 }
-.skeleton-line{
+.skeleton-line {
+  background: linear-gradient(90deg, #EDF2F6 25%, #F7FAFC 50%, #EDF2F6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
   border-radius: 8px;
 }

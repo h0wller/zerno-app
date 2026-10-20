@@ -1,5 +1,5 @@
 /* public/app/ui/scrolltop.js — сброс легаси-отступов и кнопка «Наверх»
-   Ф5.71: CSS в theme-v2.css, устранение MutationObserver в пользу детерминированного updateScrollTop. */
+   Ф5.71: CSS в theme/*.css, устранение MutationObserver в пользу детерминированного updateScrollTop. */
 function alignRailWithCard() {}
 function alignMbonusWithRail() {}
 window.alignRailWithCard = alignRailWithCard;

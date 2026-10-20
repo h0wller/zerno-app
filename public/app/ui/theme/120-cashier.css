@@ -37,21 +37,6 @@
   gap: 22px;
   align-items: center;
 }
-.scanbox{
-  width: 200px;
-  height: 200px;
-  border-radius: 22px;
-  position: relative;
-  background: #101418;
-  overflow: hidden;
-  border: 1px solid #2a3540;
-}
-.scanbox .corn{
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  border: 3px solid #7fb2d9;
-}
 .c1{
   top: 12px;
   left: 12px;
@@ -72,32 +57,6 @@
   border-right: 0;
   border-top: 0;
   border-radius: 0 0 0 8px;
-}
-.c4{
-  bottom: 12px;
-  right: 12px;
-  border-left: 0;
-  border-top: 0;
-  border-radius: 0 0 8px 0;
-}
-.scanbox .qrph{
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 58px;
-  opacity: 0.85;
-}
-.scanbox .line{
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  height: 3px;
-  background: #7fb2d9;
-  border-radius: 3px;
-  top: 15%;
-  box-shadow: 0 0 16px 3px rgba(127, 178, 217, 0.8);
-  animation: scan 2.2s ease-in-out infinite;
 }
 @keyframes scan{
 
@@ -159,8 +118,7 @@
 }
 .btn,
 button.cta,
-.btn.fire,
-#checkoutBtn{
+#checkoutBtn {
   border-radius: 12px;
   padding: 11px 17px;
   font-size: 13.5px;
@@ -181,6 +139,12 @@ button.cta,
   transform: translateY(-1px);
 }
 .btn.fire{
+  border-radius: 12px;
+  padding: 11px 17px;
+  font-size: 13.5px;
+  font-weight: 800;
+  transition: 0.22s;
+  cursor: pointer;
   background: var(--btn-fire-bg, var(--flame));
   color: var(--btn-fire-color, #fff);
   border: var(--btn-fire-border, none);

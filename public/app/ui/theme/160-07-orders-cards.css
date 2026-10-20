@@ -1,0 +1,177 @@
+/* ── Карточки заказов гостя в профиле (перенос из views.js) ── */
+#myOrders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 4px;
+}
+#myOrders .hmini {
+  margin: 0;
+  background: #FFFFFF;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.myOrderCard {
+  background: #FFFFFF;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: var(--sh);
+}
+.myOrderCard .moTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.moSt {
+  font: 800 11px/1 "Unbounded", sans-serif;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #EDF2F6;
+  color: #33507A;
+  white-space: nowrap;
+}
+.mo-new,
+.mo-accept,
+.mo-way {
+  background: var(--tint-cool);
+  color: var(--flame);
+}
+.mo-cook {
+  background: var(--tint-alert);
+  color: var(--status-alert);
+}
+.mo-done {
+  background: var(--tint-success);
+  color: var(--status-success);
+}
+.mo-cancel {
+  background: var(--tint-danger);
+  color: var(--status-danger);
+}
+.myOrderCard .moSum {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.myOrderCard .moItems {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--soft);
+}
+.myOrderCard .moGifts {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--status-success);
+  font-weight: 700;
+}
+
+/* ── Состояния стоп-листа карточек ── */
+.card.stopped {
+  opacity: 0.75;
+}
+body.editing .card .stopbadge {
+  right: 52px;
+}
+/* ── Системная база: мобильные инпуты, шторка и кнопка скролла ── */
+@media (pointer: coarse) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+}
+body.panel-open {
+  overflow: hidden;
+}
+#panel {
+  overscroll-behavior: contain;
+}
+/* ── Кнопка «Наверх» (перенос геометрии из scrolltop.js) ── */
+#scrollTopBtn {
+  position: fixed;
+  right: 20px;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  z-index: 96;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: var(--card, #FFFFFF);
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 24px -8px rgba(16, 20, 24, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 0.25s, transform 0.25s;
+}
+#scrollTopBtn.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+#scrollTopBtn.low {
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+#scrollTopBtn:active {
+  transform: scale(0.94);
+}
+/* ── Стили корзины, модификаторов и кросс-сейла (перенос из cart.js) ── */
+.cartItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1.5px dashed rgba(58, 42, 28, 0.18);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.ci-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.ci-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ci-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink, #101418);
+}
+.ci-opt {
+  font-size: 11.5px;
+  color: var(--soft, #586470);
+  font-weight: 500;
+}
+.ci-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--flame, #C03B2A);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+

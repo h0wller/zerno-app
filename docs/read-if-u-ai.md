@@ -59,7 +59,7 @@ npm run build:client
 
 * **Стили (4-слойная архитектура):**
 
-1. *Слой 1:* `public/app/ui/theme-v2.css` (базовые токены и компоненты).
+1. *Слой 1:* `public/app/ui/theme/*.css` (базовые токены и компоненты).
 
 2. *Слой 2:* `public/app/ui/brand-tokens.css` (токены брендов) + `public/app/core/views.js` (layout и селекторы `[data-brand="delivery"]`).
 
