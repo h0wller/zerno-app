@@ -87,5 +87,6 @@ CREATE TABLE IF NOT EXISTS fcm(
     CREATE INDEX IF NOT EXISTS idx_orders_cid ON orders(cid);
     CREATE INDEX IF NOT EXISTS idx_history_cid ON history(cid);
     CREATE INDEX IF NOT EXISTS idx_chat_key ON chat(key);
+    CREATE TABLE IF NOT EXISTS bonus_grants(cid TEXT, kind TEXT, ts TEXT, PRIMARY KEY(cid, kind));
   `);
 }

@@ -12,7 +12,7 @@ import { sendSms } from '../services/sms.js';
 import { tgSend, TG_TOKEN } from '../services/telegram.js';
 import { sendPush } from '../services/push.js';
 import { userGuard, pendingGuard, adminGuard } from '../middleware/auth.js';
-import { QR_SOURCE, getQrBonus, setQrBonus, applyQrBonus } from '../domain/qr-bonus.js';
+import { grantBonus, getBonusConfig, setBonusConfig, QR_SOURCE } from '../domain/bonuses.js';
 import { validate, RegisterSchema, LoginSchema, SetupPinSchema, ActivateCodeSchema } from '../middleware/validate.js';
 import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from '../config.js';
 
@@ -180,6 +180,7 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
         .run(String(req.body.name || '').trim() || ex.name, tgChat, ex.id);
       addHist(ex.id, 'Профиль подтверждён через Telegram', 'Система');
       grantWelcome(ex.id, 'Telegram');
+      grantBonus(ex.id, ex.src === QR_SOURCE ? 'qr' : 'signup');
       return res.json({ token: issueToken(ex.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(ex.id)) });
     } else {
       return res.status(409).json({ error: 'exists' });
@@ -211,7 +212,7 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     logEv(r.customer.name, 'регистрация без TG, ждёт код кассира');
   }
 
-  if (okTg || okSms) applyQrBonus(r.customer.id);
+  if (okTg || okSms) grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
   res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
 });
 
@@ -329,7 +330,7 @@ authRouter.post('/api/staff/activate-guest', pendingGuard, (req, res) => {
   if (c.verified) return res.status(409).json({ error: 'Уже активирован' });
   db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
   addHist(c.id, '✅ Профиль активирован сотрудником', 'Сотрудник');
-  applyQrBonus(c.id);
+  grantBonus(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
   logEv(req.user.name, `активировал гостя ${c.name}`);
   res.json({ ok: true });
 });
@@ -340,9 +341,17 @@ authRouter.get('/api/staff/pending', pendingGuard, (req, res) => {
   });
 });
 
-// Настройка бонуса за регистрацию по QR (только админ). По умолчанию выключен.
-authRouter.get('/api/admin/qr-bonus', adminGuard, (req, res) => res.json(getQrBonus()));
-authRouter.put('/api/admin/qr-bonus', adminGuard, (req, res) => res.json(setQrBonus(req.body || {})));
+// Настройка бонусов (только админ): регистрация, регистрация по QR, установка приложения.
+// Для каждого вида отдельно: штампы в кофейне и скидка ₽ в доставке. По умолчанию всё 0.
+authRouter.get('/api/admin/bonuses', adminGuard, (req, res) => res.json(getBonusConfig()));
+authRouter.put('/api/admin/bonuses', adminGuard, (req, res) => res.json(setBonusConfig(req.body || {})));
+
+// Бонус за установку приложения. Клиент вызывает, когда приложение открыто установленным.
+// Сервер сам не даёт начислить дважды.
+authRouter.post('/api/bonus/install', userGuard, (req, res) => {
+  const r = req.user.verified ? grantBonus(req.user.id, 'install') : null;
+  res.json({ granted: !!r, code: r ? r.code : null });
+});
 
 authRouter.post('/api/auth/deactivate', userGuard, (req, res) => {
   if (req.user.role === 'admin') {

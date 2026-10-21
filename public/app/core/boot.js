@@ -200,6 +200,23 @@ function initIosHint() {
   };
 }
 
+/* ── 5b. Бонус за установку приложения ──
+   Сервер сам не даёт начислить дважды, поэтому можно вызывать при каждом запуске установленного приложения. */
+function initInstallBonus() {
+  const report = function () {
+    try { if (!localStorage.getItem('zt_user')) return; } catch (_) { return; }
+    if (typeof api !== 'function') return;
+    api('/bonus/install', { method: 'POST' })
+      .then(function (r) {
+        if (r && r.granted && typeof toast === 'function') toast('Бонус за установку приложения начислен 🎁', '🎁');
+      })
+      .catch(function () {});
+  };
+  window.addEventListener('appinstalled', report);
+  const standalone = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  if (standalone) report();
+}
+
 /* ── 6. Старт ── */
 function onReady(fn) {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
@@ -209,6 +226,7 @@ function onReady(fn) {
 onReady(function () {
   initInstallBanner();
   initIosHint();
+  initInstallBonus();
   boot();
 });
 

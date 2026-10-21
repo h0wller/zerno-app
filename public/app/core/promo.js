@@ -24,31 +24,37 @@
         syncOverlay();
         loadPromos();
         window.loadWeekPromo();
-        loadQrBonus();
+        loadBonuses();
       };
 
-      /* Бонус за регистрацию по QR (админ). Сумма 0 / выключено — гости ничего не получают. */
-      async function loadQrBonus() {
-        if (!$("#qbOn")) return;
+      /* Бонусы (админ): каждое событие отдельно для кофейни (штампы) и доставки (скидка ₽). 0 = выключено. */
+      async function loadBonuses() {
+        if (!$("#bzSave")) return;
         try {
-          const d = await api("/admin/qr-bonus");
-          $("#qbOn").checked = !!d.enabled;
-          $("#qbStamps").value = d.stamps || 0;
+          const d = await api("/admin/bonuses");
+          document.querySelectorAll("[data-bz]").forEach((el) => {
+            const [kind, brand] = el.dataset.bz.split(":");
+            el.value = (d.kinds && d.kinds[kind] && d.kinds[kind][brand]) || 0;
+          });
+          $("#bzDays").value = d.days || 30;
         } catch (e) {
-          /* не админ или сервер недоступен — панель просто остаётся пустой */
+          /* не админ или сервер недоступен — панель остаётся с нулями */
         }
       }
-      if ($("#qbSave")) {
-        $("#qbSave").onclick = async () => {
+      if ($("#bzSave")) {
+        $("#bzSave").onclick = async () => {
+          const kinds = {};
+          document.querySelectorAll("[data-bz]").forEach((el) => {
+            const [kind, brand] = el.dataset.bz.split(":");
+            kinds[kind] = kinds[kind] || {};
+            kinds[kind][brand] = +el.value || 0;
+          });
           try {
-            await api("/admin/qr-bonus", {
+            await api("/admin/bonuses", {
               method: "PUT",
-              body: {
-                enabled: $("#qbOn").checked,
-                stamps: +$("#qbStamps").value || 0,
-              },
+              body: { kinds: kinds, days: +$("#bzDays").value || 30 },
             });
-            toast("Бонус за QR сохранён", "📲");
+            toast("Бонусы сохранены", "🎁");
           } catch (e) {
             toast(e.message, "⚠️");
           }
