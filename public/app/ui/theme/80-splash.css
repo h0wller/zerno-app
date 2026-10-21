@@ -1,15 +1,33 @@
-/* ── Сплэш бренда: база в СЛОЕ 1 (Ф3.54) — без FOUC в медленных WebView ── */
+/* ── Сплэш бренда: тёмная «вечерняя» сцена, вход с анимацией (Ф3.54) ── */
 #brandSplash,
 #brandSplashStatic {
   position: fixed;
   inset: 0;
   z-index: 400;
-  background: #FFFFFF;
+  background-color: #0E1620;
+  background-image:
+    radial-gradient(120% 70% at 50% -10%, rgba(255, 140, 60, 0.32), transparent 60%),
+    radial-gradient(90% 60% at 100% 110%, rgba(76, 175, 170, 0.26), transparent 60%),
+    linear-gradient(180deg, #131E2A 0%, #0A1119 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
   overflow: auto;
+  overflow-x: hidden;
+}
+/* Медленно дрейфующее свечение за контентом */
+#brandSplashStatic::before,
+#brandSplash::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 184, 77, 0.16), transparent 40%),
+    radial-gradient(circle at 72% 68%, rgba(127, 200, 255, 0.12), transparent 42%);
+  animation: spGlow 10s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 #brandSplashStatic img,
 #brandSplash img {
@@ -19,82 +37,140 @@
   margin-bottom: 8px;
 }
 #brandSplash .spInner,
-#brandSplashStatic .spInner{
+#brandSplashStatic .spInner {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 560px;
-  text-align: center
+  text-align: center;
 }
 #brandSplash .spTitle,
-#brandSplashStatic .spTitle{
-  font: 400 clamp(20px, 5.5vw, 30px)/1.25 Prata, serif;
-  margin-bottom: 6px;
-  overflow-wrap: break-word
+#brandSplashStatic .spTitle {
+  font: 400 clamp(26px, 7vw, 40px)/1.15 Prata, serif;
+  color: #FFF6E8;
+  letter-spacing: 0.01em;
+  margin-bottom: 10px;
+  overflow-wrap: break-word;
+  text-shadow: 0 2px 24px rgba(255, 160, 80, 0.35);
+  animation: spRise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 #brandSplash .spSub,
-#brandSplashStatic .spSub{
-  color: var(--soft);
+#brandSplashStatic .spSub {
+  color: rgba(255, 246, 232, 0.68);
   font-size: 14px;
-  margin-bottom: 22px
+  letter-spacing: 0.04em;
+  margin-bottom: 28px;
+  animation: spRise 0.8s 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 #brandSplash .spBtns,
-#brandSplashStatic .spBtns{
+#brandSplashStatic .spBtns {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px
+  gap: 14px;
 }
 #brandSplash .spBtn,
-#brandSplashStatic .spBtn{
-  border-radius: 22px;
-  padding: 22px 16px;
+#brandSplashStatic .spBtn {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 26px;
+  padding: 24px 18px;
   font: 700 16px Unbounded, sans-serif;
-  box-shadow: var(--sh);
-  width: 100%
+  width: 100%;
+  cursor: pointer;
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.6);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  animation: spRise 0.7s 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  -webkit-tap-highlight-color: transparent;
+}
+#brandSplash .spBtns .spBtn:nth-child(2),
+#brandSplashStatic .spBtns .spBtn:nth-child(2) {
+  animation-delay: 0.34s;
+}
+/* Блик, проходящий по карточке */
+#brandSplash .spBtn::after,
+#brandSplashStatic .spBtn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.32) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: spShine 3.6s 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+#brandSplash .spBtn:active,
+#brandSplashStatic .spBtn:active {
+  transform: scale(0.97);
 }
 #brandSplash .spBtn small,
-#brandSplashStatic .spBtn small{
+#brandSplashStatic .spBtn small {
   display: block;
   font: 400 12px Golos Text, sans-serif;
-  margin-top: 6px
-}
-#brandSplash .spPizza,
-#brandSplashStatic .spPizza{
-  border: 2px solid #F2D9A5;
-  background: #FFF6E5;
-  color: #6B4E0E
+  margin-top: 6px;
 }
 #brandSplash .spPizza small,
-#brandSplashStatic .spPizza small{
-  color: #8A6D3B
+#brandSplashStatic .spPizza small {
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 2px rgba(120, 40, 0, 0.35);
+}
+#brandSplash .spPizza,
+#brandSplashStatic .spPizza {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #FFA04D 0%, #FF5E3A 100%);
+  box-shadow: 0 18px 40px -14px rgba(255, 110, 60, 0.7);
 }
 #brandSplash .spCoffee,
-#brandSplashStatic .spCoffee{
-  border: 2px solid var(--line);
-  background: #fff;
-  color: var(--ink)
+#brandSplashStatic .spCoffee {
+  color: #FFF6E8;
+  background: linear-gradient(135deg, #1F3B4D 0%, #2A5F69 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 40px -14px rgba(42, 95, 105, 0.7);
 }
 #brandSplash .spCoffee small,
-#brandSplashStatic .spCoffee small{
-  color: var(--soft)
+#brandSplashStatic .spCoffee small {
+  color: rgba(255, 246, 232, 0.7);
 }
 #brandSplash .spBtn .em,
-#brandSplashStatic .spBtn .em{
+#brandSplashStatic .spBtn .em {
   display: block;
-  font-size: 30px;
+  font-size: 34px;
   line-height: 1;
-  margin-bottom: 10px
+  margin-bottom: 10px;
+  animation: spFloat 3.2s ease-in-out infinite;
 }
 #brandSplash .spBtn .bt,
-#brandSplashStatic .spBtn .bt{
+#brandSplashStatic .spBtn .bt {
   display: block;
-  font: 700 16px Unbounded, sans-serif
+  font: 700 16px Unbounded, sans-serif;
 }
-@media(min-width:560px){#brandSplash .spBtns,
-#brandSplashStatic .spBtns{
-    grid-template-columns: 1fr 1fr
+@media (min-width: 560px) {
+  #brandSplash .spBtns,
+  #brandSplashStatic .spBtns {
+    grid-template-columns: 1fr 1fr;
   }
-
-
-
+}
+@keyframes spRise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes spFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes spShine {
+  0% { transform: translateX(-120%); }
+  60%, 100% { transform: translateX(120%); }
+}
+@keyframes spGlow {
+  to { transform: translate3d(-4%, 3%, 0) scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #brandSplash *,
+  #brandSplashStatic *,
+  #brandSplash::before,
+  #brandSplashStatic::before {
+    animation: none !important;
+  }
 }
 /* ── Ф3.55: компенсация плавающей шапки Telegram-WebView ── */
 body.in-tg .topbar {
