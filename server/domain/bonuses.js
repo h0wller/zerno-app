@@ -11,8 +11,14 @@ import { grant } from './loyalty.js';
 import { addHist } from './helpers.js';
 import { sendPush } from '../services/push.js';
 import { nowISO } from '../utils/id-time.js';
+import {
+  BONUS_KINDS,
+  cleanBonusConfig,
+  mergeBonusConfig,
+  makeBonusPromoCode,
+} from '../utils/bonus-config.js';
 
-export const BONUS_KINDS = ['signup', 'qr', 'install'];
+export { BONUS_KINDS };
 // Значение customers.src для регистрации с QR-постера (совпадает с видом бонуса 'qr').
 export const QR_SOURCE = 'qr';
 export const BONUS_TITLES = {
@@ -21,49 +27,21 @@ export const BONUS_TITLES = {
   install: 'Установка приложения',
 };
 
-const DEFAULT_CFG = {
-  days: 30, // срок действия промокода доставки, дней
-  kinds: {
-    signup: { coffee: 0, delivery: 0 },
-    qr: { coffee: 0, delivery: 0 },
-    install: { coffee: 0, delivery: 0 },
-  },
-};
-
 export function getBonusConfig() {
   let saved = {};
   try {
     const row = db.prepare("SELECT value FROM meta WHERE key='bonus_cfg'").get();
     if (row) saved = JSON.parse(row.value) || {};
   } catch (_) {}
-  const kinds = {};
-  for (const k of BONUS_KINDS) {
-    kinds[k] = { ...DEFAULT_CFG.kinds[k], ...((saved.kinds || {})[k] || {}) };
-  }
-  return { days: saved.days || DEFAULT_CFG.days, kinds };
+  return mergeBonusConfig(saved);
 }
 
 export function setBonusConfig(input) {
-  const kinds = {};
-  for (const k of BONUS_KINDS) {
-    const src = (input.kinds && input.kinds[k]) || {};
-    kinds[k] = {
-      coffee: Math.max(0, Math.min(10, parseInt(src.coffee, 10) || 0)),
-      delivery: Math.max(0, Math.min(5000, parseInt(src.delivery, 10) || 0)),
-    };
-  }
-  const clean = {
-    days: Math.max(1, Math.min(365, parseInt(input.days, 10) || DEFAULT_CFG.days)),
-    kinds,
-  };
+  const clean = cleanBonusConfig(input);
   db.prepare(
     "INSERT INTO meta(key,value) VALUES('bonus_cfg',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
   ).run(JSON.stringify(clean));
   return clean;
-}
-
-function makePromoCode() {
-  return 'B' + crypto.randomBytes(3).toString('hex').toUpperCase();
 }
 
 // Начисляет бонус вида kind гостю cid. Возвращает результат или null, если начислять нечего.
@@ -88,7 +66,7 @@ export function grantBonus(cid, kind) {
 
   let code = null;
   if (k.delivery > 0) {
-    code = makePromoCode();
+    code = makeBonusPromoCode();
     const expires = new Date(Date.now() + cfg.days * 86400000).toISOString();
     db.prepare(
       'INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope) VALUES(?,?,?,?,1,?,1,0,?,?)'

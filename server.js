@@ -34,6 +34,9 @@ import statsRouter from './server/routes/stats.js';
 import { item, getMeta, touch } from './server/domain/helpers.js';
 
 const app = express();
+// За прокси (Railway и т.п.) задайте TRUST_PROXY=1, иначе req.ip будет адресом прокси.
+// Без прокси не доверяем заголовкам клиента: иначе X-Forwarded-For обходит блокировку PIN.
+if (process.env.TRUST_PROXY) app.set('trust proxy', /^\d+$/.test(process.env.TRUST_PROXY) ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY);
 function appKb() {
   return {
     keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]],

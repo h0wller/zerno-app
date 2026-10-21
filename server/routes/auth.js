@@ -1,4 +1,5 @@
 import express from 'express';
+import { validateTgInitData, isTgAuthFresh } from '../utils/tg-auth.js';
 import crypto from 'crypto';
 import { db } from '../db/connection.js';
 import { cust, addHist, logEv, issueToken } from '../domain/helpers.js';
@@ -19,37 +20,6 @@ import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from '../con
 export const authRouter = express.Router();
 
 // [tg-link-auth-endpoint-v1]
-function validateTgInitData(initData, botToken) {
-  if (!initData || !botToken) return null;
-  try {
-    const params = new URLSearchParams(initData);
-    const hash = params.get('hash');
-    if (!hash) return null;
-    params.delete('hash');
-
-    const entries = Array.from(params.entries());
-    entries.sort((a, b) => a[0].localeCompare(b[0]));
-    const dataCheckString = entries.map(([k, v]) => `${k}=${v}`).join('\n');
-
-    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-    const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-
-    const hashBuf = Buffer.from(hash, 'hex');
-    const calcBuf = Buffer.from(calculatedHash, 'hex');
-    if (hashBuf.length !== calcBuf.length || !crypto.timingSafeEqual(hashBuf, calcBuf)) {
-      return null;
-    }
-
-    const userRaw = params.get('user');
-    if (!userRaw) return null;
-    const user = JSON.parse(userRaw);
-    const authDate = Number(params.get('auth_date') || 0);
-
-    return { user, authDate };
-  } catch (e) {
-    return null;
-  }
-}
 
 authRouter.post('/api/auth/tg-link', (req, res) => {
   const initData = String(req.body.initData || '').trim();
@@ -58,7 +28,7 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
     return res.status(401).json({ error: 'Неверные данные авторизации Telegram' });
   }
   // initData подписан, но без срока годности его можно было бы повторять бесконечно. Берём окно в час.
-  if (!valid.authDate || Math.floor(Date.now() / 1000) - valid.authDate > 3600) {
+  if (!isTgAuthFresh(valid.authDate)) {
     return res.status(401).json({ error: 'Сессия Telegram устарела, откройте приложение заново' });
   }
 
