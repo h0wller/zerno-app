@@ -181,10 +181,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             $("#profileTopBtn").textContent = (me.name[0] || "Г").toUpperCase();
             $("#nameInput").value = me.name;
             $("#phoneLbl").textContent = me.phone + " · вход по номеру";
-            $("#chatsToggle2").hidden = !(
-                me &&
-                (me.role === "admin" || me.role === "cashier")
-            );
+            // Кнопки админа (чаты, дашборд, промокоды) показывает views.js по режиму, а не по роли.
             const r = me.role || "guest";
             $("#roleLbl").textContent =
                 r === "admin"
@@ -200,7 +197,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             refreshPushBtn();
             const spb2 = $("#setPinBtn");
             if (spb2) spb2.hidden = !me;
-            $("#dashToggle").hidden = !(me && me.role === "admin");
             $("#stCups").textContent = me.cups;
             $("#stStamps").textContent = me.stamps + "/10";
             $("#stFree").textContent = me.free;
