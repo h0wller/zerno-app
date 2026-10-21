@@ -5,11 +5,12 @@ $("#dashToggle").onclick = async () => {
   syncOverlay();
   window.loadSubs();
   try {
-    const s = await api("/stats");
+    // Статистику и «списано бесплатных» грузим вместе и рисуем одним проходом, чтобы блоки не затирали друг друга.
+    const [s, rd] = await Promise.all([api("/stats"), api("/stats/redeems").catch(() => null)]);
     $("#dashTop").innerHTML = `
      <div class="stat"><b>${s.total}</b><span>всего гостей</span></div>
      <div class="stat"><b>${s.newWeek}</b><span>новых за 7 дн</span></div>
-     <div class="stat"><b>${s.returning}</b><span>возвращаются</span></div>`;
+     <div class="stat"><b>${s.returning}</b><span>с 2+ чашками</span></div>`;
     const max = Math.max(1, ...s.days.map((d) => d.c));
     $("#dashChart").innerHTML = s.days
       .map(
@@ -22,6 +23,13 @@ $("#dashToggle").onclick = async () => {
      <div class="hmini">Штампы: сегодня <b>${s.stampsToday}</b> · за 7 дн <b>${s.stampsWeek}</b> · за 30 дн <b>${s.stampsMonth}</b></div>
      <div class="hmini">Бесплатных кофе списано за 30 дн: <b>${s.redeemed}</b> · новых гостей за 30 дн: <b>${s.newMonth}</b></div>
      <div class="hmini">Средняя чашек на гостя: <b>${s.avgCups}</b> · активаций промокодов: <b>${s.promoUses}</b></div>`;
+    if (rd) {
+      const items = Object.entries(rd.byItem || {}).sort((a, b) => b[1] - a[1]);
+      $("#dashMore").innerHTML += `
+     <div class="hmini" style="margin-top:8px">🎁 Списано бесплатных кофе за 30 дн: <b>${rd.total}</b>${
+        items.length ? " · " + items.map((e) => esc(e[0]) + " ×" + e[1]).join(", ") : ""
+      }</div>`;
+    }
   } catch (e) {
     toast(e.message, "⚠️");
   }

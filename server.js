@@ -67,13 +67,16 @@ app.use(statsRouter);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.post('/api/clientlog', (req, res) => {
-  console.log('[client]', (req.body && req.body.kind) || '?', (req.body && req.body.msg) || '');
+  // Ограничиваем длину, чтобы сюда нельзя было засорить логи большим текстом.
+  const kind = String((req.body && req.body.kind) || '?').slice(0, 40);
+  const msg = String((req.body && req.body.msg) || '').slice(0, 300);
+  console.log('[client]', kind, msg);
   res.json({ ok: true });
 });
 app.get('/api/config', (req, res) => res.json({ tgUsername: TG_BOT_USERNAME }));
 
 // [tg-diag v1] — диагностика Telegram-бота
-app.get('/api/tg/diag', async (req, res) => {
+app.get('/api/tg/diag', adminGuard, async (req, res) => {
   const token = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
   let me = null, err = null;
   if (token) {

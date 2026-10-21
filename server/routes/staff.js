@@ -8,7 +8,6 @@ import { staffGuard } from '../middleware/auth.js';
 
 export const staffRouter = express.Router();
 
-let demoIdx = 0;
 
 /* ── ПОИСК ГОСТЯ ──
    Берём ВСЕХ гостей, фильтруем по имени / 10 последним цифрам телефона.
@@ -83,11 +82,6 @@ staffRouter.post('/api/staff/scan', staffGuard, (req, res) => {
   c ? res.json({ customer: cust(c) }) : res.status(404).json({ error: 'QR не найден' });
 });
 
-staffRouter.get('/api/staff/demo', staffGuard, (req, res) => {
-  const rows = db.prepare('SELECT * FROM customers ORDER BY created_at').all();
-  if (!rows.length) return res.status(404).json({ error: 'Нет гостей' });
-  res.json({ customer: cust(rows[demoIdx++ % rows.length]) });
-});
 
 staffRouter.get('/api/staff/log', staffGuard, (req, res) => {
   const scope = String(req.query.scope || '').toLowerCase();
