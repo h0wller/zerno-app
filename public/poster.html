@@ -19,10 +19,11 @@
  /* два бренда рядом */
  .brands{display:flex;width:100%;gap:4mm;align-items:stretch}
  .brand{flex:1;background:#fff;border:1px solid var(--line);border-radius:4mm;padding:3.5mm 3mm;display:flex;flex-direction:column;align-items:center}
- .brand img.logo{height:24mm;width:auto;display:block;margin:0 auto 2mm}
- .brand img.friday{height:9mm;width:auto}
- .brand h2{font-size:10.5pt;font-weight:800;margin:0 0 1.5mm}
- .brand p{font-size:8.6pt;line-height:1.4;color:#41505E;margin:0}
+ .brand .logo-box{height:24mm;width:100%;display:flex;align-items:center;justify-content:center;margin-bottom:2mm}
+ .brand img.logo{height:24mm;width:auto;display:block}
+ .brand img.friday{width:36mm;height:auto;display:block}
+ .brand h2{font-size:10.5pt;font-weight:800;margin:0 0 1.5mm;line-height:1.2}
+ .brand p{font-size:8.6pt;line-height:1.4;color:#41505E;margin:0;min-height:calc(8.6pt * 1.4 * 3)}
 
  /* QR */
  .qrblock{margin:5mm 0 3mm;display:flex;flex-direction:column;align-items:center}
@@ -45,14 +46,14 @@
 
  <div class="brands">
   <div class="brand">
-   <img class="logo" src="andCoffee.svg" alt="…и кофе">
+   <div class="logo-box"><img class="logo" src="andCoffee.svg" alt="…и кофе"></div>
    <h2>…и кофе</h2>
    <p>Кофейня на берегу моря.<br>Каждый 10-й кофе — бесплатно. Штампы по QR кассиру.</p>
   </div>
   <div class="brand">
-   <img class="logo friday" src="friday-logo.svg" alt="Пятница">
+   <div class="logo-box"><img class="friday" src="friday-logo.svg" alt="Пятница"></div>
    <h2>Пятница</h2>
-   <p>Доставка: меню и заказ<br>прямо в приложении.</p>
+   <p>Доставка из приложения.<br>Меню, заказ и статус<br>в один тап.</p>
   </div>
  </div>
 

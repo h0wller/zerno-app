@@ -24,7 +24,36 @@
         syncOverlay();
         loadPromos();
         window.loadWeekPromo();
+        loadQrBonus();
       };
+
+      /* Бонус за регистрацию по QR (админ). Сумма 0 / выключено — гости ничего не получают. */
+      async function loadQrBonus() {
+        if (!$("#qbOn")) return;
+        try {
+          const d = await api("/admin/qr-bonus");
+          $("#qbOn").checked = !!d.enabled;
+          $("#qbStamps").value = d.stamps || 0;
+        } catch (e) {
+          /* не админ или сервер недоступен — панель просто остаётся пустой */
+        }
+      }
+      if ($("#qbSave")) {
+        $("#qbSave").onclick = async () => {
+          try {
+            await api("/admin/qr-bonus", {
+              method: "PUT",
+              body: {
+                enabled: $("#qbOn").checked,
+                stamps: +$("#qbStamps").value || 0,
+              },
+            });
+            toast("Бонус за QR сохранён", "📲");
+          } catch (e) {
+            toast(e.message, "⚠️");
+          }
+        };
+      }
       function closePromo() {
         $("#promoModal").classList.remove("show");
         syncOverlay();
