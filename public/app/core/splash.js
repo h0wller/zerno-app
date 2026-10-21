@@ -145,7 +145,7 @@
             '</button>' +
             '<button type="button" class="spBtn spCoffee" data-go="coffee" style="--sp-bg:#FFFFFF;--sp-ink:#123A6B;--sp-accent:#3E8FD0">' +
               '<span class="em"><img src="/andCoffee.svg" alt="…и кофе" width="120" height="120"></span>' +
-              '<span class="bt">… и кофе</span>' +
+              '<span class="bt">…и кофе</span>' +
               '<small>меню, штампы и бонусы</small>' +
             '</button>' +
           '</div>' +
