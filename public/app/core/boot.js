@@ -121,10 +121,32 @@ function initInstallBanner() {
     return;
   }
 
+  // Платформа определяет, какой баннер можно показать.
+  // iPhone/iPad: установка только через Safari (Поделиться → На экран «Домой»), её показывает initIosHint.
+  // Встроенные браузеры (Telegram, Instagram и т.п.) не умеют устанавливать PWA.
+  // Уже установленное приложение: баннер не нужен.
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/.test(ua);
+  const inApp = /(Telegram|Instagram|FBAN|FBAV|VK|WhatsApp|Twitter)/.test(ua);
+  const standalone = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  if (!b || isIOS || inApp || standalone) {
+    if (b) b.hidden = true;
+    return;
+  }
+
+  // Текст под платформу: на телефоне — про установку на главный экран, на компьютере — про установку программы.
+  const sp = b.querySelector('span');
+  if (sp) {
+    sp.textContent = isAndroid
+      ? '📲 Установите приложение — карта всегда под рукой'
+      : '💻 Установите приложение на компьютер — меню откроется в отдельном окне';
+  }
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     _defPrompt = e;
-    if (b && !localStorage.getItem('zt_inst_hide')) b.hidden = false;
+    if (!localStorage.getItem('zt_inst_hide')) b.hidden = false;
   });
 
   const btn = document.getElementById('installBtn');
@@ -143,21 +165,6 @@ function initInstallBanner() {
     localStorage.setItem('zt_inst_hide', '1');
   };
 
-  if (
-    b &&
-    /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-    !navigator.standalone &&
-    !localStorage.getItem('zt_inst_hide')
-  ) {
-    b.hidden = false;
-    const sp = b.querySelector('span');
-    if (sp) {
-      sp.innerHTML =
-        '💻 Приложение можно установить: <b>меню ⋮ → «Установить приложение»</b> — или нажмите этот баннер';
-    }
-    const bBtn = b.querySelector('#installBtn');
-    if (bBtn) bBtn.style.display = 'none';
-  }
 }
 
 /* ── 5. iOS-хинт установки ── */
