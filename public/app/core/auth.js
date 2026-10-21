@@ -6,6 +6,11 @@
   var setPinCtx = null;
   var regPoll = null;
 
+  // Источник регистрации (сейчас только 'qr' — пришли с постера). Хранится до успешной регистрации.
+  function getRegSource() {
+    try { return localStorage.getItem('zt_src') === 'qr' ? 'qr' : ''; } catch (_) { return ''; }
+  }
+
   function setAuthFormMode(login) {
     var rf = document.getElementById('regForm');
     var lf = document.getElementById('loginForm');
@@ -267,8 +272,9 @@
         try {
           var r = await api('/auth/register', {
             method: 'POST',
-            body: { name: name, phone: phone, pin: pin, code: code }
+            body: { name: name, phone: phone, pin: pin, code: code, src: getRegSource() }
           });
+          try { localStorage.removeItem('zt_src'); } catch (_) {}
           setUser(r.token, r.customer);
           closeAuth();
           if (typeof renderAll === 'function') renderAll();

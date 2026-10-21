@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS fcm(
   if (ncols.length && !ncols.includes('notify_tg')) db.exec(`ALTER TABLE customers ADD COLUMN notify_tg INTEGER DEFAULT 1`);
   if (ncols.length && !ncols.includes('notify_web')) db.exec(`ALTER TABLE customers ADD COLUMN notify_web INTEGER DEFAULT 1`);
   if (ncols.length && !ncols.includes('consent')) db.exec(`ALTER TABLE customers ADD COLUMN consent TEXT DEFAULT ''`);
+  if (ncols.length && !ncols.includes('src')) db.exec(`ALTER TABLE customers ADD COLUMN src TEXT DEFAULT ''`);
+  if (ncols.length && !ncols.includes('qr_done')) db.exec(`ALTER TABLE customers ADD COLUMN qr_done INTEGER DEFAULT 0`);
 
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);

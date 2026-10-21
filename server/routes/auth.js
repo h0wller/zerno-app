@@ -11,7 +11,8 @@ import { nowISO } from '../utils/id-time.js';
 import { sendSms } from '../services/sms.js';
 import { tgSend, TG_TOKEN } from '../services/telegram.js';
 import { sendPush } from '../services/push.js';
-import { userGuard, pendingGuard } from '../middleware/auth.js';
+import { userGuard, pendingGuard, adminGuard } from '../middleware/auth.js';
+import { QR_SOURCE, getQrBonus, setQrBonus, applyQrBonus } from '../domain/qr-bonus.js';
 import { validate, RegisterSchema, LoginSchema, SetupPinSchema, ActivateCodeSchema } from '../middleware/validate.js';
 import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from '../config.js';
 
@@ -187,6 +188,8 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
 
   const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
   if (r.err) return res.status(r.code).json({ error: r.err });
+  // Откуда пришёл гость (сейчас только QR с постера). Бонус начисляется позже, при подтверждении.
+  if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
 
   if (okTg || okSms) {
     if (tgChat) db.prepare('UPDATE customers SET tg=? WHERE id=?').run(tgChat, r.customer.id);
@@ -208,10 +211,11 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     logEv(r.customer.name, 'регистрация без TG, ждёт код кассира');
   }
 
+  if (okTg || okSms) applyQrBonus(r.customer.id);
   res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
 });
 
-authRouter.post('/api/auth/activate-guest', userGuard, (req, res) => {
+authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
   const code = String(req.body.code || '').trim();
   if (!/^\d{4}$/.test(code)) return res.status(400).json({ error: 'Код — 4 цифры' });
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id);
@@ -325,6 +329,7 @@ authRouter.post('/api/staff/activate-guest', pendingGuard, (req, res) => {
   if (c.verified) return res.status(409).json({ error: 'Уже активирован' });
   db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
   addHist(c.id, '✅ Профиль активирован сотрудником', 'Сотрудник');
+  applyQrBonus(c.id);
   logEv(req.user.name, `активировал гостя ${c.name}`);
   res.json({ ok: true });
 });
@@ -334,6 +339,10 @@ authRouter.get('/api/staff/pending', pendingGuard, (req, res) => {
     pending: db.prepare('SELECT id,name,phone,actcode,created_at FROM customers WHERE verified=0 AND actcode IS NOT NULL ORDER BY created_at DESC LIMIT 20').all()
   });
 });
+
+// Настройка бонуса за регистрацию по QR (только админ). По умолчанию выключен.
+authRouter.get('/api/admin/qr-bonus', adminGuard, (req, res) => res.json(getQrBonus()));
+authRouter.put('/api/admin/qr-bonus', adminGuard, (req, res) => res.json(setQrBonus(req.body || {})));
 
 authRouter.post('/api/auth/deactivate', userGuard, (req, res) => {
   if (req.user.role === 'admin') {
