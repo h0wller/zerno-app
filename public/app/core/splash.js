@@ -139,12 +139,12 @@
           '<h2 class="spTitle">«Пятница» &amp; …и кофе</h2>' +
           '<div class="spSub">Выберите, куда вы сегодня</div>' +
           '<div class="spBtns">' +
-            '<button type="button" class="spBtn spPizza" data-go="delivery">' +
+            '<button type="button" class="spBtn spPizza" data-go="delivery" style="--sp-bg:#F6EEE1;--sp-ink:#3A2A1C;--sp-accent:#C03B2A">' +
               '<span class="em">🍕</span>' +
               '<span class="bt">«Пятница»</span>' +
               '<small>доставка пиццы и роллов</small>' +
             '</button>' +
-            '<button type="button" class="spBtn spCoffee" data-go="coffee">' +
+            '<button type="button" class="spBtn spCoffee" data-go="coffee" style="--sp-bg:#123A6B;--sp-ink:#FFFFFF;--sp-accent:#3E8FD0">' +
               '<span class="em">🌊</span>' +
               '<span class="bt">Кофейня</span>' +
               '<small>меню, штампы и бонусы</small>' +

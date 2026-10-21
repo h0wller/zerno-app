@@ -88,28 +88,54 @@
   margin-top: 6px;
 }
 
-/* «Пятница»: красный, как её кнопки и теги */
+/* Цвета каждой карточки приходят из разметки (--sp-*), см. registry/index.html:
+   «Пятница» — крафт: кремовая бумага, шоколадная рамка, жёсткая печатная тень.
+   Наведение и нажатие повторяют её карточки и кнопки в приложении. */
 #brandSplash .spPizza,
 #brandSplashStatic .spPizza {
-  background: var(--status-danger, #B3372B);
-  color: #FFFFFF;
-  box-shadow: 0 10px 26px -12px rgba(179, 55, 43, 0.55);
+  background: var(--sp-bg, var(--paper));
+  color: var(--sp-ink, var(--ink));
+  border: 2px solid var(--sp-ink, var(--ink));
+  border-radius: 18px;
+  box-shadow: 3px 3px 0 var(--sp-ink, var(--ink));
+}
+#brandSplash .spPizza .bt,
+#brandSplashStatic .spPizza .bt {
+  color: var(--sp-accent, var(--flame));
 }
 #brandSplash .spPizza small,
 #brandSplashStatic .spPizza small {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--sp-ink, var(--ink));
+  opacity: 0.8;
+}
+@media (hover: hover) {
+  #brandSplash .spPizza:hover,
+  #brandSplashStatic .spPizza:hover {
+    box-shadow: 4px 4px 0 var(--sp-ink, var(--ink));
+    transform: translate(-1px, -1px);
+  }
 }
 #brandSplash .spPizza:active,
 #brandSplashStatic .spPizza:active {
-  transform: scale(0.98);
+  box-shadow: 0 0 0 var(--sp-ink, var(--ink));
+  transform: translate(3px, 3px);
 }
 
-/* «…и кофе»: синий, как её кнопки и акценты */
+/* «…и кофе»: мягкая карточка, при наведении синяя рамка и глубже тень, как у карточек меню */
 #brandSplash .spCoffee,
 #brandSplashStatic .spCoffee {
-  background: var(--flame, #123A6B);
-  color: #FFFFFF;
-  box-shadow: 0 10px 26px -12px rgba(18, 58, 107, 0.5);
+  background: var(--sp-bg, var(--flame));
+  color: var(--sp-ink, #FFFFFF);
+  border: 1.5px solid rgba(62, 143, 208, 0.25);
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
+}
+@media (hover: hover) {
+  #brandSplash .spCoffee:hover,
+  #brandSplashStatic .spCoffee:hover {
+    border-color: var(--sp-accent, #3E8FD0);
+    box-shadow: 0 10px 28px rgba(18, 58, 107, 0.15);
+  }
 }
 #brandSplash .spCoffee small,
 #brandSplashStatic .spCoffee small {
