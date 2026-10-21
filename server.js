@@ -153,7 +153,10 @@ app.use(express.static(PUBLIC_DIR, {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     } else if (p.endsWith('index.html') || p.endsWith('install.html') || p.endsWith('manifest.webmanifest') || /\.(svg|css|js)$/i.test(p)) {
       res.setHeader('Cache-Control', 'no-cache');
-    } else if (/\.(woff2?|png|jpe?g|ico|webp)$/i.test(p)) {
+    } else if (/\.webp$/i.test(p)) {
+      // Фото блюд меняются на месте (одно имя файла), поэтому кэш короче года.
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    } else if (/\.(woff2?|png|jpe?g|ico)$/i.test(p)) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
   }
