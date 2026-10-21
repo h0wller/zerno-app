@@ -128,7 +128,12 @@ export function createTgRouter({ appKb }) {
   }
 
   tgRouter.post('/api/tg/webhook', async (req, res) => {
-    if (TG_WEBHOOK_SECRET && req.header('x-telegram-bot-api-secret-token') !== TG_WEBHOOK_SECRET)
+    // Без секрета вебхук открыт для подделки подтверждений номера, поэтому без него не работаем вовсе.
+    if (!TG_WEBHOOK_SECRET) {
+      console.log('[tg] webhook отклонён: не задан TG_WEBHOOK_SECRET');
+      return res.status(503).json({ error: 'webhook secret not configured' });
+    }
+    if (req.header('x-telegram-bot-api-secret-token') !== TG_WEBHOOK_SECRET)
       return res.status(403).json({ error: 'bad secret' });
 
     const u = req.body;
@@ -278,7 +283,9 @@ export function createTgRouter({ appKb }) {
 
     if (u.message.contact) {
       const pend = otpStore.get('regchat:' + chatId);
-      if (pend && Date.now() < pend.expires) {
+      // Подтверждать номер может только тот, кто прислал СВОЙ контакт (user_id совпадает с отправителем).
+      const ownContact = String(u.message.contact.user_id || '') === String(u.message.from?.id || '') && !!u.message.from?.id;
+      if (pend && Date.now() < pend.expires && ownContact) {
         const contactPhone = fmtPhone(u.message.contact.phone_number);
         if (contactPhone === fmtPhone(pend.phone)) {
           const targetCust = db.prepare('SELECT * FROM customers WHERE phone=?').get(contactPhone);
@@ -342,6 +349,13 @@ export function createTgRouter({ appKb }) {
       }
       const rawPhone = u.message.contact ? u.message.contact.phone_number : text;
       const formatted = fmtPhone(rawPhone);
+      // Привязывать Telegram к профилю можно только по СВОЕМУ контакту. Набранный номер не доказывает владение.
+      const ownShare = !!(u.message.contact && u.message.from?.id &&
+        String(u.message.contact.user_id || '') === String(u.message.from.id));
+      if (!ownShare) {
+        await tgSend(chatId, 'Чтобы привязать номер, нажмите «Поделиться номером» — так мы подтверждаем, что номер ваш.');
+        return;
+      }
       const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(formatted);
       if (c) {
         db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);

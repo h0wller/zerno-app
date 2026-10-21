@@ -53,11 +53,13 @@ function validateTgInitData(initData, botToken) {
 
 authRouter.post('/api/auth/tg-link', (req, res) => {
   const initData = String(req.body.initData || '').trim();
-  const token = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || TG_TOKEN;
-
-  const valid = validateTgInitData(initData, token);
+  const valid = validateTgInitData(initData, TG_TOKEN);
   if (!valid || !valid.user || !valid.user.id) {
     return res.status(401).json({ error: 'Неверные данные авторизации Telegram' });
+  }
+  // initData подписан, но без срока годности его можно было бы повторять бесконечно. Берём окно в час.
+  if (!valid.authDate || Math.floor(Date.now() / 1000) - valid.authDate > 3600) {
+    return res.status(401).json({ error: 'Сессия Telegram устарела, откройте приложение заново' });
   }
 
   const tgId = String(valid.user.id);
@@ -87,6 +89,18 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   if (ph10(p).length < 10) {
     return res.status(400).json({ error: 'Введите номер полностью' });
   }
+
+  // Номер не доказан: привязка и создание профиля по номеру возможны только после подтверждения контактом в боте
+  // от того же Telegram-аккаунта (см. webhook: tgChat совпадает с этим tgId).
+  const confirmed = otpStore.get('reg:' + p);
+  const botOk = !!(confirmed && confirmed.confirmed && String(confirmed.tgChat) === tgId && Date.now() < confirmed.expires);
+  if (!botOk) {
+    const botToken = crypto.randomBytes(6).toString('hex');
+    otpStore.set('regtg:' + botToken, { phone: p, name: String(req.body.name || '').trim(), expires: Date.now() + 10 * 60 * 1000 });
+    otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
+    return res.json({ needBotConfirm: true, tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${botToken}` });
+  }
+  otpStore.delete('reg:' + p);
 
   // 3. Ищем существующего клиента по номеру телефона
   c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);

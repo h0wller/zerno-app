@@ -249,6 +249,13 @@
               method: 'POST',
               body: { initData: window.__tgInitData, phone: phone, name: name, pin: pin }
             });
+            if (rTg && rTg.needBotConfirm) {
+              // Номер сначала подтверждаем в боте, потом повторяем вход.
+              toast('Подтвердите номер в боте Telegram, затем нажмите «Продолжить» ещё раз', '🤖');
+              var tgOpen = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink;
+              if (typeof tgOpen === 'function') tgOpen(rTg.tgUrl); else window.open(rTg.tgUrl, '_blank');
+              return;
+            }
             if (rTg && rTg.token && rTg.customer) {
               setUser(rTg.token, rTg.customer);
               closeAuth();

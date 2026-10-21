@@ -2,7 +2,9 @@
 // Сервис Telegram: константы, tgSend, tgEnsureWebhook
 // appKb остаётся в server.js (module-09)
 
-export const TG_TOKEN = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
+// Боевой токен — TELEGRAM_BOT_TOKEN. TEST_TOKEN используем только вне production.
+export const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN ||
+  (process.env.NODE_ENV !== 'production' ? (process.env.TEST_TOKEN || '') : '');
 export const TG_CHANNEL = process.env.TG_CHANNEL_ID || '';
 export const TG_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'and_coffee_bot';
 export const TG_WEBHOOK_SECRET = process.env.TG_WEBHOOK_SECRET || '';
@@ -11,7 +13,7 @@ export const PUBLIC_URL = _normalizeUrl(process.env.PUBLIC_URL || (process.env.R
 export const APP_URL = PUBLIC_URL || 'https://friday.andcoffee.online';
 
 export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
-  const token = process.env.TEST_TOKEN || TG_TOKEN;
+  const token = TG_TOKEN;
   if (!token) { return; }
   if (!chatId) return;
 
@@ -48,7 +50,8 @@ export async function tgEnsureWebhook() {
     // [tg-ensure-webhook-allowed-updates-v1]
     const hasUpdates = Array.isArray(info.result?.allowed_updates) &&
       ['message', 'callback_query', 'edited_message'].every(x => info.result.allowed_updates.includes(x));
-    if (info.ok && info.result && info.result.url === want && hasUpdates) { console.log('[tg] webhook уже наш и актуален:', want); return; }
+    // Секрет Telegram не показывает, поэтому при заданном секрете переустанавливаем вебхук каждый запуск.
+    if (!TG_WEBHOOK_SECRET && info.ok && info.result && info.result.url === want && hasUpdates) { console.log('[tg] webhook уже наш и актуален:', want); return; }
     const body = { url: want, allowed_updates: ['message', 'callback_query', 'edited_message'] };
     if (TG_WEBHOOK_SECRET) body.secret_token = TG_WEBHOOK_SECRET;
     const set = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/setWebhook`, {
