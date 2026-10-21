@@ -359,6 +359,27 @@ authRouter.put('/api/me', userGuard, (req, res) => {
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
 
+// Удаление профиля клиента. Персональные данные стираются, заказы остаются без привязки
+// к человеку (для учёта). Сотрудники не могут удалить себя через приложение.
+authRouter.delete('/api/me', userGuard, (req, res) => {
+  const cid = req.user.id;
+  if (['admin', 'cashier', 'dispatch'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Сотрудник не может удалить профиль. Сначала снимите права.' });
+  }
+  db.transaction(() => {
+    db.prepare("DELETE FROM tokens WHERE kind='user' AND ref=?").run(cid);
+    db.prepare('DELETE FROM subs WHERE cid=?').run(cid);
+    db.prepare('DELETE FROM fcm WHERE cid=?').run(cid);
+    db.prepare('DELETE FROM promo_use WHERE cid=?').run(cid);
+    db.prepare('DELETE FROM history WHERE cid=?').run(cid);
+    db.prepare('DELETE FROM chat WHERE key=?').run(cid);
+    db.prepare('DELETE FROM chat_meta WHERE key=?').run(cid);
+    db.prepare("UPDATE orders SET cid='', name='', phone='', addr='', comment='' WHERE cid=?").run(cid);
+    db.prepare('DELETE FROM customers WHERE id=?').run(cid);
+  })();
+  res.json({ ok: true });
+});
+
 authRouter.put('/api/me/notify', userGuard, (req, res) => {
   db.prepare('UPDATE customers SET notify_tg=?, notify_web=? WHERE id=?')
     .run(req.body.tg ? 1 : 0, req.body.web ? 1 : 0, req.user.id);
