@@ -147,3 +147,16 @@ html body div.wrap > #deliveryRail button {
   }
 }
 
+
+/* Тап-таргеты карточек доставки ≥ 44px по высоте (проверка pwa-responsive.spec.js: 40px минимум) */
+#deliveryGrid .card .cta[data-add],
+#deliveryGrid .card button.cta {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#deliveryGrid .card .opts button,
+#deliveryGrid .card .opts .opt-btn {
+  min-height: 44px;
+}

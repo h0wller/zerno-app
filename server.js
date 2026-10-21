@@ -34,6 +34,9 @@ import statsRouter from './server/routes/stats.js';
 import { item, getMeta, touch } from './server/domain/helpers.js';
 
 const app = express();
+// За прокси (Railway и т.п.) задайте TRUST_PROXY=1, иначе req.ip будет адресом прокси.
+// Без прокси не доверяем заголовкам клиента: иначе X-Forwarded-For обходит блокировку PIN.
+if (process.env.TRUST_PROXY) app.set('trust proxy', /^\d+$/.test(process.env.TRUST_PROXY) ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY);
 function appKb() {
   return {
     keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]],
@@ -67,13 +70,16 @@ app.use(statsRouter);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.post('/api/clientlog', (req, res) => {
-  console.log('[client]', (req.body && req.body.kind) || '?', (req.body && req.body.msg) || '');
+  // Ограничиваем длину, чтобы сюда нельзя было засорить логи большим текстом.
+  const kind = String((req.body && req.body.kind) || '?').slice(0, 40);
+  const msg = String((req.body && req.body.msg) || '').slice(0, 300);
+  console.log('[client]', kind, msg);
   res.json({ ok: true });
 });
 app.get('/api/config', (req, res) => res.json({ tgUsername: TG_BOT_USERNAME }));
 
 // [tg-diag v1] — диагностика Telegram-бота
-app.get('/api/tg/diag', async (req, res) => {
+app.get('/api/tg/diag', adminGuard, async (req, res) => {
   const token = process.env.TEST_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
   let me = null, err = null;
   if (token) {
@@ -145,9 +151,12 @@ app.use(express.static(PUBLIC_DIR, {
     // sw.js ОБЯЗАН быть no-store, чтобы iOS не брала его из кэша
     if (p.endsWith('sw.js')) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-    } else if (p.endsWith('index.html') || p.endsWith('manifest.webmanifest') || /\.(svg|css|js)$/i.test(p)) {
+    } else if (p.endsWith('index.html') || p.endsWith('install.html') || p.endsWith('manifest.webmanifest') || /\.(svg|css|js)$/i.test(p)) {
       res.setHeader('Cache-Control', 'no-cache');
-    } else if (/\.(woff2?|png|jpe?g|ico|webp)$/i.test(p)) {
+    } else if (/\.webp$/i.test(p)) {
+      // Фото блюд меняются на месте (одно имя файла), поэтому кэш короче года.
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    } else if (/\.(woff2?|png|jpe?g|ico)$/i.test(p)) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
   }

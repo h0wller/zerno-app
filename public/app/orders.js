@@ -138,20 +138,7 @@ document.addEventListener('click', async function (e) {
     d.innerHTML = '<b>Задержать все:</b> <button type="button" data-dlyall="15">+15 мин</button> <button type="button" data-dlyall="30">+30 мин</button>';
     top.appendChild(d);
   }
-  document.getElementById('dashToggle').addEventListener('click', function () {
-    setTimeout(async function () {
-      try {
-        var r = await api('/stats/redeems');
-        var host = document.getElementById('dashMore'); if (!host) return;
-        var old = document.getElementById('dashRedeems'); if (old) old.remove();
-        var items = Object.entries(r.byItem || {}).sort(function (a, b) { return b[1] - a[1]; });
-        var d = document.createElement('div'); d.id = 'dashRedeems';
-        d.innerHTML = '<div class="hmini" style="margin-top:8px">🎁 Списано бесплатных кофе за 30 дней: <b>' + r.total + '</b>' +
-          (items.length ? ' · ' + items.map(function (e) { return esc(e[0]) + ' ×' + e[1]; }).join(', ') : '') + '</div>';
-        host.appendChild(d);
-      } catch (e) {}
-    }, 700);
-  });
+  /* Блок «Списано бесплатных кофе» теперь рисует dash.js вместе с остальной статистикой (без гонки). */
 })();
 
 function injectDelay() {

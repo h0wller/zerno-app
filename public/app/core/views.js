@@ -344,8 +344,9 @@ window.setMode = function (m) {
   sv();
   var pt = document.getElementById('promoToggle'); if (pt) pt.hidden = (m !== 'admin');
   var dt = document.getElementById('dashToggle'); if (dt) dt.hidden = (m !== 'admin');
-  var ct = document.getElementById('chatsToggle2');
-  if (ct) ct.hidden = !(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
+  // Чаты гостей в панели админа — только в режиме админа. Кассир и диспетчер открывают чаты из своего экрана (chatsToggle),
+  // поэтому здесь не дублируем кнопку.
+  var ct = document.getElementById('chatsToggle2'); if (ct) ct.hidden = (m !== 'admin');
   var bd = document.getElementById('adminBadge'); if (bd) bd.hidden = (m !== 'admin');
   if (m !== 'admin' && typeof exitEdit === 'function') exitEdit();
   if (m === 'cashier' && typeof window.loadPending === 'function') window.loadPending();

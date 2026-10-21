@@ -32,11 +32,12 @@ statsRouter.get('/api/stats', adminGuard, (req, res) => {
 });
 
 statsRouter.get('/api/stats/redeems', adminGuard, (req, res) => {
+  const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString();
   const rows = db.prepare(`
-    SELECT a, by, ts FROM history 
-    WHERE a LIKE '%списан бесплатный кофе%' 
-    ORDER BY id DESC LIMIT 100
-  `).all();
+    SELECT a, by, ts FROM history
+    WHERE a LIKE '%списан бесплатный кофе%' AND ts > ?
+    ORDER BY id DESC
+  `).all(monthAgo);
   const stats = {};
   rows.forEach(r => {
     const match = r.a.match(/списан бесплатный кофе: (.+?) \(/);

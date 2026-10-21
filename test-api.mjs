@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 const PORT = 3999, BASE = `http://localhost:${PORT}`, DB = 'test-tmp.db';
 if (fs.existsSync(DB)) fs.unlinkSync(DB);
-const srv = spawn('node', ['server.js'], { env: { ...process.env, DB_PATH: DB, PORT: String(PORT) }, stdio: 'ignore' });
+const srv = spawn('node', ['server.js'], { env: { ...process.env, DB_PATH: DB, PORT: String(PORT), TG_WEBHOOK_SECRET: '' }, stdio: 'ignore' });
 const wait = ms => new Promise(r => setTimeout(r, ms));
 async function up(){ for(let i=0;i<60;i++){ try{ const r=await fetch(BASE+'/api/health'); if(r.ok) return true; }catch(e){} await wait(200);} return false; }
 let pass=0, fail=0;
@@ -51,6 +51,37 @@ const run=async()=>{
   check('статус меняется',(await api('/orders/'+ord.j.order.id+'/status',{method:'POST',token:d,body:{status:'accept'}})).status===200);
   check('диспетчер не лезет в кассу',(await api('/staff/customers',{token:d})).status===403);
   check('кассир не лезет в админку',(await api('/promos',{token:c})).status===403);
+
+  // ── безопасность админки и Telegram ──
+  check('tg/diag без входа — 401',(await api('/tg/diag')).status===401);
+  check('tg/diag для кассира — 403',(await api('/tg/diag',{token:c})).status===403);
+  check('staff/demo удалён — 404',(await api('/staff/demo',{token:c})).status===404);
+  check('вебхук без секрета — 503',(await fetch(BASE+'/api/tg/webhook',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).status===503);
+  check('tg-link с мусором — 401',(await api('/auth/tg-link',{method:'POST',body:{initData:'hash=00&user=%7B%7D&auth_date=1'}})).status===401);
+
+  // ── бонусы: настройка только админу, однократное начисление ──
+  check('бонусы: кассир не меняет — 403',(await api('/admin/bonuses',{method:'PUT',token:c,body:{kinds:{install:{coffee:2,delivery:0}}}})).status===403);
+  const setB=await api('/admin/bonuses',{method:'PUT',token:a,body:{days:30,kinds:{install:{coffee:2,delivery:150}}}});
+  check('бонусы: админ сохраняет',setB.status===200&&setB.j.kinds?.install?.coffee===2,JSON.stringify(setB.j));
+  const gi=await register('Установщик','+7 900 000-00-05');
+  const ti=gi.j.token;
+  const idI=(await api('/me',{token:ti})).j.customer.id;
+  await api('/staff/activate-guest',{method:'POST',token:c,body:{id:idI}});
+  const i1=await api('/bonus/install',{method:'POST',token:ti});
+  check('установка: первый раз начислено',i1.j.granted===true&&!!i1.j.code,JSON.stringify(i1.j));
+  const i2=await api('/bonus/install',{method:'POST',token:ti});
+  check('установка: повтор ничего не даёт',i2.j.granted===false);
+  const meI=(await api('/me',{token:ti})).j.customer;
+  check('установка: штампы пришли (+2)',meI.stamps===2,String(meI.stamps));
+  await api('/admin/bonuses',{method:'PUT',token:a,body:{days:30,kinds:{install:{coffee:0,delivery:0}}}});
+
+  // ── удаление профиля ──
+  const gd=await register('Удаляемый','+7 900 000-00-06');
+  const td=gd.j.token;
+  check('удаление: сотрудник не может — 403',(await api('/me',{method:'DELETE',token:c})).status===403);
+  const del=await api('/me',{method:'DELETE',token:td});
+  check('удаление: гость удалён',del.status===200&&del.j.ok===true);
+  check('удаление: старый токен не работает — 401',(await api('/me',{token:td})).status===401);
 };
 (async()=>{
   if(!await up()){ console.log('❌ сервер не поднялся'); srv.kill(); process.exit(1); }

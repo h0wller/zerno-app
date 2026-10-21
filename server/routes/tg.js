@@ -128,7 +128,12 @@ export function createTgRouter({ appKb }) {
   }
 
   tgRouter.post('/api/tg/webhook', async (req, res) => {
-    if (TG_WEBHOOK_SECRET && req.header('x-telegram-bot-api-secret-token') !== TG_WEBHOOK_SECRET)
+    // Без секрета вебхук открыт для подделки подтверждений номера, поэтому без него не работаем вовсе.
+    if (!TG_WEBHOOK_SECRET) {
+      console.log('[tg] webhook отклонён: не задан TG_WEBHOOK_SECRET');
+      return res.status(503).json({ error: 'webhook secret not configured' });
+    }
+    if (req.header('x-telegram-bot-api-secret-token') !== TG_WEBHOOK_SECRET)
       return res.status(403).json({ error: 'bad secret' });
 
     const u = req.body;
@@ -138,7 +143,9 @@ export function createTgRouter({ appKb }) {
     try {
       var _kind = u.callback_query ? 'callback' : (u.message ? (u.message.contact ? 'contact' : 'message') : 'other');
       var _body = u.callback_query ? (u.callback_query.data || '') : (u.message ? (u.message.text || (u.message.contact ? 'phone' : '')) : '');
-      console.log('[tg] in  kind=' + _kind + '  body=' + JSON.stringify(_body) + '  from=' + (u.message ? u.message.chat.id : (u.callback_query ? u.callback_query.from.id : '?')));
+      // В логах не пишем номера телефонов: маскируем всё, что похоже на телефон.
+      const _safeBody = JSON.stringify(_body).replace(/\+?\d[\d\s()-]{8,}\d/g, '[phone]').slice(0, 200);
+      console.log('[tg] in  kind=' + _kind + '  body=' + _safeBody + '  from=' + (u.message ? u.message.chat.id : (u.callback_query ? u.callback_query.from.id : '?')));
     } catch (e) {}
 
     /* ────────────────────────── CALLBACK QUERY ────────────────────────── */
@@ -278,7 +285,9 @@ export function createTgRouter({ appKb }) {
 
     if (u.message.contact) {
       const pend = otpStore.get('regchat:' + chatId);
-      if (pend && Date.now() < pend.expires) {
+      // Подтверждать номер может только тот, кто прислал СВОЙ контакт (user_id совпадает с отправителем).
+      const ownContact = String(u.message.contact.user_id || '') === String(u.message.from?.id || '') && !!u.message.from?.id;
+      if (pend && Date.now() < pend.expires && ownContact) {
         const contactPhone = fmtPhone(u.message.contact.phone_number);
         if (contactPhone === fmtPhone(pend.phone)) {
           const targetCust = db.prepare('SELECT * FROM customers WHERE phone=?').get(contactPhone);
@@ -342,6 +351,13 @@ export function createTgRouter({ appKb }) {
       }
       const rawPhone = u.message.contact ? u.message.contact.phone_number : text;
       const formatted = fmtPhone(rawPhone);
+      // Привязывать Telegram к профилю можно только по СВОЕМУ контакту. Набранный номер не доказывает владение.
+      const ownShare = !!(u.message.contact && u.message.from?.id &&
+        String(u.message.contact.user_id || '') === String(u.message.from.id));
+      if (!ownShare) {
+        await tgSend(chatId, 'Чтобы привязать номер, нажмите «Поделиться номером» — так мы подтверждаем, что номер ваш.');
+        return;
+      }
       const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(formatted);
       if (c) {
         db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);

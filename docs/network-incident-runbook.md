@@ -182,5 +182,5 @@ checkViaCheckHost();
    crontab -e
 
    Вставь строку в конец файла:
-   */15 * * * * cd /var/www/zerno-app && /usr/bin/node scripts/monitor-ru-availability.mjs >> /var/log/ru-monitor.log 2>&1
+   */15 * * * * cd /var/www/app && /usr/bin/node --env-file=/var/www/app/.env scripts/monitor-ru-availability.mjs >> /var/log/ru-monitor.log 2>&1
 

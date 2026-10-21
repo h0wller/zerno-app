@@ -17,17 +17,28 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    signingConfigs {
-    release {
-        storeFile file('../release-key.jks')
-        storePassword 'D-RXKeNNO7'
-        keyAlias 'zerno'
-        keyPassword 'D-RXKeNNO7'
+    // Пароли подписи НЕ храним в репозитории: android/keystore.properties (в .gitignore).
+    // Шаблон: android/keystore.properties.example
+    def keystorePropsFile = rootProject.file('keystore.properties')
+    def keystoreProps = new Properties()
+    if (keystorePropsFile.exists()) {
+        keystoreProps.load(new FileInputStream(keystorePropsFile))
     }
-}
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
     buildTypes {
     release {
-        signingConfig signingConfigs.release
+        if (keystorePropsFile.exists()) {
+            signingConfig signingConfigs.release
+        }
         minifyEnabled false
         proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
     }

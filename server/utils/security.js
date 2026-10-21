@@ -19,7 +19,7 @@ export const pinLocks = new Map();
  * @param {string} [tag='staff'] - Тег действия (например, 'staff', 'reg').
  * @returns {string} Ключ для хранения в Map блокировок.
  */
-export const lockKey = (req, tag = 'staff') => (req.headers['x-forwarded-for'] || req.ip || 'local') + ':' + tag;
+export const lockKey = (req, tag = 'staff') => (req.ip || 'local') + ':' + tag;
 
 /**
  * Проверяет, сколько секунд осталось до снятия блокировки.
