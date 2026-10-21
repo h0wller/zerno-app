@@ -36,6 +36,12 @@ components:
       description: 'Authorization: Bearer <token из localStorage zt_user>'
 
   schemas:
+    BonusKind:
+      type: object
+      description: Бонус одного вида для кофейни и доставки
+      properties:
+        coffee: { type: integer, minimum: 0, maximum: 10, description: "Штампы в кофейне" }
+        delivery: { type: integer, minimum: 0, maximum: 5000, description: "Скидка ₽ в доставке" }
     Customer:
       type: object
       required: [id, name, phone, stamps, free, cups, role]
@@ -277,8 +283,18 @@ paths:
             schema:
               type: object
               required: [initData]
-              properties: { initData: { type: string } }
-      responses: { '200': { description: OK } }
+              properties:
+                initData: { type: string, description: "Подписанные Telegram данные, действительны один час" }
+                phone: { type: string, description: "Номер; привязка по нему возможна только после подтверждения в боте" }
+                name: { type: string }
+                pin: { type: string }
+      responses:
+        '200':
+          description: >-
+            Вход выполнен ({token, customer}), либо needBotConfirm=true с tgUrl: номер нужно подтвердить в боте
+            тем же аккаунтом Telegram, затем повторить вызов.
+        '401': { description: "Подпись initData неверна или устарела" }
+        '400': { description: "Номер введён не полностью" }
 
   /api/me:
     get:
@@ -293,6 +309,31 @@ paths:
                 type: object
                 properties: { customer: { $ref: '#/components/schemas/Customer' } }
         '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [Auth]
+      summary: Сменить имя гостя
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { name: { type: string, maxLength: 24 } }
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [Auth]
+      summary: Удалить профиль и персональные данные
+      description: |
+        Удаляет профиль гостя, токены, push-подписки, историю, чат и промо-использования.
+        Заказы сохраняются без имени, телефона, адреса и комментария (обезличиваются) для учёта.
+        Сотрудники (admin, cashier, dispatch) не могут удалить себя через приложение.
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: "Сотрудник не может удалить профиль" }
 
   /api/menu:
     get:
@@ -568,11 +609,72 @@ paths:
       security: [{ BearerAuth: [] }]
       responses: { '200': { description: OK } }
 
-  /api/tg/diag:
+  /api/stats/redeems:
     get:
-      tags: [System]
-      summary: Диагностика вебхука и соединения с Telegram Bot API
+      tags: [Admin]
+      summary: Списания бесплатных кофе за 30 дней (по видам)
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/bonuses:
+    get:
+      tags: [Admin]
+      summary: Настройки бонусов (регистрация, регистрация по QR, установка приложения)
+      description: "Для каждого вида отдельно: штампы в кофейне (0–10) и скидка ₽ в доставке (0–5000) по одноразовому промокоду. 0 — выключено."
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Admin]
+      summary: Сохранить настройки бонусов
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                days: { type: integer, minimum: 1, maximum: 365, description: "Срок промокода доставки" }
+                kinds:
+                  type: object
+                  properties:
+                    signup: { $ref: '#/components/schemas/BonusKind' }
+                    qr: { $ref: '#/components/schemas/BonusKind' }
+                    install: { $ref: '#/components/schemas/BonusKind' }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/bonus/install:
+    post:
+      tags: [Auth]
+      summary: Начислить бонус за установку приложения (один раз на гостя)
+      description: "Вызывается клиентом при событии appinstalled и при запуске установленного приложения. Повторные вызовы ничего не начисляют."
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  granted: { type: boolean }
+                  code: { type: string, nullable: true, description: "Промокод доставки, если выдан" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/tg/diag:
+    get:
+      tags: [Admin]
+      summary: Диагностика вебхука и соединения с Telegram Bot API (только админ)
+      description: "Раньше был открыт без входа и показывал начало токена бота. Теперь доступен только администратору."
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '403': { $ref: '#/components/responses/Forbidden' }
