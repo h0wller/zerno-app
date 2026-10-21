@@ -165,11 +165,23 @@
   to { transform: translate3d(-4%, 3%, 0) scale(1.06); }
 }
 @media (prefers-reduced-motion: reduce) {
-  #brandSplash *,
-  #brandSplashStatic *,
+  #brandSplash .spTitle,
+  #brandSplashStatic .spTitle,
+  #brandSplash .spSub,
+  #brandSplashStatic .spSub,
+  #brandSplash .spBtn,
+  #brandSplashStatic .spBtn,
+  #brandSplash .spBtns .spBtn:nth-child(2),
+  #brandSplashStatic .spBtns .spBtn:nth-child(2),
+  #brandSplash .spBtn::after,
+  #brandSplashStatic .spBtn::after,
+  #brandSplash .spBtn .em,
+  #brandSplashStatic .spBtn .em {
+    animation: none;
+  }
   #brandSplash::before,
   #brandSplashStatic::before {
-    animation: none !important;
+    animation: none;
   }
 }
 /* ── Ф3.55: компенсация плавающей шапки Telegram-WebView ── */
