@@ -301,6 +301,24 @@
       };
     }
 
+    // Enter ведёт к следующему видимому полю, а на последнем поле отправляет форму.
+    [['regForm', 'regBtn'], ['loginForm', 'logBtn']].forEach(function (pair) {
+      var form = document.getElementById(pair[0]);
+      if (!form) return;
+      form.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+        e.preventDefault();
+        var fields = Array.prototype.filter.call(
+          form.querySelectorAll('input'),
+          function (el) { return el.offsetParent !== null && !el.disabled; }
+        );
+        var idx = fields.indexOf(e.target);
+        if (idx > -1 && idx < fields.length - 1) { fields[idx + 1].focus(); return; }
+        var btn = document.getElementById(pair[1]);
+        if (btn && btn.offsetParent !== null) btn.click();
+      });
+    });
+
     var regTgBtn = document.getElementById('regTgBtn');
     if (regTgBtn) {
       regTgBtn.onclick = async function () {
