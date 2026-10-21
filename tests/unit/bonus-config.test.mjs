@@ -51,3 +51,37 @@ test('makeBonusPromoCode: формат B + 8 hex, уникальность на 
   }
   assert.equal(seen.size, 2000);
 });
+
+test('cleanBonusConfig: нечисловой срок и пустой ввод дают умолчания', () => {
+  assert.equal(cleanBonusConfig({ days: 'много' }).days, DEFAULT_BONUS_DAYS);
+  const r = cleanBonusConfig();
+  assert.equal(r.days, DEFAULT_BONUS_DAYS);
+  for (const k of BONUS_KINDS) assert.deepEqual(r.kinds[k], { coffee: 0, delivery: 0 });
+});
+
+test('cleanBonusConfig: строковые числа приводятся, дробные обрезаются', () => {
+  const r = cleanBonusConfig({ days: '45', kinds: { signup: { coffee: '4.9', delivery: '1500' } } });
+  assert.equal(r.days, 45);
+  assert.deepEqual(r.kinds.signup, { coffee: 4, delivery: 1500 });
+});
+
+test('cleanBonusConfig: граничные значения лимитов допустимы', () => {
+  const r = cleanBonusConfig({
+    days: 365, kinds: { install: { coffee: 10, delivery: 5000 } },
+  });
+  assert.equal(r.days, 365);
+  assert.deepEqual(r.kinds.install, { coffee: 10, delivery: 5000 });
+  assert.equal(cleanBonusConfig({ days: 1 }).days, 1);
+});
+
+test('mergeBonusConfig: повреждённый kinds не ломает умолчания', () => {
+  const r = mergeBonusConfig({ kinds: null, days: 'x' });
+  assert.equal(r.days, DEFAULT_BONUS_DAYS);
+  for (const k of BONUS_KINDS) assert.deepEqual(r.kinds[k], { coffee: 0, delivery: 0 });
+});
+
+test('mergeBonusConfig: неизвестные виды из базы не попадают в результат', () => {
+  const r = mergeBonusConfig({ kinds: { legacy: { coffee: 5, delivery: 5 } } });
+  assert.equal('legacy' in r.kinds, false);
+  assert.deepEqual(Object.keys(r.kinds).sort(), [...BONUS_KINDS].sort());
+});
