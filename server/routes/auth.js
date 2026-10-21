@@ -11,7 +11,8 @@ import { nowISO } from '../utils/id-time.js';
 import { sendSms } from '../services/sms.js';
 import { tgSend, TG_TOKEN } from '../services/telegram.js';
 import { sendPush } from '../services/push.js';
-import { userGuard, pendingGuard } from '../middleware/auth.js';
+import { userGuard, pendingGuard, adminGuard } from '../middleware/auth.js';
+import { grantBonus, getBonusConfig, setBonusConfig, QR_SOURCE } from '../domain/bonuses.js';
 import { validate, RegisterSchema, LoginSchema, SetupPinSchema, ActivateCodeSchema } from '../middleware/validate.js';
 import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from '../config.js';
 
@@ -179,6 +180,7 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
         .run(String(req.body.name || '').trim() || ex.name, tgChat, ex.id);
       addHist(ex.id, 'Профиль подтверждён через Telegram', 'Система');
       grantWelcome(ex.id, 'Telegram');
+      grantBonus(ex.id, ex.src === QR_SOURCE ? 'qr' : 'signup');
       return res.json({ token: issueToken(ex.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(ex.id)) });
     } else {
       return res.status(409).json({ error: 'exists' });
@@ -187,6 +189,8 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
 
   const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
   if (r.err) return res.status(r.code).json({ error: r.err });
+  // Откуда пришёл гость (сейчас только QR с постера). Бонус начисляется позже, при подтверждении.
+  if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
 
   if (okTg || okSms) {
     if (tgChat) db.prepare('UPDATE customers SET tg=? WHERE id=?').run(tgChat, r.customer.id);
@@ -208,10 +212,11 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     logEv(r.customer.name, 'регистрация без TG, ждёт код кассира');
   }
 
+  if (okTg || okSms) grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
   res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
 });
 
-authRouter.post('/api/auth/activate-guest', userGuard, (req, res) => {
+authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
   const code = String(req.body.code || '').trim();
   if (!/^\d{4}$/.test(code)) return res.status(400).json({ error: 'Код — 4 цифры' });
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id);
@@ -325,6 +330,7 @@ authRouter.post('/api/staff/activate-guest', pendingGuard, (req, res) => {
   if (c.verified) return res.status(409).json({ error: 'Уже активирован' });
   db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
   addHist(c.id, '✅ Профиль активирован сотрудником', 'Сотрудник');
+  grantBonus(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
   logEv(req.user.name, `активировал гостя ${c.name}`);
   res.json({ ok: true });
 });
@@ -333,6 +339,18 @@ authRouter.get('/api/staff/pending', pendingGuard, (req, res) => {
   res.json({
     pending: db.prepare('SELECT id,name,phone,actcode,created_at FROM customers WHERE verified=0 AND actcode IS NOT NULL ORDER BY created_at DESC LIMIT 20').all()
   });
+});
+
+// Настройка бонусов (только админ): регистрация, регистрация по QR, установка приложения.
+// Для каждого вида отдельно: штампы в кофейне и скидка ₽ в доставке. По умолчанию всё 0.
+authRouter.get('/api/admin/bonuses', adminGuard, (req, res) => res.json(getBonusConfig()));
+authRouter.put('/api/admin/bonuses', adminGuard, (req, res) => res.json(setBonusConfig(req.body || {})));
+
+// Бонус за установку приложения. Клиент вызывает, когда приложение открыто установленным.
+// Сервер сам не даёт начислить дважды.
+authRouter.post('/api/bonus/install', userGuard, (req, res) => {
+  const r = req.user.verified ? grantBonus(req.user.id, 'install') : null;
+  res.json({ granted: !!r, code: r ? r.code : null });
 });
 
 authRouter.post('/api/auth/deactivate', userGuard, (req, res) => {
@@ -357,6 +375,27 @@ authRouter.put('/api/me', userGuard, (req, res) => {
   const name = String(req.body.name || '').trim() || 'Гость';
   db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
+});
+
+// Удаление профиля клиента. Персональные данные стираются, заказы остаются без привязки
+// к человеку (для учёта). Сотрудники не могут удалить себя через приложение.
+authRouter.delete('/api/me', userGuard, (req, res) => {
+  const cid = req.user.id;
+  if (['admin', 'cashier', 'dispatch'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Сотрудник не может удалить профиль. Сначала снимите права.' });
+  }
+  db.transaction(() => {
+    db.prepare("DELETE FROM tokens WHERE kind='user' AND ref=?").run(cid);
+    db.prepare('DELETE FROM subs WHERE cid=?').run(cid);
+    db.prepare('DELETE FROM fcm WHERE cid=?').run(cid);
+    db.prepare('DELETE FROM promo_use WHERE cid=?').run(cid);
+    db.prepare('DELETE FROM history WHERE cid=?').run(cid);
+    db.prepare('DELETE FROM chat WHERE key=?').run(cid);
+    db.prepare('DELETE FROM chat_meta WHERE key=?').run(cid);
+    db.prepare("UPDATE orders SET cid='', name='', phone='', addr='', comment='' WHERE cid=?").run(cid);
+    db.prepare('DELETE FROM customers WHERE id=?').run(cid);
+  })();
+  res.json({ ok: true });
 });
 
 authRouter.put('/api/me/notify', userGuard, (req, res) => {

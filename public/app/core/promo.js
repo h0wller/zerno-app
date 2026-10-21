@@ -24,7 +24,42 @@
         syncOverlay();
         loadPromos();
         window.loadWeekPromo();
+        loadBonuses();
       };
+
+      /* Бонусы (админ): каждое событие отдельно для кофейни (штампы) и доставки (скидка ₽). 0 = выключено. */
+      async function loadBonuses() {
+        if (!$("#bzSave")) return;
+        try {
+          const d = await api("/admin/bonuses");
+          document.querySelectorAll("[data-bz]").forEach((el) => {
+            const [kind, brand] = el.dataset.bz.split(":");
+            el.value = (d.kinds && d.kinds[kind] && d.kinds[kind][brand]) || 0;
+          });
+          $("#bzDays").value = d.days || 30;
+        } catch (e) {
+          /* не админ или сервер недоступен — панель остаётся с нулями */
+        }
+      }
+      if ($("#bzSave")) {
+        $("#bzSave").onclick = async () => {
+          const kinds = {};
+          document.querySelectorAll("[data-bz]").forEach((el) => {
+            const [kind, brand] = el.dataset.bz.split(":");
+            kinds[kind] = kinds[kind] || {};
+            kinds[kind][brand] = +el.value || 0;
+          });
+          try {
+            await api("/admin/bonuses", {
+              method: "PUT",
+              body: { kinds: kinds, days: +$("#bzDays").value || 30 },
+            });
+            toast("Бонусы сохранены", "🎁");
+          } catch (e) {
+            toast(e.message, "⚠️");
+          }
+        };
+      }
       function closePromo() {
         $("#promoModal").classList.remove("show");
         syncOverlay();

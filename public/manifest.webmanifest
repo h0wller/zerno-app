@@ -1,7 +1,7 @@
 {
-  "name": "…и кофе — кофейня на берегу моря",
-  "short_name": "…и кофе",
-  "description": "Меню и бонусы кофейни «…и кофе»: каждый 10-й кофе бесплатно.",
+  "name": "Пятница «…и кофе» — доставка и кофейня",
+  "short_name": "Пятница «…и кофе»",
+  "description": "Доставка «Пятница» и кофейня «…и кофе»: меню, заказы и бонусы в одном приложении.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
@@ -22,7 +22,7 @@
       "purpose": "any"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "icons/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

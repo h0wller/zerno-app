@@ -8,6 +8,22 @@ if (typeof window.__initialSearch === 'undefined') {
   window.__initialSearch = location.search;
 }
 
+/* ── QR с постера: ?ref=qr → запомнить источник и сразу открыть регистрацию (если гость не вошёл) ── */
+(function initQrRef() {
+  if (QS.get('ref') !== 'qr') return;
+  try { localStorage.setItem('zt_src', 'qr'); } catch (_) {}
+  var t0 = Date.now();
+  var iv = setInterval(function () {
+    var loggedIn = false;
+    try { loggedIn = !!localStorage.getItem('zt_user'); } catch (_) {}
+    if (loggedIn || Date.now() - t0 > 8000) { clearInterval(iv); return; }
+    if (typeof window.openAuth === 'function') {
+      clearInterval(iv);
+      window.openAuth(false);
+    }
+  }, 300);
+})();
+
   // [tg-web-seamless-auth-v1]
   (function initAuthTokenLogin() {
     var at = QS.get('auth_token');

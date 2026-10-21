@@ -6,6 +6,11 @@
   var setPinCtx = null;
   var regPoll = null;
 
+  // Источник регистрации (сейчас только 'qr' — пришли с постера). Хранится до успешной регистрации.
+  function getRegSource() {
+    try { return localStorage.getItem('zt_src') === 'qr' ? 'qr' : ''; } catch (_) { return ''; }
+  }
+
   function setAuthFormMode(login) {
     var rf = document.getElementById('regForm');
     var lf = document.getElementById('loginForm');
@@ -267,8 +272,9 @@
         try {
           var r = await api('/auth/register', {
             method: 'POST',
-            body: { name: name, phone: phone, pin: pin, code: code }
+            body: { name: name, phone: phone, pin: pin, code: code, src: getRegSource() }
           });
+          try { localStorage.removeItem('zt_src'); } catch (_) {}
           setUser(r.token, r.customer);
           closeAuth();
           if (typeof renderAll === 'function') renderAll();
@@ -473,6 +479,33 @@
         window.mode = 'guest';
         if (typeof closePanel === 'function') closePanel();
         if (typeof renderAll === 'function') renderAll();
+        openAuth();
+      };
+    }
+
+    var deleteAccBtn = document.getElementById('deleteAccBtn');
+    if (deleteAccBtn) {
+      deleteAccBtn.onclick = async function () {
+        var ok = window.confirm('Удалить профиль и персональные данные? Это действие необратимо. История заказов сохранится без имени и телефона.');
+        if (!ok) return;
+        try {
+          var reg = await navigator.serviceWorker.ready;
+          var sub = await reg.pushManager.getSubscription();
+          if (sub) await sub.unsubscribe();
+        } catch (_) {}
+        try {
+          await api('/me', { method: 'DELETE' });
+        } catch (e) {
+          alert('Не удалось удалить профиль. Попробуйте позже или напишите на почту из политики конфиденциальности.');
+          return;
+        }
+        window.USER_TOKEN = null;
+        localStorage.removeItem('zt_user');
+        window.me = null;
+        window.mode = 'guest';
+        if (typeof closePanel === 'function') closePanel();
+        if (typeof renderAll === 'function') renderAll();
+        alert('Профиль удалён.');
         openAuth();
       };
     }
