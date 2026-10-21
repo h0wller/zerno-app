@@ -101,7 +101,29 @@
 }
 #brandSplash .spPizza .bt,
 #brandSplashStatic .spPizza .bt {
-  color: var(--sp-accent, var(--flame));
+  color: var(--sp-ink, var(--ink));
+  text-shadow: 0 2px 0 rgba(58, 42, 28, 0.18);
+}
+/* Официальные логотипы вместо эмодзи (цвета самого логотипа не меняем) */
+#brandSplash .spBtn .em,
+#brandSplashStatic .spBtn .em {
+  height: auto;
+}
+#brandSplash .spBtn .em img,
+#brandSplashStatic .spBtn .em img {
+  display: block;
+  margin: 0 auto 10px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+#brandSplash .spPizza .em img,
+#brandSplashStatic .spPizza .em img {
+  max-height: 56px;
+}
+#brandSplash .spCoffee .em img,
+#brandSplashStatic .spCoffee .em img {
+  max-height: 120px;
 }
 #brandSplash .spPizza small,
 #brandSplashStatic .spPizza small {
@@ -124,11 +146,15 @@
 /* «…и кофе»: мягкая карточка, при наведении синяя рамка и глубже тень, как у карточек меню */
 #brandSplash .spCoffee,
 #brandSplashStatic .spCoffee {
-  background: var(--sp-bg, var(--flame));
-  color: var(--sp-ink, #FFFFFF);
+  background: var(--sp-bg, #FFFFFF);
+  color: var(--sp-ink, var(--flame));
   border: 1.5px solid rgba(62, 143, 208, 0.25);
   border-radius: 18px;
   box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
+}
+#brandSplash .spCoffee .bt,
+#brandSplashStatic .spCoffee .bt {
+  color: var(--sp-ink, var(--flame));
 }
 @media (hover: hover) {
   #brandSplash .spCoffee:hover,
@@ -139,7 +165,7 @@
 }
 #brandSplash .spCoffee small,
 #brandSplashStatic .spCoffee small {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--soft, #586470);
 }
 #brandSplash .spCoffee:active,
 #brandSplashStatic .spCoffee:active {
