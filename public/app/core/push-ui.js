@@ -9,6 +9,19 @@ function urlBase64ToUint8Array(s) {
       }
 
       let pushBusy = false;
+      // Стабильный id браузера: одно устройство — одна подписка на сервере.
+      function getDevId() {
+        try {
+          let id = localStorage.getItem("zt_dev");
+          if (!id) {
+            id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+            localStorage.setItem("zt_dev", id);
+          }
+          return id;
+        } catch (e) {
+          return "";
+        }
+      }
       async function enablePush() {
         if (pushBusy) return toast("Секунду, включаю…", "⏳");
         pushBusy = true;
@@ -67,7 +80,7 @@ function urlBase64ToUint8Array(s) {
           }
           await api("/push/subscribe", {
             method: "POST",
-            body: { sub: sub.toJSON() },
+            body: { sub: sub.toJSON(), dev: getDevId() },
           });
           window.refreshPushBtn();
           toast("Готово! Проверочный пуш уже летит", "🔔");
@@ -186,8 +199,14 @@ function urlBase64ToUint8Array(s) {
                 });
                 await api("/push/subscribe", {
                   method: "POST",
-                  body: { sub: s.toJSON() },
+                  body: { sub: s.toJSON(), dev: getDevId() },
                 });
+              } else if (s && Notification.permission === "granted") {
+                // Подписка есть на устройстве, но сервер мог её удалить (410/404): отправляем повторно, сервер сделает upsert.
+                await api("/push/subscribe", {
+                  method: "POST",
+                  body: { sub: s.toJSON(), dev: getDevId() },
+                }).catch(function () {});
               }
               clearTimeout(t);
               apply(!s);

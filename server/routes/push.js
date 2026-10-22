@@ -17,9 +17,14 @@ pushRouter.post('/api/push/subscribe', userGuard, (req, res) => {
   const sub = req.body.sub;
   if (!sub || !sub.endpoint) return res.status(400).json({ error: 'bad sub' });
   const s = JSON.stringify(sub);
-  const existed = db.prepare('SELECT 1 FROM subs WHERE cid=? AND sub=?').get(req.user.id, s);
-  db.prepare('INSERT OR IGNORE INTO subs(cid,sub,created) VALUES(?,?,?)').run(req.user.id, s, nowISO());
-  if (!existed) sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
+  const dev = String(req.body.dev || '').slice(0, 64);
+  // Приветствие — только когда у клиента ещё не было ни одной подписки.
+  const before = db.prepare('SELECT COUNT(*) AS n FROM subs WHERE cid=?').get(req.user.id).n;
+  // Одно устройство — одна подписка: старые строки того же устройства удаляем.
+  if (dev) db.prepare('DELETE FROM subs WHERE cid=? AND dev=? AND sub<>?').run(req.user.id, dev, s);
+  db.prepare(`INSERT INTO subs(cid,sub,created,dev) VALUES(?,?,?,?)
+    ON CONFLICT(sub) DO UPDATE SET cid=excluded.cid, dev=excluded.dev`).run(req.user.id, s, nowISO(), dev);
+  if (before === 0) sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
   res.json({ ok: true });
 });
 
