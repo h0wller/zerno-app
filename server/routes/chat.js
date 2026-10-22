@@ -49,16 +49,34 @@ chatRouter.get('/api/chat/list', chatGuard, (req, res) => {
   const rows = db.prepare(`SELECT c.key, MAX(c.id) mid,
     SUM(CASE WHEN c.who='guest' AND c.read_s=0 THEN 1 ELSE 0 END) unread,
     IFNULL(m.closed,0) closed, IFNULL(m.staff_in,0) staff_in, IFNULL(m.ctx,'coffee') ctx,
-    MAX(CASE WHEN c.who='guest' AND c.human=1 THEN 1 ELSE 0 END) human
+    MAX(CASE WHEN c.who='guest' AND c.human=1 THEN 1 ELSE 0 END) human,
+    MAX(CASE WHEN c.who='guest' AND c.human=1 THEN c.id END) callId,
+    MAX(c.ts) lastTs
     FROM chat c LEFT JOIN chat_meta m ON m.key=c.key
     GROUP BY c.key ORDER BY mid DESC LIMIT 50`).all();
-  res.json({ threads: rows
+  const prevStmt = db.prepare("SELECT text FROM chat WHERE key=? AND who='guest' AND human=0 AND id<? ORDER BY id DESC LIMIT 1");
+  const callStmt = db.prepare('SELECT ts FROM chat WHERE id=?');
+  const threads = rows
     .filter(r => role === 'dispatch' ? r.ctx === 'delivery' : role === 'cashier' ? r.ctx === 'coffee' : true)
     .filter(r => showClosed ? r.closed : (!r.closed && (r.human || r.staff_in)))
     .map(r => {
       const c = db.prepare('SELECT name FROM customers WHERE id=?').get(r.key.replace(/:[cd]$/, ''));
-      return { key: r.key, name: c ? c.name : 'Гость', unread: r.unread, human: r.human, ctx: r.ctx };
-    }) });
+      const callTs = r.callId ? ((callStmt.get(r.callId) || {}).ts || '') : '';
+      // Последнее сообщение гостя перед вызовом сотрудника (без склейки с текстом вызова).
+      const prev = r.callId ? prevStmt.get(r.key, r.callId) : null;
+      const lastGuest = prev && prev.text ? String(prev.text).split('\n💬 ').pop().slice(0, 140) : '';
+      return {
+        key: r.key, name: c ? c.name : 'Гость', unread: r.unread, human: r.human, ctx: r.ctx,
+        callTs, lastGuest, lastTs: r.lastTs || '',
+      };
+    });
+  // Ожидающие вызовы сверху (дольше ждущие — первыми), остальные — по свежести.
+  threads.sort((a, b) => {
+    if (a.human !== b.human) return b.human - a.human;
+    if (a.human) return String(a.callTs).localeCompare(String(b.callTs));
+    return String(b.lastTs).localeCompare(String(a.lastTs));
+  });
+  res.json({ threads });
 });
 
 chatRouter.get('/api/chat/dialog', chatGuard, (req, res) => {

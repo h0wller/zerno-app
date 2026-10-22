@@ -354,6 +354,16 @@
   };
 
   /* ── loadScList, updateStaffBadge ── */
+  // Сколько гость ждёт сотрудника: «только что», «5 мин», «2 ч».
+  function waitLabel(ts) {
+    var t = Date.parse(ts);
+    if (!t) return "";
+    var m = Math.max(0, Math.round((Date.now() - t) / 60000));
+    if (m < 1) return "только что";
+    if (m < 60) return m + " мин";
+    return Math.round(m / 60) + " ч";
+  }
+
   window.loadScList = async function () {
     try {
       var closedMode = !!window.scClosedView;
@@ -375,20 +385,33 @@
         threads
           .map(function (t) {
             var tCtx = t.ctx || (/:d$/.test(t.key || "") ? "delivery" : "coffee");
+            var shortId = String(t.key || "").replace(/:[cd]$/, "").slice(-4);
+            var waiting = t.human && !closedMode && t.callTs;
             return (
-              '<div class="hmini" style="cursor:pointer" data-sck="' +
+              '<div class="hmini" style="cursor:pointer;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.06)" data-sck="' +
               esc(t.key) +
               '">' +
-              "<b>" +
+              '<div><b>' +
               esc(t.name) +
-              "</b> " +
+              '</b> <span style="opacity:.55;font-size:12px">#' +
+              esc(shortId) +
+              "</span> " +
               (tCtx === "delivery" ? "🍕" : "☕") +
               (t.human && !closedMode
                 ? '<span class="tag hit" style="position:static;margin-left:6px">нужен ответ</span>'
                 : "") +
               '<span style="float:right">' +
               (t.unread ? "новое: " + t.unread : "") +
-              "</span></div>"
+              "</span></div>" +
+              (t.lastGuest
+                ? '<div style="opacity:.8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">💬 «' +
+                  esc(t.lastGuest) +
+                  "»</div>"
+                : "") +
+              (waiting
+                ? '<div style="opacity:.6;font-size:12px;margin-top:2px">ждёт ' + esc(waitLabel(t.callTs)) + "</div>"
+                : "") +
+              "</div>"
             );
           })
           .join("") ||

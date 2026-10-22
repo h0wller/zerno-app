@@ -80,6 +80,8 @@ CREATE TABLE IF NOT EXISTS fcm(
   if (ncols.length && !ncols.includes('notify_web')) db.exec(`ALTER TABLE customers ADD COLUMN notify_web INTEGER DEFAULT 1`);
   if (ncols.length && !ncols.includes('consent')) db.exec(`ALTER TABLE customers ADD COLUMN consent TEXT DEFAULT ''`);
   if (ncols.length && !ncols.includes('src')) db.exec(`ALTER TABLE customers ADD COLUMN src TEXT DEFAULT ''`);
+  const scols = db.prepare('PRAGMA table_info(subs)').all().map(c => c.name);
+  if (scols.length && !scols.includes('dev')) db.exec(`ALTER TABLE subs ADD COLUMN dev TEXT DEFAULT ''`);
   if (ncols.length && !ncols.includes('qr_done')) db.exec(`ALTER TABLE customers ADD COLUMN qr_done INTEGER DEFAULT 0`);
 
   db.exec(`
