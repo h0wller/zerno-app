@@ -17,9 +17,11 @@ pushRouter.post('/api/push/subscribe', userGuard, (req, res) => {
   const sub = req.body.sub;
   if (!sub || !sub.endpoint) return res.status(400).json({ error: 'bad sub' });
   const s = JSON.stringify(sub);
-  const existed = db.prepare('SELECT 1 FROM subs WHERE cid=? AND sub=?').get(req.user.id, s);
+  // Приветствие — только когда у клиента ещё не было ни одной подписки.
+  // Повторная отправка той же или новой подписки (обновление ключей, перезаход) его не повторяет.
+  const before = db.prepare('SELECT COUNT(*) AS n FROM subs WHERE cid=?').get(req.user.id).n;
   db.prepare('INSERT OR IGNORE INTO subs(cid,sub,created) VALUES(?,?,?)').run(req.user.id, s, nowISO());
-  if (!existed) sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
+  if (before === 0) sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
   res.json({ ok: true });
 });
 

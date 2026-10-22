@@ -188,6 +188,12 @@ function urlBase64ToUint8Array(s) {
                   method: "POST",
                   body: { sub: s.toJSON() },
                 });
+              } else if (s && Notification.permission === "granted") {
+                // Подписка есть на устройстве, но сервер мог её удалить (410/404): отправляем повторно, сервер сделает upsert.
+                await api("/push/subscribe", {
+                  method: "POST",
+                  body: { sub: s.toJSON() },
+                }).catch(function () {});
               }
               clearTimeout(t);
               apply(!s);
