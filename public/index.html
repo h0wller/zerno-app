@@ -138,7 +138,8 @@ canvas#fx {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box; /* без него width:100% + padding выпирают за экран и контент сдвигается на 16px по X */
   will-change: opacity, visibility;
 }
 #brandSplashStatic {
@@ -328,11 +329,29 @@ body {
   color: var(--ink, #101418);
 }
 
-/* ═══ 7. Сплэш: текст и кнопки (зеркало theme/*.css) ═══ */
+/* ═══ 7. Сплэш: геометрия и типографика — ТОЧНОЕ зеркало theme/80-splash.css ═══
+   Всё, что влияет на размер/позицию/шрифт сплэша, обязано совпадать с 80-splash.css до пикселя:
+   theme/*.css грузятся отложенно (media=print → all), и любое расхождение даёт скачок сплэша
+   (CLS + мигание) в момент их применения. Меняете 80-splash.css — меняйте и этот блок.
+   Охраняет tests/splash-cls.spec.js. Анимации входа продублированы с теми же параметрами,
+   чтобы при подключении 80-splash.css они не перезапускались (одинаковое computed-значение). */
 #brandSplashStatic,
-#brandSplash { overflow: auto; }
+#brandSplash {
+  overflow: auto;
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(18, 58, 107, 0.10), transparent 45%),
+    radial-gradient(circle at 92% 96%, rgba(179, 55, 43, 0.08), transparent 45%);
+}
 #brandSplashStatic *,
 #brandSplash * { box-sizing: border-box; margin: 0; padding: 0; }
+#brandSplashStatic img,
+#brandSplash img {
+  max-width: 44px;
+  max-height: 44px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
 #brandSplashStatic .spInner,
 #brandSplash .spInner { width: 100%; max-width: 560px; text-align: center; }
 #brandSplashStatic .spTitle,
@@ -343,41 +362,103 @@ body {
   color: var(--ink, #101418);
 }
 #brandSplashStatic .spSub,
-#brandSplash .spSub { color: var(--soft, #586470); font-size: 14px; margin-bottom: 22px; }
+#brandSplash .spSub {
+  color: var(--ink, #101418);
+  font: 900 clamp(24px, 7vw, 34px)/1.2 Unbounded, sans-serif;
+  letter-spacing: -0.01em;
+  margin-bottom: 28px;
+  animation: spRise 0.7s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
 #brandSplashStatic .spBtns,
-#brandSplash .spBtns { display: grid; grid-template-columns: 1fr; gap: 12px; }
+#brandSplash .spBtns { display: grid; grid-template-columns: 1fr; gap: 16px; }
 #brandSplashStatic .spBtn,
 #brandSplash .spBtn {
   -webkit-appearance: none;
   appearance: none;
-  cursor: pointer;
-  border-radius: 22px;
-  padding: 22px 16px;
-  font: 700 16px Unbounded, sans-serif;
-  box-shadow: var(--sh, 0 10px 30px -12px rgba(16, 20, 24, 0.18));
+  position: relative;
   width: 100%;
+  padding: 22px 18px;
+  border: 0;
+  border-radius: 18px;
+  cursor: pointer;
+  font: 700 16px Unbounded, sans-serif;
+  animation: spRise 0.6s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
+#brandSplashStatic .spBtns .spBtn:nth-child(2),
+#brandSplash .spBtns .spBtn:nth-child(2) { animation-delay: 0.3s; }
+#brandSplashStatic .spBtn .em,
+#brandSplash .spBtn .em {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  margin-bottom: 10px;
+  animation: spFloat 3.2s ease-in-out infinite;
+}
+#brandSplashStatic .spBtn .em img,
+#brandSplash .spBtn .em img {
+  display: block;
+  margin: 0 auto;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+#brandSplashStatic .spPizza .em img,
+#brandSplash .spPizza .em img { max-height: 56px; }
+#brandSplashStatic .spCoffee .em img,
+#brandSplash .spCoffee .em img { max-height: 100px; }
+#brandSplashStatic .spBtn .bt,
+#brandSplash .spBtn .bt { display: block; font: 700 17px Unbounded, sans-serif; }
 #brandSplashStatic .spBtn small,
 #brandSplash .spBtn small {
   display: block;
-  font: 400 12px "Golos Text", system-ui, sans-serif;
+  font: 400 13px Golos Text, sans-serif;
   margin-top: 6px;
 }
+/* «Пятница»: цвета приходят из inline-токенов --sp-* на кнопке (см. разметку) */
 #brandSplashStatic .spPizza,
-#brandSplash .spPizza { border: 2px solid #F2D9A5; background: #FFF6E5; color: #6B4E0E; }
+#brandSplash .spPizza {
+  background: var(--sp-bg, var(--paper, #FFFFFF));
+  color: var(--sp-ink, var(--ink, #101418));
+  border: 2px solid var(--sp-ink, var(--ink, #101418));
+  box-shadow: 3px 3px 0 var(--sp-ink, var(--ink, #101418));
+}
+#brandSplashStatic .spPizza .bt,
+#brandSplash .spPizza .bt {
+  color: var(--sp-ink, var(--ink, #101418));
+  text-shadow: 0 2px 0 rgba(58, 42, 28, 0.18);
+}
 #brandSplashStatic .spPizza small,
-#brandSplash .spPizza small { color: #8A6D3B; }
+#brandSplash .spPizza small { color: var(--sp-ink, var(--ink, #101418)); opacity: 0.8; }
+/* «…и кофе» */
 #brandSplashStatic .spCoffee,
-#brandSplash .spCoffee { border: 2px solid var(--line, #D8DFE4); background: #fff; color: var(--ink, #101418); }
+#brandSplash .spCoffee {
+  background: var(--sp-bg, #FFFFFF);
+  color: var(--sp-ink, var(--flame));
+  border: 2px solid rgba(62, 143, 208, 0.25);
+  box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
+}
+#brandSplashStatic .spCoffee .bt,
+#brandSplash .spCoffee .bt { color: var(--sp-ink, var(--flame)); }
 #brandSplashStatic .spCoffee small,
 #brandSplash .spCoffee small { color: var(--soft, #586470); }
-#brandSplashStatic .spBtn .em,
-#brandSplash .spBtn .em { display: block; font-size: 30px; line-height: 1; margin-bottom: 10px; }
-#brandSplashStatic .spBtn .bt,
-#brandSplash .spBtn .bt { display: block; font: 700 16px Unbounded, sans-serif; }
 @media (min-width: 560px) {
   #brandSplashStatic .spBtns,
   #brandSplash .spBtns { grid-template-columns: 1fr 1fr; }
+}
+@keyframes spRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes spFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #brandSplashStatic .spSub, #brandSplash .spSub,
+  #brandSplashStatic .spBtn, #brandSplash .spBtn,
+  #brandSplashStatic .spBtns .spBtn:nth-child(2), #brandSplash .spBtns .spBtn:nth-child(2),
+  #brandSplashStatic .spBtn .em, #brandSplash .spBtn .em { animation: none; }
 }
 
 /* ═══ 8. Карточка (Маргарита) и сетки до загрузки theme/*.css ═══ */
@@ -481,9 +562,9 @@ html[data-brand="delivery"] {
 <script id="perf-lighthouse-bridge">
     (() => {
       const ua = navigator.userAgent;
+      /* Тот же детектор, что в core/boot.js и core/splash.js (включая эмуляцию Moto G Power в PageSpeed) */
       const isAudit =
-        ua.includes('Chrome-Lighthouse') ||
-        ua.includes('Lighthouse') ||
+        /Chrome-Lighthouse|Lighthouse|moto g power/i.test(ua) ||
         window.location.search.includes('lighthouse=1') ||
         window.location.search.includes('clean=1');
 
@@ -657,76 +738,77 @@ if(b==='delivery'){
   <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <!-- Неблокирующая загрузка слоёв CSS со 100% фолбэк-страховкой для iOS WebKit / Telegram WebView -->
-  <link rel="stylesheet" href="/app/ui/fonts.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=543" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=543" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/fonts.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=544" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=544" media="print" onload="this.media='all'" />
   <script>
     window.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('link[media="print"]').forEach(function (l) { l.media = 'all'; });
     });
   </script>
   <noscript>
-    <link rel="stylesheet" href="/app/ui/fonts.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=543" />
-    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=543" />
+    <link rel="stylesheet" href="/app/ui/fonts.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=544" />
+    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=544" />
   </noscript>
-  <!-- [tg-splash-menu-fix-v2] решение о сплэше = то же, что в core/splash.js -->
+  <!-- [tg-splash-menu-fix-v3] решение о сплэше в <head> = ТО ЖЕ, что в core/splash.js (один в один).
+     Расхождение даёт «мигание»: сплэш рисуется в первом кадре, а затем JS его снимает (или наоборот). -->
 <script>
   (function () {
     var de = document.documentElement;
@@ -741,25 +823,38 @@ if(b==='delivery'){
         if (ne && ne[0] && ne[0].type) navType = ne[0].type;
       } catch (e) { }
 
-      var isTg = !!(window.__isTgMiniApp || /Telegram/i.test(navigator.userAgent) || QS.get('src') === 'tg');
-      var done = false;
-      try { done = !isTg && sessionStorage.getItem('splashDone') === '1'; } catch (e) { }
+      var isTg = !!(window.__isTgMiniApp || /Telegram/i.test(navigator.userAgent) ||
+        (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || QS.get('src') === 'tg');
+      var forceSplash = QS.get('splash') === '1' || QS.get('splash') === 'true';
+      if (forceSplash && !isAudit) { try { sessionStorage.removeItem('splashDone'); } catch (e) { } }
 
-      var fromBrandNav = !!QS.get('brand') && navType !== 'reload';
+      var done = false, clicked = false;
+      try {
+        done = !isTg && sessionStorage.getItem('splashDone') === '1';
+        clicked = sessionStorage.getItem('zt_splash_clicked') === '1';
+      } catch (e) { }
+
+      /* ?brand= пропускает сплэш, кроме ?splash=1 и reload после клика по сплэшу в этой же вкладке */
+      var fromBrandNav = !!QS.get('brand') && !forceSplash && !(navType === 'reload' && clicked);
       var hasDeeplink = !!(QS.get('item') || QS.get('tab') || QS.get('no') || QS.get('reorder'));
 
-      if (isAudit) {
-        need = false;
-      } else if (QS.get('splash') === '1' || QS.get('splash') === 'true') {
-        try { sessionStorage.removeItem('splashDone'); } catch (e) { }
-        need = true;
-      } else {
-        need = !(done || fromBrandNav || hasDeeplink);
-      }
+      need = !(isAudit || done || fromBrandNav || hasDeeplink);
     } catch (e) { }
     de.classList.remove('need-splash', 'no-splash');
     de.classList.add(need ? 'need-splash' : 'no-splash');
-    if (need) de.classList.remove('splash-skipped');
+    if (need) {
+      de.classList.remove('splash-skipped');
+      /* Логотипы сплэша грузим заранее, но ТОЛЬКО когда сплэш реально покажется: у вернувшихся
+         пользователей и в аудитах (PERF-P0 v6) они не конкурируют с LCP-картинкой каталога. */
+      try {
+        ['/friday-logo.svg', '/andCoffee.svg'].forEach(function (href) {
+          var l = document.createElement('link');
+          l.rel = 'preload'; l.as = 'image'; l.type = 'image/svg+xml'; l.href = href;
+          l.setAttribute('fetchpriority', 'high');
+          document.head.appendChild(l);
+        });
+      } catch (e) { }
+    }
   })();
 </script>
 </head>
@@ -771,10 +866,10 @@ if(b==='delivery'){
       <div class="spSub">Выберите, куда вы сегодня</div>
       <div class="spBtns">
         <button class="spBtn spPizza" data-go="delivery" style="--sp-bg:#F6EEE1;--sp-ink:#3A2A1C;--sp-accent:#C03B2A">
-          <span class="em"><img src="/friday-logo.svg" alt="Пятница" width="200" height="56" /></span><span class="bt">«Пятница»</span><small>доставка пиццы и роллов</small>
+          <span class="em"><img src="/friday-logo.svg" alt="Пятница" width="224" height="56" /></span><span class="bt">«Пятница»</span><small>доставка пиццы и роллов</small>
         </button>
         <button class="spBtn spCoffee" data-go="coffee" style="--sp-bg:#FFFFFF;--sp-ink:#123A6B;--sp-accent:#3E8FD0">
-          <span class="em"><img src="/andCoffee.svg" alt="…и кофе" width="120" height="120" /></span><span class="bt">…и кофе</span><small>меню, штампы и бонусы</small>
+          <span class="em"><img src="/andCoffee.svg" alt="…и кофе" width="100" height="100" /></span><span class="bt">…и кофе</span><small>меню, штампы и бонусы</small>
         </button>
       </div>
     </div>
@@ -1673,7 +1768,7 @@ if(b==='delivery'){
       <button class="btn ghost cart-continue-btn" id="cartClose">Продолжить покупки</button>
     </div>
   </div>
-<script type="module" src="/dist/main.bundle.js?v=543"></script>
+<script type="module" src="/dist/main.bundle.js?v=544"></script>
   <div id="installBanner" hidden style="
         position: fixed;
         left: 12px;

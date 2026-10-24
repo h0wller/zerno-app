@@ -542,16 +542,8 @@
         comment: (document.getElementById("checkoutComment") || {}).value
       };
       sessionStorage.setItem("zt_checkout_draft", JSON.stringify(draft));
-
-      if (draft.place || draft.street || draft.house) {
-        if (window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
-          window.AddressBook.autoAdd({ place: draft.place, street: draft.street, house: draft.house });
-        } else {
-          localStorage.setItem("zt_saved_address", JSON.stringify({
-            place: draft.place, street: draft.street, house: draft.house
-          }));
-        }
-      }
+      /* Черновик ≠ сохранённый адрес: в «Мои адреса» адрес попадает только после успешного заказа
+         (см. checkBtn.onclick). Раньше autoAdd вызывался на каждый ввод и плодил записи «Н», «Ну», «С». */
     } catch (e) {}
   }
 
@@ -1178,6 +1170,11 @@ function renderCartBase() {
         r = await api("/orders", { method: "POST", body: body });
         toast("Заказ #" + (r.order && r.order.no ? r.order.no : "") + " оформлен!", "🎉");
 
+        /* Адрес прошёл валидацию и заказ принят — запоминаем его в «Моих адресах» (только доставка) */
+        if (method !== "pickup" && window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
+          try { window.AddressBook.autoAdd({ place: placeV, street: streetV, house: houseV }); } catch (eAb) { }
+        }
+
         if (window.TgUx) window.TgUx.success();
 
         if (typeof cart !== "undefined" && Array.isArray(cart)) cart.length = 0;
@@ -1215,24 +1212,6 @@ function renderCartBase() {
           var preorderSlot = document.getElementById("checkoutSlot") ? document.getElementById("checkoutSlot").value : "";
           if (preorderSlot && preorderSlot !== "asap" && window.PreorderTimer && typeof window.PreorderTimer.updateAll === "function") {
             setTimeout(window.PreorderTimer.updateAll, 500);
-          }
-        } catch (e2) { }
-
-        try {
-          var cpEl2 = document.getElementById("checkoutPlace");
-          var csEl2 = document.getElementById("checkoutStreet");
-          var chEl2 = document.getElementById("checkoutHouse");
-          var addrToSave = {
-            place: cpEl2 ? cpEl2.value.trim() : "",
-            street: csEl2 ? csEl2.value.trim() : "",
-            house: chEl2 ? chEl2.value.trim() : ""
-          };
-          if (addrToSave.place || addrToSave.street) {
-            if (window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
-              window.AddressBook.autoAdd(addrToSave);
-            } else {
-              localStorage.setItem("zt_saved_address", JSON.stringify(addrToSave));
-            }
           }
         } catch (e2) { }
 
