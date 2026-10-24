@@ -1,6 +1,12 @@
-/* public/app/core/address-book.js — ADDRESS-BOOK v3
-   v3-фиксы: шторка НЕ закрывается после удаления/сохранения (closest вместо contains,
-   устойчиво к отцепленным узлам); автоподстановки в форме редактирования
+/* public/app/core/address-book.js — ADDRESS-BOOK v4
+   v4-фиксы: (1) шторка реально не закрывается после удаления/сохранения — клик «снаружи»
+   определяется по composedPath() (путь фиксируется на момент диспатча), т.к. closest() по
+   узлу, который renderList() уже отцепил от DOM, не находит #addrBookSheet;
+   (2) в книгу попадает только полный валидный адрес (place+улица из справочника+дом) —
+   черновики с каждого нажатия клавиши больше не плодят записи «Н», «Ну», «С»;
+   (3) удаление последнего адреса не «воскрешает» его из legacy-ключа;
+   (4) при открытии шторки вычищаются записи-мусор из прошлых версий.
+   v3: автоподстановки в форме редактирования
    (datalist улиц по населённому пункту + тариф + валидация улицы);
    вся палитра через CSS-токены Слоя 1 (бренд применяется слоем 2 сам).
    Без MutationObserver: только события + явный refresh. */
@@ -33,7 +39,9 @@
   function write(l) {
     try {
       localStorage.setItem(LS, JSON.stringify(l.slice(0, MAX)));
+      /* v4: пустой список = legacy-ключ тоже очищаем, иначе read() вернёт удалённый адрес обратно */
       if (l.length) localStorage.setItem(LEGACY, JSON.stringify(l[0]));
+      else localStorage.removeItem(LEGACY);
     } catch (e) {}
   }
   function esc(s) {
@@ -56,6 +64,18 @@
   function say(t, i) { if (typeof window.toast === 'function') window.toast(t, i || '📍'); }
   function streetsFor(p) { return (window.AddressModule && window.AddressModule.getStreets) ? window.AddressModule.getStreets(p) : []; }
   function feeFor(p) { return (window.AddressModule && window.AddressModule.getFee) ? (Number(window.AddressModule.getFee(p)) || 0) : 0; }
+  /* v4: улица допустима, если справочника для места нет или она в нём есть (как в чекауте и saveEdit) */
+  function streetOk(place, street) {
+    var AM = window.AddressModule;
+    if (!AM || !AM.isValidStreet || !streetsFor(place).length) return true;
+    return AM.isValidStreet(place, street);
+  }
+  /* v4: убираем мусор прошлых версий (пустая улица, улица-обрывок вне справочника) */
+  function prune() {
+    var l = read();
+    var clean = l.filter(function (a) { return a.place && a.street && streetOk(a.place, a.street); });
+    if (clean.length !== l.length) write(clean);
+  }
 
   var sheet = null, editId = null;
 
@@ -152,11 +172,16 @@
       if (e.target && e.target.getAttribute && e.target.getAttribute('data-abs-f') === 'place') syncPlace();
     });
 
-    /* v3: клик вне — detachment-safe (closest работает по отцепленной цепочке родителей) */
+    /* v4: клик вне. Обработчик шторки уже мог перерисовать список и отцепить e.target от DOM
+       (удаление/сохранение) — closest() по такому узлу #addrBookSheet не найдёт и шторка закроется.
+       composedPath() зафиксирован на момент диспатча, поэтому устойчив к перерисовке. */
     document.addEventListener('click', function (e) {
       if (!sheet || sheet.hidden) return;
+      var path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      var btn = document.getElementById('addrBookBtn');
+      if (path.indexOf(sheet) !== -1 || (btn && path.indexOf(btn) !== -1)) return;
       var t = e.target;
-      if (t && t.closest && t.closest('#addrBookSheet, #addrBookBtn')) return;
+      if (!path.length && t && t.closest && t.closest('#addrBookSheet, #addrBookBtn')) return;
       closeSheet();
     });
     document.addEventListener('keydown', function (e) {
@@ -228,9 +253,11 @@
     renderList();                   /* v3: шторка остаётся открытой */
     say('Адрес сохранён', '✅');
   }
+  /* v4: только законченный адрес: место + улица из справочника + дом.
+     Вызывается после успешного заказа (cart.js), а не с каждым нажатием клавиши. */
   function autoAdd(a) {
     a = norm(a);
-    if (!a.place && !a.street) return;
+    if (!a.place || !a.street || !a.house || !streetOk(a.place, a.street)) return;
     var l = read().filter(function (x) { return x.id !== a.id; });
     l.unshift(a);
     write(l);
@@ -238,7 +265,7 @@
   }
 
   function openSheet() { ensureSheet();
-    document.querySelectorAll('.addr-book-menu').forEach(function (n) { n.remove(); }); /* UI-DEDUP v4 */ stopEdit(); renderList(); sheet.hidden = false; sheet.classList.add('open'); }
+    document.querySelectorAll('.addr-book-menu').forEach(function (n) { n.remove(); }); /* UI-DEDUP v4 */ stopEdit(); prune(); renderList(); sheet.hidden = false; sheet.classList.add('open'); }
   function closeSheet() { if (!sheet) return; sheet.hidden = true; sheet.classList.remove('open'); stopEdit(); }
 
   function init() {
