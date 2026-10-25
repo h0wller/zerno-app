@@ -35,27 +35,14 @@ window.__isTgMiniApp = (function () {
 })();
 
 /* ── Ф5.6.1: iOS gesture-guard (было INLINE #2 index.html, дословно) ── */
-// Блокировка паразитного зума окна в iOS Safari / PWA (защита от вылета WebKit)
-      document.addEventListener(
-        "gesturestart",
-        function (e) {
-          e.preventDefault();
-        },
-        { passive: false },
-      );
-
-      document.addEventListener(
-        "gesturechange",
-        function (e) {
-          e.preventDefault();
-        },
-        { passive: false },
-      );
-
-      document.addEventListener(
-        "gestureend",
-        function (e) {
-          e.preventDefault();
-        },
-        { passive: false },
-      );
+// Блокировка паразитного зума окна в iOS Safari / PWA с исключением для модалки зума меню
+["gesturestart", "gesturechange", "gestureend"].forEach(function (ev) {
+  document.addEventListener(
+    ev,
+    function (e) {
+      if (e.target && e.target.closest && e.target.closest("#itemZoomOverlay")) return;
+      e.preventDefault();
+    },
+    { passive: false }
+  );
+});
