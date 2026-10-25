@@ -179,22 +179,21 @@ app.post('/api/menu/upload', menuGuard, async (req, res) => {
     const cardFileName = `${cleanId}-card.webp`;
     const zoomFileName = `${cleanId}-zoom.webp`;
 
-    // 1. Компактная карточка 600x600 WebP
-    await sharp(buffer)
-  .rotate()
-  .resize(600, 375, { fit: 'cover', position: 'center' }) // 600 / 1.6 = 375
-  .webp({ quality: 80 })
-  .toFile(path.join(dishesDir, cardFileName));
-      
-
-    // 2. Зум высокого разрешения 1200x1200 WebP
+    // 1. Компактная карточка 640x400 WebP (чёткая на 2x/3x экранах)
     await sharp(buffer)
       .rotate()
-      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 86 })
+      .resize(640, 400, { fit: 'cover', position: 'center' })
+      .webp({ quality: 84, smartSubsampling: true })
+      .toFile(path.join(dishesDir, cardFileName));
+
+    // 2. Зум высокого разрешения 1400x1400 WebP
+    await sharp(buffer)
+      .rotate()
+      .resize(1400, 1400, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 90, smartSubsampling: true })
       .toFile(path.join(dishesDir, zoomFileName));
 
-    res.json({ ok: true, url: `/media/dishes/${cardFileName}` });
+    res.json({ ok: true, url: `/media/dishes/${cardFileName}?v=${Date.now()}` });
   } catch (err) {
     console.error('Ошибка upload:', err);
     res.status(500).json({ error: 'Ошибка сохранения изображения' });
