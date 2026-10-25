@@ -71,7 +71,7 @@ function renderMenu() {
       const volStr = fmtVol(p.vol);
       return `<article class="card ${p.on ? '' : 'stopped'}" style="--d:${Math.min(i, 10) * 35}ms" data-item-id="${p.id}">
        <div class="media" style="--tint:${TINT[p.cat] || '#E7ECF0'}">
-                  ${p.img ? `<img src="${p.img}" alt="${esc(p.name)}" data-zoom="${p.img}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="${i < 4 ? 'eager' : 'lazy'}" fetchpriority="${i < 4 ? 'high' : 'auto'}" decoding="async">` : `<span class="em">${p.e || '☕'}</span>`}
+                  ${p.img ? `<img src="${p.img}" alt="${esc(p.name)}" data-zoom="${toZoomSrc(p.img)}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="${i < 4 ? 'eager' : 'lazy'}" fetchpriority="${i < 4 ? 'high' : 'auto'}" decoding="async">` : `<span class="em">${p.e || '☕'}</span>`}
          ${tg}${p.on ? '' : '<span class="stopbadge">СТОП</span>'}
           ${editMode ?`<button class="edBtn" data-ed="${p.id}" title="Редактировать">✏️</button>`: ''}
        </div>
@@ -103,7 +103,11 @@ const a = $('#addCard');
   const a = $('#addCard');
   if (a) a.onclick = () => openEditor(null);
 }
-
+/* Преобразует путь превью карточки (*-card.webp) в полноразмерный (*-zoom.webp) */
+function toZoomSrc(src) {
+  if (!src) return '';
+  return String(src).replace(/-card\.webp(\?.*)?$/i, '-zoom.webp$1');
+}
 /* ── UX и валидация модалки модификаторов (размер, тесто, опции) ── */
 function openItemModifiersModal(product) {
   var modal = document.getElementById('itemModal');
@@ -219,23 +223,45 @@ function openItemModifiersModal(product) {
 
 function openZoom(src, name, price) {
   const w = document.createElement('div');
-    w.id = 'itemZoomOverlay';
+  w.id = 'itemZoomOverlay';
   w.style.cssText = 'position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(16,24,32,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);opacity:0;transition:opacity .25s';
   const card = document.createElement('div');
-  card.style.cssText = 'width:min(430px,94vw);background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.45);transform:scale(.92) translateY(14px);transition:transform .3s cubic-bezier(.2,1.25,.35,1)';
+  card.style.cssText = 'width:min(460px,94vw);background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.45);transform:scale(.92) translateY(14px);transition:transform .3s cubic-bezier(.2,1.25,.35,1)';
+
   const im = new Image();
-  im.src = src; im.alt = name || '';
-  im.style.cssText = 'display:block;width:100%;height:min(62vh,430px);object-fit:cover;background:#E7ECF0';
+  const zoomUrl = toZoomSrc(src);
+  im.decoding = 'async';
+  im.fetchPriority = 'high';
+  // Если по какой-то причине *-zoom.webp нет на диске — откат на исходный src
+  im.onerror = () => {
+    if (im.src !== src && src) {
+      im.onerror = null;
+      im.src = src;
+    }
+  };
+  im.src = zoomUrl;
+  im.alt = name || '';
+  im.style.cssText = 'display:block;width:100%;max-height:min(68dvh,460px);height:auto;object-fit:contain;background:#F3F6F9';
+
   const cap = document.createElement('div');
   cap.style.cssText = 'display:flex;align-items:baseline;gap:10px;padding:14px 18px calc(14px + env(safe-area-inset-bottom))';
   cap.innerHTML = '<b style="flex:1;font:700 16px -apple-system,\'Segoe UI\',Roboto,sans-serif;color:#12303E">' + (name || '') + '</b>' + (price ? '<span style="font:800 15px -apple-system,\'Segoe UI\',Roboto,sans-serif;color:' + ((typeof brand !== 'undefined' && brand === 'delivery') ? '#C03B2A' : '#2E6F8E') + '">' + price + '</span>' : '');
-  card.appendChild(im); card.appendChild(cap);
+  card.appendChild(im);
+  card.appendChild(cap);
+
   const x = document.createElement('button');
   x.setAttribute('aria-label', 'Закрыть');
   x.textContent = '✕';
   x.style.cssText = 'position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px;width:42px;height:42px;border:none;border-radius:50%;background:rgba(255,255,255,.95);color:#12303E;font-size:17px;box-shadow:0 6px 18px rgba(0,0,0,.28)';
-  w.appendChild(card); w.appendChild(x);
-  const close = () => { w.style.opacity = '0'; card.style.transform = 'scale(.92) translateY(14px)'; document.body.style.overflow = ''; setTimeout(() => w.remove(), 260); };
+  w.appendChild(card);
+  w.appendChild(x);
+
+  const close = () => {
+    w.style.opacity = '0';
+    card.style.transform = 'scale(.92) translateY(14px)';
+    document.body.style.overflow = '';
+    setTimeout(() => w.remove(), 260);
+  };
   w.addEventListener('click', e => { if (e.target === w || e.target === x) close(); });
   document.body.style.overflow = 'hidden';
   document.body.appendChild(w);
