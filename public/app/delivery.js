@@ -810,8 +810,11 @@ function promoDisc(sum, info){
 }
 
 window.preorderMode = function () {
-  var h = new Date().getHours();
-  if (h >= 22) return 'tomorrow';
+  // F3.66: время — по Кёнигсбергу (окно close из /api/delivery.info, сезонный график задаёт сервер).
+  var t = (typeof window.getKaliningradTime === 'function') ? window.getKaliningradTime() : null;
+  var h = t ? t.hour : new Date().getHours();
+  var closeH = (deliveryInfo && deliveryInfo.schedule && deliveryInfo.schedule.close) || 22;
+  if (h >= closeH) return 'tomorrow';
   if (h < 11) return 'today';
   return null;
 };

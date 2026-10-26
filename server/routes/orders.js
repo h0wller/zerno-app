@@ -302,8 +302,9 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
 
   // ── Предзаказы и проверка лимитов слота ──
   const now = new Date();
-  const currentHour = now.getHours();
-  const isWorkingHours = currentHour >= DELIVERY.hours[0] && currentHour < DELIVERY.hours[1];
+  // F3.66: единый источник часов работы — Кёнигсберг + сезонный график (как в /api/delivery/info).
+  // Раньше здесь был локальный now.getHours() по таймзоне сервера → рассинхрон с info («открыто» vs 400).
+  const isWorkingHours = getDeliveryHours(now).isOpen;
 
   let isPreorder = b.is_preorder ? 1 : 0;
   let preorderDate = String(b.preorder_date || '').trim();
