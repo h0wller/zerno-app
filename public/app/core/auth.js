@@ -55,8 +55,8 @@
     var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
     if (hint) hint.style.display = 'none';
 
-    var consentRow = modal.querySelector('label:has(input[type="checkbox"]), .consent-row');
-    if (consentRow) consentRow.style.display = 'none';
+    // F3.62: строку согласия в TMA НЕ скрываем — 152-ФЗ требует действия пользователя
+    // в любой среде, включая Mini App. Владелец инжекта #consentRow — admin-extra.js (без изменений).
 
     if (window.__tgUser && window.__tgUser.name) {
       var rn = document.getElementById('regName');
