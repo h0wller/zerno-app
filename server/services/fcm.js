@@ -4,7 +4,7 @@
 
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
-import { db } from '../config.js';
+import { db } from '../db/connection.js';
 let fcmReady = false;
 
 if (process.env.FIREBASE_SA) {

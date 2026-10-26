@@ -13,7 +13,8 @@ import express from 'express';
 import compression from 'compression';
 
 // ── Конфигурация и БД ──
-import { db, PORT, PUBLIC_DIR } from './server/config.js';
+import { PORT, PUBLIC_DIR } from './server/config.js';
+import { db } from './server/db/connection.js';
 // ── Утилиты ──
 import { uid } from './server/utils/id-time.js';
 import {
@@ -106,6 +107,12 @@ app.get('/api/tg/diag', adminGuard, async (req, res) => {
       APP_URL: process.env.APP_URL || null,
       TG_WEBHOOK_SECRET: secret ? 'set (' + secret.length + ' chars)' : 'MISSING',
       NODE_ENV: process.env.NODE_ENV || null,
+    },
+    // F3.60: наличие кодов сотрудников в окружении (значения не наружу).
+    codes_present: {
+      admin: !!process.env.ADMIN_CODE,
+      cashier: !!process.env.CASHIER_CODE,
+      dispatch: !!process.env.DISPATCH_CODE,
     },
   });
 });

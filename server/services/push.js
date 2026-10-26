@@ -3,7 +3,7 @@
 // Уважает notify_tg / notify_web флаги клиента
 
 import webpush from 'web-push';
-import { db } from '../config.js';
+import { db } from '../db/connection.js';
 import { tgSend } from './telegram.js';
 import { sendFcm } from './fcm.js';
 // sendSms импортируем для доступности, но в sendPush не используется

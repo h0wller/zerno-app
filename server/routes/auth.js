@@ -301,6 +301,10 @@ authRouter.post('/api/auth/activate', userGuard, validate(ActivateCodeSchema), (
     registerFail(req);
     return res.status(403).json({ error: 'Неверный код доступа' });
   }
+  // F3.60: админ не понижает себя кодом активации — только «Отключить права» (/api/auth/deactivate, с защитой последнего админа).
+  if (req.user.role === 'admin' && role !== 'admin') {
+    return res.status(409).json({ error: 'Администратор не может понизить себя кодом активации' });
+  }
   pinLocks.delete(lockKey(req));
   db.prepare('UPDATE customers SET role=? WHERE id=?').run(role, req.user.id);
   addHist(req.user.id, role === 'admin' ? '🔓 Выдан доступ администратора' : '🧾 Выдан доступ кассира', 'Система');
