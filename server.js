@@ -123,6 +123,8 @@ app.get('/api/dmenu', (req, res) => res.json({
   items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery'").all().map(item),
 }));
 app.post('/api/menu', adminGuard, (req, res) => {
+  const sec = req.body.section === 'delivery' ? 'delivery' : 'coffee';
+  const maxOrd = db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS m FROM menu WHERE section = ?').get(sec).m;
   const p = req.body; p.id = p.id || uid('p');
   db.prepare('INSERT INTO menu(id,cat,e,name,descr,comp,vol,price,tag,coffee,is_on,img,section,opts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
     p.id, p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
