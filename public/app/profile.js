@@ -446,3 +446,13 @@ window.loadMyOrders = loadMyOrders;
 /* ── Ф5.25: ESM-шимы для кассира (точки штампов, склонения чашек) ── */
 window.stampIcon = stampIcon; /* Ф5.25: dotsHTML в cashier.js */
 window.cupWord = cupWord; /* Ф5.25: тексты списаний/подарков */
+
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest('[data-open-track]');
+  if (!btn) return;
+  if (!btn) return;
+  e.preventDefault();
+  var id = btn.getAttribute('data-open-track');
+  var found = (window.__lastMineOrders || []).find(function (x) { return String(x.id) === String(id); });
+  if (found && typeof window.openOrderTrackModal === 'function') window.openOrderTrackModal(found);
+});
