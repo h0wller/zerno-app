@@ -163,13 +163,13 @@ app.put('/api/menu/:id', menuGuard, (req, res) => {
       return res.status(403).json({ error: 'Доступно только переключение стоп-листа (on)' });
     }
     const onVal = req.body.on ? 1 : 0;
-    db.prepare('UPDATE menu SET on = ? WHERE id = ?').run(onVal, id);
+    db.prepare('UPDATE menu SET is_on = ? WHERE id = ?').run(onVal, id);
     db.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('menu_updated', datetime('now'))").run();
     return res.json({ ok: true, id, on: onVal });
   }
   if (onlyOn) {
     const onVal = req.body.on ? 1 : 0;
-    db.prepare('UPDATE menu SET on = ? WHERE id = ?').run(onVal, id);
+    db.prepare('UPDATE menu SET is_on = ? WHERE id = ?').run(onVal, id);
     db.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('menu_updated', datetime('now'))").run();
     return res.json({ ok: true, id, on: onVal });
   }
