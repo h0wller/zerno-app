@@ -810,8 +810,11 @@ function promoDisc(sum, info){
 }
 
 window.preorderMode = function () {
-  var h = new Date().getHours();
-  if (h >= 22) return 'tomorrow';
+  // F3.66: время — по Кёнигсбергу (окно close из /api/delivery.info, сезонный график задаёт сервер).
+  var t = (typeof window.getKaliningradTime === 'function') ? window.getKaliningradTime() : null;
+  var h = t ? t.hour : new Date().getHours();
+  var closeH = (deliveryInfo && deliveryInfo.schedule && deliveryInfo.schedule.close) || 22;
+  if (h >= closeH) return 'tomorrow';
   if (h < 11) return 'today';
   return null;
 };
@@ -825,7 +828,9 @@ $('#deliveryGrid').addEventListener('change', async function (e) {
   const p = DMENU.find(x => String(x.id) === String(t.dataset.onoff)); if (!p) return;
   p.on = t.checked ? 1 : 0;
   try {
-    await api('/menu/' + p.id, { method: 'PUT', body: p });
+    // F3.68: не-админ (cashier/dispatch) шлёт ТОЛЬКО {on} — иначе серверный PUT /api/menu/:id отдаёт 403
+    const body = (window.me && window.me.role === 'admin') ? p : { on: p.on };
+    await api('/menu/' + p.id, { method: 'PUT', body });
     window.renderDeliveryMenu();
     toast(t.checked ? '«' + esc(p.name) + '» снова в меню' : '«' + esc(p.name) + '» → стоп-лист', t.checked ? '✅' : '⛔');
   } catch (err) { toast(err.message, '⚠️'); await loadDelivery(); }

@@ -276,7 +276,9 @@ $('#grid').addEventListener('change', async e => {
   const on = t.checked ? 1 : 0;
 p.on = on;
 try {
-await api('/menu/' + p.id, { method: 'PUT', body: p });
+// F3.68: не-админ (cashier/dispatch) шлёт ТОЛЬКО {on} — серверный PUT /api/menu/:id отдаёт 403 на любое другое тело
+const body = (window.me && window.me.role === 'admin') ? p : { on };
+await api('/menu/' + p.id, { method: 'PUT', body });
 window.renderMenu();   // локальный рендер из обновлённого MENU — без stale-рефетча
 toast(on ? `«${esc(p.name)}» снова в меню` : `«${esc(p.name)}» → стоп-лист`, on ? '✅' : '⛔');
 } catch (err) {

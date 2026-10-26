@@ -10,6 +10,7 @@ import { cust, addHist, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { nowISO } from '../utils/id-time.js';
 import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
+import { botIntent } from '../utils/bot-nlu.js';
 
 function welcomeKeyboard(c) {
   const rows = [
@@ -389,22 +390,25 @@ export function createTgRouter({ appKb }) {
 
     const lower = text.toLowerCase();
 
-    if (/(оператор|человек|помощь|поддержк|админ|связаться|проблем|жалоб|ошибк|позови)/i.test(lower)) {
+    // F3.71: классификация намерений вынесена в чистый модуль server/utils/bot-nlu.js (юнит-тестируется без БД/сети)
+    const intent = botIntent(lower);
+
+    if (intent === 'support') {
       await sendSupportMenu(chatId);
       return;
     }
 
-    if (/(штамп|бонус|бесплатн|подарок|зерн|зёрн|промокод|баллы|qr)/i.test(lower)) {
+    if (intent === 'bonus') {
       await sendBonusInfo(chatId);
       return;
     }
 
-    if (/(заказ|где курьер|где доставка|доставк|статус заказа)/i.test(lower)) {
+    if (intent === 'orders') {
       await sendOrdersInfo(chatId);
       return;
     }
 
-    if (/(где вы|адрес|находит|как добраться|время работ|режим работ|часы работ|до скольки|со скольки|янтарн)/i.test(lower)) {
+    if (intent === 'address') {
       await tgSend(chatId,
         '📍 <b>Наши заведения в пгт Янтарный:</b>\n\n' +
         '🌊 <b>Кофейня «…и кофе»</b>\n' +
@@ -425,7 +429,7 @@ export function createTgRouter({ appKb }) {
       return;
     }
 
-    if (/(меню|пицц|ролл|кофе|напитк|десерт)/i.test(lower)) {
+    if (intent === 'menu') {
       await sendMenuButtons(chatId);
       return;
     }
