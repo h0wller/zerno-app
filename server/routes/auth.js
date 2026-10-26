@@ -90,6 +90,10 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   const r = createCustomer(finalName, p, pin);
   if (r.err) return res.status(r.code).json({ error: r.err });
 
+  // F3.61: tg-link создаёт профиль только после подтверждения контакта в боте — номер доказан,
+  // consent проставляется сервером. Но если клиент принёс src=QR_SOURCE (сканирование с постера),
+  // источник регистрации сохраняем так же, как в /api/auth/register (иначе бонус за QR не начислится).
+  if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
   db.prepare('UPDATE customers SET tg=?, verified=1, consent=? WHERE id=?')
     .run(tgId, nowISO() + ' v1', r.customer.id);
   grantWelcome(r.customer.id, 'Telegram');
