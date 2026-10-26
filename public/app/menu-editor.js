@@ -163,3 +163,5 @@ document.getElementById('editToggle').onclick=function(){
 };
 
 })();
+function canToggleStopList() { return !!(window.me && ['admin', 'cashier', 'dispatch'].includes(window.me.role)); }
+window.canToggleStopList = canToggleStopList;
