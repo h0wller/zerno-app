@@ -245,3 +245,5 @@ window.enablePush = enablePush;
 window.togglePushHint = togglePushHint;
 window.refreshPushBtn = refreshPushBtn;
 window.urlBase64ToUint8Array = urlBase64ToUint8Array;
+
+window.getDevId = getDevId;
