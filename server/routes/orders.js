@@ -1,3 +1,32 @@
+
+export function getKaliningradDateParts(date = new Date()) {
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Kaliningrad',
+    month: 'numeric',
+    weekday: 'short',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(date).map((p) => [p.type, p.value]));
+  const month = Number(parts.month);
+  const hour = Number(parts.hour) % 24;
+  const minute = Number(parts.minute) || 0;
+  const wkMap = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 };
+  const dayOfWeek = wkMap[parts.weekday] ?? date.getUTCDay();
+  return { month, dayOfWeek, hour, minute };
+}
+
+export function getDeliveryHours(date = new Date()) {
+  const { month, dayOfWeek, hour, minute } = getKaliningradDateParts(date);
+  const isSummer = month >= 5 && month <= 9;
+  const isMonThu = dayOfWeek >= 1 && dayOfWeek <= 4;
+  const open = DELIVERY.schedule.default.open;
+  const close = (!isSummer && isMonThu) ? DELIVERY.schedule.winter.close : DELIVERY.schedule.default.close;
+  const curMin = hour * 60 + minute;
+  const isOpen = curMin >= open * 60 && curMin < close * 60;
+  return { open, close, isOpen };
+}
 function _getKlgHour() {
   try {
     const str = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Kaliningrad', hour: 'numeric', hour12: false }).format(new Date());
