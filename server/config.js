@@ -1,7 +1,8 @@
+// server/config.js — ТОЛЬКО константы окружения (Fix-env, F3.59-fix).
+// Без side-effect: импорт кодов/портов не открывает SQLite.
+// db берите напрямую из './db/connection.js' там, где он нужен.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { db } from './db/connection.js';
-export { db };
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(configDir, '..');

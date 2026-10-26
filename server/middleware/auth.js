@@ -1,6 +1,6 @@
 // server/middleware/auth.js
 // Модуль 03: authUser и guards. db — из того же места, откуда его берёт server.js
-import { db } from '../config.js';
+import { db } from '../db/connection.js';
 
 export function authUser(req) {
   const t = (req.header('Authorization') || '').replace('Bearer ', '').trim();

@@ -37,7 +37,8 @@ function _getKlgHour() {
 }
 /* server/routes/orders.js — module-07: заказы доставки + delivery-конфиг */
 import { Router } from 'express';
-import { db, WEBAPP_URL } from '../config.js';
+import { WEBAPP_URL } from '../config.js';
+import { db } from '../db/connection.js';
 import { userGuard, adminGuard, dispatchGuard } from '../middleware/auth.js';
 import { logEv } from '../domain/helpers.js';
 import { nowISO, uid } from '../utils/id-time.js';
