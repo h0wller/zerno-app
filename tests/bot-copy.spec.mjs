@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { tgSend } from '../../server/services/telegram.js';
+import { tgSend } from '../server/services/telegram.js';
 
 test('tgSend handles long messages and safe truncation', async () => {
   const longText = 'A'.repeat(5000);

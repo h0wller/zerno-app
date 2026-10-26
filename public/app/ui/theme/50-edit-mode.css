@@ -53,6 +53,8 @@
 body.editing .card .tag{
   display: none
 }
+.card.dragging { opacity: .5; border-style: dashed; }
+.card.drag-over { outline: 3px solid var(--flame); outline-offset: 2px; }
 /* ── Блокировка скролла фона и скрытие плавающих FAB при открытой корзине ── */
 body.cart-open {
   overflow: hidden;

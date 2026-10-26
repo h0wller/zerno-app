@@ -1,4 +1,3 @@
-
 export function getKaliningradDateParts(date = new Date()) {
   const fmt = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Europe/Kaliningrad',
@@ -16,13 +15,14 @@ export function getKaliningradDateParts(date = new Date()) {
   const dayOfWeek = wkMap[parts.weekday] ?? date.getUTCDay();
   return { month, dayOfWeek, hour, minute };
 }
-
 export function getDeliveryHours(date = new Date()) {
   const { month, dayOfWeek, hour, minute } = getKaliningradDateParts(date);
   const isSummer = month >= 5 && month <= 9;
   const isMonThu = dayOfWeek >= 1 && dayOfWeek <= 4;
+  
   const open = DELIVERY.schedule.default.open;
   const close = (!isSummer && isMonThu) ? DELIVERY.schedule.winter.close : DELIVERY.schedule.default.close;
+  
   const curMin = hour * 60 + minute;
   const isOpen = curMin >= open * 60 && curMin < close * 60;
   return { open, close, isOpen };
@@ -31,7 +31,7 @@ function _getKlgHour() {
   try {
     const str = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Kaliningrad', hour: 'numeric', hour12: false }).format(new Date());
     return parseInt(str, 10);
-  } catch (_) {
+  } catch (e) {
     return (new Date().getUTCHours() + 2) % 24;
   }
 }
@@ -49,8 +49,13 @@ const ordersRouter = Router();
 
 /* ── конфиг доставки ── */
 const DELIVERY = {
-  hours: [11, 22], eta: 45, slotStep: 30, slotDays: 2,
-  maxPreordersPerSlot: 2, // Лимит предзаказов на один 30-минутный интервал
+  hours: [11, 22], // Дефолтные часы (используются как fallback)
+  schedule: {
+    default: { open: 11, close: 22 },
+    winter: { open: 11, close: 21 } // Зимний график: пн-чт закрываемся в 21:00
+  },
+  eta: 45, slotStep: 30, slotDays: 2,
+  maxPreordersPerSlot: 2,
   pickupAddr: 'пгт Янтарный, ул. Советская, 38А', pickupDiscount: 0.10,
   zones: [
     { fee: 200, places: ['Янтарный', 'Покровское', 'Синявино'] },
@@ -179,9 +184,11 @@ ordersRouter.get('/api/delivery/info', (req, res) => {
   `).all(DELIVERY.maxPreordersPerSlot);
 
   const busySlots = busyRows.map(r => r.slot);
-
+  const hours = getDeliveryHours();
   res.json({ 
     ...DELIVERY, 
+    schedule: { open: hours.open, close: hours.close },
+    today: { isOpen: hours.isOpen, open: hours.open, close: hours.close },
     busySlots,
     weekPromo: weekPromo(), 
     pizzaMonth: pizzaMonth() 

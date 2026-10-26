@@ -126,11 +126,24 @@ app.post('/api/menu', adminGuard, (req, res) => {
   const sec = req.body.section === 'delivery' ? 'delivery' : 'coffee';
   const maxOrd = db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS m FROM menu WHERE section = ?').get(sec).m;
   const p = req.body; p.id = p.id || uid('p');
-  db.prepare('INSERT INTO menu(id,cat,e,name,descr,comp,vol,price,tag,coffee,is_on,img,section,opts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
-    p.id, p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
-    p.vol || '', String(p.price ?? '0'), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null,
-    p.section || 'coffee', JSON.stringify(p.opts || []));
-  touch(); res.json({ ok: true, id: p.id });
+db.prepare('INSERT INTO menu(id,cat,e,name,descr,comp,vol,price,tag,coffee,is_on,img,section,opts,sort_order) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
+  p.id, p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
+  p.vol || '', String(p.price ?? '0'), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null,
+  p.section || 'coffee', JSON.stringify(p.opts || []), maxOrd);  touch(); res.json({ ok: true, id: p.id });
+});
+app.put('/api/menu/reorder', adminGuard, (req, res) => {
+  const sec = req.body.brand === 'delivery' ? 'delivery' : 'coffee';
+  const ids = Array.isArray(req.body.ids) ? req.body.ids.map(String) : [];
+  if (!ids.length) return res.status(400).json({ error: 'Пустой порядок' });
+  const upd = db.prepare('UPDATE menu SET sort_order = ? WHERE id = ? AND section = ?');
+  const changed = db.transaction((list) => {
+    let n = 0;
+    list.forEach((id, i) => { n += upd.run(i + 1, id, sec).changes; });
+    return n;
+  })(ids);
+  if (changed !== ids.length) return res.status(409).json({ error: 'Не все позиции найдены в секции' });
+  touch();
+  res.json({ ok: true });
 });
 app.put('/api/menu/:id', menuGuard, (req, res) => {
   const id = String(req.params.id || '').trim();
@@ -144,13 +157,13 @@ app.put('/api/menu/:id', menuGuard, (req, res) => {
     }
     const onVal = req.body.on ? 1 : 0;
     db.prepare('UPDATE menu SET on = ? WHERE id = ?').run(onVal, id);
-    setMenuUpdatedAt();
+    db.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('menu_updated', datetime('now'))").run();
     return res.json({ ok: true, id, on: onVal });
   }
   if (onlyOn) {
     const onVal = req.body.on ? 1 : 0;
     db.prepare('UPDATE menu SET on = ? WHERE id = ?').run(onVal, id);
-    setMenuUpdatedAt();
+    db.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('menu_updated', datetime('now'))").run();
     return res.json({ ok: true, id, on: onVal });
   }
   const p = req.body;

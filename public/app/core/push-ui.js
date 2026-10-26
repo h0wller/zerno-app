@@ -239,11 +239,24 @@ function urlBase64ToUint8Array(s) {
       };
 
       
-      
-/* ── Ф5.6.2g: ESM-шимы ── */
+      /* Ф5.6.2g-fix: стабильный идентификатор устройства (контракт window.getDevId).
+Ранее функция не была объявлена — window.getDevId = getDevId бросал
+ReferenceError на top-level и ронял весь бандл (push-ui.js:249). */
+function getDevId() {
+  try {
+    let id = localStorage.getItem('zt_dev');
+    if (!id) {
+      id = 'dev-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      localStorage.setItem('zt_dev', id);
+    }
+    return id;
+  } catch (e) {
+    return 'dev-unknown';
+  }
+}
+/* ── Ф5.6.2g: ESM- shimy ── */
 window.enablePush = enablePush;
 window.togglePushHint = togglePushHint;
 window.refreshPushBtn = refreshPushBtn;
 window.urlBase64ToUint8Array = urlBase64ToUint8Array;
-
 window.getDevId = getDevId;

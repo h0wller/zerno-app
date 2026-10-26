@@ -1,7 +1,7 @@
 /* public/app/menu.js — F2.6a: гостевое меню — рейл, поиск, сетка, редактор-зум.
    Без IIFE: fix-views.js оборачивает window.renderMenu(499) и window.renderRail(502),
    читает CATS лексически (406). Все объявления — top-level var/function. */
-
+import { attachGridDnD, canDragMenu, dragAttr } from './core/dnd.js';
 window.cat = 'coffee'; /* Ф5.6-финал шаг 4-fix: menu-editor читает cat голым */
 window.query = ''; /* Ф5.6-финал шаг 4-fix2: menu-editor пишет query голым */
 /* F5.8h-fix: кофейный пул без delivery-секции (поиск и сетка не матчат чужой бренд) */
@@ -69,8 +69,8 @@ function renderMenu() {
       const tg = p.tag ? `<span class="tag ${p.tag === 'Хит' ? 'hit' : p.tag === 'New' ? 'new' : 'vegan'}">${esc(p.tag)}</span>` : '';
       const priceStr = fmtMulti(p.price, p);
       const volStr = fmtVol(p.vol);
-      return `<article class="card ${p.on ? '' : 'stopped'}" style="--d:${Math.min(i, 10) * 35}ms" data-item-id="${p.id}">
-       <div class="media" style="--tint:${TINT[p.cat] || '#E7ECF0'}">
+      return `<article class="card ${p.on ? '' : 'stopped'}" style="--d:${Math.min(i, 10) * 35}ms" data-item-id="${p.id}"${dragAttr()}>
+             <div class="media" style="--tint:${TINT[p.cat] || '#E7ECF0'}">
                   ${p.img ? `<img src="${p.img}" alt="${esc(p.name)}" data-zoom="${p.img}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="${i < 4 ? 'eager' : 'lazy'}" fetchpriority="${i < 4 ? 'high' : 'auto'}" decoding="async">` : `<span class="em">${p.e || '☕'}</span>`}
          ${tg}${p.on ? '' : '<span class="stopbadge">СТОП</span>'}
           ${editMode ?`<button class="edBtn" data-ed="${p.id}" title="Редактировать">✏️</button>`: ''}
@@ -308,3 +308,14 @@ if (typeof window.alignRailWithCard === 'function') setTimeout(window.alignRailW
 window.renderRail = renderRail;
 window.openZoom = openZoom;
 window.openItemModifiersModal = openItemModifiersModal;
+
+/* ── F3.70: DnD порядка кофейни ── */
+attachGridDnD(document.getElementById('grid'), {
+  canDrag: canDragMenu,
+  getIds: () => coffeePool().map(p => p.id),
+  onReorder: async (ids) => {
+    await api('/menu/reorder', { method: 'PUT', body: { brand: 'coffee', ids } });
+    await loadMenu();
+  },
+  rerender: () => renderMenu()
+});

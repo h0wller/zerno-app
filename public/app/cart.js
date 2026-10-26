@@ -1279,68 +1279,6 @@ function renderCartBase() {
     }, 100);
   });
 
-  /* ── ScrollSpy для подсветки активной категории в #deliveryRail при прокрутке витрины ── */
-  (function initDeliveryRailScrollSpy() {
-    var spyTick = false;
-    function resolveCardCat(card) {
-      if (!card) return null;
-      var direct = card.getAttribute("data-cat") || card.getAttribute("data-cat-anchor");
-      if (direct) return direct;
-      var addBtn = card.querySelector("[data-add]");
-      var id = addBtn ? addBtn.getAttribute("data-add") : card.getAttribute("data-item-id");
-      if (id && typeof window.DMENU !== "undefined" && Array.isArray(window.DMENU)) {
-        var prod = window.DMENU.find(function (x) { return String(x.id) === String(id); });
-        if (prod && prod.cat) {
-          card.setAttribute("data-cat", prod.cat);
-          return prod.cat;
-        }
-      }
-      return null;
-    }
-
-    function syncRailActiveOnScroll() {
-      spyTick = false;
-      if (!checkIsDelivery()) return;
-      var rail = document.getElementById("deliveryRail");
-      var grid = document.getElementById("deliveryGrid");
-      if (!rail || !grid) return;
-
-      var cards = Array.from(grid.querySelectorAll("[data-cat-anchor], .cat-section[data-cat], .card:not(.skeleton-card)")).filter(function (el) {
-        return el.offsetParent !== null;
-      });
-      if (!cards.length) return;
-
-      var topThreshold = 160;
-      var currentCat = null;
-      for (var i = 0; i < cards.length; i++) {
-        var r = cards[i].getBoundingClientRect();
-        if (r.bottom > 90 && r.top <= topThreshold) {
-          currentCat = resolveCardCat(cards[i]);
-          if (currentCat) break;
-        }
-      }
-      if (!currentCat && cards.length) {
-        currentCat = resolveCardCat(cards[0]);
-      }
-      if (currentCat) {
-        rail.querySelectorAll("button").forEach(function (btn) {
-          var bCat = btn.getAttribute("data-dcat") || btn.getAttribute("data-cat") || btn.dataset.dcat || btn.dataset.cat;
-          if (bCat) {
-            btn.classList.toggle("on", bCat === currentCat);
-          }
-        });
-      }
-    }
-
-    window.__syncDeliveryScrollSpy = syncRailActiveOnScroll;
-    window.addEventListener("scroll", function () {
-      if (!spyTick) {
-        spyTick = true;
-        requestAnimationFrame(syncRailActiveOnScroll);
-      }
-    }, { passive: true });
-  })();
-
   /* ── Спринт 3, Задача 3: Модалка подтверждения и Live Tracking заказа ── */
   var trackPollTimer = null;
   var activeTrackOrder = null;
