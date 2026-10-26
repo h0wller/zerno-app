@@ -112,15 +112,15 @@ app.get('/api/tg/diag', adminGuard, async (req, res) => {
 
 /* ── меню ── */
 app.get('/api/menu', (req, res) => res.json({
-  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee'").all().map(item),
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee' ORDER BY sort_order ASC, id ASC").all().map(item),
   updatedAt: getMeta(),
 }));
 app.get('/api/menu/all', menuGuard, (req, res) => res.json({
-  items: db.prepare('SELECT * FROM menu').all().map(item),
+  items: db.prepare('SELECT * FROM menu ORDER BY sort_order ASC, id ASC').all().map(item),
   updatedAt: getMeta(),
 }));
 app.get('/api/dmenu', (req, res) => res.json({
-  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery'").all().map(item),
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery' ORDER BY sort_order ASC, id ASC").all().map(item),
 }));
 app.post('/api/menu', adminGuard, (req, res) => {
   const sec = req.body.section === 'delivery' ? 'delivery' : 'coffee';
