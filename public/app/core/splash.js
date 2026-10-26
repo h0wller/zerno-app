@@ -140,7 +140,7 @@
           '<div class="spBtns">' +
             '<button type="button" class="spBtn spPizza" data-go="delivery" style="--sp-bg:#F6EEE1;--sp-ink:#3A2A1C;--sp-accent:#C03B2A">' +
               '<span class="em"><img src="/friday-logo.svg" alt="Пятница" width="200" height="56"></span>' +
-              '<span class="bt">«Пятница»</span>' +
+              '<span class="bt">Пятница</span>' +
               '<small>доставка пиццы и роллов</small>' +
             '</button>' +
             '<button type="button" class="spBtn spCoffee" data-go="coffee" style="--sp-bg:#FFFFFF;--sp-ink:#123A6B;--sp-accent:#3E8FD0">' +
