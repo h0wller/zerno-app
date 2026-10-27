@@ -9,7 +9,9 @@ export const DEFAULT_BONUS_DAYS = 30;
 export const DEFAULT_BONUS_CFG = {
   days: DEFAULT_BONUS_DAYS,
   kinds: {
-    signup: { coffee: 0, delivery: 0 },
+    // F3.64: регистрация по умолчанию даёт 10 штампов и бесплатную первую доставку
+    // (скидка промокодом равна максимальной зоне доставки — 1100 ₽, см. DELIVERY.zones).
+    signup: { coffee: 10, delivery: 1100 },
     qr: { coffee: 0, delivery: 0 },
     install: { coffee: 0, delivery: 0 },
   },
