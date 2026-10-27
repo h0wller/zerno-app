@@ -67,6 +67,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await expect(page.locator('#regName')).toHaveValue('Tg User');
     await page.fill('#regPhone', '+7 9' + String(Date.now()).slice(-9));
     await page.fill('#regPin', '1234');
+    await page.check('#consentBox'); // 152-ФЗ: без галочки регистрация в TMA не уходит на сервер
     await page.click('#regBtn');
     await expect(page.locator('.toast', { hasText: 'Подтвердите номер в боте' })).toBeVisible();
     await page.click('#regBtn');

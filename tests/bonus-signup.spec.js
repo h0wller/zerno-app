@@ -9,12 +9,13 @@ test.describe('Signup Bonuses Suite (F3.64)', () => {
     });
     await page.goto('/?brand=delivery');
     const card = page.locator('#deliveryGrid .card').first();
+    await card.locator('.opts button', { hasText: '35 см' }).first().click({ timeout: 10000 });
     await card.locator('button', { hasText: 'Добавить' }).first().click();
+    await page.locator('#cartFab').click();
     await page.evaluate(() => {
       cart.forEach((c) => { c.qty = 10; });
       window.renderCart();
     });
-    await page.locator('#cartFab').click();
     await expect(page.locator('#deliveryPromoBar')).toHaveCount(0);
     await expect(page.locator('#cartPanel')).not.toContainText('Подарок добавлен');
     await expect(page.locator('#cartPanel')).not.toContainText('бесплатно от');
