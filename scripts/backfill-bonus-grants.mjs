@@ -1,3 +1,4 @@
+/* eslint-env node */
 import { db } from '../server/db/connection.js';
 
 const kinds = ['signup', 'qr', 'install'];
