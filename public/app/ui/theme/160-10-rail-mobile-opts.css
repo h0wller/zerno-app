@@ -180,3 +180,7 @@
   width: 100%;
 }
 
+
+#deliveryGrid .card .opts button {
+  min-height: 40px;
+}
