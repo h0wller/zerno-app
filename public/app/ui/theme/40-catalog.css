@@ -1,0 +1,35 @@
+/* ── Сабфильтры каталога (.subchip) ── */
+.subchip:active {
+  transform: scale(0.95);
+}
+
+.placebox{
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+  background: #fff;
+  font-size: 12.5px;
+  color: var(--soft);
+  line-height: 1.5;
+}
+.placebox b{
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.skeleton-card{
+  pointer-events: none;
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #EDF2F6 25%, #F7FAFC 50%, #EDF2F6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+.skeleton-line {
+  background: linear-gradient(90deg, #EDF2F6 25%, #F7FAFC 50%, #EDF2F6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 8px;
+}

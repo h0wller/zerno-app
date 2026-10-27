@@ -1,0 +1,156 @@
+/* public/app/core/promo.js — Ф5.7: кластер "promo" из legacy-core.js (вербатим, порядок сохранён). Top-level = global. */
+/* ── промокоды ── */
+      $("#promoBtn").onclick = async () => {
+        const code = $("#promoInput").value.trim();
+        if (!code) return toast("Введите промокод", "🎟");
+        try {
+          const r = await api("/promo/redeem", {
+            method: "POST",
+            body: { code },
+          });
+          me = r.customer;
+          renderBonus();
+          renderProfile();
+          confetti();
+          toast(r.msg, "🎉");
+          $("#promoInput").value = "";
+        } catch (e) {
+          toast(e.message, "⚠️");
+        }
+      };
+
+      $("#promoToggle").onclick = () => {
+        $("#promoModal").classList.add("show");
+        syncOverlay();
+        loadPromos();
+        window.loadWeekPromo();
+        loadBonuses();
+      };
+
+      /* Бонусы (админ): каждое событие отдельно для кофейни (штампы) и доставки (скидка ₽). 0 = выключено. */
+      async function loadBonuses() {
+        if (!$("#bzSave")) return;
+        try {
+          const d = await api("/admin/bonuses");
+          document.querySelectorAll("[data-bz]").forEach((el) => {
+            const [kind, brand] = el.dataset.bz.split(":");
+            el.value = (d.kinds && d.kinds[kind] && d.kinds[kind][brand]) || 0;
+          });
+          $("#bzDays").value = d.days || 30;
+        } catch (e) {
+          /* не админ или сервер недоступен — панель остаётся с нулями */
+        }
+      }
+      if ($("#bzSave")) {
+        $("#bzSave").onclick = async () => {
+          const kinds = {};
+          document.querySelectorAll("[data-bz]").forEach((el) => {
+            const [kind, brand] = el.dataset.bz.split(":");
+            kinds[kind] = kinds[kind] || {};
+            kinds[kind][brand] = +el.value || 0;
+          });
+          try {
+            await api("/admin/bonuses", {
+              method: "PUT",
+              body: { kinds: kinds, days: +$("#bzDays").value || 30 },
+            });
+            toast("Бонусы сохранены", "🎁");
+          } catch (e) {
+            toast(e.message, "⚠️");
+          }
+        };
+      }
+      function closePromo() {
+        $("#promoModal").classList.remove("show");
+        syncOverlay();
+      }
+      $("#promoClose").onclick = closePromo;
+
+      $("#pmList").addEventListener("click", async (e) => {
+        const t = e.target.closest("[data-pt]"),
+          d = e.target.closest("[data-pd]");
+        if (t) {
+          await api("/promos/" + t.dataset.pt + "/toggle", { method: "POST" });
+          loadPromos();
+        }
+        if ((d) && (confirm("Удалить промокод?"))) {
+            await api("/promos/" + d.dataset.pd, { method: "DELETE" });
+            loadPromos();
+          }
+      });
+
+      $("#pmCreate").onclick = async () => {
+        const body = {
+          code: $("#pmCode").value,
+          kind: $("#pmKind").value,
+          value: +$("#pmValue").value || 1,
+          days: +$("#pmDays").value || 0,
+          maxuses: +$("#pmMax").value || 0,
+        };
+        try {
+          await api("/promos", { method: "POST", body });
+          $("#pmCode").value = "";
+          loadPromos();
+          toast("Промокод создан — делитесь кодом!", "🎟");
+        } catch (e) {
+          toast(e.message, "⚠️");
+        }
+      };
+
+      async function loadWeekPromo() {
+        try {
+          const d = await fetch(API_BASE + "/api/delivery/info").then((r) =>
+            r.json(),
+          );
+          const w = d.weekPromo || {};
+          $("#wpText").value = w.text || "";
+          $("#wpThreshold").value = w.threshold || 0;
+          $("#wpGift").value = w.gift || "";
+          $("#wpUntil").value = w.until ? w.until.slice(0, 10) : "";
+          $("#pmName").value = (d.pizzaMonth && d.pizzaMonth.name) || "";
+          $("#pmOn").checked = !!d.pizzaMonth;
+        } catch (e) {}
+      }
+
+      $("#wpSave").onclick = async () => {
+        try {
+          await api("/admin/weekpromo", {
+            method: "PUT",
+            body: {
+              text: $("#wpText").value.trim(),
+              threshold: +$("#wpThreshold").value || 0,
+              gift: $("#wpGift").value.trim(),
+              until: $("#wpUntil").value
+                ? new Date($("#wpUntil").value + "T23:59:59").toISOString()
+                : null,
+              push: $("#wpPush").checked,
+            },
+          });
+          $("#wpPush").checked = false;
+          toast("Пятничный подарок сохранён", "🍕");
+          loadDelivery();
+        } catch (e) {
+          toast(e.message, "⚠️");
+        }
+      };
+
+      $("#pmSave").onclick = async () => {
+        try {
+          await api("/admin/weekpromo", {
+            method: "PUT",
+            body: {
+              pmName: $("#pmName").value.trim(),
+              pmOn: $("#pmOn").checked,
+            },
+          });
+          toast("Пицца месяца сохранена", "🍕");
+          loadDelivery();
+        } catch (e) {
+          toast(e.message, "⚠️");
+        }
+      };
+
+      
+/* ── Ф5.6.2c: ESM-шим: явные window-экспорты для классик-потребителей ── */
+window.closePromo = closePromo;
+window.loadWeekPromo = loadWeekPromo;

@@ -1,0 +1,184 @@
+/* public/app/cashier.js — F2.3: кассир — поиск гостя, штампы, списание, журнал. */
+var found = null;
+
+function dotsHTML(u, last) {
+  let h = '';
+  for (let i = 0; i < 10; i++)
+    h += `<span class="cdot ${i < u.stamps ? 'f' : ''} ${i === last ? 'last' : ''}">${i < u.stamps ? stampIcon(i) : ''}</span>`;
+  return h;
+}
+
+function hrow(h) {
+  return `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`;
+}
+
+function showCust(u, last = null) {
+  found = u;
+  $('#custCard').classList.add('show');
+  $('#custInit').textContent = (u.name[0] || 'Г').toUpperCase();
+  $('#custName').textContent = u.name;
+  $('#custPhone').textContent = u.phone + ' · профиль по номеру';
+  $('#custDots').innerHTML = dotsHTML(u, last);
+  $('#custNote').textContent = `Штампов: ${u.stamps} из 10` + (u.free ? ` · бесплатных кофе: ${u.free}` : '');
+  const fb = $('#custFree');
+  if (fb) { fb.hidden = u.free < 1; const fn = $('#custFreeN'); if (fn) fn.textContent = u.free; }
+  $('#custHist').innerHTML = (u.history || []).slice(0, 4).map(hrow).join('') || '<div class="hmini">История пуста</div>';
+  $('#giveStampBtn').textContent = u.stamps === 9
+    ? '☕ Пробить 10-й штамп → кофе в подарок'
+    : `🫘 Пробить штамп · будет ${u.stamps + 1} из 10`;
+  $('#redeemBtn').hidden = u.free === 0;
+  renderBonus();
+}
+
+$('#findBtn').onclick = async () => {
+  let q = $('#findInput').value.trim();
+  const clean = q.replace(/\D/g, '');
+  if (clean.length >= 7) q = clean.slice(-10);
+  try {
+    const r = await api('/staff/customers?search=' + encodeURIComponent(q));
+    if (!r.customers || !r.customers.length) {
+      return toast('Гость не найден. Создайте профиль → «＋ Новый гость»', '🔍');
+    }
+    if (r.customers.length > 1) {
+      toast('Найдено несколько — показан первый', 'ℹ️');
+    }
+    showCust(r.customers[0]);
+  } catch (e) { 
+    toast(e.message, '⚠️'); 
+  }
+};
+
+$('#findInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('#findBtn').click(); });
+
+$('#giveStampBtn').onclick = async () => {
+  if (!found) return;
+  try {
+    const r = await api('/staff/stamp', { method: 'POST', body: { id: found.id } });
+    found = r.customer;
+    showCust(found, r.ten ? -1 : found.stamps - 1);
+    renderLog();
+    if (r.ten) confetti();
+    toast(r.msg, r.ten ? '🎉' : '🫘');
+  } catch (e) { toast(e.message, '⚠️'); }
+};
+
+$('#redeemBtn').onclick = async () => {
+  if (!found) return;
+  try {
+    const r = await api('/staff/redeem', { method: 'POST', body: { id: found.id } });
+    found = r.customer;
+    showCust(found);
+    renderLog();
+    renderProfile();
+    toast('Бесплатный кофе списан', '🎁');
+  } catch (e) { toast(e.message, '⚠️'); }
+};
+
+const toggleNgModal = () => {
+  const c = $('#ngCard');
+  if (!c) return;
+  c.hidden = !c.hidden;
+  if (!c.hidden) {
+    const f = $('#ngName');
+    if (f) f.focus();
+  }
+};
+$('#newGuestBtn').onclick = toggleNgModal;
+const ng2 = $('#newGuestBtn2');
+if (ng2) ng2.onclick = toggleNgModal;
+
+$('#ngCancel').onclick = () => { $('#ngCard').hidden = true; };
+
+$('#ngSave').onclick = async () => {
+  const name = $('#ngName').value.trim(), phone = $('#ngPhone').value;
+  if (name.length < 2) return toast('Введите имя гостя', '✍️');
+  if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
+  try {
+    const r = await api('/staff/customers', { method: 'POST', body: { name, phone } });
+    $('#ngCard').hidden = true;
+    $('#ngName').value = '';
+    $('#ngPhone').value = '';
+    showCust(r.customer);
+    renderLog();
+    toast(`Профиль создан: ${esc(name)}. Можно начислять штампы`, '✅');
+  } catch (e) {
+    if (e.code === 409 || (e.code === 400 && /exists/i.test(e.message || ''))) { /* Ф5.24: exists-fallthrough сервера */
+      try {
+        const f = await api('/staff/customers?search=' + encodeURIComponent(phone));
+        if (f.customers.length) {
+          $('#ngCard').hidden = true;
+          showCust(f.customers[0]);
+          return toast(`Профиль уже есть по этому номеру: ${esc(f.customers[0].name)}`, '🔔');
+        }
+      } catch (_) {}
+    }
+    toast(e.message, '⚠️');
+  }
+};
+
+async function renderLog() {
+  if (typeof window.loadPending === 'function') window.loadPending();   // ← вне try
+  try {
+    const r = await api('/staff/log?scope=coffee');
+    const rows = r.log || [];
+    $('#cashLog').innerHTML = rows.length
+      ? rows.map(l =>
+          `<div class="logrow cashlog"><span class="lt">${esc(l.t)}</span><span class="la">${esc(l.w)} — ${esc(l.a)}</span></div>`
+        ).join('')
+      : '<div class="hmini">Журнал пуст</div>';
+
+    const h = $('#cashLog').previousElementSibling;
+    if (h && h.tagName === 'H4') h.style.display = '';
+    if (typeof window.filterCashLog === 'function') window.filterCashLog();
+  } catch (e) {
+    $('#cashLog').innerHTML = '';
+  }
+}
+
+function cashierClean(){
+  var ng2 = document.getElementById('newGuestBtn2');
+  if (ng2) ng2.style.display = 'none';
+}
+
+// Наблюдатель привязан СТРОГО к #cashierView, не перегружая весь DOM приложения
+(function initCashierObserver() {
+  var cv = document.getElementById('cashierView');
+  if (cv && typeof MutationObserver !== 'undefined') {
+    new MutationObserver(function() {
+      if (!cv.hidden) cashierClean();
+    }).observe(cv, { attributes: true, attributeFilter: ['hidden'] });
+  }
+})();
+
+showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return _sc(u,last);};})(showCust);
+
+(function(){
+  if(document.getElementById('redeemPick'))return;
+  var m=document.createElement('div');m.id='redeemPick';
+  m.innerHTML='<div class="omCard" style="max-width:420px"><button type="button" class="omClose">✕</button><h3 style="margin:0 0 12px">🎁 Какой кофе списать?</h3><div id="rpList" style="display:grid;gap:8px"></div></div>';
+  document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.omClose'))m.classList.remove('show');});
+  document.getElementById('rpList').innerHTML=['Эспрессо','Американо','Капучино','Латте','Флэт уайт','Батч брю'].map(function(n){return '<button type="button" class="btn ghost" data-rp="'+n+'" style="width:100%">'+n+'</button>';}).join('');
+  m.addEventListener('click',async function(e){
+    var b=e.target.closest('[data-rp]');if(!b)return;
+    var id=window.__foundId;if(!id)return toast('Гость не найден','⚠️');
+    try{var r=await api('/staff/redeem',{method:'POST',body:{id:id,item:b.dataset.rp}});
+      m.classList.remove('show');toast('Списано: '+b.dataset.rp,'🎁');
+      try{showCust(r.customer);}catch(e2){}
+    }catch(err){toast(err.message,'⚠️');}
+  });
+  var rb=document.getElementById('redeemBtn');
+  if(rb)rb.addEventListener('click',function(e){
+    e.stopImmediatePropagation();e.preventDefault();
+    document.getElementById('redeemPick').classList.add('show');
+  },true);
+})();
+
+(function(){
+window.renderLog = renderLog; /* Ф5.6-финал шаг 2-fix: голый вызов из catalog setMode */
+})();
+/* ── Ф5.8f: ESM-шимы: scanner.js/views.js/cashier-card/admin-extra ── */
+window.showCust = showCust;
+window.dotsHTML = dotsHTML;
+window.hrow = hrow;
+window.cashierClean = cashierClean;

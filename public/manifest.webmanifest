@@ -1,0 +1,31 @@
+{
+  "name": "Пятница «…и кофе» — доставка и кофейня",
+  "short_name": "Пятница «…и кофе»",
+  "description": "Доставка «Пятница» и кофейня «…и кофе»: меню, заказы и бонусы в одном приложении.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#F5F2EC",
+  "theme_color": "#101418",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "icons/icon-192-v2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

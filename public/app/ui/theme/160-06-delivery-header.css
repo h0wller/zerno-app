@@ -1,0 +1,239 @@
+/* ── База шапки и переключателя заведений (перенос из views.js) ── */
+.topbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: calc(var(--topbar-h, 64px) + var(--sat, env(safe-area-inset-top, 0px)));
+  padding: var(--sat, env(safe-area-inset-top, 0px)) 12px 0;
+  box-sizing: border-box;
+  background: var(--topbar-bg, transparent);
+  color: var(--topbar-color, var(--ink));
+  border-bottom: var(--topbar-border, none);
+  top: 0;
+  z-index: 90;
+  box-shadow: 0 4px 16px -4px rgba(18, 58, 107, 0.08);
+}
+.topbar .venueWrap {
+  position: relative;
+  order: 1;
+  flex: 0 0 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-start;
+}
+.topbar .brand {
+  order: 2;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: static;
+  transform: none;
+}
+.topbar #profileTopBtn {
+  order: 3;
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.topbar #modeSeg {
+  order: 10;
+  flex: 1 1 100%;
+}
+.venueToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: var(--venue-toggle-border, 1.5px solid var(--line));
+  background: var(--venue-toggle-bg, var(--card, #FFFFFF));
+  color: var(--venue-toggle-color, var(--ink));
+  box-shadow: var(--venue-toggle-shadow, none);
+  border-radius: 999px;
+  padding: 0 12px;
+  height: calc(var(--topbar-h, 64px) - 20px);
+  font: 700 calc(var(--topbar-h, 64px) * 0.22) "Golos Text", system-ui, sans-serif;
+  cursor: pointer;
+  transition: background .2s, transform .2s, border-color .2s;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.venueToggle:hover {
+  background: #F5F5F5;
+  transform: translateY(-1px);
+}
+.venueToggle .vt-arrow {
+  font-size: 9px;
+  opacity: .7;
+  transition: transform .2s;
+}
+.venueToggle[aria-expanded="true"] .vt-arrow {
+  transform: rotate(180deg);
+}
+.venueWrap #brandSeg {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 1000;
+  flex-direction: column;
+  gap: 4px;
+  width: 232px;
+  min-width: 220px;
+  max-width: 88vw;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--card, #FFFFFF);
+  box-shadow: 0 12px 28px rgba(16, 20, 24, .18);
+  padding: 6px;
+  animation: fadeIn .2s ease;
+}
+.venueWrap #brandSeg.open {
+  display: flex;
+}
+.venueWrap #brandSeg button {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font: 600 13.5px "Golos Text", sans-serif;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.venueWrap #brandSeg button:hover {
+  background: rgba(0, 0, 0, .05);
+}
+.venueWrap #brandSeg button.on {
+  background: var(--tint-cool);
+  color: var(--flame);
+  font-weight: 700;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (min-width: 821px) {
+  header.topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 8px 18px;
+}
+.topbar {
+  grid-template-rows: 64px auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 8px 18px;
+}
+  .topbar .venueWrap {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    order: 0;
+    min-width: 0;
+  }
+  .topbar .brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    order: 0;
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .topbar #modeSeg:not([hidden]) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    margin-top: 4px;
+  }
+  .topbar #mbonusBtn {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    order: 0;
+    margin: 0;
+    position: static;
+    width: auto;
+    max-width: none;
+    height: 44px;
+    padding: 0 14px;
+    flex-direction: row;
+    border-radius: 999px;
+    align-self: center;
+  }
+  .topbar #profileTopBtn {
+    grid-column: 4;
+    grid-row: 1;
+    justify-self: end;
+    order: 0;
+    position: static;
+    margin: 0;
+    margin-left: 0;
+    align-self: center;
+  }
+}
+/* ── Кнопки заказа доставки и чипсы добавок (перенос из views.js) ── */
+#deliveryGrid .cta {
+  background: var(--card-bg, #FFFFFF);
+  border: var(--card-border, 1.5px solid var(--line));
+  color: var(--ink, #101418);
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 44px;
+  font: 700 14px "Golos Text", system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background .15s, border-color .15s, color .15s;
+}
+#deliveryGrid .cta:active {
+  transform: translateY(1px);
+}
+#deliveryGrid .cta:disabled {
+  background: #EDF2F6;
+  border-color: var(--line);
+  color: #8B98A5;
+  cursor: not-allowed;
+  transform: none;
+}
+#deliveryGrid .cta.incart {
+  border-color: var(--flame);
+  color: var(--flame);
+}
+#deliveryGrid .cta.added {
+  background: var(--btn-fire-bg, var(--flame));
+  border-color: var(--btn-fire-bg, var(--flame));
+  color: var(--btn-fire-color, #FFFFFF);
+}
+.addonChip {
+  display: inline-block;
+  border: 1.5px solid var(--line);
+  background: #FFFFFF;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 6px 6px 0;
+}
+.addonChip b {
+  color: var(--flame);
+}
+

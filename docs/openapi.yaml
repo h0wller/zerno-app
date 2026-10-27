@@ -1,0 +1,680 @@
+openapi: 3.0.3
+
+info:
+  title: zerno-app API
+  version: 0.2.0
+  description: |
+    Контракт API PWA «…и кофе» / «Пятница». Собран из docs/api.md
+    и фактических роутов server/routes/*.js. Источник правды — серверный код.
+    При расхождении — правьте спеку и server/routes/* в одном PR.
+  contact:
+    name: Zerno App
+    url: https://friday.andcoffee.online
+
+servers:
+  - url: https://friday.andcoffee.online
+    description: Production
+  - url: http://localhost:3000
+    description: Local dev
+
+tags:
+  - name: Auth
+  - name: Menu
+  - name: Orders
+  - name: Staff
+  - name: Chat
+  - name: Push
+  - name: Promos
+  - name: Admin
+  - name: System
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: 'Authorization: Bearer <token из localStorage zt_user>'
+
+  schemas:
+    BonusKind:
+      type: object
+      description: Бонус одного вида для кофейни и доставки
+      properties:
+        coffee: { type: integer, minimum: 0, maximum: 10, description: "Штампы в кофейне" }
+        delivery: { type: integer, minimum: 0, maximum: 5000, description: "Скидка ₽ в доставке" }
+    Customer:
+      type: object
+      required: [id, name, phone, stamps, free, cups, role]
+      properties:
+        id:          { type: integer, minimum: 1 }
+        name:        { type: string, maxLength: 24 }
+        phone:       { type: string, pattern: '^\\+7\\d{10}$' }
+        stamps:      { type: integer, minimum: 0, maximum: 10 }
+        free:        { type: integer, minimum: 0 }
+        cups:        { type: integer, minimum: 0 }
+        qr:          { type: string, description: 'Код Z-XXXXXX' }
+        role:        { type: string, enum: [guest, cashier, dispatch, admin] }
+        verified:    { type: integer, enum: [0, 1] }
+        welcome:     { type: integer, enum: [0, 1] }
+        tg:          { type: integer, enum: [0, 1] }
+        # Добавлено после сверки с server/domain/helpers.js::cust()
+        notify_tg:   { type: integer, enum: [0, 1] }
+        notify_web:  { type: integer, enum: [0, 1] }
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              ts: { type: string, format: date-time }
+              a:  { type: string }
+              by: { type: string }
+      additionalProperties: true
+
+    MenuItem:
+      type: object
+      required: [id, cat, name, price]
+      properties:
+        id:      { type: integer }
+        cat:     { type: string, enum: [coffee, drinks, food, pizza, rolls, snacks] }
+        e:       { type: string }
+        name:    { type: string, maxLength: 40 }
+        desc:    { type: string, maxLength: 140 }
+        comp:    { type: array, items: { type: string } }
+        vol:     { type: string, maxLength: 14 }
+        price:   { type: number, minimum: 0 }
+        tag:     { type: string }
+        coffee:  { type: integer, enum: [0, 1] }
+        on:      { type: integer, enum: [0, 1] }
+        img:     { type: string }
+        section: { type: string, enum: [coffee, delivery] }
+      additionalProperties: true
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        code:  { type: string }
+
+  responses:
+    Unauthorized:
+      description: Токен отсутствует или недействителен
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Недостаточно прав
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+paths:
+  /api/health:
+    get:
+      tags: [System]
+      summary: Health-check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { ok: { type: boolean } }
+
+  /api/config:
+    get:
+      tags: [System]
+      summary: Публичный bootstrap-конфиг
+      responses:
+        '200': { description: OK }
+
+  /api/clientlog:
+    post:
+      tags: [System]
+      summary: Лог клиентских событий
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, msg]
+              properties:
+                kind: { type: string }
+                msg:  { type: string, maxLength: 500 }
+      responses: { '200': { description: OK } }
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация нового гостя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone, consent]
+              properties:
+                name:    { type: string, maxLength: 24 }
+                phone:   { type: string }
+                pin:     { type: string, pattern: '^\\d{4}$' }
+                consent: { type: integer, enum: [0, 1] }
+      responses:
+        '200':
+          description: Профиль создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:    { type: string }
+                  customer: { $ref: '#/components/schemas/Customer' }
+        '409': { description: Профиль уже существует }
+
+  /api/auth/request-reg-otp:
+    post:
+      tags: [Auth]
+      summary: Запрос OTP для регистрации (SMS или Telegram)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string }
+                name:  { type: string }
+                via:   { type: string, enum: [tg, sms] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:    { type: boolean }
+                  tgUrl: { type: string }
+        '400': { description: Неверный номер }
+        '409': { description: Номер уже зарегистрирован }
+        '429': { description: Слишком частые запросы }
+
+  /api/auth/check-reg:
+    get:
+      tags: [Auth]
+      summary: Проверка статуса регистрации через Telegram
+      parameters:
+        - in: query
+          name: phone
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  confirmed: { type: boolean }
+                  token:     { type: string }
+                  customer:  { $ref: '#/components/schemas/Customer' }
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход по телефону и PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string }
+                pin:   { type: string, pattern: '^\\d{4}$' }
+      responses:
+        '200': { description: OK }
+        '409': { description: 'Требуется PIN (needPin)' }
+
+  /api/auth/setup-pin:
+    post:
+      tags: [Auth]
+      summary: Установить/сменить PIN
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pin]
+              properties: { pin: { type: string, pattern: '^\\d{4}$' } }
+      responses: { '200': { description: OK } }
+
+  /api/auth/activate-guest:
+    post:
+      tags: [Auth]
+      summary: Активация гостя по коду от кассира
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties: { code: { type: string } }
+      responses: { '200': { description: OK } }
+
+  /api/auth/tg-link:
+    post:
+      tags: [Auth]
+      summary: Привязка Telegram initData
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [initData]
+              properties:
+                initData: { type: string, description: "Подписанные Telegram данные, действительны один час" }
+                phone: { type: string, description: "Номер; привязка по нему возможна только после подтверждения в боте" }
+                name: { type: string }
+                pin: { type: string }
+      responses:
+        '200':
+          description: >-
+            Вход выполнен ({token, customer}), либо needBotConfirm=true с tgUrl: номер нужно подтвердить в боте
+            тем же аккаунтом Telegram, затем повторить вызов.
+        '401': { description: "Подпись initData неверна или устарела" }
+        '400': { description: "Номер введён не полностью" }
+
+  /api/me:
+    get:
+      tags: [Auth]
+      summary: Текущий пользователь
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { customer: { $ref: '#/components/schemas/Customer' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [Auth]
+      summary: Сменить имя гостя
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { name: { type: string, maxLength: 24 } }
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [Auth]
+      summary: Удалить профиль и персональные данные
+      description: |
+        Удаляет профиль гостя, токены, push-подписки, историю, чат и промо-использования.
+        Заказы сохраняются без имени, телефона, адреса и комментария (обезличиваются) для учёта.
+        Сотрудники (admin, cashier, dispatch) не могут удалить себя через приложение.
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: "Сотрудник не может удалить профиль" }
+
+  /api/menu:
+    get:
+      tags: [Menu]
+      summary: Публичное меню кофейни
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:     { type: array, items: { $ref: '#/components/schemas/MenuItem' } }
+                  updatedAt: { type: string, format: date-time }
+
+  /api/menu/all:
+    get:
+      tags: [Menu]
+      summary: Всё меню, включая выключенные позиции (admin)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/dmenu:
+    get:
+      tags: [Menu]
+      summary: Меню доставки «Пятница»
+      responses: { '200': { description: OK } }
+
+  /api/delivery/info:
+    get:
+      tags: [Menu]
+      summary: Конфиг доставки (часы, ETA, ссылки)
+      responses: { '200': { description: OK } }
+
+  /api/orders:
+    post:
+      tags: [Orders]
+      summary: Создание заказа
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [brand, items, sum]
+              properties:
+                brand: { type: string, enum: [coffee, delivery] }
+                items: { type: array, items: { type: object } }
+                sum:   { type: number, minimum: 0 }
+              additionalProperties: true
+      responses: { '200': { description: OK } }
+    get:
+      tags: [Orders]
+      summary: Мои заказы
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/orders/mine:
+    get:
+      tags: [Orders]
+      summary: История заказов текущего пользователя
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/orders/all:
+    get:
+      tags: [Orders]
+      summary: Все заказы (dispatch)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/orders/delay-all:
+    post:
+      tags: [Orders]
+      summary: Массовая задержка активных заказов диспетчером
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [min]
+              properties:
+                min:    { type: integer, minimum: 1 }
+                reason: { type: string }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/staff/stamp:
+    post:
+      tags: [Staff]
+      summary: Пробить штамп
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string }
+                delta: { type: integer }
+                drink: { type: string }
+      responses: { '200': { description: OK } }
+
+  /api/staff/redeem:
+    post:
+      tags: [Staff]
+      summary: Списать бесплатный кофе
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties: { phone: { type: string } }
+      responses: { '200': { description: OK } }
+
+  /api/staff/scan:
+    post:
+      tags: [Staff]
+      summary: Скан QR гостя
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seed]
+              properties: { seed: { type: string } }
+      responses: { '200': { description: OK } }
+
+  /api/chat/send:
+    post:
+      tags: [Chat]
+      summary: Отправить сообщение в чат
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, maxLength: 2000 }
+                ctx:  { type: string }
+              additionalProperties: true
+      responses: { '200': { description: OK } }
+
+  /api/chat/thread:
+    get:
+      tags: [Chat]
+      summary: Получить тред чата
+      parameters:
+        - in: query
+          name: ctx
+          schema: { type: string }
+      responses: { '200': { description: OK } }
+
+  /api/chat/open:
+    post:
+      tags: [Chat]
+      summary: Переоткрытие закрытого диалога (персонал)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key]
+              properties:
+                key: { type: string }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/vapid:
+    get:
+      tags: [Push]
+      summary: VAPID public key
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { publicKey: { type: string } }
+
+  /api/push/subscribe:
+    post:
+      tags: [Push]
+      summary: Подписка на web-push
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sub]
+              properties: { sub: { type: object } }
+      responses: { '200': { description: OK } }
+
+  /api/promo/redeem:
+    post:
+      tags: [Promos]
+      summary: Активация промокода гостем
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+      responses:
+        '200':
+          description: Промокод применён
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:      { type: string }
+                  customer: { $ref: '#/components/schemas/Customer' }
+        '400': { description: Ошибка применения }
+
+  /api/promo/info:
+    get:
+      tags: [Promos]
+      summary: Проверка условий промокода для корзины
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+        '404': { description: Промокод не найден }
+
+  /api/promos:
+    get:
+      tags: [Admin]
+      summary: Список промокодов
+      security: [{ BearerAuth: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Создать промокод
+      security: [{ BearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/stats:
+    get:
+      tags: [Admin]
+      summary: Дашборд владельца
+      security: [{ BearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/stats/redeems:
+    get:
+      tags: [Admin]
+      summary: Списания бесплатных кофе за 30 дней (по видам)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/bonuses:
+    get:
+      tags: [Admin]
+      summary: Настройки бонусов (регистрация, регистрация по QR, установка приложения)
+      description: "Для каждого вида отдельно: штампы в кофейне (0–10) и скидка ₽ в доставке (0–5000) по одноразовому промокоду. 0 — выключено."
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Admin]
+      summary: Сохранить настройки бонусов
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                days: { type: integer, minimum: 1, maximum: 365, description: "Срок промокода доставки" }
+                kinds:
+                  type: object
+                  properties:
+                    signup: { $ref: '#/components/schemas/BonusKind' }
+                    qr: { $ref: '#/components/schemas/BonusKind' }
+                    install: { $ref: '#/components/schemas/BonusKind' }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/bonus/install:
+    post:
+      tags: [Auth]
+      summary: Начислить бонус за установку приложения (один раз на гостя)
+      description: "Вызывается клиентом при событии appinstalled и при запуске установленного приложения. Повторные вызовы ничего не начисляют."
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  granted: { type: boolean }
+                  code: { type: string, nullable: true, description: "Промокод доставки, если выдан" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/tg/diag:
+    get:
+      tags: [Admin]
+      summary: Диагностика вебхука и соединения с Telegram Bot API (только админ)
+      description: "Раньше был открыт без входа и показывал начало токена бота. Теперь доступен только администратору."
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '403': { $ref: '#/components/responses/Forbidden' }

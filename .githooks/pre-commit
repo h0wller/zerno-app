@@ -1,0 +1,25 @@
+#!/bin/sh
+
+echo "🔍 [pre-commit] Запуск статических проверок и аудита..."
+
+# 1. Быстрый аудит (синтаксис, слои CSS, бренды, лимиты MutationObserver)
+npm run pretest
+if [ $? -ne 0 ]; then
+  echo "💥 [pre-commit] Аудит завершился с ошибкой! Коммит отклонён."
+  exit 1
+fi
+
+echo "🔄 [pre-commit] Обновление STATIC_CACHE..."
+
+# 2. Пересборка клиентского бандла + инкремент версии Service Worker
+npm run build:client
+if [ $? -ne 0 ]; then
+  echo "💥 [pre-commit] Не удалось собрать бандл или обновить public/sw.js!"
+  exit 1
+fi
+
+# 3. Добавление свежего бандла и sw.js в текущий индекс Git
+git add public/sw.js public/dist/main.bundle.js public/dist/main.bundle.js.map
+
+echo "✅ [pre-commit] Проверки пройдены, STATIC_CACHE инкрементирован и добавлен в коммит."
+exit 0

@@ -1,0 +1,158 @@
+/* ── ADDR-BTN-NATIVE v1: геометрия «Мои адреса» объединена с .addr-book-btn выше ── */
+
+/* PERF-P0 v1: мёртвые селекторы удалены */
+
+
+/* [fix-all v1] F5.60 FIX-RAIL + FIX-MBONUS */
+/* ─────────────────────────────────────────────────────────────────────────
+   F5.60 FIX-RAIL — единый владелец позиции .rail / #deliveryRail
+   ─────────────────────────────────────────────────────────────────────────
+   До этого правила о sticky-top писались в четырёх media-блоках
+   (Слой 1 base, F5.15, F5.17, F5.45). Побеждало последнее (F5.45:
+   top: calc(50dvh - 160px); margin-top: 140px), но inline-запись из
+   scrolltop.js (rail.style.marginTop = offset) его обнуляла.
+   Теперь: один владелец здесь, с body-префиксом и в самом конце каскада.
+   scrolltop.js больше не пишет inline top/marginTop — только чистит legacy.
+   Rail и section — соседи в grid row 1, tops выровнены через align-self:start. */
+@media (max-width: 820px) {
+  body .wrap > .rail,
+  body .wrap > #deliveryRail {
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    margin-top: 0;
+    margin-bottom: 0;
+    align-self: start;
+    height: auto;
+    max-height: calc(100dvh - 24px);
+    transform: none;
+    transition: none;
+  }
+}
+@media (max-width: 1180px) and (min-width: 821px) {
+  body .wrap > .rail,
+  body .wrap > #deliveryRail {
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    margin-top: 0;
+    align-self: start;
+    height: auto;
+    max-height: calc(100dvh - 24px);
+    transform: none;
+    transition: none;
+  }
+}
+@media (max-height: 480px) {
+  body .wrap > .rail,
+  body .wrap > #deliveryRail {
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    margin-top: 0;
+    max-height: calc(100dvh - 16px);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   F5.60 FIX-MBONUS — единый владелец #mbonusBtn
+   ─────────────────────────────────────────────────────────────────────────
+   До этого 8+ media-блоков (F5.14, F5.17, F5.18, F5.26, F5.28, F5.29,
+   F5.31, F5.32, F5.34, F5.35, F5.36, F5.39, F5.45) писали в одни и те же
+   свойства с конфликтом. body-префикс + последнее место в файле → один
+   детерминированный победитель. */
+body #mbonusBtn {
+  /* mobile-first: фикс-пилюля в левом нижнем углу */
+  position: fixed;
+  left: 12px;
+  right: auto;
+  top: auto;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  height: 56px;
+  display: flex;
+  padding: 6px 4px;
+  margin: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 16px;
+  background: #101418;
+  color: #fff;
+  box-shadow: 0 10px 24px -6px rgba(16, 20, 24, 0.45);
+  z-index: 95;
+  transform: none;
+  transition: opacity 0.25s, transform 0.25s;
+}
+body #mbonusBtn.near-footer {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+}
+body #mbonusBtn::before { content: none; }      /* старые ::before attr(data-bean) не нужны */
+body #mbonusBtn > span:not(.mb-free) {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 800;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+}
+body #mbonusBtn > span:not(.mb-free) svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  padding: 0;
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 50%;
+  color: #7B5233;
+}
+body #mbonusBtn .mb-bean {
+  width: 18px;
+  height: 18px;
+  overflow: hidden;
+}
+body #mbonusBtn .mb-free {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 4px;
+  border-radius: 8px;
+  background: linear-gradient(120deg, #f3e3ce, #e4c9a5);
+  color: #4a3100;
+}
+
+@media (min-width: 821px) {
+  body #mbonusBtn {
+    /* desktop: статичный элемент в шапке (grid-column 3). */
+    position: static;
+    left: auto; right: auto; top: auto; bottom: auto;
+    width: auto;
+    min-width: 120px;
+    max-width: 180px;
+    height: 56px;
+    padding: 0 14px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    margin: 0;
+    transform: none;
+  }
+  body #mbonusBtn.near-footer {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+  body #mbonusBtn > span:not(.mb-free) { font-size: 13px; gap: 6px; }
+  body #mbonusBtn > span:not(.mb-free) svg { width: 22px; height: 22px; flex: 0 0 22px; }
+  body #mbonusBtn .mb-free { font-size: 11px; padding: 5px 10px; }
+}
+/* [fix-all v1] END F5.60 */
+
+
+
+

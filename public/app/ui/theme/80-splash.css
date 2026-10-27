@@ -1,0 +1,195 @@
+/* ── Сплэш выбора бренда (Ф3.54): светлая сцена, карточки в цветах брендов ── */
+/* Палитра только из корневых токенов (00-head.css): бренд на сплэше ещё не выбран. */
+#brandSplash,
+#brandSplashStatic {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background-color: var(--paper, #FFFFFF);
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(18, 58, 107, 0.10), transparent 45%),
+    radial-gradient(circle at 92% 96%, rgba(179, 55, 43, 0.08), transparent 45%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  overflow: auto;
+  overflow-x: hidden;
+}
+#brandSplashStatic img,
+#brandSplash img {
+  max-width: 44px;
+  max-height: 44px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+#brandSplash .spInner,
+#brandSplashStatic .spInner {
+  width: 100%;
+  max-width: 560px;
+  text-align: center;
+}
+#brandSplash .spSub,
+#brandSplashStatic .spSub {
+  color: var(--ink, #101418);
+  font: 900 clamp(24px, 7vw, 34px)/1.2 Unbounded, sans-serif;
+  letter-spacing: -0.01em;
+  margin-bottom: 28px;
+  animation: spRise 0.7s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+#brandSplash .spBtns,
+#brandSplashStatic .spBtns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+#brandSplash .spBtn,
+#brandSplashStatic .spBtn {
+  position: relative;
+  width: 100%;
+  padding: 22px 18px;
+  border: 0;
+  border-radius: 18px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  animation: spRise 0.6s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+#brandSplash .spBtns .spBtn:nth-child(2),
+#brandSplashStatic .spBtns .spBtn:nth-child(2) {
+  animation-delay: 0.3s;
+}
+#brandSplash .spBtn .em,
+#brandSplashStatic .spBtn .em {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  margin-bottom: 10px;
+  animation: spFloat 3.2s ease-in-out infinite;
+}
+#brandSplash .spBtn .bt,
+#brandSplashStatic .spBtn .bt {
+  display: block;
+  font: 700 17px Unbounded, sans-serif;
+}
+#brandSplash .spBtn small,
+#brandSplashStatic .spBtn small {
+  display: block;
+  font: 400 13px Golos Text, sans-serif;
+  margin-top: 6px;
+}
+
+/* Цвета каждой карточки приходят из разметки (--sp-*), см. registry/index.html:
+   «Пятница» — крафт: кремовая бумага, шоколадная рамка, жёсткая печатная тень.
+   Наведение и нажатие повторяют её карточки и кнопки в приложении. */
+#brandSplash .spPizza,
+#brandSplashStatic .spPizza {
+  background: var(--sp-bg, var(--paper));
+  color: var(--sp-ink, var(--ink));
+  border: 2px solid var(--sp-ink, var(--ink));
+  border-radius: 18px;
+  box-shadow: 3px 3px 0 var(--sp-ink, var(--ink));
+}
+#brandSplash .spPizza .bt,
+#brandSplashStatic .spPizza .bt {
+  color: var(--sp-ink, var(--ink));
+  text-shadow: 0 2px 0 rgba(58, 42, 28, 0.18);
+}
+/* Официальные логотипы вместо эмодзи (цвета самого логотипа не меняем) */
+#brandSplash .spBtn .em img,
+#brandSplashStatic .spBtn .em img {
+  display: block;
+  margin: 0 auto;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+#brandSplash .spPizza .em img,
+#brandSplashStatic .spPizza .em img {
+  max-height: 56px;
+}
+#brandSplash .spCoffee .em img,
+#brandSplashStatic .spCoffee .em img {
+  max-height: 100px;
+}
+#brandSplash .spPizza small,
+#brandSplashStatic .spPizza small {
+  color: var(--sp-ink, var(--ink));
+  opacity: 0.8;
+}
+@media (hover: hover) {
+  #brandSplash .spPizza:hover,
+  #brandSplashStatic .spPizza:hover {
+    box-shadow: 4px 4px 0 var(--sp-ink, var(--ink));
+    transform: translate(-1px, -1px);
+  }
+}
+#brandSplash .spPizza:active,
+#brandSplashStatic .spPizza:active {
+  box-shadow: 0 0 0 var(--sp-ink, var(--ink));
+  transform: translate(3px, 3px);
+}
+
+/* «…и кофе»: мягкая карточка, при наведении синяя рамка и глубже тень, как у карточек меню */
+#brandSplash .spCoffee,
+#brandSplashStatic .spCoffee {
+  background: var(--sp-bg, #FFFFFF);
+  color: var(--sp-ink, var(--flame));
+  border: 2px solid rgba(62, 143, 208, 0.25);
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
+}
+#brandSplash .spCoffee .bt,
+#brandSplashStatic .spCoffee .bt {
+  color: var(--sp-ink, var(--flame));
+}
+@media (hover: hover) {
+  #brandSplash .spCoffee:hover,
+  #brandSplashStatic .spCoffee:hover {
+    border-color: var(--sp-accent, #3E8FD0);
+    box-shadow: 0 10px 28px rgba(18, 58, 107, 0.15);
+  }
+}
+#brandSplash .spCoffee small,
+#brandSplashStatic .spCoffee small {
+  color: var(--soft, #586470);
+}
+#brandSplash .spCoffee:active,
+#brandSplashStatic .spCoffee:active {
+  transform: scale(0.98);
+}
+
+@media (min-width: 560px) {
+  #brandSplash .spBtns,
+  #brandSplashStatic .spBtns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@keyframes spRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes spFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #brandSplash .spTitle,
+  #brandSplashStatic .spTitle,
+  #brandSplash .spSub,
+  #brandSplashStatic .spSub,
+  #brandSplash .spBtn,
+  #brandSplashStatic .spBtn,
+  #brandSplash .spBtns .spBtn:nth-child(2),
+  #brandSplashStatic .spBtns .spBtn:nth-child(2),
+  #brandSplash .spBtn .em,
+  #brandSplashStatic .spBtn .em {
+    animation: none;
+  }
+}
+/* ── Ф3.55: компенсация плавающей шапки Telegram-WebView ── */
+body.in-tg .topbar {
+  height: auto;
+}

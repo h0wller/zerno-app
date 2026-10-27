@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>…и кофе · Пятница — табличка с QR</title>
+<link href="https://fonts.googleapis.com/css2?family=Prata&family=Golos+Text:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+ @page{size:A5 portrait;margin:0}
+ *{box-sizing:border-box}
+ :root{--paper:#F5F2EC;--ink:#101418;--soft:#63707C;--line:#DDE3E8;--flame:#1F4E8C;--flame-d:#163B6B;--blue-l:#EAF1F9;--blue-b:#B9CDE4}
+ body{margin:0;font-family:'Golos Text',-apple-system,'Segoe UI',Roboto,sans-serif;background:#ddd}
+ .sheet{width:148mm;height:210mm;margin:0 auto;background:var(--paper);color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;text-align:center;padding:9mm 11mm 8mm;position:relative;overflow:hidden}
+ .sheet::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2.5mm;background:var(--flame)}
+ h1{font-family:'Prata',Georgia,serif;font-weight:400;font-size:19pt;line-height:1.15;margin:0 0 2mm}
+ .lead{font-size:10.5pt;color:var(--soft);margin:0 0 5mm;line-height:1.4}
+
+ /* два бренда рядом */
+ .brands{display:flex;width:100%;gap:4mm;align-items:stretch}
+ .brand{flex:1;background:#fff;border:1px solid var(--line);border-radius:4mm;padding:3.5mm 3mm;display:flex;flex-direction:column;align-items:center}
+ .brand .logo-box{height:24mm;width:100%;display:flex;align-items:center;justify-content:center;margin-bottom:2mm}
+ .brand img.logo{height:24mm;width:auto;display:block}
+ .brand img.friday{width:36mm;height:auto;display:block}
+ .brand h2{font-size:10.5pt;font-weight:800;margin:0 0 1.5mm;line-height:1.2}
+ .brand p{font-size:8.6pt;line-height:1.4;color:#41505E;margin:0;min-height:calc(8.6pt * 1.4 * 3)}
+
+ /* QR */
+ .qrblock{margin:5mm 0 3mm;display:flex;flex-direction:column;align-items:center}
+ .qrwrap{background:#fff;border-radius:5mm;padding:3mm;box-shadow:0 3mm 8mm -4mm rgba(16,20,24,.25)}
+ img.qr{width:46mm;height:46mm;display:block}
+ .scan{margin-top:2.5mm;font-size:12pt;font-weight:800;color:var(--flame-d)}
+ .steps{font-size:9.5pt;color:#41505E;margin-top:1.5mm;line-height:1.5}
+
+ .bonus{margin-top:3mm;background:var(--blue-l);border:1px solid var(--blue-b);color:var(--flame-d);border-radius:999px;padding:1.6mm 5mm;font-size:9.5pt;font-weight:700}
+
+ .foot{margin-top:auto;width:100%;border-top:1px solid var(--line);padding-top:3mm;font-size:8.5pt;color:var(--soft);line-height:1.5}
+ .foot b{color:var(--ink)}
+ .url{font-size:9.5pt;font-weight:700;color:var(--flame);letter-spacing:.04em;margin-top:1mm}
+</style>
+</head>
+<body>
+<div class="sheet">
+ <h1>Кофе и доставка —<br>в одном приложении</h1>
+ <p class="lead">Установите за 10 секунд и откройте оба сервиса одним тапом</p>
+
+ <div class="brands">
+  <div class="brand">
+   <div class="logo-box"><img class="logo" src="andCoffee.svg" alt="…и кофе"></div>
+   <h2>…и кофе</h2>
+   <p>Кофейня на берегу моря.<br>Каждый 10-й кофе — бесплатно. Штампы по QR кассиру.</p>
+  </div>
+  <div class="brand">
+   <div class="logo-box"><img class="friday" src="friday-logo.svg" alt="Пятница"></div>
+   <h2>Пятница</h2>
+   <p>Доставка из приложения.<br>Меню, заказ и статус<br>в один тап.</p>
+  </div>
+ </div>
+
+ <div class="qrblock">
+  <div class="qrwrap"><img class="qr" src="images/qr-install.svg" alt="QR-код: установить приложение"></div>
+  <div class="scan">Наведите камеру телефона</div>
+  <div class="steps">1. Установите приложение · 2. Зарегистрируйтесь · 3. Покажите QR кассиру</div>
+  <div class="bonus">🎁 Бонус при регистрации по QR — в приложении</div>
+ </div>
+
+ <div class="foot">
+  <b>…и кофе</b>: п. Янтарный, ул. Советская 70Г · ПН–ВС · май–сен 08:00–21:00 · окт–апр 08:00–20:00<br>
+  <!-- F3.66: часы синхронизированы с server/routes/orders.js::DELIVERY.schedule — при изменении графика обновить обе точки -->
+  <b>Пятница</b>: п. Янтарный, ул. Советская, 38А · доставка из приложения<br>
+  Май–сентябрь: пн–вс 11:00–22:00 · Октябрь–апрель: пн–чт 11:00–21:00, пт–вс 11:00–22:00
+  <div class="url">friday.andcoffee.online</div>
+ </div>
+</div>
+</body>
+</html>

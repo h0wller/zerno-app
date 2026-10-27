@@ -1,0 +1,138 @@
+# ═══ Зависимости ═══
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ═══ Локальные базы SQLite ═══
+# прод/тест базы и их WAL-файлы живут только на диске и на volume Railway
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ═══ Секреты — никогда в репозиторий ═══
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+*.keystore
+*.jks
+keystore.properties
+serviceAccount*.json
+*-firebase-*.json
+
+# ═══ Логи ═══
+logs/
+*.log
+error-context.md
+.last-run.json
+# ═══ Мусор ОС и редакторов ═══
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ═══ Тесты и покрытие ═══
+coverage/
+.nyc_output/
+
+# ═══ Capacitor / нативные приложения ═══
+# исходники платформ храним, игнорируем сборку и синхронизированные веб-ассеты
+android/.gradle/
+android/.idea/
+android/build/
+android/app/build/
+android/app/release/
+android/capacitor-cordova-android-plugins/build/
+android/app/src/main/assets/public/
+android/local.properties
+android/captures/
+*.apk
+*.aab
+ios/App/Pods/
+ios/App/App/public/
+ios/DerivedData/
+ios/**/*.xcuserdata/
+*.ipa
+*.dSYM.zip
+
+# ═══ Прочие артефакты ═══
+.cache/
+.tmp/
+test-results/
+error-context.md
+playwright-report/
+*.last-run.json
+# Playwright артефакты
+artifacts/smoke.db
+tmp/
+*.db
+artifacts/
+screens/.auth-admin.json
+screens/01-splash-mobile.png
+screens/02-coffee-desktop.png
+screens/02-coffee-mobile.png
+screens/04-friday-desktop.png
+screens/04-friday-mobile.png
+screens/05-cart-desktop.png
+screens/05-cart-mobile.png
+screens/07-profile-desktop.png
+screens/07-profile-mobile.png
+screens/07b-qr-full-desktop.png
+screens/07b-qr-full-mobile.png
+screens/08-chat-armed-desktop.png
+screens/08-chat-armed-mobile.png
+screens/09-auth-mobile.png
+screens/10-cashier.png
+screens/11-dispatcher.png
+screens/12-admin-editmode.png
+screens/12b-promo-modal.png
+screens/12c-dashboard.png
+screens/14-topbar-coffee.png
+screens/14-topbar-friday.png
+screens/debug-05-cart-desktop.png
+screens/debug-05-cart-mobile.png
+screens/debug-12-admin-edit.png
+scripts/reshoot-v2.mjs
+scripts/reshoot-v3.mjs
+scripts/reshoot.mjs
+scripts/shoot.mjs
+schema-dump.sql
+public/dump-schema.mjs
+sqlite-tools-win-x64-3530400/sqldiff.exe
+sqlite-tools-win-x64-3530400/sqlite3_analyzer.exe
+sqlite-tools-win-x64-3530400/sqlite3_rsync.exe
+bundle.ps1
+docs/inline-core-dump.txt
+
+# Backups от скриптов
+*.bak
+*.bak-*
+repomix-output.xml
+lh-cold-.json
+.env.example
+.env.example
+# Pre-fix бэкапы от fix-all*.mjs
+*.pre-fix-*
+fix-shared-brands.mjs
+media/raw/
+lighthouse-report.report.html
+lighthouse-report.report.json
+lh-mobile.json
+lh-desktop.json
+lh-local-1.json
+lh-local-2.json
+lh-local-3.json
+lh-delivery-mobile.json
+lh-coffee-mobile.html
+lh-delivery-mobile.html
+ 
