@@ -27,9 +27,9 @@ window.__initialSearch = location.search;
 // Детект Telegram Mini App. Выполняется ДО deeplink.js, который срезает query-строку.
 window.__isTgMiniApp = (function () {
   try {
-    if (new URLSearchParams(location.search).get("src") === "tg") return true;
     if (/tgWebAppData=/.test(location.hash)) return true;
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) return true;
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg && !tg.isStub && tg.initData && tg.initData.length > 0) return true;
   } catch (e) {}
   return false;
 })();

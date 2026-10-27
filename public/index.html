@@ -575,8 +575,6 @@ html[data-brand="delivery"] {
     })();
   </script>
   <!-- END: perf-optimizer-patch -->
-
-
   <script>
     // Безопасный глобальный контракт TgUx (защита от потери sync)
     window.TgUx = window.TgUx || {};
@@ -603,31 +601,31 @@ html[data-brand="delivery"] {
   <script>/* PERF-MEASURE v2: флаг ?nosw=1 для замеров без SW */
     window.__ztNoSW = /[?&]nosw=1/.test(location.search);
   </script>
-  <script>(function () {
-      /* TG-OFFLOAD v4: надёжный детект Telegram Mini App */
+<script>(function () {
+      /* TG-OFFLOAD v5: точный детект Mini App vs In-App Browser */
       var q = location.search + location.hash;
-      var inTg = false;
+      var hasTgWebAppParams = /[?&#]tgWebApp(Data|Platform|Version|BotId)=/i.test(q);
+      var hasTgBridge = false;
       try {
-        inTg = /Telegram/i.test(navigator.userAgent) ||
-          /[?&#]tgWebApp(Data|Platform|Version|BotId)=/i.test(q) ||
-          Boolean(window.TelegramWebviewProxy) ||
+        hasTgBridge = Boolean(window.TelegramWebviewProxy) ||
           Boolean(window.TelegramGameProxy) ||
-          Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.webApp) ||
-          Boolean(window.Telegram && window.Telegram.WebApp && (window.Telegram.WebApp.initData || window.Telegram.WebApp.platform));
-      } catch (e) { inTg = false; }
-      window.__isTgMiniApp = inTg;
+          Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.webApp);
+      } catch (e) { hasTgBridge = false; }
+
+      var inTg = hasTgWebAppParams || hasTgBridge || /Telegram/i.test(navigator.userAgent);
+      window.__isTgMiniApp = hasTgWebAppParams;
 
       function makeStub() {
         var noop = function () { };
         var btn = function () {
           return {
             text: '', isVisible: false, show: noop, hide: noop, enable: noop,
-            disable: noop, setText: noop, setColor: noop, onClick: noop, offClick: noop
+            disable: noop, setText: noop, setColor: noop, setParams: noop, onClick: noop, offClick: noop
           };
         };
         return {
           isStub: true, readyState: 'ready', isExpanded: true,
-          initData: '', initDataUnsafe: {}, version: '0.0', platform: 'unknown', isStub: true,
+          initData: '', initDataUnsafe: {}, version: '0.0', platform: 'unknown',
           colorScheme: 'light', themeParams: {},
           ready: noop, expand: noop, close: noop,
           enableClosingConfirmation: noop, disableVerticalSwipes: noop,
@@ -654,9 +652,22 @@ html[data-brand="delivery"] {
         s.async = false;
         s.onload = function () {
           try {
-            if (window.Telegram && window.Telegram.WebApp) {
-              window.Telegram.WebApp.ready();
-              window.Telegram.WebApp.expand();
+            var tg = window.Telegram && window.Telegram.WebApp;
+            if (tg && !tg.isStub) {
+              // Настоящий Mini App имеет непустую initData или query_id/user
+              var isRealMiniApp = Boolean(
+                (tg.initData && tg.initData.length > 0) ||
+                (tg.initDataUnsafe && (tg.initDataUnsafe.query_id || tg.initDataUnsafe.user)) ||
+                hasTgWebAppParams
+              );
+              window.__isTgMiniApp = isRealMiniApp;
+              if (isRealMiniApp) {
+                tg.ready();
+                tg.expand();
+                if (window.TgUx && typeof window.TgUx.sync === 'function') {
+                  window.TgUx.sync();
+                }
+              }
             }
           } catch (err) { }
         };
@@ -738,74 +749,74 @@ if(b==='delivery'){
   <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <!-- Неблокирующая загрузка слоёв CSS со 100% фолбэк-страховкой для iOS WebKit / Telegram WebView -->
-  <link rel="stylesheet" href="/app/ui/fonts.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=564" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=564" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/fonts.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=566" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=566" media="print" onload="this.media='all'" />
   <script>
     window.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('link[media="print"]').forEach(function (l) { l.media = 'all'; });
     });
   </script>
   <noscript>
-    <link rel="stylesheet" href="/app/ui/fonts.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=564" />
-    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=564" />
+    <link rel="stylesheet" href="/app/ui/fonts.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=566" />
+    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=566" />
   </noscript>
   <!-- [tg-splash-menu-fix-v3] решение о сплэше в <head> = ТО ЖЕ, что в core/splash.js (один в один).
      Расхождение даёт «мигание»: сплэш рисуется в первом кадре, а затем JS его снимает (или наоборот). -->
@@ -1773,7 +1784,7 @@ if(b==='delivery'){
       <button class="btn ghost cart-continue-btn" id="cartClose">Продолжить покупки</button>
     </div>
   </div>
-<script type="module" src="/dist/main.bundle.js?v=564"></script>
+<script type="module" src="/dist/main.bundle.js?v=566"></script>
   <div id="installBanner" hidden style="
         position: fixed;
         left: 12px;

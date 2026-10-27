@@ -123,15 +123,13 @@ window.syncOverlay = syncOverlay;
     null;
 
   function isTg() {
-    if (window.__isTgMiniApp) return true;
     const tg = getTg();
     if (!tg || tg.isStub) return false;
+    if (window.__isTgMiniApp) return true;
     return !!(
       (tg.initData && tg.initData.length > 0) ||
-      (tg.initDataUnsafe && (tg.initDataUnsafe.query_id || tg.initDataUnsafe.user)) ||
-      (tg.platform && tg.platform !== "unknown" && tg.platform !== "web") ||
-      /tgWebAppData=/.test(location.hash) ||
-      new URLSearchParams(location.search).get("src") === "tg"
+      (tg.initDataUnsafe && (tg.initDataUnsafe.query_id || tg.initDataUnsafe.user)) || 
+      /tgWebAppData=/.test(location.hash)
     );
   }
 
@@ -227,6 +225,7 @@ function ensureTgEnvironment() {
     const { count, total } = getCartSummary();
     const shouldShow = isCartOpen && count > 0 && total > 0;
 
+    bindMainButton();
     if (shouldShow) {
       document.documentElement.classList.add("tg-native-main");
       const isDeliv =
@@ -325,23 +324,25 @@ function ensureTgEnvironment() {
 
   window.TgUx = TgUx;
 
-  try {
-    const tg = getTg();
-    if (tg && tg.MainButton) {
-      const onMainClick = function () {
-        haptic("medium");
-        const btn = document.getElementById("checkoutBtn");
-        if (btn) btn.click();
-      };
-      if (typeof tg.MainButton.onClick === "function") {
-        tg.MainButton.onClick(onMainClick);
-      } else if (typeof tg.MainButton.onEvent === "function") {
-        tg.MainButton.onEvent("clicked", onMainClick);
+  function bindMainButton() {
+    try {
+      const tg = getTg();
+      if (tg && !tg.isStub && tg.MainButton && !tg.MainButton.__zernoBound) {
+        tg.MainButton.__zernoBound = true;
+        const onMainClick = function () {
+          haptic("medium");
+          const btn = document.getElementById("checkoutBtn");
+          if (btn) btn.click();
+        };
+        if (typeof tg.MainButton.onClick === "function") {
+          tg.MainButton.onClick(onMainClick);
+        } else if (typeof tg.MainButton.onEvent === "function") {
+          tg.MainButton.onEvent("clicked", onMainClick);
+        }
       }
-    }
-  } catch (_) {}
-
-  bindBackButton();
+    } catch (_) {}
+  }
+  bindMainButton();
 
   document.addEventListener(
     "click",
