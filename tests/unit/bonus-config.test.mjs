@@ -30,16 +30,18 @@ test('cleanBonusConfig: срок меньше одного дня поднима
   assert.equal(cleanBonusConfig({ days: 0 }).days, 1);
 });
 
-test('mergeBonusConfig для пустой базы даёт всё выключено', () => {
+test('mergeBonusConfig для пустой базы даёт включённый signup и выключенные остальные', () => {
   const r = mergeBonusConfig({});
   assert.equal(r.days, DEFAULT_BONUS_DAYS);
-  for (const k of BONUS_KINDS) assert.deepEqual(r.kinds[k], { coffee: 0, delivery: 0 });
+  // F3.64: регистрация по умолчанию — 10 штампов и бесплатная первая доставка (1100 ₽)
+  assert.deepEqual(r.kinds.signup, { coffee: 10, delivery: 1100 });
+  for (const k of ['qr', 'install']) assert.deepEqual(r.kinds[k], { coffee: 0, delivery: 0 });
 });
 
 test('mergeBonusConfig дополняет частичную настройку', () => {
   const r = mergeBonusConfig({ kinds: { qr: { coffee: 3 } } });
   assert.deepEqual(r.kinds.qr, { coffee: 3, delivery: 0 });
-  assert.deepEqual(r.kinds.signup, { coffee: 0, delivery: 0 });
+  assert.deepEqual(r.kinds.signup, { coffee: 10, delivery: 1100 });
 });
 
 test('makeBonusPromoCode: формат B + 8 hex, уникальность на выборке', () => {
@@ -77,7 +79,8 @@ test('cleanBonusConfig: граничные значения лимитов до�
 test('mergeBonusConfig: повреждённый kinds не ломает умолчания', () => {
   const r = mergeBonusConfig({ kinds: null, days: 'x' });
   assert.equal(r.days, DEFAULT_BONUS_DAYS);
-  for (const k of BONUS_KINDS) assert.deepEqual(r.kinds[k], { coffee: 0, delivery: 0 });
+  assert.deepEqual(r.kinds.signup, { coffee: 10, delivery: 1100 });
+  for (const k of ['qr', 'install']) assert.deepEqual(r.kinds[k], { coffee: 0, delivery: 0 });
 });
 
 test('mergeBonusConfig: неизвестные виды из базы не попадают в результат', () => {

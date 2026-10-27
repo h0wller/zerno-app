@@ -83,7 +83,6 @@
     var fee = 0;
 
     var minOrder = 0;
-    var freeFrom = 0;
     var baseZoneFee = 0;
     var placeEl = document.getElementById("checkoutPlace");
     var placeVal = (placeEl && placeEl.value && placeEl.value.trim()) ? placeEl.value.trim() : "Янтарный";
@@ -97,7 +96,6 @@
         if (z) {
           baseZoneFee = Number(z.fee) || 0;
           if (Number(z.min) > 0) minOrder = Number(z.min);
-          if (Number(z.freeFrom) > 0) freeFrom = Number(z.freeFrom);
         }
       }
       if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
