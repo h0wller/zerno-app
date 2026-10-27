@@ -25,10 +25,15 @@ function editorFields(){
   if(ob)ob.hidden=!isPizza;
 }
 
-/* Редактировать меню могут админ, кассир и диспетчер; в гостевом виде (меню) или в админ-режиме. */
-function canEditMenu(){
+/* Стоп-лист («в меню») доступен админу, кассиру и диспетчеру; в гостевом виде (меню) или в админ-режиме. */
+function canStopMenu(){
   return !!(me && ['admin','cashier','dispatch'].indexOf(me.role)!==-1 && (mode==='admin'||mode==='guest'));
 }
+/* Редактировать позиции (✏️, добавить, сохранить, удалить, порядок) может только админ; сервер проверяет то же. */
+function canEditMenu(){
+  return !!(me && me.role==='admin' && (mode==='admin'||mode==='guest'));
+}
+window.canStopMenu=canStopMenu;
 window.canEditMenu=canEditMenu;
 
 function openEditor(id){
@@ -155,11 +160,19 @@ document.getElementById('editToggle').onclick=function(){
   editMode=!editMode;
   document.body.classList.toggle('editing',editMode);
   var b=document.getElementById('editToggle');
-  b.textContent=editMode?'✔ Готово':'✏️ Редактировать';
+  b.textContent=editMode?'✔ Готово':(canEditMenu()?'✏️ Редактировать':'⛔ Стоп-лист');
   b.classList.toggle('on',editMode);
   if(brand==='delivery')renderDeliveryMenu();
   else renderMenu();
-  if(editMode)toast('Режим редактирования: ✏️ на карточке или тумблер «в меню»','✏️');
+  if(editMode){
+    toast(canEditMenu()?'Режим редактирования: ✏️ на карточке или тумблер «в меню»':'Стоп-лист: тумблер «в меню» на карточке','✏️');
+    // F3.70: HTML5 DnD не работает на тач-устройствах — предупреждаем сразу при включении режима
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+      toast('Перетаскивание карточек — мышью на десктопе; на телефоне меняйте порядок на ПК', 'ℹ️');
+    }
+  }
 };
 
 })();
+function canToggleStopList() { return !!(window.me && ['admin', 'cashier', 'dispatch'].includes(window.me.role)); }
+window.canToggleStopList = canToggleStopList;

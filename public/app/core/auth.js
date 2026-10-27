@@ -55,8 +55,8 @@
     var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
     if (hint) hint.style.display = 'none';
 
-    var consentRow = modal.querySelector('label:has(input[type="checkbox"]), .consent-row');
-    if (consentRow) consentRow.style.display = 'none';
+    // F3.62: строку согласия в TMA НЕ скрываем — 152-ФЗ требует действия пользователя
+    // в любой среде, включая Mini App. Владелец инжекта #consentRow — admin-extra.js (без изменений).
 
     if (window.__tgUser && window.__tgUser.name) {
       var rn = document.getElementById('regName');
@@ -108,6 +108,9 @@
   function closeAuth() {
     var am = document.getElementById('authModal');
     if (am) am.classList.remove('show');
+    // F3.61: очистка поллинга подтверждения номера при закрытии модалки — иначе утечка таймера
+    // и повторный старт интервала при следующем открытии (ADR-008, никаких висящих наблюдателей).
+    if (regPoll) { clearInterval(regPoll); regPoll = null; }
     if (typeof syncOverlay === 'function') syncOverlay();
   }
 
@@ -244,10 +247,15 @@
         if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
 
         if (window.__tgInitData) {
+          // F3.61: в TMA согласие берём из #consentBox (рядовый чекбокс формы);
+          // если строка согласия не отрендерена — считаем согласие данным (фолбэк для старых сборок).
+          var cbTg = document.getElementById('consentBox');
+          var consentTg = cbTg ? (cbTg.checked ? 1 : 0) : 1;
+          if (cbTg && !cbTg.checked) return toast('Отметь согласие с политикой конфиденциальности', '⚠️');
           try {
             var rTg = await api('/auth/tg-link', {
               method: 'POST',
-              body: { initData: window.__tgInitData, phone: phone, name: name, pin: pin }
+              body: { initData: window.__tgInitData, phone: phone, name: name, pin: pin, consent: consentTg, src: getRegSource() }
             });
             if (rTg && rTg.needBotConfirm) {
               // Номер сначала подтверждаем в боте, потом повторяем вход.
@@ -260,7 +268,7 @@
               setUser(rTg.token, rTg.customer);
               closeAuth();
               if (typeof renderAll === 'function') renderAll();
-              toast(rTg.isNew ? 'Профиль создан! +1 штамп ваш 🎁' : 'Профиль привязан к Telegram ✅', '🎉');
+              toast(rTg.isNew ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎁' : 'Профиль привязан к Telegram ✅', '🎉');
               return;
             }
           } catch (errTg) {
@@ -286,8 +294,8 @@
           closeAuth();
           if (typeof renderAll === 'function') renderAll();
           toast(r.customer.verified
-            ? 'Профиль создан! Приветственный бонус ваш 🎉'
-            : 'Профиль создан! Код активации — у кассира, а +1 штамп — в Telegram 🎁', '');
+            ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎉'
+            : 'Профиль создан! Код активации — у кассира, после него приветственный напиток и бесплатная доставка 🎁', '');
         } catch (e) {
           if (e.code === 409) {
             toast('Этот номер уже зарегистрирован — входим', '🔗');
@@ -337,7 +345,10 @@
           toast('Подтвердите номер в Telegram', '🤖');
 
           if (regPoll) clearInterval(regPoll);
+          // F3.61: лимит поллинга 60 попыток × 2.5 с ≈ 2.5 мин — защита от вечно живого таймера.
+          var regPollTries = 0;
           regPoll = setInterval(async function () {
+            if (++regPollTries > 60) { clearInterval(regPoll); regPoll = null; return; }
             try {
               var c = await api('/auth/check-reg?phone=' + encodeURIComponent(ph));
               if (c && c.confirmed) {

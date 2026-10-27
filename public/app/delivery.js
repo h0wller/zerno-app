@@ -1,3 +1,4 @@
+import { attachGridDnD, canDragMenu, dragAttr } from './core/dnd.js';
 function getKaliningradTime() {
   if (typeof window !== "undefined" && typeof window.getKaliningradTime === "function" && window.getKaliningradTime !== getKaliningradTime) {
     return window.getKaliningradTime();
@@ -11,7 +12,10 @@ function isDeliveryServiceOpen() {
     return window.isDeliveryServiceOpen();
   }
   var t = getKaliningradTime();
-  return t.hour >= 11 && t.hour < 22;
+  var s = deliveryInfo && (deliveryInfo.today || deliveryInfo.schedule);
+  var open = s && Number(s.open) > 0 ? Number(s.open) : 11;
+  var close = s && Number(s.close) > 0 ? Number(s.close) : 22;
+  return t.hour * 60 + t.minute >= open * 60 && t.hour * 60 + t.minute < close * 60;
 }
 
 if (typeof window !== 'undefined') {
@@ -255,8 +259,8 @@ function renderDeliveryCard(p, n0, i) {
     ? '<img src="' + p.img + '" alt="' + esc(p.name) + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="' + (isAboveFold ? 'eager' : 'lazy') + '" fetchpriority="' + (isAboveFold ? 'high' : 'auto') + '" decoding="async">'
     : '<span class="em">' + (p.e || '🍕') + '</span>';
 
-  return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '">' +
-    '<div class="media" style="--tint:#F3E2CE;position:relative;overflow:hidden;">' +
+  return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
+      '<div class="media" style="--tint:#F3E2CE;position:relative;overflow:hidden;">' +
       mediaContent +
       (p.on ? '' : '<span class="stopbadge">СТОП</span>') +
     '</div>' +
@@ -310,6 +314,7 @@ function renderDeliveryMenu() {
     const p0 = list[0];
     const n0 = cart.reduce((a, c) => (String(c.id) === String(p0.id) ? a + c.qty : a), 0);
     firstCard.setAttribute('data-product-id', p0.id);
+    firstCard.draggable = canDragMenu();
     firstCard.classList.toggle('stopped', !p0.on);
     const cbody0 = firstCard.querySelector('.cbody');
     if (cbody0) {
@@ -419,7 +424,7 @@ function patchDeliveryCards(list) {
       else if (add.disabled) { add.disabled = false; }
     }
     if (editing) {
-      if (!card.querySelector('.edBtn')) {
+      if (!card.querySelector('.edBtn') && window.canEditMenu && window.canEditMenu()) {
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'edBtn'; b.dataset.ed = p.id; b.textContent = '✏️';
         card.appendChild(b);
@@ -591,8 +596,6 @@ function renderCart() {
   $('#cartDiscount').textContent = discount ? `−10% самовывоз: −${fmt(discount)}` : '';
   $('#cartFee').textContent = fee ? `Доставка: ${fmt(fee)}` : '';
   const gifts = [];
-  const wp2 = deliveryInfo && deliveryInfo.weekPromo;
-  if (wp2 && wp2.gift && sum > 0) { const q = wp2.threshold > 0 ? Math.floor(sum / wp2.threshold) : 1; if (q > 0) gifts.push(`🎁 ${wp2.gift} ×${q}`); }
   const pm2 = deliveryInfo && deliveryInfo.pizzaMonth;
   if (pm2) { const big = cart.reduce((a, c) => a + ((c.sz === 35) ? c.qty : 0), 0); if (big >= 2) gifts.push(`🎁 ${pm2.name} — подарок`); }
   $('#cartGifts').innerHTML = gifts.join('<br>');
@@ -804,13 +807,18 @@ window.paintTotals = function(){
 };
 
 function promoDisc(sum, info){
+  if (info.kind === 'freeship') return 0;
   return info.kind === 'percent' ? Math.round(sum * Math.min(90, info.value) / 100) : Math.min(info.value || 0, sum);
 }
 
 window.preorderMode = function () {
-  var h = new Date().getHours();
-  if (h >= 22) return 'tomorrow';
-  if (h < 11) return 'today';
+  // F3.66: время — по Кёнигсбергу (окно close из /api/delivery.info, сезонный график задаёт сервер).
+  var t = (typeof window.getKaliningradTime === 'function') ? window.getKaliningradTime() : null;
+  var h = t ? t.hour : new Date().getHours();
+  var closeH = (deliveryInfo && deliveryInfo.schedule && deliveryInfo.schedule.close) || 22;
+  if (h >= closeH) return 'tomorrow';
+  var openH = (deliveryInfo && deliveryInfo.schedule && Number(deliveryInfo.schedule.open) > 0) ? Number(deliveryInfo.schedule.open) : 11;
+  if (h < openH) return 'today';
   return null;
 };
 window.assertServiceOpen = function () { return window.preorderMode() === null; };
@@ -823,7 +831,9 @@ $('#deliveryGrid').addEventListener('change', async function (e) {
   const p = DMENU.find(x => String(x.id) === String(t.dataset.onoff)); if (!p) return;
   p.on = t.checked ? 1 : 0;
   try {
-    await api('/menu/' + p.id, { method: 'PUT', body: p });
+    // F3.68: не-админ (cashier/dispatch) шлёт ТОЛЬКО {on} — иначе серверный PUT /api/menu/:id отдаёт 403
+    const body = (window.me && window.me.role === 'admin') ? p : { on: p.on };
+    await api('/menu/' + p.id, { method: 'PUT', body });
     window.renderDeliveryMenu();
     toast(t.checked ? '«' + esc(p.name) + '» снова в меню' : '«' + esc(p.name) + '» → стоп-лист', t.checked ? '✅' : '⛔');
   } catch (err) { toast(err.message, '⚠️'); await loadDelivery(); }
@@ -845,3 +855,60 @@ window.populatePlaces = populatePlaces;
 window.setupSlotDisplayToggle = setupSlotDisplayToggle;
 window.promoDisc = promoDisc;
 window.renderCart = renderCart;
+/* ── F3.70: DnD порядка доставки ── */
+attachGridDnD(document.getElementById('deliveryGrid'), {
+  canDrag: canDragMenu,
+  getIds: () => (window.DMENU || []).map(p => p.id),
+  onReorder: async (ids) => {
+    await api('/menu/reorder', { method: 'PUT', body: { brand: 'delivery', ids } });
+    await loadDelivery();
+  },
+  rerender: () => renderDeliveryMenu()
+});
+/* ── ScrollSpy: подсветка активной категории #deliveryRail при скролле витрины ──
+   Перенесено из cart.js: владелец рейла и грида — delivery.js (docs/module-map.md). */
+(function initDeliveryRailScrollSpy() {
+  var spyTick = false;
+  function isDeliveryNow() {
+    if (typeof brand !== "undefined" && brand) return brand === "delivery";
+    return document.documentElement.getAttribute("data-brand") === "delivery";
+  }
+  function resolveCardCat(card) {
+    if (!card) return null;
+    var direct = card.getAttribute("data-cat") || card.getAttribute("data-cat-anchor");
+    if (direct) return direct;
+    var addBtn = card.querySelector("[data-add]");
+    var id = addBtn ? addBtn.getAttribute("data-add") : card.getAttribute("data-item-id");
+    if (id && typeof window.DMENU !== "undefined" && Array.isArray(window.DMENU)) {
+      var prod = window.DMENU.find(function (x) { return String(x.id) === String(id); });
+      if (prod && prod.cat) { card.setAttribute("data-cat", prod.cat); return prod.cat; }
+    }
+    return null;
+  }
+  function syncRailActiveOnScroll() {
+    spyTick = false;
+    if (!isDeliveryNow()) return;
+    var rail = document.getElementById("deliveryRail");
+    var grid = document.getElementById("deliveryGrid");
+    if (!rail || !grid) return;
+    var cards = Array.from(grid.querySelectorAll("[data-cat-anchor], .cat-section[data-cat], .card:not(.skeleton-card)"))
+      .filter(function (el) { return el.offsetParent !== null; });
+    if (!cards.length) return;
+    var topThreshold = 160, currentCat = null;
+    for (var i = 0; i < cards.length; i++) {
+      var r = cards[i].getBoundingClientRect();
+      if (r.bottom > 90 && r.top <= topThreshold) { currentCat = resolveCardCat(cards[i]); if (currentCat) break; }
+    }
+    if (!currentCat && cards.length) currentCat = resolveCardCat(cards[0]);
+    if (currentCat) {
+      rail.querySelectorAll("button").forEach(function (btn) {
+        var bCat = btn.getAttribute("data-dcat") || btn.getAttribute("data-cat") || btn.dataset.dcat || btn.dataset.cat;
+        if (bCat) btn.classList.toggle("on", bCat === currentCat);
+      });
+    }
+  }
+  window.__syncDeliveryScrollSpy = syncRailActiveOnScroll;
+  window.addEventListener("scroll", function () {
+    if (!spyTick) { spyTick = true; requestAnimationFrame(syncRailActiveOnScroll); }
+  }, { passive: true });
+})();

@@ -13,7 +13,8 @@ import express from 'express';
 import compression from 'compression';
 
 // ── Конфигурация и БД ──
-import { db, PORT, PUBLIC_DIR } from './server/config.js';
+import { PORT, PUBLIC_DIR } from './server/config.js';
+import { db } from './server/db/connection.js';
 // ── Утилиты ──
 import { uid } from './server/utils/id-time.js';
 import {
@@ -107,30 +108,71 @@ app.get('/api/tg/diag', adminGuard, async (req, res) => {
       TG_WEBHOOK_SECRET: secret ? 'set (' + secret.length + ' chars)' : 'MISSING',
       NODE_ENV: process.env.NODE_ENV || null,
     },
+    // F3.60: наличие кодов сотрудников в окружении (значения не наружу).
+    codes_present: {
+      admin: !!process.env.ADMIN_CODE,
+      cashier: !!process.env.CASHIER_CODE,
+      dispatch: !!process.env.DISPATCH_CODE,
+    },
   });
 });
 
 /* ── меню ── */
 app.get('/api/menu', (req, res) => res.json({
-  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee'").all().map(item),
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee' ORDER BY sort_order ASC, id ASC").all().map(item),
   updatedAt: getMeta(),
 }));
 app.get('/api/menu/all', menuGuard, (req, res) => res.json({
-  items: db.prepare('SELECT * FROM menu').all().map(item),
+  items: db.prepare('SELECT * FROM menu ORDER BY sort_order ASC, id ASC').all().map(item),
   updatedAt: getMeta(),
 }));
 app.get('/api/dmenu', (req, res) => res.json({
-  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery'").all().map(item),
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery' ORDER BY sort_order ASC, id ASC").all().map(item),
 }));
-app.post('/api/menu', menuGuard, (req, res) => {
+app.post('/api/menu', adminGuard, (req, res) => {
+  const sec = req.body.section === 'delivery' ? 'delivery' : 'coffee';
+  const maxOrd = db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS m FROM menu WHERE section = ?').get(sec).m;
   const p = req.body; p.id = p.id || uid('p');
-  db.prepare('INSERT INTO menu(id,cat,e,name,descr,comp,vol,price,tag,coffee,is_on,img,section,opts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
-    p.id, p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
-    p.vol || '', String(p.price ?? '0'), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null,
-    p.section || 'coffee', JSON.stringify(p.opts || []));
-  touch(); res.json({ ok: true, id: p.id });
+db.prepare('INSERT INTO menu(id,cat,e,name,descr,comp,vol,price,tag,coffee,is_on,img,section,opts,sort_order) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
+  p.id, p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
+  p.vol || '', String(p.price ?? '0'), p.tag || '', p.coffee ? 1 : 0, p.on ? 1 : 0, p.img || null,
+  p.section || 'coffee', JSON.stringify(p.opts || []), maxOrd);  touch(); res.json({ ok: true, id: p.id });
+});
+app.put('/api/menu/reorder', adminGuard, (req, res) => {
+  const sec = req.body.brand === 'delivery' ? 'delivery' : 'coffee';
+  const ids = Array.isArray(req.body.ids) ? req.body.ids.map(String) : [];
+  if (!ids.length) return res.status(400).json({ error: 'Пустой порядок' });
+  const upd = db.prepare('UPDATE menu SET sort_order = ? WHERE id = ? AND section = ?');
+  const changed = db.transaction((list) => {
+    let n = 0;
+    list.forEach((id, i) => { n += upd.run(i + 1, id, sec).changes; });
+    return n;
+  })(ids);
+  if (changed !== ids.length) return res.status(409).json({ error: 'Не все позиции найдены в секции' });
+  touch();
+  res.json({ ok: true });
 });
 app.put('/api/menu/:id', menuGuard, (req, res) => {
+  const id = String(req.params.id || '').trim();
+  const existing = db.prepare('SELECT * FROM menu WHERE id = ?').get(id);
+  if (!existing) return res.status(404).json({ error: 'Позиция не найдена' });
+  const bodyKeys = Object.keys(req.body || {});
+  const onlyOn = bodyKeys.length === 1 && bodyKeys[0] === 'on';
+  if (req.user.role !== 'admin') {
+    if (!onlyOn) {
+      return res.status(403).json({ error: 'Доступно только переключение стоп-листа (on)' });
+    }
+    const onVal = req.body.on ? 1 : 0;
+    db.prepare('UPDATE menu SET is_on = ? WHERE id = ?').run(onVal, id);
+    touch();
+    return res.json({ ok: true, id, on: onVal });
+  }
+  if (onlyOn) {
+    const onVal = req.body.on ? 1 : 0;
+    db.prepare('UPDATE menu SET is_on = ? WHERE id = ?').run(onVal, id);
+    touch();
+    return res.json({ ok: true, id, on: onVal });
+  }
   const p = req.body;
   db.prepare('UPDATE menu SET cat=?,e=?,name=?,descr=?,comp=?,vol=?,price=?,tag=?,coffee=?,is_on=?,img=?,section=?,opts=? WHERE id=?').run(
     p.cat, p.e || '☕', p.name || 'Без названия', p.desc || '', JSON.stringify(p.comp || []),
@@ -138,7 +180,7 @@ app.put('/api/menu/:id', menuGuard, (req, res) => {
     p.section || 'coffee', JSON.stringify(p.opts || []), req.params.id);
   touch(); res.json({ ok: true });
 });
-app.delete('/api/menu/:id', menuGuard, (req, res) => {
+app.delete('/api/menu/:id', adminGuard, (req, res) => {
   db.prepare('DELETE FROM menu WHERE id=?').run(req.params.id);
   touch(); res.json({ ok: true });
 });
@@ -163,7 +205,7 @@ app.use(express.static(PUBLIC_DIR, {
 }));
 
 /* POST /api/menu/upload — автоматическая Retina WebP нарезка из админки */
-app.post('/api/menu/upload', menuGuard, async (req, res) => {
+app.post('/api/menu/upload', adminGuard, async (req, res) => {
   try {
     const { id, data } = req.body || {};
     if (!data || typeof data !== 'string' || !data.includes(',')) {

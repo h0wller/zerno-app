@@ -3,6 +3,7 @@
 //   signup  — обычная регистрация
 //   qr      — регистрация по QR с постера
 //   install — установка приложения на телефон
+// Доставка: скидка ₽ (delivery) и/или флаг freeFirstDelivery — одноразовый код kind='freeship' (fee = 0).
 // Настройки лежат в meta.bonus_cfg, по умолчанию всё выключено (0).
 // Каждый вид бонуса начисляется гостю один раз (таблица bonus_grants) и только подтверждённому профилю.
 import crypto from 'crypto';
@@ -52,7 +53,7 @@ export function grantBonus(cid, kind) {
 
   const cfg = getBonusConfig();
   const k = cfg.kinds[kind];
-  if (!k || (k.coffee <= 0 && k.delivery <= 0)) return null;
+  if (!k || (k.coffee <= 0 && k.delivery <= 0 && !k.freeFirstDelivery)) return null;
 
   // Один раз на гостя и вид бонуса.
   const ins = db.prepare('INSERT OR IGNORE INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)').run(cid, kind, nowISO());
@@ -61,7 +62,7 @@ export function grantBonus(cid, kind) {
   const parts = [];
   if (k.coffee > 0) {
     for (let i = 0; i < k.coffee; i++) grant(cid, 'Система');
-    parts.push(`+${k.coffee} штамп(а) в кофейне`);
+    parts.push(k.coffee >= 10 ? 'приветственный напиток в кофейне (10 штампов)' : `+${k.coffee} штамп(а) в кофейне`);
   }
 
   let code = null;
@@ -74,8 +75,27 @@ export function grantBonus(cid, kind) {
     parts.push(`скидка ${k.delivery} ₽ на доставку, промокод ${code} (действует ${cfg.days} дн.)`);
   }
 
+  // Первая доставка бесплатно: одноразовый персональный промокод вида freeship (сумма заказа не меняется, fee = 0).
+  let freeCode = null;
+  if (k.freeFirstDelivery) {
+    freeCode = makeBonusPromoCode();
+    const exp = new Date(Date.now() + cfg.days * 86400000).toISOString();
+    db.prepare(
+      'INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope,owner) VALUES(?,?,?,?,1,?,1,0,?,?,?)'
+    ).run(crypto.randomUUID(), freeCode, 'freeship', 0, exp, nowISO(), 'delivery', cid);
+    parts.push(`первая доставка бесплатно (применится в корзине сама, ${cfg.days} дн.)`);
+  }
+
   const title = BONUS_TITLES[kind];
   addHist(cid, `🎁 Бонус «${title}»: ${parts.join(', ')}`, 'Система');
   sendPush(cid, '🎁 Бонус начислен', parts.join(', ')).catch(() => {});
-  return { kind, coffee: k.coffee, delivery: k.delivery, code };
+  return { kind, coffee: k.coffee, delivery: k.delivery, code, freeCode };
+}
+
+// Действующий персональный код «первая доставка бесплатно» гостя (или null). Клиент применяет его в корзине сам.
+export function findFreeDeliveryCode(cid) {
+  const r = db.prepare(
+    "SELECT code FROM promos WHERE owner=? AND kind='freeship' AND active=1 AND uses<maxuses AND (expires IS NULL OR expires>?) ORDER BY created DESC LIMIT 1"
+  ).get(cid, new Date().toISOString());
+  return r ? r.code : null;
 }

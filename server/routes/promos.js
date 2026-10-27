@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db/connection.js';
 import { userGuard, adminGuard } from '../middleware/auth.js';
 import { grant } from '../domain/loyalty.js';
+import { findFreeDeliveryCode } from '../domain/bonuses.js';
 import { cust, addHist, logEv } from '../domain/helpers.js';
 import { nowISO, uid } from '../utils/id-time.js';
 
@@ -51,6 +52,11 @@ promosRouter.get('/api/promo/info', (req, res) => {
   if (p.maxuses > 0 && p.uses >= p.maxuses) return res.json({ ok: false, error: 'Код уже использован' });
   
   res.json({ ok: true, kind: p.kind, value: p.value, code: p.code });
+});
+
+// Персональный код «первая доставка бесплатно» текущего гостя: корзина применяет его автоматически.
+promosRouter.get('/api/me/free-delivery', userGuard, (req, res) => {
+  res.json({ code: findFreeDeliveryCode(req.user.id) });
 });
 
 // ══════════════════════════════════════════════

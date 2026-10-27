@@ -6,10 +6,12 @@ import { tgSend, TG_TOKEN, TG_WEBHOOK_SECRET, APP_URL } from '../services/telegr
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { otpStore } from '../utils/otp.js';
 import { grantWelcome } from '../domain/loyalty.js';
+import { grantBonus, QR_SOURCE } from '../domain/bonuses.js';
 import { cust, addHist, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { nowISO } from '../utils/id-time.js';
 import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
+import { botIntent } from '../utils/bot-nlu.js';
 
 function welcomeKeyboard(c) {
   const rows = [
@@ -243,8 +245,8 @@ export function createTgRouter({ appKb }) {
           (c.free ? `\n🎁 Бесплатных кофе: <b>${c.free}</b>` : '')
         : '☕ Привет! Я бот «…и кофе» и доставки «Пятница» 🌊🍕\n\n' +
           'Привяжите номер и заберите приветственные бонусы:\n' +
-          '☕ <b>+1 штамп</b> на кофе у моря\n' +
-          '🍕 <b>Скидка 200 ₽</b> на первый заказ доставки (промокод <b>ПРИВЕТ</b>)\n\n' +
+          '☕ <b>Приветственный напиток</b> в кофейне\n' +
+          '🍕 <b>Бесплатная первая доставка</b> «Пятницы»\n\n' +
           'Штампы, меню, заказы и чат поддержки — всё здесь 👇';
       await tgSend(chatId, hello, welcomeKeyboard(c));
       return;
@@ -294,6 +296,7 @@ export function createTgRouter({ appKb }) {
           if (targetCust) {
             db.prepare('UPDATE customers SET tg=?, verified=1 WHERE id=?').run(chatId, targetCust.id);
             if (!targetCust.welcome) grantWelcome(targetCust.id, 'Telegram');
+            grantBonus(targetCust.id, targetCust.src === QR_SOURCE ? 'qr' : 'signup');
             addHist(targetCust.id, 'Вход через Telegram-подтверждение', 'Telegram');
           } else {
             const tgUserName = [u.message.from?.first_name, u.message.from?.last_name].filter(Boolean).join(' ');
@@ -302,6 +305,7 @@ export function createTgRouter({ appKb }) {
             if (!r.err && r.customer) {
               db.prepare('UPDATE customers SET tg=?, verified=1, consent=? WHERE id=?').run(chatId, nowISO() + ' v1', r.customer.id);
               grantWelcome(r.customer.id, 'Telegram');
+              grantBonus(r.customer.id, 'signup');
               addHist(r.customer.id, 'Регистрация через Telegram', 'Telegram');
             }
           }
@@ -328,8 +332,8 @@ export function createTgRouter({ appKb }) {
           await tgSend(chatId,
             '🎉 <b>Профиль готов, ' + (custObj ? custObj.name : '') + '!</b>\n\n' +
             'Ваши приветственные бонусы активированы:\n' +
-            '☕ <b>+1 штамп</b> на кофе у моря\n' +
-            '🍕 <b>Скидка 200 ₽</b> на доставку (промокод <b>ПРИВЕТ</b>)\n\n' +
+            '☕ <b>Приветственный напиток</b> в кофейне\n' +
+            '🍕 <b>Бесплатная первая доставка</b> — применится в корзине сама\n\n' +
             'В браузере вход выполнился автоматически. Или откройте сайт кнопкой ниже 👇',
             {
               inline_keyboard: [[
@@ -363,11 +367,12 @@ export function createTgRouter({ appKb }) {
         db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);
         if (!c.welcome) {
           grantWelcome(c.id, 'Telegram');
+          grantBonus(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
           await tgSend(chatId,
             '✅ Готово, ' + c.name + '! Профиль привязан 🎉\n\n' +
             '🎁 <b>Ваши приветственные бонусы:</b>\n' +
-            '☕ +1 штамп на кофе (уже в вашей карте бонусов)\n' +
-            '🍕 Скидка 200 ₽ на заказ доставки по промокоду <b>ПРИВЕТ</b>',
+            '☕ Приветственный напиток в кофейне (уже в вашей карте)\n' +
+            '🍕 Бесплатная первая доставка — применится в корзине сама',
             welcomeKeyboard(c)
           );
         } else {
@@ -380,7 +385,7 @@ export function createTgRouter({ appKb }) {
         );
       } else {
         await tgSend(chatId,
-          'Профиль с номером ' + formatted + ' не найден ⚠️\n\nСоздайте его в приложении за 10 секунд — и получите приветственный штамп 🎁',
+          'Профиль с номером ' + formatted + ' не найден ⚠️\n\nСоздайте его в приложении за 10 секунд — и получите приветственный напиток и бесплатную доставку 🎁',
           { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }
         );
       }
@@ -389,22 +394,25 @@ export function createTgRouter({ appKb }) {
 
     const lower = text.toLowerCase();
 
-    if (/(оператор|человек|помощь|поддержк|админ|связаться|проблем|жалоб|ошибк|позови)/i.test(lower)) {
+    // F3.71: классификация намерений вынесена в чистый модуль server/utils/bot-nlu.js (юнит-тестируется без БД/сети)
+    const intent = botIntent(lower);
+
+    if (intent === 'support') {
       await sendSupportMenu(chatId);
       return;
     }
 
-    if (/(штамп|бонус|бесплатн|подарок|зерн|зёрн|промокод|баллы|qr)/i.test(lower)) {
+    if (intent === 'bonus') {
       await sendBonusInfo(chatId);
       return;
     }
 
-    if (/(заказ|где курьер|где доставка|доставк|статус заказа)/i.test(lower)) {
+    if (intent === 'orders') {
       await sendOrdersInfo(chatId);
       return;
     }
 
-    if (/(где вы|адрес|находит|как добраться|время работ|режим работ|часы работ|до скольки|со скольки|янтарн)/i.test(lower)) {
+    if (intent === 'address') {
       await tgSend(chatId,
         '📍 <b>Наши заведения в пгт Янтарный:</b>\n\n' +
         '🌊 <b>Кофейня «…и кофе»</b>\n' +
@@ -425,7 +433,7 @@ export function createTgRouter({ appKb }) {
       return;
     }
 
-    if (/(меню|пицц|ролл|кофе|напитк|десерт)/i.test(lower)) {
+    if (intent === 'menu') {
       await sendMenuButtons(chatId);
       return;
     }

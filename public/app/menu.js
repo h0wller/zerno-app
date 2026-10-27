@@ -1,7 +1,7 @@
 /* public/app/menu.js — F2.6a: гостевое меню — рейл, поиск, сетка, редактор-зум, авто-КБЖУ по техкартам.
    Без IIFE: fix-views.js оборачивает window.renderMenu(499) и window.renderRail(502),
    читает CATS лексически (406). Все объявления — top-level var/function. */
-
+import { attachGridDnD, canDragMenu, dragAttr } from './core/dnd.js';
 window.cat = 'coffee'; /* Ф5.6-финал шаг 4-fix: menu-editor читает cat голым */
 window.query = ''; /* Ф5.6-финал шаг 4-fix2: menu-editor пишет query голым */
 
@@ -381,7 +381,7 @@ function renderMenu() {
             : '';
           const priceStr = fmtMulti(p.price, p);
           const volStr = fmtVol(p.vol);
-          return `<article class="card ${p.on ? '' : 'stopped'}" style="--d:${Math.min(i, 10) * 35}ms" data-item-id="${p.id}">
+          return `<article class="card ${p.on ? '' : 'stopped'}" style="--d:${Math.min(i, 10) * 35}ms" data-item-id="${p.id}"${dragAttr()}>
        <div class="media" style="--tint:${TINT[p.cat] || '#E7ECF0'}">
                   ${
                     p.img
@@ -389,7 +389,7 @@ function renderMenu() {
                       : `<span class="em">${p.e || '☕'}</span>`
                   }
          ${tg}${p.on ? '' : '<span class="stopbadge">СТОП</span>'}
-          ${editMode ? `<button class="edBtn" data-ed="${p.id}" title="Редактировать">✏️</button>` : ''}
+          ${editMode && window.canEditMenu && window.canEditMenu() ? `<button class="edBtn" data-ed="${p.id}" title="Редактировать">✏️</button>` : ''}
        </div>
        <div class="cbody">
          <h3>${esc(p.name)}</h3>
@@ -425,7 +425,7 @@ function renderMenu() {
          </div></div></article>`;
         })
         .join('') +
-      (editMode
+      (editMode && window.canEditMenu && window.canEditMenu()
         ? `<button class="addcard" id="addCard"><span>＋</span>Добавить позицию</button>`
         : '') +
       (list.length === 0
@@ -893,18 +893,17 @@ $('#grid').addEventListener('change', async e => {
   const p = MENU.find(x => String(x.id) === String(t.dataset.onoff));
   if (!p) return;
   const on = t.checked ? 1 : 0;
-  p.on = on;
-  try {
-    await api('/menu/' + p.id, { method: 'PUT', body: p });
-    window.renderMenu(); // локальный рендер из обновлённого MENU — без stale-рефетча
-    toast(
-      on ? `«${esc(p.name)}» снова в меню` : `«${esc(p.name)}» → стоп-лист`,
-      on ? '✅' : '⛔'
-    );
-  } catch (err) {
-    toast(err.message, '⚠️');
-    await loadMenu();
-  }
+p.on = on;
+try {
+// F3.68: не-админ (cashier/dispatch) шлёт ТОЛЬКО {on} — серверный PUT /api/menu/:id отдаёт 403 на любое другое тело
+const body = (window.me && window.me.role === 'admin') ? p : { on };
+await api('/menu/' + p.id, { method: 'PUT', body });
+window.renderMenu();   // локальный рендер из обновлённого MENU — без stale-рефетча
+toast(on ? `«${esc(p.name)}» снова в меню` : `«${esc(p.name)}» → стоп-лист`, on ? '✅' : '⛔');
+} catch (err) {
+toast(err.message, '⚠️');
+await loadMenu();
+}
 });
 
 /* ── Ф6.2: LCP-картинка первого экрана — eager + fetchpriority ── */
@@ -932,3 +931,14 @@ if (typeof window.alignRailWithCard === 'function') setTimeout(window.alignRailW
 window.renderRail = renderRail;
 window.openZoom = openZoom;
 window.openItemModifiersModal = openItemModifiersModal;
+
+/* ── F3.70: DnD порядка кофейни ── */
+attachGridDnD(document.getElementById('grid'), {
+  canDrag: canDragMenu,
+  getIds: () => coffeePool().map(p => p.id),
+  onReorder: async (ids) => {
+    await api('/menu/reorder', { method: 'PUT', body: { brand: 'coffee', ids } });
+    await loadMenu();
+  },
+  rerender: () => renderMenu()
+});

@@ -360,9 +360,7 @@ html body #authModal.tg-mode #regTgBtn,
 html body #authModal.tg-mode .mhint{
   display: none;
 }
-html body #authModal.tg-mode .frow:has(input[type="checkbox"]){
-  display: none;
-}
+/* F3.62: чекбокс согласия в TMA не скрываем — требование 152-ФЗ (согласие действием в любой среде). */
 @media (max-width: 375px){html body #authModal input{
     font-size: 16px; /* защита от авто-зума на iOS */
   }

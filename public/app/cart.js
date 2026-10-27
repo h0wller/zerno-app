@@ -61,7 +61,7 @@
   var promoTimer = null;
 
   function promoDisc(sum, info) {
-    if (!info) return 0;
+    if (!info || info.kind === "freeship") return 0;
     return info.kind === "percent"
       ? Math.round((sum * Math.min(90, info.value)) / 100)
       : Math.min(info.value || 0, sum);
@@ -83,7 +83,6 @@
     var fee = 0;
 
     var minOrder = 0;
-    var freeFrom = 0;
     var baseZoneFee = 0;
     var placeEl = document.getElementById("checkoutPlace");
     var placeVal = (placeEl && placeEl.value && placeEl.value.trim()) ? placeEl.value.trim() : "Янтарный";
@@ -97,7 +96,6 @@
         if (z) {
           baseZoneFee = Number(z.fee) || 0;
           if (Number(z.min) > 0) minOrder = Number(z.min);
-          if (Number(z.freeFrom) > 0) freeFrom = Number(z.freeFrom);
         }
       }
       if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
@@ -106,9 +104,6 @@
       }
       if (!baseZoneFee) {
         baseZoneFee = /синявино|покровское/i.test(normP) ? 250 : (/куликово|яблоновка/i.test(normP) ? 300 : 200);
-      }
-      if (!freeFrom) {
-        freeFrom = /синявино|покровское/i.test(normP) ? 2000 : (/куликово|яблоновка/i.test(normP) ? 2500 : 1500);
       }
       if (!minOrder) {
         minOrder = Number(window.MIN_DELIVERY_ORDER) > 0
@@ -119,7 +114,8 @@
       }
 
       if (list.length) {
-        fee = (freeFrom > 0 && sum >= freeFrom) ? 0 : baseZoneFee;
+        // Доставка платная всегда (сервер freeFrom не знает), кроме персонального промокода «первая доставка бесплатно».
+        fee = (promoInfo && promoInfo.kind === "freeship") ? 0 : baseZoneFee;
       }
     }
 
@@ -129,7 +125,7 @@
       pickup: pickup,
       fee: fee,
       baseZoneFee: baseZoneFee,
-      freeFrom: freeFrom,
+      freeShip: !!(promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
       placeVal: placeVal,
       pd: pd,
       minOrder: minOrder,
@@ -200,9 +196,25 @@
     cf.hidden = !shouldShow;
   }
 
+  /* Персональный код «первая доставка бесплатно» (выдаётся за регистрацию) применяем сами, один раз на гостя за сессию. */
+  var freeAutoFor = "";
+  async function tryAutoFreeCode() {
+    var u = typeof window.me !== "undefined" ? window.me : null;
+    if (!u || !u.id || freeAutoFor === u.id) return "";
+    freeAutoFor = u.id;
+    try {
+      var r = await api("/me/free-delivery");
+      return (r && r.code) || "";
+    } catch (e) { return ""; }
+  }
+
   async function refreshPromoLine(sum) {
     var line = document.getElementById("cartPromoLine");
     if (!line) return;
+    if (!cartPromoCode) {
+      var autoCode = await tryAutoFreeCode();
+      if (autoCode) cartPromoCode = autoCode;
+    }
     if (!cartPromoCode) {
       promoInfo = null;
       line.textContent = "";
@@ -217,7 +229,9 @@
       if (r.ok) {
         promoInfo = r;
         localStorage.setItem("zt_cartpromo", cartPromoCode);
-        line.textContent = "🎟 " + r.code + ": −" + fmt(promoDisc(sum, r));
+        line.textContent = r.kind === "freeship"
+          ? "🎟 " + r.code + ": первая доставка бесплатно"
+          : "🎟 " + r.code + ": −" + fmt(promoDisc(sum, r));
         line.style.color = "var(--green)";
       } else {
         promoInfo = null;
@@ -315,40 +329,11 @@
       "</div>";
   }
 
+  /* #deliveryPromoBar отключён по продуктовому решению 2026-10-27: плашка «до подарка» больше не рисуется.
+     Логика weekPromo (threshold/gift) остаётся в БД и API для будущих акций. */
   function updateDeliveryPromoBar() {
-    var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
-    var pBar = document.getElementById("deliveryPromoBar");
-    if (!list.length || !checkIsDelivery()) {
-      if (pBar) pBar.style.display = "none";
-      return;
-    }
-    var cartItems = document.getElementById("cartItems");
-    if (!cartItems || !cartItems.parentNode) return;
-    if (!pBar) {
-      pBar = document.createElement("div");
-      pBar.id = "deliveryPromoBar";
-      cartItems.parentNode.insertBefore(pBar, cartItems);
-    }
-    pBar.style.display = "";
-
-    var tNow = totalsNow().sum;
-    var wp = typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.weekPromo ? deliveryInfo.weekPromo : {};
-    var thresholdVal = Number(wp.threshold) > 0 ? Number(wp.threshold) : 2000;
-    var giftText = wp.gift && wp.gift.trim() ? wp.gift.trim() : "Пиво 0,5";
-    var isDone = tNow >= thresholdVal && tNow > 0;
-    var diffVal = Math.max(0, thresholdVal - tNow);
-    var progressVal = thresholdVal > 0 ? Math.min(100, Math.round((tNow / thresholdVal) * 100)) : 0;
-    if (isDone) progressVal = 100;
-
-    pBar.className = "cart-promo-badge";
-    pBar.innerHTML =
-      '<div class="cpb-top">' +
-        "<span>" + (isDone ? "🎁 Подарок добавлен: " + esc(giftText) : "До подарка (" + esc(giftText) + "):") + "</span>" +
-        '<b class="' + (isDone ? "done" : "") + '">' + (isDone ? "Выполнено!" : "ещё " + fmt(diffVal)) + "</b>" +
-      "</div>" +
-      '<div class="cpb-bar">' +
-        '<div class="cpb-fill' + (isDone ? " done" : "") + '" style="width:' + progressVal + '%;"></div>' +
-      "</div>";
+    var stale = document.getElementById("deliveryPromoBar");
+    if (stale) stale.remove();
   }
 
   function clearPromo() {
@@ -401,12 +386,10 @@
     }
     hint.hidden = false;
     var info = t || totalsNow();
-    if (info.freeFrom > 0 && info.sum >= info.freeFrom) {
-      hint.innerHTML = "✅ <span><b>" + esc(info.placeVal) + ":</b> бесплатная доставка!</span>";
+    if (info.freeShip) {
+      hint.innerHTML = "✅ <span><b>" + esc(info.placeVal) + ":</b> доставка бесплатно (бонус за регистрацию)</span>";
     } else {
-      var needForFree = Math.max(0, info.freeFrom - info.sum);
       hint.innerHTML = "🚗 <span><b>" + esc(info.placeVal) + ":</b> доставка " + fmt(info.baseZoneFee) +
-        (info.freeFrom > 0 ? " · бесплатно от " + fmt(info.freeFrom) + (info.sum > 0 ? " (ещё " + fmt(needForFree) + ")" : "") : "") +
         " · мин. заказ " + fmt(info.minOrder) + "</span>";
     }
   }
@@ -589,11 +572,7 @@
     var di = typeof deliveryInfo !== "undefined" && deliveryInfo ? deliveryInfo : null;
     var gifts = [];
 
-    var wp2 = di && di.weekPromo;
-    if (wp2 && wp2.gift && sum > 0) {
-      var q = wp2.threshold > 0 ? Math.floor(sum / wp2.threshold) : 1;
-      if (q > 0) gifts.push("🎁 " + wp2.gift + " ×" + q);
-    }
+    /* Подарок от суммы (weekPromo) не показываем — см. updateDeliveryPromoBar. */
     var pm2 = di && di.pizzaMonth;
     if (pm2 && pm2.name) {
       var big = list.reduce(function (a, c) {
@@ -1257,68 +1236,6 @@ function renderCartBase() {
       if (grid) grid.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   });
-
-  /* ── ScrollSpy для подсветки активной категории в #deliveryRail при прокрутке витрины ── */
-  (function initDeliveryRailScrollSpy() {
-    var spyTick = false;
-    function resolveCardCat(card) {
-      if (!card) return null;
-      var direct = card.getAttribute("data-cat") || card.getAttribute("data-cat-anchor");
-      if (direct) return direct;
-      var addBtn = card.querySelector("[data-add]");
-      var id = addBtn ? addBtn.getAttribute("data-add") : card.getAttribute("data-item-id");
-      if (id && typeof window.DMENU !== "undefined" && Array.isArray(window.DMENU)) {
-        var prod = window.DMENU.find(function (x) { return String(x.id) === String(id); });
-        if (prod && prod.cat) {
-          card.setAttribute("data-cat", prod.cat);
-          return prod.cat;
-        }
-      }
-      return null;
-    }
-
-    function syncRailActiveOnScroll() {
-      spyTick = false;
-      if (!checkIsDelivery()) return;
-      var rail = document.getElementById("deliveryRail");
-      var grid = document.getElementById("deliveryGrid");
-      if (!rail || !grid) return;
-
-      var cards = Array.from(grid.querySelectorAll("[data-cat-anchor], .cat-section[data-cat], .card:not(.skeleton-card)")).filter(function (el) {
-        return el.offsetParent !== null;
-      });
-      if (!cards.length) return;
-
-      var topThreshold = 160;
-      var currentCat = null;
-      for (var i = 0; i < cards.length; i++) {
-        var r = cards[i].getBoundingClientRect();
-        if (r.bottom > 90 && r.top <= topThreshold) {
-          currentCat = resolveCardCat(cards[i]);
-          if (currentCat) break;
-        }
-      }
-      if (!currentCat && cards.length) {
-        currentCat = resolveCardCat(cards[0]);
-      }
-      if (currentCat) {
-        rail.querySelectorAll("button").forEach(function (btn) {
-          var bCat = btn.getAttribute("data-dcat") || btn.getAttribute("data-cat") || btn.dataset.dcat || btn.dataset.cat;
-          if (bCat) {
-            btn.classList.toggle("on", bCat === currentCat);
-          }
-        });
-      }
-    }
-
-    window.__syncDeliveryScrollSpy = syncRailActiveOnScroll;
-    window.addEventListener("scroll", function () {
-      if (!spyTick) {
-        spyTick = true;
-        requestAnimationFrame(syncRailActiveOnScroll);
-      }
-    }, { passive: true });
-  })();
 
   /* ── Спринт 3, Задача 3: Модалка подтверждения и Live Tracking заказа ── */
   var trackPollTimer = null;

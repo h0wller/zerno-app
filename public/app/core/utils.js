@@ -61,11 +61,22 @@
     var h = (d.getUTCHours() + 2) % 24;
     return { hour: h, minute: d.getUTCMinutes() };
   }
+  // Часы доставки приходят с сервера (GET /api/delivery/info: today/schedule — зимой пн–чт до 21:00).
+  // Пока ответ не загружен или в нём нет часов — прежние константы 11–22.
+  function deliveryHours() {
+    var di = window.deliveryInfo;
+    var s = di && (di.today || di.schedule);
+    var open = s && Number(s.open) >= 0 && s.open !== undefined ? Number(s.open) : 11;
+    var close = s && Number(s.close) > 0 ? Number(s.close) : 22;
+    return { open: open, close: close };
+  }
   function isDeliveryServiceOpen() {
     var t = getKaliningradTime();
     var min = t.hour * 60 + t.minute;
-    return min >= 660 && min < 1320;
+    var h = deliveryHours();
+    return min >= h.open * 60 && min < h.close * 60;
   }
+  window.deliveryHours = deliveryHours;
   window.getKaliningradTime = getKaliningradTime;
   window.isDeliveryServiceOpen = isDeliveryServiceOpen;
 })();

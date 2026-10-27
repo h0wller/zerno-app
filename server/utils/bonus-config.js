@@ -9,13 +9,15 @@ export const DEFAULT_BONUS_DAYS = 30;
 export const DEFAULT_BONUS_CFG = {
   days: DEFAULT_BONUS_DAYS,
   kinds: {
-    signup: { coffee: 0, delivery: 0 },
-    qr: { coffee: 0, delivery: 0 },
-    install: { coffee: 0, delivery: 0 },
+    // Регистрация: 10 штампов (карта кофейни = 1 напиток) и первая доставка бесплатно.
+    // QR-регистрация получает то же самое: гость по QR не должен получать меньше обычного.
+    signup: { coffee: 10, delivery: 0, freeFirstDelivery: 1 },
+    qr: { coffee: 10, delivery: 0, freeFirstDelivery: 1 },
+    install: { coffee: 0, delivery: 0, freeFirstDelivery: 0 },
   },
 };
 
-export const LIMITS = { coffee: [0, 10], delivery: [0, 5000], days: [1, 365] };
+export const LIMITS = { coffee: [0, 10], delivery: [0, 5000], days: [1, 365], freeFirstDelivery: [0, 1] };
 
 const clampInt = (v, [min, max], fallback) => {
   const n = parseInt(v, 10);
@@ -35,6 +37,7 @@ export function cleanBonusConfig(input = {}) {
     kinds[k] = {
       coffee: clampInt(src.coffee, LIMITS.coffee, 0),
       delivery: clampInt(src.delivery, LIMITS.delivery, 0),
+      freeFirstDelivery: clampInt(src.freeFirstDelivery, LIMITS.freeFirstDelivery, 0),
     };
   }
   return { days: clampInt(input.days, LIMITS.days, DEFAULT_BONUS_DAYS), kinds };

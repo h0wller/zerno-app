@@ -262,7 +262,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             '</div>';
 
         if (!me.welcome && !me.tg) {
-            html += '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>+1 штамп</b> за привязку в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
+            html += '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>Приветственный напиток и бесплатная первая доставка</b> за регистрацию. Быстрее всего — в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
         }
 
         n.hidden = false;
@@ -278,7 +278,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                         body: { code: codeVal },
                     });
                     me = r.customer;
-                    toast("Профиль активирован! А +1 штамп ждёт в Telegram 🎁", "");
+                    toast("Профиль активирован! Приветственный напиток и бесплатная доставка уже ваши 🎁", "");
                     renderAll();
                 } catch (e) {
                     toast(e.message, "⚠️");
@@ -296,6 +296,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         }
         try {
             var r = await api('/orders/mine');
+            window.__lastMineOrders = r.orders || []; /* Ф3.69: единый кэш для делегата [data-open-track] */
             var ST = {
                 new: ['🆕', 'mo-new', 'Новый'],
                 accept: ['✅', 'mo-accept', 'Подтверждён'],
@@ -319,7 +320,9 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                 host.innerHTML = '<div class="myOrderCard"><div class="moTop"><span>Заказ #' + o.no + ' <span class="moDate">· ' + d + '</span></span><span class="moSt ' + s[1] + '">' + s[0] + ' ' + s[2] + '</span></div>' +
                     '<div class="moSum">' + fmt(o.total) + timeInfo + '</div>' +
                     (items ? '<div class="moItems">' + esc(items) + '</div>' : '') +
-                    ((o.gifts && o.gifts.length) ? '<div class="moGifts">🎁 ' + o.gifts.map(function (g) { return esc(g.name) + ' ×' + g.qty; }).join(', ') + '</div>' : '') + '</div>';
+                    ((o.gifts && o.gifts.length) ? '<div class="moGifts">🎁 ' + o.gifts.map(function (g) { return esc(g.name) + ' ×' + g.qty; }).join(', ') + '</div>' : '') +
+                    /* Ф3.69: кнопка «Отследить» для активных заказов */
+                    (!['done', 'cancel'].includes(o.status) ? '<button type="button" class="moTrack" data-open-track="' + esc(String(o.id)) + '">📍 Отследить</button>' : '') + '</div>';
             }
         } catch (e) { }
         if (typeof window.applyProfileBrand === 'function') window.applyProfileBrand();
@@ -333,6 +336,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         if (typeof window.syncOverlay === 'function') window.syncOverlay();
         try {
             var r = await api('/orders/mine');
+            window.__lastMineOrders = r.orders || []; /* Ф3.69: кэш списка для кнопки «Отследить» */
             var ST = {
                 new: '🆕 Новый',
                 accept: '✅ Подтверждён',
@@ -352,7 +356,9 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                 return '<div class="myOrderCard" style="margin-bottom:8px"><div class="moTop"><span>Заказ #' + o.no + ' <span class="moDate">· ' + d + '</span></span><span class="moSt">' + (ST[o.status] || o.status) + '</span></div>' +
                     '<div class="moSum">' + fmt(o.total) + timeInfo + '</div>' +
                     '<div class="moItems">' + esc(o.items.map(function (i) { return i.qty + '× ' + i.name; }).join(', ')) + '</div>' +
-                    ((o.gifts && o.gifts.length) ? '<div class="moGifts">🎁 ' + o.gifts.map(function (g) { return esc(g.name) + ' ×' + g.qty; }).join(', ') + '</div>' : '') + '</div>';
+                    ((o.gifts && o.gifts.length) ? '<div class="moGifts">🎁 ' + o.gifts.map(function (g) { return esc(g.name) + ' ×' + g.qty; }).join(', ') + '</div>' : '') +
+                    /* Ф3.69: кнопка «Отследить» для активных заказов в модалке */
+                    (!['done', 'cancel'].includes(o.status) ? '<button type="button" class="moTrack" data-open-track="' + esc(String(o.id)) + '">📍 Отследить</button>' : '') + '</div>';
             }).join('') || '<div class="hmini">Заказов пока нет 🍕</div>';
         } catch (e) {
             list.innerHTML = '<div class="hmini">Не загрузилось</div>';
@@ -446,3 +452,14 @@ window.loadMyOrders = loadMyOrders;
 /* ── Ф5.25: ESM-шимы для кассира (точки штампов, склонения чашек) ── */
 window.stampIcon = stampIcon; /* Ф5.25: dotsHTML в cashier.js */
 window.cupWord = cupWord; /* Ф5.25: тексты списаний/подарков */
+
+/* Ф3.69: делегированный клик «Отследить заказ» (#myOrders и модалка «Мои заказы»).
+   Заказ ищем в кэше window.__lastMineOrders, который обновляется при каждом рендере списка. */
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest ? e.target.closest('[data-open-track]') : null;
+  if (!btn) return;
+  e.preventDefault();
+  var id = btn.getAttribute('data-open-track');
+  var found = (window.__lastMineOrders || []).find(function (x) { return String(x.id) === String(id); });
+  if (found && typeof window.openOrderTrackModal === 'function') window.openOrderTrackModal(found);
+});
