@@ -159,7 +159,15 @@ document.getElementById('editToggle').onclick=function(){
   b.classList.toggle('on',editMode);
   if(brand==='delivery')renderDeliveryMenu();
   else renderMenu();
-  if(editMode)toast('Режим редактирования: ✏️ на карточке или тумблер «в меню»','✏️');
+  if(editMode){
+    toast('Режим редактирования: ✏️ на карточке или тумблер «в меню»','✏️');
+    // F3.70: HTML5 DnD не работает на тач-устройствах — предупреждаем сразу при включении режима
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+      toast('Перетаскивание карточек — мышью на десктопе; на телефоне меняйте порядок на ПК', 'ℹ️');
+    }
+  }
 };
 
 })();
+function canToggleStopList() { return !!(window.me && ['admin', 'cashier', 'dispatch'].includes(window.me.role)); }
+window.canToggleStopList = canToggleStopList;

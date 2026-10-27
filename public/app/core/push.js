@@ -19,7 +19,8 @@ var cur=u8ToB64url(new Uint8Array(sub.options.applicationServerKey));
 if(cur!==vap.publicKey){try{await sub.unsubscribe();}catch(e){}sub=null;}
 }
 if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64urlToU8(vap.publicKey)});
-await api('/push/subscribe',{method:'POST',body:{sub:sub.toJSON()}});
+var dev = typeof window.getDevId === 'function' ? window.getDevId() : (localStorage.getItem('zt_dev') || '');
+await api('/push/subscribe', { method: 'POST', body: { sub: sub.toJSON(), dev: dev } });
 if(verbose)toast('Уведомления подключены 🔔','✅');
 return true;
 }catch(e){if(verbose)toast('Не вышло подключить: '+e.message,'⚠️');return false;}

@@ -25,7 +25,11 @@ export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
     }
   }
 
-  const body = { chat_id: chatId, text, parse_mode: 'HTML' };
+  // F3.71: лимит Telegram sendMessage — 4096 символов; длинное сообщение обрезаем с «…»
+  const TG_MAX = 4096;
+  let safeText = String(text);
+  if (safeText.length > TG_MAX) safeText = safeText.slice(0, TG_MAX - 1) + '…';
+  const body = { chat_id: chatId, text: safeText, parse_mode: 'HTML' };
   if (kb) body.reply_markup = kb;
   try {
     const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {

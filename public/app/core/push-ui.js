@@ -258,9 +258,11 @@ function urlBase64ToUint8Array(s) {
       };
 
       
-      
-/* ── Ф5.6.2g: ESM-шимы ── */
+      /* getDevId объявлен выше (стабильный id устройства: одно устройство — одна подписка).
+         Дубликат из feat/F3.67 убран при слиянии: два top-level объявления ломают сборку бандла. */
+/* ── Ф5.6.2g: ESM- shimy ── */
 window.enablePush = enablePush;
 window.togglePushHint = togglePushHint;
 window.refreshPushBtn = refreshPushBtn;
 window.urlBase64ToUint8Array = urlBase64ToUint8Array;
+window.getDevId = getDevId;

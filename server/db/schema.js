@@ -57,6 +57,10 @@ CREATE TABLE IF NOT EXISTS fcm(
   const menuCols = db.prepare('PRAGMA table_info(menu)').all().map(c => c.name);
   if (menuCols.length && !menuCols.includes('section')) db.exec(`ALTER TABLE menu ADD COLUMN section TEXT DEFAULT 'coffee'`);
   if (menuCols.length && !menuCols.includes('opts')) db.exec(`ALTER TABLE menu ADD COLUMN opts TEXT DEFAULT '[]'`);
+  if (menuCols.length && !menuCols.includes('sort_order')) {
+  db.exec(`ALTER TABLE menu ADD COLUMN sort_order INTEGER DEFAULT 0`);
+  db.exec(`UPDATE menu SET sort_order = rowid`);
+}
 
   const prCols = db.prepare('PRAGMA table_info(promos)').all().map(c => c.name);
   if (prCols.length && !prCols.includes('scope')) db.exec(`ALTER TABLE promos ADD COLUMN scope TEXT DEFAULT 'coffee'`);
