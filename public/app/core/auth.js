@@ -216,6 +216,11 @@
         }
       } catch (_) {}
     }
+    // F3.62: в TMA открываем модалку регистрации СРАЗУ и синхронно — иначе чекбокс согласия
+    // consentBox существует, но скрыт внутри незакрытой модалки (toBeVisible падает).
+    // checkTgAutoLogin() при этом не трогаем: он сам подставит имя из tgUser при needPhone.
+    var isTgBoot = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+    if (isTgBoot && !localStorage.getItem('zt_user')) openAuth(false);
     checkTgAutoLogin();
 
     var toLogin = document.getElementById('toLogin');
@@ -237,6 +242,12 @@
     var regBtn = document.getElementById('regBtn');
     if (regBtn) {
       regBtn.onclick = async function () {
+        // F3.62: гарантируем наличие строки согласия (#consentRow инжектит admin-extra.js —
+        // владелец не менялся). В TMA модалка открывается на boot до DOMContentLoaded этого
+        // модуля, поэтому проверяем прямо в обработчике: нет строки → инжектируем → просим отметить.
+        if (!document.getElementById('consentBox') && typeof window.ensureConsentRow === 'function') {
+          window.ensureConsentRow();
+        }
         var name = (document.getElementById('regName') || {}).value.trim();
         var phone = (document.getElementById('regPhone') || {}).value;
         var pin = (document.getElementById('regPin') || {}).value.trim();

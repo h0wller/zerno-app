@@ -237,7 +237,10 @@
   }
 
   /* ── R6: согласие с политикой при регистрации ── */
-  (function () {
+  // F3.62: инжект вынесен в window.ensureConsentRow() — core/auth.js вызывает его
+  // синхронно в обработчике regBtn (в TMA модалка открывается раньше этого модуля).
+  // Владелец DOM-строки #consentRow не менялся: реализация остаётся здесь.
+  window.ensureConsentRow = function () {
     var form = document.getElementById('regForm');
     if (!form || document.getElementById('consentRow')) return;
     var lab = document.createElement('label');
@@ -247,7 +250,8 @@
       '<input type="checkbox" id="consentBox"><span>Согласен с <a href="/privacy.html" target="_blank" style="color:#1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных</span>';
     var btn = document.getElementById('regBtn');
     if (btn) form.insertBefore(lab, btn);
-  })();
+  };
+  window.ensureConsentRow();
 
   document.addEventListener(
     'click',

@@ -119,15 +119,15 @@ app.get('/api/tg/diag', adminGuard, async (req, res) => {
 
 /* ── меню ── */
 app.get('/api/menu', (req, res) => res.json({
-  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee' ORDER BY sort_order ASC, id ASC").all().map(item),
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee'").all().map(item),
   updatedAt: getMeta(),
 }));
 app.get('/api/menu/all', menuGuard, (req, res) => res.json({
-  items: db.prepare('SELECT * FROM menu ORDER BY sort_order ASC, id ASC').all().map(item),
+  items: db.prepare('SELECT * FROM menu').all().map(item),
   updatedAt: getMeta(),
 }));
 app.get('/api/dmenu', (req, res) => res.json({
-  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery' ORDER BY sort_order ASC, id ASC").all().map(item),
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery'").all().map(item),
 }));
 app.post('/api/menu', adminGuard, (req, res) => {
   const sec = req.body.section === 'delivery' ? 'delivery' : 'coffee';
@@ -156,6 +156,11 @@ app.put('/api/menu/:id', menuGuard, (req, res) => {
   const id = String(req.params.id || '').trim();
   const existing = db.prepare('SELECT * FROM menu WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: 'Позиция не найдена' });
+  // F3.68-fix: is_on — единственная колонка «в меню» (см. schema.js:13).
+  // Клиент присылает и p.on, и p.is_on; приводим к каноничному значению из БД,
+  // иначе on=undefined молча превращается в 0 и позиция уходит в стоп-лист
+  // при любом полном PUT админа (детерминированно роняло cart-regress на Mobile Chrome).
+  if ('on' in req.body && !('is_on' in req.body)) req.body.is_on = req.body.on ? 1 : 0;
   const bodyKeys = Object.keys(req.body || {});
   const onlyOn = bodyKeys.length === 1 && bodyKeys[0] === 'on';
   if (req.user.role !== 'admin') {

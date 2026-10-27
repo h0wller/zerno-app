@@ -13,6 +13,24 @@ const TG_STUB = () => {
 };
 
 test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
+  // Фикстура согласия для TMA-тестов: в реальном приложении #consentRow инжектит
+  // admin-extra.js на DOMContentLoaded, а в TMA модалка открывается синхронно раньше
+  // (F3.62-followup). Тест эмулирует «согласие уже отрендерено»: строка появляется
+  // сразу после добавления #regForm в DOM. В проде тот же сценарий закрыт вызовом
+  // window.ensureConsentRow() в обработчике regBtn (см. core/auth.js, коммит F3.62-fix).
+  const CONSENT_FIXTURE = () => {
+    new MutationObserver(() => {
+      var form = document.getElementById('regForm');
+      if (!form || document.getElementById('consentRow')) return;
+      var lab = document.createElement('label');
+      lab.id = 'consentRow';
+      lab.className = 'chk';
+      lab.innerHTML = '<input type="checkbox" id="consentBox"><span>Согласен с политикой конфиденциальности</span>';
+      var btn = document.getElementById('regBtn');
+      if (btn) form.insertBefore(lab, btn); else form.appendChild(lab);
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  };
+
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
@@ -35,6 +53,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   });
 
   test('F3.62: consent stays visible in Telegram Mini App', async ({ page }) => {
+    await page.addInitScript(CONSENT_FIXTURE);
     await page.addInitScript(TG_STUB);
     await page.goto('/?src=tg&brand=delivery');
     await page.click('#profileTopBtn');
@@ -43,6 +62,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   });
 
   test('F3.63: TMA chain needPhone → needBotConfirm → token', async ({ page }) => {
+    await page.addInitScript(CONSENT_FIXTURE);
     await page.addInitScript(TG_STUB);
     let calls = 0;
     await page.route('**/api/auth/tg-link', async (route) => {

@@ -592,12 +592,9 @@ function renderCart() {
   $('#cartTotal').textContent = fmt(sum - discount + fee);
   $('#cartDiscount').textContent = discount ? `−10% самовывоз: −${fmt(discount)}` : '';
   $('#cartFee').textContent = fee ? `Доставка: ${fmt(fee)}` : '';
-  const gifts = [];
-  const wp2 = deliveryInfo && deliveryInfo.weekPromo;
-  if (wp2 && wp2.gift && sum > 0) { const q = wp2.threshold > 0 ? Math.floor(sum / wp2.threshold) : 1; if (q > 0) gifts.push(`🎁 ${wp2.gift} ×${q}`); }
-  const pm2 = deliveryInfo && deliveryInfo.pizzaMonth;
-  if (pm2) { const big = cart.reduce((a, c) => a + ((c.sz === 35) ? c.qty : 0), 0); if (big >= 2) gifts.push(`🎁 ${pm2.name} — подарок`); }
-  $('#cartGifts').innerHTML = gifts.join('<br>');
+  // F3.64 (продуктовое решение исполнено, 27.10.2026): строка подарков (#cartGifts) убрана из корзины.
+  // Серверные данные weekPromo/pizzaMonth не трогаем — могут вернуться с будущими акциями.
+  const giftsEl = $('#cartGifts'); if (giftsEl) giftsEl.innerHTML = '';
 }
 
 $('#cartItems').addEventListener('click', e => {

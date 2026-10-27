@@ -99,9 +99,8 @@ test('корзина: 1 клик = +1, подарок 2×35, пустая = 0 �
   await expect.poll(async () => num(await total.textContent()), { timeout: 5000 }).toBe(t1 + price); // НЕ +2
 
   await page.waitForFunction(() => window.deliveryInfo, null, { timeout: 10000 });
-  const pm = await page.evaluate(() => (window.deliveryInfo && window.deliveryInfo.pizzaMonth && window.deliveryInfo.pizzaMonth.name) || '');
-  if (pm) await expect(page.locator('#cartGifts')).toContainText('подарок', { timeout: 5000 });
-  else await expect(page.locator('#cartGifts')).toHaveText('', { timeout: 5000 });
+  // F3.64 (27.10.2026): подарки из корзины убраны — #cartGifts всегда пуст, независимо от pizzaMonth.
+  await expect(page.locator('#cartGifts')).toHaveText('', { timeout: 5000 });
 
   /* Ф5.23: снятие количества карточным «−» за один тап */
   await page.locator('#cartClose').click();

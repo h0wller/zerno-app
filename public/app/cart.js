@@ -83,7 +83,7 @@
     var fee = 0;
 
     var minOrder = 0;
-    var freeFrom = 0;
+    // F3.64: freeFrom намеренно не читается из зоны — доставка всегда платная (поле в API сохранено для будущих акций).
     var baseZoneFee = 0;
     var placeEl = document.getElementById("checkoutPlace");
     var placeVal = (placeEl && placeEl.value && placeEl.value.trim()) ? placeEl.value.trim() : "Янтарный";
@@ -97,7 +97,6 @@
         if (z) {
           baseZoneFee = Number(z.fee) || 0;
           if (Number(z.min) > 0) minOrder = Number(z.min);
-          if (Number(z.freeFrom) > 0) freeFrom = Number(z.freeFrom);
         }
       }
       if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
@@ -107,9 +106,8 @@
       if (!baseZoneFee) {
         baseZoneFee = /синявино|покровское/i.test(normP) ? 250 : (/куликово|яблоновка/i.test(normP) ? 300 : 200);
       }
-      if (!freeFrom) {
-        freeFrom = /синявино|покровское/i.test(normP) ? 2000 : (/куликово|яблоновка/i.test(normP) ? 2500 : 1500);
-      }
+      // F3.64 (продуктовое решение снято с defer, 27.10.2026): бесплатная доставка «от суммы» убрана.
+      // Клиентский фолбэк freeFrom удалён; зональный freeFrom игнорируется ниже — доставка всегда платная.
       if (!minOrder) {
         minOrder = Number(window.MIN_DELIVERY_ORDER) > 0
           ? Number(window.MIN_DELIVERY_ORDER)
@@ -119,7 +117,8 @@
       }
 
       if (list.length) {
-        fee = (freeFrom > 0 && sum >= freeFrom) ? 0 : baseZoneFee;
+        // F3.64: доставка всегда платная — порог «бесплатно от N ₽» убран из функционала.
+        fee = baseZoneFee;
       }
     }
 
@@ -129,7 +128,7 @@
       pickup: pickup,
       fee: fee,
       baseZoneFee: baseZoneFee,
-      freeFrom: freeFrom,
+      freeFrom: 0, // F3.64: порог бесплатной доставки убран из функционала; поле оставлено для совместимости контракта totalsNow()
       placeVal: placeVal,
       pd: pd,
       minOrder: minOrder,
@@ -316,39 +315,11 @@
   }
 
   function updateDeliveryPromoBar() {
-    var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
+    // F3.64 (продуктовое решение исполнено, 27.10.2026): плашка «До подарка» убрана из функционала.
+    // Функция-заглушка сохранена: window.updateDeliveryPromoBar — публичный контракт (вызывается из paintTotals),
+    // серверные поля deliveryInfo.weekPromo/threshold/gift не удалены — могут вернуться с будущими акциями.
     var pBar = document.getElementById("deliveryPromoBar");
-    if (!list.length || !checkIsDelivery()) {
-      if (pBar) pBar.style.display = "none";
-      return;
-    }
-    var cartItems = document.getElementById("cartItems");
-    if (!cartItems || !cartItems.parentNode) return;
-    if (!pBar) {
-      pBar = document.createElement("div");
-      pBar.id = "deliveryPromoBar";
-      cartItems.parentNode.insertBefore(pBar, cartItems);
-    }
-    pBar.style.display = "";
-
-    var tNow = totalsNow().sum;
-    var wp = typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.weekPromo ? deliveryInfo.weekPromo : {};
-    var thresholdVal = Number(wp.threshold) > 0 ? Number(wp.threshold) : 2000;
-    var giftText = wp.gift && wp.gift.trim() ? wp.gift.trim() : "Пиво 0,5";
-    var isDone = tNow >= thresholdVal && tNow > 0;
-    var diffVal = Math.max(0, thresholdVal - tNow);
-    var progressVal = thresholdVal > 0 ? Math.min(100, Math.round((tNow / thresholdVal) * 100)) : 0;
-    if (isDone) progressVal = 100;
-
-    pBar.className = "cart-promo-badge";
-    pBar.innerHTML =
-      '<div class="cpb-top">' +
-        "<span>" + (isDone ? "🎁 Подарок добавлен: " + esc(giftText) : "До подарка (" + esc(giftText) + "):") + "</span>" +
-        '<b class="' + (isDone ? "done" : "") + '">' + (isDone ? "Выполнено!" : "ещё " + fmt(diffVal)) + "</b>" +
-      "</div>" +
-      '<div class="cpb-bar">' +
-        '<div class="cpb-fill' + (isDone ? " done" : "") + '" style="width:' + progressVal + '%;"></div>' +
-      "</div>";
+    if (pBar) pBar.style.display = "none";
   }
 
   function clearPromo() {
@@ -401,14 +372,9 @@
     }
     hint.hidden = false;
     var info = t || totalsNow();
-    if (info.freeFrom > 0 && info.sum >= info.freeFrom) {
-      hint.innerHTML = "✅ <span><b>" + esc(info.placeVal) + ":</b> бесплатная доставка!</span>";
-    } else {
-      var needForFree = Math.max(0, info.freeFrom - info.sum);
-      hint.innerHTML = "🚗 <span><b>" + esc(info.placeVal) + ":</b> доставка " + fmt(info.baseZoneFee) +
-        (info.freeFrom > 0 ? " · бесплатно от " + fmt(info.freeFrom) + (info.sum > 0 ? " (ещё " + fmt(needForFree) + ")" : "") : "") +
-        " · мин. заказ " + fmt(info.minOrder) + "</span>";
-    }
+    // F3.64: порога «бесплатно от N ₽» больше нет — доставка всегда платная (скидка 10% самовывоза осталась).
+    hint.innerHTML = "🚗 <span><b>" + esc(info.placeVal) + ":</b> доставка " + fmt(info.baseZoneFee) +
+      " · мин. заказ " + fmt(info.minOrder) + "</span>";
   }
 
   function syncCheckoutGuestAutofill() {
@@ -590,26 +556,11 @@
   }
 
   function renderGifts() {
+    // F3.64 (продуктовое решение исполнено, 27.10.2026): подарки из корзины убраны.
+    // Функция сохранена — вызывается из paintTotals; очищаем строку #cartGifts.
     var el = document.getElementById("cartGifts");
     if (!el) return;
-    var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
-    var sum = list.reduce(function (a, c) { return a + (Number(c.price) || 0) * (Number(c.qty) || 1); }, 0);
-    var di = typeof deliveryInfo !== "undefined" && deliveryInfo ? deliveryInfo : null;
-    var gifts = [];
-
-    var wp2 = di && di.weekPromo;
-    if (wp2 && wp2.gift && sum > 0) {
-      var q = wp2.threshold > 0 ? Math.floor(sum / wp2.threshold) : 1;
-      if (q > 0) gifts.push("🎁 " + wp2.gift + " ×" + q);
-    }
-    var pm2 = di && di.pizzaMonth;
-    if (pm2 && pm2.name) {
-      var big = list.reduce(function (a, c) {
-        return a + ((Number(c.sz) === 35) ? (Number(c.qty) || 1) : 0);
-      }, 0);
-      if (big >= 2) gifts.push("🎁 " + pm2.name + " — подарок");
-    }
-    el.innerHTML = gifts.join("<br>");
+    el.innerHTML = "";
   }
 
     /* ── Хелперы рендеринга модификаторов и карточек позиций ── */
