@@ -49,6 +49,12 @@ const run=async()=>{
   check('подарок пиццы месяца начислен',(ord.j.order?.gifts||[]).length>=1);
   check('диспетчер видит заказ',(await api('/orders',{token:d})).j.orders?.some(o=>o.no===ord.j.order?.no));
   check('статус меняется',(await api('/orders/'+ord.j.order.id+'/status',{method:'POST',token:d,body:{status:'accept'}})).status===200);
+  // F2.5.6: выполненный предзаказ остаётся у диспетчера и его статус можно менять вручную
+  await api('/orders/'+ordPre.j.order.id+'/status',{method:'POST',token:d,body:{status:'done'}});
+  const preList = (await api('/orders',{token:d})).j.orders || [];
+  check('предзаказ done виден диспетчеру',preList.some(o=>o.no===ordPre.j.order?.no&&o.status==='done'));
+  check('done→accept для предзаказа',(await api('/orders/'+ordPre.j.order.id+'/status',{method:'POST',token:d,body:{status:'accept'}})).status===200);
+  check('обычный done скрыт из ленты',(await api('/orders',{token:d})).j.orders?.every(o=>!(o.status==='done'&&!o.is_preorder)));
   check('диспетчер не лезет в кассу',(await api('/staff/customers',{token:d})).status===403);
   check('кассир не лезет в админку',(await api('/promos',{token:c})).status===403);
 
