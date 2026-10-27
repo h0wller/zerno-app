@@ -3,52 +3,104 @@
 (function () {
   'use strict';
 
-  /* ── список промокодов (модалка админа) ── */
+  /* ── список промокодов (модалка админа): кэш + чипы-фильтр ── */
+  var promoCache = [];
+  var promoFilter = 'all';
+
+  function promoRow(p) {
+    var exp = p.expires
+      ? new Date(p.expires).toLocaleDateString('ru-RU')
+      : 'бессрочно';
+    var dead = p.expires && new Date(p.expires) < new Date();
+    var kind =
+      p.kind === 'stamp'
+        ? '+' + p.value + ' штамп(а) 🌊'
+        : p.kind === 'free'
+          ? '+' + p.value + ' кофе 🌊'
+          : p.kind === 'freeship'
+            ? 'бесплатная доставка 🛵'
+            : p.kind === 'percent'
+              ? '−' + p.value + '% 🍕'
+              : '−' + p.value + ' ₽ 🍕';
+    return (
+      '<div class="logrow" style="align-items:center;gap:8px;flex-wrap:wrap">' +
+      '<span class="lt">' +
+      esc(p.code) +
+      '</span>' +
+      '<span style="flex:1;min-width:150px">' +
+      kind +
+      ' · ' +
+      (dead ? 'истёк' : 'до ' + exp) +
+      ' · лимит ' +
+      (p.maxuses || '∞') +
+      ' · исп. ' +
+      p.uses +
+      (p.owner ? ' · 🤖 авто' : '') +
+      '</span>' +
+      '<button class="btn ghost" data-pt="' +
+      p.id +
+      '">' +
+      (p.active ? 'Выкл' : 'Вкл') +
+      '</button>' +
+      '<button class="btn ghost danger" data-pd="' +
+      p.id +
+      '">🗑</button></div>'
+    );
+  }
+
+  function paintPromoList() {
+    var list = document.getElementById('pmList');
+    var chips = document.getElementById('pmChips');
+    if (!list) return;
+    var auto = promoCache.filter(function (p) { return p.owner; });
+    var manual = promoCache.filter(function (p) { return !p.owner; });
+    var shown =
+      promoFilter === 'auto'
+        ? auto
+        : promoFilter === 'manual'
+          ? manual
+          : promoCache;
+    if (chips) {
+      chips.innerHTML = [
+        ['all', 'Все', promoCache.length],
+        ['manual', 'Ручные', manual.length],
+        ['auto', 'Авто', auto.length]
+      ]
+        .map(function (c) {
+          return (
+            '<button type="button" class="pm-chip' +
+            (promoFilter === c[0] ? ' on' : '') +
+            '" data-pf="' +
+            c[0] +
+            '">' +
+            c[1] +
+            ' · ' +
+            c[2] +
+            '</button>'
+          );
+        })
+        .join('');
+    }
+    list.innerHTML =
+      shown.map(promoRow).join('') ||
+      '<div class="hmini">Пока пусто — создайте первый код</div>';
+  }
+
+  var chipsHost = document.getElementById('pmChips');
+  if (chipsHost) {
+    chipsHost.addEventListener('click', function (e) {
+      var c = e.target.closest('[data-pf]');
+      if (!c) return;
+      promoFilter = c.getAttribute('data-pf') || 'all';
+      paintPromoList();
+    });
+  }
+
   window.loadPromos = async function () {
     try {
       var r = await api('/promos');
-      document.getElementById('pmList').innerHTML =
-        r.promos
-          .map(function (p) {
-            var exp = p.expires
-              ? new Date(p.expires).toLocaleDateString('ru-RU')
-              : 'бессрочно';
-            var dead = p.expires && new Date(p.expires) < new Date();
-            var kind =
-              p.kind === 'stamp'
-                ? '+' + p.value + ' штамп(а) 🌊'
-                : p.kind === 'free'
-                  ? '+' + p.value + ' кофе 🌊'
-                  : p.kind === 'freeship'
-                    ? 'бесплатная доставка 🛵'
-                  : p.kind === 'percent'
-                    ? '−' + p.value + '% 🍕'
-                    : '−' + p.value + ' ₽ 🍕';
-            return (
-              '<div class="logrow" style="align-items:center;gap:8px;flex-wrap:wrap">' +
-              '<span class="lt">' +
-              esc(p.code) +
-              '</span>' +
-              '<span style="flex:1;min-width:150px">' +
-              kind +
-              ' · ' +
-              (dead ? 'истёк' : 'до ' + exp) +
-              ' · лимит ' +
-              (p.maxuses || '∞') +
-              ' · исп. ' +
-              p.uses +
-              '</span>' +
-              '<button class="btn ghost" data-pt="' +
-              p.id +
-              '">' +
-              (p.active ? 'Выкл' : 'Вкл') +
-              '</button>' +
-              '<button class="btn ghost danger" data-pd="' +
-              p.id +
-              '">🗑</button></div>'
-            );
-          })
-          .join('') || '<div class="hmini">Пока пусто — создайте первый код</div>';
+      promoCache = Array.isArray(r.promos) ? r.promos : [];
+      paintPromoList();
     } catch (e) {}
   };
 

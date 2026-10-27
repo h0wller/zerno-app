@@ -208,46 +208,64 @@
     } catch (e) { return ""; }
   }
 
-  async function refreshPromoLine(sum) {
-    var line = document.getElementById("cartPromoLine");
-    if (!line) return;
-    if (!cartPromoCode) {
-      var autoCode = await tryAutoFreeCode();
-      if (autoCode) cartPromoCode = autoCode;
-    }
-    if (!cartPromoCode) {
-      promoInfo = null;
-      line.textContent = "";
-      paintTotals();
-      return;
-    }
-    try {
-      var r = await fetch(
-        API_BASE + "/api/promo/info?code=" + encodeURIComponent(cartPromoCode)
-      ).then(function (x) { return x.json(); });
+/* ── PROMO-CLEAR v2: кнопка сброса промокода ── */
+var PROMO_CLEAR_BTN = '<button type="button" class="promo-clear-btn" title="Убрать промокод" aria-label="Убрать промокод" style="margin-left:8px;padding:0 4px;background:none;border:none;cursor:pointer;font-size:15px;line-height:1;color:#B3372B;">✕</button>';
 
-      if (r.ok) {
-        promoInfo = r;
-        localStorage.setItem("zt_cartpromo", cartPromoCode);
-        line.textContent = r.kind === "freeship"
-          ? "🎟 " + r.code + ": первая доставка бесплатно"
-          : "🎟 " + r.code + ": −" + fmt(promoDisc(sum, r));
-        line.style.color = "var(--green)";
-      } else {
-        promoInfo = null;
-        localStorage.removeItem("zt_cartpromo");
-        cartPromoCode = "";
-        var typed = (document.getElementById("cartPromo") || {}).value || "";
-        if (typed.trim()) {
-          line.textContent = "⚠️ " + (r.error || "Код не найден");
-          line.style.color = "#B3372B";
-        } else {
-          line.textContent = "";
-        }
-      }
-    } catch (e) { }
+function bindPromoClear(line) {
+  var btn = line.querySelector('.promo-clear-btn');
+  if (!btn) return;
+  btn.onclick = function () {
+    cartPromoCode = '';
+    promoInfo = null;
+    localStorage.removeItem('zt_cartpromo');
+    var inp = document.getElementById('cartPromo');
+    if (inp) inp.value = '';
+    line.innerHTML = '';
     paintTotals();
+    refreshPromoLine(totalsNow().sum);
+  };
+}
+
+async function refreshPromoLine(sum) {
+  var line = document.getElementById('cartPromoLine');
+  if (!line) return;
+
+  if (!cartPromoCode) {
+    var autoCode = await tryAutoFreeCode();
+    if (autoCode) cartPromoCode = autoCode;
   }
+
+  if (!cartPromoCode) {
+    promoInfo = null;
+    line.innerHTML = '';
+    paintTotals();
+    return;
+  }
+
+  try {
+    var r = await fetch(API_BASE + '/api/promo/info?code=' + encodeURIComponent(cartPromoCode)).then(function (x) { return x.json(); });
+    if (r.ok) {
+      promoInfo = r;
+      localStorage.setItem('zt_cartpromo', cartPromoCode);
+      line.innerHTML = '<span>🎟 ' + esc(r.code) + ': ' + (r.kind === 'freeship' ? 'первая доставка бесплатно' : '−' + fmt(promoDisc(sum, r))) + '</span>' + PROMO_CLEAR_BTN;
+      line.style.color = 'var(--green)';
+      bindPromoClear(line);
+    } else {
+      promoInfo = null;
+      localStorage.removeItem('zt_cartpromo');
+      cartPromoCode = '';
+      var typed = (document.getElementById('cartPromo') || {}).value || '';
+      if (typed.trim()) {
+        line.innerHTML = '<span>⚠️ ' + esc(r.error || 'Код не найден') + '</span>' + PROMO_CLEAR_BTN;
+        line.style.color = '#B3372B';
+        bindPromoClear(line);
+      } else {
+        line.innerHTML = '';
+      }
+    }
+  } catch (e) { }
+  paintTotals();
+}
 
   /* ── Блок «Рекомендуем к заказу» (напитки и соусы к столу) ── */
   function renderAddons() {
@@ -336,14 +354,16 @@
     if (stale) stale.remove();
   }
 
-  function clearPromo() {
-    cartPromoCode = "";
-    promoInfo = null;
-    localStorage.removeItem("zt_cartpromo");
-    var line = document.getElementById("cartPromoLine");
-    if (line) line.textContent = "";
-    paintTotals();
-  }
+function clearPromo() {
+  cartPromoCode = '';
+  promoInfo = null;
+  localStorage.removeItem('zt_cartpromo');
+  var line = document.getElementById('cartPromoLine');
+  if (line) line.innerHTML = '';
+  var inp = document.getElementById('cartPromo');
+  if (inp) inp.value = '';
+  paintTotals();
+}
 
   function flagField(el) {
     if (!el) return;
@@ -568,7 +588,6 @@
     var el = document.getElementById("cartGifts");
     if (!el) return;
     var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
-    var sum = list.reduce(function (a, c) { return a + (Number(c.price) || 0) * (Number(c.qty) || 1); }, 0);
     var di = typeof deliveryInfo !== "undefined" && deliveryInfo ? deliveryInfo : null;
     var gifts = [];
 

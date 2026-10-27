@@ -396,6 +396,13 @@ label.chk{
 #promoModal .form label small{
   margin-top: 4px
 }
+/* ── Скролл-бокс списка промокодов: модалка не растягивается ── */
+.pm-scroll{max-height:260px;overflow-y:auto;overscroll-behavior:contain;border:1.5px solid var(--line);border-radius:12px;padding:6px;background:var(--panel,#fff);}
+.pm-scroll::-webkit-scrollbar{width:8px;}
+.pm-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;}
+.pm-chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+.pm-chip{border:1.5px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--panel,#fff);color:var(--ink,#333);font-size:12px;font-weight:700;cursor:pointer;}
+.pm-chip.on{background:var(--flame,#C8402A);border-color:var(--flame,#C8402A);color:#fff;}
 #pmList .logrow{
   flex-wrap: wrap
 }
