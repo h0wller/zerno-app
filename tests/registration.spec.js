@@ -35,6 +35,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   });
 
   test('F3.62: consent stays visible in Telegram Mini App', async ({ page }) => {
+    await page.route('https://telegram.org/**', (r) => r.abort()); // реальный telegram-web-app.js затирает заглушку
     await page.addInitScript(TG_STUB);
     await page.goto('/?src=tg&brand=delivery');
     await page.click('#profileTopBtn');
@@ -43,6 +44,9 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   });
 
   test('F3.63: TMA chain needPhone → needBotConfirm → token', async ({ page }) => {
+    // В CI есть интернет: настоящий telegram-web-app.js подменяет window.Telegram, и его openTelegramLink
+    // уводит страницу на t.me. Блокируем скрипт, остаётся только наша заглушка.
+    await page.route('https://telegram.org/**', (r) => r.abort());
     await page.addInitScript(TG_STUB);
     // Ветка выбирается по телу запроса, а не по номеру вызова: автологин может дёрнуть tg-link не один раз.
     let botAsked = false;
