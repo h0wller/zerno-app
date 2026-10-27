@@ -44,16 +44,17 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
 
   test('F3.63: TMA chain needPhone → needBotConfirm → token', async ({ page }) => {
     await page.addInitScript(TG_STUB);
-    let calls = 0;
+    // Ветка выбирается по телу запроса, а не по номеру вызова: автологин может дёрнуть tg-link не один раз.
+    let botAsked = false;
     await page.route('**/api/auth/tg-link', async (route) => {
       if (route.request().method() !== 'POST') return route.continue();
-      calls++;
       const body = route.request().postDataJSON();
-      if (calls === 1 && !body.phone) {
+      if (!body.phone) {
         return route.fulfill({ status: 200, contentType: 'application/json',
           body: JSON.stringify({ needPhone: true, tgUser: { id: 1, name: 'Tg User' } }) });
       }
-      if (calls === 2) {
+      if (!botAsked) {
+        botAsked = true;
         return route.fulfill({ status: 200, contentType: 'application/json',
           body: JSON.stringify({ needBotConfirm: true, tgUrl: 'https://t.me/test_bot?start=reg_abc' }) });
       }
