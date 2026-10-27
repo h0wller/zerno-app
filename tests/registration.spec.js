@@ -5,7 +5,7 @@ const TG_STUB = () => {
   window.Telegram = { WebApp: {
     initData: 'query_id=AAH&user=%7B%22id%22%3A1%2C%22first_name%22%3A%22T%22%7D',
     initDataUnsafe: { user: { id: 1, first_name: 'T' } }, platform: 'ios',
-    ready() {}, expand() {}, enableClosingConfirmation() {}, disableVerticalSwipes() {},
+    ready() {}, expand() {}, openTelegramLink() {}, // в настоящем TMA ссылка на бота открывается нативно, страница не уходит enableClosingConfirmation() {}, disableVerticalSwipes() {},
     BackButton: { show() {}, hide() {}, onClick() {} },
     MainButton: { show() {}, hide() {}, setText() {}, setParams() {}, onClick() {} },
     HapticFeedback: { impactOccurred() {}, notificationOccurred() {}, selectionChanged() {} }
