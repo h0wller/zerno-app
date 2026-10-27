@@ -6,6 +6,7 @@ import { tgSend, TG_TOKEN, TG_WEBHOOK_SECRET, APP_URL } from '../services/telegr
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { otpStore } from '../utils/otp.js';
 import { grantWelcome } from '../domain/loyalty.js';
+import { grantBonus, QR_SOURCE } from '../domain/bonuses.js';
 import { cust, addHist, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { nowISO } from '../utils/id-time.js';
@@ -244,8 +245,8 @@ export function createTgRouter({ appKb }) {
           (c.free ? `\n🎁 Бесплатных кофе: <b>${c.free}</b>` : '')
         : '☕ Привет! Я бот «…и кофе» и доставки «Пятница» 🌊🍕\n\n' +
           'Привяжите номер и заберите приветственные бонусы:\n' +
-          '☕ <b>+1 штамп</b> на кофе у моря\n' +
-          '🍕 и бонусы за регистрацию в приложении\n\n' +
+          '☕ <b>Приветственный напиток</b> в кофейне\n' +
+          '🍕 <b>Бесплатная первая доставка</b> «Пятницы»\n\n' +
           'Штампы, меню, заказы и чат поддержки — всё здесь 👇';
       await tgSend(chatId, hello, welcomeKeyboard(c));
       return;
@@ -295,6 +296,7 @@ export function createTgRouter({ appKb }) {
           if (targetCust) {
             db.prepare('UPDATE customers SET tg=?, verified=1 WHERE id=?').run(chatId, targetCust.id);
             if (!targetCust.welcome) grantWelcome(targetCust.id, 'Telegram');
+            grantBonus(targetCust.id, targetCust.src === QR_SOURCE ? 'qr' : 'signup');
             addHist(targetCust.id, 'Вход через Telegram-подтверждение', 'Telegram');
           } else {
             const tgUserName = [u.message.from?.first_name, u.message.from?.last_name].filter(Boolean).join(' ');
@@ -303,6 +305,7 @@ export function createTgRouter({ appKb }) {
             if (!r.err && r.customer) {
               db.prepare('UPDATE customers SET tg=?, verified=1, consent=? WHERE id=?').run(chatId, nowISO() + ' v1', r.customer.id);
               grantWelcome(r.customer.id, 'Telegram');
+              grantBonus(r.customer.id, 'signup');
               addHist(r.customer.id, 'Регистрация через Telegram', 'Telegram');
             }
           }
@@ -329,8 +332,8 @@ export function createTgRouter({ appKb }) {
           await tgSend(chatId,
             '🎉 <b>Профиль готов, ' + (custObj ? custObj.name : '') + '!</b>\n\n' +
             'Ваши приветственные бонусы активированы:\n' +
-            '☕ <b>+1 штамп</b> на кофе у моря\n' +
-            '🍕 Остальные бонусы за регистрацию — в приложении, в профиле\n\n' +
+            '☕ <b>Приветственный напиток</b> в кофейне\n' +
+            '🍕 <b>Бесплатная первая доставка</b> — применится в корзине сама\n\n' +
             'В браузере вход выполнился автоматически. Или откройте сайт кнопкой ниже 👇',
             {
               inline_keyboard: [[
@@ -364,11 +367,12 @@ export function createTgRouter({ appKb }) {
         db.prepare('UPDATE customers SET tg=? WHERE id=?').run(chatId, c.id);
         if (!c.welcome) {
           grantWelcome(c.id, 'Telegram');
+          grantBonus(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
           await tgSend(chatId,
             '✅ Готово, ' + c.name + '! Профиль привязан 🎉\n\n' +
             '🎁 <b>Ваши приветственные бонусы:</b>\n' +
-            '☕ +1 штамп на кофе (уже в вашей карте бонусов)\n' +
-            '🍕 Остальные бонусы за регистрацию — в приложении, в профиле',
+            '☕ Приветственный напиток в кофейне (уже в вашей карте)\n' +
+            '🍕 Бесплатная первая доставка — применится в корзине сама',
             welcomeKeyboard(c)
           );
         } else {
@@ -381,7 +385,7 @@ export function createTgRouter({ appKb }) {
         );
       } else {
         await tgSend(chatId,
-          'Профиль с номером ' + formatted + ' не найден ⚠️\n\nСоздайте его в приложении за 10 секунд — и получите приветственный штамп 🎁',
+          'Профиль с номером ' + formatted + ' не найден ⚠️\n\nСоздайте его в приложении за 10 секунд — и получите приветственный напиток и бесплатную доставку 🎁',
           { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }
         );
       }

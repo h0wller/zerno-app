@@ -79,6 +79,7 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
     if (!c.welcome) {
       grantWelcome(c.id, 'Telegram');
     }
+    grantBonus(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
     addHist(c.id, 'Telegram привязан через Mini App', 'Telegram');
     const updated = db.prepare('SELECT * FROM customers WHERE id=?').get(c.id);
     return res.json({ token: issueToken(c.id), customer: cust(updated), isNew: false });
@@ -97,6 +98,7 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   db.prepare('UPDATE customers SET tg=?, verified=1, consent=? WHERE id=?')
     .run(tgId, nowISO() + ' v1', r.customer.id);
   grantWelcome(r.customer.id, 'Telegram');
+  grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
   addHist(r.customer.id, 'Регистрация через Telegram Mini App', 'Telegram');
 
   const newCust = db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id);

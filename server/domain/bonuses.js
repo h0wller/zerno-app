@@ -62,7 +62,7 @@ export function grantBonus(cid, kind) {
   const parts = [];
   if (k.coffee > 0) {
     for (let i = 0; i < k.coffee; i++) grant(cid, 'Система');
-    parts.push(`+${k.coffee} штамп(а) в кофейне`);
+    parts.push(k.coffee >= 10 ? 'приветственный напиток в кофейне (10 штампов)' : `+${k.coffee} штамп(а) в кофейне`);
   }
 
   let code = null;
@@ -83,7 +83,7 @@ export function grantBonus(cid, kind) {
     db.prepare(
       'INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope,owner) VALUES(?,?,?,?,1,?,1,0,?,?,?)'
     ).run(crypto.randomUUID(), freeCode, 'freeship', 0, exp, nowISO(), 'delivery', cid);
-    parts.push(`первая доставка бесплатно, промокод ${freeCode} (действует ${cfg.days} дн.)`);
+    parts.push(`первая доставка бесплатно (применится в корзине сама, ${cfg.days} дн.)`);
   }
 
   const title = BONUS_TITLES[kind];

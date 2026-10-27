@@ -78,13 +78,13 @@ window.renderVerifyNote=function(){
   // Какие секции показывать
   var showInfo       = true;                                  // «Как устроены бонусы» — всегда
   var showActivation = !isStaff && !isVerified;               // форма активации — гостям
-  var showTgBonus    = !isStaff && !me.welcome && !me.tg;     // +1 штамп TG — не-сотрудникам
+  var showTgBonus    = !isStaff && !me.welcome && !me.tg;     // приветствие за регистрацию — не-сотрудникам
 
   var html = '';
 
   // ── Секция 1: справка (всегда для авторизованного) ──
   if(showInfo){
-    html += '<small style="color:#5B6B7A;background:#EDF2F6;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">Как устроены бонусы:<br>🫘 штампы — кассир начисляет по вашему QR<br>🎁 +1 штамп — привязка Telegram<br>🧾 активация профиля — код из 4 цифр на кассе</small>';
+    html += '<small style="color:#5B6B7A;background:#EDF2F6;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">Как устроены бонусы:<br>🫘 штампы — кассир начисляет по вашему QR<br>🎁 приветственный напиток и бесплатная доставка — за регистрацию<br>🧾 активация профиля — код из 4 цифр на кассе</small>';
   }
 
   // ── Секция 2: активация кодом (только гость без верификации) ──
@@ -93,9 +93,9 @@ window.renderVerifyNote=function(){
          +  '<div style="display:flex;gap:8px"><input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1"><button class="btn fire" id="actBtn">Активировать</button></div>';
   }
 
-  // ── Секция 3: +1 штамп за Telegram (только не-сотрудникам) ──
+  // ── Секция 3: приветствие за регистрацию (только не-сотрудникам) ──
   if(showTgBonus){
-    html += '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>+1 штамп</b> за привязку в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
+    html += '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>Приветственный напиток и бесплатная первая доставка</b> за регистрацию. Быстрее всего — в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
   }
 
   n.hidden = false;
@@ -107,7 +107,7 @@ window.renderVerifyNote=function(){
     try{
       var r = await api('/auth/activate-guest',{method:'POST',body:{code:document.getElementById('actCode').value.trim()}});
       me = r.customer;
-      toast('Профиль активирован! А +1 штамп ждёт в Telegram 🎁','');
+      toast('Профиль активирован! Приветственный напиток и бесплатная доставка уже ваши 🎁','');
       renderAll();
     }catch(e){ toast(e.message,'⚠️'); }
   };

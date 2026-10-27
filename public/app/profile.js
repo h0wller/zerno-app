@@ -262,7 +262,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             '</div>';
 
         if (!me.welcome && !me.tg) {
-            html += '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>+1 штамп</b> за привязку в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
+            html += '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>Приветственный напиток и бесплатная первая доставка</b> за регистрацию. Быстрее всего — в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
         }
 
         n.hidden = false;
@@ -278,7 +278,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                         body: { code: codeVal },
                     });
                     me = r.customer;
-                    toast("Профиль активирован! А +1 штамп ждёт в Telegram 🎁", "");
+                    toast("Профиль активирован! Приветственный напиток и бесплатная доставка уже ваши 🎁", "");
                     renderAll();
                 } catch (e) {
                     toast(e.message, "⚠️");
