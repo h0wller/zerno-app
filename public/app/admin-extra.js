@@ -19,6 +19,8 @@
                 ? '+' + p.value + ' штамп(а) 🌊'
                 : p.kind === 'free'
                   ? '+' + p.value + ' кофе 🌊'
+                  : p.kind === 'freeship'
+                    ? 'бесплатная доставка 🛵'
                   : p.kind === 'percent'
                     ? '−' + p.value + '% 🍕'
                     : '−' + p.value + ' ₽ 🍕';

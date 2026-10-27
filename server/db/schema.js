@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS fcm(
 
   const prCols = db.prepare('PRAGMA table_info(promos)').all().map(c => c.name);
   if (prCols.length && !prCols.includes('scope')) db.exec(`ALTER TABLE promos ADD COLUMN scope TEXT DEFAULT 'coffee'`);
+  // owner: персональный промокод (бонус за регистрацию) действует только у своего владельца
+  if (prCols.length && !prCols.includes('owner')) db.exec(`ALTER TABLE promos ADD COLUMN owner TEXT`);
 
   db.exec(`CREATE TABLE IF NOT EXISTS orders(
     id TEXT PRIMARY KEY, no INTEGER, cid TEXT, name TEXT, phone TEXT,

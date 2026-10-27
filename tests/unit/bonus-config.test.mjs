@@ -14,9 +14,9 @@ test('cleanBonusConfig ограничивает значения и заменя
     kinds: { signup: { coffee: 99, delivery: 'abc' }, qr: { coffee: -3, delivery: 7000 } },
   });
   assert.equal(r.days, 365);
-  assert.deepEqual(r.kinds.signup, { coffee: 10, delivery: 0 });
-  assert.deepEqual(r.kinds.qr, { coffee: 0, delivery: 5000 });
-  assert.deepEqual(r.kinds.install, { coffee: 0, delivery: 0 });
+  assert.deepEqual(r.kinds.signup, { coffee: 10, delivery: 0, freeFirstDelivery: 0 });
+  assert.deepEqual(r.kinds.qr, { coffee: 0, delivery: 5000, freeFirstDelivery: 0 });
+  assert.deepEqual(r.kinds.install, { coffee: 0, delivery: 0, freeFirstDelivery: 0 });
 });
 
 test('cleanBonusConfig без срока ставит умолчание и отбрасывает лишние виды', () => {
@@ -30,16 +30,18 @@ test('cleanBonusConfig: срок меньше одного дня поднима
   assert.equal(cleanBonusConfig({ days: 0 }).days, 1);
 });
 
-test('mergeBonusConfig для пустой базы даёт всё выключено', () => {
+test('mergeBonusConfig для пустой базы: регистрация = 10 штампов + первая доставка бесплатно', () => {
   const r = mergeBonusConfig({});
   assert.equal(r.days, DEFAULT_BONUS_DAYS);
-  for (const k of BONUS_KINDS) assert.deepEqual(r.kinds[k], { coffee: 0, delivery: 0 });
+  assert.deepEqual(r.kinds.signup, { coffee: 10, delivery: 0, freeFirstDelivery: 1 });
+  assert.deepEqual(r.kinds.qr, { coffee: 10, delivery: 0, freeFirstDelivery: 1 });
+  assert.deepEqual(r.kinds.install, { coffee: 0, delivery: 0, freeFirstDelivery: 0 });
 });
 
 test('mergeBonusConfig дополняет частичную настройку', () => {
   const r = mergeBonusConfig({ kinds: { qr: { coffee: 3 } } });
-  assert.deepEqual(r.kinds.qr, { coffee: 3, delivery: 0 });
-  assert.deepEqual(r.kinds.signup, { coffee: 0, delivery: 0 });
+  assert.deepEqual(r.kinds.qr, { coffee: 3, delivery: 0, freeFirstDelivery: 1 });
+  assert.deepEqual(r.kinds.signup, { coffee: 10, delivery: 0, freeFirstDelivery: 1 });
 });
 
 test('makeBonusPromoCode: формат B + 8 hex, уникальность на выборке', () => {
@@ -56,13 +58,13 @@ test('cleanBonusConfig: нечисловой срок и пустой ввод �
   assert.equal(cleanBonusConfig({ days: 'много' }).days, DEFAULT_BONUS_DAYS);
   const r = cleanBonusConfig();
   assert.equal(r.days, DEFAULT_BONUS_DAYS);
-  for (const k of BONUS_KINDS) assert.deepEqual(r.kinds[k], { coffee: 0, delivery: 0 });
+  for (const k of BONUS_KINDS) assert.deepEqual(r.kinds[k], { coffee: 0, delivery: 0, freeFirstDelivery: 0 });
 });
 
 test('cleanBonusConfig: строковые числа приводятся, дробные обрезаются', () => {
   const r = cleanBonusConfig({ days: '45', kinds: { signup: { coffee: '4.9', delivery: '1500' } } });
   assert.equal(r.days, 45);
-  assert.deepEqual(r.kinds.signup, { coffee: 4, delivery: 1500 });
+  assert.deepEqual(r.kinds.signup, { coffee: 4, delivery: 1500, freeFirstDelivery: 0 });
 });
 
 test('cleanBonusConfig: граничные значения лимитов допустимы', () => {
@@ -70,18 +72,30 @@ test('cleanBonusConfig: граничные значения лимитов до�
     days: 365, kinds: { install: { coffee: 10, delivery: 5000 } },
   });
   assert.equal(r.days, 365);
-  assert.deepEqual(r.kinds.install, { coffee: 10, delivery: 5000 });
+  assert.deepEqual(r.kinds.install, { coffee: 10, delivery: 5000, freeFirstDelivery: 0 });
   assert.equal(cleanBonusConfig({ days: 1 }).days, 1);
 });
 
 test('mergeBonusConfig: повреждённый kinds не ломает умолчания', () => {
   const r = mergeBonusConfig({ kinds: null, days: 'x' });
   assert.equal(r.days, DEFAULT_BONUS_DAYS);
-  for (const k of BONUS_KINDS) assert.deepEqual(r.kinds[k], { coffee: 0, delivery: 0 });
+  assert.deepEqual(r.kinds.signup, { coffee: 10, delivery: 0, freeFirstDelivery: 1 });
 });
 
 test('mergeBonusConfig: неизвестные виды из базы не попадают в результат', () => {
   const r = mergeBonusConfig({ kinds: { legacy: { coffee: 5, delivery: 5 } } });
   assert.equal('legacy' in r.kinds, false);
   assert.deepEqual(Object.keys(r.kinds).sort(), [...BONUS_KINDS].sort());
+});
+
+test('cleanBonusConfig: freeFirstDelivery — флаг 0/1', () => {
+  const r = cleanBonusConfig({ kinds: { signup: { freeFirstDelivery: 5 }, qr: { freeFirstDelivery: '1' }, install: { freeFirstDelivery: -2 } } });
+  assert.equal(r.kinds.signup.freeFirstDelivery, 1);
+  assert.equal(r.kinds.qr.freeFirstDelivery, 1);
+  assert.equal(r.kinds.install.freeFirstDelivery, 0);
+});
+
+test('mergeBonusConfig: сохранённый старый конфиг без флага получает умолчание, штампы сохраняются', () => {
+  const r = mergeBonusConfig({ kinds: { signup: { coffee: 0, delivery: 0 } } });
+  assert.deepEqual(r.kinds.signup, { coffee: 0, delivery: 0, freeFirstDelivery: 1 });
 });

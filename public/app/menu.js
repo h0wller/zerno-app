@@ -389,7 +389,7 @@ function renderMenu() {
                       : `<span class="em">${p.e || '☕'}</span>`
                   }
          ${tg}${p.on ? '' : '<span class="stopbadge">СТОП</span>'}
-          ${editMode ? `<button class="edBtn" data-ed="${p.id}" title="Редактировать">✏️</button>` : ''}
+          ${editMode && window.canEditMenu && window.canEditMenu() ? `<button class="edBtn" data-ed="${p.id}" title="Редактировать">✏️</button>` : ''}
        </div>
        <div class="cbody">
          <h3>${esc(p.name)}</h3>
@@ -425,7 +425,7 @@ function renderMenu() {
          </div></div></article>`;
         })
         .join('') +
-      (editMode
+      (editMode && window.canEditMenu && window.canEditMenu()
         ? `<button class="addcard" id="addCard"><span>＋</span>Добавить позицию</button>`
         : '') +
       (list.length === 0

@@ -12,7 +12,10 @@ function isDeliveryServiceOpen() {
     return window.isDeliveryServiceOpen();
   }
   var t = getKaliningradTime();
-  return t.hour >= 11 && t.hour < 22;
+  var s = deliveryInfo && (deliveryInfo.today || deliveryInfo.schedule);
+  var open = s && Number(s.open) > 0 ? Number(s.open) : 11;
+  var close = s && Number(s.close) > 0 ? Number(s.close) : 22;
+  return t.hour * 60 + t.minute >= open * 60 && t.hour * 60 + t.minute < close * 60;
 }
 
 if (typeof window !== 'undefined') {
@@ -421,7 +424,7 @@ function patchDeliveryCards(list) {
       else if (add.disabled) { add.disabled = false; }
     }
     if (editing) {
-      if (!card.querySelector('.edBtn')) {
+      if (!card.querySelector('.edBtn') && window.canEditMenu && window.canEditMenu()) {
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'edBtn'; b.dataset.ed = p.id; b.textContent = '✏️';
         card.appendChild(b);
@@ -593,8 +596,6 @@ function renderCart() {
   $('#cartDiscount').textContent = discount ? `−10% самовывоз: −${fmt(discount)}` : '';
   $('#cartFee').textContent = fee ? `Доставка: ${fmt(fee)}` : '';
   const gifts = [];
-  const wp2 = deliveryInfo && deliveryInfo.weekPromo;
-  if (wp2 && wp2.gift && sum > 0) { const q = wp2.threshold > 0 ? Math.floor(sum / wp2.threshold) : 1; if (q > 0) gifts.push(`🎁 ${wp2.gift} ×${q}`); }
   const pm2 = deliveryInfo && deliveryInfo.pizzaMonth;
   if (pm2) { const big = cart.reduce((a, c) => a + ((c.sz === 35) ? c.qty : 0), 0); if (big >= 2) gifts.push(`🎁 ${pm2.name} — подарок`); }
   $('#cartGifts').innerHTML = gifts.join('<br>');
@@ -806,6 +807,7 @@ window.paintTotals = function(){
 };
 
 function promoDisc(sum, info){
+  if (info.kind === 'freeship') return 0;
   return info.kind === 'percent' ? Math.round(sum * Math.min(90, info.value) / 100) : Math.min(info.value || 0, sum);
 }
 
@@ -815,7 +817,8 @@ window.preorderMode = function () {
   var h = t ? t.hour : new Date().getHours();
   var closeH = (deliveryInfo && deliveryInfo.schedule && deliveryInfo.schedule.close) || 22;
   if (h >= closeH) return 'tomorrow';
-  if (h < 11) return 'today';
+  var openH = (deliveryInfo && deliveryInfo.schedule && Number(deliveryInfo.schedule.open) > 0) ? Number(deliveryInfo.schedule.open) : 11;
+  if (h < openH) return 'today';
   return null;
 };
 window.assertServiceOpen = function () { return window.preorderMode() === null; };

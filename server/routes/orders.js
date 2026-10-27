@@ -358,7 +358,15 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     if (p.maxuses > 0 && p.uses >= p.maxuses) return res.status(410).json({ error: 'Промокод использован' });
     if (db.prepare('SELECT 1 FROM promo_use WHERE promo=? AND cid=?').get(p.id, req.user.id))
       return res.status(409).json({ error: 'Вы уже использовали этот промокод' });
-    promoDiscount = p.kind === 'percent' ? Math.round(sum * Math.min(90, p.value) / 100) : Math.min(p.value || 0, sum);
+    if (p.owner && p.owner !== req.user.id) return res.status(400).json({ error: 'Промокод не найден для доставки' });
+    if (p.kind === 'freeship') {
+      // Первая доставка бесплатно: сумма блюд не меняется, обнуляется только плата за доставку.
+      if (method !== 'delivery') return res.status(400).json({ error: 'Этот промокод действует только на доставку' });
+      fee = 0;
+      promoDiscount = 0;
+    } else {
+      promoDiscount = p.kind === 'percent' ? Math.round(sum * Math.min(90, p.value) / 100) : Math.min(p.value || 0, sum);
+    }
     promoCode = p.code;
     db.prepare('INSERT INTO promo_use(promo,cid,ts) VALUES(?,?,?)').run(p.id, req.user.id, nowISO());
     db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(p.id);

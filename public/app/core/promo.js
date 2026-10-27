@@ -36,6 +36,10 @@
             const [kind, brand] = el.dataset.bz.split(":");
             el.value = (d.kinds && d.kinds[kind] && d.kinds[kind][brand]) || 0;
           });
+          document.querySelectorAll("[data-bzf]").forEach((el) => {
+            const k = d.kinds && d.kinds[el.dataset.bzf];
+            el.checked = !!(k && k.freeFirstDelivery);
+          });
           $("#bzDays").value = d.days || 30;
         } catch (e) {
           /* не админ или сервер недоступен — панель остаётся с нулями */
@@ -48,6 +52,10 @@
             const [kind, brand] = el.dataset.bz.split(":");
             kinds[kind] = kinds[kind] || {};
             kinds[kind][brand] = +el.value || 0;
+          });
+          document.querySelectorAll("[data-bzf]").forEach((el) => {
+            kinds[el.dataset.bzf] = kinds[el.dataset.bzf] || {};
+            kinds[el.dataset.bzf].freeFirstDelivery = el.checked ? 1 : 0;
           });
           try {
             await api("/admin/bonuses", {

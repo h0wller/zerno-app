@@ -1,11 +1,23 @@
-// F3.64: бар «подарок от суммы» и freeFrom НЕ убираются (продуктовое решение от 27.10.2026,
-// см. docs/frontend-todo.md §4). Тест зафиксирован на пустой корзине: плашка скрыта.
+// F3.64 (2.1/2.2/2.3): плашка «до подарка» и freeFrom убраны; первая доставка бесплатна по персональному коду.
 import { test, expect } from '@playwright/test';
 
 test.describe('Signup Bonuses Suite (F3.64)', () => {
-  test('no delivery promo bar or gifts on high cart sum', async ({ page }) => {
+  test('no delivery promo bar, gift line or free-from hint on a big cart', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
     await page.goto('/?brand=delivery');
-    const bar = page.locator('#deliveryPromoBar');
-    await expect(bar).toBeHidden();
+    const card = page.locator('#deliveryGrid .card').first();
+    await card.locator('button', { hasText: 'Добавить' }).first().click();
+    await page.evaluate(() => {
+      cart.forEach((c) => { c.qty = 10; });
+      window.renderCart();
+    });
+    await page.locator('#cartFab').click();
+    await expect(page.locator('#deliveryPromoBar')).toHaveCount(0);
+    await expect(page.locator('#cartPanel')).not.toContainText('Подарок добавлен');
+    await expect(page.locator('#cartPanel')).not.toContainText('бесплатно от');
+    await expect(page.locator('#cartFee')).not.toContainText('Бесплатно');
   });
 });

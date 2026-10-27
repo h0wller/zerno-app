@@ -63,6 +63,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
         body: JSON.stringify(await reg.json()) });
     });
     await page.goto('/?src=tg&brand=delivery');
+    await page.click('#profileTopBtn');
     await expect(page.locator('#regName')).toHaveValue('Tg User');
     await page.fill('#regPhone', '+7 9' + String(Date.now()).slice(-9));
     await page.fill('#regPin', '1234');
