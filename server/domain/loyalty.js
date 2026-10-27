@@ -55,6 +55,42 @@ export function grant(cid, by) {
     );
   }
   return { customer: cust(f), ten, msg: ten ? '10-й штамп! Начислен бесплатный кофе' : `+1 штамп → ${f.stamps} из 10` };
+  
+}
+export function grantStamps(cid, n, by) {
+  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
+  if (!c || n <= 0) return null;
+  
+  const newStamps = c.stamps + n;
+  let free = c.free;
+  let finalStamps = newStamps;
+  let ten = false;
+  
+  if (newStamps >= 10) {
+    free += Math.floor(newStamps / 10);
+    finalStamps = newStamps % 10;
+    ten = true;
+  }
+  
+  db.prepare('UPDATE customers SET stamps=?, free=? WHERE id=?').run(finalStamps, free, cid);
+  addHist(cid, `Начислено ${n} штампов (итого ${finalStamps}/10, бесплатно: ${free})`, by);
+  logEv(c.name, `+${n} штампов → ${finalStamps}/10`);
+  
+  if (ten) {
+    const baseAppUrl = APP_URL || 'https://friday.andcoffee.online';
+    sendPush(
+      cid,
+      '🎁 Бонус начислен',
+      `Приветственный напиток в кофейне (${n} штампов), первая доставка бесплатно (применится в корзине сама, 30 дн.)`,
+      {
+        inline_keyboard: [[
+          { text: '☕ Открыть карту штампов', web_app: { url: baseAppUrl + '/?src=tg&brand=coffee&tab=bonus' } }
+        ]]
+      }
+    );
+  }
+  
+  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)), ten };
 }
 
 export function redeem(cid, by, item) {
@@ -79,7 +115,7 @@ export function redeem(cid, by, item) {
   return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) };
 }
 
-export function grantWelcome(cid, by) {
+export function grantWelcome(cid, _by) {
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
   if (!c || c.welcome) return null;
   db.prepare('UPDATE customers SET welcome=1, verified=1 WHERE id=?').run(cid);

@@ -8,7 +8,7 @@
 // Каждый вид бонуса начисляется гостю один раз (таблица bonus_grants) и только подтверждённому профилю.
 import crypto from 'crypto';
 import { db } from '../db/connection.js';
-import { grant } from './loyalty.js';
+import { grant, grantStamps } from './loyalty.js';
 import { addHist } from './helpers.js';
 import { sendPush } from '../services/push.js';
 import { nowISO } from '../utils/id-time.js';
@@ -50,7 +50,13 @@ export function grantBonus(cid, kind) {
   if (!BONUS_KINDS.includes(kind)) return null;
   const c = db.prepare('SELECT id, verified FROM customers WHERE id=?').get(cid);
   if (!c || !c.verified) return null;
-
+    // Только гости получают приветственные бонусы
+  if (c.role !== 'guest') return null;
+  
+  // Для signup/qr: только если профиль ещё не использовался
+  if ((kind === 'signup' || kind === 'qr') && (c.cups > 0 || c.stamps > 0 || c.free > 0)) {
+    return null;
+  }
   const cfg = getBonusConfig();
   const k = cfg.kinds[kind];
   if (!k || (k.coffee <= 0 && k.delivery <= 0 && !k.freeFirstDelivery)) return null;
@@ -61,7 +67,7 @@ export function grantBonus(cid, kind) {
 
   const parts = [];
   if (k.coffee > 0) {
-    for (let i = 0; i < k.coffee; i++) grant(cid, 'Система');
+    grantStamps(cid, k.coffee, 'Система');for (let i = 0; i < k.coffee; i++) grant(cid, 'Система');
     parts.push(k.coffee >= 10 ? 'приветственный напиток в кофейне (10 штампов)' : `+${k.coffee} штамп(а) в кофейне`);
   }
 
