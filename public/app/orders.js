@@ -24,11 +24,14 @@ function beep() {
 }
 
 function orderCard(o) {
-  var next = o.status === 'new' ? ['accept']
-    : o.status === 'accept' ? ['cook']
-    : o.status === 'cook' ? (o.method === 'pickup' ? ['done'] : ['way'])
-    : o.status === 'way' ? ['done']
-    : [];
+  // F2.5.6: диспетчер может управлять и предзаказами — для завершённых статусов
+  // оставляем ручное переключение, чтобы вернуть заказ в работу.
+  var next = o.status === 'new' ? ['accept', 'done', 'cancel']
+    : o.status === 'accept' ? ['cook', 'done', 'cancel']
+    : o.status === 'cook' ? (o.method === 'pickup' ? ['done', 'cancel'] : ['way', 'done', 'cancel'])
+    : o.status === 'way' ? ['done', 'cancel']
+    : o.status === 'done' ? ['accept', 'cook'] // Возможность вернуть выполненный предзаказ в работу
+    : ['accept', 'done'];
 
   // Рендер позиций заказа с вложенными модификаторами для кухни и диспетчера
   var items = (o.items || []).map(function(i) {
@@ -76,7 +79,9 @@ function orderCard(o) {
 async function renderOrders(silent) {
   try {
     const r = await api('/orders');
-    const list = r.orders || [];
+    // F2.5.6: предзаказы всегда остаются в работе диспетчера — не скрываем их,
+    // даже если статус уже «done» (ручная смена статуса доступна в карточке).
+    const list = (r.orders || []).filter(o => o.is_preorder || o.status !== 'done');
     const maxNo = list.length ? list[0].no : 0;
     if (!silent && lastOrderNo && maxNo > lastOrderNo) { toast(`Новый заказ #${maxNo}!`, '🍕'); beep(); }
     if (maxNo) lastOrderNo = maxNo;

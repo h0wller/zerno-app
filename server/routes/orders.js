@@ -404,8 +404,14 @@ ordersRouter.get('/api/orders/mine', userGuard, (req, res) => {
 
 ordersRouter.get('/api/orders', dispatchGuard, (req, res) => {
   const st = req.query.status;
-  const rows = st ? db.prepare('SELECT * FROM orders WHERE status=? ORDER BY no DESC LIMIT 50').all(st)
-    : db.prepare("SELECT * FROM orders WHERE created>? ORDER BY no DESC LIMIT 50").all(new Date(Date.now() - 3 * 86400000).toISOString());
+  // F2.5.6: предзаказы всегда остаются в работе диспетчера — не скрываем их из-за
+  // авто-статуса done (иначе карточка исчезает вместе с кнопками смены статуса).
+  const keepDonePreorders = !st && (!req.query.done || req.query.done === '1');
+  const rows = st
+    ? db.prepare('SELECT * FROM orders WHERE status=? ORDER BY no DESC LIMIT 50').all(st)
+    : db.prepare(
+        `SELECT * FROM orders WHERE created>? ${keepDonePreorders ? "AND NOT (status='done' AND is_preorder=1)" : ''} ORDER BY no DESC LIMIT 50`
+      ).all(new Date(Date.now() - 3 * 86400000).toISOString());
   res.json({ orders: rows.map(o => ({ ...o, items: JSON.parse(o.items || '[]'), gifts: JSON.parse(o.gifts || '[]') })) });
 });
 
