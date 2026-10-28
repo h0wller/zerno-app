@@ -1,13 +1,4 @@
 /* ── Базовые сбросы ─────────────────────────────────────────────────────── */
-/* Ссылки «Пятницы»: убираем браузерное подчёркивание во всех состояниях. */
-html[data-brand="delivery"] a,
-html[data-brand="delivery"] a:visited,
-html[data-brand="delivery"] a:hover,
-html[data-brand="delivery"] a:active,
-html[data-brand="delivery"] a:focus {
-  text-decoration: none;
-}
-
 *::before,
 *::after {
   margin: 0;
