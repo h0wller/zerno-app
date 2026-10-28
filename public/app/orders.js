@@ -24,15 +24,13 @@ function beep() {
 }
 
 function orderCard(o) {
-  // F2.5.6: диспетчер может управлять и предзаказами — для завершённых статусов
-  // оставляем ручное переключение, чтобы вернуть заказ в работу.
-  // F2.5.7: для отменённых заказов кнопки управления не рендерятся вовсе
-  var next = o.status === 'cancel' ? []
+  // Отменённые и выполненные заказы терминальны в диспетчерской ленте.
+  // Предзаказы остаются видимыми после выполнения, но не предлагают повторно менять статус.
+  var next = o.status === 'cancel' || o.status === 'done' ? []
     : o.status === 'new' ? ['accept', 'done', 'cancel']
     : o.status === 'accept' ? ['cook', 'done', 'cancel']
     : o.status === 'cook' ? (o.method === 'pickup' ? ['done', 'cancel'] : ['way', 'done', 'cancel'])
     : o.status === 'way' ? ['done', 'cancel']
-    : o.status === 'done' ? ['accept', 'cook'] // Возможность вернуть выполненный предзаказ в работу
     : ['accept', 'done'];
 
   // Рендер позиций заказа с вложенными модификаторами для кухни и диспетчера
@@ -71,11 +69,11 @@ function orderCard(o) {
     '<div class="ocItems">' + items + (gifts ? '<br>' + gifts : '') + '</div>' +
     '<div class="ocTotal">Итого: <b>' + fmt(o.total) + '</b>' + (o.discount ? ' · скидка ' + fmt(o.discount) : '') + (o.fee ? ' · доставка ' + fmt(o.fee) : '') + '</div>' +
     (o.comment ? '<div class="ocComment">💬 ' + esc(o.comment) + '</div>' : '') +
-    // F2.5.7: для отменённых заказов actsHtml пуст — никаких <button> не рендерится
-    '<div class="ocActs">' + (o.status === 'cancel' ? '' : next.map(function(s) {
+    // Терминальные статусы не показывают кнопки смены статуса.
+    '<div class="ocActs">' + ((o.status === 'cancel' || o.status === 'done') ? '' : next.map(function(s) {
       return '<button class="btn fire" data-os="' + s + '">' + orderLabel(s) + '</button>';
     }).join('') +
-    ((o.status !== 'done' && o.status !== 'cancel') ? '<button class="btn ghost danger" data-os="cancel">❌ Отменить</button>' : '')) + '</div>' +
+    '<button class="btn ghost danger" data-os="cancel">❌ Отменить</button>') + '</div>' +
   '</div>';
 }
 
