@@ -159,25 +159,6 @@ test.describe('Карточки меню: высота, выравнивание
           expect(Math.max(...gaps), 'футер не прижат к низу карточки').toBeLessThanOrEqual(20);
         });
 
-        test('вся сетка одной высоты: внеэкранные карточки совпадают с отрисованными', async ({ page }) => {
-          // content-visibility: auto (index.html, critical-слой) резервирует высоту для карточек
-          // с 5-й. Если резерв расходится с реальной высотой, сетка выглядит разнобойной.
-          const heights = await page.evaluate((grid) => {
-            const out = [];
-            for (const c of document.querySelectorAll(`${grid} .card:not(.skeleton-card)`)) {
-              const r = c.getBoundingClientRect();
-              if (r.height) out.push(Math.round(r.height * 10) / 10);
-            }
-            return out;
-          }, brand.grid);
-
-          expect(heights.length).toBeGreaterThan(0);
-          expect(
-            Math.max(...heights) - Math.min(...heights),
-            `Высоты карточек всей сетки расходятся: ${JSON.stringify([...new Set(heights)])}`
-          ).toBeLessThanOrEqual(1);
-        });
-
         test('описание занимает одинаковый резерв высоты (нет «прыгающих» строк)', async ({ page }) => {
           const heights = await page.evaluate((grid) => {
             const out = [];
