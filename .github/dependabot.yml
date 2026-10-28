@@ -1,0 +1,20 @@
+version: 2
+
+updates:
+  # Security-only policy: disable routine version-update PRs.
+  # Dependabot security updates can still open PRs for vulnerable dependencies.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    commit-message:
+      prefix: "security(npm)"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    commit-message:
+      prefix: "security(actions)"
