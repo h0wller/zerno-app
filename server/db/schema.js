@@ -98,6 +98,17 @@ CREATE TABLE IF NOT EXISTS fcm(
   if (scols.length && !scols.includes('dev')) db.exec(`ALTER TABLE subs ADD COLUMN dev TEXT DEFAULT ''`);
   if (ncols.length && !ncols.includes('qr_done')) db.exec(`ALTER TABLE customers ADD COLUMN qr_done INTEGER DEFAULT 0`);
 
+  // Telegram ID must identify at most one customer. Do not auto-merge legacy duplicates:
+  // that could silently combine accounts, orders, history, or loyalty balances.
+  const tgDuplicates = db.prepare(
+    "SELECT tg, COUNT(*) AS n FROM customers WHERE tg IS NOT NULL AND TRIM(tg) <> '' GROUP BY tg HAVING COUNT(*) > 1"
+  ).all();
+  if (tgDuplicates.length === 0) {
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_tg_unique ON customers(tg) WHERE tg IS NOT NULL AND TRIM(tg) <> ''");
+  } else {
+    console.error('[migration] Duplicate Telegram IDs found in customers; unique index was not created. Manual reconciliation is required.');
+  }
+
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
     CREATE INDEX IF NOT EXISTS idx_orders_cid ON orders(cid);

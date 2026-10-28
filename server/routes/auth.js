@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { db } from '../db/connection.js';
 import { cust, addHist, logEv, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
+import { linkTelegram } from '../domain/telegram-link.js';
 import { grantWelcome, redeem } from '../domain/loyalty.js';
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { lockedSeconds, registerFail, hashPin, safeEqual, pinLocks, lockKey } from '../utils/security.js';
@@ -36,7 +37,11 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   const tgName = [valid.user.first_name, valid.user.last_name].filter(Boolean).join(' ') || valid.user.username || 'Гость';
 
   // 1. Проверяем, есть ли уже профиль с таким Telegram ID
-  let c = db.prepare('SELECT * FROM customers WHERE tg=?').get(tgId);
+  const linkedRows = db.prepare('SELECT id FROM customers WHERE tg=?').all(tgId);
+  if (linkedRows.length > 1) {
+    return res.status(409).json({ error: 'Этот Telegram привязан к нескольким профилям. Обратитесь к администратору.' });
+  }
+  let c = linkedRows.length === 1 ? db.prepare('SELECT * FROM customers WHERE id=?').get(linkedRows[0].id) : null;
   if (c) {
     addHist(c.id, 'Вход через Telegram Mini App', 'Telegram');
     return res.json({ token: issueToken(c.id), customer: cust(c), isNew: false });
@@ -75,7 +80,9 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   // 3. Ищем существующего клиента по номеру телефона
   c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (c) {
-    db.prepare('UPDATE customers SET tg=?, verified=1 WHERE id=?').run(tgId, c.id);
+    const linked = linkTelegram(db, c.id, tgId);
+    if (!linked.ok) return res.status(409).json({ error: 'Не удалось привязать Telegram к профилю. Возможно, он уже связан с другим аккаунтом.' });
+    db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(c.id);
     if (!c.welcome) {
       grantWelcome(c.id, 'Telegram');
     }
@@ -95,8 +102,13 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   // consent проставляется сервером. Но если клиент принёс src=QR_SOURCE (сканирование с постера),
   // источник регистрации сохраняем так же, как в /api/auth/register (иначе бонус за QR не начислится).
   if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
-  db.prepare('UPDATE customers SET tg=?, verified=1, consent=? WHERE id=?')
-    .run(tgId, nowISO() + ' v1', r.customer.id);
+  const linked = linkTelegram(db, r.customer.id, tgId);
+  if (!linked.ok) {
+    db.prepare('DELETE FROM customers WHERE id=?').run(r.customer.id);
+    return res.status(409).json({ error: 'Не удалось привязать Telegram к новому профилю. Попробуйте войти снова.' });
+  }
+  db.prepare('UPDATE customers SET verified=1, consent=? WHERE id=?')
+    .run(nowISO() + ' v1', r.customer.id);
   grantWelcome(r.customer.id, 'Telegram');
   grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
   addHist(r.customer.id, 'Регистрация через Telegram Mini App', 'Telegram');
@@ -165,9 +177,11 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
       db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
       db.prepare('DELETE FROM customers WHERE id=?').run(ex.id);
     } else if (okTg && !ex.verified) {
+      const linked = linkTelegram(db, ex.id, String(tgChat));
+      if (!linked.ok) return res.status(409).json({ error: 'Этот Telegram уже привязан к другому профилю.' });
       db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
-      db.prepare('UPDATE customers SET name=?, tg=?, verified=1 WHERE id=?')
-        .run(String(req.body.name || '').trim() || ex.name, tgChat, ex.id);
+      db.prepare('UPDATE customers SET name=?, verified=1 WHERE id=?')
+        .run(String(req.body.name || '').trim() || ex.name, ex.id);
       addHist(ex.id, 'Профиль подтверждён через Telegram', 'Система');
       grantWelcome(ex.id, 'Telegram');
       grantBonus(ex.id, ex.src === QR_SOURCE ? 'qr' : 'signup');
@@ -183,7 +197,14 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
 
   if (okTg || okSms) {
-    if (tgChat) db.prepare('UPDATE customers SET tg=? WHERE id=?').run(tgChat, r.customer.id);
+    if (tgChat) {
+      const linked = linkTelegram(db, r.customer.id, String(tgChat));
+      if (!linked.ok) {
+        db.prepare('DELETE FROM tokens WHERE ref=?').run(r.customer.id);
+        db.prepare('DELETE FROM customers WHERE id=?').run(r.customer.id);
+        return res.status(409).json({ error: 'Этот Telegram уже привязан к другому профилю.' });
+      }
+    }
     db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
     if (okTg) grantWelcome(r.customer.id, 'Telegram');
     addHist(r.customer.id, okTg ? 'Telegram привязан при регистрации' : 'Подтверждение по SMS', 'Система');
