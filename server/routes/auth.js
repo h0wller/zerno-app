@@ -26,7 +26,7 @@ if (process.env.NODE_ENV === 'test') {
     const key = String(req.body?.key || '');
     const code = String(req.body?.code || '');
     const expiresInMs = Number(req.body?.expiresInMs);
-    if ((!key.startsWith('reg:') && !/^\\+?\\d{10,15}$/.test(key)) || !code || !Number.isFinite(expiresInMs)) {
+    if ((!key.startsWith('reg:') && !/^[+0-9\s-]{10,24}$/.test(key)) || !code || !Number.isFinite(expiresInMs)) {
       return res.status(400).json({ error: 'Invalid test OTP fixture' });
     }
     otpStore.set(key, { code, expires: Date.now() + expiresInMs });
