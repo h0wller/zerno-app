@@ -70,7 +70,7 @@ after(async () => {
 
 test('registration without consent neither creates a usable profile nor consumes OTP', async () => {
   const phone = '+7 900 000-01-01';
-  const key = 'reg: +7 900 000-01-01';
+  const key = 'reg:+7 900 000-01-01';
   await seedOtp(key, '2468');
 
   const rejected = await api('/api/auth/register', {
