@@ -28,7 +28,7 @@
     const res = await fetch(url, { ...opts, headers });
     if (opts.raw) return res;
     const text = await res.text();
-    let data = null;
+    let data;
     try { data = text ? JSON.parse(text) : null; } catch { data = text; }
     if (!res.ok) {
       const err = new Error((data && data.error) || ('HTTP ' + res.status));
