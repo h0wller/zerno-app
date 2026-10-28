@@ -418,6 +418,11 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
       { timeout: 15000 }
     );
 
+    // Детерминируем часы работы: CI может запускаться после закрытия кухни.
+    await page.evaluate(() => {
+      window.getKaliningradTime = () => ({ hour: 12, minute: 30 });
+    });
+
     const firstCard = page.locator('#deliveryGrid .card:has(.opts button)').first();
     await expect(firstCard).toBeVisible({ timeout: 10000 });
 
