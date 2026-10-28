@@ -17,8 +17,8 @@ export function linkTelegram(database, customerId, telegramId) {
     if (!customer) return { ok: false, reason: 'customer_not_found' };
 
     const owners = db.prepare('SELECT id FROM customers WHERE tg=?').all(tg);
-    if (owners.some(owner => owner.id !== cid)) return { ok: false, reason: 'telegram_in_use' };
     if (owners.length > 1) return { ok: false, reason: 'duplicate_legacy_link' };
+    if (owners.some(owner => owner.id !== cid)) return { ok: false, reason: 'telegram_in_use' };
     if (customer.tg && String(customer.tg) !== tg) return { ok: false, reason: 'customer_already_linked' };
 
     if (customer.tg === tg) return { ok: true };
