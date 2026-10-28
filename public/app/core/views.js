@@ -106,8 +106,7 @@ var rules = [
  '[data-brand="delivery"] #cartPanel,[data-brand="delivery"] .cartPanel{background:var(--fr-rice);border:3px solid var(--fr-choc);border-bottom:none}',
  '[data-brand="delivery"] .cartPanel .cartItem{border-bottom:1.5px dashed rgba(58,42,28,.3);color:#3A2A1C;font-weight:600}',
   '[data-brand="delivery"] #scrollTopBtn{background:var(--fr-paper,#F6EEE1);border:1.5px solid #3a2a1c}',
-'#deliveryGrid .cbody .desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.75em}',
- '#deliveryGrid .cbody .opts{margin-top:auto}',
+ /* База .desc (clamp 2 строки + резерв высоты) и прижатие футера/кнопки к низу живут в theme/20-cards.css — дубли здесь запрещены (css-architecture: «один селектор — одно место»). */
  '[data-brand="delivery"] .chatHead .op{background:#F6EEE1;border:0;display:flex;align-items:center;justify-content:center;font-size:20px}',
  '[data-brand="delivery"] .chat-fab::before{border-color:#C03B2A}',
  '[data-brand="delivery"] .chatHead .av{background:var(--fr-paper);background-image:none;color:var(--fr-choc)}',

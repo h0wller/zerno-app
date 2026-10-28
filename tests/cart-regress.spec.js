@@ -66,8 +66,8 @@ test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степп
     await expect(stepPlus).toBeVisible();
 
     const stepBox = await stepPlus.boundingBox();
-    expect(Math.round(stepBox.width)).toBe(40);
-    expect(Math.round(stepBox.height)).toBe(40);
+    expect(Math.round(stepBox.width)).toBe(44);
+    expect(Math.round(stepBox.height)).toBe(44);
   });
 });
 

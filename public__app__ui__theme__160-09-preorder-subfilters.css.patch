@@ -1,0 +1,17 @@
+diff --git a/public/app/ui/theme/160-09-preorder-subfilters.css b/public/app/ui/theme/160-09-preorder-subfilters.css
+index c28b319..f3ef5a0 100644
+--- a/public/app/ui/theme/160-09-preorder-subfilters.css
++++ b/public/app/ui/theme/160-09-preorder-subfilters.css
+@@ -101,3 +101,6 @@
+ 
+-/* Плашки выбора опций пиццы (Segmented Control Grid) */
++/* Плашки выбора опций пиццы (Segmented Control Grid)
++   margin-top: auto здесь не нужен и вреден: он «съедает» свободное место .cbody,
++   и кнопка добавления (.steprow) перестаёт быть единственной прижатой к низу.
++   Единственный владелец прижатия к низу в карточке доставки — .steprow (theme/20-cards.css). */
+ #deliveryGrid .opts {
+@@ -106,3 +109,3 @@
+   gap: 6px;
+-  margin-top: auto;
++  margin-top: 6px;
+   padding-top: 6px;

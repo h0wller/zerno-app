@@ -12,6 +12,7 @@ import './core/qr.js';
 import './core/review.js';
 import './core/fx.js';
 import './core/dash.js';
+import './core/dash-orders.js';
 import './core/promo.js';
 import './core/staffpin.js';
 import './core/push-ui.js';

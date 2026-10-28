@@ -1,0 +1,303 @@
+diff --git a/tests/unit/bonus-grants.test.mjs b/tests/unit/bonus-grants.test.mjs
+new file mode 100644
+index 0000000..01bd46f
+--- /dev/null
++++ b/tests/unit/bonus-grants.test.mjs
+@@ -0,0 +1,297 @@
++// Приветственные бонусы: одно начисление = один UPDATE + одна запись в истории + один пуш.
++// Проверяем защиту от повторного вызова, от сотрудника и от «старого» профиля,
++// а также арифметику штампов (10 → подарок, меньше 10 → просто штампы).
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import os from 'node:os';
++import path from 'node:path';
++
++// БД теста создаётся до импорта connection.js — иначе откроется боевой zerno.db.
++const TMP_DB = path.join(os.tmpdir(), `zerno-bonus-${process.pid}-${Date.now()}.db`);
++process.env.DB_PATH = TMP_DB;
++process.env.NODE_ENV = 'test';
++
++const { db } = await import('../../server/db/connection.js');
++const { initSchema } = await import('../../server/db/schema.js');
++const { grantBonus, setBonusConfig } = await import('../../server/domain/bonuses.js');
++const { grantStamps, applyStamps } = await import('../../server/domain/loyalty.js');
++const { splitStamps } = await import('../../server/utils/loyalty-helpers.js');
++
++initSchema();
++
++let seq = 0;
++/** Гость в базе. role/verified/cups/stamps/free задаются явно. */
++function makeCustomer(over = {}) {
++  const id = `c${++seq}`;
++  db.prepare(
++    'INSERT INTO customers(id,name,phone,verified,role,cups,stamps,free) VALUES(?,?,?,?,?,?,?,?)'
++  ).run(
++    id,
++    over.name || 'Тест',
++    `+7999000${String(seq).padStart(4, '0')}`,
++    over.verified === undefined ? 1 : over.verified,
++    over.role || 'guest',
++    over.cups || 0,
++    over.stamps || 0,
++    over.free || 0
++  );
++  return id;
++}
++const row = id => db.prepare('SELECT stamps, free, cups, role FROM customers WHERE id=?').get(id);
++const grants = id => db.prepare('SELECT kind FROM bonus_grants WHERE cid=? ORDER BY kind').all(id).map(r => r.kind);
++const hist = id => db.prepare('SELECT a FROM history WHERE cid=? ORDER BY id').all(id).map(r => r.a);
++const events = () => db.prepare('SELECT a FROM events ORDER BY id').all().map(r => r.a);
++
++/** Явный конфиг: cleanBonusConfig обнуляет всё, что не передано, поэтому виды задаём целиком. */
++const cfgWelcome = () => setBonusConfig({
++  days: 30,
++  kinds: {
++    signup: { coffee: 10, freeFirstDelivery: 1 },
++    qr: { coffee: 10, freeFirstDelivery: 1 },
++    install: { coffee: 0 },
++  },
++});
++const cfgStampsOnly = () => setBonusConfig({
++  days: 30,
++  kinds: { signup: { coffee: 10 }, qr: { coffee: 3 }, install: { coffee: 3 } },
++});
++cfgWelcome();
++
++test('splitStamps: 10 штампов складываются в подарок, остаток на карте', () => {
++  assert.deepEqual(splitStamps(0, 0, 10), { stamps: 0, free: 1, addedFree: 1, gotFree: true });
++  assert.deepEqual(splitStamps(7, 0, 10), { stamps: 7, free: 1, addedFree: 1, gotFree: true });
++  assert.deepEqual(splitStamps(0, 2, 25), { stamps: 5, free: 4, addedFree: 2, gotFree: true });
++  assert.deepEqual(splitStamps(3, 1, 4), { stamps: 7, free: 1, addedFree: 0, gotFree: false });
++  assert.deepEqual(splitStamps(9, 0, 0), { stamps: 9, free: 0, addedFree: 0, gotFree: false });
++  // мусор на входе не ломает арифметику и не уводит счётчики в минус
++  assert.deepEqual(splitStamps(NaN, undefined, '5'), { stamps: 5, free: 0, addedFree: 0, gotFree: false });
++  assert.deepEqual(splitStamps(-3, -1, -8), { stamps: 0, free: 0, addedFree: 0, gotFree: false });
++});
++
++test('grantStamps: один UPDATE, одна запись в истории, cups не трогает, подарок при 10', () => {
++  const id = makeCustomer({ stamps: 4 });
++  const r = grantStamps(id, 6, 'Тест');
++  assert.equal(r.ten, true);
++  assert.equal(r.addedFree, 1);
++  assert.deepEqual(row(id), { stamps: 0, free: 1, cups: 0, role: 'guest' });
++  assert.deepEqual(hist(id), ['Начислено 6 шт. → 0/10, подарок(ов): +1']);
++});
++
++test('grantStamps: n <= 0 и неизвестный клиент — null, база не тронута', () => {
++  const id = makeCustomer({ stamps: 2 });
++  assert.equal(grantStamps(id, 0), null);
++  assert.equal(grantStamps(id, -5), null);
++  assert.equal(grantStamps('no-such-cid', 10), null);
++  assert.deepEqual(row(id), { stamps: 2, free: 0, cups: 0, role: 'guest' });
++  assert.equal(hist(id).length, 0);
++});
++
++test('applyStamps: ядро без истории — историю пишет вызывающий', () => {
++  const id = makeCustomer({ stamps: 8 });
++  const r = applyStamps(id, 5);
++  assert.deepEqual({ ten: r.ten, addedFree: r.addedFree, stamps: r.stamps, free: r.free }, { ten: true, addedFree: 1, stamps: 3, free: 1 });
++  assert.equal(hist(id).length, 0, 'ядро не пишет историю');
++  assert.equal(applyStamps(id, 0), null);
++});
++
++test('grantBonus signup: 10 штампов = 1 подарок, одна запись в bonus_grants и одна в истории', () => {
++  const id = makeCustomer();
++  const r = grantBonus(id, 'signup');
++  assert.ok(r, 'бонус начислен');
++  assert.equal(r.kind, 'signup');
++  assert.equal(r.coffee, 10);
++  assert.match(r.freeCode, /^B[0-9A-F]{8}$/, 'персональный код первой бесплатной доставки');
++  assert.deepEqual(row(id), { stamps: 0, free: 1, cups: 0, role: 'guest' });
++  assert.deepEqual(grants(id), ['signup']);
++  const h = hist(id);
++  assert.equal(h.length, 1, 'ровно одна сводная запись на всё начисление');
++  assert.match(h[0], /🎁 Бонус «Регистрация»/);
++  assert.match(h[0], /первая доставка бесплатно/, 'в истории виден и бонус доставки');
++  assert.ok(!h.some(x => /Штамп \d+ из 10/.test(x)), 'цикл grant() больше не вызывается');
++  assert.ok(
++    events().some(x => /бонус «Регистрация»: \+10 штампов/.test(x)),
++    'событие для админ-журнала записано'
++  );
++  assert.equal(
++    db.prepare("SELECT COUNT(*) AS c FROM promos WHERE owner=? AND kind='freeship'").get(id).c,
++    1,
++    'один персональный freeship-код'
++  );
++});
++
++test('grantBonus: повторный вызов того же вида — null и без начисления', () => {
++  const id = makeCustomer();
++  assert.ok(grantBonus(id, 'signup'));
++  const second = grantBonus(id, 'signup');
++  assert.equal(second, null);
++  assert.deepEqual(row(id), { stamps: 0, free: 1, cups: 0, role: 'guest' });
++  assert.deepEqual(grants(id), ['signup']);
++  assert.equal(hist(id).length, 1, 'повтор не дописывает историю');
++});
++
++test('grantBonus: signup и qr — ОДИН приветственный бонус на клиента, второй канал закрыт', () => {
++  const id = makeCustomer();
++  assert.ok(grantBonus(id, 'signup'));
++  assert.equal(grantBonus(id, 'qr'), null, 'QR после регистрации повторно не начисляется');
++  assert.deepEqual(row(id), { stamps: 0, free: 1, cups: 0, role: 'guest' }, 'второго подарка нет');
++  assert.deepEqual(grants(id), ['signup'], 'отметка qr не появилась');
++  assert.equal(hist(id).length, 1, 'одна запись в истории');
++
++  // то же в обратную сторону: сначала регистрация по QR, потом обычная
++  const b = makeCustomer();
++  assert.ok(grantBonus(b, 'qr'));
++  assert.equal(grantBonus(b, 'signup'), null, 'регистрация после QR повторно не начисляется');
++  assert.deepEqual(row(b), { stamps: 0, free: 1, cups: 0, role: 'guest' });
++  assert.deepEqual(grants(b), ['qr']);
++  assert.equal(hist(b).length, 1);
++
++  // install — отдельное событие (установка приложения), приветственным бонусом не закрывается
++  cfgStampsOnly();
++  assert.ok(grantBonus(id, 'install'), 'install начисляется независимо от signup/qr');
++  assert.deepEqual(grants(id), ['install', 'signup']);
++  cfgWelcome();
++});
++
++test('grantBonus: отметка бэкфилла закрывает оба приветственных канала', () => {
++  // Так выглядят профили после миграции: bonus_grants заполнен отметками, а подарки никто не выдавал.
++  const id = makeCustomer();
++  db.prepare("INSERT OR IGNORE INTO bonus_grants(cid,kind,ts) VALUES(?,'signup',?)").run(id, '2026-01-01T00:00:00.000Z');
++  assert.deepEqual(row(id), { stamps: 0, free: 0, cups: 0, role: 'guest' });
++  assert.equal(grantBonus(id, 'signup'), null, 'свой вид уже отмечен');
++  assert.equal(grantBonus(id, 'qr'), null, 'старый профиль свой приветственный бонус уже получил');
++  assert.deepEqual(row(id), { stamps: 0, free: 0, cups: 0, role: 'guest' }, 'ничего не начислено');
++  assert.deepEqual(grants(id), ['signup'], 'лишних отметок нет');
++  assert.equal(hist(id).length, 0);
++});
++
++test('grantBonus: списанный подарок или использованный промокод закрывают signup/qr', () => {
++  cfgWelcome();
++  // подарок начислен и уже списан кассиром → профиль «в деле»
++  const a = makeCustomer();
++  assert.ok(grantBonus(a, 'signup'));
++  assert.equal(row(a).free, 1);
++  db.prepare('UPDATE customers SET free=0 WHERE id=?').run(a);
++  assert.equal(grantBonus(a, 'qr'), null, 'повторный приветственный бонус после списания подарка');
++  assert.equal(row(a).free, 0);
++
++  // подарок уже выпит, а гость к тому же заказал доставку с персональным кодом
++  const b = makeCustomer();
++  const rb = grantBonus(b, 'signup');
++  assert.ok(rb && rb.freeCode);
++  db.prepare('UPDATE promos SET uses=1 WHERE code=?').run(rb.freeCode);
++  db.prepare('UPDATE customers SET free=0 WHERE id=?').run(b);
++  assert.equal(grantBonus(b, 'qr'), null, 'персональный промокод уже активирован');
++  assert.equal(row(b).free, 0, 'подарок не начислен повторно');
++  assert.deepEqual(grants(b), ['signup']);
++});
++
++test('grantBonus: сотрудник (role != guest) бонус не получает', () => {
++  for (const role of ['admin', 'cashier', 'dispatch']) {
++    const id = makeCustomer({ role });
++    assert.equal(grantBonus(id, 'signup'), null, `role=${role}`);
++    assert.equal(grantBonus(id, 'qr'), null, `role=${role}`);
++    assert.equal(grantBonus(id, 'install'), null, `role=${role}`);
++    assert.deepEqual(row(id), { stamps: 0, free: 0, cups: 0, role });
++    assert.deepEqual(grants(id), [], 'bonus_grants не пополняется');
++    assert.equal(hist(id).length, 0);
++  }
++});
++
++test('grantBonus: неподтверждённый профиль бонус не получает', () => {
++  const id = makeCustomer({ verified: 0 });
++  assert.equal(grantBonus(id, 'signup'), null);
++  assert.deepEqual(grants(id), []);
++  assert.deepEqual(row(id), { stamps: 0, free: 0, cups: 0, role: 'guest' });
++});
++
++test('grantBonus: профиль с активностью не считается новичком (signup/qr), install — можно', () => {
++  cfgStampsOnly();
++  for (const over of [{ cups: 1 }, { stamps: 5 }, { free: 1 }]) {
++    const id = makeCustomer(over);
++    assert.equal(grantBonus(id, 'signup'), null, JSON.stringify(over));
++    assert.equal(grantBonus(id, 'qr'), null, JSON.stringify(over));
++    assert.deepEqual(
++      row(id),
++      { stamps: over.stamps || 0, free: over.free || 0, cups: over.cups || 0, role: 'guest' },
++      'счётчики не изменились'
++    );
++    assert.deepEqual(grants(id), []);
++    assert.equal(hist(id).length, 0);
++  }
++  // install не привязан к «новичку»: 3 штампа, подарка нет (3 < 10)
++  const id = makeCustomer({ cups: 4 });
++  const r = grantBonus(id, 'install');
++  assert.ok(r);
++  assert.equal(r.coffee, 3);
++  assert.deepEqual(row(id), { stamps: 3, free: 0, cups: 4, role: 'guest' });
++  assert.deepEqual(grants(id), ['install']);
++  cfgWelcome();
++});
++
++test('grantBonus: подарок не от бонуса (старая схема) — профиль не новичок', () => {
++  cfgWelcome();
++  const id = makeCustomer({ free: 1 });
++  assert.deepEqual(grants(id), [], 'отметок о бонусах нет');
++  assert.equal(grantBonus(id, 'signup'), null);
++  assert.equal(grantBonus(id, 'qr'), null);
++  assert.deepEqual(row(id), { stamps: 0, free: 1, cups: 0, role: 'guest' }, 'второй подарок не начислен');
++  assert.deepEqual(grants(id), []);
++  assert.equal(hist(id).length, 0);
++});
++
++test('grantBonus: выключенный вид (всё по нулям) — null, запись не создаётся', () => {
++  cfgWelcome(); // install в этом конфиге выключен
++  const id = makeCustomer();
++  assert.equal(grantBonus(id, 'install'), null);
++  assert.deepEqual(grants(id), [], 'нет записи — вид можно включить позже и начислить');
++  assert.equal(hist(id).length, 0);
++  assert.deepEqual(row(id), { stamps: 0, free: 0, cups: 0, role: 'guest' });
++});
++
++test('grantBonus: неизвестный вид отклоняется', () => {
++  const id = makeCustomer();
++  assert.equal(grantBonus(id, 'hack'), null);
++  assert.equal(grantBonus(id, ''), null);
++  assert.deepEqual(grants(id), []);
++});
++
++test('grantBonus: частичное начисление (3 штампа) не даёт подарок', () => {
++  cfgStampsOnly();
++  const id = makeCustomer();
++  const r = grantBonus(id, 'qr');
++  assert.ok(r);
++  assert.equal(r.coffee, 3);
++  assert.equal(r.freeCode, null);
++  assert.deepEqual(row(id), { stamps: 3, free: 0, cups: 0, role: 'guest' });
++  assert.equal(hist(id).length, 1);
++  cfgWelcome();
++});
++
++test('бэкфилл: флаг в meta, повторный initSchema идемпотентен', () => {
++  const before = db.prepare('SELECT COUNT(*) AS c FROM bonus_grants').get().c;
++  assert.ok(db.prepare("SELECT 1 FROM meta WHERE key='bonus_grants_backfilled'").get(), 'флаг миграции записан');
++  initSchema();
++  initSchema();
++  assert.equal(db.prepare('SELECT COUNT(*) AS c FROM bonus_grants').get().c, before, 'повтор не плодит записи');
++});
++
++test('бэкфилл: клиент, созданный до миграции, новичком не считается', () => {
++  // имитируем «старую» базу: отметок нет, флага миграции нет
++  const id = makeCustomer();
++  db.prepare('DELETE FROM bonus_grants').run();
++  db.prepare("DELETE FROM meta WHERE key='bonus_grants_backfilled'").run();
++  initSchema();
++  assert.deepEqual(grants(id), ['install', 'qr', 'signup'], 'бэкфилл вернул отметки всем существующим');
++  assert.equal(grantBonus(id, 'signup'), null, 'старый профиль не получает бонус повторно');
++  assert.deepEqual(row(id), { stamps: 0, free: 0, cups: 0, role: 'guest' });
++  assert.equal(hist(id).length, 0);
++});
++
++test('чистка: временная БД теста удаляется', () => {
++  db.close();
++  for (const f of [TMP_DB, `${TMP_DB}-wal`, `${TMP_DB}-shm`]) {
++    try { fs.rmSync(f, { force: true }); } catch { /* уже удалён */ }
++  }
++  assert.equal(fs.existsSync(TMP_DB), false);
++});

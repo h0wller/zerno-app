@@ -1,0 +1,242 @@
+/* public/app/ui/theme/160-13-dashboard-bento.css — СЛОЙ 1: Bento-дашборд и блок заказов сотрудников */
+#dashModal .dashCard {
+  max-width: 680px;
+  width: 100%;
+}
+
+#dashModal .dashTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px;
+  margin: 10px 0 14px;
+  background: var(--bg, #f4f6f8);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+#dashModal .dashTabs button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--soft);
+  font: 700 13px/1.2 "Golos Text", sans-serif;
+  padding: 9px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+
+#dashModal .dashTabs button.on {
+  background: var(--card, #ffffff);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(16, 20, 24, 0.08);
+}
+
+#dashOrders .bentoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+@media (min-width: 560px) {
+  #dashOrders .bentoGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+#dashOrders .bt {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+}
+
+#dashOrders .btSpan2 {
+  grid-column: span 2;
+}
+
+#dashOrders .btFull {
+  grid-column: 1 / -1;
+}
+
+#dashOrders .btMain {
+  background: var(--flame);
+  border-color: var(--flame);
+  color: var(--on-flame, #ffffff);
+}
+
+#dashOrders .btLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--soft);
+}
+
+#dashOrders .btVal {
+  font: 900 20px/1.15 "Unbounded", sans-serif;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+#dashOrders .btMain .btVal {
+  font-size: 24px;
+  color: var(--on-flame, #ffffff);
+}
+
+#dashOrders .btOwn {
+  font-size: 11.5px;
+  color: var(--soft);
+  font-variant-numeric: tabular-nums;
+}
+
+#dashOrders .btMain .btLabel,
+#dashOrders .btMain .btOwn {
+  color: var(--on-flame, #ffffff);
+  opacity: 0.9;
+}
+
+#dashOrders .btStatusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+#dashOrders .btChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--bg, #f4f6f8);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+#dashOrders .btChip b {
+  font-variant-numeric: tabular-nums;
+}
+
+#dashOrders .btChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 116px;
+  padding-top: 12px;
+}
+
+#dashOrders .btBarCol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+#dashOrders .btBar {
+  width: 100%;
+  border-radius: 6px;
+  background: var(--line);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+#dashOrders .btBar.hasData {
+  background: var(--flame);
+}
+
+#dashOrders .btBarOwn {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+#dashOrders .btBarLbl {
+  font-size: 9px;
+  color: var(--soft);
+  font-variant-numeric: tabular-nums;
+}
+
+#dashOrders .btTopList {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+#dashOrders .btTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+#dashOrders .btTopRow:last-child {
+  border-bottom: 0;
+}
+
+#dashTop .stat .statSub {
+  display: block;
+  font-size: 10px;
+  color: var(--soft);
+  margin-top: 3px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ownOrdersBox {
+  margin-top: 14px;
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: var(--card, #ffffff);
+}
+
+.ownOrdersBox > summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ownOrdersBox > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ownOrdersList {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ownBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--bg, #f4f6f8);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  margin-left: 6px;
+}

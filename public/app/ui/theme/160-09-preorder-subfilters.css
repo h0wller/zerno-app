@@ -47,7 +47,11 @@
   display: flex;
   flex-direction: column;
 }
-
+#deliveryGrid .cbody h3{
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  line-clamp: 2;
+  overflow:hidden; min-height:calc(15.5px * 1.3 * 2);
+}
 /* Субфильтры */
 .subfilter-bar {
   display: flex;
@@ -99,12 +103,15 @@
   box-shadow: 2px 2px 0 var(--fr-choc);
 }
 
-/* Плашки выбора опций пиццы (Segmented Control Grid) */
+/* Плашки выбора опций пиццы (Segmented Control Grid)
+   margin-top: auto здесь не нужен и вреден: он «съедает» свободное место .cbody,
+   и кнопка добавления (.steprow) перестаёт быть единственной прижатой к низу.
+   Единственный владелец прижатия к низу в карточке доставки — .steprow (theme/20-cards.css). */
 #deliveryGrid .opts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
-  margin-top: auto;
+  margin-top: 6px;
   padding-top: 6px;
   width: 100%;
 }

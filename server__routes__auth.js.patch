@@ -1,0 +1,9 @@
+diff --git a/server/routes/auth.js b/server/routes/auth.js
+index 9f4a5a8..84a9304 100644
+--- a/server/routes/auth.js
++++ b/server/routes/auth.js
+@@ -219,2 +219,4 @@ authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
+   addHist(c.id, '✅ Профиль активирован на кассе', 'Кассир');
++  // Приветственный бонус — как и при активации сотрудником (/api/staff/activate-guest).
++  grantBonus(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
+   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });

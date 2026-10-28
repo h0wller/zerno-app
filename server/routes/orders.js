@@ -58,6 +58,7 @@ const DELIVERY = {
   eta: 45, slotStep: 30, slotDays: 2,
   maxPreordersPerSlot: 2,
   pickupAddr: 'пгт Янтарный, ул. Советская, 38А', pickupDiscount: 0.10,
+  staffDiscount: 0.10, // скидка на все заказы аккаунтов сотрудников; с самовывозом не суммируется
   zones: [
     { fee: 200, places: ['Янтарный', 'Покровское', 'Синявино'] },
     { fee: 500, places: ['Кленовое', 'Охотное', 'Русское', 'Поваровка', 'Морозовка', 'Янтаровка', 'Красноторовка', 'Ягодное'] },
@@ -76,6 +77,8 @@ const pizzaMonth = () => {
   const m = JSON.parse(db.prepare("SELECT value FROM meta WHERE key='pizza_month'").get()?.value || 'null');
   return (m && m.on && m.name) ? m : null;
 };
+
+const STAFF_ROLES = ['cashier', 'dispatch', 'admin'];
 
 export const ORDER_STATUS = {
   new: '🆕 Заказ принят',
@@ -114,7 +117,8 @@ function orderNotifyStaff(o) {
   const giftsList = Array.isArray(o.gifts) ? o.gifts : JSON.parse(o.gifts || '[]');
   const gifts = giftsList.map(g => `🎁 ${g.name} ×${g.qty}`);
   const timeLabel = o.is_preorder ? `⏰ ПРЕДЗАКАЗ: ${o.slot}` : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot}`;
-  const txt = `👨‍🍳 <b>[Кухня] Заказ #${o.no}</b>\n\n👤 ${o.name} (${o.phone})\n${o.method === 'pickup' ? '🛍 Самовывоз: Советская 38А' : '🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr}\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n\n${lines.concat(gifts).join('\n')}\n\nИтого: <b>${o.total} ₽</b>${o.comment ? '\n💬 ' + o.comment : ''}`;
+  const own = o.by_staff ? ' · 🏠 <b>свои</b>' : '';
+  const txt = `👨‍🍳 <b>[Кухня] Заказ #${o.no}</b>${own}\n\n👤 ${o.name} (${o.phone})\n${o.method === 'pickup' ? '🛍 Самовывоз: Советская 38А' : '🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr}\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n\n${lines.concat(gifts).join('\n')}\n\nИтого: <b>${o.total} ₽</b>${o.comment ? '\n💬 ' + o.comment : ''}`;
 
   const staff = db.prepare("SELECT id, tg FROM customers WHERE role IN ('cashier','admin','dispatch')").all();
   const sentTg = new Set();
@@ -342,7 +346,11 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     }
   }
 
-  const discount = method === 'pickup' ? Math.round(sum * DELIVERY.pickupDiscount) : 0;
+  // Сотрудники: −10% на любой заказ. Со скидкой самовывоза не суммируется — берём большую.
+  const byStaff = STAFF_ROLES.includes(req.user.role) ? 1 : 0;
+  const pickupDiscount = method === 'pickup' ? Math.round(sum * DELIVERY.pickupDiscount) : 0;
+  const staffDiscount = byStaff ? Math.round(sum * DELIVERY.staffDiscount) : 0;
+  const discount = Math.max(pickupDiscount, staffDiscount);
   const gifts = [];
   const wp = weekPromo();
   if (wp && wp.gift) { const q = wp.threshold > 0 ? Math.floor(sum / wp.threshold) : 1; if (q > 0) gifts.push({ name: wp.gift, qty: q }); }
@@ -384,13 +392,13 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     pay: b.pay === 'card' ? 'card' : 'cash',
     comment: String(b.comment || '').slice(0, 300), 
     items, total, discount, fee, gifts, promo: promoCode, promodiscount: promoDiscount, 
-    is_preorder: isPreorder, preorder_date: preorderDate,
+    is_preorder: isPreorder, preorder_date: preorderDate, by_staff: byStaff,
     status: 'new', created: nowISO(), updated: nowISO() 
   };
   
-  db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,fee,gifts,is_preorder,preorder_date,status,created,updated) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+  db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,fee,gifts,is_preorder,preorder_date,by_staff,status,created,updated) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(o.id, o.no, o.cid, o.name, o.phone, o.method, o.place, o.addr, o.slot, o.pay, o.comment,
-    JSON.stringify(o.items), o.total, o.discount, o.fee, JSON.stringify(o.gifts), o.is_preorder, o.preorder_date, o.status, o.created, o.updated);
+    JSON.stringify(o.items), o.total, o.discount, o.fee, JSON.stringify(o.gifts), o.is_preorder, o.preorder_date, o.by_staff, o.status, o.created, o.updated);
   
   orderNotifyStaff(o);
   orderNotifyCustomer(o);
@@ -404,13 +412,16 @@ ordersRouter.get('/api/orders/mine', userGuard, (req, res) => {
 
 ordersRouter.get('/api/orders', dispatchGuard, (req, res) => {
   const st = req.query.status;
+  // ?staff=1 — только «свои» (заказы сотрудников), ?staff=0 — только гостевые, без параметра — все.
+  const staffSql = req.query.staff === '1' ? ' AND by_staff=1' : req.query.staff === '0' ? ' AND by_staff=0' : '';
   // F2.5.6: предзаказы всегда остаются в работе диспетчера — не скрываем их из-за
   // авто-статуса done (иначе карточка исчезает вместе с кнопками смены статуса).
-  const keepDonePreorders = !st && (!req.query.done || req.query.done === '1');
+  // Обычные (не предзаказ) выполненные заказы из ленты убираем.
+  const hideDoneRegular = !st && (!req.query.done || req.query.done === '1');
   const rows = st
-    ? db.prepare('SELECT * FROM orders WHERE status=? ORDER BY no DESC LIMIT 50').all(st)
+    ? db.prepare(`SELECT * FROM orders WHERE status=?${staffSql} ORDER BY no DESC LIMIT 50`).all(st)
     : db.prepare(
-        `SELECT * FROM orders WHERE created>? ${keepDonePreorders ? "AND NOT (status='done' AND is_preorder=1)" : ''} ORDER BY no DESC LIMIT 50`
+        `SELECT * FROM orders WHERE created>?${staffSql} ${hideDoneRegular ? "AND NOT (status='done' AND is_preorder=0)" : ''} ORDER BY no DESC LIMIT 50`
       ).all(new Date(Date.now() - 3 * 86400000).toISOString());
   res.json({ orders: rows.map(o => ({ ...o, items: JSON.parse(o.items || '[]'), gifts: JSON.parse(o.gifts || '[]') })) });
 });

@@ -80,6 +80,14 @@ CREATE TABLE IF NOT EXISTS fcm(
   if (ocols.length && !ocols.includes('eta')) db.exec(`ALTER TABLE orders ADD COLUMN eta TEXT DEFAULT ''`);
   if (ocols.length && !ocols.includes('is_preorder')) db.exec(`ALTER TABLE orders ADD COLUMN is_preorder INTEGER DEFAULT 0`);
   if (ocols.length && !ocols.includes('preorder_date')) db.exec(`ALTER TABLE orders ADD COLUMN preorder_date TEXT DEFAULT ''`);
+  /* Заказ сотрудника («свой»): снимок роли на момент заказа, а не JOIN по customers.role —
+     иначе при понижении сотрудника его старые заказы переехали бы в гостевую выручку. */
+  if (ocols.length && !ocols.includes('by_staff')) {
+    db.exec(`ALTER TABLE orders ADD COLUMN by_staff INTEGER DEFAULT 0`);
+    // Разовый бэкфилл: ALTER выполняется один раз, поэтому отдельный флаг в meta не нужен.
+    db.exec(`UPDATE orders SET by_staff=1 WHERE cid IN
+      (SELECT id FROM customers WHERE role IN ('cashier','dispatch','admin'))`);
+  }
 
   const ncols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
   if (ncols.length && !ncols.includes('notify_tg')) db.exec(`ALTER TABLE customers ADD COLUMN notify_tg INTEGER DEFAULT 1`);
@@ -93,8 +101,28 @@ CREATE TABLE IF NOT EXISTS fcm(
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
     CREATE INDEX IF NOT EXISTS idx_orders_cid ON orders(cid);
+    CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created);
     CREATE INDEX IF NOT EXISTS idx_history_cid ON history(cid);
     CREATE INDEX IF NOT EXISTS idx_chat_key ON chat(key);
     CREATE TABLE IF NOT EXISTS bonus_grants(cid TEXT, kind TEXT, ts TEXT, PRIMARY KEY(cid, kind));
   `);
+
+  /* ── Бонусы: разовый бэкфилл bonus_grants ──
+     Профили, созданные до появления таблицы bonus_grants, уже получали приветственные бонусы
+     (или не получат их задним числом). Помечаем все три вида как выданные, чтобы grantBonus
+     не считал старого клиента новичком и не начислил напиток повторно.
+     Идемпотентно: флаг в meta + INSERT OR IGNORE по PK(cid, kind). */
+  if (!db.prepare("SELECT 1 FROM meta WHERE key='bonus_grants_backfilled'").get()) {
+    const ts = new Date().toISOString();
+    const fill = db.prepare('INSERT OR IGNORE INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)');
+    const backfill = db.transaction(() => {
+      for (const row of db.prepare('SELECT id FROM customers').all()) {
+        fill.run(row.id, 'signup', ts);
+        fill.run(row.id, 'qr', ts);
+        fill.run(row.id, 'install', ts);
+      }
+      db.prepare("INSERT INTO meta(key,value) VALUES('bonus_grants_backfilled',?)").run(ts);
+    });
+    backfill();
+  }
 }

@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v567';
+const STATIC_CACHE = 'zerno-static-v577';
 const MEDIA_CACHE = 'zerno-media-v20';
 const API_CACHE = 'zerno-api-v14';
 
@@ -40,6 +40,7 @@ const STATIC_ASSETS = [
   '/app/ui/theme/160-10-rail-mobile-opts.css',
   '/app/ui/theme/160-11-canonical-grid-menu.css',
   '/app/ui/theme/160-12-admin-bar-tail.css',
+  '/app/ui/theme/160-13-dashboard-bento.css',
   '/app/ui/theme/170-profile-button.css',
   '/app/ui/brand-tokens.css',
   '/app/ui/fonts.css',

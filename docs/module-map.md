@@ -131,7 +131,8 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/promo.js` | `#promoModal`: CRUD кодов, недельная акция и пицца месяца | `window.closePromo`, `window.loadWeekPromo` |
-| `core/dash.js` | `#dashModal`: статистика, график штампов, подписчики пушей | `window.loadSubs`, `window.closeDash` |
+| `core/dash.js` | `#dashModal`: вкладки брендов, статистика «…и кофе» (штампы, подписчики пушей) | `window.loadSubs`, `window.closeDash` |
+| `core/dash-orders.js` | вкладка «Пятница» в `#dashModal`: Bento-плитки заказов, график 14 дней, топ-5 позиций и блок «свои» | `window.loadOrdersStats` |
 
 ## 13. CSS по слоям (подробнее — docs/css-architecture.md)
 

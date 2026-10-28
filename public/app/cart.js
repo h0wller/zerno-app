@@ -79,7 +79,9 @@
 
     var methodEl = document.getElementById("checkoutMethod");
     var method = methodEl ? methodEl.value : "delivery";
-    var pickup = method === "pickup" ? Math.round(sum * 0.1) : 0;
+    var isStaffUser = !!(typeof window.me !== "undefined" && window.me && ["admin", "cashier", "dispatch"].includes(window.me.role));
+    var pickup = (method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0;
+    var discLabel = method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : "");
     var fee = 0;
 
     var minOrder = 0;
@@ -123,6 +125,7 @@
     return {
       sum: sum,
       pickup: pickup,
+      discLabel: discLabel,
       fee: fee,
       baseZoneFee: baseZoneFee,
       freeShip: !!(promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
@@ -150,7 +153,7 @@
 
     var discEl = document.getElementById("cartDiscount");
     if (discEl) {
-      discEl.textContent = t.pickup ? "−10% самовывоз: −" + fmt(t.pickup) : "";
+      discEl.textContent = t.pickup ? (t.discLabel || "−10% самовывоз") + ": −" + fmt(t.pickup) : "";
       discEl.style.display = t.pickup ? "flex" : "none";
     }
 

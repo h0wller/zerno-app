@@ -217,6 +217,8 @@ authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
   }
   db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
   addHist(c.id, '✅ Профиль активирован на кассе', 'Кассир');
+  // Приветственный бонус — как и при активации сотрудником (/api/staff/activate-guest).
+  grantBonus(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
 });
 
