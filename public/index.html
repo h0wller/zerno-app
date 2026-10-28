@@ -1474,9 +1474,10 @@ if(b==='delivery'){
         <small style="color: #8b98a5; font-size: 11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная
           номер</small>
         <button type="button" class="cta" id="regBtn">Создать профиль</button>
-        <p class="regConsent" style="margin: 0; color: #8b98a5; font-size: 11.5px; text-align: center">
-          Создавая профиль, вы соглашаетесь с <a href="/privacy.html" target="_blank" rel="noopener" style="color: #1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных
-        </p>
+        <label class="chk regConsent" id="consentRow" for="consentBox" style="margin: 0; color: #8b98a5; font-size: 11.5px; align-items: flex-start">
+          <input type="checkbox" id="consentBox" name="consent" required />
+          <span>Согласен с <a href="/privacy.html" target="_blank" rel="noopener" style="color: #1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных</span>
+        </label>
         <div class="alt">
           Уже есть профиль?
           <button type="button" id="toLogin">Войти по номеру</button>
