@@ -55,8 +55,7 @@
     var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
     if (hint) hint.style.display = 'none';
 
-    // F3.62: строку согласия в TMA НЕ скрываем — 152-ФЗ требует действия пользователя
-    // в любой среде, включая Mini App. Владелец инжекта #consentRow — admin-extra.js (без изменений).
+    // Согласие рендерится в authModal и проверяется обработчиком регистрации независимо от среды.
 
     if (window.__tgUser && window.__tgUser.name) {
       var rn = document.getElementById('regName');
@@ -242,20 +241,20 @@
         var pin = (document.getElementById('regPin') || {}).value.trim();
         var code = (document.getElementById('regOtp') || {}).value.trim();
 
+        var consentBox = document.getElementById('consentBox');
+        if (!consentBox || !consentBox.checked) {
+          return toast('Отметь согласие с политикой конфиденциальности', '⚠️');
+        }
+
         if (name.length < 2) return toast('Введите имя', '✍️');
         if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
         if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
 
         if (window.__tgInitData) {
-          // F3.61: в TMA согласие берём из #consentBox (рядовый чекбокс формы);
-          // если строка согласия не отрендерена — считаем согласие данным (фолбэк для старых сборок).
-          var cbTg = document.getElementById('consentBox');
-          var consentTg = cbTg ? (cbTg.checked ? 1 : 0) : 1;
-          if (cbTg && !cbTg.checked) return toast('Отметь согласие с политикой конфиденциальности', '⚠️');
           try {
             var rTg = await api('/auth/tg-link', {
               method: 'POST',
-              body: { initData: window.__tgInitData, phone: phone, name: name, pin: pin, consent: consentTg, src: getRegSource() }
+              body: { initData: window.__tgInitData, phone: phone, name: name, pin: pin, consent: 1, src: getRegSource() }
             });
             if (rTg && rTg.needBotConfirm) {
               // Номер сначала подтверждаем в боте, потом повторяем вход.
@@ -287,7 +286,7 @@
         try {
           var r = await api('/auth/register', {
             method: 'POST',
-            body: { name: name, phone: phone, pin: pin, code: code, src: getRegSource() }
+            body: { name: name, phone: phone, pin: pin, code: code, consent: 1, src: getRegSource() }
           });
           try { localStorage.removeItem('zt_src'); } catch (_) {}
           setUser(r.token, r.customer);
@@ -332,6 +331,10 @@
       regTgBtn.onclick = async function () {
         var ph = (document.getElementById('regPhone') || {}).value;
         var nm = ((document.getElementById('regName') || {}).value || '').trim();
+        var consentBox = document.getElementById('consentBox');
+        if (!consentBox || !consentBox.checked) {
+          return toast('Сначала подтвердите согласие с политикой конфиденциальности', '⚠️');
+        }
         if (ph10(ph).length < 10) return toast('Введите номер полностью', '📵');
         try {
           var r = await api('/auth/request-reg-otp', {
