@@ -331,6 +331,10 @@
       regTgBtn.onclick = async function () {
         var ph = (document.getElementById('regPhone') || {}).value;
         var nm = ((document.getElementById('regName') || {}).value || '').trim();
+        var consentBox = document.getElementById('consentBox');
+        if (!consentBox || !consentBox.checked) {
+          return toast('Сначала подтвердите согласие с политикой конфиденциальности', '⚠️');
+        }
         if (ph10(ph).length < 10) return toast('Введите номер полностью', '📵');
         try {
           var r = await api('/auth/request-reg-otp', {
