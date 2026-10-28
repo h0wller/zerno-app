@@ -8,7 +8,7 @@ import { linkTelegram } from '../domain/telegram-link.js';
 import { grantWelcome, redeem } from '../domain/loyalty.js';
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { lockedSeconds, registerFail, hashPin, safeEqual, pinLocks, lockKey } from '../utils/security.js';
-import { otpStore } from '../utils/otp.js';
+import { otpStore, isOtpLive, consumeOtp } from '../utils/otp.js';
 import { nowISO } from '../utils/id-time.js';
 import { sendSms } from '../services/sms.js';
 import { tgSend, TG_TOKEN } from '../services/telegram.js';
@@ -19,6 +19,20 @@ import { validate, RegisterSchema, LoginSchema, SetupPinSchema, ActivateCodeSche
 import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from '../config.js';
 
 export const authRouter = express.Router();
+
+// Isolated test seam: never registered in production.
+if (process.env.NODE_ENV === 'test') {
+  authRouter.post('/__test/otp', (req, res) => {
+    const key = String(req.body?.key || '');
+    const code = String(req.body?.code || '');
+    const expiresInMs = Number(req.body?.expiresInMs);
+    if ((!key.startsWith('reg:') && !/^[+0-9\s-]{10,24}$/.test(key)) || !code || !Number.isFinite(expiresInMs)) {
+      return res.status(400).json({ error: 'Invalid test OTP fixture' });
+    }
+    otpStore.set(key, { code, expires: Date.now() + expiresInMs });
+    return res.json({ ok: true });
+  });
+}
 
 // [tg-link-auth-endpoint-v1]
 
@@ -72,7 +86,7 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   // Номер не доказан: привязка и создание профиля по номеру возможны только после подтверждения контактом в боте
   // от того же Telegram-аккаунта (см. webhook: tgChat совпадает с этим tgId).
   const confirmed = otpStore.get('reg:' + p);
-  const botOk = !!(confirmed && confirmed.confirmed && String(confirmed.tgChat) === tgId && Date.now() < confirmed.expires);
+  const botOk = isOtpLive(confirmed) && !!confirmed.confirmed && String(confirmed.tgChat) === tgId;
   if (!botOk) {
     const botToken = crypto.randomBytes(6).toString('hex');
     otpStore.set('regtg:' + botToken, { phone: p, name: String(req.body.name || '').trim(), expires: Date.now() + 10 * 60 * 1000 });
@@ -157,7 +171,7 @@ authRouter.post('/api/auth/request-reg-otp', (req, res) => {
 authRouter.get('/api/auth/check-reg', (req, res) => {
   const p = fmtPhone(req.query.phone || '');
   const st = otpStore.get('reg:' + p);
-  const isOk = !!(st && st.confirmed && Date.now() < st.expires);
+  const isOk = isOtpLive(st) && !!st.confirmed;
   if (isOk && st.token && st.customer) {
     return res.json({ confirmed: true, token: st.token, customer: st.customer });
   }
@@ -172,11 +186,11 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   const p = fmtPhone(req.body.phone || '');
   const code = String(req.body.code || '').trim();
   const st = otpStore.get('reg:' + p);
-  const okTg = !!(st && st.confirmed && Date.now() < st.expires);
-  const okSms = !!(st && st.code && code && st.code === code && Date.now() < st.expires);
+  const okTg = isOtpLive(st) && !!st.confirmed;
+  const okSms = isOtpLive(st) && !!st.code && !!code && st.code === code;
   if (okSms) pinLocks.delete(lockKey(req, 'reg'));
   const tgChat = okTg ? (st.tgChat || null) : null;
-  if (okTg || okSms) otpStore.delete('reg:' + p);
+  if (okTg || okSms) consumeOtp('reg:' + p, entry => okTg ? !!entry.confirmed : !!entry.code && !!code && entry.code === code);
 
   const ex = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (ex) {
@@ -262,12 +276,12 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
 
   if (otp) {
     const st = otpStore.get(p);
-    if (!st || Date.now() > st.expires) return res.status(403).json({ error: 'Код просрочен — запросите новый' });
+    if (!isOtpLive(st)) return res.status(403).json({ error: 'Код просрочен — запросите новый' });
     if (st.code !== otp) {
       registerFail(req, 'login');
       return res.status(403).json({ error: 'Неверный код' });
     }
-    otpStore.delete(p);
+    consumeOtp(p, entry => entry.code === otp);
     pinLocks.delete(lockKey(req, 'login'));
     addHist(c.id, 'Вход по коду из Telegram', 'Приложение');
     return res.json({ token: issueToken(c.id), customer: cust(c), needPin: !c.pin });
