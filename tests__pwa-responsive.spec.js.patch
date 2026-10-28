@@ -1,0 +1,29 @@
+diff --git a/tests/pwa-responsive.spec.js b/tests/pwa-responsive.spec.js
+index 70debb2..01354f5 100644
+--- a/tests/pwa-responsive.spec.js
++++ b/tests/pwa-responsive.spec.js
+@@ -176,4 +176,16 @@ test.describe('PWA Responsive Layout Audit', () => {
+ 
++            // Пустой результат раньше означал «тест пройден» даже при неотрендеренной сетке.
++            // Проверяем только там, где сетка доставки действительно показана: на «кофейных»
++            // страницах (#grid) контейнер #deliveryGrid скрыт, и таргетов в нём законно нет.
++            const gridVisible = await page.evaluate(() => {
++              const g = document.getElementById('deliveryGrid');
++              if (!g) return false;
++              const r = g.getBoundingClientRect();
++              return getComputedStyle(g).display !== 'none' && r.height > 0;
++            });
++
+             if (tapTargets.length > 0) {
+-              const trulySmall = tapTargets.filter(t => t.width < 36 || t.height < 36);
++              // Порог — ровно 40px из названия теста. Раньше здесь было 36px: скрытый допуск
++              // занижал требование и пропускал кнопки 36–39px.
++              const trulySmall = tapTargets.filter(t => t.width < 40 || t.height < 40);
+               expect(trulySmall.length,
+@@ -181,2 +193,6 @@ test.describe('PWA Responsive Layout Audit', () => {
+               ).toBe(0);
++            } else {
++              expect(gridVisible,
++                'Сетка доставки показана, но тап-таргетов нет — тест ничего не проверил'
++              ).toBe(false);
+             }

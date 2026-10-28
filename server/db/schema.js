@@ -97,4 +97,42 @@ CREATE TABLE IF NOT EXISTS fcm(
     CREATE INDEX IF NOT EXISTS idx_chat_key ON chat(key);
     CREATE TABLE IF NOT EXISTS bonus_grants(cid TEXT, kind TEXT, ts TEXT, PRIMARY KEY(cid, kind));
   `);
+
+  /* ── Бонусы: разовый бэкфилл bonus_grants ──
+     Профили, созданные до появления таблицы bonus_grants, уже получали приветственные бонусы
+     (или не получат их задним числом). Помечаем все три вида как выданные, чтобы grantBonus
+     не считал старого клиента новичком и не начислил напиток повторно.
+     Идемпотентно: флаг в meta + INSERT OR IGNORE по PK(cid, kind). */
+  if (!db.prepare("SELECT 1 FROM meta WHERE key='bonus_grants_backfilled'").get()) {
+    const ts = new Date().toISOString();
+    const fill = db.prepare('INSERT OR IGNORE INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)');
+    const backfill = db.transaction(() => {
+      for (const row of db.prepare('SELECT id FROM customers').all()) {
+        fill.run(row.id, 'signup', ts);
+        fill.run(row.id, 'qr', ts);
+        fill.run(row.id, 'install', ts);
+      }
+      db.prepare("INSERT INTO meta(key,value) VALUES('bonus_grants_backfilled',?)").run(ts);
+    });
+    backfill();
+  }
+
+  /* ── Бонусы: разовый бэкфилл bonus_grants ──
+     Профили, созданные до появления таблицы bonus_grants, уже получали приветственные бонусы
+     (или не получат их задним числом). Помечаем все три вида как выданные, чтобы grantBonus
+     не считал старого клиента новичком и не начислил напиток повторно.
+     Идемпотентно: флаг в meta + INSERT OR IGNORE по PK(cid, kind). */
+  if (!db.prepare("SELECT 1 FROM meta WHERE key='bonus_grants_backfilled'").get()) {
+    const ts = new Date().toISOString();
+    const fill = db.prepare('INSERT OR IGNORE INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)');
+    const backfill = db.transaction(() => {
+      for (const row of db.prepare('SELECT id FROM customers').all()) {
+        fill.run(row.id, 'signup', ts);
+        fill.run(row.id, 'qr', ts);
+        fill.run(row.id, 'install', ts);
+      }
+      db.prepare("INSERT INTO meta(key,value) VALUES('bonus_grants_backfilled',?)").run(ts);
+    });
+    backfill();
+  }
 }

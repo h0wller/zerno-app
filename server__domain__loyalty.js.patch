@@ -1,0 +1,84 @@
+diff --git a/server/domain/loyalty.js b/server/domain/loyalty.js
+index efb5b16..0c86ead 100644
+--- a/server/domain/loyalty.js
++++ b/server/domain/loyalty.js
+@@ -4,3 +4,3 @@ import { sendPush } from '../services/push.js';
+ import { APP_URL } from '../services/telegram.js';
+-import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
++import { stampBar, cupWord, splitStamps } from '../utils/loyalty-helpers.js';
+ 
+@@ -59,36 +59,40 @@ export function grant(cid, by) {
+ }
+-export function grantStamps(cid, n, by) {
+-  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
+-  if (!c || n <= 0) return null;
+-  
+-  const newStamps = c.stamps + n;
+-  let free = c.free;
+-  let finalStamps = newStamps;
+-  let ten = false;
+-  
+-  if (newStamps >= 10) {
+-    free += Math.floor(newStamps / 10);
+-    finalStamps = newStamps % 10;
+-    ten = true;
+-  }
+-  
+-  db.prepare('UPDATE customers SET stamps=?, free=? WHERE id=?').run(finalStamps, free, cid);
+-  addHist(cid, `Начислено ${n} штампов (итого ${finalStamps}/10, бесплатно: ${free})`, by);
+-  logEv(c.name, `+${n} штампов → ${finalStamps}/10`);
+-  
+-  if (ten) {
+-    const baseAppUrl = APP_URL || 'https://friday.andcoffee.online';
+-    sendPush(
+-      cid,
+-      '🎁 Бонус начислен',
+-      `Приветственный напиток в кофейне (${n} штампов), первая доставка бесплатно (применится в корзине сама, 30 дн.)`,
+-      {
+-        inline_keyboard: [[
+-          { text: '☕ Открыть карту штампов', web_app: { url: baseAppUrl + '/?src=tg&brand=coffee&tab=bonus' } }
+-        ]]
+-      }
+-    );
+-  }
+-  
+-  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)), ten };
++/**
++ * Ядро начисления штампов: один UPDATE и расчёт подарков.
++ * Не пишет историю/журнал и не открывает транзакцию — это делает вызывающий,
++ * чтобы составное начисление (например, приветственный бонус) осталось одной атомарной операцией.
++ * @param {string} cid - id клиента.
++ * @param {number} n - сколько штампов начислить.
++ * @returns {{ten: boolean, addedFree: number, stamps: number, free: number, name: string, added: number}|null}
++ *   null, если клиента нет или n <= 0.
++ */
++export function applyStamps(cid, n) {
++  const add = Math.floor(Number(n) || 0);
++  const c = db.prepare('SELECT id, name, stamps, free FROM customers WHERE id=?').get(cid);
++  if (!c || add <= 0) return null;
++  const r = splitStamps(c.stamps, c.free, add);
++  db.prepare('UPDATE customers SET stamps=?, free=? WHERE id=?').run(r.stamps, r.free, cid);
++  return { ten: r.gotFree, addedFree: r.addedFree, stamps: r.stamps, free: r.free, name: c.name, added: add };
++}
++
++/**
++ * Начисляет n штампов одним UPDATE в транзакции: 10 и больше — складываются в подарки,
++ * остаток остаётся на карте. cups не трогает (это счётчик реально выпитых чашек, его пишет grant).
++ * Пишет ровно одну запись в историю и НЕ отправляет пуш: текст уведомления знает только вызывающий.
++ * @param {string} cid - id клиента.
++ * @param {number} n - сколько штампов начислить.
++ * @param {string} [by] - автор операции для истории.
++ * @returns {{customer: object, ten: boolean, addedFree: number}|null} null, если клиента нет или n <= 0.
++ */
++export function grantStamps(cid, n, by = 'Система') {
++  let r = null;
++  const apply = db.transaction(() => {
++    r = applyStamps(cid, n);
++    if (!r) return;
++    addHist(cid, `Начислено ${r.added} шт. → ${r.stamps}/10${r.addedFree ? `, подарок(ов): +${r.addedFree}` : ''}`, by);
++    logEv(r.name, `+${r.added} штампов → ${r.stamps}/10`);
++  });
++  apply();
++  if (!r) return null;
++  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)), ten: r.ten, addedFree: r.addedFree };
+ }

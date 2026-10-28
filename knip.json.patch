@@ -1,0 +1,14 @@
+diff --git a/knip.json b/knip.json
+index 5e2f9f7..06c71ee 100644
+--- a/knip.json
++++ b/knip.json
+@@ -10,2 +10,3 @@
+     "tests/*.spec.js",
++    "tests/unit/*.test.mjs",
+     "scripts/*.mjs"
+@@ -16,3 +17,4 @@
+     "scripts/**/*.mjs",
+-    "tests/**/*.js"
++    "tests/**/*.js",
++    "tests/**/*.mjs"
+   ],

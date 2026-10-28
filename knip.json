@@ -8,13 +8,15 @@
     "public/app/core/address-book.js",
     "public/app/core/preorder-timer.js",
     "tests/*.spec.js",
+    "tests/unit/*.test.mjs",
     "scripts/*.mjs"
   ],
   "project": [
     "server/**/*.js",
     "public/app/**/*.js",
     "scripts/**/*.mjs",
-    "tests/**/*.js"
+    "tests/**/*.js",
+    "tests/**/*.mjs"
   ],
   "ignore": [
     "public/app/vendor/**"

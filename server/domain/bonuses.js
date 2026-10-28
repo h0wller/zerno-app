@@ -4,12 +4,15 @@
 //   qr      — регистрация по QR с постера
 //   install — установка приложения на телефон
 // Доставка: скидка ₽ (delivery) и/или флаг freeFirstDelivery — одноразовый код kind='freeship' (fee = 0).
-// Настройки лежат в meta.bonus_cfg, по умолчанию всё выключено (0).
+// Настройки лежат в meta.bonus_cfg; умолчания — в server/utils/bonus-config.js
+// (регистрация и регистрация по QR: 10 штампов = напиток + первая доставка бесплатно).
 // Каждый вид бонуса начисляется гостю один раз (таблица bonus_grants) и только подтверждённому профилю.
+// signup и qr — это ОДИН приветственный бонус на два канала: получил по одному каналу, по второму уже нельзя.
+// Дополнительно signup/qr требуют «свежего» профиля — см. profileWasUsed(). install от новичка не зависит.
 import crypto from 'crypto';
 import { db } from '../db/connection.js';
-import { grant, grantStamps } from './loyalty.js';
-import { addHist } from './helpers.js';
+import { applyStamps } from './loyalty.js';
+import { addHist, logEv } from './helpers.js';
 import { sendPush } from '../services/push.js';
 import { nowISO } from '../utils/id-time.js';
 import {
@@ -45,55 +48,112 @@ export function setBonusConfig(input) {
   return clean;
 }
 
+/**
+ * Приветственный бонус уже получен? signup и qr — два канала одного и того же подарка,
+ * поэтому отметка любого из них закрывает оба (получил по QR — при регистрации повторно не даём,
+ * и наоборот). Отметка бэкфилла из schema.js тоже считается: старые профили свой подарок уже получили.
+ * @param {string} cid - id клиента.
+ * @returns {boolean}
+ */
+function welcomeAlreadyGranted(cid) {
+  return !!db.prepare(
+    "SELECT 1 FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr') LIMIT 1"
+  ).get(cid);
+}
+
+/**
+ * Профиль уже «в деле»? Приветственные бонусы (signup/qr) — только для новичков.
+ * Признаки использования: уже полученный приветственный бонус (в т.ч. отметка бэкфилла),
+ * купленные чашки (cups), штамп с кассы (stamps), подарок на руках (free > 0 — старая схема или промокод),
+ * списанный подарок (free снова 0, но в истории есть выдача бонуса), активированный персональный промокод.
+ * @param {string} cid - id клиента.
+ * @param {{cups: number, stamps: number, free: number}} c - строка клиента.
+ * @returns {boolean}
+ */
+function profileWasUsed(cid, c) {
+  if (welcomeAlreadyGranted(cid)) return true;
+  if (c.cups > 0 || c.stamps > 0 || c.free > 0) return true;
+  const welcomed = db.prepare(
+    "SELECT 1 FROM history WHERE cid=? AND a LIKE '🎁 Бонус «%' LIMIT 1"
+  ).get(cid);
+  if (welcomed) return true; // бонус выдавали, подарка уже нет — значит списан
+  return !!db.prepare('SELECT 1 FROM promos WHERE owner=? AND uses>0 LIMIT 1').get(cid);
+}
+
 // Начисляет бонус вида kind гостю cid. Возвращает результат или null, если начислять нечего.
+// Всё начисление (штампы + промокоды + история) — одна транзакция, один пуш на всё событие.
 export function grantBonus(cid, kind) {
   if (!BONUS_KINDS.includes(kind)) return null;
-  const c = db.prepare('SELECT id, verified FROM customers WHERE id=?').get(cid);
+  // role/cups/stamps/free нужны для проверок ниже — выбираем их явно.
+  const c = db.prepare('SELECT id, role, verified, cups, stamps, free FROM customers WHERE id=?').get(cid);
   if (!c || !c.verified) return null;
-    // Только гости получают приветственные бонусы
-  if (c.role !== 'guest') return null;
-  
-  // Для signup/qr: только если профиль ещё не использовался
-  if ((kind === 'signup' || kind === 'qr') && (c.cups > 0 || c.stamps > 0 || c.free > 0)) {
-    return null;
-  }
+  // Только гости получают приветственные бонусы
+  if ((c.role || 'guest') !== 'guest') return null;
+  if ((kind === 'signup' || kind === 'qr') && profileWasUsed(cid, c)) return null;
+
   const cfg = getBonusConfig();
   const k = cfg.kinds[kind];
   if (!k || (k.coffee <= 0 && k.delivery <= 0 && !k.freeFirstDelivery)) return null;
 
-  // Один раз на гостя и вид бонуса.
-  const ins = db.prepare('INSERT OR IGNORE INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)').run(cid, kind, nowISO());
-  if (ins.changes === 0) return null;
-
   const parts = [];
-  if (k.coffee > 0) {
-    grantStamps(cid, k.coffee, 'Система');for (let i = 0; i < k.coffee; i++) grant(cid, 'Система');
-    parts.push(k.coffee >= 10 ? 'приветственный напиток в кофейне (10 штампов)' : `+${k.coffee} штамп(а) в кофейне`);
-  }
-
   let code = null;
-  if (k.delivery > 0) {
-    code = makeBonusPromoCode();
-    const expires = new Date(Date.now() + cfg.days * 86400000).toISOString();
-    db.prepare(
-      'INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope) VALUES(?,?,?,?,1,?,1,0,?,?)'
-    ).run(crypto.randomUUID(), code, 'money', k.delivery, expires, nowISO(), 'delivery');
-    parts.push(`скидка ${k.delivery} ₽ на доставку, промокод ${code} (действует ${cfg.days} дн.)`);
-  }
-
-  // Первая доставка бесплатно: одноразовый персональный промокод вида freeship (сумма заказа не меняется, fee = 0).
   let freeCode = null;
-  if (k.freeFirstDelivery) {
-    freeCode = makeBonusPromoCode();
-    const exp = new Date(Date.now() + cfg.days * 86400000).toISOString();
-    db.prepare(
-      'INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope,owner) VALUES(?,?,?,?,1,?,1,0,?,?,?)'
-    ).run(crypto.randomUUID(), freeCode, 'freeship', 0, exp, nowISO(), 'delivery', cid);
-    parts.push(`первая доставка бесплатно (применится в корзине сама, ${cfg.days} дн.)`);
+
+  const apply = db.transaction(() => {
+    // Один раз на гостя и вид бонуса: PK(cid,kind) + INSERT OR IGNORE.
+    const ins = db.prepare('INSERT OR IGNORE INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)').run(cid, kind, nowISO());
+    if (ins.changes === 0) return false;
+
+    // signup и qr — один приветственный бонус на два канала. Проверка ВНУТРИ транзакции и после
+    // вставки: если второй канал пришёл одновременно с первым (гонка), count > 1 → throw → rollback.
+    // Возврат false здесь не годится: better-sqlite3 коммитит транзакцию при нормальном возврате,
+    // и отметка о неначисленном бонусе осталась бы в базе.
+    if (kind === 'signup' || kind === 'qr') {
+      const n = db.prepare(
+        "SELECT COUNT(*) AS n FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
+      ).get(cid).n;
+      if (n > 1) throw new Error('welcome bonus already granted');
+    }
+
+    if (k.coffee > 0) {
+      const st = applyStamps(cid, k.coffee);
+      if (st) {
+        logEv(st.name, `бонус «${BONUS_TITLES[kind]}»: +${k.coffee} штампов → ${st.stamps}/10`);
+        parts.push(k.coffee >= 10 ? 'приветственный напиток в кофейне (10 штампов)' : `+${k.coffee} штамп(а) в кофейне`);
+      }
+    }
+
+    if (k.delivery > 0) {
+      code = makeBonusPromoCode();
+      const expires = new Date(Date.now() + cfg.days * 86400000).toISOString();
+      db.prepare(
+        'INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope) VALUES(?,?,?,?,1,?,1,0,?,?)'
+      ).run(crypto.randomUUID(), code, 'money', k.delivery, expires, nowISO(), 'delivery');
+      parts.push(`скидка ${k.delivery} ₽ на доставку, промокод ${code} (действует ${cfg.days} дн.)`);
+    }
+
+    // Первая доставка бесплатно: одноразовый персональный промокод вида freeship (сумма заказа не меняется, fee = 0).
+    if (k.freeFirstDelivery) {
+      freeCode = makeBonusPromoCode();
+      const exp = new Date(Date.now() + cfg.days * 86400000).toISOString();
+      db.prepare(
+        'INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope,owner) VALUES(?,?,?,?,1,?,1,0,?,?,?)'
+      ).run(crypto.randomUUID(), freeCode, 'freeship', 0, exp, nowISO(), 'delivery', cid);
+      parts.push(`первая доставка бесплатно (применится в корзине сама, ${cfg.days} дн.)`);
+    }
+
+    addHist(cid, `🎁 Бонус «${BONUS_TITLES[kind]}»: ${parts.join(', ')}`, 'Система');
+    return true;
+  });
+
+  // throw из транзакции = откат: второй приветственный бонус по другому каналу (гонка signup/qr).
+  try {
+    if (!apply()) return null;
+  } catch (_) {
+    return null;
   }
 
-  const title = BONUS_TITLES[kind];
-  addHist(cid, `🎁 Бонус «${title}»: ${parts.join(', ')}`, 'Система');
+  // Один пуш на всё начисление — уже после коммита транзакции.
   sendPush(cid, '🎁 Бонус начислен', parts.join(', ')).catch(() => {});
   return { kind, coffee: k.coffee, delivery: k.delivery, code, freeCode };
 }
