@@ -24,6 +24,12 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      # Dependabot can omit nested lockfile entries while leaving their
+      # parent dependency ranges intact. Normalize the lockfile with the
+      # same npm version before npm ci validates it.
+      - name: Normalize dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
       - name: Install dependencies
         run: npm ci
 
@@ -48,6 +54,9 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      - name: Normalize dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
       - name: Install dependencies
         run: npm ci
