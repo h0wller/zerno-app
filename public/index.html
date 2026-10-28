@@ -204,6 +204,15 @@ html[data-brand="delivery"] #menuView {
 body {
   margin: 0;
 }
+/* Убираем подчёркивание ссылок «Пятницы» ещё до загрузки отложенных theme CSS. */
+html[data-brand="delivery"] a,
+html[data-brand="delivery"] a:visited,
+html[data-brand="delivery"] a:hover,
+html[data-brand="delivery"] a:active,
+html[data-brand="delivery"] a:focus {
+  text-decoration: none;
+}
+
 header.topbar,
 .topbar {
   display: grid;
