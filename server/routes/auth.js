@@ -177,9 +177,11 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
       db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
       db.prepare('DELETE FROM customers WHERE id=?').run(ex.id);
     } else if (okTg && !ex.verified) {
+      const linked = linkTelegram(db, ex.id, String(tgChat));
+      if (!linked.ok) return res.status(409).json({ error: 'Этот Telegram уже привязан к другому профилю.' });
       db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
-      db.prepare('UPDATE customers SET name=?, tg=?, verified=1 WHERE id=?')
-        .run(String(req.body.name || '').trim() || ex.name, tgChat, ex.id);
+      db.prepare('UPDATE customers SET name=?, verified=1 WHERE id=?')
+        .run(String(req.body.name || '').trim() || ex.name, ex.id);
       addHist(ex.id, 'Профиль подтверждён через Telegram', 'Система');
       grantWelcome(ex.id, 'Telegram');
       grantBonus(ex.id, ex.src === QR_SOURCE ? 'qr' : 'signup');
