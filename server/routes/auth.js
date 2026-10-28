@@ -374,7 +374,7 @@ authRouter.post('/api/admin/test-role-session', adminGuard, (req, res) => {
   if (!profile) {
     let phone;
     do {
-      phone = String(79990000000 + crypto.randomInt(1, 999999));
+      phone = fmtPhone(String(79990000000 + crypto.randomInt(1, 999999)));
     } while (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(phone));
 
     const created = createCustomer(roles[role].name, phone);
