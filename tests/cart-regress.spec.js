@@ -473,6 +473,10 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await timeSegSlot.click();
     await expect(page.locator('#checkoutSlot')).toBeVisible();
 
+    // Проверяем режим «Ко времени», но оформляем заказ через ASAP:
+    // доступные слоты зависят от актуального расписания на момент CI-запуска.
+    await page.locator('#checkoutTimeModeSeg [data-tmode="asap"]').click();
+
     await page.locator('#checkoutStreet').fill('Советская');
     await page.locator('#checkoutHouse').fill('70');
     await expect(page.locator('#checkoutBtn')).toBeEnabled();
