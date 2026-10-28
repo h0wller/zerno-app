@@ -128,8 +128,14 @@ function expect(name, r, status, fields = []) {
   expect('POST /api/push/send (без токена) → 401', await call('POST', '/api/push/send', { body: { body: 'x' } }), 401, ['error']);
 
   const digits = '9' + String(Date.now()).slice(-9);
-  const reg = await call('POST', '/api/auth/register', { body: { name: 'Smoke ' + digits.slice(-4), phone: '+7' + digits, pin: '1234' } });
-  expect('POST /api/auth/register', reg, 200, ['token', 'customer.id', 'customer.qr', 'customer.role']);
+  const noConsent = await call('POST', '/api/auth/register', {
+    body: { name: 'Smoke ' + digits.slice(-4), phone: '+7' + digits, pin: '1234' }
+  });
+  expect('POST /api/auth/register без согласия → 400', noConsent, 400, ['error']);
+  const reg = await call('POST', '/api/auth/register', {
+    body: { name: 'Smoke ' + digits.slice(-4), phone: '+7' + digits, pin: '1234', consent: 1 }
+  });
+  expect('POST /api/auth/register с согласием', reg, 200, ['token', 'customer.id', 'customer.qr', 'customer.role']);
   const token = reg.json && reg.json.token;
 
   if (token) {
