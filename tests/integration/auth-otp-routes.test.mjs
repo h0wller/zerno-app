@@ -69,8 +69,8 @@ after(async () => {
 });
 
 test('registration without consent neither creates a usable profile nor consumes OTP', async () => {
-  const phone = '+79000000101';
-  const key = 'reg:' + phone;
+  const phone = '+7 900 000-01-01';
+  const key = 'reg: +7 900 000-01-01';
   await seedOtp(key, '2468');
 
   const rejected = await api('/api/auth/register', {
@@ -88,7 +88,7 @@ test('registration without consent neither creates a usable profile nor consumes
 });
 
 test('OTP login rejects wrong and expired codes, then consumes a valid code once', async () => {
-  const phone = '+79000000102';
+  const phone = '+7 900 000-01-02';
   const registered = await api('/api/auth/register', {
     name: 'OTP Test', phone, pin: '1234', consent: true
   });
