@@ -26,6 +26,7 @@ jobs:
             cd /var/www/app
             git fetch origin
             git reset --hard ${{ github.event_name == 'workflow_dispatch' && 'origin/pizza' || github.event.workflow_run.head_sha }}
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
             npm ci
             BUILD_NUM=$(git rev-list --count HEAD) npm run build:client
             npm prune --omit=dev
