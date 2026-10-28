@@ -199,7 +199,11 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   if (okTg || okSms) {
     if (tgChat) {
       const linked = linkTelegram(db, r.customer.id, String(tgChat));
-      if (!linked.ok) return res.status(409).json({ error: 'Этот Telegram уже привязан к другому профилю.' });
+      if (!linked.ok) {
+        db.prepare('DELETE FROM tokens WHERE ref=?').run(r.customer.id);
+        db.prepare('DELETE FROM customers WHERE id=?').run(r.customer.id);
+        return res.status(409).json({ error: 'Этот Telegram уже привязан к другому профилю.' });
+      }
     }
     db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
     if (okTg) grantWelcome(r.customer.id, 'Telegram');
