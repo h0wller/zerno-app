@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS fcm(
   const scols = db.prepare('PRAGMA table_info(subs)').all().map(c => c.name);
   if (scols.length && !scols.includes('dev')) db.exec(`ALTER TABLE subs ADD COLUMN dev TEXT DEFAULT ''`);
   if (ncols.length && !ncols.includes('qr_done')) db.exec(`ALTER TABLE customers ADD COLUMN qr_done INTEGER DEFAULT 0`);
+  if (ncols.length && !ncols.includes('is_test')) db.exec(`ALTER TABLE customers ADD COLUMN is_test INTEGER NOT NULL DEFAULT 0`);
 
   // Telegram ID must identify at most one customer. Do not auto-merge legacy duplicates:
   // that could silently combine accounts, orders, history, or loyalty balances.
