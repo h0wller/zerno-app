@@ -1,5 +1,5 @@
 /* public/app/admin-extra.js — Ф3.20: админ-кластер — промо-лист, guard'ы кофейного меню,
-брендовый хром (тикер/логотип), согласие с политикой при регистрации. */
+брендовый хром (тикер/логотип). */
 (function () {
   'use strict';
 
@@ -290,53 +290,7 @@
     });
   }
 
-  /* ── R6: согласие с политикой при регистрации ── */
-  (function () {
-    var form = document.getElementById('regForm');
-    if (!form || document.getElementById('consentRow')) return;
-    var lab = document.createElement('label');
-    lab.id = 'consentRow';
-    lab.className = 'chk';
-    lab.innerHTML =
-      '<input type="checkbox" id="consentBox"><span>Согласен с <a href="/privacy.html" target="_blank" style="color:#1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных</span>';
-    var btn = document.getElementById('regBtn');
-    if (btn) form.insertBefore(lab, btn);
-  })();
-
-  document.addEventListener(
-    'click',
-    function (e) {
-      var b = e.target.closest('#regBtn');
-      if (!b) return;
-      var cb = document.getElementById('consentBox');
-      if (cb && !cb.checked) {
-        e.stopImmediatePropagation();
-        e.preventDefault();
-        toast('Отметь согласие с политикой конфиденциальности', '⚠️');
-      }
-    },
-    true
-  );
-
-  (function () {
-    var _f = window.fetch;
-    window.fetch = function (u, o) {
-      try {
-        if (
-          o &&
-          o.body &&
-          typeof o.body === 'string' &&
-          String(u).indexOf('/api/auth/register') > -1
-        ) {
-          var b = JSON.parse(o.body);
-          var cb = document.getElementById('consentBox');
-          b.consent = cb && cb.checked ? 1 : 0;
-          o = Object.assign({}, o, { body: JSON.stringify(b) });
-        }
-      } catch (e) {}
-      return _f.call(this, u, o);
-    };
-  })();
+  /* Согласие регистрации управляется модулем auth.js и разметкой authModal. */
 })();
 
 if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();

@@ -64,6 +64,10 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   if (ph10(p).length < 10) {
     return res.status(400).json({ error: 'Введите номер полностью' });
   }
+  // Не полагаемся только на UI: согласие обязательно для привязки/создания профиля по номеру.
+  if (req.body.consent !== 1 && req.body.consent !== true) {
+    return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
+  }
 
   // Номер не доказан: привязка и создание профиля по номеру возможны только после подтверждения контактом в боте
   // от того же Telegram-аккаунта (см. webhook: tgChat совпадает с этим tgId).
@@ -161,6 +165,10 @@ authRouter.get('/api/auth/check-reg', (req, res) => {
 });
 
 authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
+  // Проверяем согласие до любых изменений БД и до потребления OTP.
+  if (req.body.consent !== 1 && req.body.consent !== true) {
+    return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
+  }
   const p = fmtPhone(req.body.phone || '');
   const code = String(req.body.code || '').trim();
   const st = otpStore.get('reg:' + p);
@@ -208,7 +216,6 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
     if (okTg) grantWelcome(r.customer.id, 'Telegram');
     addHist(r.customer.id, okTg ? 'Telegram привязан при регистрации' : 'Подтверждение по SMS', 'Система');
-    if (!req.body.consent) return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
     db.prepare('UPDATE customers SET consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id);
   } else {
     let ac;
