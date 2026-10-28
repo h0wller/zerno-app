@@ -339,6 +339,102 @@
   })();
 })();
 
+// ── Изолированное тестирование ролей с реальными серверными правами ──
+(function () {
+  'use strict';
+  var ADMIN_TOKEN_KEY = 'zt_test_role_admin_token';
+  var PANEL_ID = 'ztTestRolePanel';
+
+  function ensurePanel() {
+    var panel = document.getElementById(PANEL_ID);
+    if (panel) return panel;
+    panel = document.createElement('aside');
+    panel.id = PANEL_ID;
+    panel.setAttribute('aria-label', 'Тестирование ролей');
+    panel.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:10050;width:min(280px,calc(100vw - 28px));padding:12px;background:var(--card,#fff);color:var(--text,#222);border:1px solid var(--line,#ccc);border-radius:14px;box-shadow:0 8px 28px #0002;font:14px/1.4 system-ui,sans-serif;';
+    panel.innerHTML =
+      '<div style="font-weight:700;margin-bottom:8px">Тестирование ролей</div>' +
+      '<div data-test-role-actions style="display:grid;gap:6px">' +
+        '<button type="button" data-test-role="guest">Открыть как гость</button>' +
+        '<button type="button" data-test-role="cashier">Открыть как кассир</button>' +
+        '<button type="button" data-test-role="dispatch">Открыть как диспетчер</button>' +
+      '</div>' +
+      '<button type="button" data-test-role-return style="display:none;width:100%;margin-top:8px">Вернуться в мой админ-аккаунт</button>' +
+      '<div data-test-role-note style="font-size:12px;opacity:.75;margin-top:7px">Тестовые профили отдельные. Данные основного аккаунта не меняются.</div>';
+    document.body.appendChild(panel);
+    panel.addEventListener('click', async function (event) {
+      var roleButton = event.target.closest('[data-test-role]');
+      var returnButton = event.target.closest('[data-test-role-return]');
+      if (roleButton) {
+        if (!window.me || window.me.role !== 'admin') {
+          if (typeof toast === 'function') toast('Переключать роли может только администратор');
+          return;
+        }
+        var adminToken = window.USER_TOKEN || localStorage.getItem('zt_user');
+        if (!adminToken) return;
+        roleButton.disabled = true;
+        try {
+          var result = await api('/admin/test-role-session', {
+            method: 'POST',
+            body: { role: roleButton.getAttribute('data-test-role') }
+          });
+          sessionStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
+          window.setUser(result.token, result.customer);
+          if (typeof renderAll === 'function') await renderAll();
+          if (typeof toast === 'function') toast('Тестовый режим: ' + result.customer.name);
+        } catch (err) {
+          if (typeof toast === 'function') toast(err.message || 'Не удалось открыть тестовую роль');
+        } finally {
+          roleButton.disabled = false;
+          refreshPanel();
+        }
+      } else if (returnButton) {
+        var savedToken = sessionStorage.getItem(ADMIN_TOKEN_KEY);
+        if (!savedToken) {
+          if (typeof toast === 'function') toast('Сессия администратора не найдена. Войдите обычным способом.');
+          refreshPanel();
+          return;
+        }
+        returnButton.disabled = true;
+        try {
+          window.setUser(savedToken, null);
+          var result = await api('/me');
+          window.setUser(savedToken, result.customer);
+          sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+          if (typeof renderAll === 'function') await renderAll();
+          if (typeof toast === 'function') toast('Возврат в основной аккаунт выполнен');
+        } catch (err) {
+          if (typeof toast === 'function') toast('Не удалось восстановить сессию администратора: ' + (err.message || 'ошибка входа'));
+        } finally {
+          returnButton.disabled = false;
+          refreshPanel();
+        }
+      }
+    });
+    return panel;
+  }
+
+  function refreshPanel() {
+    if (!document.body) return;
+    var panel = ensurePanel();
+    var isAdmin = !!(window.me && window.me.role === 'admin');
+    var hasSavedAdmin = !!sessionStorage.getItem(ADMIN_TOKEN_KEY);
+    panel.hidden = !isAdmin && !hasSavedAdmin;
+    var actions = panel.querySelector('[data-test-role-actions]');
+    var back = panel.querySelector('[data-test-role-return]');
+    if (actions) actions.hidden = !isAdmin;
+    if (back) back.style.display = hasSavedAdmin ? 'block' : 'none';
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', refreshPanel, { once: true });
+  } else {
+    refreshPanel();
+  }
+  window.addEventListener('load', refreshPanel, { once: true });
+  window.setTimeout(refreshPanel, 900);
+})();
+ 
 if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
 setTimeout(function () {
   if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
