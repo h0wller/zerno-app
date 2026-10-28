@@ -241,14 +241,14 @@
         var pin = (document.getElementById('regPin') || {}).value.trim();
         var code = (document.getElementById('regOtp') || {}).value.trim();
 
-        if (name.length < 2) return toast('Введите имя', '✍️');
-        if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
-        if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
-
         var consentBox = document.getElementById('consentBox');
         if (!consentBox || !consentBox.checked) {
           return toast('Отметь согласие с политикой конфиденциальности', '⚠️');
         }
+
+        if (name.length < 2) return toast('Введите имя', '✍️');
+        if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
+        if (!/^\\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
 
         if (window.__tgInitData) {
           try {
