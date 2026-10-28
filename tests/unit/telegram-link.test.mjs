@@ -42,6 +42,6 @@ test('duplicate legacy IDs are detected rather than choosing an arbitrary profil
   db.prepare('INSERT INTO customers(id, tg) VALUES (?, ?)').run('a', '123');
   db.prepare('INSERT INTO customers(id, tg) VALUES (?, ?)').run('b', '123');
   assert.deepEqual(findUniqueTelegramCustomer(db, '123'), { ok: false, customer: null, reason: 'duplicate_legacy_link' });
-  assert.deepEqual(linkTelegram(db, 'a', '123'), { ok: false, reason: 'telegram_in_use' });
+  assert.deepEqual(linkTelegram(db, 'a', '123'), { ok: false, reason: 'duplicate_legacy_link' });
   db.close();
 });
