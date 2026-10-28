@@ -9,10 +9,19 @@ import { grantWelcome } from '../domain/loyalty.js';
 import { grantBonus, QR_SOURCE } from '../domain/bonuses.js';
 import { cust, addHist, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
-import { linkTelegram } from '../domain/telegram-link.js';
+import { linkTelegram, findUniqueTelegramCustomer } from '../domain/telegram-link.js';
 import { nowISO } from '../utils/id-time.js';
 import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
 import { botIntent } from '../utils/bot-nlu.js';
+
+function getUniqueCustomerByTelegram(telegramId) {
+  const result = findUniqueTelegramCustomer(db, telegramId);
+  if (!result.ok) {
+    console.error('[telegram] Duplicate Telegram ID detected; refusing ambiguous customer lookup.');
+    return null;
+  }
+  return result.customer;
+}
 
 function welcomeKeyboard(c) {
   const rows = [
@@ -50,7 +59,7 @@ export function createTgRouter({ appKb }) {
   const tgRouter = Router();
 
   async function sendBonusInfo(targetChatId) {
-    const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(targetChatId);
+    const c = getUniqueCustomerByTelegram(targetChatId);
     if (!c) {
       await tgSend(targetChatId, 'Сначала привяжите номер — нажмите кнопку ниже 👇', appKb());
       return;
@@ -119,7 +128,7 @@ export function createTgRouter({ appKb }) {
   }
 
   async function sendOrdersInfo(targetChatId) {
-    const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(targetChatId);
+    const c = getUniqueCustomerByTelegram(targetChatId);
     if (!c) {
       await tgSend(targetChatId, 'Сначала привяжите профиль 👇', appKb());
       return;
@@ -240,7 +249,7 @@ export function createTgRouter({ appKb }) {
     }
 
     if (text === '/start') {
-      const c = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
+      const c = getUniqueCustomerByTelegram(chatId);
       const hello = c
         ? `С возвращением, <b>${c.name}</b>!\n\n${stampBar(c.stamps)}\nШтампов: <b>${c.stamps}/10</b>` +
           (c.free ? `\n🎁 Бесплатных кофе: <b>${c.free}</b>` : '')
@@ -281,7 +290,7 @@ export function createTgRouter({ appKb }) {
         '— «Где мой заказ?»\n' +
         '— «Часы работы и адрес»\n' +
         '— «Позови оператора»',
-        welcomeKeyboard(db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId))
+        welcomeKeyboard(getUniqueCustomerByTelegram(chatId))
       );
       return;
     }
@@ -454,7 +463,7 @@ export function createTgRouter({ appKb }) {
       return;
     }
 
-    const custCur = db.prepare('SELECT * FROM customers WHERE tg=?').get(chatId);
+    const custCur = getUniqueCustomerByTelegram(chatId);
     await tgSend(chatId,
       'Я подскажу по меню, заказам и бонусам 🌊\nВыберите действие в меню ниже или напишите свой вопрос:',
       welcomeKeyboard(custCur)
