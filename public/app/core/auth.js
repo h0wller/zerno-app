@@ -248,7 +248,7 @@
 
         if (name.length < 2) return toast('Введите имя', '✍️');
         if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
-        if (!/^\\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
+        if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
 
         if (window.__tgInitData) {
           try {
