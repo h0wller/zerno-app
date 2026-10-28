@@ -47,9 +47,20 @@ test.describe('Карточки меню: высота, выравнивание
             localStorage.setItem('token', 'test_tok_cards');
           });
           await page.goto(brand.url, { waitUntil: 'domcontentloaded' });
-          // Ждём настоящий рендер каталога, а не скелетоны.
-          await page.waitForSelector(`${brand.grid} .card:not(.skeleton-card)`, { timeout: 15000 });
-          await page.waitForTimeout(600);
+          // Ждём полный рендер каталога (он дорисовывается постепенно), а не первую карточку и не скелетоны.
+          const cardSel = `${brand.grid} .card:not(.skeleton-card)`;
+          await expect
+            .poll(() => page.locator(cardSel).count(), { timeout: 15000 })
+            .toBeGreaterThanOrEqual(brand.minCards);
+          // Подмена шрифта меняет высоту карточек на пару пикселей — замеряем только после неё.
+          await page.evaluate(() => document.fonts.ready);
+          // Раскладка устоялась: высота первой карточки не меняется два замера подряд.
+          await expect.poll(async () => {
+            const h1 = await page.locator(cardSel).first().evaluate((el) => el.getBoundingClientRect().height);
+            await page.waitForTimeout(150);
+            const h2 = await page.locator(cardSel).first().evaluate((el) => el.getBoundingClientRect().height);
+            return Math.abs(h1 - h2) < 0.5;
+          }, { timeout: 5000 }).toBe(true);
         });
 
         test('сетка отрендерилась (иначе остальные проверки бессмысленны)', async ({ page }) => {
@@ -79,46 +90,55 @@ test.describe('Карточки меню: высота, выравнивание
           }
         });
 
-        test('высота рядов стабильна: внеэкранные карточки не «прыгают» при отрисовке', async ({ page }) => {
+         test('высота рядов стабильна: внеэкранные карточки не «прыгают» при отрисовке', async ({ page }) => {
           // content-visibility: auto у карточек с 5-й: резерв высоты обязан совпадать с реальной,
           // иначе при скролле ряды меняют высоту (CLS) и сетка выглядит разнобойной.
-          const before = await page.evaluate((grid) => {
+          const cardSel = `${brand.grid} .card:not(.skeleton-card)`;
+
+          // Сетка дорисовывается постепенно — ждём, пока число карточек устоится.
+          await expect.poll(async () => {
+            const a = await page.locator(cardSel).count();
+            await page.waitForTimeout(250);
+            return a === (await page.locator(cardSel).count()) ? a : -1;
+          }, { timeout: 10000 }).toBeGreaterThan(0);
+
+          // Высота каждого ряда; ряд определяется позицией в документе, а не в окне.
+          const rowHeights = (grid) => {
             const rows = new Map();
             for (const c of document.querySelectorAll(`${grid} .card:not(.skeleton-card)`)) {
               const r = c.getBoundingClientRect();
               if (!r.height) continue;
-              const key = Math.round(r.top);
+              const key = Math.round(r.top + window.scrollY);
               if (!rows.has(key)) rows.set(key, []);
               rows.get(key).push(Math.round(r.height));
             }
-            return [...rows.values()].map((h) => Math.max(...h));
-          }, brand.grid);
+            return [...rows.entries()].sort((a, b) => a[0] - b[0]).map(([, h]) => Math.max(...h));
+          };
+
+          const before = await page.evaluate(rowHeights, brand.grid);
 
           await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
           await page.waitForTimeout(700);
           await page.evaluate(() => window.scrollTo(0, 0));
           await page.waitForTimeout(700);
 
-          const after = await page.evaluate((grid) => {
-            const rows = new Map();
-            for (const c of document.querySelectorAll(`${grid} .card:not(.skeleton-card)`)) {
-              const r = c.getBoundingClientRect();
-              if (!r.height) continue;
-              const key = Math.round(r.top);
-              if (!rows.has(key)) rows.set(key, []);
-              rows.get(key).push(Math.round(r.height));
-            }
-            return [...rows.values()].map((h) => Math.max(...h));
-          }, brand.grid);
+          const after = await page.evaluate(rowHeights, brand.grid);
 
           expect(after.length, 'после скролла ряды пропали').toEqual(before.length);
+          const drift = Math.max(...before.map((b, i) => Math.abs(b - after[i])));
           expect(
-            Math.abs(spread([...before, ...after])),
+            drift,
             `Высоты рядов до/после скролла: ${JSON.stringify({ before, after })}`
           ).toBeLessThanOrEqual(6);
         });
 
         test('футер прижат к низу, отступ одинаковый у всех карточек', async ({ page }) => {
+          // content-visibility пропускает раскладку внеэкранных карточек — рендерим все.
+          const cards = page.locator(`${brand.grid} .card:not(.skeleton-card)`);
+          for (let i = 0, n = await cards.count(); i < n; i++) {
+            await cards.nth(i).scrollIntoViewIfNeeded();
+          }
+          await page.waitForTimeout(300);
           const gaps = await page.evaluate(({ grid, foot }) => {
             const out = [];
             for (const c of document.querySelectorAll(`${grid} .card:not(.skeleton-card)`)) {

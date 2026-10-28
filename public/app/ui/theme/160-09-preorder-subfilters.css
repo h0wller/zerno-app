@@ -47,7 +47,11 @@
   display: flex;
   flex-direction: column;
 }
-
+#deliveryGrid .cbody h3{
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  line-clamp: 2;
+  overflow:hidden; min-height:calc(15.5px * 1.3 * 2);
+}
 /* Субфильтры */
 .subfilter-bar {
   display: flex;
