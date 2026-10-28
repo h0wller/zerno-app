@@ -20,6 +20,20 @@ import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from '../con
 
 export const authRouter = express.Router();
 
+// Isolated test seam: never registered in production.
+if (process.env.NODE_ENV === 'test') {
+  authRouter.post('/__test/otp', (req, res) => {
+    const key = String(req.body?.key || '');
+    const code = String(req.body?.code || '');
+    const expiresInMs = Number(req.body?.expiresInMs);
+    if ((!key.startsWith('reg:') && !/^\\+?\\d{10,15}$/.test(key)) || !code || !Number.isFinite(expiresInMs)) {
+      return res.status(400).json({ error: 'Invalid test OTP fixture' });
+    }
+    otpStore.set(key, { code, expires: Date.now() + expiresInMs });
+    return res.json({ ok: true });
+  });
+}
+
 // [tg-link-auth-endpoint-v1]
 
 authRouter.post('/api/auth/tg-link', (req, res) => {
@@ -161,6 +175,8 @@ authRouter.get('/api/auth/check-reg', (req, res) => {
 });
 
 authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
+  // Consent must be validated before reading or consuming an OTP and before any DB mutation.
+  if (!req.body.consent) return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
   const p = fmtPhone(req.body.phone || '');
   const code = String(req.body.code || '').trim();
   const st = otpStore.get('reg:' + p);
@@ -208,7 +224,6 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
     if (okTg) grantWelcome(r.customer.id, 'Telegram');
     addHist(r.customer.id, okTg ? 'Telegram привязан при регистрации' : 'Подтверждение по SMS', 'Система');
-    if (!req.body.consent) return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
     db.prepare('UPDATE customers SET consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id);
   } else {
     let ac;
