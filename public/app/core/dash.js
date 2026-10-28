@@ -1,14 +1,15 @@
 /* public/app/core/dash.js — Ф5.7: кластер "dash" из legacy-core.js. Top-level = global. */
-/* ── дашборд ── */
-$("#dashToggle").onclick = async () => {
-  $("#dashModal").classList.add("show");
-  syncOverlay();
-  window.loadSubs();
+let dashTab = "coffee";
+let coffeeLoadedAt = 0;
+const COFFEE_REFRESH_MS = 30000;
+
+async function loadCoffeeStats() {
+  coffeeLoadedAt = Date.now();
   try {
-    // Статистику и «списано бесплатных» грузим вместе и рисуем одним проходом, чтобы блоки не затирали друг друга.
     const [s, rd] = await Promise.all([api("/stats"), api("/stats/redeems").catch(() => null)]);
+    const staffNote = s.staffCount ? `<small class="statSub">из них сотрудники: ${s.staffCount}</small>` : "";
     $("#dashTop").innerHTML = `
-     <div class="stat"><b>${s.total}</b><span>всего гостей</span></div>
+     <div class="stat"><b>${s.total}</b><span>всего гостей</span>${staffNote}</div>
      <div class="stat"><b>${s.newWeek}</b><span>новых за 7 дн</span></div>
      <div class="stat"><b>${s.returning}</b><span>с 2+ чашками</span></div>`;
     const max = Math.max(1, ...s.days.map((d) => d.c));
@@ -33,7 +34,48 @@ $("#dashToggle").onclick = async () => {
   } catch (e) {
     toast(e.message, "⚠️");
   }
+}
+
+function setDashTab(tab) {
+  dashTab = tab === "delivery" ? "delivery" : "coffee";
+  document.querySelectorAll("#dashTabs [data-dtab]").forEach((btn) => {
+    const on = btn.dataset.dtab === dashTab;
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  document.querySelectorAll("#dashModal [data-dpane]").forEach((pane) => {
+    pane.hidden = pane.dataset.dpane !== dashTab;
+  });
+  if (dashTab === "coffee") {
+    loadCoffeeStats();
+  } else if (window.ztBus) {
+    window.ztBus.emit("dash:tab", "delivery");
+  }
+}
+
+const tabsEl = $("#dashTabs");
+if (tabsEl) {
+  tabsEl.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-dtab]");
+    if (b) setDashTab(b.dataset.dtab);
+  });
+}
+
+$("#dashToggle").onclick = async () => {
+  $("#dashModal").classList.add("show");
+  syncOverlay();
+  window.loadSubs();
+  const initialTab = typeof window.brand !== "undefined" && window.brand === "delivery" ? "delivery" : "coffee";
+  setDashTab(initialTab);
 };
+
+if (window.ztBus) {
+  window.ztBus.on("dash:refresh", () => {
+    if ($("#dashModal").classList.contains("show") && dashTab === "coffee" && Date.now() - coffeeLoadedAt > COFFEE_REFRESH_MS) {
+      loadCoffeeStats();
+    }
+  });
+}
 
 async function loadSubs() {
   try {
