@@ -55,6 +55,26 @@ const run=async()=>{
   check('предзаказ done виден диспетчеру',preList.some(o=>o.no===ordPre.j.order?.no&&o.status==='done'));
   check('done→accept для предзаказа',(await api('/orders/'+ordPre.j.order.id+'/status',{method:'POST',token:d,body:{status:'accept'}})).status===200);
   check('обычный done скрыт из ленты',(await api('/orders',{token:d})).j.orders?.every(o=>!(o.status==='done'&&!o.is_preorder)));
+
+  // ── заказы сотрудников («свои»): −10%, пометка, отдельная статистика ──
+  const staffOrd=await api('/orders',{method:'POST',token:c,body:{method:'delivery',place:'Янтарный',addr:'Советская 1',slot:'asap',pay:'cash',items:[{id:pizza.id,oi:1,qty:2}]}});
+  const so=staffOrd.j.order||{};
+  const staffSum=so.total-so.fee+so.discount;
+  check('сотрудник: заказ помечен by_staff',staffOrd.status===200&&so.by_staff===1,JSON.stringify(staffOrd.j));
+  check('сотрудник: скидка 10% на сумму блюд',so.discount===Math.round(staffSum*0.1)&&so.discount>0,JSON.stringify(so));
+  check('гость: by_staff=0 и без скидки',ord.j.order?.by_staff===0&&ord.j.order?.discount===0,JSON.stringify(ord.j.order));
+  const pickStaff=await api('/orders',{method:'POST',token:c,body:{method:'pickup',slot:'asap',pay:'cash',items:[{id:pizza.id,oi:1,qty:1}]}});
+  check('сотрудник + самовывоз: скидки не суммируются (10%, не 20%)',pickStaff.j.order?.discount===Math.round((pickStaff.j.order.total+pickStaff.j.order.discount)*0.1),JSON.stringify(pickStaff.j.order));
+  const onlyStaff=(await api('/orders?staff=1',{token:d})).j.orders||[];
+  const onlyGuest=(await api('/orders?staff=0',{token:d})).j.orders||[];
+  check('фильтр staff=1: только «свои»',onlyStaff.length>=2&&onlyStaff.every(o=>o.by_staff===1));
+  check('фильтр staff=0: только гостевые',onlyGuest.length>=1&&onlyGuest.every(o=>o.by_staff===0));
+  check('статистика заказов: только админу',(await api('/stats/orders',{token:d})).status===403&&(await api('/stats/orders',{token:c})).status===403);
+  const so2=await api('/stats/orders',{token:a});
+  check('статистика заказов: гости и «свои» раздельно',so2.status===200&&so2.j.week?.guest?.orders>=1&&so2.j.week?.staff?.orders>=2,JSON.stringify(so2.j.week));
+  check('статистика заказов: ряд по дням',Array.isArray(so2.j.days)&&so2.j.days.length===14&&so2.j.days.every(x=>'guest' in x&&'staff' in x));
+  const st2=await api('/stats',{token:a});
+  check('статистика гостей не включает сотрудников',st2.j.staffCount>=3&&st2.j.total>=1,JSON.stringify(st2.j));
   check('диспетчер не лезет в кассу',(await api('/staff/customers',{token:d})).status===403);
   check('кассир не лезет в админку',(await api('/promos',{token:c})).status===403);
 

@@ -10,15 +10,17 @@ statsRouter.get('/api/stats', adminGuard, (req, res) => {
   const ds = dayStart.toISOString();
   const weekAgo = new Date(Date.now()-7*86400000).toISOString();
   const monthAgo = new Date(Date.now()-30*86400000).toISOString();
-  const total = db.prepare('SELECT COUNT(*) c FROM customers').get().c;
-  const newWeek = db.prepare('SELECT COUNT(*) c FROM customers WHERE created_at>?').get(weekAgo).c;
-  const newMonth = db.prepare('SELECT COUNT(*) c FROM customers WHERE created_at>?').get(monthAgo).c;
+  // Сотрудники в гостевую статистику не входят — их количество отдаём отдельной строкой.
+  const total = db.prepare("SELECT COUNT(*) c FROM customers WHERE role='guest'").get().c;
+  const staffCount = db.prepare("SELECT COUNT(*) c FROM customers WHERE role!='guest'").get().c;
+  const newWeek = db.prepare("SELECT COUNT(*) c FROM customers WHERE role='guest' AND created_at>?").get(weekAgo).c;
+  const newMonth = db.prepare("SELECT COUNT(*) c FROM customers WHERE role='guest' AND created_at>?").get(monthAgo).c;
   const stampsToday = db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE 'Штамп%' AND ts>?").get(ds).c;
   const stampsWeek = db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE 'Штамп%' AND ts>?").get(weekAgo).c;
   const stampsMonth = db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE 'Штамп%' AND ts>?").get(monthAgo).c;
   const redeemed = db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE '🎁 Списан%' AND ts>?").get(monthAgo).c;
-  const returning = db.prepare('SELECT COUNT(*) c FROM customers WHERE cups>=2').get().c;
-  const avgCups = Math.round((db.prepare('SELECT AVG(cups) a FROM customers').get().a||0)*10)/10;
+  const returning = db.prepare("SELECT COUNT(*) c FROM customers WHERE role='guest' AND cups>=2").get().c;
+  const avgCups = Math.round((db.prepare("SELECT AVG(cups) a FROM customers WHERE role='guest'").get().a||0)*10)/10;
   const promoUses = db.prepare('SELECT COUNT(*) c FROM promo_use').get().c;
   const days = [];
   for (let i=13;i>=0;i--) {
@@ -28,7 +30,7 @@ statsRouter.get('/api/stats', adminGuard, (req, res) => {
     days.push({ label: d.getDate()+'.'+(d.getMonth()+1),
       c: db.prepare("SELECT COUNT(*) c FROM history WHERE a LIKE 'Штамп%' AND ts>=? AND ts<?").get(start,end).c });
   }
-  res.json({ total,newWeek,newMonth,stampsToday,stampsWeek,stampsMonth,redeemed,returning,avgCups,promoUses,days });
+  res.json({ total,staffCount,newWeek,newMonth,stampsToday,stampsWeek,stampsMonth,redeemed,returning,avgCups,promoUses,days });
 });
 
 statsRouter.get('/api/stats/redeems', adminGuard, (req, res) => {
@@ -52,6 +54,60 @@ statsRouter.get('/api/stats/redeems', adminGuard, (req, res) => {
       by: r.by,
       time: r.ts
     }))
+  });
+});
+
+/* ── Заказы «Пятницы» для дашборда: гости и «свои» (сотрудники) раздельно ── */
+const klgDay = (d) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Kaliningrad' }).format(d); // YYYY-MM-DD
+
+const emptyBucket = () => ({ orders: 0, revenue: 0, avg: 0, cancelled: 0, pickup: 0, delivery: 0, preorders: 0, byStatus: {}, top: [] });
+
+function summarize(rows) {
+  const b = emptyBucket();
+  const top = {};
+  for (const o of rows) {
+    b.byStatus[o.status] = (b.byStatus[o.status] || 0) + 1;
+    if (o.status === 'cancel') { b.cancelled++; continue; } // отменённые не входят ни в заказы, ни в выручку
+    b.orders++;
+    b.revenue += o.total || 0;
+    if (o.method === 'pickup') b.pickup++; else b.delivery++;
+    if (o.is_preorder) b.preorders++;
+    for (const i of JSON.parse(o.items || '[]')) top[i.name] = (top[i.name] || 0) + (i.qty || 1);
+  }
+  b.avg = b.orders ? Math.round(b.revenue / b.orders) : 0;
+  b.top = Object.entries(top).sort((a, c) => c[1] - a[1]).slice(0, 5).map(([name, qty]) => ({ name, qty }));
+  return b;
+}
+
+statsRouter.get('/api/stats/orders', adminGuard, (req, res) => {
+  const n = Math.max(1, Math.min(30, parseInt(req.query.days, 10) || 14));
+  const since = new Date(Date.now() - (n + 1) * 86400000).toISOString();
+  const rows = db.prepare('SELECT status, method, is_preorder, total, items, by_staff, created FROM orders WHERE created>?').all(since);
+
+  const today = klgDay(new Date());
+  const weekFrom = klgDay(new Date(Date.now() - 6 * 86400000));
+  const guest = rows.filter((o) => !o.by_staff);
+  const staff = rows.filter((o) => o.by_staff);
+  const inRange = (list, from) => list.filter((o) => klgDay(new Date(o.created)) >= from);
+
+  const days = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const key = klgDay(d);
+    const dayRows = rows.filter((o) => klgDay(new Date(o.created)) === key && o.status !== 'cancel');
+    const g = dayRows.filter((o) => !o.by_staff);
+    days.push({
+      label: key.slice(8) + '.' + key.slice(5, 7),
+      guest: g.length,
+      staff: dayRows.length - g.length,
+      revenue: g.reduce((a, o) => a + (o.total || 0), 0),
+    });
+  }
+
+  res.json({
+    today: { guest: summarize(inRange(guest, today)), staff: summarize(inRange(staff, today)) },
+    week: { guest: summarize(inRange(guest, weekFrom)), staff: summarize(inRange(staff, weekFrom)) },
+    days,
   });
 });
 
