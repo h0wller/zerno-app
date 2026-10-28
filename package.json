@@ -19,7 +19,7 @@
     "bump:sw": "node scripts/bump-sw.mjs",
     "audit": "npm run check && npm run pretest && npm run lint:code && npm run lint:dup && npm run lint:dead && npm run lint:layers && npm run smoke && npm run test:e2e",
     "build:client": "npm run bump:sw && esbuild public/app/main.js --bundle --minify --sourcemap --format=esm --target=es2022 --outfile=public/dist/main.bundle.js",
-    "test:unit": "node --test tests/unit/*.test.mjs"
+    "test:unit": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs"
   },
   "engines": {
     "node": "22.x"
