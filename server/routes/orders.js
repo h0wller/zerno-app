@@ -45,6 +45,7 @@ import { nowISO, uid } from '../utils/id-time.js';
 import { sendPush } from '../services/push.js';
 import { tgSend, TG_CHANNEL, APP_URL } from '../services/telegram.js';
 import { getStreetSuggestions, validateDeliveryAddress } from '../domain/address.js';
+import { canTransitionOrderStatus } from '../domain/order-status.js';
 
 const ordersRouter = Router();
 
@@ -431,6 +432,9 @@ ordersRouter.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
   if (!ORDER_STATUS[s]) return res.status(400).json({ error: 'Неизвестный статус' });
   const o = db.prepare('SELECT * FROM orders WHERE id=?').get(req.params.id);
   if (!o) return res.status(404).json({ error: 'Заказ не найден' });
+  if (!canTransitionOrderStatus(o.status, s, o.method)) {
+    return res.status(409).json({ error: 'Недопустимый переход статуса заказа' });
+  }
   db.prepare('UPDATE orders SET status=?, updated=? WHERE id=?').run(s, nowISO(), o.id);
   const isDone = s === 'done';
   const base = (typeof APP_URL !== 'undefined' && APP_URL) || (typeof WEBAPP_URL !== 'undefined' && WEBAPP_URL) || 'https://friday.andcoffee.online';
