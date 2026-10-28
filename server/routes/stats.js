@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { db } from '../db/connection.js';
 import { adminGuard } from '../middleware/auth.js';
+import { isCancelledStatus, summarizeOrderRows } from '../domain/order-stats.js';
 
 const statsRouter = Router();
 
@@ -60,32 +61,6 @@ statsRouter.get('/api/stats/redeems', adminGuard, (req, res) => {
 /* ── Заказы «Пятницы» для дашборда: гости и «свои» (сотрудники) раздельно ── */
 const klgDay = (d) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Kaliningrad' }).format(d); // YYYY-MM-DD
 
-const emptyBucket = () => ({ orders: 0, revenue: 0, avg: 0, cancelled: 0, pickup: 0, delivery: 0, preorders: 0, byStatus: {}, top: [] });
-
-// Treat legacy/normalized cancellation spellings consistently in every statistic.
-function isCancelledStatus(status) {
-  return ['cancel', 'cancelled', 'canceled'].includes(String(status || '').trim().toLowerCase());
-}
-
-function summarize(rows) {
-  const b = emptyBucket();
-  const top = {};
-  for (const o of rows) {
-    b.byStatus[o.status] = (b.byStatus[o.status] || 0) + 1;
-    if (isCancelledStatus(o.status)) { b.cancelled++; continue; } // отменённые не входят ни в заказы, выручку и топ позиций
-    b.orders++;
-    b.revenue += o.total || 0;
-    if (o.method === 'pickup') b.pickup++; else b.delivery++;
-    if (o.is_preorder) b.preorders++;
-    for (const i of JSON.parse(o.items || '[]')) top[i.name] = (top[i.name] || 0) + (i.qty || 1);
-  }
-  b.avg = b.orders ? Math.round(b.revenue / b.orders) : 0;
-  // Передаём полный рейтинг каждой группы: обрезка до top-5 здесь ломает общий рейтинг,
-  // когда позиции гостей и сотрудников объединяются на клиенте.
-  b.top = Object.entries(top).sort((a, c) => c[1] - a[1]).map(([name, qty]) => ({ name, qty }));
-  return b;
-}
-
 statsRouter.get('/api/stats/orders', adminGuard, (req, res) => {
   const n = Math.max(1, Math.min(30, parseInt(req.query.days, 10) || 14));
   const since = new Date(Date.now() - (n + 1) * 86400000).toISOString();
@@ -112,8 +87,8 @@ statsRouter.get('/api/stats/orders', adminGuard, (req, res) => {
   }
 
   res.json({
-    today: { guest: summarize(inRange(guest, today)), staff: summarize(inRange(staff, today)) },
-    week: { guest: summarize(inRange(guest, weekFrom)), staff: summarize(inRange(staff, weekFrom)) },
+    today: { guest: summarizeOrderRows(inRange(guest, today)), staff: summarizeOrderRows(inRange(staff, today)) },
+    week: { guest: summarizeOrderRows(inRange(guest, weekFrom)), staff: summarizeOrderRows(inRange(staff, weekFrom)) },
     days,
   });
 });
