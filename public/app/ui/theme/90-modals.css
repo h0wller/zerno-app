@@ -427,16 +427,16 @@ label.chk{
   scrollbar-width: thin;
   overscroll-behavior: contain;
 }
-#authModal .alogo,
-#authModal h3,
+#authModal .authcard .alogo,
+#authModal .authcard h3,
 #authModal > .authcard > .msub {
   align-self: center;
   text-align: center;
 }
-#authModal .alogo {
+#authModal .authcard .alogo {
   margin-bottom: 8px;
 }
-#authModal h3 {
+#authModal .authcard h3 {
   margin: 0;
   line-height: 1.2;
   max-width: 100%;
@@ -446,9 +446,6 @@ label.chk{
   max-width: 34ch;
   line-height: 1.5;
   margin-bottom: 8px;
-}
-#authModal form {
-  gap: 12px !important;
 }
 #authModal .form label:not(.chk) {
   gap: 7px;
