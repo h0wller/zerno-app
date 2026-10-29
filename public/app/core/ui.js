@@ -30,8 +30,8 @@
 
     if (res.status === 401) {
       window.__ztAuthDead = true;
-      if (typeof setUser === 'function') {
-        setUser(null, null);
+      if (typeof window.setUser === 'function') {
+        window.setUser(null, null);
       } else {
         localStorage.removeItem('zt_user');
         window.USER_TOKEN = null;
