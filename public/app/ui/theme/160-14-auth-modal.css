@@ -218,11 +218,16 @@
 }
 
 #authModal .authcard .mclose {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
 }
 
 @media (max-width: 560px) {
+  .modal#authModal {
+    padding: max(8px, env(safe-area-inset-top, 0px)) 10px max(8px, env(safe-area-inset-bottom, 0px));
+  }
+
   #authModal .authcard {
     width: 100%;
     max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
@@ -254,6 +259,10 @@
 }
 
 @media (max-height: 560px) {
+  .modal#authModal {
+    padding: max(8px, env(safe-area-inset-top, 0px)) 10px max(8px, env(safe-area-inset-bottom, 0px));
+  }
+
   #authModal .authcard {
     max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     padding-top: 16px;
