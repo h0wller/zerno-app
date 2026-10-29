@@ -6,6 +6,7 @@ import './core/state.js';
 import './core/utils.js';
 import './core/api.js';
 import './core/ui.js';
+import './core/auth-session.js';
 import './core/auth.js';
 import './core/registration.js';
 import './core/panel.js';
