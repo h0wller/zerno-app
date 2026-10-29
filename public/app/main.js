@@ -7,6 +7,7 @@ import './core/utils.js';
 import './core/api.js';
 import './core/ui.js';
 import './core/auth.js';
+import './core/registration.js';
 import './core/panel.js';
 import './core/qr.js';
 import './core/review.js';
