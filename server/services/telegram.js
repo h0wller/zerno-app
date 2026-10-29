@@ -14,8 +14,8 @@ export const APP_URL = PUBLIC_URL || 'https://friday.andcoffee.online';
 
 export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
   const token = TG_TOKEN;
-  if (!token) { return; }
-  if (!chatId) return;
+  if (!token) return { ok: false, reason: 'no_token' };
+  if (!chatId) return { ok: false, reason: 'no_chat' };
 
   // Блокируем отправку в рабочий канал/группу на localhost и во время тестов
   if (TG_CHANNEL && String(chatId) === String(TG_CHANNEL)) {
