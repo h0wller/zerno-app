@@ -77,7 +77,7 @@
   display: none;
 }
 
-#authModal .authcard .form label:not(.chk) {
+#authModal .authcard.form label:not(.chk) {
   gap: 7px;
   color: var(--soft);
   font-size: 12px;
@@ -87,8 +87,8 @@
   text-transform: none;
 }
 
-#authModal .authcard .form input:not([type="checkbox"]),
-#authModal .authcard .form select {
+#authModal .authcard.form input:not([type="checkbox"]),
+#authModal .authcard.form select {
   width: 100%;
   min-width: 0;
   min-height: 48px;
@@ -105,8 +105,8 @@
   transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
 }
 
-#authModal .authcard .form input:not([type="checkbox"]):focus,
-#authModal .authcard .form select:focus {
+#authModal .authcard.form input:not([type="checkbox"]):focus,
+#authModal .authcard.form select:focus {
   border-color: var(--flame);
   box-shadow: 0 0 0 3px rgba(16, 20, 24, .07);
 }
