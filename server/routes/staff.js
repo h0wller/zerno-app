@@ -52,9 +52,11 @@ staffRouter.post('/api/staff/customers', staffGuard, (req, res) => {
         return cd.slice(-10) === d10;
       });
       if (existing) {
+        const wasUnverified = !existing.verified;
         db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(existing.id);
         addHist(existing.id, 'Профиль верифицирован кассиром', 'Кассир');
         logEv(existing.name, 'Верификация кассиром');
+        if (wasUnverified) grantBonus(existing.id, existing.src === QR_SOURCE ? 'qr' : 'signup');
         const updated = db.prepare('SELECT * FROM customers WHERE id=?').get(existing.id);
         return res.json({ customer: cust(updated) });
       }
