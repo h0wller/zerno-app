@@ -1,4 +1,4 @@
-/* public/app/core/auth.js — владелец модалки, входа, PIN и auth-сессии */
+/* public/app/core/auth.js — владелец модалки, входа и PIN */
 (function () {
   'use strict';
 
@@ -356,9 +356,7 @@
         try {
           await api('/exit', { method: 'POST' });
         } catch (_) {}
-        window.USER_TOKEN = null;
-        localStorage.removeItem('zt_user');
-        window.me = null;
+        window.setUser(null, null);
         window.mode = 'guest';
         if (typeof closePanel === 'function') closePanel();
         if (typeof renderAll === 'function') renderAll();
@@ -382,9 +380,7 @@
           alert('Не удалось удалить профиль. Попробуйте позже или напишите на почту из политики конфиденциальности.');
           return;
         }
-        window.USER_TOKEN = null;
-        localStorage.removeItem('zt_user');
-        window.me = null;
+        window.setUser(null, null);
         window.mode = 'guest';
         if (typeof closePanel === 'function') closePanel();
         if (typeof renderAll === 'function') renderAll();
@@ -397,7 +393,6 @@
   window.openAuth = openAuth;
   window.closeAuth = closeAuth;
   window.authSwap = authSwap;
-  window.setUser = setUser;
   window.openSetPin = openSetPin;
   window.closeSetPin = closeSetPin;
   window.applyAuthBrand = applyAuthBrand;
