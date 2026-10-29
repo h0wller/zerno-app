@@ -44,6 +44,8 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     const consent = page.locator('#consentBox');
     await consent.check();
     await page.click('#toLogin');
+    // OTP mode is entered only after a valid phone passes client-side validation.
+    await page.fill('#logPhone', '+7 999 123-45-67');
     await page.click('#otpBtn');
     await expect(page.locator('#logOtpWrap')).toBeVisible();
 
