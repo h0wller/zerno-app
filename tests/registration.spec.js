@@ -91,6 +91,30 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     expect(afterReset).toEqual({ token: null, storedToken: null, customer: null });
   });
 
+  test('set PIN modal preserves claim and manage modes', async ({ page }) => {
+    await page.goto('/?brand=delivery');
+
+    const modal = page.locator('#setPinModal');
+    const otpAlternative = page.locator('#setPinOtp');
+
+    await page.evaluate(() => window.openSetPin('claim', '+7 999 123-45-67'));
+    await expect(modal).toHaveClass(/show/);
+    await expect(modal.locator('.msub')).toContainText('до введения PIN');
+    await expect(otpAlternative).toBeVisible();
+
+    await page.click('#setPinClose');
+    await expect(modal).not.toHaveClass(/show/);
+
+    await page.evaluate(() => window.openSetPin('manage', ''));
+    await expect(modal).toHaveClass(/show/);
+    await expect(modal.locator('.msub')).toContainText('сменить PIN');
+    await expect(otpAlternative).toBeHidden();
+
+    await page.fill('#setPinInput', '12x4');
+    await page.click('#setPinGo');
+    await expect(page.locator('.toast', { hasText: 'PIN — ровно 4 цифры' })).toBeVisible();
+  });
+
   test('F3.62: consent stays visible in Telegram Mini App', async ({ page }) => {
     await page.route('https://telegram.org/**', (r) => r.abort()); // реальный telegram-web-app.js затирает заглушку
     await page.addInitScript(TG_STUB);
