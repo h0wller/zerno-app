@@ -34,7 +34,7 @@ if (typeof window.__initialSearch === 'undefined') {
         api('/me', { headers: { Authorization: 'Bearer ' + at } })
           .then(function(res) {
             if (res && res.customer) {
-              setUser(at, res.customer);
+              window.setUser(at, res.customer);
               if (typeof renderAll === 'function') renderAll();
               if (typeof toast === 'function') toast('Вход выполнен! С возвращением, ' + res.customer.name, '👋');
             }
