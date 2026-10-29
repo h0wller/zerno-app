@@ -51,7 +51,7 @@
               return;
             }
             if (rTg && rTg.token && rTg.customer) {
-              setUser(rTg.token, rTg.customer);
+              window.setUser(rTg.token, rTg.customer);
               closeAuth();
               if (typeof renderAll === 'function') renderAll();
               toast(rTg.isNew ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎁' : 'Профиль привязан к Telegram ✅', '🎉');
@@ -76,7 +76,7 @@
             body: { name: name, phone: phone, pin: pin, code: code, consent: 1, src: getRegSource() }
           });
           try { localStorage.removeItem('zt_src'); } catch (_) {}
-          setUser(r.token, r.customer);
+          window.setUser(r.token, r.customer);
           closeAuth();
           if (typeof renderAll === 'function') renderAll();
           toast(r.customer.verified
@@ -127,7 +127,7 @@
                 clearInterval(regPoll);
                 regPoll = null;
                 if (c.token && c.customer) {
-                  setUser(c.token, c.customer);
+                  window.setUser(c.token, c.customer);
                   closeAuth();
                   if (typeof renderAll === 'function') renderAll();
                   toast('Добро пожаловать, ' + c.customer.name + '! Бонусы активированы 🎉', '🎁');
