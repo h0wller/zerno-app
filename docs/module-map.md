@@ -84,7 +84,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), формы регистрации/входа/OTP, `setUser`, `#setPinModal`, `#profileTopBtn`, logoutBtn | `window.openAuth`, `window.closeAuth`, `window.authSwap`, `window.setUser`, `window.openSetPin`, `window.closeSetPin` |
+| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `setUser`, `#setPinModal`, `#profileTopBtn`, logoutBtn | `window.openAuth`, `window.closeAuth`, `window.authSwap`, `window.setUser`, `window.openSetPin`, `window.closeSetPin` |
 | `core/registration.js` | Регистрация, согласие, OTP Telegram и поллинг подтверждения | `window.resetRegistrationState` |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
 
