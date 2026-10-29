@@ -194,7 +194,7 @@ if (brandRulesCount > MAX_BRAND_RULES) {
 // Послойность (база + @media или :hover/::before у того же селектора) — норма responsive-CSS, не дубль.
 // :root не считаем: переменные по каскаду сознательно объявлены в нескольких частях.
 const realCounts = new Map();
-let layered = 0;
+let layered;
 const stripComments = THEME_CSS.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
 {
   const stack = []; let buf = '';

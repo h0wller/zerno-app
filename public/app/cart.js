@@ -1166,7 +1166,7 @@ function renderCartBase() {
         try { window.Telegram.WebApp.MainButton.showProgress(); } catch (tgErr) {}
       }
 
-      var r = null;
+      var r;
       try {
         r = await api("/orders", { method: "POST", body: body });
         toast("Заказ #" + (r.order && r.order.no ? r.order.no : "") + " оформлен!", "🎉");

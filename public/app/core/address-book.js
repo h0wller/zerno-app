@@ -25,7 +25,7 @@
     };
   }
   function read() {
-    var l = [];
+    var l;
     try { l = JSON.parse(localStorage.getItem(LS) || '[]'); } catch (e) { l = []; }
     if (!Array.isArray(l)) l = [];
     if (!l.length) {
