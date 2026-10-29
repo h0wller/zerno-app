@@ -3,6 +3,7 @@ import { db } from '../db/connection.js';
 import { cust, addHist, logEv } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { grant, redeem } from '../domain/loyalty.js';
+import { grantBonus, QR_SOURCE } from '../domain/bonuses.js';
 
 import { staffGuard } from '../middleware/auth.js';
 
