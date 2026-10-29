@@ -1,4 +1,4 @@
-/* public/app/core/auth.js — Ф5.3: кластер авторизации (регистрация, вход, PIN, бренд-адаптация) */
+/* public/app/core/auth.js — владелец модалки, входа, PIN и auth-сессии */
 (function () {
   'use strict';
 
@@ -110,13 +110,6 @@
       var input = document.getElementById(id);
       if (input) input.value = '';
     });
-
-    var confirmed = document.getElementById('regTgRow');
-    if (confirmed) {
-      confirmed.hidden = true;
-      confirmed.className = '';
-      confirmed.innerHTML = '✅ Номер подтверждён — завершите регистрацию';
-    }
 
     resetLoginPinState();
   }
