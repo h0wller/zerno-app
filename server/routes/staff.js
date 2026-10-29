@@ -67,6 +67,7 @@ staffRouter.post('/api/staff/customers', staffGuard, (req, res) => {
   db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
   addHist(r.customer.id, 'Профиль создан', 'Кассир');
   logEv(r.customer.name, 'Создан профиль');
+  grantBonus(r.customer.id, r.customer.src === QR_SOURCE ? 'qr' : 'signup');
   res.json(r);
 });
 
