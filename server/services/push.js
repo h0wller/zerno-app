@@ -32,28 +32,36 @@ export async function sendTg(cid, title, body, markup) {
 }
 
 export async function sendPush(cid, title, body, markup) {
+  const result = { ok: true, telegram: null, web: null, fcm: null };
   try {
     const c = db.prepare('SELECT tg, notify_tg, notify_web FROM customers WHERE id=?').get(cid);
     const wantTg = !c || c.notify_tg !== 0;
     const wantWeb = !c || c.notify_web !== 0;
 
     if (wantTg) {
-      await sendTg(cid, title, body, markup).catch(e => {
-        console.error('[push] sendTg unhandled for cid=' + cid + ':', e.message);
-      });
+      result.telegram = await sendTg(cid, title, body, markup);
     } else {
+      result.telegram = { ok: false, reason: 'disabled' };
       console.log('[push] tg skip: notify_tg выключен у cid=' + cid);
     }
 
     if (wantWeb) {
-      sendFcm(cid, title, body).catch(e => {
-        console.error('[push] sendFcm err cid=' + cid + ':', e.message);
-      });
+      result.fcm = await sendFcm(cid, title, body).then(
+        value => ({ ok: true, value }),
+        err => {
+          console.error('[push] sendFcm err cid=' + cid + ':', err.message);
+          return { ok: false, reason: 'exception', error: err.message };
+        }
+      );
       const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
+      let sent = 0;
+      let failed = 0;
       for (const r of rows) {
         try {
           await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body }));
+          sent++;
         } catch (e) {
+          failed++;
           if (e.statusCode === 404 || e.statusCode === 410) {
             console.log('[push] webpush sub expired (удаляем): cid=' + cid);
             db.prepare('DELETE FROM subs WHERE sub=?').run(r.sub);
@@ -62,10 +70,14 @@ export async function sendPush(cid, title, body, markup) {
           }
         }
       }
+      result.web = { ok: failed === 0, sent, failed };
+    } else {
+      result.web = { ok: false, reason: 'disabled' };
     }
-    return { ok: true };
+    result.ok = !!(result.telegram?.ok || result.web?.ok || result.fcm?.ok);
+    return result;
   } catch (err) {
     console.error('[push] sendPush fatal err for cid=' + cid + ':', err.message);
-    return { ok: false, error: err.message };
+    return { ...result, ok: false, error: err.message };
   }
 }
