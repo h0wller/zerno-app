@@ -60,6 +60,37 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await expect(page.locator('#logBtn')).toHaveText('Войти');
   });
 
+  test('auth-session owns persisted user state and clears it centrally', async ({ page }) => {
+    await page.goto('/?brand=delivery');
+
+    await page.evaluate(() => window.setUser('session-test-token', { name: 'Session Test' }));
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user'))).toBe('session-test-token');
+    await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('Session Test');
+    expect(await page.evaluate(() => window.setUser.__deepWrap)).toBe(1);
+
+    const afterSet = await page.evaluate(() => ({
+      token: window.USER_TOKEN,
+      storedToken: localStorage.getItem('zt_user'),
+      customerName: window.me && window.me.name,
+      avatar: document.getElementById('profileTopBtn').textContent
+    }));
+    expect(afterSet).toEqual({
+      token: 'session-test-token',
+      storedToken: 'session-test-token',
+      customerName: 'Session Test',
+      avatar: 'S'
+    });
+
+    await page.evaluate(() => window.setUser(null, null));
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user'))).toBeNull();
+    const afterReset = await page.evaluate(() => ({
+      token: window.USER_TOKEN,
+      storedToken: localStorage.getItem('zt_user'),
+      customer: window.me
+    }));
+    expect(afterReset).toEqual({ token: null, storedToken: null, customer: null });
+  });
+
   test('F3.62: consent stays visible in Telegram Mini App', async ({ page }) => {
     await page.route('https://telegram.org/**', (r) => r.abort()); // реальный telegram-web-app.js затирает заглушку
     await page.addInitScript(TG_STUB);
