@@ -107,7 +107,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
 
     await page.evaluate(() => window.openSetPin('manage', ''));
     await expect(modal).toHaveClass(/show/);
-    await expect(modal.locator('.msub')).toContainText('сменить PIN');
+    await expect(modal.locator('.msub')).toContainText('смените PIN');
     await expect(otpAlternative).toBeHidden();
 
     await page.fill('#setPinInput', '12x4');
