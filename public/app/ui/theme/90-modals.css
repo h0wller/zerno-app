@@ -406,3 +406,112 @@ label.chk{
 #pmList .logrow{
   flex-wrap: wrap
 }
+
+
+/* Auth modal: clearer hierarchy, comfortable controls and small-screen scrolling. */
+#authModal {
+  padding: max(12px, env(safe-area-inset-top, 0px))
+    max(12px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px))
+    max(12px, env(safe-area-inset-left, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#authModal .authcard {
+  width: min(420px, 100%);
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  padding: clamp(20px, 4.5vw, 28px);
+  border-radius: 24px;
+  text-align: left;
+  gap: 12px;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+}
+#authModal .alogo,
+#authModal h3,
+#authModal > .authcard > .msub {
+  align-self: center;
+  text-align: center;
+}
+#authModal .alogo {
+  margin-bottom: 8px;
+}
+#authModal h3 {
+  margin: 0;
+  line-height: 1.2;
+  max-width: 100%;
+  padding-right: 24px;
+}
+#authModal .msub {
+  max-width: 34ch;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+#authModal form {
+  gap: 12px !important;
+}
+#authModal .form label:not(.chk) {
+  gap: 7px;
+  line-height: 1.35;
+}
+#authModal .form input:not([type="checkbox"]) {
+  min-height: 46px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 13px;
+}
+#authModal .form input:not([type="checkbox"]):focus-visible,
+#authModal button:focus-visible,
+#authModal a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--flame, #C8402A) 35%, transparent);
+  outline-offset: 2px;
+}
+#authModal #consentRow {
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+  text-align: left;
+}
+#authModal #consentBox {
+  flex: 0 0 19px;
+  margin-top: 2px;
+}
+#authModal #consentRow span {
+  min-width: 0;
+}
+#authModal #regBtn,
+#authModal #logBtn,
+#authModal #regTgBtn {
+  min-height: 48px;
+  border-radius: 14px;
+}
+#authModal .alt {
+  margin-top: 2px;
+  line-height: 1.45;
+}
+#authModal .alt button {
+  min-height: 36px;
+  padding: 6px 8px;
+}
+#authModal small {
+  line-height: 1.45;
+}
+@media (max-width: 560px) {
+  #authModal {
+    place-items: center;
+    padding: max(10px, env(safe-area-inset-top, 0px))
+      10px
+      max(10px, env(safe-area-inset-bottom, 0px));
+  }
+  #authModal .authcard {
+    width: 100%;
+    max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    padding: 20px 18px;
+    border-radius: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #authModal .modal-card {
+    transition: none;
+  }
+}
