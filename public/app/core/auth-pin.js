@@ -52,7 +52,7 @@
     if (!setPinGo) return;
     setPinGo.onclick = async function () {
       var pin = (document.getElementById('setPinInput') || {}).value.trim();
-      if (!/^\\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
+      if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
       try {
         if (setPinCtx && setPinCtx.mode === 'claim') {
           var r = await api('/auth/setup-pin', {
