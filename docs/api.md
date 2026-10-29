@@ -12,6 +12,7 @@ dispatchGuard (dispatch/cashier/admin), adminGuard (admin).
 | POST | /api/auth/otp-send ? | {phone} | {ok} | — |
 | POST | /api/auth/otp-verify ? | {phone, code} | {token, customer} | — |
 | GET  | /api/me | — | {customer} | userGuard |
+| GET  | /api/me/free-delivery | — | {code} (персональный код или null) | userGuard |
 | POST | /api/auth/setup-pin | {pin} | {ok} | userGuard |
 | POST | /api/auth/activate-guest | {code} | {customer} | userGuard |
 | POST | /api/auth/tg-link ? | initData | {customer, welcome} | userGuard |
@@ -54,3 +55,8 @@ dispatchGuard (dispatch/cashier/admin), adminGuard (admin).
 | GET  | /api/stats ? | — | {dash} | adminGuard |
 | GET  | /api/health | — | {ok:true} | — |
 | POST | /api/clientlog | {kind, msg} | {ok} | — |
+
+## Бонусы и тестирование
+
+- Правила приветственных бонусов, взаимное исключение `signup/qr`, одноразовая бесплатная доставка и безопасный production repair описаны в [runbook бонусов](./bonus-grants-runbook.md).
+- `POST /__test/otp` существует только при `NODE_ENV=test`; использовать его можно только в изолированных тестах. Он не является публичным production API.
