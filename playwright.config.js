@@ -26,7 +26,8 @@ export default defineConfig({
     // Без этого activate(3364) на ui-baseline.spec.js отдаёт 403.
     env: {
       PORT: process.env.PORT || '3000',
-      DB_PATH: process.env.DB_PATH || './zerno.db',
+      DB_PATH: process.env.DB_PATH || './.playwright-test.db',
+      NODE_ENV: process.env.NODE_ENV || 'test',
       ADMIN_CODE: process.env.ADMIN_CODE || '3364',
       CASHIER_CODE: process.env.CASHIER_CODE || '2468',
       DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
