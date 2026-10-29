@@ -163,7 +163,7 @@
             }
           }, 2500);
         } catch (e) {
-          toast(e.message, '⚠️');
+          if (pollGeneration === regPollGeneration) toast(e.message, '⚠️');
         }
       };
     }
