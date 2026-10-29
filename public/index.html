@@ -797,6 +797,7 @@ if(b==='delivery'){
   <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=576" media="print" onload="this.media='all'" />
   <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=576" media="print" onload="this.media='all'" />
   <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=576" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=576" media="print" onload="this.media='all'" />
   <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=576" media="print" onload="this.media='all'" />
   <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=576" media="print" onload="this.media='all'" />
   <script>
@@ -835,6 +836,7 @@ if(b==='delivery'){
     <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=576" />
     <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=576" />
     <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=576" />
+    <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=576" />
     <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=576" />
     <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=576" />
   </noscript>
@@ -1431,8 +1433,9 @@ if(b==='delivery'){
     </div>
   </div>
 
-  <div class="modal" id="authModal">
+  <div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle" aria-describedby="authDescription">
     <div class="modal-card authcard form">
+      <div class="auth-head">
       <div class="alogo">
         <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke-linecap="round">
           <path d="M5 4h14v7a7 7 0 0 1-14 0V4z" stroke="#fff" stroke-width="1.7" />
@@ -1441,17 +1444,19 @@ if(b==='delivery'){
           <path d="M8.5 15.5c1.2-.8 2.3-.8 3.5 0s2.3.8 3.5 0" stroke="#4C7FC0" stroke-width="1.5" />
         </svg>
       </div>
+      <div class="auth-kicker">Единый профиль</div>
       <h3 id="authTitle">Создайте профиль</h3>
-      <div class="msub">
+      <div class="msub" id="authDescription">
         Штампы и бесплатные кофе — по номеру телефона.<br />Никаких карт и
         анкет.
       </div>
-      <form id="regForm" style="display: flex; flex-direction: column; gap: 11px">
+      </div>
+      <form id="regForm">
         <label for="regName">Имя<input id="regName" name="regName" maxlength="24"
             placeholder="Как к вам обращаться?" /></label>
         <label for="regPhone">Телефон<input id="regPhone" name="regPhone" inputmode="tel" placeholder="+7 900 000-00-00"
             autocomplete="username" /></label>
-        <button type="button" class="btn fire" id="regTgBtn" style="width: 100%">
+        <button type="button" class="btn fire" id="regTgBtn">
           🤖 Подтвердить в Telegram · бесплатно
         </button>
         <div id="regTgRow" hidden style="
@@ -1462,8 +1467,7 @@ if(b==='delivery'){
             ">
           ✅ Номер подтверждён — завершите регистрацию
         </div>
-        <small style="color: #8b98a5; font-size: 11px">Нет Telegram? Создайте профиль и попросите у кассира код активации.
-          Подтвердите номер в Telegram — приветственный напиток и бесплатная доставка ваши 🎁</small>
+        <small class="auth-help">Если Telegram недоступен, можно создать профиль и получить код активации у кассира.</small>
         <button type="button" class="btn ghost" id="regOtpBtn" style="width: 100%; margin-top: 8px" hidden>
           📨 Код по SMS (платная опция)
         </button>
@@ -1471,11 +1475,10 @@ if(b==='delivery'){
             maxlength="4" placeholder="4 цифры" autocomplete="one-time-code" /></label>
         <label for="regPin" id="regPinRow">PIN-код (4 цифры)<input id="regPin" name="regPin" type="text"
             inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password" /></label>
-        <small style="color: #8b98a5; font-size: 11px">PIN защищает ваш профиль — без него никто не войдёт, даже зная
-          номер</small>
-        <label class="chk regConsent" id="consentRow" for="consentBox" style="margin: 0; color: #8b98a5; font-size: 11.5px; align-items: flex-start">
+        <small class="auth-help">PIN защищает профиль, даже если кто-то знает ваш номер телефона.</small>
+        <label class="chk regConsent" id="consentRow" for="consentBox">
           <input type="checkbox" id="consentBox" name="consent" required />
-          <span>Согласен с <a href="/privacy.html" target="_blank" rel="noopener" style="color: #1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных</span>
+          <span>Согласен с <a href="/privacy.html" target="_blank" rel="noopener">политикой конфиденциальности</a> и обработкой персональных данных</span>
         </label>
         <button type="button" class="cta" id="regBtn">Создать профиль</button>
         <div class="alt">
@@ -1483,7 +1486,7 @@ if(b==='delivery'){
           <button type="button" id="toLogin">Войти по номеру</button>
         </div>
       </form>
-      <form id="loginForm" style="display: none; flex-direction: column; gap: 11px">
+      <form id="loginForm">
         <label for="logPhone">Ваш номер телефона<input id="logPhone" name="logPhone" inputmode="tel"
             placeholder="+7 900 000-00-00" autocomplete="username" /></label>
         <label for="logPin" id="logPinRow">PIN-код<input id="logPin" name="logPin" type="text" inputmode="numeric"
