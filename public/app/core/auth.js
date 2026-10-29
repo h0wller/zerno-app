@@ -104,12 +104,33 @@
     }, 180);
   }
 
+  function resetAuthTransientState() {
+    // Временные состояния не должны переживать закрытие модалки.
+    if (regPoll) { clearInterval(regPoll); regPoll = null; }
+    loginMode = 'pin';
+
+    var consent = document.getElementById('consentBox');
+    if (consent) consent.checked = false;
+
+    ['regOtp', 'logOtp'].forEach(function (id) {
+      var input = document.getElementById(id);
+      if (input) input.value = '';
+    });
+
+    var confirmed = document.getElementById('regTgRow');
+    if (confirmed) {
+      confirmed.hidden = true;
+      confirmed.className = '';
+      confirmed.innerHTML = '✅ Номер подтверждён — завершите регистрацию';
+    }
+
+    resetLoginPinState();
+  }
+
   function closeAuth() {
     var am = document.getElementById('authModal');
     if (am) am.classList.remove('show');
-    // F3.61: очистка поллинга подтверждения номера при закрытии модалки — иначе утечка таймера
-    // и повторный старт интервала при следующем открытии (ADR-008, никаких висящих наблюдателей).
-    if (regPoll) { clearInterval(regPoll); regPoll = null; }
+    resetAuthTransientState();
     if (typeof syncOverlay === 'function') syncOverlay();
   }
 
