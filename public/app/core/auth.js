@@ -31,7 +31,7 @@
   }
 
   function armPw() {
-    ['regPin', 'logPin', 'logOtp', 'setPinInput', 'pinInput'].forEach(function (id) {
+    ['regPin', 'logPin', 'logOtp', 'pinInput'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.type = 'password';
     });
