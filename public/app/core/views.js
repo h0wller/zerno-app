@@ -543,9 +543,7 @@ document.addEventListener('click', function (e) {
   var b = e.target.closest('#authPrompt button, #authPrompt [data-auth]');
   if (!b) return;
   e.preventDefault();
-  if (typeof openAuth === 'function') { openAuth(); return; }
-  var m = document.getElementById('authModal');
-  if (m) { m.classList.add('open'); m.style.display = 'flex'; }
+  if (typeof openAuth === 'function') openAuth();
 });
 
 /* ── Ф5.38: fitSearch — сброс принудительной 100% ширины поиска ── */

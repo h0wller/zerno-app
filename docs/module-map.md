@@ -33,7 +33,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/views.js` | CSS-инъекция СЛОЯ 2 (layout + `[data-brand]`); `sv()`/`setMode`/`syncBrandViews` — финальные владельцы (перебивают шимы catalog.js); DOM-переезды (deliveryView/ordersView/cashierView → section, deliveryRail → wrap); пилюля `#venueToggle` и дропдаун `#brandSeg`; размещение пуш-бабла; `fitSearch` (ширина поиска); `stripLogoInlineStyles` — inline-страховка размеров марки; кластер шапки Ф5.30 | `window.syncBrandViews`, `window.setMode`, `window.stripLogoInlineStyles`, `window.__fitSearch`, `window.__syncHeaderCluster` |
-| `admin-extra.js` | `applyBrandChrome()`: содержимое `#tickerTrack` и `.mark` (официальные svg/img; Ф5.39: Пятница — горизонтальный SVG 160×40 без webp-растра); `loadPromos` (модалка админа); guard'ы кофейного меню до загрузки MENU; согласие ПД при регистрации | `window.applyBrandChrome`, `window.loadPromos` |
+| `admin-extra.js` | `applyBrandChrome()`: содержимое `#tickerTrack` и `.mark` (официальные svg/img; Ф5.39: Пятница — горизонтальный SVG 160×40 без webp-растра); `loadPromos` (модалка админа); guard'ы кофейного меню до загрузки MENU | `window.applyBrandChrome`, `window.loadPromos` |
 | `core/catalog.js` | `loadMenu`, `renderModes`; легаси `setMode`/`syncBrandViews` (перезаписываются views.js при инициализации) | `window.loadMenu`, `window.renderModes` |
 | `core/splash.js` | Динамический сплэш `#brandSplash`, выбор бренда `finish()` | — |
 | `profile-brand.js` | Брендовые правила профиля (fridayInfo, myOrders, placebox), `renderVerifyNote`, relink; единственная обёртка renderProfile | `window.applyProfileBrand`, `window.renderVerifyNote` |
@@ -84,7 +84,10 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `core/auth.js` | `#authModal` (open/close/swap), формы регистрации/входа/OTP, `setUser`, `#setPinModal`, `#profileTopBtn`, logoutBtn | `window.openAuth`, `window.closeAuth`, `window.authSwap`, `window.setUser`, `window.openSetPin`, `window.closeSetPin` |
+| `core/auth-session.js` | Установка клиентской сессии: токен, `me`, onboarding, аватары, QR и регистрация FCM-токена | `window.setUser` |
+| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, logoutBtn | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
+| `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
+| `core/registration.js` | Регистрация, согласие, OTP Telegram и поллинг подтверждения | `window.resetRegistrationState` |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
 
 ## 8. Персонал: кассир и сканер

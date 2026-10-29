@@ -1,15 +1,8 @@
-/* public/app/core/auth.js — Ф5.3: кластер авторизации (регистрация, вход, PIN, бренд-адаптация) */
+/* public/app/core/auth.js — владелец модалки и входа */
 (function () {
   'use strict';
 
   var loginMode = 'pin';
-  var setPinCtx = null;
-  var regPoll = null;
-
-  // Источник регистрации (сейчас только 'qr' — пришли с постера). Хранится до успешной регистрации.
-  function getRegSource() {
-    try { return localStorage.getItem('zt_src') === 'qr' ? 'qr' : ''; } catch (_) { return ''; }
-  }
 
   function setAuthFormMode(login) {
     var rf = document.getElementById('regForm');
@@ -38,7 +31,7 @@
   }
 
   function armPw() {
-    ['regPin', 'logPin', 'logOtp', 'setPinInput', 'pinInput'].forEach(function (id) {
+    ['regPin', 'logPin', 'logOtp', 'pinInput'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.type = 'password';
     });
@@ -104,12 +97,26 @@
     }, 180);
   }
 
+  function resetAuthTransientState() {
+    // Временные состояния не должны переживать закрытие модалки.
+    if (typeof window.resetRegistrationState === 'function') window.resetRegistrationState();
+    loginMode = 'pin';
+
+    var consent = document.getElementById('consentBox');
+    if (consent) consent.checked = false;
+
+    ['regOtp', 'logOtp'].forEach(function (id) {
+      var input = document.getElementById(id);
+      if (input) input.value = '';
+    });
+
+    resetLoginPinState();
+  }
+
   function closeAuth() {
     var am = document.getElementById('authModal');
     if (am) am.classList.remove('show');
-    // F3.61: очистка поллинга подтверждения номера при закрытии модалки — иначе утечка таймера
-    // и повторный старт интервала при следующем открытии (ADR-008, никаких висящих наблюдателей).
-    if (regPoll) { clearInterval(regPoll); regPoll = null; }
+    resetAuthTransientState();
     if (typeof syncOverlay === 'function') syncOverlay();
   }
 
@@ -119,74 +126,6 @@
     if (login) resetLoginPinState();
   }
 
-  function setUser(token, customer) {
-    window.USER_TOKEN = token;
-    if (token) localStorage.setItem('zt_user', token);
-    else localStorage.removeItem('zt_user');
-
-    window.me = customer;
-    window.historyLoaded = false;
-    window.lastChatId = 0;
-
-    if (typeof initChatPointer === 'function') initChatPointer();
-    if (typeof showBadge === 'function') showBadge();
-
-    window.onboarded = true;
-    localStorage.setItem('zt_onb', '1');
-
-    var initChar = (customer && customer.name && customer.name.trim())
-      ? customer.name.trim().charAt(0).toUpperCase()
-      : '?';
-    var topAva = document.getElementById('profileTopBtn');
-    if (topAva) topAva.textContent = initChar;
-    var profAva = document.getElementById('avInit');
-    if (profAva) profAva.textContent = initChar;
-
-    var qm = document.getElementById('qrMini');
-    var qmain = document.getElementById('qrMain');
-    if (customer && customer.qr && typeof drawQR === 'function') {
-      if (qm) drawQR(qm, customer.qr);
-      if (qmain) drawQR(qmain, customer.qr);
-    }
-
-    var fcmT = localStorage.getItem('zt_fcm_token');
-    if (fcmT && customer && typeof api === 'function') {
-      api('/push/fcm', { method: 'POST', body: { token: fcmT } }).catch(function () {});
-    }
-  }
-
-  function openSetPin(mode, phone) {
-    armPw();
-    setPinCtx = { mode: mode, phone: phone || '' };
-    var inp = document.getElementById('setPinInput');
-    if (inp) inp.value = '';
-
-    var spm = document.getElementById('setPinModal');
-    if (spm) {
-      var msub = spm.querySelector('.msub');
-      if (msub) {
-        msub.innerHTML = mode === 'claim'
-          ? 'Этот профиль создан до введения PIN.<br>Придумайте 4 цифры — это ваш ключ для входа.<br>Или запросите код в Telegram ниже.'
-          : 'Придумайте или смените PIN (4 цифры).<br>Понадобится, если Telegram будет недоступен.';
-      }
-      var alt = document.getElementById('setPinOtp');
-      if (alt) alt.style.display = mode === 'claim' ? '' : 'none';
-      spm.classList.add('show');
-    }
-
-    if (typeof syncOverlay === 'function') syncOverlay();
-    setTimeout(function () {
-      var el = document.getElementById('setPinInput');
-      if (el) el.focus();
-    }, 150);
-  }
-
-  function closeSetPin() {
-    setPinCtx = null;
-    var spm = document.getElementById('setPinModal');
-    if (spm) spm.classList.remove('show');
-    if (typeof syncOverlay === 'function') syncOverlay();
-  }
 
   document.addEventListener('DOMContentLoaded', function () {
     async function checkTgAutoLogin() {
@@ -201,7 +140,7 @@
           body: { initData: initData }
         });
         if (r && r.token && r.customer) {
-          setUser(r.token, r.customer);
+          window.setUser(r.token, r.customer);
           if (typeof renderAll === 'function') renderAll();
           if (typeof toast === 'function') toast('Вход выполнен через Telegram', '🤖');
           closeAuth();
@@ -233,81 +172,6 @@
       };
     }
 
-    var regBtn = document.getElementById('regBtn');
-    if (regBtn) {
-      regBtn.onclick = async function () {
-        var name = (document.getElementById('regName') || {}).value.trim();
-        var phone = (document.getElementById('regPhone') || {}).value;
-        var pin = (document.getElementById('regPin') || {}).value.trim();
-        var code = (document.getElementById('regOtp') || {}).value.trim();
-
-        var consentBox = document.getElementById('consentBox');
-        if (!consentBox || !consentBox.checked) {
-          return toast('Отметь согласие с политикой конфиденциальности', '⚠️');
-        }
-
-        if (name.length < 2) return toast('Введите имя', '✍️');
-        if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
-        if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
-
-        if (window.__tgInitData) {
-          try {
-            var rTg = await api('/auth/tg-link', {
-              method: 'POST',
-              body: { initData: window.__tgInitData, phone: phone, name: name, pin: pin, consent: 1, src: getRegSource() }
-            });
-            if (rTg && rTg.needBotConfirm) {
-              // Номер сначала подтверждаем в боте, потом повторяем вход.
-              toast('Подтвердите номер в боте Telegram, затем нажмите «Продолжить» ещё раз', '🤖');
-              var tgOpen = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink;
-              if (typeof tgOpen === 'function') tgOpen(rTg.tgUrl); else window.open(rTg.tgUrl, '_blank');
-              return;
-            }
-            if (rTg && rTg.token && rTg.customer) {
-              setUser(rTg.token, rTg.customer);
-              closeAuth();
-              if (typeof renderAll === 'function') renderAll();
-              toast(rTg.isNew ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎁' : 'Профиль привязан к Telegram ✅', '🎉');
-              return;
-            }
-          } catch (errTg) {
-            if (errTg.code === 409) {
-              toast('Номер уже зарегистрирован — входим', '🔗');
-              var lpTg = document.getElementById('logPhone');
-              if (lpTg) lpTg.value = fmtPhone(phone);
-              authSwap(true);
-              return;
-            }
-            toast(errTg.message || 'Ошибка регистрации через Telegram', '⚠️');
-            return;
-          }
-        }
-
-        try {
-          var r = await api('/auth/register', {
-            method: 'POST',
-            body: { name: name, phone: phone, pin: pin, code: code, consent: 1, src: getRegSource() }
-          });
-          try { localStorage.removeItem('zt_src'); } catch (_) {}
-          setUser(r.token, r.customer);
-          closeAuth();
-          if (typeof renderAll === 'function') renderAll();
-          toast(r.customer.verified
-            ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎉'
-            : 'Профиль создан! Код активации — у кассира, после него приветственный напиток и бесплатная доставка 🎁', '');
-        } catch (e) {
-          if (e.code === 409) {
-            toast('Этот номер уже зарегистрирован — входим', '🔗');
-            var lp = document.getElementById('logPhone');
-            if (lp) lp.value = fmtPhone(phone);
-            authSwap(true);
-          } else {
-            toast(e.message, '⚠️');
-          }
-        }
-      };
-    }
-
     // Enter ведёт к следующему видимому полю, а на последнем поле отправляет форму.
     [['regForm', 'regBtn'], ['loginForm', 'logBtn']].forEach(function (pair) {
       var form = document.getElementById(pair[0]);
@@ -326,60 +190,6 @@
       });
     });
 
-    var regTgBtn = document.getElementById('regTgBtn');
-    if (regTgBtn) {
-      regTgBtn.onclick = async function () {
-        var ph = (document.getElementById('regPhone') || {}).value;
-        var nm = ((document.getElementById('regName') || {}).value || '').trim();
-        var consentBox = document.getElementById('consentBox');
-        if (!consentBox || !consentBox.checked) {
-          return toast('Сначала подтвердите согласие с политикой конфиденциальности', '⚠️');
-        }
-        if (ph10(ph).length < 10) return toast('Введите номер полностью', '📵');
-        try {
-          var r = await api('/auth/request-reg-otp', {
-            method: 'POST',
-            body: { phone: ph, name: nm, via: 'tg' }
-          });
-          if (r && r.tgUrl) {
-            toast('Открываем Telegram...', '🤖');
-            setTimeout(function() { window.location.href = r.tgUrl; }, 250);
-          }
-          toast('Подтвердите номер в Telegram', '🤖');
-
-          if (regPoll) clearInterval(regPoll);
-          // F3.61: лимит поллинга 60 попыток × 2.5 с ≈ 2.5 мин — защита от вечно живого таймера.
-          var regPollTries = 0;
-          regPoll = setInterval(async function () {
-            if (++regPollTries > 60) { clearInterval(regPoll); regPoll = null; return; }
-            try {
-              var c = await api('/auth/check-reg?phone=' + encodeURIComponent(ph));
-              if (c && c.confirmed) {
-                clearInterval(regPoll);
-                regPoll = null;
-                if (c.token && c.customer) {
-                  setUser(c.token, c.customer);
-                  closeAuth();
-                  if (typeof renderAll === 'function') renderAll();
-                  toast('Добро пожаловать, ' + c.customer.name + '! Бонусы активированы 🎉', '🎁');
-                  return;
-                }
-                var row = document.getElementById('regTgRow');
-                if (row) {
-                  row.hidden = false;
-                  row.className = 'auth-badge-confirmed';
-                  row.innerHTML = '<span>✅ Номер подтверждён в Telegram</span>';
-                }
-                toast('Номер подтверждён через Telegram', '🎉');
-              }
-            } catch (_) {}
-          }, 2500);
-        } catch (e) {
-          toast(e.message, '⚠️');
-        }
-      };
-    }
-
     var logBtn = document.getElementById('logBtn');
     if (logBtn) {
       logBtn.onclick = async function () {
@@ -393,7 +203,7 @@
               method: 'POST',
               body: { phone: phone, otp: otpVal }
             });
-            setUser(rOtp.token, rOtp.customer);
+            window.setUser(rOtp.token, rOtp.customer);
             closeAuth();
             if (typeof renderAll === 'function') renderAll();
             toast('С возвращением, ' + rOtp.customer.name + '!', '🔗');
@@ -404,14 +214,14 @@
               method: 'POST',
               body: { phone: phone, pin: pinVal }
             });
-            setUser(rPin.token, rPin.customer);
+            window.setUser(rPin.token, rPin.customer);
             closeAuth();
             if (typeof renderAll === 'function') renderAll();
             toast('С возвращением, ' + rPin.customer.name + '!', '🔗');
           }
         } catch (e) {
           if (e.code === 409) {
-            openSetPin('claim', phone);
+            window.openSetPin('claim', phone);
           } else {
             toast(e.message, '⚠️');
           }
@@ -440,41 +250,6 @@
 
     var otpBack = document.getElementById('otpBack');
     if (otpBack) otpBack.onclick = resetLoginPinState;
-
-    var setPinClose = document.getElementById('setPinClose');
-    if (setPinClose) setPinClose.onclick = closeSetPin;
-
-    var setPinGo = document.getElementById('setPinGo');
-    if (setPinGo) {
-      setPinGo.onclick = async function () {
-        var pin = (document.getElementById('setPinInput') || {}).value.trim();
-        if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
-        try {
-          if (setPinCtx && setPinCtx.mode === 'claim') {
-            var r = await api('/auth/setup-pin', {
-              method: 'POST',
-              body: { phone: setPinCtx.phone, pin: pin }
-            });
-            setUser(r.token, r.customer);
-            closeSetPin();
-            closeAuth();
-            if (typeof renderAll === 'function') renderAll();
-            toast('PIN задан — добро пожаловать!', '🔐');
-          } else {
-            var rSet = await api('/auth/set-pin', {
-              method: 'POST',
-              body: { pin: pin }
-            });
-            window.me = rSet.customer;
-            if (typeof renderProfile === 'function') renderProfile();
-            closeSetPin();
-            toast('PIN сохранён', '🔐');
-          }
-        } catch (e) {
-          toast(e.message, '⚠️');
-        }
-      };
-    }
 
     var profileTopBtn = document.getElementById('profileTopBtn');
     if (profileTopBtn) {
@@ -512,9 +287,7 @@
         try {
           await api('/exit', { method: 'POST' });
         } catch (_) {}
-        window.USER_TOKEN = null;
-        localStorage.removeItem('zt_user');
-        window.me = null;
+        window.setUser(null, null);
         window.mode = 'guest';
         if (typeof closePanel === 'function') closePanel();
         if (typeof renderAll === 'function') renderAll();
@@ -538,9 +311,7 @@
           alert('Не удалось удалить профиль. Попробуйте позже или напишите на почту из политики конфиденциальности.');
           return;
         }
-        window.USER_TOKEN = null;
-        localStorage.removeItem('zt_user');
-        window.me = null;
+        window.setUser(null, null);
         window.mode = 'guest';
         if (typeof closePanel === 'function') closePanel();
         if (typeof renderAll === 'function') renderAll();
@@ -553,8 +324,5 @@
   window.openAuth = openAuth;
   window.closeAuth = closeAuth;
   window.authSwap = authSwap;
-  window.setUser = setUser;
-  window.openSetPin = openSetPin;
-  window.closeSetPin = closeSetPin;
   window.applyAuthBrand = applyAuthBrand;
 })();

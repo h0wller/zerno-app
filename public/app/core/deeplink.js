@@ -29,12 +29,12 @@ if (typeof window.__initialSearch === 'undefined') {
     var at = QS.get('auth_token');
     if (!at) return;
     var t0 = Date.now(), iv = setInterval(function() {
-      if (typeof api === 'function' && typeof setUser === 'function') {
+      if (typeof api === 'function' && typeof window.setUser === 'function') {
         clearInterval(iv);
         api('/me', { headers: { Authorization: 'Bearer ' + at } })
           .then(function(res) {
             if (res && res.customer) {
-              setUser(at, res.customer);
+              window.setUser(at, res.customer);
               if (typeof renderAll === 'function') renderAll();
               if (typeof toast === 'function') toast('Вход выполнен! С возвращением, ' + res.customer.name, '👋');
             }
@@ -254,8 +254,8 @@ if (typeof window.__initialSearch === 'undefined') {
     if (ready || Date.now() - t0 > 4000) { clearInterval(iv); apply(); }
   }, 150);
 
-  if (typeof setUser === 'function' && !setUser.__deepWrap) {
-    setUser = (function(_su) {
+  if (typeof window.setUser === 'function' && !window.setUser.__deepWrap) {
+    window.setUser = (function(_su) {
       return function (_t, _c) {
         var r = _su.apply(this, arguments);
         var pend = window.__ztPendingDeep; window.__ztPendingDeep = null;
@@ -264,8 +264,8 @@ if (typeof window.__initialSearch === 'undefined') {
         if (pend === 'profile' || pend === 'review') setTimeout(function() { openReviewView(pend === 'review'); }, 150);
         return r;
       };
-    })(setUser);
-    setUser.__deepWrap = 1;
+    })(window.setUser);
+    window.setUser.__deepWrap = 1;
   }
 
   // [tg-mini-app-reorder]

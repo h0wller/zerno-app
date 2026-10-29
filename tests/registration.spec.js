@@ -34,6 +34,129 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     expect(await page.locator('#consentRow a').getAttribute('target')).toBe('_blank');
   });
 
+  test('auth modal resets consent and OTP mode after close/reopen', async ({ page }) => {
+    await page.route('**/api/auth/request-otp', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+    );
+    await page.goto('/?brand=delivery');
+    await page.click('#profileTopBtn');
+
+    const consent = page.locator('#consentBox');
+    await consent.check();
+    await page.click('#toLogin');
+    // OTP mode is entered only after a valid phone passes client-side validation.
+    await page.fill('#logPhone', '+7 999 123-45-67');
+    await page.click('#otpBtn');
+    await expect(page.locator('#logOtpWrap')).toBeVisible();
+
+    await page.evaluate(() => window.closeAuth());
+    await page.click('#profileTopBtn');
+    await expect(consent).not.toBeChecked();
+
+    await page.click('#toLogin');
+    await expect(page.locator('#logPinRow')).toBeVisible();
+    await expect(page.locator('#logOtpWrap')).toBeHidden();
+    await expect(page.locator('#otpBackRow')).toBeHidden();
+    await expect(page.locator('#logBtn')).toHaveText('Войти');
+  });
+
+  test('closing auth modal ignores a pending Telegram registration check', async ({ page }) => {
+    let markCheckStarted;
+    let resolveCheck;
+    const checkStarted = new Promise((resolve) => { markCheckStarted = resolve; });
+
+    await page.route('**/api/auth/request-reg-otp', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+    );
+    await page.route('**/api/auth/check-reg*', (route) => {
+      markCheckStarted();
+      return new Promise((resolve) => {
+        resolveCheck = async () => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              confirmed: true,
+              token: 'stale-registration-token',
+              customer: { name: 'Stale Registration' }
+            })
+          });
+          resolve();
+        };
+      });
+    });
+
+    await page.goto('/?brand=delivery');
+    await page.click('#profileTopBtn');
+    await page.fill('#regName', 'Test Customer');
+    await page.fill('#regPhone', '+7 999 123-45-67');
+    await page.check('#consentBox');
+    await page.click('#regTgBtn');
+
+    await checkStarted;
+    await page.evaluate(() => window.closeAuth());
+    resolveCheck();
+
+    await expect.poll(() => page.evaluate(() => window.me)).toBeNull();
+    await expect(page.locator('#regTgRow')).toBeHidden();
+    expect(await page.evaluate(() => localStorage.getItem('zt_user'))).toBeNull();
+  });
+
+  test('auth-session owns persisted user state and clears it centrally', async ({ page }) => {
+    await page.goto('/?brand=delivery');
+
+    await page.evaluate(() => window.setUser('session-test-token', { name: 'Session Test' }));
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user'))).toBe('session-test-token');
+    await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('Session Test');
+    expect(await page.evaluate(() => window.setUser.__deepWrap)).toBe(1);
+
+    const afterSet = await page.evaluate(() => ({
+      token: window.USER_TOKEN,
+      storedToken: localStorage.getItem('zt_user'),
+      customerName: window.me && window.me.name,
+      avatar: document.getElementById('profileTopBtn').textContent
+    }));
+    expect(afterSet).toEqual({
+      token: 'session-test-token',
+      storedToken: 'session-test-token',
+      customerName: 'Session Test',
+      avatar: 'S'
+    });
+
+    await page.evaluate(() => window.setUser(null, null));
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user'))).toBeNull();
+    const afterReset = await page.evaluate(() => ({
+      token: window.USER_TOKEN,
+      storedToken: localStorage.getItem('zt_user'),
+      customer: window.me
+    }));
+    expect(afterReset).toEqual({ token: null, storedToken: null, customer: null });
+  });
+
+  test('set PIN modal preserves claim and manage modes', async ({ page }) => {
+    await page.goto('/?brand=delivery');
+
+    const modal = page.locator('#setPinModal');
+    const otpAlternative = page.locator('#setPinOtp');
+
+    await page.evaluate(() => window.openSetPin('claim', '+7 999 123-45-67'));
+    await expect(modal).toHaveClass(/show/);
+    await expect(modal.locator('.msub')).toContainText('до введения PIN');
+    await expect(otpAlternative).toBeVisible();
+
+    await page.click('#setPinClose');
+    await expect(modal).not.toHaveClass(/show/);
+
+    await page.evaluate(() => window.openSetPin('manage', ''));
+    await expect(modal).toHaveClass(/show/);
+    await expect(modal.locator('.msub')).toContainText('смените PIN');
+    await expect(otpAlternative).toBeHidden();
+
+    await page.fill('#setPinInput', '12x4');
+    await page.click('#setPinGo');
+    await expect(page.locator('.toast', { hasText: 'PIN — ровно 4 цифры' })).toBeVisible();
+  });
+
   test('F3.62: consent stays visible in Telegram Mini App', async ({ page }) => {
     await page.route('https://telegram.org/**', (r) => r.abort()); // реальный telegram-web-app.js затирает заглушку
     await page.addInitScript(TG_STUB);
