@@ -60,6 +60,48 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await expect(page.locator('#logBtn')).toHaveText('Войти');
   });
 
+  test('closing auth modal ignores a pending Telegram registration check', async ({ page }) => {
+    let markCheckStarted;
+    let resolveCheck;
+    const checkStarted = new Promise((resolve) => { markCheckStarted = resolve; });
+
+    await page.route('**/api/auth/request-reg-otp', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+    );
+    await page.route('**/api/auth/check-reg*', (route) => {
+      markCheckStarted();
+      return new Promise((resolve) => {
+        resolveCheck = async () => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              confirmed: true,
+              token: 'stale-registration-token',
+              customer: { name: 'Stale Registration' }
+            })
+          });
+          resolve();
+        };
+      });
+    });
+
+    await page.goto('/?brand=delivery');
+    await page.click('#profileTopBtn');
+    await page.fill('#regName', 'Test Customer');
+    await page.fill('#regPhone', '+7 999 123-45-67');
+    await page.check('#consentBox');
+    await page.click('#regTgBtn');
+
+    await checkStarted;
+    await page.evaluate(() => window.closeAuth());
+    resolveCheck();
+
+    await expect.poll(() => page.evaluate(() => window.me)).toBeNull();
+    await expect(page.locator('#regTgRow')).toBeHidden();
+    expect(await page.evaluate(() => localStorage.getItem('zt_user'))).toBeNull();
+  });
+
   test('auth-session owns persisted user state and clears it centrally', async ({ page }) => {
     await page.goto('/?brand=delivery');
 
