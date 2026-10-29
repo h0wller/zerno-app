@@ -38,11 +38,14 @@ export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
       body: JSON.stringify(body)
     });
     const j = await r.json().catch(() => ({}));
-    if (!j.ok) {
-      console.error('[tg] tgSend FAIL → chat=' + chatId + '  err=' + (j.description || r.status));
+    if (!r.ok || !j.ok) {
+      console.error('[tg] tgSend FAIL: ' + (j.description || r.status));
+      return { ok: false, reason: 'telegram_api_error', code: r.status, error: j.description || 'Telegram API error' };
     }
+    return { ok: true, messageId: j.result?.message_id ?? null };
   } catch (e) {
     console.error('[tg] tgSend NETWORK ERR: ' + e.message);
+    return { ok: false, reason: 'network_error', error: e.message };
   }
 }
 
