@@ -418,6 +418,11 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
       { timeout: 15000 }
     );
 
+    // Детерминируем часы работы: CI может запускаться после закрытия кухни.
+    await page.evaluate(() => {
+      window.getKaliningradTime = () => ({ hour: 12, minute: 30 });
+    });
+
     const firstCard = page.locator('#deliveryGrid .card:has(.opts button)').first();
     await expect(firstCard).toBeVisible({ timeout: 10000 });
 
@@ -472,6 +477,10 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     const timeSegSlot = page.locator('#checkoutTimeModeSeg [data-tmode="slot"]');
     await timeSegSlot.click();
     await expect(page.locator('#checkoutSlot')).toBeVisible();
+
+    // Проверяем режим «Ко времени», но оформляем заказ через ASAP:
+    // доступные слоты зависят от актуального расписания на момент CI-запуска.
+    await page.locator('#checkoutTimeModeSeg [data-tmode="asap"]').click();
 
     await page.locator('#checkoutStreet').fill('Советская');
     await page.locator('#checkoutHouse').fill('70');
