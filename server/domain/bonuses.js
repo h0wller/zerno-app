@@ -82,7 +82,7 @@ function profileWasUsed(cid, c) {
 
 // Начисляет бонус вида kind гостю cid. Возвращает результат или null, если начислять нечего.
 // Всё начисление (штампы + промокоды + история) — одна транзакция, один пуш на всё событие.
-export function grantBonus(cid, kind) {
+export function grantBonus(cid, kind, { notify = true } = {}) {
   if (!BONUS_KINDS.includes(kind)) return null;
   // role/cups/stamps/free нужны для проверок ниже — выбираем их явно.
   const c = db.prepare('SELECT id, role, verified, cups, stamps, free FROM customers WHERE id=?').get(cid);
@@ -153,9 +153,11 @@ export function grantBonus(cid, kind) {
     return null;
   }
 
-  // Один пуш на всё начисление — уже после коммита транзакции.
-  sendPush(cid, '🎁 Бонус начислен', parts.join(', ')).catch(() => {});
-  return { kind, coffee: k.coffee, delivery: k.delivery, code, freeCode };
+  // Один пуш на всё начисление — уже после коммита транзакции. notify:false — для обслуживающих скриптов,
+  // которые шлют уведомление сами после своего коммита (иначе при откате внешней транзакции гость получил бы пуш зря).
+  const message = parts.join(', ');
+  if (notify) sendPush(cid, '🎁 Бонус начислен', message).catch(() => {});
+  return { kind, coffee: k.coffee, delivery: k.delivery, code, freeCode, message };
 }
 
 // Действующий персональный код «первая доставка бесплатно» гостя (или null). Клиент применяет его в корзине сам.
