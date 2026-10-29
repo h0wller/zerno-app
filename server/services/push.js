@@ -18,12 +18,16 @@ export async function sendTg(cid, title, body, markup) {
       return { ok: false, reason: 'no_tg' };
     }
     const text = title ? (title + '\n' + body) : body;
-    await tgSend(c.tg, text, markup);
-    console.log('[push] tg ok: cid=' + cid + ' tg=' + c.tg + ' title="' + (title || '') + '"');
-    return { ok: true };
+    const result = await tgSend(c.tg, text, markup);
+    if (!result?.ok) {
+      console.error('[push] tg failed for customer:', result?.reason || 'unknown');
+      return result || { ok: false, reason: 'empty_result' };
+    }
+    console.log('[push] tg ok: cid=' + cid + ' title="' + (title || '') + '"');
+    return result;
   } catch (err) {
     console.error('[push] tg ERR for cid=' + cid + ':', err.message);
-    return { ok: false, error: err.message };
+    return { ok: false, reason: 'exception', error: err.message };
   }
 }
 
