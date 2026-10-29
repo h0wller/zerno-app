@@ -21,7 +21,6 @@
 //   5. после коммита — снимок «после» и сравнение; install, чужие клиенты, bonus_cfg и маркер бэкфилла не меняются.
 // В вывод и снимки не попадают: полный телефон, Telegram ID, токены, коды промокодов. Имя — инициалы.
 import fs from 'node:fs';
-import path from 'node:path';
 import Database from 'better-sqlite3';
 
 const args = process.argv.slice(2);
