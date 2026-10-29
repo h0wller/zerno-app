@@ -118,19 +118,31 @@ CREATE TABLE IF NOT EXISTS fcm(
     CREATE TABLE IF NOT EXISTS bonus_grants(cid TEXT, kind TEXT, ts TEXT, PRIMARY KEY(cid, kind));
   `);
 
-  /* ── Бонусы: разовый бэкфилл bonus_grants ──
-     Профили, созданные до появления таблицы bonus_grants, уже получали приветственные бонусы
-     (или не получат их задним числом). Помечаем все три вида как выданные, чтобы grantBonus
-     не считал старого клиента новичком и не начислил напиток повторно.
-     Идемпотентно: флаг в meta + INSERT OR IGNORE по PK(cid, kind). */
+  /* ── Бэкфилл bonus_grants только для профилей с признаками уже использованного бонуса ──
+     Нельзя помечать все профили: это блокирует приветственный бонус у неактивированных гостей.
+     Для signup/qr достаточно одного из признаков использования профиля; install не блокируем
+     без явной записи о соответствующем бонусе. Идемпотентно по meta + PK(cid, kind). */
   if (!db.prepare("SELECT 1 FROM meta WHERE key='bonus_grants_backfilled'").get()) {
     const ts = new Date().toISOString();
     const fill = db.prepare('INSERT OR IGNORE INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)');
     const backfill = db.transaction(() => {
-      for (const row of db.prepare('SELECT id FROM customers').all()) {
-        fill.run(row.id, 'signup', ts);
-        fill.run(row.id, 'qr', ts);
-        fill.run(row.id, 'install', ts);
+      const rows = db.prepare(`
+        SELECT c.id,
+          CASE WHEN c.cups > 0 OR c.stamps > 0 OR c.free > 0
+            OR EXISTS (SELECT 1 FROM history h WHERE h.cid=c.id AND h.a LIKE '🎁 Бонус «%')
+            OR EXISTS (SELECT 1 FROM promos p WHERE p.owner=c.id AND p.uses>0)
+          THEN 1 ELSE 0 END AS has_bonus_evidence,
+          EXISTS (SELECT 1 FROM history h WHERE h.cid=c.id AND h.a LIKE '%Установка приложения%')
+            AS has_install_evidence
+        FROM customers c
+        WHERE c.verified=1
+      `).all();
+      for (const row of rows) {
+        if (row.has_bonus_evidence) {
+          fill.run(row.id, 'signup', ts);
+          fill.run(row.id, 'qr', ts);
+        }
+        if (row.has_install_evidence) fill.run(row.id, 'install', ts);
       }
       db.prepare("INSERT INTO meta(key,value) VALUES('bonus_grants_backfilled',?)").run(ts);
     });
