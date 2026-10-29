@@ -112,6 +112,8 @@
 | `core/push.js` | `ensurePush`, VAPID-утилиты, самовосстановление подписки | `window.ensurePush` |
 | `core/push-ui.js` | `enablePush`, видимость `#pushBtn`, пуш-бабл `#pushHint`, FCM/Capacitor, массовая рассылка (админ) | `window.enablePush`, `window.refreshPushBtn`, `window.togglePushHint` |
 
+Серверный контракт отправки, диагностика ошибок и расследование бонусных уведомлений: [docs/telegram-notification-investigation-2026-10-29.md](telegram-notification-investigation-2026-10-29.md).
+
 ## 11. Оверлеи, панели, системный UX
 
 | Модуль | Владеет | Контракты |
