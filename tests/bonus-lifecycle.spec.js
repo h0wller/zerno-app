@@ -11,7 +11,7 @@ function uniquePhone() {
 async function registerVerifiedGuest(request, src) {
   const phone = uniquePhone();
   const code = '4826';
-  const otp = await request.post('/api/auth/__test/otp', {
+  const otp = await request.post('/__test/otp', {
     data: { key: 'reg:' + phone, code, expiresInMs: 120000 },
   });
   expect(otp.ok(), 'test OTP fixture must be available only in isolated test mode').toBeTruthy();
