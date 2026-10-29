@@ -67,8 +67,17 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright Tests
-        run: npm run test:e2e
+      # Keep the welcome/signup regression visible as an independent CI gate.
+      - name: Run Bonus Signup Regression
+        run: npx playwright test tests/bonus-signup.spec.js
+        env:
+          PORT: 3000
+          ADMIN_CODE: '3364'
+          CASHIER_CODE: '2468'
+          DISPATCH_CODE: '5719'
+
+      - name: Run Remaining Playwright Tests
+        run: npx playwright test --grep-invert "Signup Bonuses Suite"
         env:
           PORT: 3000
           ADMIN_CODE: '3364'
