@@ -22,7 +22,7 @@ Inline-скрипт `public/index.html` полностью распилен на
 
 ### [x] 5.3 — Кластер авторизации (`public/app/core/auth.js`)
 * Вынесены модальные окна и функции `openAuth()`, `closeAuth()`, `authSwap()`.
-* Вынесена логика `setUser()` (токены, сброс состояний, QR-код, автологин TG).
+* Сессионная функция `setUser()` выделена в `core/auth-session.js` (токен, `me`, onboarding, аватары, QR, FCM); Telegram auto-login остаётся в `core/auth.js`.
 * Вынесены формы регистрации, входа по PIN/OTP и сброса доступа.
 * Экран ввода пин-кода персонала вынесен в `core/staffpin.js`.
 
