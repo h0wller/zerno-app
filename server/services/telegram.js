@@ -21,7 +21,7 @@ export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
   if (TG_CHANNEL && String(chatId) === String(TG_CHANNEL)) {
     if (process.env.NODE_ENV !== 'production' && !process.env.TELEGRAM_FORCE_SEND) {
       console.log('[tg-dev-skip channel]:', String(text).slice(0, 70));
-      return;
+      return { ok: true, skipped: 'dev_channel' };
     }
   }
 
