@@ -276,16 +276,25 @@ test('бэкфилл: флаг в meta, повторный initSchema идемп
   assert.equal(db.prepare('SELECT COUNT(*) AS c FROM bonus_grants').get().c, before, 'повтор не плодит записи');
 });
 
-test('бэкфилл: клиент, созданный до миграции, новичком не считается', () => {
-  // имитируем «старую» базу: отметок нет, флага миграции нет
-  const id = makeCustomer();
+test('бэкфилл: профиль с признаками использованного бонуса защищён от повторного начисления', () => {
+  // Имитируем старую базу: отметок нет, флага миграции нет, но есть доказательство использования.
+  const id = makeCustomer({ stamps: 2 });
   db.prepare('DELETE FROM bonus_grants').run();
   db.prepare("DELETE FROM meta WHERE key='bonus_grants_backfilled'").run();
   initSchema();
-  assert.deepEqual(grants(id), ['install', 'qr', 'signup'], 'бэкфилл вернул отметки всем существующим');
-  assert.equal(grantBonus(id, 'signup'), null, 'старый профиль не получает бонус повторно');
-  assert.deepEqual(row(id), { stamps: 0, free: 0, cups: 0, role: 'guest' });
+  assert.deepEqual(grants(id), ['qr', 'signup'], 'бэкфилл отмечает использованный приветственный бонус');
+  assert.equal(grantBonus(id, 'signup'), null, 'повторный приветственный бонус не начисляется');
+  assert.deepEqual(row(id), { stamps: 2, free: 0, cups: 0, role: 'guest' });
   assert.equal(hist(id).length, 0);
+});
+
+test('бэкфилл: неподтверждённый профиль не получает отметки о бонусах', () => {
+  const id = makeCustomer({ verified: 0 });
+  db.prepare('DELETE FROM bonus_grants').run();
+  db.prepare("DELETE FROM meta WHERE key='bonus_grants_backfilled'").run();
+  initSchema();
+  assert.deepEqual(grants(id), [], 'неподтверждённые профили исключены из бэкфилла');
+  assert.equal(grantBonus(id, 'signup'), null, 'бонус нельзя начислить неподтверждённому профилю');
 });
 
 test('чистка: временная БД теста удаляется', () => {

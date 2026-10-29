@@ -14,14 +14,14 @@ export const APP_URL = PUBLIC_URL || 'https://friday.andcoffee.online';
 
 export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
   const token = TG_TOKEN;
-  if (!token) { return; }
-  if (!chatId) return;
+  if (!token) return { ok: false, reason: 'no_token' };
+  if (!chatId) return { ok: false, reason: 'no_chat' };
 
   // Блокируем отправку в рабочий канал/группу на localhost и во время тестов
   if (TG_CHANNEL && String(chatId) === String(TG_CHANNEL)) {
     if (process.env.NODE_ENV !== 'production' && !process.env.TELEGRAM_FORCE_SEND) {
       console.log('[tg-dev-skip channel]:', String(text).slice(0, 70));
-      return;
+      return { ok: true, skipped: 'dev_channel' };
     }
   }
 
@@ -38,11 +38,14 @@ export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
       body: JSON.stringify(body)
     });
     const j = await r.json().catch(() => ({}));
-    if (!j.ok) {
-      console.error('[tg] tgSend FAIL → chat=' + chatId + '  err=' + (j.description || r.status));
+    if (!r.ok || !j.ok) {
+      console.error('[tg] tgSend FAIL: ' + (j.description || r.status));
+      return { ok: false, reason: 'telegram_api_error', code: r.status, error: j.description || 'Telegram API error' };
     }
+    return { ok: true, messageId: j.result?.message_id ?? null };
   } catch (e) {
     console.error('[tg] tgSend NETWORK ERR: ' + e.message);
+    return { ok: false, reason: 'network_error', error: e.message };
   }
 }
 

@@ -3,6 +3,7 @@ import { db } from '../db/connection.js';
 import { cust, addHist, logEv } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { grant, redeem } from '../domain/loyalty.js';
+import { grantBonus, QR_SOURCE } from '../domain/bonuses.js';
 
 import { staffGuard } from '../middleware/auth.js';
 
@@ -51,9 +52,11 @@ staffRouter.post('/api/staff/customers', staffGuard, (req, res) => {
         return cd.slice(-10) === d10;
       });
       if (existing) {
+        const wasUnverified = !existing.verified;
         db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(existing.id);
         addHist(existing.id, 'Профиль верифицирован кассиром', 'Кассир');
         logEv(existing.name, 'Верификация кассиром');
+        if (wasUnverified) grantBonus(existing.id, existing.src === QR_SOURCE ? 'qr' : 'signup');
         const updated = db.prepare('SELECT * FROM customers WHERE id=?').get(existing.id);
         return res.json({ customer: cust(updated) });
       }
@@ -64,6 +67,7 @@ staffRouter.post('/api/staff/customers', staffGuard, (req, res) => {
   db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
   addHist(r.customer.id, 'Профиль создан', 'Кассир');
   logEv(r.customer.name, 'Создан профиль');
+  grantBonus(r.customer.id, r.customer.src === QR_SOURCE ? 'qr' : 'signup');
   res.json(r);
 });
 
