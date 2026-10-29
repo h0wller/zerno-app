@@ -4,12 +4,6 @@
 
   var loginMode = 'pin';
   var setPinCtx = null;
-  var regPoll = null;
-
-  // Источник регистрации (сейчас только 'qr' — пришли с постера). Хранится до успешной регистрации.
-  function getRegSource() {
-    try { return localStorage.getItem('zt_src') === 'qr' ? 'qr' : ''; } catch (_) { return ''; }
-  }
 
   function setAuthFormMode(login) {
     var rf = document.getElementById('regForm');
@@ -106,7 +100,7 @@
 
   function resetAuthTransientState() {
     // Временные состояния не должны переживать закрытие модалки.
-    if (regPoll) { clearInterval(regPoll); regPoll = null; }
+    if (typeof window.resetRegistrationState === 'function') window.resetRegistrationState();
     loginMode = 'pin';
 
     var consent = document.getElementById('consentBox');
@@ -254,81 +248,6 @@
       };
     }
 
-    var regBtn = document.getElementById('regBtn');
-    if (regBtn) {
-      regBtn.onclick = async function () {
-        var name = (document.getElementById('regName') || {}).value.trim();
-        var phone = (document.getElementById('regPhone') || {}).value;
-        var pin = (document.getElementById('regPin') || {}).value.trim();
-        var code = (document.getElementById('regOtp') || {}).value.trim();
-
-        var consentBox = document.getElementById('consentBox');
-        if (!consentBox || !consentBox.checked) {
-          return toast('Отметь согласие с политикой конфиденциальности', '⚠️');
-        }
-
-        if (name.length < 2) return toast('Введите имя', '✍️');
-        if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
-        if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
-
-        if (window.__tgInitData) {
-          try {
-            var rTg = await api('/auth/tg-link', {
-              method: 'POST',
-              body: { initData: window.__tgInitData, phone: phone, name: name, pin: pin, consent: 1, src: getRegSource() }
-            });
-            if (rTg && rTg.needBotConfirm) {
-              // Номер сначала подтверждаем в боте, потом повторяем вход.
-              toast('Подтвердите номер в боте Telegram, затем нажмите «Продолжить» ещё раз', '🤖');
-              var tgOpen = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink;
-              if (typeof tgOpen === 'function') tgOpen(rTg.tgUrl); else window.open(rTg.tgUrl, '_blank');
-              return;
-            }
-            if (rTg && rTg.token && rTg.customer) {
-              setUser(rTg.token, rTg.customer);
-              closeAuth();
-              if (typeof renderAll === 'function') renderAll();
-              toast(rTg.isNew ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎁' : 'Профиль привязан к Telegram ✅', '🎉');
-              return;
-            }
-          } catch (errTg) {
-            if (errTg.code === 409) {
-              toast('Номер уже зарегистрирован — входим', '🔗');
-              var lpTg = document.getElementById('logPhone');
-              if (lpTg) lpTg.value = fmtPhone(phone);
-              authSwap(true);
-              return;
-            }
-            toast(errTg.message || 'Ошибка регистрации через Telegram', '⚠️');
-            return;
-          }
-        }
-
-        try {
-          var r = await api('/auth/register', {
-            method: 'POST',
-            body: { name: name, phone: phone, pin: pin, code: code, consent: 1, src: getRegSource() }
-          });
-          try { localStorage.removeItem('zt_src'); } catch (_) {}
-          setUser(r.token, r.customer);
-          closeAuth();
-          if (typeof renderAll === 'function') renderAll();
-          toast(r.customer.verified
-            ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎉'
-            : 'Профиль создан! Код активации — у кассира, после него приветственный напиток и бесплатная доставка 🎁', '');
-        } catch (e) {
-          if (e.code === 409) {
-            toast('Этот номер уже зарегистрирован — входим', '🔗');
-            var lp = document.getElementById('logPhone');
-            if (lp) lp.value = fmtPhone(phone);
-            authSwap(true);
-          } else {
-            toast(e.message, '⚠️');
-          }
-        }
-      };
-    }
-
     // Enter ведёт к следующему видимому полю, а на последнем поле отправляет форму.
     [['regForm', 'regBtn'], ['loginForm', 'logBtn']].forEach(function (pair) {
       var form = document.getElementById(pair[0]);
@@ -346,60 +265,6 @@
         if (btn && btn.offsetParent !== null) btn.click();
       });
     });
-
-    var regTgBtn = document.getElementById('regTgBtn');
-    if (regTgBtn) {
-      regTgBtn.onclick = async function () {
-        var ph = (document.getElementById('regPhone') || {}).value;
-        var nm = ((document.getElementById('regName') || {}).value || '').trim();
-        var consentBox = document.getElementById('consentBox');
-        if (!consentBox || !consentBox.checked) {
-          return toast('Сначала подтвердите согласие с политикой конфиденциальности', '⚠️');
-        }
-        if (ph10(ph).length < 10) return toast('Введите номер полностью', '📵');
-        try {
-          var r = await api('/auth/request-reg-otp', {
-            method: 'POST',
-            body: { phone: ph, name: nm, via: 'tg' }
-          });
-          if (r && r.tgUrl) {
-            toast('Открываем Telegram...', '🤖');
-            setTimeout(function() { window.location.href = r.tgUrl; }, 250);
-          }
-          toast('Подтвердите номер в Telegram', '🤖');
-
-          if (regPoll) clearInterval(regPoll);
-          // F3.61: лимит поллинга 60 попыток × 2.5 с ≈ 2.5 мин — защита от вечно живого таймера.
-          var regPollTries = 0;
-          regPoll = setInterval(async function () {
-            if (++regPollTries > 60) { clearInterval(regPoll); regPoll = null; return; }
-            try {
-              var c = await api('/auth/check-reg?phone=' + encodeURIComponent(ph));
-              if (c && c.confirmed) {
-                clearInterval(regPoll);
-                regPoll = null;
-                if (c.token && c.customer) {
-                  setUser(c.token, c.customer);
-                  closeAuth();
-                  if (typeof renderAll === 'function') renderAll();
-                  toast('Добро пожаловать, ' + c.customer.name + '! Бонусы активированы 🎉', '🎁');
-                  return;
-                }
-                var row = document.getElementById('regTgRow');
-                if (row) {
-                  row.hidden = false;
-                  row.className = 'auth-badge-confirmed';
-                  row.innerHTML = '<span>✅ Номер подтверждён в Telegram</span>';
-                }
-                toast('Номер подтверждён через Telegram', '🎉');
-              }
-            } catch (_) {}
-          }, 2500);
-        } catch (e) {
-          toast(e.message, '⚠️');
-        }
-      };
-    }
 
     var logBtn = document.getElementById('logBtn');
     if (logBtn) {
