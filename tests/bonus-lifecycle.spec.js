@@ -26,8 +26,9 @@ async function registerVerifiedGuest(request, src) {
       ...(src ? { src } : {}),
     },
   });
-  expect(response.status(), await response.text()).toBe(200);
-  const payload = await response.json();
+  const responseText = await response.text();
+  expect(response.status(), responseText).toBe(200);
+  const payload = JSON.parse(responseText);
   expect(payload.token).toBeTruthy();
   expect(payload.customer.verified).toBe(1);
   expect(payload.customer.free).toBe(1);
@@ -59,8 +60,9 @@ async function assertFreeDeliveryIsSingleUse(request, token) {
     promo: code,
   };
   const first = await request.post('/api/orders', { headers, data: order });
-  expect(first.status(), await first.text()).toBe(200);
-  const firstPayload = await first.json();
+  const firstText = await first.text();
+  expect(first.status(), firstText).toBe(200);
+  const firstPayload = JSON.parse(firstText);
   expect(firstPayload.order.fee).toBe(0);
   expect(firstPayload.order.promo).toBe(code);
 
