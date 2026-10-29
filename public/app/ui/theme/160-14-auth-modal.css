@@ -227,7 +227,7 @@
     width: 100%;
     max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     padding: 22px clamp(16px, 5vw, 22px);
-    border-radius: 20px;
+    border-radius: var(--modal-radius, 20px);
   }
 
   #authModal .auth-head {
@@ -265,8 +265,6 @@
   }
 
   #authModal .auth-head .alogo {
-    width: 48px !important;
-    height: 48px !important;
     margin-bottom: 8px;
   }
 
