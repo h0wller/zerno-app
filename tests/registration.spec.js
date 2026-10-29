@@ -34,6 +34,30 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     expect(await page.locator('#consentRow a').getAttribute('target')).toBe('_blank');
   });
 
+  test('auth modal resets consent and OTP mode after close/reopen', async ({ page }) => {
+    await page.route('**/api/auth/request-otp', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+    );
+    await page.goto('/?brand=delivery');
+    await page.click('#profileTopBtn');
+
+    const consent = page.locator('#consentBox');
+    await consent.check();
+    await page.click('#toLogin');
+    await page.click('#otpBtn');
+    await expect(page.locator('#logOtpWrap')).toBeVisible();
+
+    await page.evaluate(() => window.closeAuth());
+    await page.click('#profileTopBtn');
+    await expect(consent).not.toBeChecked();
+
+    await page.click('#toLogin');
+    await expect(page.locator('#logPinRow')).toBeVisible();
+    await expect(page.locator('#logOtpWrap')).toBeHidden();
+    await expect(page.locator('#otpBackRow')).toBeHidden();
+    await expect(page.locator('#logBtn')).toHaveText('Войти');
+  });
+
   test('F3.62: consent stays visible in Telegram Mini App', async ({ page }) => {
     await page.route('https://telegram.org/**', (r) => r.abort()); // реальный telegram-web-app.js затирает заглушку
     await page.addInitScript(TG_STUB);
