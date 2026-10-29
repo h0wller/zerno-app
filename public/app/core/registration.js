@@ -3,6 +3,7 @@
   'use strict';
 
   var regPoll = null;
+  var regPollGeneration = 0;
 
   function getRegSource() {
     try { return localStorage.getItem('zt_src') === 'qr' ? 'qr' : ''; } catch (_) { return ''; }
@@ -10,6 +11,8 @@
 
   // Вызывается владельцем auth-модалки при закрытии, чтобы не оставлять polling между сессиями.
   window.resetRegistrationState = function () {
+    // Инвалидируем и таймер, и любой уже выполняющийся запрос.
+    regPollGeneration += 1;
     if (regPoll) { clearInterval(regPoll); regPoll = null; }
     var row = document.getElementById('regTgRow');
     if (row) {
@@ -98,6 +101,10 @@
     var regTgBtn = document.getElementById('regTgBtn');
     if (regTgBtn) {
       regTgBtn.onclick = async function () {
+        // Новый запуск отменяет предыдущий цикл и все его ожидающие ответы.
+        if (regPoll) { clearInterval(regPoll); regPoll = null; }
+        var pollGeneration = ++regPollGeneration;
+        var pollBusy = false;
         var ph = (document.getElementById('regPhone') || {}).value;
         var nm = ((document.getElementById('regName') || {}).value || '').trim();
         var consentBox = document.getElementById('consentBox');
@@ -110,19 +117,27 @@
             method: 'POST',
             body: { phone: ph, name: nm, via: 'tg' }
           });
+          if (pollGeneration !== regPollGeneration) return;
           if (r && r.tgUrl) {
             toast('Открываем Telegram...', '🤖');
             setTimeout(function() { window.location.href = r.tgUrl; }, 250);
           }
           toast('Подтвердите номер в Telegram', '🤖');
 
-          if (regPoll) clearInterval(regPoll);
-          // F3.61: лимит поллинга 60 попыток × 2.5 с ≈ 2.5 мин — защита от вечно живого таймера.
+          // Лимит поллинга: 60 попыток × 2.5 с ≈ 2.5 мин.
           var regPollTries = 0;
           regPoll = setInterval(async function () {
-            if (++regPollTries > 60) { clearInterval(regPoll); regPoll = null; return; }
+            if (pollGeneration !== regPollGeneration || pollBusy) return;
+            if (++regPollTries > 60) {
+              clearInterval(regPoll);
+              if (pollGeneration === regPollGeneration) regPoll = null;
+              return;
+            }
+            pollBusy = true;
             try {
               var c = await api('/auth/check-reg?phone=' + encodeURIComponent(ph));
+              // Модалка могла закрыться, пока запрос выполнялся.
+              if (pollGeneration !== regPollGeneration) return;
               if (c && c.confirmed) {
                 clearInterval(regPoll);
                 regPoll = null;
@@ -141,7 +156,11 @@
                 }
                 toast('Номер подтверждён через Telegram', '🎉');
               }
-            } catch (_) {}
+            } catch (_) {
+              // Сетевые ошибки не завершают цикл; следующая попытка повторит запрос.
+            } finally {
+              pollBusy = false;
+            }
           }, 2500);
         } catch (e) {
           toast(e.message, '⚠️');
