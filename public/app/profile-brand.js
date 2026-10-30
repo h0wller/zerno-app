@@ -16,9 +16,11 @@ function histH4(){
 }
 function brandRules(){
   var deliv=(typeof brand!=='undefined'&&brand==='delivery');
-  var mo=document.getElementById('myOrders'),mb=document.getElementById('myOrdersBtn'),fi=document.getElementById('fridayInfo');
-  if(mo)mo.style.display=deliv?'':'none';
-  if(mb)mb.style.display=deliv?'':'none';
+  var deliverySection=document.getElementById('profileOrdersSection');
+  var coffeeSection=document.getElementById('profileCoffeeSection');
+  var fi=document.getElementById('fridayInfo');
+  if(deliverySection)deliverySection.hidden=!deliv;
+  if(coffeeSection)coffeeSection.hidden=deliv;
   Array.prototype.slice.call(document.querySelectorAll('#profileBox .placebox')).forEach(function(p){
     var t=p.textContent||'';
     if(/Мы у моря/i.test(t))p.style.display=deliv?'none':'';
@@ -114,12 +116,7 @@ window.renderVerifyNote=function(){
 };
 /* ── единственная обёртка renderProfile ── */
 renderProfile=(function(_rp){return function(){var r=_rp.apply(this,arguments);
-  var deliv=(brand==='delivery');
-  var q=document.getElementById('qrMain');var qb=q&&q.closest('.qrbox');
-  if(qb)qb.style.display=deliv?'none':'';
-  var st=document.querySelector('#profileBox .stats');
-  if(st)st.style.display=deliv?'none':'';
-  if(me)loadMyOrders();
+  if(me&&typeof window.loadMyOrders==='function')window.loadMyOrders();
   brandRules();
   return r;};})(renderProfile);
 })();

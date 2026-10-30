@@ -161,18 +161,7 @@ $("#emDel").onclick = async () => {
   }
 };
 
-$("#nameInput").addEventListener("change", async (e) => {
-  if (!me) return;
-  const name = e.target.value.trim() || "Гость";
-  try {
-    const r = await api("/me", { method: "PUT", body: { name } });
-    me = r.customer;
-    renderProfile();
-    toast("Профиль обновлён", "✅");
-  } catch (err) {
-    toast(err.message, "⚠️");
-  }
-});
+
 
 
 /* ── Ф5.6.2f: ESM-шимы ── */

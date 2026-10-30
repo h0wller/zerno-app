@@ -1,125 +1,111 @@
-/* public/app/profile-orders.js — список заказов и модалка «Мои заказы». */
+/* public/app/profile-orders.js — заказы гостя: единая загрузка и отображение. */
 (function () {
-'use strict';
+    'use strict';
+    var ordersCache = null, ordersCacheAt = 0, ordersRequest = null, cacheTtl = 20000;
 
-    async function loadMyOrders() {
+    function fetchMyOrders(force) {
+        if (!me) return Promise.resolve([]);
+        if (!force && ordersCache && Date.now() - ordersCacheAt < cacheTtl) return Promise.resolve(ordersCache);
+        if (ordersRequest) return ordersRequest;
+        ordersRequest = api('/orders/mine').then(function (response) {
+            ordersCache = Array.isArray(response.orders) ? response.orders : [];
+            ordersCacheAt = Date.now();
+            window.__lastMineOrders = ordersCache;
+            return ordersCache;
+        }).finally(function () { ordersRequest = null; });
+        return ordersRequest;
+    }
+
+    function statusFor(status) {
+        var statuses = {
+            new: ['🆕', 'mo-new', 'Новый'], accept: ['✅', 'mo-accept', 'Подтверждён'],
+            cook: ['👨‍🍳', 'mo-cook', 'Готовится'], way: ['🛵', 'mo-way', 'Курьер в пути'],
+            done: ['🏁', 'mo-done', 'Выполнен'], cancel: ['❌', 'mo-cancel', 'Отменён']
+        };
+        return statuses[status] || ['•', 'mo-new', String(status || 'Статус неизвестен')];
+    }
+
+    function renderOrder(order, compact) {
+        var status = statusFor(order.status);
+        var date = new Date(order.created);
+        var dateText = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        var items = (Array.isArray(order.items) ? order.items : []).map(function (item) {
+            return (Number(item.qty) || 1) + '× ' + esc(item.name || 'Позиция');
+        }).join(', ');
+        var time = order.is_preorder
+            ? ' · <span class="preorder-slot">⏰ Предзаказ: ' + esc(order.slot || '') + '</span>'
+            : (order.eta ? ' · <span>⏰ ' + esc(order.eta) + '</span>' : '');
+        var track = !['done', 'cancel'].includes(order.status)
+            ? '<button type="button" class="moTrack" data-open-track="' + esc(String(order.id)) + '">📍 Отследить</button>' : '';
+        return '<article class="myOrderCard' + (compact ? ' is-compact' : '') + '">' +
+            '<div class="moTop"><span>Заказ #' + esc(String(order.no || order.id || '')) +
+            (dateText ? ' <span class="moDate">· ' + dateText + '</span>' : '') + '</span>' +
+            '<span class="moSt ' + status[1] + '">' + status[0] + ' ' + esc(status[2]) + '</span></div>' +
+            '<div class="moSum">' + fmt(order.total) + time + '</div>' +
+            (items ? '<div class="moItems">' + items + '</div>' : '') +
+            ((Array.isArray(order.gifts) && order.gifts.length) ? '<div class="moGifts">🎁 ' +
+                order.gifts.map(function (gift) { return esc(gift.name || 'Подарок') + ' ×' + (Number(gift.qty) || 1); }).join(', ') + '</div>' : '') +
+            track + '</article>';
+    }
+
+    async function loadMyOrders(options) {
         var host = document.getElementById('myOrders');
         if (!host || !me) return;
-        if (typeof brand !== 'undefined' && brand !== 'delivery') {
-            host.innerHTML = '';
-            return;
-        }
+        if (typeof brand !== 'undefined' && brand !== 'delivery') { host.innerHTML = ''; return; }
         try {
-            var r = await api('/orders/mine');
-            window.__lastMineOrders = r.orders || []; /* Ф3.69: единый кэш для делегата [data-open-track] */
-            var ST = {
-                new: ['🆕', 'mo-new', 'Новый'],
-                accept: ['✅', 'mo-accept', 'Подтверждён'],
-                cook: ['👨‍🍳', 'mo-cook', 'Готовится'],
-                way: ['🛵', 'mo-way', 'Курьер в пути'],
-                done: ['🏁', 'mo-done', 'Выполнен'],
-                cancel: ['❌', 'mo-cancel', 'Отменён']
-            };
-            var o = (r.orders || [])[0];
-            if (!o) {
-                host.innerHTML = '<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';
-            } else {
-                var s = ST[o.status] || ['•', 'mo-new', o.status];
-                var d = new Date(o.created).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
-                var items = (o.items || []).slice(0, 3).map(function (i) { return i.qty + '× ' + i.name; }).join(', ') + ((o.items || []).length > 3 ? '…' : '');
-
-                var timeInfo = o.is_preorder
-                    ? ' · <span class="preorder-slot" data-slot="' + esc(o.slot) + '" style="color:#B26A05;font-weight:700">⏰ Предзаказ: ' + esc(o.slot) + '</span>'
-                    : (o.eta ? ' · <span>⏰ ' + esc(o.eta) + '</span>' : '');
-
-                host.innerHTML = '<div class="myOrderCard"><div class="moTop"><span>Заказ #' + o.no + ' <span class="moDate">· ' + d + '</span></span><span class="moSt ' + s[1] + '">' + s[0] + ' ' + s[2] + '</span></div>' +
-                    '<div class="moSum">' + fmt(o.total) + timeInfo + '</div>' +
-                    (items ? '<div class="moItems">' + esc(items) + '</div>' : '') +
-                    ((o.gifts && o.gifts.length) ? '<div class="moGifts">🎁 ' + o.gifts.map(function (g) { return esc(g.name) + ' ×' + g.qty; }).join(', ') + '</div>' : '') +
-                    /* Ф3.69: кнопка «Отследить» для активных заказов */
-                    (!['done', 'cancel'].includes(o.status) ? '<button type="button" class="moTrack" data-open-track="' + esc(String(o.id)) + '">📍 Отследить</button>' : '') + '</div>';
-            }
-        } catch (e) { }
-        if (typeof window.applyProfileBrand === 'function') window.applyProfileBrand();
+            var orders = await fetchMyOrders(!!(options && options.force));
+            host.innerHTML = orders.length ? renderOrder(orders[0], true)
+                : '<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';
+        } catch (_) {
+            if (!host.innerHTML) host.innerHTML = '<div class="hmini">Не удалось загрузить последний заказ</div>';
+        }
     }
 
-    async function renderOrdersModal() {
+    async function renderOrdersModal(options) {
+        var modal = document.getElementById('ordersModal');
         var list = document.getElementById('omList');
-        if (!list || !me) return;
-        list.innerHTML = '<div class="hmini">Загрузка…</div>';
-        document.getElementById('ordersModal').classList.add('show');
+        if (!modal || !list || !me) return;
+        modal.classList.add('show');
         if (typeof window.syncOverlay === 'function') window.syncOverlay();
+        if (!ordersCache) list.innerHTML = '<div class="hmini">Загрузка заказов…</div>';
         try {
-            var r = await api('/orders/mine');
-            window.__lastMineOrders = r.orders || []; /* Ф3.69: кэш списка для кнопки «Отследить» */
-            var ST = {
-                new: '🆕 Новый',
-                accept: '✅ Подтверждён',
-                cook: '👨‍🍳 Готовится',
-                way: '🛵 Курьер в пути',
-                done: '🏁 Выполнен',
-                cancel: '❌ Отменён'
-            };
-
-            list.innerHTML = (r.orders || []).map(function (o) {
-                var d = new Date(o.created).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
-                // СТАЛО:
-                var timeInfo = o.is_preorder
-                    ? ' · <b class="preorder-marker" data-preorder-slot="' + esc(o.slot) + '" style="color:#B26A05">⏰ Предзаказ: ' + esc(o.slot) + '</b>'
-                    : (o.eta ? ' · ⏰ ' + esc(o.eta) : '');
-
-                return '<div class="myOrderCard" style="margin-bottom:8px"><div class="moTop"><span>Заказ #' + o.no + ' <span class="moDate">· ' + d + '</span></span><span class="moSt">' + (ST[o.status] || o.status) + '</span></div>' +
-                    '<div class="moSum">' + fmt(o.total) + timeInfo + '</div>' +
-                    '<div class="moItems">' + esc(o.items.map(function (i) { return i.qty + '× ' + i.name; }).join(', ')) + '</div>' +
-                    ((o.gifts && o.gifts.length) ? '<div class="moGifts">🎁 ' + o.gifts.map(function (g) { return esc(g.name) + ' ×' + g.qty; }).join(', ') + '</div>' : '') +
-                    /* Ф3.69: кнопка «Отследить» для активных заказов в модалке */
-                    (!['done', 'cancel'].includes(o.status) ? '<button type="button" class="moTrack" data-open-track="' + esc(String(o.id)) + '">📍 Отследить</button>' : '') + '</div>';
-            }).join('') || '<div class="hmini">Заказов пока нет 🍕</div>';
-        } catch (e) {
-            list.innerHTML = '<div class="hmini">Не загрузилось</div>';
+            var orders = await fetchMyOrders(!!(options && options.force));
+            list.innerHTML = orders.map(function (order) { return renderOrder(order, false); }).join('') ||
+                '<div class="hmini">Заказов пока нет 🍕</div>';
+        } catch (_) {
+            list.innerHTML = '<div class="hmini">Не удалось загрузить заказы. Попробуйте открыть список ещё раз.</div>';
         }
     }
 
-    Object.assign(window, { loadMyOrders, renderOrdersModal });
-})();
+    function invalidateMyOrders() { ordersCache = null; ordersCacheAt = 0; }
+    Object.assign(window, { loadMyOrders: loadMyOrders, renderOrdersModal: renderOrdersModal, invalidateMyOrders: invalidateMyOrders });
 
-(function () {
-    if (document.getElementById('ordersModal')) return;
-    var m = document.createElement('div');
-    m.id = 'ordersModal';
-    m.innerHTML = '<div class="omCard"><button type="button" class="omClose">✕ Закрыть</button><h3 style="margin:0 0 12px">📦 Мои заказы</h3><div id="omList"></div></div>';
-    document.body.appendChild(m);
-    m.addEventListener('click', function (e) {
-        if (e.target === m || e.target.closest('.omClose')) {
-            m.classList.remove('show');
-            if (typeof window.syncOverlay === 'function') window.syncOverlay();
-        }
+    (function createOrdersModal() {
+        if (document.getElementById('ordersModal')) return;
+        var modal = document.createElement('div');
+        modal.id = 'ordersModal';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-labelledby', 'ordersModalTitle');
+        modal.innerHTML = '<div class="omCard" tabindex="-1"><button type="button" class="omClose" aria-label="Закрыть список заказов">✕ Закрыть</button><h3 id="ordersModalTitle" style="margin:0 0 12px">📦 Мои заказы</h3><div id="omList" aria-live="polite"></div></div>';
+        document.body.appendChild(modal);
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal || event.target.closest('.omClose')) {
+                modal.classList.remove('show');
+                if (typeof window.syncOverlay === 'function') window.syncOverlay();
+                var opener = document.getElementById('myOrdersBtn');
+                if (opener) opener.focus();
+            }
+        });
+    })();
+
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest ? event.target.closest('[data-open-track]') : null;
+        if (!button) return;
+        event.preventDefault();
+        var order = (window.__lastMineOrders || []).find(function (item) {
+            return String(item.id) === String(button.getAttribute('data-open-track'));
+        });
+        if (order && typeof window.openOrderTrackModal === 'function') window.openOrderTrackModal(order);
     });
 })();
-
-(function () {
-    var pb = document.getElementById('profileBox');
-    if (pb && !document.getElementById('myOrdersBtn')) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.id = 'myOrdersBtn';
-        b.className = 'demoBtn';
-        b.textContent = '📦 Мои заказы';
-        var mo = document.getElementById('myOrders');
-        if (mo) pb.insertBefore(b, mo);
-        else pb.appendChild(b);
-    }
-})();
-
-/* DOM-блок выше создаёт ordersModal и кнопку myOrdersBtn; открытием управляет core/panel.js. */
-
-/* Ф3.69: делегированный клик «Отследить заказ» (#myOrders и модалка «Мои заказы»).
-   Заказ ищем в кэше window.__lastMineOrders, который обновляется при каждом рендере списка. */
-document.addEventListener('click', function (e) {
-  var btn = e.target.closest ? e.target.closest('[data-open-track]') : null;
-  if (!btn) return;
-  e.preventDefault();
-  var id = btn.getAttribute('data-open-track');
-  var found = (window.__lastMineOrders || []).find(function (x) { return String(x.id) === String(id); });
-  if (found && typeof window.openOrderTrackModal === 'function') window.openOrderTrackModal(found);
-});

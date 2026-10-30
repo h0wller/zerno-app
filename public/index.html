@@ -1208,14 +1208,14 @@ if(b==='delivery'){
       </div>
     </section>
 
-    <aside class="panel" id="panel">
-      <div class="tabs">
-        <button class="btn-back">← Назад</button>
-        <button data-tab="bonus" class="on">Бонусы</button>
-        <button data-tab="profile">Профиль</button>
+    <aside class="panel" id="panel" aria-label="Личный кабинет">
+      <div class="tabs" role="tablist" aria-label="Разделы личного кабинета">
+        <button class="btn-back" type="button" aria-label="Закрыть личный кабинет">← Назад</button>
+        <button id="tabBonus" type="button" role="tab" data-tab="bonus" class="on" aria-controls="pvBonus" aria-selected="true" tabindex="0">Бонусы</button>
+        <button id="tabProfile" type="button" role="tab" data-tab="profile" aria-controls="pvProfile" aria-selected="false" tabindex="-1">Профиль</button>
       </div>
 
-      <div class="pv" id="pvBonus">
+      <div class="pv" id="pvBonus" role="tabpanel" aria-labelledby="tabBonus" tabindex="0">
         <div id="bonusNoUser">
           <div class="authPrompt">
             <span class="ap">🎁</span>
@@ -1250,7 +1250,7 @@ if(b==='delivery'){
         </div>
       </div>
 
-      <div class="pv" id="pvProfile" hidden>
+      <div class="pv" id="pvProfile" role="tabpanel" aria-labelledby="tabProfile" tabindex="0" hidden>
         <div id="profileNoUser">
           <div class="authPrompt">
             <span class="ap">👤</span>
@@ -1263,38 +1263,52 @@ if(b==='delivery'){
           </div>
         </div>
         <div id="profileBox" hidden>
-          <h4>Профиль</h4>
-          <div class="phead">
-            <div class="ava" id="avInit">А</div>
-            <div style="flex: 1">
-              <input id="nameInput" name="nameInput" maxlength="24" />
-              <div class="ph" id="phoneLbl"></div>
-              <div class="ph" id="roleLbl"></div>
+          <section class="profile-identity">
+            <div class="phead">
+              <div class="ava" id="avInit" aria-hidden="true">А</div>
+              <div class="profile-identity-copy">
+                <div class="profile-name-row">
+                  <input id="nameInput" name="nameInput" maxlength="24" readonly aria-label="Имя в профиле" />
+                  <button class="profile-name-action" id="nameEditBtn" type="button" aria-label="Изменить имя">Изменить</button>
+                  <div class="profile-name-actions" id="nameEditActions" hidden>
+                    <button class="profile-name-action is-primary" id="nameSaveBtn" type="button">Сохранить</button>
+                    <button class="profile-name-action" id="nameCancelBtn" type="button">Отмена</button>
+                  </div>
+                </div>
+                <div class="ph" id="phoneLbl"></div>
+                <div class="profile-role" id="roleLbl"></div>
+              </div>
+              <button class="gear" id="profileSettingsBtn" type="button" title="Настройки профиля" aria-label="Настройки профиля" aria-controls="settingsModal" aria-expanded="false">⚙️</button>
             </div>
-          </div>
+          </section>
           <button class="demoBtn" id="activateBtn" hidden>
             🔑 У меня код доступа сотрудника
           </button>
           <button class="demoBtn" id="pushBtn" hidden>
             🔔 Включить уведомления
           </button>
-          <button class="demoBtn" id="setPinBtn" hidden>
-            🔐 Задать / сменить PIN
-          </button>
 
-          <div class="stats">
-            <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
-            <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
-            <div class="stat"><b id="stFree">0</b><span>подарков</span></div>
-          </div>
-          <div id="myOrders" style="margin-top: 12px"></div>
-          <div class="qrbox" style="margin-top: 14px">
-            <canvas id="qrMain" width="220" height="220" style="width: 158px; height: 158px"></canvas>
-            <small>Ваш QR для штампов и бонусов</small>
-            <button class="demoBtn" id="qrOpenProfile" style="margin-top: 10px">
-              ⛶ На весь экран для кассира
-            </button>
-          </div>
+          <section class="profile-brand-section profile-coffee-only" id="profileCoffeeSection" aria-label="Бонусы кофейни">
+            <div class="stats" aria-label="Статистика посещений">
+              <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
+              <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
+              <div class="stat"><b id="stFree">0</b><span>подарков</span></div>
+            </div>
+            <div class="qrbox profile-main-qr">
+              <canvas id="qrMain" width="220" height="220" style="width: 158px; height: 158px"></canvas>
+              <small>Ваш QR для штампов и бонусов</small>
+              <button class="demoBtn" id="qrOpenProfile" type="button">
+                ⛶ На весь экран для кассира
+              </button>
+            </div>
+          </section>
+          <section class="profile-brand-section profile-delivery-only" id="profileOrdersSection" aria-label="Заказы доставки" hidden>
+            <div class="profile-section-heading">
+              <h4>Последний заказ</h4>
+              <button class="profile-all-orders" id="myOrdersBtn" type="button" aria-controls="ordersModal">Все заказы</button>
+            </div>
+            <div id="myOrders" aria-live="polite" aria-atomic="true"></div>
+          </section>
           <div class="placebox">
             <b>Мы у моря</b>п. Янтарный, Советская ул., 70г<br />
             Ежедневно: май–сен 8:00–21:00 · окт–апр 8:00–20:00<br />
@@ -1314,8 +1328,14 @@ if(b==='delivery'){
               ⭐ Оставить отзыв
             </button>
           </div>
-          <h4>История</h4>
-          <div id="histList"></div>
+          <section class="profile-history-section" aria-labelledby="historyHeading">
+            <div class="profile-history-heading">
+              <h4 id="historyHeading">История операций</h4>
+              <span class="profile-history-count" id="historyCount"></span>
+            </div>
+            <div id="histList" aria-live="polite"></div>
+            <button class="profile-history-toggle" id="historyToggleBtn" type="button" hidden>Показать всю историю</button>
+          </section>
         </div>
       </div>
     </aside>
