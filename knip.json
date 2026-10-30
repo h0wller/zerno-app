@@ -1,7 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
-    "public/app/main.js",
     "public/sw.js",
     "public/app/core/address-dict.js",
     "public/app/core/address-autocomplete.js",
@@ -24,7 +23,6 @@
   "ignoreDependencies": [
     "@capacitor/*",
     "ts-api-utils",
-    "sharp",
     "svgo",
     "terser"
   ],
