@@ -24,6 +24,7 @@ function setTab(t) {
 /* ── Открытие шторки (мобильная версия ≤820px) ── */
 var panelReturnFocus = null;
 function openPanel(tab) {
+    if (tab === 'bonus' && window.brand === 'delivery') tab = 'profile';
     setTab(tab);
     if (window.innerWidth <= 1180) {
         var panel = document.getElementById('panel');
