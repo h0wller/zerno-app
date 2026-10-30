@@ -9,14 +9,24 @@
         return me ? String(me.id || me.phone || '') : null;
     }
 
+    function resetOrdersCacheForUser(userKey) {
+        if (ordersCacheUser === userKey) return;
+        ordersCache = null;
+        ordersCacheAt = 0;
+        ordersCacheUser = userKey;
+        window.__lastMineOrders = [];
+        var host = document.getElementById('myOrders');
+        if (host) host.innerHTML = '<div class="hmini">Загрузка заказа…</div>';
+        var list = document.getElementById('omList');
+        if (list && document.getElementById('ordersModal')?.classList.contains('show')) {
+            list.innerHTML = '<div class="hmini">Загрузка заказов…</div>';
+        }
+    }
+
     function fetchMyOrders(force) {
         var userKey = currentUserKey();
         if (userKey === null) return Promise.resolve([]);
-        if (ordersCacheUser !== userKey) {
-            ordersCache = null;
-            ordersCacheAt = 0;
-            ordersCacheUser = userKey;
-        }
+        resetOrdersCacheForUser(userKey);
         if (!force && ordersCache && Date.now() - ordersCacheAt < cacheTtl) return Promise.resolve(ordersCache);
         if (ordersRequest && ordersRequestUser === userKey) return ordersRequest;
 
@@ -76,12 +86,15 @@
         var host = document.getElementById('myOrders');
         if (!host || !me) return;
         if (typeof brand !== 'undefined' && brand !== 'delivery') { host.innerHTML = ''; return; }
+        var userKey = currentUserKey();
         try {
             var orders = await fetchMyOrders(!!(options && options.force));
+            if (currentUserKey() !== userKey) return;
             host.innerHTML = orders.length ? renderOrder(orders[0], true)
                 : '<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';
         } catch (_) {
-            if (!host.innerHTML) host.innerHTML = '<div class="hmini">Не удалось загрузить последний заказ</div>';
+            if (currentUserKey() !== userKey) return;
+            host.innerHTML = '<div class="hmini">Не удалось загрузить последний заказ</div>';
         }
     }
 
@@ -96,20 +109,26 @@
             if (closeButton) closeButton.focus();
             if (typeof window.syncOverlay === 'function') window.syncOverlay();
         }
+        var userKey = currentUserKey();
         if (!ordersCache) list.innerHTML = '<div class="hmini">Загрузка заказов…</div>';
         try {
             var orders = await fetchMyOrders(!!(options && options.force));
+            if (currentUserKey() !== userKey) return;
             list.innerHTML = orders.map(function (order) { return renderOrder(order, false); }).join('') ||
                 '<div class="hmini">Заказов пока нет 🍕</div>';
         } catch (_) {
+            if (currentUserKey() !== userKey) return;
             list.innerHTML = '<div class="hmini">Не удалось загрузить заказы. Попробуйте открыть список ещё раз.</div>';
         }
     }
 
     function updateMyOrdersCache(orders) {
+        var userKey = currentUserKey();
+        if (userKey === null) return;
+        resetOrdersCacheForUser(userKey);
         ordersCache = Array.isArray(orders) ? orders : [];
         ordersCacheAt = Date.now();
-        ordersCacheUser = currentUserKey();
+        ordersCacheUser = userKey;
         window.__lastMineOrders = ordersCache;
     }
 
