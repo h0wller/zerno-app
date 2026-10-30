@@ -56,3 +56,57 @@ test.describe('Stop-list Guards (F3.68)', () => {
     expect((await request.delete('/api/menu/pz-marg', { headers: { Authorization: 'Bearer ' + tok } })).status()).toBe(403);
   });
 });
+
+
+test('cashier and dispatcher can toggle only their own menu section', async ({ request }) => {
+  const cashierAuth = {
+    Authorization: 'Bearer ' + await staffToken(request, process.env.CASHIER_CODE || '2468', 'Section Cashier')
+  };
+  const dispatchAuth = {
+    Authorization: 'Bearer ' + await staffToken(request, process.env.DISPATCH_CODE || '5719', 'Section Dispatch')
+  };
+  const adminAuth = {
+    Authorization: 'Bearer ' + await staffToken(request, process.env.ADMIN_CODE || '3364', 'Section Admin')
+  };
+
+  const menuResponse = await request.get('/api/menu/all', { headers: adminAuth });
+  expect(menuResponse.status()).toBe(200);
+  const items = (await menuResponse.json()).items || [];
+  const coffeeItem = items.find(item => item.section === 'coffee');
+  const deliveryItem = items.find(item => item.section === 'delivery');
+  expect(coffeeItem, 'a coffee menu item is required for the stop-list test').toBeTruthy();
+  expect(deliveryItem, 'a delivery menu item is required for the stop-list test').toBeTruthy();
+
+  async function toggleAndRestore(item, auth) {
+    const nextOn = Number(item.on) ? 0 : 1;
+    const changed = await request.put('/api/menu/' + item.id, {
+      data: { on: nextOn },
+      headers: auth
+    });
+    expect(changed.status()).toBe(200);
+    expect((await changed.json()).on).toBe(nextOn);
+
+    const restored = await request.put('/api/menu/' + item.id, {
+      data: { on: Number(item.on) ? 1 : 0 },
+      headers: auth
+    });
+    expect(restored.status()).toBe(200);
+  }
+
+  await toggleAndRestore(coffeeItem, cashierAuth);
+  await toggleAndRestore(deliveryItem, dispatchAuth);
+  await toggleAndRestore(coffeeItem, adminAuth);
+  await toggleAndRestore(deliveryItem, adminAuth);
+
+  const cashierOnDelivery = await request.put('/api/menu/' + deliveryItem.id, {
+    data: { on: Number(deliveryItem.on) ? 0 : 1 },
+    headers: cashierAuth
+  });
+  expect(cashierOnDelivery.status()).toBe(403);
+
+  const dispatchOnCoffee = await request.put('/api/menu/' + coffeeItem.id, {
+    data: { on: Number(coffeeItem.on) ? 0 : 1 },
+    headers: dispatchAuth
+  });
+  expect(dispatchOnCoffee.status()).toBe(403);
+});

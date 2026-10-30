@@ -2,23 +2,30 @@
 (function () {
   'use strict';
 
-  var regPoll = null;
-  var regPollGeneration = 0;
 
   function getRegSource() {
     try { return localStorage.getItem('zt_src') === 'qr' ? 'qr' : ''; } catch (_) { return ''; }
   }
 
-  // Вызывается владельцем auth-модалки при закрытии, чтобы не оставлять polling между сессиями.
+  // Сброс Telegram-подтверждения при закрытии auth-модалки.
   window.resetRegistrationState = function () {
-    // Инвалидируем и таймер, и любой уже выполняющийся запрос.
-    regPollGeneration += 1;
-    if (regPoll) { clearInterval(regPoll); regPoll = null; }
+    window.__regTgPollGeneration = (window.__regTgPollGeneration || 0) + 1;
+    if (window.__registrationTgPoll) {
+      clearInterval(window.__registrationTgPoll);
+      window.__registrationTgPoll = null;
+    }
     var row = document.getElementById('regTgRow');
     if (row) {
       row.hidden = true;
       row.className = '';
-      row.innerHTML = '✅ Номер подтверждён — завершите регистрацию';
+      row.textContent = '✅ Номер подтверждён — завершите регистрацию';
+    }
+    var button = document.getElementById('regTgBtn');
+    if (button) {
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+      var label = button.querySelector('span');
+      if (label) label.textContent = 'Подтвердить в Telegram · бесплатно';
     }
   };
 
@@ -26,6 +33,7 @@
     var regBtn = document.getElementById('regBtn');
     if (regBtn) {
       regBtn.onclick = async function () {
+        if (regBtn.disabled) return;
         var name = (document.getElementById('regName') || {}).value.trim();
         var phone = (document.getElementById('regPhone') || {}).value;
         var pin = (document.getElementById('regPin') || {}).value.trim();
@@ -40,6 +48,10 @@
         if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
         if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
 
+        regBtn.disabled = true;
+        regBtn.setAttribute('aria-busy', 'true');
+        regBtn.textContent = 'Создаём профиль…';
+        try {
         if (window.__tgInitData) {
           try {
             var rTg = await api('/auth/tg-link', {
@@ -95,16 +107,19 @@
             toast(e.message, '⚠️');
           }
         }
+        } finally {
+          regBtn.disabled = false;
+          regBtn.removeAttribute('aria-busy');
+          regBtn.textContent = 'Создать профиль';
+        }
       };
     }
 
     var regTgBtn = document.getElementById('regTgBtn');
     if (regTgBtn) {
       regTgBtn.onclick = async function () {
-        // Новый запуск отменяет предыдущий цикл и все его ожидающие ответы.
-        if (regPoll) { clearInterval(regPoll); regPoll = null; }
-        var pollGeneration = ++regPollGeneration;
-        var pollBusy = false;
+        if (regTgBtn.disabled) return;
+
         var ph = (document.getElementById('regPhone') || {}).value;
         var nm = ((document.getElementById('regName') || {}).value || '').trim();
         var consentBox = document.getElementById('consentBox');
@@ -112,35 +127,67 @@
           return toast('Сначала подтвердите согласие с политикой конфиденциальности', '⚠️');
         }
         if (ph10(ph).length < 10) return toast('Введите номер полностью', '📵');
+
+        if (window.__registrationTgPoll) {
+          clearInterval(window.__registrationTgPoll);
+          window.__registrationTgPoll = null;
+        }
+        var pollGeneration = (window.__regTgPollGeneration = (window.__regTgPollGeneration || 0) + 1);
+        var pollBusy = false;
+        var statusRow = document.getElementById('regTgRow');
+        if (statusRow) {
+          statusRow.hidden = true;
+          statusRow.className = '';
+          statusRow.textContent = '✅ Номер подтверждён — завершите регистрацию';
+        }
+
+        var buttonLabel = regTgBtn.querySelector('span');
+        var requestAccepted = false;
+        regTgBtn.disabled = true;
+        regTgBtn.setAttribute('aria-busy', 'true');
+        if (buttonLabel) buttonLabel.textContent = 'Отправляем запрос…';
+
         try {
           var r = await api('/auth/request-reg-otp', {
             method: 'POST',
             body: { phone: ph, name: nm, via: 'tg' }
           });
-          if (pollGeneration !== regPollGeneration) return;
+          if (pollGeneration !== window.__regTgPollGeneration) return;
+          requestAccepted = true;
+
           if (r && r.tgUrl) {
             toast('Открываем Telegram...', '🤖');
             setTimeout(function() { window.location.href = r.tgUrl; }, 250);
           }
           toast('Подтвердите номер в Telegram', '🤖');
 
+          if (statusRow) {
+            statusRow.hidden = false;
+            statusRow.className = 'auth-tg-pending';
+            statusRow.textContent = 'Ожидаем подтверждение в Telegram…';
+          }
+
           // Лимит поллинга: 60 попыток × 2.5 с ≈ 2.5 мин.
           var regPollTries = 0;
-          regPoll = setInterval(async function () {
-            if (pollGeneration !== regPollGeneration || pollBusy) return;
+          var pollTimer = setInterval(async function () {
+            if (pollGeneration !== window.__regTgPollGeneration || pollBusy) return;
             if (++regPollTries > 60) {
-              clearInterval(regPoll);
-              if (pollGeneration === regPollGeneration) regPoll = null;
+              clearInterval(pollTimer);
+              if (window.__registrationTgPoll === pollTimer) window.__registrationTgPoll = null;
+              if (pollGeneration === window.__regTgPollGeneration && statusRow) {
+                statusRow.hidden = false;
+                statusRow.className = 'auth-tg-timeout';
+                statusRow.textContent = 'Не получили подтверждение. Отправьте запрос повторно.';
+              }
               return;
             }
             pollBusy = true;
             try {
               var c = await api('/auth/check-reg?phone=' + encodeURIComponent(ph));
-              // Модалка могла закрыться, пока запрос выполнялся.
-              if (pollGeneration !== regPollGeneration) return;
+              if (pollGeneration !== window.__regTgPollGeneration) return;
               if (c && c.confirmed) {
-                clearInterval(regPoll);
-                regPoll = null;
+                clearInterval(pollTimer);
+                if (window.__registrationTgPoll === pollTimer) window.__registrationTgPoll = null;
                 if (c.token && c.customer) {
                   window.setUser(c.token, c.customer);
                   closeAuth();
@@ -148,11 +195,10 @@
                   toast('Добро пожаловать, ' + c.customer.name + '! Бонусы активированы 🎉', '🎁');
                   return;
                 }
-                var row = document.getElementById('regTgRow');
-                if (row) {
-                  row.hidden = false;
-                  row.className = 'auth-badge-confirmed';
-                  row.innerHTML = '<span>✅ Номер подтверждён в Telegram</span>';
+                if (statusRow) {
+                  statusRow.hidden = false;
+                  statusRow.className = 'auth-badge-confirmed';
+                  statusRow.textContent = '✅ Номер подтверждён в Telegram';
                 }
                 toast('Номер подтверждён через Telegram', '🎉');
               }
@@ -162,8 +208,19 @@
               pollBusy = false;
             }
           }, 2500);
+          window.__registrationTgPoll = pollTimer;
         } catch (e) {
-          if (pollGeneration === regPollGeneration) toast(e.message, '⚠️');
+          if (pollGeneration === window.__regTgPollGeneration) toast(e.message, '⚠️');
+        } finally {
+          if (pollGeneration === window.__regTgPollGeneration) {
+            regTgBtn.disabled = false;
+            regTgBtn.removeAttribute('aria-busy');
+            if (buttonLabel) {
+              buttonLabel.textContent = requestAccepted
+                ? 'Отправить повторно в Telegram'
+                : 'Подтвердить в Telegram · бесплатно';
+            }
+          }
         }
       };
     }

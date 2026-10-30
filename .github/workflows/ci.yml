@@ -64,6 +64,15 @@ jobs:
       - name: Build client bundle
         run: npm run build:client
 
+      - name: Upload generated client assets
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: built-client-assets-${{ github.sha }}
+          path: |
+            public/dist/main.bundle.js
+            public/dist/main.bundle.js.map
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 

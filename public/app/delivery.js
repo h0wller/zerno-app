@@ -429,13 +429,18 @@ function patchDeliveryCards(list) {
         b.type = 'button'; b.className = 'edBtn'; b.dataset.ed = p.id; b.textContent = '✏️';
         card.appendChild(b);
       }
+      const canToggle = window.canToggleStopList && window.canToggleStopList('delivery');
       let lab = card.querySelector('.donoff');
-      if (!lab) {
-        lab = document.createElement('label'); lab.className = 'donoff';
-        lab.innerHTML = '<input type="checkbox" data-onoff="' + p.id + '">в меню';
-        card.appendChild(lab);
+      if (canToggle) {
+        if (!lab) {
+          lab = document.createElement('label'); lab.className = 'donoff';
+          lab.innerHTML = '<input type="checkbox" data-onoff="' + p.id + '">в меню';
+          card.appendChild(lab);
+        }
+        const inp = lab.querySelector('input'); if (inp) inp.checked = !!p.on;
+      } else if (lab) {
+        lab.remove();
       }
-      const inp = lab.querySelector('input'); if (inp) inp.checked = !!p.on;
     } else {
       const d2 = card.querySelector('.donoff'); if (d2) d2.remove();
       const e2 = card.querySelector('.edBtn'); if (e2) e2.remove();
@@ -829,6 +834,10 @@ $('#deliveryGrid').addEventListener('change', async function (e) {
   const t = e.target.closest('.donoff [data-onoff]'); if (!t) return;
   e.stopPropagation();
   const p = DMENU.find(x => String(x.id) === String(t.dataset.onoff)); if (!p) return;
+  if (!window.canToggleStopList || !window.canToggleStopList('delivery')) {
+    t.checked = !!p.on;
+    return;
+  }
   p.on = t.checked ? 1 : 0;
   try {
     // F3.68: не-админ (cashier/dispatch) шлёт ТОЛЬКО {on} — иначе серверный PUT /api/menu/:id отдаёт 403

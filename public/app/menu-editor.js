@@ -26,8 +26,14 @@ function editorFields(){
 }
 
 /* Стоп-лист («в меню») доступен админу, кассиру и диспетчеру; в гостевом виде (меню) или в админ-режиме. */
-function canStopMenu(){
-  return !!(me && ['admin','cashier','dispatch'].indexOf(me.role)!==-1 && (mode==='admin'||mode==='guest'));
+function canStopMenu(targetBrand){
+  if(!me || (mode!=='admin' && mode!=='guest'))return false;
+  var section=targetBrand||brand;
+  if(section==='test')section='coffee';
+  if(me.role==='admin')return true;
+  if(me.role==='cashier')return section==='coffee';
+  if(me.role==='dispatch')return section==='delivery';
+  return false;
 }
 /* Редактировать позиции (✏️, добавить, сохранить, удалить, порядок) может только админ; сервер проверяет то же. */
 function canEditMenu(){
@@ -174,5 +180,5 @@ document.getElementById('editToggle').onclick=function(){
 };
 
 })();
-function canToggleStopList() { return !!(window.me && ['admin', 'cashier', 'dispatch'].includes(window.me.role)); }
+function canToggleStopList(targetBrand) { return canStopMenu(targetBrand); }
 window.canToggleStopList = canToggleStopList;

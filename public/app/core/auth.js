@@ -13,6 +13,10 @@
     if (rf) rf.style.display = login ? 'none' : 'flex';
     if (lf) lf.style.display = login ? 'flex' : 'none';
     if (at) at.textContent = login ? 'Вход по номеру' : 'Создайте профиль';
+    var regTab = document.getElementById('toReg');
+    var loginTab = document.getElementById('toLogin');
+    if (regTab) regTab.setAttribute('aria-pressed', String(!login));
+    if (loginTab) loginTab.setAttribute('aria-pressed', String(!!login));
   }
 
   function resetLoginPinState() {
@@ -21,6 +25,8 @@
     var ow = document.getElementById('logOtpWrap'); if (ow) ow.style.display = 'none';
     var bk = document.getElementById('otpBackRow'); if (bk) bk.style.display = 'none';
     var lb = document.getElementById('logBtn'); if (lb) lb.textContent = 'Войти';
+    var hint = document.getElementById('logOtpHint');
+    if (hint) { hint.hidden = true; hint.textContent = ''; }
   }
 
   function getValidatedLoginPhone() {
@@ -61,25 +67,9 @@
   function applyAuthBrand() {
     var modal = document.getElementById('authModal');
     if (!modal) return;
-    var isDeliv = (typeof brand !== 'undefined' && brand === 'delivery');
-    var modeName = isDeliv ? 'delivery' : 'coffee';
-    var b = (typeof window.BRANDS !== 'undefined')
-      ? window.BRANDS[modeName] || window.BRANDS.coffee
-      : { label: '…и кофе', authLogo: { src: '/andCoffee.svg', box: 66, wide: false } };
-    var al = b.authLogo || { src: '/andCoffee.svg', box: 66, wide: false };
-    var alogo = modal.querySelector('.alogo');
-    if (alogo) {
-      alogo.style.width = al.box + 'px';
-      alogo.style.height = (al.wide ? Math.round(al.box * 0.25) : al.box) + 'px';
-      alogo.innerHTML = '<img src="' + al.src + '" alt="' + b.label + '" style="width:100%;height:100%;object-fit:contain;display:block;">';
-    }
     adaptAuthForTelegram(modal);
     var msub = modal.querySelector('.msub');
-    if (msub) {
-      msub.innerHTML = isDeliv
-        ? 'Единый профиль: сохранение адресов, подарки от 2 000 ₽ и штампы на кофе у моря.'
-        : 'Копите зёрна на бесплатный кофе на кассе и заказывайте пиццу с подарками и сохранёнными адресами.';
-    }
+    if (msub) msub.textContent = 'За регистрацию в Едином профиле — приветственный напиток и бесплатная доставка.';
   }
 
   function openAuth(login) {
@@ -218,14 +208,25 @@
     }
     checkTgAutoLogin();
 
-    var authClose = document.getElementById('authClose');
-    if (authClose) authClose.onclick = closeAuth;
-
     var toLogin = document.getElementById('toLogin');
     if (toLogin) toLogin.onclick = function () { authSwap(true); };
 
     var toReg = document.getElementById('toReg');
     if (toReg) toReg.onclick = function () { authSwap(false); };
+
+    var authModeSwitch = document.querySelector('#authModal .auth-mode-switch');
+    if (authModeSwitch) {
+      authModeSwitch.addEventListener('keydown', function (event) {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Home' && event.key !== 'End') return;
+        var tabs = [toReg, toLogin].filter(Boolean);
+        if (!tabs.length) return;
+        event.preventDefault();
+        var current = tabs.indexOf(document.activeElement);
+        var next = event.key === 'Home' ? 0 : (event.key === 'End' ? tabs.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length);
+        authSwap(next === 1);
+        tabs[next].focus();
+      });
+    }
 
     var skipAuth = document.getElementById('skipAuth');
     if (skipAuth) {
@@ -245,7 +246,7 @@
         if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
         e.preventDefault();
         var fields = Array.prototype.filter.call(
-          form.querySelectorAll('input'),
+          form.querySelectorAll('input:not([type="checkbox"])'),
           function (el) { return el.offsetParent !== null && !el.disabled; }
         );
         var idx = fields.indexOf(e.target);
@@ -258,9 +259,12 @@
     var logBtn = document.getElementById('logBtn');
     if (logBtn) {
       logBtn.onclick = async function () {
+        if (logBtn.disabled) return;
         var phone = getValidatedLoginPhone();
         if (!phone) return;
-
+        logBtn.disabled = true;
+        logBtn.setAttribute('aria-busy', 'true');
+        logBtn.textContent = 'Входим…';
         try {
           if (loginMode === 'otp') {
             var otpVal = (document.getElementById('logOtp') || {}).value.trim();
@@ -290,6 +294,10 @@
           } else {
             toast(e.message, '⚠️');
           }
+        } finally {
+          logBtn.disabled = false;
+          logBtn.removeAttribute('aria-busy');
+          logBtn.textContent = loginMode === 'otp' ? 'Войти по коду' : 'Войти';
         }
       };
     }
@@ -297,8 +305,12 @@
     var otpBtn = document.getElementById('otpBtn');
     if (otpBtn) {
       otpBtn.onclick = async function () {
+        if (otpBtn.disabled) return;
         var phone = getValidatedLoginPhone();
         if (!phone) return;
+        otpBtn.disabled = true;
+        otpBtn.setAttribute('aria-busy', 'true');
+        otpBtn.textContent = 'Отправляем код…';
         try {
           await api('/auth/request-otp', { method: 'POST', body: { phone: phone } });
           loginMode = 'otp';
@@ -306,10 +318,17 @@
           var ow = document.getElementById('logOtpWrap'); if (ow) ow.style.display = '';
           var bk = document.getElementById('otpBackRow'); if (bk) bk.style.display = '';
           var lb = document.getElementById('logBtn'); if (lb) lb.textContent = 'Войти по коду';
-          var otpInput = document.getElementById('logOtp'); if (otpInput) otpInput.focus();
+          var hint = document.getElementById('logOtpHint');
+          if (hint) { hint.textContent = 'Код отправлен в Telegram. Введите его в поле выше.'; hint.hidden = false; }
+          var otpInput = document.getElementById('logOtp');
+          if (otpInput) { otpInput.value = ''; otpInput.focus(); }
           toast('Код отправлен в Telegram', '🔑');
         } catch (e) {
           toast(e.message, '⚠️');
+        } finally {
+          otpBtn.disabled = false;
+          otpBtn.removeAttribute('aria-busy');
+          otpBtn.textContent = '🔑 Не помню PIN — код в Telegram';
         }
       };
     }

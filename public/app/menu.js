@@ -418,7 +418,7 @@ function renderMenu() {
          ${volStr ? `<span class="vol">${esc(volStr)}</span>` : ''}
          <div class="cfoot"><span class="price">${priceStr}</span>
           ${
-            editMode
+            editMode && window.canToggleStopList && window.canToggleStopList('coffee')
               ? `<label class="donoff"><input type="checkbox" data-onoff="${p.id}" ${p.on ? 'checked' : ''}>в меню</label>`
               : ''
           }
@@ -892,6 +892,10 @@ $('#grid').addEventListener('change', async e => {
   if (!t) return;
   const p = MENU.find(x => String(x.id) === String(t.dataset.onoff));
   if (!p) return;
+  if (!window.canToggleStopList || !window.canToggleStopList('coffee')) {
+    t.checked = !!p.on;
+    return;
+  }
   const on = t.checked ? 1 : 0;
 p.on = on;
 try {
