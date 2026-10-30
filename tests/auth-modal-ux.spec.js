@@ -248,7 +248,7 @@ test('auth modal keeps the short unified-profile registration benefit visible in
   await page.waitForFunction(() => typeof window.openAuth === 'function');
 
   const benefit = page.locator('#authModal .msub');
-  const expected = 'Единый профиль: напиток в подарок · доставка 0 ₽';
+  const expected = 'Бонусы за регистрацию — внутри';
 
   await page.evaluate(() => window.openAuth(false));
   await expect(benefit).toHaveText(expected);

@@ -69,7 +69,7 @@
     if (!modal) return;
     adaptAuthForTelegram(modal);
     var msub = modal.querySelector('.msub');
-    if (msub) msub.textContent = 'Единый профиль: напиток в подарок · доставка 0 ₽';
+    if (msub) msub.textContent = 'Бонусы за регистрацию — внутри';
   }
 
   function openAuth(login) {
