@@ -738,7 +738,34 @@ button {
 html[data-brand="delivery"] {
   --line: #E5DACB;
 }
-    </style>
+    /* Keep the announcement ticker compact before deferred ticker CSS arrives. */
+html body .ticker {
+  display: flex;
+  align-items: center;
+  position: relative;
+  max-width: 100%;
+  height: 28px;
+  min-height: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  line-height: 28px;
+}
+html body #tickerTrack {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  width: max-content;
+  white-space: nowrap;
+}
+html body #tickerTrack > span {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  white-space: nowrap;
+  line-height: 28px;
+}
+</style>
 <script id="perf-lighthouse-bridge">
     (() => {
       const ua = navigator.userAgent;
