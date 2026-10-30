@@ -38,6 +38,22 @@ test.describe('Оценочный калькулятор КБЖУ в увели�
     await expect(nutrition.locator('[data-kbju-val="kcal"]')).toHaveText(/^\d+$/);
   });
 
+  test('цвета блока КБЖУ меняются вместе с токенами бренда', async ({ page }) => {
+    await openDeliveryItem(page, 'pz-marg');
+
+    const option = page.locator('#zoomKbjuBox [data-kbju-option="0"]');
+    await expect(option).toHaveCSS('background-color', 'rgb(201, 158, 110)');
+    await expect(option).toHaveCSS('border-top-color', 'rgb(192, 59, 42)');
+
+    await page.evaluate(() => {
+      document.documentElement.dataset.brand = 'coffee';
+      document.body.dataset.brand = 'coffee';
+    });
+
+    await expect(option).toHaveCSS('background-color', 'rgb(234, 241, 249)');
+    await expect(option).toHaveCSS('border-top-color', 'rgb(18, 58, 107)');
+  });
+
   test('ролл с полной ТТК показывает оценочные КБЖУ', async ({ page }) => {
     await openDeliveryItem(page, 'rl-phil-og');
 
