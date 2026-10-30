@@ -415,13 +415,14 @@
 }
 #fridayInfo .friday-info-hours-row span {
   color: var(--soft);
+  text-align: right;
 }
 #fridayInfo .friday-info-links {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 10px 18px;
   margin-top: 12px;
 }
 #fridayInfo .friday-info-review {
