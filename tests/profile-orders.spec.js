@@ -334,8 +334,53 @@ test.describe('Модуль заказов профиля', () => {
     await expect(vk.locator('svg')).toHaveCount(1);
     await expect(yandex).toHaveAttribute('href', 'https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/');
     await expect(yandex.locator('svg')).toHaveCount(1);
-    await expect(info.locator('.friday-info-review')).toBeVisible();
+    const socialRow = info.locator('.friday-info-links');
+    const socialLayout = await socialRow.evaluate(element => {
+      const [first, second] = element.querySelectorAll('.friday-info-link');
+      const row = element.getBoundingClientRect();
+      const firstRect = first.getBoundingClientRect();
+      const secondRect = second.getBoundingClientRect();
+      return {
+        justifyContent: getComputedStyle(element).justifyContent,
+        leftInset: firstRect.left - row.left,
+        rightInset: row.right - secondRect.right,
+        bottom: row.bottom
+      };
+    });
+    expect(socialLayout.justifyContent).toBe('space-between');
+    expect(socialLayout.leftInset).toBeLessThanOrEqual(1);
+    expect(socialLayout.rightInset).toBeLessThanOrEqual(1);
+
+    const review = info.locator('.friday-info-review');
+    await expect(review).toBeVisible();
+    const reviewLayout = await review.evaluate(element => ({
+      display: getComputedStyle(element).display,
+      justifyContent: getComputedStyle(element).justifyContent,
+      width: element.getBoundingClientRect().width,
+      top: element.getBoundingClientRect().top
+    }));
+    expect(reviewLayout.display).toBe('flex');
+    expect(reviewLayout.justifyContent).toBe('center');
+    expect(reviewLayout.width).toBeGreaterThan(0);
+    expect(reviewLayout.top).toBeGreaterThanOrEqual(socialLayout.bottom);
+
     expect(await info.evaluate(element => getComputedStyle(element).textAlign)).toBe('left');
+  });
+
+  test('кнопка закрытия списка заказов использует кофейные брендированные токены', async ({ page }) => {
+    await page.locator('#myOrdersBtn').click();
+    const close = page.locator('#ordersModal .omClose');
+    await expect(close).toBeVisible();
+
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-brand', 'coffee');
+      document.body.setAttribute('data-brand', 'coffee');
+    });
+
+    await expect.poll(() => close.evaluate(element => getComputedStyle(element).backgroundColor))
+      .toBe('rgb(18, 58, 107)');
+    await expect.poll(() => close.evaluate(element => getComputedStyle(element).color))
+      .toBe('rgb(255, 255, 255)');
   });
 
   test('содержимое профиля меняется вместе с брендом, вкладки доступны с клавиатуры', async ({ page }) => {
