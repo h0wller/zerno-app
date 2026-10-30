@@ -129,6 +129,12 @@
   }
 
 
+  // Clicking the backdrop dismisses the auth dialog; clicks inside the card do not.
+  document.addEventListener('click', function (event) {
+    var modal = document.getElementById('authModal');
+    if (modal && modal.classList.contains('show') && event.target === modal) closeAuth();
+  });
+
   // A modal dialog keeps keyboard focus inside and closes on Escape.
   document.addEventListener('keydown', function (event) {
     var modal = document.getElementById('authModal');
