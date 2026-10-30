@@ -135,10 +135,9 @@ test('registration and login tabs stay in sync with the active form and keyboard
 
   const registerTab = page.locator('#toReg');
   const loginTab = page.locator('#toLogin');
-  await expect(registerTab).toHaveAttribute('role', 'tab');
-  await expect(loginTab).toHaveAttribute('role', 'tab');
-  await expect(registerTab).toHaveAttribute('aria-selected', 'true');
-  await expect(registerTab).toHaveAttribute('tabindex', '0');
+  await expect(registerTab).toHaveAttribute('type', 'button');
+  await expect(loginTab).toHaveAttribute('type', 'button');
+  await expect(registerTab).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#regForm')).toBeVisible();
   const registerStyle = await registerTab.evaluate((el) => ({
     background: getComputedStyle(el).backgroundColor,
@@ -152,8 +151,8 @@ test('registration and login tabs stay in sync with the active form and keyboard
   expect(registerStyle.color).not.toBe(loginStyle.color);
 
   await page.evaluate(() => window.openAuth(true));
-  await expect(loginTab).toHaveAttribute('aria-selected', 'true');
-  await expect(registerTab).toHaveAttribute('aria-selected', 'false');
+  await expect(loginTab).toHaveAttribute('aria-pressed', 'true');
+  await expect(registerTab).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#loginForm')).toBeVisible();
   const activeLoginStyle = await loginTab.evaluate((el) => ({
     background: getComputedStyle(el).backgroundColor,
@@ -168,30 +167,45 @@ test('registration and login tabs stay in sync with the active form and keyboard
 
   // Mouse/touch activation must keep the selected tab and visible panel synchronized.
   await registerTab.click();
-  await expect(registerTab).toHaveAttribute('aria-selected', 'true');
-  await expect(loginTab).toHaveAttribute('aria-selected', 'false');
+  await expect(registerTab).toHaveAttribute('aria-pressed', 'true');
+  await expect(loginTab).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#regForm')).toBeVisible();
   await expect(page.locator('#loginForm')).toBeHidden();
 
   await loginTab.click();
-  await expect(loginTab).toHaveAttribute('aria-selected', 'true');
-  await expect(registerTab).toHaveAttribute('aria-selected', 'false');
+  await expect(loginTab).toHaveAttribute('aria-pressed', 'true');
+  await expect(registerTab).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#loginForm')).toBeVisible();
   await expect(page.locator('#regForm')).toBeHidden();
 
+  // Arrow keys still switch the active mode.
   await registerTab.focus();
   await page.keyboard.press('ArrowRight');
   await expect(loginTab).toBeFocused();
-  await expect(loginTab).toHaveAttribute('aria-selected', 'true');
-  await expect(registerTab).toHaveAttribute('aria-selected', 'false');
+  await expect(loginTab).toHaveAttribute('aria-pressed', 'true');
+  await expect(registerTab).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#loginForm')).toBeVisible();
 
   await page.keyboard.press('ArrowLeft');
   await expect(registerTab).toBeFocused();
-  await expect(registerTab).toHaveAttribute('aria-selected', 'true');
+  await expect(registerTab).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#regForm')).toBeVisible();
+
+  // Tab proceeds through both mode buttons before entering the selected form.
+  await registerTab.focus();
+  await page.keyboard.press('Tab');
+  await expect(loginTab).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.locator('#regName')).toBeFocused();
+
+  // The login button is also reachable by Tab while registration is active.
+  await registerTab.focus();
+  await page.keyboard.press('Tab');
+  await expect(loginTab).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(loginTab).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#loginForm')).toBeVisible();
+  await expect(page.locator('#logPhone')).toBeFocused();
 });
 
 test('auth modal closes on backdrop click but stays open for card clicks', async ({ page }) => {
@@ -245,6 +259,34 @@ test('auth fields expose mobile autofill and next/done keyboard hints', async ({
   await expect(page.locator('#logPhone')).toHaveAttribute('enterkeyhint', 'next');
   await expect(page.locator('#logPin')).toHaveAttribute('enterkeyhint', 'done');
   await expect(page.locator('#logOtp')).toHaveAttribute('enterkeyhint', 'done');
+});
+
+
+test('consent checkbox and its full row show a visible keyboard focus indicator', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+
+  const phone = page.locator('#regPhone');
+  const checkbox = page.locator('#consentBox');
+  const row = page.locator('#consentRow');
+
+  await phone.focus();
+  await page.keyboard.press('Tab');
+  await expect(checkbox).toBeFocused();
+
+  const focusStyles = await row.evaluate((el) => ({
+    outlineStyle: getComputedStyle(el).outlineStyle,
+    outlineWidth: getComputedStyle(el).outlineWidth,
+    boxShadow: getComputedStyle(el).boxShadow,
+  }));
+  expect(focusStyles.outlineStyle).toBe('solid');
+  expect(focusStyles.outlineWidth).toBe('3px');
+  expect(focusStyles.boxShadow).not.toBe('none');
 });
 
 test('Telegram registration action uses its own icon instead of the robot emoji', async ({ page }) => {

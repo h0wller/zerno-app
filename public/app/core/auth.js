@@ -15,14 +15,8 @@
     if (at) at.textContent = login ? 'Вход по номеру' : 'Создайте профиль';
     var regTab = document.getElementById('toReg');
     var loginTab = document.getElementById('toLogin');
-    if (regTab) {
-      regTab.setAttribute('aria-selected', String(!login));
-      regTab.tabIndex = login ? -1 : 0;
-    }
-    if (loginTab) {
-      loginTab.setAttribute('aria-selected', String(!!login));
-      loginTab.tabIndex = login ? 0 : -1;
-    }
+    if (regTab) regTab.setAttribute('aria-pressed', String(!login));
+    if (loginTab) loginTab.setAttribute('aria-pressed', String(!!login));
   }
 
   function resetLoginPinState() {
