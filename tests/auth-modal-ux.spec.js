@@ -116,3 +116,18 @@ test('auth modal traps keyboard focus at its boundaries', async ({ page }) => {
   await page.keyboard.press('Shift+Tab');
   await expect(lastControl).toBeFocused();
 });
+
+test('switching between registration and login moves focus to the active form', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+
+  await page.locator('#toLogin').click();
+  await expect(page.locator('#logPhone')).toBeFocused();
+  await page.locator('#toReg').click();
+  await expect(page.locator('#regName')).toBeFocused();
+});
