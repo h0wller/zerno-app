@@ -286,3 +286,41 @@
     animation-iteration-count: 1;
   }
 }
+
+
+#authModal .authcard {
+  position: relative;
+}
+
+#authModal .auth-close {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--soft);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .18s ease, border-color .18s ease, background-color .18s ease;
+}
+
+#authModal .auth-close:hover {
+  border-color: var(--flame);
+  background: var(--card);
+  color: var(--flame);
+}
+
+#authModal .auth-close:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--flame) 28%, transparent);
+  outline-offset: 2px;
+}

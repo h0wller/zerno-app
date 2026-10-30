@@ -208,6 +208,9 @@
     }
     checkTgAutoLogin();
 
+    var authClose = document.getElementById('authClose');
+    if (authClose) authClose.onclick = closeAuth;
+
     var toLogin = document.getElementById('toLogin');
     if (toLogin) toLogin.onclick = function () { authSwap(true); };
 
@@ -293,6 +296,7 @@
           var ow = document.getElementById('logOtpWrap'); if (ow) ow.style.display = '';
           var bk = document.getElementById('otpBackRow'); if (bk) bk.style.display = '';
           var lb = document.getElementById('logBtn'); if (lb) lb.textContent = 'Войти по коду';
+          var otpInput = document.getElementById('logOtp'); if (otpInput) otpInput.focus();
           toast('Код отправлен в Telegram', '🔑');
         } catch (e) {
           toast(e.message, '⚠️');
@@ -301,7 +305,11 @@
     }
 
     var otpBack = document.getElementById('otpBack');
-    if (otpBack) otpBack.onclick = resetLoginPinState;
+    if (otpBack) otpBack.onclick = function () {
+      resetLoginPinState();
+      var pin = document.getElementById('logPin');
+      if (pin) pin.focus();
+    };
 
     var profileTopBtn = document.getElementById('profileTopBtn');
     if (profileTopBtn) {

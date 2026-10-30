@@ -157,3 +157,46 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
   await expect(modal).not.toHaveClass(/show/);
   await expect(trigger).toBeFocused();
 });
+
+
+test('auth modal close button restores focus to its invoking control', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => {
+    const trigger = document.createElement('button');
+    trigger.id = 'authCloseTrigger';
+    trigger.textContent = 'Open profile';
+    trigger.addEventListener('click', () => window.openAuth(false));
+    document.body.appendChild(trigger);
+  });
+
+  const trigger = page.locator('#authCloseTrigger');
+  await trigger.click();
+  await page.locator('#authClose').click();
+  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
+  await expect(trigger).toBeFocused();
+});
+
+test('switching to and from Telegram code entry moves focus to the active field', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.route('**/auth/request-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true }),
+  }));
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(true));
+  await page.locator('#logPhone').fill('+79001234567');
+  await page.locator('#otpBtn').click();
+  await expect(page.locator('#logOtp')).toBeFocused();
+  await page.locator('#otpBack').click();
+  await expect(page.locator('#logPin')).toBeFocused();
+});
