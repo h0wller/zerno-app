@@ -244,6 +244,16 @@ function urlBase64ToUint8Array(s) {
         } catch (e) {}
       }
 
+      $("#pushHoursSend").onclick = async () => {
+        if (!confirm("Отправить уведомление о новом графике всем гостям с включёнными пушами?")) return;
+        try {
+          const r = await api("/push/send-hours-update", { method: "POST", body: {} });
+          toast(`Получателей: ${r.recipients}, доставлено на устройства: ${r.delivered}, ошибок: ${r.failed}`, "🔔");
+        } catch (e) {
+          toast(e.message, "⚠️");
+        }
+      };
+
       $("#pushSend").onclick = async () => {
         const body = $("#pushText").value.trim();
         if (!body) return toast("Введите текст пуша", "✍️");
