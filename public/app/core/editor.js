@@ -174,11 +174,6 @@ $("#nameInput").addEventListener("change", async (e) => {
   }
 });
 
-$("#resetBtn").onclick = () => {
-  if (!confirm("Выйти и очистить локальные данные (токены)?")) return;
-  localStorage.clear();
-  location.reload();
-};
 
 /* ── Ф5.6.2f: ESM-шимы ── */
 window.armPw = armPw;

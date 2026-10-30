@@ -125,12 +125,52 @@
 #settingsModal .set-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   padding: 12px;
   border: 1.5px solid var(--line);
   border-radius: 14px;
   margin-bottom: 10px;
   background: #fff;
+}
+#settingsModal .settings-section + .settings-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+#settingsModal .settings-section-title {
+  margin: 12px 0 8px;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 800;
+}
+#settingsModal .settings-channel-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  padding: 0 4px 4px;
+}
+#settingsModal .settings-account-section {
+  display: grid;
+  gap: 8px;
+}
+#settingsModal .settings-account-section .settings-section-title {
+  margin-top: 0;
+}
+#settingsModal .settings-account-action {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+}
+#settingsModal .settings-account-action.is-danger {
+  border-color: rgba(179, 55, 43, 0.35);
+  color: #b3372b;
 }
 #chatMsgs,
 .cartPanel {

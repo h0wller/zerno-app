@@ -47,7 +47,7 @@
 | `core/menu-content.js` | Общее чистое правило отображения состава: описание пиццы доставки служит текстовым составом, структурированный `comp` остаётся в данных | `getVisibleComposition` |
 | `menu.js` | `#rail` (категории), `#searchInput`, рендер `#grid`; зум фото (`openZoom`); модалка модификаторов; LCP-картинка eager | `window.renderMenu`, `window.renderRail`, `window.openZoom` |
 | `menu-editor.js` | `openEditor`/`exitEdit`, сохранение emModal, editToggle | `window.openEditor`, `window.exitEdit` |
-| `core/editor.js` | Делегирование кликов `#grid`; фотозона редактора (`renderZone`/`loadImg`/`closeEditor`); имя гостя; resetBtn | `window.renderZone`, `window.closeEditor`, `window.loadImg` |
+| `core/editor.js` | Делегирование кликов `#grid`; фотозона редактора (`renderZone`/`loadImg`/`closeEditor`); имя гостя | `window.renderZone`, `window.closeEditor`, `window.loadImg` |
 | `delivery.js` | `window.DMENU`, cart (инициализация из LS); `#deliveryRail`; рендер `#deliveryGrid` + скелетоны; стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
 | `ui/delivery-search.js` | Поиск в Пятнице (`#dSearch` внутри `.mh-right`) и фильтрация грида | — |
 
@@ -87,7 +87,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/auth-session.js` | Установка клиентской сессии: токен, `me`, onboarding, аватары, QR и регистрация FCM-токена | `window.setUser` |
-| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, logoutBtn | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
+| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
 | `core/registration.js` | Регистрация, согласие, OTP Telegram и поллинг подтверждения | `window.resetRegistrationState` |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
@@ -127,7 +127,7 @@
 | `core/panel.js` | Шторка профиля `#panel`, вкладки `.tabs`, обработчик mbonusBtn | `window.openPanel`, `window.closePanel`, `window.setTab` |
 | `core/swipe.js` | iOS-свайп закрытия `#panel` | — |
 | `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`); обёртка `.topbar-right` на ≥821px | `window.alignRailWithCard` |
-| `ui/settings.js` | `#settingsModal` (PIN, каналы, сброс), шестерёнки профиля | — |
+| `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход и удаление аккаунта), шестерёнка профиля | — |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |
 | `core/deeplink.js` | Диплинки: brand/tab/no/support/reorder/auth_token | — |

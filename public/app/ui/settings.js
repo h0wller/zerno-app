@@ -1,86 +1,111 @@
-/* Ф3.4: перенесено из fix-views.js (настройки + шестерёнка) */
+/* public/app/ui/settings.js — настройки профиля и управление аккаунтом. */
+(function () {
+  'use strict';
 
-/* 1. Создание модалки */
-(function(){
-  if(document.getElementById('settingsModal'))return;
-  var m=document.createElement('div');m.className='modal';m.id='settingsModal';
-  m.innerHTML='<div class="modal-card" style="width:min(420px,100%)"><button class="mclose" id="setClose">✕</button>'+
-  '<h3>Настройки</h3><div class="msub">PIN, уведомления и данные устройства</div>'+
-  '<div class="set-row"><span style="flex:1">🔐 Задать / сменить PIN</span><button class="btn ghost" id="setPinGo2">Открыть</button></div>'+
-  '<div class="set-row" style="margin-bottom:6px"><span style="flex:1">🔔 Каналы уведомлений</span></div>'+
-  '<div style="display:flex;gap:16px;margin:0 0 12px 4px">'+
-  '<label class="chk"><input type="checkbox" id="ntTg2"> 🤖 Telegram</label>'+
-  '<label class="chk"><input type="checkbox" id="ntWeb2"> 🔔 Пуши браузера</label></div>'+
-  '<div class="set-row"><span style="flex:1">↺ Сбросить локальные данные</span><button class="btn ghost danger" id="resetGo2">Сброс</button></div></div>';
-  document.body.appendChild(m);
-  
-  document.getElementById('setClose').onclick=function(){m.classList.remove('show');syncOverlay();};
-  document.getElementById('setPinGo2').onclick=function(){m.classList.remove('show');syncOverlay();var b=document.getElementById('setPinBtn');if(b)b.click();};
-  document.getElementById('resetGo2').onclick=function(){var b=document.getElementById('resetBtn');if(b)b.click();};
-  
-  var t=document.getElementById('ntTg2'),w=document.getElementById('ntWeb2');
-  function sync(){syncNotifyAll();}
-  [t,w].forEach(function(el){el.addEventListener('change',function(){window.applyNotify(t.checked,w.checked);});});
-  window.__syncSettings=sync;
-})();
+  if (document.getElementById('settingsModal')) return;
 
-/* 2. Шестерёнка (десктоп) */
-(function(){
-  var ph=document.querySelector('#profileBox .phead');
-  if(ph&&!ph.querySelector('.gear')){
-    var g=document.createElement('button');g.className='gear';g.textContent='⚙️';g.title='Настройки';
-    g.onclick=function(){if(window.__syncSettings)window.__syncSettings();
-    document.getElementById('settingsModal').classList.add('show');syncOverlay();};
-    ph.appendChild(g);
+  var modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'settingsModal';
+  modal.innerHTML =
+    '<div class="modal-card settings-card" style="width:min(420px,100%)">' +
+      '<button class="mclose" id="setClose" type="button" aria-label="Закрыть настройки">✕</button>' +
+      '<h3>Настройки</h3>' +
+      '<div class="msub">Безопасность, уведомления и аккаунт</div>' +
+
+      '<section class="settings-section" aria-label="Безопасность и уведомления">' +
+        '<div class="set-row">' +
+          '<span>🔐 PIN-код</span>' +
+          '<button class="btn ghost" id="setPinGo2" type="button">Изменить</button>' +
+        '</div>' +
+        '<div class="settings-section-title">Каналы уведомлений</div>' +
+        '<div class="settings-channel-row">' +
+          '<label class="chk"><input type="checkbox" id="ntTg2"> 🤖 Telegram</label>' +
+          '<label class="chk"><input type="checkbox" id="ntWeb2"> 🔔 Браузер</label>' +
+        '</div>' +
+      '</section>' +
+
+      '<section class="settings-section settings-account-section" aria-label="Управление аккаунтом">' +
+        '<div class="settings-section-title">Аккаунт</div>' +
+        '<button class="settings-account-action" id="logoutBtn" type="button">⇄ Выйти и сменить аккаунт</button>' +
+        '<button class="settings-account-action is-danger" id="deleteAccBtn" type="button">Удалить аккаунт и данные</button>' +
+      '</section>' +
+    '</div>';
+  document.body.appendChild(modal);
+
+  var overlay = document.getElementById('overlay');
+  var profileHead = document.querySelector('#profileBox .phead');
+
+  function afterClose() {
+    if (!overlay) return;
+    var anotherModalOpen = !!document.querySelector('.modal.show:not(#settingsModal)');
+    var panel = document.getElementById('panel');
+    var panelOpen = !!(panel && panel.classList.contains('open'));
+
+    if (anotherModalOpen) {
+      overlay.classList.add('show', 'ov-high');
+    } else if (panelOpen) {
+      overlay.classList.add('show');
+      overlay.classList.remove('ov-high');
+    } else {
+      overlay.classList.remove('show', 'ov-high');
+    }
   }
-  var spb=document.getElementById('setPinBtn');if(spb)spb.style.display='none';
-  var nd=document.getElementById('notifyDetails');if(nd)nd.style.display='none';
-})();
 
-/* 3. Тап по подложке закрывает «Настройки» */
-(function(){
-  var ov=document.getElementById('overlay');
-  if(ov){
-    ov.addEventListener('click',function(){
-      var m=document.getElementById('settingsModal');
-      if(m&&m.classList.contains('show'))m.classList.remove('show');
+  function closeSettings() {
+    modal.classList.remove('show');
+    afterClose();
+  }
+
+  function openSettings() {
+    if (typeof window.syncNotifyAll === 'function') window.syncNotifyAll();
+    modal.classList.add('show');
+    if (overlay) overlay.classList.add('show', 'ov-high');
+  }
+
+  var gear = document.createElement('button');
+  gear.type = 'button';
+  gear.className = 'gear';
+  gear.textContent = '⚙️';
+  gear.title = 'Настройки профиля';
+  gear.setAttribute('aria-label', 'Настройки профиля');
+  gear.addEventListener('click', openSettings);
+  if (profileHead) profileHead.appendChild(gear);
+
+  document.getElementById('setClose').addEventListener('click', closeSettings);
+  document.getElementById('setPinGo2').addEventListener('click', function () {
+    closeSettings();
+    var pinButton = document.getElementById('setPinBtn');
+    if (pinButton) pinButton.click();
+  });
+
+  ['ntTg2', 'ntWeb2'].forEach(function (id) {
+    var input = document.getElementById(id);
+    input.addEventListener('change', function () {
+      var tg = document.getElementById('ntTg2');
+      var web = document.getElementById('ntWeb2');
+      if (typeof window.applyNotify === 'function') {
+        window.applyNotify(!!tg.checked, !!web.checked);
+      }
     });
-  }
-})();
+  });
 
-/* 4. Мобильная адаптация (из v64) */
-(function(){
-  var $=function(s){return document.querySelector(s);};
-  function openSettings(){
-    var m=$('#settingsModal');if(!m)return;
-    m.classList.add('show');
-    var ov=$('#overlay');if(ov){ov.classList.add('show');ov.classList.add('ov-high');}
-    if(window.__syncSettings)window.__syncSettings();
-  }
-  function afterClose(){
-    var ov=$('#overlay');if(!ov)return;
-    var anyModal=document.querySelector('.modal.show');
-    var panelOpen=$('#panel').classList.contains('open');
-    if(!anyModal&&!panelOpen){ov.classList.remove('show');ov.classList.remove('ov-high');}
-    else if(anyModal){ov.classList.add('show');ov.classList.add('ov-high');}
-    else{ov.classList.add('show');ov.classList.remove('ov-high');}
-  }
-  var pb=$('#profileBox');if(!pb)return;
-  var ph=pb.querySelector('.phead');
-  if(ph&&!ph.querySelector('.gear')){
-    var g=document.createElement('button');g.type='button';g.className='gear';g.textContent='⚙️';
-    g.style.cssText+=';margin-left:auto;width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:18px;flex:0 0 auto';
-    ph.appendChild(g);
-  }
-  var gear=ph&&ph.querySelector('.gear');
-  if(gear)gear.onclick=openSettings;
-  var sc=$('#setClose');if(sc)sc.addEventListener('click',function(){setTimeout(afterClose,0);});
-  document.addEventListener('click',function(e){
-    var m=$('#settingsModal');if(!m||!m.classList.contains('show'))return;
-    if(e.target.id==='overlay'){e.stopPropagation();m.classList.remove('show');afterClose();}
-  },true);
-  document.addEventListener('keydown',function(e){
-    if(e.key!=='Escape')return;
-    var m=$('#settingsModal');if(m&&m.classList.contains('show')){m.classList.remove('show');afterClose();}
-  },true);
+  document.addEventListener('click', function (event) {
+    if (event.target !== overlay || !modal.classList.contains('show')) return;
+    event.stopPropagation();
+    closeSettings();
+  }, true);
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && modal.classList.contains('show')) closeSettings();
+  }, true);
+
+  window.__syncSettings = function () {
+    if (typeof window.syncNotifyAll === 'function') window.syncNotifyAll();
+  };
+
+  var pinButton = document.getElementById('setPinBtn');
+  if (pinButton) pinButton.style.display = 'none';
+  var legacyNotifyDetails = document.getElementById('notifyDetails');
+  if (legacyNotifyDetails) legacyNotifyDetails.style.display = 'none';
 })();
