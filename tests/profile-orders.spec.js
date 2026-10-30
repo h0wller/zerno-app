@@ -64,26 +64,7 @@ test.describe('Модуль заказов профиля', () => {
     await modal.locator('.omClose').click();
     await expect(modal).not.toHaveClass(/show/);
   });
-});
 
-  
-  test('настройки профиля содержат управление аккаунтом без общего сброса хранилища', async ({ page }) => {
-    await page.locator('#profileBox .gear').click();
-
-    const settings = page.locator('#settingsModal');
-    await expect(settings).toHaveClass(/show/);
-    await expect(settings.locator('#setPinGo2')).toBeVisible();
-    await expect(settings.locator('#ntTg2')).toBeVisible();
-    await expect(settings.locator('#ntWeb2')).toBeVisible();
-    await expect(settings.locator('#logoutBtn')).toBeVisible();
-    await expect(settings.locator('#deleteAccBtn')).toBeVisible();
-    await expect(page.locator('#resetBtn')).toHaveCount(0);
-    await expect(page.locator('#resetGo2')).toHaveCount(0);
-
-    await settings.locator('#setClose').click();
-    await expect(settings).not.toHaveClass(/show/);
-  });
-  
   test('настройки профиля содержат управление аккаунтом без общего сброса хранилища', async ({ page }) => {
     await page.locator('#profileBox .gear').click();
 
