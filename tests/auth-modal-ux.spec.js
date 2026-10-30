@@ -201,6 +201,7 @@ test('switching to and from Telegram code entry moves focus to the active field'
   await page.evaluate(() => window.openAuth(true));
   await page.locator('#logPhone').fill('+79001234567');
   await page.locator('#otpBtn').click();
+  await expect(page.locator('#logOtp')).toBeVisible();
   await expect(page.locator('#logOtp')).toBeFocused();
   await page.locator('#otpBack').click();
   await expect(page.locator('#logPin')).toBeFocused();

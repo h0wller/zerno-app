@@ -103,6 +103,13 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   });
 
   test('auth-session owns persisted user state and clears it centrally', async ({ page }) => {
+    // The app starts chat/profile requests in the background. Their auth responses
+    // must not invalidate this test's deliberately synthetic session token.
+    await page.route('**/api/**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: '{}'
+    }));
     await page.goto('/?brand=delivery');
     await page.waitForFunction(() => typeof window.setUser === 'function' && window.setUser.__deepWrap === 1);
 

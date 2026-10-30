@@ -4,6 +4,7 @@
 
   var loginMode = 'pin';
   var authReturnFocus = null;
+  var authFocusTimer = null;
 
   function setAuthFormMode(login) {
     var rf = document.getElementById('regForm');
@@ -96,7 +97,12 @@
     setAuthFormMode(login);
 
     if (typeof syncOverlay === 'function') syncOverlay();
-    setTimeout(function () {
+    if (authFocusTimer) clearTimeout(authFocusTimer);
+    authFocusTimer = setTimeout(function () {
+      authFocusTimer = null;
+      if (!am || !am.classList.contains('show')) return;
+      // Do not steal focus after the user has started interacting with the dialog.
+      if (am.contains(document.activeElement)) return;
       var target = login ? document.getElementById('logPhone') : document.getElementById('regName');
       if (target) target.focus();
     }, 180);
@@ -119,6 +125,10 @@
   }
 
   function closeAuth() {
+    if (authFocusTimer) {
+      clearTimeout(authFocusTimer);
+      authFocusTimer = null;
+    }
     var am = document.getElementById('authModal');
     if (am) am.classList.remove('show');
     resetAuthTransientState();
