@@ -140,7 +140,10 @@
         deleteConfirm.disabled = true;
         deleteConfirm.textContent = 'Удаляем…';
         var deleted = await window.performAccountDeletion();
-        if (!deleted) updateDeleteConfirmation();
+        if (!deleted) {
+            deleteConfirm.textContent = 'Удалить аккаунт';
+            updateDeleteConfirmation();
+        }
     });
 
     document.addEventListener('click', function (event) {
