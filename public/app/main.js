@@ -37,6 +37,7 @@ import './ui/cashier-card.js';
 import './ui/scrolltop.js';
 import './chat.js';
 import './chat-core.js';
+import './core/nutrition.js';
 import './menu.js';
 import './profile.js';
 import './profile-brand.js';

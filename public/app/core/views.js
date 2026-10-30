@@ -96,7 +96,6 @@ var rules = [
  '[data-brand="delivery"] .panel .btn.fire,[data-brand="delivery"] #profileBox .btn.fire,[data-brand="delivery"] .authBtn{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc);color:#fff}',
  'html[data-brand="delivery"] body{background-color:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.1) 1px,transparent 1.5px);background-size:12px 12px}',
  '[data-brand="delivery"] h1,[data-brand="delivery"] h2,[data-brand="delivery"] h3,[data-brand="delivery"] .cbody h3{font-family:Unbounded,sans-serif;color:var(--fr-choc)}',
- '[data-brand="delivery"] .comp i{background:var(--fr-rice);border-color:var(--fr-tan);color:var(--fr-choc)}',
  '[data-brand="delivery"] #deliveryGrid .opts button{border:2px solid var(--fr-tan);background:#fff}',
  '[data-brand="delivery"] #deliveryGrid .opts button.sel{background:var(--btn-fire-bg,var(--flame));border:var(--btn-fire-border,2px solid var(--fr-choc));box-shadow:var(--btn-fire-shadow,2px 2px 0 var(--fr-choc));color:var(--btn-fire-color,#fff)}',
  '[data-brand="delivery"] #deliveryGrid .opts button.sel .op,[data-brand="delivery"] #deliveryGrid .opts button.sel .opt-size,[data-brand="delivery"] #deliveryGrid .opts button.sel .opt-crust,[data-brand="delivery"] #deliveryGrid .opts button.sel .opt-weight,[data-brand="delivery"] #deliveryGrid .opts button.sel .opt-price{color:var(--btn-fire-color,#fff)}',

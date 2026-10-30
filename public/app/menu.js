@@ -3,6 +3,7 @@
    читает CATS лексически (406). Все объявления — top-level var/function. */
 import { attachGridDnD, canDragMenu, dragAttr } from './core/dnd.js';
 import { getVisibleComposition } from './core/menu-content.js';
+import { calculateDishKbju } from './core/nutrition.js';
 window.cat = 'coffee'; /* Ф5.6-финал шаг 4-fix: menu-editor читает cat голым */
 window.query = ''; /* Ф5.6-финал шаг 4-fix2: menu-editor пишет query голым */
 
@@ -41,270 +42,6 @@ function toZoomSrc(src) {
   if (!src) return '';
   return String(src).replace(/-card\.webp(\?.*)?$/i, '-zoom.webp$1');
 }
-
-/* ══════════════════════════════════════════════════════════════════════════
-   АВТОМАТИЧЕСКИЙ КАЛЬКУЛЯТОР КБЖУ ПО ГРАММОВКАМ ТЕХКАРТ
-   ══════════════════════════════════════════════════════════════════════════
-   1. window.INGREDIENTS_DB — справочник пищевой ценности продуктов на 100 г:
-      { kcal: ккал, p: белки, f: жиры, c: углеводы }
-   2. window.TECH_CARDS — техкарты блюд в граммах.
-      Достаточно вписать граммовку каждого ингредиента по названию или ID блюда,
-      и функция calculateDishKbju() автоматически посчитает:
-      - КБЖУ на 100 г готового блюда
-      - КБЖУ на всю порцию (и общий вес в граммах)
-   ══════════════════════════════════════════════════════════════════════════ */
-
-window.INGREDIENTS_DB = Object.assign(
-  {
-    // Основа и тесто
-    'тесто пицца': { kcal: 255, p: 8.2, f: 3.5, c: 47.6 },
-    'тесто': { kcal: 255, p: 8.2, f: 3.5, c: 47.6 },
-    'мука': { kcal: 342, p: 10.3, f: 1.1, c: 70.6 },
-    'рис для суши': { kcal: 140, p: 2.8, f: 0.3, c: 31.2 },
-    'рис': { kcal: 140, p: 2.8, f: 0.3, c: 31.2 },
-    'нори': { kcal: 349, p: 46.1, f: 0.1, c: 41.0 },
-
-    // Сыры
-    'моцарелла': { kcal: 280, p: 22.0, f: 21.0, c: 1.0 },
-    'сыр моцарелла': { kcal: 280, p: 22.0, f: 21.0, c: 1.0 },
-    'чеддер': { kcal: 402, p: 25.0, f: 33.0, c: 1.3 },
-    'сыр чеддер': { kcal: 402, p: 25.0, f: 33.0, c: 1.3 },
-    'пармезан': { kcal: 431, p: 38.0, f: 29.0, c: 4.1 },
-    'сыр пармезан': { kcal: 431, p: 38.0, f: 29.0, c: 4.1 },
-    'дорблю': { kcal: 353, p: 21.4, f: 28.7, c: 0.0 },
-    'сыр дорблю': { kcal: 353, p: 21.4, f: 28.7, c: 0.0 },
-    'фета': { kcal: 264, p: 14.2, f: 21.3, c: 4.1 },
-    'сливочный сыр': { kcal: 310, p: 6.5, f: 31.0, c: 3.2 },
-    'творожный сыр': { kcal: 268, p: 6.8, f: 25.5, c: 3.0 },
-
-    // Соусы
-    'соус томатный': { kcal: 54, p: 1.4, f: 1.2, c: 9.2 },
-    'томатный соус': { kcal: 54, p: 1.4, f: 1.2, c: 9.2 },
-    'соус сливочный': { kcal: 215, p: 2.8, f: 20.5, c: 4.8 },
-    'сливочный соус': { kcal: 215, p: 2.8, f: 20.5, c: 4.8 },
-    'соус цезарь': { kcal: 390, p: 3.2, f: 40.0, c: 4.0 },
-    'соус барбекю': { kcal: 172, p: 0.8, f: 0.6, c: 40.8 },
-    'соус чесночный': { kcal: 380, p: 1.5, f: 39.0, c: 5.2 },
-    'соус спайси': { kcal: 410, p: 1.2, f: 42.0, c: 6.0 },
-    'соус унаги': { kcal: 224, p: 2.9, f: 0.1, c: 52.8 },
-    'соус терияки': { kcal: 140, p: 3.5, f: 0.2, c: 31.0 },
-    'майонез': { kcal: 627, p: 2.8, f: 67.0, c: 2.6 },
-    'песто': { kcal: 450, p: 5.1, f: 45.0, c: 5.5 },
-
-    // Мясо и птица
-    'ветчина': { kcal: 240, p: 14.5, f: 19.5, c: 1.5 },
-    'пепперони': { kcal: 465, p: 20.0, f: 42.0, c: 1.8 },
-    'салями': { kcal: 445, p: 21.0, f: 39.0, c: 1.5 },
-    'бекон': { kcal: 458, p: 13.0, f: 45.0, c: 0.8 },
-    'курица': { kcal: 165, p: 23.0, f: 7.5, c: 0.5 },
-    'куриное филе': { kcal: 165, p: 23.0, f: 7.5, c: 0.5 },
-    'охотничьи колбаски': { kcal: 410, p: 15.5, f: 38.0, c: 1.8 },
-    'говядина': { kcal: 250, p: 26.0, f: 16.0, c: 0.0 },
-    'свинина': { kcal: 290, p: 21.0, f: 23.0, c: 0.0 },
-
-    // Рыба и морепродукты
-    'лосось': { kcal: 208, p: 20.4, f: 13.4, c: 0.0 },
-    'семга': { kcal: 208, p: 20.4, f: 13.4, c: 0.0 },
-    'угорь': { kcal: 315, p: 18.0, f: 26.0, c: 2.5 },
-    'креветки': { kcal: 99, p: 21.0, f: 1.4, c: 0.2 },
-    'тунец': { kcal: 130, p: 24.0, f: 4.0, c: 0.0 },
-    'снежный краб': { kcal: 95, p: 7.5, f: 1.0, c: 14.0 },
-    'краб-микс': { kcal: 195, p: 6.5, f: 14.0, c: 10.5 },
-    'икра масаго': { kcal: 132, p: 17.5, f: 6.2, c: 1.5 },
-    'мидии': { kcal: 172, p: 24.0, f: 4.5, c: 7.4 },
-
-    // Овощи, грибы, зелень, фрукты
-    'шампиньоны': { kcal: 27, p: 4.3, f: 1.0, c: 0.1 },
-    'грибы': { kcal: 27, p: 4.3, f: 1.0, c: 0.1 },
-    'томаты': { kcal: 20, p: 1.1, f: 0.2, c: 3.8 },
-    'помидоры': { kcal: 20, p: 1.1, f: 0.2, c: 3.8 },
-    'черри': { kcal: 22, p: 1.0, f: 0.2, c: 4.0 },
-    'огурец': { kcal: 15, p: 0.8, f: 0.1, c: 2.8 },
-    'огурцы маринованные': { kcal: 16, p: 0.8, f: 0.1, c: 3.0 },
-    'перец болгарский': { kcal: 27, p: 1.3, f: 0.1, c: 5.3 },
-    'халапеньо': { kcal: 29, p: 0.9, f: 0.4, c: 6.5 },
-    'лук красный': { kcal: 41, p: 1.4, f: 0.1, c: 9.1 },
-    'лук фри': { kcal: 590, p: 6.0, f: 44.0, c: 42.0 },
-    'маслины': { kcal: 115, p: 0.8, f: 10.7, c: 6.3 },
-    'оливки': { kcal: 145, p: 1.0, f: 15.3, c: 3.8 },
-    'ананас': { kcal: 60, p: 0.4, f: 0.1, c: 14.5 },
-    'авокадо': { kcal: 160, p: 2.0, f: 14.7, c: 1.8 },
-    'айсберг': { kcal: 14, p: 0.9, f: 0.1, c: 3.0 },
-    'руккола': { kcal: 25, p: 2.6, f: 0.7, c: 2.1 },
-    'кунжут': { kcal: 573, p: 17.7, f: 49.7, c: 23.4 },
-    'картофель фри': { kcal: 312, p: 3.4, f: 15.0, c: 41.0 },
-    'наггетсы': { kcal: 275, p: 14.8, f: 16.5, c: 17.0 },
-
-    // Кофейня (напитки и добавки)
-    'эспрессо': { kcal: 9, p: 0.1, f: 0.2, c: 1.7 },
-    'молоко 3.2%': { kcal: 60, p: 2.9, f: 3.2, c: 4.7 },
-    'молоко': { kcal: 60, p: 2.9, f: 3.2, c: 4.7 },
-    'сливки 10%': { kcal: 119, p: 2.7, f: 10.0, c: 4.5 },
-    'сливки 20%': { kcal: 207, p: 2.5, f: 20.0, c: 4.0 },
-    'альтернативное молоко': { kcal: 46, p: 0.8, f: 1.5, c: 7.2 },
-    'сироп': { kcal: 268, p: 0.0, f: 0.0, c: 67.0 }
-  },
-  window.INGREDIENTS_DB || {}
-);
-
-/* ── ТЕХКАРТЫ БЛЮД (вносите граммовки сюда) ──
-   Ключом может быть точное название блюда (регистр не важен) или его ID.
-   Формат:
-   'Название блюда': {
-     'ингредиент из INGREDIENTS_DB': граммы,
-     ...
-     // При необходимости можно задать кастомный ингредиент прямо на месте:
-     // 'фирменный соус': { g: 45, kcal: 280, p: 2, f: 26, c: 8 }
-   }
-*/
-window.TECH_CARDS = Object.assign(
-  {
-    // Примеры (замените граммовки на точные цифры из ваших техкарт):
-    // 'Ветчина и грибы': {
-    //   'тесто пицца': 280,
-    //   'соус сливочный': 60,
-    //   'моцарелла': 110,
-    //   'ветчина': 80,
-    //   'шампиньоны': 60,
-    //   'чеддер': 30
-    // },
-    // 'Сырная': {
-    //   'тесто пицца': 280,
-    //   'соус сливочный': 60,
-    //   'моцарелла': 120,
-    //   'чеддер': 45,
-    //   'дорблю': 30,
-    //   'пармезан': 25
-    // }
-  },
-  window.TECH_CARDS || {}
-);
-
-/* Вычисляет КБЖУ блюда по техкарте (граммовкам) или прямому полю item.kbju / item.recipe */
-function calculateDishKbju(item, titleFallback) {
-  const nameKey = String((item && item.name) || titleFallback || '').trim();
-  const lowerName = nameKey.toLowerCase();
-  const itemId = item && item.id != null ? String(item.id) : '';
-
-  // 1. Ищем рецепт (граммовки) в item.recipe / item.techCard или в window.TECH_CARDS
-  let recipe = (item && (item.recipe || item.techCard)) || null;
-  if (!recipe && window.TECH_CARDS) {
-    if (itemId && window.TECH_CARDS[itemId]) {
-      recipe = window.TECH_CARDS[itemId];
-    } else if (window.TECH_CARDS[nameKey]) {
-      recipe = window.TECH_CARDS[nameKey];
-    } else {
-      const matchedKey = Object.keys(window.TECH_CARDS).find(
-        k => k.trim().toLowerCase() === lowerName
-      );
-      if (matchedKey) recipe = window.TECH_CARDS[matchedKey];
-    }
-  }
-
-  if (typeof recipe === 'string') {
-    try { recipe = JSON.parse(recipe); } catch (_) { recipe = null; }
-  }
-
-  // 2. Если задана техкарта с граммовками — считаем автоматически
-  if (recipe && typeof recipe === 'object' && !('kcal' in recipe)) {
-    let totalGrams = 0;
-    let totalKcal = 0;
-    let totalP = 0;
-    let totalF = 0;
-    let totalC = 0;
-    const breakdown = [];
-
-    const db = window.INGREDIENTS_DB || {};
-    const entries = Array.isArray(recipe)
-      ? recipe.map(r => [r.name || r.ing, r])
-      : Object.entries(recipe);
-
-    for (const [rawIngName, val] of entries) {
-      const ingKey = String(rawIngName || '').trim().toLowerCase();
-      if (!ingKey) continue;
-
-      let grams = 0;
-      let ref = db[ingKey] || null;
-
-      if (typeof val === 'number' || typeof val === 'string') {
-        grams = parseFloat(val) || 0;
-      } else if (val && typeof val === 'object') {
-        grams = parseFloat(val.g ?? val.grams ?? val.weight ?? 0) || 0;
-        if (val.kcal != null) {
-          ref = {
-            kcal: Number(val.kcal) || 0,
-            p: Number(val.p) || 0,
-            f: Number(val.f) || 0,
-            c: Number(val.c) || 0
-          };
-        }
-      }
-
-      if (grams <= 0 || !ref) continue;
-
-      const factor = grams / 100;
-      totalGrams += grams;
-      totalKcal += (Number(ref.kcal) || 0) * factor;
-      totalP += (Number(ref.p) || 0) * factor;
-      totalF += (Number(ref.f) || 0) * factor;
-      totalC += (Number(ref.c) || 0) * factor;
-      breakdown.push({ name: rawIngName, grams: Math.round(grams) });
-    }
-
-    if (totalGrams > 0) {
-      const round1 = n => Math.round(n * 10) / 10;
-      const scale100 = 100 / totalGrams;
-      return {
-        totalWeight: Math.round(totalGrams),
-        per100: {
-          kcal: Math.round(totalKcal * scale100),
-          p: round1(totalP * scale100),
-          f: round1(totalF * scale100),
-          c: round1(totalC * scale100)
-        },
-        perPortion: {
-          kcal: Math.round(totalKcal),
-          p: round1(totalP),
-          f: round1(totalF),
-          c: round1(totalC)
-        },
-        breakdown
-      };
-    }
-  }
-
-  // 3. Фолбэк: если у блюда уже задано готовое КБЖУ напрямую (item.kbju или в TECH_CARDS со свойством kcal)
-  let direct = (item && (item.kbju || item.nutrition)) || (recipe && recipe.kcal != null ? recipe : null);
-  if (typeof direct === 'string') {
-    try { direct = JSON.parse(direct); } catch (_) { direct = null; }
-  }
-  if (direct && (direct.kcal != null || direct.p != null)) {
-    const w = Number(direct.weight || direct.grams || 0) || 0;
-    const p100 = {
-      kcal: Math.round(Number(direct.kcal) || 0),
-      p: Number(direct.p) || 0,
-      f: Number(direct.f) || 0,
-      c: Number(direct.c) || 0
-    };
-    return {
-      totalWeight: w,
-      per100: p100,
-      perPortion: w > 0
-        ? {
-            kcal: Math.round((p100.kcal * w) / 100),
-            p: Math.round(((p100.p * w) / 100) * 10) / 10,
-            f: Math.round(((p100.f * w) / 100) * 10) / 10,
-            c: Math.round(((p100.c * w) / 100) * 10) / 10
-          }
-        : null,
-      breakdown: []
-    };
-  }
-
-  return null;
-}
-
-window.calculateDishKbju = calculateDishKbju;
 
 /* Поиск полного объекта блюда в MENU и DMENU (чтобы достать состав, описание и техкарту) */
 function findDishForZoom(src, name, explicitItem) {
@@ -568,7 +305,82 @@ function openItemModifiersModal(product) {
   };
 }
 
-/* ── Полноэкранный зум с пинчем двумя пальцами, составом и авто-КБЖУ ── */
+function getZoomPizzaOptions(dish) {
+  if (!dish || dish.section !== 'delivery' || dish.cat !== 'pizza') return [];
+  const raw = dish.opts;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+  return [];
+}
+
+function renderZoomNutrition(data, pizzaOptions, selectedOptionIndex) {
+  const optionSelector = pizzaOptions.length
+    ? '<div style="margin-bottom:9px">' +
+        '<div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--nutrition-muted, #8B98A5);margin-bottom:6px">Размер и тесто</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:5px">' +
+          pizzaOptions.map((option, index) => {
+            const active = index === selectedOptionIndex;
+            const label = String(option.l || option.name || ('Вариант ' + (index + 1)));
+            const buttonStyle = active
+              ? 'border:2px solid var(--nutrition-accent, var(--flame, #123A6B));background:var(--nutrition-accent-soft, #EAF1F9);color:var(--nutrition-text, #101418);box-shadow:2px 2px 0 var(--nutrition-border, transparent);'
+              : 'border:1px solid var(--nutrition-border, #D8DFE4);background:var(--nutrition-surface, #F8FAFC);color:var(--nutrition-text, #101418);';
+            return '<button type="button" data-kbju-option="' + index + '" aria-pressed="' + active + '" style="' + buttonStyle + 'border-radius:9px;padding:6px 8px;font-size:11px;font-weight:' + (active ? '700' : '500') + ';cursor:pointer">' + esc(label) + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>'
+    : '';
+
+  if (!data) {
+    if (!pizzaOptions.length) return '';
+    return '<div id="zoomKbjuBox" style="margin-top:2px">' +
+      optionSelector +
+      '<div style="font-size:12px;line-height:1.45;color:var(--nutrition-warning, #7A5A26)">Для этой позиции пока нет ТТК. КБЖУ не рассчитывается.</div>' +
+    '</div>';
+  }
+
+  if (data.status === 'incomplete' || !data.complete || !data.per100) {
+    const missing = (data.missingIngredients || []).map(esc).join(', ');
+    return '<div id="zoomKbjuBox" style="margin-top:2px">' +
+      optionSelector +
+      '<div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--nutrition-muted, #8B98A5);margin-bottom:5px">Пищевая ценность — оценка</div>' +
+      '<div style="font-size:12px;line-height:1.45;color:var(--nutrition-warning, #7A5A26)">Полный расчёт недоступен: не хватает данных по ' + (missing || 'одному или нескольким ингредиентам') + '. Числа не показываются, чтобы не занижать КБЖУ.</div>' +
+    '</div>';
+  }
+
+  const hasPortion = !!(data.perPortion && data.totalWeight > 0);
+  const cell = (idKey, val, label) =>
+    '<div style="flex:1;background:var(--nutrition-surface, #F8FAFC);border:1px solid var(--nutrition-border, #E5EBF0);border-radius:12px;padding:7px 4px;text-align:center">' +
+      '<b data-kbju-val="' + idKey + '" style="display:block;font-size:14px;color:var(--nutrition-text, #101418)">' + esc(val ?? '—') + '</b>' +
+      '<span style="font-size:10.5px;color:var(--nutrition-muted, #6E7A85)">' + label + '</span>' +
+    '</div>';
+
+  return '<div id="zoomKbjuBox" style="margin-top:2px">' +
+    optionSelector +
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">' +
+      '<span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--nutrition-muted, #8B98A5)">Пищевая ценность — оценка</span>' +
+      (hasPortion
+        ? '<div style="display:inline-flex;background:var(--nutrition-toggle-bg, #EEF2F6);border:var(--nutrition-toggle-border, none);border-radius:999px;padding:2px;gap:2px;white-space:nowrap">' +
+            '<button type="button" data-kbju-mode="100" style="border:var(--nutrition-toggle-active-border, none);background:var(--nutrition-toggle-active-bg, #FFFFFF);color:var(--nutrition-text, #101418);font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;cursor:pointer;box-shadow:var(--nutrition-toggle-active-shadow, 0 1px 3px rgba(0,0,0,.1))">на 100 г</button>' +
+            '<button type="button" data-kbju-mode="portion" style="border:none;background:transparent;color:var(--nutrition-muted, #586470);font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;cursor:pointer">на порцию (' + data.totalWeight + ' г)</button>' +
+          '</div>'
+        : '<span style="font-size:11px;color:var(--nutrition-muted, #8B98A5)">на 100 г</span>') +
+    '</div>' +
+    '<div style="display:flex;gap:6px">' +
+      cell('kcal', data.per100.kcal, 'ккал') +
+      cell('p', data.per100.p, 'белки, г') +
+      cell('f', data.per100.f, 'жиры, г') +
+      cell('c', data.per100.c, 'углеводы, г') +
+    '</div>' +
+    '<div style="font-size:10.5px;line-height:1.4;color:var(--nutrition-muted, #8B98A5);margin-top:6px">Расчёт по граммовкам ТТК и усреднённым справочным значениям ингредиентов; фактический состав поставщика и потери при приготовлении могут отличаться.</div>' +
+  '</div>';
+}/* ── Полноэкранный зум с пинчем двумя пальцами, составом и авто-КБЖУ ── */
 function openZoom(src, name, price, itemObj) {
   const dish = findDishForZoom(src, name, itemObj);
   const title = name || (dish && dish.name) || '';
@@ -577,7 +389,11 @@ function openZoom(src, name, price, itemObj) {
 
   const descText = dish && dish.desc ? String(dish.desc).trim() : '';
   const compList = getVisibleComposition(dish);
-  const kbjuData = calculateDishKbju(dish, title);
+  const pizzaOptions = getZoomPizzaOptions(dish);
+  let selectedPizzaOptionIndex = 0;
+  let kbjuData = calculateDishKbju(dish, title, {
+    option: pizzaOptions[selectedPizzaOptionIndex] || null
+  });
   const volText =
     (dish && dish.vol ? String(dish.vol).trim() : '') ||
     (kbjuData && kbjuData.totalWeight ? kbjuData.totalWeight + ' г' : '');
@@ -768,61 +584,49 @@ function openZoom(src, name, price, itemObj) {
           compList
             .map(
               c =>
-                `<span style="font-size:12px;background:#F3F5F7;color:#2C3640;padding:4px 10px;border-radius:999px;font-weight:500">${esc(c)}</span>`
+                `<span class="zoom-composition-chip" style="font-size:12px;background:var(--composition-chip-bg, #EAF1F9);border:1px solid var(--composition-chip-border, rgba(62, 143, 208, 0.25));color:var(--composition-chip-color, #123A6B);padding:4px 10px;border-radius:999px;font-weight:500">${esc(c)}</span>`
             )
             .join('') +
         `</div>` +
       `</div>`;
   }
 
-  let kbjuHtml = '';
-  if (kbjuData) {
-    const hasPortion = !!(kbjuData.perPortion && kbjuData.totalWeight > 0);
-    const cell = (idKey, val, lbl) =>
-      `<div style="flex:1;background:#F8FAFC;border:1px solid #E5EBF0;border-radius:12px;padding:7px 4px;text-align:center">` +
-        `<b data-kbju-val="${idKey}" style="display:block;font-size:14px;color:#101418">${esc(val ?? '—')}</b>` +
-        `<span style="font-size:10.5px;color:#6E7A85">${lbl}</span>` +
-      `</div>`;
+  const kbjuHtml = renderZoomNutrition(kbjuData, pizzaOptions, selectedPizzaOptionIndex);
 
-    kbjuHtml =
-      `<div id="zoomKbjuBox" style="margin-top:2px">` +
-        `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">` +
-          `<span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8B98A5">Пищевая ценность</span>` +
-          (hasPortion
-            ? `<div style="display:inline-flex;background:#EEF2F6;border-radius:999px;padding:2px;gap:2px">` +
-                `<button type="button" data-kbju-mode="100" style="border:none;background:#fff;color:#101418;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.1)">на 100 г</button>` +
-                `<button type="button" data-kbju-mode="portion" style="border:none;background:transparent;color:#586470;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;cursor:pointer">на порцию (${kbjuData.totalWeight} г)</button>` +
-              `</div>`
-            : `<span style="font-size:11px;color:#8B98A5">на 100 г</span>`) +
-        `</div>` +
-        `<div style="display:flex;gap:6px">` +
-          cell('kcal', kbjuData.per100.kcal, 'ккал') +
-          cell('p', kbjuData.per100.p, 'белки, г') +
-          cell('f', kbjuData.per100.f, 'жиры, г') +
-          cell('c', kbjuData.per100.c, 'углеводы, г') +
-        `</div>` +
-      `</div>`;
-  }
+  cap.innerHTML = headHtml + compHtml + '<div id="zoomKbjuMount">' + kbjuHtml + '</div>';
 
-  cap.innerHTML = headHtml + compHtml + kbjuHtml;
-
-  // Переключатель «на 100 г» / «на порцию»
-  if (kbjuData && kbjuData.perPortion) {
+  // Переключение размера/теста и формата КБЖУ в одном обработчике.
+  if (kbjuData || pizzaOptions.length) {
     cap.addEventListener('click', e => {
-      const btn = e.target.closest('[data-kbju-mode]');
-      if (!btn) return;
-      const mode = btn.dataset.kbjuMode;
-      const targetVals = mode === 'portion' ? kbjuData.perPortion : kbjuData.per100;
-      cap.querySelectorAll('[data-kbju-mode]').forEach(b => {
-        const active = b === btn;
-        b.style.background = active ? '#fff' : 'transparent';
-        b.style.color = active ? '#101418' : '#586470';
-        b.style.fontWeight = active ? '700' : '600';
-        b.style.boxShadow = active ? '0 1px 3px rgba(0,0,0,.1)' : 'none';
+      const optionButton = e.target.closest('[data-kbju-option]');
+      if (optionButton) {
+        selectedPizzaOptionIndex = Number.parseInt(optionButton.dataset.kbjuOption, 10) || 0;
+        kbjuData = calculateDishKbju(dish, title, {
+          option: pizzaOptions[selectedPizzaOptionIndex] || null
+        });
+        const mount = cap.querySelector('#zoomKbjuMount');
+        if (mount) {
+          mount.innerHTML = renderZoomNutrition(kbjuData, pizzaOptions, selectedPizzaOptionIndex);
+        }
+        return;
+      }
+
+      const modeButton = e.target.closest('[data-kbju-mode]');
+      if (!modeButton || !kbjuData?.perPortion) return;
+
+      const mode = modeButton.dataset.kbjuMode;
+      const targetValues = mode === 'portion' ? kbjuData.perPortion : kbjuData.per100;
+      cap.querySelectorAll('[data-kbju-mode]').forEach(button => {
+        const active = button === modeButton;
+        button.style.border = active ? 'var(--nutrition-toggle-active-border, none)' : 'none';
+        button.style.background = active ? 'var(--nutrition-toggle-active-bg, #FFFFFF)' : 'transparent';
+        button.style.color = active ? 'var(--nutrition-text, #101418)' : 'var(--nutrition-muted, #586470)';
+        button.style.fontWeight = active ? '700' : '600';
+        button.style.boxShadow = active ? 'var(--nutrition-toggle-active-shadow, 0 1px 3px rgba(0,0,0,.1))' : 'none';
       });
-      ['kcal', 'p', 'f', 'c'].forEach(k => {
-        const el = cap.querySelector(`[data-kbju-val="${k}"]`);
-        if (el) el.textContent = targetVals[k];
+      ['kcal', 'p', 'f', 'c'].forEach(key => {
+        const element = cap.querySelector('[data-kbju-val="' + key + '"]');
+        if (element) element.textContent = targetValues[key];
       });
     });
   }
