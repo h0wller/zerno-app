@@ -75,7 +75,8 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `profile.js` | `renderBonus` (штампы, freeSlot), `renderProfile`, `loadMyOrders`, `renderOrdersModal`; создание ordersModal и myOrdersBtn; QR-текст под канвасом | `window.renderBonus`, `window.renderProfile`, `window.loadMyOrders` |
+| `profile.js` | Готовность `me`, `updateMbonusBadge`, `renderBonus`, `renderProfile`, `renderVerifyNote`; QR-текст под канвасом | `window.renderBonus`, `window.renderProfile` |
+| `profile-orders.js` | Последний заказ в профиле, модалка всех заказов, кнопка `myOrdersBtn`, кэш заказов и обработка «Отследить» | `window.loadMyOrders`, `window.renderOrdersModal` |
 | `core/qr.js` | `drawQR`, полноэкранный `#qrModal`, wake lock | `window.drawQR`, `window.openQRFull`, `window.closeQRFull` |
 | `core/review.js` | `#reviewBtn`, `maybeAskReview` | `window.maybeAskReview` |
 | `core/preorder-timer.js` | Таймеры «Предзаказ» в карточках заказов профиля | `window.PreorderTimer` |

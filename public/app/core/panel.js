@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
         backBtn.addEventListener('click', closePanel);
     }
 
-    /* Делегирование кнопки открытия модалки «Мои заказы» владельцу в profile.js */
+    /* Делегирование открытия модалки заказов: данные и разметка принадлежат profile-orders.js. */
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('#myOrdersBtn, [data-tab="my-orders"], .my-orders-btn');
       if (!btn) return;
