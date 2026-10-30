@@ -16,48 +16,32 @@
 
 #authModal .auth-head {
   display: flex;
+  width: 100%;
+  box-sizing: border-box;
   flex-direction: column;
   align-items: center;
+  gap: 5px;
+  padding: 4px 8px 0;
+  margin-bottom: 20px;
   text-align: center;
-  padding: 4px 24px 0;
-  margin-bottom: 22px;
-}
-
-#authModal .auth-kicker {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 26px;
-  padding: 4px 10px;
-  margin: 0 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--panel);
-  color: var(--flame);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .09em;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-#authModal .auth-head .alogo {
-  flex: 0 0 auto;
-  margin: 0 auto 14px;
 }
 
 #authModal .auth-head h3 {
-  margin: 0 0 8px;
-  font-size: clamp(22px, 5vw, 26px);
+  margin: 0;
+  font-size: clamp(21px, 4.6vw, 25px);
   line-height: 1.2;
+  text-align: center;
   text-wrap: balance;
 }
 
 #authModal .auth-head .msub {
-  max-width: 34ch;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: center;
   text-wrap: pretty;
 }
 
@@ -176,6 +160,18 @@
   text-underline-offset: 2px;
 }
 
+#authModal #consentRow:focus-within {
+  border-color: var(--flame);
+  outline: 3px solid color-mix(in srgb, var(--flame) 28%, transparent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--flame) 12%, transparent);
+}
+
+#authModal #consentBox:focus-visible {
+  outline: 3px solid var(--flame);
+  outline-offset: 3px;
+}
+
 #authModal #regBtn,
 #authModal #logBtn {
   width: 100%;
@@ -231,16 +227,12 @@
   }
 
   #authModal .auth-head {
-    padding: 6px 16px 0;
-    margin-bottom: 18px;
-  }
-
-  #authModal .auth-head .alogo {
-    margin-bottom: 10px;
+    padding: 6px 8px 0;
+    margin-bottom: 16px;
   }
 
   #authModal .auth-head .msub {
-    font-size: 12.5px;
+    font-size: 12px;
   }
 
   #authModal #regForm,
@@ -265,15 +257,7 @@
   }
 
   #authModal .auth-head {
-    margin-bottom: 14px;
-  }
-
-  #authModal .auth-head .alogo {
-    margin-bottom: 8px;
-  }
-
-  #authModal .auth-kicker {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
 }
 
@@ -288,39 +272,182 @@
 }
 
 
-#authModal .authcard {
-  position: relative;
+/* Auth polish: make the two entry paths explicit and keep status visible. */
+#authModal .auth-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
 }
 
-#authModal .auth-close {
-  position: absolute;
-  z-index: 2;
-  top: 12px;
-  right: 12px;
+#authModal .auth-mode-switch button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  min-height: 40px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 12px;
+  border-radius: 10px;
   color: var(--soft);
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1;
-  cursor: pointer;
-  transition: color .18s ease, border-color .18s ease, background-color .18s ease;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
 }
 
-#authModal .auth-close:hover {
-  border-color: var(--flame);
+#authModal .auth-mode-switch [aria-pressed="true"] {
+  border: 1px solid var(--flame);
+  background: var(--flame);
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(16, 20, 24, .16);
+}
+
+#authModal .auth-mode-switch [aria-pressed="false"] {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+}
+
+#authModal .auth-mode-switch [aria-pressed="false"]:hover {
   background: var(--card);
   color: var(--flame);
 }
 
-#authModal .auth-close:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--flame) 28%, transparent);
+#authModal .auth-mode-switch :focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--flame) 30%, transparent);
   outline-offset: 2px;
+}
+
+#authModal .auth-help {
+  display: block;
+  margin: -3px 1px 0;
+  color: var(--soft);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+
+#authModal #logOtpHint {
+  margin: -2px 1px 0;
+}
+
+#authModal .authcard {
+  scroll-padding-block: 24px;
+}
+
+#authModal .authcard input:focus {
+  scroll-margin-block: 24px;
+}
+
+#authModal button[aria-busy="true"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  cursor: progress;
+  opacity: .82;
+}
+
+#authModal button[aria-busy="true"]::before {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  content: "";
+  border: 2px solid currentColor;
+  border-left-color: transparent;
+  border-radius: 50%;
+  animation: authModalSpin .7s linear infinite;
+}
+
+@keyframes authModalSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 560px) {
+  #authModal .auth-mode-switch {
+    margin-bottom: 14px;
+  }
+
+  #authModal .auth-mode-switch button {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #authModal button[aria-busy="true"]::before {
+    animation: none;
+  }
+}
+
+
+/* Guest browsing is available from either auth mode, not only from the login form. */
+#authModal .auth-guest-action {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+#authModal .auth-guest-action button {
+  width: 100%;
+  min-height: 44px;
+}
+
+
+/* Desktop scroll containers remain scrollable, but their visual tracks stay hidden. */
+@media (hover: hover) and (pointer: fine) {
+  #authModal,
+  #authModal .authcard {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  #authModal::-webkit-scrollbar,
+  #authModal .authcard::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+#authModal #regTgBtn {
+  gap: 9px;
+}
+
+#authModal .auth-telegram-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+/* Telegram registration feedback: pending, confirmed and timed-out states. */
+#authModal #regTgRow.auth-tg-pending,
+#authModal #regTgRow.auth-tg-timeout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+
+#authModal #regTgRow.auth-tg-pending {
+  background: var(--panel);
+  color: var(--soft);
+}
+
+#authModal #regTgRow.auth-tg-timeout {
+  border-color: color-mix(in srgb, var(--flame) 30%, var(--line));
+  background: var(--panel);
+  color: var(--flame);
 }
