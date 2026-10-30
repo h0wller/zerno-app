@@ -416,6 +416,26 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#profileOrdersSection')).toBeHidden();
     await expect(page.locator('#fridayInfo')).toBeHidden();
 
+    const coffeeVenue = page.locator('#profileBox .coffee-venue-card');
+    await expect(coffeeVenue).toContainText('п. Янтарный, ул. Советская, 70г');
+    await expect(coffeeVenue).toContainText('Май–сентябрь');
+    await expect(coffeeVenue).toContainText('Октябрь–апрель');
+    const telegram = coffeeVenue.getByRole('link', { name: 'Telegram-канал' });
+    const instagram = coffeeVenue.getByRole('link', { name: 'Instagram' });
+    const bot = coffeeVenue.getByRole('link', { name: 'Бот с бонусами' });
+    await expect(telegram).toHaveAttribute('href', 'https://t.me/and_coffee39');
+    await expect(instagram).toHaveAttribute('href', 'https://www.instagram.com/and_coffee39/');
+    await expect(bot).toHaveAttribute('href', 'https://t.me/and_coffee_bot');
+    await expect(coffeeVenue).not.toContainText('t.me/and_coffee39');
+    await expect(coffeeVenue).not.toContainText('instagram.com/and_coffee39');
+    await expect(coffeeVenue.locator('.coffee-place-link svg')).toHaveCount(3);
+
+    const coffeeReview = page.locator('#reviewBtn');
+    await expect(coffeeReview).toHaveText('Оставить отзыв');
+    await expect(coffeeReview.locator('svg')).toHaveCount(0);
+    await expect.poll(() => coffeeReview.evaluate(element => getComputedStyle(element).justifyContent))
+      .toBe('center');
+
     await page.evaluate(() => {
       window.me = null;
       window.renderProfile();
