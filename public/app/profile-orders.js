@@ -111,24 +111,6 @@
     }
 })();
 
-document.addEventListener('click', function (e) {
-    var btn = e.target.closest('#myOrdersBtn, [data-tab="my-orders"], .my-orders-btn');
-    if (!btn && e.target.closest('button')) {
-        var b = e.target.closest('button');
-        if (/мои заказы/i.test(b.textContent || '')) btn = b;
-    }
-    if (btn) {
-        e.preventDefault();
-        var m = document.getElementById('ordersModal');
-        if (m && m.parentElement !== document.body) {
-            document.body.appendChild(m);
-        }
-        if (typeof window.renderOrdersModal === 'function') {
-            window.renderOrdersModal();
-        }
-    }
-});
-
 /* DOM-блок выше создаёт ordersModal и кнопку myOrdersBtn; открытием управляет core/panel.js. */
 
 /* Ф3.69: делегированный клик «Отследить заказ» (#myOrders и модалка «Мои заказы»).
