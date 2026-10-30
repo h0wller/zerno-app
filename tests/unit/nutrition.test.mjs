@@ -32,7 +32,7 @@ test('pizza uses TTK finished output when catalog option weight is absent', () =
   const result = calculateDishKbju({ id: 'pz-marg', name: 'Маргарита' });
   assert.equal(result.status, 'ready');
   assert.equal(result.totalWeight, 395);
-  assert.equal(result.weightSource, 'выход из ТТК');
+  assert.equal(result.weightSource, 'выход готового изделия из ТТК');
 });
 
 test('white sauce is calculated as a nested preparation and scaled to a 40 g portion', () => {
