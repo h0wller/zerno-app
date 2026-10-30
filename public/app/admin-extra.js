@@ -303,6 +303,7 @@
   var panel = null;
   var featureEnabled = sessionStorage.getItem(FEATURE_KEY) === '1';
   var featureCheckPending = false;
+  var featureCheckRetryAt = 0;
 
   function ensurePanel() {
     if (panel && panel.isConnected) return panel;
@@ -383,7 +384,7 @@
     var isAdmin = !!(window.me && window.me.role === 'admin');
     var hasSavedAdmin = !!sessionStorage.getItem(ADMIN_TOKEN_KEY);
 
-    if (!featureEnabled && (isAdmin || hasSavedAdmin) && !featureCheckPending) {
+    if (!featureEnabled && (isAdmin || hasSavedAdmin) && !featureCheckPending && Date.now() >= featureCheckRetryAt) {
       featureCheckPending = true;
       try {
         var status = await api('/admin/test-role-session');
@@ -391,6 +392,7 @@
         if (featureEnabled) sessionStorage.setItem(FEATURE_KEY, '1');
       } catch (_) {
         featureEnabled = hasSavedAdmin && sessionStorage.getItem(FEATURE_KEY) === '1';
+        featureCheckRetryAt = Date.now() + 5000;
       } finally {
         featureCheckPending = false;
       }
