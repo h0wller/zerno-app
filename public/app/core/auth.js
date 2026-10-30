@@ -444,6 +444,7 @@
         window.setUser(null, null);
         window.mode = 'guest';
         if (typeof closePanel === 'function') closePanel();
+        if (typeof window.closeProfileSettings === 'function') window.closeProfileSettings();
         if (typeof renderAll === 'function') renderAll();
         openAuth();
       };
