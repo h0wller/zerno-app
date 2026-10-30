@@ -232,6 +232,32 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#histList .hmini')).toHaveCount(3);
   });
 
+  test('элементы профиля помещаются на узком экране, верхняя граница danger zone видима', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+
+    const panel = page.locator('#panel');
+    const ordersButton = page.locator('#myOrdersBtn');
+    const bounds = await Promise.all([panel.boundingBox(), ordersButton.boundingBox()]);
+    expect(bounds[0]).not.toBeNull();
+    expect(bounds[1]).not.toBeNull();
+    expect(bounds[1].x).toBeGreaterThanOrEqual(bounds[0].x);
+    expect(bounds[1].x + bounds[1].width).toBeLessThanOrEqual(bounds[0].x + bounds[0].width + 1);
+
+    const editButton = page.locator('#nameEditBtn');
+    await expect(editButton).toHaveAttribute('aria-label', 'Изменить имя');
+    await expect(editButton.locator('svg')).toHaveCount(1);
+
+    await page.locator('#profileSettingsBtn').click();
+    const dangerZone = page.locator('#settingsModal .settings-danger-zone');
+    await expect(dangerZone).toBeVisible();
+    const border = await dangerZone.evaluate(element => {
+      const style = getComputedStyle(element);
+      return { topStyle: style.borderTopStyle, topColor: style.borderTopColor };
+    });
+    expect(border.topStyle).toBe('solid');
+    expect(border.topColor).toBe('rgb(179, 55, 43)');
+  });
+
   test('содержимое профиля меняется вместе с брендом, вкладки доступны с клавиатуры', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection')).toBeVisible();
     await expect(page.locator('#profileCoffeeSection')).toBeHidden();

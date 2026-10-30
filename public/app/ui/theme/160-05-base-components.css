@@ -134,12 +134,12 @@
   background: #fff;
 }
 #settingsModal .settings-section + .settings-section {
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--line);
 }
 #settingsModal .settings-section-title {
-  margin: 12px 0 8px;
+  margin: 8px 0 6px;
   color: var(--soft);
   font-size: 12px;
   font-weight: 800;
@@ -173,10 +173,15 @@
   color: var(--status-danger);
 }
 #settingsModal .settings-danger-zone {
-  padding: 12px;
+  padding: 10px;
   border: 1px solid var(--status-danger);
   border-radius: 14px;
   background: var(--tint-danger);
+}
+#settingsModal .settings-section.settings-danger-zone {
+  margin-top: 10px;
+  padding-top: 10px;
+  border: 1px solid var(--status-danger);
 }
 #settingsModal .settings-danger-zone .settings-section-title {
   margin-top: 0;
@@ -192,8 +197,8 @@
 #settingsModal .settings-delete-confirm {
   display: grid;
   gap: 8px;
-  margin-top: 10px;
-  padding-top: 12px;
+  margin-top: 8px;
+  padding-top: 10px;
   border-top: 1px solid var(--status-danger);
 }
 #settingsModal .settings-delete-confirm label {
@@ -297,3 +302,5 @@
   }
 }
 
+
+#settingsModal .settings-card { padding: 20px; }
