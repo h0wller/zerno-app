@@ -56,7 +56,8 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `cart.js` | ЕДИНСТВЕННЫЙ владелец мутаций корзины и save; `#cartItems`, аддоны (`#cartAddons`), итоги (`#cartTotal`/`#cartSum`/`#cartFee`/`#cartDiscount`), строка подарков `#cartGifts`, `deliveryPromoBar`; видимость и содержимое cartFab; валидация чекаута и POST /api/orders | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo` |
+| `cart.js` | Единственный владелец мутаций корзины и сохранения; `#cartItems`, аддоны, итоги, подарки, cartFab; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo` |
+| `checkout-validation.js` | Проверка адреса и времени доставки перед оформлением; подсветка ошибочного поля и переключатель «сейчас / ко времени» | `window.CheckoutValidation` |
 | `core/address-dict.js` | Справочник улиц и тарифов | `window.AddressModule` |
 | `core/address-autocomplete.js` | Дропдаун подсказок `#checkoutStreet` | — |
 | `core/address-book.js` | Шторка «Мои адреса» (`#addrBookSheet`), кнопка в чекауте | `window.AddressBook` |
