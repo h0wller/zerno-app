@@ -147,7 +147,9 @@
     });
 
     document.addEventListener('click', function (event) {
-        if (event.target === overlay && modal.classList.contains('show')) closeSettings();
+        if (event.target !== overlay || !modal.classList.contains('show')) return;
+        event.stopPropagation();
+        closeSettings();
     }, true);
 
     document.addEventListener('keydown', function (event) {
