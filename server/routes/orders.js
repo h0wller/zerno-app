@@ -16,7 +16,6 @@ import {
   validateDeliverySlot,
 } from '../domain/delivery-hours.js';
 
-export { getKaliningradDateParts, getDeliveryHours } from '../domain/delivery-hours.js';
 
 const ordersRouter = Router();
 

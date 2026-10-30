@@ -2,12 +2,6 @@
 (function () {
   "use strict";
 
-  function isServiceOpen() {
-    return typeof window.isDeliveryServiceOpen === "function"
-      ? window.isDeliveryServiceOpen()
-      : true;
-  }
-
   var activeAddonTab = "all";
   // Состояние раскрытых блоков модификаторов по индексам позиций в корзине
   var openModsMap = {};
