@@ -69,6 +69,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
+| `order-tracking.js` | Модалка `#orderTrackModal`, опрос статуса гостевого заказа и повтор заказа | `window.openOrderTrackModal`, `window.closeOrderTrackModal` |
 | `orders.js` | `#ordersList` (диспетчер), обработчики статусов/задержек; «Активация гостей» (`loadPending`); инжект redeems в дашборд | `window.renderOrders`, `window.loadPending` |
 | `live.js` | Поллинги заказов/профиля при изменениях; pageshow/visibilitychange; zpush-сообщения от SW | — |
 
