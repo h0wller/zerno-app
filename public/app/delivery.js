@@ -8,6 +8,18 @@ function getKaliningradTime() {
   return { hour: dt.getUTCHours(), minute: dt.getUTCMinutes() };
 }
 
+function getKaliningradNow() {
+  var calendar = new Date(Date.now() + 2 * 3600000);
+  var clock = getKaliningradTime();
+  return new Date(Date.UTC(
+    calendar.getUTCFullYear(),
+    calendar.getUTCMonth(),
+    calendar.getUTCDate(),
+    Number(clock.hour),
+    Number(clock.minute || 0)
+  ) - 2 * 3600000);
+}
+
 function isDeliveryServiceOpen() {
   if (typeof window !== 'undefined' && typeof window.isDeliveryServiceOpen === 'function' && window.isDeliveryServiceOpen !== isDeliveryServiceOpen) {
     return window.isDeliveryServiceOpen();
@@ -675,44 +687,59 @@ window.loadDelivery = async function() {
   } catch(e) {}
 };
 
-function buildSlotItem(now, d, m, busyList, pad) {
-  var t = new Date(now);
-  t.setDate(t.getDate() + d);
-  t.setHours(Math.floor(m / 60), m % 60, 0, 0);
+function buildSlotItem(now, daySchedule, startMinute, busyList, pad) {
+  var parts = String(daySchedule.date || '').split('-').map(Number);
+  if (parts.length !== 3) return null;
 
-  var tEnd = new Date(t.getTime() + 30 * 60 * 1000);
-  if (d === 0 && (t.getTime() - now.getTime() < 45 * 60 * 1000)) return null;
+  var year = parts[0];
+  var month = parts[1];
+  var day = parts[2];
+  var step = Number(deliveryInfo && deliveryInfo.slotStep) || 30;
+  var endMinute = startMinute + step;
+  var startInstant = new Date(Date.UTC(
+    year, month - 1, day, Math.floor(startMinute / 60), startMinute % 60
+  ) - 2 * 3600000);
 
-  var datePart = pad(t.getDate()) + '.' + pad(t.getMonth() + 1);
-  var startPart = pad(t.getHours()) + ':' + pad(t.getMinutes());
-  var endPart = pad(tEnd.getHours()) + ':' + pad(tEnd.getMinutes());
+  if (Number(daySchedule.offset) === 0
+    && startInstant.getTime() - now.getTime() < (Number(deliveryInfo && deliveryInfo.eta) || 45) * 60000) {
+    return null;
+  }
 
+  var datePart = pad(day) + '.' + pad(month);
+  var startPart = pad(Math.floor(startMinute / 60)) + ':' + pad(startMinute % 60);
+  var endPart = pad(Math.floor(endMinute / 60)) + ':' + pad(endMinute % 60);
   var slotVal = datePart + ' | ' + startPart + '–' + endPart;
   var slotShort = startPart + ' – ' + endPart;
-  var dayPrefix = (d === 0 ? 'Сегодня' : 'Завтра');
-  var slotFull = dayPrefix + ' (' + datePart + ') · ' + slotShort;
+  var slotFull = (Number(daySchedule.offset) === 0 ? 'Сегодня' : 'Завтра')
+    + ' (' + datePart + ') · ' + slotShort;
   var isBusy = busyList.indexOf(slotVal) > -1;
 
-  return { 
-    v: slotVal, 
+  return {
+    v: slotVal,
     shortLabel: slotShort + (isBusy ? ' (мест нет)' : ''),
     fullLabel: slotFull + (isBusy ? ' (мест нет)' : ''),
-    disabled: isBusy 
+    disabled: isBusy,
   };
 }
 
-function buildDaySlots(now, d, busyList, pad) {
+function buildDaySlots(now, daySchedule, busyList, pad) {
+  if (!daySchedule) return null;
   var items = [];
-  for (var m = 690; m < 1320; m += 30) {
-    var item = buildSlotItem(now, d, m, busyList, pad);
+  var step = Number(deliveryInfo && deliveryInfo.slotStep) || 30;
+  var firstMinute = Number(daySchedule.open) * 60 + step;
+  var closeMinute = Number(daySchedule.close) * 60;
+
+  for (var minute = firstMinute; minute + step <= closeMinute; minute += step) {
+    var item = buildSlotItem(now, daySchedule, minute, busyList, pad);
     if (item) items.push(item);
   }
   if (!items.length) return null;
-  var dt = new Date(now);
-  dt.setDate(dt.getDate() + d);
+
+  var parts = String(daySchedule.date || '').split('-');
   return {
-    label: (d === 0 ? 'Сегодня' : 'Завтра') + ' (' + pad(dt.getDate()) + '.' + pad(dt.getMonth() + 1) + ')',
-    items: items
+    label: (Number(daySchedule.offset) === 0 ? 'Сегодня' : 'Завтра')
+      + ' (' + parts[2] + '.' + parts[1] + ')',
+    items: items,
   };
 }
 
@@ -724,43 +751,43 @@ function renderSlotGroupOptions(days, pm) {
     html += '<option value="asap" data-short="Как можно скорее (~45 мин)" data-full="Как можно скорее (~45 мин)">Как можно скорее (~45 мин)</option>';
   }
 
-  Object.keys(days).forEach(function (k) {
-    html += '<optgroup label="' + days[k].label + '">' + 
-      days[k].items.map(function (s) { 
-        return '<option value="' + s.v + '" data-short="' + esc(s.shortLabel) + '" data-full="' + esc(s.fullLabel) + '"' + 
-          (s.disabled ? ' disabled style="color:#8E9AA5;background:#F0F4F8"' : '') + '>' + 
-          esc(s.shortLabel) + 
-        '</option>'; 
-      }).join('') + 
-    '</optgroup>';
+  Object.keys(days).forEach(function (key) {
+    html += '<optgroup label="' + days[key].label + '">' +
+      days[key].items.map(function (slot) {
+        return '<option value="' + slot.v + '" data-short="' + esc(slot.shortLabel)
+          + '" data-full="' + esc(slot.fullLabel) + '"'
+          + (slot.disabled ? ' disabled style="color:#8E9AA5;background:#F0F4F8"' : '')
+          + '>' + esc(slot.shortLabel) + '</option>';
+      }).join('') +
+      '</optgroup>';
   });
   return html;
 }
 
-window.populateSlots = function(){
-  var now = new Date();
-  var pad = function(n){ return String(n).padStart(2, '0'); };
-  var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : null;
+window.populateSlots = function () {
+  var now = getKaliningradNow();
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : 'today';
   var sel = document.getElementById('checkoutSlot');
-  var prev = sel ? sel.value : '';
+  var previousValue = sel ? sel.value : '';
   var days = {};
-  var dFrom = pm === 'tomorrow' ? 1 : 0;
-  var dTo = pm === 'today' ? 1 : 2;
-
+  var scheduleDays = deliveryInfo && Array.isArray(deliveryInfo.days) ? deliveryInfo.days : [];
+  var allowedOffsets = pm === 'today' ? [0] : pm === 'tomorrow' ? [1] : [0, 1];
   var busyList = (deliveryInfo && Array.isArray(deliveryInfo.busySlots)) ? deliveryInfo.busySlots : [];
 
-  for (var d = dFrom; d < dTo; d++) {
-    var dayData = buildDaySlots(now, d, busyList, pad);
-    if (dayData) days[d] = dayData;
-  }
+  allowedOffsets.forEach(function (offset) {
+    var daySchedule = scheduleDays.find(function (day) { return Number(day.offset) === offset; });
+    var dayData = buildDaySlots(now, daySchedule, busyList, pad);
+    if (dayData) days[offset] = dayData;
+  });
 
   if (sel) {
     sel.innerHTML = renderSlotGroupOptions(days, pm);
-    if (prev) {
+    if (previousValue) {
       for (var i = 0; i < sel.options.length; i++) {
-        if (sel.options[i].value === prev && !sel.options[i].disabled) { 
-          sel.value = prev; 
-          break; 
+        if (sel.options[i].value === previousValue && !sel.options[i].disabled) {
+          sel.value = previousValue;
+          break;
         }
       }
     }
@@ -826,13 +853,16 @@ function promoDisc(sum, info){
 }
 
 window.preorderMode = function () {
-  // F3.66: время — по Кёнигсбергу (окно close из /api/delivery.info, сезонный график задаёт сервер).
-  var t = (typeof window.getKaliningradTime === 'function') ? window.getKaliningradTime() : null;
-  var h = t ? t.hour : new Date().getHours();
-  var closeH = (deliveryInfo && deliveryInfo.schedule && deliveryInfo.schedule.close) || 22;
-  if (h >= closeH) return 'tomorrow';
-  var openH = (deliveryInfo && deliveryInfo.schedule && Number(deliveryInfo.schedule.open) > 0) ? Number(deliveryInfo.schedule.open) : 11;
-  if (h < openH) return 'today';
+  if (!deliveryInfo || !deliveryInfo.today) return 'today';
+
+  var time = getKaliningradTime();
+  var currentMinute = Number(time.hour) * 60 + Number(time.minute || 0);
+  var openMinute = Number(deliveryInfo.today.open) * 60;
+  var closeMinute = Number(deliveryInfo.today.close) * 60;
+  var etaMinutes = Number(deliveryInfo.eta) || 45;
+
+  if (currentMinute < openMinute) return 'today';
+  if (currentMinute >= closeMinute || currentMinute + etaMinutes >= closeMinute) return 'tomorrow';
   return null;
 };
 window.assertServiceOpen = function () { return window.preorderMode() === null; };

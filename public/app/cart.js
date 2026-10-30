@@ -677,25 +677,26 @@ function clearPromo() {
 
   function syncPreorderNotice(cItems) {
     var pmNotice = document.getElementById("preorderNotice");
-    var isOffHours = !isServiceOpen();
-    if (isOffHours && checkIsDelivery()) {
+    var pmMode = typeof window.preorderMode === "function" ? window.preorderMode() : null;
+    if (pmMode && checkIsDelivery()) {
       if (!pmNotice) {
         pmNotice = document.createElement("div");
         pmNotice.id = "preorderNotice";
         pmNotice.className = "cart-preorder-notice";
         cItems.parentNode.insertBefore(pmNotice, cItems);
       }
-      var pmMode = typeof window.preorderMode === "function" ? window.preorderMode() : "today";
-      pmNotice.innerHTML = pmMode === "tomorrow"
-        ? "🌙 <b>Кухня сейчас отдыхает.</b> Принимаем предзаказы на завтра — выберите удобный интервал ниже!"
-        : "☀ <b>Откроемся в 11:00.</b> Оформите предзаказ, и мы привезём его точно ко времени!";
+      if (pmMode === "tomorrow") {
+        pmNotice.innerHTML = "🌙 <b>Приём заказов на сегодня завершён.</b> Выберите удобный интервал доставки на завтра.";
+      } else {
+        var openHour = Number(window.deliveryInfo && window.deliveryInfo.today && window.deliveryInfo.today.open) || 11;
+        pmNotice.innerHTML = "☀ <b>Откроемся в " + String(openHour).padStart(2, "0") + ":00.</b> Можно оформить предзаказ на сегодня.";
+      }
       pmNotice.style.display = "";
     } else if (pmNotice) {
       pmNotice.style.display = "none";
     }
   }
 
-  /* ── Рендер корзины ── */
   function persistCartUpdate() {
   localStorage.setItem("zt_cart", JSON.stringify(cart));
   if (typeof window.updateCartFab === 'function') window.updateCartFab();
@@ -1059,6 +1060,7 @@ function renderCartBase() {
   }
 
   function resolveCheckoutSlot() {
+    if (typeof window.populateSlots === "function") window.populateSlots();
     var pm = typeof window.preorderMode === "function"
       ? window.preorderMode()
       : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);

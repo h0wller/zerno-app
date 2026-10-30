@@ -1,9 +1,3 @@
-function isDeliveryServiceOpen() {
-  var t = getKaliningradTime();
-  var min = t.hour * 60 + t.minute;
-  return min >= 660 && min < 1320;
-}
-
 /* public/app/core/preorder-timer.js — Легковесный таймер (без обсерверов и циклов) */
 (function () {
   'use strict';
@@ -21,27 +15,28 @@ function isDeliveryServiceOpen() {
     var timeMatch = timePart.match(/(\d{1,2}):(\d{2})\s*[–\-\s]+\s*(\d{1,2}):(\d{2})/);
     if (!timeMatch) return null;
 
-    var now = new Date();
-    var year = now.getFullYear();
-    var month = now.getMonth();
-    var day = now.getDate();
+    var klgNow = new Date(Date.now() + 2 * 3600000);
+    var year = klgNow.getUTCFullYear();
+    var month = klgNow.getUTCMonth();
+    var day = klgNow.getUTCDate();
 
     if (datePart) {
-      var dateMatch = datePart.match(/(\d{1,2})[.\-\/](\d{1,2})(?:[.\-\/](\d{2,4}))?/);
+      var dateMatch = datePart.match(/(\\d{1,2})[.\\-\\/](\\d{1,2})(?:[.\\-\\/](\\d{2,4}))?/);
       if (dateMatch) {
         day = parseInt(dateMatch[1], 10);
         month = parseInt(dateMatch[2], 10) - 1;
         if (dateMatch[3]) {
           year = parseInt(dateMatch[3], 10);
           if (year < 100) year += 2000;
+        } else if (month < klgNow.getUTCMonth()
+          || (month === klgNow.getUTCMonth() && day < klgNow.getUTCDate())) {
+          year += 1;
         }
       }
     }
 
-    var start = new Date(year, month, day, parseInt(timeMatch[1], 10), parseInt(timeMatch[2], 10), 0);
-    var end = new Date(year, month, day, parseInt(timeMatch[3], 10), parseInt(timeMatch[4], 10), 0);
-    if (end <= start) end = new Date(end.getTime() + 86400000);
-
+    var start = new Date(Date.UTC(year, month, day, parseInt(timeMatch[1], 10), parseInt(timeMatch[2], 10)) - 2 * 3600000);
+    var end = new Date(Date.UTC(year, month, day, parseInt(timeMatch[3], 10), parseInt(timeMatch[4], 10)) - 2 * 3600000);
     return { start: start, end: end };
   }
 
