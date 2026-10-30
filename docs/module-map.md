@@ -56,7 +56,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `cart.js` | ЕДИНСТВЕННЫЙ владелец мутаций корзины и save; `#cartItems`, аддоны (`#cartAddons`), итоги (`#cartTotal`/`#cartSum`/`#cartFee`/`#cartDiscount`), строка подарков `#cartGifts`, `deliveryPromoBar`; видимость и содержимое cartFab; валидация чекаута и POST /api/orders | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo` |
+| `cart.js` | Единственный владелец мутаций корзины и сохранения; `#cartItems`, аддоны, итоги, подарки, cartFab; валидация чекаута и POST /api/orders | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo` |
 | `core/address-dict.js` | Справочник улиц и тарифов | `window.AddressModule` |
 | `core/address-autocomplete.js` | Дропдаун подсказок `#checkoutStreet` | — |
 | `core/address-book.js` | Шторка «Мои адреса» (`#addrBookSheet`), кнопка в чекауте | `window.AddressBook` |
@@ -69,6 +69,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
+| `order-tracking.js` | Модалка `#orderTrackModal`, опрос статуса гостевого заказа и повтор заказа | `window.openOrderTrackModal`, `window.closeOrderTrackModal` |
 | `orders.js` | `#ordersList` (диспетчер), обработчики статусов/задержек; «Активация гостей» (`loadPending`); инжект redeems в дашборд | `window.renderOrders`, `window.loadPending` |
 | `live.js` | Поллинги заказов/профиля при изменениях; pageshow/visibilitychange; zpush-сообщения от SW | — |
 
