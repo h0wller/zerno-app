@@ -6,6 +6,7 @@ openAuth (auth.js), me (state.js). Все потребители обращаю�
 
 /* ── Переключение вкладок Бонусы / Профиль ── */
 function setTab(t) {
+    if (t === 'bonus' && window.brand === 'delivery') t = 'profile';
     document.querySelectorAll('.tabs button[data-tab]').forEach(function (button) {
         var selected = button.dataset.tab === t;
         button.classList.toggle('on', selected);
@@ -68,7 +69,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         tabs.addEventListener('keydown', function (event) {
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-            var buttons = Array.prototype.slice.call(tabs.querySelectorAll('[data-tab]'));
+            var buttons = Array.prototype.slice.call(tabs.querySelectorAll('[data-tab]')).filter(function (button) {
+                return !button.hidden && button.style.display !== 'none';
+            });
             if (!buttons.length) return;
             var current = buttons.indexOf(document.activeElement);
             var next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
