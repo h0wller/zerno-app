@@ -49,18 +49,6 @@
   }
   window.getAddonType = getAddonType;
 
-  /* ── Состояние промокодов ── */
-  var cartPromoCode = localStorage.getItem("zt_cartpromo") || "";
-  var promoInfo = null;
-  var promoTimer = null;
-
-  function promoDisc(sum, info) {
-    if (!info || info.kind === "freeship") return 0;
-    return info.kind === "percent"
-      ? Math.round((sum * Math.min(90, info.value)) / 100)
-      : Math.min(info.value || 0, sum);
-  }
-
   function totalsNow() {
     var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
     var sum = list.reduce(function (a, c) {
@@ -111,11 +99,12 @@
 
       if (list.length) {
         // Доставка платная всегда (сервер freeFrom не знает), кроме персонального промокода «первая доставка бесплатно».
-        fee = (promoInfo && promoInfo.kind === "freeship") ? 0 : baseZoneFee;
+        fee = (window.CartPromo.getInfo() && window.CartPromo.getInfo().kind === "freeship") ? 0 : baseZoneFee;
       }
     }
 
-    var pd = promoInfo ? promoDisc(sum, promoInfo) : 0;
+    var promoInfo = window.CartPromo.getInfo();
+    var pd = promoInfo ? window.CartPromo.discount(sum, promoInfo) : 0;
     return {
       sum: sum,
       pickup: pickup,
@@ -192,77 +181,6 @@
     cf.classList.toggle("visible", shouldShow);
     cf.hidden = !shouldShow;
   }
-
-  /* Персональный код «первая доставка бесплатно» (выдаётся за регистрацию) применяем сами, один раз на гостя за сессию. */
-  var freeAutoFor = "";
-  async function tryAutoFreeCode() {
-    var u = typeof window.me !== "undefined" ? window.me : null;
-    if (!u || !u.id || freeAutoFor === u.id) return "";
-    freeAutoFor = u.id;
-    try {
-      var r = await api("/me/free-delivery");
-      return (r && r.code) || "";
-    } catch (e) { return ""; }
-  }
-
-/* ── PROMO-CLEAR v2: кнопка сброса промокода ── */
-var PROMO_CLEAR_BTN = '<button type="button" class="promo-clear-btn" title="Убрать промокод" aria-label="Убрать промокод" style="margin-left:8px;padding:0 4px;background:none;border:none;cursor:pointer;font-size:15px;line-height:1;color:#B3372B;">✕</button>';
-
-function bindPromoClear(line) {
-  var btn = line.querySelector('.promo-clear-btn');
-  if (!btn) return;
-  btn.onclick = function () {
-    cartPromoCode = '';
-    promoInfo = null;
-    localStorage.removeItem('zt_cartpromo');
-    var inp = document.getElementById('cartPromo');
-    if (inp) inp.value = '';
-    line.innerHTML = '';
-    paintTotals();
-    refreshPromoLine(totalsNow().sum);
-  };
-}
-
-async function refreshPromoLine(sum) {
-  var line = document.getElementById('cartPromoLine');
-  if (!line) return;
-
-  if (!cartPromoCode) {
-    var autoCode = await tryAutoFreeCode();
-    if (autoCode) cartPromoCode = autoCode;
-  }
-
-  if (!cartPromoCode) {
-    promoInfo = null;
-    line.innerHTML = '';
-    paintTotals();
-    return;
-  }
-
-  try {
-    var r = await fetch(API_BASE + '/api/promo/info?code=' + encodeURIComponent(cartPromoCode)).then(function (x) { return x.json(); });
-    if (r.ok) {
-      promoInfo = r;
-      localStorage.setItem('zt_cartpromo', cartPromoCode);
-      line.innerHTML = '<span>🎟 ' + esc(r.code) + ': ' + (r.kind === 'freeship' ? 'первая доставка бесплатно' : '−' + fmt(promoDisc(sum, r))) + '</span>' + PROMO_CLEAR_BTN;
-      line.style.color = 'var(--green)';
-      bindPromoClear(line);
-    } else {
-      promoInfo = null;
-      localStorage.removeItem('zt_cartpromo');
-      cartPromoCode = '';
-      var typed = (document.getElementById('cartPromo') || {}).value || '';
-      if (typed.trim()) {
-        line.innerHTML = '<span>⚠️ ' + esc(r.error || 'Код не найден') + '</span>' + PROMO_CLEAR_BTN;
-        line.style.color = '#B3372B';
-        bindPromoClear(line);
-      } else {
-        line.innerHTML = '';
-      }
-    }
-  } catch (e) { }
-  paintTotals();
-}
 
   /* ── Блок «Рекомендуем к заказу» (напитки и соусы к столу) ── */
   function renderAddons() {
@@ -350,17 +268,6 @@ async function refreshPromoLine(sum) {
     var stale = document.getElementById("deliveryPromoBar");
     if (stale) stale.remove();
   }
-
-function clearPromo() {
-  cartPromoCode = '';
-  promoInfo = null;
-  localStorage.removeItem('zt_cartpromo');
-  var line = document.getElementById('cartPromoLine');
-  if (line) line.innerHTML = '';
-  var inp = document.getElementById('cartPromo');
-  if (inp) inp.value = '';
-  paintTotals();
-}
 
   function syncZoneFeeHint(t) {
     var placeEl = document.getElementById("checkoutPlace");
@@ -644,14 +551,14 @@ function renderCartBase() {
     updateDeliveryPromoBar();
     paintTotals();
     toggleDeliveryGroup();
-    refreshPromoLine(totalsNow().sum);
+    window.CartPromo.refresh(totalsNow().sum);
   }
 
   window.renderCart = renderCartBase;
   window.totalsNow = totalsNow;
   window.paintTotals = paintTotals;
   window.cartFabShow = cartFabShow;
-  window.clearPromo = clearPromo;
+  window.clearPromo = window.CartPromo.clear;
   window.updateDeliveryPromoBar = updateDeliveryPromoBar;
 
   window.updateCartFab = function () {
@@ -879,29 +786,6 @@ function renderCartBase() {
     }, { passive: false });
   })();
 
-  var promoInput = document.getElementById("cartPromo");
-  if (promoInput) {
-    promoInput.addEventListener("input", function () {
-      var v = promoInput.value.trim().toUpperCase();
-      if (!v) { clearPromo(); return; }
-      clearTimeout(promoTimer);
-      promoTimer = setTimeout(function () {
-        cartPromoCode = v;
-        refreshPromoLine(totalsNow().sum);
-      }, 400);
-    });
-  }
-
-  var promoBtn = document.getElementById("cartPromoBtn");
-  if (promoBtn) {
-    promoBtn.onclick = function () {
-      var v = (promoInput ? promoInput.value : "").trim().toUpperCase();
-      if (!v) { clearPromo(); return; }
-      cartPromoCode = v;
-      refreshPromoLine(totalsNow().sum);
-    };
-  }
-
   var cmEl = document.getElementById("checkoutMethod");
   if (cmEl) {
     cmEl.addEventListener("change", function () {
@@ -991,7 +875,8 @@ function renderCartBase() {
           };
         })
       };
-      if (cartPromoCode) body.promo = cartPromoCode;
+      var promoCode = window.CartPromo.getCode();
+      if (promoCode) body.promo = promoCode;
 
       // 1. Идемпотентный ID: защита от дублей при сетевом сбое
       body.client_order_id = "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
@@ -1024,7 +909,7 @@ function renderCartBase() {
         openModsMap = {};
         localStorage.setItem("zt_cart", "[]");
         sessionStorage.removeItem("zt_checkout_draft");
-        clearPromo();
+        window.CartPromo.clear();
 
         var pi = document.getElementById("cartPromo"); if (pi) pi.value = "";
         var stEl = document.getElementById("checkoutStreet"); if (stEl) stEl.value = "";
