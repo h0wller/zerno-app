@@ -73,25 +73,9 @@
   function applyAuthBrand() {
     var modal = document.getElementById('authModal');
     if (!modal) return;
-    var isDeliv = (typeof brand !== 'undefined' && brand === 'delivery');
-    var modeName = isDeliv ? 'delivery' : 'coffee';
-    var b = (typeof window.BRANDS !== 'undefined')
-      ? window.BRANDS[modeName] || window.BRANDS.coffee
-      : { label: '…и кофе', authLogo: { src: '/andCoffee.svg', box: 66, wide: false } };
-    var al = b.authLogo || { src: '/andCoffee.svg', box: 66, wide: false };
-    var alogo = modal.querySelector('.alogo');
-    if (alogo) {
-      alogo.style.width = al.box + 'px';
-      alogo.style.height = (al.wide ? Math.round(al.box * 0.25) : al.box) + 'px';
-      alogo.innerHTML = '<img src="' + al.src + '" alt="' + b.label + '" style="width:100%;height:100%;object-fit:contain;display:block;">';
-    }
     adaptAuthForTelegram(modal);
     var msub = modal.querySelector('.msub');
-    if (msub) {
-      msub.innerHTML = isDeliv
-        ? 'Единый профиль: сохранение адресов, подарки от 2 000 ₽ и штампы на кофе у моря.'
-        : 'Копите зёрна на бесплатный кофе на кассе и заказывайте пиццу с подарками и сохранёнными адресами.';
-    }
+    if (msub) msub.textContent = 'Сохраняйте заказы, адреса и бонусы.';
   }
 
   function openAuth(login) {
@@ -151,11 +135,23 @@
   }
 
 
-  // Clicking the backdrop dismisses the auth dialog; clicks inside the card do not.
+  // The close control is delegated so it keeps working if the modal markup is refreshed
+  // or this module initializes after DOMContentLoaded.
   document.addEventListener('click', function (event) {
+    var target = event.target;
+    var closeButton = target && typeof target.closest === 'function'
+      ? target.closest('#authClose')
+      : null;
+    if (closeButton) {
+      event.preventDefault();
+      closeAuth();
+      return;
+    }
+
+    // Clicking the backdrop dismisses the auth dialog; clicks inside the card do not.
     var modal = document.getElementById('authModal');
-    if (modal && modal.classList.contains('show') && event.target === modal) closeAuth();
-  });
+    if (modal && modal.classList.contains('show') && target === modal) closeAuth();
+  }, true);
 
   // A modal dialog keeps keyboard focus inside and closes on Escape.
   document.addEventListener('keydown', function (event) {
@@ -229,9 +225,6 @@
       } catch (_) {}
     }
     checkTgAutoLogin();
-
-    var authClose = document.getElementById('authClose');
-    if (authClose) authClose.onclick = closeAuth;
 
     var toLogin = document.getElementById('toLogin');
     if (toLogin) toLogin.onclick = function () { authSwap(true); };

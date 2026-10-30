@@ -34,7 +34,7 @@ for (const viewport of viewports) {
     await expect(modal).toBeVisible();
     await expect(modal).toHaveAttribute('role', 'dialog');
     await expect(modal).toHaveAttribute('aria-modal', 'true');
-    await expect(modal.locator('.auth-kicker')).toHaveText('Единый профиль');
+    await expect(modal.locator('.auth-logo img')).toHaveAttribute('src', '/icon.svg');
     await expect(card.locator('#regName')).toBeVisible();
 
     await page.waitForFunction(() => {
@@ -139,6 +139,16 @@ test('registration and login tabs stay in sync with the active form and keyboard
   await expect(registerTab).toHaveAttribute('aria-selected', 'true');
   await expect(registerTab).toHaveAttribute('tabindex', '0');
   await expect(page.locator('#regForm')).toBeVisible();
+  const registerStyle = await registerTab.evaluate((el) => ({
+    background: getComputedStyle(el).backgroundColor,
+    color: getComputedStyle(el).color,
+  }));
+  const loginStyle = await loginTab.evaluate((el) => ({
+    background: getComputedStyle(el).backgroundColor,
+    color: getComputedStyle(el).color,
+  }));
+  expect(registerStyle.background).not.toBe(loginStyle.background);
+  expect(registerStyle.color).not.toBe(loginStyle.color);
 
   await registerTab.focus();
   await page.keyboard.press('ArrowRight');
@@ -199,9 +209,14 @@ test('auth modal close button restores focus to its invoking control', async ({ 
 
   const trigger = page.locator('#authCloseTrigger');
   await trigger.click();
-  await page.locator('#authClose').click();
+  const closeButton = page.locator('#authClose');
+  await expect(closeButton).toBeVisible();
+  await closeButton.click();
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   await expect(trigger).toBeFocused();
+  await trigger.click();
+  await closeButton.click();
+  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
 });
 
 test('switching to and from Telegram code entry moves focus to the active field', async ({ page }) => {
