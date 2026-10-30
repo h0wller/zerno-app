@@ -52,7 +52,7 @@ test.describe('Оценочный калькулятор КБЖУ в увели�
 
     const nutrition = page.locator('#zoomKbjuBox');
     await expect(nutrition).toContainText('Пищевая ценность — оценка');
-    await expect(nutrition.locator('[data-kbju-val="kcal"]')).toHaveText(/^\\d+$/);
+    await expect(nutrition.locator('[data-kbju-val="kcal"]')).toHaveText(/^[0-9]+$/);
     await expect(nutrition).toContainText('на порцию (290 г)');
   });
 });
