@@ -181,6 +181,16 @@
                 first.focus();
             }
         });
+
+        // После закрытия вложенного трекера фокус может остаться на скрытой кнопке.
+        // Ловим Escape на document, но не закрываем список поверх открытого трекера.
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape' || !modal.classList.contains('show')
+                || document.querySelector('#orderTrackModal.show')) return;
+            event.preventDefault();
+            event.stopPropagation();
+            close();
+        });
     })();
 
     document.addEventListener('click', function (event) {
