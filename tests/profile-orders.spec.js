@@ -87,7 +87,7 @@ test.describe('Модуль заказов профиля', () => {
     expect(mineRequestCount).toBe(1);
 
     await expect(modal.locator('.omClose')).toBeFocused();
-    await modal.press('Escape');
+    await page.keyboard.press('Escape');
     await expect(modal).not.toHaveClass(/show/);
     await expect(page.locator('#myOrdersBtn')).toBeFocused();
   });
