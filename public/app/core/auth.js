@@ -135,23 +135,11 @@
   }
 
 
-  // The close control is delegated so it keeps working if the modal markup is refreshed
-  // or this module initializes after DOMContentLoaded.
+  // Clicking the backdrop dismisses the auth dialog; clicks inside the card do not.
   document.addEventListener('click', function (event) {
-    var target = event.target;
-    var closeButton = target && typeof target.closest === 'function'
-      ? target.closest('#authClose')
-      : null;
-    if (closeButton) {
-      event.preventDefault();
-      closeAuth();
-      return;
-    }
-
-    // Clicking the backdrop dismisses the auth dialog; clicks inside the card do not.
     var modal = document.getElementById('authModal');
-    if (modal && modal.classList.contains('show') && target === modal) closeAuth();
-  }, true);
+    if (modal && modal.classList.contains('show') && event.target === modal) closeAuth();
+  });
 
   // A modal dialog keeps keyboard focus inside and closes on Escape.
   document.addEventListener('keydown', function (event) {

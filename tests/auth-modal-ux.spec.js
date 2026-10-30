@@ -34,7 +34,8 @@ for (const viewport of viewports) {
     await expect(modal).toBeVisible();
     await expect(modal).toHaveAttribute('role', 'dialog');
     await expect(modal).toHaveAttribute('aria-modal', 'true');
-    await expect(modal.locator('.auth-logo img')).toHaveAttribute('src', '/zerno-mark.webp');
+    await expect(modal.locator('.auth-logo')).toHaveCount(0);
+    await expect(modal.locator('#authClose')).toHaveCount(0);
     await expect(card.locator('#regName')).toBeVisible();
 
     await page.waitForFunction(() => {
@@ -150,6 +151,21 @@ test('registration and login tabs stay in sync with the active form and keyboard
   expect(registerStyle.background).not.toBe(loginStyle.background);
   expect(registerStyle.color).not.toBe(loginStyle.color);
 
+  await page.evaluate(() => window.openAuth(true));
+  await expect(loginTab).toHaveAttribute('aria-selected', 'true');
+  await expect(registerTab).toHaveAttribute('aria-selected', 'false');
+  await expect(page.locator('#loginForm')).toBeVisible();
+  const activeLoginStyle = await loginTab.evaluate((el) => ({
+    background: getComputedStyle(el).backgroundColor,
+    color: getComputedStyle(el).color,
+  }));
+  const inactiveRegisterStyle = await registerTab.evaluate((el) => ({
+    background: getComputedStyle(el).backgroundColor,
+    color: getComputedStyle(el).color,
+  }));
+  expect(activeLoginStyle.background).not.toBe(inactiveRegisterStyle.background);
+  expect(activeLoginStyle.color).not.toBe(inactiveRegisterStyle.color);
+
   await registerTab.focus();
   await page.keyboard.press('ArrowRight');
   await expect(loginTab).toBeFocused();
@@ -191,33 +207,6 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
   await expect(trigger).toBeFocused();
 });
 
-
-test('auth modal close button restores focus to its invoking control', async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem('zt_onb', '1');
-    sessionStorage.setItem('splashDone', '1');
-  });
-  await page.goto('/?brand=coffee');
-  await page.waitForFunction(() => typeof window.openAuth === 'function');
-  await page.evaluate(() => {
-    const trigger = document.createElement('button');
-    trigger.id = 'authCloseTrigger';
-    trigger.textContent = 'Open profile';
-    trigger.addEventListener('click', () => window.openAuth(false));
-    document.body.appendChild(trigger);
-  });
-
-  const trigger = page.locator('#authCloseTrigger');
-  await trigger.click();
-  const closeButton = page.locator('#authClose');
-  await expect(closeButton).toBeVisible();
-  await closeButton.click();
-  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
-  await expect(trigger).toBeFocused();
-  await trigger.click();
-  await closeButton.click();
-  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
-});
 
 test('switching to and from Telegram code entry moves focus to the active field', async ({ page }) => {
   await page.addInitScript(() => {

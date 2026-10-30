@@ -15,54 +15,29 @@
 }
 
 #authModal .auth-head {
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  grid-template-areas:
-    "logo title"
-    "logo subtitle";
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  column-gap: 16px;
-  row-gap: 3px;
-  padding: 4px 48px 0 0;
+  gap: 5px;
+  padding: 4px 8px 0;
   margin-bottom: 20px;
-  text-align: left;
-}
-
-#authModal .auth-logo {
-  grid-area: logo;
-  justify-self: center;
-  align-self: center;
-  width: 96px;
-  height: 96px;
-  flex: 0 0 96px;
-  overflow: hidden;
-  border-radius: 18px;
-}
-
-#authModal .auth-logo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  text-align: center;
 }
 
 #authModal .auth-head h3 {
-  grid-area: title;
-  justify-self: start;
   margin: 0;
   font-size: clamp(21px, 4.6vw, 25px);
   line-height: 1.2;
-  text-align: left;
+  text-align: center;
   text-wrap: balance;
 }
 
 #authModal .auth-head .msub {
-  grid-area: subtitle;
-  max-width: 40ch;
+  max-width: 36ch;
   margin: 0;
   font-size: 12.5px;
   line-height: 1.4;
-  text-align: left;
+  text-align: center;
   text-wrap: pretty;
 }
 
@@ -236,16 +211,8 @@
   }
 
   #authModal .auth-head {
-    grid-template-columns: 80px minmax(0, 1fr);
-    column-gap: 12px;
-    padding: 6px 44px 0 0;
+    padding: 6px 8px 0;
     margin-bottom: 16px;
-  }
-
-  #authModal .auth-logo {
-    width: 80px;
-    height: 80px;
-    flex-basis: 80px;
   }
 
   #authModal .auth-head .msub {
@@ -274,19 +241,7 @@
   }
 
   #authModal .auth-head {
-    grid-template-columns: 64px minmax(0, 1fr);
-    column-gap: 10px;
     margin-bottom: 12px;
-  }
-
-  #authModal .auth-logo {
-    width: 64px;
-    height: 64px;
-    flex-basis: 64px;
-  }
-
-  #authModal .auth-kicker {
-    margin-bottom: 8px;
   }
 }
 
@@ -298,44 +253,6 @@
     animation-duration: .01ms;
     animation-iteration-count: 1;
   }
-}
-
-
-#authModal .authcard {
-  position: relative;
-}
-
-#authModal .auth-close {
-  position: absolute;
-  z-index: 5;
-  top: 12px;
-  right: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  min-height: 40px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
-  color: var(--soft);
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1;
-  cursor: pointer;
-  transition: color .18s ease, border-color .18s ease, background-color .18s ease;
-}
-
-#authModal .auth-close:hover {
-  border-color: var(--flame);
-  background: var(--card);
-  color: var(--flame);
-}
-
-#authModal .auth-close:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--flame) 28%, transparent);
-  outline-offset: 2px;
 }
 
 

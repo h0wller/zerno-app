@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v591';
+const STATIC_CACHE = 'zerno-static-v592';
 const MEDIA_CACHE = 'zerno-media-v20';
 const API_CACHE = 'zerno-api-v14';
 
@@ -8,7 +8,6 @@ const STATIC_ASSETS = [
   '/index.html',
   '/manifest.webmanifest',
   '/icon.svg',
-  '/zerno-mark.webp',
   '/andCoffee.svg',
   '/friday-logo.svg',
   '/dist/main.bundle.js',
