@@ -34,7 +34,7 @@ function brandRules(){
     fi.style.display=deliv?'':'none';
     if(deliv){
       var historySection=document.querySelector('#profileBox .profile-history-section');
-      if(historySection&&fi.nextElementSibling!==historySection)pb.insertBefore(fi,historySection);
+      if(historySection&&fi.nextElementSibling!==historySection)historySection.parentNode.insertBefore(fi,historySection);
     }
   }
   if(typeof window.syncNotifyUI==='function')window.syncNotifyUI();
