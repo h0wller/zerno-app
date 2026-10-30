@@ -61,8 +61,7 @@
     var h = (d.getUTCHours() + 2) % 24;
     return { hour: h, minute: d.getUTCMinutes() };
   }
-  // Часы доставки приходят с сервера (GET /api/delivery/info: today/schedule — зимой пн–чт до 21:00).
-  // Пока ответ не загружен или в нём нет часов — прежние константы 11–22.
+  // Часы доставки берём только из /api/delivery/info; без ответа считаем сервис закрытым.
   function deliveryHours() {
     var schedule = window.deliveryInfo && (window.deliveryInfo.today || window.deliveryInfo.schedule);
     if (!schedule) return null;
