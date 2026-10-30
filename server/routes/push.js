@@ -77,6 +77,7 @@ pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
   const title = 'Пятница — новый график';
   const customers = db.prepare(`SELECT id AS cid, tg, notify_tg, notify_web
     FROM customers
+    WHERE role='guest'
     ORDER BY id`).all();
 
   let recipients = 0, telegramSent = 0, pushSent = 0, failed = 0;
