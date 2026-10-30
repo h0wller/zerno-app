@@ -34,6 +34,33 @@ test('зимнее расписание: понедельник–четверг
   }
 });
 
+test('смена сезонного расписания происходит строго 1 октября и 1 мая', () => {
+  const dates = [
+    ['2026-09-30T19:00:00.000Z', 22], // 30 сентября, 21:00 в Калининграде
+    ['2026-10-01T19:00:00.000Z', 21], // 1 октября, четверг
+    ['2026-04-30T19:00:00.000Z', 21], // 30 апреля, четверг
+    ['2026-05-01T19:00:00.000Z', 22], // 1 мая, пятница
+  ];
+
+  for (const [isoDate, close] of dates) {
+    assert.equal(getDeliveryHours(new Date(isoDate)).close, close, isoDate);
+  }
+});
+
+test('пограничные дни месяца получают разное расписание при расчёте предзаказа', () => {
+  const endOfSeptember = getDeliveryDays(new Date('2026-09-30T08:00:00.000Z'), 2);
+  assert.deepEqual(endOfSeptember.map(({ date, close }) => ({ date, close })), [
+    { date: '2026-09-30', close: 22 },
+    { date: '2026-10-01', close: 21 },
+  ]);
+
+  const endOfApril = getDeliveryDays(new Date('2026-04-30T08:00:00.000Z'), 2);
+  assert.deepEqual(endOfApril.map(({ date, close }) => ({ date, close })), [
+    { date: '2026-04-30', close: 21 },
+    { date: '2026-05-01', close: 22 },
+  ]);
+});
+
 test('слоты на сегодня и завтра получают расписание именно соответствующего дня', () => {
   const days = getDeliveryDays(new Date('2026-10-25T20:30:00.000Z'), 2);
 
