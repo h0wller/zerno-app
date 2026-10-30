@@ -209,6 +209,64 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
 
 
 
+
+test('Telegram registration action uses its own icon instead of the robot emoji', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+
+  const button = page.locator('#regTgBtn');
+  const icon = button.locator('.auth-telegram-icon');
+  await expect(icon).toHaveAttribute('viewBox', '0 0 24 24');
+  await expect(icon).toHaveAttribute('aria-hidden', 'true');
+  await expect(button).toContainText('Подтвердить в Telegram · бесплатно');
+  expect(await button.innerText()).not.toContain('🤖');
+});
+
+test('desktop auth modal scrolls without displaying scrollbar tracks', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+
+  const card = page.locator('#authModal .authcard');
+  await card.evaluate((el) => { el.style.maxHeight = '220px'; });
+
+  const metrics = await page.evaluate(() => {
+    const modal = document.getElementById('authModal');
+    const cardEl = modal.querySelector('.authcard');
+    return {
+      desktopPointer: matchMedia('(hover: hover) and (pointer: fine)').matches,
+      modalScrollbar: getComputedStyle(modal).scrollbarWidth,
+      cardScrollbar: getComputedStyle(cardEl).scrollbarWidth,
+      modalOverflow: getComputedStyle(modal).overflowY,
+      cardOverflow: getComputedStyle(cardEl).overflowY,
+      cardHasOverflow: cardEl.scrollHeight > cardEl.clientHeight,
+      cardClientHeight: cardEl.clientHeight,
+      cardScrollHeight: cardEl.scrollHeight,
+    };
+  });
+
+  expect(metrics.desktopPointer).toBe(true);
+  expect(metrics.modalScrollbar).toBe('none');
+  expect(metrics.cardScrollbar).toBe('none');
+  expect(metrics.modalOverflow).toBe('auto');
+  expect(metrics.cardOverflow).toBe('auto');
+  expect(metrics.cardHasOverflow).toBe(true);
+
+  await card.hover();
+  await page.mouse.wheel(0, 480);
+  await expect.poll(() => card.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+});
+
 test('registration consent is placed before Telegram verification and gates its request', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
