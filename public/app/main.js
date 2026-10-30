@@ -46,6 +46,7 @@ import './cashier.js';
 import './scanner.js';
 import './delivery.js';
 import './ui/delivery-search.js';
+import './checkout-validation.js';
 import './cart.js';
 import './order-tracking.js';
 import './orders.js';
