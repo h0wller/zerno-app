@@ -238,7 +238,7 @@ function syncViewsVisibility(showCoffee, showDeliv) {
 }
 
 function syncStaffAndGuestControls(bName2) {
-  var canEdit = (typeof canStopMenu === 'function') && canStopMenu();
+  var canEdit = (typeof canStopMenu === 'function') && canStopMenu(bName2);
   var et = document.getElementById('editToggle');
   if (et) et.hidden = !canEdit;
   var ab = document.getElementById('adminBar');

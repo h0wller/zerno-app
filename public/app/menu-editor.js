@@ -25,9 +25,15 @@ function editorFields(){
   if(ob)ob.hidden=!isPizza;
 }
 
-/* Стоп-лист («в меню») доступен админу, кассиру и диспетчеру; в гостевом виде (меню) или в админ-режиме. */
-function canStopMenu(){
-  return !!(me && ['admin','cashier','dispatch'].indexOf(me.role)!==-1 && (mode==='admin'||mode==='guest'));
+/* Стоп-лист: админ — оба раздела, кассир — кофейня, диспетчер — доставка. */
+function canStopMenu(targetBrand){
+  if(!me || (mode!=='admin' && mode!=='guest'))return false;
+  var section=targetBrand||brand;
+  if(section==='test')section='coffee';
+  if(me.role==='admin')return true;
+  if(me.role==='cashier')return section==='coffee';
+  if(me.role==='dispatch')return section==='delivery';
+  return false;
 }
 /* Редактировать позиции (✏️, добавить, сохранить, удалить, порядок) может только админ; сервер проверяет то же. */
 function canEditMenu(){
