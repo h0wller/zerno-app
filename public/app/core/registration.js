@@ -29,89 +29,153 @@
     }
   };
 
+  function readRegistrationForm() {
+    return {
+      name: (document.getElementById('regName') || {}).value.trim(),
+      phone: (document.getElementById('regPhone') || {}).value,
+      pin: (document.getElementById('regPin') || {}).value.trim(),
+      code: (document.getElementById('regOtp') || {}).value.trim()
+    };
+  }
+
+  function validateRegistrationForm(form) {
+    var consentBox = document.getElementById('consentBox');
+    if (!consentBox || !consentBox.checked) {
+      toast('Отметь согласие с политикой конфиденциальности', '⚠️');
+      return false;
+    }
+    if (form.name.length < 2) {
+      toast('Введите имя', '✍️');
+      return false;
+    }
+    if (ph10(form.phone).length < 10) {
+      toast('Введите номер полностью', '📵');
+      return false;
+    }
+    if (!/^\d{4}$/.test(form.pin)) {
+      toast('PIN — ровно 4 цифры', '🔐');
+      return false;
+    }
+    return true;
+  }
+
+  function setRegistrationButtonBusy(button, busy) {
+    button.disabled = busy;
+    if (busy) {
+      button.setAttribute('aria-busy', 'true');
+      button.textContent = 'Создаём профиль…';
+      return;
+    }
+    button.removeAttribute('aria-busy');
+    button.textContent = 'Создать профиль';
+  }
+
+  function completeRegistration(response, message, icon) {
+    window.setUser(response.token, response.customer);
+    closeAuth();
+    if (typeof renderAll === 'function') renderAll();
+    toast(message, icon);
+  }
+
+  function openExistingProfile(phone, message) {
+    toast(message, '🔗');
+    var loginPhone = document.getElementById('logPhone');
+    if (loginPhone) loginPhone.value = fmtPhone(phone);
+    authSwap(true);
+  }
+
+  async function registerThroughTelegram(form) {
+    try {
+      var response = await api('/auth/tg-link', {
+        method: 'POST',
+        body: {
+          initData: window.__tgInitData,
+          phone: form.phone,
+          name: form.name,
+          pin: form.pin,
+          consent: 1,
+          src: getRegSource()
+        }
+      });
+
+      if (response && response.needBotConfirm) {
+        // Номер сначала подтверждаем в боте, потом повторяем вход.
+        toast('Подтвердите номер в боте Telegram, затем нажмите «Продолжить» ещё раз', '🤖');
+        var openTelegramLink = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink;
+        if (typeof openTelegramLink === 'function') openTelegramLink(response.tgUrl);
+        else window.open(response.tgUrl, '_blank');
+        return true;
+      }
+
+      if (response && response.token && response.customer) {
+        var message = response.isNew
+          ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎁'
+          : 'Профиль привязан к Telegram ✅';
+        completeRegistration(response, message, '🎉');
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error.code === 409) {
+        openExistingProfile(form.phone, 'Номер уже зарегистрирован — входим');
+      } else {
+        toast(error.message || 'Ошибка регистрации через Telegram', '⚠️');
+      }
+      return true;
+    }
+  }
+
+  async function registerByPhone(form) {
+    try {
+      var response = await api('/auth/register', {
+        method: 'POST',
+        body: {
+          name: form.name,
+          phone: form.phone,
+          pin: form.pin,
+          code: form.code,
+          consent: 1,
+          src: getRegSource()
+        }
+      });
+      try { localStorage.removeItem('zt_src'); } catch (_) {}
+
+      var message = response.customer.verified
+        ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎉'
+        : 'Профиль создан! Код активации — у кассира, после него приветственный напиток и бесплатная доставка 🎁';
+      completeRegistration(response, message, '');
+    } catch (error) {
+      if (error.code === 409) {
+        openExistingProfile(form.phone, 'Этот номер уже зарегистрирован — входим');
+      } else {
+        toast(error.message, '⚠️');
+      }
+    }
+  }
+
+  async function submitRegistration(button) {
+    if (button.disabled) return;
+    var form = readRegistrationForm();
+    if (!validateRegistrationForm(form)) return;
+
+    setRegistrationButtonBusy(button, true);
+    try {
+      if (window.__tgInitData) {
+        var handledByTelegram = await registerThroughTelegram(form);
+        if (handledByTelegram) return;
+      }
+      await registerByPhone(form);
+    } finally {
+      setRegistrationButtonBusy(button, false);
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     var regBtn = document.getElementById('regBtn');
     if (regBtn) {
-      regBtn.onclick = async function () {
-        if (regBtn.disabled) return;
-        var name = (document.getElementById('regName') || {}).value.trim();
-        var phone = (document.getElementById('regPhone') || {}).value;
-        var pin = (document.getElementById('regPin') || {}).value.trim();
-        var code = (document.getElementById('regOtp') || {}).value.trim();
-
-        var consentBox = document.getElementById('consentBox');
-        if (!consentBox || !consentBox.checked) {
-          return toast('Отметь согласие с политикой конфиденциальности', '⚠️');
-        }
-
-        if (name.length < 2) return toast('Введите имя', '✍️');
-        if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
-        if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
-
-        regBtn.disabled = true;
-        regBtn.setAttribute('aria-busy', 'true');
-        regBtn.textContent = 'Создаём профиль…';
-        try {
-        if (window.__tgInitData) {
-          try {
-            var rTg = await api('/auth/tg-link', {
-              method: 'POST',
-              body: { initData: window.__tgInitData, phone: phone, name: name, pin: pin, consent: 1, src: getRegSource() }
-            });
-            if (rTg && rTg.needBotConfirm) {
-              // Номер сначала подтверждаем в боте, потом повторяем вход.
-              toast('Подтвердите номер в боте Telegram, затем нажмите «Продолжить» ещё раз', '🤖');
-              var tgOpen = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink;
-              if (typeof tgOpen === 'function') tgOpen(rTg.tgUrl); else window.open(rTg.tgUrl, '_blank');
-              return;
-            }
-            if (rTg && rTg.token && rTg.customer) {
-              window.setUser(rTg.token, rTg.customer);
-              closeAuth();
-              if (typeof renderAll === 'function') renderAll();
-              toast(rTg.isNew ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎁' : 'Профиль привязан к Telegram ✅', '🎉');
-              return;
-            }
-          } catch (errTg) {
-            if (errTg.code === 409) {
-              toast('Номер уже зарегистрирован — входим', '🔗');
-              var lpTg = document.getElementById('logPhone');
-              if (lpTg) lpTg.value = fmtPhone(phone);
-              authSwap(true);
-              return;
-            }
-            toast(errTg.message || 'Ошибка регистрации через Telegram', '⚠️');
-            return;
-          }
-        }
-
-        try {
-          var r = await api('/auth/register', {
-            method: 'POST',
-            body: { name: name, phone: phone, pin: pin, code: code, consent: 1, src: getRegSource() }
-          });
-          try { localStorage.removeItem('zt_src'); } catch (_) {}
-          window.setUser(r.token, r.customer);
-          closeAuth();
-          if (typeof renderAll === 'function') renderAll();
-          toast(r.customer.verified
-            ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎉'
-            : 'Профиль создан! Код активации — у кассира, после него приветственный напиток и бесплатная доставка 🎁', '');
-        } catch (e) {
-          if (e.code === 409) {
-            toast('Этот номер уже зарегистрирован — входим', '🔗');
-            var lp = document.getElementById('logPhone');
-            if (lp) lp.value = fmtPhone(phone);
-            authSwap(true);
-          } else {
-            toast(e.message, '⚠️');
-          }
-        }
-        } finally {
-          regBtn.disabled = false;
-          regBtn.removeAttribute('aria-busy');
-          regBtn.textContent = 'Создать профиль';
-        }
+      regBtn.onclick = function () {
+        return submitRegistration(regBtn);
       };
     }
 
