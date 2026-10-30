@@ -91,12 +91,6 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!btn) return;
       e.preventDefault();
       if (typeof window.renderOrdersModal === 'function') window.renderOrdersModal();
-      var modalEl = document.getElementById('ordersModal');
-      if (modalEl) {
-        modalEl.classList.add('show');
-        modalEl.hidden = false;
-        if (typeof window.syncOverlay === 'function') window.syncOverlay();
-      }
     });
 
     /* Плавающая кнопка «Мои бонусы» */
