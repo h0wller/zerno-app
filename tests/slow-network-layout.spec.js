@@ -24,7 +24,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     });
 
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
-    const ticker = page.locator('#ticker');
+    const ticker = page.locator('.ticker');
     const track = page.locator('#tickerTrack');
     await expect(track.locator('span').first()).toBeAttached({ timeout: 10000 });
 
