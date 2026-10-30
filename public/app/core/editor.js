@@ -27,8 +27,8 @@ addEventListener("load", () => {
     a.blur();
 });
 
-$("#activateBtn").onclick = openPin;
-$("#setPinBtn").onclick = () => openSetPin("change");
+const activateButton = document.getElementById("activateBtn");
+if (activateButton) activateButton.onclick = openPin;
 
 function armPw() {
   ["regPin", "logPin", "logOtp", "setPinInput", "pinInput"].forEach(
