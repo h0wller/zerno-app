@@ -1310,24 +1310,35 @@ if(b==='delivery'){
             </div>
             <div id="myOrders" aria-live="polite" aria-atomic="true"></div>
           </section>
-          <div class="placebox">
-            <b>Мы у моря</b>п. Янтарный, Советская ул., 70г<br />
-            Ежедневно: май–сен 8:00–21:00 · окт–апр 8:00–20:00<br />
-            ✈️
-            <a href="https://t.me/and_coffee39" target="_blank" style="color: var(--flame)">t.me/and_coffee39</a><br />
-            📸
-            <a href="https://www.instagram.com/and_coffee39/" target="_blank"
-              style="color: var(--flame)">instagram.com/and_coffee39</a><br />
-            🤖
-            <a href="https://t.me/and_coffee_bot" target="_blank" style="color: var(--flame)">Telegram-бот с
-              бонусами</a><br />
+          <div class="placebox coffee-venue-card">
+            <b>…и кофе у моря</b>
+            <div class="coffee-venue-detail">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              <span>п. Янтарный, ул. Советская, 70г</span>
+            </div>
+            <div class="coffee-venue-detail">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span><b>Май–сентябрь:</b> ежедневно 8:00–21:00<br><b>Октябрь–апрель:</b> ежедневно 8:00–20:00</span>
+            </div>
+            <nav class="coffee-place-links" aria-label="Социальные сети кофейни">
+              <a class="coffee-place-link" href="https://t.me/and_coffee39" target="_blank" rel="noopener noreferrer" aria-label="Telegram-канал">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.5 18-3.8-7.1L3 10.1 21 3Z"/><path d="m9.7 13.9L21 3"/></svg>
+                <span>Telegram-канал</span>
+              </a>
+              <a class="coffee-place-link" href="https://www.instagram.com/and_coffee39/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" class="coffee-icon-dot"/></svg>
+                <span>Instagram</span>
+              </a>
+              <a class="coffee-place-link" href="https://t.me/and_coffee_bot" target="_blank" rel="noopener noreferrer" aria-label="Бот с бонусами">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 3v5M8 13h.01M16 13h.01M9 17h6"/><circle cx="12" cy="3" r="1"/></svg>
+                <span>Бот с бонусами</span>
+              </a>
+            </nav>
           </div>
-          <div class="placebox" style="background: #fff6e5; border-color: #f2d9a5; color: #6b4e0e">
+          <div class="placebox coffee-review-card">
             <b>Понравилось у нас?</b>
-            Ваш отзыв на Яндекс Картах помогает нам расти 🌊<br />
-            <button class="btn fire" id="reviewBtn" style="margin-top: 10px; width: 100%">
-              ⭐ Оставить отзыв
-            </button>
+            <p>Ваш отзыв на Яндекс Картах помогает нам становиться лучше.</p>
+            <button class="btn fire coffee-review-button" id="reviewBtn" type="button">Оставить отзыв</button>
           </div>
           <section class="profile-history-section" aria-labelledby="historyHeading">
             <div class="profile-history-heading">
