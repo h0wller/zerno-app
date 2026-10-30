@@ -181,7 +181,10 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         var save = document.getElementById('nameSaveBtn');
         if (!input || !me || !nameEditing) return;
         var name = input.value.trim() || me.name || 'Гость';
-        if (name === me.name) return setNameEditing(false);
+        if (name === me.name) {
+            input.value = me.name;
+            return setNameEditing(false);
+        }
         if (save) save.disabled = true;
         try {
             var result = await api('/me', { method: 'PUT', body: { name: name } });
