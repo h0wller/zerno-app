@@ -7,13 +7,10 @@
   var pb=document.getElementById('profileBox');if(!pb||document.getElementById('fridayInfo'))return;
   var d=document.createElement('div');d.id='fridayInfo';
   d.innerHTML='<b>Пятница — доставка пиццы и роллов</b>п. Янтарный, ул. Советская, 38А (самовывоз)<br>Ежедневно 11:00–22:00 · доставка ~45 мин<br>🌐 <a href="https://vk.ru/fridaypizza39" target="_blank" style="color:#1F4E8C;font-weight:800">vk.ru/fridaypizza39</a><br>⭐ <a href="https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/" target="_blank" style="color:#1F4E8C;font-weight:800">отзывы на Яндекс Картах</a><br><a href="https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/?add-review=true" target="_blank" class="btn fire" style="margin-top:10px;display:inline-block">⭐ Оставить отзыв</a>';
-  var hist=Array.prototype.slice.call(pb.querySelectorAll('h4')).filter(function(h){return /История/.test(h.textContent);})[0];
-  if(hist)pb.insertBefore(d,hist);else pb.appendChild(d);
+  var historySection=pb.querySelector('.profile-history-section');
+  if(historySection)pb.insertBefore(d,historySection);else pb.appendChild(d);
 })();
 /* ── брендовые правила: слияние v64 profileBrandRules + R4 applyProfileBrand ── */
-function histH4(){
-  return Array.prototype.slice.call(document.querySelectorAll('#profileBox h4')).filter(function(h){return /История/i.test(h.textContent);})[0]||null;
-}
 function brandRules(){
   var deliv=(typeof brand!=='undefined'&&brand==='delivery');
   var deliverySection=document.getElementById('profileOrdersSection');
@@ -31,7 +28,10 @@ function brandRules(){
   });
   if(fi){
     fi.style.display=deliv?'':'none';
-    if(deliv){var h=histH4();if(h&&fi!==h.previousSibling)h.parentNode.insertBefore(fi,h);}
+    if(deliv){
+      var historySection=document.querySelector('#profileBox .profile-history-section');
+      if(historySection&&fi.nextElementSibling!==historySection)pb.insertBefore(fi,historySection);
+    }
   }
   if(typeof window.syncNotifyUI==='function')window.syncNotifyUI();
 }
