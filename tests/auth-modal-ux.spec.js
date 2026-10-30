@@ -108,10 +108,15 @@ test('auth modal traps keyboard focus at its boundaries', async ({ page }) => {
   await page.evaluate(() => window.openAuth(false));
 
   const modal = page.locator('#authModal');
-  const lastControl = modal.locator('#toLogin');
+  const focusable = modal.locator(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  ).filter({ visible: true });
+  const firstControl = focusable.first();
+  const lastControl = focusable.last();
+
   await lastControl.focus();
   await page.keyboard.press('Tab');
-  await expect(modal.locator('#regName')).toBeFocused();
+  await expect(firstControl).toBeFocused();
 
   await page.keyboard.press('Shift+Tab');
   await expect(lastControl).toBeFocused();
