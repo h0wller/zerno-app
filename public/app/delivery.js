@@ -1,4 +1,5 @@
 import { attachGridDnD, canDragMenu, dragAttr } from './core/dnd.js';
+import { getVisibleComposition } from './core/menu-content.js';
 function getKaliningradTime() {
   if (typeof window !== "undefined" && typeof window.getKaliningradTime === "function" && window.getKaliningradTime !== getKaliningradTime) {
     return window.getKaliningradTime();
@@ -217,6 +218,14 @@ $('#deliveryRail').addEventListener('click', e => {
   }
 });
 
+function renderCompositionChips(item) {
+  const composition = getVisibleComposition(item);
+  if (!composition.length) return '';
+  return '<div class="comp">' +
+    composition.map(function (name) { return '<i>' + esc(name) + '</i>'; }).join('') +
+  '</div>';
+}
+
 function renderPizzaOptsHtml(p, opts) {
   return '<div class="opts">' +
     opts.map(function (o, i) {
@@ -267,7 +276,7 @@ function renderDeliveryCard(p, n0, i) {
     '<div class="cbody">' +
       '<h3>' + esc(p.name) + '</h3>' +
       (p.desc ? '<div class="desc">' + esc(p.desc) + '</div>' : '') +
-      (p.comp && p.comp.length ? '<div class="comp">' + p.comp.map(function (c) { return '<i>' + esc(c) + '</i>'; }).join('') + '</div>' : '') +
+      renderCompositionChips(p) +
       bodyMiddleHTML +
       '<div class="steprow">' +
         '<button type="button" class="step" data-step="-1" data-sid="' + p.id + '" ' + (n0 ? '' : 'hidden') + '>−</button>' +
@@ -323,7 +332,7 @@ function renderDeliveryMenu() {
       cbody0.innerHTML =
         '<h3>' + esc(p0.name) + '</h3>' +
         (p0.desc ? '<div class="desc">' + esc(p0.desc) + '</div>' : '') +
-        (p0.comp && p0.comp.length ? '<div class="comp">' + p0.comp.map(function (c) { return '<i>' + esc(c) + '</i>'; }).join('') + '</div>' : '') +
+        renderCompositionChips(p0) +
         bodyMid0 +
         '<div class="steprow">' +
           '<button type="button" class="step" data-step="-1" data-sid="' + p0.id + '" ' + (n0 ? '' : 'hidden') + '>−</button>' +
