@@ -66,12 +66,13 @@ test('предзаказ на завтра проверяется по расп�
 });
 
 test('сегодняшние слоты требуют минимум 45 минут, а слоты не на ближайшие два дня запрещены', () => {
-  const now = new Date('2026-10-26T18:45:00.000Z'); // 20:45 в Калининграде
+  const beforeLeadTime = new Date('2026-10-26T17:46:00.000Z'); // 19:46 в Калининграде
+  const atLeadTime = new Date('2026-10-26T17:45:00.000Z'); // 19:45 в Калининграде
 
-  assert.deepEqual(DELIVERY_SCHEDULE.minimumLeadMinutes, 45);
-  assert.equal(validateDeliverySlot('26.10 | 21:00–21:30', now).valid, false);
-  assert.equal(validateDeliverySlot('28.10 | 20:30–21:00', now).valid, false);
-  assert.equal(validateDeliverySlot('26.10 | 20:30–21:00', now).valid, false);
+  assert.equal(DELIVERY_SCHEDULE.minimumLeadMinutes, 45);
+  assert.equal(validateDeliverySlot('26.10 | 20:30–21:00', beforeLeadTime).valid, false);
+  assert.equal(validateDeliverySlot('26.10 | 20:30–21:00', atLeadTime).valid, true);
+  assert.equal(validateDeliverySlot('28.10 | 20:30–21:00', atLeadTime).valid, false);
 });
 
 test('проверка ASAP учитывает запас на доставку и точное время закрытия', () => {

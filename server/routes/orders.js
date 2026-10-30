@@ -1,40 +1,3 @@
-export function getKaliningradDateParts(date = new Date()) {
-  const fmt = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Kaliningrad',
-    month: 'numeric',
-    weekday: 'short',
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: false,
-  });
-  const parts = Object.fromEntries(fmt.formatToParts(date).map((p) => [p.type, p.value]));
-  const month = Number(parts.month);
-  const hour = Number(parts.hour) % 24;
-  const minute = Number(parts.minute) || 0;
-  const wkMap = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 };
-  const dayOfWeek = wkMap[parts.weekday] ?? date.getUTCDay();
-  return { month, dayOfWeek, hour, minute };
-}
-export function getDeliveryHours(date = new Date()) {
-  const { month, dayOfWeek, hour, minute } = getKaliningradDateParts(date);
-  const isSummer = month >= 5 && month <= 9;
-  const isMonThu = dayOfWeek >= 1 && dayOfWeek <= 4;
-  
-  const open = DELIVERY.schedule.default.open;
-  const close = (!isSummer && isMonThu) ? DELIVERY.schedule.winter.close : DELIVERY.schedule.default.close;
-  
-  const curMin = hour * 60 + minute;
-  const isOpen = curMin >= open * 60 && curMin < close * 60;
-  return { open, close, isOpen };
-}
-function _getKlgHour() {
-  try {
-    const str = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Kaliningrad', hour: 'numeric', hour12: false }).format(new Date());
-    return parseInt(str, 10);
-  } catch (e) {
-    return (new Date().getUTCHours() + 2) % 24;
-  }
-}
 /* server/routes/orders.js — module-07: заказы доставки + delivery-конфиг */
 import { Router } from 'express';
 import { WEBAPP_URL } from '../config.js';
@@ -46,17 +9,27 @@ import { sendPush } from '../services/push.js';
 import { tgSend, TG_CHANNEL, APP_URL } from '../services/telegram.js';
 import { getStreetSuggestions, validateDeliveryAddress } from '../domain/address.js';
 import { canTransitionOrderStatus } from '../domain/order-status.js';
+import {
+  DELIVERY_SCHEDULE,
+  getDeliveryDays,
+  getDeliveryHours,
+  validateDeliverySlot,
+} from '../domain/delivery-hours.js';
+
+export { getKaliningradDateParts, getDeliveryHours } from '../domain/delivery-hours.js';
 
 const ordersRouter = Router();
 
 /* ── конфиг доставки ── */
 const DELIVERY = {
-  hours: [11, 22], // Дефолтные часы (используются как fallback)
+  hours: [DELIVERY_SCHEDULE.open, DELIVERY_SCHEDULE.summerClose],
   schedule: {
-    default: { open: 11, close: 22 },
-    winter: { open: 11, close: 21 } // Зимний график: пн-чт закрываемся в 21:00
+    default: { open: DELIVERY_SCHEDULE.open, close: DELIVERY_SCHEDULE.summerClose },
+    winter: { open: DELIVERY_SCHEDULE.open, close: DELIVERY_SCHEDULE.winterWeekdayClose },
   },
-  eta: 45, slotStep: 30, slotDays: 2,
+  eta: DELIVERY_SCHEDULE.minimumLeadMinutes,
+  slotStep: DELIVERY_SCHEDULE.slotStepMinutes,
+  slotDays: DELIVERY_SCHEDULE.slotDays,
   maxPreordersPerSlot: 2,
   pickupAddr: 'пгт Янтарный, ул. Советская, 38А', pickupDiscount: 0.10,
   staffDiscount: 0.10, // скидка на все заказы аккаунтов сотрудников; с самовывозом не суммируется
@@ -190,14 +163,23 @@ ordersRouter.get('/api/delivery/info', (req, res) => {
   `).all(DELIVERY.maxPreordersPerSlot);
 
   const busySlots = busyRows.map(r => r.slot);
-  const hours = getDeliveryHours();
-  res.json({ 
-    ...DELIVERY, 
+  const now = new Date();
+  const hours = getDeliveryHours(now);
+  const days = getDeliveryDays(now, DELIVERY.slotDays);
+  res.json({
+    ...DELIVERY,
     schedule: { open: hours.open, close: hours.close },
-    today: { isOpen: hours.isOpen, open: hours.open, close: hours.close },
+    today: {
+      date: days[0]?.date || null,
+      isOpen: hours.isOpen,
+      canAcceptAsap: hours.canAcceptAsap,
+      open: hours.open,
+      close: hours.close,
+    },
+    days,
     busySlots,
-    weekPromo: weekPromo(), 
-    pizzaMonth: pizzaMonth() 
+    weekPromo: weekPromo(),
+    pizzaMonth: pizzaMonth(),
   });
 });
 
@@ -305,31 +287,31 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     sum += (price + modsSum) * qty;
   }
 
-  // ── Предзаказы и проверка лимитов слота ──
+  // ── Проверка расписания и интервалов доставки ──
   const now = new Date();
-  // F3.66: единый источник часов работы — Кёнигсберг + сезонный график (как в /api/delivery/info).
-  // Раньше здесь был локальный now.getHours() по таймзоне сервера → рассинхрон с info («открыто» vs 400).
-  const isWorkingHours = getDeliveryHours(now).isOpen;
-
-  let isPreorder = b.is_preorder ? 1 : 0;
-  let preorderDate = String(b.preorder_date || '').trim();
+  const hoursNow = getDeliveryHours(now);
   const slotStr = String(b.slot || 'asap').trim();
+  const isTestEnv = process.env.NODE_ENV === 'test'
+    || (process.env.DB_PATH && process.env.DB_PATH.includes('tmp'));
 
-  if (slotStr && slotStr !== 'asap') {
-    isPreorder = 1;
-    if (!preorderDate) {
-      const dateMatch = slotStr.match(/^(\d{2}[.-]\d{2})/);
-      if (dateMatch) preorderDate = dateMatch[1];
-    }
-  }
+  let isPreorder = 0;
+  let preorderDate = '';
 
-  const isTestEnv = process.env.NODE_ENV === 'test' || (process.env.DB_PATH && process.env.DB_PATH.includes('tmp'));
-  
-  if (!isWorkingHours) {
-    if (!isTestEnv && slotStr === 'asap') {
-      return res.status(400).json({ error: 'Доставка сейчас закрыта. Пожалуйста, выберите интервал для предзаказа.' });
+  if (slotStr !== 'asap') {
+    const slotValidation = validateDeliverySlot(slotStr, now);
+    if (!slotValidation.valid) {
+      return res.status(400).json({
+        error: 'Выбранный интервал больше недоступен или не соответствует графику. Обновите время и выберите другой слот.',
+      });
     }
     isPreorder = 1;
+    preorderDate = slotValidation.datePart;
+  } else if (!isTestEnv && !hoursNow.canAcceptAsap) {
+    return res.status(400).json({
+      error: hoursNow.isOpen
+        ? 'Для доставки сегодня уже недостаточно времени. Выберите интервал предзаказа.'
+        : 'Доставка сейчас закрыта. Пожалуйста, выберите интервал для предзаказа.',
+    });
   }
 
   // Защита от переполнения: проверяем квоту слота на сервере
