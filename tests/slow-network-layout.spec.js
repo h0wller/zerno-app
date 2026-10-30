@@ -42,6 +42,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         heading: box(heading),
         card: box(card),
         media: box(media),
+        section: box(document.querySelector('.wrap > section')),
+        rail: box(document.querySelector('.wrap > .rail:not([style*="display: none"])')),
         viewportWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth
       };
@@ -51,6 +53,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.ticker).not.toBeNull();
     expect(before.ticker.height).toBeLessThanOrEqual(30);
     expect(before.tickerOverflow).toBe('hidden');
+    expect(before.section.width).toBeGreaterThan(250);
+    expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
     expect(before.heading.width).toBeGreaterThan(200);
     expect(before.card.width).toBeGreaterThan(200);
     expect(before.media.height).toBe(180);
@@ -63,6 +67,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.card.width).toBe(before.card.width);
     expect(after.media.height).toBe(before.media.height);
     expect(after.heading.width).toBe(before.heading.width);
+    expect(after.section.width).toBe(before.section.width);
 
     const cls = await page.evaluate(() => window.__layoutShifts.reduce((sum, value) => sum + value, 0));
     expect(cls).toBeLessThan(0.01);
