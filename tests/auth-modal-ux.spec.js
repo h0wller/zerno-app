@@ -209,6 +209,46 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
 
 
 
+test('registration consent is placed before Telegram verification and gates its request', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true }),
+  }));
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+
+  const consentRow = page.locator('#consentRow');
+  const consent = page.locator('#consentBox');
+  const telegramButton = page.locator('#regTgBtn');
+  const consentTop = await consentRow.evaluate((el) => el.getBoundingClientRect().top);
+  const telegramTop = await telegramButton.evaluate((el) => el.getBoundingClientRect().top);
+  expect(consentTop).toBeLessThan(telegramTop);
+
+  const requestPromise = page.waitForRequest((request) =>
+    request.url().includes('/api/auth/request-reg-otp')
+  ).catch(() => null);
+  await telegramButton.click();
+  await expect(page.locator('.toast', { hasText: 'Сначала подтвердите согласие' })).toBeVisible();
+  expect(await Promise.race([requestPromise, Promise.resolve(null)])).toBeNull();
+
+  await consent.check();
+  const request = page.waitForRequest((item) =>
+    item.url().includes('/api/auth/request-reg-otp')
+  );
+  await telegramButton.click();
+  const sent = await request;
+  expect(sent.postDataJSON()).toMatchObject({ phone: '', consent: 1 });
+  await page.evaluate(() => window.closeAuth());
+});
+
 test('guest menu action is available from registration and login', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
