@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateDishKbju } from '../../public/app/core/nutrition.js';
 
-test('pizza TTK is calculated using the selected diameter, dough and menu-option weight', () => {
+test('pizza TTK is calculated using the selected diameter, dough and TTK finished weight', () => {
   const pizza = {
     id: 'pz-marg',
     name: 'Маргарита',
@@ -63,20 +63,24 @@ test('nori sheet units are converted to estimated grams', () => {
   assert.equal(nori.grams, 2.5);
 });
 
-test('baking rolls are withheld when the TTK contains an unknown sauce ingredient', () => {
+test('baking sauce resolves kalini sauce to the red sauce preparation', () => {
   const result = calculateDishKbju({ id: 'rl-kioto-kr', name: 'Киото с креветкой' });
 
-  assert.equal(result.status, 'incomplete');
-  assert.equal(result.complete, false);
-  assert.deepEqual(result.missingIngredients, ['соус калиний']);
-  assert.equal(result.per100, undefined);
+  assert.equal(result.status, 'ready');
+  assert.equal(result.complete, true);
+  assert.equal(result.totalWeight, 290);
+  assert.ok(result.per100.kcal > 0);
+  assert.ok(result.perPortion.kcal > 0);
+  assert.ok(result.breakdown.some(entry => entry.name === 'Соус для запекания'));
 });
 
-test('the baked chicken roll also reports the unresolved baking-sauce ingredient', () => {
+test('the baked chicken roll also receives a complete estimated result', () => {
   const result = calculateDishKbju({ id: 'rl-bake-ch', name: 'Запечённый ролл с копчёной курицей' });
 
-  assert.equal(result.status, 'incomplete');
-  assert.ok(result.missingIngredients.includes('соус калиний'));
+  assert.equal(result.status, 'ready');
+  assert.equal(result.complete, true);
+  assert.equal(result.totalWeight, 300);
+  assert.ok(result.per100.kcal > 0);
 });
 
 test('menu positions without supplied TTK data do not receive invented values', () => {
