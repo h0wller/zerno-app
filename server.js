@@ -162,6 +162,12 @@ app.put('/api/menu/:id', menuGuard, (req, res) => {
     if (!onlyOn) {
       return res.status(403).json({ error: 'Доступно только переключение стоп-листа (on)' });
     }
+    const allowedSection = req.user.role === 'cashier'
+      ? 'coffee'
+      : (req.user.role === 'dispatch' ? 'delivery' : null);
+    if (!allowedSection || (existing.section || 'coffee') !== allowedSection) {
+      return res.status(403).json({ error: 'Недостаточно прав для стоп-листа этого меню' });
+    }
     const onVal = req.body.on ? 1 : 0;
     db.prepare('UPDATE menu SET is_on = ? WHERE id = ?').run(onVal, id);
     touch();
