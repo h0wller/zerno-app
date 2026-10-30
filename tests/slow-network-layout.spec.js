@@ -21,7 +21,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
                 sources: (entry.sources || []).map((source) => {
                   const node = source.node;
                   return {
-                    node: node ? `${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ''}${typeof node.className === 'string' && node.className ? `.${node.className.trim().replace(/\\s+/g, '.')}` : ''}` : null,
+                    node: node ? `${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ''}${typeof node.className === 'string' && node.className ? `.${node.className.trim().replace(/\s+/g, '.')}` : ''}` : null,
                     previousRect: source.previousRect,
                     currentRect: source.currentRect
                   };
