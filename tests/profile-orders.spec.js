@@ -55,7 +55,17 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Филадельфия с огурцом');
 
+    await page.evaluate(() => {
+      const render = window.renderOrdersModal;
+      window.__ordersModalRenderCount = 0;
+      window.renderOrdersModal = function () {
+        window.__ordersModalRenderCount += 1;
+        return render.apply(this, arguments);
+      };
+    });
+
     await page.locator('#myOrdersBtn').click();
+    await expect.poll(() => page.evaluate(() => window.__ordersModalRenderCount)).toBe(1);
 
     const modal = page.locator('#ordersModal');
     await expect(modal).toHaveClass(/show/);
