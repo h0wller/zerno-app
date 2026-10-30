@@ -460,7 +460,7 @@
 #profileBox > .placebox,
 #profileBox > #fridayInfo,
 #profileBox > .profile-history-section {
-  margin: 0 !important;
+  margin: 0;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 16px;
