@@ -29,8 +29,8 @@ test.describe('Poster & Delivery Hours Suite (F3.66)', () => {
 });
 
 
-function deliverySchedule(date, tomorrow, close) {
-  const day = (value, offset) => ({ offset, date: value, open: 11, close });
+function deliverySchedule(date, tomorrow, close, tomorrowClose = close) {
+  const day = (value, offset, dayClose) => ({ offset, date: value, open: 11, close: dayClose });
   return {
     eta: 45,
     slotStep: 30,
@@ -39,7 +39,7 @@ function deliverySchedule(date, tomorrow, close) {
     busySlots: [],
     schedule: { open: 11, close },
     today: { date, open: 11, close, isOpen: false, canAcceptAsap: false },
-    days: [day(date, 0), day(tomorrow, 1)],
+    days: [day(date, 0, close), day(tomorrow, 1, tomorrowClose)],
   };
 }
 
@@ -129,4 +129,96 @@ test('пятничное зимнее расписание оставляет с
 
   await page.clock.setFixedTime(new Date('2026-10-30T19:15:00.000Z')); // 21:15, за 45 минут до закрытия
   expect(await page.evaluate(() => window.preorderMode())).toBe('tomorrow');
+});
+
+
+test('переход с летнего на зимнее расписание 1 октября проверяется с подменой времени', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-09-30T19:14:00.000Z')); // 21:14 в Калининграде
+  let schedule = deliverySchedule('2026-09-30', '2026-10-01', 22, 21);
+  await page.route('**/api/delivery/info', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(schedule),
+  }));
+
+  await page.goto('/?brand=delivery');
+  await expect.poll(() => page.evaluate(() => window.deliveryInfo && window.deliveryInfo.today && window.deliveryInfo.today.date))
+    .toBe('2026-09-30');
+
+  const beforeSummerCutoff = await page.evaluate(() => {
+    window.populateSlots();
+    return {
+      mode: window.preorderMode(),
+      options: Array.from(document.querySelectorAll('#checkoutSlot option')).map(option => option.value),
+    };
+  });
+  expect(beforeSummerCutoff.mode).toBeNull();
+  expect(beforeSummerCutoff.options).toContain('30.09 | 21:30–22:00');
+
+  await page.clock.setFixedTime(new Date('2026-09-30T19:15:00.000Z')); // за 45 минут до летнего закрытия
+  const afterCutoff = await page.evaluate(() => {
+    window.populateSlots();
+    return {
+      mode: window.preorderMode(),
+      options: Array.from(document.querySelectorAll('#checkoutSlot option')).map(option => option.value),
+    };
+  });
+  expect(afterCutoff.mode).toBe('tomorrow');
+  expect(afterCutoff.options).toContain('01.10 | 20:30–21:00');
+  expect(afterCutoff.options).not.toContain('01.10 | 21:00–21:30');
+
+  await page.clock.setFixedTime(new Date('2026-09-30T22:01:00.000Z')); // 00:01, уже 1 октября
+  schedule = deliverySchedule('2026-10-01', '2026-10-02', 21, 22);
+  await page.evaluate(() => window.refreshDeliveryInfo());
+  const afterMonthChange = await page.evaluate(() => ({
+    today: window.deliveryInfo.today.date,
+    close: window.deliveryInfo.today.close,
+    mode: window.preorderMode(),
+    options: Array.from(document.querySelectorAll('#checkoutSlot option')).map(option => option.value),
+  }));
+  expect(afterMonthChange.today).toBe('2026-10-01');
+  expect(afterMonthChange.close).toBe(21);
+  expect(afterMonthChange.mode).toBe('today');
+  expect(afterMonthChange.options).toContain('01.10 | 20:30–21:00');
+  expect(afterMonthChange.options).not.toContain('01.10 | 21:00–21:30');
+});
+
+test('переход с зимнего на летнее расписание 1 мая проверяется с подменой времени', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-04-30T19:15:00.000Z')); // 21:15, сегодня зимнее закрытие в 21:00
+  let schedule = deliverySchedule('2026-04-30', '2026-05-01', 21, 22);
+  await page.route('**/api/delivery/info', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(schedule),
+  }));
+
+  await page.goto('/?brand=delivery');
+  await expect.poll(() => page.evaluate(() => window.deliveryInfo && window.deliveryInfo.today && window.deliveryInfo.today.date))
+    .toBe('2026-04-30');
+
+  const tomorrowSlots = await page.evaluate(() => {
+    window.populateSlots();
+    return {
+      mode: window.preorderMode(),
+      options: Array.from(document.querySelectorAll('#checkoutSlot option')).map(option => option.value),
+    };
+  });
+  expect(tomorrowSlots.mode).toBe('tomorrow');
+  expect(tomorrowSlots.options).toContain('01.05 | 21:30–22:00');
+  expect(tomorrowSlots.options).not.toContain('01.05 | 22:00–22:30');
+
+  await page.clock.setFixedTime(new Date('2026-04-30T22:01:00.000Z')); // 00:01, уже 1 мая
+  schedule = deliverySchedule('2026-05-01', '2026-05-02', 22, 22);
+  await page.evaluate(() => window.refreshDeliveryInfo());
+  const afterMonthChange = await page.evaluate(() => ({
+    today: window.deliveryInfo.today.date,
+    close: window.deliveryInfo.today.close,
+    mode: window.preorderMode(),
+    options: Array.from(document.querySelectorAll('#checkoutSlot option')).map(option => option.value),
+  }));
+  expect(afterMonthChange.today).toBe('2026-05-01');
+  expect(afterMonthChange.close).toBe(22);
+  expect(afterMonthChange.mode).toBe('today');
+  expect(afterMonthChange.options).toContain('01.05 | 21:30–22:00');
+  expect(afterMonthChange.options).not.toContain('01.05 | 22:00–22:30');
 });
