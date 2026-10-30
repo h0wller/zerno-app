@@ -125,6 +125,85 @@ canvas#fx {
   z-index: -1;
 }
 
+/* ─── Critical first-viewport layout: keep the deferred ticker stylesheet from flashing unstyled text ─── */
+.ticker {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 100%;
+  height: 28px;
+  min-height: 28px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  line-height: 28px;
+}
+.ticker[hidden],
+.ticker:empty,
+.ticker:has(#tickerTrack:empty),
+body.is-cashier .ticker,
+body.is-admin .ticker {
+  display: none;
+  height: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+#tickerTrack {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  width: max-content;
+  white-space: nowrap;
+  will-change: transform;
+  animation: zt-marquee 26s linear infinite;
+}
+#tickerTrack span {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: .5rem;
+  padding: 0 1.2rem;
+  font: 600 11px/28px "Unbounded", system-ui, sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+#tickerTrack span::after {
+  content: "〜";
+  margin-left: 1.4rem;
+  color: var(--azure, #3E8FD0);
+}
+@keyframes zt-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+@media (max-width: 400px) {
+  #tickerTrack span { font-size: 10px; padding: .35rem 1rem; }
+}
+/* Keep delivery menu headings within the mobile content column before deferred theme CSS arrives. */
+#deliveryView,
+#deliveryView .menu-head,
+#deliveryView .mh-top,
+#deliveryView .mh-top > div {
+  min-width: 0;
+  max-width: 100%;
+}
+#deliveryView .menu-head h1 {
+  margin: 0;
+  font-size: clamp(20px, 5.5vw, 32px);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+#deliveryView .menu-head h2.vh {
+  margin: 8px 0 4px;
+  font-size: clamp(18px, 4.8vw, 28px);
+  line-height: 1.2;
+}
+
 /* ─── 1. Splash lifecycle & FOUC-guards ─── */
 #brandSplash,
 #brandSplashStatic,
