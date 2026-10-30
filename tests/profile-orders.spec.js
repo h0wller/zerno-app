@@ -177,6 +177,8 @@ test.describe('Модуль заказов профиля', () => {
   test('содержимое профиля меняется вместе с брендом, вкладки доступны с клавиатуры', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection')).toBeVisible();
     await expect(page.locator('#profileCoffeeSection')).toBeHidden();
+    await expect(page.locator('#fridayInfo')).toBeVisible();
+    await expect(page.locator('#fridayInfo').evaluate(el => el.parentElement.id)).resolves.toBe('profileBox');
 
     await page.evaluate(() => {
       window.brand = 'coffee';
@@ -184,6 +186,7 @@ test.describe('Модуль заказов профиля', () => {
     });
     await expect(page.locator('#profileCoffeeSection')).toBeVisible();
     await expect(page.locator('#profileOrdersSection')).toBeHidden();
+    await expect(page.locator('#fridayInfo')).toBeHidden();
 
     const bonusTab = page.locator('#tabBonus');
     const profileTab = page.locator('#tabProfile');
