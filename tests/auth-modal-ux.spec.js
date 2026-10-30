@@ -238,6 +238,24 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
 
 
 
+
+test('auth modal keeps the short unified-profile registration benefit visible in both modes', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+
+  const benefit = page.locator('#authModal .msub');
+  const expected = 'Единый профиль — заказы и бонусы. За регистрацию — приветственный напиток и бесплатная доставка.';
+
+  await page.evaluate(() => window.openAuth(false));
+  await expect(benefit).toHaveText(expected);
+  await page.evaluate(() => window.openAuth(true));
+  await expect(benefit).toHaveText(expected);
+});
+
 test('auth fields expose mobile autofill and next/done keyboard hints', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
