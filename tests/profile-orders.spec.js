@@ -119,6 +119,19 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#setPinModal')).toHaveClass(/show/);
   });
 
+  test('Escape closes settings without closing the profile panel', async ({ page }) => {
+    const panel = page.locator('#panel');
+    const panelWasOpen = await panel.evaluate(element => element.classList.contains('open'));
+
+    await page.locator('#profileBox .gear').click();
+    const settings = page.locator('#settingsModal');
+    await expect(settings).toHaveClass(/show/);
+
+    await page.keyboard.press('Escape');
+    await expect(settings).not.toHaveClass(/show/);
+    await expect.poll(() => panel.evaluate(element => element.classList.contains('open'))).toBe(panelWasOpen);
+  });
+
   test('имя редактируется явно и сохраняется отдельным действием', async ({ page }) => {
     await page.route('**/api/me', async route => {
       if (route.request().method() !== 'PUT') return route.continue();
