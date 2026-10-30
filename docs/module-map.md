@@ -56,6 +56,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
+| `cart-promo.js` | Состояние, применение и сброс промокода; персональный код первой бесплатной доставки | `window.CartPromo` |
 | `cart.js` | Единственный владелец мутаций корзины и сохранения; `#cartItems`, аддоны, итоги, подарки, cartFab; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo` |
 | `checkout-validation.js` | Проверка адреса и времени доставки перед оформлением; подсветка ошибочного поля и переключатель «сейчас / ко времени» | `window.CheckoutValidation` |
 | `core/address-dict.js` | Справочник улиц и тарифов | `window.AddressModule` |
