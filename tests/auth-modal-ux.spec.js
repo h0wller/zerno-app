@@ -34,7 +34,7 @@ for (const viewport of viewports) {
     await expect(modal).toBeVisible();
     await expect(modal).toHaveAttribute('role', 'dialog');
     await expect(modal).toHaveAttribute('aria-modal', 'true');
-    await expect(modal.locator('.auth-logo img')).toHaveAttribute('src', '/icon.svg');
+    await expect(modal.locator('.auth-logo img')).toHaveAttribute('src', '/zerno-mark.webp');
     await expect(card.locator('#regName')).toBeVisible();
 
     await page.waitForFunction(() => {
