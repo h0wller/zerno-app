@@ -323,12 +323,15 @@ function getZoomPizzaOptions(dish) {
 function renderZoomNutrition(data, pizzaOptions, selectedOptionIndex) {
   const optionSelector = pizzaOptions.length
     ? '<div style="margin-bottom:9px">' +
-        '<div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8B98A5;margin-bottom:6px">Размер и тесто</div>' +
+        '<div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--nutrition-muted, #8B98A5);margin-bottom:6px">Размер и тесто</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:5px">' +
           pizzaOptions.map((option, index) => {
             const active = index === selectedOptionIndex;
             const label = String(option.l || option.name || ('Вариант ' + (index + 1)));
-            return '<button type="button" data-kbju-option="' + index + '" aria-pressed="' + active + '" style="border:1px solid ' + (active ? '#123A6B' : '#D8DFE4') + ';background:' + (active ? '#EAF1F9' : '#fff') + ';color:#123A6B;border-radius:9px;padding:6px 8px;font-size:11px;font-weight:' + (active ? '700' : '500') + ';cursor:pointer">' + esc(label) + '</button>';
+            const buttonStyle = active
+              ? 'border:2px solid var(--nutrition-accent, var(--flame, #123A6B));background:var(--nutrition-accent-soft, #EAF1F9);color:var(--nutrition-text, #101418);box-shadow:2px 2px 0 var(--nutrition-border, transparent);'
+              : 'border:1px solid var(--nutrition-border, #D8DFE4);background:var(--nutrition-surface, #F8FAFC);color:var(--nutrition-text, #101418);';
+            return '<button type="button" data-kbju-option="' + index + '" aria-pressed="' + active + '" style="' + buttonStyle + 'border-radius:9px;padding:6px 8px;font-size:11px;font-weight:' + (active ? '700' : '500') + ';cursor:pointer">' + esc(label) + '</button>';
           }).join('') +
         '</div>' +
       '</div>'
@@ -338,7 +341,7 @@ function renderZoomNutrition(data, pizzaOptions, selectedOptionIndex) {
     if (!pizzaOptions.length) return '';
     return '<div id="zoomKbjuBox" style="margin-top:2px">' +
       optionSelector +
-      '<div style="font-size:12px;line-height:1.45;color:#7A5A26">Для этой позиции пока нет ТТК. КБЖУ не рассчитывается.</div>' +
+      '<div style="font-size:12px;line-height:1.45;color:var(--nutrition-warning, #7A5A26)">Для этой позиции пока нет ТТК. КБЖУ не рассчитывается.</div>' +
     '</div>';
   }
 
@@ -346,28 +349,28 @@ function renderZoomNutrition(data, pizzaOptions, selectedOptionIndex) {
     const missing = (data.missingIngredients || []).map(esc).join(', ');
     return '<div id="zoomKbjuBox" style="margin-top:2px">' +
       optionSelector +
-      '<div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8B98A5;margin-bottom:5px">Пищевая ценность — оценка</div>' +
-      '<div style="font-size:12px;line-height:1.45;color:#7A5A26">Полный расчёт недоступен: не хватает данных по ' + (missing || 'одному или нескольким ингредиентам') + '. Числа не показываются, чтобы не занижать КБЖУ.</div>' +
+      '<div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--nutrition-muted, #8B98A5);margin-bottom:5px">Пищевая ценность — оценка</div>' +
+      '<div style="font-size:12px;line-height:1.45;color:var(--nutrition-warning, #7A5A26)">Полный расчёт недоступен: не хватает данных по ' + (missing || 'одному или нескольким ингредиентам') + '. Числа не показываются, чтобы не занижать КБЖУ.</div>' +
     '</div>';
   }
 
   const hasPortion = !!(data.perPortion && data.totalWeight > 0);
   const cell = (idKey, val, label) =>
-    '<div style="flex:1;background:#F8FAFC;border:1px solid #E5EBF0;border-radius:12px;padding:7px 4px;text-align:center">' +
-      '<b data-kbju-val="' + idKey + '" style="display:block;font-size:14px;color:#101418">' + esc(val ?? '—') + '</b>' +
-      '<span style="font-size:10.5px;color:#6E7A85">' + label + '</span>' +
+    '<div style="flex:1;background:var(--nutrition-surface, #F8FAFC);border:1px solid var(--nutrition-border, #E5EBF0);border-radius:12px;padding:7px 4px;text-align:center">' +
+      '<b data-kbju-val="' + idKey + '" style="display:block;font-size:14px;color:var(--nutrition-text, #101418)">' + esc(val ?? '—') + '</b>' +
+      '<span style="font-size:10.5px;color:var(--nutrition-muted, #6E7A85)">' + label + '</span>' +
     '</div>';
 
   return '<div id="zoomKbjuBox" style="margin-top:2px">' +
     optionSelector +
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">' +
-      '<span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8B98A5">Пищевая ценность — оценка</span>' +
+      '<span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--nutrition-muted, #8B98A5)">Пищевая ценность — оценка</span>' +
       (hasPortion
-        ? '<div style="display:inline-flex;background:#EEF2F6;border-radius:999px;padding:2px;gap:2px;white-space:nowrap">' +
-            '<button type="button" data-kbju-mode="100" style="border:none;background:#fff;color:#101418;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.1)">на 100 г</button>' +
-            '<button type="button" data-kbju-mode="portion" style="border:none;background:transparent;color:#586470;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;cursor:pointer">на порцию (' + data.totalWeight + ' г)</button>' +
+        ? '<div style="display:inline-flex;background:var(--nutrition-toggle-bg, #EEF2F6);border:var(--nutrition-toggle-border, none);border-radius:999px;padding:2px;gap:2px;white-space:nowrap">' +
+            '<button type="button" data-kbju-mode="100" style="border:var(--nutrition-toggle-active-border, none);background:var(--nutrition-toggle-active-bg, #FFFFFF);color:var(--nutrition-text, #101418);font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;cursor:pointer;box-shadow:var(--nutrition-toggle-active-shadow, 0 1px 3px rgba(0,0,0,.1))">на 100 г</button>' +
+            '<button type="button" data-kbju-mode="portion" style="border:none;background:transparent;color:var(--nutrition-muted, #586470);font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;cursor:pointer">на порцию (' + data.totalWeight + ' г)</button>' +
           '</div>'
-        : '<span style="font-size:11px;color:#8B98A5">на 100 г</span>') +
+        : '<span style="font-size:11px;color:var(--nutrition-muted, #8B98A5)">на 100 г</span>') +
     '</div>' +
     '<div style="display:flex;gap:6px">' +
       cell('kcal', data.per100.kcal, 'ккал') +
@@ -375,11 +378,9 @@ function renderZoomNutrition(data, pizzaOptions, selectedOptionIndex) {
       cell('f', data.per100.f, 'жиры, г') +
       cell('c', data.per100.c, 'углеводы, г') +
     '</div>' +
-    '<div style="font-size:10.5px;line-height:1.4;color:#8B98A5;margin-top:6px">Расчёт по граммовкам ТТК и усреднённым справочным значениям ингредиентов; фактический состав поставщика и потери при приготовлении могут отличаться.</div>' +
+    '<div style="font-size:10.5px;line-height:1.4;color:var(--nutrition-muted, #8B98A5);margin-top:6px">Расчёт по граммовкам ТТК и усреднённым справочным значениям ингредиентов; фактический состав поставщика и потери при приготовлении могут отличаться.</div>' +
   '</div>';
-}
-
-/* ── Полноэкранный зум с пинчем двумя пальцами, составом и авто-КБЖУ ── */
+}/* ── Полноэкранный зум с пинчем двумя пальцами, составом и авто-КБЖУ ── */
 function openZoom(src, name, price, itemObj) {
   const dish = findDishForZoom(src, name, itemObj);
   const title = name || (dish && dish.name) || '';
