@@ -25,12 +25,12 @@ test.describe('Оценочный калькулятор КБЖУ в увели�
     const nutrition = page.locator('#zoomKbjuBox');
     await expect(nutrition).toContainText('Пищевая ценность — оценка');
     await expect(nutrition.locator('[data-kbju-val="kcal"]')).toHaveText(/^\d+$/);
-    await expect(nutrition.locator('[data-kbju-mode="portion"]')).toContainText('415 г');
+    await expect(nutrition.locator('[data-kbju-mode="portion"]')).toContainText('395 г');
 
     const initialCalories = await nutrition.locator('[data-kbju-val="kcal"]').textContent();
     await nutrition.locator('[data-kbju-option="1"]').click();
 
-    await expect(nutrition.locator('[data-kbju-mode="portion"]')).toContainText('750 г');
+    await expect(nutrition.locator('[data-kbju-mode="portion"]')).toContainText('585 г');
     const largeCalories = await nutrition.locator('[data-kbju-val="kcal"]').textContent();
     expect(largeCalories).not.toBe(initialCalories);
 
