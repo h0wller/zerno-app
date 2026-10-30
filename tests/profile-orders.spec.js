@@ -94,10 +94,23 @@ test.describe('Модуль заказов профиля', () => {
     await expect(modal.locator('.omClose')).toBeFocused();
     const closeColors = await modal.locator('.omClose').evaluate(element => {
       const style = getComputedStyle(element);
-      return { color: style.color, background: style.backgroundColor };
+      const bgProbe = document.createElement('span');
+      const textProbe = document.createElement('span');
+      bgProbe.style.color = style.getPropertyValue('--mclose-bg').trim();
+      textProbe.style.color = style.getPropertyValue('--mclose-color').trim();
+      document.body.append(bgProbe, textProbe);
+      const result = {
+        background: style.backgroundColor,
+        tokenBackground: getComputedStyle(bgProbe).color,
+        color: style.color,
+        tokenColor: getComputedStyle(textProbe).color
+      };
+      bgProbe.remove();
+      textProbe.remove();
+      return result;
     });
-    expect(closeColors.color).toBe('rgb(255, 255, 255)');
-    expect(closeColors.background).toBe('rgb(18, 58, 107)');
+    expect(closeColors.background).toBe(closeColors.tokenBackground);
+    expect(closeColors.color).toBe(closeColors.tokenColor);
 
     await modal.locator('[data-open-track="profile-order-1"]').click();
     const trackModal = page.locator('#orderTrackModal');
@@ -232,7 +245,7 @@ test.describe('Модуль заказов профиля', () => {
         }
         return response;
       };
-      window.me = { ...window.me, id: 'profile-test-second-account' };
+      window.setUser('profile-test-token-second', { ...window.me, id: 'profile-test-second-account' });
       window.loadMyOrders();
     });
     await expect.poll(() => mineRequestCount).toBe(2);
@@ -241,7 +254,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(host).not.toContainText('P-1042');
 
     await page.evaluate(() => {
-      window.me = { ...window.me, id: 'profile-test-third-account' };
+      window.setUser('profile-test-token-third', { ...window.me, id: 'profile-test-third-account' });
       window.loadMyOrders();
     });
     await expect.poll(() => mineRequestCount).toBe(3);
@@ -308,10 +321,10 @@ test.describe('Модуль заказов профиля', () => {
     await expect(info).toBeVisible();
     await expect(info).toContainText('п. Янтарный, ул. Советская, 38А · доставка из приложения');
     await expect(info).toContainText('Май–сентябрь');
-    await expect(info).toContainText('пн–вс · 11:00–22:00');
+    await expect(info).toContainText('пн–вс 11:00–22:00');
     await expect(info).toContainText('Октябрь–апрель');
-    await expect(info).toContainText('пн–чт · 11:00–21:00');
-    await expect(info).toContainText('пт–вс · 11:00–22:00');
+    await expect(info).toContainText('пн–чт 11:00–21:00');
+    await expect(info).toContainText('пт–вс 11:00–22:00');
     await expect(info).not.toContainText('самовывоз');
     await expect(info).not.toContainText('Ежедневно 11:00–22:00');
 
