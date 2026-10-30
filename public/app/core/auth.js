@@ -168,6 +168,8 @@
     applyAuthBrand();
     setAuthFormMode(login);
     if (login) resetLoginPinState();
+    var target = document.getElementById(login ? 'logPhone' : 'regName');
+    if (target) target.focus();
   }
 
 
