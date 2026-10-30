@@ -1,0 +1,57 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Оценочный калькулятор КБЖУ в увеличенном просмотре', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#deliveryGrid [data-product-id="pz-marg"]')).toBeVisible();
+  });
+
+  async function openDeliveryItem(page, id) {
+    await page.evaluate((productId) => {
+      const product = window.DMENU.find((item) => String(item.id) === productId);
+      if (!product) throw new Error('Тестовая позиция не найдена: ' + productId);
+      window.openZoom('/test-' + productId + '-zoom.webp', product.name, '', product);
+    }, id);
+    await expect(page.locator('#itemZoomOverlay')).toBeVisible();
+  }
+
+  test('пицца показывает оценку, пересчитывает макросы при выборе размера и теста', async ({ page }) => {
+    await openDeliveryItem(page, 'pz-marg');
+
+    const nutrition = page.locator('#zoomKbjuBox');
+    await expect(nutrition).toContainText('Пищевая ценность — оценка');
+    await expect(nutrition.locator('[data-kbju-val="kcal"]')).toHaveText(/^\d+$/);
+    await expect(nutrition.locator('[data-kbju-mode="portion"]')).toContainText('415 г');
+
+    const initialCalories = await nutrition.locator('[data-kbju-val="kcal"]').textContent();
+    await nutrition.locator('[data-kbju-option="1"]').click();
+
+    await expect(nutrition.locator('[data-kbju-mode="portion"]')).toContainText('750 г');
+    const largeCalories = await nutrition.locator('[data-kbju-val="kcal"]').textContent();
+    expect(largeCalories).not.toBe(initialCalories);
+
+    await nutrition.locator('[data-kbju-mode="portion"]').click();
+    await expect(nutrition.locator('[data-kbju-val="kcal"]')).toHaveText(/^\d+$/);
+  });
+
+  test('ролл с полной ТТК показывает оценочные КБЖУ', async ({ page }) => {
+    await openDeliveryItem(page, 'rl-phil-og');
+
+    const nutrition = page.locator('#zoomKbjuBox');
+    await expect(nutrition).toContainText('Пищевая ценность — оценка');
+    await expect(nutrition.locator('[data-kbju-val="kcal"]')).toHaveText(/^\d+$/);
+    await expect(nutrition).toContainText('на порцию (250 г)');
+  });
+
+  test('ролл с нераскрытым компонентом не показывает частичные цифры', async ({ page }) => {
+    await openDeliveryItem(page, 'rl-kioto-kr');
+
+    const nutrition = page.locator('#zoomKbjuBox');
+    await expect(nutrition).toContainText('соус калиний');
+    await expect(nutrition.locator('[data-kbju-val]')).toHaveCount(0);
+  });
+});
