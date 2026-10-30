@@ -41,6 +41,10 @@ test.describe('Модуль заказов профиля', () => {
         verified: 1
       };
       window.brand = 'delivery';
+      if (typeof window.__profileMeReady !== 'function') {
+        throw new Error('Profile readiness hook was not initialized');
+      }
+      window.__profileMeReady();
       window.renderProfile();
     });
     await expect(page.locator('#myOrdersBtn')).toBeVisible();
