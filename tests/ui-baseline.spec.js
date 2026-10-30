@@ -165,6 +165,7 @@ test('baseline: кассир', async ({ page }) => {
   await modeBtn(page, 'cashier', 'Кассир').click();
   await expect(page.locator('#cashierView')).toBeVisible({ timeout: 10000 });
   const cashierGuide = page.locator('#cashierGuide');
+  await expect(cashierGuide).toHaveCount(1);
   await expect(cashierGuide).toBeVisible();
   await cashierGuide.locator('summary').click();
   await expect(cashierGuide.locator('.staff-guide-content')).toContainText('Найдите гостя');
@@ -174,6 +175,7 @@ test('baseline: кассир', async ({ page }) => {
   await modeBtn(page, 'orders', 'Заказы').click();
   await expect(page.locator('#ordersView')).toBeVisible({ timeout: 10000 });
   const dispatchGuide = page.locator('#dispatchGuide');
+  await expect(dispatchGuide).toHaveCount(1);
   await expect(dispatchGuide).toBeVisible();
   await dispatchGuide.locator('summary').click();
   await expect(dispatchGuide.locator('.staff-guide-content')).toContainText('Меняйте статус по этапам');
