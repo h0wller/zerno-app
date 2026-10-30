@@ -166,6 +166,19 @@ test('registration and login tabs stay in sync with the active form and keyboard
   expect(activeLoginStyle.background).not.toBe(inactiveRegisterStyle.background);
   expect(activeLoginStyle.color).not.toBe(inactiveRegisterStyle.color);
 
+  // Mouse/touch activation must keep the selected tab and visible panel synchronized.
+  await registerTab.click();
+  await expect(registerTab).toHaveAttribute('aria-selected', 'true');
+  await expect(loginTab).toHaveAttribute('aria-selected', 'false');
+  await expect(page.locator('#regForm')).toBeVisible();
+  await expect(page.locator('#loginForm')).toBeHidden();
+
+  await loginTab.click();
+  await expect(loginTab).toHaveAttribute('aria-selected', 'true');
+  await expect(registerTab).toHaveAttribute('aria-selected', 'false');
+  await expect(page.locator('#loginForm')).toBeVisible();
+  await expect(page.locator('#regForm')).toBeHidden();
+
   await registerTab.focus();
   await page.keyboard.press('ArrowRight');
   await expect(loginTab).toBeFocused();
