@@ -125,6 +125,21 @@ body[data-brand="coffee"] {
   --cart-qty-color: var(--ink, #101418);
   --cart-item-border: 1.5px dashed var(--line, #D8DFE4);
   --cashier-bg: var(--paper, #FFFFFF);
+
+  /* ── КБЖУ в увеличенном просмотре ─────────────────────── */
+  --nutrition-text: var(--ink, #101418);
+  --nutrition-muted: #6E7A85;
+  --nutrition-surface: #F8FAFC;
+  --nutrition-border: var(--line, #D8DFE4);
+  --nutrition-accent: var(--flame, #123A6B);
+  --nutrition-accent-soft: #EAF1F9;
+  --nutrition-warning: #7A5A26;
+  --nutrition-toggle-bg: #EEF2F6;
+  --nutrition-toggle-border: none;
+  --nutrition-toggle-active-bg: #FFFFFF;
+  --nutrition-toggle-active-border: none;
+  --nutrition-toggle-active-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
 }
 
 
@@ -265,6 +280,21 @@ body[data-brand="delivery"] {
   --cart-qty-color: #3A2A1C;
   --cart-item-border: 1.5px dashed rgba(58, 42, 28, 0.3);
   --cashier-bg: var(--fr-paper, #F6EEE1);
+
+  /* ── КБЖУ в увеличенном просмотре ─────────────────────── */
+  --nutrition-text: var(--fr-choc, #3A2A1C);
+  --nutrition-muted: rgba(58, 42, 28, 0.68);
+  --nutrition-surface: var(--fr-paper, #F6EEE1);
+  --nutrition-border: var(--fr-choc, #3A2A1C);
+  --nutrition-accent: var(--flame, #C03B2A);
+  --nutrition-accent-soft: var(--fr-tan, #C99E6E);
+  --nutrition-warning: var(--flame, #C03B2A);
+  --nutrition-toggle-bg: var(--fr-paper, #F6EEE1);
+  --nutrition-toggle-border: 1px solid var(--fr-choc, #3A2A1C);
+  --nutrition-toggle-active-bg: var(--fr-tan, #C99E6E);
+  --nutrition-toggle-active-border: 1px solid var(--fr-choc, #3A2A1C);
+  --nutrition-toggle-active-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+
 }
 
 
