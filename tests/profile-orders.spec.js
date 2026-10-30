@@ -401,6 +401,8 @@ test.describe('Модуль заказов профиля', () => {
   test('содержимое профиля меняется вместе с брендом, вкладки доступны с клавиатуры', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection')).toBeVisible();
     await expect(page.locator('#profileCoffeeSection')).toBeHidden();
+    await expect(page.locator('#profileBox .coffee-venue-card')).toBeHidden();
+    await expect(page.locator('#profileBox .coffee-review-card')).toBeHidden();
     await expect(page.locator('#tabBonus')).toBeHidden();
     await page.evaluate(() => window.openPanel('bonus'));
     await expect(page.locator('#tabProfile')).toHaveAttribute('aria-selected', 'true');
@@ -415,6 +417,8 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#profileCoffeeSection')).toBeVisible();
     await expect(page.locator('#profileOrdersSection')).toBeHidden();
     await expect(page.locator('#fridayInfo')).toBeHidden();
+    await expect(page.locator('#profileBox .coffee-venue-card')).toBeVisible();
+    await expect(page.locator('#profileBox .coffee-review-card')).toBeVisible();
 
     const coffeeVenue = page.locator('#profileBox .coffee-venue-card');
     await expect(coffeeVenue).toContainText('п. Янтарный, ул. Советская, 70г');
