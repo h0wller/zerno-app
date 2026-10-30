@@ -99,6 +99,21 @@ test('existing direct nutrition values remain supported', () => {
   assert.deepEqual(result.perPortion, { kcal: 480, p: 24, f: 16, c: 40 });
 });
 
+test('legacy Russian ingredient keys in custom tech cards remain supported', () => {
+  const result = calculateDishKbju({
+    id: 'legacy-russian-recipe',
+    techCard: {
+      'моцарелла': 100,
+      'помидоры': 50
+    }
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.equal(result.totalWeight, 150);
+  assert.equal(result.perPortion.kcal, 290);
+  assert.equal(result.per100.kcal, 193);
+});
+
 test('custom ingredient recipes remain supported for deterministic extensions', () => {
   const result = calculateDishKbju(
     { id: 'test-dish', recipe: { flour: 200, mozzarella: 50 } },
