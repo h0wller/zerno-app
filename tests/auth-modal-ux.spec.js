@@ -387,7 +387,83 @@ test('desktop auth modal scrolls without displaying scrollbar tracks', async ({ 
 });
 
 
-test('Telegram registration shows request progress, pending status and resets on close', async ({ page }) => {
+
+test('login completes and creates a session when the modal is closed mid-request', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+  let markRequestStarted;
+  let releaseRequest;
+  const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
+  const responseGate = new Promise((resolve) => { releaseRequest = resolve; });
+  let requestCount = 0;
+  await page.route('**/api/auth/login', async (route) => {
+    requestCount += 1;
+    markRequestStarted();
+    await responseGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'auth-modal-login-test',
+        customer: { id: 888889, name: 'Auth Login Test' }
+      })
+    });
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(true));
+  await page.locator('#logPhone').fill('+79001234567');
+  await page.locator('#logPin').fill('1234');
+  await page.locator('#logBtn').click();
+  await requestStarted;
+  await expect(page.locator('#logBtn')).toBeDisabled();
+
+  await page.evaluate(() => window.closeAuth());
+  releaseRequest();
+  await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('Auth Login Test');
+  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
+  expect(requestCount).toBe(1);
+});
+
+
+test('Telegram login code request completes after the auth modal is closed', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  let markRequestStarted;
+  let releaseRequest;
+  const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
+  const responseGate = new Promise((resolve) => { releaseRequest = resolve; });
+  await page.route('**/api/auth/request-otp', async (route) => {
+    markRequestStarted();
+    await responseGate;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(true));
+  await page.locator('#logPhone').fill('+79001234567');
+  await page.locator('#otpBtn').click();
+  await requestStarted;
+
+  await page.evaluate(() => window.closeAuth());
+  releaseRequest();
+  await page.waitForFunction(() => document.getElementById('logOtpWrap').style.display !== 'none');
+  await page.evaluate(() => window.openAuth(true));
+  await expect(page.locator('#logOtp')).toBeVisible();
+  await expect(page.locator('#logOtpHint')).toContainText('Код отправлен в Telegram');
+  await expect(page.locator('#otpBtn')).toBeEnabled();
+});
+
+test('Telegram registration request continues after closing the auth modal', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
@@ -424,21 +500,23 @@ test('Telegram registration shows request progress, pending status and resets on
   await expect(button).toHaveAttribute('aria-busy', 'true');
   await expect(label).toHaveText('Отправляем запрос…');
 
+  await page.evaluate(() => window.closeAuth());
+  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   releaseRequest();
   await expect(button).toBeEnabled();
   await expect(button).not.toHaveAttribute('aria-busy', 'true');
   await expect(label).toHaveText('Отправить повторно в Telegram');
+  await expect(status).toHaveClass('auth-tg-pending');
+  await expect(status).toHaveText('Ожидаем подтверждение в Telegram…');
+
+  await page.evaluate(() => window.openAuth(false));
   await expect(status).toBeVisible();
   await expect(status).toHaveAttribute('role', 'status');
   await expect(status).toHaveAttribute('aria-live', 'polite');
   await expect(status).toHaveClass('auth-tg-pending');
-  await expect(status).toHaveText('Ожидаем подтверждение в Telegram…');
-
-  await page.evaluate(() => window.closeAuth());
-  await expect(status).toBeHidden();
   await expect(button).toBeEnabled();
   await expect(button).not.toHaveAttribute('aria-busy', 'true');
-  await expect(label).toHaveText('Подтвердить в Telegram · бесплатно');
+  await expect(label).toHaveText('Отправить повторно в Telegram');
 });
 
 test('registration consent is placed before Telegram verification and gates its request', async ({ page }) => {
@@ -597,11 +675,16 @@ test('switching to and from Telegram code entry moves focus to the active field'
 });
 
 
-test('registration submit exposes a loading state and prevents duplicate requests', async ({ page }) => {
+test('registration completes and creates a session when the modal is closed mid-request', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   });
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
   let markRequestStarted;
   let releaseRequest;
   const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
@@ -634,7 +717,10 @@ test('registration submit exposes a loading state and prevents duplicate request
   await expect(submit).toBeDisabled();
   await expect(submit).toHaveAttribute('aria-busy', 'true');
   await expect(submit).toHaveText('Создаём профиль…');
+  await page.evaluate(() => window.closeAuth());
+  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   releaseRequest();
+  await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('Auth Modal Test');
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   expect(requestCount).toBe(1);
 });
