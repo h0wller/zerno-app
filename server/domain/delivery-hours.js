@@ -93,7 +93,7 @@ export function getDeliveryDays(now = new Date(), count = DELIVERY_SCHEDULE.slot
 
 export function validateDeliverySlot(slot, now = new Date()) {
   const match = String(slot || '').trim().match(
-    /^(\\d{2})\\.(\\d{2})\\s*\\|\\s*(\\d{2}):(\\d{2})[–-](\\d{2}):(\\d{2})$/,
+    /^(\d{2})\.(\d{2})\s*\|\s*(\d{2}):(\d{2})[–-](\d{2}):(\d{2})$/,
   );
   if (!match) return { valid: false, reason: 'format' };
 
