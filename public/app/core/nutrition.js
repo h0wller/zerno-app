@@ -245,13 +245,14 @@ function calculatePizza(item, recipe, sources, option) {
     ...sizeRecipe.ingredients,
     'pizza-dough': optionInfo.doughGrams
   };
-  const portionWeight = optionInfo.optionWeight || Number(sizeRecipe.yieldWeight) || 0;
+  const ttkYieldWeight = Number(sizeRecipe.yieldWeight) || 0;
+  const portionWeight = ttkYieldWeight || optionInfo.optionWeight;
   const recipeForPortion = { ingredients, yieldWeight: portionWeight || undefined };
   const evaluated = evaluateRecipe(recipeForPortion, sources);
 
   return makeResult(evaluated, {
     source: 'ТТК + усреднённая база продуктов',
-    weightSource: optionInfo.optionWeight ? 'вес выбранной опции меню' : 'выход из ТТК',
+    weightSource: ttkYieldWeight ? 'выход готового изделия из ТТК' : 'вес выбранной опции меню',
     selectedOption: optionInfo.label
   });
 }
