@@ -172,6 +172,65 @@
   border-color: rgba(179, 55, 43, 0.35);
   color: #b3372b;
 }
+#settingsModal .settings-danger-zone {
+  padding: 12px;
+  border: 1px solid rgba(179, 55, 43, 0.25);
+  border-radius: 14px;
+  background: rgba(179, 55, 43, 0.035);
+}
+#settingsModal .settings-danger-zone .settings-section-title {
+  margin-top: 0;
+  color: #b3372b;
+}
+#settingsModal .settings-danger-zone p,
+#settingsModal .settings-delete-confirm p {
+  margin: 0 0 10px;
+  color: var(--soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+#settingsModal .settings-delete-confirm {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(179, 55, 43, 0.2);
+}
+#settingsModal .settings-delete-confirm label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--soft);
+}
+#settingsModal .settings-delete-confirm input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+}
+#settingsModal .settings-delete-confirm input:focus-visible {
+  outline: 2px solid #b3372b;
+  outline-offset: 2px;
+}
+#settingsModal .settings-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+#settingsModal .settings-delete-actions .danger {
+  background: #b3372b;
+  color: #fff;
+}
+#settingsModal .settings-delete-actions .danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+#settingsModal .settings-card:focus {
+  outline: none;
+}
 #chatMsgs,
 .cartPanel {
   overscroll-behavior: contain;

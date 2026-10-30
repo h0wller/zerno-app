@@ -1,46 +1,44 @@
-/* public/app/core/notify.js — Ф3.21: каналы уведомлений — syncNotifyAll/applyNotify/syncNotifyUI
-+ инжект #notifyDetails + слушатели открытия профиля.
-Было fix-views.js: v61 notify-кластер + R3. */
-(function(){
-'use strict';
-function syncNotifyAll(){
-if(!me)return;
-[['ntTg','ntWeb'],['ntTg2','ntWeb2']].forEach(function(pr){
-var t=document.getElementById(pr[0]),w=document.getElementById(pr[1]);
-if(t)t.checked=me.notify_tg!==0;
-if(w)w.checked=me.notify_web!==0;
-});
-}
-window.syncNotifyAll=syncNotifyAll;
-window.applyNotify=async function(tg,web){
-try{
-var r=await api('/me/notify',{method:'PUT',body:{tg:tg?1:0,web:web?1:0}});
-if(r&&r.customer&&me){me.notify_tg=r.customer.notify_tg;me.notify_web=r.customer.notify_web;}
-syncNotifyAll();
-var where=(tg&&web)?'Пуши придут в оба канала':(tg?'Пуши придут только в Telegram':(web?'Пуши придут только в браузер':'Пуши выключены — верни каналы в любой момент'));
-toast('✅ Сохранено: Telegram — '+(tg?'вкл':'выкл')+', браузер — '+(web?'вкл':'выкл')+'. '+where,'🔔');
-}catch(e){toast(e.message,'⚠️');syncNotifyAll();}
-};
-function syncNotifyUI(){
-if(!me)return;
-var t=document.getElementById('ntTg'),w=document.getElementById('ntWeb');
-if(t)t.checked=me.notify_tg!==0;
-if(w)w.checked=me.notify_web!==0;
-}
-window.syncNotifyUI=syncNotifyUI;
-(function(){
-var pb=document.getElementById('profileBox');if(!pb||document.getElementById('notifyDetails'))return;
-var d=document.createElement('details');d.id='notifyDetails';
-d.innerHTML='<summary>🔔 Каналы уведомлений</summary>'+
-'<div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">'+
-'<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="ntTg"> 🤖 Telegram</label>'+
-'<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="ntWeb"> 🔔 Пуши браузера</label></div>';
-pb.appendChild(d);
-d.addEventListener('change',function(){window.applyNotify(document.getElementById('ntTg').checked,document.getElementById('ntWeb').checked);});
+/* public/app/core/notify.js — единое управление каналами уведомлений профиля. */
+(function () {
+    'use strict';
+
+    function syncNotifyAll() {
+        if (!me) return;
+        var telegram = document.getElementById('ntTg2');
+        var browser = document.getElementById('ntWeb2');
+        if (telegram) telegram.checked = me.notify_tg !== 0;
+        if (browser) browser.checked = me.notify_web !== 0;
+    }
+
+    async function applyNotify(telegram, browser) {
+        if (!me) return;
+        try {
+            var response = await api('/me/notify', {
+                method: 'PUT',
+                body: { tg: telegram ? 1 : 0, web: browser ? 1 : 0 }
+            });
+            if (response && response.customer) {
+                me.notify_tg = response.customer.notify_tg;
+                me.notify_web = response.customer.notify_web;
+            } else {
+                me.notify_tg = telegram ? 1 : 0;
+                me.notify_web = browser ? 1 : 0;
+            }
+            syncNotifyAll();
+            var channels = telegram && browser ? 'Telegram и браузер'
+                : telegram ? 'Telegram'
+                : browser ? 'браузер'
+                : 'ни один канал';
+            toast('Настройки уведомлений сохранены: ' + channels + '.', '🔔');
+        } catch (error) {
+            syncNotifyAll();
+            toast(error.message, '⚠️');
+        }
+    }
+
+    window.syncNotifyAll = syncNotifyAll;
+    window.syncNotifyUI = syncNotifyAll;
+    window.applyNotify = applyNotify;
+
+    setTimeout(syncNotifyAll, 400);
 })();
-['profileTopBtn','mbonusBtn'].forEach(function(id){
-var b=document.getElementById(id);if(b)b.addEventListener('click',function(){setTimeout(syncNotifyUI,120);});
-});
-})();
-/* ── Ф3.23: инициализация синка каналов (было хвостом fix-views v61) ── */
-setTimeout(function(){if(typeof window.syncNotifyUI==='function')window.syncNotifyUI();},400);

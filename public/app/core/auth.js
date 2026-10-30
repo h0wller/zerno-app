@@ -211,6 +211,29 @@
   }
 
 
+  async function performAccountDeletion() {
+    try {
+      var registration = await navigator.serviceWorker.ready;
+      var subscription = await registration.pushManager.getSubscription();
+      if (subscription) await subscription.unsubscribe();
+    } catch (_) {}
+    try {
+      await api('/me', { method: 'DELETE' });
+    } catch (error) {
+      alert('Не удалось удалить профиль. Попробуйте позже или напишите на почту из политики конфиденциальности.');
+      return false;
+    }
+    window.setUser(null, null);
+    window.mode = 'guest';
+    if (typeof closePanel === 'function') closePanel();
+    if (typeof window.closeProfileSettings === 'function') window.closeProfileSettings();
+    if (typeof renderAll === 'function') renderAll();
+    alert('Профиль удалён.');
+    openAuth();
+    return true;
+  }
+  window.performAccountDeletion = performAccountDeletion;
+
   document.addEventListener('DOMContentLoaded', function () {
     async function checkTgAutoLogin() {
       if (localStorage.getItem('zt_user')) return;
@@ -428,26 +451,10 @@
 
     var deleteAccBtn = document.getElementById('deleteAccBtn');
     if (deleteAccBtn) {
-      deleteAccBtn.onclick = async function () {
-        var ok = window.confirm('Удалить профиль и персональные данные? Это действие необратимо. История заказов сохранится без имени и телефона.');
-        if (!ok) return;
-        try {
-          var reg = await navigator.serviceWorker.ready;
-          var sub = await reg.pushManager.getSubscription();
-          if (sub) await sub.unsubscribe();
-        } catch (_) {}
-        try {
-          await api('/me', { method: 'DELETE' });
-        } catch (e) {
-          alert('Не удалось удалить профиль. Попробуйте позже или напишите на почту из политики конфиденциальности.');
-          return;
+      deleteAccBtn.onclick = function () {
+        if (typeof window.openDeleteAccountConfirmation === 'function') {
+          window.openDeleteAccountConfirmation();
         }
-        window.setUser(null, null);
-        window.mode = 'guest';
-        if (typeof closePanel === 'function') closePanel();
-        if (typeof renderAll === 'function') renderAll();
-        alert('Профиль удалён.');
-        openAuth();
       };
     }
   });
