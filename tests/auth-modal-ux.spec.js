@@ -374,6 +374,49 @@ test('guest menu action is available from registration and login', async ({ page
   await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_onb'))).toBe('1');
 });
 
+
+test('Enter skips the consent checkbox while Tab and Space keep it keyboard-accessible', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+
+  const regPhone = page.locator('#regPhone');
+  const regPin = page.locator('#regPin');
+  const consent = page.locator('#consentBox');
+
+  await regPhone.focus();
+  await page.keyboard.press('Enter');
+  await expect(regPin).toBeFocused();
+
+  await regPhone.focus();
+  await page.keyboard.press('Tab');
+  await expect(consent).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(consent).toBeChecked();
+
+  await page.evaluate(() => window.openAuth(true));
+  const loginPhone = page.locator('#logPhone');
+  await loginPhone.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#logPin')).toBeFocused();
+
+  await page.route('**/api/auth/request-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true }),
+  }));
+  await loginPhone.fill('+7 999 123-45-67');
+  await page.locator('#otpBtn').click();
+  await expect(page.locator('#logOtp')).toBeVisible();
+  await loginPhone.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#logOtp')).toBeFocused();
+});
+
 test('switching to and from Telegram code entry moves focus to the active field', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');

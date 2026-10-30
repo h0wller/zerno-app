@@ -252,7 +252,7 @@
         if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
         e.preventDefault();
         var fields = Array.prototype.filter.call(
-          form.querySelectorAll('input'),
+          form.querySelectorAll('input:not([type="checkbox"])'),
           function (el) { return el.offsetParent !== null && !el.disabled; }
         );
         var idx = fields.indexOf(e.target);
