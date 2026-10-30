@@ -15,9 +15,13 @@ function brandRules(){
   var deliv=(typeof brand!=='undefined'&&brand==='delivery');
   var deliverySection=document.getElementById('profileOrdersSection');
   var coffeeSection=document.getElementById('profileCoffeeSection');
+  var deliveryPrompt=document.getElementById('profileDeliveryPrompt');
+  var coffeePrompt=document.getElementById('profileCoffeePrompt');
   var fi=document.getElementById('fridayInfo');
   if(deliverySection)deliverySection.hidden=!deliv;
   if(coffeeSection)coffeeSection.hidden=deliv;
+  if(deliveryPrompt)deliveryPrompt.hidden=!deliv;
+  if(coffeePrompt)coffeePrompt.hidden=deliv;
   Array.prototype.slice.call(document.querySelectorAll('#profileBox .placebox')).forEach(function(p){
     var t=p.textContent||'';
     if(/Мы у моря/i.test(t))p.style.display=deliv?'none':'';
