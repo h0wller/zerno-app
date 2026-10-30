@@ -252,7 +252,13 @@ test('auth modal keeps the short unified-profile registration benefit visible in
 
   await page.evaluate(() => window.openAuth(false));
   await expect(benefit).toHaveText(expected);
-  await expect(benefit).toHaveCSS('width', '100%');
+  const benefitWidths = await benefit.evaluate((el) => {
+    const head = el.parentElement;
+    const style = getComputedStyle(head);
+    const availableWidth = head.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    return { actual: el.getBoundingClientRect().width, available: availableWidth };
+  });
+  expect(benefitWidths.actual).toBeGreaterThanOrEqual(benefitWidths.available - 1);
   await expect(benefit).toHaveCSS('max-width', '100%');
   await page.evaluate(() => window.openAuth(true));
   await expect(benefit).toHaveText(expected);
