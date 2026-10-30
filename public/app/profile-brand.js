@@ -10,8 +10,8 @@
     '<div class="friday-info-title">Пятница</div>' +
     '<p class="friday-info-address">п. Янтарный, ул. Советская, 38А · доставка из приложения</p>' +
     '<div class="friday-info-hours" aria-label="Время работы">' +
-      '<div class="friday-info-hours-row"><b>Май–сентябрь</b><span>пн–вс · 11:00–22:00</span></div>' +
-      '<div class="friday-info-hours-row"><b>Октябрь–апрель</b><span>пн–чт · 11:00–21:00<br>пт–вс · 11:00–22:00</span></div>' +
+      '<div class="friday-info-hours-row"><b>Май–сентябрь:</b><span>пн–вс 11:00–22:00</span></div>' +
+      '<div class="friday-info-hours-row"><b>Октябрь–апрель:</b><span>пн–чт 11:00–21:00<br>пт–вс 11:00–22:00</span></div>' +
     '</div>' +
     '<div class="friday-info-links" aria-label="Мы в интернете">' +
       '<a class="friday-info-link" href="https://vk.ru/fridaypizza39" target="_blank" rel="noopener noreferrer" aria-label="ВКонтакте">' +

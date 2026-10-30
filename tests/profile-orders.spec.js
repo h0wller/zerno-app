@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 let mineRequestCount = 0;
-let holdSecondMineRequest = false;
-let releaseSecondMineRequest = null;
 
 const orderFixture = {
   "id": "profile-order-1",
@@ -27,22 +25,13 @@ test.describe('Модуль заказов профиля', () => {
       sessionStorage.setItem('splashDone', '1');
     });
     mineRequestCount = 0;
-    holdSecondMineRequest = false;
-    releaseSecondMineRequest = null;
     await page.route('**/api/orders/mine', async route => {
       mineRequestCount += 1;
-      if (mineRequestCount === 2 && holdSecondMineRequest) {
-        await new Promise(resolve => { releaseSecondMineRequest = resolve; });
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ orders: [{ ...orderFixture, no: 'P-OLD' }] })
-        });
-        return;
-      }
-      const orders = mineRequestCount === 3
-        ? [{ ...orderFixture, no: 'P-2044' }]
-        : [orderFixture];
+      const orders = mineRequestCount === 2
+        ? [{ ...orderFixture, no: 'P-OLD' }]
+        : mineRequestCount === 3
+          ? [{ ...orderFixture, no: 'P-2044' }]
+          : [orderFixture];
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -229,24 +218,36 @@ test.describe('Модуль заказов профиля', () => {
     await expect(host).toContainText('Заказ #P-1042');
     expect(mineRequestCount).toBe(1);
 
-    holdSecondMineRequest = true;
     await page.evaluate(() => {
-      window.setUser(null, { ...window.me, id: 'profile-test-second-account' });
-      window.renderProfile();
+      const nativeFetch = window.fetch.bind(window);
+      let delayed = false;
+      window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : input.url;
+        const response = nativeFetch(input, init);
+        if (!delayed && url.includes('/api/orders/mine')) {
+          delayed = true;
+          return response.then(result => new Promise(resolve => {
+            window.__releaseOldOrdersResponse = function () { resolve(result); };
+          }));
+        }
+        return response;
+      };
+      window.me = { ...window.me, id: 'profile-test-second-account' };
+      window.loadMyOrders();
     });
     await expect.poll(() => mineRequestCount).toBe(2);
+    await expect.poll(() => page.evaluate(() => typeof window.__releaseOldOrdersResponse)).toBe('function');
     await expect(host).toContainText('Загрузка заказа…');
     await expect(host).not.toContainText('P-1042');
 
     await page.evaluate(() => {
-      window.setUser(null, { ...window.me, id: 'profile-test-third-account' });
-      window.renderProfile();
+      window.me = { ...window.me, id: 'profile-test-third-account' };
+      window.loadMyOrders();
     });
     await expect.poll(() => mineRequestCount).toBe(3);
     await expect(host).toContainText('Заказ #P-2044');
 
-    releaseSecondMineRequest();
-    releaseSecondMineRequest = null;
+    await page.evaluate(() => window.__releaseOldOrdersResponse());
     await expect(host).toContainText('Заказ #P-2044');
     await expect(host).not.toContainText('P-OLD');
   });
