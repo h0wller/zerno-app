@@ -7,6 +7,7 @@ import { nowISO } from '../utils/id-time.js';
 import { logEv } from '../domain/helpers.js';
 import { getVapidPublicKey } from '../db/index.js';
 import { sendPush } from '../services/push.js';
+import { sendFcm } from '../services/fcm.js';
 import { tgSend } from '../services/telegram.js';
 
 const pushRouter = Router();
@@ -69,6 +70,49 @@ pushRouter.post('/api/push/send', adminGuard, async (req, res) => {
   }
   logEv(req.user.name, `пуш всем (${rows.length})`);
   res.json({ ok: true, sent: rows.length, delivered: ok, failed: fail, errors: errs.slice(0, 5) });
+});
+
+pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
+  const body = 'Обновили график доставки: октябрь–апрель — пн–чт 11:00–21:00, пт–вс 11:00–22:00. Предзаказ доступен по расписанию.';
+  const title = 'Пятница — новый график';
+  const customers = db.prepare(`SELECT id AS cid, tg, notify_tg, notify_web
+    FROM customers
+    WHERE role='guest'
+    ORDER BY id`).all();
+
+  let recipients = 0, telegramSent = 0, pushSent = 0, failed = 0;
+  for (const customer of customers) {
+    const useTelegram = Boolean(customer.tg) && customer.notify_tg !== 0;
+    const usePush = !useTelegram && customer.notify_web !== 0;
+    if (!useTelegram && !usePush) continue;
+    recipients++;
+
+    if (useTelegram) {
+      const result = await tgSend(customer.tg, title + '\n' + body);
+      if (result?.ok) telegramSent++;
+      else failed++;
+      continue;
+    }
+
+    const fcm = await sendFcm(customer.cid, title, body);
+    pushSent += fcm.sent;
+    failed += fcm.failed;
+    const subscriptions = db.prepare('SELECT sub FROM subs WHERE cid=?').all(customer.cid);
+    for (const row of subscriptions) {
+      try {
+        await webpush.sendNotification(JSON.parse(row.sub), JSON.stringify({ title, body }));
+        pushSent++;
+      } catch (error) {
+        failed++;
+        if (error.statusCode === 404 || error.statusCode === 410) {
+          db.prepare('DELETE FROM subs WHERE sub=?').run(row.sub);
+        }
+      }
+    }
+  }
+
+  logEv(req.user.name, `обновление графика: ${recipients} получателей, Telegram ${telegramSent}, push ${pushSent}`);
+  res.json({ ok: true, recipients, telegramSent, pushSent, failed });
 });
 
 pushRouter.post('/api/push/unsubscribe', userGuard, (req, res) => {

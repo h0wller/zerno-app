@@ -16,17 +16,21 @@ if (process.env.FIREBASE_SA) {
 
 export async function sendFcm(cid, title, body) {
   try {
-    if (!fcmReady) return;
+    if (!fcmReady) return { sent: 0, failed: 0 };
     const messaging = getMessaging();
     const rows = db.prepare('SELECT token FROM fcm WHERE cid=?').all(cid);
+    let sent = 0, failed = 0;
     for (const r of rows) {
       try {
         await messaging.send({ token: r.token, notification: { title, body } });
+        sent++;
       } catch (e) {
+        failed++;
         if (String(e.code || '').includes('registration-token')) {
           db.prepare('DELETE FROM fcm WHERE token=?').run(r.token);
         }
       }
     }
-  } catch (e) { console.log('FCM send error', e.message); }
+    return { sent, failed };
+  } catch (e) { console.log('FCM send error', e.message); return { sent: 0, failed: 0 }; }
 }
