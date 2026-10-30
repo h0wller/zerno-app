@@ -47,6 +47,7 @@ import './scanner.js';
 import './delivery.js';
 import './ui/delivery-search.js';
 import './cart.js';
+import './order-tracking.js';
 import './orders.js';
 import './live.js';
 import './admin-extra.js';
