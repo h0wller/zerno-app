@@ -18,7 +18,7 @@ async function refreshOrdersLive(){
       var m=await api('/orders/mine');
       if(!window.me||mineUserKey!==String(window.me.id||window.me.phone||''))return;
       var orders=Array.isArray(m.orders)?m.orders:[];
-      var msig=orders.map(function(o){return o.no+':'+o.status;}).join(',');
+      var msig=mineUserKey+'|'+orders.map(function(o){return o.no+':'+o.status;}).join(',');
       if(msig!==lastMineSig){
         lastMineSig=msig;
         if(typeof window.updateMyOrdersCache==='function')window.updateMyOrdersCache(orders);
