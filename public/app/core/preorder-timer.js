@@ -21,7 +21,7 @@
     var day = klgNow.getUTCDate();
 
     if (datePart) {
-      var dateMatch = datePart.match(/(\\d{1,2})[.\\-\\/](\\d{1,2})(?:[.\\-\\/](\\d{2,4}))?/);
+      var dateMatch = datePart.match(/(\d{1,2})[.\-\/](\d{1,2})(?:[.\-\/](\d{2,4}))?/);
       if (dateMatch) {
         day = parseInt(dateMatch[1], 10);
         month = parseInt(dateMatch[2], 10) - 1;

@@ -12,7 +12,7 @@ test.describe('Poster & Delivery Hours Suite (F3.66)', () => {
     expect(data.days).toHaveLength(2);
     expect(data.days.map(day => day.offset)).toEqual([0, 1]);
     for (const day of data.days) {
-      expect(day.date).toMatch(/^\\d{4}-\\d{2}-\\d{2}$/);
+      expect(day.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(day.open).toBe(11);
       expect([21, 22]).toContain(day.close);
     }
