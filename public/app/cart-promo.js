@@ -13,7 +13,7 @@
     var user = window.me || null;
     if (!user || !user.id || freeAutoFor === user.id) return "";
     freeAutoFor = user.id;
-    try { var result = await window.fetchJSON("/me/free-delivery"); return (result && result.code) || ""; }
+    try { var result = await window.api("/me/free-delivery"); return (result && result.code) || ""; }
     catch (error) { return ""; }
   }
   function clear() {
