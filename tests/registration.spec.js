@@ -104,6 +104,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
 
   test('auth-session owns persisted user state and clears it centrally', async ({ page }) => {
     await page.goto('/?brand=delivery');
+    await page.waitForFunction(() => typeof window.setUser === 'function' && window.setUser.__deepWrap === 1);
 
     await page.evaluate(() => window.setUser('session-test-token', { name: 'Session Test' }));
     await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user'))).toBe('session-test-token');
