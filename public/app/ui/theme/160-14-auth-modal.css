@@ -368,3 +368,16 @@
     animation: none;
   }
 }
+
+
+/* Guest browsing is available from either auth mode, not only from the login form. */
+#authModal .auth-guest-action {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+#authModal .auth-guest-action button {
+  width: 100%;
+  min-height: 44px;
+}

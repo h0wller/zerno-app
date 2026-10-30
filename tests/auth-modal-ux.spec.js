@@ -208,6 +208,32 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
 });
 
 
+
+test('guest menu action is available from registration and login', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+
+  const modal = page.locator('#authModal');
+  const skipAuth = page.locator('#skipAuth');
+
+  await page.evaluate(() => window.openAuth(false));
+  await expect(page.locator('#regForm')).toBeVisible();
+  await expect(skipAuth).toBeVisible();
+  await skipAuth.click();
+  await expect(modal).not.toHaveClass(/show/);
+
+  await page.evaluate(() => window.openAuth(true));
+  await expect(page.locator('#loginForm')).toBeVisible();
+  await expect(skipAuth).toBeVisible();
+  await skipAuth.click();
+  await expect(modal).not.toHaveClass(/show/);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_onb'))).toBe('1');
+});
+
 test('switching to and from Telegram code entry moves focus to the active field', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
