@@ -86,8 +86,10 @@ test.describe('Модуль заказов профиля', () => {
     await expect(modal.locator('[data-open-track="profile-order-1"]')).toBeVisible();
     expect(mineRequestCount).toBe(1);
 
-    await modal.locator('.omClose').click();
+    await expect(modal.locator('.omClose')).toBeFocused();
+    await modal.press('Escape');
     await expect(modal).not.toHaveClass(/show/);
+    await expect(page.locator('#myOrdersBtn')).toBeFocused();
   });
 
   test('настройки профиля содержат управление аккаунтом без общего сброса хранилища', async ({ page }) => {
