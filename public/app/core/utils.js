@@ -64,17 +64,21 @@
   // Часы доставки приходят с сервера (GET /api/delivery/info: today/schedule — зимой пн–чт до 21:00).
   // Пока ответ не загружен или в нём нет часов — прежние константы 11–22.
   function deliveryHours() {
-    var di = window.deliveryInfo;
-    var s = di && (di.today || di.schedule);
-    var open = s && Number(s.open) >= 0 && s.open !== undefined ? Number(s.open) : 11;
-    var close = s && Number(s.close) > 0 ? Number(s.close) : 22;
+    var schedule = window.deliveryInfo && (window.deliveryInfo.today || window.deliveryInfo.schedule);
+    if (!schedule) return null;
+
+    var open = Number(schedule.open);
+    var close = Number(schedule.close);
+    if (!Number.isFinite(open) || !Number.isFinite(close) || close <= open) return null;
     return { open: open, close: close };
   }
   function isDeliveryServiceOpen() {
-    var t = getKaliningradTime();
-    var min = t.hour * 60 + t.minute;
-    var h = deliveryHours();
-    return min >= h.open * 60 && min < h.close * 60;
+    var hours = deliveryHours();
+    if (!hours) return false;
+
+    var time = getKaliningradTime();
+    var currentMinute = time.hour * 60 + time.minute;
+    return currentMinute >= hours.open * 60 && currentMinute < hours.close * 60;
   }
   window.deliveryHours = deliveryHours;
   window.getKaliningradTime = getKaliningradTime;

@@ -21,14 +21,16 @@ function getKaliningradNow() {
 }
 
 function isDeliveryServiceOpen() {
-  if (typeof window !== 'undefined' && typeof window.isDeliveryServiceOpen === 'function' && window.isDeliveryServiceOpen !== isDeliveryServiceOpen) {
-    return window.isDeliveryServiceOpen();
-  }
-  var t = getKaliningradTime();
-  var s = deliveryInfo && (deliveryInfo.today || deliveryInfo.schedule);
-  var open = s && Number(s.open) > 0 ? Number(s.open) : 11;
-  var close = s && Number(s.close) > 0 ? Number(s.close) : 22;
-  return t.hour * 60 + t.minute >= open * 60 && t.hour * 60 + t.minute < close * 60;
+  var schedule = deliveryInfo && (deliveryInfo.today || deliveryInfo.schedule);
+  if (!schedule) return false;
+
+  var open = Number(schedule.open);
+  var close = Number(schedule.close);
+  if (!Number.isFinite(open) || !Number.isFinite(close) || close <= open) return false;
+
+  var time = getKaliningradTime();
+  var currentMinute = time.hour * 60 + time.minute;
+  return currentMinute >= open * 60 && currentMinute < close * 60;
 }
 
 if (typeof window !== 'undefined') {
@@ -50,6 +52,24 @@ localStorage.setItem('zt_cart', JSON.stringify(cart));
 window.deliveryInfo = null;
 window.promoInfo = null;
 window.cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
+
+async function fetchDeliveryInfo() {
+  deliveryInfo = null;
+  var response = await fetch(API_BASE + '/api/delivery/info');
+  if (!response.ok) throw new Error('Не удалось обновить график работы');
+  var info = await response.json();
+  if (!info || !info.today || !Array.isArray(info.days)) {
+    throw new Error('Сервер не вернул актуальное расписание');
+  }
+  deliveryInfo = info;
+  return info;
+}
+
+window.refreshDeliveryInfo = async function () {
+  await fetchDeliveryInfo();
+  window.populateSlots();
+  return deliveryInfo;
+};
 
 const DCATS = window.DCATS = [
   { id: 'pizza', e: '🍕', l: 'Пиццы' },
@@ -674,7 +694,7 @@ window.loadDelivery = async function() {
           return { items: (all.items || []).filter(function(p){ return p.section === 'delivery'; }) };
         })
       : api('/dmenu');
-    var infoPromise = fetch(API_BASE + '/api/delivery/info').then(function(x){ return x.json(); }).catch(function(){ return null; });
+    var infoPromise = fetchDeliveryInfo().catch(function(){ return null; });
     var results = await Promise.all([menuPromise, infoPromise]);
     var r = results[0] || {};
     DMENU = r.items || [];
