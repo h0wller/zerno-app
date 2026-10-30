@@ -291,7 +291,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
 
 })();
 
-(function patchQR()(function patchQR() {
+(function patchQR() {
     if (typeof window.renderProfile !== 'function') return;
     const _rp = window.renderProfile;
     window.renderProfile = function () {
