@@ -7,6 +7,7 @@ import { nowISO } from '../utils/id-time.js';
 import { logEv } from '../domain/helpers.js';
 import { getVapidPublicKey } from '../db/index.js';
 import { sendPush } from '../services/push.js';
+import { sendFcm } from '../services/fcm.js';
 import { tgSend } from '../services/telegram.js';
 
 const pushRouter = Router();
@@ -69,6 +70,36 @@ pushRouter.post('/api/push/send', adminGuard, async (req, res) => {
   }
   logEv(req.user.name, `пуш всем (${rows.length})`);
   res.json({ ok: true, sent: rows.length, delivered: ok, failed: fail, errors: errs.slice(0, 5) });
+});
+
+pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
+  const body = 'Обновили график доставки: октябрь–апрель — пн–чт 11:00–21:00, пт–вс 11:00–22:00. Предзаказ доступен по расписанию.';
+  const title = 'Пятница — новый график';
+  const guests = db.prepare(`SELECT c.id AS cid
+    FROM customers c
+    WHERE c.role='guest' AND c.notify_web != 0
+      AND (EXISTS (SELECT 1 FROM subs s WHERE s.cid=c.id)
+        OR EXISTS (SELECT 1 FROM fcm f WHERE f.cid=c.id))`).all();
+  let delivered = 0, failed = 0;
+  for (const guest of guests) {
+    const fcm = await sendFcm(guest.cid, title, body);
+    delivered += fcm.sent;
+    failed += fcm.failed;
+    const subs = db.prepare('SELECT sub FROM subs WHERE cid=?').all(guest.cid);
+    for (const row of subs) {
+      try {
+        await webpush.sendNotification(JSON.parse(row.sub), JSON.stringify({ title, body }));
+        delivered++;
+      } catch (error) {
+        failed++;
+        if (error.statusCode === 404 || error.statusCode === 410) {
+          db.prepare('DELETE FROM subs WHERE sub=?').run(row.sub);
+        }
+      }
+    }
+  }
+  logEv(req.user.name, `обновление графика: пуш гостям (${guests.length})`);
+  res.json({ ok: true, recipients: guests.length, delivered, failed });
 });
 
 pushRouter.post('/api/push/unsubscribe', userGuard, (req, res) => {
