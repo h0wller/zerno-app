@@ -251,44 +251,54 @@ test('Telegram registration action uses its own icon instead of the robot emoji'
   expect(await button.innerText()).not.toContain('🤖');
 });
 
-test('desktop auth modal scrolls without displaying scrollbar tracks', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.addInitScript(() => {
-    localStorage.setItem('zt_onb', '1');
-    sessionStorage.setItem('splashDone', '1');
+test('desktop auth modal scrolls without displaying scrollbar tracks', async ({ browser }) => {
+  const context = await browser.newContext({
+    baseURL: test.info().project.use.baseURL,
+    viewport: { width: 1280, height: 900 },
+    isMobile: false,
+    hasTouch: false,
+    serviceWorkers: 'block',
   });
-  await page.goto('/?brand=coffee');
-  await page.waitForFunction(() => typeof window.openAuth === 'function');
-  await page.evaluate(() => window.openAuth(false));
+  const page = await context.newPage();
 
-  const card = page.locator('#authModal .authcard');
-  await card.evaluate((el) => { el.style.maxHeight = '220px'; });
+  try {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=coffee');
+    await page.waitForFunction(() => typeof window.openAuth === 'function');
+    await page.evaluate(() => window.openAuth(false));
 
-  const metrics = await page.evaluate(() => {
-    const modal = document.getElementById('authModal');
-    const cardEl = modal.querySelector('.authcard');
-    return {
-      desktopPointer: matchMedia('(hover: hover) and (pointer: fine)').matches,
-      modalScrollbar: getComputedStyle(modal).scrollbarWidth,
-      cardScrollbar: getComputedStyle(cardEl).scrollbarWidth,
-      modalOverflow: getComputedStyle(modal).overflowY,
-      cardOverflow: getComputedStyle(cardEl).overflowY,
-      cardHasOverflow: cardEl.scrollHeight > cardEl.clientHeight,
-      cardClientHeight: cardEl.clientHeight,
-      cardScrollHeight: cardEl.scrollHeight,
-    };
-  });
+    const card = page.locator('#authModal .authcard');
+    await card.evaluate((el) => { el.style.maxHeight = '220px'; });
 
-  expect(metrics.desktopPointer).toBe(true);
-  expect(metrics.modalScrollbar).toBe('none');
-  expect(metrics.cardScrollbar).toBe('none');
-  expect(metrics.modalOverflow).toBe('auto');
-  expect(metrics.cardOverflow).toBe('auto');
-  expect(metrics.cardHasOverflow).toBe(true);
+    const metrics = await page.evaluate(() => {
+      const modal = document.getElementById('authModal');
+      const cardEl = modal.querySelector('.authcard');
+      return {
+        desktopPointer: matchMedia('(hover: hover) and (pointer: fine)').matches,
+        modalScrollbar: getComputedStyle(modal).scrollbarWidth,
+        cardScrollbar: getComputedStyle(cardEl).scrollbarWidth,
+        modalOverflow: getComputedStyle(modal).overflowY,
+        cardOverflow: getComputedStyle(cardEl).overflowY,
+        cardHasOverflow: cardEl.scrollHeight > cardEl.clientHeight,
+      };
+    });
 
-  await card.hover();
-  await page.mouse.wheel(0, 480);
-  await expect.poll(() => card.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    expect(metrics.desktopPointer).toBe(true);
+    expect(metrics.modalScrollbar).toBe('none');
+    expect(metrics.cardScrollbar).toBe('none');
+    expect(metrics.modalOverflow).toBe('auto');
+    expect(metrics.cardOverflow).toBe('auto');
+    expect(metrics.cardHasOverflow).toBe(true);
+
+    await card.hover();
+    await page.mouse.wheel(0, 480);
+    await expect.poll(() => card.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  } finally {
+    await context.close();
+  }
 });
 
 test('registration consent is placed before Telegram verification and gates its request', async ({ page }) => {
