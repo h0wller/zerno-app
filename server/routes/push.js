@@ -75,21 +75,32 @@ pushRouter.post('/api/push/send', adminGuard, async (req, res) => {
 pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
   const body = 'Обновили график доставки: октябрь–апрель — пн–чт 11:00–21:00, пт–вс 11:00–22:00. Предзаказ доступен по расписанию.';
   const title = 'Пятница — новый график';
-  const guests = db.prepare(`SELECT c.id AS cid
-    FROM customers c
-    WHERE c.role='guest' AND c.notify_web != 0
-      AND (EXISTS (SELECT 1 FROM subs s WHERE s.cid=c.id)
-        OR EXISTS (SELECT 1 FROM fcm f WHERE f.cid=c.id))`).all();
-  let delivered = 0, failed = 0;
-  for (const guest of guests) {
-    const fcm = await sendFcm(guest.cid, title, body);
-    delivered += fcm.sent;
+  const customers = db.prepare(`SELECT id AS cid, tg, notify_tg, notify_web
+    FROM customers
+    ORDER BY id`).all();
+
+  let recipients = 0, telegramSent = 0, pushSent = 0, failed = 0;
+  for (const customer of customers) {
+    const useTelegram = Boolean(customer.tg) && customer.notify_tg !== 0;
+    const usePush = !useTelegram && customer.notify_web !== 0;
+    if (!useTelegram && !usePush) continue;
+    recipients++;
+
+    if (useTelegram) {
+      const result = await tgSend(customer.tg, title + '\\n' + body);
+      if (result?.ok) telegramSent++;
+      else failed++;
+      continue;
+    }
+
+    const fcm = await sendFcm(customer.cid, title, body);
+    pushSent += fcm.sent;
     failed += fcm.failed;
-    const subs = db.prepare('SELECT sub FROM subs WHERE cid=?').all(guest.cid);
-    for (const row of subs) {
+    const subscriptions = db.prepare('SELECT sub FROM subs WHERE cid=?').all(customer.cid);
+    for (const row of subscriptions) {
       try {
         await webpush.sendNotification(JSON.parse(row.sub), JSON.stringify({ title, body }));
-        delivered++;
+        pushSent++;
       } catch (error) {
         failed++;
         if (error.statusCode === 404 || error.statusCode === 410) {
@@ -98,8 +109,9 @@ pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
       }
     }
   }
-  logEv(req.user.name, `обновление графика: пуш гостям (${guests.length})`);
-  res.json({ ok: true, recipients: guests.length, delivered, failed });
+
+  logEv(req.user.name, `обновление графика: ${recipients} получателей, Telegram ${telegramSent}, push ${pushSent}`);
+  res.json({ ok: true, recipients, telegramSent, pushSent, failed });
 });
 
 pushRouter.post('/api/push/unsubscribe', userGuard, (req, res) => {
