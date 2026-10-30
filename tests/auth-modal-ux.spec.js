@@ -215,11 +215,15 @@ test('registration consent is placed before Telegram verification and gates its 
     sessionStorage.setItem('splashDone', '1');
   });
 
-  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ ok: true }),
-  }));
+  let requestCount = 0;
+  await page.route('**/api/auth/request-reg-otp', async (route) => {
+    requestCount += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
+  });
 
   await page.goto('/?brand=delivery');
   await page.waitForFunction(() => typeof window.openAuth === 'function');
@@ -228,16 +232,15 @@ test('registration consent is placed before Telegram verification and gates its 
   const consentRow = page.locator('#consentRow');
   const consent = page.locator('#consentBox');
   const telegramButton = page.locator('#regTgBtn');
+  await page.locator('#regName').fill('Test Customer');
+  await page.locator('#regPhone').fill('+7 999 123-45-67');
   const consentTop = await consentRow.evaluate((el) => el.getBoundingClientRect().top);
   const telegramTop = await telegramButton.evaluate((el) => el.getBoundingClientRect().top);
   expect(consentTop).toBeLessThan(telegramTop);
 
-  const requestPromise = page.waitForRequest((request) =>
-    request.url().includes('/api/auth/request-reg-otp')
-  ).catch(() => null);
   await telegramButton.click();
   await expect(page.locator('.toast', { hasText: 'Сначала подтвердите согласие' })).toBeVisible();
-  expect(await Promise.race([requestPromise, Promise.resolve(null)])).toBeNull();
+  expect(requestCount).toBe(0);
 
   await consent.check();
   const request = page.waitForRequest((item) =>
@@ -245,7 +248,12 @@ test('registration consent is placed before Telegram verification and gates its 
   );
   await telegramButton.click();
   const sent = await request;
-  expect(sent.postDataJSON()).toMatchObject({ phone: '', consent: 1 });
+  expect(sent.postDataJSON()).toMatchObject({
+    phone: '+7 999 123-45-67',
+    name: 'Test Customer',
+    via: 'tg',
+  });
+  expect(requestCount).toBe(1);
   await page.evaluate(() => window.closeAuth());
 });
 
