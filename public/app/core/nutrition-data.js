@@ -17,6 +17,8 @@ export const NUTRITION_INGREDIENTS = {
   'olive-oil': { label: 'Масло оливковое', kcal: 884, p: 0, f: 100, c: 0 },
   'vegetable-oil': { label: 'Масло растительное', kcal: 884, p: 0, f: 100, c: 0 },
   'rice-vinegar': { label: 'Уксус рисовый', kcal: 18, p: 0, f: 0, c: 0.4 },
+  'pickle-brine': { label: 'Рассол огуречный, оценка', kcal: 2, p: 0, f: 0, c: 0.5 },
+  seasoning: { label: 'Сухая приправа, оценка', kcal: 250, p: 10, f: 5, c: 40 },
   'soy-sauce': { label: 'Соевый соус', kcal: 53, p: 8.0, f: 0.6, c: 4.9 },
   'unagi-sauce': { label: 'Соус унаги', kcal: 224, p: 2.9, f: 0.1, c: 52.8 },
   'kimchi': { label: 'Кимчи', kcal: 15, p: 1.1, f: 0.5, c: 2.4 },
@@ -29,6 +31,7 @@ export const NUTRITION_INGREDIENTS = {
   salt: { label: 'Соль', kcal: 0, p: 0, f: 0, c: 0 },
   'sushi-rice-dry': { label: 'Рис для суши, сухой', kcal: 365, p: 7.1, f: 0.7, c: 80.0 },
   nori: { label: 'Нори, сухие', kcal: 349, p: 46.1, f: 0.1, c: 41.0 },
+  'nori-sheet': { label: 'Нори, лист (масса листа оценена в 2,5 г)', kcal: 349, p: 46.1, f: 0.1, c: 41.0 },
 
   // Meat, fish and seafood
   ham: { label: 'Ветчина, усреднённая', kcal: 240, p: 14.5, f: 19.5, c: 1.5 },
