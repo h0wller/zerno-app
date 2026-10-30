@@ -74,7 +74,6 @@ function recipeEntries(recipe) {
 function ingredientLabel(key) {
   if (NUTRITION_INGREDIENTS[key]?.label) return NUTRITION_INGREDIENTS[key].label;
   if (NUTRITION_PREPARATIONS[key]?.label) return NUTRITION_PREPARATIONS[key].label;
-  if (key === 'kalini-sauce') return 'соус калиний';
   if (key === 'nori-sheet') return 'нори';
   return String(key || 'неизвестный ингредиент');
 }
