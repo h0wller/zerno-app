@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+let mineRequestCount = 0;
+
 const orderFixture = {
   "id": "profile-order-1",
   "no": "P-1042",
@@ -22,11 +24,15 @@ test.describe('Модуль заказов профиля', () => {
       localStorage.setItem('zt_onb', '1');
       sessionStorage.setItem('splashDone', '1');
     });
-    await page.route('**/api/orders/mine', route => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ orders: [orderFixture] })
-    }));
+    mineRequestCount = 0;
+    await page.route('**/api/orders/mine', route => {
+      mineRequestCount += 1;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ orders: [orderFixture] })
+      });
+    });
     await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => {
       window.me = {
@@ -37,7 +43,13 @@ test.describe('Модуль заказов профиля', () => {
         cups: 2,
         stamps: 2,
         free: 0,
-        history: [],
+        history: [
+          { ts: '2026-10-29T12:00:00.000Z', a: 'Начислен штамп', by: 'Кассир' },
+          { ts: '2026-10-28T12:00:00.000Z', a: 'Покупка кофе', by: 'Кофейня' },
+          { ts: '2026-10-27T12:00:00.000Z', a: 'Начислен штамп', by: 'Кассир' },
+          { ts: '2026-10-26T12:00:00.000Z', a: 'Покупка кофе', by: 'Кофейня' },
+          { ts: '2026-10-25T12:00:00.000Z', a: 'Начислен штамп', by: 'Кассир' }
+        ],
         verified: 1
       };
       window.brand = 'delivery';
@@ -52,6 +64,7 @@ test.describe('Модуль заказов профиля', () => {
   });
 
   test('выводит последний заказ в профиле и список в отдельной модалке', async ({ page }) => {
+    await expect(page.locator('#profileOrdersSection .profile-section-heading')).toContainText('Последний заказ');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Филадельфия с огурцом');
 
@@ -71,6 +84,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(modal).toHaveClass(/show/);
     await expect(modal.locator('#omList .myOrderCard')).toContainText('Заказ #P-1042');
     await expect(modal.locator('[data-open-track="profile-order-1"]')).toBeVisible();
+    expect(mineRequestCount).toBe(1);
 
     await modal.locator('.omClose').click();
     await expect(modal).not.toHaveClass(/show/);
@@ -86,10 +100,83 @@ test.describe('Модуль заказов профиля', () => {
     await expect(settings.locator('#ntWeb2')).toBeVisible();
     await expect(settings.locator('#logoutBtn')).toBeVisible();
     await expect(settings.locator('#deleteAccBtn')).toBeVisible();
-    await expect(page.locator('#resetBtn')).toHaveCount(0);
-    await expect(page.locator('#resetGo2')).toHaveCount(0);
+    await expect(settings.locator('#deleteConfirmPanel')).toBeHidden();
+    await expect(settings.locator('#deleteConfirmBtn')).toBeDisabled();
+    await expect(page.locator('#setPinBtn, #notifyDetails, #ntTg, #ntWeb, #resetBtn, #resetGo2')).toHaveCount(0);
 
-    await settings.locator('#setClose').click();
-    await expect(settings).not.toHaveClass(/show/);
+    await settings.locator('#deleteAccBtn').click();
+    await expect(settings.locator('#deleteConfirmPanel')).toBeVisible();
+    await settings.locator('#deleteConfirmInput').fill('неверно');
+    await expect(settings.locator('#deleteConfirmBtn')).toBeDisabled();
+    await settings.locator('#deleteConfirmInput').fill('УДАЛИТЬ');
+    await expect(settings.locator('#deleteConfirmBtn')).toBeEnabled();
+    await settings.locator('#deleteCancelBtn').click();
+    await expect(settings.locator('#deleteConfirmPanel')).toBeHidden();
+
+    await settings.locator('#setPinGo2').click();
+    await expect(page.locator('#setPinModal')).toHaveClass(/show/);
+  });
+
+  test('имя редактируется явно и сохраняется отдельным действием', async ({ page }) => {
+    await page.route('**/api/me', async route => {
+      if (route.request().method() !== 'PUT') return route.continue();
+      const payload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          customer: {
+            id: 'profile-test',
+            name: payload.name,
+            phone: '+7 900 000-00-00',
+            role: 'guest',
+            cups: 2,
+            stamps: 2,
+            free: 0,
+            history: [],
+            verified: 1
+          }
+        })
+      });
+    });
+
+    const name = page.locator('#nameInput');
+    await expect(name).toHaveAttribute('readonly', '');
+    await page.locator('#nameEditBtn').click();
+    await expect(name).not.toHaveAttribute('readonly', '');
+    await name.fill('Новое имя');
+    await page.locator('#nameSaveBtn').click();
+    await expect(name).toHaveAttribute('readonly', '');
+    await expect(name).toHaveValue('Новое имя');
+  });
+
+  test('история показывает последние записи и раскрывает полный список', async ({ page }) => {
+    await expect(page.locator('#histList .hmini')).toHaveCount(3);
+    const toggle = page.locator('#historyToggleBtn');
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+    await expect(page.locator('#histList .hmini')).toHaveCount(5);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await toggle.click();
+    await expect(page.locator('#histList .hmini')).toHaveCount(3);
+  });
+
+  test('содержимое профиля меняется вместе с брендом, вкладки доступны с клавиатуры', async ({ page }) => {
+    await expect(page.locator('#profileOrdersSection')).toBeVisible();
+    await expect(page.locator('#profileCoffeeSection')).toBeHidden();
+
+    await page.evaluate(() => {
+      window.brand = 'coffee';
+      window.applyProfileBrand();
+    });
+    await expect(page.locator('#profileCoffeeSection')).toBeVisible();
+    await expect(page.locator('#profileOrdersSection')).toBeHidden();
+
+    const bonusTab = page.locator('#tabBonus');
+    const profileTab = page.locator('#tabProfile');
+    await profileTab.focus();
+    await profileTab.press('ArrowLeft');
+    await expect(bonusTab).toHaveAttribute('aria-selected', 'true');
+    await expect(profileTab).toHaveAttribute('aria-selected', 'false');
   });
 });

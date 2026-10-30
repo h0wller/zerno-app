@@ -16,7 +16,11 @@ async function refreshOrdersLive(){
     if(window.me&&window.mode!=='cashier'&&window.mode!=='orders'){
       var m=await api('/orders/mine');
       var msig=m.orders.map(function(o){return o.no+':'+o.status;}).join(',');
-      if(msig!==lastMineSig){lastMineSig=msig;loadMyOrders();}
+      if(msig!==lastMineSig){
+        lastMineSig=msig;
+        if(typeof window.updateMyOrdersCache==='function')window.updateMyOrdersCache(m.orders);
+        loadMyOrders();
+      }
     }
   }catch(e){}
 }

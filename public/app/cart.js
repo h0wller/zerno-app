@@ -1202,7 +1202,7 @@ function renderCartBase() {
 
         var cp2 = document.getElementById("cartPanel");
         if (cp2) cp2.classList.remove("open");
-        if (typeof loadMyOrders === "function") loadMyOrders();
+        if (typeof loadMyOrders === "function") loadMyOrders({ force: true });
         if (r && r.order) {
           openOrderTrackModal(r.order);
         } else if (typeof syncOverlay === "function") {

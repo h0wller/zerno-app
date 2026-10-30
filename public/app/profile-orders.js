@@ -77,8 +77,19 @@
         }
     }
 
+    function updateMyOrdersCache(orders) {
+        ordersCache = Array.isArray(orders) ? orders : [];
+        ordersCacheAt = Date.now();
+        window.__lastMineOrders = ordersCache;
+    }
+
     function invalidateMyOrders() { ordersCache = null; ordersCacheAt = 0; }
-    Object.assign(window, { loadMyOrders: loadMyOrders, renderOrdersModal: renderOrdersModal, invalidateMyOrders: invalidateMyOrders });
+    Object.assign(window, {
+        loadMyOrders: loadMyOrders,
+        renderOrdersModal: renderOrdersModal,
+        updateMyOrdersCache: updateMyOrdersCache,
+        invalidateMyOrders: invalidateMyOrders
+    });
 
     (function createOrdersModal() {
         if (document.getElementById('ordersModal')) return;

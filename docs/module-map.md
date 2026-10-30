@@ -75,12 +75,13 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `profile.js` | Готовность `me`, `updateMbonusBadge`, `renderBonus`, `renderProfile`, `renderVerifyNote`; QR-текст под канвасом | `window.renderBonus`, `window.renderProfile` |
-| `profile-orders.js` | Последний заказ в профиле, модалка всех заказов, кнопка `myOrdersBtn`, кэш заказов и обработка «Отследить» | `window.loadMyOrders`, `window.renderOrdersModal` |
+| `profile.js` | Готовность `me`, `updateMbonusBadge`, `renderBonus`, `renderProfile`, явное редактирование имени и раскрытие истории; QR-текст под канвасом | `window.renderBonus`, `window.renderProfile` |
+| `profile-orders.js` | Последний заказ и полный список заказов; общий кэш/запрос для карточки и модалки; обработка «Отследить» | `window.loadMyOrders`, `window.renderOrdersModal`, `window.updateMyOrdersCache`, `window.invalidateMyOrders` |
+| `profile-brand.js` | Включение брендовых секций профиля, блок «Пятница», единый `renderVerifyNote` | `window.applyProfileBrand`, `window.renderVerifyNote` |
 | `core/qr.js` | `drawQR`, полноэкранный `#qrModal`, wake lock | `window.drawQR`, `window.openQRFull`, `window.closeQRFull` |
 | `core/review.js` | `#reviewBtn`, `maybeAskReview` | `window.maybeAskReview` |
 | `core/preorder-timer.js` | Таймеры «Предзаказ» в карточках заказов профиля | `window.PreorderTimer` |
-| `core/notify.js` | Каналы уведомлений (ntTg/ntWeb, `#notifyDetails`) | `window.syncNotifyAll`, `window.applyNotify`, `window.syncNotifyUI` |
+| `core/notify.js` | Единое состояние каналов уведомлений в настройках профиля | `window.syncNotifyAll`, `window.applyNotify`, `window.syncNotifyUI` |
 
 ## 7. Авторизация и доступ
 
@@ -127,7 +128,7 @@
 | `core/panel.js` | Шторка профиля `#panel`, вкладки `.tabs`, обработчик mbonusBtn | `window.openPanel`, `window.closePanel`, `window.setTab` |
 | `core/swipe.js` | iOS-свайп закрытия `#panel` | — |
 | `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`); обёртка `.topbar-right` на ≥821px | `window.alignRailWithCard` |
-| `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход и удаление аккаунта), шестерёнка профиля | — |
+| `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |
 | `core/deeplink.js` | Диплинки: brand/tab/no/support/reorder/auth_token | — |
