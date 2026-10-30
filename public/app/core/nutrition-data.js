@@ -345,11 +345,10 @@ export const NUTRITION_DISHES = {
       pepper: 10,
       omelette: 20,
       cucumber: 20,
-      sesame: 20,
+      sesame: 22,
       'baking-sauce': 55,
       'chicken-smoked': 30,
-      'unagi-sauce': 10,
-      'sesame': 2
+      'unagi-sauce': 10
     }
   },
   'rl-bake-phil': {
