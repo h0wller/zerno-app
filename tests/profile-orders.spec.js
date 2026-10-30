@@ -188,6 +188,27 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#profileOrdersSection')).toBeHidden();
     await expect(page.locator('#fridayInfo')).toBeHidden();
 
+    await page.evaluate(() => {
+      window.me = null;
+      window.renderProfile();
+      window.applyProfileBrand();
+    });
+    await expect(page.locator('#profileNoUser')).toBeVisible();
+    await expect(page.locator('#profileCoffeePrompt')).toBeVisible();
+    await expect(page.locator('#profileDeliveryPrompt')).toBeHidden();
+
+    await page.evaluate(() => {
+      window.brand = 'delivery';
+      window.applyProfileBrand();
+    });
+    await expect(page.locator('#profileDeliveryPrompt')).toBeVisible();
+    await expect(page.locator('#profileCoffeePrompt')).toBeHidden();
+
+    await page.evaluate(() => {
+      window.brand = 'coffee';
+      window.syncBrandViews();
+    });
+
     const bonusTab = page.locator('#tabBonus');
     const profileTab = page.locator('#tabProfile');
     await profileTab.focus();
