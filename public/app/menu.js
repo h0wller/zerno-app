@@ -2,6 +2,7 @@
    Без IIFE: fix-views.js оборачивает window.renderMenu(499) и window.renderRail(502),
    читает CATS лексически (406). Все объявления — top-level var/function. */
 import { attachGridDnD, canDragMenu, dragAttr } from './core/dnd.js';
+import { getVisibleComposition } from './core/menu-content.js';
 window.cat = 'coffee'; /* Ф5.6-финал шаг 4-fix: menu-editor читает cat голым */
 window.query = ''; /* Ф5.6-финал шаг 4-fix2: menu-editor пишет query голым */
 
@@ -575,7 +576,7 @@ function openZoom(src, name, price, itemObj) {
   const accentColor = isDeliv ? '#C03B2A' : '#2E6F8E';
 
   const descText = dish && dish.desc ? String(dish.desc).trim() : '';
-  const compList = dish && Array.isArray(dish.comp) ? dish.comp.filter(Boolean) : [];
+  const compList = getVisibleComposition(dish);
   const kbjuData = calculateDishKbju(dish, title);
   const volText =
     (dish && dish.vol ? String(dish.vol).trim() : '') ||
@@ -757,7 +758,7 @@ function openZoom(src, name, price, itemObj) {
 
   let compHtml = '';
   if (descText) {
-    compHtml += `<div style="font-size:13.5px;line-height:1.45;color:#45505B">${esc(descText)}</div>`;
+    compHtml += `<div class="zoom-desc" style="font-size:13.5px;line-height:1.45;color:#45505B">${esc(descText)}</div>`;
   }
   if (compList.length) {
     compHtml +=
