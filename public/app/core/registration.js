@@ -7,10 +7,23 @@
     try { return localStorage.getItem('zt_src') === 'qr' ? 'qr' : ''; } catch (_) { return ''; }
   }
 
+  function beginAuthOperation() {
+    if (typeof window.beginAuthOperation === 'function') window.beginAuthOperation();
+  }
+
+  function endAuthOperation() {
+    if (typeof window.endAuthOperation === 'function') window.endAuthOperation();
+  }
+
+  function markAuthResetOnIdle() {
+    if (typeof window.markAuthResetOnIdle === 'function') window.markAuthResetOnIdle();
+  }
+
   // Сброс Telegram-подтверждения при закрытии auth-модалки.
   window.resetRegistrationState = function () {
     window.__regTgPollGeneration = (window.__regTgPollGeneration || 0) + 1;
-    if (window.__registrationTgPoll) {
+    if (typeof window.__registrationTgPollFinish === 'function') window.__registrationTgPollFinish();
+    else if (window.__registrationTgPoll) {
       clearInterval(window.__registrationTgPoll);
       window.__registrationTgPoll = null;
     }
@@ -71,6 +84,7 @@
   }
 
   function completeRegistration(response, message, icon) {
+    markAuthResetOnIdle();
     window.setUser(response.token, response.customer);
     closeAuth();
     if (typeof renderAll === 'function') renderAll();
@@ -159,6 +173,7 @@
     var form = readRegistrationForm();
     if (!validateRegistrationForm(form)) return;
 
+    beginAuthOperation();
     setRegistrationButtonBusy(button, true);
     try {
       if (window.__tgInitData) {
@@ -168,6 +183,7 @@
       await registerByPhone(form);
     } finally {
       setRegistrationButtonBusy(button, false);
+      endAuthOperation();
     }
   }
 
@@ -192,7 +208,8 @@
         }
         if (ph10(ph).length < 10) return toast('Введите номер полностью', '📵');
 
-        if (window.__registrationTgPoll) {
+        if (typeof window.__registrationTgPollFinish === 'function') window.__registrationTgPollFinish();
+        else if (window.__registrationTgPoll) {
           clearInterval(window.__registrationTgPoll);
           window.__registrationTgPoll = null;
         }
@@ -207,6 +224,7 @@
 
         var buttonLabel = regTgBtn.querySelector('span');
         var requestAccepted = false;
+        beginAuthOperation();
         regTgBtn.disabled = true;
         regTgBtn.setAttribute('aria-busy', 'true');
         if (buttonLabel) buttonLabel.textContent = 'Отправляем запрос…';
@@ -231,13 +249,28 @@
             statusRow.textContent = 'Ожидаем подтверждение в Telegram…';
           }
 
-          // Лимит поллинга: 60 попыток × 2.5 с ≈ 2.5 мин.
+          // Поллинг остаётся активным после закрытия модалки и завершает вход в фоне.
+          // Лимит: 60 попыток × 2.5 с ≈ 2.5 мин.
           var regPollTries = 0;
-          var pollTimer = setInterval(async function () {
-            if (pollGeneration !== window.__regTgPollGeneration || pollBusy) return;
+          var pollFinished = false;
+          var pollTimer;
+          function finishPoll() {
+            if (pollFinished) return;
+            pollFinished = true;
+            clearInterval(pollTimer);
+            if (window.__registrationTgPoll === pollTimer) window.__registrationTgPoll = null;
+            if (window.__registrationTgPollFinish === finishPoll) window.__registrationTgPollFinish = null;
+            endAuthOperation();
+          }
+          beginAuthOperation();
+          pollTimer = setInterval(async function () {
+            if (pollGeneration !== window.__regTgPollGeneration) {
+              finishPoll();
+              return;
+            }
+            if (pollBusy) return;
             if (++regPollTries > 60) {
-              clearInterval(pollTimer);
-              if (window.__registrationTgPoll === pollTimer) window.__registrationTgPoll = null;
+              finishPoll();
               if (pollGeneration === window.__regTgPollGeneration && statusRow) {
                 statusRow.hidden = false;
                 statusRow.className = 'auth-tg-timeout';
@@ -250,11 +283,11 @@
               var c = await api('/auth/check-reg?phone=' + encodeURIComponent(ph));
               if (pollGeneration !== window.__regTgPollGeneration) return;
               if (c && c.confirmed) {
-                clearInterval(pollTimer);
-                if (window.__registrationTgPoll === pollTimer) window.__registrationTgPoll = null;
                 if (c.token && c.customer) {
+                  markAuthResetOnIdle();
                   window.setUser(c.token, c.customer);
                   closeAuth();
+                  finishPoll();
                   if (typeof renderAll === 'function') renderAll();
                   toast('Добро пожаловать, ' + c.customer.name + '! Бонусы активированы 🎉', '🎁');
                   return;
@@ -273,6 +306,7 @@
             }
           }, 2500);
           window.__registrationTgPoll = pollTimer;
+          window.__registrationTgPollFinish = finishPoll;
         } catch (e) {
           if (pollGeneration === window.__regTgPollGeneration) toast(e.message, '⚠️');
         } finally {
@@ -285,6 +319,7 @@
                 : 'Подтвердить в Telegram · бесплатно';
             }
           }
+          endAuthOperation();
         }
       };
     }
