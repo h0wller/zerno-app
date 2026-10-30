@@ -409,3 +409,29 @@
   height: 20px;
   flex: 0 0 20px;
 }
+
+/* Telegram registration feedback: pending, confirmed and timed-out states. */
+#authModal #regTgRow.auth-tg-pending,
+#authModal #regTgRow.auth-tg-timeout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+
+#authModal #regTgRow.auth-tg-pending {
+  background: var(--panel);
+  color: var(--soft);
+}
+
+#authModal #regTgRow.auth-tg-timeout {
+  border-color: color-mix(in srgb, var(--flame) 30%, var(--line));
+  background: var(--panel);
+  color: var(--flame);
+}

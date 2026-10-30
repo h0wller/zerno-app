@@ -314,6 +314,61 @@ test('desktop auth modal scrolls without displaying scrollbar tracks', async ({ 
   }
 });
 
+
+test('Telegram registration shows request progress, pending status and resets on close', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  let markRequestStarted;
+  let releaseRequest;
+  const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
+  const responseGate = new Promise((resolve) => { releaseRequest = resolve; });
+  await page.route('**/api/auth/request-reg-otp', async (route) => {
+    markRequestStarted();
+    await responseGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Test Customer');
+  await page.locator('#regPhone').fill('+7 999 123-45-67');
+  await page.locator('#consentBox').check();
+
+  const button = page.locator('#regTgBtn');
+  const label = button.locator('span');
+  const status = page.locator('#regTgRow');
+  await button.click();
+  await requestStarted;
+
+  await expect(button).toBeDisabled();
+  await expect(button).toHaveAttribute('aria-busy', 'true');
+  await expect(label).toHaveText('Отправляем запрос…');
+
+  releaseRequest();
+  await expect(button).toBeEnabled();
+  await expect(button).not.toHaveAttribute('aria-busy', 'true');
+  await expect(label).toHaveText('Отправить повторно в Telegram');
+  await expect(status).toBeVisible();
+  await expect(status).toHaveAttribute('role', 'status');
+  await expect(status).toHaveAttribute('aria-live', 'polite');
+  await expect(status).toHaveClass('auth-tg-pending');
+  await expect(status).toHaveText('Ожидаем подтверждение в Telegram…');
+
+  await page.evaluate(() => window.closeAuth());
+  await expect(status).toBeHidden();
+  await expect(button).toBeEnabled();
+  await expect(button).not.toHaveAttribute('aria-busy', 'true');
+  await expect(label).toHaveText('Подтвердить в Telegram · бесплатно');
+});
+
 test('registration consent is placed before Telegram verification and gates its request', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
