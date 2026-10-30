@@ -154,6 +154,7 @@
         if (!modal.classList.contains('show')) return;
         if (event.key === 'Escape') {
             event.preventDefault();
+            event.stopPropagation();
             if (deletePanel && !deletePanel.hidden) {
                 closeDeleteConfirmation();
                 if (deleteButton) deleteButton.focus();
