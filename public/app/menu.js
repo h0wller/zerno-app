@@ -618,10 +618,11 @@ function openZoom(src, name, price, itemObj) {
       const targetValues = mode === 'portion' ? kbjuData.perPortion : kbjuData.per100;
       cap.querySelectorAll('[data-kbju-mode]').forEach(button => {
         const active = button === modeButton;
-        button.style.background = active ? '#fff' : 'transparent';
-        button.style.color = active ? '#101418' : '#586470';
+        button.style.border = active ? 'var(--nutrition-toggle-active-border, none)' : 'none';
+        button.style.background = active ? 'var(--nutrition-toggle-active-bg, #FFFFFF)' : 'transparent';
+        button.style.color = active ? 'var(--nutrition-text, #101418)' : 'var(--nutrition-muted, #586470)';
         button.style.fontWeight = active ? '700' : '600';
-        button.style.boxShadow = active ? '0 1px 3px rgba(0,0,0,.1)' : 'none';
+        button.style.boxShadow = active ? 'var(--nutrition-toggle-active-shadow, 0 1px 3px rgba(0,0,0,.1))' : 'none';
       });
       ['kcal', 'p', 'f', 'c'].forEach(key => {
         const element = cap.querySelector('[data-kbju-val="' + key + '"]');
