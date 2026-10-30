@@ -194,7 +194,6 @@ if (brandRulesCount > MAX_BRAND_RULES) {
 // Послойность (база + @media или :hover/::before у того же селектора) — норма responsive-CSS, не дубль.
 // :root не считаем: переменные по каскаду сознательно объявлены в нескольких частях.
 const realCounts = new Map();
-let layered;
 const stripComments = THEME_CSS.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
 {
   const stack = []; let buf = '';
@@ -219,7 +218,7 @@ const realDups = [...realCounts.entries()].filter(([, n]) => n > 1);
 // для информации: сколько селекторов встречаются больше одного раза вообще (включая послойность)
 const anyCount = new Map();
 for (const [k, n] of realCounts) { const sel = k.slice(k.indexOf(' | ') + 3); anyCount.set(sel, (anyCount.get(sel) || 0) + n); }
-layered = [...anyCount.values()].filter(n => n > 1).length - realDups.length;
+const layered = [...anyCount.values()].filter(n => n > 1).length - realDups.length;
 if (realDups.length) {
   console.warn(`⚠️ [Warning] theme/*.css: ${realDups.length} настоящих дублей (один селектор дважды в одном контексте). Послойность (информативно): ${layered}.`);
   realDups.slice(0, 20).forEach(([k, n]) => console.warn(`   ×${n}  ${k}`));
