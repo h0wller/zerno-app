@@ -449,16 +449,7 @@ function clearPromo() {
     var labelEl = slotEl.closest("label") || slotEl.parentElement;
     if (!labelEl) return;
 
-    // Гарантируем, что у селекта слотов есть варианты выбора времени, если они ещё не подгружены
-    if (slotEl.options.length <= 1) {
-      var defaultSlots = ["12:00–13:00", "13:00–14:00", "14:00–15:00", "16:00–17:00", "18:00–19:00", "19:00–20:00", "20:00–21:00"];
-      defaultSlots.forEach(function (sl) {
-        var opt = document.createElement("option");
-        opt.value = sl;
-        opt.textContent = "Ко времени: " + sl;
-        slotEl.appendChild(opt);
-      });
-    }
+    if (typeof window.populateSlots === "function") window.populateSlots();
 
     var seg = document.createElement("div");
     seg.id = "checkoutTimeModeSeg";
@@ -1053,8 +1044,21 @@ function renderCartBase() {
     return { ok: true, placeV: placeV, streetV: streetV, houseV: houseV };
   }
 
-  function resolveCheckoutSlot() {
-    if (typeof window.populateSlots === "function") window.populateSlots();
+  async function resolveCheckoutSlot() {
+    if (typeof window.refreshDeliveryInfo === "function") {
+      try {
+        await window.refreshDeliveryInfo();
+      } catch (error) {
+        return {
+          ok: false,
+          field: document.getElementById("checkoutSlot"),
+          message: "Не удалось проверить актуальный график работы. Проверьте соединение и попробуйте снова.",
+          icon: "⚠️"
+        };
+      }
+    } else if (typeof window.populateSlots === "function") {
+      window.populateSlots();
+    }
     var pm = typeof window.preorderMode === "function"
       ? window.preorderMode()
       : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);
@@ -1114,7 +1118,7 @@ function renderCartBase() {
         return toast(addressState.message, addressState.icon);
       }
 
-      var slotState = resolveCheckoutSlot();
+      var slotState = await resolveCheckoutSlot();
       if (!slotState.ok) {
         if (slotState.field) flagField(slotState.field);
         return toast(slotState.message, slotState.icon);
