@@ -245,7 +245,7 @@ function urlBase64ToUint8Array(s) {
       }
 
       $("#pushHoursSend").onclick = async () => {
-        if (!confirm("Отправить уведомление всем пользователям? Telegram имеет приоритет; push получат только те, у кого Telegram не подключён или выключен.")) return;
+        if (!confirm("Отправить уведомление всем гостям? Telegram имеет приоритет; push получат только те, у кого Telegram не подключён или выключен.")) return;
         try {
           const r = await api("/push/send-hours-update", { method: "POST", body: {} });
           toast(`Получателей: ${r.recipients}, Telegram: ${r.telegramSent}, push: ${r.pushSent}, ошибок: ${r.failed}`, "🔔");
