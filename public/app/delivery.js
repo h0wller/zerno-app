@@ -663,7 +663,17 @@ $('#checkoutMethod').onchange = () => {
   window.renderCart();
 };
 
-$('#cartFab').onclick = () => { window.renderCart(); $('#cartPanel').classList.add('open'); };
+$('#cartFab').onclick = async () => {
+  window.renderCart();
+  $('#cartPanel').classList.add('open');
+  try {
+    await window.refreshDeliveryInfo();
+  } catch (error) {
+    if (typeof toast === 'function') {
+      toast('Не удалось обновить график работы. Проверьте соединение перед оформлением.', '⚠️');
+    }
+  }
+};
 
 function populatePlaces() {
   if (!deliveryInfo) return;
