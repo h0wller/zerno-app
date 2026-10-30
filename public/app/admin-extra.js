@@ -293,6 +293,131 @@
   /* Согласие регистрации управляется модулем auth.js и разметкой authModal. */
 })();
 
+// ── Локальный переключатель тестовых ролей (не работает без LOCAL_ROLE_TESTING=1 на сервере) ──
+(function () {
+  'use strict';
+
+  var ADMIN_TOKEN_KEY = 'zt_local_test_admin_token';
+  var FEATURE_KEY = 'zt_local_role_testing_enabled';
+  var PANEL_ID = 'ztLocalRoleTestPanel';
+  var panel = null;
+  var featureEnabled = sessionStorage.getItem(FEATURE_KEY) === '1';
+  var featureCheckPending = false;
+
+  function ensurePanel() {
+    if (panel && panel.isConnected) return panel;
+    panel = document.createElement('aside');
+    panel.id = PANEL_ID;
+    panel.setAttribute('aria-label', 'Локальное тестирование ролей');
+    panel.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:10050;width:min(290px,calc(100vw - 28px));padding:12px;background:var(--card,#fff);color:var(--text,#222);border:1px solid var(--line,#ccc);border-radius:14px;box-shadow:0 8px 28px #0002;font:14px/1.4 system-ui,sans-serif;';
+    panel.innerHTML =
+      '<div style="font-weight:700;margin-bottom:8px">Локальное тестирование ролей</div>' +
+      '<div data-local-role-actions style="display:grid;gap:6px">' +
+        '<button type="button" data-local-role="guest">Открыть как гость</button>' +
+        '<button type="button" data-local-role="cashier">Открыть как кассир</button>' +
+        '<button type="button" data-local-role="dispatch">Открыть как диспетчер</button>' +
+      '</div>' +
+      '<button type="button" data-local-role-return style="display:none;width:100%;margin-top:8px">Вернуться в мой админ-аккаунт</button>' +
+      '<div style="font-size:12px;opacity:.75;margin-top:7px">Отдельные профили в локальной тестовой БД. Роль основного аккаунта не меняется.</div>';
+    document.body.appendChild(panel);
+
+    panel.addEventListener('click', async function (event) {
+      var roleButton = event.target.closest('[data-local-role]');
+      var returnButton = event.target.closest('[data-local-role-return]');
+
+      if (roleButton) {
+        if (!window.me || window.me.role !== 'admin') {
+          if (typeof toast === 'function') toast('Переключать роли может только администратор');
+          return;
+        }
+        var adminToken = window.USER_TOKEN || localStorage.getItem('zt_user');
+        if (!adminToken) return;
+
+        roleButton.disabled = true;
+        try {
+          var result = await api('/admin/test-role-session', {
+            method: 'POST',
+            body: { role: roleButton.getAttribute('data-local-role') }
+          });
+          if (!sessionStorage.getItem(ADMIN_TOKEN_KEY)) {
+            sessionStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
+          }
+          window.setUser(result.token, result.customer);
+          if (typeof renderAll === 'function') await renderAll();
+          if (typeof toast === 'function') toast('Локальный тестовый профиль: ' + result.customer.name);
+        } catch (err) {
+          if (typeof toast === 'function') toast(err.message || 'Не удалось открыть тестовую роль');
+        } finally {
+          roleButton.disabled = false;
+          refreshPanel();
+        }
+      } else if (returnButton) {
+        var savedToken = sessionStorage.getItem(ADMIN_TOKEN_KEY);
+        if (!savedToken) {
+          if (typeof toast === 'function') toast('Сессия администратора не найдена. Войдите обычным способом.');
+          refreshPanel();
+          return;
+        }
+
+        returnButton.disabled = true;
+        try {
+          window.setUser(savedToken, null);
+          var result = await api('/me');
+          window.setUser(savedToken, result.customer);
+          sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+          if (typeof renderAll === 'function') await renderAll();
+          if (typeof toast === 'function') toast('Возврат в основной админ-аккаунт выполнен');
+        } catch (err) {
+          if (typeof toast === 'function') toast('Не удалось восстановить сессию администратора: ' + (err.message || 'ошибка входа'));
+        } finally {
+          returnButton.disabled = false;
+          refreshPanel();
+        }
+      }
+    });
+    return panel;
+  }
+
+  async function refreshPanel() {
+    if (!document.body) return;
+    var isAdmin = !!(window.me && window.me.role === 'admin');
+    var hasSavedAdmin = !!sessionStorage.getItem(ADMIN_TOKEN_KEY);
+
+    if (!featureEnabled && (isAdmin || hasSavedAdmin) && !featureCheckPending) {
+      featureCheckPending = true;
+      try {
+        var status = await api('/admin/test-role-session');
+        featureEnabled = !!(status && status.enabled);
+        if (featureEnabled) sessionStorage.setItem(FEATURE_KEY, '1');
+      } catch (_) {
+        featureEnabled = hasSavedAdmin && sessionStorage.getItem(FEATURE_KEY) === '1';
+      } finally {
+        featureCheckPending = false;
+      }
+    }
+
+    if (!featureEnabled) {
+      if (panel) panel.hidden = true;
+      return;
+    }
+
+    var currentPanel = ensurePanel();
+    currentPanel.hidden = !isAdmin && !hasSavedAdmin;
+    var actions = currentPanel.querySelector('[data-local-role-actions]');
+    var back = currentPanel.querySelector('[data-local-role-return]');
+    if (actions) actions.hidden = !isAdmin;
+    if (back) back.style.display = hasSavedAdmin ? 'block' : 'none';
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', refreshPanel, { once: true });
+  } else {
+    refreshPanel();
+  }
+  window.addEventListener('load', refreshPanel, { once: true });
+  window.setInterval(refreshPanel, 700);
+})();
+
 if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
 setTimeout(function () {
   if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome();
