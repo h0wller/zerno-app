@@ -9,10 +9,25 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
       window.__layoutShifts = [];
+      window.__layoutShiftDetails = [];
       try {
         new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (!entry.hadRecentInput) window.__layoutShifts.push(entry.value);
+            if (!entry.hadRecentInput) {
+              window.__layoutShifts.push(entry.value);
+              window.__layoutShiftDetails.push({
+                value: entry.value,
+                startTime: entry.startTime,
+                sources: (entry.sources || []).map((source) => {
+                  const node = source.node;
+                  return {
+                    node: node ? `${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ''}${typeof node.className === 'string' && node.className ? `.${node.className.trim().replace(/\\s+/g, '.')}` : ''}` : null,
+                    previousRect: source.previousRect,
+                    currentRect: source.currentRect
+                  };
+                })
+              });
+            }
           }
         }).observe({ type: 'layout-shift', buffered: true });
       } catch (_) {}
@@ -50,6 +65,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     });
 
     const before = await measure();
+    console.log('[slow-network-layout] before deferred CSS', JSON.stringify(before));
     expect(before.ticker).not.toBeNull();
     expect(before.ticker.height).toBeLessThanOrEqual(30);
     expect(before.tickerOverflow).toBe('hidden');
@@ -66,6 +82,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await page.waitForLoadState('load');
     await page.waitForTimeout(100);
     const after = await measure();
+    console.log('[slow-network-layout] after deferred CSS', JSON.stringify(after));
     expect(after.card.width).toBe(before.card.width);
     expect(after.media.height).toBe(before.media.height);
     expect(after.heading.width).toBeGreaterThan(200);
@@ -73,7 +90,12 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.heading.right).toBeLessThanOrEqual(after.section.right + 1);
     expect(after.section.width).toBe(before.section.width);
 
-    const cls = await page.evaluate(() => window.__layoutShifts.reduce((sum, value) => sum + value, 0));
+    const shiftReport = await page.evaluate(() => ({
+      cls: window.__layoutShifts.reduce((sum, value) => sum + value, 0),
+      shifts: window.__layoutShiftDetails
+    }));
+    console.log('[slow-network-layout] layout shift attribution', JSON.stringify(shiftReport));
+    const cls = shiftReport.cls;
     expect(cls).toBeLessThan(0.01);
   });
 });
