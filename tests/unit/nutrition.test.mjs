@@ -19,10 +19,10 @@ test('pizza TTK is calculated using the selected diameter, dough and menu-option
   const large = calculateDishKbju(pizza, '', { option: pizza.opts[1] });
 
   assert.equal(thick.status, 'ready');
-  assert.equal(thick.totalWeight, 415);
-  assert.equal(thick.weightSource, 'вес выбранной опции меню');
-  assert.equal(thin.totalWeight, 335);
-  assert.equal(large.totalWeight, 750);
+  assert.equal(thick.totalWeight, 395);
+  assert.equal(thick.weightSource, 'выход готового изделия из ТТК');
+  assert.equal(thin.totalWeight, 395);
+  assert.equal(large.totalWeight, 585);
   assert.ok(thick.perPortion.kcal > thin.perPortion.kcal);
   assert.ok(thick.per100.kcal > 0);
   assert.ok(large.perPortion.kcal > thick.perPortion.kcal);
