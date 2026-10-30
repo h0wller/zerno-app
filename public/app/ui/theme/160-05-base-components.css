@@ -304,3 +304,69 @@
 
 
 #settingsModal .settings-card { padding: 20px; }
+
+
+/* ── Настройки профиля: компактная ширина и общая ритмика ── */
+#settingsModal .settings-card {
+  width: min(400px, 100%);
+  max-width: 400px;
+  padding: 20px;
+}
+#settingsModal .settings-card h3 {
+  margin: 0 40px 4px 0;
+}
+#settingsModal .settings-card .msub {
+  margin-bottom: 14px;
+}
+#settingsModal .settings-section + .settings-section {
+  margin-top: 12px;
+  padding-top: 10px;
+}
+#settingsModal .settings-section-title {
+  margin: 0 0 8px;
+}
+#settingsModal .set-row {
+  margin: 0;
+  padding: 10px 12px;
+}
+#settingsModal .settings-channel-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0;
+}
+#settingsModal .settings-channel-row .chk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 42px;
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+#settingsModal .settings-channel-row .chk input {
+  flex: 0 0 auto;
+  margin: 0;
+}
+#settingsModal .settings-account-section {
+  gap: 8px;
+}
+#settingsModal .settings-account-action {
+  padding: 10px 12px;
+  line-height: 1.35;
+}
+#settingsModal .settings-danger-zone {
+  padding: 12px;
+}
+#settingsModal .settings-danger-zone .settings-section-title {
+  margin: 0 0 8px;
+}
+@media (max-width: 420px) {
+  #settingsModal .settings-card {
+    width: 100%;
+    padding: 18px;
+  }
+}

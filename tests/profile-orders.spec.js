@@ -113,6 +113,8 @@ test.describe('Модуль заказов профиля', () => {
 
     const settings = page.locator('#settingsModal');
     await expect(settings).toHaveClass(/show/);
+    const settingsWidth = await settings.locator('.settings-card').evaluate(element => element.getBoundingClientRect().width);
+    expect(settingsWidth).toBeLessThanOrEqual(401);
     await expect(settings.locator('#setPinGo2')).toBeVisible();
     await expect(settings.locator('#ntTg2')).toBeVisible();
     await expect(settings.locator('#ntWeb2')).toBeVisible();
@@ -223,6 +225,7 @@ test.describe('Модуль заказов профиля', () => {
 
   test('история показывает последние записи и раскрывает полный список', async ({ page }) => {
     await expect(page.locator('#histList .hmini')).toHaveCount(3);
+    await expect(page.locator('#historyCount')).toHaveText('5 записей');
     const toggle = page.locator('#historyToggleBtn');
     await expect(toggle).toBeVisible();
     await toggle.click();
@@ -260,6 +263,9 @@ test.describe('Модуль заказов профиля', () => {
     await page.locator('#profileSettingsBtn').click();
     const dangerZone = page.locator('#settingsModal .settings-danger-zone');
     await expect(dangerZone).toBeVisible();
+    const settingsCard = await page.locator('#settingsModal .settings-card').boundingBox();
+    expect(settingsCard.width).toBeLessThanOrEqual(285);
+    expect(settingsCard.x).toBeGreaterThanOrEqual(17);
     const border = await dangerZone.evaluate(element => {
       const style = getComputedStyle(element);
       return { topStyle: style.borderTopStyle, topColor: style.borderTopColor };

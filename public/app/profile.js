@@ -208,7 +208,14 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         list.innerHTML = visible.map(function (item) {
             return '<div class="hmini"><b>' + esc(fmtTs(item.ts)) + '</b> · ' + esc(item.a) + ' <i>— ' + esc(item.by) + '</i></div>';
         }).join('') || '<div class="hmini">История пока пуста</div>';
-        if (count) count.textContent = history.length ? String(history.length) : '';
+        if (count) {
+            var mod10 = history.length % 10;
+            var mod100 = history.length % 100;
+            var noun = mod10 === 1 && mod100 !== 11 ? 'запись'
+                : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'записи'
+                : 'записей';
+            count.textContent = history.length ? history.length + ' ' + noun : '';
+        }
         if (toggle) {
             toggle.hidden = history.length <= 3;
             toggle.textContent = historyExpanded ? 'Свернуть историю' : 'Показать всю историю';

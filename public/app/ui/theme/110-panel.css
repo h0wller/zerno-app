@@ -444,3 +444,128 @@
   #profileOrdersSection .profile-section-heading #myOrdersBtn { width: 100%; }
   .profile-name-actions .profile-name-action { padding: 6px 7px; font-size: 10.5px; }
 }
+
+
+/* ── Профиль: единая сетка секций и согласованные действия ── */
+#profileBox:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#profileBox > * {
+  min-width: 0;
+}
+#profileBox > .profile-identity,
+#profileBox > .profile-brand-section,
+#profileBox > .placebox,
+#profileBox > #fridayInfo,
+#profileBox > .profile-history-section {
+  margin: 0 !important;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+#profileBox > .profile-identity {
+  padding: 12px;
+}
+#profileBox .stats {
+  margin-top: 0;
+}
+#profileBox .profile-main-qr,
+#profileBox .qrbox {
+  margin: 12px 0 0;
+  padding: 12px;
+  border-radius: 14px;
+}
+#profileBox .profile-main-qr canvas {
+  display: block;
+  max-width: 100%;
+  margin: 0 auto;
+}
+#profileBox .demoBtn,
+#profileBox > #activateBtn,
+#profileBox > #pushBtn {
+  margin: 10px 0 0;
+  border-style: solid;
+  border-color: var(--line);
+  background: #fff;
+}
+#profileBox > #activateBtn,
+#profileBox > #pushBtn {
+  margin: 0;
+  padding: 10px 12px;
+}
+#profileBox .profile-section-heading {
+  align-items: center;
+  margin-bottom: 10px;
+}
+#profileBox .profile-section-heading h4 {
+  margin: 0;
+}
+#profileBox .profile-section-heading #myOrdersBtn {
+  width: auto;
+  margin: 0;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+#profileBox .myOrderCard {
+  margin-top: 0;
+}
+#profileBox > #fridayInfo {
+  line-height: 1.55;
+  border-color: rgba(62, 143, 208, 0.28);
+  background: var(--tint-cool);
+}
+#profileBox > .profile-history-section {
+  padding: 12px;
+}
+#profileBox .profile-history-heading {
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+#profileBox .profile-history-heading h4 {
+  margin: 0;
+}
+#profileBox .profile-history-count {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--tint-cool);
+  color: var(--soft);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+#profileBox .profile-history-count:empty {
+  display: none;
+}
+#profileBox #histList .hmini {
+  padding: 9px 2px;
+  line-height: 1.4;
+}
+#profileBox #histList .hmini:last-child {
+  border-bottom: 0;
+}
+#profileBox .profile-history-toggle {
+  margin-top: 8px;
+  padding: 7px 10px;
+}
+#profileBox > .placebox {
+  line-height: 1.55;
+}
+#profileBox > .placebox b {
+  margin-bottom: 4px;
+}
+@media (max-width: 380px) {
+  #profileBox .profile-section-heading {
+    align-items: stretch;
+  }
+  #profileBox .profile-section-heading #myOrdersBtn {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+}
