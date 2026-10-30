@@ -52,6 +52,11 @@ test.describe('Оценочный калькулятор КБЖУ в увели�
 
     await expect(option).toHaveCSS('background-color', 'rgb(234, 241, 249)');
     await expect(option).toHaveCSS('border-top-color', 'rgb(18, 58, 107)');
+
+    const portionMode = page.locator('#zoomKbjuBox [data-kbju-mode="portion"]');
+    await portionMode.click();
+    await expect(portionMode).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(portionMode).toHaveCSS('color', 'rgb(16, 20, 24)');
   });
 
   test('ролл с полной ТТК показывает оценочные КБЖУ', async ({ page }) => {
