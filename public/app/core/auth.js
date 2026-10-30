@@ -3,6 +3,8 @@
   'use strict';
 
   var loginMode = 'pin';
+  var authReturnFocus = null;
+  var authFocusTimer = null;
 
   function setAuthFormMode(login) {
     var rf = document.getElementById('regForm');
@@ -86,12 +88,21 @@
     applyAuthBrand();
 
     var am = document.getElementById('authModal');
+    if (am && !am.classList.contains('show')) {
+      var active = document.activeElement;
+      authReturnFocus = active && active !== document.body ? active : null;
+    }
     if (am) am.classList.add('show');
 
     setAuthFormMode(login);
 
     if (typeof syncOverlay === 'function') syncOverlay();
-    setTimeout(function () {
+    if (authFocusTimer) clearTimeout(authFocusTimer);
+    authFocusTimer = setTimeout(function () {
+      authFocusTimer = null;
+      if (!am || !am.classList.contains('show')) return;
+      // Do not steal focus after the user has started interacting with the dialog.
+      if (am.contains(document.activeElement)) return;
       var target = login ? document.getElementById('logPhone') : document.getElementById('regName');
       if (target) target.focus();
     }, 180);
@@ -114,16 +125,67 @@
   }
 
   function closeAuth() {
+    if (authFocusTimer) {
+      clearTimeout(authFocusTimer);
+      authFocusTimer = null;
+    }
     var am = document.getElementById('authModal');
     if (am) am.classList.remove('show');
     resetAuthTransientState();
     if (typeof syncOverlay === 'function') syncOverlay();
+    var returnTarget = authReturnFocus;
+    authReturnFocus = null;
+    if (returnTarget && returnTarget.isConnected && typeof returnTarget.focus === 'function') returnTarget.focus();
   }
+
+
+  // Clicking the backdrop dismisses the auth dialog; clicks inside the card do not.
+  document.addEventListener('click', function (event) {
+    var modal = document.getElementById('authModal');
+    if (modal && modal.classList.contains('show') && event.target === modal) closeAuth();
+  });
+
+  // A modal dialog keeps keyboard focus inside and closes on Escape.
+  document.addEventListener('keydown', function (event) {
+    var modal = document.getElementById('authModal');
+    if (!modal || !modal.classList.contains('show')) return;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeAuth();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+    var focusable = Array.prototype.filter.call(
+      modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+      function (element) {
+        return element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden';
+      }
+    );
+    if (!focusable.length) {
+      event.preventDefault();
+      modal.focus();
+      return;
+    }
+
+    var first = focusable[0];
+    var last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 
   function authSwap(login) {
     applyAuthBrand();
     setAuthFormMode(login);
     if (login) resetLoginPinState();
+    var target = document.getElementById(login ? 'logPhone' : 'regName');
+    if (target) target.focus();
   }
 
 
@@ -155,6 +217,9 @@
       } catch (_) {}
     }
     checkTgAutoLogin();
+
+    var authClose = document.getElementById('authClose');
+    if (authClose) authClose.onclick = closeAuth;
 
     var toLogin = document.getElementById('toLogin');
     if (toLogin) toLogin.onclick = function () { authSwap(true); };
@@ -241,6 +306,7 @@
           var ow = document.getElementById('logOtpWrap'); if (ow) ow.style.display = '';
           var bk = document.getElementById('otpBackRow'); if (bk) bk.style.display = '';
           var lb = document.getElementById('logBtn'); if (lb) lb.textContent = 'Войти по коду';
+          var otpInput = document.getElementById('logOtp'); if (otpInput) otpInput.focus();
           toast('Код отправлен в Telegram', '🔑');
         } catch (e) {
           toast(e.message, '⚠️');
@@ -249,7 +315,11 @@
     }
 
     var otpBack = document.getElementById('otpBack');
-    if (otpBack) otpBack.onclick = resetLoginPinState;
+    if (otpBack) otpBack.onclick = function () {
+      resetLoginPinState();
+      var pin = document.getElementById('logPin');
+      if (pin) pin.focus();
+    };
 
     var profileTopBtn = document.getElementById('profileTopBtn');
     if (profileTopBtn) {
