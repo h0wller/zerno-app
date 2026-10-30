@@ -178,7 +178,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#profileOrdersSection')).toBeVisible();
     await expect(page.locator('#profileCoffeeSection')).toBeHidden();
     await expect(page.locator('#tabBonus')).toBeHidden();
-    await page.evaluate(() => window.setTab('bonus'));
+    await page.evaluate(() => window.openPanel('bonus'));
     await expect(page.locator('#tabProfile')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('#pvProfile')).toBeVisible();
     await expect(page.locator('#fridayInfo')).toBeVisible();
