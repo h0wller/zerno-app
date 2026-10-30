@@ -3,6 +3,7 @@
   'use strict';
 
   var loginMode = 'pin';
+  var authReturnFocus = null;
 
   function setAuthFormMode(login) {
     var rf = document.getElementById('regForm');
@@ -86,6 +87,10 @@
     applyAuthBrand();
 
     var am = document.getElementById('authModal');
+    if (am && !am.classList.contains('show')) {
+      var active = document.activeElement;
+      authReturnFocus = active && active !== document.body ? active : null;
+    }
     if (am) am.classList.add('show');
 
     setAuthFormMode(login);
@@ -118,7 +123,46 @@
     if (am) am.classList.remove('show');
     resetAuthTransientState();
     if (typeof syncOverlay === 'function') syncOverlay();
+    var returnTarget = authReturnFocus;
+    authReturnFocus = null;
+    if (returnTarget && returnTarget.isConnected && typeof returnTarget.focus === 'function') returnTarget.focus();
   }
+
+
+  // A modal dialog keeps keyboard focus inside and closes on Escape.
+  document.addEventListener('keydown', function (event) {
+    var modal = document.getElementById('authModal');
+    if (!modal || !modal.classList.contains('show')) return;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeAuth();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+    var focusable = Array.prototype.filter.call(
+      modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+      function (element) {
+        return element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden';
+      }
+    );
+    if (!focusable.length) {
+      event.preventDefault();
+      modal.focus();
+      return;
+    }
+
+    var first = focusable[0];
+    var last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 
   function authSwap(login) {
     applyAuthBrand();
