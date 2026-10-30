@@ -33,7 +33,9 @@
 }
 
 #authModal .auth-head .msub {
-  max-width: 36ch;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   margin: 0;
   font-size: 12.5px;
   line-height: 1.4;
