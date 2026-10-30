@@ -344,13 +344,15 @@ test.describe('Модуль заказов профиля', () => {
         justifyContent: getComputedStyle(element).justifyContent,
         gap: getComputedStyle(element).columnGap,
         distance: secondRect.left - firstRect.right,
+        centerOffset: Math.abs((firstRect.left + secondRect.right) / 2 - (row.left + row.width / 2)),
         bottom: row.bottom
       };
     });
-    expect(socialLayout.justifyContent).toBe('flex-start');
-    expect(socialLayout.gap).toBe('18px');
-    expect(socialLayout.distance).toBeGreaterThanOrEqual(17);
-    expect(socialLayout.distance).toBeLessThanOrEqual(19);
+    expect(socialLayout.justifyContent).toBe('center');
+    expect(socialLayout.gap).toBe('28px');
+    expect(socialLayout.distance).toBeGreaterThanOrEqual(27);
+    expect(socialLayout.distance).toBeLessThanOrEqual(29);
+    expect(socialLayout.centerOffset).toBeLessThanOrEqual(1);
 
     const summerHours = info.locator('.friday-info-hours-row').first().locator('span');
     await expect.poll(() => summerHours.evaluate(element => getComputedStyle(element).textAlign))
@@ -358,15 +360,23 @@ test.describe('Модуль заказов профиля', () => {
 
     const review = info.locator('.friday-info-review');
     await expect(review).toBeVisible();
-    const reviewLayout = await review.evaluate(element => ({
-      display: getComputedStyle(element).display,
-      justifyContent: getComputedStyle(element).justifyContent,
-      width: element.getBoundingClientRect().width,
-      top: element.getBoundingClientRect().top
-    }));
+    await expect(review).toHaveText('Оставить отзыв');
+    await expect(review.locator('svg')).toHaveCount(0);
+    const reviewLayout = await review.evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      const parent = element.parentElement.getBoundingClientRect();
+      return {
+        display: getComputedStyle(element).display,
+        justifyContent: getComputedStyle(element).justifyContent,
+        textAlign: getComputedStyle(element).textAlign,
+        centerOffset: Math.abs(rect.left + rect.width / 2 - (parent.left + parent.width / 2)),
+        top: rect.top
+      };
+    });
     expect(reviewLayout.display).toBe('flex');
     expect(reviewLayout.justifyContent).toBe('center');
-    expect(reviewLayout.width).toBeGreaterThan(0);
+    expect(reviewLayout.textAlign).toBe('center');
+    expect(reviewLayout.centerOffset).toBeLessThanOrEqual(1);
     expect(reviewLayout.top).toBeGreaterThanOrEqual(socialLayout.bottom);
 
     expect(await info.evaluate(element => getComputedStyle(element).textAlign)).toBe('left');
