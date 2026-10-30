@@ -47,6 +47,7 @@ import './scanner.js';
 import './delivery.js';
 import './ui/delivery-search.js';
 import './checkout-validation.js';
+import './cart-promo.js';
 import './cart.js';
 import './order-tracking.js';
 import './orders.js';
