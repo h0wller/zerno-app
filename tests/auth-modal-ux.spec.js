@@ -252,11 +252,15 @@ test('auth fields expose mobile autofill and next/done keyboard hints', async ({
   await expect(page.locator('#regPhone')).toHaveAttribute('type', 'tel');
   await expect(page.locator('#regPhone')).toHaveAttribute('autocomplete', 'tel');
   await expect(page.locator('#regPhone')).toHaveAttribute('enterkeyhint', 'next');
+  await expect(page.locator('#regPhone')).toHaveAttribute('maxlength', '16');
+  expect(await page.locator('#regPhone').evaluate((el) => el.maxLength)).toBe(16);
   await expect(page.locator('#regPin')).toHaveAttribute('enterkeyhint', 'done');
 
   await page.evaluate(() => window.openAuth(true));
   await expect(page.locator('#logPhone')).toHaveAttribute('type', 'tel');
   await expect(page.locator('#logPhone')).toHaveAttribute('enterkeyhint', 'next');
+  await expect(page.locator('#logPhone')).toHaveAttribute('maxlength', '16');
+  expect(await page.locator('#logPhone').evaluate((el) => el.maxLength)).toBe(16);
   await expect(page.locator('#logPin')).toHaveAttribute('enterkeyhint', 'done');
   await expect(page.locator('#logOtp')).toHaveAttribute('enterkeyhint', 'done');
 });
