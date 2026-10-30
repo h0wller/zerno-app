@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 let mineRequestCount = 0;
+let holdSecondMineRequest = false;
+let releaseSecondMineRequest = null;
 
 const orderFixture = {
   "id": "profile-order-1",
@@ -25,12 +27,26 @@ test.describe('Модуль заказов профиля', () => {
       sessionStorage.setItem('splashDone', '1');
     });
     mineRequestCount = 0;
-    await page.route('**/api/orders/mine', route => {
+    holdSecondMineRequest = false;
+    releaseSecondMineRequest = null;
+    await page.route('**/api/orders/mine', async route => {
       mineRequestCount += 1;
-      return route.fulfill({
+      if (mineRequestCount === 2 && holdSecondMineRequest) {
+        await new Promise(resolve => { releaseSecondMineRequest = resolve; });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ orders: [{ ...orderFixture, no: 'P-OLD' }] })
+        });
+        return;
+      }
+      const orders = mineRequestCount === 3
+        ? [{ ...orderFixture, no: 'P-2044' }]
+        : [orderFixture];
+      await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ orders: [orderFixture] })
+        body: JSON.stringify({ orders })
       });
     });
     await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
@@ -178,15 +194,31 @@ test.describe('Модуль заказов профиля', () => {
     await expect(name).toHaveValue('Новое имя');
   });
 
-  test('при смене пользователя кэш заказов обновляется', async ({ page }) => {
-    await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
+  test('смена аккаунта очищает старый заказ и игнорирует поздний ответ прежней сессии', async ({ page }) => {
+    const host = page.locator('#myOrders');
+    await expect(host).toContainText('Заказ #P-1042');
     expect(mineRequestCount).toBe(1);
 
+    holdSecondMineRequest = true;
     await page.evaluate(() => {
       window.me = { ...window.me, id: 'profile-test-second-account' };
       window.loadMyOrders();
     });
     await expect.poll(() => mineRequestCount).toBe(2);
+    await expect(host).toContainText('Загрузка заказа…');
+    await expect(host).not.toContainText('P-1042');
+
+    await page.evaluate(() => {
+      window.me = { ...window.me, id: 'profile-test-third-account' };
+      window.loadMyOrders();
+    });
+    await expect.poll(() => mineRequestCount).toBe(3);
+    await expect(host).toContainText('Заказ #P-2044');
+
+    releaseSecondMineRequest();
+    releaseSecondMineRequest = null;
+    await expect(host).toContainText('Заказ #P-2044');
+    await expect(host).not.toContainText('P-OLD');
   });
 
   test('история показывает последние записи и раскрывает полный список', async ({ page }) => {
