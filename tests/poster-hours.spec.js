@@ -44,7 +44,7 @@ function deliverySchedule(date, tomorrow, close) {
 }
 
 test('клиентские предзаказы следуют зимнему расписанию при подмене системного времени', async ({ page }) => {
-  await page.clock.install({ time: new Date('2026-10-27T08:30:00.000Z') });
+  await page.clock.setFixedTime(new Date('2026-10-27T08:30:00.000Z'));
   let schedule = deliverySchedule('2026-10-27', '2026-10-28', 21);
   await page.route('**/api/delivery/info', route => route.fulfill({
     status: 200,
@@ -104,7 +104,7 @@ test('клиентские предзаказы следуют зимнему р
 });
 
 test('пятничное зимнее расписание оставляет слот до 22:00 при подмене времени', async ({ page }) => {
-  await page.clock.install({ time: new Date('2026-10-30T18:45:00.000Z') }); // 20:45 в Калининграде
+  await page.clock.setFixedTime(new Date('2026-10-30T18:45:00.000Z')); // 20:45 в Калининграде
   const schedule = deliverySchedule('2026-10-30', '2026-10-31', 22);
   await page.route('**/api/delivery/info', route => route.fulfill({
     status: 200,
