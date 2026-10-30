@@ -131,3 +131,29 @@ test('switching between registration and login moves focus to the active form', 
   await page.locator('#toReg').click();
   await expect(page.locator('#regName')).toBeFocused();
 });
+
+test('auth modal closes on backdrop click but stays open for card clicks', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => {
+    const trigger = document.createElement('button');
+    trigger.id = 'authBackdropTrigger';
+    trigger.textContent = 'Open profile';
+    trigger.addEventListener('click', () => window.openAuth(false));
+    document.body.appendChild(trigger);
+  });
+
+  const trigger = page.locator('#authBackdropTrigger');
+  const modal = page.locator('#authModal');
+  await trigger.click();
+  await expect(modal).toHaveClass(/show/);
+  await modal.locator('.authcard').click({ position: { x: 12, y: 12 } });
+  await expect(modal).toHaveClass(/show/);
+  await modal.click({ position: { x: 2, y: 2 } });
+  await expect(modal).not.toHaveClass(/show/);
+  await expect(trigger).toBeFocused();
+});
