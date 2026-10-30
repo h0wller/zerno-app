@@ -127,7 +127,12 @@ body[data-brand="coffee"] {
   --cashier-bg: var(--paper, #FFFFFF);
 
   /* ── КБЖУ в увеличенном просмотре ─────────────────────── */
-  --nutrition-text: var(--ink, #101418);
+  /* ── Чипы состава ───────────────────────────────────────── */
+  --composition-chip-bg: #EAF1F9;
+  --composition-chip-border: rgba(62, 143, 208, 0.25);
+  --composition-chip-color: #123A6B;
+
+    --nutrition-text: var(--ink, #101418);
   --nutrition-muted: #6E7A85;
   --nutrition-surface: #F8FAFC;
   --nutrition-border: var(--line, #D8DFE4);
@@ -282,7 +287,12 @@ body[data-brand="delivery"] {
   --cashier-bg: var(--fr-paper, #F6EEE1);
 
   /* ── КБЖУ в увеличенном просмотре ─────────────────────── */
-  --nutrition-text: var(--fr-choc, #3A2A1C);
+  /* ── Чипы состава ───────────────────────────────────────── */
+  --composition-chip-bg: var(--fr-rice, #EFE6D8);
+  --composition-chip-border: var(--fr-tan, #C99E6E);
+  --composition-chip-color: var(--fr-choc, #3A2A1C);
+
+    --nutrition-text: var(--fr-choc, #3A2A1C);
   --nutrition-muted: rgba(58, 42, 28, 0.68);
   --nutrition-surface: var(--fr-paper, #F6EEE1);
   --nutrition-border: var(--fr-choc, #3A2A1C);

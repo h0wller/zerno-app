@@ -584,7 +584,7 @@ function openZoom(src, name, price, itemObj) {
           compList
             .map(
               c =>
-                `<span style="font-size:12px;background:#F3F5F7;color:#2C3640;padding:4px 10px;border-radius:999px;font-weight:500">${esc(c)}</span>`
+                `<span class="zoom-composition-chip" style="font-size:12px;background:var(--composition-chip-bg, #EAF1F9);border:1px solid var(--composition-chip-border, rgba(62, 143, 208, 0.25));color:var(--composition-chip-color, #123A6B);padding:4px 10px;border-radius:999px;font-weight:500">${esc(c)}</span>`
             )
             .join('') +
         `</div>` +

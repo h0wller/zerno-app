@@ -155,12 +155,12 @@ body.editing .card:hover{
 }
 .comp i{
   font-style: normal;
-  background: #EAF1F9;
-  border: 1px solid rgba(62, 143, 208, 0.25);
+  background: var(--composition-chip-bg, #EAF1F9);
+  border: 1px solid var(--composition-chip-border, rgba(62, 143, 208, 0.25));
   border-radius: 999px;
   padding: 3px 9px;
   font: 600 10.5px "Golos Text";
-  color: #123A6B;
+  color: var(--composition-chip-color, #123A6B);
   flex: 0 0 auto;
 }
 .cbody .vol{

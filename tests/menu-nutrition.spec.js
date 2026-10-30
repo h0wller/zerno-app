@@ -59,6 +59,29 @@ test.describe('Оценочный калькулятор КБЖУ в увели�
     await expect(portionMode).toHaveCSS('color', 'rgb(16, 20, 24)');
   });
 
+  test('бейджи состава ролла используют токены обоих брендов', async ({ page }) => {
+    const cardChip = page.locator('#deliveryGrid [data-product-id="rl-phil-og"] .comp i').first();
+    await expect(cardChip).toBeVisible();
+    await expect(cardChip).toHaveCSS('background-color', 'rgb(239, 230, 216)');
+    await expect(cardChip).toHaveCSS('border-top-color', 'rgb(201, 158, 110)');
+    await expect(cardChip).toHaveCSS('color', 'rgb(58, 42, 28)');
+
+    await openDeliveryItem(page, 'rl-phil-og');
+    const zoomChip = page.locator('#itemZoomOverlay .zoom-composition-chip').first();
+    await expect(zoomChip).toBeVisible();
+    await expect(zoomChip).toHaveCSS('background-color', 'rgb(239, 230, 216)');
+
+    await page.evaluate(() => {
+      document.documentElement.dataset.brand = 'coffee';
+      document.body.dataset.brand = 'coffee';
+    });
+
+    await expect(cardChip).toHaveCSS('background-color', 'rgb(234, 241, 249)');
+    await expect(cardChip).toHaveCSS('border-top-color', 'rgba(62, 143, 208, 0.25)');
+    await expect(cardChip).toHaveCSS('color', 'rgb(18, 58, 107)');
+    await expect(zoomChip).toHaveCSS('background-color', 'rgb(234, 241, 249)');
+  });
+
   test('ролл с полной ТТК показывает оценочные КБЖУ', async ({ page }) => {
     await openDeliveryItem(page, 'rl-phil-og');
 
