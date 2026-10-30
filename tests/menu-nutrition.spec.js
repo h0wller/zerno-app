@@ -47,11 +47,12 @@ test.describe('Оценочный калькулятор КБЖУ в увели�
     await expect(nutrition).toContainText('на порцию (250 г)');
   });
 
-  test('ролл с нераскрытым компонентом не показывает частичные цифры', async ({ page }) => {
+  test('запечённый ролл с красным соусом в заготовке показывает полный расчёт', async ({ page }) => {
     await openDeliveryItem(page, 'rl-kioto-kr');
 
     const nutrition = page.locator('#zoomKbjuBox');
-    await expect(nutrition).toContainText('соус калиний');
-    await expect(nutrition.locator('[data-kbju-val]')).toHaveCount(0);
+    await expect(nutrition).toContainText('Пищевая ценность — оценка');
+    await expect(nutrition.locator('[data-kbju-val="kcal"]')).toHaveText(/^\\d+$/);
+    await expect(nutrition).toContainText('на порцию (290 г)');
   });
 });
