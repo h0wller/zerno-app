@@ -1,19 +1,42 @@
 /* public/app/profile-orders.js — заказы гостя: единая загрузка и отображение. */
 (function () {
     'use strict';
-    var ordersCache = null, ordersCacheAt = 0, ordersRequest = null, cacheTtl = 20000;
+    var ordersCache = null, ordersCacheAt = 0, ordersCacheUser = null;
+    var ordersRequest = null, ordersRequestUser = null, cacheTtl = 20000;
+
+    function currentUserKey() {
+        return me ? String(me.id || me.phone || '') : null;
+    }
 
     function fetchMyOrders(force) {
-        if (!me) return Promise.resolve([]);
+        var userKey = currentUserKey();
+        if (userKey === null) return Promise.resolve([]);
+        if (ordersCacheUser !== userKey) {
+            ordersCache = null;
+            ordersCacheAt = 0;
+            ordersCacheUser = userKey;
+        }
         if (!force && ordersCache && Date.now() - ordersCacheAt < cacheTtl) return Promise.resolve(ordersCache);
-        if (ordersRequest) return ordersRequest;
-        ordersRequest = api('/orders/mine').then(function (response) {
-            ordersCache = Array.isArray(response.orders) ? response.orders : [];
-            ordersCacheAt = Date.now();
-            window.__lastMineOrders = ordersCache;
-            return ordersCache;
-        }).finally(function () { ordersRequest = null; });
-        return ordersRequest;
+        if (ordersRequest && ordersRequestUser === userKey) return ordersRequest;
+
+        var request = api('/orders/mine').then(function (response) {
+            var result = Array.isArray(response.orders) ? response.orders : [];
+            if (currentUserKey() === userKey) {
+                ordersCache = result;
+                ordersCacheAt = Date.now();
+                ordersCacheUser = userKey;
+                window.__lastMineOrders = result;
+            }
+            return result;
+        }).finally(function () {
+            if (ordersRequest === request) {
+                ordersRequest = null;
+                ordersRequestUser = null;
+            }
+        });
+        ordersRequest = request;
+        ordersRequestUser = userKey;
+        return request;
     }
 
     function statusFor(status) {
@@ -80,6 +103,7 @@
     function updateMyOrdersCache(orders) {
         ordersCache = Array.isArray(orders) ? orders : [];
         ordersCacheAt = Date.now();
+        ordersCacheUser = currentUserKey();
         window.__lastMineOrders = ordersCache;
     }
 
