@@ -210,6 +210,30 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
 
 
 
+
+test('auth fields expose mobile autofill and next/done keyboard hints', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+
+  await expect(page.locator('#regName')).toHaveAttribute('autocomplete', 'name');
+  await expect(page.locator('#regName')).toHaveAttribute('enterkeyhint', 'next');
+  await expect(page.locator('#regPhone')).toHaveAttribute('type', 'tel');
+  await expect(page.locator('#regPhone')).toHaveAttribute('autocomplete', 'tel');
+  await expect(page.locator('#regPhone')).toHaveAttribute('enterkeyhint', 'next');
+  await expect(page.locator('#regPin')).toHaveAttribute('enterkeyhint', 'done');
+
+  await page.evaluate(() => window.openAuth(true));
+  await expect(page.locator('#logPhone')).toHaveAttribute('type', 'tel');
+  await expect(page.locator('#logPhone')).toHaveAttribute('enterkeyhint', 'next');
+  await expect(page.locator('#logPin')).toHaveAttribute('enterkeyhint', 'done');
+  await expect(page.locator('#logOtp')).toHaveAttribute('enterkeyhint', 'done');
+});
+
 test('Telegram registration action uses its own icon instead of the robot emoji', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
