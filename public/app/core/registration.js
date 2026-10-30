@@ -26,6 +26,7 @@
     var regBtn = document.getElementById('regBtn');
     if (regBtn) {
       regBtn.onclick = async function () {
+        if (regBtn.disabled) return;
         var name = (document.getElementById('regName') || {}).value.trim();
         var phone = (document.getElementById('regPhone') || {}).value;
         var pin = (document.getElementById('regPin') || {}).value.trim();
@@ -40,6 +41,10 @@
         if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
         if (!/^\d{4}$/.test(pin)) return toast('PIN — ровно 4 цифры', '🔐');
 
+        regBtn.disabled = true;
+        regBtn.setAttribute('aria-busy', 'true');
+        regBtn.textContent = 'Создаём профиль…';
+        try {
         if (window.__tgInitData) {
           try {
             var rTg = await api('/auth/tg-link', {
@@ -94,6 +99,11 @@
           } else {
             toast(e.message, '⚠️');
           }
+        }
+        } finally {
+          regBtn.disabled = false;
+          regBtn.removeAttribute('aria-busy');
+          regBtn.textContent = 'Создать профиль';
         }
       };
     }

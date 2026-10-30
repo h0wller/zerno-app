@@ -4,6 +4,7 @@ test.use({ serviceWorkers: 'block' });
 
 const viewports = [
   { name: 'coffee desktop', brand: 'coffee', width: 1280, height: 900 },
+  { name: 'delivery desktop', brand: 'delivery', width: 1280, height: 900 },
   { name: 'delivery compact phone', brand: 'delivery', width: 360, height: 640 },
   { name: 'coffee landscape phone', brand: 'coffee', width: 844, height: 390 },
 ];
@@ -122,7 +123,7 @@ test('auth modal traps keyboard focus at its boundaries', async ({ page }) => {
   await expect(lastControl).toBeFocused();
 });
 
-test('switching between registration and login moves focus to the active form', async ({ page }) => {
+test('registration and login tabs stay in sync with the active form and keyboard', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
@@ -131,9 +132,26 @@ test('switching between registration and login moves focus to the active form', 
   await page.waitForFunction(() => typeof window.openAuth === 'function');
   await page.evaluate(() => window.openAuth(false));
 
-  await page.locator('#toLogin').click();
-  await expect(page.locator('#logPhone')).toBeFocused();
-  await page.locator('#toReg').click();
+  const registerTab = page.locator('#toReg');
+  const loginTab = page.locator('#toLogin');
+  await expect(registerTab).toHaveAttribute('role', 'tab');
+  await expect(loginTab).toHaveAttribute('role', 'tab');
+  await expect(registerTab).toHaveAttribute('aria-selected', 'true');
+  await expect(registerTab).toHaveAttribute('tabindex', '0');
+  await expect(page.locator('#regForm')).toBeVisible();
+
+  await registerTab.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(loginTab).toBeFocused();
+  await expect(loginTab).toHaveAttribute('aria-selected', 'true');
+  await expect(registerTab).toHaveAttribute('aria-selected', 'false');
+  await expect(page.locator('#loginForm')).toBeVisible();
+
+  await page.keyboard.press('ArrowLeft');
+  await expect(registerTab).toBeFocused();
+  await expect(registerTab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#regForm')).toBeVisible();
+  await page.keyboard.press('Tab');
   await expect(page.locator('#regName')).toBeFocused();
 });
 
@@ -200,9 +218,70 @@ test('switching to and from Telegram code entry moves focus to the active field'
   await page.waitForFunction(() => typeof window.openAuth === 'function');
   await page.evaluate(() => window.openAuth(true));
   await page.locator('#logPhone').fill('+79001234567');
-  await page.locator('#otpBtn').click();
+  let markRequestStarted;
+  let releaseRequest;
+  const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
+  const responseGate = new Promise((resolve) => { releaseRequest = resolve; });
+  await page.unroute('**/auth/request-otp');
+  await page.route('**/api/auth/request-otp', async (route) => {
+    markRequestStarted();
+    await responseGate;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+  });
+  const otpButton = page.locator('#otpBtn');
+  await otpButton.click();
+  await requestStarted;
+  await expect(otpButton).toBeDisabled();
+  await expect(otpButton).toHaveAttribute('aria-busy', 'true');
+  await expect(otpButton).toHaveText('Отправляем код…');
+  releaseRequest();
   await expect(page.locator('#logOtp')).toBeVisible();
   await expect(page.locator('#logOtp')).toBeFocused();
+  await expect(page.locator('#logOtpHint')).toContainText('Код отправлен в Telegram');
+  await expect(otpButton).toBeEnabled();
   await page.locator('#otpBack').click();
   await expect(page.locator('#logPin')).toBeFocused();
+});
+
+
+test('registration submit exposes a loading state and prevents duplicate requests', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  let markRequestStarted;
+  let releaseRequest;
+  const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
+  const responseGate = new Promise((resolve) => { releaseRequest = resolve; });
+  let requestCount = 0;
+  await page.route('**/api/auth/register', async (route) => {
+    requestCount += 1;
+    markRequestStarted();
+    await responseGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'auth-modal-register-test',
+        customer: { id: 888888, name: 'Auth Modal Test', verified: true }
+      })
+    });
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Auth Modal Test');
+  await page.locator('#regPhone').fill('+79001234567');
+  await page.locator('#regPin').fill('1234');
+  await page.locator('#consentBox').check();
+
+  const submit = page.locator('#regBtn');
+  await submit.click();
+  await requestStarted;
+  await expect(submit).toBeDisabled();
+  await expect(submit).toHaveAttribute('aria-busy', 'true');
+  await expect(submit).toHaveText('Создаём профиль…');
+  releaseRequest();
+  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
+  expect(requestCount).toBe(1);
 });
