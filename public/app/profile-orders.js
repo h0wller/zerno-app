@@ -2,7 +2,8 @@
 (function () {
     'use strict';
     var ordersCache = null, ordersCacheAt = 0, ordersCacheUser = null;
-    var ordersRequest = null, ordersRequestUser = null, cacheTtl = 20000;
+    var ordersRequest = null, ordersRequestUser = null, ordersModalOpener = null;
+    var cacheTtl = 20000;
 
     function currentUserKey() {
         return me ? String(me.id || me.phone || '') : null;
@@ -88,8 +89,13 @@
         var modal = document.getElementById('ordersModal');
         var list = document.getElementById('omList');
         if (!modal || !list || !me) return;
-        modal.classList.add('show');
-        if (typeof window.syncOverlay === 'function') window.syncOverlay();
+        if (!modal.classList.contains('show')) {
+            ordersModalOpener = document.activeElement;
+            modal.classList.add('show');
+            var closeButton = modal.querySelector('.omClose');
+            if (closeButton) closeButton.focus();
+            if (typeof window.syncOverlay === 'function') window.syncOverlay();
+        }
         if (!ordersCache) list.innerHTML = '<div class="hmini">Загрузка заказов…</div>';
         try {
             var orders = await fetchMyOrders(!!(options && options.force));
@@ -124,12 +130,35 @@
         modal.setAttribute('aria-labelledby', 'ordersModalTitle');
         modal.innerHTML = '<div class="omCard" tabindex="-1"><button type="button" class="omClose" aria-label="Закрыть список заказов">✕ Закрыть</button><h3 id="ordersModalTitle" style="margin:0 0 12px">📦 Мои заказы</h3><div id="omList" aria-live="polite"></div></div>';
         document.body.appendChild(modal);
+
+        function close() {
+            modal.classList.remove('show');
+            if (typeof window.syncOverlay === 'function') window.syncOverlay();
+            if (ordersModalOpener && ordersModalOpener.isConnected) ordersModalOpener.focus();
+            ordersModalOpener = null;
+        }
+
         modal.addEventListener('click', function (event) {
-            if (event.target === modal || event.target.closest('.omClose')) {
-                modal.classList.remove('show');
-                if (typeof window.syncOverlay === 'function') window.syncOverlay();
-                var opener = document.getElementById('myOrdersBtn');
-                if (opener) opener.focus();
+            if (event.target === modal || event.target.closest('.omClose')) close();
+        });
+        modal.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                close();
+                return;
+            }
+            if (event.key !== 'Tab') return;
+            var focusable = Array.prototype.slice.call(modal.querySelectorAll(
+                'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(function (element) { return !element.closest('[hidden]'); });
+            if (!focusable.length) return;
+            var first = focusable[0], last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
             }
         });
     })();
