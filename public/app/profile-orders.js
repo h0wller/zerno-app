@@ -70,7 +70,7 @@
             ? ' · <span class="preorder-slot">⏰ Предзаказ: ' + esc(order.slot || '') + '</span>'
             : (order.eta ? ' · <span>⏰ ' + esc(order.eta) + '</span>' : '');
         var track = !['done', 'cancel'].includes(order.status)
-            ? '<button type="button" class="moTrack" data-open-track="' + esc(String(order.id)) + '">📍 Отследить</button>' : '';
+            ? '<button type="button" class="moTrack" data-open-track="' + esc(String(order.id)) + '" aria-label="Открыть статус и детали заказа">Статус заказа</button>' : '';
         return '<article class="myOrderCard' + (compact ? ' is-compact' : '') + '">' +
             '<div class="moTop"><span>Заказ #' + esc(String(order.no || order.id || '')) +
             (dateText ? ' <span class="moDate">· ' + dateText + '</span>' : '') + '</span>' +

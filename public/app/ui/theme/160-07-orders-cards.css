@@ -192,3 +192,16 @@ body.panel-open {
   display: grid;
   gap: 8px;
 }
+
+
+/* ── Однозначное основное действие в карточке заказа ── */
+#myOrders .moTrack,
+#omList .moTrack {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 38px;
+  cursor: pointer;
+}

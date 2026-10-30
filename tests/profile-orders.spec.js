@@ -103,6 +103,34 @@ test.describe('Модуль заказов профиля', () => {
     expect(mineRequestCount).toBe(1);
 
     await expect(modal.locator('.omClose')).toBeFocused();
+    const closeColors = await modal.locator('.omClose').evaluate(element => {
+      const style = getComputedStyle(element);
+      return { color: style.color, background: style.backgroundColor };
+    });
+    expect(closeColors.color).toBe('rgb(255, 255, 255)');
+    expect(closeColors.background).toBe('rgb(18, 58, 107)');
+
+    await modal.locator('[data-open-track="profile-order-1"]').click();
+    const trackModal = page.locator('#orderTrackModal');
+    await expect(trackModal).toHaveClass(/show/);
+    await expect(trackModal.locator('.ot-card')).toBeVisible();
+    const stack = await page.evaluate(() => {
+      const orders = document.getElementById('ordersModal');
+      const track = document.getElementById('orderTrackModal');
+      const rect = track.getBoundingClientRect();
+      const top = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return {
+        orders: Number(getComputedStyle(orders).zIndex),
+        track: Number(getComputedStyle(track).zIndex),
+        topLayer: top && top.closest('#orderTrackModal') ? 'orderTrackModal' : 'other'
+      };
+    });
+    expect(stack.track).toBeGreaterThan(stack.orders);
+    expect(stack.topLayer).toBe('orderTrackModal');
+    await trackModal.locator('[data-ot-close]').click();
+    await expect(trackModal).not.toHaveClass(/show/);
+    await expect(modal).toHaveClass(/show/);
+
     await page.keyboard.press('Escape');
     await expect(modal).not.toHaveClass(/show/);
     await expect(page.locator('#myOrdersBtn')).toBeFocused();
@@ -203,16 +231,16 @@ test.describe('Модуль заказов профиля', () => {
 
     holdSecondMineRequest = true;
     await page.evaluate(() => {
-      window.me = { ...window.me, id: 'profile-test-second-account' };
-      window.loadMyOrders();
+      window.setUser(null, { ...window.me, id: 'profile-test-second-account' });
+      window.renderProfile();
     });
     await expect.poll(() => mineRequestCount).toBe(2);
     await expect(host).toContainText('Загрузка заказа…');
     await expect(host).not.toContainText('P-1042');
 
     await page.evaluate(() => {
-      window.me = { ...window.me, id: 'profile-test-third-account' };
-      window.loadMyOrders();
+      window.setUser(null, { ...window.me, id: 'profile-test-third-account' });
+      window.renderProfile();
     });
     await expect.poll(() => mineRequestCount).toBe(3);
     await expect(host).toContainText('Заказ #P-2044');
@@ -272,6 +300,28 @@ test.describe('Модуль заказов профиля', () => {
     });
     expect(border.topStyle).toBe('solid');
     expect(border.topColor).toBe('rgb(179, 55, 43)');
+  });
+
+  test('информация о Пятнице показывает актуальное расписание и брендовые ссылки', async ({ page }) => {
+    const info = page.locator('#fridayInfo');
+    await expect(info).toBeVisible();
+    await expect(info).toContainText('п. Янтарный, ул. Советская, 38А · доставка из приложения');
+    await expect(info).toContainText('Май–сентябрь');
+    await expect(info).toContainText('пн–вс · 11:00–22:00');
+    await expect(info).toContainText('Октябрь–апрель');
+    await expect(info).toContainText('пн–чт · 11:00–21:00');
+    await expect(info).toContainText('пт–вс · 11:00–22:00');
+    await expect(info).not.toContainText('самовывоз');
+    await expect(info).not.toContainText('Ежедневно 11:00–22:00');
+
+    const vk = info.getByRole('link', { name: 'ВКонтакте' });
+    const yandex = info.getByRole('link', { name: 'Яндекс Карты' });
+    await expect(vk).toHaveAttribute('href', 'https://vk.ru/fridaypizza39');
+    await expect(vk.locator('svg')).toHaveCount(1);
+    await expect(yandex).toHaveAttribute('href', 'https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/');
+    await expect(yandex.locator('svg')).toHaveCount(1);
+    await expect(info.locator('.friday-info-review')).toBeVisible();
+    expect(await info.evaluate(element => getComputedStyle(element).textAlign)).toBe('left');
   });
 
   test('содержимое профиля меняется вместе с брендом, вкладки доступны с клавиатуры', async ({ page }) => {
