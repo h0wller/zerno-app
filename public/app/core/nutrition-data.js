@@ -115,7 +115,7 @@ export const NUTRITION_PREPARATIONS = {
     ingredients: {
       mayonnaise: 600,
       mozzarella: 400,
-      'kalini-sauce': 80,
+      'red-sauce': 80,
       'masago-orange': 60
     }
   },
