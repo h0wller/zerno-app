@@ -158,6 +158,105 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
 
     /* ── профиль ── */
     var _rpRunning = false;
+    var nameEditing = false;
+    var historyExpanded = false;
+
+    function setNameEditing(editing) {
+        nameEditing = editing;
+        var input = document.getElementById('nameInput');
+        var edit = document.getElementById('nameEditBtn');
+        var actions = document.getElementById('nameEditActions');
+        var save = document.getElementById('nameSaveBtn');
+        if (input) {
+            input.readOnly = !editing;
+            input.setAttribute('aria-readonly', String(!editing));
+        }
+        if (edit) edit.hidden = editing;
+        if (actions) actions.hidden = !editing;
+        if (save) save.disabled = false;
+    }
+
+    async function saveProfileName() {
+        var input = document.getElementById('nameInput');
+        var save = document.getElementById('nameSaveBtn');
+        if (!input || !me || !nameEditing) return;
+        var name = input.value.trim() || me.name || 'Гость';
+        if (name === me.name) {
+            input.value = me.name;
+            return setNameEditing(false);
+        }
+        if (save) save.disabled = true;
+        try {
+            var result = await api('/me', { method: 'PUT', body: { name: name } });
+            me = result.customer;
+            setNameEditing(false);
+            renderProfile();
+            toast('Имя профиля обновлено', '✅');
+        } catch (error) {
+            toast(error.message, '⚠️');
+            if (save) save.disabled = false;
+        }
+    }
+
+    function renderHistory() {
+        var list = document.getElementById('histList');
+        var count = document.getElementById('historyCount');
+        var toggle = document.getElementById('historyToggleBtn');
+        if (!list || !me) return;
+        var history = Array.isArray(me.history) ? me.history : [];
+        var visible = historyExpanded ? history : history.slice(0, 3);
+        list.innerHTML = visible.map(function (item) {
+            return '<div class="hmini"><b>' + esc(fmtTs(item.ts)) + '</b> · ' + esc(item.a) + ' <i>— ' + esc(item.by) + '</i></div>';
+        }).join('') || '<div class="hmini">История пока пуста</div>';
+        if (count) {
+            var mod10 = history.length % 10;
+            var mod100 = history.length % 100;
+            var noun = mod10 === 1 && mod100 !== 11 ? 'запись'
+                : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'записи'
+                : 'записей';
+            count.textContent = history.length ? history.length + ' ' + noun : '';
+        }
+        if (toggle) {
+            toggle.hidden = history.length <= 3;
+            toggle.textContent = historyExpanded ? 'Свернуть историю' : 'Показать всю историю';
+            toggle.setAttribute('aria-expanded', String(historyExpanded));
+        }
+    }
+
+    (function bindProfileControls() {
+        var input = document.getElementById('nameInput');
+        var edit = document.getElementById('nameEditBtn');
+        var save = document.getElementById('nameSaveBtn');
+        var cancel = document.getElementById('nameCancelBtn');
+        var historyToggle = document.getElementById('historyToggleBtn');
+        if (edit) edit.addEventListener('click', function () {
+            if (!me || !input) return;
+            input.value = me.name || '';
+            setNameEditing(true);
+            input.focus();
+            input.select();
+        });
+        if (save) save.addEventListener('click', saveProfileName);
+        if (cancel) cancel.addEventListener('click', function () {
+            if (input && me) input.value = me.name || '';
+            setNameEditing(false);
+            if (edit) edit.focus();
+        });
+        if (input) input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && nameEditing) {
+                event.preventDefault();
+                saveProfileName();
+            } else if (event.key === 'Escape' && nameEditing) {
+                event.preventDefault();
+                if (cancel) cancel.click();
+            }
+        });
+        if (historyToggle) historyToggle.addEventListener('click', function () {
+            historyExpanded = !historyExpanded;
+            renderHistory();
+        });
+    })();
+
     function renderProfile() {
         if (_rpRunning) return;
         _rpRunning = true;
@@ -175,11 +274,14 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             if (!me) {
                 $("#avInit").textContent = "?";
                 $("#profileTopBtn").textContent = "?";
+                if ($("#nameInput")) $("#nameInput").value = "";
+                setNameEditing(false);
+                historyExpanded = false;
                 return;
             }
             $("#avInit").textContent = (me.name[0] || "Г").toUpperCase();
             $("#profileTopBtn").textContent = (me.name[0] || "Г").toUpperCase();
-            $("#nameInput").value = me.name;
+            if (!nameEditing) $("#nameInput").value = me.name || "";
             $("#phoneLbl").textContent = me.phone + " · вход по номеру";
             // Кнопки админа (чаты, дашборд, промокоды) показывает views.js по режиму, а не по роли.
             const r = me.role || "guest";
@@ -195,19 +297,10 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                     ? "🔑 У меня код доступа сотрудника"
                     : "🔑 Повысить до администратора";
             refreshPushBtn();
-            const spb2 = $("#setPinBtn");
-            if (spb2) spb2.hidden = !me;
             $("#stCups").textContent = me.cups;
             $("#stStamps").textContent = me.stamps + "/10";
             $("#stFree").textContent = me.free;
-            $("#histList").innerHTML =
-                (me.history || [])
-                    .slice(0, 8)
-                    .map(
-                        (h) =>
-                            `<div class="hmini"><b>${fmtTs(h.ts)}</b> · ${esc(h.a)} <i>— ${esc(h.by)}</i></div>`,
-                    )
-                    .join("") || '<div class="hmini">История пока пуста</div>';
+            renderHistory();
 
             if (typeof window.syncBrandViews === "function") window.syncBrandViews();
         } finally {
@@ -215,204 +308,9 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         }
     }
 
-    /* ── блок верификации под кнопкой PIN ── */
-    var _verifyNoteQueued = false;
-    function renderVerifyNote() {
-        if (!_meResolved) {
-            var existing = document.getElementById('verifyNote');
-            if (existing) existing.hidden = true;
-            var actBtn0 = document.getElementById('activateBtn');
-            if (actBtn0) actBtn0.hidden = true;
-            if (!_verifyNoteQueued) {
-                _verifyNoteQueued = true;
-                _onMeResolved(function () {
-                    _verifyNoteQueued = false;
-                    try { renderVerifyNote(); } catch (e) { }
-                });
-            }
-            return;
-        }
+    Object.assign(window, { renderBonus, renderProfile });
 
-        let n = $("#verifyNote");
-        const pb = $("#profileBox");
-        if (!pb) return;
-
-        if (!n) {
-            n = document.createElement("div");
-            n.id = "verifyNote";
-            pb.insertBefore(n, pb.firstChild);
-        }
-
-        const isStaff = me && me.role && me.role !== 'guest';
-        const isVerified = me && (me.verified === true || me.verified === 1 || me.verified > 0);
-        const isAlreadyActive = !me || isStaff || isVerified;
-
-        if (isAlreadyActive) {
-            n.hidden = true;
-            n.innerHTML = "";
-            const actBtn = document.getElementById('activateBtn');
-            if (actBtn) actBtn.hidden = true;
-            return;
-        }
-
-        let html = '<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small>' +
-            '<div style="display:flex;gap:8px;margin-bottom:12px">' +
-            '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1">' +
-            '<button class="btn fire" id="actBtn">Активировать</button>' +
-            '</div>';
-
-        if (!me.welcome && !me.tg) {
-            html += '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>Приветственный напиток и бесплатная первая доставка</b> за регистрацию. Быстрее всего — в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
-        }
-
-        n.hidden = false;
-        n.innerHTML = html;
-
-        const ab = $("#actBtn");
-        if (ab) {
-            ab.onclick = async () => {
-                try {
-                    const codeVal = $("#actCode").value.trim();
-                    const r = await api("/auth/activate-guest", {
-                        method: "POST",
-                        body: { code: codeVal },
-                    });
-                    me = r.customer;
-                    toast("Профиль активирован! Приветственный напиток и бесплатная доставка уже ваши 🎁", "");
-                    renderAll();
-                } catch (e) {
-                    toast(e.message, "⚠️");
-                }
-            };
-        }
-    }
-
-    async function loadMyOrders() {
-        var host = document.getElementById('myOrders');
-        if (!host || !me) return;
-        if (typeof brand !== 'undefined' && brand !== 'delivery') {
-            host.innerHTML = '';
-            return;
-        }
-        try {
-            var r = await api('/orders/mine');
-            window.__lastMineOrders = r.orders || []; /* Ф3.69: единый кэш для делегата [data-open-track] */
-            var ST = {
-                new: ['🆕', 'mo-new', 'Новый'],
-                accept: ['✅', 'mo-accept', 'Подтверждён'],
-                cook: ['👨‍🍳', 'mo-cook', 'Готовится'],
-                way: ['🛵', 'mo-way', 'Курьер в пути'],
-                done: ['🏁', 'mo-done', 'Выполнен'],
-                cancel: ['❌', 'mo-cancel', 'Отменён']
-            };
-            var o = (r.orders || [])[0];
-            if (!o) {
-                host.innerHTML = '<div class="hmini">Заказов пока нет — самое время выбрать пиццу 🍕</div>';
-            } else {
-                var s = ST[o.status] || ['•', 'mo-new', o.status];
-                var d = new Date(o.created).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
-                var items = (o.items || []).slice(0, 3).map(function (i) { return i.qty + '× ' + i.name; }).join(', ') + ((o.items || []).length > 3 ? '…' : '');
-
-                var timeInfo = o.is_preorder
-                    ? ' · <span class="preorder-slot" data-slot="' + esc(o.slot) + '" style="color:#B26A05;font-weight:700">⏰ Предзаказ: ' + esc(o.slot) + '</span>'
-                    : (o.eta ? ' · <span>⏰ ' + esc(o.eta) + '</span>' : '');
-
-                host.innerHTML = '<div class="myOrderCard"><div class="moTop"><span>Заказ #' + o.no + ' <span class="moDate">· ' + d + '</span></span><span class="moSt ' + s[1] + '">' + s[0] + ' ' + s[2] + '</span></div>' +
-                    '<div class="moSum">' + fmt(o.total) + timeInfo + '</div>' +
-                    (items ? '<div class="moItems">' + esc(items) + '</div>' : '') +
-                    ((o.gifts && o.gifts.length) ? '<div class="moGifts">🎁 ' + o.gifts.map(function (g) { return esc(g.name) + ' ×' + g.qty; }).join(', ') + '</div>' : '') +
-                    /* Ф3.69: кнопка «Отследить» для активных заказов */
-                    (!['done', 'cancel'].includes(o.status) ? '<button type="button" class="moTrack" data-open-track="' + esc(String(o.id)) + '">📍 Отследить</button>' : '') + '</div>';
-            }
-        } catch (e) { }
-        if (typeof window.applyProfileBrand === 'function') window.applyProfileBrand();
-    }
-
-    async function renderOrdersModal() {
-        var list = document.getElementById('omList');
-        if (!list || !me) return;
-        list.innerHTML = '<div class="hmini">Загрузка…</div>';
-        document.getElementById('ordersModal').classList.add('show');
-        if (typeof window.syncOverlay === 'function') window.syncOverlay();
-        try {
-            var r = await api('/orders/mine');
-            window.__lastMineOrders = r.orders || []; /* Ф3.69: кэш списка для кнопки «Отследить» */
-            var ST = {
-                new: '🆕 Новый',
-                accept: '✅ Подтверждён',
-                cook: '👨‍🍳 Готовится',
-                way: '🛵 Курьер в пути',
-                done: '🏁 Выполнен',
-                cancel: '❌ Отменён'
-            };
-
-            list.innerHTML = (r.orders || []).map(function (o) {
-                var d = new Date(o.created).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
-                // СТАЛО:
-                var timeInfo = o.is_preorder
-                    ? ' · <b class="preorder-marker" data-preorder-slot="' + esc(o.slot) + '" style="color:#B26A05">⏰ Предзаказ: ' + esc(o.slot) + '</b>'
-                    : (o.eta ? ' · ⏰ ' + esc(o.eta) : '');
-
-                return '<div class="myOrderCard" style="margin-bottom:8px"><div class="moTop"><span>Заказ #' + o.no + ' <span class="moDate">· ' + d + '</span></span><span class="moSt">' + (ST[o.status] || o.status) + '</span></div>' +
-                    '<div class="moSum">' + fmt(o.total) + timeInfo + '</div>' +
-                    '<div class="moItems">' + esc(o.items.map(function (i) { return i.qty + '× ' + i.name; }).join(', ')) + '</div>' +
-                    ((o.gifts && o.gifts.length) ? '<div class="moGifts">🎁 ' + o.gifts.map(function (g) { return esc(g.name) + ' ×' + g.qty; }).join(', ') + '</div>' : '') +
-                    /* Ф3.69: кнопка «Отследить» для активных заказов в модалке */
-                    (!['done', 'cancel'].includes(o.status) ? '<button type="button" class="moTrack" data-open-track="' + esc(String(o.id)) + '">📍 Отследить</button>' : '') + '</div>';
-            }).join('') || '<div class="hmini">Заказов пока нет 🍕</div>';
-        } catch (e) {
-            list.innerHTML = '<div class="hmini">Не загрузилось</div>';
-        }
-    }
-
-    Object.assign(window, { renderBonus, renderProfile, renderVerifyNote, loadMyOrders, renderOrdersModal });
 })();
-
-(function () {
-    if (document.getElementById('ordersModal')) return;
-    var m = document.createElement('div');
-    m.id = 'ordersModal';
-    m.innerHTML = '<div class="omCard"><button type="button" class="omClose">✕ Закрыть</button><h3 style="margin:0 0 12px">📦 Мои заказы</h3><div id="omList"></div></div>';
-    document.body.appendChild(m);
-    m.addEventListener('click', function (e) {
-        if (e.target === m || e.target.closest('.omClose')) {
-            m.classList.remove('show');
-            if (typeof window.syncOverlay === 'function') window.syncOverlay();
-        }
-    });
-})();
-
-(function () {
-    var pb = document.getElementById('profileBox');
-    if (pb && !document.getElementById('myOrdersBtn')) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.id = 'myOrdersBtn';
-        b.className = 'demoBtn';
-        b.textContent = '📦 Мои заказы';
-        var mo = document.getElementById('myOrders');
-        if (mo) pb.insertBefore(b, mo);
-        else pb.appendChild(b);
-    }
-})();
-
-document.addEventListener('click', function (e) {
-    var btn = e.target.closest('#myOrdersBtn, [data-tab="my-orders"], .my-orders-btn');
-    if (!btn && e.target.closest('button')) {
-        var b = e.target.closest('button');
-        if (/мои заказы/i.test(b.textContent || '')) btn = b;
-    }
-    if (btn) {
-        e.preventDefault();
-        var m = document.getElementById('ordersModal');
-        if (m && m.parentElement !== document.body) {
-            document.body.appendChild(m);
-        }
-        if (typeof window.renderOrdersModal === 'function') {
-            window.renderOrdersModal();
-        }
-    }
-});
 
 (function patchQR() {
     if (typeof window.renderProfile !== 'function') return;
@@ -447,19 +345,8 @@ document.addEventListener('click', function (e) {
 }, true);
 /* ── Ф5.8f: ESM-шимы: catalog.js/profile-brand.js/boot.js/live.js ── */
 window.renderBonus = renderBonus;
-window.loadMyOrders = loadMyOrders;
 
 /* ── Ф5.25: ESM-шимы для кассира (точки штампов, склонения чашек) ── */
 window.stampIcon = stampIcon; /* Ф5.25: dotsHTML в cashier.js */
 window.cupWord = cupWord; /* Ф5.25: тексты списаний/подарков */
 
-/* Ф3.69: делегированный клик «Отследить заказ» (#myOrders и модалка «Мои заказы»).
-   Заказ ищем в кэше window.__lastMineOrders, который обновляется при каждом рендере списка. */
-document.addEventListener('click', function (e) {
-  var btn = e.target.closest ? e.target.closest('[data-open-track]') : null;
-  if (!btn) return;
-  e.preventDefault();
-  var id = btn.getAttribute('data-open-track');
-  var found = (window.__lastMineOrders || []).find(function (x) { return String(x.id) === String(id); });
-  if (found && typeof window.openOrderTrackModal === 'function') window.openOrderTrackModal(found);
-});

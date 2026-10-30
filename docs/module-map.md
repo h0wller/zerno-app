@@ -48,7 +48,7 @@
 | `core/nutrition.js` + `core/nutrition-data.js` | Оценочный расчёт КБЖУ по ТТК, справочнику ингредиентов и вложенным заготовкам | `window.INGREDIENTS_DB`, `window.TECH_CARDS`, `window.calculateDishKbju` |
 | `menu.js` | `#rail` (категории), `#searchInput`, рендер `#grid`; зум фото (`openZoom`); модалка модификаторов; LCP-картинка eager | `window.renderMenu`, `window.renderRail`, `window.openZoom` |
 | `menu-editor.js` | `openEditor`/`exitEdit`, сохранение emModal, editToggle | `window.openEditor`, `window.exitEdit` |
-| `core/editor.js` | Делегирование кликов `#grid`; фотозона редактора (`renderZone`/`loadImg`/`closeEditor`); имя гостя; resetBtn | `window.renderZone`, `window.closeEditor`, `window.loadImg` |
+| `core/editor.js` | Делегирование кликов `#grid`; фотозона редактора (`renderZone`/`loadImg`/`closeEditor`); имя гостя | `window.renderZone`, `window.closeEditor`, `window.loadImg` |
 | `delivery.js` | `window.DMENU`, cart (инициализация из LS); `#deliveryRail`; рендер `#deliveryGrid` + скелетоны; стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
 | `ui/delivery-search.js` | Поиск в Пятнице (`#dSearch` внутри `.mh-right`) и фильтрация грида | — |
 
@@ -76,18 +76,20 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `profile.js` | `renderBonus` (штампы, freeSlot), `renderProfile`, `loadMyOrders`, `renderOrdersModal`; создание ordersModal и myOrdersBtn; QR-текст под канвасом | `window.renderBonus`, `window.renderProfile`, `window.loadMyOrders` |
+| `profile.js` | Готовность `me`, `updateMbonusBadge`, `renderBonus`, `renderProfile`, явное редактирование имени и раскрытие истории; QR-текст под канвасом | `window.renderBonus`, `window.renderProfile` |
+| `profile-orders.js` | Последний заказ и полный список заказов; общий кэш/запрос для карточки и модалки; обработка «Отследить» | `window.loadMyOrders`, `window.renderOrdersModal`, `window.updateMyOrdersCache`, `window.invalidateMyOrders` |
+| `profile-brand.js` | Включение брендовых секций профиля, блок «Пятница», единый `renderVerifyNote` | `window.applyProfileBrand`, `window.renderVerifyNote` |
 | `core/qr.js` | `drawQR`, полноэкранный `#qrModal`, wake lock | `window.drawQR`, `window.openQRFull`, `window.closeQRFull` |
 | `core/review.js` | `#reviewBtn`, `maybeAskReview` | `window.maybeAskReview` |
 | `core/preorder-timer.js` | Таймеры «Предзаказ» в карточках заказов профиля | `window.PreorderTimer` |
-| `core/notify.js` | Каналы уведомлений (ntTg/ntWeb, `#notifyDetails`) | `window.syncNotifyAll`, `window.applyNotify`, `window.syncNotifyUI` |
+| `core/notify.js` | Единое состояние каналов уведомлений в настройках профиля | `window.syncNotifyAll`, `window.applyNotify`, `window.syncNotifyUI` |
 
 ## 7. Авторизация и доступ
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/auth-session.js` | Установка клиентской сессии: токен, `me`, onboarding, аватары, QR и регистрация FCM-токена | `window.setUser` |
-| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, logoutBtn | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
+| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
 | `core/registration.js` | Регистрация, согласие, OTP Telegram и поллинг подтверждения | `window.resetRegistrationState` |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
@@ -127,7 +129,7 @@
 | `core/panel.js` | Шторка профиля `#panel`, вкладки `.tabs`, обработчик mbonusBtn | `window.openPanel`, `window.closePanel`, `window.setTab` |
 | `core/swipe.js` | iOS-свайп закрытия `#panel` | — |
 | `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`); обёртка `.topbar-right` на ≥821px | `window.alignRailWithCard` |
-| `ui/settings.js` | `#settingsModal` (PIN, каналы, сброс), шестерёнки профиля | — |
+| `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |
 | `core/deeplink.js` | Диплинки: brand/tab/no/support/reorder/auth_token | — |

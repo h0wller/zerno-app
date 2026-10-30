@@ -64,10 +64,10 @@ body[data-brand="coffee"] {
   --modal-input-border: 1.5px solid var(--line, #D8DFE4);
   --modal-input-color: var(--ink, #101418);
 
-  --mclose-bg: #EDF2F6;
-  --mclose-border: none;
-  --mclose-shadow: none;
-  --mclose-color: var(--ink, #101418);
+  --mclose-bg: var(--cta-bg, var(--flame, #123A6B));
+  --mclose-border: var(--cta-border, none);
+  --mclose-shadow: var(--cta-shadow, none);
+  --mclose-color: var(--cta-color, #FFFFFF);
 
   --alogo-bg: #FFFFFF;
   --alogo-border: 1.5px solid var(--line, #D8DFE4);

@@ -27,8 +27,8 @@ addEventListener("load", () => {
     a.blur();
 });
 
-$("#activateBtn").onclick = openPin;
-$("#setPinBtn").onclick = () => openSetPin("change");
+const activateButton = document.getElementById("activateBtn");
+if (activateButton) activateButton.onclick = openPin;
 
 function armPw() {
   ["regPin", "logPin", "logOtp", "setPinInput", "pinInput"].forEach(
@@ -161,24 +161,8 @@ $("#emDel").onclick = async () => {
   }
 };
 
-$("#nameInput").addEventListener("change", async (e) => {
-  if (!me) return;
-  const name = e.target.value.trim() || "Гость";
-  try {
-    const r = await api("/me", { method: "PUT", body: { name } });
-    me = r.customer;
-    renderProfile();
-    toast("Профиль обновлён", "✅");
-  } catch (err) {
-    toast(err.message, "⚠️");
-  }
-});
 
-$("#resetBtn").onclick = () => {
-  if (!confirm("Выйти и очистить локальные данные (токены)?")) return;
-  localStorage.clear();
-  location.reload();
-};
+
 
 /* ── Ф5.6.2f: ESM-шимы ── */
 window.armPw = armPw;

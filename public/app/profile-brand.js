@@ -6,19 +6,44 @@
 (function(){
   var pb=document.getElementById('profileBox');if(!pb||document.getElementById('fridayInfo'))return;
   var d=document.createElement('div');d.id='fridayInfo';
-  d.innerHTML='<b>Пятница — доставка пиццы и роллов</b>п. Янтарный, ул. Советская, 38А (самовывоз)<br>Ежедневно 11:00–22:00 · доставка ~45 мин<br>🌐 <a href="https://vk.ru/fridaypizza39" target="_blank" style="color:#1F4E8C;font-weight:800">vk.ru/fridaypizza39</a><br>⭐ <a href="https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/" target="_blank" style="color:#1F4E8C;font-weight:800">отзывы на Яндекс Картах</a><br><a href="https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/?add-review=true" target="_blank" class="btn fire" style="margin-top:10px;display:inline-block">⭐ Оставить отзыв</a>';
-  var hist=Array.prototype.slice.call(pb.querySelectorAll('h4')).filter(function(h){return /История/.test(h.textContent);})[0];
-  if(hist)pb.insertBefore(d,hist);else pb.appendChild(d);
+  d.innerHTML =
+    '<div class="friday-info-title">Пятница</div>' +
+    '<p class="friday-info-address">п. Янтарный, ул. Советская, 38А · доставка из приложения</p>' +
+    '<div class="friday-info-hours" aria-label="Время работы">' +
+      '<div class="friday-info-hours-row"><b>Май–сентябрь:</b><span>пн–вс 11:00–22:00</span></div>' +
+      '<div class="friday-info-hours-row"><b>Октябрь–апрель:</b><span>пн–чт 11:00–21:00<br>пт–вс 11:00–22:00</span></div>' +
+    '</div>' +
+    '<div class="friday-info-links" aria-label="Мы в интернете">' +
+      '<a class="friday-info-link" href="https://vk.ru/fridaypizza39" target="_blank" rel="noopener noreferrer" aria-label="ВКонтакте">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="7" fill="#0077FF"/><path fill="#fff" d="M5 7.5h2.6c.2 3.1 1.6 4.6 2.8 4.9V7.5h2.2v2.9c1.2-.1 2.4-1.4 2.8-2.9h2.2c-.2 1.7-1.4 3.1-2.5 3.7 1 .5 2.5 1.8 2.9 3.8h-2.6c-.5-1.5-1.6-2.5-2.8-2.7v2.7h-.4C8 15 5.3 12.1 5 7.5z"/></svg>' +
+        '<span>ВКонтакте</span>' +
+      '</a>' +
+      '<a class="friday-info-link" href="https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/" target="_blank" rel="noopener noreferrer" aria-label="Яндекс Карты">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#FC3F1D" d="M12 1.5a8.5 8.5 0 0 0-8.5 8.5c0 6.1 8.5 12.5 8.5 12.5S20.5 16.1 20.5 10A8.5 8.5 0 0 0 12 1.5z"/><text x="12" y="15.1" fill="#fff" font-family="Arial,sans-serif" font-size="12" font-weight="700" text-anchor="middle">Я</text></svg>' +
+        '<span>Яндекс Карты</span>' +
+      '</a>' +
+    '</div>' +
+    '<a href="https://yandex.ru/maps/org/pyatnitsa/33658031357/reviews/?add-review=true" target="_blank" rel="noopener noreferrer" class="friday-info-review" aria-label="Оставить отзыв на Яндекс Картах">' +
+      '<span>Оставить отзыв</span>' +
+    '</a>';
+  var historySection=pb.querySelector('.profile-history-section');
+  if(historySection)pb.insertBefore(d,historySection);else pb.appendChild(d);
 })();
 /* ── брендовые правила: слияние v64 profileBrandRules + R4 applyProfileBrand ── */
-function histH4(){
-  return Array.prototype.slice.call(document.querySelectorAll('#profileBox h4')).filter(function(h){return /История/i.test(h.textContent);})[0]||null;
-}
 function brandRules(){
   var deliv=(typeof brand!=='undefined'&&brand==='delivery');
-  var mo=document.getElementById('myOrders'),mb=document.getElementById('myOrdersBtn'),fi=document.getElementById('fridayInfo');
-  if(mo)mo.style.display=deliv?'':'none';
-  if(mb)mb.style.display=deliv?'':'none';
+  var deliverySection=document.getElementById('profileOrdersSection');
+  var coffeeSection=document.getElementById('profileCoffeeSection');
+  var deliveryPrompt=document.getElementById('profileDeliveryPrompt');
+  var coffeePrompt=document.getElementById('profileCoffeePrompt');
+  var fi=document.getElementById('fridayInfo');
+  if(deliverySection)deliverySection.hidden=!deliv;
+  if(coffeeSection)coffeeSection.hidden=deliv;
+  if(deliveryPrompt)deliveryPrompt.hidden=!deliv;
+  if(coffeePrompt)coffeePrompt.hidden=deliv;
+  Array.prototype.slice.call(document.querySelectorAll('#profileBox .coffee-venue-card, #profileBox .coffee-review-card')).forEach(function(card){
+    card.style.display=deliv?'none':'';
+  });
   Array.prototype.slice.call(document.querySelectorAll('#profileBox .placebox')).forEach(function(p){
     var t=p.textContent||'';
     if(/Мы у моря/i.test(t))p.style.display=deliv?'none':'';
@@ -29,7 +54,10 @@ function brandRules(){
   });
   if(fi){
     fi.style.display=deliv?'':'none';
-    if(deliv){var h=histH4();if(h&&fi!==h.previousSibling)h.parentNode.insertBefore(fi,h);}
+    if(deliv){
+      var historySection=document.querySelector('#profileBox .profile-history-section');
+      if(historySection&&fi.nextElementSibling!==historySection)historySection.parentNode.insertBefore(fi,historySection);
+    }
   }
   if(typeof window.syncNotifyUI==='function')window.syncNotifyUI();
 }
@@ -114,12 +142,7 @@ window.renderVerifyNote=function(){
 };
 /* ── единственная обёртка renderProfile ── */
 renderProfile=(function(_rp){return function(){var r=_rp.apply(this,arguments);
-  var deliv=(brand==='delivery');
-  var q=document.getElementById('qrMain');var qb=q&&q.closest('.qrbox');
-  if(qb)qb.style.display=deliv?'none':'';
-  var st=document.querySelector('#profileBox .stats');
-  if(st)st.style.display=deliv?'none':'';
-  if(me)loadMyOrders();
+  if(me&&typeof window.loadMyOrders==='function')window.loadMyOrders();
   brandRules();
   return r;};})(renderProfile);
 })();

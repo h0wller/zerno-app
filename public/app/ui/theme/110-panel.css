@@ -188,22 +188,6 @@
   border-color: var(--flame);
   color: var(--flame);
 }
-.resetBtn {
-  width: 100%;
-  margin-top: 12px;
-  border: 1.5px dashed var(--line);
-  border-radius: 14px;
-  padding: 10px;
-  font-weight: 700;
-  transition: 0.2s;
-  background: #fff;
-  font-size: 12px;
-  color: #8b98a5;
-}
-.resetBtn:hover{
-  border-color: #b3372b;
-  color: #b3372b;
-}
 .qrbox{
   background: #fff;
   border: 1px solid var(--line);
@@ -258,40 +242,151 @@
 .authPrompt button:hover{
   transform: scale(1.04);
 }
-.phead{
+.profile-identity { margin-bottom: 6px; }
+.phead {
   display: flex;
   gap: 12px;
   align-items: center;
 }
-.phead .ava{
+.phead .ava {
   width: 52px;
   height: 52px;
+  flex: 0 0 52px;
   font-size: 19px;
   border: none;
 }
-.phead input{
-  border: none;
-  border-bottom: 2px solid var(--line);
-  background: transparent;
-  font: 700 17px "Golos Text";
+.profile-identity-copy {
+  flex: 1;
+  min-width: 0;
+}
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.phead input#nameInput {
+  min-width: 0;
   width: 100%;
-  padding: 3px 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font: 700 18px/1.25 "Golos Text";
+  padding: 5px 7px;
   transition: 0.2s;
 }
-.phead input:focus{
-  outline: none;
-  border-color: var(--flame);
+.phead input#nameInput[readonly] {
+  border-color: transparent;
+  cursor: default;
 }
-.phead .ph{
-  font-size: 16px;
+.phead input#nameInput:not([readonly]) {
+  border-color: var(--line);
+  background: #fff;
+}
+.phead input#nameInput:focus-visible {
+  outline: 2px solid var(--flame);
+  outline-offset: 2px;
+}
+.profile-name-action {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 7px 9px;
+  color: var(--soft);
+  background: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+.profile-name-action.is-primary { color: var(--flame); }
+.profile-name-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.phead .ph {
+  font-size: 13px;
   color: #5b6874;
-  margin-top: 2px;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+.profile-role {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--soft);
+  font-size: 10.5px;
+  line-height: 1.35;
+  font-weight: 800;
+}
+.profile-brand-section { margin-top: 8px; }
+.profile-section-heading,
+.profile-history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.profile-section-heading {
+  flex-wrap: wrap;
+}
+.profile-section-heading h4 {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+.profile-section-heading h4,
+.profile-history-heading h4 { margin: 0; }
+.profile-all-orders {
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--flame);
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
+}
+#profileOrdersSection .profile-section-heading #myOrdersBtn {
+  width: auto;
+  margin: 0;
+}
+.profile-history-section { margin-top: 10px; }
+.profile-history-count {
+  color: var(--soft);
+  font-size: 11px;
+  font-weight: 700;
+}
+.profile-history-toggle {
+  margin-top: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--soft);
+  background: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.profile-name-action:focus-visible,
+.profile-all-orders:focus-visible,
+.profile-history-toggle:focus-visible,
+.tabs button:focus-visible {
+  outline: 2px solid var(--flame);
+  outline-offset: 2px;
 }
 .stats{
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 8px;
 }
 .stats .stat{
   background: #ffffff;
@@ -332,4 +427,145 @@
 .hmini i{
   font-style: normal;
   opacity: 0.75;
+}
+
+
+/* Компактная компоновка профиля и мобильные действия. */
+#pvProfile { padding: 10px 12px; }
+#profileBox > .placebox { margin-top: 8px; padding: 10px 12px; }
+#profileBox > #fridayInfo { margin: 8px 0; padding: 10px 12px; }
+.profile-name-edit-icon { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 5px; }
+.profile-name-edit-icon svg { display: block; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 380px) {
+  .phead { gap: 8px; }
+  .phead .ava { width: 44px; height: 44px; flex-basis: 44px; }
+  .phead .gear { width: 36px; height: 36px; flex: 0 0 36px; }
+  .profile-section-heading { align-items: stretch; }
+  #profileOrdersSection .profile-section-heading #myOrdersBtn { width: 100%; }
+  .profile-name-actions .profile-name-action { padding: 6px 7px; font-size: 10.5px; }
+}
+
+
+/* ── Профиль: единая сетка секций и согласованные действия ── */
+#profileBox:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#profileBox > * {
+  min-width: 0;
+}
+#profileBox > .profile-identity,
+#profileBox > .profile-brand-section,
+#profileBox > .placebox,
+#profileBox > #fridayInfo,
+#profileBox > .profile-history-section {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+#profileBox > .profile-identity {
+  padding: 12px;
+}
+#profileBox .stats {
+  margin-top: 0;
+}
+#profileBox .profile-main-qr,
+#profileBox .qrbox {
+  margin: 12px 0 0;
+  padding: 12px;
+  border-radius: 14px;
+}
+#profileBox .profile-main-qr canvas {
+  display: block;
+  max-width: 100%;
+  margin: 0 auto;
+}
+#profileBox .demoBtn,
+#profileBox > #activateBtn,
+#profileBox > #pushBtn {
+  margin: 10px 0 0;
+  border-style: solid;
+  border-color: var(--line);
+  background: #fff;
+}
+#profileBox > #activateBtn,
+#profileBox > #pushBtn {
+  margin: 0;
+  padding: 10px 12px;
+}
+#profileBox .profile-section-heading {
+  align-items: center;
+  margin-bottom: 10px;
+}
+#profileBox .profile-section-heading h4 {
+  margin: 0;
+}
+#profileBox .profile-section-heading #myOrdersBtn {
+  width: auto;
+  margin: 0;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+#profileBox .myOrderCard {
+  margin-top: 0;
+}
+#profileBox > #fridayInfo {
+  line-height: 1.55;
+  border-color: rgba(62, 143, 208, 0.28);
+  background: var(--tint-cool);
+}
+#profileBox > .profile-history-section {
+  padding: 12px;
+}
+#profileBox .profile-history-heading {
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+#profileBox .profile-history-heading h4 {
+  margin: 0;
+}
+#profileBox .profile-history-count {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--tint-cool);
+  color: var(--soft);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+#profileBox .profile-history-count:empty {
+  display: none;
+}
+#profileBox #histList .hmini {
+  padding: 9px 2px;
+  line-height: 1.4;
+}
+#profileBox #histList .hmini:last-child {
+  border-bottom: 0;
+}
+#profileBox .profile-history-toggle {
+  margin-top: 8px;
+  padding: 7px 10px;
+}
+#profileBox > .placebox {
+  line-height: 1.55;
+}
+#profileBox > .placebox b {
+  margin-bottom: 4px;
+}
+@media (max-width: 380px) {
+  #profileBox .profile-section-heading {
+    align-items: stretch;
+  }
+  #profileBox .profile-section-heading #myOrdersBtn {
+    width: 100%;
+    flex: 1 1 100%;
+  }
 }

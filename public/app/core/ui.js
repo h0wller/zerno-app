@@ -120,7 +120,8 @@
   var wrapped = function (path, opts) {
     var m = (opts && opts.method) || 'GET';
     if (m !== 'GET' || (opts && opts.headers)) return orig.apply(this, arguments);
-    var k = String(path);
+    var token = (typeof USER_TOKEN !== 'undefined' && USER_TOKEN) || localStorage.getItem('zt_user') || '';
+    var k = String(token) + '|' + String(path);
     if (inflight[k]) return inflight[k];
     var p = orig.apply(this, arguments);
     p.then(function () { delete inflight[k]; }, function () { delete inflight[k]; });

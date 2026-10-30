@@ -2,12 +2,6 @@
 (function () {
   "use strict";
 
-  function isServiceOpen() {
-    return typeof window.isDeliveryServiceOpen === "function"
-      ? window.isDeliveryServiceOpen()
-      : true;
-  }
-
   var activeAddonTab = "all";
   // Состояние раскрытых блоков модификаторов по индексам позиций в корзине
   var openModsMap = {};
@@ -455,16 +449,7 @@ function clearPromo() {
     var labelEl = slotEl.closest("label") || slotEl.parentElement;
     if (!labelEl) return;
 
-    // Гарантируем, что у селекта слотов есть варианты выбора времени, если они ещё не подгружены
-    if (slotEl.options.length <= 1) {
-      var defaultSlots = ["12:00–13:00", "13:00–14:00", "14:00–15:00", "16:00–17:00", "18:00–19:00", "19:00–20:00", "20:00–21:00"];
-      defaultSlots.forEach(function (sl) {
-        var opt = document.createElement("option");
-        opt.value = sl;
-        opt.textContent = "Ко времени: " + sl;
-        slotEl.appendChild(opt);
-      });
-    }
+    if (typeof window.populateSlots === "function") window.populateSlots();
 
     var seg = document.createElement("div");
     seg.id = "checkoutTimeModeSeg";
@@ -677,25 +662,26 @@ function clearPromo() {
 
   function syncPreorderNotice(cItems) {
     var pmNotice = document.getElementById("preorderNotice");
-    var isOffHours = !isServiceOpen();
-    if (isOffHours && checkIsDelivery()) {
+    var pmMode = typeof window.preorderMode === "function" ? window.preorderMode() : null;
+    if (pmMode && checkIsDelivery()) {
       if (!pmNotice) {
         pmNotice = document.createElement("div");
         pmNotice.id = "preorderNotice";
         pmNotice.className = "cart-preorder-notice";
         cItems.parentNode.insertBefore(pmNotice, cItems);
       }
-      var pmMode = typeof window.preorderMode === "function" ? window.preorderMode() : "today";
-      pmNotice.innerHTML = pmMode === "tomorrow"
-        ? "🌙 <b>Кухня сейчас отдыхает.</b> Принимаем предзаказы на завтра — выберите удобный интервал ниже!"
-        : "☀ <b>Откроемся в 11:00.</b> Оформите предзаказ, и мы привезём его точно ко времени!";
+      if (pmMode === "tomorrow") {
+        pmNotice.innerHTML = "🌙 <b>Приём заказов на сегодня завершён.</b> Выберите удобный интервал доставки на завтра.";
+      } else {
+        var openHour = Number(window.deliveryInfo && window.deliveryInfo.today && window.deliveryInfo.today.open) || 11;
+        pmNotice.innerHTML = "☀ <b>Откроемся в " + String(openHour).padStart(2, "0") + ":00.</b> Можно оформить предзаказ на сегодня.";
+      }
       pmNotice.style.display = "";
     } else if (pmNotice) {
       pmNotice.style.display = "none";
     }
   }
 
-  /* ── Рендер корзины ── */
   function persistCartUpdate() {
   localStorage.setItem("zt_cart", JSON.stringify(cart));
   if (typeof window.updateCartFab === 'function') window.updateCartFab();
@@ -1058,7 +1044,21 @@ function renderCartBase() {
     return { ok: true, placeV: placeV, streetV: streetV, houseV: houseV };
   }
 
-  function resolveCheckoutSlot() {
+  async function resolveCheckoutSlot() {
+    if (typeof window.refreshDeliveryInfo === "function") {
+      try {
+        await window.refreshDeliveryInfo();
+      } catch (error) {
+        return {
+          ok: false,
+          field: document.getElementById("checkoutSlot"),
+          message: "Не удалось проверить актуальный график работы. Проверьте соединение и попробуйте снова.",
+          icon: "⚠️"
+        };
+      }
+    } else if (typeof window.populateSlots === "function") {
+      window.populateSlots();
+    }
     var pm = typeof window.preorderMode === "function"
       ? window.preorderMode()
       : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);
@@ -1118,7 +1118,7 @@ function renderCartBase() {
         return toast(addressState.message, addressState.icon);
       }
 
-      var slotState = resolveCheckoutSlot();
+      var slotState = await resolveCheckoutSlot();
       if (!slotState.ok) {
         if (slotState.field) flagField(slotState.field);
         return toast(slotState.message, slotState.icon);
@@ -1202,7 +1202,7 @@ function renderCartBase() {
 
         var cp2 = document.getElementById("cartPanel");
         if (cp2) cp2.classList.remove("open");
-        if (typeof loadMyOrders === "function") loadMyOrders();
+        if (typeof loadMyOrders === "function") loadMyOrders({ force: true });
         if (r && r.order) {
           openOrderTrackModal(r.order);
         } else if (typeof syncOverlay === "function") {

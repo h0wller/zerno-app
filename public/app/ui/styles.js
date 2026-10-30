@@ -12,7 +12,7 @@
     ".chat-fab{z-index:95!important}" +
     "@media(max-width:820px){body.panel-open .chat-fab{display:none}}" +
     "@media(max-width:820px){body.panel-open{overflow:hidden}}" +
-    ".modal{z-index:340!important}";
+    ".modal{z-index:340!important}#orderTrackModal{z-index:1010!important}";
   document.head.appendChild(css);
 
   /* ── 2. Пульс и активные состояния подсказок чата ── */

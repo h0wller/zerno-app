@@ -14,9 +14,16 @@ async function refreshOrdersLive(){
       if(sig!==lastStaffSig){lastStaffSig=sig;renderOrders(true);}
     }
     if(window.me&&window.mode!=='cashier'&&window.mode!=='orders'){
+      var mineUserKey=String(window.me.id||window.me.phone||'');
       var m=await api('/orders/mine');
-      var msig=m.orders.map(function(o){return o.no+':'+o.status;}).join(',');
-      if(msig!==lastMineSig){lastMineSig=msig;loadMyOrders();}
+      if(!window.me||mineUserKey!==String(window.me.id||window.me.phone||''))return;
+      var orders=Array.isArray(m.orders)?m.orders:[];
+      var msig=mineUserKey+'|'+orders.map(function(o){return o.no+':'+o.status;}).join(',');
+      if(msig!==lastMineSig){
+        lastMineSig=msig;
+        if(typeof window.updateMyOrdersCache==='function')window.updateMyOrdersCache(orders);
+        loadMyOrders();
+      }
     }
   }catch(e){}
 }
