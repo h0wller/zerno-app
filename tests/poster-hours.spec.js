@@ -133,7 +133,7 @@ test('пятничное зимнее расписание оставляет с
 
 
 test('переход с летнего на зимнее расписание 1 октября проверяется с подменой времени', async ({ page }) => {
-  await page.clock.setFixedTime(new Date('2026-09-30T19:14:00.000Z')); // 21:14 в Калининграде
+  await page.clock.setFixedTime(new Date('2026-09-30T18:44:00.000Z')); // 20:44, слот 21:30 доступен с учётом ETA 45 мин
   let schedule = deliverySchedule('2026-09-30', '2026-10-01', 22, 21);
   await page.route('**/api/delivery/info', route => route.fulfill({
     status: 200,
