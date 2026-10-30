@@ -177,6 +177,10 @@ test.describe('Модуль заказов профиля', () => {
   test('содержимое профиля меняется вместе с брендом, вкладки доступны с клавиатуры', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection')).toBeVisible();
     await expect(page.locator('#profileCoffeeSection')).toBeHidden();
+    await expect(page.locator('#tabBonus')).toBeHidden();
+    await page.evaluate(() => window.setTab('bonus'));
+    await expect(page.locator('#tabProfile')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#pvProfile')).toBeVisible();
     await expect(page.locator('#fridayInfo')).toBeVisible();
     await expect(page.locator('#fridayInfo').evaluate(el => el.parentElement.id)).resolves.toBe('profileBox');
 
