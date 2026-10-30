@@ -342,14 +342,19 @@ test.describe('Модуль заказов профиля', () => {
       const secondRect = second.getBoundingClientRect();
       return {
         justifyContent: getComputedStyle(element).justifyContent,
-        leftInset: firstRect.left - row.left,
-        rightInset: row.right - secondRect.right,
+        gap: getComputedStyle(element).columnGap,
+        distance: secondRect.left - firstRect.right,
         bottom: row.bottom
       };
     });
-    expect(socialLayout.justifyContent).toBe('space-between');
-    expect(socialLayout.leftInset).toBeLessThanOrEqual(1);
-    expect(socialLayout.rightInset).toBeLessThanOrEqual(1);
+    expect(socialLayout.justifyContent).toBe('flex-start');
+    expect(socialLayout.gap).toBe('18px');
+    expect(socialLayout.distance).toBeGreaterThanOrEqual(17);
+    expect(socialLayout.distance).toBeLessThanOrEqual(19);
+
+    const summerHours = info.locator('.friday-info-hours-row').first().locator('span');
+    await expect.poll(() => summerHours.evaluate(element => getComputedStyle(element).textAlign))
+      .toBe('right');
 
     const review = info.locator('.friday-info-review');
     await expect(review).toBeVisible();
