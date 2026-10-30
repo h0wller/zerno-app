@@ -444,4 +444,4 @@ export const NUTRITION_DISHES = {
 };
 
 // User-supplied TTKs omit unweighed microgreens and decorative greens.
-// Unknown components (currently "соус калиний") deliberately remain unresolved.
+// Unconfirmed supplier variants should remain unresolved until their composition is supplied.
