@@ -46,6 +46,7 @@ test.describe('Модуль заказов профиля', () => {
       }
       window.__profileMeReady();
       window.renderProfile();
+      window.openPanel('profile');
     });
     await expect(page.locator('#myOrdersBtn')).toBeVisible();
   });
