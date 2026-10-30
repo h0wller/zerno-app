@@ -60,10 +60,15 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await expect(page.locator('#logBtn')).toHaveText('Войти');
   });
 
-  test('closing auth modal ignores a pending Telegram registration check', async ({ page }) => {
+  test('closing auth modal keeps Telegram registration polling and completes login in background', async ({ page }) => {
     let markCheckStarted;
     let resolveCheck;
     const checkStarted = new Promise((resolve) => { markCheckStarted = resolve; });
+    await page.route('**/api/orders/mine', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ orders: [] })
+    }));
 
     await page.route('**/api/auth/request-reg-otp', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
@@ -97,9 +102,9 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await page.evaluate(() => window.closeAuth());
     resolveCheck();
 
-    await expect.poll(() => page.evaluate(() => window.me)).toBeNull();
-    await expect(page.locator('#regTgRow')).toBeHidden();
-    expect(await page.evaluate(() => localStorage.getItem('zt_user'))).toBeNull();
+    await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('Stale Registration');
+    await expect(page.locator('#authModal')).not.toHaveClass(/show/);
+    expect(await page.evaluate(() => localStorage.getItem('zt_user'))).toBe('stale-registration-token');
   });
 
   test('auth-session owns persisted user state and clears it centrally', async ({ page }) => {
