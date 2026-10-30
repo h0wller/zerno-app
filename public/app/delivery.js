@@ -479,8 +479,11 @@ $('#deliveryGrid').addEventListener('click', e => {
     const title = card ? (card.querySelector('h3') || {}).textContent : '';
     const price = card ? (card.querySelector('.price') || {}).textContent : '';
     const fullSrc = zoomImg.dataset.zoomSrc || zoomImg.src;
+    const product = card && card.dataset.productId
+      ? DMENU.find(item => String(item.id) === String(card.dataset.productId))
+      : null;
     if (typeof window.openZoom === 'function') {
-      window.openZoom(fullSrc, title, price);
+      window.openZoom(fullSrc, title, price, product);
     }
     return;
   }
