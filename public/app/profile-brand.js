@@ -42,7 +42,7 @@ function brandRules(){
   if(deliveryPrompt)deliveryPrompt.hidden=!deliv;
   if(coffeePrompt)coffeePrompt.hidden=deliv;
   Array.prototype.slice.call(document.querySelectorAll('#profileBox .coffee-venue-card, #profileBox .coffee-review-card')).forEach(function(card){
-    card.hidden=deliv;
+    card.style.display=deliv?'none':'';
   });
   Array.prototype.slice.call(document.querySelectorAll('#profileBox .placebox')).forEach(function(p){
     var t=p.textContent||'';
