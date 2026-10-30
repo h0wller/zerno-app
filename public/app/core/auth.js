@@ -225,8 +225,8 @@
     }
     window.setUser(null, null);
     window.mode = 'guest';
-    if (typeof closePanel === 'function') closePanel();
     if (typeof window.closeProfileSettings === 'function') window.closeProfileSettings();
+    if (typeof closePanel === 'function') closePanel();
     if (typeof renderAll === 'function') renderAll();
     alert('Профиль удалён.');
     openAuth();
@@ -443,21 +443,13 @@
         } catch (_) {}
         window.setUser(null, null);
         window.mode = 'guest';
-        if (typeof closePanel === 'function') closePanel();
         if (typeof window.closeProfileSettings === 'function') window.closeProfileSettings();
+        if (typeof closePanel === 'function') closePanel();
         if (typeof renderAll === 'function') renderAll();
         openAuth();
       };
     }
 
-    var deleteAccBtn = document.getElementById('deleteAccBtn');
-    if (deleteAccBtn) {
-      deleteAccBtn.onclick = function () {
-        if (typeof window.openDeleteAccountConfirmation === 'function') {
-          window.openDeleteAccountConfirmation();
-        }
-      };
-    }
   });
 
   window.beginAuthOperation = beginAuthOperation;
