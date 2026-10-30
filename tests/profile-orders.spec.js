@@ -150,6 +150,17 @@ test.describe('Модуль заказов профиля', () => {
     await expect(name).toHaveValue('Новое имя');
   });
 
+  test('при смене пользователя кэш заказов обновляется', async ({ page }) => {
+    await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
+    expect(mineRequestCount).toBe(1);
+
+    await page.evaluate(() => {
+      window.me = { ...window.me, id: 'profile-test-second-account' };
+      window.loadMyOrders();
+    });
+    await expect.poll(() => mineRequestCount).toBe(2);
+  });
+
   test('история показывает последние записи и раскрывает полный список', async ({ page }) => {
     await expect(page.locator('#histList .hmini')).toHaveCount(3);
     const toggle = page.locator('#historyToggleBtn');
