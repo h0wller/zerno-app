@@ -88,7 +88,7 @@ pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
     recipients++;
 
     if (useTelegram) {
-      const result = await tgSend(customer.tg, title + '\\n' + body);
+      const result = await tgSend(customer.tg, title + '\n' + body);
       if (result?.ok) telegramSent++;
       else failed++;
       continue;
