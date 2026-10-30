@@ -60,13 +60,18 @@ test.describe('Оценочный калькулятор КБЖУ в увели�
   });
 
   test('бейджи состава ролла используют токены обоих брендов', async ({ page }) => {
-    const cardChip = page.locator('#deliveryGrid [data-product-id="rl-phil-og"] .comp i').first();
+    await page.evaluate(() => {
+      window.dcat = 'rolls';
+      window.renderDeliveryMenu();
+    });
+
+    const cardChip = page.locator('#deliveryGrid [data-product-id="rl-hos-og"] .comp i').first();
     await expect(cardChip).toBeVisible();
     await expect(cardChip).toHaveCSS('background-color', 'rgb(239, 230, 216)');
     await expect(cardChip).toHaveCSS('border-top-color', 'rgb(201, 158, 110)');
     await expect(cardChip).toHaveCSS('color', 'rgb(58, 42, 28)');
 
-    await openDeliveryItem(page, 'rl-phil-og');
+    await openDeliveryItem(page, 'rl-hos-og');
     const zoomChip = page.locator('#itemZoomOverlay .zoom-composition-chip').first();
     await expect(zoomChip).toBeVisible();
     await expect(zoomChip).toHaveCSS('background-color', 'rgb(239, 230, 216)');
