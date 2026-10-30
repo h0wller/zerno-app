@@ -2,11 +2,12 @@
 (function () {
     'use strict';
     var ordersCache = null, ordersCacheAt = 0, ordersCacheUser = null;
-    var ordersRequest = null, ordersRequestUser = null, ordersModalOpener = null;
+    var ordersRequests = new Map(), ordersModalOpener = null;
     var cacheTtl = 20000;
 
     function currentUserKey() {
-        return me ? String(me.id || me.phone || '') : null;
+        var user = window.me;
+        return user ? String(user.id || user.phone || '') : null;
     }
 
     function resetOrdersCacheForUser(userKey) {
@@ -27,8 +28,11 @@
         var userKey = currentUserKey();
         if (userKey === null) return Promise.resolve([]);
         resetOrdersCacheForUser(userKey);
-        if (!force && ordersCache && Date.now() - ordersCacheAt < cacheTtl) return Promise.resolve(ordersCache);
-        if (ordersRequest && ordersRequestUser === userKey) return ordersRequest;
+        if (!force && ordersCache && ordersCacheUser === userKey && Date.now() - ordersCacheAt < cacheTtl) {
+            return Promise.resolve(ordersCache);
+        }
+        var pending = ordersRequests.get(userKey);
+        if (pending) return pending;
 
         var request = api('/orders/mine').then(function (response) {
             var result = Array.isArray(response.orders) ? response.orders : [];
@@ -40,13 +44,9 @@
             }
             return result;
         }).finally(function () {
-            if (ordersRequest === request) {
-                ordersRequest = null;
-                ordersRequestUser = null;
-            }
+            if (ordersRequests.get(userKey) === request) ordersRequests.delete(userKey);
         });
-        ordersRequest = request;
-        ordersRequestUser = userKey;
+        ordersRequests.set(userKey, request);
         return request;
     }
 
@@ -84,8 +84,8 @@
 
     async function loadMyOrders(options) {
         var host = document.getElementById('myOrders');
-        if (!host || !me) return;
-        if (typeof brand !== 'undefined' && brand !== 'delivery') { host.innerHTML = ''; return; }
+        if (!host || !window.me) return;
+        if (window.brand !== 'delivery') { host.innerHTML = ''; return; }
         var userKey = currentUserKey();
         try {
             var orders = await fetchMyOrders(!!(options && options.force));
@@ -101,7 +101,7 @@
     async function renderOrdersModal(options) {
         var modal = document.getElementById('ordersModal');
         var list = document.getElementById('omList');
-        if (!modal || !list || !me) return;
+        if (!modal || !list || !window.me) return;
         if (!modal.classList.contains('show')) {
             ordersModalOpener = document.activeElement;
             modal.classList.add('show');

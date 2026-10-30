@@ -110,6 +110,11 @@
 
     if (gear) gear.addEventListener('click', openSettings);
     if (closeButton) closeButton.addEventListener('click', closeSettings);
+    if (deleteButton) deleteButton.addEventListener('click', openDeleteConfirmation);
+
+    modal.addEventListener('click', function (event) {
+        if (event.target === modal && modal.classList.contains('show')) closeSettings();
+    });
 
     document.getElementById('setPinGo2').addEventListener('click', function () {
         closeSettings();

@@ -143,7 +143,7 @@ test.describe('Модуль заказов профиля', () => {
     const settings = page.locator('#settingsModal');
     await expect(settings).toHaveClass(/show/);
 
-    await page.locator('#overlay').click({ force: true });
+    await settings.click({ position: { x: 8, y: 8 } });
     await expect(settings).not.toHaveClass(/show/);
     await expect.poll(() => panel.evaluate(element => element.classList.contains('open'))).toBe(panelWasOpen);
   });
@@ -234,14 +234,24 @@ test.describe('Модуль заказов профиля', () => {
 
   test('элементы профиля помещаются на узком экране, верхняя граница danger zone видима', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 740 });
+    await page.evaluate(() => window.openPanel('profile'));
 
     const panel = page.locator('#panel');
-    const ordersButton = page.locator('#myOrdersBtn');
-    const bounds = await Promise.all([panel.boundingBox(), ordersButton.boundingBox()]);
-    expect(bounds[0]).not.toBeNull();
-    expect(bounds[1]).not.toBeNull();
-    expect(bounds[1].x).toBeGreaterThanOrEqual(bounds[0].x);
-    expect(bounds[1].x + bounds[1].width).toBeLessThanOrEqual(bounds[0].x + bounds[0].width + 1);
+    await expect(panel).toHaveClass(/open/);
+    const heading = page.locator('#profileOrdersSection .profile-section-heading');
+    const layout = await heading.evaluate(element => {
+      const button = element.querySelector('#myOrdersBtn');
+      const headingRect = element.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+      return {
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+        buttonRight: buttonRect.right,
+        headingRight: headingRect.right
+      };
+    });
+    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
+    expect(layout.buttonRight).toBeLessThanOrEqual(layout.headingRight + 1);
 
     const editButton = page.locator('#nameEditBtn');
     await expect(editButton).toHaveAttribute('aria-label', 'Изменить имя');
