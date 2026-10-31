@@ -242,5 +242,129 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       expect(after.scrollWidth, `no final horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
     }
+
+  test('cached staff role keeps delivery header and editor bar stable during auth hydration', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'staff-layout-test-token');
+      localStorage.setItem('zt_role', 'admin');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+      window.__layoutShifts = [];
+      try {
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (!entry.hadRecentInput) window.__layoutShifts.push(entry.value);
+          }
+        }).observe({ type: 'layout-shift', buffered: true });
+      } catch (_) {}
+    });
+
+    await page.route('**/api/me', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1400));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          customer: {
+            id: 900001,
+            name: 'Layout Test Admin',
+            phone: '+70000000000',
+            role: 'admin',
+            stamps: 0,
+            free: 0,
+            cups: 0,
+            qr: 'layout-test',
+            verified: 1,
+            welcome: 1,
+            tg: 0,
+            notify_tg: 1,
+            notify_web: 1,
+            history: []
+          }
+        })
+      });
+    });
+
+    await page.route('**/app/ui/theme/*.css*', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      await route.continue();
+    });
+
+    await page.goto('/?brand=delivery', { waitUntil: 'commit' });
+    await page.waitForLoadState('load');
+
+    const before = await page.evaluate(() => {
+      const rect = (selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const box = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          top: box.top,
+          height: box.height,
+          display: style.display,
+          visibility: style.visibility,
+          hidden: element.hidden
+        };
+      };
+      return {
+        role: document.documentElement.getAttribute('data-staff-role'),
+        ready: document.documentElement.hasAttribute('data-staff-ready'),
+        header: rect('header.topbar'),
+        modeSeg: rect('#modeSeg'),
+        wrap: rect('body > .wrap'),
+        adminBar: rect('#adminBar')
+      };
+    });
+
+    expect(before.role).toBe('admin');
+    expect(before.ready).toBe(false);
+    expect(before.modeSeg.hidden).toBe(true);
+    expect(before.modeSeg.display).toBe('flex');
+    expect(before.modeSeg.visibility).toBe('hidden');
+    expect(before.adminBar.hidden).toBe(true);
+    expect(before.adminBar.display).toBe('grid');
+    expect(before.adminBar.visibility).toBe('hidden');
+
+    await page.waitForFunction(() => window.me && window.me.role === 'admin', null, { timeout: 10000 });
+    await page.waitForTimeout(100);
+
+    const after = await page.evaluate(() => {
+      const rect = (selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const box = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          top: box.top,
+          height: box.height,
+          display: style.display,
+          visibility: style.visibility,
+          hidden: element.hidden
+        };
+      };
+      return {
+        role: document.documentElement.getAttribute('data-staff-role'),
+        ready: document.documentElement.hasAttribute('data-staff-ready'),
+        header: rect('header.topbar'),
+        modeSeg: rect('#modeSeg'),
+        wrap: rect('body > .wrap'),
+        adminBar: rect('#adminBar'),
+        cls: window.__layoutShifts.reduce((sum, value) => sum + value, 0)
+      };
+    });
+
+    expect(after.ready).toBe(true);
+    expect(after.modeSeg.hidden).toBe(false);
+    expect(after.modeSeg.visibility).toBe('visible');
+    expect(after.adminBar.hidden).toBe(false);
+    expect(after.adminBar.visibility).toBe('visible');
+    expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.modeSeg.height - before.modeSeg.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.adminBar.height - before.adminBar.height)).toBeLessThanOrEqual(1);
+    expect(after.cls).toBeLessThan(0.01);
+  });
   });
 });
