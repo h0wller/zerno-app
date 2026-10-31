@@ -293,13 +293,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       Array.isArray(window.DMENU) &&
       window.DMENU.length > 0
     );
-    await page.evaluate(() => {
-      window.dcat = 'pizza';
-      window.renderDeliveryMenu();
-    });
-    await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached();
 
     const result = await page.evaluate(() => {
+      window.dcat = 'pizza';
+      window.renderDeliveryMenu();
+
       const grid = document.getElementById('deliveryGrid');
       const firstCard = grid && grid.querySelector(':scope > .card[data-product-id]');
       const firstItem = window.DMENU.find((item) => item.cat === window.dcat);
