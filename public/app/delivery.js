@@ -291,17 +291,45 @@ function renderSingleMetaHtml(p) {
   '</div>';
 }
 
+function syncDeliveryImagePriorities() {
+  var grid = document.getElementById('deliveryGrid');
+  if (!grid) return;
+  var cards = Array.from(grid.querySelectorAll(':scope > .card[data-product-id]'));
+  if (!cards.length) return;
+
+  var firstRowTop = cards[0].getBoundingClientRect().top;
+  var hasHighPriorityImage = false;
+  cards.forEach(function (card) {
+    var image = card.querySelector('.media img[src]');
+    if (!image) return;
+    var isFirstRow = Math.abs(card.getBoundingClientRect().top - firstRowTop) <= 1;
+    image.setAttribute('loading', isFirstRow ? 'eager' : 'lazy');
+    var isLcpImage = isFirstRow && !hasHighPriorityImage;
+    image.setAttribute('fetchpriority', isLcpImage ? 'high' : 'auto');
+    if (isLcpImage) hasHighPriorityImage = true;
+  });
+}
+
+var deliveryImagePriorityFrame = 0;
+function scheduleDeliveryImagePriorities() {
+  if (deliveryImagePriorityFrame) return;
+  deliveryImagePriorityFrame = requestAnimationFrame(function () {
+    deliveryImagePriorityFrame = 0;
+    syncDeliveryImagePriorities();
+  });
+}
+
+window.addEventListener('resize', scheduleDeliveryImagePriorities, { passive: true });
+window.addEventListener('load', scheduleDeliveryImagePriorities, { once: true });
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(scheduleDeliveryImagePriorities);
+}
+
 function renderDeliveryCard(p, n0, i) {
   var opts = p.opts || [];
   var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
-  var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
-  // PR-92 review: пороги выровнены по медиумам канонической сетки доставки
-  // (index.html critical CSS + theme: ≥520 → 2 колонки, ≥1181 → 3, ≥1600 → 4).
-  var eagerImageCount = viewportWidth >= 1600 ? 4 : viewportWidth >= 1181 ? 3 : viewportWidth >= 520 ? 2 : 1;
-  var isAboveFold = typeof i === 'number' && i < eagerImageCount;
-
   var mediaContent = p.img
-    ? '<img src="' + p.img + '" alt="' + esc(p.name) + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="' + (isAboveFold ? 'eager' : 'lazy') + '" fetchpriority="' + (i === 0 ? 'high' : 'auto') + '" decoding="async">'
+    ? '<img src="' + p.img + '" alt="' + esc(p.name) + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="lazy" fetchpriority="auto" decoding="async">'
     : '<span class="em">' + (p.e || '🍕') + '</span>';
 
   return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
@@ -411,6 +439,7 @@ function renderDeliveryMenu() {
     gridEl.innerHTML = html;
   }
   patchDeliveryCards(list);
+  syncDeliveryImagePriorities();
 
   const addCard = document.getElementById('addDelivCard');
   if (addCard) {

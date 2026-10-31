@@ -112,6 +112,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await page.waitForLoadState('load');
     await page.waitForTimeout(100);
     await page.evaluate(() => document.fonts.ready.then(() => true));
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const after = await measure();
     console.log('[slow-network-layout] after deferred CSS', JSON.stringify(after));
     expect(after.card.width).toBe(before.card.width);
@@ -164,6 +165,12 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         const headerRect = header && header.getBoundingClientRect();
         const headerStyle = header && getComputedStyle(header);
         const brandStyle = brand && getComputedStyle(brand);
+        const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
+        const firstRowTop = cards.length ? cards[0].getBoundingClientRect().top : 0;
+        const firstRowImageCount = cards.filter((card) =>
+          Math.abs(card.getBoundingClientRect().top - firstRowTop) <= 1 &&
+          !!card.querySelector('.media img[src]')
+        ).length;
         return {
           x: rect ? Math.round(rect.x) : null,
           y: rect ? Math.round(rect.y) : null,
@@ -186,6 +193,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           titleDisplay: getComputedStyle(document.querySelector('#brandTitle')).display,
           subDisplay: getComputedStyle(document.querySelector('#brandSub')).display,
           gridColumns: getComputedStyle(document.querySelector('#deliveryGrid')).gridTemplateColumns.trim().split(/\s+/).length,
+          firstRowImageCount,
           eagerImageCount: document.querySelectorAll('#deliveryGrid img[loading="eager"]').length,
           highPriorityImageCount: document.querySelectorAll('#deliveryGrid img[fetchpriority="high"]').length,
           viewportWidth: document.documentElement.clientWidth,
@@ -199,10 +207,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       const expectedGridColumns = width >= 1600 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
       expect(before.gridColumns, `delivery grid has ${expectedGridColumns} columns at ${width}px before CSS`)
         .toBe(expectedGridColumns);
-      expect(before.eagerImageCount, `only the visible menu row is eager at ${width}px`)
-        .toBeLessThanOrEqual(expectedGridColumns);
-      expect(before.highPriorityImageCount, `only the LCP image has high priority at ${width}px`)
-        .toBeLessThanOrEqual(1);
+      expect(before.eagerImageCount, `all and only first-row images are eager at ${width}px`)
+        .toBe(before.firstRowImageCount);
+      expect(before.highPriorityImageCount, `only the first-row LCP image has high priority at ${width}px`)
+        .toBe(before.firstRowImageCount ? 1 : 0);
       if (width <= 1023) {
         expect(before.titleDisplay, `coffee title hidden at ${width}px before CSS`).toBe('none');
         expect(before.subDisplay, `coffee subtitle hidden at ${width}px before CSS`).toBe('none');
@@ -215,6 +223,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
       await page.waitForLoadState('load');
       await page.evaluate(() => document.fonts.ready.then(() => true));
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const after = await measureBrand();
       console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));
       expect(after.subDisplay, `brand subtitle display remains stable at ${width}px`).toBe(before.subDisplay);
@@ -231,6 +240,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       expect(after.height, `brand height remains stable at ${width}px`).toBe(before.height);
       expect(after.gridColumns, `delivery grid keeps its responsive column count at ${width}px after CSS`)
         .toBe(expectedGridColumns);
+      expect(after.eagerImageCount, `all and only first-row images stay eager at ${width}px after CSS`)
+        .toBe(after.firstRowImageCount);
+      expect(after.highPriorityImageCount, `one first-row LCP image stays high priority at ${width}px after CSS`)
+        .toBe(after.firstRowImageCount ? 1 : 0);
       expect(after.scrollWidth, `no final horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
 
@@ -241,6 +254,59 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         });
       }
     }
+  });
+
+  test('delivery image priorities follow the actual first grid row after viewport resizing', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=delivery', { waitUntil: 'commit' });
+    await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
+
+    for (const width of [320, 520, 1181, 1600, 320]) {
+      await page.setViewportSize({ width, height: 844 });
+      const isCorrect = () => page.evaluate(() => {
+        const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
+        const firstTop = cards.length ? cards[0].getBoundingClientRect().top : 0;
+        const firstRowImages = cards.filter((card) =>
+          Math.abs(card.getBoundingClientRect().top - firstTop) <= 1
+        ).map((card) => card.querySelector('.media img[src]')).filter(Boolean);
+        const eager = document.querySelectorAll('#deliveryGrid img[loading="eager"]').length;
+        const high = document.querySelectorAll('#deliveryGrid img[fetchpriority="high"]').length;
+        return eager === firstRowImages.length && high === (firstRowImages.length ? 1 : 0);
+      });
+      await expect.poll(isCorrect, { message: `image priorities follow the first row at ${width}px` }).toBe(true);
+    }
+  });
+
+  test('initial-card-preservation branch keeps the first image and reapplies row priorities', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=delivery', { waitUntil: 'commit' });
+    const firstImage = page.locator('#deliveryGrid > .card[data-product-id] .media img[src]').first();
+    await expect(firstImage).toBeAttached({ timeout: 10000 });
+    await firstImage.evaluate((image) => image.setAttribute('data-preservation-probe', 'kept'));
+    await page.evaluate(() => window.renderDeliveryMenu());
+    await expect(firstImage).toHaveAttribute('data-preservation-probe', 'kept');
+    const result = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
+      const firstTop = cards.length ? cards[0].getBoundingClientRect().top : 0;
+      const firstRowImages = cards.filter((card) =>
+        Math.abs(card.getBoundingClientRect().top - firstTop) <= 1
+      ).map((card) => card.querySelector('.media img[src]')).filter(Boolean);
+      return {
+        eager: document.querySelectorAll('#deliveryGrid img[loading="eager"]').length,
+        high: document.querySelectorAll('#deliveryGrid img[fetchpriority="high"]').length,
+        firstRow: firstRowImages.length
+      };
+    });
+    expect(result.eager).toBe(result.firstRow);
+    expect(result.high).toBe(result.firstRow ? 1 : 0);
   });
 
   test('coffee header controls stay separated before and after deferred CSS on mobile', async ({ page }, testInfo) => {
@@ -303,6 +369,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
       await page.waitForLoadState('load');
       await page.evaluate(() => document.fonts.ready.then(() => true));
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const after = await measureHeader();
       console.log(`[slow-network-layout] coffee ${width}px after CSS`, JSON.stringify(after));
       assertHeader(after, 'after CSS');
@@ -511,4 +578,24 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(Math.abs(after.adminBar.height - before.adminBar.height)).toBeLessThanOrEqual(1);
     expect(after.cls).toBeLessThan(0.01);
   });
+
+  test('staff layout reservation is released when the main bundle never starts', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'blocked-bundle-test-token');
+      localStorage.setItem('zt_role', 'admin');
+    });
+    await page.route('**/dist/main.bundle.js*', (route) => route.abort());
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.getAttribute('data-staff-role')
+    )).toBe('admin');
+    expect(await page.evaluate(() =>
+      document.documentElement.hasAttribute('data-staff-ready')
+    )).toBe(false);
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.getAttribute('data-staff-role')
+    ), { timeout: 10000, intervals: [250, 500, 1000] }).toBeNull();
+  });
+
 });

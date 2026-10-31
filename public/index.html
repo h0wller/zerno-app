@@ -1699,6 +1699,24 @@ html body #tickerTrack > span {
   white-space: nowrap;
   line-height: 28px;
 }
+/* Keep the coffee title's intrinsic font width out of the centered flex calculation. */
+@media (max-width: 690px) {
+  html body header.topbar div#headerBrand.brand > div:not(.mark) {
+    width: 96px;
+    min-width: 96px;
+    max-width: 96px;
+    flex: 0 0 96px;
+  }
+  html body header.topbar div#headerBrand.brand #brandTitle {
+    display: block;
+    width: 96px;
+    min-width: 96px;
+    max-width: 96px;
+    box-sizing: border-box;
+    white-space: nowrap;
+  }
+}
+
 </style>
 </head>
 

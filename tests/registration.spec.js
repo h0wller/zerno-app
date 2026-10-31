@@ -257,4 +257,34 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await page.click('#regBtn');
     await page.waitForFunction(() => !!window.me && window.me.name === 'Tg User', null, { timeout: 10000 });
   });
+
+  test('cross-tab logout clears the cached staff hint even when the role key remains', async ({ browser }) => {
+    const context = await browser.newContext();
+    const firstTab = await context.newPage();
+    await firstTab.goto('/?brand=delivery');
+    await firstTab.waitForFunction(() => typeof window.setUser === 'function');
+
+    await firstTab.evaluate(() => {
+      window.USER_TOKEN = 'stale-in-memory-token';
+      localStorage.setItem('zt_user', 'stale-in-memory-token');
+      localStorage.setItem('zt_role', 'admin');
+      document.documentElement.setAttribute('data-staff-role', 'admin');
+    });
+
+    const secondTab = await context.newPage();
+    await secondTab.route('**/*', (route) => route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><html><head></head><body>storage source</body></html>'
+    }));
+    await secondTab.goto('/');
+    await secondTab.evaluate(() => localStorage.removeItem('zt_user'));
+
+    await expect.poll(() => firstTab.evaluate(() => ({
+      hint: document.documentElement.getAttribute('data-staff-role'),
+      cachedRole: localStorage.getItem('zt_role')
+    }))).toEqual({ hint: null, cachedRole: 'admin' });
+    await context.close();
+  });
+
 });
