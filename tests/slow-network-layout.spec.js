@@ -134,7 +134,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       await route.continue();
     });
 
-    for (const width of [320, 480, 690, 820, 821, 1023]) {
+    for (const width of [320, 480, 519, 520, 690, 820, 821, 1023, 1180, 1181, 1599, 1600]) {
       await page.setViewportSize({ width, height: 844 });
       await page.goto('/?brand=delivery', { waitUntil: 'commit' });
       await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached({ timeout: 10000 });
@@ -162,6 +162,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           brandAlignSelf: brandStyle && brandStyle.alignSelf,
           titleDisplay: getComputedStyle(document.querySelector('#brandTitle')).display,
           subDisplay: getComputedStyle(document.querySelector('#brandSub')).display,
+          gridColumns: getComputedStyle(document.querySelector('#deliveryGrid')).gridTemplateColumns.trim().split(/\\s+/).filter(Boolean).length,
           viewportWidth: document.documentElement.clientWidth,
           scrollWidth: document.documentElement.scrollWidth
         };
@@ -170,6 +171,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       const before = await measureBrand();
       console.log(`[slow-network-layout] ${width}px before CSS`, JSON.stringify(before));
       expect(before.width, `brand mark exists at ${width}px`).not.toBeNull();
+      const expectedGridColumns = width >= 1600 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
+      expect(before.gridColumns, `delivery grid has ${expectedGridColumns} columns at ${width}px before CSS`)
+        .toBe(expectedGridColumns);
       if (width <= 1023) {
         expect(before.titleDisplay, `coffee title hidden at ${width}px before CSS`).toBe('none');
         expect(before.subDisplay, `coffee subtitle hidden at ${width}px before CSS`).toBe('none');
@@ -185,6 +189,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       expect(after.y, `brand y remains stable at ${width}px`).toBe(before.y);
       expect(after.width, `brand width remains stable at ${width}px`).toBe(before.width);
       expect(after.height, `brand height remains stable at ${width}px`).toBe(before.height);
+      expect(after.gridColumns, `delivery grid keeps its responsive column count at ${width}px after CSS`)
+        .toBe(expectedGridColumns);
       expect(after.scrollWidth, `no final horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
     }
