@@ -353,7 +353,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     const meResponse = await page.waitForResponse((response) => response.url().endsWith('/api/me'), { timeout: 15000 });
     expect(meResponse.ok()).toBe(true);
     await page.waitForFunction(() => document.documentElement.hasAttribute('data-staff-ready'), null, { timeout: 10000 });
-    expect(await page.evaluate(() => window.me && window.me.role)).toBe('admin');
     await page.waitForTimeout(100);
 
     const after = await page.evaluate(() => {
@@ -382,6 +381,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     });
 
     expect(after.ready).toBe(true);
+    expect(after.role).toBe('admin');
     expect(after.modeSeg.hidden).toBe(false);
     expect(after.modeSeg.visibility).toBe('visible');
     expect(after.adminBar.hidden).toBe(false);
