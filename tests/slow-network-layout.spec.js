@@ -284,8 +284,27 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
+    await page.route('**/api/dmenu', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [{
+          id: 'responsive-image-fixture',
+          cat: 'pizza',
+          section: 'delivery',
+          name: 'LCP fixture',
+          desc: '',
+          comp: [],
+          opts: [],
+          price: 500,
+          e: '🍕',
+          on: 1,
+          img: '/media/dishes/1-card.webp'
+        }]
+      })
+    }));
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
-    await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
+    await expect(page.locator('#deliveryGrid > .card[data-product-id] img[src]').first()).toBeAttached({ timeout: 10000 });
 
     for (const width of [320, 520, 1181, 1600, 320]) {
       await page.setViewportSize({ width, height: 844 });
