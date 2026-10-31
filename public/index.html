@@ -248,11 +248,26 @@ html[data-brand="delivery"] .topbar .brand .mark,
 body[data-brand="delivery"] .topbar .brand .mark {
   width: 160px;
   height: 40px;
-  flex: 0 0 160px;
+  flex: 0 1 auto;
+  max-width: min(60vw, 420px);
 }
 
-/* Mobile header geometry must match 160-04 before deferred theme CSS arrives. */
+/* Match the final mobile header before views.js wraps #brandSeg and theme CSS loads. */
 @media (max-width: 690px) {
+  header.topbar .venueWrap {
+    position: relative;
+    display: flex;
+    flex: 0 0 auto;
+    order: 1;
+    min-width: 0;
+    z-index: 50;
+  }
+  header.topbar #brandSeg {
+    display: none;
+  }
+  header.topbar #brandSeg.open {
+    display: flex;
+  }
   header.topbar div#headerBrand.brand {
     position: static;
     transform: none;
@@ -270,13 +285,13 @@ body[data-brand="delivery"] .topbar .brand .mark {
     z-index: 1;
     overflow: visible;
   }
-  header.topbar div#headerBrand.brand div.mark {
-    width: 42px;
-    height: 42px;
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  html[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark,
+  body[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark {
+    width: 196px;
+    max-width: min(60vw, 210px);
+    height: 48px;
+    max-height: 48px;
+    flex: 0 1 auto;
   }
   header.topbar button#profileTopBtn.ava {
     position: static;
