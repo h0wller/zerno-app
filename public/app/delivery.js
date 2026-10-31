@@ -65,10 +65,20 @@ async function fetchDeliveryInfo() {
   return info;
 }
 
-window.refreshDeliveryInfo = async function () {
-  await fetchDeliveryInfo();
-  window.populateSlots();
-  return deliveryInfo;
+var deliveryInfoRequest = null;
+window.refreshDeliveryInfo = function () {
+  if (!deliveryInfoRequest) {
+    deliveryInfoRequest = fetchDeliveryInfo()
+      .then(function (info) {
+        populatePlaces();
+        window.populateSlots();
+        return info;
+      })
+      .finally(function () {
+        deliveryInfoRequest = null;
+      });
+  }
+  return deliveryInfoRequest;
 };
 
 const DCATS = window.DCATS = [
@@ -291,13 +301,45 @@ function renderSingleMetaHtml(p) {
   '</div>';
 }
 
-function renderDeliveryCard(p, n0, i) {
+function syncDeliveryImagePriorities() {
+  var grid = document.getElementById('deliveryGrid');
+  if (!grid) return;
+  var cards = Array.from(grid.querySelectorAll(':scope > .card[data-product-id]'));
+  if (!cards.length) return;
+
+  var firstRowTop = cards[0].getBoundingClientRect().top;
+  var hasHighPriorityImage = false;
+  cards.forEach(function (card) {
+    var image = card.querySelector('.media img[src]');
+    if (!image) return;
+    var isFirstRow = Math.abs(card.getBoundingClientRect().top - firstRowTop) <= 1;
+    image.setAttribute('loading', isFirstRow ? 'eager' : 'lazy');
+    var isLcpImage = isFirstRow && !hasHighPriorityImage;
+    image.setAttribute('fetchpriority', isLcpImage ? 'high' : 'auto');
+    if (isLcpImage) hasHighPriorityImage = true;
+  });
+}
+
+var deliveryImagePriorityFrame = 0;
+function scheduleDeliveryImagePriorities() {
+  if (deliveryImagePriorityFrame) return;
+  deliveryImagePriorityFrame = requestAnimationFrame(function () {
+    deliveryImagePriorityFrame = 0;
+    syncDeliveryImagePriorities();
+  });
+}
+
+window.addEventListener('resize', scheduleDeliveryImagePriorities, { passive: true });
+window.addEventListener('load', scheduleDeliveryImagePriorities, { once: true });
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(scheduleDeliveryImagePriorities);
+}
+
+function renderDeliveryCard(p, n0) {
   var opts = p.opts || [];
   var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
-  var isAboveFold = typeof i === 'number' && i < 4;
-
   var mediaContent = p.img
-    ? '<img src="' + p.img + '" alt="' + esc(p.name) + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="' + (isAboveFold ? 'eager' : 'lazy') + '" fetchpriority="' + (isAboveFold ? 'high' : 'auto') + '" decoding="async">'
+    ? '<img src="' + p.img + '" alt="' + esc(p.name) + '" data-fallback-emoji="' + esc(p.e || '🍕') + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="lazy" fetchpriority="auto" decoding="async">'
     : '<span class="em">' + (p.e || '🍕') + '</span>';
 
   return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
@@ -377,9 +419,9 @@ function renderDeliveryMenu() {
       firstCard.nextElementSibling.remove();
     }
     // 3. Дописываем остальные карточки со 2-й по N-ю без трогания первой карточки
-    let restHtml = list.slice(1).map((p, idx) => {
+    let restHtml = list.slice(1).map((p) => {
       const n = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
-      return renderDeliveryCard(p, n, idx + 1);
+      return renderDeliveryCard(p, n);
     }).join('');
     if (typeof editMode !== 'undefined' && editMode) {
       restHtml += '<article class="card add-card" id="addDelivCard">' +
@@ -391,9 +433,9 @@ function renderDeliveryMenu() {
       gridEl.insertAdjacentHTML('beforeend', restHtml);
     }
   } else {
-    let html = list.map((p, i) => {
-      const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
-      return renderDeliveryCard(p, n0, i);
+    let html = list.map((p) => {
+      const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : 0), 0);
+      return renderDeliveryCard(p, n0);
     }).join('');
     if (typeof editMode !== 'undefined' && editMode) {
       html += '<article class="card add-card" id="addDelivCard">' +
@@ -407,6 +449,7 @@ function renderDeliveryMenu() {
     gridEl.innerHTML = html;
   }
   patchDeliveryCards(list);
+  syncDeliveryImagePriorities();
 
   const addCard = document.getElementById('addDelivCard');
   if (addCard) {
@@ -669,8 +712,12 @@ $('#checkoutMethod').onchange = () => {
 $('#cartFab').onclick = async () => {
   window.renderCart();
   $('#cartPanel').classList.add('open');
+  const checkoutButton = $('#checkoutBtn');
+  if (checkoutButton) checkoutButton.disabled = true;
   try {
     await window.refreshDeliveryInfo();
+    window.renderCart();
+    if (checkoutButton) checkoutButton.disabled = false;
   } catch (error) {
     if (typeof toast === 'function') {
       toast('Не удалось обновить график работы. Проверьте соединение перед оформлением.', '⚠️');
@@ -680,8 +727,11 @@ $('#cartFab').onclick = async () => {
 
 function populatePlaces() {
   if (!deliveryInfo) return;
+  const select = $('#checkoutPlace');
+  const previous = select.value;
   const places = deliveryInfo.zones.flatMap(z => z.places);
-  $('#checkoutPlace').innerHTML = places.map(p => `<option>${p}</option>`).join('');
+  select.innerHTML = places.map(p => `<option>${p}</option>`).join('');
+  if (places.includes(previous)) select.value = previous;
 }
 
 function skelCards(n){
@@ -702,18 +752,14 @@ window.loadDelivery = async function() {
     if (g && !DMENU.length && !g.querySelector('.card:not(.skeleton-card)')) {
       g.innerHTML = skelCards(6);
     }
-    var menuPromise = (me && ['admin','cashier','dispatch'].indexOf(me.role) !== -1)
-      ? api('/menu/all').then(function(all) {
-          return { items: (all.items || []).filter(function(p){ return p.section === 'delivery'; }) };
+    var r = (me && ['admin','cashier','dispatch'].indexOf(me.role) !== -1)
+      ? await api('/menu/all').then(function(all) {
+          MENU = all.items || [];
+          if (all.updatedAt) meta.updatedAt = all.updatedAt;
+          return { items: MENU.filter(function(p){ return p.section === 'delivery'; }) };
         })
-      : api('/dmenu');
-    var infoPromise = fetchDeliveryInfo().catch(function(){ return null; });
-    var results = await Promise.all([menuPromise, infoPromise]);
-    var r = results[0] || {};
+      : await api('/dmenu');
     DMENU = r.items || [];
-    deliveryInfo = results[1];
-    populatePlaces();
-    populateSlots();
     renderDeliveryRail();
     window.renderDeliveryMenu();
     updateCartFab();

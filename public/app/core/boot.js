@@ -13,12 +13,25 @@ const isAudit = (typeof document !== 'undefined' && document.documentElement.cla
   /Chrome-Lighthouse|Lighthouse|moto g power/i.test(navigator.userAgent) ||
   location.search.includes('lighthouse=1');
 
-/* IMG-FB v1: универсальный фолбэк брендовых webp→svg (capture: error не всплывает) */
+/* Missing dish media uses the card emoji; only brand marks have WebP→SVG pairs. */
 document.addEventListener('error', function (e) {
   var t = e.target;
-  if (!t || t.tagName !== 'IMG' || t.dataset.imgFb === '1') return;
+  if (!t || t.tagName !== 'IMG') return;
   var s = t.currentSrc || t.src || '';
   if (!/\.webp(\?|$)/i.test(s)) return;
+
+  if (t.closest('#grid .media, #deliveryGrid .media')) {
+    var fallback = document.createElement('span');
+    fallback.className = 'em';
+    fallback.dataset.imgFallback = '1';
+    fallback.textContent = t.dataset.fallbackEmoji || '☕';
+    fallback.setAttribute('role', 'img');
+    if (t.alt) fallback.setAttribute('aria-label', t.alt);
+    t.replaceWith(fallback);
+    return;
+  }
+
+  if (t.dataset.imgFb === '1' || !t.closest('#brandMark, .brandLogo, .brand-mark')) return;
   t.dataset.imgFb = '1';
   var p = t.parentElement;
   if (p && p.tagName === 'PICTURE') { while (p.firstChild) p.removeChild(p.firstChild); p.appendChild(t); }
@@ -36,8 +49,10 @@ function renderAll() {
   const profAva = document.getElementById('avInit');
   if (profAva) profAva.textContent = initChar;
 
-  if (typeof renderRail === 'function') renderRail();
-  if (typeof renderMenu === 'function') renderMenu();
+  if (window.brand !== 'delivery') {
+    if (typeof renderRail === 'function') renderRail();
+    if (typeof renderMenu === 'function') renderMenu();
+  }
   if (typeof renderModes === 'function') renderModes();
 
   const deferSecondary = window.requestIdleCallback || function (fn) { setTimeout(fn, 60); };
@@ -59,26 +74,66 @@ function renderAll() {
 
 /* ── 2. Точка входа: пользователь → меню → виды → бейджи → отзыв ── */
 async function boot() {
+  document.documentElement.setAttribute('data-staff-boot-started', '1');
   if (window.USER_TOKEN) {
+    const authController = new AbortController();
+    const authTimeout = setTimeout(() => authController.abort(), 12000);
     try {
-      window.me = (await api('/me')).customer;
+      window.me = (await api('/me', { signal: authController.signal })).customer;
+      var staffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1
+        ? window.me.role
+        : '';
+      try {
+        if (staffRole) localStorage.setItem('zt_role', staffRole);
+        else localStorage.removeItem('zt_role');
+      } catch (_) {}
+      if (staffRole) document.documentElement.setAttribute('data-staff-role', staffRole);
+      else document.documentElement.removeAttribute('data-staff-role');
+      document.documentElement.setAttribute('data-staff-ready', '1');
     } catch (e) {
       window.me = null;
       window.USER_TOKEN = null;
       localStorage.removeItem(typeof T_USER !== 'undefined' ? T_USER : 'zt_user');
+      localStorage.removeItem('zt_role');
+      document.documentElement.removeAttribute('data-staff-role');
+      document.documentElement.setAttribute('data-staff-ready', '1');
+    } finally {
+      clearTimeout(authTimeout);
     }
+  } else {
+    document.documentElement.setAttribute('data-staff-ready', '1');
   }
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
-    if (typeof loadMenu === 'function') await loadMenu();
+    if (window.brand === 'delivery') {
+      var deliveryLoad = window.__dlPromise;
+      if (!deliveryLoad && typeof window.loadDelivery === 'function') {
+        window.__dlReq = 1;
+        deliveryLoad = window.__dlPromise = window.loadDelivery();
+      }
+      if (deliveryLoad) await deliveryLoad;
+    } else if (typeof loadMenu === 'function') {
+      await loadMenu();
+    }
   } catch (err) {
     console.warn('[BOOT] Ошибка загрузки меню:', err);
   } finally {
     renderAll();
     if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
     if (typeof showBadge === 'function') showBadge();
-    if (typeof initChatPointer === 'function') initChatPointer();
     if (typeof maybeAskReview === 'function') maybeAskReview();
+    if (typeof initChatPointer === 'function') {
+      var startChatPointer = function () { initChatPointer(); };
+      var deferChatPointer = function () {
+        if (typeof window.requestIdleCallback === 'function') {
+          window.requestIdleCallback(startChatPointer, { timeout: 2500 });
+        } else {
+          setTimeout(startChatPointer, 1200);
+        }
+      };
+      if (document.readyState === 'complete') deferChatPointer();
+      else window.addEventListener('load', deferChatPointer, { once: true });
+    }
   }
 }
 

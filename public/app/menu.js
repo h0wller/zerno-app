@@ -123,7 +123,7 @@ function renderMenu() {
        <div class="media" style="--tint:${TINT[p.cat] || '#E7ECF0'}">
                   ${
                     p.img
-                      ? `<img src="${p.img}" alt="${esc(p.name)}" data-zoom="${toZoomSrc(p.img)}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="${i < 4 ? 'eager' : 'lazy'}" fetchpriority="${i < 4 ? 'high' : 'auto'}" decoding="async">`
+                      ? `<img src="${p.img}" alt="${esc(p.name)}" data-fallback-emoji="${esc(p.e || '☕')}" data-zoom="${toZoomSrc(p.img)}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="${i < 4 ? 'eager' : 'lazy'}" fetchpriority="${i < 4 ? 'high' : 'auto'}" decoding="async">`
                       : `<span class="em">${p.e || '☕'}</span>`
                   }
          ${tg}${p.on ? '' : '<span class="stopbadge">СТОП</span>'}

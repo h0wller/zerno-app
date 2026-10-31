@@ -40,8 +40,8 @@
           if (typeof window.setBotName === "function") window.setBotName();
           return;
         }
-        if (e.target.closest("[data-ot-repeat]")) {
-          if (activeTrackOrder && Array.isArray(activeTrackOrder.items)) {
+        if (e.target.closest("[data-ot-repeat]") &&
+            activeTrackOrder && Array.isArray(activeTrackOrder.items)) {
             window.cart = activeTrackOrder.items.map(function (it) {
               return {
                 key: String(it.id) + "_" + (it.opt || "0"),
@@ -62,7 +62,6 @@
             if (cPanelEl) cPanelEl.classList.add("open");
             closeOrderTrackModal();
             window.toast("Заказ добавлен в корзину", "🛒");
-          }
         }
       });
     }

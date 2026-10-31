@@ -187,5 +187,11 @@ body .wrap > #deliveryRail {
   transition: none;
 }
 /* [fix-all v3] END F5.62 */
-
-
+/* Keep the staff mode switch at the same reserved height before and after auth hydration. */
+@media (max-width: 820px) {
+  html[data-staff-role] body header.topbar #modeSeg {
+    height: 35px;
+    min-height: 35px;
+    box-sizing: border-box;
+  }
+}

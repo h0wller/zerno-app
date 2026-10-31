@@ -3,12 +3,20 @@
    window.TG_USERNAME — все публикуются выше в window. */
 (function () {
   'use strict';
-  fetch(API_BASE + '/api/config')
-    .then(function (r) { return r.json(); })
-    .then(function (cfg) {
-      window.TG_USERNAME = cfg.tgUsername || 'and_coffee_bot';
-      if (typeof window.relink === 'function') window.relink();
-      if (typeof window.renderVerifyNote === 'function') window.renderVerifyNote();
-    })
-    .catch(function () {});
+  function loadConfig() {
+    fetch(API_BASE + '/api/config')
+      .then(function (r) { return r.json(); })
+      .then(function (cfg) {
+        window.TG_USERNAME = cfg.tgUsername || 'and_coffee_bot';
+        if (typeof window.relink === 'function') window.relink();
+        if (typeof window.renderVerifyNote === 'function') window.renderVerifyNote();
+      })
+      .catch(function () {});
+  }
+
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(loadConfig, { timeout: 2500 });
+  } else {
+    setTimeout(loadConfig, 1200);
+  }
 })();

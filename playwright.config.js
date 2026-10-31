@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const testPort = process.env.CI ? (process.env.PORT || '3000') : '3100';
+const testUrl = process.env.TEST_URL || `http://localhost:${testPort}`;
+
 export default defineConfig({
   testDir: './tests',
   // Только e2e: unit-тесты (*.test.mjs) запускаются через node --test (npm run test:unit).
@@ -11,23 +14,23 @@ export default defineConfig({
   reporter: 'html',
 
   use: {
-    baseURL: process.env.TEST_URL || 'http://localhost:3000',
+    baseURL: testUrl,
     trace: 'on-first-retry',
     // actionTimeout: 10000,
   },
 
   webServer: process.env.TEST_URL ? undefined : {
     command: 'node server.js',
-    url: 'http://localhost:3000/api/health',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000, // 2 минуты на старт сервера
-    // CI-DEFAULTS v1: сервер в CI не видит .env (файл в .gitignore),
-    // поэтому стафф-коды прокидываем явно — те же значения, что в .env.example.
-    // Без этого activate(3364) на ui-baseline.spec.js отдаёт 403.
+    url: `${testUrl}/api/health`,
+    // Do not reuse the developer's server: it does not expose /__test/otp and may
+    // be connected to a non-test database. Reuse must be an explicit TEST_URL.
+    reuseExistingServer: false,
+    timeout: 120 * 1000,
     env: {
-      PORT: process.env.PORT || '3000',
-      DB_PATH: process.env.DB_PATH || './.playwright-test.db',
-      NODE_ENV: process.env.NODE_ENV || 'test',
+      ...process.env,
+      PORT: String(testPort),
+      DB_PATH: process.env.PW_DB_PATH || './.playwright-test.db',
+      NODE_ENV: 'test',
       ADMIN_CODE: process.env.ADMIN_CODE || '3364',
       CASHIER_CODE: process.env.CASHIER_CODE || '2468',
       DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
