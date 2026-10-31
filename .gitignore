@@ -141,3 +141,8 @@ lh-delivery-mobile.html
 
 # EGM review artifacts
 .egm/
+
+# agent skills (local tooling)
+.agents/
+.claude/skills/
+skills-lock.json
