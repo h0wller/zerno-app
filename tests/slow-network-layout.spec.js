@@ -111,6 +111,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
     await page.waitForLoadState('load');
     await page.waitForTimeout(100);
+    await page.evaluate(() => document.fonts.ready.then(() => true));
     const after = await measure();
     console.log('[slow-network-layout] after deferred CSS', JSON.stringify(after));
     expect(after.card.width).toBe(before.card.width);
@@ -235,7 +236,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         .toBeLessThanOrEqual(width + 1);
 
       await page.waitForLoadState('load');
-      await page.waitForTimeout(50);
+      await page.evaluate(() => document.fonts.ready.then(() => true));
       const after = await measureBrand();
       console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));
       expect(after.subDisplay, `brand subtitle display remains stable at ${width}px`).toBe(before.subDisplay);
@@ -256,7 +257,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         .toBeLessThanOrEqual(width + 1);
 
       if (testInfo.project.name === 'chromium' && [320, 390, 520, 690, 820, 821, 1024, 1181, 1600].includes(width)) {
-        await page.evaluate(() => document.fonts.ready.then(() => true));
         await testInfo.attach(`delivery-${width}px`, {
           body: await page.screenshot({ fullPage: true, animations: 'disabled' }),
           contentType: 'image/png'
