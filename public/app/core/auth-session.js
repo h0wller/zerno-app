@@ -8,6 +8,18 @@
     else localStorage.removeItem('zt_user');
 
     window.me = customer;
+    var staffRole = token && customer && ['admin', 'cashier', 'dispatch'].indexOf(customer.role) !== -1
+      ? customer.role
+      : '';
+    var root = document.documentElement;
+    if (staffRole) {
+      localStorage.setItem('zt_role', staffRole);
+      root.setAttribute('data-staff-role', staffRole);
+    } else {
+      localStorage.removeItem('zt_role');
+      root.removeAttribute('data-staff-role');
+    }
+    root.setAttribute('data-staff-ready', '1');
     window.historyLoaded = false;
     window.lastChatId = 0;
 
