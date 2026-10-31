@@ -264,7 +264,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     const meRequested = new Promise((resolve) => { markMeRequested = resolve; });
     const meGate = new Promise((resolve) => { releaseMe = resolve; });
 
-    await page.route('**/api/me*', async (route) => {
+    await page.route((url) => url.pathname === '/api/me', async (route) => {
       markMeRequested();
       await meGate;
       await route.fulfill({
