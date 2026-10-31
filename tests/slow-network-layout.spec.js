@@ -303,11 +303,13 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
     const result = await page.evaluate(() => {
       window.dcat = 'pizza';
+      const firstItem = window.DMENU.find((item) => item.cat === window.dcat);
+      if (!firstItem) return { preservable: false };
+      firstItem.img = '/media/dishes/pz-marg-card.webp';
       window.renderDeliveryMenu();
 
       const grid = document.getElementById('deliveryGrid');
       const firstCard = grid && grid.querySelector(':scope > .card[data-product-id]');
-      const firstItem = window.DMENU.find((item) => item.cat === window.dcat);
       const firstImage = firstCard && firstCard.querySelector('.media img[src]');
       if (!firstCard || !firstItem || !firstImage || firstImage.getAttribute('src') !== firstItem.img) {
         return { preservable: false };

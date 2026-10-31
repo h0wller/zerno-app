@@ -51,15 +51,14 @@
 
   window.setUser = setUser;
 
-  /* A cross-tab token change must be revalidated by boot() before this tab
-     adopts a staff layout. Logout is applied immediately without a reload. */
+  /* Only the bearer token changes the authenticated session across tabs.
+     zt_role is an untrusted layout hint; never reload or adopt it independently. */
   var storageReloadPending = false;
   window.addEventListener('storage', function (e) {
-    if (!e || (e.key !== 'zt_role' && e.key !== 'zt_user')) return;
+    if (!e || e.key !== 'zt_user') return;
     var root = document.documentElement;
-    var token = localStorage.getItem('zt_user');
 
-    if (!token) {
+    if (!e.newValue) {
       if (typeof window.setUser === 'function') {
         window.setUser(null, null);
       } else {
@@ -71,26 +70,12 @@
       return;
     }
 
-    var cachedRole = localStorage.getItem('zt_role') || '';
-    var verifiedRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1
-      ? window.me.role
-      : '';
-    if (
-      e.key === 'zt_role' &&
-      window.USER_TOKEN === token &&
-      root.hasAttribute('data-staff-ready') &&
-      verifiedRole === cachedRole
-    ) {
-      if (verifiedRole) root.setAttribute('data-staff-role', verifiedRole);
-      else root.removeAttribute('data-staff-role');
-      return;
-    }
+    if (e.newValue === window.USER_TOKEN || storageReloadPending) return;
 
-    // Never copy an unverified cached role into a guest or stale session.
+    // The new token must pass /api/me in boot() before staff layout is restored.
     root.removeAttribute('data-staff-role');
-    if (!storageReloadPending) {
-      storageReloadPending = true;
-      window.location.reload();
-    }
+    root.removeAttribute('data-staff-ready');
+    storageReloadPending = true;
+    window.location.reload();
   });
 })();

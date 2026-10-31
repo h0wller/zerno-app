@@ -16,8 +16,8 @@ test('missing dish WebP falls back to the menu emoji without requesting an SVG',
     const image = new Image();
     image.alt = 'Тестовое изображение';
     image.dataset.fallbackEmoji = '⚡';
-    image.src = '/media/dishes/__egm-missing-card.webp';
     media.appendChild(image);
+    image.src = '/media/dishes/__egm-missing-card.webp';
   });
 
   await expect(page.locator('#grid .media [data-img-fallback="1"]')).toHaveText('⚡');

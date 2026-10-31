@@ -304,8 +304,8 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
 
     const reload = page.waitForEvent('framenavigated', (frame) => frame === page.mainFrame());
     await secondTab.evaluate(() => {
-      localStorage.setItem('zt_user', 'cross-tab-login-token');
       localStorage.setItem('zt_role', 'admin');
+      localStorage.setItem('zt_user', 'cross-tab-login-token');
     });
     await Promise.all([reload, meRequested]);
 
