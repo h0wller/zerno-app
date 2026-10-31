@@ -1205,10 +1205,11 @@ if(b==='delivery'){
   }
 }
 
-/* Reserve the final desktop delivery wordmark width before deferred typography loads. */
+/* Reserve the final desktop delivery wordmark box before deferred typography loads. */
 @media (min-width: 1024px) {
   html[data-brand="delivery"] header.topbar #headerBrand.brand {
     width: 372px;
+    min-height: 53px;
   }
   html[data-brand="delivery"] .topbar .brand small {
     display: block;
