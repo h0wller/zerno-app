@@ -93,6 +93,15 @@ function renderAll() {
 /* ── 2. Точка входа: пользователь → меню → виды → бейджи → отзыв ── */
 async function boot() {
   document.documentElement.setAttribute('data-staff-boot-started', '1');
+
+  // Load the public delivery catalog while staff authentication is being verified.
+  // This keeps the first viewport populated on slow networks without trusting the role hint.
+  var earlyDeliveryLoad = null;
+  if (window.brand === 'delivery' && typeof window.loadDelivery === 'function') {
+    window.__dlReq = 1;
+    earlyDeliveryLoad = window.__dlPromise = window.loadDelivery();
+  }
+
   if (window.USER_TOKEN) {
     const authController = new AbortController();
     const authTimeout = setTimeout(() => authController.abort(), 12000);
@@ -124,11 +133,18 @@ async function boot() {
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
     if (window.brand === 'delivery') {
-      var deliveryLoad = window.__dlPromise;
-      if (!deliveryLoad && typeof window.loadDelivery === 'function') {
+      var staffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
+      var deliveryLoad = earlyDeliveryLoad;
+
+      // Once /api/me confirms a staff role, replace the public list with the
+      // full catalog (including stopped items) required by staff tools.
+      if (staffRole && typeof window.loadDelivery === 'function') {
+        deliveryLoad = window.__dlPromise = window.loadDelivery();
+      } else if (!deliveryLoad && typeof window.loadDelivery === 'function') {
         window.__dlReq = 1;
         deliveryLoad = window.__dlPromise = window.loadDelivery();
       }
+
       if (deliveryLoad) await deliveryLoad;
     } else if (typeof loadMenu === 'function') {
       await loadMenu();
