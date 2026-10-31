@@ -41,6 +41,12 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
     await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached({ timeout: 10000 });
 
+    const imagePriorities = await page.locator('#deliveryGrid img').evaluateAll((images) =>
+      images.slice(0, 4).map((image) => image.getAttribute('fetchpriority'))
+    );
+    expect(imagePriorities[0]).toBe('high');
+    expect(imagePriorities.slice(1)).not.toContain('high');
+
     const measure = () => page.evaluate(() => {
       const box = (el) => {
         if (!el) return null;
