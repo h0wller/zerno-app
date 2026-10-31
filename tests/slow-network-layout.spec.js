@@ -39,15 +39,16 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     });
 
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
-    await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached({ timeout: 10000 });
+    await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
 
-    const images = await page.locator('#deliveryGrid img').evaluateAll((nodes) =>
+    const productCards = page.locator('#deliveryGrid > .card[data-product-id]');
+    const images = await productCards.locator('img').evaluateAll((nodes) =>
       nodes.map((image) => ({
         loading: image.getAttribute('loading'),
         priority: image.getAttribute('fetchpriority')
       }))
     );
-    const firstCardImage = page.locator('#deliveryGrid > .card').first().locator('img');
+    const firstCardImage = productCards.first().locator('img');
     if (await firstCardImage.count()) {
       await expect(firstCardImage).toHaveAttribute('fetchpriority', 'high');
       await expect(firstCardImage).toHaveAttribute('loading', 'eager');
@@ -155,7 +156,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     for (const width of [320, 480, 519, 520, 690, 820, 821, 1023, 1180, 1181, 1599, 1600]) {
       await page.setViewportSize({ width, height: 844 });
       await page.goto('/?brand=delivery', { waitUntil: 'commit' });
-      await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached({ timeout: 10000 });
+      await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
 
       const measureBrand = () => page.evaluate(() => {
         const mark = document.querySelector('#brandMark');
