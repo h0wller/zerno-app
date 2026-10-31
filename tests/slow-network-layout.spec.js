@@ -243,19 +243,23 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     }
   });
 
-  test('coffee header controls do not overlap on mobile', async ({ page }, testInfo) => {
+  test('coffee header controls stay separated before and after deferred CSS on mobile', async ({ page }, testInfo) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
+    await page.route('**/app/ui/theme/*.css*', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      await route.continue();
+    });
 
     for (const width of [320, 390, 520, 690]) {
       await page.setViewportSize({ width, height: 844 });
-      await page.goto('/?brand=coffee', { waitUntil: 'load' });
+      await page.goto('/?brand=coffee', { waitUntil: 'commit' });
       await expect(page.locator('.venueWrap')).toBeAttached();
-      await page.evaluate(() => document.fonts.ready.then(() => true));
+      await expect(page.locator('#brandMark')).toBeAttached();
 
-      const header = await page.evaluate(() => {
+      const measureHeader = () => page.evaluate(() => {
         const rect = (selector) => {
           const element = document.querySelector(selector);
           if (!element) return null;
@@ -266,28 +270,51 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         };
         return {
           venue: rect('.venueWrap'),
-          brand: rect('#headerBrand'),
+          brandMark: rect('#brandMark'),
+          brandTitle: rect('#brandTitle'),
+          bonus: rect('#mbonusBtn'),
           profile: rect('#profileTopBtn'),
           viewportWidth: document.documentElement.clientWidth,
           scrollWidth: document.documentElement.scrollWidth
         };
       });
 
-      expect(header.venue, `venue toggle exists at ${width}px`).not.toBeNull();
-      expect(header.brand, `brand exists at ${width}px`).not.toBeNull();
-      expect(header.profile, `profile button exists at ${width}px`).not.toBeNull();
-      const controls = [header.venue, header.brand, header.profile];
-      for (let i = 0; i < controls.length; i++) {
-        for (let j = i + 1; j < controls.length; j++) {
-          const overlaps = controls[i].left < controls[j].right &&
-            controls[i].right > controls[j].left &&
-            controls[i].top < controls[j].bottom &&
-            controls[i].bottom > controls[j].top;
-          expect(overlaps, `header controls do not overlap at ${width}px: ${JSON.stringify({ venue: header.venue, brand: header.brand, profile: header.profile })}`).toBe(false);
+      const assertHeader = (header, phase) => {
+        for (const selector of ['venue', 'brandMark', 'brandTitle', 'bonus', 'profile']) {
+          expect(header[selector], `${selector} is visible at ${width}px ${phase}`).not.toBeNull();
+        }
+        const controls = ['venue', 'brandMark', 'brandTitle', 'bonus', 'profile']
+          .map((selector) => header[selector]);
+        for (let i = 0; i < controls.length; i++) {
+          for (let j = i + 1; j < controls.length; j++) {
+            const overlaps = controls[i].left < controls[j].right &&
+              controls[i].right > controls[j].left &&
+              controls[i].top < controls[j].bottom &&
+              controls[i].bottom > controls[j].top;
+            expect(overlaps, `visible header controls do not overlap at ${width}px ${phase}: ${JSON.stringify(header)}`).toBe(false);
+          }
+        }
+        expect(header.scrollWidth, `no horizontal overflow at ${width}px ${phase}`)
+          .toBeLessThanOrEqual(header.viewportWidth + 1);
+      };
+
+      const before = await measureHeader();
+      console.log(`[slow-network-layout] coffee ${width}px before CSS`, JSON.stringify(before));
+      assertHeader(before, 'before CSS');
+
+      await page.waitForLoadState('load');
+      await page.evaluate(() => document.fonts.ready.then(() => true));
+      const after = await measureHeader();
+      console.log(`[slow-network-layout] coffee ${width}px after CSS`, JSON.stringify(after));
+      assertHeader(after, 'after CSS');
+
+      for (const selector of ['venue', 'brandMark', 'brandTitle', 'bonus', 'profile']) {
+        for (const edge of ['left', 'right', 'top', 'bottom']) {
+          expect(Math.abs(after[selector][edge] - before[selector][edge]),
+            `${selector} ${edge} stays stable at ${width}px after deferred CSS`)
+            .toBeLessThanOrEqual(1);
         }
       }
-      expect(header.scrollWidth, `no horizontal overflow at ${width}px`)
-        .toBeLessThanOrEqual(header.viewportWidth + 1);
 
       if (testInfo.project.name === 'chromium') {
         await testInfo.attach(`coffee-header-${width}px`, {
