@@ -106,6 +106,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.search).toEqual(before.search);
     expect(after.searchInput).toEqual(before.searchInput);
     expect(after.updated.width).toBe(before.updated.width);
+    expect(after.updated.height).toBe(before.updated.height);
     expect(after.subchip.width).toBe(before.subchip.width);
     expect(after.option.height).toBe(before.option.height);
     expect(after.heading.width).toBeGreaterThan(200);
@@ -154,6 +155,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       });
 
       const before = await measureBrand();
+      console.log(`[slow-network-layout] ${width}px before CSS`, JSON.stringify(before));
       expect(before.width, `brand mark exists at ${width}px`).not.toBeNull();
       if (width <= 1023) {
         expect(before.titleDisplay, `coffee title hidden at ${width}px before CSS`).toBe('none');
@@ -165,6 +167,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       await page.waitForLoadState('load');
       await page.waitForTimeout(50);
       const after = await measureBrand();
+      console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));
       expect(after.x, `brand x remains stable at ${width}px`).toBe(before.x);
       expect(after.y, `brand y remains stable at ${width}px`).toBe(before.y);
       expect(after.width, `brand width remains stable at ${width}px`).toBe(before.width);
