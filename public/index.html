@@ -1205,8 +1205,11 @@ if(b==='delivery'){
   }
 }
 
-/* Match 140-topbar.css before deferred styles; the subtitle affects the centered grid item's intrinsic width. */
+/* Reserve the final desktop delivery wordmark width before deferred typography loads. */
 @media (min-width: 1024px) {
+  html[data-brand="delivery"] header.topbar #headerBrand.brand {
+    width: 372px;
+  }
   html[data-brand="delivery"] .topbar .brand small {
     display: block;
   }

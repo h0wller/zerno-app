@@ -149,7 +149,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       await route.continue();
     });
 
-    for (const width of [320, 480, 519, 520, 690, 820, 821, 1023, 1180, 1181, 1599, 1600]) {
+    for (const width of [320, 480, 519, 520, 690, 691, 820, 821, 1023, 1024, 1180, 1181, 1599, 1600]) {
       await page.setViewportSize({ width, height: 844 });
       await page.goto('/?brand=delivery', { waitUntil: 'commit' });
       await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
