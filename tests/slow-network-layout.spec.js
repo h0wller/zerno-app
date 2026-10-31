@@ -242,6 +242,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       expect(after.scrollWidth, `no final horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
     }
+  });
 
   test('cached staff role keeps delivery header and editor bar stable during auth hydration', async ({ page }) => {
     await page.addInitScript(() => {
@@ -365,6 +366,5 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(Math.abs(after.modeSeg.height - before.modeSeg.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.adminBar.height - before.adminBar.height)).toBeLessThanOrEqual(1);
     expect(after.cls).toBeLessThan(0.01);
-  });
   });
 });
