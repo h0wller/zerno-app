@@ -258,7 +258,10 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await page.waitForFunction(() => !!window.me && window.me.name === 'Tg User', null, { timeout: 10000 });
   });
 
-  test('cross-tab login is revalidated before role adoption and logout clears the session', async ({ page, context }) => {
+  test.describe('cross-tab storage synchronization without service worker interception', () => {
+    test.use({ serviceWorkers: 'block' });
+
+    test('cross-tab login is revalidated before role adoption and logout clears the session', async ({ page, context }) => {
     let releaseMe;
     let markMeRequested;
     const meRequested = new Promise((resolve) => { markMeRequested = resolve; });
@@ -334,6 +337,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
       token: localStorage.getItem('zt_user'),
       role: document.documentElement.getAttribute('data-staff-role')
     }))).toEqual({ token: null, role: null });
+  });
   });
 
 });
