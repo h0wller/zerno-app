@@ -1214,6 +1214,10 @@ if(b==='delivery'){
   html[data-brand="delivery"] .topbar .brand small {
     display: block;
   }
+  html[data-brand="delivery"] .topbar #headerBrand.brand > div:not(.mark) {
+    width: 202px;
+    flex: 0 0 202px;
+  }
 }
 
 /* Hide the coffee wordmark alongside the delivery logo before views.js injects this rule. */
