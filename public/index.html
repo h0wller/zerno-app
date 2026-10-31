@@ -262,6 +262,7 @@ header.topbar,
     grid-column: 2;
     grid-row: 1;
     justify-self: center;
+    margin-right: 0;
     order: 0;
     flex: none;
     min-width: 0;
@@ -1059,6 +1060,7 @@ if(b==='delivery'){
     grid-column: 2;
     grid-row: 1;
     justify-self: center;
+    margin-right: 0;
     order: 0;
     flex: none;
     min-width: 0;
@@ -1253,6 +1255,13 @@ if(b==='delivery'){
     margin-top: 4px;
     box-sizing: border-box;
     visibility: hidden !important;
+  }
+}
+
+/* Reserve the same 6px mode-switch offset that 160-04 applies after hydration. */
+@media (max-width: 690px) {
+  html[data-staff-role]:not([data-staff-ready]) body header.topbar #modeSeg[hidden] {
+    margin-top: 6px;
   }
 }
 
