@@ -53,12 +53,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       await expect(firstCardImage).toHaveAttribute('fetchpriority', 'high');
       await expect(firstCardImage).toHaveAttribute('loading', 'eager');
     }
-    expect(images.filter((image) => image.priority === 'high')).toHaveLength(
-      (await firstCardImage.count()) ? 1 : 0
-    );
-    expect(images.filter((image) => image.loading === 'eager')).toHaveLength(
-      (await firstCardImage.count()) ? 1 : 0
-    );
+    expect(images.filter((image) => image.priority === 'high')).toHaveLength(images.length ? 1 : 0);
+    expect(images.filter((image) => image.loading === 'eager')).toHaveLength(images.length ? 1 : 0);
 
     const measure = () => page.evaluate(() => {
       const box = (el) => {
@@ -356,7 +352,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
     const meResponse = await page.waitForResponse((response) => response.url().endsWith('/api/me'), { timeout: 15000 });
     expect(meResponse.ok()).toBe(true);
-    await page.waitForFunction(() => window.me && window.me.role === 'admin', null, { timeout: 10000 });
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-staff-ready'), null, { timeout: 10000 });
+    expect(await page.evaluate(() => window.me && window.me.role)).toBe('admin');
     await page.waitForTimeout(100);
 
     const after = await page.evaluate(() => {
