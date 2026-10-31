@@ -184,30 +184,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           })() : null,
           titleDisplay: getComputedStyle(document.querySelector('#brandTitle')).display,
           subDisplay: getComputedStyle(document.querySelector('#brandSub')).display,
-          gridColumns: (() => {
-            const template = getComputedStyle(document.querySelector('#deliveryGrid')).gridTemplateColumns.trim();
-            const countTracks = (value) => {
-              const tokens = [];
-              let token = '';
-              let depth = 0;
-              for (const char of value) {
-                if (/\s/.test(char) && depth === 0) {
-                  if (token) tokens.push(token);
-                  token = '';
-                  continue;
-                }
-                token += char;
-                if (char === '(') depth += 1;
-                if (char === ')') depth -= 1;
-              }
-              if (token) tokens.push(token);
-              return tokens.reduce((total, track) => {
-                const repeat = track.match(/^repeat\(\s*(\d+)\s*,([\s\S]*)\)$/i);
-                return total + (repeat ? Number(repeat[1]) * countTracks(repeat[2]) : 1);
-              }, 0);
-            };
-            return countTracks(template);
-          })(),
+          gridColumns: getComputedStyle(document.querySelector('#deliveryGrid')).gridTemplateColumns.trim().split(/\s+/).length,
           eagerImageCount: document.querySelectorAll('#deliveryGrid img[loading="eager"]').length,
           highPriorityImageCount: document.querySelectorAll('#deliveryGrid img[fetchpriority="high"]').length,
           viewportWidth: document.documentElement.clientWidth,
