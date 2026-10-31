@@ -51,12 +51,27 @@
 
   window.setUser = setUser;
 
-  /* Only the bearer token changes the authenticated session across tabs.
-     zt_role is an untrusted layout hint; never reload or adopt it independently. */
+  /* Both keys are hints from another tab: revalidate through /api/me before layout changes. */
   var storageReloadPending = false;
   window.addEventListener('storage', function (e) {
-    if (!e || e.key !== 'zt_user') return;
+    if (!e || (e.key !== 'zt_user' && e.key !== 'zt_role')) return;
     var root = document.documentElement;
+
+    if (e.key === 'zt_role') {
+      // Without a token, a role hint cannot grant staff layout or access.
+      if (!localStorage.getItem('zt_user')) {
+        root.removeAttribute('data-staff-role');
+        root.setAttribute('data-staff-ready', '1');
+        return;
+      }
+      if (e.newValue === root.getAttribute('data-staff-role') || storageReloadPending) return;
+
+      root.removeAttribute('data-staff-role');
+      root.removeAttribute('data-staff-ready');
+      storageReloadPending = true;
+      window.location.reload();
+      return;
+    }
 
     if (!e.newValue) {
       if (typeof window.setUser === 'function') {

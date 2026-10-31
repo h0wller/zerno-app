@@ -318,6 +318,16 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
       verifiedRole: window.me && window.me.role
     }))).toEqual({ ready: true, role: 'admin', verifiedRole: 'admin' });
 
+    // A role-hint change must also trigger server revalidation, not leave stale staff layout.
+    const roleReload = page.waitForEvent('framenavigated', (frame) => frame === page.mainFrame());
+    await secondTab.evaluate(() => localStorage.removeItem('zt_role'));
+    await roleReload;
+    await expect.poll(() => page.evaluate(() => ({
+      ready: document.documentElement.hasAttribute('data-staff-ready'),
+      role: document.documentElement.getAttribute('data-staff-role'),
+      verifiedRole: window.me && window.me.role
+    }))).toEqual({ ready: true, role: 'admin', verifiedRole: 'admin' });
+
     // Logout clears the other tab immediately, even while a cached role remains.
     await secondTab.evaluate(() => localStorage.removeItem('zt_user'));
     await expect.poll(() => page.evaluate(() => ({
