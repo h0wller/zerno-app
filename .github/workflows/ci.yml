@@ -87,10 +87,13 @@ jobs:
           CASHIER_CODE: '2468'
           DISPATCH_CODE: '5719'
 
-      - name: Upload Playwright Report
-        if: failure()
+      # Keep responsive layout screenshots available for visual review on green and red runs.
+      - name: Upload Playwright Diagnostics
+        if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: playwright-diagnostics
+          path: |
+            playwright-report/
+            test-results/
           retention-days: 7
