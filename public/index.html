@@ -1067,7 +1067,7 @@ if(b==='delivery'){
 
 /* Match 160-04: at <=690px the 48px delivery mark sets the brand row height. */
 @media (max-width: 690px) {
-  html body header.topbar #headerBrand.brand {
+  html[data-brand="delivery"] body header.topbar div#headerBrand.brand {
     height: auto;
     max-height: none;
   }
