@@ -57,6 +57,11 @@ body.editing .card{
 body.editing .card:hover{
   transform: none;
 }
+/* Delivery cards also have first-paint border rules in index.html. Keep edit mode stronger. */
+html[data-brand="delivery"] body.editing #deliveryGrid > .card {
+  border-style: dashed;
+  border-color: #9FB4C8;
+}
 /* ── Медиа-зона карточки ────────────────────────────────────────────────── */
 .media{
   height: 180px;
