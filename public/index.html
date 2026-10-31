@@ -1051,6 +1051,14 @@ if(b==='delivery'){
     height: auto;
   }
 }
+/* Hide the coffee wordmark alongside the delivery logo before views.js injects this rule. */
+@media (max-width: 1023px) {
+  html[data-brand="delivery"] .topbar .brand b,
+  html[data-brand="delivery"] .topbar .brand small,
+  html[data-brand="delivery"] .topbar .brand > div:not(.mark) {
+    display: none !important;
+  }
+}
 @media (max-width: 480px) {
   :root {
     --topbar-h: 60px;
