@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Slow network: first viewport stays styled before deferred CSS', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
+  test.use({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
 
   test('delivery menu keeps its content column and product card geometry', async ({ page }) => {
     await page.addInitScript(() => {
