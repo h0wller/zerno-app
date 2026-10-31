@@ -154,6 +154,7 @@
     grid-column: 2;
     grid-row: 1;
     justify-self: center;
+    margin-right: 0;
     order: 0;
     flex: none;
     min-width: 0;
@@ -167,11 +168,10 @@
   }
   .topbar #mbonusBtn {
     grid-column: 3;
-    margin-right: 52px;
     grid-row: 1;
     justify-self: end;
     order: 0;
-    margin: 0;
+    margin: 0 56px 0 0;
     position: static;
     width: auto;
     max-width: none;
