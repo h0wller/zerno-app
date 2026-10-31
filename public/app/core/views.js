@@ -46,7 +46,6 @@ if (supportPending) {
 /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
 var css = document.createElement('style');
 var rules = [
-  'html[data-brand="delivery"] body.editing #deliveryGrid > .card { border-style: dashed; border-color: #9FB4C8; }',
  'html[data-brand="delivery"] a, html[data-brand="delivery"] a:visited, html[data-brand="delivery"] a:hover, html[data-brand="delivery"] a:active, html[data-brand="delivery"] a:focus { text-decoration: none; }',
  'html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView { background: var(--cashier-bg, #F6EEE1); }',
  'html[data-brand="delivery"] .cash-card, html[data-brand="delivery"] #ordersView .card, html[data-brand="delivery"] #ordersView article { background: #FFFDF9; border-color: #E8DCCB; }',
