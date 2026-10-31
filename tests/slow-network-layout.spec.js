@@ -297,9 +297,18 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         ).map((card) => card.querySelector('.media img[src]')).filter(Boolean);
         const eager = document.querySelectorAll('#deliveryGrid img[loading="eager"]').length;
         const high = document.querySelectorAll('#deliveryGrid img[fetchpriority="high"]').length;
-        return eager === firstRowImages.length && high === (firstRowImages.length ? 1 : 0);
+        return {
+          imageCount: firstRowImages.length,
+          eager,
+          high,
+          correct: firstRowImages.length > 0 &&
+            eager === firstRowImages.length &&
+            high === 1
+        };
       });
-      await expect.poll(isCorrect, { message: `image priorities follow the first row at ${width}px` }).toBe(true);
+      await expect.poll(async () => (await isCorrect()).correct, {
+        message: `non-empty first-row images keep eager/high priority at ${width}px`
+      }).toBe(true);
     }
   });
 
@@ -392,6 +401,19 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           brandMark: rect('#brandMark'),
           brandTitle: rect('#brandTitle'),
           profile: rect('#profileTopBtn'),
+          bonus: rect('#mbonusBtn'),
+          bonusStyle: (() => {
+            const bonus = document.querySelector('#mbonusBtn');
+            if (!bonus) return null;
+            const style = getComputedStyle(bonus);
+            return {
+              position: style.position,
+              width: style.width,
+              height: style.height,
+              left: style.left,
+              bottom: style.bottom
+            };
+          })(),
           topbar: topbarRect ? {
             y: topbarRect.y,
             height: topbarRect.height,
@@ -413,9 +435,12 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       });
 
       const assertHeader = (header, phase) => {
-        for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile']) {
+        for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile', 'bonus']) {
           expect(header[selector], `${selector} is visible at ${width}px ${phase}`).not.toBeNull();
         }
+        expect(header.bonusStyle.position, `bonus stays fixed at ${width}px ${phase}`).toBe('fixed');
+        expect(header.bonusStyle.width, `bonus width is reserved at ${width}px ${phase}`).toBe('56px');
+        expect(header.bonusStyle.height, `bonus height is reserved at ${width}px ${phase}`).toBe('56px');
         const controls = ['venue', 'brandMark', 'brandTitle', 'profile']
           .map((selector) => header[selector]);
         for (let i = 0; i < controls.length; i++) {
@@ -440,6 +465,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       console.log(`[slow-network-layout] coffee ${width}px after CSS`, JSON.stringify(after));
       assertHeader(after, 'after CSS');
 
+      expect(after.bonus).toEqual(before.bonus);
+      expect(after.bonusStyle).toEqual(before.bonusStyle);
       for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile']) {
         for (const edge of ['left', 'right', 'top', 'bottom']) {
           expect(Math.abs(after[selector][edge] - before[selector][edge]),
@@ -477,7 +504,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await page.route('**/api/**', async (route) => {
       const pathname = new URL(route.request().url()).pathname;
       if (pathname === '/api/me') {
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 9000));
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
