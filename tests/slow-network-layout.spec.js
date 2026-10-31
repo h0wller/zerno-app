@@ -1,5 +1,17 @@
 import { test, expect } from '@playwright/test';
 
+async function waitForDeferredTheme(page) {
+  await page.waitForFunction(() => {
+    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .filter((link) => link.href.includes('/app/ui/theme/'));
+    return links.length > 0 && links.every((link) => !!link.sheet);
+  }, null, { timeout: 15000 });
+  await page.evaluate(() => document.fonts.ready.then(() => true));
+  await page.evaluate(() => new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve))
+  ));
+}
+
 test.describe('Slow network: first viewport stays styled before deferred CSS', () => {
   test.use({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
 
@@ -109,10 +121,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.card.width).toBeLessThanOrEqual(before.viewportWidth - 80);
     expect(before.scrollWidth).toBeLessThanOrEqual(before.viewportWidth + 1);
 
-    await page.waitForLoadState('load');
-    await page.waitForTimeout(100);
-    await page.evaluate(() => document.fonts.ready.then(() => true));
-    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await waitForDeferredTheme(page);
     const after = await measure();
     console.log('[slow-network-layout] after deferred CSS', JSON.stringify(after));
     expect(after.card.width).toBe(before.card.width);
@@ -221,9 +230,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       expect(before.scrollWidth, `no initial horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
 
-      await page.waitForLoadState('load');
-      await page.evaluate(() => document.fonts.ready.then(() => true));
-      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await waitForDeferredTheme(page);
       const after = await measureBrand();
       console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));
       expect(after.subDisplay, `brand subtitle display remains stable at ${width}px`).toBe(before.subDisplay);
@@ -391,9 +398,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       console.log(`[slow-network-layout] coffee ${width}px before CSS`, JSON.stringify(before));
       assertHeader(before, 'before CSS');
 
-      await page.waitForLoadState('load');
-      await page.evaluate(() => document.fonts.ready.then(() => true));
-      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await waitForDeferredTheme(page);
       const after = await measureHeader();
       console.log(`[slow-network-layout] coffee ${width}px after CSS`, JSON.stringify(after));
       assertHeader(after, 'after CSS');
@@ -489,7 +494,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
     await page.locator('#modeSeg').waitFor({ state: 'attached' });
     await meRequest;
-    await page.waitForLoadState('load');
+    await waitForDeferredTheme(page);
 
     const before = await page.evaluate(() => {
       const rect = (selector) => {

@@ -13,12 +13,25 @@ const isAudit = (typeof document !== 'undefined' && document.documentElement.cla
   /Chrome-Lighthouse|Lighthouse|moto g power/i.test(navigator.userAgent) ||
   location.search.includes('lighthouse=1');
 
-/* IMG-FB v1: универсальный фолбэк брендовых webp→svg (capture: error не всплывает) */
+/* Missing dish media uses the card emoji; only brand marks have WebP→SVG pairs. */
 document.addEventListener('error', function (e) {
   var t = e.target;
-  if (!t || t.tagName !== 'IMG' || t.dataset.imgFb === '1') return;
+  if (!t || t.tagName !== 'IMG') return;
   var s = t.currentSrc || t.src || '';
   if (!/\.webp(\?|$)/i.test(s)) return;
+
+  if (t.closest('#grid .media, #deliveryGrid .media')) {
+    var fallback = document.createElement('span');
+    fallback.className = 'em';
+    fallback.dataset.imgFallback = '1';
+    fallback.textContent = t.dataset.fallbackEmoji || '☕';
+    fallback.setAttribute('role', 'img');
+    if (t.alt) fallback.setAttribute('aria-label', t.alt);
+    t.replaceWith(fallback);
+    return;
+  }
+
+  if (t.dataset.imgFb === '1' || !t.closest('#brandMark, .brandLogo, .brand-mark')) return;
   t.dataset.imgFb = '1';
   var p = t.parentElement;
   if (p && p.tagName === 'PICTURE') { while (p.firstChild) p.removeChild(p.firstChild); p.appendChild(t); }

@@ -33,8 +33,15 @@ import { createTgRouter } from './server/routes/tg.js';
 import pushRouter from './server/routes/push.js';
 import statsRouter from './server/routes/stats.js';
 import { item, getMeta, touch } from './server/domain/helpers.js';
+import { menuImageForResponse } from './server/utils/menu-image.js';
 
 const app = express();
+
+function menuResponseItem(row) {
+  const result = item(row);
+  result.img = menuImageForResponse(result.img, PUBLIC_DIR);
+  return result;
+}
 // За прокси (Railway и т.п.) задайте TRUST_PROXY=1, иначе req.ip будет адресом прокси.
 // Без прокси не доверяем заголовкам клиента: иначе X-Forwarded-For обходит блокировку PIN.
 if (process.env.TRUST_PROXY) app.set('trust proxy', /^\d+$/.test(process.env.TRUST_PROXY) ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY);
@@ -119,15 +126,15 @@ app.get('/api/tg/diag', adminGuard, async (req, res) => {
 
 /* ── меню ── */
 app.get('/api/menu', (req, res) => res.json({
-  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee' ORDER BY sort_order ASC, id ASC").all().map(item),
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee' ORDER BY sort_order ASC, id ASC").all().map(menuResponseItem),
   updatedAt: getMeta(),
 }));
 app.get('/api/menu/all', menuGuard, (req, res) => res.json({
-  items: db.prepare('SELECT * FROM menu ORDER BY sort_order ASC, id ASC').all().map(item),
+  items: db.prepare('SELECT * FROM menu ORDER BY sort_order ASC, id ASC').all().map(menuResponseItem),
   updatedAt: getMeta(),
 }));
 app.get('/api/dmenu', (req, res) => res.json({
-  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery' ORDER BY sort_order ASC, id ASC").all().map(item),
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery' ORDER BY sort_order ASC, id ASC").all().map(menuResponseItem),
 }));
 app.post('/api/menu', adminGuard, (req, res) => {
   const sec = req.body.section === 'delivery' ? 'delivery' : 'coffee';
