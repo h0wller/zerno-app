@@ -175,6 +175,12 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           brandHeight: brandStyle && brandStyle.height,
           brandMinHeight: brandStyle && brandStyle.minHeight,
           brandAlignSelf: brandStyle && brandStyle.alignSelf,
+          brandDisplay: brandStyle && brandStyle.display,
+          brandGap: brandStyle && brandStyle.gap,
+          brandRect: brand ? (() => {
+            const box = brand.getBoundingClientRect();
+            return { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) };
+          })() : null,
           titleDisplay: getComputedStyle(document.querySelector('#brandTitle')).display,
           subDisplay: getComputedStyle(document.querySelector('#brandSub')).display,
           gridColumns: (() => {
@@ -230,6 +236,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       const after = await measureBrand();
       console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));
       expect(after.subDisplay, `brand subtitle display remains stable at ${width}px`).toBe(before.subDisplay);
+      expect(after.brandDisplay, `brand container display remains stable at ${width}px`).toBe(before.brandDisplay);
+      expect(after.brandGap, `brand container gap remains stable at ${width}px`).toBe(before.brandGap);
+      expect(after.brandRect, `brand container geometry remains stable at ${width}px`).toEqual(before.brandRect);
       expect(after.x, `brand x remains stable at ${width}px`).toBe(before.x);
       expect(Math.abs(after.y - before.y), `brand y remains stable within 1px at ${width}px`)
         .toBeLessThanOrEqual(1);
