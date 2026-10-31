@@ -1,12 +1,23 @@
 import { test, expect } from '@playwright/test';
 
 async function waitForDeferredTheme(page) {
-  await page.waitForFunction(() => {
-    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-      .filter((link) => link.href.includes('/app/ui/theme/'));
-    return links.length > 0 &&
-      links.every((link) => link.media !== 'print' && link.sheet !== null);
-  }, null, { timeout: 20000 });
+  try {
+    await page.waitForFunction(() => {
+      const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .filter((link) => link.href.includes('/app/ui/theme/'));
+      return links.length > 0 &&
+        links.every((link) => link.media !== 'print' && link.sheet !== null);
+    }, null, { timeout: 20000 });
+  } catch (error) {
+    const status = await page.evaluate(() => Array.from(
+      document.querySelectorAll('link[rel="stylesheet"]')
+    ).filter((link) => link.href.includes('/app/ui/theme/')).map((link) => ({
+      href: link.href,
+      media: link.media,
+      loaded: link.sheet !== null
+    })));
+    throw new Error(`Deferred theme CSS did not finish loading: ${JSON.stringify(status)}`, { cause: error });
+  }
   await page.evaluate(() => document.fonts.ready.then(() => true));
   await page.evaluate(() => new Promise((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(resolve))
@@ -270,6 +281,27 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
+
+    // Keep this request/checkout test independent of the production menu's
+    // current assortment; a pizza with required options cannot be added yet.
+    await page.route('**/api/dmenu', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [{
+          id: 'first-frame-cart-fixture',
+          name: 'Cart fixture',
+          desc: '',
+          cat: 'pizza',
+          section: 'delivery',
+          price: 500,
+          on: 1,
+          opts: [],
+          comp: [],
+          e: '🍕'
+        }]
+      })
+    }));
 
     const requested = [];
     page.on('request', (request) => {
@@ -632,9 +664,12 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     });
 
     const meRequest = page.waitForRequest((request) => request.url().endsWith('/api/me'), { timeout: 15000 });
+    const publicMenuResponse = page.waitForResponse((response) =>
+      new URL(response.url()).pathname === '/api/dmenu'
+    , { timeout: 15000 });
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
     await page.locator('#modeSeg').waitFor({ state: 'attached' });
-    await meRequest;
+    await Promise.all([meRequest, publicMenuResponse]);
     await waitForDeferredTheme(page);
 
     const before = await page.evaluate(() => {
