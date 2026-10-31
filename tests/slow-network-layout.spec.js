@@ -311,6 +311,28 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await expect(page.locator('#checkoutBtn')).toBeEnabled();
   });
 
+  test('switching from delivery lazily loads the coffee catalog', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+
+    await page.goto('/?brand=delivery', { waitUntil: 'commit' });
+    await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
+    expect(await page.evaluate(() => window.MENU.length)).toBe(0);
+
+    const coffeeRequest = page.waitForRequest((request) =>
+      new URL(request.url()).pathname === '/api/menu'
+    );
+    await page.evaluate(() => {
+      document.querySelector('#brandSeg [data-brand="coffee"]').click();
+    });
+    await coffeeRequest;
+    await expect.poll(() => page.evaluate(() => window.MENU.length)).toBeGreaterThan(0);
+    await expect(page.locator('#grid > .card').first()).toBeAttached();
+  });
+
   test('delivery image priorities follow the actual first grid row after viewport resizing', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
