@@ -62,10 +62,24 @@ async function boot() {
   if (window.USER_TOKEN) {
     try {
       window.me = (await api('/me')).customer;
+      var staffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1
+        ? window.me.role
+        : '';
+      if (staffRole) {
+        localStorage.setItem('zt_role', staffRole);
+        document.documentElement.setAttribute('data-staff-role', staffRole);
+      } else {
+        localStorage.removeItem('zt_role');
+        document.documentElement.removeAttribute('data-staff-role');
+      }
+      document.documentElement.setAttribute('data-staff-ready', '1');
     } catch (e) {
       window.me = null;
       window.USER_TOKEN = null;
       localStorage.removeItem(typeof T_USER !== 'undefined' ? T_USER : 'zt_user');
+      localStorage.removeItem('zt_role');
+      document.documentElement.removeAttribute('data-staff-role');
+      document.documentElement.setAttribute('data-staff-ready', '1');
     }
   }
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
