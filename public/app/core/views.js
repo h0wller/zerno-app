@@ -307,7 +307,7 @@ function sv() {
   if (showDeliv && typeof window.DMENU !== 'undefined' && !window.DMENU.length &&
       typeof window.loadDelivery === 'function' && !window.__dlReq) {
     window.__dlReq = 1;
-    window.loadDelivery();
+    window.__dlPromise = window.loadDelivery();
   }
   if (typeof applyBrandChrome === 'function') {
     applyBrandChrome();
@@ -358,10 +358,7 @@ window.setMode = function (m) {
       }, 8000);
     }
   }
-  if (m === 'admin' && typeof loadMenu === 'function') loadMenu();
-  if ((m === 'guest' || m === 'admin') && brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
-    loadDelivery();
-  }
+  if (m === 'admin' && brand !== 'delivery' && typeof loadMenu === 'function') loadMenu();
   if (typeof renderModes === 'function') renderModes();
   if (typeof toast === 'function') {
     toast(
@@ -391,9 +388,11 @@ if (brandSegEl) {
     var vtg = document.getElementById('venueToggle');
     if (vtg) vtg.setAttribute('aria-expanded', 'false');
     window.__dlReq = 0;
+    window.__dlPromise = null;
     sv();
-    if (brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
-      loadDelivery();
+    if (brand === 'coffee' && (!window.MENU || !window.MENU.length) &&
+        typeof loadMenu === 'function') {
+      loadMenu();
     }
     if (typeof supportPending !== 'undefined' && !supportPending && typeof chatCtx !== 'undefined' && chatCtx !== brand) {
       chatCtx = brand;
