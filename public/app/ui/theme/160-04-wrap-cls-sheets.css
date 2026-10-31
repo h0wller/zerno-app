@@ -149,22 +149,25 @@
   }
 
   header.topbar div#headerBrand.brand {
-  position: static;
-  transform: none;
-  margin: 0 auto;
-  flex: 1 1 auto;
-  max-width: calc(100% - 116px);
-  min-height: 44px;
-  height: auto;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  order: 2;
-  z-index: 1;
-  overflow: visible;
-}
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    position: static;
+    transform: none;
+    margin: 0;
+    width: min(196px, 60vw);
+    min-width: min(196px, 60vw);
+    max-width: min(196px, 60vw);
+    min-height: 44px;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 1;
+    overflow: visible;
+  }
 
   header.topbar div#headerBrand.brand div.mark {
     width: var(--mark-w, 42px);
