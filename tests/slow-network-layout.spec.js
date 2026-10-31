@@ -41,11 +41,16 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
     await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached({ timeout: 10000 });
 
-    const imagePriorities = await page.locator('#deliveryGrid img').evaluateAll((images) =>
-      images.slice(0, 4).map((image) => image.getAttribute('fetchpriority'))
+    const images = await page.locator('#deliveryGrid img').evaluateAll((nodes) =>
+      nodes.slice(0, 4).map((image) => ({
+        loading: image.getAttribute('loading'),
+        priority: image.getAttribute('fetchpriority')
+      }))
     );
-    expect(imagePriorities[0]).toBe('high');
-    expect(imagePriorities.slice(1)).not.toContain('high');
+    expect(images[0]?.priority).toBe('high');
+    expect(images.slice(1)).not.toContainEqual(expect.objectContaining({ priority: 'high' }));
+    expect(images[0]?.loading).toBe('eager');
+    expect(images.slice(1)).not.toContainEqual(expect.objectContaining({ loading: 'eager' }));
 
     const measure = () => page.evaluate(() => {
       const box = (el) => {
@@ -192,6 +197,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
             };
             return countTracks(template);
           })(),
+          eagerImageCount: document.querySelectorAll('#deliveryGrid img[loading="eager"]').length,
+          highPriorityImageCount: document.querySelectorAll('#deliveryGrid img[fetchpriority="high"]').length,
           viewportWidth: document.documentElement.clientWidth,
           scrollWidth: document.documentElement.scrollWidth
         };
@@ -203,6 +210,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       const expectedGridColumns = width >= 1600 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
       expect(before.gridColumns, `delivery grid has ${expectedGridColumns} columns at ${width}px before CSS`)
         .toBe(expectedGridColumns);
+      expect(before.eagerImageCount, `only the visible menu row is eager at ${width}px`)
+        .toBeLessThanOrEqual(expectedGridColumns);
+      expect(before.highPriorityImageCount, `only the LCP image has high priority at ${width}px`)
+        .toBeLessThanOrEqual(1);
       if (width <= 1023) {
         expect(before.titleDisplay, `coffee title hidden at ${width}px before CSS`).toBe('none');
         expect(before.subDisplay, `coffee subtitle hidden at ${width}px before CSS`).toBe('none');
