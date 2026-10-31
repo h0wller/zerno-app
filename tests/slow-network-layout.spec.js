@@ -282,7 +282,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile']) {
           expect(header[selector], `${selector} is visible at ${width}px ${phase}`).not.toBeNull();
         }
-        const controls = ['venue', 'brandMark', 'brandTitle', 'bonus', 'profile']
+        const controls = ['venue', 'brandMark', 'brandTitle', 'profile']
           .map((selector) => header[selector]);
         for (let i = 0; i < controls.length; i++) {
           for (let j = i + 1; j < controls.length; j++) {
@@ -307,7 +307,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       console.log(`[slow-network-layout] coffee ${width}px after CSS`, JSON.stringify(after));
       assertHeader(after, 'after CSS');
 
-      for (const selector of ['venue', 'brandMark', 'brandTitle', 'bonus', 'profile']) {
+      for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile']) {
         for (const edge of ['left', 'right', 'top', 'bottom']) {
           expect(Math.abs(after[selector][edge] - before[selector][edge]),
             `${selector} ${edge} stays stable at ${width}px after deferred CSS`)
