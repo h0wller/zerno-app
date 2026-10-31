@@ -267,7 +267,9 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     const meRequested = new Promise((resolve) => { markMeRequested = resolve; });
     const meGate = new Promise((resolve) => { releaseMe = resolve; });
 
-    await page.route((url) => url.pathname === '/api/me', async (route) => {
+    let meRequestCount = 0;
+    await context.route('**/api/me', async (route) => {
+      meRequestCount += 1;
       markMeRequested();
       await meGate;
       await route.fulfill({
@@ -322,9 +324,9 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     }))).toEqual({ ready: true, role: 'admin', verifiedRole: 'admin' });
 
     // A role-hint change must also trigger server revalidation, not leave stale staff layout.
-    const roleReload = page.waitForEvent('framenavigated', (frame) => frame === page.mainFrame());
+    const requestsBeforeRoleChange = meRequestCount;
     await secondTab.evaluate(() => localStorage.removeItem('zt_role'));
-    await roleReload;
+    await expect.poll(() => meRequestCount).toBe(requestsBeforeRoleChange + 1);
     await expect.poll(() => page.evaluate(() => ({
       ready: document.documentElement.hasAttribute('data-staff-ready'),
       role: document.documentElement.getAttribute('data-staff-role'),
