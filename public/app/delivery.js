@@ -338,8 +338,11 @@ if (document.fonts && document.fonts.ready) {
 function renderDeliveryCard(p, n0) {
   var opts = p.opts || [];
   var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
+  var imageSet = p.imgSrcset
+    ? ' srcset="' + esc(p.imgSrcset) + '" sizes="(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw"'
+    : '';
   var mediaContent = p.img
-    ? '<img src="' + p.img + '" alt="' + esc(p.name) + '" data-fallback-emoji="' + esc(p.e || '🍕') + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="lazy" fetchpriority="auto" decoding="async">'
+    ? '<img src="' + p.img + '"' + imageSet + ' alt="' + esc(p.name) + '" data-fallback-emoji="' + esc(p.e || '🍕') + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="lazy" fetchpriority="auto" decoding="async">'
     : '<span class="em">' + (p.e || '🍕') + '</span>';
 
   return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
