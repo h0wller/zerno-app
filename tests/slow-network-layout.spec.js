@@ -248,6 +248,61 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     }
   });
 
+  test('coffee header controls do not overlap on mobile', async ({ page }, testInfo) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+
+    for (const width of [320, 390, 520, 690]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto('/?brand=coffee', { waitUntil: 'load' });
+      await expect(page.locator('.venueWrap')).toBeAttached();
+      await page.evaluate(() => document.fonts.ready.then(() => true));
+
+      const header = await page.evaluate(() => {
+        const rect = (selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return null;
+          const box = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          if (style.display === 'none' || style.visibility === 'hidden' || !box.width || !box.height) return null;
+          return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+        };
+        return {
+          venue: rect('.venueWrap'),
+          brand: rect('#headerBrand'),
+          profile: rect('#profileTopBtn'),
+          viewportWidth: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth
+        };
+      });
+
+      expect(header.venue, `venue toggle exists at ${width}px`).not.toBeNull();
+      expect(header.brand, `brand exists at ${width}px`).not.toBeNull();
+      expect(header.profile, `profile button exists at ${width}px`).not.toBeNull();
+      const controls = [header.venue, header.brand, header.profile];
+      for (let i = 0; i < controls.length; i++) {
+        for (let j = i + 1; j < controls.length; j++) {
+          const overlaps = controls[i].left < controls[j].right &&
+            controls[i].right > controls[j].left &&
+            controls[i].top < controls[j].bottom &&
+            controls[i].bottom > controls[j].top;
+          expect(overlaps, `header controls do not overlap at ${width}px`).toBe(false);
+        }
+      }
+      expect(header.scrollWidth, `no horizontal overflow at ${width}px`)
+        .toBeLessThanOrEqual(header.viewportWidth + 1);
+
+      if (testInfo.project.name === 'chromium') {
+        await testInfo.attach(`coffee-header-${width}px`, {
+          body: await page.screenshot({ fullPage: true, animations: 'disabled' }),
+          contentType: 'image/png'
+        });
+      }
+    }
+  });
+
   test('cached staff role keeps delivery header and editor bar stable during auth hydration', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_user', 'staff-layout-test-token');
