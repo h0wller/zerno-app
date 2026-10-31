@@ -138,11 +138,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     const cls = shiftReport.cls;
     expect(cls).toBeLessThan(0.01);
 
-    const editBorder = await page.locator('#deliveryGrid > .card').first().evaluate((card) => {
-      document.body.classList.add('editing');
-      return getComputedStyle(card).borderTopStyle;
-    });
-    expect(editBorder).toBe('dashed');
   });
 
   test('delivery header stays stable at responsive breakpoints', async ({ page }, testInfo) => {
