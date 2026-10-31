@@ -138,7 +138,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(cls).toBeLessThan(0.01);
   });
 
-  test('delivery header stays stable at responsive breakpoints', async ({ page }) => {
+  test('delivery header stays stable at responsive breakpoints', async ({ page }, testInfo) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
@@ -227,6 +227,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       if (width <= 1023) {
         expect(before.titleDisplay, `coffee title hidden at ${width}px before CSS`).toBe('none');
         expect(before.subDisplay, `coffee subtitle hidden at ${width}px before CSS`).toBe('none');
+      } else {
+        expect(before.titleDisplay, `desktop brand title visible at ${width}px before CSS`).not.toBe('none');
+        expect(before.subDisplay, `desktop brand subtitle visible at ${width}px before CSS`).not.toBe('none');
       }
       expect(before.scrollWidth, `no initial horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
@@ -251,6 +254,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         .toBe(expectedGridColumns);
       expect(after.scrollWidth, `no final horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
+
+      if (testInfo.project.name === 'chromium' && [320, 390, 520, 690, 820, 821, 1024, 1181, 1600].includes(width)) {
+        await page.evaluate(() => document.fonts.ready.then(() => true));
+        await testInfo.attach(`delivery-${width}px`, {
+          body: await page.screenshot({ fullPage: true, animations: 'disabled' }),
+          contentType: 'image/png'
+        });
+      }
     }
   });
 
