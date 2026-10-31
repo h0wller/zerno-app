@@ -297,7 +297,7 @@ function renderDeliveryCard(p, n0, i) {
   var isAboveFold = typeof i === 'number' && i < 4;
 
   var mediaContent = p.img
-    ? '<img src="' + p.img + '" alt="' + esc(p.name) + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="' + (isAboveFold ? 'eager' : 'lazy') + '" fetchpriority="' + (isAboveFold ? 'high' : 'auto') + '" decoding="async">'
+    ? '<img src="' + p.img + '" alt="' + esc(p.name) + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="' + (isAboveFold ? 'eager' : 'lazy') + '" fetchpriority="' + (i === 0 ? 'high' : 'auto') + '" decoding="async">'
     : '<span class="em">' + (p.e || '🍕') + '</span>';
 
   return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
