@@ -1206,6 +1206,18 @@ if(b==='delivery'){
     height: auto;
   }
 }
+
+/* Match the final compact venue control before deferred CSS and font metrics arrive. */
+@media (max-width: 690px) {
+  html body header.topbar button#venueToggle.venueToggle {
+    width: 3.5em;
+    min-width: 3.5em;
+    max-width: 3.5em;
+    height: 38px;
+    box-sizing: border-box;
+  }
+}
+
 /* 160-06 sets this gap at tablet widths; 160-04 uses 8px below 691px. */
 @media (min-width: 691px) and (max-width: 820px) {
   html body header.topbar #headerBrand.brand {
