@@ -331,16 +331,33 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           hidden: element.hidden
         };
       };
+      const header = document.querySelector('header.topbar');
+      const modeSeg = document.querySelector('#modeSeg');
       return {
         role: document.documentElement.getAttribute('data-staff-role'),
         ready: document.documentElement.hasAttribute('data-staff-ready'),
+        bodyClass: document.body.className,
         header: rect('header.topbar'),
+        headerStyle: header && {
+          height: getComputedStyle(header).height,
+          minHeight: getComputedStyle(header).minHeight,
+          paddingTop: getComputedStyle(header).paddingTop,
+          paddingBottom: getComputedStyle(header).paddingBottom,
+          gridTemplateRows: getComputedStyle(header).gridTemplateRows
+        },
         modeSeg: rect('#modeSeg'),
+        modeSegStyle: modeSeg && {
+          marginTop: getComputedStyle(modeSeg).marginTop,
+          height: getComputedStyle(modeSeg).height,
+          minHeight: getComputedStyle(modeSeg).minHeight,
+          alignSelf: getComputedStyle(modeSeg).alignSelf
+        },
         wrap: rect('body > .wrap'),
         adminBar: rect('#adminBar')
       };
     });
 
+    console.log('[staff-layout] before auth hydration', JSON.stringify(before));
     expect(before.role).toBe('admin');
     expect(before.ready).toBe(false);
     expect(before.modeSeg.hidden).toBe(true);
@@ -369,17 +386,34 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           hidden: element.hidden
         };
       };
+      const header = document.querySelector('header.topbar');
+      const modeSeg = document.querySelector('#modeSeg');
       return {
         role: document.documentElement.getAttribute('data-staff-role'),
         ready: document.documentElement.hasAttribute('data-staff-ready'),
+        bodyClass: document.body.className,
         header: rect('header.topbar'),
+        headerStyle: header && {
+          height: getComputedStyle(header).height,
+          minHeight: getComputedStyle(header).minHeight,
+          paddingTop: getComputedStyle(header).paddingTop,
+          paddingBottom: getComputedStyle(header).paddingBottom,
+          gridTemplateRows: getComputedStyle(header).gridTemplateRows
+        },
         modeSeg: rect('#modeSeg'),
+        modeSegStyle: modeSeg && {
+          marginTop: getComputedStyle(modeSeg).marginTop,
+          height: getComputedStyle(modeSeg).height,
+          minHeight: getComputedStyle(modeSeg).minHeight,
+          alignSelf: getComputedStyle(modeSeg).alignSelf
+        },
         wrap: rect('body > .wrap'),
         adminBar: rect('#adminBar'),
         cls: window.__layoutShifts.reduce((sum, value) => sum + value, 0)
       };
     });
 
+    console.log('[staff-layout] after auth hydration', JSON.stringify(after));
     expect(after.ready).toBe(true);
     expect(after.role).toBe('admin');
     expect(after.modeSeg.hidden).toBe(false);
