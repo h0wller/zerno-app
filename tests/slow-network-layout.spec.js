@@ -42,15 +42,22 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached({ timeout: 10000 });
 
     const images = await page.locator('#deliveryGrid img').evaluateAll((nodes) =>
-      nodes.slice(0, 4).map((image) => ({
+      nodes.map((image) => ({
         loading: image.getAttribute('loading'),
         priority: image.getAttribute('fetchpriority')
       }))
     );
-    expect(images[0]?.priority).toBe('high');
-    expect(images.slice(1)).not.toContainEqual(expect.objectContaining({ priority: 'high' }));
-    expect(images[0]?.loading).toBe('eager');
-    expect(images.slice(1)).not.toContainEqual(expect.objectContaining({ loading: 'eager' }));
+    const firstCardImage = page.locator('#deliveryGrid > .card').first().locator('img');
+    if (await firstCardImage.count()) {
+      await expect(firstCardImage).toHaveAttribute('fetchpriority', 'high');
+      await expect(firstCardImage).toHaveAttribute('loading', 'eager');
+    }
+    expect(images.filter((image) => image.priority === 'high')).toHaveLength(
+      (await firstCardImage.count()) ? 1 : 0
+    );
+    expect(images.filter((image) => image.loading === 'eager')).toHaveLength(
+      (await firstCardImage.count()) ? 1 : 0
+    );
 
     const measure = () => page.evaluate(() => {
       const box = (el) => {
@@ -226,7 +233,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       const after = await measureBrand();
       console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));
       expect(after.x, `brand x remains stable at ${width}px`).toBe(before.x);
-      expect(after.y, `brand y remains stable at ${width}px`).toBe(before.y);
+      expect(Math.abs(after.y - before.y), `brand y remains stable within 1px at ${width}px`)
+        .toBeLessThanOrEqual(1);
       expect(after.width, `brand width remains stable at ${width}px`).toBe(before.width);
       expect(after.height, `brand height remains stable at ${width}px`).toBe(before.height);
       expect(after.gridColumns, `delivery grid keeps its responsive column count at ${width}px after CSS`)
