@@ -1046,6 +1046,7 @@ if(b==='delivery'){
     align-items: center;
     align-content: center;
     gap: 8px;
+    min-height: 64px;
     padding: 8px 18px;
   }
   .topbar .venueWrap {
@@ -1058,6 +1059,8 @@ if(b==='delivery'){
     grid-column: 2;
     grid-row: 1;
     justify-self: center;
+    order: 0;
+    flex: none;
     min-width: 0;
     max-width: 100%;
   }
@@ -1085,7 +1088,9 @@ if(b==='delivery'){
     grid-column: 4;
     grid-row: 1;
     justify-self: end;
+    order: 0;
     margin: 0;
+    margin-left: 0;
     position: static;
     align-self: center;
   }
