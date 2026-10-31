@@ -123,16 +123,22 @@ async function boot() {
     if (typeof showBadge === 'function') showBadge();
     if (typeof maybeAskReview === 'function') maybeAskReview();
     if (typeof initChatPointer === 'function') {
-      var startChatPointer = function () { initChatPointer(); };
-      var deferChatPointer = function () {
-        if (typeof window.requestIdleCallback === 'function') {
-          window.requestIdleCallback(startChatPointer, { timeout: 2500 });
+      var startChatPointer = function () {
+        if (document.visibilityState === 'visible') {
+          initChatPointer();
         } else {
-          setTimeout(startChatPointer, 1200);
+          document.addEventListener('visibilitychange', function onVisible() {
+            if (document.visibilityState === 'visible') initChatPointer();
+          }, { once: true });
         }
       };
-      if (document.readyState === 'complete') deferChatPointer();
-      else window.addEventListener('load', deferChatPointer, { once: true });
+      if (typeof window.requestIdleCallback === 'function') {
+        requestAnimationFrame(function () {
+          window.requestIdleCallback(startChatPointer, { timeout: 2500 });
+        });
+      } else {
+        setTimeout(startChatPointer, 1200);
+      }
     }
   }
 }
