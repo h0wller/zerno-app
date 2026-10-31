@@ -379,6 +379,40 @@ authRouter.get('/api/staff/pending', pendingGuard, (req, res) => {
   });
 });
 
+// Изолированные тестовые профили. Доступ только администратору; основной профиль не меняется.
+authRouter.post('/api/admin/test-role-session', adminGuard, (req, res) => {
+  const role = String(req.body.role || '');
+  const roles = {
+    guest: { name: 'ТЕСТ · Гость' },
+    cashier: { name: 'ТЕСТ · Кассир' },
+    dispatch: { name: 'ТЕСТ · Диспетчер' }
+  };
+  if (!Object.prototype.hasOwnProperty.call(roles, role)) {
+    return res.status(400).json({ error: 'Недопустимая тестовая роль' });
+  }
+
+  let profile = db.prepare('SELECT * FROM customers WHERE is_test=1 AND role=? ORDER BY created_at LIMIT 1').get(role);
+  if (!profile) {
+    let phone;
+    do {
+      phone = fmtPhone(String(79990000000 + crypto.randomInt(1, 999999)));
+    } while (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(phone));
+
+    const created = createCustomer(roles[role].name, phone);
+    if (created.err) return res.status(created.code || 500).json({ error: created.err });
+    db.prepare('UPDATE customers SET role=?, is_test=1, verified=1, consent=? WHERE id=?')
+      .run(role, new Date().toISOString() + ' test-profile', created.customer.id);
+    profile = db.prepare('SELECT * FROM customers WHERE id=?').get(created.customer.id);
+    addHist(profile.id, 'Создан изолированный тестовый профиль', 'Система');
+  }
+
+  // Старые сессии тестового профиля отзываются, остальные аккаунты не затрагиваются.
+  db.prepare("DELETE FROM tokens WHERE kind='user' AND ref=?").run(profile.id);
+  const token = issueToken(profile.id);
+  const customer = db.prepare('SELECT * FROM customers WHERE id=?').get(profile.id);
+  return res.json({ token, customer: cust(customer), testProfile: true });
+});
+
 // Настройка бонусов (только админ): регистрация, регистрация по QR, установка приложения.
 // Для каждого вида отдельно: штампы в кофейне и скидка ₽ в доставке. По умолчанию всё 0.
 authRouter.get('/api/admin/bonuses', adminGuard, (req, res) => res.json(getBonusConfig()));
