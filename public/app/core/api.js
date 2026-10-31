@@ -1,8 +1,8 @@
 /* public/app/core/api.js — F1.2: базовая обёртка над fetch (UMD-ish) */
 (function () {
   const isLocal = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
-// dev: фронт может быть на Live Server (5500), Vite (5173) и т.д. — бэк всегда на 3000
-// прод: фронт и API на одном origin
+// App server :3000 and isolated Playwright server :3100 serve their own API.
+// Static local frontends on other ports (Live Server/Vite) use the API on :3000.
   const isAppOrigin = !isLocal || location.port === '3000' || location.port === '3100';
   const API_BASE = isAppOrigin ? location.origin : 'http://localhost:3000';   
 

@@ -1701,7 +1701,7 @@ html body #tickerTrack > span {
 }
 /* Anchor both wordmark lines inside a fixed slot; font swaps cannot change their geometry. */
 @media (max-width: 690px) {
-  html body header.topbar div#headerBrand.brand > div:not(.mark) {
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand > div:not(.mark) {
     position: relative !important;
     display: block !important;
     width: 96px !important;
@@ -1712,7 +1712,7 @@ html body #tickerTrack > span {
     max-height: 36px !important;
     flex: 0 0 36px !important;
   }
-  html body header.topbar div#headerBrand.brand #brandTitle {
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand #brandTitle {
     position: absolute !important;
     display: block !important;
     top: 0 !important;
@@ -1730,7 +1730,7 @@ html body #tickerTrack > span {
     letter-spacing: 0.04em;
     white-space: nowrap;
   }
-  html body header.topbar div#headerBrand.brand #brandSub {
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand #brandSub {
     position: absolute !important;
     display: block !important;
     top: 24px !important;
