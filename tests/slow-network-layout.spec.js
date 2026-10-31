@@ -4,8 +4,10 @@ async function waitForDeferredTheme(page) {
   await page.waitForFunction(() => {
     const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
       .filter((link) => link.href.includes('/app/ui/theme/'));
-    return links.length > 0 && links.every((link) => !!link.sheet);
-  }, null, { timeout: 15000 });
+    const loaded = window.__loadedThemeStylesheets;
+    return links.length > 0 &&
+      links.every((link) => link.media !== 'print' && loaded && loaded.has(link.href));
+  }, null, { timeout: 20000 });
   await page.evaluate(() => document.fonts.ready.then(() => true));
   await page.evaluate(() => new Promise((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(resolve))
@@ -14,6 +16,19 @@ async function waitForDeferredTheme(page) {
 
 test.describe('Slow network: first viewport stays styled before deferred CSS', () => {
   test.use({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__loadedThemeStylesheets = new Set();
+      document.addEventListener('load', (event) => {
+        const link = event.target;
+        if (link && link.tagName === 'LINK' && link.rel === 'stylesheet' &&
+            link.href.includes('/app/ui/theme/')) {
+          window.__loadedThemeStylesheets.add(link.href);
+        }
+      }, true);
+    });
+  });
 
   test('delivery menu keeps its content column and product card geometry', async ({ page }) => {
     await page.addInitScript(() => {
@@ -367,11 +382,31 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           if (style.display === 'none' || style.visibility === 'hidden' || !box.width || !box.height) return null;
           return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
         };
+        const topbar = document.querySelector('header.topbar');
+        const topbarRect = topbar && topbar.getBoundingClientRect();
+        const topbarStyle = topbar && getComputedStyle(topbar);
+        const venueWrap = document.querySelector('.venueWrap');
+        const venueStyle = venueWrap && getComputedStyle(venueWrap);
         return {
           venue: rect('.venueWrap'),
           brandMark: rect('#brandMark'),
           brandTitle: rect('#brandTitle'),
           profile: rect('#profileTopBtn'),
+          topbar: topbarRect ? {
+            y: topbarRect.y,
+            height: topbarRect.height,
+            paddingTop: topbarStyle.paddingTop,
+            paddingBottom: topbarStyle.paddingBottom,
+            alignItems: topbarStyle.alignItems,
+            alignContent: topbarStyle.alignContent,
+            gridTemplateRows: topbarStyle.gridTemplateRows
+          } : null,
+          venueStyle: venueStyle ? {
+            marginTop: venueStyle.marginTop,
+            alignSelf: venueStyle.alignSelf,
+            position: venueStyle.position,
+            transform: venueStyle.transform
+          } : null,
           viewportWidth: document.documentElement.clientWidth,
           scrollWidth: document.documentElement.scrollWidth
         };

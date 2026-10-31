@@ -325,7 +325,7 @@ if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(scheduleDeliveryImagePriorities);
 }
 
-function renderDeliveryCard(p, n0, i) {
+function renderDeliveryCard(p, n0) {
   var opts = p.opts || [];
   var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
   var mediaContent = p.img
@@ -409,9 +409,9 @@ function renderDeliveryMenu() {
       firstCard.nextElementSibling.remove();
     }
     // 3. Дописываем остальные карточки со 2-й по N-ю без трогания первой карточки
-    let restHtml = list.slice(1).map((p, idx) => {
+    let restHtml = list.slice(1).map((p) => {
       const n = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
-      return renderDeliveryCard(p, n, idx + 1);
+      return renderDeliveryCard(p, n);
     }).join('');
     if (typeof editMode !== 'undefined' && editMode) {
       restHtml += '<article class="card add-card" id="addDelivCard">' +
@@ -423,9 +423,9 @@ function renderDeliveryMenu() {
       gridEl.insertAdjacentHTML('beforeend', restHtml);
     }
   } else {
-    let html = list.map((p, i) => {
-      const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
-      return renderDeliveryCard(p, n0, i);
+    let html = list.map((p) => {
+      const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : 0), 0);
+      return renderDeliveryCard(p, n0);
     }).join('');
     if (typeof editMode !== 'undefined' && editMode) {
       html += '<article class="card add-card" id="addDelivCard">' +
