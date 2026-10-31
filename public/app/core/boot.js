@@ -139,6 +139,9 @@ async function boot() {
       // Once /api/me confirms a staff role, replace the public list with the
       // full catalog (including stopped items) required by staff tools.
       if (staffRole && typeof window.loadDelivery === 'function') {
+        // Let the public preload settle before starting the staff request. Otherwise
+        // a slower /api/dmenu response could overwrite the complete staff catalog.
+        if (earlyDeliveryLoad) await earlyDeliveryLoad;
         deliveryLoad = window.__dlPromise = window.loadDelivery();
       } else if (!deliveryLoad && typeof window.loadDelivery === 'function') {
         window.__dlReq = 1;
