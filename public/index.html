@@ -1144,6 +1144,24 @@ html[data-brand="delivery"] #deliveryGrid {
   min-width: 0;
   align-items: stretch;
 }
+
+/* Keep the critical first frame aligned with the canonical responsive menu grid. */
+@media (min-width: 520px) and (max-width: 1180px) {
+  html[data-brand="delivery"] #deliveryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1181px) {
+  html[data-brand="delivery"] #deliveryGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+@media (min-width: 1600px) {
+  html[data-brand="delivery"] #deliveryGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
 html[data-brand="delivery"] #deliveryGrid > .card {
   display: flex;
   flex-direction: column;
