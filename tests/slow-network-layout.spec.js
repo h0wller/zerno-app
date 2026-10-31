@@ -162,7 +162,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           brandAlignSelf: brandStyle && brandStyle.alignSelf,
           titleDisplay: getComputedStyle(document.querySelector('#brandTitle')).display,
           subDisplay: getComputedStyle(document.querySelector('#brandSub')).display,
-          gridColumns: getComputedStyle(document.querySelector('#deliveryGrid')).gridTemplateColumns.trim().split(/\\s+/).filter(Boolean).length,
+          gridColumns: getComputedStyle(document.querySelector('#deliveryGrid')).gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length,
           viewportWidth: document.documentElement.clientWidth,
           scrollWidth: document.documentElement.scrollWidth
         };
