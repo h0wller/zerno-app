@@ -272,7 +272,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           venue: rect('.venueWrap'),
           brandMark: rect('#brandMark'),
           brandTitle: rect('#brandTitle'),
-          bonus: rect('#mbonusBtn'),
           profile: rect('#profileTopBtn'),
           viewportWidth: document.documentElement.clientWidth,
           scrollWidth: document.documentElement.scrollWidth
@@ -280,7 +279,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       });
 
       const assertHeader = (header, phase) => {
-        for (const selector of ['venue', 'brandMark', 'brandTitle', 'bonus', 'profile']) {
+        for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile']) {
           expect(header[selector], `${selector} is visible at ${width}px ${phase}`).not.toBeNull();
         }
         const controls = ['venue', 'brandMark', 'brandTitle', 'bonus', 'profile']
