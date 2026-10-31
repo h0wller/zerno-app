@@ -39,6 +39,25 @@ document.addEventListener('error', function (e) {
 }, true);
 
 
+function runWhenIdle(callback, timeout) {
+  var schedule = function () {
+    var run = function () {
+      if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(callback, { timeout: timeout || 2000 });
+      } else {
+        setTimeout(callback, 800);
+      }
+    };
+    if (document.visibilityState === 'visible' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(run);
+    } else {
+      run();
+    }
+  };
+  if (document.readyState === 'complete') schedule();
+  else window.addEventListener('load', schedule, { once: true });
+}
+
 /* ── 1. Агрегатная перерисовка всех видов ── */
 function renderAll() {
   const initChar = (window.me && window.me.name && window.me.name.trim())
@@ -55,8 +74,7 @@ function renderAll() {
   }
   if (typeof renderModes === 'function') renderModes();
 
-  const deferSecondary = window.requestIdleCallback || function (fn) { setTimeout(fn, 60); };
-  deferSecondary(function () {
+  runWhenIdle(function () {
     if (typeof renderBonus === 'function') renderBonus();
     if (typeof renderProfile === 'function') renderProfile();
     if (typeof renderChips === 'function') renderChips();
@@ -123,22 +141,7 @@ async function boot() {
     if (typeof showBadge === 'function') showBadge();
     if (typeof maybeAskReview === 'function') maybeAskReview();
     if (typeof initChatPointer === 'function') {
-      var startChatPointer = function () {
-        if (document.visibilityState === 'visible') {
-          initChatPointer();
-        } else {
-          document.addEventListener('visibilitychange', function onVisible() {
-            if (document.visibilityState === 'visible') initChatPointer();
-          }, { once: true });
-        }
-      };
-      if (typeof window.requestIdleCallback === 'function') {
-        requestAnimationFrame(function () {
-          window.requestIdleCallback(startChatPointer, { timeout: 2500 });
-        });
-      } else {
-        setTimeout(startChatPointer, 1200);
-      }
+      runWhenIdle(function () { initChatPointer(); }, 2500);
     }
   }
 }
