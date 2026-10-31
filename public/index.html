@@ -250,6 +250,42 @@ body[data-brand="delivery"] .topbar .brand .mark {
   height: 40px;
   flex: 0 0 160px;
 }
+
+/* Mobile header geometry must match 160-04 before deferred theme CSS arrives. */
+@media (max-width: 690px) {
+  header.topbar div#headerBrand.brand {
+    position: static;
+    transform: none;
+    margin: 0 auto;
+    flex: 1 1 auto;
+    max-width: calc(100% - 116px);
+    min-height: 44px;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    order: 2;
+    z-index: 1;
+    overflow: visible;
+  }
+  header.topbar div#headerBrand.brand div.mark {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  header.topbar button#profileTopBtn.ava {
+    position: static;
+    transform: none;
+    margin: 0;
+    order: 3;
+    z-index: 2;
+  }
+}
 .topbar .brand .mark img,
 .topbar .brand .mark svg {
   display: block;
