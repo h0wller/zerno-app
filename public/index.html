@@ -842,56 +842,43 @@ html[data-brand="delivery"] {
         installStub();
       }
     })();</script>
-  <script>
+  <script id="zt-lcp-head">
     (function () {
-      var pre = null;
+      var endpoint = '';
       try {
-        pre = fetch("/api/menu", { headers: { Accept: "application/json" } });
-      } catch (e) { }
-      var of = window.fetch;
-      window.fetch = function (u, o) {
-        var hasAuth =
-          o &&
-          o.headers &&
-          (typeof o.headers.get === "function"
-            ? o.headers.get("Authorization")
-            : o.headers.Authorization || o.headers["Authorization"]);
-        if (
-          pre &&
-          !hasAuth &&
-          (!o || (o.method || "GET") === "GET") &&
-          String(u).indexOf("/api/menu") > -1 &&
-          String(u).indexOf("/api/menu/all") === -1
-        ) {
-          var p = pre;
-          pre = null;
-          return p;
-        }
-        return of.apply(this, arguments);
+        if (localStorage.getItem('zt_user')) return;
+        var params = new URLSearchParams(location.search);
+        var brand = params.get('brand') || localStorage.getItem('zt_brand') || 'coffee';
+        endpoint = brand === 'delivery' ? '/api/dmenu' : '/api/menu';
+      } catch (_) { return; }
+
+      var nativeFetch = window.fetch;
+      var pending = nativeFetch.call(window, endpoint, {
+        headers: { Accept: 'application/json' }
+      });
+
+      window.fetch = function (input, options) {
+        try {
+          var url = typeof input === 'string' ? input : input.url;
+          var method = (options && options.method) || (input && input.method) || 'GET';
+          var headers = new Headers(input && input.headers ? input.headers : undefined);
+          if (options && options.headers) {
+            new Headers(options.headers).forEach(function (value, key) {
+              headers.set(key, value);
+            });
+          }
+          if (pending && method.toUpperCase() === 'GET' && !headers.has('Authorization') &&
+              new URL(url, location.href).pathname === endpoint) {
+            var response = pending;
+            pending = null;
+            return response;
+          }
+        } catch (_) {}
+        return nativeFetch.apply(this, arguments);
       };
     })();
   </script>
-
-  <script id="zt-lcp-head">/* LCP-HEAD v3: ранний fetch меню (без preload шрифтов — CLS-фикс) */
-(function(){
-var b=null;try{b=new URLSearchParams(location.search).get('brand')||localStorage.getItem('zt_brand');}catch(e){}
-var of=window.fetch;
-if(b==='delivery'){
-  var pre=null;try{pre=fetch('/api/dmenu',{headers:{Accept:'application/json'}});}catch(e){}
-  window.fetch=function(u,o){
-    var hasAuth=o&&o.headers&&(typeof o.headers.get==='function'?o.headers.get('Authorization'):o.headers.Authorization);
-    if(pre&&!hasAuth&&(!o||(o.method||'GET')==='GET')&&String(u).indexOf('/api/dmenu')>-1){var p=pre;pre=null;return p;}
-    return of.apply(this,arguments);};
-}else if(b==='coffee'||!b){
-  var preMenu=null;try{preMenu=fetch('/api/menu',{headers:{Accept:'application/json'}});}catch(e){}
-  window.fetch=function(u,o){
-    var hasAuth=o&&o.headers&&(typeof o.headers.get==='function'?o.headers.get('Authorization'):o.headers.Authorization);
-    if(preMenu&&!hasAuth&&(!o||(o.method||'GET')==='GET')&&String(u).indexOf('/api/menu')>-1){var p=preMenu;preMenu=null;return p;}
-    return of.apply(this,arguments);};
-}
-})();
-</script> 
-<!-- LCP-PRELOAD-FONT v1: preload шрифта Unbounded 700 для LCP <h1> -->
+  <!-- LCP-PRELOAD-FONT v1: preload шрифта Unbounded 700 для LCP <h1> -->
 <title>Пятница «…и кофе» — доставка и кофейня</title>
   <meta name="description"
     content="Кофейня «…и кофе» в Янтарном: актуальное меню и бонусы — каждый 10-й кофе бесплатно." />
