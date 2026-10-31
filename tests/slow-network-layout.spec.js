@@ -142,11 +142,24 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       const measureBrand = () => page.evaluate(() => {
         const mark = document.querySelector('#brandMark');
         const rect = mark && mark.getBoundingClientRect();
+        const header = document.querySelector('header.topbar');
+        const brand = document.querySelector('#headerBrand');
+        const headerRect = header && header.getBoundingClientRect();
+        const headerStyle = header && getComputedStyle(header);
+        const brandStyle = brand && getComputedStyle(brand);
         return {
           x: rect ? Math.round(rect.x) : null,
           y: rect ? Math.round(rect.y) : null,
           width: rect ? Math.round(rect.width) : null,
           height: rect ? Math.round(rect.height) : null,
+          headerY: headerRect ? Math.round(headerRect.y) : null,
+          headerHeight: headerRect ? Math.round(headerRect.height) : null,
+          headerPaddingTop: headerStyle && headerStyle.paddingTop,
+          headerPaddingBottom: headerStyle && headerStyle.paddingBottom,
+          headerMinHeight: headerStyle && headerStyle.minHeight,
+          brandHeight: brandStyle && brandStyle.height,
+          brandMinHeight: brandStyle && brandStyle.minHeight,
+          brandAlignSelf: brandStyle && brandStyle.alignSelf,
           titleDisplay: getComputedStyle(document.querySelector('#brandTitle')).display,
           subDisplay: getComputedStyle(document.querySelector('#brandSub')).display,
           viewportWidth: document.documentElement.clientWidth,
