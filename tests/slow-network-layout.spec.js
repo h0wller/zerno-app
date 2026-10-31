@@ -229,6 +229,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       await page.waitForTimeout(50);
       const after = await measureBrand();
       console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));
+      expect(after.subDisplay, `brand subtitle display remains stable at ${width}px`).toBe(before.subDisplay);
       expect(after.x, `brand x remains stable at ${width}px`).toBe(before.x);
       expect(Math.abs(after.y - before.y), `brand y remains stable within 1px at ${width}px`)
         .toBeLessThanOrEqual(1);
@@ -420,8 +421,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.modeSeg.visibility).toBe('visible');
     expect(after.adminBar.hidden).toBe(false);
     expect(after.adminBar.visibility).toBe('visible');
+    expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.modeSeg.top - before.modeSeg.top)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.modeSeg.height - before.modeSeg.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.adminBar.height - before.adminBar.height)).toBeLessThanOrEqual(1);
     expect(after.cls).toBeLessThan(0.01);
