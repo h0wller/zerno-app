@@ -269,11 +269,15 @@ body[data-brand="delivery"] .topbar .brand .mark {
     display: flex;
   }
   header.topbar div#headerBrand.brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
     position: static;
     transform: none;
-    margin: 0 auto;
-    flex: 1 1 auto;
-    max-width: calc(100% - 116px);
+    margin: 0;
+    width: min(196px, 60vw);
+    min-width: min(196px, 60vw);
+    max-width: min(196px, 60vw);
     min-height: 44px;
     height: auto;
     display: flex;
@@ -281,17 +285,17 @@ body[data-brand="delivery"] .topbar .brand .mark {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    order: 2;
     z-index: 1;
     overflow: visible;
   }
   html[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark,
   body[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark {
-    width: 196px;
-    max-width: min(60vw, 210px);
+    width: min(196px, 60vw);
+    min-width: min(196px, 60vw);
+    max-width: min(196px, 60vw);
     height: 48px;
     max-height: 48px;
-    flex: 0 1 auto;
+    flex: 0 0 min(196px, 60vw);
   }
   header.topbar button#profileTopBtn.ava {
     position: static;
