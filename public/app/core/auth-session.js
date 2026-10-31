@@ -50,4 +50,19 @@
   }
 
   window.setUser = setUser;
+
+  /* PR-92 review: синхронизация role-hinta между вкладками.
+     Logout/смена роли в другой вкладке должен мгновенно снимать каркасный
+     резерв рядов staff-контролов, иначе гость видит пустые зарезервированные строки. */
+  window.addEventListener('storage', function (e) {
+    if (!e || (e.key !== 'zt_role' && e.key !== 'zt_user')) return;
+    var root = document.documentElement;
+    var token = window.USER_TOKEN || localStorage.getItem('zt_user');
+    var role = localStorage.getItem('zt_role');
+    if (!token || ['admin', 'cashier', 'dispatch'].indexOf(role) === -1) {
+      root.removeAttribute('data-staff-role');
+    } else if (root.getAttribute('data-staff-role') !== role) {
+      root.setAttribute('data-staff-role', role);
+    }
+  });
 })();

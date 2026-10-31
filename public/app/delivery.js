@@ -295,6 +295,8 @@ function renderDeliveryCard(p, n0, i) {
   var opts = p.opts || [];
   var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
   var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+  // PR-92 review: пороги выровнены по медиумам канонической сетки доставки
+  // (index.html critical CSS + theme: ≥520 → 2 колонки, ≥1181 → 3, ≥1600 → 4).
   var eagerImageCount = viewportWidth >= 1600 ? 4 : viewportWidth >= 1181 ? 3 : viewportWidth >= 520 ? 2 : 1;
   var isAboveFold = typeof i === 'number' && i < eagerImageCount;
 
