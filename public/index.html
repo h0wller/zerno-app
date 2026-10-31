@@ -35,7 +35,9 @@
           // лучше, чем вечные пустые строки каркаса.
           setTimeout(function () {
             var d = document.documentElement;
-            if (d.hasAttribute('data-staff-role') && !d.hasAttribute('data-staff-ready')) {
+            if (d.hasAttribute('data-staff-role') &&
+                !d.hasAttribute('data-staff-ready') &&
+                !d.hasAttribute('data-staff-boot-started')) {
               d.removeAttribute('data-staff-role');
             }
           }, 8000);
