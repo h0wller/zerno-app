@@ -957,6 +957,21 @@ if(b==='delivery'){
   white-space: nowrap;
 }
 
+/* Match the late views.js <=600px topbar override before the first frame. */
+@media (max-width: 600px) {
+  .topbar {
+    padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 8px !important;
+    min-height: calc(52px + env(safe-area-inset-top, 0px)) !important;
+    gap: 6px;
+  }
+  .topbar .brand {
+    font-size: 18px !important;
+  }
+  .topbar .brand small {
+    font-size: 10px !important;
+  }
+}
+
 /* Reserve the final mobile header grid before 160-03/160-06 CSS is available. */
 @media (max-width: 820px) {
   :root {
@@ -1220,7 +1235,8 @@ html[data-brand="delivery"] #deliveryView .menu-head .upd {
   color: var(--soft);
   letter-spacing: 0.02em;
   text-transform: none;
-  min-width: min(182px, 100%);
+  width: min(183px, 100%);
+  min-width: 0;
   min-height: 26px;
   max-width: 100%;
   box-sizing: border-box;
