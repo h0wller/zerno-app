@@ -169,10 +169,6 @@
     overflow: visible;
   }
 
-  /* Guest delivery header: avoid centering a 48px logo in a 46px content box. */
-  html[data-brand="delivery"] header.topbar:not(:has(#modeSeg:not([hidden]))) {
-    grid-template-rows: 48px;
-  }
 
   header.topbar div#headerBrand.brand div.mark {
     width: var(--mark-w, 42px);
