@@ -446,7 +446,7 @@ body > div.wrap,
   }
 }
 #grid .card:nth-child(n+5),
-#deliveryGrid .dcard:nth-child(n+5),
+#deliveryGrid .card:nth-child(n+5),
 .cartItem,
 .logrow {
   content-visibility: auto;
@@ -460,6 +460,9 @@ body > div.wrap,
    (180px медиа + 167px тело + 2px рамки), поэтому ряды совпадают и до отрисовки, и после. */
 #grid .card:nth-child(n+5) {
   contain-intrinsic-block-size: 352px; /* 350 + рамка 2px (1.5px округляется до 1px) = 352 */
+}
+#deliveryGrid .card:nth-child(n+5) {
+  contain-intrinsic-block-size: 480px;
 }
 .menu-head {
   margin-left: 0;
