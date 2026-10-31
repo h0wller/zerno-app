@@ -2,6 +2,7 @@
 <html lang="ru">
 
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <script id="zt-early-brand-guard">
     (function () {
       try {
@@ -750,7 +751,6 @@ html[data-brand="delivery"] {
         installStub();
       }
     })();</script>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <script>
     (function () {
       var pre = null;
@@ -946,6 +946,17 @@ if(b==='delivery'){
   })();
 </script>
 <style>
+/* Keep visually-hidden content out of layout before deferred 30-utils.css arrives. */
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* The section must stay in column 2 before deferred 160-12-admin-bar-tail.css arrives. */
 html body div.wrap > section {
   grid-column: 2;
