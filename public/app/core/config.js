@@ -14,9 +14,13 @@
       .catch(function () {});
   }
 
-  if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(loadConfig, { timeout: 2500 });
-  } else {
-    setTimeout(loadConfig, 1200);
+  function scheduleConfig() {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(loadConfig, { timeout: 2500 });
+    } else {
+      setTimeout(loadConfig, 800);
+    }
   }
+  if (document.readyState === 'complete') scheduleConfig();
+  else window.addEventListener('load', scheduleConfig, { once: true });
 })();
