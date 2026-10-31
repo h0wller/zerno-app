@@ -49,8 +49,10 @@ function renderAll() {
   const profAva = document.getElementById('avInit');
   if (profAva) profAva.textContent = initChar;
 
-  if (typeof renderRail === 'function') renderRail();
-  if (typeof renderMenu === 'function') renderMenu();
+  if (window.brand !== 'delivery') {
+    if (typeof renderRail === 'function') renderRail();
+    if (typeof renderMenu === 'function') renderMenu();
+  }
   if (typeof renderModes === 'function') renderModes();
 
   const deferSecondary = window.requestIdleCallback || function (fn) { setTimeout(fn, 60); };
@@ -103,15 +105,35 @@ async function boot() {
   }
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
-    if (typeof loadMenu === 'function') await loadMenu();
+    if (window.brand === 'delivery') {
+      var deliveryLoad = window.__dlPromise;
+      if (!deliveryLoad && typeof window.loadDelivery === 'function') {
+        window.__dlReq = 1;
+        deliveryLoad = window.__dlPromise = window.loadDelivery();
+      }
+      if (deliveryLoad) await deliveryLoad;
+    } else if (typeof loadMenu === 'function') {
+      await loadMenu();
+    }
   } catch (err) {
     console.warn('[BOOT] Ошибка загрузки меню:', err);
   } finally {
     renderAll();
     if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
     if (typeof showBadge === 'function') showBadge();
-    if (typeof initChatPointer === 'function') initChatPointer();
     if (typeof maybeAskReview === 'function') maybeAskReview();
+    if (typeof initChatPointer === 'function') {
+      var startChatPointer = function () { initChatPointer(); };
+      var deferChatPointer = function () {
+        if (typeof window.requestIdleCallback === 'function') {
+          window.requestIdleCallback(startChatPointer, { timeout: 2500 });
+        } else {
+          setTimeout(startChatPointer, 1200);
+        }
+      };
+      if (document.readyState === 'complete') deferChatPointer();
+      else window.addEventListener('load', deferChatPointer, { once: true });
+    }
   }
 }
 
