@@ -261,6 +261,75 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   test.describe('cross-tab storage synchronization without service worker interception', () => {
     test.use({ serviceWorkers: 'block' });
 
+    test('staff catalog replaces the public preload after authentication', async ({ page }) => {
+      let releasePublicMenu;
+      let markPublicRequested;
+      let markStaffRequested;
+      const publicRequested = new Promise((resolve) => { markPublicRequested = resolve; });
+      const staffRequested = new Promise((resolve) => { markStaffRequested = resolve; });
+      const publicMenuGate = new Promise((resolve) => { releasePublicMenu = resolve; });
+      let staffRequestCount = 0;
+
+      await page.addInitScript(() => {
+        localStorage.setItem('zt_user', 'catalog-race-test-token');
+        localStorage.setItem('zt_role', 'admin');
+      });
+
+      await page.route('**/api/**', async (route) => {
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname === '/api/me') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ customer: { id: 900003, name: 'Catalog Admin', role: 'admin' } })
+          });
+          return;
+        }
+        if (pathname === '/api/dmenu') {
+          markPublicRequested();
+          await publicMenuGate;
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              items: [{ id: 900004, name: 'Public item', section: 'delivery', cat: 'pizza', price: 500, on: 1, opts: [], comp: [] }]
+            })
+          });
+          return;
+        }
+        if (pathname === '/api/menu/all') {
+          staffRequestCount += 1;
+          markStaffRequested();
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              items: [
+                { id: 900004, name: 'Public item', section: 'delivery', cat: 'pizza', price: 500, on: 1, opts: [], comp: [] },
+                { id: 900005, name: 'Stopped staff item', section: 'delivery', cat: 'pizza', price: 600, on: 0, opts: [], comp: [] }
+              ]
+            })
+          });
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] })
+        });
+      });
+
+      await page.goto('/?brand=delivery');
+      await publicRequested;
+      await expect.poll(() => page.evaluate(() => document.documentElement.hasAttribute('data-staff-ready'))).toBe(true);
+      expect(staffRequestCount).toBe(0);
+
+      releasePublicMenu();
+      await staffRequested;
+      await expect.poll(() => page.evaluate(() => (window.DMENU || []).map((item) => item.id)))
+        .toEqual([900004, 900005]);
+    });
+
     test('cross-tab login is revalidated before role adoption and logout clears the session', async ({ page, context }) => {
     let releaseMe;
     let markMeRequested;
