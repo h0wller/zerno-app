@@ -262,28 +262,50 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       } catch (_) {}
     });
 
-    await page.route('**/api/me', async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 1400));
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      if (pathname === '/api/me') {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            customer: {
+              id: 900001,
+              name: 'Layout Test Admin',
+              phone: '+70000000000',
+              role: 'admin',
+              stamps: 0,
+              free: 0,
+              cups: 0,
+              qr: 'layout-test',
+              verified: 1,
+              welcome: 1,
+              tg: 0,
+              notify_tg: 1,
+              notify_web: 1,
+              history: []
+            }
+          })
+        });
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          customer: {
-            id: 900001,
-            name: 'Layout Test Admin',
-            phone: '+70000000000',
-            role: 'admin',
-            stamps: 0,
-            free: 0,
-            cups: 0,
-            qr: 'layout-test',
-            verified: 1,
-            welcome: 1,
-            tg: 0,
-            notify_tg: 1,
-            notify_web: 1,
-            history: []
-          }
+          ok: true,
+          items: [],
+          orders: [],
+          pending: [],
+          customers: [],
+          threads: [],
+          messages: [],
+          promos: [],
+          today: { open: 11, close: 22 },
+          schedule: { open: 11, close: 22 },
+          days: []
         })
       });
     });
@@ -293,7 +315,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       await route.continue();
     });
 
+    const meRequest = page.waitForRequest((request) => request.url().endsWith('/api/me'), { timeout: 15000 });
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
+    await page.locator('#modeSeg').waitFor({ state: 'attached' });
+    await meRequest;
     await page.waitForLoadState('load');
 
     const before = await page.evaluate(() => {
@@ -329,6 +354,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.adminBar.display).toBe('grid');
     expect(before.adminBar.visibility).toBe('hidden');
 
+    const meResponse = await page.waitForResponse((response) => response.url().endsWith('/api/me'), { timeout: 15000 });
+    expect(meResponse.ok()).toBe(true);
     await page.waitForFunction(() => window.me && window.me.role === 'admin', null, { timeout: 10000 });
     await page.waitForTimeout(100);
 
