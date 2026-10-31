@@ -288,23 +288,49 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       sessionStorage.setItem('splashDone', '1');
     });
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
-    const firstImage = page.locator('#deliveryGrid > .card[data-product-id] .media img[src]').first();
-    await expect(firstImage).toBeAttached({ timeout: 10000 });
-    await firstImage.evaluate((image) => image.setAttribute('data-preservation-probe', 'kept'));
-    await page.evaluate(() => window.renderDeliveryMenu());
-    await expect(firstImage).toHaveAttribute('data-preservation-probe', 'kept');
+    await page.waitForFunction(() =>
+      typeof window.renderDeliveryMenu === 'function' &&
+      Array.isArray(window.DMENU) &&
+      window.DMENU.length > 0
+    );
+    await page.evaluate(() => {
+      window.dcat = 'pizza';
+      window.renderDeliveryMenu();
+    });
+    await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached();
+
     const result = await page.evaluate(() => {
-      const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
+      const grid = document.getElementById('deliveryGrid');
+      const firstCard = grid && grid.querySelector(':scope > .card[data-product-id]');
+      const firstItem = window.DMENU.find((item) => item.cat === window.dcat);
+      const firstImage = firstCard && firstCard.querySelector('.media img[src]');
+      if (!firstCard || !firstItem || !firstImage || firstImage.getAttribute('src') !== firstItem.img) {
+        return { preservable: false };
+      }
+
+      firstImage.setAttribute('data-preservation-probe', 'kept');
+      window.renderDeliveryMenu();
+      const retainedCard = grid.querySelector(':scope > .card[data-product-id]');
+      const retainedImage = retainedCard && retainedCard.querySelector('.media img[src]');
+      const cards = Array.from(grid.querySelectorAll(':scope > .card[data-product-id]'));
       const firstTop = cards.length ? cards[0].getBoundingClientRect().top : 0;
       const firstRowImages = cards.filter((card) =>
         Math.abs(card.getBoundingClientRect().top - firstTop) <= 1
       ).map((card) => card.querySelector('.media img[src]')).filter(Boolean);
       return {
-        eager: document.querySelectorAll('#deliveryGrid img[loading="eager"]').length,
-        high: document.querySelectorAll('#deliveryGrid img[fetchpriority="high"]').length,
+        preservable: true,
+        sameCard: retainedCard === firstCard,
+        sameImage: retainedImage === firstImage,
+        imageMarker: retainedImage && retainedImage.getAttribute('data-preservation-probe'),
+        eager: grid.querySelectorAll('img[loading="eager"]').length,
+        high: grid.querySelectorAll('img[fetchpriority="high"]').length,
         firstRow: firstRowImages.length
       };
     });
+    expect(result.preservable).toBe(true);
+    expect(result.sameCard).toBe(true);
+    expect(result.sameImage).toBe(true);
+    expect(result.imageMarker).toBe('kept');
     expect(result.eager).toBe(result.firstRow);
     expect(result.high).toBe(result.firstRow ? 1 : 0);
   });

@@ -58,7 +58,7 @@ The registration suite verifies that local-storage quota errors do not break sta
 
 The responsive test attaches full-page Chromium screenshots at 320, 390, 520, 690, 820, 821, 1024, 1181, and 1600 px after deferred CSS and fonts have loaded.
 
-Every CI run uploads the HTML report and test results as the `playwright-diagnostics` artifact, including successful runs. The E2E job also uploads the generated bundle, service worker, and matching `index.html` as `built-client-output` so the tracked production output can be compared with the source build. Open the report and inspect the attached screenshots when changing:
+Every CI run uploads the HTML report and test results as the `playwright-diagnostics` artifact, including successful runs. For PR #92, a successful E2E job also commits the exact generated bundle, service worker, and matching `index.html` used by the tests as tracked production assets. Open the report and inspect the attached screenshots when changing:
 
 - critical CSS in `public/index.html`;
 - `160-03-topbar-search-panel.css`, `160-04-wrap-cls-sheets.css`, or `160-06-delivery-header.css`;

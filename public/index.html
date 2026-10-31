@@ -1699,20 +1699,26 @@ html body #tickerTrack > span {
   white-space: nowrap;
   line-height: 28px;
 }
-/* Keep the coffee title's intrinsic font width out of the centered flex calculation. */
+/* Reserve fixed text and line-box dimensions so font loading cannot move the centered mark. */
 @media (max-width: 690px) {
   html body header.topbar div#headerBrand.brand > div:not(.mark) {
     width: 96px;
     min-width: 96px;
     max-width: 96px;
-    flex: 0 0 96px;
+    height: 24px;
+    min-height: 24px;
+    max-height: 24px;
+    flex: 0 0 24px;
   }
   html body header.topbar div#headerBrand.brand #brandTitle {
     display: block;
     width: 96px;
     min-width: 96px;
     max-width: 96px;
+    height: 24px;
     box-sizing: border-box;
+    font: 400 19px/24px "Prata", serif;
+    letter-spacing: 0.04em;
     white-space: nowrap;
   }
 }

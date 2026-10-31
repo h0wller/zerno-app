@@ -65,6 +65,16 @@ jobs:
         id: build-client
         run: npm run build:client
 
+      - name: Verify staff layout code is present in the production bundle
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const bundle = readFileSync('public/dist/main.bundle.js', 'utf8');
+          for (const marker of ['zt_role', 'data-staff-role', 'data-staff-ready']) {
+            if (!bundle.includes(marker)) throw new Error('Production bundle is missing ' + marker);
+          }
+          NODE
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
@@ -109,3 +119,50 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  sync-built-client:
+    name: Sync production client output
+    needs: e2e-tests
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.number == 92 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout PR source branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Download tested client output
+        uses: actions/download-artifact@v7
+        with:
+          name: built-client-output
+          path: .built-client-output
+
+      - name: Replace tracked production assets
+        run: |
+          set -euo pipefail
+          test -s .built-client-output/dist/main.bundle.js
+          test -s .built-client-output/sw.js
+          test -s .built-client-output/index.html
+          install -D .built-client-output/dist/main.bundle.js public/dist/main.bundle.js
+          install -D .built-client-output/sw.js public/sw.js
+          install -D .built-client-output/index.html public/index.html
+
+      - name: Commit tested production assets
+        env:
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/dist/main.bundle.js public/sw.js public/index.html
+          if git diff --cached --quiet; then
+            echo "Production assets already match the tested build."
+          else
+            git commit -m "build(pr92): sync tested production client assets"
+            git push origin "HEAD:${PR_BRANCH}"
+          fi
