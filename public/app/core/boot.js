@@ -74,8 +74,10 @@ function renderAll() {
 async function boot() {
   document.documentElement.setAttribute('data-staff-boot-started', '1');
   if (window.USER_TOKEN) {
+    const authController = new AbortController();
+    const authTimeout = setTimeout(() => authController.abort(), 12000);
     try {
-      window.me = (await api('/me')).customer;
+      window.me = (await api('/me', { signal: authController.signal })).customer;
       var staffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1
         ? window.me.role
         : '';
@@ -93,7 +95,11 @@ async function boot() {
       localStorage.removeItem('zt_role');
       document.documentElement.removeAttribute('data-staff-role');
       document.documentElement.setAttribute('data-staff-ready', '1');
+    } finally {
+      clearTimeout(authTimeout);
     }
+  } else {
+    document.documentElement.setAttribute('data-staff-ready', '1');
   }
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
