@@ -65,10 +65,20 @@ async function fetchDeliveryInfo() {
   return info;
 }
 
-window.refreshDeliveryInfo = async function () {
-  await fetchDeliveryInfo();
-  window.populateSlots();
-  return deliveryInfo;
+var deliveryInfoRequest = null;
+window.refreshDeliveryInfo = function () {
+  if (!deliveryInfoRequest) {
+    deliveryInfoRequest = fetchDeliveryInfo()
+      .then(function (info) {
+        populatePlaces();
+        window.populateSlots();
+        return info;
+      })
+      .finally(function () {
+        deliveryInfoRequest = null;
+      });
+  }
+  return deliveryInfoRequest;
 };
 
 const DCATS = window.DCATS = [
@@ -702,8 +712,12 @@ $('#checkoutMethod').onchange = () => {
 $('#cartFab').onclick = async () => {
   window.renderCart();
   $('#cartPanel').classList.add('open');
+  const checkoutButton = $('#checkoutBtn');
+  if (checkoutButton) checkoutButton.disabled = true;
   try {
     await window.refreshDeliveryInfo();
+    window.renderCart();
+    if (checkoutButton) checkoutButton.disabled = false;
   } catch (error) {
     if (typeof toast === 'function') {
       toast('Не удалось обновить график работы. Проверьте соединение перед оформлением.', '⚠️');
@@ -713,8 +727,11 @@ $('#cartFab').onclick = async () => {
 
 function populatePlaces() {
   if (!deliveryInfo) return;
+  const select = $('#checkoutPlace');
+  const previous = select.value;
   const places = deliveryInfo.zones.flatMap(z => z.places);
-  $('#checkoutPlace').innerHTML = places.map(p => `<option>${p}</option>`).join('');
+  select.innerHTML = places.map(p => `<option>${p}</option>`).join('');
+  if (places.includes(previous)) select.value = previous;
 }
 
 function skelCards(n){
@@ -735,18 +752,14 @@ window.loadDelivery = async function() {
     if (g && !DMENU.length && !g.querySelector('.card:not(.skeleton-card)')) {
       g.innerHTML = skelCards(6);
     }
-    var menuPromise = (me && ['admin','cashier','dispatch'].indexOf(me.role) !== -1)
-      ? api('/menu/all').then(function(all) {
-          return { items: (all.items || []).filter(function(p){ return p.section === 'delivery'; }) };
+    var r = (me && ['admin','cashier','dispatch'].indexOf(me.role) !== -1)
+      ? await api('/menu/all').then(function(all) {
+          MENU = all.items || [];
+          if (all.updatedAt) meta.updatedAt = all.updatedAt;
+          return { items: MENU.filter(function(p){ return p.section === 'delivery'; }) };
         })
-      : api('/dmenu');
-    var infoPromise = fetchDeliveryInfo().catch(function(){ return null; });
-    var results = await Promise.all([menuPromise, infoPromise]);
-    var r = results[0] || {};
+      : await api('/dmenu');
     DMENU = r.items || [];
-    deliveryInfo = results[1];
-    populatePlaces();
-    populateSlots();
     renderDeliveryRail();
     window.renderDeliveryMenu();
     updateCartFab();
