@@ -294,7 +294,9 @@ function renderSingleMetaHtml(p) {
 function renderDeliveryCard(p, n0, i) {
   var opts = p.opts || [];
   var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
-  var isAboveFold = typeof i === 'number' && i < 4;
+  var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+  var eagerImageCount = viewportWidth >= 1600 ? 4 : viewportWidth >= 1181 ? 3 : viewportWidth >= 520 ? 2 : 1;
+  var isAboveFold = typeof i === 'number' && i < eagerImageCount;
 
   var mediaContent = p.img
     ? '<img src="' + p.img + '" alt="' + esc(p.name) + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="' + (isAboveFold ? 'eager' : 'lazy') + '" fetchpriority="' + (i === 0 ? 'high' : 'auto') + '" decoding="async">'
