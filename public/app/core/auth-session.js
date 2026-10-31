@@ -51,18 +51,46 @@
 
   window.setUser = setUser;
 
-  /* PR-92 review: синхронизация role-hinta между вкладками.
-     Logout/смена роли в другой вкладке должен мгновенно снимать каркасный
-     резерв рядов staff-контролов, иначе гость видит пустые зарезервированные строки. */
+  /* A cross-tab token change must be revalidated by boot() before this tab
+     adopts a staff layout. Logout is applied immediately without a reload. */
+  var storageReloadPending = false;
   window.addEventListener('storage', function (e) {
     if (!e || (e.key !== 'zt_role' && e.key !== 'zt_user')) return;
     var root = document.documentElement;
-    var token = e.key === 'zt_user' ? e.newValue : localStorage.getItem('zt_user');
-    var role = localStorage.getItem('zt_role');
-    if (!token || ['admin', 'cashier', 'dispatch'].indexOf(role) === -1) {
-      root.removeAttribute('data-staff-role');
-    } else if (root.getAttribute('data-staff-role') !== role) {
-      root.setAttribute('data-staff-role', role);
+    var token = localStorage.getItem('zt_user');
+
+    if (!token) {
+      if (typeof window.setUser === 'function') {
+        window.setUser(null, null);
+      } else {
+        root.removeAttribute('data-staff-role');
+        root.setAttribute('data-staff-ready', '1');
+        window.USER_TOKEN = null;
+        window.me = null;
+      }
+      return;
+    }
+
+    var cachedRole = localStorage.getItem('zt_role') || '';
+    var verifiedRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1
+      ? window.me.role
+      : '';
+    if (
+      e.key === 'zt_role' &&
+      window.USER_TOKEN === token &&
+      root.hasAttribute('data-staff-ready') &&
+      verifiedRole === cachedRole
+    ) {
+      if (verifiedRole) root.setAttribute('data-staff-role', verifiedRole);
+      else root.removeAttribute('data-staff-role');
+      return;
+    }
+
+    // Never copy an unverified cached role into a guest or stale session.
+    root.removeAttribute('data-staff-role');
+    if (!storageReloadPending) {
+      storageReloadPending = true;
+      window.location.reload();
     }
   });
 })();

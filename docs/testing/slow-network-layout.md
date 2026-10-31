@@ -49,7 +49,7 @@ The slow-network suite covers:
 1. First-paint versus post-CSS geometry at a throttled theme-CSS load.
 2. Responsive header and menu geometry at 320, 480, 519, 520, 690, 691, 820, 821, 1023, 1024, 1180, 1181, 1599, and 1600 px.
 3. Cached staff-role hydration, including the delayed `/api/me` response and the bundle-failure watchdog.
-4. Cross-tab logout invalidates the cached staff layout hint.
+4. Cross-tab login restarts server-side auth hydration before applying a staff hint; logout clears the old tab immediately.
 5. CLS, horizontal overflow, image loading priority before and after CSS, viewport resizing, initial-card preservation, and desktop/mobile wordmark visibility.
 
 The registration suite verifies that local-storage quota errors do not break staff login, session updates, or cross-tab logout cleanup.

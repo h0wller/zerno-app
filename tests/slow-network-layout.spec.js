@@ -112,7 +112,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await page.waitForLoadState('load');
     await page.waitForTimeout(100);
     await page.evaluate(() => document.fonts.ready.then(() => true));
-      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const after = await measure();
     console.log('[slow-network-layout] after deferred CSS', JSON.stringify(after));
     expect(after.card.width).toBe(before.card.width);

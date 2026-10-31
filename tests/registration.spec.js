@@ -258,18 +258,41 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await page.waitForFunction(() => !!window.me && window.me.name === 'Tg User', null, { timeout: 10000 });
   });
 
-  test('cross-tab logout clears the cached staff hint even when the role key remains', async ({ browser }) => {
-    const context = await browser.newContext();
-    const firstTab = await context.newPage();
-    await firstTab.goto('/?brand=delivery');
-    await firstTab.waitForFunction(() => typeof window.setUser === 'function');
+  test('cross-tab login is revalidated before role adoption and logout clears the session', async ({ page, context }) => {
+    let releaseMe;
+    let markMeRequested;
+    const meRequested = new Promise((resolve) => { markMeRequested = resolve; });
+    const meGate = new Promise((resolve) => { releaseMe = resolve; });
 
-    await firstTab.evaluate(() => {
-      window.USER_TOKEN = 'stale-in-memory-token';
-      localStorage.setItem('zt_user', 'stale-in-memory-token');
-      localStorage.setItem('zt_role', 'admin');
-      document.documentElement.setAttribute('data-staff-role', 'admin');
+    await page.route('**/api/me*', async (route) => {
+      markMeRequested();
+      await meGate;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          customer: {
+            id: 900002,
+            name: 'Cross-tab Staff',
+            role: 'admin',
+            phone: '+70000000002',
+            qr: 'cross-tab-staff',
+            stamps: 0,
+            free: 0,
+            cups: 0,
+            verified: 1,
+            history: []
+          }
+        })
+      });
     });
+
+    await page.goto('/?brand=delivery');
+    await page.waitForFunction(() => typeof window.setUser === 'function');
+    expect(await page.evaluate(() => ({
+      token: localStorage.getItem('zt_user'),
+      role: document.documentElement.getAttribute('data-staff-role')
+    }))).toEqual({ token: null, role: null });
 
     const secondTab = await context.newPage();
     await secondTab.route('**/*', (route) => route.fulfill({
@@ -278,13 +301,29 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
       body: '<!doctype html><html><head></head><body>storage source</body></html>'
     }));
     await secondTab.goto('/');
-    await secondTab.evaluate(() => localStorage.removeItem('zt_user'));
 
-    await expect.poll(() => firstTab.evaluate(() => ({
-      hint: document.documentElement.getAttribute('data-staff-role'),
-      cachedRole: localStorage.getItem('zt_role')
-    }))).toEqual({ hint: null, cachedRole: 'admin' });
-    await context.close();
+    const reload = page.waitForEvent('framenavigated', (frame) => frame === page.mainFrame());
+    await secondTab.evaluate(() => {
+      localStorage.setItem('zt_user', 'cross-tab-login-token');
+      localStorage.setItem('zt_role', 'admin');
+    });
+    await Promise.all([reload, meRequested]);
+
+    // The guest tab restarts boot() and waits for the server response.
+    expect(await page.evaluate(() => document.documentElement.hasAttribute('data-staff-ready'))).toBe(false);
+    releaseMe();
+    await expect.poll(() => page.evaluate(() => ({
+      ready: document.documentElement.hasAttribute('data-staff-ready'),
+      role: document.documentElement.getAttribute('data-staff-role'),
+      verifiedRole: window.me && window.me.role
+    }))).toEqual({ ready: true, role: 'admin', verifiedRole: 'admin' });
+
+    // Logout clears the other tab immediately, even while a cached role remains.
+    await secondTab.evaluate(() => localStorage.removeItem('zt_user'));
+    await expect.poll(() => page.evaluate(() => ({
+      token: localStorage.getItem('zt_user'),
+      role: document.documentElement.getAttribute('data-staff-role')
+    }))).toEqual({ token: null, role: null });
   });
 
 });
