@@ -288,7 +288,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
             controls[i].right > controls[j].left &&
             controls[i].top < controls[j].bottom &&
             controls[i].bottom > controls[j].top;
-          expect(overlaps, `header controls do not overlap at ${width}px`).toBe(false);
+          expect(overlaps, `header controls do not overlap at ${width}px: ${JSON.stringify({ venue: header.venue, brand: header.brand, profile: header.profile })}`).toBe(false);
         }
       }
       expect(header.scrollWidth, `no horizontal overflow at ${width}px`)
