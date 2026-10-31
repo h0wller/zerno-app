@@ -146,6 +146,49 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     expect(afterReset).toEqual({ token: null, storedToken: null, customer: null });
   });
 
+  test('role hint storage failure does not invalidate staff sessions', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'role-cache-test-token');
+      const setItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key, value) {
+        if (key === 'zt_role') throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
+        return setItem.call(this, key, value);
+      };
+    });
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      const body = pathname === '/api/me'
+        ? { customer: { id: 1, name: 'Role Cache Admin', role: 'admin', qr: 'role-cache-test' } }
+        : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    });
+
+    await page.goto('/?brand=delivery');
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-staff-ready'));
+    expect(await page.evaluate(() => ({
+      token: window.USER_TOKEN,
+      role: window.me && window.me.role,
+      staffRole: document.documentElement.getAttribute('data-staff-role'),
+      cachedRole: localStorage.getItem('zt_role')
+    }))).toEqual({
+      token: 'role-cache-test-token',
+      role: 'admin',
+      staffRole: 'admin',
+      cachedRole: null
+    });
+
+    await page.evaluate(() => window.setUser('next-session-token', { name: 'Role Cache Admin', role: 'admin' }));
+    expect(await page.evaluate(() => ({
+      token: window.USER_TOKEN,
+      role: window.me && window.me.role,
+      staffRole: document.documentElement.getAttribute('data-staff-role')
+    }))).toEqual({
+      token: 'next-session-token',
+      role: 'admin',
+      staffRole: 'admin'
+    });
+  });
+
   test('set PIN modal preserves claim and manage modes', async ({ page }) => {
     await page.goto('/?brand=delivery');
 

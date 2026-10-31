@@ -65,13 +65,12 @@ async function boot() {
       var staffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1
         ? window.me.role
         : '';
-      if (staffRole) {
-        localStorage.setItem('zt_role', staffRole);
-        document.documentElement.setAttribute('data-staff-role', staffRole);
-      } else {
-        localStorage.removeItem('zt_role');
-        document.documentElement.removeAttribute('data-staff-role');
-      }
+      try {
+        if (staffRole) localStorage.setItem('zt_role', staffRole);
+        else localStorage.removeItem('zt_role');
+      } catch (_) {}
+      if (staffRole) document.documentElement.setAttribute('data-staff-role', staffRole);
+      else document.documentElement.removeAttribute('data-staff-role');
       document.documentElement.setAttribute('data-staff-ready', '1');
     } catch (e) {
       window.me = null;
