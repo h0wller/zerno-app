@@ -1088,6 +1088,13 @@ if(b==='delivery'){
   }
 }
 
+/* Keep the single guest header row equal to the 48px delivery mark. */
+@media (max-width: 690px) {
+  html[data-brand="delivery"] body header.topbar:not(:has(#modeSeg:not([hidden]))) {
+    grid-template-rows: 48px;
+  }
+}
+
 /* The section must stay in column 2 before deferred 160-12-admin-bar-tail.css arrives. */
 html body div.wrap > section {
   grid-column: 2;
