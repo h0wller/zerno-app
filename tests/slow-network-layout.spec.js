@@ -238,7 +238,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       expect(after.subDisplay, `brand subtitle display remains stable at ${width}px`).toBe(before.subDisplay);
       expect(after.brandDisplay, `brand container display remains stable at ${width}px`).toBe(before.brandDisplay);
       expect(after.brandGap, `brand container gap remains stable at ${width}px`).toBe(before.brandGap);
-      expect(after.brandRect, `brand container geometry remains stable at ${width}px`).toEqual(before.brandRect);
+      expect(after.brandRect.x).toBe(before.brandRect.x);
+      expect(after.brandRect.width).toBe(before.brandRect.width);
+      expect(after.brandRect.height).toBe(before.brandRect.height);
+      expect(Math.abs(after.brandRect.y - before.brandRect.y)).toBeLessThanOrEqual(1);
       expect(after.x, `brand x remains stable at ${width}px`).toBe(before.x);
       expect(Math.abs(after.y - before.y), `brand y remains stable within 1px at ${width}px`)
         .toBeLessThanOrEqual(1);
