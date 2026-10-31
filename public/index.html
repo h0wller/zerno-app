@@ -1212,6 +1212,9 @@ html[data-brand="delivery"] #deliveryView .menu-head .upd {
   color: var(--soft);
   letter-spacing: 0.02em;
   text-transform: none;
+  min-width: min(181px, 100%);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 html[data-brand="delivery"] #deliveryView .mh-right,
 html[data-brand="delivery"] #deliveryView .mh-right .search,
@@ -1221,6 +1224,33 @@ html[data-brand="delivery"] #deliveryView .mh-right input {
   min-width: 0;
   margin: 0;
   box-sizing: border-box;
+}
+html[data-brand="delivery"] #deliveryView .mh-right {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  flex: 1 1 100%;
+}
+html[data-brand="delivery"] #deliveryView .mh-right .search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1.5px solid #d8dfe4;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(18, 58, 107, 0.05);
+  flex: 1 1 100%;
+}
+html[data-brand="delivery"] #deliveryView .mh-right .search input {
+  border: none;
+  outline: none;
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  background: transparent;
+  color: #101418;
 }
 html[data-brand="delivery"] #deliveryView .subfilter-bar {
   display: flex;
@@ -1242,6 +1272,9 @@ html[data-brand="delivery"] #deliveryView .subfilter-bar .subchip {
   justify-content: center;
   gap: 5px;
   padding: 0 14px;
+  border: 2px solid var(--fr-tan, #D9C7AD);
+  background: var(--fr-paper, #F6EEE1);
+  color: var(--fr-choc, #3A2A1C);
   border-radius: 999px;
   font: 600 13px/1 "Golos Text", system-ui, sans-serif;
   white-space: nowrap;
@@ -1302,6 +1335,8 @@ html[data-brand="delivery"] #deliveryGrid .opts .opt-btn {
   align-items: stretch;
   gap: 3px;
   padding: 7px 9px;
+  border: 2px solid var(--fr-tan, #D9C7AD);
+  background: #fff;
   min-height: 48px;
   width: 100%;
   min-width: 0;
