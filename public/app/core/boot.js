@@ -72,6 +72,7 @@ function renderAll() {
 
 /* ── 2. Точка входа: пользователь → меню → виды → бейджи → отзыв ── */
 async function boot() {
+  document.documentElement.setAttribute('data-staff-boot-started', '1');
   if (window.USER_TOKEN) {
     try {
       window.me = (await api('/me')).customer;
