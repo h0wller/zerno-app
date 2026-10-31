@@ -268,7 +268,29 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     const meGate = new Promise((resolve) => { releaseMe = resolve; });
 
     let meRequestCount = 0;
-    await context.route('**/api/me', async (route) => {
+    await context.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      if (pathname !== '/api/me') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ok: true,
+            items: [],
+            orders: [],
+            pending: [],
+            customers: [],
+            threads: [],
+            messages: [],
+            promos: [],
+            today: { open: 11, close: 22 },
+            schedule: { open: 11, close: 22 },
+            days: []
+          })
+        });
+        return;
+      }
+
       meRequestCount += 1;
       markMeRequested();
       await meGate;

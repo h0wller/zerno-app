@@ -4,9 +4,8 @@ async function waitForDeferredTheme(page) {
   await page.waitForFunction(() => {
     const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
       .filter((link) => link.href.includes('/app/ui/theme/'));
-    const loaded = window.__loadedThemeStylesheets;
     return links.length > 0 &&
-      links.every((link) => link.media !== 'print' && loaded && loaded.has(link.href));
+      links.every((link) => link.media !== 'print' && link.sheet !== null);
   }, null, { timeout: 20000 });
   await page.evaluate(() => document.fonts.ready.then(() => true));
   await page.evaluate(() => new Promise((resolve) =>
@@ -16,19 +15,6 @@ async function waitForDeferredTheme(page) {
 
 test.describe('Slow network: first viewport stays styled before deferred CSS', () => {
   test.use({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
-
-  test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      window.__loadedThemeStylesheets = new Set();
-      document.addEventListener('load', (event) => {
-        const link = event.target;
-        if (link && link.tagName === 'LINK' && link.rel === 'stylesheet' &&
-            link.href.includes('/app/ui/theme/')) {
-          window.__loadedThemeStylesheets.add(link.href);
-        }
-      }, true);
-    });
-  });
 
   test('delivery menu keeps its content column and product card geometry', async ({ page }) => {
     await page.addInitScript(() => {
@@ -579,6 +565,19 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       } catch (_) {}
     });
 
+    const deliveryItems = Array.from({ length: 6 }, (_, index) => ({
+      id: 990001 + index,
+      name: 'Тестовая пицца ' + (index + 1),
+      desc: 'Тестовая позиция',
+      cat: 'pizza',
+      section: 'delivery',
+      price: 500,
+      on: 1,
+      opts: [],
+      comp: [],
+      e: '🍕'
+    }));
+
     await page.route('**/api/**', async (route) => {
       const pathname = new URL(route.request().url()).pathname;
       if (pathname === '/api/me') {
@@ -613,7 +612,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         contentType: 'application/json',
         body: JSON.stringify({
           ok: true,
-          items: [],
+          items: deliveryItems,
           orders: [],
           pending: [],
           customers: [],

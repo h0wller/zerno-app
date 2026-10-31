@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+test.use({ serviceWorkers: 'block' });
+
 test.describe('Poster & Delivery Hours Suite (F3.66)', () => {
   test('delivery info endpoint returns schedule and today status', async ({ request }) => {
     const res = await request.get('/api/delivery/info');
@@ -53,6 +55,7 @@ test('клиентские предзаказы следуют зимнему р
   }));
 
   await page.goto('/?brand=delivery');
+  await page.evaluate(() => window.refreshDeliveryInfo());
   await expect.poll(() => page.evaluate(() => window.deliveryInfo && window.deliveryInfo.today && window.deliveryInfo.today.date))
     .toBe('2026-10-27');
 
@@ -113,6 +116,7 @@ test('пятничное зимнее расписание оставляет с
   }));
 
   await page.goto('/?brand=delivery');
+  await page.evaluate(() => window.refreshDeliveryInfo());
   await expect.poll(() => page.evaluate(() => window.deliveryInfo && window.deliveryInfo.today && window.deliveryInfo.today.date))
     .toBe('2026-10-30');
 
@@ -142,6 +146,7 @@ test('переход с летнего на зимнее расписание 1 
   }));
 
   await page.goto('/?brand=delivery');
+  await page.evaluate(() => window.refreshDeliveryInfo());
   await expect.poll(() => page.evaluate(() => window.deliveryInfo && window.deliveryInfo.today && window.deliveryInfo.today.date))
     .toBe('2026-09-30');
 
@@ -193,6 +198,7 @@ test('переход с зимнего на летнее расписание 1 
   }));
 
   await page.goto('/?brand=delivery');
+  await page.evaluate(() => window.refreshDeliveryInfo());
   await expect.poll(() => page.evaluate(() => window.deliveryInfo && window.deliveryInfo.today && window.deliveryInfo.today.date))
     .toBe('2026-04-30');
 
