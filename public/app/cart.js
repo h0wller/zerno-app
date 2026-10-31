@@ -641,6 +641,7 @@ function renderCartBase() {
 
     syncPreorderNotice(cItems);
     renderAddons();
+    renderGifts();
     updateDeliveryPromoBar();
     paintTotals();
     toggleDeliveryGroup();
