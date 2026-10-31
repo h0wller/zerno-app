@@ -390,9 +390,15 @@ if (brandSegEl) {
     window.__dlReq = 0;
     window.__dlPromise = null;
     sv();
-    if (brand === 'coffee' && (!window.MENU || !window.MENU.length) &&
-        typeof loadMenu === 'function') {
-      loadMenu();
+    if (brand === 'coffee') {
+      if ((!window.MENU || !window.MENU.length) && typeof loadMenu === 'function') {
+        loadMenu().then(function () {
+          if (typeof renderRail === 'function') renderRail();
+        }).catch(function () {});
+      } else {
+        if (typeof renderRail === 'function') renderRail();
+        if (typeof renderMenu === 'function') renderMenu();
+      }
     }
     if (typeof supportPending !== 'undefined' && !supportPending && typeof chatCtx !== 'undefined' && chatCtx !== brand) {
       chatCtx = brand;
