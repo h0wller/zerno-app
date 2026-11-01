@@ -69,13 +69,11 @@ ios/**/*.xcuserdata/
 .cache/
 .tmp/
 test-results/
-error-context.md
 playwright-report/
 *.last-run.json
 # Playwright артефакты
 artifacts/smoke.db
 tmp/
-*.db
 artifacts/
 screens/.auth-admin.json
 screens/01-splash-mobile.png
@@ -120,7 +118,6 @@ docs/inline-core-dump.txt
 repomix-output.xml
 lh-cold-.json
 .env.example
-.env.example
 # Pre-fix бэкапы от fix-all*.mjs
 *.pre-fix-*
 fix-shared-brands.mjs
@@ -137,7 +134,6 @@ lh-coffee-mobile.html
 lh-delivery-mobile.html
  0002-staff-orders-stats.patch
 0003-dispatch-done-preorders.patch
-0002-staff-orders-stats.patch
 
 # EGM review artifacts
 .egm/

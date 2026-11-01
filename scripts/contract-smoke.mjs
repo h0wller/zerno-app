@@ -68,21 +68,6 @@ process.on('SIGTERM', () => { _killCiServer(); process.exit(1); });
 
 await _ensureServerUp();
 
-const __serverProc = null;
-
-
-function cleanupServer() {
-  if (__serverProc) {
-    try {
-      __serverProc.kill();
-    } catch (_) {}
-  }
-}
-process.on('exit', cleanupServer);
-process.on('SIGINT', () => { cleanupServer(); process.exit(1); });
-process.on('SIGTERM', () => { cleanupServer(); process.exit(1); });
-
-
 const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
 const ADMIN = process.env.SMOKE_ADMIN_CODE || '';
 const CASHIER = process.env.SMOKE_CASHIER_CODE || '';
@@ -91,11 +76,10 @@ const log = (ok, name, extra = '') => { ok ? pass++ : fail++; console.log(`${ok 
 
 async function call(method, path, { body, token } = {}) {
   const headers = {
-  'Content-Type': 'application/json',
-  'x-smoke-test': '1',
-  ...(token ? { Authorization: `Bearer ${token}` } : {})
-};
-  if (token) headers.Authorization = 'Bearer ' + token;
+    'Content-Type': 'application/json',
+    'x-smoke-test': '1',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
   const res = await fetch(BASE + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   let json = null; try { json = await res.json(); } catch {}
   return { status: res.status, json };

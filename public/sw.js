@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v618';
+const STATIC_CACHE = 'zerno-static-v619';
 const MEDIA_CACHE = 'zerno-media-v20';
 const API_CACHE = 'zerno-api-v14';
 
@@ -50,9 +50,6 @@ const STATIC_ASSETS = [
   '/app/core/address-book.js',
   '/app/core/preorder-timer.js',
   '/app/vendor/qrcode.min.js',
-  '/app/ui/fonts/golos-text-400-cyrillic.woff2',
-  '/app/ui/fonts/golos-text-600-cyrillic.woff2',
-  '/app/ui/fonts/golos-text-700-cyrillic.woff2',
   '/app/ui/fonts/prata-400-cyrillic.woff2',
   '/app/ui/fonts/unbounded-700-cyrillic.woff2'
 ];

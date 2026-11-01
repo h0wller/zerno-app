@@ -63,8 +63,6 @@ const badLines = viewsLines.filter(l => {
   if (l.startsWith('@media') || l.startsWith('@keyframes') || l.startsWith('html,') || l.startsWith('body{') || l.startsWith('img,') || l === '') return false;
   // [data-brand=...] — разрешено
   if (l.startsWith('[data-brand=') || l.startsWith('html[data-brand=') || l.startsWith('body[data-brand=') || l.startsWith('html[data-brand="delivery"] body')) return false;
-  /* Ф3.32: layout-селекторы топбара/карточек (не брендовые, но легитимные) */
-  if (allowedGeneric.some(s => l.startsWith(s))) return false;
   // системные id-селекторы (FAB, grid, overlay) — разрешены
   if (l.startsWith('#') || l.startsWith('.topbar') || l.startsWith('.chat-fab') || l.startsWith('.addonChip') || l.startsWith('.ctxPick') || l.startsWith('.chatHint') || l.startsWith('#chatPanel') || l.startsWith('.myOrderCard') || l.startsWith('.moSt') || l.startsWith('.mo-') || l.startsWith('#myOrders') || l.startsWith('#brandSplash') || l.startsWith('#supportChooseOverlay') || l.startsWith('.venueToggle') || l.startsWith('.topbar .venueWrap') || l.startsWith('#iosHint') || l.startsWith('#installBanner') || l.startsWith('body.support-pending') || l.startsWith('#deliveryGrid') || l.startsWith('#cartFab')) return false;
   return true;
@@ -115,11 +113,8 @@ if (duplicates.length) {
   ok('views.js: нет дублей селекторов');
 }
 /* ── ПРАВИЛО 8: sanity-check эмитуемого CSS из views.js ── */
-import { readFileSync as rfs } from 'node:fs';
-const vsrc = rfs('public/app/core/views.js', 'utf8');
-const m = vsrc.match(/var rules = \[([\s\S]*?)\];\s*css\.textContent = rules\.join/);
-if (m) {
-  const cssText = m[1].split('\n')
+if (rulesMatch) {
+  const cssText = rulesMatch[1].split('\n')
     .map(l => l.trim())
     .filter(l => (l.startsWith("'") || l.startsWith('"')) && (l.endsWith("',") || l.endsWith('",')))
     .map(l => l.slice(1, -2))
@@ -129,7 +124,7 @@ if (m) {
   const open = (cssText.match(/\/\*/g) || []).length, close = (cssText.match(/\*\//g) || []).length;
   if (open !== close) { bad++; console.error(`❌ views.js: незакрытые CSS-комментарии (${open} vs ${close})`); }
   const watched = ['.ticker', '.brand .mark', '.opts button', '.brandSeg', '.cartPanel'];
-  const idxFull = rfs('public/index.html', 'utf8');
+  const idxFull = readFileSync('public/index.html', 'utf8');
 /* F5.12: critical FOUC-guard (Ф3.51) — разрешённый дубль-владелец, из watched исключён */
 const critStart = idxFull.indexOf('critical FOUC-guard');
 const critEnd = critStart >= 0 ? idxFull.indexOf('</style>', critStart) : -1;
