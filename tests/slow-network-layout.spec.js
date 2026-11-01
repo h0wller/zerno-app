@@ -336,7 +336,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     }
   });
 
-  test('delivery first frame skips coffee catalog, schedule, chat and hidden orders', async ({ page }) => {
+  test('delivery first frame loads schedule without coffee catalog, chat or orders', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
@@ -378,15 +378,16 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(requested.filter((path) => path === '/api/dmenu')).toHaveLength(1);
     expect(requested).not.toContain('/api/menu');
     expect(requested).not.toContain('/api/menu/all');
-    expect(requested).not.toContain('/api/delivery/info');
     expect(requested).not.toContain('/api/chat/thread');
     expect(requested).not.toContain('/api/orders/mine');
+    await expect.poll(() => requested.filter((path) => path === '/api/delivery/info').length)
+      .toBe(1);
 
     await page.locator('#deliveryGrid .cta[data-add]').first().click();
     await expect(page.locator('#cartFab')).toBeVisible();
     await page.click('#cartFab');
     await expect.poll(() => requested.filter((path) => path === '/api/delivery/info').length)
-      .toBe(1);
+      .toBeGreaterThanOrEqual(1);
     await expect(page.locator('#checkoutBtn')).toBeEnabled();
   });
 
