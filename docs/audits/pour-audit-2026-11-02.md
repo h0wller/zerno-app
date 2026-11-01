@@ -18,18 +18,18 @@ The contrast review rows include many repeated card descendants whose background
 
 ## Fix plan and verification
 
-- [ ] Give `#dSearch` a persistent associated label; preserve the placeholder as a hint.
-- [ ] Make the search field and container distinguishable from their background (3:1 boundary) and provide a visible keyboard focus indicator.
-- [ ] Ensure 44×44 px targets for four `#modeSeg` buttons, `#editToggle`, `#dSearch` and nine `#deliverySubFilter` chips.
-- [ ] Raise the confirmed delivery-brand contrast below AAA: venue-toggle arrow, mode segment active/inactive labels, ticker text, active delivery-rail button, delivery heading badge and update label.
-- [ ] Expose the chat FAB and scroll-to-top control through labelled landmarks; mark the confetti canvas decorative.
-- [ ] Remove continuous marquee movement rather than adding a separate pause control; remove the duplicated ticker copies used only for looping.
-- [ ] Align topbar DOM order with the visible reading order.
+- [x] Give `#dSearch` a persistent associated label; preserve the placeholder as a hint.
+- [x] Make the search field and container distinguishable from their background (3:1 boundary) and provide a visible keyboard focus indicator.
+- [x] Ensure 44×44 px targets for four `#modeSeg` buttons, `#editToggle`, `#dSearch` and nine `#deliverySubFilter` chips.
+- [x] Raise the confirmed delivery-brand contrast below AAA: venue-toggle arrow, mode segment active/inactive labels, ticker text, active delivery-rail button, delivery heading badge and update label.
+- [x] Expose the chat FAB and scroll-to-top control through labelled landmarks; mark the confetti canvas decorative.
+- [x] Remove continuous marquee movement rather than adding a separate pause control; remove the duplicated ticker copies used only for looping.
+- [x] Align topbar DOM order with the visible reading order.
 - [ ] Re-run Pour with all overlays/modals dismissed and the page fully hydrated; inspect image/gradient text, footer text and every remaining `review` item by eye.
 
 ## Scope notes
 
-The CSV was recorded as a supplied input, not copied into the repository. This Markdown file keeps the normalized report and remediation checklist. The Playwright regression spec added in this PR covers the deterministic DOM, target-size, landmark, ticker and keyboard-focus contracts. The report does not certify WCAG AAA across the whole application: repeat the audit for the coffee brand, authenticated staff states, mobile and desktop after the fixes.
+The CSV was recorded as a supplied input, not copied into the repository. This Markdown file keeps the normalized report and remediation checklist. The Playwright regression spec added in this PR covers the deterministic DOM, target-size, landmark, ticker, keyboard-focus and AAA text-contrast contracts. The report does not certify WCAG AAA across the whole application: repeat the audit for the coffee brand, authenticated staff states, mobile and desktop after the fixes.
 
 ## Confirmed CSS/DOM work tracked in this PR
 

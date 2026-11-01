@@ -88,6 +88,62 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
+  test('critical delivery text retains AAA contrast on its opaque surfaces', async ({ page }) => {
+    await expect(page.locator('#venueToggle')).toBeAttached();
+
+    const metrics = await page.evaluate(() => {
+      const mode = document.getElementById('modeSeg');
+      const wasHidden = mode.hidden;
+      mode.hidden = false;
+      const inactive = document.createElement('button');
+      const active = document.createElement('button');
+      active.className = 'on';
+      mode.append(inactive, active);
+
+      const rail = document.getElementById('deliveryRail');
+      const railProbe = document.createElement('button');
+      railProbe.className = 'on';
+      rail.appendChild(railProbe);
+
+      const ticker = document.getElementById('tickerTrack');
+      const venue = document.getElementById('venueToggle');
+      const arrow = venue.querySelector('.vt-arrow');
+      const badge = document.querySelector('#deliveryView .menu-head h1 em');
+      const update = document.getElementById('updWhenD');
+
+      const result = {
+        modeBackground: getComputedStyle(mode).backgroundColor,
+        inactiveModeText: getComputedStyle(inactive).color,
+        activeModeBackground: getComputedStyle(active).backgroundColor,
+        activeModeText: getComputedStyle(active).color,
+        tickerBackground: getComputedStyle(ticker).backgroundColor,
+        tickerText: getComputedStyle(ticker).color,
+        railBackground: getComputedStyle(railProbe).backgroundColor,
+        railText: getComputedStyle(railProbe).color,
+        venueBackground: getComputedStyle(venue).backgroundColor,
+        venueText: getComputedStyle(arrow).color,
+        venueArrowOpacity: getComputedStyle(arrow).opacity,
+        badgeText: getComputedStyle(badge).color,
+        updateText: getComputedStyle(update).color,
+      };
+
+      inactive.remove();
+      active.remove();
+      railProbe.remove();
+      mode.hidden = wasHidden;
+      return result;
+    });
+
+    expect(contrastRatio(metrics.modeBackground, metrics.inactiveModeText)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(metrics.activeModeBackground, metrics.activeModeText)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(metrics.tickerBackground, metrics.tickerText)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(metrics.railBackground, metrics.railText)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(metrics.venueBackground, metrics.venueText)).toBeGreaterThanOrEqual(7);
+    expect(metrics.venueArrowOpacity).toBe('1');
+    expect(contrastRatio('rgb(246, 238, 225)', metrics.badgeText)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio('rgb(246, 238, 225)', metrics.updateText)).toBeGreaterThanOrEqual(7);
+  });
+
   test('keyboard focus on delivery search retains a visible indicator', async ({ page }) => {
     let reachedSearch = false;
     for (let i = 0; i < 30; i += 1) {
