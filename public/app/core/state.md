@@ -19,7 +19,7 @@
 | `cat` | `'coffee' \| 'drinks' \| …` | rail click | renderMenu |
 | `dcat` | `'pizza' \| 'rolls' \| …` | delivery rail click | renderDeliveryMenu |
 | `query` | `string` | searchInput input | renderMenu |
-| `USER_TOKEN` | `string \| null` | setUser, logout | api.js (authHeaders) |
+| `USER_TOKEN` | `string \| null` | setUser, logout | api.js |
 | `onboarded` | `boolean` | skipAuth | boot |
 
 ## Правила для новых модулей (public/app/*)
