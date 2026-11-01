@@ -418,14 +418,8 @@ label.chk{
   overscroll-behavior: contain;
 }
 #authModal .authcard {
-  width: min(420px, 100%);
-  max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-  padding: clamp(20px, 4.5vw, 28px);
   border-radius: 24px;
-  text-align: left;
   gap: 12px;
-  scrollbar-width: thin;
-  overscroll-behavior: contain;
 }
 #authModal .authcard .alogo,
 #authModal .authcard h3,
@@ -463,24 +457,8 @@ label.chk{
   outline: 3px solid color-mix(in srgb, var(--flame, #C8402A) 35%, transparent);
   outline-offset: 2px;
 }
-#authModal #consentRow {
-  align-items: flex-start;
-  gap: 10px;
-  line-height: 1.5;
-  text-align: left;
-}
-#authModal #consentBox {
-  flex: 0 0 19px;
-  margin-top: 2px;
-}
 #authModal #consentRow span {
   min-width: 0;
-}
-#authModal #regBtn,
-#authModal #logBtn,
-#authModal #regTgBtn {
-  min-height: 48px;
-  border-radius: 14px;
 }
 #authModal .alt {
   margin-top: 2px;
@@ -499,12 +477,6 @@ label.chk{
     padding: max(10px, env(safe-area-inset-top, 0px))
       10px
       max(10px, env(safe-area-inset-bottom, 0px));
-  }
-  #authModal .authcard {
-    width: 100%;
-    max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-    padding: 20px 18px;
-    border-radius: 20px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
