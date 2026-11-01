@@ -84,7 +84,7 @@ body.editing .card:hover{
   position: absolute;
   top: 10px;
   left: 10px;
-  font: 700 9.5px "Unbounded";
+  font: 700 9.5px "Unbounded", "Golos Text", sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 4px 9px;
@@ -111,7 +111,7 @@ body.editing .card:hover{
   right: 10px;
   background: #D63939;
   color: #FFFFFF;
-  font: 800 10px "Unbounded";
+  font: 800 10px "Unbounded", "Golos Text", sans-serif;
   letter-spacing: 0.12em;
   padding: 5px 10px;
   border-radius: 999px;
