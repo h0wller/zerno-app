@@ -61,73 +61,113 @@
       : Math.min(info.value || 0, sum);
   }
 
-  function totalsNow() {
-    var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
-    var sum = list.reduce(function (a, c) {
-      var itemPrice = Number(c.price) || 0;
-      var modsSum = (c.modifiers || []).reduce(function (mA, m) {
-        return mA + (Number(m.price) || 0);
+  function getCartList() {
+    return typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
+  }
+
+  function getCartSubtotal(list) {
+    return list.reduce(function (total, item) {
+      var itemPrice = Number(item.price) || 0;
+      var modifiersPrice = (item.modifiers || []).reduce(function (sum, modifier) {
+        return sum + (Number(modifier.price) || 0);
       }, 0);
-      return a + (itemPrice + modsSum) * (Number(c.qty) || 1);
+      return total + (itemPrice + modifiersPrice) * (Number(item.qty) || 1);
     }, 0);
+  }
 
-    var methodEl = document.getElementById("checkoutMethod");
-    var method = methodEl ? methodEl.value : "delivery";
-    var isStaffUser = !!(typeof window.me !== "undefined" && window.me && ["admin", "cashier", "dispatch"].includes(window.me.role));
-    var pickup = (method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0;
-    var discLabel = method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : "");
-    var fee = 0;
-
-    var minOrder = 0;
-    var baseZoneFee = 0;
+  function getDeliveryPlace() {
     var placeEl = document.getElementById("checkoutPlace");
-    var placeVal = (placeEl && placeEl.value && placeEl.value.trim()) ? placeEl.value.trim() : "Янтарный";
-    var normP = String(placeVal).toLowerCase().trim();
+    return (placeEl && placeEl.value && placeEl.value.trim())
+      ? placeEl.value.trim()
+      : "Янтарный";
+  }
 
-    if (method === "delivery") {
-      if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
-        var z = deliveryInfo.zones.find(function (zone) {
-          return zone.places && zone.places.includes(placeVal);
-        });
-        if (z) {
-          baseZoneFee = Number(z.fee) || 0;
-          if (Number(z.min) > 0) minOrder = Number(z.min);
-        }
-      }
-      if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
-        var zoneFee = Number(window.AddressModule.getFee(placeVal));
-        if (zoneFee > 0) baseZoneFee = zoneFee;
-      }
-      if (!baseZoneFee) {
-        baseZoneFee = /синявино|покровское/i.test(normP) ? 250 : (/куликово|яблоновка/i.test(normP) ? 300 : 200);
-      }
-      if (!minOrder) {
-        minOrder = Number(window.MIN_DELIVERY_ORDER) > 0
-          ? Number(window.MIN_DELIVERY_ORDER)
-          : (/синявино|покровское/i.test(normP) ? 1000 : (/куликово|яблоновка/i.test(normP) ? 1200 : 0));
-      } else if (Number(window.MIN_DELIVERY_ORDER) > 0) {
-        minOrder = Number(window.MIN_DELIVERY_ORDER);
-      }
+  function getDefaultDeliveryRates(normalizedPlace) {
+    var isFarZone = /синявино|покровское/i.test(normalizedPlace);
+    var isOuterZone = /куликово|яблоновка/i.test(normalizedPlace);
+    return {
+      fee: isFarZone ? 250 : (isOuterZone ? 300 : 200),
+      minOrder: isFarZone ? 1000 : (isOuterZone ? 1200 : 0),
+    };
+  }
 
-      if (list.length) {
-        // Доставка платная всегда (сервер freeFrom не знает), кроме персонального промокода «первая доставка бесплатно».
-        fee = (promoInfo && promoInfo.kind === "freeship") ? 0 : baseZoneFee;
+  function getDeliveryZoneRates(placeVal) {
+    var baseZoneFee = 0;
+    var minOrder = 0;
+    var normalizedPlace = String(placeVal).toLowerCase().trim();
+
+    if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
+      var zone = deliveryInfo.zones.find(function (entry) {
+        return entry.places && entry.places.includes(placeVal);
+      });
+      if (zone) {
+        baseZoneFee = Number(zone.fee) || 0;
+        if (Number(zone.min) > 0) minOrder = Number(zone.min);
       }
     }
 
+    if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
+      var addressFee = Number(window.AddressModule.getFee(placeVal));
+      if (addressFee > 0) baseZoneFee = addressFee;
+    }
+
+    var defaults = getDefaultDeliveryRates(normalizedPlace);
+    if (!baseZoneFee) baseZoneFee = defaults.fee;
+
+    var configuredMinOrder = Number(window.MIN_DELIVERY_ORDER);
+    if (!minOrder) {
+      minOrder = configuredMinOrder > 0 ? configuredMinOrder : defaults.minOrder;
+    } else if (configuredMinOrder > 0) {
+      minOrder = configuredMinOrder;
+    }
+
+    return { baseZoneFee: baseZoneFee, minOrder: minOrder };
+  }
+
+  function getDeliveryPricing(list, method, placeVal) {
+    if (method !== "delivery") {
+      return { fee: 0, baseZoneFee: 0, minOrder: 0 };
+    }
+
+    var rates = getDeliveryZoneRates(placeVal);
+    var fee = 0;
+    if (list.length) {
+      // Доставка платная всегда, кроме персонального промокода «первая доставка бесплатно».
+      fee = (promoInfo && promoInfo.kind === "freeship") ? 0 : rates.baseZoneFee;
+    }
+
+    return {
+      fee: fee,
+      baseZoneFee: rates.baseZoneFee,
+      minOrder: rates.minOrder,
+    };
+  }
+
+  function totalsNow() {
+    var list = getCartList();
+    var sum = getCartSubtotal(list);
+    var methodEl = document.getElementById("checkoutMethod");
+    var method = methodEl ? methodEl.value : "delivery";
+    var isStaffUser = !!(typeof window.me !== "undefined" && window.me &&
+      ["admin", "cashier", "dispatch"].includes(window.me.role));
+    var pickup = (method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0;
+    var discLabel = method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : "");
+    var placeVal = getDeliveryPlace();
+    var deliveryPricing = getDeliveryPricing(list, method, placeVal);
     var pd = promoInfo ? promoDisc(sum, promoInfo) : 0;
+
     return {
       sum: sum,
       pickup: pickup,
       discLabel: discLabel,
-      fee: fee,
-      baseZoneFee: baseZoneFee,
+      fee: deliveryPricing.fee,
+      baseZoneFee: deliveryPricing.baseZoneFee,
       freeShip: !!(promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
       placeVal: placeVal,
       pd: pd,
-      minOrder: minOrder,
-      belowMin: method === "delivery" && minOrder > 0 && sum > 0 && sum < minOrder,
-      total: Math.max(0, sum - pickup - pd + fee),
+      minOrder: deliveryPricing.minOrder,
+      belowMin: method === "delivery" && deliveryPricing.minOrder > 0 && sum > 0 && sum < deliveryPricing.minOrder,
+      total: Math.max(0, sum - pickup - pd + deliveryPricing.fee),
     };
   }
 
