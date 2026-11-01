@@ -901,3 +901,40 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
   });
 
 });
+
+
+test.describe('API request cancellation', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  test('api forwards AbortSignal to fetch', async ({ page }) => {
+    await page.route('**/api/__abort-signal-probe', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      try {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true })
+        });
+      } catch (_) {
+        // The test intentionally aborts this request before the response is sent.
+      }
+    });
+
+    await page.goto('/?brand=coffee');
+    await expect.poll(() => page.evaluate(() => typeof window.api)).toBe('function');
+
+    const result = await page.evaluate(async () => {
+      const controller = new AbortController();
+      const request = window.api('/__abort-signal-probe', { signal: controller.signal });
+      setTimeout(() => controller.abort(), 20);
+      try {
+        await request;
+        return 'resolved';
+      } catch (error) {
+        return error.name;
+      }
+    });
+
+    expect(result).toBe('AbortError');
+  });
+});

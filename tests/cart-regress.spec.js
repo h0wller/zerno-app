@@ -73,6 +73,39 @@ test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степп
 
 const num = (s) => parseInt(String(s).replace(/[^0-9]/g, ''), 10) || 0;
 
+test('delivery schedule and promo ticker hydrate before the cart is opened', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  const info = {
+    today: { open: 11, close: 22 },
+    days: [],
+    zones: [],
+    weekPromo: { text: 'Тестовая акция недели' },
+    pizzaMonth: { name: 'Тестовая пицца' }
+  };
+  await page.route('**/api/delivery/info', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(info)
+  }));
+
+  const scheduleResponse = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === '/api/delivery/info'
+  , { timeout: 10000 });
+  await page.goto('/?brand=delivery');
+  const response = await scheduleResponse;
+  expect(response.ok()).toBeTruthy();
+
+  await expect.poll(() => page.evaluate(() => !!window.deliveryInfo)).toBe(true);
+  await expect(page.locator('#tickerTrack')).toContainText(info.weekPromo.text);
+  await expect(page.locator('#tickerTrack')).toContainText(info.pizzaMonth.name);
+  await expect(page.locator('#cartPanel')).not.toHaveClass(/open/);
+});
+
 test('корзина: 1 клик = +1, подарок 2×35, пустая = 0 ₽', async ({ page }) => {
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
@@ -287,6 +320,12 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     });
 
     const checkoutBtn = page.locator('#checkoutBtn');
+    await expect(checkoutBtn).toBeDisabled();
+    await expect(checkoutBtn).toContainText('Мин. сумма доставки');
+
+    // Reopening refreshes deliveryInfo; it must not unlock a cart below the minimum.
+    await page.locator('#cartClose').click();
+    await page.locator('#cartFab').click();
     await expect(checkoutBtn).toBeDisabled();
     await expect(checkoutBtn).toContainText('Мин. сумма доставки');
 

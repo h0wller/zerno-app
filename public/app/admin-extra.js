@@ -231,6 +231,9 @@
             emoji: '☕'
           };
 
+    if (brand === 'delivery' && !window.deliveryInfo && typeof window.refreshDeliveryInfo === 'function') {
+      window.refreshDeliveryInfo().catch(function () {});
+    }
     renderTickerItems(bConfig);
 
     var mark =

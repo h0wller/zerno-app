@@ -721,7 +721,6 @@ $('#cartFab').onclick = async () => {
   try {
     await window.refreshDeliveryInfo();
     window.renderCart();
-    if (checkoutButton) checkoutButton.disabled = false;
   } catch (error) {
     if (typeof toast === 'function') {
       toast('Не удалось обновить график работы. Проверьте соединение перед оформлением.', '⚠️');

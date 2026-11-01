@@ -25,7 +25,8 @@
     const res = await fetch(url, {
       method: opts.method || 'GET',
       headers: headers,
-      body: opts.body ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body)) : undefined
+      body: opts.body ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body)) : undefined,
+      signal: opts.signal
     });
 
     if (res.status === 401) {
