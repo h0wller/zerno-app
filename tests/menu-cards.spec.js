@@ -136,11 +136,6 @@ test.describe('Карточки меню: высота, выравнивание
           await page.addInitScript(() => {
             localStorage.setItem('zt_onb', '1');
             sessionStorage.setItem('splashDone', '1');
-            const u = { id: 'u_cards', name: 'Тестер', phone: '+7 999 999-22-22', stamps: 2, verified: 1 };
-            localStorage.setItem('zt_user', JSON.stringify(u));
-            localStorage.setItem('user', JSON.stringify(u));
-            localStorage.setItem('zt_token', 'test_tok_cards');
-            localStorage.setItem('token', 'test_tok_cards');
           });
           const deliveryResponse = brand.name === 'Доставка'
             ? page.waitForResponse((res) => new URL(res.url()).pathname.replace(/\/+$/, '').endsWith('/dmenu'), { timeout: 5000 })
