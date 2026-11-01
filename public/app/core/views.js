@@ -100,7 +100,7 @@ var rules = [
  '[data-brand="delivery"] #deliveryGrid .opts button.sel{background:var(--btn-fire-bg,var(--flame));border:var(--btn-fire-border,2px solid var(--fr-choc));box-shadow:var(--btn-fire-shadow,2px 2px 0 var(--fr-choc));color:var(--btn-fire-color,#fff)}',
  '[data-brand="delivery"] #deliveryGrid .opts button.sel .op,[data-brand="delivery"] #deliveryGrid .opts button.sel .opt-size,[data-brand="delivery"] #deliveryGrid .opts button.sel .opt-crust,[data-brand="delivery"] #deliveryGrid .opts button.sel .opt-weight,[data-brand="delivery"] #deliveryGrid .opts button.sel .opt-price{color:var(--btn-fire-color,#fff)}',
  '[data-brand="delivery"] #deliveryRail button.on{background:#8B2B20;border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff;font:700 13px Unbounded,sans-serif}',
- '[data-brand="delivery"] #brandSeg,[data-brand="delivery"] #modeSeg{background:var(--esp);--mode-segment-color:#F3EDE6}',
+ '[data-brand="delivery"] #brandSeg,[data-brand="delivery"] #modeSeg{background:var(--esp)}',
  '[data-brand="delivery"] #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on{background:#8B2B20;color:#fff}',
  '[data-brand="delivery"] #cartFab,[data-brand="delivery"] .chat-fab{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc)}',
  '[data-brand="delivery"] #cartPanel,[data-brand="delivery"] .cartPanel{background:var(--fr-rice);border:3px solid var(--fr-choc);border-bottom:none}',
@@ -127,7 +127,8 @@ var rules = [
  '[data-brand="delivery"] .subchip{border:2px solid var(--fr-tan);background:var(--fr-paper);color:var(--fr-choc)}',
  '[data-brand="delivery"] .subchip.on{background:var(--flame);border-color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff}',
  '@media(min-width:0){body.is-cashier .ticker,body.is-admin .ticker{display:none}}',
-  ];
+  '[data-brand="delivery"] #modeSeg button:not(.on){color:#F3EDE6}'
+];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
 
