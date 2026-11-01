@@ -126,7 +126,14 @@ var rules = [
   '[data-brand="delivery"] .brand small { color: #3a2a1c; }',
  '[data-brand="delivery"] .subchip{border:2px solid var(--fr-tan);background:var(--fr-paper);color:var(--fr-choc)}',
  '[data-brand="delivery"] .subchip.on{background:var(--flame);border-color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff}',
- '@media(min-width:0){body.is-cashier .ticker,body.is-admin .ticker{display:none}}'
+ '@media(min-width:0){body.is-cashier .ticker,body.is-admin .ticker{display:none}}',
+  '[data-brand="delivery"] .venueWrap #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on,[data-brand="delivery"] #deliveryRail button.on{background:#8B2B20;color:#fff}',
+  '[data-brand="delivery"] #modeSeg button:not(.on){color:#F3EDE6}',
+  '[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{color:#FFC36B}',
+  '[data-brand="delivery"] #tickerTrack span::after{color:#FFC36B}',
+  '[data-brand="delivery"] #deliveryView .menu-head h1 em{color:#8B2B20}',
+  '[data-brand="delivery"] #deliveryView .menu-head .upd{color:#241812}',
+  '[data-brand="delivery"] #deliveryView #updWhenD{color:#0F5132}'
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
@@ -562,14 +569,7 @@ sv();
     if (byId) return byId;
     var all = document.querySelectorAll('#profileBox button, .panel button');
     for (let i = 0; i < all.length; i++) {
-      if (/Включить уведомления/.test(all[i].textContent || '')) return all[i  '[data-brand="delivery"] .venueWrap #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on,[data-brand="delivery"] #deliveryRail button.on{background:#8B2B20;color:#fff}',
-  '[data-brand="delivery"] #modeSeg button:not(.on){color:#F3EDE6}',
-  '[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{color:#FFC36B}',
-  '[data-brand="delivery"] #tickerTrack span::after{color:#FFC36B}',
-  '[data-brand="delivery"] #deliveryView .menu-head h1 em{color:#8B2B20}',
-  '[data-brand="delivery"] #deliveryView .menu-head .upd{color:#241812}',
-  '[data-brand="delivery"] #deliveryView #updWhenD{color:#0F5132}'
-];
+      if (/Включить уведомления/.test(all[i].textContent || '')) return all[i];
     }
     return null;
   }
