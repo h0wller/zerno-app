@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-const imageFixture = Array.from({ length: 5 }, (_, index) => ({
+const imageFixture = Array.from({ length: 6 }, (_, index) => ({
   id: 'responsive-image-' + index,
   cat: 'pizza',
   section: 'delivery',
   name: 'LCP fixture ' + index,
   desc: '',
-  comp: [],
-  opts: [],
+  comp: ['томатный соус', 'моцарелла'],
+  opts: [{ l: '25 см, пышное', w: '415 г', p: 535, sz: 25 }],
   price: 500,
   e: '🍕',
   on: 1,
@@ -97,7 +97,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     const response = await deliveryResponse;
     expect(response.ok()).toBeTruthy();
     const items = (await response.json()).items;
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(6);
     expect(items[0].id).toBe('responsive-image-0');
     await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
 
