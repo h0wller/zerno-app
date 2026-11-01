@@ -726,134 +726,151 @@ function renderCartBase() {
     });
   }
   var cPanel = document.getElementById("cartPanel");
-  if (cPanel) {
-    cPanel.addEventListener("click", function (e) {
-      if (e.target.closest("#cartTopClose") || e.target.closest("#cartClose")) {
-        e.preventDefault();
-        cPanel.classList.remove("open");
-        if (typeof syncOverlay === "function") syncOverlay();
-        if (window.TgUx) window.TgUx.sync();
-        return;
-      }
-
-      // Табы кросс-сейла (Все / Соусы / Напитки)
-      var tabBtn = e.target.closest("[data-atab]");
-      if (tabBtn) {
-        e.preventDefault();
-        activeAddonTab = tabBtn.dataset.atab;
-        renderAddons();
-        return;
-      }
-
-      // Раскрытие / сворачивание списка добавок по нажатию на кнопку
-      var toggleBtn = e.target.closest("[data-toggle-mods]");
-      if (toggleBtn) {
-        e.preventDefault();
-        var idx = +toggleBtn.dataset.toggleMods;
-        openModsMap[idx] = !openModsMap[idx];
-        renderCartBase();
-        return;
-      }
-
-      // Переключатель модификатора: повторный клик по тому же чипсу убирает добавку
-      var modChip = e.target.closest("[data-toggle-mod-item]");
-      if (modChip && typeof DMENU !== "undefined") {
-        e.preventDefault();
-        var targetIdx = +modChip.dataset.toggleModItem;
-        var modId = modChip.dataset.modId;
-        var cartItem = cart[targetIdx];
-        var modProduct = DMENU.find(function (x) { return String(x.id) === String(modId); });
-
-        if (cartItem && modProduct) {
-          if (!cartItem.modifiers) cartItem.modifiers = [];
-          var existPos = cartItem.modifiers.findIndex(function (m) { return String(m.id) === String(modId); });
-
-          if (existPos > -1) {
-            // Уже добавлен -> клик по этому же тексту УБИРАЕТ его
-            cartItem.modifiers.splice(existPos, 1);
-          } else {
-            // Не добавлен -> добавляем
-            cartItem.modifiers.push({
-              id: modProduct.id,
-              name: modProduct.name,
-              price: Number(modProduct.price) || 0
-            });
-            if (window.TgUx) window.TgUx.haptic("medium");
-          }
-
-          persistCartUpdate();
-        }
-        return;
-      }
-
-      // Удаление модификатора по крестику ✕
-      var delModBtn = e.target.closest("[data-del-mod]");
-      if (delModBtn) {
-        e.preventDefault();
-        var cIdx = +delModBtn.dataset.delMod;
-        var mIdx = +delModBtn.dataset.modIdx;
-        if (cart[cIdx] && cart[cIdx].modifiers) {
-          cart[cIdx].modifiers.splice(mIdx, 1);
-          persistCartUpdate();
-        }
-        return;
-      }
-
-      // Степпер изменения количества основного блюда
-      var b = e.target.closest("[data-ci]");
-      if (b) {
-        var i = +b.dataset.ci;
-        var it = cart[i];
-        if (!it) { renderCartBase(); return; }
-        if (b.dataset.act === "+") it.qty++;
-        else if (it.qty > 1) it.qty--;
-        else {
-          cart.splice(i, 1);
-          delete openModsMap[i];
-        }
-
-        persistCartUpdate();
-        return;
-      }
-
-      // Быстрое добавление напитков или соусов из общего блока
-      var acBtn = e.target.closest("[data-addon-id]");
-      if (acBtn && typeof DMENU !== "undefined") {
-        var aId = acBtn.dataset.addonId;
-        var prod = DMENU.find(function (x) { return String(x.id) === String(aId); });
-        if (!prod) return;
-
-        var inCart = cart.find(function (c) { return String(c.id) === String(prod.id) && (!c.modifiers || !c.modifiers.length); });
-        var action = acBtn.dataset.acAct;
-
-        if (action === "minus") {
-          if (inCart) {
-            if (inCart.qty > 1) inCart.qty--;
-            else cart.splice(cart.indexOf(inCart), 1);
-          }
-        } else {
-          if (inCart) {
-            inCart.qty++;
-          } else {
-            cart.push({
-              key: prod.id,
-              id: prod.id,
-              oi: -1,
-              name: prod.name,
-              opt: null,
-              price: parseInt(prod.price, 10) || 0,
-              sz: 0,
-              qty: 1,
-              modifiers: []
-            });
-          }
-          if (window.TgUx) window.TgUx.haptic("medium");
-        }
-
-        persistCartUpdate();
-      }
-    });
+  function handleCartCloseClick(e, panel) {
+    if (!e.target.closest("#cartTopClose") && !e.target.closest("#cartClose")) return false;
+    e.preventDefault();
+    panel.classList.remove("open");
+    if (typeof syncOverlay === "function") syncOverlay();
+    if (window.TgUx) window.TgUx.sync();
+    return true;
   }
+
+  function handleCartAddonTabClick(e) {
+    var tabBtn = e.target.closest("[data-atab]");
+    if (!tabBtn) return false;
+    e.preventDefault();
+    activeAddonTab = tabBtn.dataset.atab;
+    renderAddons();
+    return true;
+  }
+
+  function handleCartModifiersToggleClick(e) {
+    var toggleBtn = e.target.closest("[data-toggle-mods]");
+    if (!toggleBtn) return false;
+    e.preventDefault();
+    var idx = +toggleBtn.dataset.toggleMods;
+    openModsMap[idx] = !openModsMap[idx];
+    renderCartBase();
+    return true;
+  }
+
+  function handleCartModifierChipClick(e) {
+    var modChip = e.target.closest("[data-toggle-mod-item]");
+    if (!modChip || typeof DMENU === "undefined") return false;
+    e.preventDefault();
+
+    var targetIdx = +modChip.dataset.toggleModItem;
+    var modId = modChip.dataset.modId;
+    var cartItem = cart[targetIdx];
+    var modProduct = DMENU.find(function (item) { return String(item.id) === String(modId); });
+
+    if (cartItem && modProduct) {
+      if (!cartItem.modifiers) cartItem.modifiers = [];
+      var existingIndex = cartItem.modifiers.findIndex(function (modifier) {
+        return String(modifier.id) === String(modId);
+      });
+
+      if (existingIndex > -1) {
+        cartItem.modifiers.splice(existingIndex, 1);
+      } else {
+        cartItem.modifiers.push({
+          id: modProduct.id,
+          name: modProduct.name,
+          price: Number(modProduct.price) || 0,
+        });
+        if (window.TgUx) window.TgUx.haptic("medium");
+      }
+      persistCartUpdate();
+    }
+    return true;
+  }
+
+  function handleCartModifierDeleteClick(e) {
+    var deleteButton = e.target.closest("[data-del-mod]");
+    if (!deleteButton) return false;
+    e.preventDefault();
+
+    var cartIndex = +deleteButton.dataset.delMod;
+    var modifierIndex = +deleteButton.dataset.modIdx;
+    if (cart[cartIndex] && cart[cartIndex].modifiers) {
+      cart[cartIndex].modifiers.splice(modifierIndex, 1);
+      persistCartUpdate();
+    }
+    return true;
+  }
+
+  function handleCartQuantityClick(e) {
+    var button = e.target.closest("[data-ci]");
+    if (!button) return false;
+
+    var index = +button.dataset.ci;
+    var item = cart[index];
+    if (!item) {
+      renderCartBase();
+      return true;
+    }
+
+    if (button.dataset.act === "+") item.qty++;
+    else if (item.qty > 1) item.qty--;
+    else {
+      cart.splice(index, 1);
+      delete openModsMap[index];
+    }
+    persistCartUpdate();
+    return true;
+  }
+
+  function handleCartQuickAddonClick(e) {
+    var addonButton = e.target.closest("[data-addon-id]");
+    if (!addonButton || typeof DMENU === "undefined") return false;
+
+    var addonId = addonButton.dataset.addonId;
+    var product = DMENU.find(function (item) { return String(item.id) === String(addonId); });
+    if (!product) return true;
+
+    var inCart = cart.find(function (item) {
+      return String(item.id) === String(product.id) && (!item.modifiers || !item.modifiers.length);
+    });
+    var action = addonButton.dataset.acAct;
+
+    if (action === "minus") {
+      if (inCart) {
+        if (inCart.qty > 1) inCart.qty--;
+        else cart.splice(cart.indexOf(inCart), 1);
+      }
+    } else if (inCart) {
+      inCart.qty++;
+      if (window.TgUx) window.TgUx.haptic("medium");
+    } else {
+      cart.push({
+        key: product.id,
+        id: product.id,
+        oi: -1,
+        name: product.name,
+        opt: null,
+        price: parseInt(product.price, 10) || 0,
+        sz: 0,
+        qty: 1,
+        modifiers: [],
+      });
+      if (window.TgUx) window.TgUx.haptic("medium");
+    }
+
+    persistCartUpdate();
+    return true;
+  }
+
+  function handleCartPanelClick(e) {
+    if (handleCartCloseClick(e, cPanel)) return;
+    if (handleCartAddonTabClick(e)) return;
+    if (handleCartModifiersToggleClick(e)) return;
+    if (handleCartModifierChipClick(e)) return;
+    if (handleCartModifierDeleteClick(e)) return;
+    if (handleCartQuantityClick(e)) return;
+    handleCartQuickAddonClick(e);
+  }
+
+  if (cPanel) cPanel.addEventListener("click", handleCartPanelClick);
 
   /* ── 1. Свайп мышью как на смартфоне (Drag-to-scroll) на ПК ── */
   (function initMouseDragScroll() {
