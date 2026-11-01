@@ -59,6 +59,9 @@
       "minimatch": "^10.2.3"
     },
     "braces": "^3.0.3",
-    "micromatch": "^4.0.8"
+    "micromatch": "^4.0.8",
+    "firebase-admin": {
+      "@google-cloud/firestore": "^9.4.0"
+    }
   }
 }
