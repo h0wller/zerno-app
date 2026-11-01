@@ -136,6 +136,7 @@ app.get('/api/menu/all', menuGuard, (req, res) => res.json({
 }));
 app.get('/api/dmenu', (req, res) => res.json({
   items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery' ORDER BY sort_order ASC, id ASC").all().map(menuResponseItem),
+  updatedAt: getMeta(),
 }));
 app.post('/api/menu', adminGuard, (req, res) => {
   const sec = req.body.section === 'delivery' ? 'delivery' : 'coffee';
