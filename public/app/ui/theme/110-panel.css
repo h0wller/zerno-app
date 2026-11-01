@@ -480,10 +480,6 @@
 }
 #profileBox .demoBtn {
   margin: 10px 0 0;
-}
-#profileBox .demoBtn,
-#profileBox > #activateBtn,
-#profileBox > #pushBtn {
   border-style: solid;
   border-color: var(--line);
   background: #fff;
@@ -492,6 +488,9 @@
 #profileBox > #pushBtn {
   margin: 0;
   padding: 10px 12px;
+  border-style: solid;
+  border-color: var(--line);
+  background: #fff;
 }
 #profileBox .profile-section-heading {
   align-items: center;
