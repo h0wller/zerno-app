@@ -758,11 +758,17 @@ window.loadDelivery = async function() {
     var r = (me && ['admin','cashier','dispatch'].indexOf(me.role) !== -1)
       ? await api('/menu/all').then(function(all) {
           MENU = all.items || [];
-          if (all.updatedAt) meta.updatedAt = all.updatedAt;
-          return { items: MENU.filter(function(p){ return p.section === 'delivery'; }) };
+          return {
+            items: MENU.filter(function(p){ return p.section === 'delivery'; }),
+            updatedAt: all.updatedAt,
+          };
         })
       : await api('/dmenu');
     DMENU = r.items || [];
+    if (r.updatedAt) {
+      window.meta.updatedAt = r.updatedAt;
+      if (typeof window.renderUpd === 'function') window.renderUpd();
+    }
     renderDeliveryRail();
     window.renderDeliveryMenu();
     updateCartFab();
