@@ -2,6 +2,9 @@
 (function () {
   'use strict';
 
+  var STAFF_ROLE_ATTRIBUTE = 'data-staff-role';
+  var STAFF_READY_ATTRIBUTE = 'data-staff-ready';
+
   function setUser(token, customer) {
     window.USER_TOKEN = token;
     if (token) localStorage.setItem('zt_user', token);
@@ -16,9 +19,9 @@
       if (staffRole) localStorage.setItem('zt_role', staffRole);
       else localStorage.removeItem('zt_role');
     } catch (_) {}
-    if (staffRole) root.setAttribute('data-staff-role', staffRole);
-    else root.removeAttribute('data-staff-role');
-    root.setAttribute('data-staff-ready', '1');
+    if (staffRole) root.setAttribute(STAFF_ROLE_ATTRIBUTE, staffRole);
+    else root.removeAttribute(STAFF_ROLE_ATTRIBUTE);
+    root.setAttribute(STAFF_READY_ATTRIBUTE, '1');
     window.historyLoaded = false;
     window.lastChatId = 0;
 
@@ -60,14 +63,14 @@
     if (e.key === 'zt_role') {
       // Without a token, a role hint cannot grant staff layout or access.
       if (!localStorage.getItem('zt_user')) {
-        root.removeAttribute('data-staff-role');
-        root.setAttribute('data-staff-ready', '1');
+        root.removeAttribute(STAFF_ROLE_ATTRIBUTE);
+        root.setAttribute(STAFF_READY_ATTRIBUTE, '1');
         return;
       }
-      if (e.newValue === root.getAttribute('data-staff-role') || storageReloadPending) return;
+      if (e.newValue === root.getAttribute(STAFF_ROLE_ATTRIBUTE) || storageReloadPending) return;
 
-      root.removeAttribute('data-staff-role');
-      root.removeAttribute('data-staff-ready');
+      root.removeAttribute(STAFF_ROLE_ATTRIBUTE);
+      root.removeAttribute(STAFF_READY_ATTRIBUTE);
       storageReloadPending = true;
       window.location.reload();
       return;
@@ -77,8 +80,8 @@
       if (typeof window.setUser === 'function') {
         window.setUser(null, null);
       } else {
-        root.removeAttribute('data-staff-role');
-        root.setAttribute('data-staff-ready', '1');
+        root.removeAttribute(STAFF_ROLE_ATTRIBUTE);
+        root.setAttribute(STAFF_READY_ATTRIBUTE, '1');
         window.USER_TOKEN = null;
         window.me = null;
       }
@@ -88,8 +91,8 @@
     if (e.newValue === window.USER_TOKEN || storageReloadPending) return;
 
     // The new token must pass /api/me in boot() before staff layout is restored.
-    root.removeAttribute('data-staff-role');
-    root.removeAttribute('data-staff-ready');
+    root.removeAttribute(STAFF_ROLE_ATTRIBUTE);
+    root.removeAttribute(STAFF_READY_ATTRIBUTE);
     storageReloadPending = true;
     window.location.reload();
   });

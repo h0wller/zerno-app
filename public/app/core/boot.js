@@ -91,67 +91,79 @@ function renderAll() {
 }
 
 /* ── 2. Точка входа: пользователь → меню → виды → бейджи → отзыв ── */
+function preloadDeliveryCatalog() {
+  if (window.brand !== 'delivery' || typeof window.loadDelivery !== 'function') return null;
+  window.__dlReq = 1;
+  return window.__dlPromise = window.loadDelivery();
+}
+
+async function verifyStaffSession() {
+  if (!window.USER_TOKEN) {
+    document.documentElement.setAttribute('data-staff-ready', '1');
+    return;
+  }
+
+  const authController = new AbortController();
+  const authTimeout = setTimeout(() => authController.abort(), 12000);
+  try {
+    window.me = (await api('/me', { signal: authController.signal })).customer;
+    var staffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1
+      ? window.me.role
+      : '';
+    try {
+      if (staffRole) localStorage.setItem('zt_role', staffRole);
+      else localStorage.removeItem('zt_role');
+    } catch (_) {}
+    if (staffRole) document.documentElement.setAttribute('data-staff-role', staffRole);
+    else document.documentElement.removeAttribute('data-staff-role');
+    document.documentElement.setAttribute('data-staff-ready', '1');
+  } catch (e) {
+    window.me = null;
+    window.USER_TOKEN = null;
+    localStorage.removeItem(typeof T_USER !== 'undefined' ? T_USER : 'zt_user');
+    localStorage.removeItem('zt_role');
+    document.documentElement.removeAttribute('data-staff-role');
+    document.documentElement.setAttribute('data-staff-ready', '1');
+  } finally {
+    clearTimeout(authTimeout);
+  }
+}
+
+async function loadInitialCatalog(earlyDeliveryLoad) {
+  if (window.brand !== 'delivery') {
+    if (typeof loadMenu === 'function') await loadMenu();
+    return;
+  }
+
+  var isStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
+  var deliveryLoad = earlyDeliveryLoad;
+
+  // Once /api/me confirms a staff role, replace the public list with the
+  // full catalog (including stopped items) required by staff tools.
+  if (isStaffRole && typeof window.loadDelivery === 'function') {
+    // Let the public preload settle before starting the staff request. Otherwise
+    // a slower /api/dmenu response could overwrite the complete staff catalog.
+    if (earlyDeliveryLoad) await earlyDeliveryLoad;
+    deliveryLoad = window.__dlPromise = window.loadDelivery();
+  } else if (!deliveryLoad && typeof window.loadDelivery === 'function') {
+    window.__dlReq = 1;
+    deliveryLoad = window.__dlPromise = window.loadDelivery();
+  }
+
+  if (deliveryLoad) await deliveryLoad;
+}
+
 async function boot() {
   document.documentElement.setAttribute('data-staff-boot-started', '1');
 
   // Load the public delivery catalog while staff authentication is being verified.
   // This keeps the first viewport populated on slow networks without trusting the role hint.
-  var earlyDeliveryLoad = null;
-  if (window.brand === 'delivery' && typeof window.loadDelivery === 'function') {
-    window.__dlReq = 1;
-    earlyDeliveryLoad = window.__dlPromise = window.loadDelivery();
-  }
+  var earlyDeliveryLoad = preloadDeliveryCatalog();
 
-  if (window.USER_TOKEN) {
-    const authController = new AbortController();
-    const authTimeout = setTimeout(() => authController.abort(), 12000);
-    try {
-      window.me = (await api('/me', { signal: authController.signal })).customer;
-      var staffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1
-        ? window.me.role
-        : '';
-      try {
-        if (staffRole) localStorage.setItem('zt_role', staffRole);
-        else localStorage.removeItem('zt_role');
-      } catch (_) {}
-      if (staffRole) document.documentElement.setAttribute('data-staff-role', staffRole);
-      else document.documentElement.removeAttribute('data-staff-role');
-      document.documentElement.setAttribute('data-staff-ready', '1');
-    } catch (e) {
-      window.me = null;
-      window.USER_TOKEN = null;
-      localStorage.removeItem(typeof T_USER !== 'undefined' ? T_USER : 'zt_user');
-      localStorage.removeItem('zt_role');
-      document.documentElement.removeAttribute('data-staff-role');
-      document.documentElement.setAttribute('data-staff-ready', '1');
-    } finally {
-      clearTimeout(authTimeout);
-    }
-  } else {
-    document.documentElement.setAttribute('data-staff-ready', '1');
-  }
+  await verifyStaffSession();
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
-    if (window.brand === 'delivery') {
-      var staffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
-      var deliveryLoad = earlyDeliveryLoad;
-
-      // Once /api/me confirms a staff role, replace the public list with the
-      // full catalog (including stopped items) required by staff tools.
-      if (staffRole && typeof window.loadDelivery === 'function') {
-        // Let the public preload settle before starting the staff request. Otherwise
-        // a slower /api/dmenu response could overwrite the complete staff catalog.
-        if (earlyDeliveryLoad) await earlyDeliveryLoad;
-        deliveryLoad = window.__dlPromise = window.loadDelivery();
-      } else if (!deliveryLoad && typeof window.loadDelivery === 'function') {
-        window.__dlReq = 1;
-        deliveryLoad = window.__dlPromise = window.loadDelivery();
-      }
-
-      if (deliveryLoad) await deliveryLoad;
-    } else if (typeof loadMenu === 'function') {
-      await loadMenu();
-    }
+    await loadInitialCatalog(earlyDeliveryLoad);
   } catch (err) {
     console.warn('[BOOT] Ошибка загрузки меню:', err);
   } finally {
