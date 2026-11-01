@@ -31,6 +31,8 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Verify dependency audit
+        id: dependency_audit
+        continue-on-error: true
         run: npm audit --audit-level=moderate
 
       - name: Commit updated lockfile
@@ -46,3 +48,7 @@ jobs:
           git add package-lock.json
           git commit -m "fix: update lockfile for patched transitive dependencies"
           git push origin "HEAD:refs/heads/${BRANCH_NAME}"
+
+      - name: Fail if audit still reports moderate or higher vulnerabilities
+        if: steps.dependency_audit.outcome == 'failure'
+        run: exit 1
