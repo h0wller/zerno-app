@@ -296,7 +296,7 @@ test.describe('Карточки меню: высота, выравнивание
           sessionStorage.setItem('splashDone', '1');
         });
         const deliveryResponse = page.waitForResponse((res) =>
-          new URL(res.url()).pathname === '/api/dmenu', { timeout: 5000 }
+          new URL(res.url()).pathname.replace(/\/+$/, '').endsWith('/dmenu'), { timeout: 5000 }
         );
         await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
         const response = await deliveryResponse;

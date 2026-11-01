@@ -420,7 +420,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     });
     await routeImageDeliveryFixture(page);
     const deliveryResponse = page.waitForResponse((res) =>
-      new URL(res.url()).pathname === '/api/dmenu', { timeout: 5000 }
+      new URL(res.url()).pathname.replace(/\/+$/, '').endsWith('/dmenu'), { timeout: 5000 }
     );
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
     const response = await deliveryResponse;
