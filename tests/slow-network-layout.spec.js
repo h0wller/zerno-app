@@ -426,10 +426,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     const response = await deliveryResponse;
     expect(response.ok()).toBeTruthy();
     const items = (await response.json()).items;
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(6);
     expect(items[0].id).toBe('responsive-image-0');
     await expect(page.locator('#deliveryGrid > .card[data-product-id] img[src]').first()).toBeAttached({ timeout: 10000 });
-    await expect.poll(() => page.locator('#deliveryGrid > .card[data-product-id]').count()).toBe(5);
+    await expect.poll(() => page.locator('#deliveryGrid > .card[data-product-id]').count()).toBe(6);
     expect(await page.locator('#deliveryGrid > .card[data-product-id]').nth(4).evaluate((card) =>
       getComputedStyle(card).contentVisibility
     )).toBe('auto');
