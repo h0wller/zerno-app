@@ -15,7 +15,7 @@ const imageFixture = Array.from({ length: 5 }, (_, index) => ({
 }));
 
 async function routeImageDeliveryFixture(page) {
-  await page.route(/\/api\/dmenu(?:\?.*)?$/, (route) => route.fulfill({
+  await page.route('**/dmenu**', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ items: imageFixture })
@@ -91,12 +91,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     });
 
     const deliveryResponse = page.waitForResponse((res) =>
-      new URL(res.url()).pathname === '/api/dmenu', { timeout: 5000 }
+      new URL(res.url()).pathname.replace(/\/+$/, '').endsWith('/dmenu'), { timeout: 5000 }
     );
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
     const response = await deliveryResponse;
     expect(response.ok()).toBeTruthy();
-    expect((await response.json()).items).toHaveLength(5);
+    const items = (await response.json()).items;
+    expect(items).toHaveLength(5);
+    expect(items[0].id).toBe('responsive-image-0');
     await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
 
     const productCards = page.locator('#deliveryGrid > .card[data-product-id]');
@@ -343,7 +345,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
     // Keep this request/checkout test independent of the production menu's
     // current assortment; a pizza with required options cannot be added yet.
-    await page.route('**/api/dmenu', (route) => route.fulfill({
+    await page.route('**/dmenu**', (route) => route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
@@ -423,7 +425,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
     const response = await deliveryResponse;
     expect(response.ok()).toBeTruthy();
-    expect((await response.json()).items).toHaveLength(5);
+    const items = (await response.json()).items;
+    expect(items).toHaveLength(5);
+    expect(items[0].id).toBe('responsive-image-0');
     await expect(page.locator('#deliveryGrid > .card[data-product-id] img[src]').first()).toBeAttached({ timeout: 10000 });
     await expect.poll(() => page.locator('#deliveryGrid > .card[data-product-id]').count()).toBe(5);
     expect(await page.locator('#deliveryGrid > .card[data-product-id]').nth(4).evaluate((card) =>

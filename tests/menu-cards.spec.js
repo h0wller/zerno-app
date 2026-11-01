@@ -100,7 +100,7 @@ const DELIVERY_ITEMS = [
 ];
 
 async function routeDeliveryFixture(page) {
-  await page.route(/\/api\/dmenu(?:\?.*)?$/, (route) => route.fulfill({
+  await page.route('**/dmenu**', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({
@@ -143,18 +143,20 @@ test.describe('Карточки меню: высота, выравнивание
             localStorage.setItem('token', 'test_tok_cards');
           });
           const deliveryResponse = brand.name === 'Доставка'
-            ? page.waitForResponse((res) => new URL(res.url()).pathname === '/api/dmenu', { timeout: 5000 })
+            ? page.waitForResponse((res) => new URL(res.url()).pathname.replace(/\/+$/, '').endsWith('/dmenu'), { timeout: 5000 })
             : null;
           await page.goto(brand.url, { waitUntil: 'domcontentloaded' });
           if (deliveryResponse) {
             const response = await deliveryResponse;
             expect(response.ok()).toBeTruthy();
-            expect((await response.json()).items).toHaveLength(6);
+            const items = (await response.json()).items;
+            expect(items).toHaveLength(6);
+            expect(items[0].id).toBe('pz-marg');
           }
           // Ждём полный рендер каталога (он дорисовывается постепенно), а не первую карточку и не скелетоны.
           const cardSel = `${brand.grid} .card:not(.skeleton-card)`;
           await expect
-            .poll(() => page.locator(cardSel).count(), { timeout: 15000 })
+            .poll(() => page.locator(cardSel).count(), { timeout: 5000 })
             .toBeGreaterThanOrEqual(brand.minCards);
           // Подмена шрифта меняет высоту карточек на пару пикселей — замеряем только после неё.
           await page.evaluate(() => document.fonts.ready);
@@ -299,7 +301,9 @@ test.describe('Карточки меню: высота, выравнивание
         await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
         const response = await deliveryResponse;
         expect(response.ok()).toBeTruthy();
-        expect((await response.json()).items).toHaveLength(6);
+        const items = (await response.json()).items;
+        expect(items).toHaveLength(6);
+        expect(items[0].id).toBe('pz-marg');
         await page.waitForSelector('#deliveryGrid .card:not(.skeleton-card)', { timeout: 5000 });
         await page.waitForTimeout(500);
 
