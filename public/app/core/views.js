@@ -411,6 +411,9 @@ function applyBrandSelection(bName) {
   try { localStorage.setItem('zt_brand', brand); } catch (err) {}
   document.documentElement.setAttribute('data-brand', brand);
   document.body.setAttribute('data-brand', brand);
+  if (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders')) {
+    if (typeof setMode === 'function') setMode('guest');
+  }
 }
 
 function syncBrandDropdown(bName) {
