@@ -133,7 +133,7 @@ function showBadge() {
         )
       ).json();
       for (const m of r.msgs) lastChatId = Math.max(lastChatId, m.id);
-      const rk = "zt_read_" + chatKey();
+      const rk = "zt_read_" + activeChatKey();
       let readId = +localStorage.getItem(rk) || 0;
       if (!localStorage.getItem(rk)) {
         readId = lastChatId;
@@ -153,7 +153,7 @@ function showBadge() {
         await fetch(
           API_BASE +
             "/api/chat/thread?key=" +
-            encodeURIComponent(chatKey()) +
+            encodeURIComponent(activeChatKey()) +
             "&after=0",
         )
       ).json();
@@ -284,7 +284,7 @@ async function updateStaffBadge() {
   setInterval(async () => {
     if (document.visibilityState !== 'visible') return;
     try {
-      const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(chatKey()) + '&after=' + lastChatId)).json();
+      const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(activeChatKey()) + '&after=' + lastChatId)).json();
       for (const m of r.msgs) {
         lastChatId = Math.max(lastChatId, m.id);
         if (m.who === 'staff') {
@@ -305,7 +305,7 @@ async function updateStaffBadge() {
     $('#chatFab').classList.toggle('open', p.classList.contains('open'));
     if (typeof window.sv === 'function') window.sv(); /* <── ДОБАВЛЕНО */
     if (p.classList.contains('open')) {
-      if (!lastChatId) { try { const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(chatKey()) + '&after=0')).json(); for (const m of r.msgs) lastChatId = Math.max(lastChatId, m.id); } catch (e) {} }
+      if (!lastChatId) { try { const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(activeChatKey()) + '&after=0')).json(); for (const m of r.msgs) lastChatId = Math.max(lastChatId, m.id); } catch (e) {} }
       localStorage.setItem(unreadKey(), '0'); showBadge(); localStorage.setItem('zt_read_' + activeChatKey(), lastChatId);
       if (!historyLoaded) await loadHistory();
       if (!chatOpened) {
