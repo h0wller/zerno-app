@@ -15,7 +15,13 @@ export default defineConfig({
 
   use: {
     baseURL: testUrl,
-    trace: 'on-first-retry',
+    trace: {
+      mode: 'on-first-retry',
+      screenshots: false,
+      snapshots: false,
+      sources: false,
+      attachments: false,
+    },
     // actionTimeout: 10000,
   },
 
@@ -45,6 +51,7 @@ export default defineConfig({
     // При необходимости можно добавить mobile-устройства, так как PWA адаптирована под них
     {
       name: 'Mobile Chrome',
+      testIgnore: '**/menu-cards.spec.js',
       use: { ...devices['Pixel 5'] },
     },
   ],

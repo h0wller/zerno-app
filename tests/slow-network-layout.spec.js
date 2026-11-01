@@ -1,5 +1,32 @@
 import { test, expect } from '@playwright/test';
 
+const imageFixture = Array.from({ length: 5 }, (_, index) => ({
+  id: 'responsive-image-' + index,
+  cat: 'pizza',
+  section: 'delivery',
+  name: 'LCP fixture ' + index,
+  desc: '',
+  comp: [],
+  opts: [],
+  price: 500,
+  e: '🍕',
+  on: 1,
+  img: '/media/dishes/1-card.webp'
+}));
+
+async function routeImageDeliveryFixture(page) {
+  await page.route(/\\/api\\/dmenu(?:\\?.*)?$/, (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ items: imageFixture })
+  }));
+  await page.route(/\\/media\\/dishes\\/.*$/, (route) => route.fulfill({
+    status: 200,
+    contentType: 'image/gif',
+    body: Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'base64')
+  }));
+}
+
 async function waitForDeferredTheme(page) {
   try {
     await page.waitForFunction(() => {
@@ -57,12 +84,19 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       } catch (_) {}
     });
 
+    await routeImageDeliveryFixture(page);
     await page.route('**/app/ui/theme/*.css*', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 900));
       await route.continue();
     });
 
+    const deliveryResponse = page.waitForResponse((res) =>
+      new URL(res.url()).pathname === '/api/dmenu', { timeout: 5000 }
+    );
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
+    const response = await deliveryResponse;
+    expect(response.ok()).toBeTruthy();
+    expect((await response.json()).items).toHaveLength(5);
     await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
 
     const productCards = page.locator('#deliveryGrid > .card[data-product-id]');
@@ -87,6 +121,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         return { x: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width), height: Math.round(r.height) };
       };
       const ticker = document.querySelector('.ticker');
+      const header = document.querySelector('header.topbar');
       const heading = document.querySelector('#deliveryView .menu-head h1');
       const card = document.querySelector('#deliveryGrid > .card');
       const media = card && card.querySelector('.media');
@@ -94,6 +129,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       const brandSub = document.querySelector('#brandSub');
       return {
         ticker: box(ticker),
+        header: box(header),
+        headerStyle: header && {
+          height: getComputedStyle(header).height,
+          minHeight: getComputedStyle(header).minHeight,
+          paddingTop: getComputedStyle(header).paddingTop,
+          paddingBottom: getComputedStyle(header).paddingBottom,
+          gridTemplateRows: getComputedStyle(header).gridTemplateRows
+        },
         tickerOverflow: ticker && getComputedStyle(ticker).overflow,
         heading: box(heading),
         card: box(card),
@@ -135,6 +178,22 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
     await waitForDeferredTheme(page);
     const after = await measure();
+    const imagePriorities = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
+      const firstTop = cards.length ? cards[0].getBoundingClientRect().top : 0;
+      const firstRowImages = cards.filter((card) =>
+        Math.abs(card.getBoundingClientRect().top - firstTop) <= 1
+      ).map((card) => card.querySelector('.media img[src]')).filter(Boolean);
+      return {
+        firstRow: firstRowImages.length,
+        eager: document.querySelectorAll('#deliveryGrid img[loading="eager"]').length,
+        high: document.querySelectorAll('#deliveryGrid img[fetchpriority="high"]').length
+      };
+    });
+    expect(imagePriorities.firstRow).toBeGreaterThan(0);
+    expect(imagePriorities.eager).toBe(imagePriorities.firstRow);
+    expect(imagePriorities.high).toBe(1);
+    console.log('[slow-network-layout] after deferred CSS image priorities', JSON.stringify(imagePriorities));
     console.log('[slow-network-layout] after deferred CSS', JSON.stringify(after));
     expect(after.card.width).toBe(before.card.width);
     expect(after.media.height).toBe(before.media.height);
@@ -357,26 +416,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
-    await page.route('**/api/dmenu', (route) => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        items: Array.from({ length: 5 }, (_, index) => ({
-          id: 'responsive-image-' + index,
-          cat: 'pizza',
-          section: 'delivery',
-          name: 'LCP fixture ' + index,
-          desc: '',
-          comp: [],
-          opts: [],
-          price: 500,
-          e: '🍕',
-          on: 1,
-          img: '/media/dishes/1-card.webp'
-        }))
-      })
-    }));
+    await routeImageDeliveryFixture(page);
+    const deliveryResponse = page.waitForResponse((res) =>
+      new URL(res.url()).pathname === '/api/dmenu', { timeout: 5000 }
+    );
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
+    const response = await deliveryResponse;
+    expect(response.ok()).toBeTruthy();
+    expect((await response.json()).items).toHaveLength(5);
     await expect(page.locator('#deliveryGrid > .card[data-product-id] img[src]').first()).toBeAttached({ timeout: 10000 });
     await expect.poll(() => page.locator('#deliveryGrid > .card[data-product-id]').count()).toBe(5);
     expect(await page.locator('#deliveryGrid > .card[data-product-id]').nth(4).evaluate((card) =>
@@ -409,6 +456,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
   });
 
   test('initial-card-preservation branch keeps the first image and reapplies row priorities', async ({ page }) => {
+    await page.route(/\\/media\\/dishes\\/.*$/, (route) => route.fulfill({
+      status: 200,
+      contentType: 'image/gif',
+      body: Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'base64')
+    }));
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
@@ -627,9 +679,15 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       on: 1,
       opts: [],
       comp: [],
-      e: '🍕'
+      e: '🍕',
+      img: '/media/dishes/1-card.webp'
     }));
 
+    await page.route(/\\/media\\/dishes\\/.*$/, (route) => route.fulfill({
+      status: 200,
+      contentType: 'image/gif',
+      body: Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'base64')
+    }));
     await page.route('**/api/**', async (route) => {
       const pathname = new URL(route.request().url()).pathname;
       if (pathname === '/api/me') {

@@ -100,10 +100,17 @@ const DELIVERY_ITEMS = [
 ];
 
 async function routeDeliveryFixture(page) {
-  await page.route('**/api/dmenu', (route) => route.fulfill({
+  await page.route(/\\/api\\/dmenu(?:\\?.*)?$/, (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ items: DELIVERY_ITEMS })
+    body: JSON.stringify({
+      items: DELIVERY_ITEMS.map((item) => ({ ...item, img: '/media/dishes/1-card.webp' }))
+    })
+  }));
+  await page.route(/\\/media\\/dishes\\/.*$/, (route) => route.fulfill({
+    status: 200,
+    contentType: 'image/gif',
+    body: Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'base64')
   }));
 }
 
@@ -135,7 +142,15 @@ test.describe('Карточки меню: высота, выравнивание
             localStorage.setItem('zt_token', 'test_tok_cards');
             localStorage.setItem('token', 'test_tok_cards');
           });
+          const deliveryResponse = brand.name === 'Доставка'
+            ? page.waitForResponse((res) => new URL(res.url()).pathname === '/api/dmenu', { timeout: 5000 })
+            : null;
           await page.goto(brand.url, { waitUntil: 'domcontentloaded' });
+          if (deliveryResponse) {
+            const response = await deliveryResponse;
+            expect(response.ok()).toBeTruthy();
+            expect((await response.json()).items).toHaveLength(6);
+          }
           // Ждём полный рендер каталога (он дорисовывается постепенно), а не первую карточку и не скелетоны.
           const cardSel = `${brand.grid} .card:not(.skeleton-card)`;
           await expect
@@ -278,8 +293,14 @@ test.describe('Карточки меню: высота, выравнивание
           localStorage.setItem('zt_onb', '1');
           sessionStorage.setItem('splashDone', '1');
         });
+        const deliveryResponse = page.waitForResponse((res) =>
+          new URL(res.url()).pathname === '/api/dmenu', { timeout: 5000 }
+        );
         await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
-        await page.waitForSelector('#deliveryGrid .card:not(.skeleton-card)', { timeout: 15000 });
+        const response = await deliveryResponse;
+        expect(response.ok()).toBeTruthy();
+        expect((await response.json()).items).toHaveLength(6);
+        await page.waitForSelector('#deliveryGrid .card:not(.skeleton-card)', { timeout: 5000 });
         await page.waitForTimeout(500);
 
         // Кладём одну позицию в корзину, чтобы степпер «−/+» перестал быть hidden и тоже попал в замер.

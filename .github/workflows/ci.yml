@@ -115,9 +115,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-diagnostics
-          path: |
-            playwright-report/
-            test-results/
+          path: playwright-report/
           retention-days: 7
 
   sync-built-client:
@@ -125,7 +123,6 @@ jobs:
     needs: e2e-tests
     if: >-
       github.event_name == 'pull_request' &&
-      github.event.pull_request.number == 92 &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.user.login == github.repository_owner
     runs-on: ubuntu-latest
