@@ -52,8 +52,15 @@
     "knip": "^6.43.0"
   },
   "overrides": {
+    "@google-cloud/firestore": "^9.4.0",
+    "@eslint/config-array": {
+      "minimatch": "^11.0.3"
+    },
     "eslint-plugin-sonarjs": {
-      "minimatch": "^10.2.3"
+      "minimatch": "^11.0.3"
+    },
+    "rimraf@^6.0.1": {
+      "glob": "^14.0.2"
     },
     "braces": "^3.0.3",
     "micromatch": "^4.0.8"
