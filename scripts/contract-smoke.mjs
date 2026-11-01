@@ -68,7 +68,6 @@ process.on('SIGTERM', () => { _killCiServer(); process.exit(1); });
 
 await _ensureServerUp();
 
-
 const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
 const ADMIN = process.env.SMOKE_ADMIN_CODE || '';
 const CASHIER = process.env.SMOKE_CASHIER_CODE || '';
@@ -77,9 +76,9 @@ const log = (ok, name, extra = '') => { ok ? pass++ : fail++; console.log(`${ok 
 
 async function call(method, path, { body, token } = {}) {
   const headers = {
-  'Content-Type': 'application/json',
-  'x-smoke-test': '1',
-  ...(token ? { Authorization: `Bearer ${token}` } : {})
+    'Content-Type': 'application/json',
+    'x-smoke-test': '1',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
   };
   const res = await fetch(BASE + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   let json = null; try { json = await res.json(); } catch {}
