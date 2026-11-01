@@ -645,7 +645,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       sessionStorage.setItem('splashDone', '1');
       window.__layoutShifts = [];
       try {
-        new PerformanceObserver((list) => {
+        window.__layoutShiftObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
             if (entry.hadRecentInput) continue;
             const sources = Array.from(entry.sources || []).slice(0, 5).map((source) => {
@@ -669,7 +669,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
               sources
             });
           }
-        }).observe({ type: 'layout-shift', buffered: true });
+        });
+        window.__layoutShiftObserver.observe({ type: 'layout-shift', buffered: true });
       } catch (_) {}
     });
 
@@ -808,6 +809,13 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.adminBar.hidden).toBe(true);
     expect(before.adminBar.display).toBe('grid');
     expect(before.adminBar.visibility).toBe('hidden');
+
+    // The first-paint/CSS/font settle is asserted by the neighboring layout tests.
+    // Drain those earlier entries so this threshold measures only the delayed auth interval.
+    await page.evaluate(() => {
+      if (window.__layoutShiftObserver) window.__layoutShiftObserver.takeRecords();
+      window.__layoutShifts.length = 0;
+    });
 
     const meResponse = await page.waitForResponse((response) => response.url().endsWith('/api/me'), { timeout: 15000 });
     expect(meResponse.ok()).toBe(true);
