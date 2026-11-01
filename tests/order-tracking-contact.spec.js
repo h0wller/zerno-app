@@ -76,6 +76,6 @@ test('контакт из заказа открывает доставочный
   await expect(page.locator('#chatInput')).toHaveValue(
     'Здравствуйте! У меня вопрос по заказу №1234.'
   );
-  expect(threadKeys.some(key => key.endsWith(':d'))).toBe(true);
+  await expect.poll(() => threadKeys.some(key => key.endsWith(':d'))).toBe(true);
   await expect(page.locator('#orderTrackModal')).not.toHaveClass(/show/);
 });
