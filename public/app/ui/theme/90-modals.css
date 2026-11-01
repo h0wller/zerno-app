@@ -93,7 +93,7 @@
   transform: rotate(90deg) scale(1.1);
 }
 .modal-card h3{
-  font: var(--modal-title-font, 400 24px Prata, serif);
+  font: var(--modal-title-font, 400 24px Prata, "Golos Text", serif);
   margin-bottom: 4px;
   color: var(--modal-title-color, #123A6B);
 }
@@ -272,7 +272,7 @@ label.chk{
   text-underline-offset: 3px
 }
 .pin{
-  font: 900 28px Unbounded;
+  font: 900 28px Unbounded, "Golos Text", sans-serif;
   letter-spacing: .45em;
   text-align: center;
   padding: 12px 8px;
@@ -361,13 +361,13 @@ label.chk{
   animation: stampin .45s cubic-bezier(.2, 1.4, .4, 1);
 }
 .qrttl{
-  font: 700 11px Unbounded;
+  font: 700 11px Unbounded, "Golos Text", sans-serif;
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--soft)
 }
 .qrname{
-  font: 400 24px Prata, serif;
+  font: 400 24px Prata, "Golos Text", serif;
   margin-top: 10px;
   color: #123A6B
 }
