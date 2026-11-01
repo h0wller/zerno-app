@@ -591,7 +591,27 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       try {
         new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (!entry.hadRecentInput) window.__layoutShifts.push(entry.value);
+            if (entry.hadRecentInput) continue;
+            const sources = Array.from(entry.sources || []).slice(0, 5).map((source) => {
+              const node = source.node;
+              const rect = (value) => value && ({
+                x: value.x, y: value.y, width: value.width, height: value.height
+              });
+              return {
+                node: node ? {
+                  tag: String(node.tagName || node.nodeName || '').toLowerCase(),
+                  id: node.id || '',
+                  className: typeof node.className === 'string' ? node.className : ''
+                } : null,
+                previousRect: rect(source.previousRect),
+                currentRect: rect(source.currentRect)
+              };
+            });
+            window.__layoutShifts.push({
+              value: entry.value,
+              startTime: Math.round(entry.startTime * 100) / 100,
+              sources
+            });
           }
         }).observe({ type: 'layout-shift', buffered: true });
       } catch (_) {}
@@ -764,7 +784,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         },
         wrap: rect('body > .wrap'),
         adminBar: rect('#adminBar'),
-        cls: window.__layoutShifts.reduce((sum, value) => sum + value, 0)
+        cls: window.__layoutShifts.reduce((sum, entry) => sum + entry.value, 0),
+        shiftCount: window.__layoutShifts.length,
+        layoutShifts: window.__layoutShifts.slice(-20)
       };
     });
 
