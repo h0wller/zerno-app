@@ -21,10 +21,7 @@
     "public/app/vendor/**"
   ],
   "ignoreDependencies": [
-    "@capacitor/*",
-    "ts-api-utils",
-    "svgo",
-    "terser"
+    "@capacitor/*"
   ],
   "ignoreExportsUsedInFile": true
 }

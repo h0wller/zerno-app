@@ -12,12 +12,8 @@ export function on(event, callback) {
   return () => target.removeEventListener(event, handler);
 }
 
-export function once(event, callback) {
-  const handler = (e) => callback(e.detail);
-  target.addEventListener(event, handler, { once: true });
-}
 
 // Доступ в глобальную область для плавного перехода vanilla-скриптов
 if (typeof window !== 'undefined') {
-  window.ztBus = { emit, on, once };
+  window.ztBus = { emit, on };
 }
