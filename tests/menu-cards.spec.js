@@ -100,14 +100,14 @@ const DELIVERY_ITEMS = [
 ];
 
 async function routeDeliveryFixture(page) {
-  await page.route(/\\/api\\/dmenu(?:\\?.*)?$/, (route) => route.fulfill({
+  await page.route(/\/api\/dmenu(?:\?.*)?$/, (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({
       items: DELIVERY_ITEMS.map((item) => ({ ...item, img: '/media/dishes/1-card.webp' }))
     })
   }));
-  await page.route(/\\/media\\/dishes\\/.*$/, (route) => route.fulfill({
+  await page.route(/\/media\/dishes\/.*$/, (route) => route.fulfill({
     status: 200,
     contentType: 'image/gif',
     body: Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'base64')

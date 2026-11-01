@@ -15,12 +15,12 @@ const imageFixture = Array.from({ length: 5 }, (_, index) => ({
 }));
 
 async function routeImageDeliveryFixture(page) {
-  await page.route(/\\/api\\/dmenu(?:\\?.*)?$/, (route) => route.fulfill({
+  await page.route(/\/api\/dmenu(?:\?.*)?$/, (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ items: imageFixture })
   }));
-  await page.route(/\\/media\\/dishes\\/.*$/, (route) => route.fulfill({
+  await page.route(/\/media\/dishes\/.*$/, (route) => route.fulfill({
     status: 200,
     contentType: 'image/gif',
     body: Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'base64')
@@ -456,7 +456,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
   });
 
   test('initial-card-preservation branch keeps the first image and reapplies row priorities', async ({ page }) => {
-    await page.route(/\\/media\\/dishes\\/.*$/, (route) => route.fulfill({
+    await page.route(/\/media\/dishes\/.*$/, (route) => route.fulfill({
       status: 200,
       contentType: 'image/gif',
       body: Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'base64')
@@ -683,7 +683,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       img: '/media/dishes/1-card.webp'
     }));
 
-    await page.route(/\\/media\\/dishes\\/.*$/, (route) => route.fulfill({
+    await page.route(/\/media\/dishes\/.*$/, (route) => route.fulfill({
       status: 200,
       contentType: 'image/gif',
       body: Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'base64')
