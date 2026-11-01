@@ -33,7 +33,7 @@
   border-radius: 999px;
   font-size: 12.5px;
   font-weight: 700;
-  color: #9fb4c8;
+  color: var(--mode-segment-color, #9fb4c8);
   transition: 0.25s;
 }
 .modeSeg button.on{
@@ -102,7 +102,7 @@
 .menu-head .upd b,
 #menuView #updWhen,
 #deliveryView #updWhenD{
-  color: var(--status-success, #2F7D4F);
+  color: #0F5132;
   font-weight: 700;
 }
 .adminBadge{
