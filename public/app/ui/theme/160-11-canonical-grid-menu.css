@@ -58,6 +58,8 @@ body.in-tg .topbar {
   min-width: 0;
   box-sizing: border-box;
   align-items: stretch;
+  /* Hydration replaces the SSR card; don't let scroll anchoring move the first viewport. */
+  overflow-anchor: none;
 }
 @media (min-width: 520px) and (max-width: 1180px) {
   #grid,
