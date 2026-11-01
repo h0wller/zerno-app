@@ -2,7 +2,6 @@
 #deliveryGrid .card .opts button,
 #deliveryGrid .card .opts .opt-btn {
   padding: 7px 9px;
-  min-height: 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
