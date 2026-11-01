@@ -987,144 +987,186 @@ function renderCartBase() {
     }
   });
 
+  function canStartCheckout(checkBtn) {
+    if (checkBtn.disabled || checkBtn.getAttribute("data-busy") === "1") return false;
+    if (!me) {
+      toast("Сначала войдите по номеру", "👤");
+      if (typeof openAuth === "function") openAuth();
+      return false;
+    }
+    if (!cart || cart.length === 0) {
+      toast("Корзина пуста", "🛒");
+      return false;
+    }
+
+    var totals = totalsNow();
+    if (totals.belowMin) {
+      toast("Минимальная сумма заказа для доставки — " + fmt(totals.minOrder), "⚠️");
+      return false;
+    }
+    return true;
+  }
+
+  async function resolveCheckoutInput() {
+    var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
+    var addressState = window.CheckoutValidation.resolveAddress(method);
+    if (!addressState.ok) {
+      if (addressState.field) window.CheckoutValidation.flagField(addressState.field);
+      toast(addressState.message, addressState.icon);
+      return null;
+    }
+
+    var slotState = await window.CheckoutValidation.resolveSlot();
+    if (!slotState.ok) {
+      if (slotState.field) window.CheckoutValidation.flagField(slotState.field);
+      toast(slotState.message, slotState.icon);
+      return null;
+    }
+
+    return {
+      method: method,
+      placeV: addressState.placeV,
+      streetV: addressState.streetV,
+      houseV: addressState.houseV,
+      slotVal: slotState.slotVal,
+      isPreorder: slotState.isPreorder,
+      preorderDate: slotState.preorderDate,
+    };
+  }
+
+  function buildCheckoutRequest(checkoutInput) {
+    var body = {
+      method: checkoutInput.method,
+      place: checkoutInput.method === "pickup" ? "Самовывоз" : checkoutInput.placeV,
+      street: checkoutInput.streetV,
+      house: checkoutInput.houseV,
+      slot: checkoutInput.slotVal,
+      is_preorder: checkoutInput.isPreorder ? 1 : 0,
+      preorder_date: checkoutInput.preorderDate,
+      pay: (document.getElementById("checkoutPay") || {}).value || "cash",
+      comment: ((document.getElementById("checkoutComment") || {}).value || "").trim(),
+      items: cart.map(function (item) {
+        return {
+          id: item.id,
+          oi: item.oi,
+          qty: item.qty,
+          modifiers: item.modifiers || [],
+        };
+      }),
+    };
+    if (cartPromoCode) body.promo = cartPromoCode;
+
+    // Идемпотентный ID: защита от дублей при сетевом сбое.
+    body.client_order_id = "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    return body;
+  }
+
+  function showCheckoutProgress(checkBtn) {
+    var originalHtml = checkBtn.innerHTML;
+    checkBtn.disabled = true;
+    checkBtn.setAttribute("data-busy", "1");
+    checkBtn.style.pointerEvents = "none";
+    checkBtn.innerHTML = '<span>⏳ Оформляем заказ...</span>';
+
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
+      try { window.Telegram.WebApp.MainButton.showProgress(); } catch (tgErr) {}
+    }
+    return originalHtml;
+  }
+
+  function completeCheckoutSuccess(result, checkoutInput) {
+    toast("Заказ #" + (result.order && result.order.no ? result.order.no : "") + " оформлен!", "🎉");
+
+    if (checkoutInput.method !== "pickup" && window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
+      try {
+        window.AddressBook.autoAdd({
+          place: checkoutInput.placeV,
+          street: checkoutInput.streetV,
+          house: checkoutInput.houseV,
+        });
+      } catch (eAb) {}
+    }
+
+    if (window.TgUx) window.TgUx.success();
+    if (typeof cart !== "undefined" && Array.isArray(cart)) cart.length = 0;
+    window.cart = [];
+    openModsMap = {};
+    localStorage.setItem("zt_cart", "[]");
+    sessionStorage.removeItem("zt_checkout_draft");
+    clearPromo();
+
+    var promoInput = document.getElementById("cartPromo");
+    if (promoInput) promoInput.value = "";
+    var streetInput = document.getElementById("checkoutStreet");
+    if (streetInput) streetInput.value = "";
+    var houseInput = document.getElementById("checkoutHouse");
+    if (houseInput) houseInput.value = "";
+    var commentInput = document.getElementById("checkoutComment");
+    if (commentInput) commentInput.value = "";
+    var slotInput = document.getElementById("checkoutSlot");
+    if (slotInput) slotInput.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
+
+    document.querySelectorAll("#deliveryGrid .opts button.sel").forEach(function (button) {
+      button.classList.remove("sel");
+    });
+
+    if (typeof syncAddButtons === "function") syncAddButtons();
+    if (typeof updateCartFab === "function") updateCartFab();
+    renderCartBase();
+
+    var panel = document.getElementById("cartPanel");
+    if (panel) panel.classList.remove("open");
+    if (typeof loadMyOrders === "function") loadMyOrders({ force: true });
+    if (result && result.order) {
+      window.openOrderTrackModal(result.order);
+    } else if (typeof syncOverlay === "function") {
+      syncOverlay();
+    }
+  }
+
+  function handleCheckoutFailure(error) {
+    try {
+      var slot = document.getElementById("checkoutSlot");
+      var preorderSlot = slot ? slot.value : "";
+      if (preorderSlot && preorderSlot !== "asap" &&
+          window.PreorderTimer && typeof window.PreorderTimer.updateAll === "function") {
+        setTimeout(window.PreorderTimer.updateAll, 500);
+      }
+    } catch (timerError) {}
+
+    toast(error.message || "Ошибка оформления заказа", "⚠️");
+  }
+
+  function restoreCheckoutProgress(checkBtn, originalHtml) {
+    checkBtn.disabled = false;
+    checkBtn.removeAttribute("data-busy");
+    checkBtn.style.pointerEvents = "";
+    checkBtn.innerHTML = originalHtml;
+
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
+      try { window.Telegram.WebApp.MainButton.hideProgress(); } catch (tgErr) {}
+    }
+  }
+
   /* ── Оформление заказа ── */
   var checkBtn = document.getElementById("checkoutBtn");
   if (checkBtn) {
     checkBtn.onclick = async function () {
-      if (checkBtn.disabled || checkBtn.getAttribute("data-busy") === "1") return;
+      if (!canStartCheckout(checkBtn)) return;
 
-      if (!me) {
-        toast("Сначала войдите по номеру", "👤");
-        if (typeof openAuth === "function") openAuth();
-        return;
-      }
-      if (!cart || cart.length === 0) {
-        toast("Корзина пуста", "🛒");
-        return;
-      }
+      var checkoutInput = await resolveCheckoutInput();
+      if (!checkoutInput) return;
 
-      var tCheck = totalsNow();
-      if (tCheck.belowMin) {
-        toast("Минимальная сумма заказа для доставки — " + fmt(tCheck.minOrder), "⚠️");
-        return;
-      }
-
-      var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
-      var addressState = window.CheckoutValidation.resolveAddress(method);
-      if (!addressState.ok) {
-        if (addressState.field) window.CheckoutValidation.flagField(addressState.field);
-        return toast(addressState.message, addressState.icon);
-      }
-
-      var slotState = await window.CheckoutValidation.resolveSlot();
-      if (!slotState.ok) {
-        if (slotState.field) window.CheckoutValidation.flagField(slotState.field);
-        return toast(slotState.message, slotState.icon);
-      }
-
-      var placeV = addressState.placeV;
-      var streetV = addressState.streetV;
-      var houseV = addressState.houseV;
-      var slotVal = slotState.slotVal;
-      var isPreorder = slotState.isPreorder;
-      var preorderDate = slotState.preorderDate;
-
-      var body = {
-        method: method,
-        place: method === "pickup" ? "Самовывоз" : placeV,
-        street: streetV,
-        house: houseV,
-        slot: slotVal,
-        is_preorder: isPreorder ? 1 : 0,
-        preorder_date: preorderDate,
-        pay: (document.getElementById("checkoutPay") || {}).value || "cash",
-        comment: ((document.getElementById("checkoutComment") || {}).value || "").trim(),
-        items: cart.map(function (c) {
-          return {
-            id: c.id,
-            oi: c.oi,
-            qty: c.qty,
-            modifiers: c.modifiers || []
-          };
-        })
-      };
-      if (cartPromoCode) body.promo = cartPromoCode;
-
-      // 1. Идемпотентный ID: защита от дублей при сетевом сбое
-      body.client_order_id = "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-
-      // 2. Блокируем кнопку физически и визуально ДО отправки запроса
-      var origBtnHtml = checkBtn.innerHTML;
-      checkBtn.disabled = true;
-      checkBtn.setAttribute("data-busy", "1");
-      checkBtn.style.pointerEvents = "none";
-      checkBtn.innerHTML = '<span>⏳ Оформляем заказ...</span>';
-
-      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
-        try { window.Telegram.WebApp.MainButton.showProgress(); } catch (tgErr) {}
-      }
-
-      var r;
+      var body = buildCheckoutRequest(checkoutInput);
+      var originalHtml = showCheckoutProgress(checkBtn);
       try {
-        r = await api("/orders", { method: "POST", body: body });
-        toast("Заказ #" + (r.order && r.order.no ? r.order.no : "") + " оформлен!", "🎉");
-
-        /* Адрес прошёл валидацию и заказ принят — запоминаем его в «Моих адресах» (только доставка) */
-        if (method !== "pickup" && window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
-          try { window.AddressBook.autoAdd({ place: placeV, street: streetV, house: houseV }); } catch (eAb) { }
-        }
-
-        if (window.TgUx) window.TgUx.success();
-
-        if (typeof cart !== "undefined" && Array.isArray(cart)) cart.length = 0;
-        window.cart = [];
-        openModsMap = {};
-        localStorage.setItem("zt_cart", "[]");
-        sessionStorage.removeItem("zt_checkout_draft");
-        clearPromo();
-
-        var pi = document.getElementById("cartPromo"); if (pi) pi.value = "";
-        var stEl = document.getElementById("checkoutStreet"); if (stEl) stEl.value = "";
-        var hsEl = document.getElementById("checkoutHouse"); if (hsEl) hsEl.value = "";
-        var cmEl = document.getElementById("checkoutComment"); if (cmEl) cmEl.value = "";
-        var slEl = document.getElementById("checkoutSlot");
-        if (slEl) slEl.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
-
-        document.querySelectorAll("#deliveryGrid .opts button.sel").forEach(function (btn) {
-          btn.classList.remove("sel");
-        });
-
-        if (typeof syncAddButtons === "function") syncAddButtons();
-        if (typeof updateCartFab === "function") updateCartFab();
-        renderCartBase();
-
-        var cp2 = document.getElementById("cartPanel");
-        if (cp2) cp2.classList.remove("open");
-        if (typeof loadMyOrders === "function") loadMyOrders({ force: true });
-        if (r && r.order) {
-          window.openOrderTrackModal(r.order);
-        } else if (typeof syncOverlay === "function") {
-          syncOverlay();
-        }
-      } catch (e) {
-        try {
-          var preorderSlot = document.getElementById("checkoutSlot") ? document.getElementById("checkoutSlot").value : "";
-          if (preorderSlot && preorderSlot !== "asap" && window.PreorderTimer && typeof window.PreorderTimer.updateAll === "function") {
-            setTimeout(window.PreorderTimer.updateAll, 500);
-          }
-        } catch (e2) { }
-
-        toast(e.message || "Ошибка оформления заказа", "⚠️");
+        var result = await api("/orders", { method: "POST", body: body });
+        completeCheckoutSuccess(result, checkoutInput);
+      } catch (error) {
+        handleCheckoutFailure(error);
       } finally {
-        // 3. Разблокировка при любом исходе (успех, 500, таймаут)
-        checkBtn.disabled = false;
-        checkBtn.removeAttribute("data-busy");
-        checkBtn.style.pointerEvents = "";
-        checkBtn.innerHTML = origBtnHtml;
-
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
-          try { window.Telegram.WebApp.MainButton.hideProgress(); } catch (tgErr) {}
-        }
+        // Разблокировка при любом исходе: успех, 500 или таймаут.
+        restoreCheckoutProgress(checkBtn, originalHtml);
       }
     };
   }
