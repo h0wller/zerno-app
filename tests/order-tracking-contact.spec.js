@@ -7,6 +7,10 @@ async function openDeliveryApp(page) {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
     localStorage.removeItem('zt_chatctx');
+    localStorage.setItem('zt_cart', JSON.stringify([{
+      key: 'pickup-test', id: 'pickup-test', oi: -1, name: 'Тестовая позиция',
+      price: 100, qty: 1, sz: 0
+    }]));
     sessionStorage.removeItem('zt_support_ctx');
     sessionStorage.setItem('splashDone', '1');
   });
