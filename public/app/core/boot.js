@@ -133,12 +133,12 @@ async function boot() {
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
     if (window.brand === 'delivery') {
-      var staffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
+      var isStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
       var deliveryLoad = earlyDeliveryLoad;
 
       // Once /api/me confirms a staff role, replace the public list with the
       // full catalog (including stopped items) required by staff tools.
-      if (staffRole && typeof window.loadDelivery === 'function') {
+      if (isStaffRole && typeof window.loadDelivery === 'function') {
         // Let the public preload settle before starting the staff request. Otherwise
         // a slower /api/dmenu response could overwrite the complete staff catalog.
         if (earlyDeliveryLoad) await earlyDeliveryLoad;
