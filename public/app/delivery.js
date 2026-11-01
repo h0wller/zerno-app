@@ -365,6 +365,88 @@ function renderDeliveryCard(p, n0) {
   '</article>';
 }
 
+function getFilteredDeliveryItems(catItems) {
+  if (dcat === 'sauces' && activeAddonTab !== 'all') {
+    return catItems.filter(p => getSafeAddonType(p) === activeAddonTab);
+  }
+  if (dcat !== 'sauces' && catItems.length > 5 && activeIngredient !== 'all') {
+    return catItems.filter(p => matchesIngredient(p, activeIngredient));
+  }
+  return catItems;
+}
+
+function updateFirstDeliveryCard(gridEl, firstCard, list) {
+  const p0 = list[0];
+  const n0 = cart.reduce((a, c) => (String(c.id) === String(p0.id) ? a + c.qty : a), 0);
+  firstCard.setAttribute('data-product-id', p0.id);
+  firstCard.draggable = canDragMenu();
+  firstCard.classList.toggle('stopped', !p0.on);
+
+  const cbody0 = firstCard.querySelector('.cbody');
+  if (cbody0) {
+    const opts0 = p0.opts || [];
+    const bodyMid0 = opts0.length > 0 ? renderPizzaOptsHtml(p0, opts0) : renderSingleMetaHtml(p0);
+    cbody0.innerHTML =
+      '<h3>' + esc(p0.name) + '</h3>' +
+      (p0.desc ? '<div class="desc">' + esc(p0.desc) + '</div>' : '') +
+      renderCompositionChips(p0) +
+      bodyMid0 +
+      '<div class="steprow">' +
+        '<button type="button" class="step" data-step="-1" data-sid="' + p0.id + '" ' + (n0 ? '' : 'hidden') + '>−</button>' +
+        '<button type="button" class="cta" data-add="' + p0.id + '">' + (n0 ? 'В корзине · ' + n0 : 'Добавить') + '</button>' +
+        '<button type="button" class="step" data-step="1" data-sid="' + p0.id + '" ' + (n0 ? '' : 'hidden') + '>+</button>' +
+      '</div>';
+  }
+
+  while (firstCard.nextElementSibling) {
+    firstCard.nextElementSibling.remove();
+  }
+
+  let restHtml = list.slice(1).map((p) => {
+    const n = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
+    return renderDeliveryCard(p, n);
+  }).join('');
+  if (typeof editMode !== 'undefined' && editMode) {
+    restHtml += '<article class="card add-card" id="addDelivCard">' +
+      '<div style="font-size:32px">➕</div>' +
+      '<div>Добавить позицию в доставку</div>' +
+    '</article>';
+  }
+  if (restHtml) gridEl.insertAdjacentHTML('beforeend', restHtml);
+}
+
+function renderDeliveryGrid(list) {
+  const gridEl = $('#deliveryGrid');
+  const firstCard = gridEl && gridEl.querySelector('.card:not(.skeleton-card)');
+  const firstImg = firstCard && firstCard.querySelector('.media img[src]');
+  const canKeepFirst = !!(
+    firstCard &&
+    firstImg &&
+    list.length > 0 &&
+    firstImg.getAttribute('src') === list[0].img
+  );
+
+  if (canKeepFirst) {
+    updateFirstDeliveryCard(gridEl, firstCard, list);
+    return;
+  }
+
+  let html = list.map((p) => {
+    const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : 0), 0);
+    return renderDeliveryCard(p, n0);
+  }).join('');
+  if (typeof editMode !== 'undefined' && editMode) {
+    html += '<article class="card add-card" id="addDelivCard">' +
+      '<div style="font-size:32px">➕</div>' +
+      '<div>Добавить позицию в доставку</div>' +
+    '</article>';
+  }
+  if (list.length === 0 && (typeof editMode === 'undefined' || !editMode)) {
+    html += '<div class="gempty">В этой категории пока пусто</div>';
+  }
+  gridEl.innerHTML = html;
+}
+
 function renderDeliveryMenu() {
   const catItems = DMENU.filter(p => p.cat === dcat);
 
@@ -376,89 +458,13 @@ function renderDeliveryMenu() {
   }
 
   renderSubFilter(catItems);
-
-  let list = catItems;
-  if (dcat === 'sauces') {
-    if (activeAddonTab !== 'all') {
-      list = list.filter(p => getSafeAddonType(p) === activeAddonTab);
-    }
-  } else if (catItems.length > 5 && activeIngredient !== 'all') {
-    list = list.filter(p => matchesIngredient(p, activeIngredient));
-  }
-
-  var gridEl = $('#deliveryGrid');
-  var firstCard = gridEl && gridEl.querySelector('.card:not(.skeleton-card)');
-  var firstImg = firstCard && firstCard.querySelector('.media img[src]');
-  var canKeepFirst = !!(
-    firstCard &&
-    firstImg &&
-    list.length > 0 &&
-    firstImg.getAttribute('src') === list[0].img
-  );
-
-  if (canKeepFirst) {
-    // 1. Оставляем первую карточку и её <img> в DOM БЕЗ отсоединения (сохраняем ранний LCP первого кадра!)
-    const p0 = list[0];
-    const n0 = cart.reduce((a, c) => (String(c.id) === String(p0.id) ? a + c.qty : a), 0);
-    firstCard.setAttribute('data-product-id', p0.id);
-    firstCard.draggable = canDragMenu();
-    firstCard.classList.toggle('stopped', !p0.on);
-    const cbody0 = firstCard.querySelector('.cbody');
-    if (cbody0) {
-      var opts0 = p0.opts || [];
-      var bodyMid0 = opts0.length > 0 ? renderPizzaOptsHtml(p0, opts0) : renderSingleMetaHtml(p0);
-      cbody0.innerHTML =
-        '<h3>' + esc(p0.name) + '</h3>' +
-        (p0.desc ? '<div class="desc">' + esc(p0.desc) + '</div>' : '') +
-        renderCompositionChips(p0) +
-        bodyMid0 +
-        '<div class="steprow">' +
-          '<button type="button" class="step" data-step="-1" data-sid="' + p0.id + '" ' + (n0 ? '' : 'hidden') + '>−</button>' +
-          '<button type="button" class="cta" data-add="' + p0.id + '">' + (n0 ? 'В корзине · ' + n0 : 'Добавить') + '</button>' +
-          '<button type="button" class="step" data-step="1" data-sid="' + p0.id + '" ' + (n0 ? '' : 'hidden') + '>+</button>' +
-        '</div>';
-    }
-    // 2. Удаляем только скелетоны и старые карточки ПОСЛЕ первой карточки
-    while (firstCard.nextElementSibling) {
-      firstCard.nextElementSibling.remove();
-    }
-    // 3. Дописываем остальные карточки со 2-й по N-ю без трогания первой карточки
-    let restHtml = list.slice(1).map((p) => {
-      const n = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : a), 0);
-      return renderDeliveryCard(p, n);
-    }).join('');
-    if (typeof editMode !== 'undefined' && editMode) {
-      restHtml += '<article class="card add-card" id="addDelivCard">' +
-        '<div style="font-size:32px">➕</div>' +
-        '<div>Добавить позицию в доставку</div>' +
-      '</article>';
-    }
-    if (restHtml) {
-      gridEl.insertAdjacentHTML('beforeend', restHtml);
-    }
-  } else {
-    let html = list.map((p) => {
-      const n0 = cart.reduce((a, c) => (String(c.id) === String(p.id) ? a + c.qty : 0), 0);
-      return renderDeliveryCard(p, n0);
-    }).join('');
-    if (typeof editMode !== 'undefined' && editMode) {
-      html += '<article class="card add-card" id="addDelivCard">' +
-        '<div style="font-size:32px">➕</div>' +
-        '<div>Добавить позицию в доставку</div>' +
-      '</article>';
-    }
-    if (list.length === 0 && (typeof editMode === 'undefined' || !editMode)) {
-      html += '<div class="gempty">В этой категории пока пусто</div>';
-    }
-    gridEl.innerHTML = html;
-  }
+  const list = getFilteredDeliveryItems(catItems);
+  renderDeliveryGrid(list);
   patchDeliveryCards(list);
   syncDeliveryImagePriorities();
 
   const addCard = document.getElementById('addDelivCard');
-  if (addCard) {
-    addCard.onclick = () => openEditor(null, 'delivery');
-  }
+  if (addCard) addCard.onclick = () => openEditor(null, 'delivery');
 }
 
 /* ── Слушатель кликов по чипсам и табам субфильтров ── */
@@ -479,61 +485,95 @@ document.addEventListener('click', function (e) {
 });
 
 /* ── Состояния карточек: поддержка Retina и авто-зум ── */
+function patchDeliveryCardMedia(media, product, index) {
+  if (!media) return;
+  let badge = media.querySelector('.stopbadge');
+  if (!product.on && !badge) {
+    badge = document.createElement('span');
+    badge.className = 'stopbadge';
+    badge.textContent = 'СТОП';
+    media.appendChild(badge);
+  }
+  if (product.on && badge) badge.remove();
+
+  if (product.img && !media.querySelector('img')) {
+    const placeholder = media.querySelector('.em');
+    if (placeholder) placeholder.remove();
+    const image = document.createElement('img');
+    image.src = product.img;
+    image.alt = product.name || '';
+    image.loading = index === 0 ? 'eager' : 'lazy';
+    image.decoding = 'async';
+    if (index === 0) {
+      try { image.fetchPriority = 'high'; } catch (e) {}
+    }
+    image.dataset.zoom = 'true';
+    image.dataset.zoomSrc = product.img.replace('-card.webp', '-zoom.webp');
+    image.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in;';
+    media.appendChild(image);
+  }
+}
+
+function patchDeliveryCardAction(card, product) {
+  const add = card.querySelector('[data-add]');
+  if (!add) return;
+  if (!product.on) {
+    add.disabled = true;
+    add.classList.remove('incart', 'added');
+    add.textContent = 'СТОП — недоступно';
+  } else if (add.disabled) {
+    add.disabled = false;
+  }
+}
+
+function patchDeliveryCardEditor(card, product, editing) {
+  if (!editing) {
+    const stopControl = card.querySelector('.donoff');
+    if (stopControl) stopControl.remove();
+    const editButton = card.querySelector('.edBtn');
+    if (editButton) editButton.remove();
+    return;
+  }
+
+  if (!card.querySelector('.edBtn') && window.canEditMenu && window.canEditMenu()) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'edBtn';
+    button.dataset.ed = product.id;
+    button.textContent = '✏️';
+    card.appendChild(button);
+  }
+
+  const canToggle = window.canToggleStopList && window.canToggleStopList('delivery');
+  let label = card.querySelector('.donoff');
+  if (canToggle && !label) {
+    label = document.createElement('label');
+    label.className = 'donoff';
+    label.innerHTML = '<input type="checkbox" data-onoff="' + product.id + '">в меню';
+    card.appendChild(label);
+  } else if (!canToggle && label) {
+    label.remove();
+    return;
+  }
+
+  if (canToggle) {
+    const input = label.querySelector('input');
+    if (input) input.checked = !!product.on;
+  }
+}
+
+function patchDeliveryCard(card, product, index, editing) {
+  if (!product) return;
+  card.classList.toggle('stopped', !product.on);
+  patchDeliveryCardMedia(card.querySelector('.media'), product, index);
+  patchDeliveryCardAction(card, product);
+  patchDeliveryCardEditor(card, product, editing);
+}
+
 function patchDeliveryCards(list) {
   const cards = $('#deliveryGrid').querySelectorAll('.card');
   const editing = (typeof editMode !== 'undefined' && editMode);
-  cards.forEach((card, i) => {
-    const p = list[i]; if (!p) return;
-    card.classList.toggle('stopped', !p.on);
-    const media = card.querySelector('.media');
-    if (media) {
-      let sb = media.querySelector('.stopbadge');
-      if (!p.on && !sb) { sb = document.createElement('span'); sb.className = 'stopbadge'; sb.textContent = 'СТОП'; media.appendChild(sb); }
-      if (p.on && sb) sb.remove();
-
-      if (p.img && !media.querySelector('img')) {
-        const em = media.querySelector('.em'); if (em) em.remove();
-        const im = document.createElement('img');
-        im.src = p.img;
-        im.alt = p.name || '';
-        im.loading = (i === 0) ? 'eager' : 'lazy';
-        im.decoding = 'async';
-        if (i === 0) { try { im.fetchPriority = 'high'; } catch (e) {} }
-        im.dataset.zoom = 'true';
-        // Автоматически подменяем -card.webp на -zoom.webp для модалки
-        im.dataset.zoomSrc = p.img.replace('-card.webp', '-zoom.webp');
-        im.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in;';
-        media.appendChild(im);
-      }
-    }
-    const add = card.querySelector('[data-add]');
-    if (add) {
-      if (!p.on) { add.disabled = true; add.classList.remove('incart', 'added'); add.textContent = 'СТОП — недоступно'; }
-      else if (add.disabled) { add.disabled = false; }
-    }
-    if (editing) {
-      if (!card.querySelector('.edBtn') && window.canEditMenu && window.canEditMenu()) {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'edBtn'; b.dataset.ed = p.id; b.textContent = '✏️';
-        card.appendChild(b);
-      }
-      const canToggle = window.canToggleStopList && window.canToggleStopList('delivery');
-      let lab = card.querySelector('.donoff');
-      if (canToggle) {
-        if (!lab) {
-          lab = document.createElement('label'); lab.className = 'donoff';
-          lab.innerHTML = '<input type="checkbox" data-onoff="' + p.id + '">в меню';
-          card.appendChild(lab);
-        }
-        const inp = lab.querySelector('input'); if (inp) inp.checked = !!p.on;
-      } else if (lab) {
-        lab.remove();
-      }
-    } else {
-      const d2 = card.querySelector('.donoff'); if (d2) d2.remove();
-      const e2 = card.querySelector('.edBtn'); if (e2) e2.remove();
-    }
-  });
+  cards.forEach((card, index) => patchDeliveryCard(card, list[index], index, editing));
   syncAddButtons();
 }
 
@@ -547,133 +587,157 @@ function syncAddButtons() {
   });
 }
 
-$('#deliveryGrid').addEventListener('click', e => {
-  // Полноэкранный Zoom фото с высоким разрешением
+function handleDeliveryZoomClick(e) {
   const zoomImg = e.target.closest('[data-zoom], .media img');
-  if (zoomImg) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
-    const card = zoomImg.closest('.card, article');
-    const title = card ? (card.querySelector('h3') || {}).textContent : '';
-    const price = card ? (card.querySelector('.price') || {}).textContent : '';
-    const fullSrc = zoomImg.dataset.zoomSrc || zoomImg.src;
-    const product = card && card.dataset.productId
-      ? DMENU.find(item => String(item.id) === String(card.dataset.productId))
-      : null;
-    if (typeof window.openZoom === 'function') {
-      window.openZoom(fullSrc, title, price, product);
-    }
-    return;
+  if (!zoomImg) return false;
+  e.preventDefault();
+  e.stopPropagation();
+  if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+  const card = zoomImg.closest('.card, article');
+  const title = card ? (card.querySelector('h3') || {}).textContent : '';
+  const price = card ? (card.querySelector('.price') || {}).textContent : '';
+  const fullSrc = zoomImg.dataset.zoomSrc || zoomImg.src;
+  const product = card && card.dataset.productId
+    ? DMENU.find(item => String(item.id) === String(card.dataset.productId))
+    : null;
+  if (typeof window.openZoom === 'function') window.openZoom(fullSrc, title, price, product);
+  return true;
+}
+
+function handleDeliveryStepperClick(e) {
+  const step = e.target.closest('[data-step]');
+  if (!step) return false;
+  const id = step.dataset.sid;
+  const delta = +step.dataset.step;
+  const item = cart.find(entry => String(entry.id) === String(id));
+  if (!item && delta < 0) return true;
+  if (item) {
+    if (delta > 0) item.qty++;
+    else if (item.qty > 1) item.qty--;
+    else cart.splice(cart.indexOf(item), 1);
   }
-
-  // Режим редактирования не обрабатывает клики добавления
-  if (e.target.closest('.edBtn') || e.target.closest('.donoff')) return;
-
-  // Степпер
-  const st = e.target.closest('[data-step]');
-  if (st) {
-    const id = st.dataset.sid; const delta = +st.dataset.step;
-    const item = cart.find(c => String(c.id) === String(id));
-    if (!item && delta < 0) return;
-    if (item) { if (delta > 0) item.qty++; else if (item.qty > 1) item.qty--; else cart.splice(cart.indexOf(item), 1); }
-    localStorage.setItem('zt_cart', JSON.stringify(cart));
-    if (typeof window.updateCartFab === 'function') window.updateCartFab();
-    if (typeof window.renderCart === 'function') window.renderCart();
-    const n = cart.reduce((a, c) => (String(c.id) === String(id) ? a + c.qty : a), 0);
-    const row = st.closest('.steprow'); const mid = row && row.querySelector('[data-add]');
-    if (mid) { mid.textContent = n ? ('В корзине · ' + n) : 'Добавить'; mid.classList.toggle('incart', n > 0); }
-    if (row) row.querySelectorAll('.step').forEach(s => { s.hidden = !n; });
-    return;
+  localStorage.setItem('zt_cart', JSON.stringify(cart));
+  if (typeof window.updateCartFab === 'function') window.updateCartFab();
+  if (typeof window.renderCart === 'function') window.renderCart();
+  const count = cart.reduce((total, entry) => (String(entry.id) === String(id) ? total + entry.qty : total), 0);
+  const row = step.closest('.steprow');
+  const addButton = row && row.querySelector('[data-add]');
+  if (addButton) {
+    addButton.textContent = count ? ('В корзине · ' + count) : 'Добавить';
+    addButton.classList.toggle('incart', count > 0);
   }
+  if (row) row.querySelectorAll('.step').forEach(button => { button.hidden = !count; });
+  return true;
+}
 
-  // Тап по карточке (выбор опции)
+function handleDeliveryCardClick(e) {
   const card = e.target.closest('#deliveryGrid .card');
-  if (card && !e.target.closest('.opts button') && !e.target.closest('[data-add]') && !e.target.closest('.edBtn') && !e.target.closest('.donoff')) {
-    const optsBox = card.querySelector('.opts');
-    const addBtn = card.querySelector('[data-add]');
-    const p = DMENU.find(x => String(x.id) === String(addBtn && addBtn.dataset.add));
-    if (p && (p.opts || []).length && optsBox) {
-      if (!optsBox.querySelector('.sel')) {
-        optsBox.classList.remove('shake'); void optsBox.offsetWidth; optsBox.classList.add('shake');
-        optsBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        if (typeof toast === 'function') toast('Выберите размер и тесто 🍕', '');
-      }
-    } else if (p && addBtn) {
-      addBtn.click();
-    }
-    return;
-  }
+  if (!card || e.target.closest('.opts button') || e.target.closest('[data-add]') ||
+      e.target.closest('.edBtn') || e.target.closest('.donoff')) return false;
 
-  // Клик по опции размера/теста
-  const optBtn = e.target.closest('.opts button');
-  if (optBtn) {
-    const group = optBtn.closest('.opts');
-    const wasSel = optBtn.classList.contains('sel');
-    group.querySelectorAll('button').forEach(b => b.classList.remove('sel'));
-    if (!wasSel) optBtn.classList.add('sel');
-    return;
-  }
-
-  // Клик по кнопке «Добавить»
-  const addBtn = e.target.closest('[data-add]');
-  if (addBtn) {
-    const id = addBtn.dataset.add;
-    const p = DMENU.find(x => String(x.id) === String(id));
-    if (!p) return;
-    
-    const opts = p.opts || [];
-    const cardBody = addBtn.closest('.cbody');
-    const selOpt = cardBody ? cardBody.querySelector('.opts button.sel') : null;
-
-    if (!selOpt && opts.length > 0) {
-      const optsBox = (cardBody && cardBody.querySelector('.opts')) || null;
-      if (optsBox) {
-        optsBox.classList.remove('shake'); void optsBox.offsetWidth; optsBox.classList.add('shake');
-        optsBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      }
+  const optsBox = card.querySelector('.opts');
+  const addButton = card.querySelector('[data-add]');
+  const product = DMENU.find(item => String(item.id) === String(addButton && addButton.dataset.add));
+  if (product && (product.opts || []).length && optsBox) {
+    if (!optsBox.querySelector('.sel')) {
+      optsBox.classList.remove('shake');
+      void optsBox.offsetWidth;
+      optsBox.classList.add('shake');
+      optsBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
       if (typeof toast === 'function') toast('Выберите размер и тесто 🍕', '');
-      return;
     }
-    const oi = selOpt ? parseInt(selOpt.dataset.oi, 10) : -1;
-
-    const price = (oi >= 0 && opts[oi]) ? Number(opts[oi].p) : (Number(p.price) || 0);
-    if (price <= 0) {
-      if (typeof toast === 'function') toast('Ошибка цены', '⚠️');
-      return;
-    }
-
-    const optLabel = (oi >= 0 && opts[oi]) ? opts[oi].l : null;
-    const key = id + (oi >= 0 ? '_' + oi : '');
-    const existing = cart.find(c => String(c.key) === String(key));
-
-    if (existing) {
-      existing.qty++;
-    } else {
-      cart.push({
-        key: key,
-        id: id,
-        oi: oi,
-        name: p.name,
-        opt: optLabel,
-        price: price,
-        sz: (oi >= 0 && opts[oi]) ? (Number(opts[oi].sz) || 0) : 0,
-        qty: 1
-      });
-    }
-    
-    localStorage.setItem('zt_cart', JSON.stringify(cart));
-    
-    if (typeof syncAddButtons === 'function') syncAddButtons();
-    addBtn.classList.add('added');
-    if (window.TgUx) window.TgUx.haptic('medium');
-    setTimeout(() => addBtn.classList.remove('added'), 700);
-    
-    if (typeof updateCartFab === 'function') updateCartFab();
-    if (typeof window.renderCart === 'function') window.renderCart();
-    if (typeof toast === 'function') toast('Добавлено в корзину', '🛒');
+  } else if (product && addButton) {
+    addButton.click();
   }
-});
+  return true;
+}
+
+function handleDeliveryOptionClick(e) {
+  const option = e.target.closest('.opts button');
+  if (!option) return false;
+  const group = option.closest('.opts');
+  const wasSelected = option.classList.contains('sel');
+  group.querySelectorAll('button').forEach(button => button.classList.remove('sel'));
+  if (!wasSelected) option.classList.add('sel');
+  return true;
+}
+
+function resolveDeliveryAddSelection(addButton, product) {
+  const options = product.opts || [];
+  const cardBody = addButton.closest('.cbody');
+  const selectedOption = cardBody ? cardBody.querySelector('.opts button.sel') : null;
+  if (!selectedOption && options.length > 0) {
+    const optionsBox = cardBody && cardBody.querySelector('.opts');
+    if (optionsBox) {
+      optionsBox.classList.remove('shake');
+      void optionsBox.offsetWidth;
+      optionsBox.classList.add('shake');
+      optionsBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    if (typeof toast === 'function') toast('Выберите размер и тесто 🍕', '');
+    return null;
+  }
+
+  const optionIndex = selectedOption ? parseInt(selectedOption.dataset.oi, 10) : -1;
+  const option = options[optionIndex];
+  const price = option ? Number(option.p) : (Number(product.price) || 0);
+  if (price <= 0) {
+    if (typeof toast === 'function') toast('Ошибка цены', '⚠️');
+    return null;
+  }
+  return { optionIndex, option, price };
+}
+
+function upsertDeliveryCartItem(product, selection) {
+  const id = product.id;
+  const key = id + (selection.optionIndex >= 0 ? '_' + selection.optionIndex : '');
+  const existing = cart.find(item => String(item.key) === String(key));
+  if (existing) {
+    existing.qty++;
+    return;
+  }
+  cart.push({
+    key: key,
+    id: id,
+    oi: selection.optionIndex,
+    name: product.name,
+    opt: selection.option ? selection.option.l : null,
+    price: selection.price,
+    sz: selection.option ? (Number(selection.option.sz) || 0) : 0,
+    qty: 1
+  });
+}
+
+function handleDeliveryAddClick(e) {
+  const addButton = e.target.closest('[data-add]');
+  if (!addButton) return false;
+  const product = DMENU.find(item => String(item.id) === String(addButton.dataset.add));
+  if (!product) return true;
+  const selection = resolveDeliveryAddSelection(addButton, product);
+  if (!selection) return true;
+
+  upsertDeliveryCartItem(product, selection);
+  localStorage.setItem('zt_cart', JSON.stringify(cart));
+  if (typeof syncAddButtons === 'function') syncAddButtons();
+  addButton.classList.add('added');
+  if (window.TgUx) window.TgUx.haptic('medium');
+  setTimeout(() => addButton.classList.remove('added'), 700);
+  if (typeof updateCartFab === 'function') updateCartFab();
+  if (typeof window.renderCart === 'function') window.renderCart();
+  if (typeof toast === 'function') toast('Добавлено в корзину', '🛒');
+  return true;
+}
+
+function handleDeliveryGridClick(e) {
+  if (handleDeliveryZoomClick(e)) return;
+  if (e.target.closest('.edBtn') || e.target.closest('.donoff')) return;
+  if (handleDeliveryStepperClick(e)) return;
+  if (handleDeliveryCardClick(e)) return;
+  if (handleDeliveryOptionClick(e)) return;
+  handleDeliveryAddClick(e);
+}
+
+$('#deliveryGrid').addEventListener('click', handleDeliveryGridClick);
 
 $('#cartFab').onclick = () => { $('#cartPanel').classList.add('open'); };
 $('#cartClose').onclick = () => { $('#cartPanel').classList.remove('open'); };
@@ -708,8 +772,8 @@ $('#cartItems').addEventListener('click', e => {
 
 $('#checkoutMethod').onchange = () => {
   const pickup = $('#checkoutMethod').value === 'pickup';
-  $('#checkoutPlaceLabel').hidden = pickup;
-  $('#checkoutAddrLabel').hidden = pickup;
+  const deliveryGroup = $('#checkoutDeliveryGroup');
+  if (deliveryGroup) deliveryGroup.style.display = pickup ? 'none' : 'contents';
   window.renderCart();
 };
 
@@ -758,11 +822,17 @@ window.loadDelivery = async function() {
     var r = (me && ['admin','cashier','dispatch'].indexOf(me.role) !== -1)
       ? await api('/menu/all').then(function(all) {
           MENU = all.items || [];
-          if (all.updatedAt) meta.updatedAt = all.updatedAt;
-          return { items: MENU.filter(function(p){ return p.section === 'delivery'; }) };
+          return {
+            items: MENU.filter(function(p){ return p.section === 'delivery'; }),
+            updatedAt: all.updatedAt,
+          };
         })
       : await api('/dmenu');
     DMENU = r.items || [];
+    if (r.updatedAt) {
+      window.meta.updatedAt = r.updatedAt;
+      if (typeof window.renderUpd === 'function') window.renderUpd();
+    }
     renderDeliveryRail();
     window.renderDeliveryMenu();
     updateCartFab();

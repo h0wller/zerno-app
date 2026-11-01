@@ -12,7 +12,7 @@ var scKey = null, scClosedView = false;
 
   /* ── гость ↔ бот ── */
   const now = () => new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-  const unreadKey = () => 'zt_unread_' + chatKey();
+  const unreadKey = () => 'zt_unread_' + activeChatKey();
 
   function addMsg(who, text) {
     const m = document.createElement('div');
@@ -67,6 +67,13 @@ var scKey = null, scClosedView = false;
     return k;
   }
 
+  // Use the chat-core wrapper so every history/poll/storage key is scoped to the active brand.
+  function activeChatKey() {
+    return typeof window.chatKey === 'function' && window.chatKey !== chatKey
+      ? window.chatKey()
+      : chatKey();
+  }
+
 function sendChat(text) {
   if (!text || !text.trim()) return;
   if (typeof window.sendChat === 'function' && window.sendChat !== sendChat) {
@@ -74,7 +81,7 @@ function sendChat(text) {
   }
   addMsg('me', text);
   $('#chatInput').value = '';
-  const key = chatKey();
+  const key = activeChatKey();
   if (staffIn) {
     fetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human: 0 }) }).catch(() => {});
     return;
@@ -121,12 +128,12 @@ function showBadge() {
         await fetch(
           API_BASE +
             "/api/chat/thread?key=" +
-            encodeURIComponent(chatKey()) +
+            encodeURIComponent(activeChatKey()) +
             "&after=0",
         )
       ).json();
       for (const m of r.msgs) lastChatId = Math.max(lastChatId, m.id);
-      const rk = "zt_read_" + chatKey();
+      const rk = "zt_read_" + activeChatKey();
       let readId = +localStorage.getItem(rk) || 0;
       if (!localStorage.getItem(rk)) {
         readId = lastChatId;
@@ -146,7 +153,7 @@ function showBadge() {
         await fetch(
           API_BASE +
             "/api/chat/thread?key=" +
-            encodeURIComponent(chatKey()) +
+            encodeURIComponent(activeChatKey()) +
             "&after=0",
         )
       ).json();
@@ -277,7 +284,7 @@ async function updateStaffBadge() {
   setInterval(async () => {
     if (document.visibilityState !== 'visible') return;
     try {
-      const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(chatKey()) + '&after=' + lastChatId)).json();
+      const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(activeChatKey()) + '&after=' + lastChatId)).json();
       for (const m of r.msgs) {
         lastChatId = Math.max(lastChatId, m.id);
         if (m.who === 'staff') {
@@ -298,8 +305,8 @@ async function updateStaffBadge() {
     $('#chatFab').classList.toggle('open', p.classList.contains('open'));
     if (typeof window.sv === 'function') window.sv(); /* <── ДОБАВЛЕНО */
     if (p.classList.contains('open')) {
-      if (!lastChatId) { try { const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(chatKey()) + '&after=0')).json(); for (const m of r.msgs) lastChatId = Math.max(lastChatId, m.id); } catch (e) {} }
-      localStorage.setItem(unreadKey(), '0'); showBadge(); localStorage.setItem('zt_read_' + chatKey(), lastChatId);
+      if (!lastChatId) { try { const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(activeChatKey()) + '&after=0')).json(); for (const m of r.msgs) lastChatId = Math.max(lastChatId, m.id); } catch (e) {} }
+      localStorage.setItem(unreadKey(), '0'); showBadge(); localStorage.setItem('zt_read_' + activeChatKey(), lastChatId);
       if (!historyLoaded) await loadHistory();
       if (!chatOpened) {
         chatOpened = true;

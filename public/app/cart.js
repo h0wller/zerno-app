@@ -61,73 +61,109 @@
       : Math.min(info.value || 0, sum);
   }
 
-  function totalsNow() {
-    var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
-    var sum = list.reduce(function (a, c) {
-      var itemPrice = Number(c.price) || 0;
-      var modsSum = (c.modifiers || []).reduce(function (mA, m) {
-        return mA + (Number(m.price) || 0);
+  function getCartSubtotal(list) {
+    return list.reduce(function (total, item) {
+      var itemPrice = Number(item.price) || 0;
+      var modifiersPrice = (item.modifiers || []).reduce(function (sum, modifier) {
+        return sum + (Number(modifier.price) || 0);
       }, 0);
-      return a + (itemPrice + modsSum) * (Number(c.qty) || 1);
+      return total + (itemPrice + modifiersPrice) * (Number(item.qty) || 1);
     }, 0);
+  }
 
-    var methodEl = document.getElementById("checkoutMethod");
-    var method = methodEl ? methodEl.value : "delivery";
-    var isStaffUser = !!(typeof window.me !== "undefined" && window.me && ["admin", "cashier", "dispatch"].includes(window.me.role));
-    var pickup = (method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0;
-    var discLabel = method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : "");
-    var fee = 0;
-
-    var minOrder = 0;
-    var baseZoneFee = 0;
+  function getDeliveryPlace() {
     var placeEl = document.getElementById("checkoutPlace");
-    var placeVal = (placeEl && placeEl.value && placeEl.value.trim()) ? placeEl.value.trim() : "Янтарный";
-    var normP = String(placeVal).toLowerCase().trim();
+    return (placeEl && placeEl.value && placeEl.value.trim())
+      ? placeEl.value.trim()
+      : "Янтарный";
+  }
 
-    if (method === "delivery") {
-      if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
-        var z = deliveryInfo.zones.find(function (zone) {
-          return zone.places && zone.places.includes(placeVal);
-        });
-        if (z) {
-          baseZoneFee = Number(z.fee) || 0;
-          if (Number(z.min) > 0) minOrder = Number(z.min);
-        }
-      }
-      if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
-        var zoneFee = Number(window.AddressModule.getFee(placeVal));
-        if (zoneFee > 0) baseZoneFee = zoneFee;
-      }
-      if (!baseZoneFee) {
-        baseZoneFee = /синявино|покровское/i.test(normP) ? 250 : (/куликово|яблоновка/i.test(normP) ? 300 : 200);
-      }
-      if (!minOrder) {
-        minOrder = Number(window.MIN_DELIVERY_ORDER) > 0
-          ? Number(window.MIN_DELIVERY_ORDER)
-          : (/синявино|покровское/i.test(normP) ? 1000 : (/куликово|яблоновка/i.test(normP) ? 1200 : 0));
-      } else if (Number(window.MIN_DELIVERY_ORDER) > 0) {
-        minOrder = Number(window.MIN_DELIVERY_ORDER);
-      }
+  function getDefaultDeliveryRates(normalizedPlace) {
+    var isFarZone = /синявино|покровское/i.test(normalizedPlace);
+    var isOuterZone = /куликово|яблоновка/i.test(normalizedPlace);
+    return {
+      fee: isFarZone ? 250 : (isOuterZone ? 300 : 200),
+      minOrder: isFarZone ? 1000 : (isOuterZone ? 1200 : 0),
+    };
+  }
 
-      if (list.length) {
-        // Доставка платная всегда (сервер freeFrom не знает), кроме персонального промокода «первая доставка бесплатно».
-        fee = (promoInfo && promoInfo.kind === "freeship") ? 0 : baseZoneFee;
+  function getDeliveryZoneRates(placeVal) {
+    var baseZoneFee = 0;
+    var minOrder = 0;
+    var normalizedPlace = String(placeVal).toLowerCase().trim();
+
+    if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
+      var zone = deliveryInfo.zones.find(function (entry) {
+        return entry.places && entry.places.includes(placeVal);
+      });
+      if (zone) {
+        baseZoneFee = Number(zone.fee) || 0;
+        if (Number(zone.min) > 0) minOrder = Number(zone.min);
       }
     }
 
+    if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
+      var addressFee = Number(window.AddressModule.getFee(placeVal));
+      if (addressFee > 0) baseZoneFee = addressFee;
+    }
+
+    var defaults = getDefaultDeliveryRates(normalizedPlace);
+    if (!baseZoneFee) baseZoneFee = defaults.fee;
+
+    var configuredMinOrder = Number(window.MIN_DELIVERY_ORDER);
+    if (!minOrder) {
+      minOrder = configuredMinOrder > 0 ? configuredMinOrder : defaults.minOrder;
+    } else if (configuredMinOrder > 0) {
+      minOrder = configuredMinOrder;
+    }
+
+    return { baseZoneFee: baseZoneFee, minOrder: minOrder };
+  }
+
+  function getDeliveryPricing(list, method, placeVal) {
+    if (method !== "delivery") {
+      return { fee: 0, baseZoneFee: 0, minOrder: 0 };
+    }
+
+    var rates = getDeliveryZoneRates(placeVal);
+    var fee = 0;
+    if (list.length) {
+      // Доставка платная всегда, кроме персонального промокода «первая доставка бесплатно».
+      fee = (promoInfo && promoInfo.kind === "freeship") ? 0 : rates.baseZoneFee;
+    }
+
+    return {
+      fee: fee,
+      baseZoneFee: rates.baseZoneFee,
+      minOrder: rates.minOrder,
+    };
+  }
+
+  function totalsNow() {
+    var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
+    var sum = getCartSubtotal(list);
+    var methodEl = document.getElementById("checkoutMethod");
+    var method = methodEl ? methodEl.value : "delivery";
+    var isStaffUser = !!(typeof window.me !== "undefined" && window.me &&
+      ["admin", "cashier", "dispatch"].includes(window.me.role));
+    var pickup = (method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0;
+    var discLabel = method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : "");
+    var placeVal = getDeliveryPlace();
+    var deliveryPricing = getDeliveryPricing(list, method, placeVal);
     var pd = promoInfo ? promoDisc(sum, promoInfo) : 0;
+
     return {
       sum: sum,
       pickup: pickup,
       discLabel: discLabel,
-      fee: fee,
-      baseZoneFee: baseZoneFee,
+      fee: deliveryPricing.fee,
+      baseZoneFee: deliveryPricing.baseZoneFee,
       freeShip: !!(promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
       placeVal: placeVal,
       pd: pd,
-      minOrder: minOrder,
-      belowMin: method === "delivery" && minOrder > 0 && sum > 0 && sum < minOrder,
-      total: Math.max(0, sum - pickup - pd + fee),
+      minOrder: deliveryPricing.minOrder,
+      belowMin: method === "delivery" && deliveryPricing.minOrder > 0 && sum > 0 && sum < deliveryPricing.minOrder,
+      total: Math.max(0, sum - pickup - pd + deliveryPricing.fee),
     };
   }
 
@@ -686,134 +722,151 @@ function renderCartBase() {
     });
   }
   var cPanel = document.getElementById("cartPanel");
-  if (cPanel) {
-    cPanel.addEventListener("click", function (e) {
-      if (e.target.closest("#cartTopClose") || e.target.closest("#cartClose")) {
-        e.preventDefault();
-        cPanel.classList.remove("open");
-        if (typeof syncOverlay === "function") syncOverlay();
-        if (window.TgUx) window.TgUx.sync();
-        return;
-      }
-
-      // Табы кросс-сейла (Все / Соусы / Напитки)
-      var tabBtn = e.target.closest("[data-atab]");
-      if (tabBtn) {
-        e.preventDefault();
-        activeAddonTab = tabBtn.dataset.atab;
-        renderAddons();
-        return;
-      }
-
-      // Раскрытие / сворачивание списка добавок по нажатию на кнопку
-      var toggleBtn = e.target.closest("[data-toggle-mods]");
-      if (toggleBtn) {
-        e.preventDefault();
-        var idx = +toggleBtn.dataset.toggleMods;
-        openModsMap[idx] = !openModsMap[idx];
-        renderCartBase();
-        return;
-      }
-
-      // Переключатель модификатора: повторный клик по тому же чипсу убирает добавку
-      var modChip = e.target.closest("[data-toggle-mod-item]");
-      if (modChip && typeof DMENU !== "undefined") {
-        e.preventDefault();
-        var targetIdx = +modChip.dataset.toggleModItem;
-        var modId = modChip.dataset.modId;
-        var cartItem = cart[targetIdx];
-        var modProduct = DMENU.find(function (x) { return String(x.id) === String(modId); });
-
-        if (cartItem && modProduct) {
-          if (!cartItem.modifiers) cartItem.modifiers = [];
-          var existPos = cartItem.modifiers.findIndex(function (m) { return String(m.id) === String(modId); });
-
-          if (existPos > -1) {
-            // Уже добавлен -> клик по этому же тексту УБИРАЕТ его
-            cartItem.modifiers.splice(existPos, 1);
-          } else {
-            // Не добавлен -> добавляем
-            cartItem.modifiers.push({
-              id: modProduct.id,
-              name: modProduct.name,
-              price: Number(modProduct.price) || 0
-            });
-            if (window.TgUx) window.TgUx.haptic("medium");
-          }
-
-          persistCartUpdate();
-        }
-        return;
-      }
-
-      // Удаление модификатора по крестику ✕
-      var delModBtn = e.target.closest("[data-del-mod]");
-      if (delModBtn) {
-        e.preventDefault();
-        var cIdx = +delModBtn.dataset.delMod;
-        var mIdx = +delModBtn.dataset.modIdx;
-        if (cart[cIdx] && cart[cIdx].modifiers) {
-          cart[cIdx].modifiers.splice(mIdx, 1);
-          persistCartUpdate();
-        }
-        return;
-      }
-
-      // Степпер изменения количества основного блюда
-      var b = e.target.closest("[data-ci]");
-      if (b) {
-        var i = +b.dataset.ci;
-        var it = cart[i];
-        if (!it) { renderCartBase(); return; }
-        if (b.dataset.act === "+") it.qty++;
-        else if (it.qty > 1) it.qty--;
-        else {
-          cart.splice(i, 1);
-          delete openModsMap[i];
-        }
-
-        persistCartUpdate();
-        return;
-      }
-
-      // Быстрое добавление напитков или соусов из общего блока
-      var acBtn = e.target.closest("[data-addon-id]");
-      if (acBtn && typeof DMENU !== "undefined") {
-        var aId = acBtn.dataset.addonId;
-        var prod = DMENU.find(function (x) { return String(x.id) === String(aId); });
-        if (!prod) return;
-
-        var inCart = cart.find(function (c) { return String(c.id) === String(prod.id) && (!c.modifiers || !c.modifiers.length); });
-        var action = acBtn.dataset.acAct;
-
-        if (action === "minus") {
-          if (inCart) {
-            if (inCart.qty > 1) inCart.qty--;
-            else cart.splice(cart.indexOf(inCart), 1);
-          }
-        } else {
-          if (inCart) {
-            inCart.qty++;
-          } else {
-            cart.push({
-              key: prod.id,
-              id: prod.id,
-              oi: -1,
-              name: prod.name,
-              opt: null,
-              price: parseInt(prod.price, 10) || 0,
-              sz: 0,
-              qty: 1,
-              modifiers: []
-            });
-          }
-          if (window.TgUx) window.TgUx.haptic("medium");
-        }
-
-        persistCartUpdate();
-      }
-    });
+  function handleCartCloseClick(e, panel) {
+    if (!e.target.closest("#cartTopClose") && !e.target.closest("#cartClose")) return false;
+    e.preventDefault();
+    panel.classList.remove("open");
+    if (typeof syncOverlay === "function") syncOverlay();
+    if (window.TgUx) window.TgUx.sync();
+    return true;
   }
+
+  function handleCartAddonTabClick(e) {
+    var tabBtn = e.target.closest("[data-atab]");
+    if (!tabBtn) return false;
+    e.preventDefault();
+    activeAddonTab = tabBtn.dataset.atab;
+    renderAddons();
+    return true;
+  }
+
+  function handleCartModifiersToggleClick(e) {
+    var toggleBtn = e.target.closest("[data-toggle-mods]");
+    if (!toggleBtn) return false;
+    e.preventDefault();
+    var idx = +toggleBtn.dataset.toggleMods;
+    openModsMap[idx] = !openModsMap[idx];
+    renderCartBase();
+    return true;
+  }
+
+  function handleCartModifierChipClick(e) {
+    var modChip = e.target.closest("[data-toggle-mod-item]");
+    if (!modChip || typeof DMENU === "undefined") return false;
+    e.preventDefault();
+
+    var targetIdx = +modChip.dataset.toggleModItem;
+    var modId = modChip.dataset.modId;
+    var cartItem = cart[targetIdx];
+    var modProduct = DMENU.find(function (item) { return String(item.id) === String(modId); });
+
+    if (cartItem && modProduct) {
+      if (!cartItem.modifiers) cartItem.modifiers = [];
+      var existingIndex = cartItem.modifiers.findIndex(function (modifier) {
+        return String(modifier.id) === String(modId);
+      });
+
+      if (existingIndex > -1) {
+        cartItem.modifiers.splice(existingIndex, 1);
+      } else {
+        cartItem.modifiers.push({
+          id: modProduct.id,
+          name: modProduct.name,
+          price: Number(modProduct.price) || 0,
+        });
+        if (window.TgUx) window.TgUx.haptic("medium");
+      }
+      persistCartUpdate();
+    }
+    return true;
+  }
+
+  function handleCartModifierDeleteClick(e) {
+    var deleteButton = e.target.closest("[data-del-mod]");
+    if (!deleteButton) return false;
+    e.preventDefault();
+
+    var cartIndex = +deleteButton.dataset.delMod;
+    var modifierIndex = +deleteButton.dataset.modIdx;
+    if (cart[cartIndex] && cart[cartIndex].modifiers) {
+      cart[cartIndex].modifiers.splice(modifierIndex, 1);
+      persistCartUpdate();
+    }
+    return true;
+  }
+
+  function handleCartQuantityClick(e) {
+    var button = e.target.closest("[data-ci]");
+    if (!button) return false;
+
+    var index = +button.dataset.ci;
+    var item = cart[index];
+    if (!item) {
+      renderCartBase();
+      return true;
+    }
+
+    if (button.dataset.act === "+") item.qty++;
+    else if (item.qty > 1) item.qty--;
+    else {
+      cart.splice(index, 1);
+      delete openModsMap[index];
+    }
+    persistCartUpdate();
+    return true;
+  }
+
+  function handleCartQuickAddonClick(e) {
+    var addonButton = e.target.closest("[data-addon-id]");
+    if (!addonButton || typeof DMENU === "undefined") return false;
+
+    var addonId = addonButton.dataset.addonId;
+    var product = DMENU.find(function (item) { return String(item.id) === String(addonId); });
+    if (!product) return true;
+
+    var inCart = cart.find(function (item) {
+      return String(item.id) === String(product.id) && (!item.modifiers || !item.modifiers.length);
+    });
+    var action = addonButton.dataset.acAct;
+
+    if (action === "minus") {
+      if (inCart) {
+        if (inCart.qty > 1) inCart.qty--;
+        else cart.splice(cart.indexOf(inCart), 1);
+      }
+    } else if (inCart) {
+      inCart.qty++;
+      if (window.TgUx) window.TgUx.haptic("medium");
+    } else {
+      cart.push({
+        key: product.id,
+        id: product.id,
+        oi: -1,
+        name: product.name,
+        opt: null,
+        price: parseInt(product.price, 10) || 0,
+        sz: 0,
+        qty: 1,
+        modifiers: [],
+      });
+      if (window.TgUx) window.TgUx.haptic("medium");
+    }
+
+    persistCartUpdate();
+    return true;
+  }
+
+  function handleCartPanelClick(e) {
+    if (handleCartCloseClick(e, cPanel)) return;
+    if (handleCartAddonTabClick(e)) return;
+    if (handleCartModifiersToggleClick(e)) return;
+    if (handleCartModifierChipClick(e)) return;
+    if (handleCartModifierDeleteClick(e)) return;
+    if (handleCartQuantityClick(e)) return;
+    handleCartQuickAddonClick(e);
+  }
+
+  if (cPanel) cPanel.addEventListener("click", handleCartPanelClick);
 
   /* ── 1. Свайп мышью как на смартфоне (Drag-to-scroll) на ПК ── */
   (function initMouseDragScroll() {
@@ -930,144 +983,186 @@ function renderCartBase() {
     }
   });
 
+  function canStartCheckout(checkBtn) {
+    if (checkBtn.disabled || checkBtn.getAttribute("data-busy") === "1") return false;
+    if (!me) {
+      toast("Сначала войдите по номеру", "👤");
+      if (typeof openAuth === "function") openAuth();
+      return false;
+    }
+    if (!cart || cart.length === 0) {
+      toast("Корзина пуста", "🛒");
+      return false;
+    }
+
+    var totals = totalsNow();
+    if (totals.belowMin) {
+      toast("Минимальная сумма заказа для доставки — " + fmt(totals.minOrder), "⚠️");
+      return false;
+    }
+    return true;
+  }
+
+  async function resolveCheckoutInput() {
+    var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
+    var addressState = window.CheckoutValidation.resolveAddress(method);
+    if (!addressState.ok) {
+      if (addressState.field) window.CheckoutValidation.flagField(addressState.field);
+      toast(addressState.message, addressState.icon);
+      return null;
+    }
+
+    var slotState = await window.CheckoutValidation.resolveSlot();
+    if (!slotState.ok) {
+      if (slotState.field) window.CheckoutValidation.flagField(slotState.field);
+      toast(slotState.message, slotState.icon);
+      return null;
+    }
+
+    return {
+      method: method,
+      placeV: addressState.placeV,
+      streetV: addressState.streetV,
+      houseV: addressState.houseV,
+      slotVal: slotState.slotVal,
+      isPreorder: slotState.isPreorder,
+      preorderDate: slotState.preorderDate,
+    };
+  }
+
+  function buildCheckoutRequest(checkoutInput) {
+    var body = {
+      method: checkoutInput.method,
+      place: checkoutInput.method === "pickup" ? "Самовывоз" : checkoutInput.placeV,
+      street: checkoutInput.streetV,
+      house: checkoutInput.houseV,
+      slot: checkoutInput.slotVal,
+      is_preorder: checkoutInput.isPreorder ? 1 : 0,
+      preorder_date: checkoutInput.preorderDate,
+      pay: (document.getElementById("checkoutPay") || {}).value || "cash",
+      comment: ((document.getElementById("checkoutComment") || {}).value || "").trim(),
+      items: cart.map(function (item) {
+        return {
+          id: item.id,
+          oi: item.oi,
+          qty: item.qty,
+          modifiers: item.modifiers || [],
+        };
+      }),
+    };
+    if (cartPromoCode) body.promo = cartPromoCode;
+
+    // Идемпотентный ID: защита от дублей при сетевом сбое.
+    body.client_order_id = "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    return body;
+  }
+
+  function showCheckoutProgress(checkBtn) {
+    var originalHtml = checkBtn.innerHTML;
+    checkBtn.disabled = true;
+    checkBtn.setAttribute("data-busy", "1");
+    checkBtn.style.pointerEvents = "none";
+    checkBtn.innerHTML = '<span>⏳ Оформляем заказ...</span>';
+
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
+      try { window.Telegram.WebApp.MainButton.showProgress(); } catch (tgErr) {}
+    }
+    return originalHtml;
+  }
+
+  function completeCheckoutSuccess(result, checkoutInput) {
+    toast("Заказ #" + (result.order && result.order.no ? result.order.no : "") + " оформлен!", "🎉");
+
+    if (checkoutInput.method !== "pickup" && window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
+      try {
+        window.AddressBook.autoAdd({
+          place: checkoutInput.placeV,
+          street: checkoutInput.streetV,
+          house: checkoutInput.houseV,
+        });
+      } catch (eAb) {}
+    }
+
+    if (window.TgUx) window.TgUx.success();
+    if (typeof cart !== "undefined" && Array.isArray(cart)) cart.length = 0;
+    window.cart = [];
+    openModsMap = {};
+    localStorage.setItem("zt_cart", "[]");
+    sessionStorage.removeItem("zt_checkout_draft");
+    clearPromo();
+
+    var promoInput = document.getElementById("cartPromo");
+    if (promoInput) promoInput.value = "";
+    var streetInput = document.getElementById("checkoutStreet");
+    if (streetInput) streetInput.value = "";
+    var houseInput = document.getElementById("checkoutHouse");
+    if (houseInput) houseInput.value = "";
+    var commentInput = document.getElementById("checkoutComment");
+    if (commentInput) commentInput.value = "";
+    var slotInput = document.getElementById("checkoutSlot");
+    if (slotInput) slotInput.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
+
+    document.querySelectorAll("#deliveryGrid .opts button.sel").forEach(function (button) {
+      button.classList.remove("sel");
+    });
+
+    if (typeof syncAddButtons === "function") syncAddButtons();
+    if (typeof updateCartFab === "function") updateCartFab();
+    renderCartBase();
+
+    var panel = document.getElementById("cartPanel");
+    if (panel) panel.classList.remove("open");
+    if (typeof loadMyOrders === "function") loadMyOrders({ force: true });
+    if (result && result.order) {
+      window.openOrderTrackModal(result.order);
+    } else if (typeof syncOverlay === "function") {
+      syncOverlay();
+    }
+  }
+
+  function handleCheckoutFailure(error) {
+    try {
+      var slot = document.getElementById("checkoutSlot");
+      var preorderSlot = slot ? slot.value : "";
+      if (preorderSlot && preorderSlot !== "asap" &&
+          window.PreorderTimer && typeof window.PreorderTimer.updateAll === "function") {
+        setTimeout(window.PreorderTimer.updateAll, 500);
+      }
+    } catch (timerError) {}
+
+    toast(error.message || "Ошибка оформления заказа", "⚠️");
+  }
+
+  function restoreCheckoutProgress(checkBtn, originalHtml) {
+    checkBtn.disabled = false;
+    checkBtn.removeAttribute("data-busy");
+    checkBtn.style.pointerEvents = "";
+    checkBtn.innerHTML = originalHtml;
+
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
+      try { window.Telegram.WebApp.MainButton.hideProgress(); } catch (tgErr) {}
+    }
+  }
+
   /* ── Оформление заказа ── */
   var checkBtn = document.getElementById("checkoutBtn");
   if (checkBtn) {
     checkBtn.onclick = async function () {
-      if (checkBtn.disabled || checkBtn.getAttribute("data-busy") === "1") return;
+      if (!canStartCheckout(checkBtn)) return;
 
-      if (!me) {
-        toast("Сначала войдите по номеру", "👤");
-        if (typeof openAuth === "function") openAuth();
-        return;
-      }
-      if (!cart || cart.length === 0) {
-        toast("Корзина пуста", "🛒");
-        return;
-      }
+      var checkoutInput = await resolveCheckoutInput();
+      if (!checkoutInput) return;
 
-      var tCheck = totalsNow();
-      if (tCheck.belowMin) {
-        toast("Минимальная сумма заказа для доставки — " + fmt(tCheck.minOrder), "⚠️");
-        return;
-      }
-
-      var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
-      var addressState = window.CheckoutValidation.resolveAddress(method);
-      if (!addressState.ok) {
-        if (addressState.field) window.CheckoutValidation.flagField(addressState.field);
-        return toast(addressState.message, addressState.icon);
-      }
-
-      var slotState = await window.CheckoutValidation.resolveSlot();
-      if (!slotState.ok) {
-        if (slotState.field) window.CheckoutValidation.flagField(slotState.field);
-        return toast(slotState.message, slotState.icon);
-      }
-
-      var placeV = addressState.placeV;
-      var streetV = addressState.streetV;
-      var houseV = addressState.houseV;
-      var slotVal = slotState.slotVal;
-      var isPreorder = slotState.isPreorder;
-      var preorderDate = slotState.preorderDate;
-
-      var body = {
-        method: method,
-        place: method === "pickup" ? "Самовывоз" : placeV,
-        street: streetV,
-        house: houseV,
-        slot: slotVal,
-        is_preorder: isPreorder ? 1 : 0,
-        preorder_date: preorderDate,
-        pay: (document.getElementById("checkoutPay") || {}).value || "cash",
-        comment: ((document.getElementById("checkoutComment") || {}).value || "").trim(),
-        items: cart.map(function (c) {
-          return {
-            id: c.id,
-            oi: c.oi,
-            qty: c.qty,
-            modifiers: c.modifiers || []
-          };
-        })
-      };
-      if (cartPromoCode) body.promo = cartPromoCode;
-
-      // 1. Идемпотентный ID: защита от дублей при сетевом сбое
-      body.client_order_id = "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-
-      // 2. Блокируем кнопку физически и визуально ДО отправки запроса
-      var origBtnHtml = checkBtn.innerHTML;
-      checkBtn.disabled = true;
-      checkBtn.setAttribute("data-busy", "1");
-      checkBtn.style.pointerEvents = "none";
-      checkBtn.innerHTML = '<span>⏳ Оформляем заказ...</span>';
-
-      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
-        try { window.Telegram.WebApp.MainButton.showProgress(); } catch (tgErr) {}
-      }
-
-      var r;
+      var body = buildCheckoutRequest(checkoutInput);
+      var originalHtml = showCheckoutProgress(checkBtn);
       try {
-        r = await api("/orders", { method: "POST", body: body });
-        toast("Заказ #" + (r.order && r.order.no ? r.order.no : "") + " оформлен!", "🎉");
-
-        /* Адрес прошёл валидацию и заказ принят — запоминаем его в «Моих адресах» (только доставка) */
-        if (method !== "pickup" && window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
-          try { window.AddressBook.autoAdd({ place: placeV, street: streetV, house: houseV }); } catch (eAb) { }
-        }
-
-        if (window.TgUx) window.TgUx.success();
-
-        if (typeof cart !== "undefined" && Array.isArray(cart)) cart.length = 0;
-        window.cart = [];
-        openModsMap = {};
-        localStorage.setItem("zt_cart", "[]");
-        sessionStorage.removeItem("zt_checkout_draft");
-        clearPromo();
-
-        var pi = document.getElementById("cartPromo"); if (pi) pi.value = "";
-        var stEl = document.getElementById("checkoutStreet"); if (stEl) stEl.value = "";
-        var hsEl = document.getElementById("checkoutHouse"); if (hsEl) hsEl.value = "";
-        var cmEl = document.getElementById("checkoutComment"); if (cmEl) cmEl.value = "";
-        var slEl = document.getElementById("checkoutSlot");
-        if (slEl) slEl.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
-
-        document.querySelectorAll("#deliveryGrid .opts button.sel").forEach(function (btn) {
-          btn.classList.remove("sel");
-        });
-
-        if (typeof syncAddButtons === "function") syncAddButtons();
-        if (typeof updateCartFab === "function") updateCartFab();
-        renderCartBase();
-
-        var cp2 = document.getElementById("cartPanel");
-        if (cp2) cp2.classList.remove("open");
-        if (typeof loadMyOrders === "function") loadMyOrders({ force: true });
-        if (r && r.order) {
-          window.openOrderTrackModal(r.order);
-        } else if (typeof syncOverlay === "function") {
-          syncOverlay();
-        }
-      } catch (e) {
-        try {
-          var preorderSlot = document.getElementById("checkoutSlot") ? document.getElementById("checkoutSlot").value : "";
-          if (preorderSlot && preorderSlot !== "asap" && window.PreorderTimer && typeof window.PreorderTimer.updateAll === "function") {
-            setTimeout(window.PreorderTimer.updateAll, 500);
-          }
-        } catch (e2) { }
-
-        toast(e.message || "Ошибка оформления заказа", "⚠️");
+        var result = await api("/orders", { method: "POST", body: body });
+        completeCheckoutSuccess(result, checkoutInput);
+      } catch (error) {
+        handleCheckoutFailure(error);
       } finally {
-        // 3. Разблокировка при любом исходе (успех, 500, таймаут)
-        checkBtn.disabled = false;
-        checkBtn.removeAttribute("data-busy");
-        checkBtn.style.pointerEvents = "";
-        checkBtn.innerHTML = origBtnHtml;
-
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
-          try { window.Telegram.WebApp.MainButton.hideProgress(); } catch (tgErr) {}
-        }
+        // Разблокировка при любом исходе: успех, 500 или таймаут.
+        restoreCheckoutProgress(checkBtn, originalHtml);
       }
     };
   }

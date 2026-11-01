@@ -29,15 +29,37 @@
           return;
         }
         if (e.target.closest("[data-ot-chat]")) {
-          if (window.chatState && typeof window.chatState.setChatCtx === "function") {
-            window.chatState.setChatCtx("delivery");
+          var chatState = window.chatState;
+          if (chatState) {
+            if (typeof chatState.setChosenSupportCtx === "function") {
+              chatState.setChosenSupportCtx("delivery");
+            }
+            if (typeof chatState.setSupportPending === "function") {
+              chatState.setSupportPending(false);
+            }
+            if (typeof chatState.setChatCtx === "function") {
+              chatState.setChatCtx("delivery");
+            }
           }
+          document.body.classList.remove("support-pending");
+          if (typeof window.hideSupportOverlay === "function") window.hideSupportOverlay();
+
           var cp = document.getElementById("chatPanel");
           if (cp) cp.classList.add("open");
           var fab = document.getElementById("chatFab");
           if (fab) fab.classList.add("open");
           closeOrderTrackModal();
+
           if (typeof window.setBotName === "function") window.setBotName();
+          if (typeof window.reloadChatThread === "function") window.reloadChatThread();
+
+          var input = document.getElementById("chatInput");
+          var orderNo = activeTrackOrder && (activeTrackOrder.no || activeTrackOrder.id);
+          if (input) {
+            input.value = "Здравствуйте! У меня вопрос по заказу" +
+              (orderNo ? " №" + orderNo : "") + ".";
+            input.focus();
+          }
           return;
         }
         if (e.target.closest("[data-ot-repeat]") &&
