@@ -462,6 +462,9 @@
     grid-template-columns: 1fr;
     gap: 2px;
   }
+  #fridayInfo .friday-info-hours-row span {
+    text-align: left;
+  }
 }
 
 
