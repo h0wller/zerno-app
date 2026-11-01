@@ -88,7 +88,7 @@ html body div.wrap > section {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px 10px;
-  font: 800 clamp(20px, 2.8vw, 28px)/1.15 "Unbounded", system-ui, sans-serif;
+  font: 800 clamp(20px, 2.8vw, 28px)/1.15 "Unbounded", "Golos Text", system-ui, sans-serif;
   color: #123a6b;
 }
 .menu-head h1 em {
