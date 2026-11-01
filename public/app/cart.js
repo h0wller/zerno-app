@@ -61,10 +61,6 @@
       : Math.min(info.value || 0, sum);
   }
 
-  function getCartList() {
-    return typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
-  }
-
   function getCartSubtotal(list) {
     return list.reduce(function (total, item) {
       var itemPrice = Number(item.price) || 0;
@@ -144,7 +140,7 @@
   }
 
   function totalsNow() {
-    var list = getCartList();
+    var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
     var sum = getCartSubtotal(list);
     var methodEl = document.getElementById("checkoutMethod");
     var method = methodEl ? methodEl.value : "delivery";
