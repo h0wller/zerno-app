@@ -2,7 +2,8 @@
 (function () {
   'use strict';
 
-  var STAFF_ROLE_ATTRIBUTE = STAFF_ROLE_ATTRIBUTE;
+  var STAFF_ROLE_ATTRIBUTE = 'data-staff-role';
+  var STAFF_READY_ATTRIBUTE = 'data-staff-ready';
 
   function setUser(token, customer) {
     window.USER_TOKEN = token;
