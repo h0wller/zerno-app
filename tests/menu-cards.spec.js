@@ -31,26 +31,127 @@ const TAP_MIN = 44;
 /** Равны ли числа с допуском (субпиксельная раскладка сетки даёт доли пикселя). */
 const spread = (nums) => Math.max(...nums) - Math.min(...nums);
 
+const DELIVERY_ITEMS = [
+  {
+    id: 'pz-marg', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Маргарита',
+    desc: 'Красный соус, моцарелла', comp: ['красный соус', 'моцарелла'],
+    vol: '25/35 см', price: '0', on: 1, opts: [
+      { l: '25 см, пышное', w: '415 г', p: 535, sz: 25 },
+      { l: '35 см, пышное', w: '750 г', p: 735, sz: 35 },
+      { l: '25 см, тонкое', w: '335 г', p: 435, sz: 25 },
+      { l: '35 см, тонкое', w: '550 г', p: 635, sz: 35 }
+    ]
+  },
+  {
+    id: 'pz-hamgr', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Ветчина и грибы',
+    desc: 'Белый соус, моцарелла, шампиньоны, ветчина, чеддер',
+    comp: ['белый соус', 'моцарелла', 'шампиньоны', 'ветчина', 'чеддер'],
+    vol: '25/35 см', price: '0', on: 1, opts: [
+      { l: '25 см, пышное', w: '545 г', p: 745, sz: 25 },
+      { l: '35 см, пышное', w: '990 г', p: 1095, sz: 35 },
+      { l: '25 см, тонкое', w: '465 г', p: 645, sz: 25 },
+      { l: '35 см, тонкое', w: '790 г', p: 995, sz: 35 }
+    ]
+  },
+  {
+    id: 'pz-veg', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Овощная',
+    desc: 'Песто, баклажаны, цукини, перец, помидоры черри, брокколи, руккола',
+    comp: ['песто', 'баклажаны', 'цукини', 'перец', 'черри', 'брокколи', 'руккола'],
+    vol: '25/35 см', price: '0', on: 1, opts: [
+      { l: '25 см, пышное', w: '485 г', p: 635, sz: 25 },
+      { l: '35 см, пышное', w: '870 г', p: 935, sz: 35 },
+      { l: '25 см, тонкое', w: '405 г', p: 535, sz: 25 },
+      { l: '35 см, тонкое', w: '670 г', p: 835, sz: 35 }
+    ]
+  },
+  {
+    id: 'pz-cheese', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Сырная',
+    desc: 'Белый соус, моцарелла, чеддер, камамбер',
+    comp: ['белый соус', 'моцарелла', 'чеддер', 'камамбер'],
+    vol: '25/35 см', price: '0', on: 1, opts: [
+      { l: '25 см, пышное', w: '500 г', p: 845, sz: 25 },
+      { l: '35 см, пышное', w: '850 г', p: 1145, sz: 35 },
+      { l: '25 см, тонкое', w: '420 г', p: 745, sz: 25 },
+      { l: '35 см, тонкое', w: '650 г', p: 1045, sz: 35 }
+    ]
+  },
+  {
+    id: 'pz-hamsal', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Ветчина-салями',
+    desc: 'Красный соус, моцарелла, салями, ветчина, перец, руккола',
+    comp: ['красный соус', 'моцарелла', 'салями', 'ветчина', 'перец', 'руккола'],
+    vol: '25/35 см', price: '0', on: 1, opts: [
+      { l: '25 см, пышное', w: '470 г', p: 790, sz: 25 },
+      { l: '35 см, пышное', w: '860 г', p: 1090, sz: 35 },
+      { l: '25 см, тонкое', w: '390 г', p: 690, sz: 25 },
+      { l: '35 см, тонкое', w: '660 г', p: 990, sz: 35 }
+    ]
+  },
+  {
+    id: 'pz-bacon', section: 'delivery', cat: 'pizza', e: '🍕', name: 'С беконом',
+    desc: 'Белый соус, моцарелла, шампиньоны, бекон, маринованный огурец, красный лук',
+    comp: ['белый соус', 'моцарелла', 'шампиньоны', 'бекон', 'огурец', 'лук'],
+    vol: '25/35 см', price: '0', on: 1, opts: [
+      { l: '25 см, пышное', w: '510 г', p: 740, sz: 25 },
+      { l: '35 см, пышное', w: '930 г', p: 1140, sz: 35 },
+      { l: '25 см, тонкое', w: '430 г', p: 640, sz: 25 },
+      { l: '35 см, тонкое', w: '730 г', p: 1040, sz: 35 }
+    ]
+  }
+];
+
+async function routeDeliveryFixture(page) {
+  await page.route('**/dmenu**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      items: DELIVERY_ITEMS.map((item) => ({ ...item, img: '/media/dishes/1-card.webp' }))
+    })
+  }));
+  await page.route(/\/media\/dishes\/.*$/, (route) => route.fulfill({
+    status: 200,
+    contentType: 'image/gif',
+    body: Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'base64')
+  }));
+}
+
+test('delivery API seed includes at least six active pizza cards', async ({ request }) => {
+  const response = await request.get('/api/dmenu');
+  expect(response.ok()).toBeTruthy();
+  const { items = [] } = await response.json();
+  const activePizzas = items.filter((item) =>
+    item.section === 'delivery' && item.cat === 'pizza' && Number(item.on) === 1
+  );
+  expect(activePizzas.length, 'test database must keep the complete active pizza seed').toBeGreaterThanOrEqual(6);
+});
+
 test.describe('Карточки меню: высота, выравнивание, тап-таргеты', () => {
+  test.use({ serviceWorkers: 'block' });
+
   for (const vp of VIEWPORTS) {
     for (const brand of BRANDS) {
       test.describe(`${vp.name} (${vp.width}×${vp.height}) · ${brand.name}`, () => {
         test.beforeEach(async ({ page }) => {
           await page.setViewportSize({ width: vp.width, height: vp.height });
+          if (brand.name === 'Доставка') await routeDeliveryFixture(page);
           await page.addInitScript(() => {
             localStorage.setItem('zt_onb', '1');
             sessionStorage.setItem('splashDone', '1');
-            const u = { id: 'u_cards', name: 'Тестер', phone: '+7 999 999-22-22', stamps: 2, verified: 1 };
-            localStorage.setItem('zt_user', JSON.stringify(u));
-            localStorage.setItem('user', JSON.stringify(u));
-            localStorage.setItem('zt_token', 'test_tok_cards');
-            localStorage.setItem('token', 'test_tok_cards');
           });
+          const deliveryResponse = brand.name === 'Доставка'
+            ? page.waitForResponse((res) => new URL(res.url()).pathname.replace(/\/+$/, '').endsWith('/dmenu'), { timeout: 5000 })
+            : null;
           await page.goto(brand.url, { waitUntil: 'domcontentloaded' });
+          if (deliveryResponse) {
+            const response = await deliveryResponse;
+            expect(response.ok()).toBeTruthy();
+            const items = (await response.json()).items;
+            expect(items).toHaveLength(6);
+            expect(items[0].id).toBe('pz-marg');
+          }
           // Ждём полный рендер каталога (он дорисовывается постепенно), а не первую карточку и не скелетоны.
           const cardSel = `${brand.grid} .card:not(.skeleton-card)`;
           await expect
-            .poll(() => page.locator(cardSel).count(), { timeout: 15000 })
+            .poll(() => page.locator(cardSel).count(), { timeout: 5000 })
             .toBeGreaterThanOrEqual(brand.minCards);
           // Подмена шрифта меняет высоту карточек на пару пикселей — замеряем только после неё.
           await page.evaluate(() => document.fonts.ready);
@@ -184,12 +285,21 @@ test.describe('Карточки меню: высота, выравнивание
     for (const vp of VIEWPORTS) {
       test(`${vp.name} (${vp.width}×${vp.height}): все цели ≥ ${TAP_MIN}×${TAP_MIN}px`, async ({ page }) => {
         await page.setViewportSize({ width: vp.width, height: vp.height });
+        await routeDeliveryFixture(page);
         await page.addInitScript(() => {
           localStorage.setItem('zt_onb', '1');
           sessionStorage.setItem('splashDone', '1');
         });
+        const deliveryResponse = page.waitForResponse((res) =>
+          new URL(res.url()).pathname.replace(/\/+$/, '').endsWith('/dmenu'), { timeout: 5000 }
+        );
         await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
-        await page.waitForSelector('#deliveryGrid .card:not(.skeleton-card)', { timeout: 15000 });
+        const response = await deliveryResponse;
+        expect(response.ok()).toBeTruthy();
+        const items = (await response.json()).items;
+        expect(items).toHaveLength(6);
+        expect(items[0].id).toBe('pz-marg');
+        await page.waitForSelector('#deliveryGrid .card:not(.skeleton-card)', { timeout: 5000 });
         await page.waitForTimeout(500);
 
         // Кладём одну позицию в корзину, чтобы степпер «−/+» перестал быть hidden и тоже попал в замер.

@@ -231,26 +231,10 @@
             emoji: '☕'
           };
 
-    renderTickerItems(bConfig);
-
-    if (
-      typeof brand !== 'undefined' &&
-      brand === 'delivery' &&
-      !window.deliveryInfo &&
-      typeof API_BASE !== 'undefined'
-    ) {
-      fetch(API_BASE + '/api/delivery/info')
-        .then(function (r) {
-          return r.json();
-        })
-        .then(function (d) {
-          if (d) {
-            window.deliveryInfo = d;
-            renderTickerItems(bConfig);
-          }
-        })
-        .catch(function () {});
+    if (brand === 'delivery' && !window.deliveryInfo && typeof window.refreshDeliveryInfo === 'function') {
+      window.refreshDeliveryInfo().catch(function () {});
     }
+    renderTickerItems(bConfig);
 
     var mark =
       document.getElementById('brandMark') ||

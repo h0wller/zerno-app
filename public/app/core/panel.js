@@ -26,6 +26,9 @@ var panelReturnFocus = null;
 function openPanel(tab) {
     if (tab === 'bonus' && window.brand === 'delivery') tab = 'profile';
     setTab(tab);
+    if (tab === 'profile' && window.me && typeof window.loadMyOrders === 'function') {
+        window.loadMyOrders();
+    }
     if (window.innerWidth <= 1180) {
         var panel = document.getElementById('panel');
         if (panel) {

@@ -5,6 +5,7 @@ import {
   PIZZA_DOUGH_PORTIONS
 } from './nutrition-data.js';
 
+const DEFAULT_NUTRITION_SOURCE = 'ТТК + усреднённая база продуктов';
 
 const LEGACY_INGREDIENT_ALIASES = {
   'тесто пицца': { kcal: 255, p: 8.2, f: 3.5, c: 47.6 },
@@ -288,7 +289,7 @@ function makeResult(evaluated, metadata = {}) {
       estimated: true,
       missingIngredients: evaluated.missingIngredients || [],
       totalWeight: evaluated.totalWeight || metadata.totalWeight || 0,
-      source: metadata.source || 'ТТК + усреднённая база продуктов',
+      source: metadata.source || DEFAULT_NUTRITION_SOURCE,
       weightSource: metadata.weightSource || 'ТТК',
       selectedOption: metadata.selectedOption || ''
     };
@@ -303,7 +304,7 @@ function makeResult(evaluated, metadata = {}) {
     per100: evaluated.per100,
     perPortion: evaluated.perPortion,
     breakdown: evaluated.breakdown,
-    source: metadata.source || 'ТТК + усреднённая база продуктов',
+    source: metadata.source || DEFAULT_NUTRITION_SOURCE,
     weightSource: metadata.weightSource || 'ТТК',
     selectedOption: metadata.selectedOption || ''
   };
@@ -320,7 +321,7 @@ function calculatePizza(item, recipe, sources, option) {
       estimated: true,
       missingIngredients: ['ТТК для выбранного размера пиццы'],
       totalWeight: 0,
-      source: 'ТТК + усреднённая база продуктов'
+      source: DEFAULT_NUTRITION_SOURCE
     };
   }
 
@@ -334,7 +335,7 @@ function calculatePizza(item, recipe, sources, option) {
   const evaluated = evaluateRecipe(recipeForPortion, sources);
 
   return makeResult(evaluated, {
-    source: 'ТТК + усреднённая база продуктов',
+    source: DEFAULT_NUTRITION_SOURCE,
     weightSource: ttkYieldWeight ? 'выход готового изделия из ТТК' : 'вес выбранной опции меню',
     selectedOption: optionInfo.label
   });
@@ -369,7 +370,7 @@ function calculatePreparationDish(recipe, sources) {
     per100: evaluated.per100,
     perPortion,
     breakdown: [{ name: preparation.label || recipe.preparation, grams: portionWeight }],
-    source: 'ТТК + усреднённая база продуктов',
+    source: DEFAULT_NUTRITION_SOURCE,
     weightSource: 'порция из меню',
     selectedOption: ''
   };

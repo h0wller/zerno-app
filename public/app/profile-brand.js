@@ -142,7 +142,11 @@ window.renderVerifyNote=function(){
 };
 /* ── единственная обёртка renderProfile ── */
 renderProfile=(function(_rp){return function(){var r=_rp.apply(this,arguments);
-  if(me&&typeof window.loadMyOrders==='function')window.loadMyOrders();
+  var panel = document.getElementById('panel');
+  var profileTab = document.getElementById('pvProfile');
+  var profileVisible = panel && profileTab && !profileTab.hidden &&
+    (window.innerWidth > 1180 || panel.classList.contains('open'));
+  if(me && profileVisible && typeof window.loadMyOrders==='function')window.loadMyOrders();
   brandRules();
   return r;};})(renderProfile);
 })();

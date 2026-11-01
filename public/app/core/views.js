@@ -119,7 +119,7 @@ var rules = [
 
  '@media(min-width:1181px){body.is-cashier .panel{display:none}body.is-cashier .wrap{grid-template-columns:1fr}.topbar > :last-child{margin-left:0!important}#profileTopBtn{margin-left:auto;}}',
  '@media(max-width:640px){#modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}.chat{right:8px}.mh-right{margin-left:0;width:100%}}',
- '@media (max-width: 600px) { .topbar { padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 8px !important; min-height: calc(52px + env(safe-area-inset-top, 0px)) !important; gap: 6px; } .topbar .brand { font-size: 18px !important; } .topbar .brand small { font-size: 10px !important; } }',
+ '@media (max-width: 600px) { .topbar { padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 8px !important; min-height: calc(52px + env(safe-area-inset-top, 0px)) !important; gap: 8px; } .topbar .brand { font-size: 18px !important; } .topbar .brand small { font-size: 10px !important; } }',
 '[data-brand="delivery"] #deliveryView .menu-head { margin: 4px 0 12px; width: 100%; background: linear-gradient(135deg, #FFFDF9 0%, #F6EEE1 100%); border: 2px solid var(--fr-tan, #D9C7AD); box-shadow: 3px 3px 0 rgba(58,42,28,0.08); }',
  '[data-brand="delivery"] #deliveryView .menu-head h1 { font: 900 clamp(20px, 3vw, 28px)/1.15 "Unbounded", sans-serif; color: #3a2a1c; margin: 0; }',
  '[data-brand="delivery"] #deliveryView .menu-head h1 em { display: inline-flex; align-items: center; font: 700 11px/1.2 "Golos Text", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: var(--flame, #C03B2A); background: rgba(192,59,42,0.1); border: 1px solid rgba(192,59,42,0.25); border-radius: 999px; padding: 4px 10px; margin-left: 0; max-width: 100%; white-space: normal; box-sizing: border-box; vertical-align: middle; }', '[data-brand="delivery"] .brand b { font: 900 18px "Unbounded", sans-serif ; color: #3a2a1c ; }',
@@ -307,7 +307,7 @@ function sv() {
   if (showDeliv && typeof window.DMENU !== 'undefined' && !window.DMENU.length &&
       typeof window.loadDelivery === 'function' && !window.__dlReq) {
     window.__dlReq = 1;
-    window.loadDelivery();
+    window.__dlPromise = window.loadDelivery();
   }
   if (typeof applyBrandChrome === 'function') {
     applyBrandChrome();
@@ -358,10 +358,7 @@ window.setMode = function (m) {
       }, 8000);
     }
   }
-  if (m === 'admin' && typeof loadMenu === 'function') loadMenu();
-  if ((m === 'guest' || m === 'admin') && brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
-    loadDelivery();
-  }
+  if (m === 'admin' && brand !== 'delivery' && typeof loadMenu === 'function') loadMenu();
   if (typeof renderModes === 'function') renderModes();
   if (typeof toast === 'function') {
     toast(
@@ -391,9 +388,17 @@ if (brandSegEl) {
     var vtg = document.getElementById('venueToggle');
     if (vtg) vtg.setAttribute('aria-expanded', 'false');
     window.__dlReq = 0;
+    window.__dlPromise = null;
     sv();
-    if (brand === 'delivery' && (typeof DMENU === 'undefined' || !DMENU.length) && typeof loadDelivery === 'function') {
-      loadDelivery();
+    if (brand === 'coffee') {
+      if ((!window.MENU || !window.MENU.length) && typeof loadMenu === 'function') {
+        loadMenu().then(function () {
+          if (typeof renderRail === 'function') renderRail();
+        }).catch(function () {});
+      } else {
+        if (typeof renderRail === 'function') renderRail();
+        if (typeof renderMenu === 'function') renderMenu();
+      }
     }
     if (typeof supportPending !== 'undefined' && !supportPending && typeof chatCtx !== 'undefined' && chatCtx !== brand) {
       chatCtx = brand;

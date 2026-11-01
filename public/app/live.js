@@ -13,7 +13,11 @@ async function refreshOrdersLive(){
       var sig=r.orders.map(function(o){return o.no+':'+o.status;}).join(',');
       if(sig!==lastStaffSig){lastStaffSig=sig;renderOrders(true);}
     }
-    if(window.me&&window.mode!=='cashier'&&window.mode!=='orders'){
+    var panel = document.getElementById('panel');
+    var profileTab = document.getElementById('pvProfile');
+    var profileVisible = panel && profileTab && !profileTab.hidden &&
+      (window.innerWidth > 1180 || panel.classList.contains('open'));
+    if(window.me&&profileVisible&&window.mode!=='cashier'&&window.mode!=='orders'){
       var mineUserKey=String(window.me.id||window.me.phone||'');
       var m=await api('/orders/mine');
       if(!window.me||mineUserKey!==String(window.me.id||window.me.phone||''))return;

@@ -33,8 +33,16 @@ import { createTgRouter } from './server/routes/tg.js';
 import pushRouter from './server/routes/push.js';
 import statsRouter from './server/routes/stats.js';
 import { item, getMeta, touch } from './server/domain/helpers.js';
+import { menuImageForResponse, menuImageSrcsetForResponse } from './server/utils/menu-image.js';
 
 const app = express();
+
+function menuResponseItem(row) {
+  const result = item(row);
+  result.img = menuImageForResponse(result.img, PUBLIC_DIR);
+  result.imgSrcset = menuImageSrcsetForResponse(result.img, PUBLIC_DIR);
+  return result;
+}
 // За прокси (Railway и т.п.) задайте TRUST_PROXY=1, иначе req.ip будет адресом прокси.
 // Без прокси не доверяем заголовкам клиента: иначе X-Forwarded-For обходит блокировку PIN.
 if (process.env.TRUST_PROXY) app.set('trust proxy', /^\d+$/.test(process.env.TRUST_PROXY) ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY);
@@ -119,15 +127,15 @@ app.get('/api/tg/diag', adminGuard, async (req, res) => {
 
 /* ── меню ── */
 app.get('/api/menu', (req, res) => res.json({
-  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee' ORDER BY sort_order ASC, id ASC").all().map(item),
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='coffee' ORDER BY sort_order ASC, id ASC").all().map(menuResponseItem),
   updatedAt: getMeta(),
 }));
 app.get('/api/menu/all', menuGuard, (req, res) => res.json({
-  items: db.prepare('SELECT * FROM menu ORDER BY sort_order ASC, id ASC').all().map(item),
+  items: db.prepare('SELECT * FROM menu ORDER BY sort_order ASC, id ASC').all().map(menuResponseItem),
   updatedAt: getMeta(),
 }));
 app.get('/api/dmenu', (req, res) => res.json({
-  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery' ORDER BY sort_order ASC, id ASC").all().map(item),
+  items: db.prepare("SELECT * FROM menu WHERE is_on=1 AND section='delivery' ORDER BY sort_order ASC, id ASC").all().map(menuResponseItem),
 }));
 app.post('/api/menu', adminGuard, (req, res) => {
   const sec = req.body.section === 'delivery' ? 'delivery' : 'coffee';
@@ -202,8 +210,10 @@ app.use(express.static(PUBLIC_DIR, {
     } else if (p.endsWith('index.html') || p.endsWith('install.html') || p.endsWith('manifest.webmanifest') || /\.(svg|css|js)$/i.test(p)) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (/\.webp$/i.test(p)) {
-      // Фото блюд меняются на месте (одно имя файла), поэтому кэш короче года.
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+      const versioned = /[?&]v=/.test((res.req && res.req.url) || '');
+      res.setHeader('Cache-Control', versioned
+        ? 'public, max-age=31536000, immutable'
+        : 'public, max-age=86400');
     } else if (/\.(woff2?|png|jpe?g|ico)$/i.test(p)) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
@@ -226,13 +236,18 @@ app.post('/api/menu/upload', adminGuard, async (req, res) => {
 
     const cardFileName = `${cleanId}-card.webp`;
     const zoomFileName = `${cleanId}-zoom.webp`;
+    const resizedDir = path.join(dishesDir, 'resized');
+    fs.mkdirSync(resizedDir, { recursive: true });
 
-    // 1. Компактная карточка 640x400 WebP (чёткая на 2x/3x экранах)
-    await sharp(buffer)
-      .rotate()
-      .resize(640, 400, { fit: 'cover', position: 'center' })
-      .webp({ quality: 84, smartSubsampling: true })
-      .toFile(path.join(dishesDir, cardFileName));
+    // One original plus responsive 300/600 px variants for card-sized slots.
+    await Promise.all([
+      sharp(buffer).rotate().resize(640, 400, { fit: 'cover', position: 'center' })
+        .webp({ quality: 84, smartSubsampling: true }).toFile(path.join(dishesDir, cardFileName)),
+      sharp(buffer).rotate().resize(300, 188, { fit: 'cover', position: 'center' })
+        .webp({ quality: 78, smartSubsampling: true }).toFile(path.join(resizedDir, `${cleanId}-card-300.webp`)),
+      sharp(buffer).rotate().resize(600, 375, { fit: 'cover', position: 'center' })
+        .webp({ quality: 82, smartSubsampling: true }).toFile(path.join(resizedDir, `${cleanId}-card-600.webp`))
+    ]);
 
     // 2. Зум высокого разрешения 1400x1400 WebP
     await sharp(buffer)
@@ -267,13 +282,18 @@ async function migrateBase64ImagesToWebP() {
       const buffer = Buffer.from(base64Str, 'base64');
       const cardFile = `${cleanId}-card.webp`;
       const zoomFile = `${cleanId}-zoom.webp`;
+      const resizedDir = path.join(dishesDir, 'resized');
+      fs.mkdirSync(resizedDir, { recursive: true });
 
-      // Нарезка 600x600 WebP для карточки
-      await sharp(buffer)
-        .rotate()
-        .resize(600, 375, { fit: 'cover', position: 'center' }) // 600 / 1.6 = 375
-        .webp({ quality: 80 })
-        .toFile(path.join(dishesDir, cardFile));
+      // Original card plus responsive 300/600 px variants.
+      await Promise.all([
+        sharp(buffer).rotate().resize(600, 375, { fit: 'cover', position: 'center' })
+          .webp({ quality: 80 }).toFile(path.join(dishesDir, cardFile)),
+        sharp(buffer).rotate().resize(300, 188, { fit: 'cover', position: 'center' })
+          .webp({ quality: 78 }).toFile(path.join(resizedDir, `${cleanId}-card-300.webp`)),
+        sharp(buffer).rotate().resize(600, 375, { fit: 'cover', position: 'center' })
+          .webp({ quality: 82 }).toFile(path.join(resizedDir, `${cleanId}-card-600.webp`))
+      ]);
 
       // Нарезка 1200x1200 WebP для зума
       await sharp(buffer)

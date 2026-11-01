@@ -8,7 +8,7 @@
     "test": "node test-api.mjs",
     "prepare": "git config core.hooksPath .githooks",
     "pretest": "node --check public/app/core/views.js && node --check public/dist/main.bundle.js && node scripts/css-audit.mjs && node scripts/brands-check.mjs && node scripts/audit-observers.mjs && npm run test:unit",
-    "test:e2e": "playwright test",
+    "test:e2e": "npm run build:client && playwright test",
     "ui:baseline": "npx playwright test tests/ui-baseline.spec.js --update-snapshots",
     "check": "node --check server.js",
     "lint:code": "eslint public/ server/ scripts/ --max-warnings 50",

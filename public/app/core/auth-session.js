@@ -8,6 +8,17 @@
     else localStorage.removeItem('zt_user');
 
     window.me = customer;
+    var staffRole = token && customer && ['admin', 'cashier', 'dispatch'].indexOf(customer.role) !== -1
+      ? customer.role
+      : '';
+    var root = document.documentElement;
+    try {
+      if (staffRole) localStorage.setItem('zt_role', staffRole);
+      else localStorage.removeItem('zt_role');
+    } catch (_) {}
+    if (staffRole) root.setAttribute('data-staff-role', staffRole);
+    else root.removeAttribute('data-staff-role');
+    root.setAttribute('data-staff-ready', '1');
     window.historyLoaded = false;
     window.lastChatId = 0;
 
@@ -39,4 +50,47 @@
   }
 
   window.setUser = setUser;
+
+  /* Both keys are hints from another tab: revalidate through /api/me before layout changes. */
+  var storageReloadPending = false;
+  window.addEventListener('storage', function (e) {
+    if (!e || (e.key !== 'zt_user' && e.key !== 'zt_role')) return;
+    var root = document.documentElement;
+
+    if (e.key === 'zt_role') {
+      // Without a token, a role hint cannot grant staff layout or access.
+      if (!localStorage.getItem('zt_user')) {
+        root.removeAttribute('data-staff-role');
+        root.setAttribute('data-staff-ready', '1');
+        return;
+      }
+      if (e.newValue === root.getAttribute('data-staff-role') || storageReloadPending) return;
+
+      root.removeAttribute('data-staff-role');
+      root.removeAttribute('data-staff-ready');
+      storageReloadPending = true;
+      window.location.reload();
+      return;
+    }
+
+    if (!e.newValue) {
+      if (typeof window.setUser === 'function') {
+        window.setUser(null, null);
+      } else {
+        root.removeAttribute('data-staff-role');
+        root.setAttribute('data-staff-ready', '1');
+        window.USER_TOKEN = null;
+        window.me = null;
+      }
+      return;
+    }
+
+    if (e.newValue === window.USER_TOKEN || storageReloadPending) return;
+
+    // The new token must pass /api/me in boot() before staff layout is restored.
+    root.removeAttribute('data-staff-role');
+    root.removeAttribute('data-staff-ready');
+    storageReloadPending = true;
+    window.location.reload();
+  });
 })();

@@ -25,7 +25,8 @@
     const res = await fetch(url, {
       method: opts.method || 'GET',
       headers: headers,
-      body: opts.body ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body)) : undefined
+      body: opts.body ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body)) : undefined,
+      signal: opts.signal
     });
 
     if (res.status === 401) {
@@ -33,7 +34,13 @@
       if (typeof window.setUser === 'function') {
         window.setUser(null, null);
       } else {
+        // PR-92 review: fallback-ветка (bundle не загрузился) обязана чистить
+        // и role-hint, иначе устаревший data-staff-role оставляет резерв рядов.
         localStorage.removeItem('zt_user');
+        try { localStorage.removeItem('zt_role'); } catch (_) {}
+        var rootEl = document.documentElement;
+        rootEl.removeAttribute('data-staff-role');
+        rootEl.setAttribute('data-staff-ready', '1');
         window.USER_TOKEN = null;
         window.me = null;
       }
