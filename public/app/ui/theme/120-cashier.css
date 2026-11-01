@@ -16,8 +16,7 @@
 }
 .cash-top h2{
   font:
-    400 24px "Prata",
-    serif;
+    400 24px "Prata", "Golos Text", serif;
   margin-right: auto;
 }
 .cash-top h2 em{
@@ -183,7 +182,7 @@ button.cta,
   border-radius: 50%;
   background: linear-gradient(135deg, #3e8fd0, #123a6b);
   color: #fff;
-  font: 700 22px "Unbounded";
+  font: 700 22px "Unbounded", "Golos Text", sans-serif;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -193,7 +192,7 @@ button.cta,
   min-width: 220px;
 }
 .cust .info b{
-  font: 700 18px "Unbounded";
+  font: 700 18px "Unbounded", "Golos Text", sans-serif;
 }
 .cust .info .cp{
   color: var(--soft);
@@ -247,7 +246,7 @@ button.cta,
   animation: rise 0.3s both;
 }
 .logrow .lt{
-  font: 700 10.5px "Unbounded";
+  font: 700 10.5px "Unbounded", "Golos Text", sans-serif;
   color: #8b98a5;
   min-width: 0;
   white-space: nowrap;
