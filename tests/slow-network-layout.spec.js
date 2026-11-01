@@ -676,13 +676,18 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     const deliveryItems = Array.from({ length: 6 }, (_, index) => ({
       id: 990001 + index,
       name: 'Тестовая пицца ' + (index + 1),
-      desc: 'Тестовая позиция',
+      desc: 'Красный соус, моцарелла',
       cat: 'pizza',
       section: 'delivery',
-      price: 500,
+      price: 535,
       on: 1,
-      opts: [],
-      comp: [],
+      opts: [
+        { l: '25 см, пышное', w: '415 г', p: 535, sz: 25 },
+        { l: '35 см, пышное', w: '750 г', p: 735, sz: 35 },
+        { l: '25 см, тонкое', w: '335 г', p: 435, sz: 25 },
+        { l: '35 см, тонкое', w: '550 г', p: 635, sz: 35 }
+      ],
+      comp: ['красный соус', 'моцарелла'],
       e: '🍕',
       img: '/media/dishes/1-card.webp'
     }));
