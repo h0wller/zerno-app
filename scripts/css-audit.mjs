@@ -115,9 +115,7 @@ if (duplicates.length) {
   ok('views.js: нет дублей селекторов');
 }
 /* ── ПРАВИЛО 8: sanity-check эмитуемого CSS из views.js ── */
-import { readFileSync as rfs } from 'node:fs';
-const vsrc = rfs('public/app/core/views.js', 'utf8');
-const m = vsrc.match(/var rules = \[([\s\S]*?)\];\s*css\.textContent = rules\.join/);
+const m = VIEWS.match(/var rules = \[([\s\S]*?)\];\s*css\.textContent = rules\.join/);
 if (m) {
   const cssText = m[1].split('\n')
     .map(l => l.trim())
@@ -129,7 +127,7 @@ if (m) {
   const open = (cssText.match(/\/\*/g) || []).length, close = (cssText.match(/\*\//g) || []).length;
   if (open !== close) { bad++; console.error(`❌ views.js: незакрытые CSS-комментарии (${open} vs ${close})`); }
   const watched = ['.ticker', '.brand .mark', '.opts button', '.brandSeg', '.cartPanel'];
-  const idxFull = rfs('public/index.html', 'utf8');
+  const idxFull = readFileSync('public/index.html', 'utf8');
 /* F5.12: critical FOUC-guard (Ф3.51) — разрешённый дубль-владелец, из watched исключён */
 const critStart = idxFull.indexOf('critical FOUC-guard');
 const critEnd = critStart >= 0 ? idxFull.indexOf('</style>', critStart) : -1;
