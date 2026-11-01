@@ -219,9 +219,6 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
-#settingsModal .settings-card:focus {
-  outline: none;
-}
 #chatMsgs,
 .cartPanel {
   overscroll-behavior: contain;

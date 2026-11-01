@@ -139,32 +139,6 @@
   /* ── R5: тикер и логотип по бренду ── */
   var __chromeLast = null;
 
-  function setTickerSpeed() {
-    var t = document.getElementById('tickerTrack');
-    if (!t) return;
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        var half = t.scrollWidth / 2;
-        if (half > 0) {
-          var dur = Math.max(18, Math.round(half / 55));
-          t.style.animation = 'zt-marquee ' + dur + 's linear infinite';
-        }
-      });
-    });
-  }
-
-  function padTicker() {
-    setTickerSpeed();
-  }
-
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(setTickerSpeed);
-  }
-  window.addEventListener('resize', function () {
-    clearTimeout(window.__tsT);
-    window.__tsT = setTimeout(setTickerSpeed, 300);
-  });
-
   function renderTickerItems(bConfig) {
     var track = document.getElementById('tickerTrack');
     if (!track) return;
@@ -208,13 +182,11 @@
       if (tickerBox) tickerBox.hidden = true;
     } else {
       if (tickerBox) tickerBox.hidden = false;
-      var L4 = L.concat(L, L, L);
-      track.innerHTML = L4
+      track.innerHTML = L
         .map(function (x) {
           return '<span class="ti">' + x + '</span>';
         })
         .join('');
-      padTicker();
     }
   }
 
