@@ -662,18 +662,12 @@ function handleDeliveryOptionClick(e) {
   return true;
 }
 
-function handleDeliveryAddClick(e) {
-  const addButton = e.target.closest('[data-add]');
-  if (!addButton) return false;
-  const id = addButton.dataset.add;
-  const product = DMENU.find(item => String(item.id) === String(id));
-  if (!product) return true;
-
+function resolveDeliveryAddSelection(addButton, product) {
   const options = product.opts || [];
   const cardBody = addButton.closest('.cbody');
   const selectedOption = cardBody ? cardBody.querySelector('.opts button.sel') : null;
   if (!selectedOption && options.length > 0) {
-    const optionsBox = (cardBody && cardBody.querySelector('.opts')) || null;
+    const optionsBox = cardBody && cardBody.querySelector('.opts');
     if (optionsBox) {
       optionsBox.classList.remove('shake');
       void optionsBox.offsetWidth;
@@ -681,36 +675,48 @@ function handleDeliveryAddClick(e) {
       optionsBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
     if (typeof toast === 'function') toast('Выберите размер и тесто 🍕', '');
-    return true;
+    return null;
   }
 
   const optionIndex = selectedOption ? parseInt(selectedOption.dataset.oi, 10) : -1;
-  const price = (optionIndex >= 0 && options[optionIndex])
-    ? Number(options[optionIndex].p)
-    : (Number(product.price) || 0);
+  const option = options[optionIndex];
+  const price = option ? Number(option.p) : (Number(product.price) || 0);
   if (price <= 0) {
     if (typeof toast === 'function') toast('Ошибка цены', '⚠️');
-    return true;
+    return null;
   }
+  return { optionIndex, option, price };
+}
 
-  const optionLabel = (optionIndex >= 0 && options[optionIndex]) ? options[optionIndex].l : null;
-  const key = id + (optionIndex >= 0 ? '_' + optionIndex : '');
+function upsertDeliveryCartItem(product, selection) {
+  const id = product.id;
+  const key = id + (selection.optionIndex >= 0 ? '_' + selection.optionIndex : '');
   const existing = cart.find(item => String(item.key) === String(key));
   if (existing) {
     existing.qty++;
-  } else {
-    cart.push({
-      key: key,
-      id: id,
-      oi: optionIndex,
-      name: product.name,
-      opt: optionLabel,
-      price: price,
-      sz: (optionIndex >= 0 && options[optionIndex]) ? (Number(options[optionIndex].sz) || 0) : 0,
-      qty: 1
-    });
+    return;
   }
+  cart.push({
+    key: key,
+    id: id,
+    oi: selection.optionIndex,
+    name: product.name,
+    opt: selection.option ? selection.option.l : null,
+    price: selection.price,
+    sz: selection.option ? (Number(selection.option.sz) || 0) : 0,
+    qty: 1
+  });
+}
 
+function handleDeliveryAddClick(e) {
+  const addButton = e.target.closest('[data-add]');
+  if (!addButton) return false;
+  const product = DMENU.find(item => String(item.id) === String(addButton.dataset.add));
+  if (!product) return true;
+  const selection = resolveDeliveryAddSelection(addButton, product);
+  if (!selection) return true;
+
+  upsertDeliveryCartItem(product, selection);
   localStorage.setItem('zt_cart', JSON.stringify(cart));
   if (typeof syncAddButtons === 'function') syncAddButtons();
   addButton.classList.add('added');
