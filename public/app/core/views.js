@@ -171,19 +171,7 @@ document.head.appendChild(css);
 /* ========== 3. Виды и режимы ========== */
 var _lastCfabState = '';
 
-function syncBrandChromeState(bName, isDel) {
-  document.documentElement.setAttribute('data-brand', bName);
-  document.body.setAttribute('data-brand', bName);
-    /* Цвет полосы браузера (safe area): Safari перекрашивает только новый элемент meta */
-  (function () {
-    var color = isDel ? '#C99E6E' : '#FFFFFF';
-    document.querySelectorAll('meta[name="theme-color"]').forEach(function (old) { old.remove(); });
-    var m = document.createElement('meta');
-    m.name = 'theme-color';
-    m.content = color;
-    document.head.appendChild(m);
-  })();
-  /* Адрес отражает бренд без перезагрузки (только в обычном браузере после выбора бренда/сплэша) */
+function syncBrandUrl(bName) {
   try {
     var isPwa = (navigator.standalone === true) || matchMedia('(display-mode: standalone)').matches;
     var splashActive = !sessionStorage.getItem('splashDone') && !document.documentElement.classList.contains('no-splash');
@@ -195,23 +183,30 @@ function syncBrandChromeState(bName, isDel) {
       }
     }
   } catch (e) {}
+}
+
+function syncBrandSelector(bName, isDel) {
   var seg = document.getElementById('brandSeg');
-  if (seg) {
-    var cBtn = seg.querySelector('[data-brand="coffee"]');
-    var dBtn = seg.querySelector('[data-brand="delivery"]');
-    if (cBtn) cBtn.classList.toggle('on', bName === 'coffee');
-    if (dBtn) dBtn.classList.toggle('on', bName === 'delivery');
-    seg.classList.toggle('is-delivery', isDel);
-  }
+  if (!seg) return;
+  var cBtn = seg.querySelector('[data-brand="coffee"]');
+  var dBtn = seg.querySelector('[data-brand="delivery"]');
+  if (cBtn) cBtn.classList.toggle('on', bName === 'coffee');
+  if (dBtn) dBtn.classList.toggle('on', isDel);
+  seg.classList.toggle('is-delivery', isDel);
+}
+
+function syncBrandMarkAndChatIcon(isDel) {
   if (window.__ensureVenueToggle) window.__ensureVenueToggle();
   if (window.__labelVenueToggle) window.__labelVenueToggle();
   var mark = document.getElementById('brandMark') || document.querySelector('.brand .mark');
   if (mark) mark.classList.toggle('is-delivery', isDel);
   var op = document.querySelector('.chat-h .op, .chatHead .op');
-  if (op) {
-    if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
-    op.innerHTML = isDel ? '🍕' : (op.getAttribute('data-orig') || '');
-  }
+  if (!op) return;
+  if (!op.hasAttribute('data-orig')) op.setAttribute('data-orig', op.innerHTML);
+  op.innerHTML = isDel ? '🍕' : (op.getAttribute('data-orig') || '');
+}
+
+function syncBrandTitle(isDel) {
   var bTitle = document.getElementById('brandTitle');
   var bSub = document.getElementById('brandSub');
   if (bTitle) {
@@ -220,9 +215,28 @@ function syncBrandChromeState(bName, isDel) {
       bTitle.removeAttribute('aria-label');
     } else {
       bTitle.setAttribute('aria-label', '…и кофе');
-      bTitle.innerHTML = '…и к<span class="bean" aria-hidden="true"><svg viewBox="3.5 1.5 21 24"><g transform="translate(3 3)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#23272C"/></g></g><g transform="translate(2 2)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="translate(1 1)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="currentColor"/><path d="M12 3.6C8.4 7.8 15.6 16.2 12 20.4" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/></g></svg></span>фе';    }
+      bTitle.innerHTML = '…и к<span class="bean" aria-hidden="true"><svg viewBox="3.5 1.5 21 24"><g transform="translate(3 3)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#23272C"/></g></g><g transform="translate(2 2)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="translate(1 1)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="currentColor"/><path d="M12 3.6C8.4 7.8 15.6 16.2 12 20.4" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/></g></svg></span>фе';
+    }
   }
   if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
+}
+
+function syncBrandChromeState(bName, isDel) {
+  document.documentElement.setAttribute('data-brand', bName);
+  document.body.setAttribute('data-brand', bName);
+  /* Цвет полосы браузера (safe area): Safari перекрашивает только новый элемент meta */
+  (function () {
+    var color = isDel ? '#C99E6E' : '#FFFFFF';
+    document.querySelectorAll('meta[name="theme-color"]').forEach(function (old) { old.remove(); });
+    var m = document.createElement('meta');
+    m.name = 'theme-color';
+    m.content = color;
+    document.head.appendChild(m);
+  })();
+  syncBrandUrl(bName);
+  syncBrandSelector(bName, isDel);
+  syncBrandMarkAndChatIcon(isDel);
+  syncBrandTitle(isDel);
 }
 
 function syncViewsVisibility(showCoffee, showDeliv) {
@@ -328,29 +342,40 @@ window.syncBrandViews = function() {
   sv();
 };
 
-window.setMode = function (m) {
-  var role = (typeof me !== 'undefined' && me) ? me.role : 'guest';
-  if (m === 'cashier' && role !== 'cashier' && role !== 'admin') return;
-  if (m === 'orders' && role !== 'dispatch' && role !== 'cashier' && role !== 'admin') return;
-  if (m === 'admin' && role !== 'admin') return;
-  window.mode = m;
-  document.body.classList.toggle('is-cashier', m === 'cashier' || m === 'orders');
-  document.body.classList.toggle('is-admin', m === 'admin');
+function canEnterMode(modeName, role) {
+  if (modeName === 'cashier' && role !== 'cashier' && role !== 'admin') return false;
+  if (modeName === 'orders' && role !== 'dispatch' && role !== 'cashier' && role !== 'admin') return false;
+  if (modeName === 'admin' && role !== 'admin') return false;
+  return true;
+}
+
+function syncModeVisibility(modeName) {
+  document.body.classList.toggle('is-cashier', modeName === 'cashier' || modeName === 'orders');
+  document.body.classList.toggle('is-admin', modeName === 'admin');
   var cv = document.getElementById('cashierView');
-  if (cv) { cv.hidden = (m !== 'cashier'); cv.style.display = ''; }
+  if (cv) { cv.hidden = (modeName !== 'cashier'); cv.style.display = ''; }
   var ov = document.getElementById('ordersView');
-  if (ov) ov.hidden = (m !== 'orders');
+  if (ov) ov.hidden = (modeName !== 'orders');
   sv();
-  var pt = document.getElementById('promoToggle'); if (pt) pt.hidden = (m !== 'admin');
-  var dt = document.getElementById('dashToggle'); if (dt) dt.hidden = (m !== 'admin');
-  // Чаты гостей в панели админа — только в режиме админа. Кассир и диспетчер открывают чаты из своего экрана (chatsToggle),
-  // поэтому здесь не дублируем кнопку.
-  var ct = document.getElementById('chatsToggle2'); if (ct) ct.hidden = (m !== 'admin');
-  var bd = document.getElementById('adminBadge'); if (bd) bd.hidden = (m !== 'admin');
-  if (m !== 'admin' && typeof exitEdit === 'function') exitEdit();
-  if (m === 'cashier' && typeof window.loadPending === 'function') window.loadPending();
-  if (m === 'cashier' && typeof renderLog === 'function') renderLog();
-  if (m === 'orders') {
+}
+
+function syncModeControls(modeName) {
+  var isAdmin = modeName === 'admin';
+  var pt = document.getElementById('promoToggle');
+  if (pt) pt.hidden = !isAdmin;
+  var dt = document.getElementById('dashToggle');
+  if (dt) dt.hidden = !isAdmin;
+  var ct = document.getElementById('chatsToggle2');
+  if (ct) ct.hidden = !isAdmin;
+  var bd = document.getElementById('adminBadge');
+  if (bd) bd.hidden = !isAdmin;
+}
+
+function startModeServices(modeName) {
+  if (modeName !== 'admin' && typeof exitEdit === 'function') exitEdit();
+  if (modeName === 'cashier' && typeof window.loadPending === 'function') window.loadPending();
+  if (modeName === 'cashier' && typeof renderLog === 'function') renderLog();
+  if (modeName === 'orders') {
     if (typeof renderOrders === 'function') renderOrders();
     if (typeof ordersPoll === 'undefined' || !ordersPoll) {
       window.ordersPoll = setInterval(function () {
@@ -358,62 +383,89 @@ window.setMode = function (m) {
       }, 8000);
     }
   }
-  if (m === 'admin' && brand !== 'delivery' && typeof loadMenu === 'function') loadMenu();
+  if (modeName === 'admin' && brand !== 'delivery' && typeof loadMenu === 'function') loadMenu();
+}
+
+function notifyModeActivated(modeName) {
+  if (typeof toast !== 'function') return;
+  toast(
+    modeName === 'admin' ? 'Режим администратора активен' : modeName === 'cashier' ? 'Смена кассира активна' : modeName === 'orders' ? 'Панель диспетчера' : 'Режим гостя',
+    modeName === 'admin' ? '🔓' : modeName === 'cashier' ? '🧾' : modeName === 'orders' ? '🍕' : ''
+  );
+}
+
+window.setMode = function (m) {
+  var role = (typeof me !== 'undefined' && me) ? me.role : 'guest';
+  if (!canEnterMode(m, role)) return;
+  window.mode = m;
+  syncModeVisibility(m);
+  syncModeControls(m);
+  startModeServices(m);
   if (typeof renderModes === 'function') renderModes();
-  if (typeof toast === 'function') {
-    toast(
-      m === 'admin' ? 'Режим администратора активен' : m === 'cashier' ? 'Смена кассира активна' : m === 'orders' ? 'Панель диспетчера' : 'Режим гостя',
-      m === 'admin' ? '🔓' : m === 'cashier' ? '🧾' : m === 'orders' ? '🍕' : ''
-    );
-  }
+  notifyModeActivated(m);
 };
 
 var brandSegEl = document.getElementById('brandSeg');
-if (brandSegEl) {
-  brandSegEl.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-brand]');
-    if (!b) return;
-    brand = b.dataset.brand;
-    try { localStorage.setItem('zt_brand', brand); } catch (err) {}
-    document.documentElement.setAttribute('data-brand', brand);
-    document.body.setAttribute('data-brand', brand);
-    if (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders')) {
-      if (typeof setMode === 'function') setMode('guest');
-    }
-    brandSegEl.querySelectorAll('button').forEach(function (x) {
-      x.classList.toggle('on', x.dataset.brand === brand);
-    });
-    brandSegEl.classList.remove('open');
-    brandSegEl.style.display = 'none';
-    var vtg = document.getElementById('venueToggle');
-    if (vtg) vtg.setAttribute('aria-expanded', 'false');
-    window.__dlReq = 0;
-    window.__dlPromise = null;
-    sv();
-    if (brand === 'coffee') {
-      if ((!window.MENU || !window.MENU.length) && typeof loadMenu === 'function') {
-        loadMenu().then(function () {
-          if (typeof renderRail === 'function') renderRail();
-        }).catch(function () {});
-      } else {
-        if (typeof renderRail === 'function') renderRail();
-        if (typeof renderMenu === 'function') renderMenu();
-      }
-    }
-    if (typeof supportPending !== 'undefined' && !supportPending && typeof chatCtx !== 'undefined' && chatCtx !== brand) {
-      chatCtx = brand;
-      try { localStorage.setItem('zt_chatctx', chatCtx); } catch (err) {}
-      if (typeof setBotName === 'function') setBotName();
-    }
-    var cp = document.getElementById('chatPanel');
-    if (cp && cp.classList.contains('open')) {
-      setTimeout(function () {
-        if (typeof reloadChatThread === 'function') reloadChatThread();
-      }, 80);
-    }
-  });
+function applyBrandSelection(bName) {
+  brand = bName;
+  try { localStorage.setItem('zt_brand', brand); } catch (err) {}
+  document.documentElement.setAttribute('data-brand', brand);
+  document.body.setAttribute('data-brand', brand);
 }
 
+function syncBrandDropdown(bName) {
+  brandSegEl.querySelectorAll('button').forEach(function (button) {
+    button.classList.toggle('on', button.dataset.brand === bName);
+  });
+  brandSegEl.classList.remove('open');
+  brandSegEl.style.display = 'none';
+  var toggle = document.getElementById('venueToggle');
+  if (toggle) toggle.setAttribute('aria-expanded', 'false');
+}
+
+function loadCoffeeMenuOnBrandSwitch(bName) {
+  if (bName !== 'coffee') return;
+  if ((!window.MENU || !window.MENU.length) && typeof loadMenu === 'function') {
+    loadMenu().then(function () {
+      if (typeof renderRail === 'function') renderRail();
+    }).catch(function () {});
+    return;
+  }
+  if (typeof renderRail === 'function') renderRail();
+  if (typeof renderMenu === 'function') renderMenu();
+}
+
+function syncChatContextOnBrandSwitch(bName) {
+  if (typeof supportPending === 'undefined' || supportPending ||
+      typeof chatCtx === 'undefined' || chatCtx === bName) return;
+  chatCtx = bName;
+  try { localStorage.setItem('zt_chatctx', chatCtx); } catch (err) {}
+  if (typeof setBotName === 'function') setBotName();
+}
+
+function reloadOpenChatForBrandSwitch() {
+  var chatPanel = document.getElementById('chatPanel');
+  if (chatPanel && chatPanel.classList.contains('open')) {
+    setTimeout(function () {
+      if (typeof reloadChatThread === 'function') reloadChatThread();
+    }, 80);
+  }
+}
+
+function handleBrandSegmentClick(e) {
+  var button = e.target.closest('[data-brand]');
+  if (!button) return;
+  applyBrandSelection(button.dataset.brand);
+  syncBrandDropdown(brand);
+  window.__dlReq = 0;
+  window.__dlPromise = null;
+  sv();
+  loadCoffeeMenuOnBrandSwitch(brand);
+  syncChatContextOnBrandSwitch(brand);
+  reloadOpenChatForBrandSwitch();
+}
+
+if (brandSegEl) brandSegEl.addEventListener('click', handleBrandSegmentClick);
 sv();
 
 /* ========== Ф3.26: создание #venueToggle один раз без дублирования ========== */
