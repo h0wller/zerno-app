@@ -33,7 +33,7 @@
 #brandSplash .spSub,
 #brandSplashStatic .spSub {
   color: var(--ink, #101418);
-  font: 900 clamp(24px, 7vw, 34px)/1.2 Unbounded, sans-serif;
+  font: 900 clamp(24px, 7vw, 34px)/1.2 Unbounded, "Golos Text", sans-serif;
   letter-spacing: -0.01em;
   margin-bottom: 28px;
   animation: spRise 0.7s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
@@ -72,7 +72,7 @@
 #brandSplash .spBtn .bt,
 #brandSplashStatic .spBtn .bt {
   display: block;
-  font: 700 17px Unbounded, sans-serif;
+  font: 700 17px Unbounded, "Golos Text", sans-serif;
 }
 #brandSplash .spBtn small,
 #brandSplashStatic .spBtn small {
