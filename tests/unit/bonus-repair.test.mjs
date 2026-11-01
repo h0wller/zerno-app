@@ -20,9 +20,6 @@ const { grantBonus, setBonusConfig } = await import('../../server/domain/bonuses
 initSchema();
 setBonusConfig({ days: 30, kinds: { signup: { coffee: 10, freeFirstDelivery: 1 }, qr: { coffee: 10, freeFirstDelivery: 1 }, install: { coffee: 0 } } });
 
-initSchema();
-setBonusConfig({ days: 30, kinds: { signup: { coffee: 10, freeFirstDelivery: 1 }, qr: { coffee: 10, freeFirstDelivery: 1 }, install: { coffee: 0 } } });
-
 let seq = 0;
 function makeCustomer(over = {}) {
   const id = `a${++seq}`;
@@ -31,7 +28,6 @@ function makeCustomer(over = {}) {
     over.verified === undefined ? 1 : over.verified, 'guest', over.tg || null, over.created || '2026-09-01T10:00:00.000Z');
   return id;
 }
-const row = (id) => db.prepare('SELECT stamps, free, verified FROM customers WHERE id=?').get(id);
 const grants = (id) => db.prepare('SELECT kind, ts FROM bonus_grants WHERE cid=? ORDER BY kind').all(id);
 const bonusHist = (id) => db.prepare("SELECT COUNT(*) n FROM history WHERE cid=? AND a LIKE '🎁 Бонус «%'").get(id).n;
 
@@ -151,7 +147,6 @@ test('repair --affected: аудит классифицирует клиенто�
   const a = makeBlockedGuest();
   const normalGuest = makeCustomer({ verified: 1 });
   grantBonus(normalGuest, 'signup'); // штатное начисление (отметка не от бэкфилла)
-  const size = fs.statSync(TMP_DB).mtimeMs;
   const r = runScript('repair-bonus-grants.mjs', ['--affected']);
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /A · доказанно ложные отметки/);
@@ -160,7 +155,6 @@ test('repair --affected: аудит классифицирует клиенто�
   const phone = db.prepare('SELECT phone FROM customers WHERE id=?').get(a).phone;
   assert.ok(!r.stdout.includes(phone) && !r.stdout.includes('Анна Тестова'));
   assert.equal(grants(a).length, 3);
-  void size;
 });
 
 test('чистка: временная БД удаляется', () => {

@@ -140,7 +140,7 @@ function cleanStreetName(name) {
 
   // 2. Срезаем все слова типов (кириллически безопасным способом без \b)
   const TYPE_WORDS = /(^|[\s,.\-])(ул\.?|улиц[а-я]*|пер\.?|переул[а-я]*|пр-д|проезд|ш\.?|шоссе|туп\.?|тупик|алле[яи]|бульвар|б-р)(?=[\s,.\-]|$)/gi;
-  s = s.replace(TYPE_WORDS, ' ').replace(TYPE_WORDS, ' ');
+  s = s.replace(TYPE_WORDS, ' ');
 
   // 3. Убираем знаки препинания и множественные пробелы
   s = s.replace(/^[.,\s\-]+|[.,\s\-]+$/g, '').trim().replace(/\s+/g, ' ');
@@ -200,7 +200,6 @@ export function normStreet(str) {
   const TYPE_WORDS = /(^|[\\s,.\\-])(ул\\.?|улиц[а-я]*|пер\\.?|переул[а-я]*|пр-д|проезд|ш\\.?|шоссе|туп\\.?|тупик|алле[яи]|бульвар|б-р)(?=[\\s,.\\-]|$)/gi;
   return String(str || '').toLowerCase().trim()
     .replace(TYPE_WORDS, ' ')
-    .replace(TYPE_WORDS, ' ')
     .replace(/^[.,\\s\\-]+|[.,\\s\\-]+$/g, '')
     .replace(/\\s+/g, ' ')
     .trim();
@@ -259,7 +258,6 @@ export function validateDeliveryAddress(place, street, house) {
   function normStreet(str) {
     var TYPE_WORDS = /(^|[\\s,.\\-])(ул\\.?|улиц[а-я]*|пер\\.?|переул[а-я]*|пр-д|проезд|ш\\.?|шоссе|туп\\.?|тупик|алле[яи]|бульвар|б-р)(?=[\\s,.\\-]|$)/gi;
     return String(str || '').toLowerCase().trim()
-      .replace(TYPE_WORDS, ' ')
       .replace(TYPE_WORDS, ' ')
       .replace(/^[.,\\s\\-]+|[.,\\s\\-]+$/g, '')
       .replace(/\\s+/g, ' ')

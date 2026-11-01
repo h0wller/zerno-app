@@ -19,7 +19,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # 3. Добавление свежего бандла и sw.js в текущий индекс Git
-git add public/sw.js public/dist/main.bundle.js public/dist/main.bundle.js.map
+git add public/index.html public/sw.js public/dist/main.bundle.js public/dist/main.bundle.js.map
 
 echo "✅ [pre-commit] Проверки пройдены, STATIC_CACHE инкрементирован и добавлен в коммит."
 exit 0
