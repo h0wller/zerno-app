@@ -708,8 +708,8 @@ $('#cartItems').addEventListener('click', e => {
 
 $('#checkoutMethod').onchange = () => {
   const pickup = $('#checkoutMethod').value === 'pickup';
-  $('#checkoutPlaceLabel').hidden = pickup;
-  $('#checkoutAddrLabel').hidden = pickup;
+  const deliveryGroup = $('#checkoutDeliveryGroup');
+  if (deliveryGroup) deliveryGroup.style.display = pickup ? 'none' : 'contents';
   window.renderCart();
 };
 
