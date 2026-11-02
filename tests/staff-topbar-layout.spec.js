@@ -11,6 +11,12 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
   await page.goto('/?brand=delivery');
   const mode = page.locator('#modeSeg');
   await expect(mode).toBeAttached();
+  await page.evaluate(() => {
+    document.getElementById('modeSeg').innerHTML =
+      ['Кофейня', 'Доставка', 'Заказы', 'Касса']
+        .map((label) => '<button type="button">' + label + '</button>')
+        .join('');
+  });
 
   const measure = () => page.evaluate(() => {
     const header = document.querySelector('header.topbar');
@@ -22,6 +28,7 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
       modeHeight: modeBox.height,
       modeBottom: modeBox.bottom,
       gridRows: getComputedStyle(header).gridTemplateRows,
+      buttonHeights: Array.from(mode.querySelectorAll('button'), (button) => button.getBoundingClientRect().height),
     };
   });
 
@@ -31,6 +38,9 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
   });
   const placeholder = await measure();
   expect(placeholder.modeHeight).toBeGreaterThanOrEqual(52);
+  expect(placeholder.modeHeight).toBeLessThanOrEqual(52.5);
+  expect(placeholder.buttonHeights).toHaveLength(4);
+  expect(placeholder.buttonHeights.every((height) => height >= 44 && height <= 44.5)).toBe(true);
   expect(placeholder.modeBottom).toBeLessThanOrEqual(placeholder.headerBottom + 1);
 
   await page.evaluate(() => {
@@ -40,6 +50,8 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
   await expect(mode).toBeVisible();
   const hydrated = await measure();
   expect(hydrated.modeHeight).toBeGreaterThanOrEqual(52);
+  expect(hydrated.modeHeight).toBeLessThanOrEqual(52.5);
+  expect(hydrated.buttonHeights.every((height) => height >= 44 && height <= 44.5)).toBe(true);
   expect(hydrated.modeBottom).toBeLessThanOrEqual(hydrated.headerBottom + 1);
   expect(hydrated.gridRows.split(' ').length).toBeGreaterThanOrEqual(2);
 });
