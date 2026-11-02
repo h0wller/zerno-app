@@ -26,6 +26,7 @@ test('single staff action does not stretch the admin bar across the content colu
 });
 
 test('staff mode switch fits its reserved topbar row before and after hydration', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
@@ -60,8 +61,7 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
     document.documentElement.removeAttribute('data-staff-ready');
   });
   const placeholder = await measure();
-  expect(placeholder.modeHeight).toBeGreaterThanOrEqual(52);
-  expect(placeholder.modeHeight).toBeLessThanOrEqual(52.5);
+  expect(placeholder.modeHeight).toBe(46);
   expect(placeholder.buttonHeights).toHaveLength(4);
   expect(placeholder.buttonHeights.every((height) => height >= 44 && height <= 44.5)).toBe(true);
   expect(placeholder.modeBottom).toBeLessThanOrEqual(placeholder.headerBottom + 1);
@@ -72,8 +72,7 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
   });
   await expect(mode).toBeVisible();
   const hydrated = await measure();
-  expect(hydrated.modeHeight).toBeGreaterThanOrEqual(52);
-  expect(hydrated.modeHeight).toBeLessThanOrEqual(52.5);
+  expect(hydrated.modeHeight).toBe(46);
   expect(hydrated.buttonHeights.every((height) => height >= 44 && height <= 44.5)).toBe(true);
   expect(hydrated.modeBottom).toBeLessThanOrEqual(hydrated.headerBottom + 1);
   expect(hydrated.gridRows.split(' ').length).toBeGreaterThanOrEqual(2);
