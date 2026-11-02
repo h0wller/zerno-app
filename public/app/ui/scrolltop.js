@@ -5,7 +5,7 @@ var observedRailHead = null;
 var observedRailTopbar = null;
 
 function updateRailStickyPosition(rail, head) {
-  if (!rail || !window.matchMedia('(max-width: 820px)').matches) return;
+  if (!rail) return;
 
   var topbar = document.querySelector('header.topbar');
   var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
@@ -14,11 +14,10 @@ function updateRailStickyPosition(rail, head) {
   var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
   var availableHeight = Math.max(0, laneBottom - laneTop);
   var stickyTop = laneTop + availableHeight / 2;
-  var top = stickyTop + 'px';
-  var maxHeight = availableHeight + 'px';
 
-  if (rail.style.top !== top) rail.style.top = top;
-  if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
+  rail.style.top = stickyTop + 'px';
+  rail.style.maxHeight = availableHeight + 'px';
+  rail.style.transform = 'translateY(-50%)';
 }
 
 function alignRailWithCard() {
@@ -27,16 +26,6 @@ function alignRailWithCard() {
   var head = document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head');
 
   if (!rail) return;
-  if (!window.matchMedia('(max-width: 820px)').matches) {
-    rail.style.removeProperty('margin-top');
-    rail.style.removeProperty('top');
-    rail.style.removeProperty('max-height');
-    if (railHeadObserver) railHeadObserver.disconnect();
-    observedRailHead = null;
-    observedRailTopbar = null;
-    return;
-  }
-
   var wrap = rail.parentElement;
   if (!wrap) return;
 
@@ -71,7 +60,7 @@ window.alignRailWithCard = alignRailWithCard;
 window.alignMbonusWithRail = alignMbonusWithRail;
 var railScrollTick = false;
 window.addEventListener('scroll', function () {
-  if (railScrollTick || !window.matchMedia('(max-width: 820px)').matches) return;
+  if (railScrollTick) return;
   railScrollTick = true;
   requestAnimationFrame(function () {
     railScrollTick = false;
