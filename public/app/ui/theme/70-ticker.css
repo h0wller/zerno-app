@@ -20,9 +20,11 @@
 .ticker::-webkit-scrollbar {
   display: none;
 }
+.ticker:has(#tickerTrack:empty) {
+  visibility: hidden;
+}
 .ticker[hidden],
 .ticker:empty,
-.ticker:has(#tickerTrack:empty),
 body.is-cashier .ticker,
 body.is-admin .ticker {
   display: none;
