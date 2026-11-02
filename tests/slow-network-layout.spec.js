@@ -812,7 +812,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.modeSeg.display).toBe('flex');
     expect(before.modeSeg.visibility).toBe('hidden');
     expect(before.adminBar.hidden).toBe(true);
-    expect(before.adminBar.display).toBe('grid');
+    expect(before.adminBar.display).toBe('flex');
     expect(before.adminBar.visibility).toBe('hidden');
 
     // The first-paint/CSS/font settle is asserted by the neighboring layout tests.
