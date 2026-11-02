@@ -1304,7 +1304,7 @@ html[data-brand="delivery"] {
 
 /* Guest controls stay in one compact row; the ticker is a following body sibling. */
 @media (max-width: 820px) {
-  html:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) {
+  html[data-brand="coffee"]:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) {
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
@@ -1316,12 +1316,12 @@ html[data-brand="delivery"] {
     box-sizing: border-box;
     box-shadow: none;
   }
-  html:not([data-staff-role]) body header.topbar .venueWrap {
+  html[data-brand="coffee"]:not([data-staff-role]) body header.topbar .venueWrap {
     order: 0;
     flex: 0 0 auto;
     margin: 0;
   }
-  html:not([data-staff-role]) body header.topbar #headerBrand {
+  html[data-brand="coffee"]:not([data-staff-role]) body header.topbar #headerBrand {
     order: 0;
     flex: 0 1 auto;
     width: min(196px, 60vw);
@@ -1329,7 +1329,7 @@ html[data-brand="delivery"] {
     max-width: min(196px, 60vw);
     margin: 0;
   }
-  html:not([data-staff-role]) body header.topbar #profileTopBtn {
+  html[data-brand="coffee"]:not([data-staff-role]) body header.topbar #profileTopBtn {
     order: 0;
     flex: 0 0 44px;
     margin: 0;
