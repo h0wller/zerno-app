@@ -19,10 +19,10 @@ test('winter ticker uses the current Kaliningrad weekday schedule', () => {
   );
   assert.equal(
     deliveryHoursTickerText(new Date('2026-11-06T10:00:00.000Z')),
-    'Сегодня, пятницу: 11:00–22:00',
+    'Сегодня, пятница: 11:00–22:00',
   );
   assert.equal(
     deliveryHoursTickerText(new Date('2026-11-07T10:00:00.000Z')),
-    'Сегодня, субботу: 11:00–22:00',
+    'Сегодня, суббота: 11:00–22:00',
   );
 });
