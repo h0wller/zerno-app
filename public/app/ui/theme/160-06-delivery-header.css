@@ -260,6 +260,7 @@
     padding: calc(var(--sat, env(safe-area-inset-top, 0px)) + 4px) 12px 0;
     box-sizing: border-box;
     border-radius: 0;
+    border-bottom: none;
     box-shadow: none;
   }
   html body header.topbar > #brandSeg { display: none; }
