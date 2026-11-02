@@ -69,9 +69,13 @@ test.describe('Pour accessibility audit — delivery brand', () => {
   test('ticker is static and header DOM order follows the visual sequence', async ({ page }) => {
     const ticker = await page.locator('#tickerTrack').evaluate((element) => ({
       animationName: getComputedStyle(element).animationName,
+      flexWrap: getComputedStyle(element).flexWrap,
+      whiteSpace: getComputedStyle(element).whiteSpace,
       itemCount: element.children.length,
     }));
     expect(ticker.animationName).toBe('none');
+    expect(ticker.flexWrap).toBe('wrap');
+    expect(ticker.whiteSpace).toBe('normal');
     expect(ticker.itemCount).toBeLessThanOrEqual(7);
 
     const order = await page.locator('header.topbar').evaluate((header) => {
@@ -124,6 +128,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         venueText: getComputedStyle(arrow).color,
         venueArrowOpacity: getComputedStyle(arrow).opacity,
         badgeText: getComputedStyle(badge).color,
+        badgeBackground: getComputedStyle(badge).backgroundColor,
         updateText: getComputedStyle(update).color,
       };
 
@@ -140,7 +145,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(contrastRatio(metrics.railBackground, metrics.railText)).toBeGreaterThanOrEqual(7);
     expect(contrastRatio(metrics.venueBackground, metrics.venueText)).toBeGreaterThanOrEqual(7);
     expect(metrics.venueArrowOpacity).toBe('1');
-    expect(contrastRatio('rgb(246, 238, 225)', metrics.badgeText)).toBeGreaterThanOrEqual(7);
+    const badgeSurface = compositeColor(metrics.badgeBackground, 'rgb(246, 238, 225)');
+    expect(contrastRatio(badgeSurface, metrics.badgeText)).toBeGreaterThanOrEqual(7);
     expect(contrastRatio('rgb(246, 238, 225)', metrics.updateText)).toBeGreaterThanOrEqual(7);
   });
 
@@ -161,6 +167,15 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(reachedSearch).toBe(true);
   });
 });
+
+function compositeColor(foreground, background) {
+  const fg = foreground.match(/[\\d.]+/g).map(Number);
+  const bg = background.match(/[\\d.]+/g).map(Number);
+  const alpha = fg.length > 3 ? fg[3] : 1;
+  return 'rgb(' + fg.slice(0, 3).map((channel, index) =>
+    Math.round(channel * alpha + bg[index] * (1 - alpha))
+  ).join(', ') + ')';
+}
 
 function contrastRatio(first, second) {
   const luminance = (color) => {
