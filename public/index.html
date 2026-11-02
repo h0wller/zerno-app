@@ -1706,33 +1706,46 @@ html[data-brand="delivery"] #deliveryGrid .card .opts .opt-price {
   white-space: nowrap;
 }
 
-/* Keep the announcement ticker compact before deferred ticker CSS arrives. */
+/* Reserve one line before brand data and deferred theme CSS arrive. */
 html body .ticker {
   display: flex;
   align-items: center;
   position: relative;
+  box-sizing: border-box;
+  width: 100%;
   max-width: 100%;
-  height: auto;
+  height: 28px;
   min-height: 28px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   margin: 0;
-  padding: 4px 8px;
-  line-height: 1.35;
+  padding: 0 8px;
+  line-height: 14px;
 }
+html body .ticker::-webkit-scrollbar { display: none; }
 html body #tickerTrack {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  white-space: normal;
+  justify-content: flex-start;
+  width: max-content;
+  min-width: 100%;
+  white-space: nowrap;
+  gap: 0;
 }
 html body #tickerTrack > span {
   display: inline-flex;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   align-items: center;
-  white-space: normal;
-  line-height: 1.35;
+  gap: .5rem;
+  padding: 2px .5rem;
+  font: 600 10px/14px system-ui, sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
 }
 /* Anchor both wordmark lines inside a fixed slot; font swaps cannot change their geometry. */
 @media (max-width: 690px) {
@@ -1868,7 +1881,7 @@ html body #tickerTrack > span {
     <div class="modeSeg" id="modeSeg" hidden></div>
   </header>
 
-  <div class="ticker" aria-hidden="true">
+  <div class="ticker" role="region" aria-label="Объявления" tabindex="0">
     <div class="track" id="tickerTrack"></div>
   </div>
 
