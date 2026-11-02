@@ -20,7 +20,7 @@
 .ticker::-webkit-scrollbar {
   display: none;
 }
-.ticker:has(#tickerTrack:empty) {
+.ticker.is-empty {
   visibility: hidden;
 }
 .ticker[hidden],
