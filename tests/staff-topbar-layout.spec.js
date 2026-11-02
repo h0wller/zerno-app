@@ -61,7 +61,6 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
   });
   const placeholder = await measure();
   expect(placeholder.modeHeight).toBe(46);
-  
   expect(placeholder.buttonHeights).toHaveLength(4);
   expect(placeholder.buttonHeights.every((height) => height >= 44 && height <= 44.5)).toBe(true);
   expect(placeholder.modeBottom).toBeLessThanOrEqual(placeholder.headerBottom + 1);
@@ -73,7 +72,6 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
   await expect(mode).toBeVisible();
   const hydrated = await measure();
   expect(hydrated.modeHeight).toBe(46);
-  
   expect(hydrated.buttonHeights.every((height) => height >= 44 && height <= 44.5)).toBe(true);
   expect(hydrated.modeBottom).toBeLessThanOrEqual(hydrated.headerBottom + 1);
   expect(hydrated.gridRows.split(' ').length).toBeGreaterThanOrEqual(2);
