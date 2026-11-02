@@ -71,7 +71,12 @@ body.is-admin .ticker {
   to { transform: translate3d(-50%, 0, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tickerViewport { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-  .tickerViewport::-webkit-scrollbar { display: none; }
+  html body .tickerViewport {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  html body .tickerViewport::-webkit-scrollbar { display: none; }
   .ticker.is-overflowing #tickerTrack { animation: none; }
 }
