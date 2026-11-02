@@ -1347,10 +1347,11 @@ html[data-staff-role] body #adminBar.adminBar {
 html[data-staff-role="admin"]:not([data-staff-ready]) body #adminBar[hidden],
 html[data-staff-role="cashier"][data-brand="coffee"]:not([data-staff-ready]) body #adminBar[hidden],
 html[data-staff-role="dispatch"][data-brand="delivery"]:not([data-staff-ready]) body #adminBar[hidden] {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex !important;
+  align-items: center;
   gap: 8px;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   min-height: 44px;
   margin: 0 0 12px;
   padding: 0;
