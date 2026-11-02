@@ -1,18 +1,15 @@
-/* Аккуратная панель кнопок администратора (.adminBar) без разлёта по экрану */
+/* Staff actions keep their natural width; wrap only when the viewport requires it. */
 html body #adminBar.adminBar:not([hidden]) {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   margin: 0 0 12px;
   padding: 0;
   position: static;
   box-sizing: border-box;
-}
-@media (min-width: 640px) {
-  html body #adminBar.adminBar:not([hidden]) {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 }
 html body #adminBar.adminBar > button,
 html body #editToggle,
@@ -20,12 +17,14 @@ html body #promoToggle,
 html body #dashToggle,
 html body #chatsToggle2 {
   position: static;
-  grid-column: auto;
-  width: 100%;
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
   min-width: 0;
-  height: 40px;
+  min-height: 44px;
+  height: 44px;
   margin: 0;
-  padding: 0 10px;
+  padding: 0 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
