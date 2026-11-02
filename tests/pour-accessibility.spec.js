@@ -154,12 +154,15 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       const headerBox = header.getBoundingClientRect();
       const tickerBox = tickerElement.getBoundingClientRect();
       const logoBox = header.querySelector('#headerBrand').getBoundingClientRect();
+      const contentBottom = Math.max(...Array.from(header.children)
+        .filter((element) => element !== tickerElement && !element.hidden)
+        .map((element) => element.getBoundingClientRect().bottom));
       return {
         headerLeft: headerBox.left,
         headerRight: headerBox.right,
         headerWidth: headerBox.width,
         tickerTop: tickerBox.top,
-        headerBottom: headerBox.bottom,
+        contentBottom,
         tickerParent: tickerElement.parentElement === header,
         logoCenter: logoBox.left + logoBox.width / 2,
         viewportCenter: window.innerWidth / 2,
@@ -167,7 +170,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       };
     });
     expect(attachedLayout.tickerParent).toBe(true);
-    expect(Math.abs(attachedLayout.tickerTop - attachedLayout.headerBottom)).toBeLessThanOrEqual(1);
+    expect(Math.abs(attachedLayout.tickerTop - attachedLayout.contentBottom)).toBeLessThanOrEqual(1);
     expect(attachedLayout.headerLeft).toBe(0);
     expect(attachedLayout.headerRight).toBe(390);
     expect(attachedLayout.headerWidth).toBe(390);
