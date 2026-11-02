@@ -1,15 +1,16 @@
-/* ── Тикер: база (брендовые цвета — СЛОЙ 2,
-views.js) ── */
-.ticker{
+/* Static, wrapping ticker: moving content is avoided for accessibility. */
+.ticker {
   overflow: hidden;
+  width: 100%;
   max-width: 100%;
-  height: 28px;
-  min-height: 0;
-  line-height: 28px;
+  min-height: 28px;
+  height: auto;
+  line-height: 1.35;
   display: flex;
   align-items: center;
+  justify-content: center;
   margin: 0;
-  padding: 0;
+  padding: 4px 8px;
   position: relative;
   z-index: 1;
 }
@@ -20,49 +21,41 @@ body.is-cashier .ticker,
 body.is-admin .ticker {
   display: none;
   height: 0;
+  min-height: 0;
   margin: 0;
   padding: 0;
   border: none;
 }
 #tickerTrack {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  width: max-content;
-  white-space: nowrap;
-  will-change: transform;
-  animation: zt-marquee 26s linear infinite;
+  justify-content: center;
+  width: 100%;
+  white-space: normal;
+  gap: 0;
 }
-#tickerTrack span{
-  flex: 0 0 auto;
+#tickerTrack span {
+  flex: 0 1 auto;
   display: inline-flex;
   align-items: center;
   gap: .5rem;
-  padding: 0 1.2rem;
-  font: 600 11px/30px "Unbounded", "Golos Text", system-ui, sans-serif;
-  letter-spacing: .12em;
+  padding: 2px .8rem;
+  font: 600 11px/1.35 "Unbounded", "Golos Text", system-ui, sans-serif;
+  letter-spacing: .08em;
   text-transform: uppercase;
-  white-space: nowrap
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
-#tickerTrack span::after{
+#tickerTrack span::after {
   content: "〜";
-  margin-left: 1.4rem;
-  color: var(--azure, #3E8FD0)
+  margin-left: .6rem;
+  color: var(--azure, #3E8FD0);
 }
-@keyframes zt-marquee{
-  from {
-    transform: translate3d(0, 0, 0)
-  }
-
-  to {
-    transform: translate3d(-50%, 0, 0)
-  }
-}
-@media(max-width:400px){#tickerTrack span{
+@media (max-width: 400px) {
+  #tickerTrack span {
     font-size: 10px;
-    padding: .35rem 1rem
+    padding: 2px .5rem;
   }
-
-
-
 }
