@@ -1144,7 +1144,7 @@ html[data-brand="delivery"] {
     --topbar-h: 56px;
   }
   html body header.topbar {
-    position: relative;
+    position: sticky;
     left: 8px;
     right: 8px;
     width: calc(100% - 16px);
@@ -1249,9 +1249,9 @@ html[data-brand="delivery"] {
 /* Match the final compact venue control before deferred CSS and font metrics arrive. */
 @media (max-width: 690px) {
   html body header.topbar button#venueToggle.venueToggle {
-    width: 3.5em;
-    min-width: 3.5em;
-    max-width: 3.5em;
+    width: 3em;
+    min-width: 3em;
+    max-width: 3em;
     height: 38px;
     box-sizing: border-box;
   }
@@ -1341,8 +1341,9 @@ html[data-brand="delivery"] {
     grid-row: 2;
     justify-self: center;
     width: auto;
-    height: 52px;
-    min-height: 52px;
+    height: 46px;
+    min-height: 46px;
+    padding: 0;
     margin-top: 4px;
     box-sizing: border-box;
     visibility: hidden !important;
