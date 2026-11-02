@@ -67,15 +67,24 @@ test.describe('Pour accessibility audit — delivery brand', () => {
   });
 
   test('ticker is static and header DOM order follows the visual sequence', async ({ page }) => {
-    const ticker = await page.locator('#tickerTrack').evaluate((element) => ({
-      animationName: getComputedStyle(element).animationName,
-      flexWrap: getComputedStyle(element).flexWrap,
-      whiteSpace: getComputedStyle(element).whiteSpace,
-      itemCount: element.children.length,
-    }));
+    const ticker = await page.locator('.ticker').evaluate((container) => {
+      const track = container.querySelector('#tickerTrack');
+      const containerStyle = getComputedStyle(container);
+      const trackStyle = getComputedStyle(track);
+      return {
+        animationName: trackStyle.animationName,
+        flexWrap: trackStyle.flexWrap,
+        whiteSpace: trackStyle.whiteSpace,
+        overflowX: containerStyle.overflowX,
+        height: container.getBoundingClientRect().height,
+        itemCount: track.children.length,
+      };
+    });
     expect(ticker.animationName).toBe('none');
-    expect(ticker.flexWrap).toBe('wrap');
-    expect(ticker.whiteSpace).toBe('normal');
+    expect(ticker.flexWrap).toBe('nowrap');
+    expect(ticker.whiteSpace).toBe('nowrap');
+    expect(ticker.overflowX).toBe('auto');
+    expect(ticker.height).toBe(28);
     expect(ticker.itemCount).toBeLessThanOrEqual(7);
 
     const order = await page.locator('header.topbar').evaluate((header) => {
