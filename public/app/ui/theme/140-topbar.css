@@ -27,6 +27,7 @@
   padding: 3px;
 }
 .modeSeg button{
+  min-height: 44px;
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 12.5px;
@@ -100,7 +101,7 @@
 .menu-head .upd b,
 #menuView #updWhen,
 #deliveryView #updWhenD{
-  color: var(--status-success, #2F7D4F);
+  color: #0F5132;
   font-weight: 700;
 }
 .adminBadge{
@@ -141,7 +142,6 @@
 }
 .search input{
   border: none;
-  outline: none;
   flex: 1;
   font-size: 16px;
   background: transparent;
@@ -153,6 +153,7 @@
 #dashToggle,
 #chatsToggle2{
   border-radius: 999px;
+  min-height: 44px;
   padding: 10px 18px;
   font-size: 13px;
   font-weight: 800;
