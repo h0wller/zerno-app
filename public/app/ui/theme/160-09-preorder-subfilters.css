@@ -73,8 +73,8 @@
 
 .subchip {
   flex: 0 0 auto;
-  height: 34px;
-  min-height: 34px;
+  height: 44px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
