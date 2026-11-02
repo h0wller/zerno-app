@@ -236,8 +236,8 @@ header.topbar,
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 8px;
-  min-height: calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
-  padding: calc(var(--sat, env(safe-area-inset-top, 0px)) + 4px) 12px 4px;
+  min-height: calc(60px + env(safe-area-inset-top, 0px));
+  padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px 4px;
   box-sizing: border-box;
   position: sticky;
   top: 0;
@@ -1041,7 +1041,7 @@ html[data-brand="delivery"] {
 /* Match the late views.js <=600px topbar override before the first frame. */
 @media (max-width: 600px) {
   .topbar {
-    padding: calc(var(--sat, env(safe-area-inset-top, 0px)) + 6px) 12px 0 !important;
+    padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 0 !important;
     min-height: 0 !important;
     gap: 0 8px !important;
   }
@@ -1158,7 +1158,7 @@ html[data-brand="delivery"] {
     gap: 0 8px;
     height: auto;
     min-height: 0;
-    padding: calc(var(--sat, env(safe-area-inset-top, 0px)) + 4px) 12px 0;
+    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px 0;
     box-sizing: border-box;
   }
   html body header.topbar > #brandSeg {

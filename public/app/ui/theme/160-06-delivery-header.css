@@ -5,8 +5,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  min-height: calc(var(--topbar-h, 64px) + var(--sat, var(--sat, env(safe-area-inset-top, 0px))));
-  padding: var(--sat, var(--sat, env(safe-area-inset-top, 0px))) 12px 0;
+  min-height: calc(var(--topbar-h, 64px) + var(--sat, env(safe-area-inset-top, 0px)));
+  padding: var(--sat, env(safe-area-inset-top, 0px)) 12px 0;
   box-sizing: border-box;
   background: var(--topbar-bg, transparent);
   color: var(--topbar-color, var(--ink));
