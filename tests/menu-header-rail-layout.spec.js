@@ -37,7 +37,7 @@ for (const brand of CASES) {
         const head = document.querySelector(headSelector).getBoundingClientRect();
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-        const clearanceTop = Math.max(head.bottom, topbar.bottom) + 12;
+        const clearanceTop = Math.max(0, head.bottom, topbar.bottom) + 12;
         const targetCenter = (clearanceTop + window.innerHeight - 12) / 2;
         return {
           centerDelta: Math.abs((rail.top + rail.height / 2) - targetCenter),
