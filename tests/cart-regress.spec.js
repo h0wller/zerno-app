@@ -41,12 +41,12 @@ test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степп
     // Цвет текста не должен совпадать с цветом фона
     expect(avaStyles.color).not.toBe(avaStyles.bg);
 
-    // ── Проверка Задачи 4: Сабфильтры не сплющены, высота чипса 34px ──
+    // ── Проверка Задачи 4: Сабфильтры не сплющены, hit target 44px ──
     const subchip = page.locator('.subchip').first();
     if ((await subchip.count()) > 0) {
       await expect(subchip).toBeVisible();
       const chipBox = await subchip.boundingBox();
-      expect(Math.round(chipBox.height)).toBe(34);
+      expect(Math.round(chipBox.height)).toBe(44);
     }
 
     // ── Проверка Задачи 3: Степпер +/− скрыт при qty=0 и 40x40px при qty>0 ──
@@ -554,7 +554,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
 test.describe('Спринт 4 — Тикер, геометрия рейла без наезда поиска, центрирование и стабильность шапки', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('1. Пустой тикер скрыт (0px), поиск не наезжает на #deliveryRail, шапка не прыгает и логотип строго по центру', async ({ page }) => {
+  test('1. Пустой тикер скрывает содержимое без схлопывания 28px, поиск не наезжает на #deliveryRail, шапка не прыгает и логотип строго по центру', async ({ page }) => {
     await page.addInitScript(() => {
       sessionStorage.setItem('splashDone', '1');
     });
@@ -562,18 +562,35 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
     await page.goto('/?brand=delivery');
     await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible({ timeout: 10000 });
 
-    // ── Задача 1: Тикер при наличии текста компактный (<= 30px), а при очистке текста — скрывается в 0px ──
+    // ── Задача 1: Тикер резервирует 28px; пустое состояние скрывает содержимое, но не схлопывает layout ──
     const ticker = page.locator('#ticker, .ticker').first();
-    const activeTickerBox = await ticker.boundingBox();
-    if (activeTickerBox) {
-      expect(activeTickerBox.height).toBeLessThanOrEqual(30);
-    }
+    const activeTicker = await ticker.evaluate((element) => ({
+      height: element.getBoundingClientRect().height,
+      overflowX: getComputedStyle(element).overflowX,
+    }));
+    expect(activeTicker.height).toBe(28);
+    expect(activeTicker.overflowX).toBe('auto');
 
-    await page.evaluate(() => {
-      const tr = document.getElementById('tickerTrack');
-      if (tr) tr.innerHTML = '';
+    const emptyTicker = await page.evaluate(() => {
+      window.BRANDS.delivery.ticker = [];
+      window.deliveryInfo = null;
+      window.applyBrandChrome(true);
+      const track = document.getElementById('tickerTrack');
+      const container = track.closest('.ticker');
+      const style = getComputedStyle(container);
+      return {
+        empty: container.classList.contains('is-empty'),
+        hiddenAttribute: container.hidden,
+        visibility: style.visibility,
+        height: container.getBoundingClientRect().height,
+        itemCount: track.children.length,
+      };
     });
-    await expect(ticker).toBeHidden();
+    expect(emptyTicker.empty).toBe(true);
+    expect(emptyTicker.hiddenAttribute).toBe(false);
+    expect(emptyTicker.visibility).toBe('hidden');
+    expect(emptyTicker.height).toBe(28);
+    expect(emptyTicker.itemCount).toBe(0);
 
     // ── Задача 2: Поиск НЕ наезжает на левый сайдбар #deliveryRail + sticky-позиция при скролле ──
     const rail = page.locator('#deliveryRail');

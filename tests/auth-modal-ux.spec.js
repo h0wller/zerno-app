@@ -70,7 +70,7 @@ for (const viewport of viewports) {
     expect(layout.overflowY).toBe('auto');
     expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentWidth + 1);
 
-    await card.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    await card.locator('#regBtn').scrollIntoViewIfNeeded();
     await expect(card.locator('#regBtn')).toBeInViewport();
   });
 }
