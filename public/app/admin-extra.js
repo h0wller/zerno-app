@@ -269,6 +269,17 @@
         }).join('') +
         '</div>'
       : '';
+    if (!L.length) {
+      if (tickerResizeObserver) tickerResizeObserver.disconnect();
+      var tickerToggle = tickerBox && tickerBox.querySelector('#tickerToggle');
+      if (tickerToggle) {
+        tickerToggle.hidden = true;
+        tickerToggle.setAttribute('aria-pressed', 'false');
+        tickerToggle.setAttribute('aria-label', 'Приостановить прокрутку объявлений');
+        tickerToggle.querySelector('span').textContent = 'Ⅱ';
+      }
+      return;
+    }
     bindTickerMotion(track);
   }
 
