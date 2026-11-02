@@ -141,7 +141,7 @@ html body div.wrap > #deliveryRail button {
   html body div.wrap > .rail,
   html body div.wrap > #rail,
   html body div.wrap > #deliveryRail {
-    top: calc(var(--topbar-h, 60px) + env(safe-area-inset-top, 0px));
+    top: calc(var(--topbar-h, 60px) + var(--sat, env(safe-area-inset-top, 0px)));
     transform: none;
   }
 }

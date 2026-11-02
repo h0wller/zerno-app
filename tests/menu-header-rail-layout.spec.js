@@ -16,6 +16,9 @@ for (const brand of CASES) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
       await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+      if (brand.brand === 'delivery' && viewport.width === 390) {
+        await page.addStyleTag({ content: ':root { --sat: 47px; }' });
+      }
 
       const menuHead = page.locator(brand.head);
       const rail = page.locator(brand.rail);
