@@ -21,12 +21,15 @@
 }
 .modeSeg{
   display: flex;
+  box-sizing: border-box;
+  min-height: 52px;
   background: var(--esp2);
   border: 1px solid #2a3540;
   border-radius: 999px;
   padding: 3px;
 }
 .modeSeg button{
+  box-sizing: border-box;
   min-height: 44px;
   padding: 6px 12px;
   border-radius: 999px;

@@ -139,6 +139,87 @@
   /* ── R5: тикер и логотип по бренду ── */
   var __chromeLast = null;
 
+  var tickerResizeObserver = null;
+  var tickerResizeBound = false;
+  var tickerReducedMotion = window.matchMedia
+    ? window.matchMedia('(prefers-reduced-motion: reduce)')
+    : null;
+
+  function syncTickerMotion(track) {
+    var box = track && track.closest('.ticker');
+    var viewport = box && box.querySelector('.tickerViewport');
+    var group = track && track.querySelector('.tickerGroup:not([aria-hidden="true"])');
+    var toggle = box && box.querySelector('#tickerToggle');
+    if (!box || !viewport || !group || !toggle) return;
+
+    var reduced = tickerReducedMotion && tickerReducedMotion.matches;
+    var overflowing = !reduced && group.scrollWidth * 2 > viewport.clientWidth + 1;
+    var clone = track.querySelector('.tickerGroup[aria-hidden="true"]');
+
+    if (overflowing && !clone) {
+      clone = group.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      track.appendChild(clone);
+    } else if (!overflowing && clone) {
+      clone.remove();
+    }
+
+    box.classList.toggle('is-overflowing', overflowing);
+    toggle.hidden = !overflowing;
+    if (!overflowing || !box.classList.contains('is-paused')) {
+      box.classList.remove('is-paused');
+      toggle.setAttribute('aria-pressed', 'false');
+      toggle.setAttribute('aria-label', 'Приостановить прокрутку объявлений');
+      toggle.querySelector('span').textContent = 'Ⅱ';
+    }
+  }
+
+  function bindTickerMotion(track) {
+    var box = track.closest('.ticker');
+    var viewport = box && box.querySelector('.tickerViewport');
+    var group = track.querySelector('.tickerGroup:not([aria-hidden="true"])');
+    var toggle = box && box.querySelector('#tickerToggle');
+    if (!box || !viewport || !group || !toggle) return;
+
+    if (!toggle.dataset.motionBound) {
+      toggle.addEventListener('click', function () {
+        var paused = box.classList.toggle('is-paused');
+        toggle.setAttribute('aria-pressed', String(paused));
+        toggle.setAttribute(
+          'aria-label',
+          paused ? 'Возобновить прокрутку объявлений' : 'Приостановить прокрутку объявлений'
+        );
+        toggle.querySelector('span').textContent = paused ? '▶' : 'Ⅱ';
+      });
+      toggle.dataset.motionBound = 'true';
+    }
+
+    if (tickerResizeObserver) tickerResizeObserver.disconnect();
+    if (typeof ResizeObserver !== 'undefined') {
+      tickerResizeObserver = new ResizeObserver(function () {
+        syncTickerMotion(track);
+      });
+      tickerResizeObserver.observe(viewport);
+      tickerResizeObserver.observe(group);
+    }
+    if (!tickerResizeBound) {
+      window.addEventListener('resize', function () {
+        var current = document.getElementById('tickerTrack');
+        if (current) syncTickerMotion(current);
+      });
+      if (tickerReducedMotion) {
+        tickerReducedMotion.addEventListener('change', function () {
+          var current = document.getElementById('tickerTrack');
+          if (current) syncTickerMotion(current);
+        });
+      }
+      tickerResizeBound = true;
+    }
+    requestAnimationFrame(function () {
+      syncTickerMotion(track);
+    });
+  }
+
   function renderTickerItems(bConfig) {
     var track = document.getElementById('tickerTrack');
     if (!track) return;
@@ -177,12 +258,29 @@
       })
       .filter(Boolean);
     var tickerBox = track.closest('.ticker');
-    if (tickerBox) tickerBox.classList.toggle('is-empty', !L.length);
-    track.innerHTML = L
-      .map(function (x) {
-        return '<span class="ti">' + x + '</span>';
-      })
-      .join('');
+    if (tickerBox) {
+      tickerBox.classList.toggle('is-empty', !L.length);
+      tickerBox.classList.remove('is-overflowing', 'is-paused');
+    }
+    track.innerHTML = L.length
+      ? '<div class="tickerGroup">' +
+        L.map(function (x) {
+          return '<span class="ti">' + x + '</span>';
+        }).join('') +
+        '</div>'
+      : '';
+    if (!L.length) {
+      if (tickerResizeObserver) tickerResizeObserver.disconnect();
+      var tickerToggle = tickerBox && tickerBox.querySelector('#tickerToggle');
+      if (tickerToggle) {
+        tickerToggle.hidden = true;
+        tickerToggle.setAttribute('aria-pressed', 'false');
+        tickerToggle.setAttribute('aria-label', 'Приостановить прокрутку объявлений');
+        tickerToggle.querySelector('span').textContent = 'Ⅱ';
+      }
+      return;
+    }
+    bindTickerMotion(track);
   }
 
   function applyBrandChrome(force) {

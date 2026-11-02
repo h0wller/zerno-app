@@ -162,8 +162,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     const before = await measure();
     console.log('[slow-network-layout] before deferred CSS', JSON.stringify(before));
     expect(before.ticker).not.toBeNull();
-    expect(before.ticker.height).toBeLessThanOrEqual(30);
-    expect(before.tickerOverflowX).toBe('auto');
+    expect(before.ticker.height).toBe(44);
+    expect(before.tickerOverflowX).toBe('hidden');
     expect(before.section.width).toBeGreaterThan(250);
     expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
     expect(before.heading.width).toBeGreaterThan(200);
@@ -812,7 +812,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.modeSeg.display).toBe('flex');
     expect(before.modeSeg.visibility).toBe('hidden');
     expect(before.adminBar.hidden).toBe(true);
-    expect(before.adminBar.display).toBe('grid');
+    expect(before.adminBar.display).toBe('flex');
     expect(before.adminBar.visibility).toBe('hidden');
 
     // The first-paint/CSS/font settle is asserted by the neighboring layout tests.

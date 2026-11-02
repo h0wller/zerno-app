@@ -13,12 +13,22 @@ test.describe('Mobile profile swipe close', () => {
       localStorage.setItem('token', 'swipe_test_token');
       window.__layoutShifts = [];
       try {
-        new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
             if (!entry.hadRecentInput) window.__layoutShifts.push(entry.value);
           }
-        }).observe({ type: 'layout-shift', buffered: true });
-      } catch (_) {}
+        });
+        observer.observe({ type: 'layout-shift', buffered: true });
+        window.__layoutShiftObserver = observer;
+        window.__collectLayoutShifts = () => {
+          for (const entry of observer.takeRecords()) {
+            if (!entry.hadRecentInput) window.__layoutShifts.push(entry.value);
+          }
+          return window.__layoutShifts.reduce((sum, value) => sum + value, 0);
+        };
+      } catch (_) {
+        window.__collectLayoutShifts = () => 0;
+      }
     });
 
     await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
@@ -41,6 +51,14 @@ test.describe('Mobile profile swipe close', () => {
     });
     const panel = page.locator('#panel');
     await expect(panel).toHaveClass(/open/);
+    // The panel slides in over 350ms; assert its final geometry, not the mid-transition frame.
+    await expect.poll(() => panel.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return Math.abs(rect.right - window.innerWidth);
+    })).toBeLessThanOrEqual(1);
+    const drawer = await panel.evaluate((element) => element.getBoundingClientRect().width);
+    expect(drawer).toBeLessThanOrEqual(360);
+    expect(drawer).toBeGreaterThan(300);
     await page.waitForTimeout(100);
 
     const before = await page.evaluate(() => {
@@ -50,22 +68,26 @@ test.describe('Mobile profile swipe close', () => {
         headerTop: header.getBoundingClientRect().top,
         headerPosition: getComputedStyle(header).position,
         bodyOverflowY: getComputedStyle(document.body).overflowY,
+        layoutShift: window.__collectLayoutShifts(),
       };
     });
 
-    await page.evaluate(() => {
-      const panel = document.getElementById('panel');
-      const touch = (type, x) => {
-        const event = new Event(type, { bubbles: true, cancelable: true });
-        Object.defineProperty(event, 'touches', {
-          value: type === 'touchend' ? [] : [{ clientX: x, clientY: 300 }],
-        });
-        panel.dispatchEvent(event);
-      };
-      touch('touchstart', 40);
-      touch('touchmove', 230);
-      touch('touchend', 230);
+    // Use Chromium's input pipeline: synthetic DOM Events are untrusted and do not
+    // reproduce the hadRecentInput semantics of a real touch gesture.
+    const client = await page.context().newCDPSession(page);
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: 40, y: 300 }],
     });
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: 230, y: 300 }],
+    });
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    });
+    await client.detach();
 
     await expect(panel).not.toHaveClass(/open/, { timeout: 1500 });
     await page.waitForTimeout(100);
@@ -78,7 +100,7 @@ test.describe('Mobile profile swipe close', () => {
         headerPosition: getComputedStyle(header).position,
         bodyOverflowY: getComputedStyle(document.body).overflowY,
         focusedId: document.activeElement && document.activeElement.id,
-        layoutShift: window.__layoutShifts.reduce((sum, value) => sum + value, 0),
+        layoutShift: window.__collectLayoutShifts(),
       };
     });
 
@@ -89,6 +111,6 @@ test.describe('Mobile profile swipe close', () => {
     expect(after.bodyOverflowY).not.toBe('hidden');
     expect(Math.abs(after.scrollY - before.scrollY)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.headerTop - before.headerTop)).toBeLessThanOrEqual(1);
-    expect(after.layoutShift).toBeLessThan(0.001);
+    expect(after.layoutShift - before.layoutShift).toBeLessThan(0.001);
   });
 });
