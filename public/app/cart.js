@@ -129,14 +129,14 @@
       var match = slotVal.match(/^(\d{2})\.(\d{2})\s*\|\s*(\d{2}):(\d{2})/);
       if (!match) return null;
       var day = match[1], month = match[2];
-      var scheduleDays = window.deliveryInfo && Array.isArray(window.deliveryInfo.days)
-        ? window.deliveryInfo.days : [];
-      var selectedDay = scheduleDays.find(function (entry) {
-        return entry.date && entry.date.slice(8, 10) === day && entry.date.slice(5, 7) === month;
-      });
-      if (!selectedDay) return null;
+      var now = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      var year = now.getUTCFullYear();
+      var targetDate = Date.UTC(year, Number(month) - 1, Number(day));
+      var todayDate = Date.UTC(year, now.getUTCMonth(), now.getUTCDate());
+      if (targetDate < todayDate) targetDate = Date.UTC(year + 1, Number(month) - 1, Number(day));
+      var selectedWeekday = new Date(targetDate).getUTCDay();
       return {
-        dayOfWeek: new Date(selectedDay.date + "T00:00:00.000Z").getUTCDay(),
+        dayOfWeek: selectedWeekday,
         hour: Number(match[3]),
         minute: Number(match[4]),
       };
