@@ -6,6 +6,7 @@ const CASES = [
 ];
 
 const VIEWPORTS = [
+  { name: 'narrow mobile', width: 320, height: 740 },
   { name: 'mobile', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
   { name: 'desktop', width: 1440, height: 900 },
@@ -37,9 +38,7 @@ for (const brand of CASES) {
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const topbar = document.querySelector('header.topbar').getBoundingClientRect();
         const clearanceTop = Math.max(head.bottom, topbar.bottom) + 12;
-        const targetCenter = window.innerWidth <= 820
-          ? (clearanceTop + window.innerHeight - 12) / 2
-          : window.innerHeight / 2;
+        const targetCenter = (clearanceTop + window.innerHeight - 12) / 2;
         return {
           centerDelta: Math.abs((rail.top + rail.height / 2) - targetCenter),
           headGap: rail.top - head.bottom,
@@ -47,10 +46,8 @@ for (const brand of CASES) {
         };
       }, { headSelector: brand.head, railSelector: brand.rail });
       expect(initialRail.centerDelta).toBeLessThanOrEqual(2);
-      if (viewport.width <= 820) {
-        expect(initialRail.headGap, 'rail must start below the menu title and search').toBeGreaterThanOrEqual(8);
-        expect(initialRail.topbarGap, 'rail must not overlap the sticky topbar').toBeGreaterThanOrEqual(8);
-      }
+      expect(initialRail.headGap, 'rail must start below the menu title and search').toBeGreaterThanOrEqual(8);
+      expect(initialRail.topbarGap, 'rail must not overlap the topbar').toBeGreaterThanOrEqual(8);
       await expect.poll(() => ticker.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 5000 }).toBe(brand.tickerBg);
 
       const layout = await page.evaluate(({ headSelector, railSelector }) => {
@@ -106,9 +103,7 @@ for (const brand of CASES) {
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const topbar = document.querySelector('header.topbar').getBoundingClientRect();
         const clearanceTop = Math.max(head.bottom, topbar.bottom) + 12;
-        const targetCenter = window.innerWidth <= 820
-          ? (clearanceTop + window.innerHeight - 12) / 2
-          : window.innerHeight / 2;
+        const targetCenter = (clearanceTop + window.innerHeight - 12) / 2;
         return Math.abs((rail.top + rail.height / 2) - targetCenter);
       }, { headSelector: brand.head, railSelector: brand.rail }), { timeout: 5000 }).toBeLessThanOrEqual(2);
       if (viewport.width <= 820) {
