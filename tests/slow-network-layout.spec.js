@@ -147,6 +147,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         brandTitleDisplay: brandTitle && getComputedStyle(brandTitle).display,
         brandSubDisplay: brandSub && getComputedStyle(brandSub).display,
         search: box(document.querySelector('#deliveryView .mh-right .search')),
+        searchLabel: box(document.querySelector('#deliveryView label[for="dSearch"]')),
         searchInput: box(document.querySelector('#dSearch')),
         updated: box(document.querySelector('#deliveryView .menu-head .upd')),
         subchip: box(document.querySelector('#deliverySubFilter .subchip')),
@@ -174,6 +175,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.brandTitleDisplay).toBe('none');
     expect(before.brandSubDisplay).toBe('none');
     expect(before.search).not.toBeNull();
+    expect(before.searchLabel.width).toBeLessThanOrEqual(1);
+    expect(before.searchLabel.height).toBeLessThanOrEqual(1);
     expect(before.searchInput).not.toBeNull();
     expect(before.card.width).toBeLessThanOrEqual(before.viewportWidth - 80);
     expect(before.scrollWidth).toBeLessThanOrEqual(before.viewportWidth + 1);
@@ -203,6 +206,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.brandTitleDisplay).toBe(before.brandTitleDisplay);
     expect(after.brandSubDisplay).toBe(before.brandSubDisplay);
     expect(after.search).toEqual(before.search);
+    expect(after.searchLabel).toEqual(before.searchLabel);
     expect(after.searchInput).toEqual(before.searchInput);
     expect(after.updated.width).toBe(before.updated.width);
     expect(after.updated.height).toBe(before.updated.height);
