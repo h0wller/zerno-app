@@ -28,6 +28,7 @@ for (const brand of CASES) {
 
       await expect(menuHead).toBeVisible({ timeout: 10000 });
       await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect(rail).toHaveClass(/rail-position-ready/);
       await expect(ticker).toHaveCSS('display', 'flex');
       const topbar = page.locator('header.topbar');
       if (viewport.width <= 820) {
