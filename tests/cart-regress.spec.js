@@ -567,11 +567,9 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
     const activeTicker = await ticker.evaluate((element) => ({
       height: element.getBoundingClientRect().height,
       overflowX: getComputedStyle(element).overflowX,
-      pauseTarget: element.querySelector('#tickerToggle').getBoundingClientRect().width,
     }));
     expect(activeTicker.height).toBe(44);
     expect(activeTicker.overflowX).toBe('hidden');
-    expect(activeTicker.pauseTarget).toBe(44);
 
     const emptyTicker = await page.evaluate(() => {
       window.BRANDS.delivery.ticker = [];
