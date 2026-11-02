@@ -21,6 +21,8 @@
 }
 .modeSeg{
   display: flex;
+  box-sizing: border-box;
+  min-height: 52px;
   background: var(--esp2);
   border: 1px solid #2a3540;
   border-radius: 999px;
