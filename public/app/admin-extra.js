@@ -166,7 +166,7 @@
 
     box.classList.toggle('is-overflowing', overflowing);
     toggle.hidden = !overflowing;
-    if (!overflowing) {
+    if (!overflowing || !box.classList.contains('is-paused')) {
       box.classList.remove('is-paused');
       toggle.setAttribute('aria-pressed', 'false');
       toggle.setAttribute('aria-label', 'Приостановить прокрутку объявлений');
