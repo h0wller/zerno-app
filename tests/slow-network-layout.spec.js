@@ -141,6 +141,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         },
         tickerOverflowX: ticker && getComputedStyle(ticker).overflowX,
         heading: box(heading),
+        menuHead: box(document.querySelector('#deliveryView .menu-head')),
         card: box(card),
         media: box(media),
         brandMark: box(document.querySelector('#brandMark')),
@@ -167,8 +168,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.section.width).toBeGreaterThan(250);
     expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
     expect(before.heading.width).toBeGreaterThan(200);
-    expect(before.heading.x).toBeGreaterThanOrEqual(before.section.x);
-    expect(before.heading.right).toBeLessThanOrEqual(before.section.right + 1);
+    expect(before.menuHead).not.toBeNull();
+    expect(before.menuHead.x).toBeLessThanOrEqual(before.rail.x + 1);
+    expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
+    expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x);
+    expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right + 1);
     expect(before.card.width).toBeGreaterThan(200);
     expect(before.media.height).toBe(180);
     expect(before.brandMark).not.toBeNull();
