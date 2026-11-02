@@ -169,8 +169,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 });
 
 function compositeColor(foreground, background) {
-  const fg = foreground.match(/[\\d.]+/g).map(Number);
-  const bg = background.match(/[\\d.]+/g).map(Number);
+  const fg = foreground.match(/[\d.]+/g).map(Number);
+  const bg = background.match(/[\d.]+/g).map(Number);
   const alpha = fg.length > 3 ? fg[3] : 1;
   return 'rgb(' + fg.slice(0, 3).map((channel, index) =>
     Math.round(channel * alpha + bg[index] * (1 - alpha))
