@@ -218,7 +218,7 @@ body[data-brand="delivery"] {
   --modal-border: 3px solid var(--fr-choc, #3A2A1C);
   --modal-radius: 18px;
   --modal-shadow: 6px 6px 0 var(--fr-choc, #3A2A1C), 0 20px 50px rgba(0, 0, 0, 0.35);
-  --modal-title-font: "Unbounded", sans-serif;
+  --modal-title-font: "Unbounded", "Golos Text", sans-serif;
   --modal-title-color: var(--fr-choc, #3A2A1C);
   --modal-input-bg: #FFFFFF;
   --modal-input-border: 2px solid var(--fr-choc, #3A2A1C);

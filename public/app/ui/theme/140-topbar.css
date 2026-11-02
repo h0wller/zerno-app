@@ -8,8 +8,7 @@
 }
 .brand b{
   font:
-    400 19px "Prata",
-    serif;
+    400 19px "Prata", "Golos Text", serif;
   letter-spacing: 0.04em;
   color: #123a6b;
 }
@@ -46,7 +45,7 @@
   border-radius: 50%;
   background: var(--ava-bg, linear-gradient(135deg, #3e8fd0, #123a6b));
   color: var(--ava-color, #fff);
-  font: 700 14px "Unbounded";
+  font: 700 14px "Unbounded", "Golos Text", sans-serif;
   display: grid;
   place-items: center;
   border: var(--ava-border, 1px solid #fff);

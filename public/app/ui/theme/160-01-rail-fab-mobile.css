@@ -419,7 +419,7 @@ html body #authModal.tg-mode .mhint{
   border-radius: 999px;
   background: #FFFFFF;
   color: #A93226;
-  font: 800 11px/1 "Unbounded", system-ui, sans-serif;
+  font: 800 11px/1 "Unbounded", "Golos Text", system-ui, sans-serif;
   flex-shrink: 0;
 }
 .cartFab .cf-sep{

@@ -64,7 +64,7 @@
   border-radius: 3px;
 }
 .pv h4{
-  font: 700 12px "Unbounded";
+  font: 700 12px "Unbounded", "Golos Text", sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8b98a5;
@@ -152,7 +152,7 @@
 }
 #pvBonus .freeCard b{
   display: block;
-  font: 700 14px "Unbounded";
+  font: 700 14px "Unbounded", "Golos Text", sans-serif;
   color: #4a3100;
 }
 .freeCard small{
@@ -220,7 +220,7 @@
   margin-bottom: 8px;
 }
 .authPrompt b{
-  font: 700 14.5px "Unbounded";
+  font: 700 14.5px "Unbounded", "Golos Text", sans-serif;
   color: #163b6b;
   display: block;
   margin-bottom: 6px;
@@ -401,7 +401,7 @@
   box-shadow: var(--sh);
 }
 .stat b{
-  font: 900 19px "Unbounded";
+  font: 900 19px "Unbounded", "Golos Text", sans-serif;
   color: #123a6b;
 }
 .stat span{
