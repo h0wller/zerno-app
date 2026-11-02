@@ -102,6 +102,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
   });
 
   test('ticker is full-bleed, loops only a complete overflowing line, and has no pause control', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(() => {
       window.BRANDS.delivery.ticker = [
         'Пятница — доставка пиццы и роллов в Янтарном и ближайших посёлках',
@@ -140,13 +141,38 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(ticker.flexWrap).toBe('nowrap');
     expect(ticker.whiteSpace).toBe('nowrap');
     expect(ticker.overflowX).toBe('hidden');
-    expect(ticker.height).toBe(28);
+    expect(ticker.height).toBe(34);
     expect(ticker.left).toBe(0);
     expect(ticker.width).toBe(ticker.viewportWidth);
     expect(ticker.groupWidth).toBeGreaterThan(ticker.viewportWidth);
     expect(ticker.groups).toBe(2);
     expect(ticker.cloneHidden).toBe('true');
     expect(ticker.animationPlayState).toBe('running');
+
+    const attachedLayout = await page.locator('header.topbar').evaluate((header) => {
+      const tickerElement = header.querySelector('.ticker');
+      const headerBox = header.getBoundingClientRect();
+      const tickerBox = tickerElement.getBoundingClientRect();
+      const logoBox = header.querySelector('#headerBrand').getBoundingClientRect();
+      return {
+        headerLeft: headerBox.left,
+        headerRight: headerBox.right,
+        headerWidth: headerBox.width,
+        tickerTop: tickerBox.top,
+        headerBottom: headerBox.bottom,
+        tickerParent: tickerElement.parentElement === header,
+        logoCenter: logoBox.left + logoBox.width / 2,
+        viewportCenter: window.innerWidth / 2,
+        borderRadius: getComputedStyle(header).borderRadius,
+      };
+    });
+    expect(attachedLayout.tickerParent).toBe(true);
+    expect(Math.abs(attachedLayout.tickerTop - attachedLayout.headerBottom)).toBeLessThanOrEqual(1);
+    expect(attachedLayout.headerLeft).toBe(0);
+    expect(attachedLayout.headerRight).toBe(390);
+    expect(attachedLayout.headerWidth).toBe(390);
+    expect(Math.abs(attachedLayout.logoCenter - attachedLayout.viewportCenter)).toBeLessThanOrEqual(1);
+    expect(attachedLayout.borderRadius).toBe('0px');
 
     const order = await page.locator('header.topbar').evaluate((header) => {
       const childIndex = (selector) => Array.from(header.children).indexOf(header.querySelector(selector));
