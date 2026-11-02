@@ -655,7 +655,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
       expect(after.bonus).toEqual(before.bonus);
       expect(after.bonusStyle).toEqual(before.bonusStyle);
-      for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile']) {
+      for (const selector of ['venue', 'brandGroup', 'profile']) {
         for (const edge of ['left', 'right', 'top', 'bottom']) {
           expect(Math.abs(after[selector][edge] - before[selector][edge]),
             `${selector} ${edge} stays stable at ${width}px after deferred CSS`)
