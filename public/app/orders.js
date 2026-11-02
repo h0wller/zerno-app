@@ -67,7 +67,9 @@ function orderCard(o) {
     '<div class="ocWho">' + esc(o.name) + ' · ' + esc(o.phone) + '</div>' +
     '<div class="ocAddr">' + addrString + '<br>' + slotDisplay + ' · 💳 ' + (o.pay === 'cash' ? 'наличные' : 'карта при получении') + '</div>' +
     '<div class="ocItems">' + items + (gifts ? '<br>' + gifts : '') + '</div>' +
-    '<div class="ocTotal">Итого: <b>' + fmt(o.total) + '</b>' + (o.discount ? ' · скидка ' + fmt(o.discount) : '') + (o.fee ? ' · доставка ' + fmt(o.fee) : '') + '</div>' +
+    '<div class="ocTotal">Итого: <b>' + fmt(o.total) + '</b>' +
+      (o.discount ? ' · ' + esc(o.discount_label || 'скидка') + ' −' + fmt(o.discount) : '') +
+      (o.fee ? ' · доставка ' + fmt(o.fee) : '') + '</div>' +
     (o.comment ? '<div class="ocComment">💬 ' + esc(o.comment) + '</div>' : '') +
     // Терминальные статусы не показывают кнопки смены статуса.
     '<div class="ocActs">' + ((o.status === 'cancel' || o.status === 'done') ? '' : next.map(function(s) {

@@ -47,18 +47,6 @@ export function getKaliningradDateParts(date = new Date()) {
   };
 }
 
-export function isWeekdayLunchDiscountActive(timeParts) {
-  if (!timeParts) return false;
-  const dayOfWeek = Number(timeParts.dayOfWeek);
-  const hour = Number(timeParts.hour);
-  const minute = Number(timeParts.minute);
-  if (!Number.isInteger(dayOfWeek) || !Number.isInteger(hour) || !Number.isInteger(minute)) return false;
-  const localMinutes = hour * 60 + minute;
-  return dayOfWeek >= 1 && dayOfWeek <= 5
-    && localMinutes >= 11 * 60
-    && localMinutes < 15 * 60;
-}
-
 export function getDeliveryHours(date = new Date()) {
   const parts = getKaliningradDateParts(date);
   const isSummer = parts.month >= DELIVERY_SCHEDULE.summerStartMonth
@@ -167,9 +155,6 @@ export function validateDeliverySlot(slot, now = new Date()) {
     date: `${target.year}-${pad(month)}-${pad(day)}`,
     datePart: `${pad(day)}.${pad(month)}`,
     dayOffset: target.dayOffset,
-    dayOfWeek: hours.dayOfWeek,
-    hour: hours.hour,
-    minute: hours.minute,
     open: hours.open,
     close: hours.close,
   };

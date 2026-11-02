@@ -120,6 +120,46 @@
     return { baseZoneFee: baseZoneFee, minOrder: minOrder };
   }
 
+  function getLunchPromoTimeParts() {
+    var slotEl = document.getElementById("checkoutSlot");
+    var slotVal = slotEl ? slotEl.value : "asap";
+    if (!slotVal) return null;
+
+    if (slotVal !== "asap") {
+      var match = slotVal.match(/^(\\d{2})\\.(\\d{2})\\s*\\|\\s*(\\d{2}):(\\d{2})/);
+      if (!match) return null;
+      var day = match[1], month = match[2];
+      var scheduleDays = window.deliveryInfo && Array.isArray(window.deliveryInfo.days)
+        ? window.deliveryInfo.days : [];
+      var selectedDay = scheduleDays.find(function (entry) {
+        return entry.date && entry.date.slice(8, 10) === day && entry.date.slice(5, 7) === month;
+      });
+      if (!selectedDay) return null;
+      return {
+        dayOfWeek: new Date(selectedDay.date + "T00:00:00.000Z").getUTCDay(),
+        hour: Number(match[3]),
+        minute: Number(match[4]),
+      };
+    }
+
+    var kaliningradNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    var clock = typeof window.getKaliningradTime === "function"
+      ? window.getKaliningradTime()
+      : { hour: kaliningradNow.getUTCHours(), minute: kaliningradNow.getUTCMinutes() };
+    return {
+      dayOfWeek: kaliningradNow.getUTCDay(),
+      hour: Number(clock.hour),
+      minute: Number(clock.minute),
+    };
+  }
+
+  function isLunchPromoActive() {
+    var time = getLunchPromoTimeParts();
+    if (!time || time.dayOfWeek < 1 || time.dayOfWeek > 5) return false;
+    var minuteOfDay = time.hour * 60 + time.minute;
+    return minuteOfDay >= 11 * 60 && minuteOfDay < 15 * 60;
+  }
+
   function getDeliveryPricing(list, method, placeVal) {
     if (method !== "delivery") {
       return { fee: 0, baseZoneFee: 0, minOrder: 0 };
@@ -129,7 +169,7 @@
     var fee = 0;
     if (list.length) {
       // Доставка платная всегда, кроме персонального промокода «первая доставка бесплатно».
-      fee = (promoInfo && promoInfo.kind === "freeship") ? 0 : rates.baseZoneFee;
+      fee = (!isLunchPromoActive() && promoInfo && promoInfo.kind === "freeship") ? 0 : rates.baseZoneFee;
     }
 
     return {
@@ -146,11 +186,16 @@
     var method = methodEl ? methodEl.value : "delivery";
     var isStaffUser = !!(typeof window.me !== "undefined" && window.me &&
       ["admin", "cashier", "dispatch"].includes(window.me.role));
-    var pickup = (method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0;
-    var discLabel = method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : "");
+    var lunchPromo = isLunchPromoActive();
+    var pickup = lunchPromo
+      ? Math.round(sum * 0.2) + (isStaffUser ? Math.round(sum * 0.1) : 0)
+      : ((method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0);
+    var discLabel = lunchPromo
+      ? (isStaffUser ? "20% обеденная акция + 10% для своих" : "20% обеденная акция")
+      : (method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : ""));
     var placeVal = getDeliveryPlace();
     var deliveryPricing = getDeliveryPricing(list, method, placeVal);
-    var pd = promoInfo ? promoDisc(sum, promoInfo) : 0;
+    var pd = !lunchPromo && promoInfo ? promoDisc(sum, promoInfo) : 0;
 
     return {
       sum: sum,
@@ -158,7 +203,8 @@
       discLabel: discLabel,
       fee: deliveryPricing.fee,
       baseZoneFee: deliveryPricing.baseZoneFee,
-      freeShip: !!(promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
+      freeShip: !!(!lunchPromo && promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
+      lunchPromo: lunchPromo,
       placeVal: placeVal,
       pd: pd,
       minOrder: deliveryPricing.minOrder,
@@ -262,6 +308,17 @@ function bindPromoClear(line) {
 async function refreshPromoLine(sum) {
   var line = document.getElementById('cartPromoLine');
   if (!line) return;
+
+  if (isLunchPromoActive()) {
+    promoInfo = null;
+    line.innerHTML = cartPromoCode
+      ? '<span>Обеденная акция: промокоды временно не применяются</span>' + PROMO_CLEAR_BTN
+      : '';
+    line.style.color = cartPromoCode ? '#B3372B' : '';
+    bindPromoClear(line);
+    paintTotals();
+    return;
+  }
 
   if (!cartPromoCode) {
     var autoCode = await tryAutoFreeCode();
@@ -546,6 +603,10 @@ function clearPromo() {
     var gifts = [];
 
     /* Подарок от суммы (weekPromo) не показываем — см. updateDeliveryPromoBar. */
+    if (isLunchPromoActive()) {
+      el.innerHTML = "";
+      return;
+    }
     var pm2 = di && di.pizzaMonth;
     if (pm2 && pm2.name) {
       var big = list.reduce(function (a, c) {
@@ -979,7 +1040,11 @@ function renderCartBase() {
     var el = document.getElementById(id);
     if (el) {
       el.addEventListener("input", saveDraft);
-      el.addEventListener("change", saveDraft);
+      el.addEventListener("change", function () {
+        saveDraft();
+        paintTotals();
+        if (id === "checkoutSlot") refreshPromoLine(totalsNow().sum);
+      });
     }
   });
 
@@ -1050,7 +1115,7 @@ function renderCartBase() {
         };
       }),
     };
-    if (cartPromoCode) body.promo = cartPromoCode;
+    if (cartPromoCode && !isLunchPromoActive()) body.promo = cartPromoCode;
 
     // Идемпотентный ID: защита от дублей при сетевом сбое.
     body.client_order_id = "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
