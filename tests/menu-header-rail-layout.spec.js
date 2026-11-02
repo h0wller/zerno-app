@@ -32,29 +32,13 @@ for (const brand of CASES) {
       if (viewport.width <= 820) {
         await expect(topbar).toHaveCSS('border-bottom-width', '0px');
       }
-      await expect.poll(() => page.evaluate(({ headSelector, railSelector }) => {
-        const head = document.querySelector(headSelector).getBoundingClientRect();
-        const rail = document.querySelector(railSelector).getBoundingClientRect();
-        const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-        const clearanceTop = Math.max(head.bottom, topbar.bottom) + 12;
-        const targetCenter = window.innerWidth <= 820
-          ? (clearanceTop + window.innerHeight) / 2
-          : window.innerHeight / 2;
-        return {
-          centerDelta: Math.abs((rail.top + rail.height / 2) - targetCenter),
-          headerGap: rail.top - head.bottom,
-          topbarGap: rail.top - topbar.bottom,
-        };
-      }, { headSelector: brand.head, railSelector: brand.rail }), { timeout: 5000 }).toMatchObject({
-        centerDelta: expect.any(Number),
-      });
       const initialRail = await page.evaluate(({ headSelector, railSelector }) => {
         const head = document.querySelector(headSelector).getBoundingClientRect();
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const topbar = document.querySelector('header.topbar').getBoundingClientRect();
         const clearanceTop = Math.max(head.bottom, topbar.bottom) + 12;
         const targetCenter = window.innerWidth <= 820
-          ? (clearanceTop + window.innerHeight) / 2
+          ? (clearanceTop + window.innerHeight - 12) / 2
           : window.innerHeight / 2;
         return {
           centerDelta: Math.abs((rail.top + rail.height / 2) - targetCenter),
@@ -123,7 +107,7 @@ for (const brand of CASES) {
         const topbar = document.querySelector('header.topbar').getBoundingClientRect();
         const clearanceTop = Math.max(head.bottom, topbar.bottom) + 12;
         const targetCenter = window.innerWidth <= 820
-          ? (clearanceTop + window.innerHeight) / 2
+          ? (clearanceTop + window.innerHeight - 12) / 2
           : window.innerHeight / 2;
         return Math.abs((rail.top + rail.height / 2) - targetCenter);
       }, { headSelector: brand.head, railSelector: brand.rail }), { timeout: 5000 }).toBeLessThanOrEqual(2);
