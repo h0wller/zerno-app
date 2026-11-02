@@ -153,7 +153,7 @@
     if (!box || !viewport || !group || !toggle) return;
 
     var reduced = tickerReducedMotion && tickerReducedMotion.matches;
-    var overflowing = !reduced && group.scrollWidth > viewport.clientWidth + 1;
+    var overflowing = !reduced && group.scrollWidth * 2 > viewport.clientWidth + 1;
     var clone = track.querySelector('.tickerGroup[aria-hidden="true"]');
 
     if (overflowing && !clone) {
