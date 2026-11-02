@@ -43,10 +43,15 @@ test.describe('Mobile profile swipe close', () => {
     await expect(panel).toHaveClass(/open/);
     await page.waitForTimeout(100);
 
-    const before = await page.evaluate(() => ({
-      scrollY: window.scrollY,
-      headerTop: document.querySelector('header.topbar').getBoundingClientRect().top,
-    }));
+    const before = await page.evaluate(() => {
+      const header = document.querySelector('header.topbar');
+      return {
+        scrollY: window.scrollY,
+        headerTop: header.getBoundingClientRect().top,
+        headerPosition: getComputedStyle(header).position,
+        bodyOverflowY: getComputedStyle(document.body).overflowY,
+      };
+    });
 
     await page.evaluate(() => {
       const panel = document.getElementById('panel');
@@ -65,14 +70,23 @@ test.describe('Mobile profile swipe close', () => {
     await expect(panel).not.toHaveClass(/open/, { timeout: 1500 });
     await page.waitForTimeout(100);
 
-    const after = await page.evaluate(() => ({
-      scrollY: window.scrollY,
-      headerTop: document.querySelector('header.topbar').getBoundingClientRect().top,
-      focusedId: document.activeElement && document.activeElement.id,
-      layoutShift: window.__layoutShifts.reduce((sum, value) => sum + value, 0),
-    }));
+    const after = await page.evaluate(() => {
+      const header = document.querySelector('header.topbar');
+      return {
+        scrollY: window.scrollY,
+        headerTop: header.getBoundingClientRect().top,
+        headerPosition: getComputedStyle(header).position,
+        bodyOverflowY: getComputedStyle(document.body).overflowY,
+        focusedId: document.activeElement && document.activeElement.id,
+        layoutShift: window.__layoutShifts.reduce((sum, value) => sum + value, 0),
+      };
+    });
 
+    expect(before.headerPosition).toBe('sticky');
+    expect(before.bodyOverflowY).not.toBe('hidden');
+    expect(before.headerTop).toBeLessThanOrEqual(1);
     expect(after.focusedId).toBe('profileTopBtn');
+    expect(after.bodyOverflowY).not.toBe('hidden');
     expect(Math.abs(after.scrollY - before.scrollY)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.headerTop - before.headerTop)).toBeLessThanOrEqual(1);
     expect(after.layoutShift).toBeLessThan(0.001);
