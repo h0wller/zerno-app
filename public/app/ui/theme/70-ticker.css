@@ -1,14 +1,12 @@
-/* Full-width ticker attached to the topbar; motion only when content overflows. */
+/* Full-width ticker below the topbar; motion only when content overflows. */
 .ticker {
   display: flex;
   align-items: center;
-  grid-column: 1 / -1;
-  grid-row: 3;
-  width: 100vw;
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
   height: 34px;
   min-height: 34px;
-  margin: 0 0 0 calc(50% - 50vw);
+  margin: 0;
   padding: 0;
   box-sizing: border-box;
   overflow: hidden;
