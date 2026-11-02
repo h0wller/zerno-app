@@ -104,8 +104,8 @@ html body div.wrap > #rail,
 html body div.wrap > #deliveryRail {
   grid-column: 1;
   position: sticky;
-  top: max(calc(var(--topbar-h, 60px) + env(safe-area-inset-top, 0px) + 12px), calc(50dvh - 175px));
-  transform: none;
+  top: 50dvh;
+  transform: translateY(-50%);
   align-self: start;
   width: 80px;
   min-width: 80px;
@@ -141,8 +141,9 @@ html body div.wrap > #deliveryRail button {
   html body div.wrap > .rail,
   html body div.wrap > #rail,
   html body div.wrap > #deliveryRail {
-    top: calc(var(--topbar-h, 60px) + var(--sat, env(safe-area-inset-top, 0px)));
-    transform: none;
+    top: calc((100dvh + var(--topbar-h, 60px) + var(--sat, env(safe-area-inset-top, 0px))) / 2);
+    transform: translateY(-50%);
+    max-height: calc(100dvh - var(--topbar-h, 60px) - var(--sat, env(safe-area-inset-top, 0px)) - 24px);
   }
 }
 
