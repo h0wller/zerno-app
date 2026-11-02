@@ -107,6 +107,10 @@ body[data-brand="coffee"] {
   --topbar-bg: #FFFFFF;
   --topbar-color: var(--ink, #101418);
   --topbar-border: none;
+  --ticker-bg: #123A6B;
+  --ticker-color: #BBD7F2;
+  --ticker-border: 1px solid rgba(62, 143, 208, 0.25);
+  --ticker-marker-color: #3E8FD0;
 
   --venue-toggle-bg: var(--card, #FFFFFF);
   --venue-toggle-border: 1.5px solid var(--line, #D8DFE4);
@@ -267,6 +271,10 @@ body[data-brand="delivery"] {
   --topbar-bg: #C99E6E;
   --topbar-color: #3A2A1C;
   --topbar-border: 3px solid #3A2A1C;
+  --ticker-bg: var(--fr-choc, #3A2A1C);
+  --ticker-color: #FFC36B;
+  --ticker-border: 2px solid var(--fr-choc, #3A2A1C);
+  --ticker-marker-color: #FFC36B;
 
   --venue-toggle-bg: var(--fr-paper, #F6EEE1);
   --venue-toggle-border: 2px solid var(--fr-choc, #3A2A1C);
