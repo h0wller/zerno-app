@@ -1489,6 +1489,11 @@ html body div.wrap > #deliveryRail {
   grid-column: 1;
   grid-row: 1;
 }
+html body div.wrap > .rail:not(.rail-position-ready),
+html body div.wrap > #rail:not(.rail-position-ready),
+html body div.wrap > #deliveryRail:not(.rail-position-ready) {
+  visibility: hidden;
+}
 /* Keep screen-reader-only labels out of first-frame flex layout before deferred theme CSS loads. */
 .sr-only {
   position: absolute;
