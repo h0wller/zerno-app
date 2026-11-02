@@ -1,10 +1,6 @@
 /* ── F5.16: мобильная доводка (рейл-типографика,
 компакт активаций,
 тосты) ── */
-.wrap .rail,
-.wrap #deliveryRail{
-  align-self: start;
-}
 .wrap .rail button,
 .wrap #deliveryRail button{
   font-size: 10.5px;
