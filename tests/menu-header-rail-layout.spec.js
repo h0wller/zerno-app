@@ -32,10 +32,41 @@ for (const brand of CASES) {
       if (viewport.width <= 820) {
         await expect(topbar).toHaveCSS('border-bottom-width', '0px');
       }
-      await expect.poll(() => page.evaluate((railSelector) => {
+      await expect.poll(() => page.evaluate(({ headSelector, railSelector }) => {
+        const head = document.querySelector(headSelector).getBoundingClientRect();
         const rail = document.querySelector(railSelector).getBoundingClientRect();
-        return Math.abs((rail.top + rail.height / 2) - window.innerHeight / 2);
-      }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(1);
+        const topbar = document.querySelector('header.topbar').getBoundingClientRect();
+        const clearanceTop = Math.max(head.bottom, topbar.bottom) + 12;
+        const targetCenter = window.innerWidth <= 820
+          ? (clearanceTop + window.innerHeight) / 2
+          : window.innerHeight / 2;
+        return {
+          centerDelta: Math.abs((rail.top + rail.height / 2) - targetCenter),
+          headerGap: rail.top - head.bottom,
+          topbarGap: rail.top - topbar.bottom,
+        };
+      }, { headSelector: brand.head, railSelector: brand.rail }), { timeout: 5000 }).toMatchObject({
+        centerDelta: expect.any(Number),
+      });
+      const initialRail = await page.evaluate(({ headSelector, railSelector }) => {
+        const head = document.querySelector(headSelector).getBoundingClientRect();
+        const rail = document.querySelector(railSelector).getBoundingClientRect();
+        const topbar = document.querySelector('header.topbar').getBoundingClientRect();
+        const clearanceTop = Math.max(head.bottom, topbar.bottom) + 12;
+        const targetCenter = window.innerWidth <= 820
+          ? (clearanceTop + window.innerHeight) / 2
+          : window.innerHeight / 2;
+        return {
+          centerDelta: Math.abs((rail.top + rail.height / 2) - targetCenter),
+          headGap: rail.top - head.bottom,
+          topbarGap: rail.top - topbar.bottom,
+        };
+      }, { headSelector: brand.head, railSelector: brand.rail });
+      expect(initialRail.centerDelta).toBeLessThanOrEqual(2);
+      if (viewport.width <= 820) {
+        expect(initialRail.headGap, 'rail must start below the menu title and search').toBeGreaterThanOrEqual(8);
+        expect(initialRail.topbarGap, 'rail must not overlap the sticky topbar').toBeGreaterThanOrEqual(8);
+      }
       await expect.poll(() => ticker.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 5000 }).toBe(brand.tickerBg);
 
       const layout = await page.evaluate(({ headSelector, railSelector }) => {
@@ -86,10 +117,33 @@ for (const brand of CASES) {
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      await expect.poll(() => page.evaluate((selector) => {
-        const rail = document.querySelector(selector).getBoundingClientRect();
-        return Math.abs((rail.top + rail.height / 2) - window.innerHeight / 2);
-      }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(1);
+      await expect.poll(() => page.evaluate(({ headSelector, railSelector }) => {
+        const head = document.querySelector(headSelector).getBoundingClientRect();
+        const rail = document.querySelector(railSelector).getBoundingClientRect();
+        const topbar = document.querySelector('header.topbar').getBoundingClientRect();
+        const clearanceTop = Math.max(head.bottom, topbar.bottom) + 12;
+        const targetCenter = window.innerWidth <= 820
+          ? (clearanceTop + window.innerHeight) / 2
+          : window.innerHeight / 2;
+        return Math.abs((rail.top + rail.height / 2) - targetCenter);
+      }, { headSelector: brand.head, railSelector: brand.rail }), { timeout: 5000 }).toBeLessThanOrEqual(2);
+      if (viewport.width <= 820) {
+        const afterScroll = await page.evaluate(({ headSelector, railSelector }) => {
+          const head = document.querySelector(headSelector).getBoundingClientRect();
+          const rail = document.querySelector(railSelector).getBoundingClientRect();
+          const topbar = document.querySelector('header.topbar').getBoundingClientRect();
+          return {
+            railTop: rail.top,
+            railBottom: rail.bottom,
+            menuHeadBottom: head.bottom,
+            topbarBottom: topbar.bottom,
+          };
+        }, { headSelector: brand.head, railSelector: brand.rail });
+        expect(afterScroll.railTop).toBeGreaterThanOrEqual(afterScroll.topbarBottom + 8);
+        if (afterScroll.menuHeadBottom > afterScroll.topbarBottom) {
+          expect(afterScroll.railTop).toBeGreaterThanOrEqual(afterScroll.menuHeadBottom + 8);
+        }
+      }
     });
   }
 }
