@@ -61,6 +61,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
   });
 
   test('mobile staff header and mode switch stay compact without shrinking 44px controls', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/?brand=delivery');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-staff-role', 'admin');
