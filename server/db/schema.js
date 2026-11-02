@@ -70,13 +70,14 @@ CREATE TABLE IF NOT EXISTS fcm(
   db.exec(`CREATE TABLE IF NOT EXISTS orders(
     id TEXT PRIMARY KEY, no INTEGER, cid TEXT, name TEXT, phone TEXT,
     method TEXT, place TEXT, addr TEXT, slot TEXT, pay TEXT, comment TEXT,
-    items TEXT, total INTEGER, discount INTEGER, fee INTEGER, gifts TEXT,
+    items TEXT, total INTEGER, discount INTEGER, discount_label TEXT DEFAULT '', fee INTEGER, gifts TEXT,
     is_preorder INTEGER DEFAULT 0, preorder_date TEXT DEFAULT '',
     status TEXT DEFAULT 'new', created TEXT, updated TEXT)`);
 
   const ocols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
   if (ocols.length && !ocols.includes('promo')) db.exec(`ALTER TABLE orders ADD COLUMN promo TEXT DEFAULT ''`);
   if (ocols.length && !ocols.includes('promodiscount')) db.exec(`ALTER TABLE orders ADD COLUMN promodiscount INTEGER DEFAULT 0`);
+  if (ocols.length && !ocols.includes('discount_label')) db.exec(`ALTER TABLE orders ADD COLUMN discount_label TEXT DEFAULT ''`);
   if (ocols.length && !ocols.includes('eta')) db.exec(`ALTER TABLE orders ADD COLUMN eta TEXT DEFAULT ''`);
   if (ocols.length && !ocols.includes('is_preorder')) db.exec(`ALTER TABLE orders ADD COLUMN is_preorder INTEGER DEFAULT 0`);
   if (ocols.length && !ocols.includes('preorder_date')) db.exec(`ALTER TABLE orders ADD COLUMN preorder_date TEXT DEFAULT ''`);

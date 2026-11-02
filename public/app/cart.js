@@ -126,7 +126,7 @@
     if (!slotVal) return null;
 
     if (slotVal !== "asap") {
-      var match = slotVal.match(/^(\\d{2})\\.(\\d{2})\\s*\\|\\s*(\\d{2}):(\\d{2})/);
+      var match = slotVal.match(/^(\d{2})\.(\d{2})\s*\|\s*(\d{2}):(\d{2})/);
       if (!match) return null;
       var day = match[1], month = match[2];
       var scheduleDays = window.deliveryInfo && Array.isArray(window.deliveryInfo.days)
