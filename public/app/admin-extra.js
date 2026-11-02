@@ -233,6 +233,11 @@
     }
     var L = rawList
       .map(function (x) {
+        if (x === '__DELIVERY_HOURS__') {
+          return typeof window.deliveryHoursTickerText === 'function'
+            ? window.deliveryHoursTickerText()
+            : '';
+        }
         return String(x || '').trim();
       })
       .filter(Boolean);
