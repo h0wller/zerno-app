@@ -106,23 +106,20 @@ for (const brand of CASES) {
         const targetCenter = (clearanceTop + window.innerHeight - 12) / 2;
         return Math.abs((rail.top + rail.height / 2) - targetCenter);
       }, { headSelector: brand.head, railSelector: brand.rail }), { timeout: 5000 }).toBeLessThanOrEqual(2);
-      if (viewport.width <= 820) {
-        const afterScroll = await page.evaluate(({ headSelector, railSelector }) => {
-          const head = document.querySelector(headSelector).getBoundingClientRect();
-          const rail = document.querySelector(railSelector).getBoundingClientRect();
-          const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-          return {
-            railTop: rail.top,
-            railBottom: rail.bottom,
-            menuHeadBottom: head.bottom,
-            topbarBottom: topbar.bottom,
-          };
-        }, { headSelector: brand.head, railSelector: brand.rail });
-        expect(afterScroll.railTop).toBeGreaterThanOrEqual(afterScroll.topbarBottom + 8);
-        if (afterScroll.menuHeadBottom > afterScroll.topbarBottom) {
-          expect(afterScroll.railTop).toBeGreaterThanOrEqual(afterScroll.menuHeadBottom + 8);
-        }
-      }
+      const afterScroll = await page.evaluate(({ headSelector, railSelector }) => {
+        const head = document.querySelector(headSelector).getBoundingClientRect();
+        const rail = document.querySelector(railSelector).getBoundingClientRect();
+        const topbar = document.querySelector('header.topbar').getBoundingClientRect();
+        return {
+          railTop: rail.top,
+          menuHeadBottom: head.bottom,
+          topbarBottom: topbar.bottom,
+        };
+      }, { headSelector: brand.head, railSelector: brand.rail });
+      expect(afterScroll.railTop).toBeGreaterThanOrEqual(Math.max(
+        afterScroll.menuHeadBottom,
+        afterScroll.topbarBottom
+      ) + 8);
     });
   }
 }
