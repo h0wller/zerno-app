@@ -1,9 +1,47 @@
 /* public/app/ui/scrolltop.js — сброс легаси-отступов и кнопка «Наверх»
    Ф5.71: CSS в theme/*.css, устранение MutationObserver в пользу детерминированного updateScrollTop. */
-function alignRailWithCard() {}
+var railHeadObserver = null;
+var observedRailHead = null;
+
+function alignRailWithCard() {
+  var isDelivery = document.documentElement.dataset.brand === 'delivery';
+  var rail = document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
+  var head = document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head');
+
+  if (!rail) return;
+  if (!window.matchMedia('(max-width: 820px)').matches || !head || !head.offsetHeight) {
+    rail.style.removeProperty('margin-top');
+    if (railHeadObserver) railHeadObserver.disconnect();
+    observedRailHead = null;
+    return;
+  }
+
+  var wrap = rail.parentElement;
+  if (!wrap) return;
+
+  var wrapRect = wrap.getBoundingClientRect();
+  var headRect = head.getBoundingClientRect();
+  var wrapStyle = window.getComputedStyle(wrap);
+  var offset = headRect.bottom - wrapRect.top
+    - (parseFloat(wrapStyle.paddingTop) || 0)
+    - (parseFloat(wrapStyle.borderTopWidth) || 0);
+  var marginTop = Math.max(0, offset) + 'px';
+
+  if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
+
+  if (typeof ResizeObserver === 'function' && observedRailHead !== head) {
+    if (railHeadObserver) railHeadObserver.disconnect();
+    railHeadObserver = new ResizeObserver(alignRailWithCard);
+    observedRailHead = head;
+    railHeadObserver.observe(head);
+  }
+}
 function alignMbonusWithRail() {}
 window.alignRailWithCard = alignRailWithCard;
 window.alignMbonusWithRail = alignMbonusWithRail;
+window.addEventListener('resize', alignRailWithCard, { passive: true });
+window.addEventListener('load', alignRailWithCard, { once: true });
+requestAnimationFrame(alignRailWithCard);
 
 (function () {
   'use strict';

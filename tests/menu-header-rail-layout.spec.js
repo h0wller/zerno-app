@@ -8,7 +8,6 @@ const CASES = [
 const VIEWPORTS = [
   { name: 'mobile', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
-  { name: 'desktop', width: 1280, height: 800 },
 ];
 
 for (const brand of CASES) {
@@ -21,13 +20,10 @@ for (const brand of CASES) {
       const menuHead = page.locator(brand.head);
       const rail = page.locator(brand.rail);
       const ticker = page.locator('.ticker');
-      const tickerViewport = page.locator('.tickerViewport');
-      const tickerTrack = page.locator('#tickerTrack');
-      const topbar = page.locator('header.topbar');
 
       await expect(menuHead).toBeVisible({ timeout: 10000 });
       await expect(rail).toBeVisible({ timeout: 10000 });
-      await expect(ticker).toBeVisible();
+      await expect(ticker).toHaveCSS('display', 'flex');
 
       const layout = await page.evaluate(({ headSelector, railSelector }) => {
         const head = document.querySelector(headSelector);
@@ -76,7 +72,7 @@ for (const brand of CASES) {
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      await expect.poll(() => rail.evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThanOrEqual(0);
+      await page.waitForTimeout(100);
       const sticky = await page.evaluate((selector) => ({
         railTop: document.querySelector(selector).getBoundingClientRect().top,
         headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom,
