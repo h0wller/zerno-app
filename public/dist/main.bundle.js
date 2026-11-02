@@ -113,7 +113,7 @@ var _e=new EventTarget;function mn(e,t=null){_e.dispatchEvent(new CustomEvent(e,
 function syncTickerMotion(track){
 var box=track&&track.closest(".ticker"),viewport=box&&box.querySelector(".tickerViewport"),group=track&&track.querySelector('.tickerGroup:not([aria-hidden="true"])'),toggle=box&&box.querySelector("#tickerToggle");
 if(!box||!viewport||!group||!toggle)return;
-var reduced=tickerReducedMotion&&tickerReducedMotion.matches,overflowing=!reduced&&group.scrollWidth>viewport.clientWidth+1,clone=track.querySelector('.tickerGroup[aria-hidden="true"]');
+var reduced=tickerReducedMotion&&tickerReducedMotion.matches,overflowing=!reduced&&2*group.scrollWidth>viewport.clientWidth+1,clone=track.querySelector('.tickerGroup[aria-hidden="true"]');
 if(overflowing&&!clone){clone=group.cloneNode(!0),clone.setAttribute("aria-hidden","true"),track.appendChild(clone)}else!overflowing&&clone&&clone.remove();
 if(box.classList.toggle("is-overflowing",overflowing),toggle.hidden=!overflowing,!overflowing||!box.classList.contains("is-paused")){box.classList.remove("is-paused"),toggle.setAttribute("aria-pressed","false"),toggle.setAttribute("aria-label","Приостановить прокрутку объявлений"),toggle.querySelector("span").textContent="Ⅱ"}
 }
