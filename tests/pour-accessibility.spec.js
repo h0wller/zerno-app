@@ -202,6 +202,20 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect.poll(() => page.locator('#tickerTrack').evaluate((track) => getComputedStyle(track).animationName)).toBe('none');
+    const tickerViewport = page.locator('.tickerViewport');
+    await expect(tickerViewport).toHaveCSS('overflow-x', 'auto');
+    const manualScroll = await tickerViewport.evaluate((element) => {
+      const before = element.scrollLeft;
+      element.scrollLeft = element.scrollWidth;
+      return {
+        before,
+        after: element.scrollLeft,
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      };
+    });
+    expect(manualScroll.scrollWidth).toBeGreaterThan(manualScroll.clientWidth);
+    expect(manualScroll.after).toBeGreaterThan(manualScroll.before);
     await expect(page.locator('#tickerToggle')).toHaveCount(0);
   });
 
