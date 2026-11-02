@@ -66,26 +66,58 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     await expect(page.locator('nav[aria-label="Навигация по странице"] #scrollTopBtn')).toBeAttached();
   });
 
-  test('ticker is static and header DOM order follows the visual sequence', async ({ page }) => {
-    const ticker = await page.locator('.ticker').evaluate((container) => {
+  test('ticker animates overflowing announcements and has an accessible pause control', async ({ page }) => {
+    await page.evaluate(() => {
+      window.BRANDS.delivery.ticker = [
+        'Пятница — доставка пиццы и роллов в Янтарном и ближайших посёлках',
+        'Летом ежедневно с 11:00 до 22:00, зимой график зависит от дня недели',
+        'Доставка обычно занимает около 45 минут после подтверждения заказа',
+        'Новости, акции и специальные предложения доступны в наших каналах'
+      ];
+      window.applyBrandChrome(true);
+    });
+    const tickerBox = page.locator('.ticker');
+    await expect(tickerBox).toHaveClass(/is-overflowing/);
+    const toggle = page.locator('#tickerToggle');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+
+    const ticker = await tickerBox.evaluate((container) => {
       const track = container.querySelector('#tickerTrack');
       const containerStyle = getComputedStyle(container);
       const trackStyle = getComputedStyle(track);
       return {
         animationName: trackStyle.animationName,
+        animationPlayState: trackStyle.animationPlayState,
         flexWrap: trackStyle.flexWrap,
-        whiteSpace: trackStyle.whiteSpace,
+        whiteSpace: getComputedStyle(track.firstElementChild).whiteSpace,
         overflowX: containerStyle.overflowX,
         height: container.getBoundingClientRect().height,
-        itemCount: track.children.length,
+        groups: track.children.length,
+        cloneHidden: track.children[1]?.getAttribute('aria-hidden'),
+        buttonWidth: container.querySelector('#tickerToggle').getBoundingClientRect().width,
+        buttonHeight: container.querySelector('#tickerToggle').getBoundingClientRect().height
       };
     });
-    expect(ticker.animationName).toBe('none');
+    expect(ticker.animationName).toBe('zt-marquee');
     expect(ticker.flexWrap).toBe('nowrap');
     expect(ticker.whiteSpace).toBe('nowrap');
-    expect(ticker.overflowX).toBe('auto');
-    expect(ticker.height).toBe(28);
-    expect(ticker.itemCount).toBeLessThanOrEqual(7);
+    expect(ticker.overflowX).toBe('hidden');
+    expect(ticker.height).toBe(44);
+    expect(ticker.groups).toBe(2);
+    expect(ticker.cloneHidden).toBe('true');
+    expect(ticker.buttonWidth).toBeGreaterThanOrEqual(44);
+    expect(ticker.buttonHeight).toBeGreaterThanOrEqual(44);
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(toggle).toHaveAttribute('aria-label', 'Возобновить прокрутку объявлений');
+    await expect.poll(() => page.locator('#tickerTrack').evaluate((track) => getComputedStyle(track).animationPlayState)).toBe('paused');
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(toggle).toHaveAttribute('aria-label', 'Приостановить прокрутку объявлений');
+    await expect.poll(() => page.locator('#tickerTrack').evaluate((track) => getComputedStyle(track).animationPlayState)).toBe('running');
 
     const order = await page.locator('header.topbar').evaluate((header) => {
       const childIndex = (selector) => Array.from(header.children).indexOf(header.querySelector(selector));
@@ -99,6 +131,10 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     });
     expect(order.every((index) => index >= 0)).toBe(true);
     expect(order).toEqual([...order].sort((a, b) => a - b));
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect.poll(() => page.locator('#tickerTrack').evaluate((track) => getComputedStyle(track).animationName)).toBe('none');
+    await expect(toggle).toBeHidden();
   });
 
   test('critical delivery text retains AAA contrast on its opaque surfaces', async ({ page }) => {
