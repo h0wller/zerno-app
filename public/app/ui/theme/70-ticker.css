@@ -1,18 +1,24 @@
-/* Static, wrapping ticker: moving content is avoided for accessibility. */
+/* Static, horizontally scrollable ticker: no animation and no vertical reflow. */
 .ticker {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   width: 100%;
   max-width: 100%;
+  height: 28px;
   min-height: 28px;
-  height: auto;
-  line-height: 1.35;
+  box-sizing: border-box;
+  line-height: 14px;
   display: flex;
   align-items: center;
-  justify-content: center;
   margin: 0;
-  padding: 4px 8px;
+  padding: 0 8px;
   position: relative;
   z-index: 1;
+}
+.ticker::-webkit-scrollbar {
+  display: none;
 }
 .ticker[hidden],
 .ticker:empty,
@@ -28,34 +34,28 @@ body.is-admin .ticker {
 }
 #tickerTrack {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  white-space: normal;
+  justify-content: flex-start;
+  width: max-content;
+  min-width: 100%;
+  white-space: nowrap;
   gap: 0;
 }
 #tickerTrack span {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: .5rem;
-  padding: 2px .8rem;
-  font: 600 11px/1.35 "Unbounded", "Golos Text", system-ui, sans-serif;
-  letter-spacing: .08em;
+  padding: 2px .5rem;
+  font: 600 10px/14px system-ui, sans-serif;
+  letter-spacing: .04em;
   text-transform: uppercase;
-  text-align: center;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  text-align: left;
+  white-space: nowrap;
 }
 #tickerTrack span::after {
   content: "〜";
   margin-left: .6rem;
   color: var(--azure, #3E8FD0);
-}
-@media (max-width: 400px) {
-  #tickerTrack span {
-    font-size: 10px;
-    padding: 2px .5rem;
-  }
 }
