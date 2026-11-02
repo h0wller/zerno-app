@@ -81,16 +81,20 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         headerLeft: header.left,
         headerRight: header.right,
         headerWidth: header.width,
+        modeLeft: modeBox.left,
+        modeRight: modeBox.right,
         modeWidth: modeBox.width,
         modeHeight: modeBox.height,
         buttonHeights: Array.from(mode.querySelectorAll('button')).map((button) => button.getBoundingClientRect().height),
       };
     });
 
-    expect(metrics.headerLeft).toBeGreaterThanOrEqual(7);
-    expect(metrics.headerRight).toBeLessThanOrEqual(metrics.viewportWidth - 7);
-    expect(metrics.headerWidth).toBeLessThan(metrics.viewportWidth);
-    expect(metrics.modeWidth).toBeLessThan(metrics.headerWidth);
+    expect(metrics.headerLeft).toBe(0);
+    expect(metrics.headerRight).toBe(metrics.viewportWidth);
+    expect(metrics.headerWidth).toBe(metrics.viewportWidth);
+    expect(metrics.modeLeft).toBeGreaterThanOrEqual(0);
+    expect(metrics.modeRight).toBeLessThanOrEqual(metrics.viewportWidth);
+    expect(metrics.modeWidth).toBeLessThanOrEqual(metrics.headerWidth);
     expect(metrics.modeHeight).toBe(46);
     expect(metrics.buttonHeights.every((height) => height >= 44)).toBe(true);
   });
