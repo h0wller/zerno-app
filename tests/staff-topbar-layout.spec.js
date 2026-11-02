@@ -26,6 +26,7 @@ test('single staff action does not stretch the admin bar across the content colu
 });
 
 test('staff mode switch fits its reserved topbar row before and after hydration', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
