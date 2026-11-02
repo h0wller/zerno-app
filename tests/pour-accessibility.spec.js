@@ -81,16 +81,20 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         headerLeft: header.left,
         headerRight: header.right,
         headerWidth: header.width,
+        modeLeft: modeBox.left,
+        modeRight: modeBox.right,
         modeWidth: modeBox.width,
         modeHeight: modeBox.height,
         buttonHeights: Array.from(mode.querySelectorAll('button')).map((button) => button.getBoundingClientRect().height),
       };
     });
 
-    expect(metrics.headerLeft).toBeGreaterThanOrEqual(7);
-    expect(metrics.headerRight).toBeLessThanOrEqual(metrics.viewportWidth - 7);
-    expect(metrics.headerWidth).toBeLessThan(metrics.viewportWidth);
-    expect(metrics.modeWidth).toBeLessThan(metrics.headerWidth);
+    expect(metrics.headerLeft).toBe(0);
+    expect(metrics.headerRight).toBe(metrics.viewportWidth);
+    expect(metrics.headerWidth).toBe(metrics.viewportWidth);
+    expect(metrics.modeLeft).toBeGreaterThanOrEqual(0);
+    expect(metrics.modeRight).toBeLessThanOrEqual(metrics.viewportWidth);
+    expect(metrics.modeWidth).toBeLessThanOrEqual(metrics.headerWidth);
     expect(metrics.modeHeight).toBe(46);
     expect(metrics.buttonHeights.every((height) => height >= 44)).toBe(true);
   });
@@ -102,6 +106,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
   });
 
   test('ticker is full-bleed, loops only a complete overflowing line, and has no pause control', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(() => {
       window.BRANDS.delivery.ticker = [
         'Пятница — доставка пиццы и роллов в Янтарном и ближайших посёлках',
@@ -140,13 +145,41 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(ticker.flexWrap).toBe('nowrap');
     expect(ticker.whiteSpace).toBe('nowrap');
     expect(ticker.overflowX).toBe('hidden');
-    expect(ticker.height).toBe(28);
+    expect(ticker.height).toBe(34);
     expect(ticker.left).toBe(0);
     expect(ticker.width).toBe(ticker.viewportWidth);
     expect(ticker.groupWidth).toBeGreaterThan(ticker.viewportWidth);
     expect(ticker.groups).toBe(2);
     expect(ticker.cloneHidden).toBe('true');
     expect(ticker.animationPlayState).toBe('running');
+
+    const attachedLayout = await page.locator('header.topbar').evaluate((header) => {
+      const tickerElement = header.querySelector('.ticker');
+      const headerBox = header.getBoundingClientRect();
+      const tickerBox = tickerElement.getBoundingClientRect();
+      const logoBox = header.querySelector('#headerBrand').getBoundingClientRect();
+      const contentBottom = Math.max(...Array.from(header.children)
+        .filter((element) => element !== tickerElement && !element.hidden)
+        .map((element) => element.getBoundingClientRect().bottom));
+      return {
+        headerLeft: headerBox.left,
+        headerRight: headerBox.right,
+        headerWidth: headerBox.width,
+        tickerTop: tickerBox.top,
+        contentBottom,
+        tickerParent: tickerElement.parentElement === header,
+        logoCenter: logoBox.left + logoBox.width / 2,
+        viewportCenter: window.innerWidth / 2,
+        borderRadius: getComputedStyle(header).borderRadius,
+      };
+    });
+    expect(attachedLayout.tickerParent).toBe(true);
+    expect(Math.abs(attachedLayout.tickerTop - attachedLayout.contentBottom)).toBeLessThanOrEqual(1);
+    expect(attachedLayout.headerLeft).toBe(0);
+    expect(attachedLayout.headerRight).toBe(390);
+    expect(attachedLayout.headerWidth).toBe(390);
+    expect(Math.abs(attachedLayout.logoCenter - attachedLayout.viewportCenter)).toBeLessThanOrEqual(1);
+    expect(attachedLayout.borderRadius).toBe('0px');
 
     const order = await page.locator('header.topbar').evaluate((header) => {
       const childIndex = (selector) => Array.from(header.children).indexOf(header.querySelector(selector));

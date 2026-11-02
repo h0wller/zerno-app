@@ -207,3 +207,52 @@ body .wrap > #deliveryRail {
     box-sizing: border-box;
   }
 }
+
+/* Header and ticker form one full-width sticky surface. */
+@media (max-width: 820px) {
+  header.topbar, .topbar {
+    width: 100%; max-width: none; margin: 0; border-radius: 0;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    height: auto; min-height: 0;
+    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px 0;
+    row-gap: 0; column-gap: 8px; box-sizing: border-box;
+  }
+  header.topbar #headerBrand, .topbar #headerBrand {
+    grid-column: 2; grid-row: 1; justify-self: center; margin: 0;
+    width: auto; min-width: 0; max-width: 100%;
+  }
+  header.topbar #mbonusBtn, .topbar #mbonusBtn {
+    grid-column: 3; grid-row: 1; justify-self: end; margin: 0 46px 0 0;
+  }
+  header.topbar #profileTopBtn, .topbar #profileTopBtn {
+    grid-column: 3; grid-row: 1; justify-self: end; margin: 0;
+  }
+  header.topbar #modeSeg:not([hidden]), .topbar #modeSeg:not([hidden]) {
+    grid-column: 1 / -1; grid-row: 2; justify-self: center; margin-top: 0;
+  }
+  header.topbar .ticker, .topbar .ticker {
+    grid-row: 3; margin: 0 0 0 calc(50% - 50vw); border-radius: 0;
+  }
+  html:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) .ticker {
+    grid-row: 2;
+  }
+  html:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) {
+    grid-template-rows: 48px 34px;
+    height: 91px;
+    min-height: 91px;
+    box-sizing: border-box;
+  }
+  html[data-staff-role] body header.topbar {
+    grid-template-rows: 48px 50px 34px;
+  }
+}
+@media (min-width: 821px) {
+  header.topbar, .topbar {
+    width: 100%; max-width: none; margin: 0; border-radius: 0; row-gap: 0;
+  }
+  header.topbar .ticker, .topbar .ticker { grid-row: 3; margin: 0; border-radius: 0; }
+  html:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) .ticker {
+    grid-row: 2;
+  }
+}

@@ -554,7 +554,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
 test.describe('Спринт 4 — Тикер, геометрия рейла без наезда поиска, центрирование и стабильность шапки', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('1. Пустой тикер скрывает содержимое без схлопывания 28px, поиск не наезжает на #deliveryRail, шапка не прыгает и логотип строго по центру', async ({ page }) => {
+  test('1. Пустой тикер скрывает содержимое без схлопывания 34px, поиск не наезжает на #deliveryRail, шапка не прыгает и логотип строго по центру', async ({ page }) => {
     await page.addInitScript(() => {
       sessionStorage.setItem('splashDone', '1');
     });
@@ -562,13 +562,13 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
     await page.goto('/?brand=delivery');
     await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible({ timeout: 10000 });
 
-    // ── Тикер резервирует 28px под полноширинную строку без кнопки паузы ──
+    // ── Тикер резервирует 34px под полноширинную строку без кнопки паузы ──
     const ticker = page.locator('#ticker, .ticker').first();
     const activeTicker = await ticker.evaluate((element) => ({
       height: element.getBoundingClientRect().height,
       overflowX: getComputedStyle(element).overflowX,
     }));
-    expect(activeTicker.height).toBe(28);
+    expect(activeTicker.height).toBe(34);
     expect(activeTicker.overflowX).toBe('hidden');
 
     const emptyTicker = await page.evaluate(() => {
@@ -589,7 +589,7 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
     expect(emptyTicker.empty).toBe(true);
     expect(emptyTicker.hiddenAttribute).toBe(false);
     expect(emptyTicker.visibility).toBe('hidden');
-    expect(emptyTicker.height).toBe(28);
+    expect(emptyTicker.height).toBe(34);
     expect(emptyTicker.itemCount).toBe(0);
 
     // ── Задача 2: Поиск НЕ наезжает на левый сайдбар #deliveryRail + sticky-позиция при скролле ──
