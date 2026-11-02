@@ -1304,7 +1304,7 @@ html[data-brand="delivery"] {
 
 /* Reserve the delivery mark and ticker rows before deferred theme CSS arrives. */
 @media (max-width: 820px) {
-  html[data-brand="delivery"] body header.topbar:not(:has(#modeSeg:not([hidden]))) {
+  html[data-brand="delivery"]:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) {
     grid-template-rows: 48px 34px;
   }
   html body header.topbar .ticker {
