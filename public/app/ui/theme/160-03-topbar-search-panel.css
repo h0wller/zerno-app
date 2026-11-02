@@ -182,20 +182,6 @@ html .wrap > #panel:not(.open):not(.show) {
   }
 }
 
-/* [6] Рейл: sticky, центрируется при скролле (top = center).
-   marginTop при y<20 ставит JS (alignRailWithCard) — выравнивает
-   с верхом #grid на первом кадре. */
-body .wrap > .rail,
-body .wrap > #deliveryRail {
-  position: sticky;
-  top: calc(var(--topbar-h, 64px) + env(safe-area-inset-top, 0px) + 8px);
-  margin: 0;
-  align-self: start;
-  height: auto;
-  max-height: calc(100dvh - var(--topbar-h, 64px) - env(safe-area-inset-top, 0px) - 16px);
-  transform: none;
-  transition: none;
-}
 /* [fix-all v3] END F5.62 */
 /* Keep the staff mode switch at the same reserved height before and after auth hydration. */
 @media (max-width: 820px) {
