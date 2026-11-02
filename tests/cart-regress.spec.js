@@ -41,12 +41,12 @@ test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степп
     // Цвет текста не должен совпадать с цветом фона
     expect(avaStyles.color).not.toBe(avaStyles.bg);
 
-    // ── Проверка Задачи 4: Сабфильтры не сплющены, высота чипса 34px ──
+    // ── Проверка Задачи 4: Сабфильтры не сплющены, hit target 44px ──
     const subchip = page.locator('.subchip').first();
     if ((await subchip.count()) > 0) {
       await expect(subchip).toBeVisible();
       const chipBox = await subchip.boundingBox();
-      expect(Math.round(chipBox.height)).toBe(34);
+      expect(Math.round(chipBox.height)).toBe(44);
     }
 
     // ── Проверка Задачи 3: Степпер +/− скрыт при qty=0 и 40x40px при qty>0 ──
