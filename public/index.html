@@ -464,9 +464,18 @@ body > div.wrap,
 #deliveryGrid .card:nth-child(n+5) {
   contain-intrinsic-block-size: 480px;
 }
+:root { --menu-rail-width: 80px; --menu-rail-gap: 10px; }
 .menu-head {
   margin-left: 0;
   width: 100%;
+}
+@media (max-width: 820px) {
+  html body #menuView .menu-head,
+  html body #deliveryView .menu-head {
+    width: calc(100% + var(--menu-rail-width) + var(--menu-rail-gap));
+    max-width: none;
+    margin-left: calc(0px - var(--menu-rail-width) - var(--menu-rail-gap));
+  }
 }
 .mh-top {
   display: flex;
@@ -1588,10 +1597,10 @@ html[data-brand="delivery"] #deliveryGrid > .card > .cbody {
 /* Mirror the deferred delivery menu geometry to prevent FOUC-induced CLS. */
 html[data-brand="delivery"] #deliveryView .menu-head {
   animation: none;
-  width: 100%;
-  max-width: 100%;
+  width: calc(100% + var(--menu-rail-width,80px) + var(--menu-rail-gap,10px));
+  max-width: none;
   box-sizing: border-box;
-  margin: 2px 0 14px;
+  margin: 2px 0 14px calc(0px - var(--menu-rail-width,80px) - var(--menu-rail-gap,10px));
   padding: 14px 16px;
   border-radius: 18px;
   border: 1.5px solid var(--line, #D8DFE4);
