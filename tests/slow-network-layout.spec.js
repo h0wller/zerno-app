@@ -139,7 +139,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           paddingBottom: getComputedStyle(header).paddingBottom,
           gridTemplateRows: getComputedStyle(header).gridTemplateRows
         },
-        tickerOverflow: ticker && getComputedStyle(ticker).overflow,
+        tickerOverflowX: ticker && getComputedStyle(ticker).overflowX,
         heading: box(heading),
         card: box(card),
         media: box(media),
@@ -162,8 +162,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     const before = await measure();
     console.log('[slow-network-layout] before deferred CSS', JSON.stringify(before));
     expect(before.ticker).not.toBeNull();
-    expect(before.ticker.height).toBeLessThanOrEqual(120);
-    expect(before.tickerOverflow).toBe('hidden');
+    expect(before.ticker.height).toBeLessThanOrEqual(30);
+    expect(before.tickerOverflowX).toBe('auto');
     expect(before.section.width).toBeGreaterThan(250);
     expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
     expect(before.heading.width).toBeGreaterThan(200);
