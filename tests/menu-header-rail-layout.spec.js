@@ -102,7 +102,7 @@ for (const brand of CASES) {
         const head = document.querySelector(headSelector).getBoundingClientRect();
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-        const clearanceTop = Math.max(head.bottom, topbar.bottom) + 12;
+        const clearanceTop = Math.max(0, head.bottom, topbar.bottom) + 12;
         const targetCenter = (clearanceTop + window.innerHeight - 12) / 2;
         return Math.abs((rail.top + rail.height / 2) - targetCenter);
       }, { headSelector: brand.head, railSelector: brand.rail }), { timeout: 5000 }).toBeLessThanOrEqual(2);
@@ -117,6 +117,7 @@ for (const brand of CASES) {
         };
       }, { headSelector: brand.head, railSelector: brand.rail });
       expect(afterScroll.railTop).toBeGreaterThanOrEqual(Math.max(
+        0,
         afterScroll.menuHeadBottom,
         afterScroll.topbarBottom
       ) + 8);
