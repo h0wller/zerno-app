@@ -10,14 +10,16 @@ function updateRailStickyPosition(rail, head) {
   var topbar = document.querySelector('header.topbar');
   var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
   var headRect = head && head.getBoundingClientRect();
-  var laneTop = Math.max(topbarBottom, headRect && headRect.height ? headRect.bottom : topbarBottom) + 12;
+  var laneTop = Math.max(0, topbarBottom, headRect && headRect.height ? headRect.bottom : topbarBottom) + 12;
   var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
   var availableHeight = Math.max(0, laneBottom - laneTop);
   var stickyTop = laneTop + availableHeight / 2;
 
-  rail.style.top = stickyTop + 'px';
-  rail.style.maxHeight = availableHeight + 'px';
-  rail.style.transform = 'translateY(-50%)';
+  var top = stickyTop + 'px';
+  var maxHeight = availableHeight + 'px';
+  if (rail.style.top !== top) rail.style.top = top;
+  if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
+  if (rail.style.transform !== 'translateY(-50%)') rail.style.transform = 'translateY(-50%)';
 }
 
 function alignRailWithCard() {
