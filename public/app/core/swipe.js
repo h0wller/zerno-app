@@ -61,8 +61,12 @@ p.addEventListener('touchend', function() {
   if (shouldClose) {
     setT(w + 24); setOv(0);
     setTimeout(function() {
-      p.classList.remove('open');
-      if (typeof syncOverlay === 'function') syncOverlay();
+      if (typeof window.closePanel === 'function') {
+        window.closePanel();
+      } else {
+        p.classList.remove('open');
+        if (typeof syncOverlay === 'function') syncOverlay();
+      }
       cleanup();
     }, 330);
   } else {
