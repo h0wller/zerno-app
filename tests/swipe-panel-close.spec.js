@@ -41,6 +41,13 @@ test.describe('Mobile profile swipe close', () => {
     });
     const panel = page.locator('#panel');
     await expect(panel).toHaveClass(/open/);
+    const drawer = await panel.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, right: rect.right, viewportWidth: window.innerWidth };
+    });
+    expect(drawer.width).toBeLessThanOrEqual(360);
+    expect(drawer.width).toBeGreaterThan(300);
+    expect(Math.abs(drawer.right - drawer.viewportWidth)).toBeLessThanOrEqual(1);
     await page.waitForTimeout(100);
 
     const before = await page.evaluate(() => {
