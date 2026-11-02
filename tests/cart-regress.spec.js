@@ -577,10 +577,14 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
       track.replaceChildren();
       const style = getComputedStyle(container);
       return {
+        empty: container.classList.contains('is-empty'),
+        hiddenAttribute: container.hidden,
         visibility: style.visibility,
         height: container.getBoundingClientRect().height,
       };
     });
+    expect(emptyTicker.empty).toBe(true);
+    expect(emptyTicker.hiddenAttribute).toBe(false);
     expect(emptyTicker.visibility).toBe('hidden');
     expect(emptyTicker.height).toBe(28);
 
