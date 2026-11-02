@@ -5,13 +5,12 @@
 (function () {
   "use strict";
 
-  /* ── 1. Runtime-слои: z-index, фиксация скролла при открытой шторке и layout ── */
+  /* ── 1. Runtime-слои: z-index и layout ── */
   var css = document.createElement("style");
   css.id = "runtimeStyles";
   css.textContent =
     ".chat-fab{z-index:95!important}" +
     "@media(max-width:820px){body.panel-open .chat-fab{display:none}}" +
-    "@media(max-width:820px){body.panel-open{overflow:hidden}}" +
     ".modal{z-index:340!important}#orderTrackModal{z-index:1010!important}";
   document.head.appendChild(css);
 
