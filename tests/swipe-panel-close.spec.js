@@ -1,0 +1,72 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Mobile profile swipe close', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test('swipe close uses the shared focus lifecycle and preserves page scroll', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      const user = { id: 'swipe_test', name: 'Тестер', phone: '+7 999 999-11-11', verified: 1 };
+      localStorage.setItem('zt_user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('zt_token', 'swipe_test_token');
+      localStorage.setItem('token', 'swipe_test_token');
+      window.__layoutShifts = [];
+      try {
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (!entry.hadRecentInput) window.__layoutShifts.push(entry.value);
+          }
+        }).observe({ type: 'layout-shift', buffered: true });
+      } catch (_) {}
+    });
+
+    await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#profileTopBtn')).toBeVisible();
+    await page.waitForFunction(() => typeof window.openPanel === 'function' && typeof window.closePanel === 'function');
+    await page.evaluate(() => document.fonts.ready);
+
+    await page.evaluate(() => {
+      window.scrollTo(0, 400);
+      document.getElementById('profileTopBtn').focus();
+      window.openPanel('profile');
+    });
+    const panel = page.locator('#panel');
+    await expect(panel).toHaveClass(/open/);
+    await page.waitForTimeout(100);
+
+    const before = await page.evaluate(() => ({
+      scrollY: window.scrollY,
+      headerTop: document.querySelector('header.topbar').getBoundingClientRect().top,
+    }));
+
+    await page.evaluate(() => {
+      const panel = document.getElementById('panel');
+      const touch = (type, x) => {
+        const event = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'touches', {
+          value: type === 'touchend' ? [] : [{ clientX: x, clientY: 300 }],
+        });
+        panel.dispatchEvent(event);
+      };
+      touch('touchstart', 40);
+      touch('touchmove', 230);
+      touch('touchend', 230);
+    });
+
+    await expect(panel).not.toHaveClass(/open/, { timeout: 1500 });
+    await page.waitForTimeout(100);
+
+    const after = await page.evaluate(() => ({
+      scrollY: window.scrollY,
+      headerTop: document.querySelector('header.topbar').getBoundingClientRect().top,
+      focusedId: document.activeElement && document.activeElement.id,
+      layoutShift: window.__layoutShifts.reduce((sum, value) => sum + value, 0),
+    }));
+
+    expect(after.focusedId).toBe('profileTopBtn');
+    expect(Math.abs(after.scrollY - before.scrollY)).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.headerTop - before.headerTop)).toBeLessThanOrEqual(1);
+    expect(after.layoutShift).toBeLessThan(0.001);
+  });
+});
