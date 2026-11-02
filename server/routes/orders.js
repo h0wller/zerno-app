@@ -14,7 +14,9 @@ import {
   getDeliveryDays,
   getDeliveryHours,
   validateDeliverySlot,
+  isWeekdayLunchDiscountActive,
 } from '../domain/delivery-hours.js';
+import { calculateOrderDiscounts } from '../domain/order-discounts.js';
 
 
 const ordersRouter = Router();
@@ -89,9 +91,10 @@ function orderNotifyStaff(o) {
 
   const giftsList = Array.isArray(o.gifts) ? o.gifts : JSON.parse(o.gifts || '[]');
   const gifts = giftsList.map(g => `🎁 ${g.name} ×${g.qty}`);
+  const discountLine = o.discount > 0 ? `\n💸 ${o.discount_label || 'Скидка'}: −${o.discount} ₽` : '';
   const timeLabel = o.is_preorder ? `⏰ ПРЕДЗАКАЗ: ${o.slot}` : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot}`;
   const own = o.by_staff ? ' · 🏠 <b>свои</b>' : '';
-  const txt = `👨‍🍳 <b>[Кухня] Заказ #${o.no}</b>${own}\n\n👤 ${o.name} (${o.phone})\n${o.method === 'pickup' ? '🛍 Самовывоз: Советская 38А' : '🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr}\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n\n${lines.concat(gifts).join('\n')}\n\nИтого: <b>${o.total} ₽</b>${o.comment ? '\n💬 ' + o.comment : ''}`;
+  const txt = `👨‍🍳 <b>[Кухня] Заказ #${o.no}</b>${own}\n\n👤 ${o.name} (${o.phone})\n${o.method === 'pickup' ? '🛍 Самовывоз: Советская 38А' : '🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr}\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n\n${lines.concat(gifts).join('\n')}\n\nИтого: <b>${o.total} ₽</b>${discountLine}${o.comment ? '\n💬 ' + o.comment : ''}`;
 
   const staff = db.prepare("SELECT id, tg FROM customers WHERE role IN ('cashier','admin','dispatch')").all();
   const sentTg = new Set();
@@ -134,11 +137,14 @@ function orderNotifyCustomer(o) {
     const gifts = giftsList.map(g => '🎁 ' + g.name + ' × ' + g.qty).join('\n');
     const itemsText = gifts ? (lines + '\n' + gifts) : lines;
     const payText = o.pay === 'cash' ? 'наличные' : 'картой при получении';
+    const discountLine = o.discount > 0
+      ? '\n💸 ' + (o.discount_label || 'Скидка') + ': −' + o.discount + ' ₽'
+      : '';
 
     const text =
       '🍕 <b>Заказ #' + o.no + ' принят!</b>\n\n' +
       itemsText + '\n\n' +
-      'Итого: <b>' + o.total + ' ₽</b> · 💳 ' + payText + '\n' +
+      'Итого: <b>' + o.total + ' ₽</b> · 💳 ' + payText + discountLine + '\n' +
       dest + '\n' + timeLabel + '\n\n' +
       'Мы уже передали заказ на кухню. Статус обновится здесь автоматически 👇';
 
@@ -287,7 +293,9 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
   }
 
   // ── Проверка расписания и интервалов доставки ──
-  const now = new Date();
+  const now = process.env.NODE_ENV === 'test' && process.env.ZERNO_TEST_NOW
+    ? new Date(process.env.ZERNO_TEST_NOW)
+    : new Date();
   const hoursNow = getDeliveryHours(now);
   const slotStr = String(b.slot || 'asap').trim();
   const isTestEnv = process.env.NODE_ENV === 'test'
@@ -295,9 +303,10 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
 
   let isPreorder = 0;
   let preorderDate = '';
+  let slotValidation = null;
 
   if (slotStr !== 'asap') {
-    const slotValidation = validateDeliverySlot(slotStr, now);
+    slotValidation = validateDeliverySlot(slotStr, now);
     if (!slotValidation.valid) {
       return res.status(400).json({
         error: 'Выбранный интервал больше недоступен или не соответствует графику. Обновите время и выберите другой слот.',
@@ -328,19 +337,31 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     }
   }
 
-  // Сотрудники: −10% на любой заказ. Со скидкой самовывоза не суммируется — берём большую.
+  const lunchPromoActive = isWeekdayLunchDiscountActive(slotValidation || hoursNow);
   const byStaff = STAFF_ROLES.includes(req.user.role) ? 1 : 0;
-  const pickupDiscount = method === 'pickup' ? Math.round(sum * DELIVERY.pickupDiscount) : 0;
-  const staffDiscount = byStaff ? Math.round(sum * DELIVERY.staffDiscount) : 0;
-  const discount = Math.max(pickupDiscount, staffDiscount);
+  const discountResult = calculateOrderDiscounts({
+    subtotal: sum,
+    method,
+    byStaff,
+    lunchPromo: lunchPromoActive,
+    pickupRate: DELIVERY.pickupDiscount,
+    staffRate: DELIVERY.staffDiscount,
+  });
+  const discount = discountResult.discount;
+  const discountLabel = discountResult.label;
   const gifts = [];
-  const wp = weekPromo();
-  if (wp && wp.gift) { const q = wp.threshold > 0 ? Math.floor(sum / wp.threshold) : 1; if (q > 0) gifts.push({ name: wp.gift, qty: q }); }
-  const pm = pizzaMonth();
-  if (pm) { const big = items.reduce((a, i) => a + (i.sz === 35 ? i.qty : 0), 0); if (big >= 2) gifts.push({ name: pm.name + ' — подарок', qty: 1 }); }
-  
+  if (!lunchPromoActive) {
+    const wp = weekPromo();
+    if (wp && wp.gift) { const q = wp.threshold > 0 ? Math.floor(sum / wp.threshold) : 1; if (q > 0) gifts.push({ name: wp.gift, qty: q }); }
+    const pm = pizzaMonth();
+    if (pm) { const big = items.reduce((a, i) => a + (i.sz === 35 ? i.qty : 0), 0); if (big >= 2) gifts.push({ name: pm.name + ' — подарок', qty: 1 }); }
+  }
+
   let promoCode = '', promoDiscount = 0;
   const pc = String(b.promo || '').trim().toUpperCase();
+  if (lunchPromoActive && pc) {
+    return res.status(400).json({ error: 'Во время обеденной акции промокоды и другие скидки не применяются' });
+  }
   if (pc) {
     const p = db.prepare('SELECT * FROM promos WHERE code=?').get(pc);
     if (!p || !p.active || (p.scope || 'coffee') !== 'delivery') return res.status(400).json({ error: 'Промокод не найден для доставки' });
@@ -373,14 +394,14 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     slot: slotStr, 
     pay: b.pay === 'card' ? 'card' : 'cash',
     comment: String(b.comment || '').slice(0, 300), 
-    items, total, discount, fee, gifts, promo: promoCode, promodiscount: promoDiscount, 
+    items, total, discount, discount_label: discountLabel, fee, gifts, promo: promoCode, promodiscount: promoDiscount, 
     is_preorder: isPreorder, preorder_date: preorderDate, by_staff: byStaff,
     status: 'new', created: nowISO(), updated: nowISO() 
   };
   
-  db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,fee,gifts,is_preorder,preorder_date,by_staff,status,created,updated) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+  db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,discount_label,fee,gifts,is_preorder,preorder_date,by_staff,status,created,updated) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(o.id, o.no, o.cid, o.name, o.phone, o.method, o.place, o.addr, o.slot, o.pay, o.comment,
-    JSON.stringify(o.items), o.total, o.discount, o.fee, JSON.stringify(o.gifts), o.is_preorder, o.preorder_date, o.by_staff, o.status, o.created, o.updated);
+    JSON.stringify(o.items), o.total, o.discount, o.discount_label, o.fee, JSON.stringify(o.gifts), o.is_preorder, o.preorder_date, o.by_staff, o.status, o.created, o.updated);
   
   orderNotifyStaff(o);
   orderNotifyCustomer(o);
