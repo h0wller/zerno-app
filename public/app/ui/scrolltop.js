@@ -8,6 +8,14 @@ window.alignMbonusWithRail = alignMbonusWithRail;
 (function () {
   'use strict';
 
+  var nav = document.getElementById('pageNavigation');
+  if (!nav) {
+    nav = document.createElement('nav');
+    nav.id = 'pageNavigation';
+    nav.setAttribute('aria-label', 'Навигация по странице');
+    document.body.appendChild(nav);
+  }
+
   var btn = document.getElementById('scrollTopBtn');
   if (!btn) {
     btn = document.createElement('button');
@@ -15,8 +23,8 @@ window.alignMbonusWithRail = alignMbonusWithRail;
     btn.type = 'button';
     btn.setAttribute('aria-label', 'Наверх');
     btn.textContent = '↑';
-    document.body.appendChild(btn);
   }
+  if (btn.parentElement !== nav) nav.appendChild(btn);
 
   function update() {
     // ── READ PHASE (без вызова getComputedStyle) ──
