@@ -229,7 +229,7 @@ body .wrap > #deliveryRail {
     grid-column: 3; grid-row: 1; justify-self: end; margin: 0;
   }
   header.topbar #modeSeg:not([hidden]), .topbar #modeSeg:not([hidden]) {
-    grid-column: 1 / -1; grid-row: 2; justify-self: center; margin-top: 4px;
+    grid-column: 1 / -1; grid-row: 2; justify-self: center; margin-top: 0;
   }
   header.topbar .ticker, .topbar .ticker {
     grid-row: 3; margin: 0; border-radius: 0;
@@ -242,4 +242,6 @@ body .wrap > #deliveryRail {
     width: 100%; max-width: none; margin: 0; border-radius: 0; row-gap: 0;
   }
   header.topbar .ticker, .topbar .ticker { grid-row: 3; margin: 0; border-radius: 0; }
+  header.topbar:not(:has(#modeSeg:not([hidden]))) .ticker,
+  .topbar:not(:has(#modeSeg:not([hidden]))) .ticker { grid-row: 2; }
 }
