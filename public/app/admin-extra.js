@@ -177,17 +177,12 @@
       })
       .filter(Boolean);
     var tickerBox = track.closest('.ticker');
-    if (!L.length) {
-      track.innerHTML = '';
-      if (tickerBox) tickerBox.hidden = true;
-    } else {
-      if (tickerBox) tickerBox.hidden = false;
-      track.innerHTML = L
-        .map(function (x) {
-          return '<span class="ti">' + x + '</span>';
-        })
-        .join('');
-    }
+    if (tickerBox) tickerBox.classList.toggle('is-empty', !L.length);
+    track.innerHTML = L
+      .map(function (x) {
+        return '<span class="ti">' + x + '</span>';
+      })
+      .join('');
   }
 
   function applyBrandChrome(force) {
