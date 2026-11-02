@@ -239,8 +239,8 @@ body .wrap > #deliveryRail {
   }
   html:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) {
     grid-template-rows: 48px 34px;
-    height: 91px !important;
-    min-height: 91px !important;
+    height: 91px;
+    min-height: 91px;
     box-sizing: border-box;
   }
   html[data-staff-role] body header.topbar {
