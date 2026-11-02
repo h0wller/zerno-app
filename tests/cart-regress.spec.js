@@ -562,13 +562,13 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
     await page.goto('/?brand=delivery');
     await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible({ timeout: 10000 });
 
-    // ── Тикер резервирует 44px под строку и доступную кнопку паузы ──
+    // ── Тикер резервирует 28px под полноширинную строку без кнопки паузы ──
     const ticker = page.locator('#ticker, .ticker').first();
     const activeTicker = await ticker.evaluate((element) => ({
       height: element.getBoundingClientRect().height,
       overflowX: getComputedStyle(element).overflowX,
     }));
-    expect(activeTicker.height).toBe(44);
+    expect(activeTicker.height).toBe(28);
     expect(activeTicker.overflowX).toBe('hidden');
 
     const emptyTicker = await page.evaluate(() => {
@@ -589,7 +589,7 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
     expect(emptyTicker.empty).toBe(true);
     expect(emptyTicker.hiddenAttribute).toBe(false);
     expect(emptyTicker.visibility).toBe('hidden');
-    expect(emptyTicker.height).toBe(44);
+    expect(emptyTicker.height).toBe(28);
     expect(emptyTicker.itemCount).toBe(0);
 
     // ── Задача 2: Поиск НЕ наезжает на левый сайдбар #deliveryRail + sticky-позиция при скролле ──
