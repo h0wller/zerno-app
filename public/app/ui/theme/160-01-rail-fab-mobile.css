@@ -53,30 +53,8 @@
   font-weight: 600;
   line-height: 1.15;
 }
-/* ── F5.17: рейл по центру вертикали; кнопки крупнее,
-шрифт мельче,
-весь текст виден ── */
-@media (max-width: 820px){
-
-  .wrap .rail,
-  .wrap #deliveryRail {
-    /* fix-shared-brands: было top:0 (конфликт с F5.45) */
-    top: calc(env(safe-area-inset-top, 0px) + 8px); transform: none;
-    height: auto;
-    max-height: calc(100dvh - 24px);
-    position: sticky;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 64px;
-    min-width: 64px;
-    padding: 4px;
-    margin: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overflow-x: clip;
-    scrollbar-width: none;
-  }
+/* ── F5.17: вертикальная раскладка кнопок категорий ── */
+@media (max-width: 820px) {
 
   .wrap .rail button,
   .wrap #deliveryRail button {
@@ -164,16 +142,7 @@ body .wrap #deliveryRail button.on{
 /* ── Ф5.26: бонус-бейдж выровнен с рейлом (продукт 28.09): геометрия = колонка рейла ── */
 /* ── Ф5.26: лендскейп-телефон — рейл без центрирующего translate,
 ничего не обрезается ── */
-@media (max-width: 820px) and (max-height: 480px){
-
-  .wrap .rail,
-  .wrap #deliveryRail {
-    top: calc(env(safe-area-inset-top, 0px) + 8px);
-    transform: none;
-    height: auto;
-    max-height: calc(100dvh - 16px);
-  }
-
+@media (max-width: 820px) and (max-height: 480px) {
   .wrap .rail button,
   .wrap #deliveryRail button {
     min-height: 44px;
