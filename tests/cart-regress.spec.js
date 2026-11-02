@@ -566,7 +566,7 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
     const ticker = page.locator('#ticker, .ticker').first();
     const activeTickerBox = await ticker.boundingBox();
     if (activeTickerBox) {
-      expect(activeTickerBox.height).toBeLessThanOrEqual(120);
+      expect(activeTickerBox.height).toBeLessThanOrEqual(30);
     }
 
     await page.evaluate(() => {
