@@ -60,13 +60,47 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.subchips.every((height) => height >= 44)).toBe(true);
   });
 
+  test('mobile staff header and mode switch stay compact without shrinking 44px controls', async ({ page }) => {
+    await page.goto('/?brand=delivery');
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-staff-role', 'admin');
+      const modeSeg = document.getElementById('modeSeg');
+      modeSeg.hidden = false;
+      modeSeg.innerHTML = ['Заказы', 'Касса', 'Диспетчер', 'Админ'].map((label) =>
+        '<button type="button">' + label + '</button>'
+      ).join('');
+    });
+
+    const metrics = await page.evaluate(() => {
+      const header = document.querySelector('header.topbar').getBoundingClientRect();
+      const mode = document.getElementById('modeSeg');
+      const modeBox = mode.getBoundingClientRect();
+      return {
+        viewportWidth: window.innerWidth,
+        headerLeft: header.left,
+        headerRight: header.right,
+        headerWidth: header.width,
+        modeWidth: modeBox.width,
+        modeHeight: modeBox.height,
+        buttonHeights: Array.from(mode.querySelectorAll('button')).map((button) => button.getBoundingClientRect().height),
+      };
+    });
+
+    expect(metrics.headerLeft).toBeGreaterThanOrEqual(7);
+    expect(metrics.headerRight).toBeLessThanOrEqual(metrics.viewportWidth - 7);
+    expect(metrics.headerWidth).toBeLessThan(metrics.viewportWidth);
+    expect(metrics.modeWidth).toBeLessThan(metrics.headerWidth);
+    expect(metrics.modeHeight).toBe(46);
+    expect(metrics.buttonHeights.every((height) => height >= 44)).toBe(true);
+  });
+
   test('floating controls and confetti canvas have accessible landmark treatment', async ({ page }) => {
     await expect(page.locator('#fx')).toHaveAttribute('aria-hidden', 'true');
     await expect(page.locator('#chatFab').locator('xpath=ancestor::aside[@aria-label="Поддержка"]')).toHaveCount(1);
     await expect(page.locator('nav[aria-label="Навигация по странице"] #scrollTopBtn')).toBeAttached();
   });
 
-  test('ticker animates overflowing announcements and has an accessible pause control', async ({ page }) => {
+  test('ticker is full-bleed, loops only a complete overflowing line, and has no pause control', async ({ page }) => {
     await page.evaluate(() => {
       window.BRANDS.delivery.ticker = [
         'Пятница — доставка пиццы и роллов в Янтарном и ближайших посёлках',
@@ -78,46 +112,40 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     });
     const tickerBox = page.locator('.ticker');
     await expect(tickerBox).toHaveClass(/is-overflowing/);
-    const toggle = page.locator('#tickerToggle');
-    await expect(toggle).toBeVisible();
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('#tickerToggle')).toHaveCount(0);
 
     const ticker = await tickerBox.evaluate((container) => {
       const track = container.querySelector('#tickerTrack');
-      const containerStyle = getComputedStyle(container);
+      const viewport = container.querySelector('.tickerViewport');
+      const group = track.firstElementChild;
       const trackStyle = getComputedStyle(track);
+      const box = container.getBoundingClientRect();
       return {
         animationName: trackStyle.animationName,
         animationPlayState: trackStyle.animationPlayState,
         flexWrap: trackStyle.flexWrap,
-        whiteSpace: getComputedStyle(track.firstElementChild).whiteSpace,
-        overflowX: containerStyle.overflowX,
-        height: container.getBoundingClientRect().height,
+        whiteSpace: getComputedStyle(group).whiteSpace,
+        overflowX: getComputedStyle(container).overflowX,
+        height: box.height,
+        left: box.left,
+        width: box.width,
+        viewportWidth: viewport.clientWidth,
+        groupWidth: group.getBoundingClientRect().width,
         groups: track.children.length,
-        cloneHidden: track.children[1]?.getAttribute('aria-hidden'),
-        buttonWidth: container.querySelector('#tickerToggle').getBoundingClientRect().width,
-        buttonHeight: container.querySelector('#tickerToggle').getBoundingClientRect().height
+        cloneHidden: track.children[1]?.getAttribute('aria-hidden')
       };
     });
     expect(ticker.animationName).toBe('zt-marquee');
     expect(ticker.flexWrap).toBe('nowrap');
     expect(ticker.whiteSpace).toBe('nowrap');
     expect(ticker.overflowX).toBe('hidden');
-    expect(ticker.height).toBe(44);
+    expect(ticker.height).toBe(28);
+    expect(ticker.left).toBe(0);
+    expect(ticker.width).toBe(ticker.viewportWidth);
+    expect(ticker.groupWidth).toBeGreaterThan(ticker.viewportWidth);
     expect(ticker.groups).toBe(2);
     expect(ticker.cloneHidden).toBe('true');
-    expect(ticker.buttonWidth).toBeGreaterThanOrEqual(44);
-    expect(ticker.buttonHeight).toBeGreaterThanOrEqual(44);
-
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    await expect(toggle).toHaveAttribute('aria-label', 'Возобновить прокрутку объявлений');
-    await expect.poll(() => page.locator('#tickerTrack').evaluate((track) => getComputedStyle(track).animationPlayState)).toBe('paused');
-
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-    await expect(toggle).toHaveAttribute('aria-label', 'Приостановить прокрутку объявлений');
-    await expect.poll(() => page.locator('#tickerTrack').evaluate((track) => getComputedStyle(track).animationPlayState)).toBe('running');
+    expect(ticker.animationPlayState).toBe('running');
 
     const order = await page.locator('header.topbar').evaluate((header) => {
       const childIndex = (selector) => Array.from(header.children).indexOf(header.querySelector(selector));
@@ -134,7 +162,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect.poll(() => page.locator('#tickerTrack').evaluate((track) => getComputedStyle(track).animationName)).toBe('none');
-    await expect(toggle).toBeHidden();
+    await expect(page.locator('#tickerToggle')).toHaveCount(0);
   });
 
   test('critical delivery text retains AAA contrast on its opaque surfaces', async ({ page }) => {
