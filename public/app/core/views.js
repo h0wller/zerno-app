@@ -86,7 +86,6 @@ var rules = [
  '#supportChooseOverlay .scBtns{width:100%;max-width:340px}',
  '.card .tag{position:absolute;top:8px;left:8px;z-index:2;pointer-events:none;max-width:calc(100% - 16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
  '#iosHint,#installBanner{top:auto;bottom:calc(96px + env(safe-area-inset-bottom))}',
- '.rail,#deliveryRail{padding:8px 6px 16px;margin:-8px -6px -16px;overflow-x:auto;overflow-y:hidden}',
  '@media(min-width:1181px){.rail{overflow:visible;padding:0;margin:0}}',
  '#deliveryRail button{transition:transform .15s,box-shadow .15s,background .15s}',
  '#deliveryRail button:hover{transform:translateY(-1px)}',
