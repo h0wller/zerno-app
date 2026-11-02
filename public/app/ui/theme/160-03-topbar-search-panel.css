@@ -13,7 +13,7 @@
     position: fixed;
     top: 0; right: 0; bottom: 0;
     z-index: 320;
-    width: min(400px, 100%);
+    width: min(360px, 100%);
     max-height: none;
     border-radius: 22px 0 0 22px;
     transform: translateX(105%);
