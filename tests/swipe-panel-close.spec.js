@@ -58,6 +58,7 @@ test.describe('Mobile profile swipe close', () => {
         headerTop: header.getBoundingClientRect().top,
         headerPosition: getComputedStyle(header).position,
         bodyOverflowY: getComputedStyle(document.body).overflowY,
+        layoutShift: window.__layoutShifts.reduce((sum, value) => sum + value, 0),
       };
     });
 
@@ -97,6 +98,6 @@ test.describe('Mobile profile swipe close', () => {
     expect(after.bodyOverflowY).not.toBe('hidden');
     expect(Math.abs(after.scrollY - before.scrollY)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.headerTop - before.headerTop)).toBeLessThanOrEqual(1);
-    expect(after.layoutShift).toBeLessThan(0.001);
+    expect(after.layoutShift - before.layoutShift).toBeLessThan(0.001);
   });
 });
