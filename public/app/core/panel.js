@@ -49,7 +49,7 @@ function closePanel() {
         if (panel) panel.classList.remove('open');
         if (typeof syncOverlay === 'function') syncOverlay();
         if (window.TgUx) window.TgUx.sync();
-        if (panelReturnFocus && panelReturnFocus.isConnected) panelReturnFocus.focus();
+        if (panelReturnFocus && panelReturnFocus.isConnected) panelReturnFocus.focus({ preventScroll: true });
         panelReturnFocus = null;
     }
 }

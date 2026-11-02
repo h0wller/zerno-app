@@ -85,9 +85,6 @@ body.editing .card .stopbadge {
     font-size: 16px;
   }
 }
-body.panel-open {
-  overflow: hidden;
-}
 #panel {
   overscroll-behavior: contain;
 }
