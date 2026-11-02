@@ -36,7 +36,7 @@ export const BRANDS = {
     authLogo: { src: '/friday-logo.svg', box: 140, wide: true },
     ticker: [
       'Пятница — доставка пиццы и роллов',
-      'Летом ежедневно 11:00–22:00 · зимой пн–чт 11:00–21:00, пт–вс 11:00–22:00',
+      '__DELIVERY_HOURS__',
       'Доставка ~45 мин',
       'vk.ru/fridaypizza39',
       'Каждые 2000 ₽ в чеке — 0,5 пива в подарок'
@@ -69,6 +69,23 @@ export const BRANDS = {
   }
 };
 
+export function deliveryHoursTickerText(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Kaliningrad',
+    month: 'numeric',
+    weekday: 'short',
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const month = Number(values.month);
+  if (month >= 5 && month <= 9) return 'Ежедневно 11:00–22:00';
+
+  const weekdayNames = {
+    Mon: 'понедельник', Tue: 'вторник', Wed: 'среду', Thu: 'четверг',
+    Fri: 'пятницу', Sat: 'субботу', Sun: 'воскресенье',
+  };
+  const close = ['Mon', 'Tue', 'Wed', 'Thu'].includes(values.weekday) ? '21:00' : '22:00';
+  return 'Сегодня, ' + weekdayNames[values.weekday] + ': 11:00–' + close;
+}
 export function brandConfig(id) {
   return BRANDS[id] || BRANDS.coffee;
 }
@@ -76,5 +93,6 @@ export function brandConfig(id) {
 /* window-шим для легаси-потребителей и инлайн-скриптов (контракт F1.3) */
 if (typeof window !== 'undefined') {
   window.BRANDS = BRANDS;
+  window.deliveryHoursTickerText = deliveryHoursTickerText;
   window.brandConfig = brandConfig;
 }
