@@ -562,18 +562,27 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
     await page.goto('/?brand=delivery');
     await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible({ timeout: 10000 });
 
-    // ── Задача 1: Тикер при наличии текста компактный (<= 30px), а при очистке текста — скрывается в 0px ──
+    // ── Задача 1: Тикер резервирует 28px; пустое состояние скрывает содержимое, но не схлопывает layout ──
     const ticker = page.locator('#ticker, .ticker').first();
-    const activeTickerBox = await ticker.boundingBox();
-    if (activeTickerBox) {
-      expect(activeTickerBox.height).toBeLessThanOrEqual(30);
-    }
+    const activeTicker = await ticker.evaluate((element) => ({
+      height: element.getBoundingClientRect().height,
+      overflowX: getComputedStyle(element).overflowX,
+    }));
+    expect(activeTicker.height).toBe(28);
+    expect(activeTicker.overflowX).toBe('auto');
 
-    await page.evaluate(() => {
-      const tr = document.getElementById('tickerTrack');
-      if (tr) tr.innerHTML = '';
+    const emptyTicker = await page.evaluate(() => {
+      const track = document.getElementById('tickerTrack');
+      const container = track.closest('.ticker');
+      track.replaceChildren();
+      const style = getComputedStyle(container);
+      return {
+        visibility: style.visibility,
+        height: container.getBoundingClientRect().height,
+      };
     });
-    await expect(ticker).toBeHidden();
+    expect(emptyTicker.visibility).toBe('hidden');
+    expect(emptyTicker.height).toBe(28);
 
     // ── Задача 2: Поиск НЕ наезжает на левый сайдбар #deliveryRail + sticky-позиция при скролле ──
     const rail = page.locator('#deliveryRail');
