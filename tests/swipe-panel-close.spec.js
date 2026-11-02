@@ -41,13 +41,14 @@ test.describe('Mobile profile swipe close', () => {
     });
     const panel = page.locator('#panel');
     await expect(panel).toHaveClass(/open/);
-    const drawer = await panel.evaluate((element) => {
+    // The panel slides in over 350ms; assert its final geometry, not the mid-transition frame.
+    await expect.poll(() => panel.evaluate((element) => {
       const rect = element.getBoundingClientRect();
-      return { width: rect.width, right: rect.right, viewportWidth: window.innerWidth };
-    });
-    expect(drawer.width).toBeLessThanOrEqual(360);
-    expect(drawer.width).toBeGreaterThan(300);
-    expect(Math.abs(drawer.right - drawer.viewportWidth)).toBeLessThanOrEqual(1);
+      return Math.abs(rect.right - window.innerWidth);
+    })).toBeLessThanOrEqual(1);
+    const drawer = await panel.evaluate((element) => element.getBoundingClientRect().width);
+    expect(drawer).toBeLessThanOrEqual(360);
+    expect(drawer).toBeGreaterThan(300);
     await page.waitForTimeout(100);
 
     const before = await page.evaluate(() => {
