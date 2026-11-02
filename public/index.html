@@ -1313,7 +1313,7 @@ html[data-brand="delivery"] {
     margin: 0 0 0 calc(50% - 50vw);
     border-radius: 0;
   }
-  html body header.topbar:not(:has(#modeSeg:not([hidden]))) .ticker {
+  html body header.topbar:not([data-staff-role]):not(:has(#modeSeg:not([hidden]))) .ticker {
     grid-row: 2;
   }
   html[data-staff-role] body header.topbar {
