@@ -1370,6 +1370,17 @@ html body div.wrap > #deliveryRail {
   grid-column: 1;
   grid-row: 1;
 }
+/* Keep screen-reader-only labels out of first-frame flex layout before deferred theme CSS loads. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* Reserve delivery layout before deferred theme CSS is available. */
 @media (max-width: 820px) {
   html body div.wrap {
