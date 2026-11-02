@@ -572,21 +572,25 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
     expect(activeTicker.overflowX).toBe('auto');
 
     const emptyTicker = await page.evaluate(() => {
+      window.BRANDS.delivery.ticker = [];
+      window.deliveryInfo = null;
+      window.applyBrandChrome(true);
       const track = document.getElementById('tickerTrack');
       const container = track.closest('.ticker');
-      track.replaceChildren();
       const style = getComputedStyle(container);
       return {
         empty: container.classList.contains('is-empty'),
         hiddenAttribute: container.hidden,
         visibility: style.visibility,
         height: container.getBoundingClientRect().height,
+        itemCount: track.children.length,
       };
     });
     expect(emptyTicker.empty).toBe(true);
     expect(emptyTicker.hiddenAttribute).toBe(false);
     expect(emptyTicker.visibility).toBe('hidden');
     expect(emptyTicker.height).toBe(28);
+    expect(emptyTicker.itemCount).toBe(0);
 
     // ── Задача 2: Поиск НЕ наезжает на левый сайдбар #deliveryRail + sticky-позиция при скролле ──
     const rail = page.locator('#deliveryRail');
