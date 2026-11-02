@@ -553,11 +553,29 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         const topbarStyle = topbar && getComputedStyle(topbar);
         const venueWrap = document.querySelector('.venueWrap');
         const venueStyle = venueWrap && getComputedStyle(venueWrap);
+        const ticker = document.querySelector('.ticker');
+        const tickerRect = ticker && ticker.getBoundingClientRect();
+        const controls = ['.venueWrap', '#brandMark', '#brandTitle', '#profileTopBtn']
+          .map((selector) => document.querySelector(selector))
+          .filter(Boolean)
+          .map((element) => element.getBoundingClientRect());
+        const groupLeft = Math.min(...controls.map((box) => box.left));
+        const groupRight = Math.max(...controls.map((box) => box.right));
+        const verticalCenters = controls.map((box) => box.top + box.height / 2);
         return {
           venue: rect('.venueWrap'),
           brandMark: rect('#brandMark'),
           brandTitle: rect('#brandTitle'),
           profile: rect('#profileTopBtn'),
+          groupCenter: (groupLeft + groupRight) / 2,
+          controlCenterSpread: Math.max(...verticalCenters) - Math.min(...verticalCenters),
+          ticker: tickerRect ? {
+            top: tickerRect.top,
+            left: tickerRect.left,
+            width: tickerRect.width,
+            parentIsBody: ticker.parentElement === document.body
+          } : null,
+          headerShadow: topbarStyle.boxShadow,
           bonus: rect('#mbonusBtn'),
           bonusStyle: (() => {
             const bonus = document.querySelector('#mbonusBtn');
@@ -611,6 +629,18 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         }
         expect(header.scrollWidth, `no horizontal overflow at ${width}px ${phase}`)
           .toBeLessThanOrEqual(header.viewportWidth + 1);
+        expect(Math.abs(header.groupCenter - width / 2), `header controls are one centered row at ${width}px ${phase}`)
+          .toBeLessThanOrEqual(1.5);
+        expect(header.controlCenterSpread, `header controls share one vertical center at ${width}px ${phase}`)
+          .toBeLessThanOrEqual(2);
+        expect(header.topbar.height, `guest header stays compact at ${width}px ${phase}`)
+          .toBeLessThanOrEqual(64);
+        expect(header.headerShadow, `header has no lower shadow at ${width}px ${phase}`).toBe('none');
+        expect(header.ticker.parentIsBody, `ticker is outside the header at ${width}px ${phase}`).toBe(true);
+        expect(Math.abs(header.ticker.top - (header.topbar.y + header.topbar.height)),
+          `ticker touches header with no gap at ${width}px ${phase}`).toBeLessThanOrEqual(1);
+        expect(Math.abs(header.ticker.left)).toBeLessThanOrEqual(1);
+        expect(Math.abs(header.ticker.width - width)).toBeLessThanOrEqual(1);
       };
 
       const before = await measureHeader();
