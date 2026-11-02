@@ -154,31 +154,37 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(ticker.animationPlayState).toBe('running');
 
     const attachedLayout = await page.locator('header.topbar').evaluate((header) => {
-      const tickerElement = header.querySelector('.ticker');
+      const tickerElement = document.querySelector('.ticker');
       const headerBox = header.getBoundingClientRect();
       const tickerBox = tickerElement.getBoundingClientRect();
-      const logoBox = header.querySelector('#headerBrand').getBoundingClientRect();
-      const contentBottom = Math.max(...Array.from(header.children)
-        .filter((element) => element !== tickerElement && !element.hidden)
-        .map((element) => element.getBoundingClientRect().bottom));
+      const controls = ['#venueToggle', '#headerBrand', '#profileTopBtn']
+        .map((selector) => header.querySelector(selector).getBoundingClientRect());
+      const groupLeft = Math.min(...controls.map((box) => box.left));
+      const groupRight = Math.max(...controls.map((box) => box.right));
+      const verticalCenters = controls.map((box) => box.top + box.height / 2);
       return {
         headerLeft: headerBox.left,
         headerRight: headerBox.right,
         headerWidth: headerBox.width,
+        headerHeight: headerBox.height,
         tickerTop: tickerBox.top,
-        contentBottom,
-        tickerParent: tickerElement.parentElement === header,
-        logoCenter: logoBox.left + logoBox.width / 2,
+        tickerParent: tickerElement.parentElement === document.body,
+        groupCenter: (groupLeft + groupRight) / 2,
+        verticalCenterSpread: Math.max(...verticalCenters) - Math.min(...verticalCenters),
         viewportCenter: window.innerWidth / 2,
+        headerShadow: getComputedStyle(header).boxShadow,
         borderRadius: getComputedStyle(header).borderRadius,
       };
     });
     expect(attachedLayout.tickerParent).toBe(true);
-    expect(Math.abs(attachedLayout.tickerTop - attachedLayout.contentBottom)).toBeLessThanOrEqual(1);
+    expect(Math.abs(attachedLayout.tickerTop - attachedLayout.headerHeight)).toBeLessThanOrEqual(1);
     expect(attachedLayout.headerLeft).toBe(0);
     expect(attachedLayout.headerRight).toBe(390);
     expect(attachedLayout.headerWidth).toBe(390);
-    expect(Math.abs(attachedLayout.logoCenter - attachedLayout.viewportCenter)).toBeLessThanOrEqual(1);
+    expect(attachedLayout.headerHeight).toBeLessThanOrEqual(64);
+    expect(Math.abs(attachedLayout.groupCenter - attachedLayout.viewportCenter)).toBeLessThanOrEqual(1);
+    expect(attachedLayout.verticalCenterSpread).toBeLessThanOrEqual(1);
+    expect(attachedLayout.headerShadow).toBe('none');
     expect(attachedLayout.borderRadius).toBe('0px');
 
     const order = await page.locator('header.topbar').evaluate((header) => {
