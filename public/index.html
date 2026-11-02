@@ -1304,9 +1304,11 @@ html[data-brand="delivery"] {
 
 /* Reserve the delivery mark and ticker rows before deferred theme CSS arrives. */
 @media (max-width: 820px) {
-  html body header.topbar:not([data-staff-role]):not(:has(#modeSeg:not([hidden]))) {
+  html:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) {
     grid-template-rows: 48px 34px;
-    min-height: 91px;
+    height: 91px !important;
+    min-height: 91px !important;
+    box-sizing: border-box;
   }
   html body header.topbar .ticker {
     grid-column: 1 / -1;
@@ -1314,7 +1316,7 @@ html[data-brand="delivery"] {
     margin: 0 0 0 calc(50% - 50vw);
     border-radius: 0;
   }
-  html body header.topbar:not([data-staff-role]):not(:has(#modeSeg:not([hidden]))) .ticker {
+  html:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) .ticker {
     grid-row: 2;
   }
   html[data-staff-role] body header.topbar {
