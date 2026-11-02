@@ -234,11 +234,14 @@ body .wrap > #deliveryRail {
   header.topbar .ticker, .topbar .ticker {
     grid-row: 3; margin: 0 0 0 calc(50% - 50vw); border-radius: 0;
   }
-  header.topbar:not([data-staff-role]):not(:has(#modeSeg:not([hidden]))) .ticker,
-  .topbar:not([data-staff-role]):not(:has(#modeSeg:not([hidden]))) .ticker { grid-row: 2; }
-  header.topbar:not([data-staff-role]):not(:has(#modeSeg:not([hidden]))) {
+  html:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) .ticker {
+    grid-row: 2;
+  }
+  html:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) {
     grid-template-rows: 48px 34px;
-    min-height: 91px;
+    height: 91px !important;
+    min-height: 91px !important;
+    box-sizing: border-box;
   }
   html[data-staff-role] body header.topbar {
     grid-template-rows: 48px 50px 34px;
@@ -249,6 +252,7 @@ body .wrap > #deliveryRail {
     width: 100%; max-width: none; margin: 0; border-radius: 0; row-gap: 0;
   }
   header.topbar .ticker, .topbar .ticker { grid-row: 3; margin: 0; border-radius: 0; }
-  header.topbar:not([data-staff-role]):not(:has(#modeSeg:not([hidden]))) .ticker,
-  .topbar:not([data-staff-role]):not(:has(#modeSeg:not([hidden]))) .ticker { grid-row: 2; }
+  html:not([data-staff-role]) body header.topbar:not(:has(#modeSeg:not([hidden]))) .ticker {
+    grid-row: 2;
+  }
 }
