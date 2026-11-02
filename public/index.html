@@ -1318,7 +1318,7 @@ html[data-brand="delivery"] {
     gap: 0 8px;
     width: 100%;
     max-width: none;
-    height: auto;
+    height: calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
     min-height: calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
     margin: 0;
     padding: calc(var(--sat, env(safe-area-inset-top, 0px)) + 4px) 12px 0;
@@ -1385,6 +1385,7 @@ html[data-brand="delivery"] {
     overflow-x: auto;
   }
   html[data-staff-role] body header.topbar {
+    height: calc(102px + var(--sat, env(safe-area-inset-top, 0px)));
     min-height: calc(102px + var(--sat, env(safe-area-inset-top, 0px)));
     grid-template-rows: 48px 50px;
     align-content: start;
