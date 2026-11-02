@@ -149,11 +149,11 @@
     var box = track && track.closest('.ticker');
     var viewport = box && box.querySelector('.tickerViewport');
     var group = track && track.querySelector('.tickerGroup:not([aria-hidden="true"])');
-    var toggle = box && box.querySelector('#tickerToggle');
-    if (!box || !viewport || !group || !toggle) return;
+    if (!box || !viewport || !group) return;
 
     var reduced = tickerReducedMotion && tickerReducedMotion.matches;
-    var overflowing = !reduced && group.scrollWidth * 2 > viewport.clientWidth + 1;
+    // A seamless loop requires one complete announcement group to exceed the viewport.
+    var overflowing = !reduced && group.scrollWidth > viewport.clientWidth + 1;
     var clone = track.querySelector('.tickerGroup[aria-hidden="true"]');
 
     if (overflowing && !clone) {
@@ -165,34 +165,13 @@
     }
 
     box.classList.toggle('is-overflowing', overflowing);
-    toggle.hidden = !overflowing;
-    if (!overflowing || !box.classList.contains('is-paused')) {
-      box.classList.remove('is-paused');
-      toggle.setAttribute('aria-pressed', 'false');
-      toggle.setAttribute('aria-label', 'Приостановить прокрутку объявлений');
-      toggle.querySelector('span').textContent = 'Ⅱ';
-    }
   }
 
   function bindTickerMotion(track) {
     var box = track.closest('.ticker');
     var viewport = box && box.querySelector('.tickerViewport');
     var group = track.querySelector('.tickerGroup:not([aria-hidden="true"])');
-    var toggle = box && box.querySelector('#tickerToggle');
-    if (!box || !viewport || !group || !toggle) return;
-
-    if (!toggle.dataset.motionBound) {
-      toggle.addEventListener('click', function () {
-        var paused = box.classList.toggle('is-paused');
-        toggle.setAttribute('aria-pressed', String(paused));
-        toggle.setAttribute(
-          'aria-label',
-          paused ? 'Возобновить прокрутку объявлений' : 'Приостановить прокрутку объявлений'
-        );
-        toggle.querySelector('span').textContent = paused ? '▶' : 'Ⅱ';
-      });
-      toggle.dataset.motionBound = 'true';
-    }
+    if (!box || !viewport || !group) return;
 
     if (tickerResizeObserver) tickerResizeObserver.disconnect();
     if (typeof ResizeObserver !== 'undefined') {
@@ -260,7 +239,7 @@
     var tickerBox = track.closest('.ticker');
     if (tickerBox) {
       tickerBox.classList.toggle('is-empty', !L.length);
-      tickerBox.classList.remove('is-overflowing', 'is-paused');
+      tickerBox.classList.remove('is-overflowing');
     }
     track.innerHTML = L.length
       ? '<div class="tickerGroup">' +
@@ -271,13 +250,6 @@
       : '';
     if (!L.length) {
       if (tickerResizeObserver) tickerResizeObserver.disconnect();
-      var tickerToggle = tickerBox && tickerBox.querySelector('#tickerToggle');
-      if (tickerToggle) {
-        tickerToggle.hidden = true;
-        tickerToggle.setAttribute('aria-pressed', 'false');
-        tickerToggle.setAttribute('aria-label', 'Приостановить прокрутку объявлений');
-        tickerToggle.querySelector('span').textContent = 'Ⅱ';
-      }
       return;
     }
     bindTickerMotion(track);
