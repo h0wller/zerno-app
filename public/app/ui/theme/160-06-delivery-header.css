@@ -5,8 +5,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  min-height: calc(var(--topbar-h, 64px) + var(--sat, env(safe-area-inset-top, 0px)));
-  padding: var(--sat, env(safe-area-inset-top, 0px)) 12px 0;
+  min-height: calc(var(--topbar-h, 64px) + var(--sat, var(--sat, env(safe-area-inset-top, 0px))));
+  padding: var(--sat, var(--sat, env(safe-area-inset-top, 0px))) 12px 0;
   box-sizing: border-box;
   background: var(--topbar-bg, transparent);
   color: var(--topbar-color, var(--ink));
@@ -255,9 +255,9 @@
     width: 100%;
     max-width: none;
     height: auto;
-    min-height: calc(60px + env(safe-area-inset-top, 0px));
+    min-height: calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
     margin: 0;
-    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px 0;
+    padding: calc(var(--sat, env(safe-area-inset-top, 0px)) + 4px) 12px 0;
     box-sizing: border-box;
     border-radius: 0;
     box-shadow: none;
@@ -321,7 +321,7 @@
     overflow-x: auto;
   }
   html[data-staff-role] body header.topbar {
-    min-height: calc(102px + env(safe-area-inset-top, 0px));
+    min-height: calc(102px + var(--sat, env(safe-area-inset-top, 0px)));
     grid-template-rows: 48px 50px;
     align-content: start;
   }
