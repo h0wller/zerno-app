@@ -80,8 +80,8 @@ export function deliveryHoursTickerText(date = new Date()) {
   if (month >= 5 && month <= 9) return 'Ежедневно 11:00–22:00';
 
   const weekdayNames = {
-    Mon: 'понедельник', Tue: 'вторник', Wed: 'среду', Thu: 'четверг',
-    Fri: 'пятницу', Sat: 'субботу', Sun: 'воскресенье',
+    Mon: 'понедельник', Tue: 'вторник', Wed: 'среда', Thu: 'четверг',
+    Fri: 'пятница', Sat: 'суббота', Sun: 'воскресенье',
   };
   const close = ['Mon', 'Tue', 'Wed', 'Thu'].includes(values.weekday) ? '21:00' : '22:00';
   return 'Сегодня, ' + weekdayNames[values.weekday] + ': 11:00–' + close;
