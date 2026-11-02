@@ -551,7 +551,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await expect(page.locator('#cartItems .cartItem').first()).toContainText('Маргарита');
   });
 
-test.describe('Спринт 4 — Тикер, геометрия рейла без наезда поиска, центрирование и стабильность шапки', () => {
+test.describe('Спринт 4 — Тикер, полноширинная шапка меню, рейл и стабильность шапки', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   test('1. Пустой тикер скрывает содержимое без схлопывания 34px, поиск не наезжает на #deliveryRail, шапка не прыгает и логотип строго по центру', async ({ page }) => {
@@ -600,8 +600,12 @@ test.describe('Спринт 4 — Тикер, геометрия рейла бе
 
     const railBox = await rail.boundingBox();
     const searchBox = await search.boundingBox();
-    // Левый край поиска должен находиться правее правого края сайдбара категорий!
-    expect(searchBox.x).toBeGreaterThanOrEqual(railBox.x + railBox.width - 1);
+    const menuHeadBox = await page.locator('#deliveryView .menu-head').boundingBox();
+    // Поиск находится в полноширинной шапке над рейлом: горизонтальное пересечение колонок допустимо,
+    // но сами элементы не должны пересекаться по вертикали.
+    expect(searchBox.x).toBeGreaterThanOrEqual(menuHeadBox.x);
+    expect(searchBox.x + searchBox.width).toBeLessThanOrEqual(menuHeadBox.x + menuHeadBox.width);
+    expect(searchBox.y + searchBox.height).toBeLessThanOrEqual(railBox.y + 1);
 
     // ── Задача 3: Стабильность высоты .topbar, центрирование логотипа и мгновенная смена иконки 🍕 / 🌊 ──
     const topbar = page.locator('.topbar');

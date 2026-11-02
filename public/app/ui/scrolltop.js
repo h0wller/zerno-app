@@ -2,6 +2,31 @@
    Ф5.71: CSS в theme/*.css, устранение MutationObserver в пользу детерминированного updateScrollTop. */
 var railHeadObserver = null;
 var observedRailHead = null;
+var observedRailTopbar = null;
+
+function updateRailStickyPosition(rail, head) {
+  if (!rail || !head) return;
+
+  var headRect = head.getBoundingClientRect();
+  if (!headRect.height) {
+    rail.classList.remove('rail-position-ready');
+    return;
+  }
+
+  var topbar = document.querySelector('header.topbar');
+  var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
+  var laneTop = Math.max(0, topbarBottom, headRect.bottom) + 12;
+  var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
+  var availableHeight = Math.max(0, laneBottom - laneTop);
+  var stickyTop = laneTop + availableHeight / 2;
+
+  var top = stickyTop + 'px';
+  var maxHeight = availableHeight + 'px';
+  if (rail.style.top !== top) rail.style.top = top;
+  if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
+  if (rail.style.transform !== 'translateY(-50%)') rail.style.transform = 'translateY(-50%)';
+  rail.classList.add('rail-position-ready');
+}
 
 function alignRailWithCard() {
   var isDelivery = document.documentElement.dataset.brand === 'delivery';
@@ -9,36 +34,51 @@ function alignRailWithCard() {
   var head = document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head');
 
   if (!rail) return;
-  if (!window.matchMedia('(max-width: 820px)').matches || !head || !head.offsetHeight) {
-    rail.style.removeProperty('margin-top');
-    if (railHeadObserver) railHeadObserver.disconnect();
-    observedRailHead = null;
-    return;
-  }
-
   var wrap = rail.parentElement;
   if (!wrap) return;
 
-  var wrapRect = wrap.getBoundingClientRect();
-  var headRect = head.getBoundingClientRect();
-  var wrapStyle = window.getComputedStyle(wrap);
-  var offset = headRect.bottom - wrapRect.top
-    - (parseFloat(wrapStyle.paddingTop) || 0)
-    - (parseFloat(wrapStyle.borderTopWidth) || 0);
-  var marginTop = Math.max(0, offset) + 'px';
+  var headRect = head && head.getBoundingClientRect();
+  if (headRect && headRect.height) {
+    var wrapRect = wrap.getBoundingClientRect();
+    var wrapStyle = window.getComputedStyle(wrap);
+    var offset = headRect.bottom - wrapRect.top
+      - (parseFloat(wrapStyle.paddingTop) || 0)
+      - (parseFloat(wrapStyle.borderTopWidth) || 0)
+      + 12;
+    var marginTop = Math.max(0, offset) + 'px';
+    if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
+  } else if (rail.style.marginTop !== '0px') {
+    rail.style.marginTop = '0px';
+  }
 
-  if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
+  updateRailStickyPosition(rail, head);
 
-  if (typeof ResizeObserver === 'function' && observedRailHead !== head) {
+  var topbar = document.querySelector('header.topbar');
+  if (typeof ResizeObserver === 'function' && (observedRailHead !== head || observedRailTopbar !== topbar)) {
     if (railHeadObserver) railHeadObserver.disconnect();
     railHeadObserver = new ResizeObserver(alignRailWithCard);
     observedRailHead = head;
-    railHeadObserver.observe(head);
+    observedRailTopbar = topbar;
+    if (head) railHeadObserver.observe(head);
+    if (topbar) railHeadObserver.observe(topbar);
   }
 }
 function alignMbonusWithRail() {}
 window.alignRailWithCard = alignRailWithCard;
 window.alignMbonusWithRail = alignMbonusWithRail;
+var railScrollTick = false;
+window.addEventListener('scroll', function () {
+  if (railScrollTick) return;
+  railScrollTick = true;
+  requestAnimationFrame(function () {
+    railScrollTick = false;
+    var isDelivery = document.documentElement.dataset.brand === 'delivery';
+    updateRailStickyPosition(
+      document.getElementById(isDelivery ? 'deliveryRail' : 'rail'),
+      document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head')
+    );
+  });
+}, { passive: true });
 window.addEventListener('resize', alignRailWithCard, { passive: true });
 window.addEventListener('load', alignRailWithCard, { once: true });
 requestAnimationFrame(alignRailWithCard);
