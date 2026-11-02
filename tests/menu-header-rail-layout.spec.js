@@ -27,6 +27,12 @@ for (const brand of CASES) {
       await expect(menuHead).toBeVisible({ timeout: 10000 });
       await expect(rail).toBeVisible({ timeout: 10000 });
       await expect(ticker).toHaveCSS('display', 'flex');
+      await expect.poll(() => page.evaluate(({ headSelector, railSelector }) => {
+        const headBottom = document.querySelector(headSelector).getBoundingClientRect().bottom;
+        const railTop = document.querySelector(railSelector).getBoundingClientRect().top;
+        return Math.abs(railTop - headBottom);
+      }, { headSelector: brand.head, railSelector: brand.rail }), { timeout: 5000 }).toBeLessThanOrEqual(1);
+      await expect.poll(() => ticker.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 5000 }).toBe(brand.tickerBg);
 
       const layout = await page.evaluate(({ headSelector, railSelector }) => {
         const head = document.querySelector(headSelector);
@@ -75,12 +81,10 @@ for (const brand of CASES) {
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      await page.waitForTimeout(100);
-      const sticky = await page.evaluate((selector) => ({
-        railTop: document.querySelector(selector).getBoundingClientRect().top,
-        headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom,
-      }), brand.rail);
-      expect(Math.abs(sticky.railTop - sticky.headerBottom), 'sticky rail stays directly below the sticky header').toBeLessThanOrEqual(8);
+      await expect.poll(() => page.evaluate((selector) => Math.abs(
+        document.querySelector(selector).getBoundingClientRect().top
+        - document.querySelector('header.topbar').getBoundingClientRect().bottom
+      ), brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(8);
     });
   }
 }
