@@ -74,14 +74,21 @@ test.describe('Mobile profile swipe close', () => {
 
     // Use Chromium's input pipeline: synthetic DOM Events are untrusted and do not
     // reproduce the hadRecentInput semantics of a real touch gesture.
+    const gesture = await panel.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const startX = Math.ceil(rect.left + 10);
+      return { startX, endX: Math.min(startX + 190, window.innerWidth - 10) };
+    });
+    expect(gesture.endX - gesture.startX).toBeGreaterThan(120);
+
     const client = await page.context().newCDPSession(page);
     await client.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
-      touchPoints: [{ x: 40, y: 300 }],
+      touchPoints: [{ x: gesture.startX, y: 300, id: 1 }],
     });
     await client.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
-      touchPoints: [{ x: 230, y: 300 }],
+      touchPoints: [{ x: gesture.endX, y: 300, id: 1 }],
     });
     await client.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
