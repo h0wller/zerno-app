@@ -13,6 +13,9 @@
   line-height: 18px;
   position: relative;
   z-index: 1;
+  background: var(--ticker-bg, transparent);
+  color: var(--ticker-color, inherit);
+  border-bottom: var(--ticker-border, none);
 }
 .ticker.is-empty,
 .ticker[hidden],
@@ -60,7 +63,7 @@ body.is-admin .ticker {
 #tickerTrack span::after {
   content: "〜";
   margin-left: .6rem;
-  color: var(--azure, #3E8FD0);
+  color: var(--ticker-marker-color, var(--azure, #3E8FD0));
 }
 .ticker.is-overflowing #tickerTrack { animation: zt-marquee 30s linear infinite; }
 @keyframes zt-marquee {

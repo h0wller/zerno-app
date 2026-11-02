@@ -111,9 +111,7 @@ var rules = [
  '[data-brand="delivery"] .chat-fab::before{border-color:#C03B2A}',
  '[data-brand="delivery"] .chatHead .av{background:var(--fr-paper);background-image:none;color:var(--fr-choc)}',
  '[data-brand="delivery"] .mo-new,[data-brand="delivery"] .mo-accept,[data-brand="delivery"] .mo-way{background:var(--fr-rice);color:var(--flame)}',
- '[data-brand="delivery"] #tickerTrack,[data-brand="delivery"] #ticker{background:var(--fr-choc);color:#FFC36B;border-bottom:2px solid var(--fr-choc)}',
- '[data-brand="coffee"] #tickerTrack,[data-brand="coffee"] #ticker{background:#123A6B;color:#BBD7F2;border-bottom:1px solid rgba(62,143,208,.25)}',
- '[data-brand="delivery"] #tickerTrack span::after{color:#FFC36B}',
+
  '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
  
 
