@@ -24,7 +24,15 @@ test.describe('Mobile profile swipe close', () => {
     await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#profileTopBtn')).toBeVisible();
     await page.waitForFunction(() => typeof window.openPanel === 'function' && typeof window.closePanel === 'function');
-    await page.evaluate(() => document.fonts.ready);
+    await page.waitForFunction(() => {
+      const stylesheets = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .filter((link) => link.href.includes('/app/ui/theme/'));
+      return stylesheets.length > 0 &&
+        stylesheets.every((link) => link.media !== 'print' && link.sheet !== null);
+    });
+    await page.evaluate(() => document.fonts.ready.then(() => new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve))
+    )));
 
     await page.evaluate(() => {
       window.scrollTo(0, 400);
