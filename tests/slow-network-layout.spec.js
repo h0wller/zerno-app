@@ -217,8 +217,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.subchip.width).toBe(before.subchip.width);
     expect(after.option.height).toBe(before.option.height);
     expect(after.heading.width).toBeGreaterThan(200);
-    expect(after.heading.x).toBeGreaterThanOrEqual(after.section.x);
-    expect(after.heading.right).toBeLessThanOrEqual(after.section.right + 1);
+    expect(after.menuHead).toEqual(before.menuHead);
+    expect(after.menuHead.x).toBeLessThanOrEqual(after.rail.x + 1);
+    expect(after.menuHead.right).toBeGreaterThanOrEqual(after.section.right - 1);
+    expect(after.heading.x).toBeGreaterThanOrEqual(after.menuHead.x);
+    expect(after.heading.right).toBeLessThanOrEqual(after.menuHead.right + 1);
     expect(after.section.width).toBe(before.section.width);
 
     const shiftReport = await page.evaluate(() => ({
