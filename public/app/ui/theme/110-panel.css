@@ -492,6 +492,25 @@
   border-color: var(--line);
   background: #fff;
 }
+#profileBox > #activateBtn.staff-access-link {
+  width: max-content;
+  min-height: 32px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#profileBox > #activateBtn.staff-access-link:hover {
+  background: transparent;
+  color: var(--ink);
+}
 #profileBox .profile-section-heading {
   align-items: center;
   margin-bottom: 10px;

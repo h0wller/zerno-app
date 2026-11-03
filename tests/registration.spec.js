@@ -20,6 +20,59 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     });
   });
 
+  test('guest employee access remains available as a discreet profile link', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'guest-profile-ui-test-token');
+    });
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      const body = pathname === '/api/me'
+        ? {
+            customer: {
+              id: 'guest-ui-test',
+              name: 'Guest UI Test',
+              phone: '+7 999 100-00-00',
+              role: 'guest',
+              cups: 0,
+              stamps: 0,
+              free: 0,
+              history: [],
+              qr: 'guest-ui-test'
+            }
+          }
+        : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
+      });
+    });
+
+    await page.goto('/?brand=delivery');
+    await page.waitForFunction(() => window.me && window.me.role === 'guest');
+    await page.click('#profileTopBtn');
+
+    const entry = page.locator('#activateBtn');
+    await expect(entry).toBeVisible();
+    await expect(entry).toHaveText('Доступ сотрудника');
+    await expect(entry).toHaveClass(/staff-access-link/);
+    await expect(entry).toHaveAttribute('aria-label', 'Открыть вход по коду сотрудника');
+
+    await entry.click();
+    await expect(page.locator('#pinModal')).toHaveClass(/show/);
+
+    const geometry = await entry.evaluate((element) => ({
+      width: element.getBoundingClientRect().width,
+      height: element.getBoundingClientRect().height,
+      fontSize: getComputedStyle(element).fontSize,
+      background: getComputedStyle(element).backgroundColor
+    }));
+    expect(geometry.width).toBeLessThan(180);
+    expect(geometry.height).toBeGreaterThanOrEqual(32);
+    expect(geometry.fontSize).toBe('12px');
+    expect(geometry.background).toBe('rgba(0, 0, 0, 0)');
+  });
+
   test('F3.61: consent visible, not pre-checked, submit gated without it', async ({ page }) => {
     await page.goto('/?brand=delivery');
     await page.click('#profileTopBtn');
