@@ -29,7 +29,7 @@ test('в обеденное окно скидка для своих склады
     lunchPromo: true,
   });
   assert.equal(result.discount, 300);
-  assert.equal(result.label, '20% дневная акция + 10% для своих');
+  assert.equal(result.label, '20% обеденная акция + 10% для своих');
 });
 
 test('в обеденное окно скидка самовывоза не применяется дополнительно', () => {
@@ -40,7 +40,7 @@ test('в обеденное окно скидка самовывоза не пр
     lunchPromo: true,
   });
   assert.equal(result.discount, 200);
-  assert.equal(result.label, '20% дневная акция');
+  assert.equal(result.label, '20% обеденная акция');
 });
 
 test('вне обеденного окна сохраняется прежний максимум скидки самовывоза и скидки для своих', () => {
