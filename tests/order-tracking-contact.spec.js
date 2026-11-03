@@ -119,6 +119,7 @@ test('регистрационная бесплатная доставка со�
   await expect(page.locator('#cartDiscount')).toContainText('−200 ₽');
   await expect(page.locator('#cartDiscount')).toContainText('Будни, 11:00–15:00');
   await expect(page.locator('#cartFee')).toContainText('Бесплатно');
+  await expect(page.locator('#cartFee')).toHaveClass(/is-free/);
   await expect(page.locator('#cartFee')).toContainText('Бонус за регистрацию');
   await expect(page.locator('#cartFee')).toContainText('экономия 200 ₽');
   await expect(page.locator('#cartPromoLine')).toContainText('Бонус за регистрацию применён');
