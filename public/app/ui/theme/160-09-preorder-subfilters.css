@@ -213,6 +213,8 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   min-inline-size: 0;
+  width: 100%;
+  box-sizing: border-box;
   border: 0;
   margin: 6px 0 0;
   padding: 6px 0 0;
@@ -234,6 +236,7 @@
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-weight,
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-price { color:var(--btn-fire-color,#fff); opacity:1; }
 #deliveryGrid .opts .opt-radio:focus-visible + .opt-content { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; border-radius:6px; }
+#deliveryGrid .opts .opt-btn:has(.opt-radio:focus-visible) { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; }
 #deliveryGrid .opts-error { grid-column:1 / -1; margin:2px 0 0; color:var(--flame,#C03B2A); font-size:11px; font-weight:700; }
 
 /* Keep lazy-card reservation aligned with the native fieldset + legend geometry. */
