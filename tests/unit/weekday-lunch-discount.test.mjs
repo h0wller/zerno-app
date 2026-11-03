@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getDeliveryHours, isWeekdayLunchDiscountActive, validateDeliverySlot } from '../../server/domain/delivery-hours.js';
 import { calculateOrderDiscounts } from '../../server/domain/order-discounts.js';
+import { getNextLunchPromoBoundaryDelay } from '../../public/app/core/lunch-promo-time.js';
 
 test('обеденная акция действует по будням с 11:00 включительно до 15:00 исключительно', () => {
   assert.equal(isWeekdayLunchDiscountActive({ dayOfWeek: 1, hour: 10, minute: 59 }), false);
@@ -73,4 +74,18 @@ test('ASAP uses the current Europe/Kaliningrad time', () => {
   assert.equal(isWeekdayLunchDiscountActive(atLunchStart), true);
   assert.equal(isWeekdayLunchDiscountActive(beforeLunchEnd), true);
   assert.equal(isWeekdayLunchDiscountActive(atLunchEnd), false);
+});
+
+test('ASAP refresh boundary is scheduled at the next Kaliningrad lunch transition', () => {
+  const minuteBeforeStart = getNextLunchPromoBoundaryDelay(new Date('2026-11-02T08:59:30.000Z'));
+  const atStart = getNextLunchPromoBoundaryDelay(new Date('2026-11-02T09:00:00.000Z'));
+  const atEnd = getNextLunchPromoBoundaryDelay(new Date('2026-11-02T13:00:00.000Z'));
+  const fridayAfterEnd = getNextLunchPromoBoundaryDelay(new Date('2026-11-06T13:00:00.000Z'));
+  const saturday = getNextLunchPromoBoundaryDelay(new Date('2026-11-07T10:00:00.000Z'));
+
+  assert.equal(minuteBeforeStart, 30 * 1000);
+  assert.equal(atStart, 4 * 60 * 60 * 1000);
+  assert.equal(atEnd, 20 * 60 * 60 * 1000);
+  assert.equal(fridayAfterEnd, 68 * 60 * 60 * 1000);
+  assert.equal(saturday, 47 * 60 * 60 * 1000);
 });
