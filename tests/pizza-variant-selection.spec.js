@@ -23,13 +23,27 @@ const ITEMS = [
     opts: OPTIONS
   },
   {
-    id: 'pz-radio-test-second',
+    id: 'pizza/one',
     section: 'delivery',
     cat: 'pizza',
     e: '🍕',
-    name: 'Вторая тестовая пицца',
+    name: 'Пицца со slash ID',
     desc: 'Томатный соус',
     comp: ['томатный соус'],
+    vol: '25/35 см',
+    price: '0',
+    on: 1,
+    img: '/media/dishes/1-card.webp',
+    opts: OPTIONS
+  },
+  {
+    id: 'pizza?one',
+    section: 'delivery',
+    cat: 'pizza',
+    e: '🍕',
+    name: 'Пицца с question ID',
+    desc: 'Сырный соус',
+    comp: ['сырный соус'],
     vol: '25/35 см',
     price: '0',
     on: 1,
@@ -73,7 +87,7 @@ async function openPizzaMenu(page) {
 
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#deliveryGrid .card[data-product-id="pz-radio-test"]')).toBeVisible();
-  await expect(page.getByRole('group', { name: 'Размер и тесто' })).toHaveCount(2);
+  await expect(page.getByRole('group', { name: 'Размер и тесто' })).toHaveCount(3);
 }
 
 function pizzaCard(page, id = 'pz-radio-test') {
@@ -122,7 +136,7 @@ test.describe('native pizza variant selection', () => {
 
     releaseMenu({ items: ITEMS });
     await expect(page.locator('#deliveryGrid .card[data-product-id="pz-radio-test"]')).toBeVisible();
-    await expect(page.getByRole('group', { name: 'Размер и тесто' })).toHaveCount(2);
+    await expect(page.getByRole('group', { name: 'Размер и тесто' })).toHaveCount(3);
     await expect(page.locator('#deliveryGrid .card[data-product-id="1"]')).toHaveCount(0);
   });
 
@@ -163,7 +177,7 @@ test.describe('native pizza variant selection', () => {
     const groups = page.getByRole('group', { name: 'Размер и тесто' });
     await expect(groups).toHaveCount(2);
 
-    for (let index = 0; index < 2; index++) {
+    for (let index = 0; index < 3; index++) {
       const radios = groups.nth(index).getByRole('radio');
       await expect(radios).toHaveCount(4);
       for (let optionIndex = 0; optionIndex < RADIO_NAMES.length; optionIndex++) {
@@ -180,6 +194,24 @@ test.describe('native pizza variant selection', () => {
     expect(names[1].every(Boolean)).toBe(true);
     expect(new Set(names[1]).size).toBe(1);
     expect(names[0][0]).not.toBe(names[1][0]);
+  });
+
+  test('renders collision-free radio names for distinct production product IDs', async ({ page }) => {
+    await openPizzaMenu(page);
+
+    const names = await page.locator('#deliveryGrid fieldset.opts input[type="radio"]').evaluateAll(radios => {
+      const byProduct = new Map();
+      radios.forEach(radio => {
+        const productId = radio.dataset.id;
+        if (!byProduct.has(productId)) byProduct.set(productId, new Set());
+        byProduct.get(productId).add(radio.name);
+      });
+      return Object.fromEntries(Array.from(byProduct, ([id, groupNames]) => [id, Array.from(groupNames)]));
+    });
+
+    expect(names['pizza/one']).toHaveLength(1);
+    expect(names['pizza?one']).toHaveLength(1);
+    expect(names['pizza/one'][0]).not.toBe(names['pizza?one'][0]);
   });
 
   test('renders the options in two columns with the legend above them', async ({ page }) => {
