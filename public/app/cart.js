@@ -665,6 +665,7 @@ function clearPromo() {
   function ensurePlaceOptions() {
     var placeEl = document.getElementById("checkoutPlace");
     if (!placeEl || placeEl.tagName !== "SELECT") return;
+    var previous = placeEl.value;
     var defaultPlaces = ["Янтарный", "Синявино", "Покровское", "Куликово", "Яблоновка", "Донское"];
     var existing = Array.from(placeEl.options).map(function (o) { return o.value.toLowerCase().trim(); });
     defaultPlaces.forEach(function (p) {
@@ -682,7 +683,10 @@ function clearPromo() {
       placeholder.disabled = true;
       placeEl.insertBefore(placeholder, placeEl.firstChild);
     }
-    if (!placeEl.value) placeEl.value = "";
+    var hasPrevious = previous && Array.from(placeEl.options).some(function (option) {
+      return option.value === previous;
+    });
+    placeEl.value = hasPrevious ? previous : "";
   }
 
   function toggleDeliveryGroup() {
