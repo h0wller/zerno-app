@@ -114,13 +114,30 @@
 .cart-summary-lines {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   margin-bottom: 12px;
 }
 .csl-row {
   display: block;
   font-size: 12.5px;
   font-weight: 600;
+}
+.csl-row.subtotal {
+  color: var(--soft, #586470);
+  padding: 2px 0 6px;
+  border-bottom: 1px solid var(--line, #D8DFE4);
+}
+.csl-row.discount {
+  padding: 7px 9px;
+  border-left: 3px solid var(--status-success, #2F7D4F);
+  border-radius: 8px;
+  background: rgba(47, 125, 79, 0.075);
+}
+.csl-row.discount .csl-main strong {
+  color: var(--status-success, #2F7D4F);
+}
+.csl-row.fee {
+  padding: 2px 0;
 }
 .csl-main {
   display: flex;
@@ -149,7 +166,9 @@
   font-size: 17px;
   font-weight: 800;
   color: var(--ink, #101418);
-  padding-top: 4px;
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line, #D8DFE4);
 }
 .csl-total-row span:last-child {
   font-size: 20px;
