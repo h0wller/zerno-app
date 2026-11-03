@@ -516,18 +516,21 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await expect(page.locator('#checkoutBtn')).toBeEnabled();
 
     // ── Задача 3: Повторное нажатие MainButton во время валидации не дублирует заказ ──
-    let holdCheckoutValidation = true;
-    let releaseValidation;
-    let validationStarted;
-    const validationStartedPromise = new Promise((resolve) => { validationStarted = resolve; });
-    const validationReleasePromise = new Promise((resolve) => { releaseValidation = resolve; });
-    await page.route('**/api/delivery/info', async (route) => {
-      if (holdCheckoutValidation) {
-        holdCheckoutValidation = false;
-        validationStarted();
-        await validationReleasePromise;
-      }
-      await route.continue();
+    // Gate the actual slot-validation function, not a delivery-info network request:
+    // background refreshes can otherwise win the route race and make this test nondeterministic.
+    await page.evaluate(() => {
+      const validation = window.CheckoutValidation;
+      const resolveSlot = validation.resolveSlot.bind(validation);
+      window.__checkoutValidationStarted = false;
+      window.__releaseCheckoutValidation = null;
+      validation.resolveSlot = () => {
+        window.__checkoutValidationStarted = true;
+        return new Promise((resolve, reject) => {
+          window.__releaseCheckoutValidation = () => {
+            resolveSlot().then(resolve, reject);
+          };
+        });
+      };
     });
 
     let checkoutPosts = 0;
@@ -537,12 +540,8 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
       }
     });
 
-    const firstValidation = page.waitForRequest((request) =>
-      new URL(request.url()).pathname === '/api/delivery/info'
-    );
     await page.locator('#checkoutBtn').dispatchEvent('click');
-    await validationStartedPromise;
-    await firstValidation;
+    await page.waitForFunction(() => window.__checkoutValidationStarted);
 
     // During the pending slot validation, Telegram's native button calls checkoutBtn.click().
     await page.evaluate(() => window.__mainButtonClick());
@@ -553,7 +552,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
       response.request().method() === 'POST' &&
       new URL(response.url()).pathname === '/api/orders'
     );
-    releaseValidation();
+    await page.evaluate(() => window.__releaseCheckoutValidation());
     const orderResponse = await orderResponsePromise;
     expect(orderResponse.ok()).toBeTruthy();
     await expect.poll(() => checkoutPosts).toBe(1);
