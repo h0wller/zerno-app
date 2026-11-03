@@ -54,7 +54,7 @@ test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степп
     await expect(firstCard).toBeVisible({ timeout: 10000 });
 
     // Если у карточки есть выбор размера (пицца), кликаем первый размер
-    const optBtn = firstCard.locator('.opts button').first();
+    const optBtn = firstCard.locator('.opts label.opt-btn').first();
     if ((await optBtn.count()) > 0) {
       await optBtn.click();
     }
@@ -118,7 +118,7 @@ test('корзина: 1 клик = +1, подарок 2×35, пустая = 0 �
 
   await page.goto('/?brand=delivery');
   const card = page.locator('#deliveryGrid .card').first();
-  await card.locator('.opts button', { hasText: '35 см' }).first().click({ timeout: 10000 });
+  await card.locator('.opts label.opt-btn', { hasText: '35 см' }).first().click({ timeout: 10000 });
   await card.locator('button', { hasText: 'Добавить' }).first().click();
   await page.locator('#cartFab').click();
 
@@ -269,7 +269,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
 
     await page.goto('/?brand=delivery');
 
-    const firstPizzaCard = page.locator('#deliveryGrid .card:has(.opts button)').first();
+    const firstPizzaCard = page.locator('#deliveryGrid .card:has(.opts input[type="radio"])').first();
     await expect(firstPizzaCard).toBeVisible({ timeout: 10000 });
 
     // ── Задача 1: Сетка опций пиццы (.opts) и активное состояние .sel ──
@@ -451,11 +451,11 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
       window.getKaliningradTime = () => ({ hour: 12, minute: 30 });
     });
 
-    const firstCard = page.locator('#deliveryGrid .card:has(.opts button)').first();
+    const firstCard = page.locator('#deliveryGrid .card:has(.opts input[type="radio"])').first();
     await expect(firstCard).toBeVisible({ timeout: 10000 });
 
     // ── Задача 1: Haptics на выбор опции, первичное добавление (medium) и степпер (light) ──
-    await firstCard.locator('.opts button', { hasText: '35 см' }).first().click();
+    await firstCard.locator('.opts label.opt-btn', { hasText: '35 см' }).first().click();
     await firstCard.locator('.steprow .cta, [data-add]').first().click();
     await firstCard.locator('.steprow [data-step="1"], .steprow .step').last().click();
 
