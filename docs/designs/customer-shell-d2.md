@@ -52,7 +52,7 @@ D2 перестраивает общую оболочку витрины дву�
 5. Переключатель breakpoint идемпотентен; вызов повторно в той же зоне не создаёт перемещений/дубликатов.
 6. На mobile rail — обычный горизонтальный flow: `display:flex`, `flex-direction:row`, `overflow-x:auto`, без sticky top/transform/позиционирования из desktop helper.
 7. На desktop rail остаётся вертикальным; `scrolltop.js` продолжает рассчитывать существующую безопасную позицию.
-8. Delivery ScrollSpy продолжает обновлять активную категорию и при горизонтальном представлении обеспечивает видимость активной кнопки без вертикального `scrollIntoView`.
+8. Delivery ScrollSpy продолжает обновлять активную категорию и при горизонтальном представлении обеспечивает видимость активной кнопки без вертикального `scrollIntoView`. Отдельный Playwright-тест прокручивает rail к концу и проверяет, что вызов ScrollSpy возвращает active item в видимую область.
 9. Coffee category clicks сохраняют фильтрацию через существующую переменную `cat`; не приписывать Coffee несуществующий ScrollSpy.
 10. `#mbonusBtn` отсутствует в DOM и не создаётся runtime; бонусы Coffee доступны через account panel; Delivery bonus tab остаётся скрытой.
 11. Никаких API, DB, роли, цены, промокода или бонусных правил в D2 не меняется.
@@ -62,14 +62,15 @@ D2 перестраивает общую оболочку витрины дву�
 
 ### 5.1. Responsive rail reparenting
 
-В `views.js` использовать контроллер на `matchMedia('(max-width: 820px)')`:
-- взять исходные ссылки на `.wrap`, общую `section`, оба rail nodes и их target anchors;
-- при mobile сохранить исходное расположение rail в соответствующем view; при desktop поместить узлы прямыми детьми `.wrap` перед `section`;
-- при desktop восстановить оба nodes в `.wrap` до `section`;
-- на старте выполнить placement без DOM-переезда на mobile; слушать только `change` event для смены breakpoint; не создавать observers/polling loops;
-- не запускать функцию, когда обязательные DOM anchors отсутствуют, и не удалять узлы.
+Исходный HTML — mobile-first: Coffee rail находится внутри `#menuView` между `.menu-head` и `#grid`, Delivery rail — внутри `#deliveryView` между `#deliveryBanner` и `#deliverySubFilter`. Поэтому мобильный первый кадр не зависит от загрузки JS и не ждёт переноса DOM.
 
-В `scrolltop.js` на mobile сначала очистить `marginTop/top/maxHeight/transform` и `rail-position-ready`, затем выйти. При desktop родитель — `.wrap`, поэтому прежняя формула остаётся применима. Смена breakpoint вызывает существующий resize handler; дополнительно можно вызвать `alignRailWithCard()` из controller только после того, как функция зарегистрирована, либо полагаться на resize.
+В `views.js` контроллер на `matchMedia('(max-width: 820px)')`:
+- на старте оставляет rail nodes в исходных mobile-flow позициях при ширине ≤820 px;
+- на ширине ≥821 px помещает те же узлы прямыми детьми `.wrap` перед общей `section`;
+- при изменении breakpoint выполняет обратный перенос без клонирования, пересоздания обработчиков или потери state;
+- слушает только `change` event, не создаёт observers/polling loops.
+
+На desktop critical CSS скрывает вложенные rail nodes до reparenting; после переноса `scrolltop.js` вычисляет прежнюю вертикальную sticky-геометрию.
 
 ### 5.2. Mobile category strip
 
@@ -123,8 +124,8 @@ D2 перестраивает общую оболочку витрины дву�
 
 ## 9. Implementation sequence and rollback
 
-1. Обновить/добавить focused Playwright tests — сначала RED.
-2. Реализовать breakpoint reparenting в `views.js` и mobile reset/desktop align в `scrolltop.js`.
+1. Добавить focused Playwright tests на mobile flow, desktop reparenting, DOM identity, bonus entry и Delivery active-item reveal.
+2. Реализовать mobile-first DOM placement, desktop reparenting в `views.js` и mobile reset/desktop align в `scrolltop.js`.
 3. Перестроить mobile rail и wrap CSS в canonical theme и critical CSS.
 4. Удалить bonus shortcut и его вспомогательные ссылки/стили; сохранить tab flow.
 5. Обновить `docs/module-map.md` и D2 status в design doc.
