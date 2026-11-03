@@ -175,7 +175,7 @@ test.describe('native pizza variant selection', () => {
     await openPizzaMenu(page);
 
     const groups = page.getByRole('group', { name: 'Размер и тесто' });
-    await expect(groups).toHaveCount(2);
+    await expect(groups).toHaveCount(3);
 
     for (let index = 0; index < 3; index++) {
       const radios = groups.nth(index).getByRole('radio');
@@ -322,7 +322,7 @@ test.describe('native pizza variant selection', () => {
     await openPizzaMenu(page);
 
     const first = pizzaGroup(pizzaCard(page));
-    const second = pizzaGroup(pizzaCard(page, 'pz-radio-test-second'));
+    const second = pizzaGroup(pizzaCard(page, 'pizza?one'));
     const firstRadios = first.getByRole('radio');
     const secondRadios = second.getByRole('radio');
 
