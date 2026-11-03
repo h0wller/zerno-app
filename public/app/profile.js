@@ -292,12 +292,15 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                         ? "🧾 роль: кассир"
                         : "роль: гость";
             const activateButton = $("#activateBtn");
+            const staffAccessSection = $("#staffAccessSection");
             const isGuest = r === "guest";
-            activateButton.hidden = !(isGuest || r === "cashier");
+            const hasStaffAction = isGuest || r === "cashier";
+            activateButton.hidden = !hasStaffAction;
+            if (staffAccessSection) staffAccessSection.hidden = !hasStaffAction;
             activateButton.classList.toggle("staff-access-link", isGuest);
             activateButton.textContent = isGuest
                 ? "Доступ сотрудника"
-                : "🔑 Повысить до администратора";
+                : "Повысить до администратора";
             activateButton.setAttribute(
                 "aria-label",
                 isGuest ? "Открыть вход по коду сотрудника" : "Повысить до администратора",
