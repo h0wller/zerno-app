@@ -108,7 +108,7 @@ test.describe('PWA Responsive Layout Audit', () => {
             await page.goto(pg.url, { waitUntil: 'domcontentloaded' });
             await ensureNoModal(page);
 
-            const panelToggle = page.locator('#mbonusBtn, .ava, [data-tab="profile"]').first();
+            const panelToggle = page.locator('#profileTopBtn, [data-tab="profile"]').first();
             await panelToggle.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
 
             if (await panelToggle.isVisible().catch(() => false)) {

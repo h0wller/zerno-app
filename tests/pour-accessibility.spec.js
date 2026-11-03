@@ -192,7 +192,6 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       return [
         childIndex('.venueWrap'),
         childIndex('#headerBrand'),
-        childIndex('#mbonusBtn'),
         childIndex('#profileTopBtn'),
         childIndex('#modeSeg'),
       ];

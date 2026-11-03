@@ -628,12 +628,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       });
 
       const assertHeader = (header, phase) => {
-        for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile', 'bonus']) {
+        for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile']) {
           expect(header[selector], `${selector} is visible at ${width}px ${phase}`).not.toBeNull();
         }
-        expect(header.bonusStyle.position, `bonus stays fixed at ${width}px ${phase}`).toBe('fixed');
-        expect(header.bonusStyle.width, `bonus width is reserved at ${width}px ${phase}`).toBe('56px');
-        expect(header.bonusStyle.height, `bonus height is reserved at ${width}px ${phase}`).toBe('56px');
+        expect(header.bonus, `standalone bonus shortcut is absent at ${width}px ${phase}`).toBeNull();
+        expect(header.bonusStyle, `standalone bonus shortcut has no reserved geometry at ${width}px ${phase}`).toBeNull();
         const controls = ['venue', 'brandGroup', 'profile']
           .map((selector) => header[selector]);
         for (let i = 0; i < controls.length; i++) {
