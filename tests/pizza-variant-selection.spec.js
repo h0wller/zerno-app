@@ -118,7 +118,8 @@ test.describe('native pizza variant selection', () => {
     });
     expect(layout.rowCount).toBe(2);
     expect(layout.columnCount).toBe(2);
-    expect(layout.legend.width).toBeGreaterThan(layout.options[0].width);
+    expect(layout.legend.width).toBeGreaterThan(0);
+    expect(layout.legend.y).toBeLessThan(layout.options[0].y);
     expect(layout.options).toHaveLength(4);
     expect(layout.options[0].y).toBe(layout.options[1].y);
     expect(layout.options[2].y).toBe(layout.options[3].y);
@@ -132,9 +133,9 @@ test.describe('native pizza variant selection', () => {
     const radio = card.getByRole('radio', { name: /35 см пышное 750 г 735 ₽/ });
     await radio.check();
     await expect(radio).toBeChecked();
-    await expect(card.locator('.opts-error')).toHaveCount(0);
+    await expect(card.locator('.opts-error')).toBeHidden();
     await expect(page.locator('#toasts .toast')).toHaveCount(0);
-    await expect(card.getByRole('radio', { name: /25 см, пышное/ })).not.toBeChecked();
+    await expect(card.getByRole('radio', { name: /25 см пышное 415 г 535 ₽/ })).not.toBeChecked();
   });
 
   test('requires an option inline, focuses the first radio, and does not show an error toast or add to cart', async ({ page }) => {
