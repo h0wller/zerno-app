@@ -3,9 +3,9 @@
    Windows-safe: пути для динамических импортов конвертируются в file:// URL. */
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = path.resolve(import.meta.dirname, '..');
 let fails = 0;
 const ok = (m) => console.log('✅', m);
 const bad = (m) => { fails++; console.error('❌', m); };

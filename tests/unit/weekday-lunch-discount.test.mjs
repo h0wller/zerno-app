@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isWeekdayLunchDiscountActive, validateDeliverySlot } from '../../server/domain/delivery-hours.js';
+import { getDeliveryHours, isWeekdayLunchDiscountActive, validateDeliverySlot } from '../../server/domain/delivery-hours.js';
 import { calculateOrderDiscounts } from '../../server/domain/order-discounts.js';
 
 test('обеденная акция действует по будням с 11:00 включительно до 15:00 исключительно', () => {
@@ -29,7 +29,7 @@ test('в обеденное окно скидка для своих склады
     lunchPromo: true,
   });
   assert.equal(result.discount, 300);
-  assert.equal(result.label, '20% дневная акция + 10% для своих');
+  assert.equal(result.label, '20% обеденная акция + 10% для своих');
 });
 
 test('в обеденное окно скидка самовывоза не применяется дополнительно', () => {
@@ -40,7 +40,7 @@ test('в обеденное окно скидка самовывоза не пр
     lunchPromo: true,
   });
   assert.equal(result.discount, 200);
-  assert.equal(result.label, '20% дневная акция');
+  assert.equal(result.label, '20% обеденная акция');
 });
 
 test('вне обеденного окна сохраняется прежний максимум скидки самовывоза и скидки для своих', () => {
@@ -53,4 +53,24 @@ test('вне обеденного окна сохраняется прежний
   assert.equal(calculateOrderDiscounts({
     subtotal: 1000, method: 'delivery', byStaff: false, lunchPromo: false,
   }).discount, 0);
+});
+
+test('обеденная скидка 30% округляется один раз от исходной суммы', () => {
+  const result = calculateOrderDiscounts({
+    subtotal: 108,
+    method: 'delivery',
+    byStaff: true,
+    lunchPromo: true,
+  });
+  assert.equal(result.discount, 32);
+});
+
+test('ASAP uses the current Europe/Kaliningrad time', () => {
+  const atLunchStart = getDeliveryHours(new Date('2026-11-02T09:00:00.000Z'));
+  const beforeLunchEnd = getDeliveryHours(new Date('2026-11-02T12:59:00.000Z'));
+  const atLunchEnd = getDeliveryHours(new Date('2026-11-02T13:00:00.000Z'));
+
+  assert.equal(isWeekdayLunchDiscountActive(atLunchStart), true);
+  assert.equal(isWeekdayLunchDiscountActive(beforeLunchEnd), true);
+  assert.equal(isWeekdayLunchDiscountActive(atLunchEnd), false);
 });
