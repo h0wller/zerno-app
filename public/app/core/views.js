@@ -65,8 +65,8 @@ var rules = [
 '[data-brand="coffee"] .topbar .brand b#brandTitle .bean svg{display:block;width:100%;height:100%;overflow:visible}',
 '@media(max-width:690px){[data-brand="delivery"] .topbar .brand .mark{width:196px!important;max-width:min(60vw,210px)!important;height:48px!important;max-height:48px!important}}', '[data-brand="delivery"] .topbar .brand .mark{width:var(--mark-w,160px);height:var(--mark-h,40px);max-height:var(--mark-h,40px);max-width:min(60vw,420px);flex:0 1 auto;border-radius:8px}',
  '[data-brand="delivery"] .topbar .brand .mark img,[data-brand="delivery"] .topbar .brand .mark svg{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}',
- '@media(min-width:821px) and (max-width:1180px){.wrap{grid-template-columns:92px minmax(0,1fr);gap:18px;padding:18px}.wrap > .rail{grid-column:1}.wrap > section{grid-column:2;min-width:0}.wrap > .panel{position:fixed;top:0;right:0;bottom:0;z-index:120;width:min(400px,100%);max-height:none;border-radius:22px 0 0 22px;transform:translateX(105%);transition:.35s cubic-bezier(.2,1,.3,1)}.wrap > .panel.open{transform:none}.tabs .btn-back{display:none}}', '@media(min-width:821px){#mbonusBtn{flex-direction:row;align-items:center;white-space:nowrap;overflow:hidden}}',
- '@media(max-width:820px){.wrap{grid-template-columns:80px minmax(0,1fr);gap:10px;padding:10px 12px 28px 8px}.panel{position:fixed;top:0;right:0;bottom:0;z-index:120;width:min(400px,100%);max-height:none;border-radius:22px 0 0 22px;transform:translateX(105%);transition:.35s cubic-bezier(.2,1,.3,1);padding-top:calc(env(safe-area-inset-top) + 6px)}.panel.open{transform:none}.tabs{order:99;margin-top:auto;background:var(--panel);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom))}.tabs button{padding:13px 6px;font-size:14px}.mbonus.near-footer{opacity:0;pointer-events:none;transform:translateY(8px)} .scan{grid-template-columns:1fr;justify-items:center;text-align:center}body.is-cashier .wrap{grid-template-columns:1fr!important;max-width:900px;padding:14px 16px 40px}body.is-cashier .wrap > .rail,body.is-cashier .wrap > #deliveryRail{display:none!important}}',
+ '@media(min-width:821px) and (max-width:1180px){.wrap{grid-template-columns:92px minmax(0,1fr);gap:18px;padding:18px}.wrap > .rail{grid-column:1}.wrap > section{grid-column:2;min-width:0}.wrap > .panel{position:fixed;top:0;right:0;bottom:0;z-index:120;width:min(400px,100%);max-height:none;border-radius:22px 0 0 22px;transform:translateX(105%);transition:.35s cubic-bezier(.2,1,.3,1)}.wrap > .panel.open{transform:none}.tabs .btn-back{display:none}}', 
+ '@media(max-width:820px){.wrap{grid-template-columns:minmax(0,1fr);gap:10px;padding:10px 12px 32px}.panel{position:fixed;top:0;right:0;bottom:0;z-index:120;width:min(400px,100%);max-height:none;border-radius:22px 0 0 22px;transform:translateX(105%);transition:.35s cubic-bezier(.2,1,.3,1);padding-top:calc(env(safe-area-inset-top) + 6px)}.panel.open{transform:none}.tabs{order:99;margin-top:auto;background:var(--panel);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom))}.tabs button{padding:13px 6px;font-size:14px}.scan{grid-template-columns:1fr;justify-items:center;text-align:center}body.is-cashier .wrap{grid-template-columns:1fr!important;max-width:900px;padding:14px 16px 40px}body.is-cashier .wrap > .rail,body.is-cashier .wrap > #deliveryRail{display:none!important}}',
  '[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
  '[data-brand="delivery"] .venueToggle:hover{background:#EFE6D8;box-shadow:3px 3px 0 var(--fr-choc);transform:translate(-1px,-1px)}',
  '[data-brand="delivery"] .venueWrap #brandSeg{background:#FFFDF9;border:1px solid #C99E6E;box-shadow:0 10px 25px rgba(58,42,28,0.18);border-radius:14px}',
@@ -247,6 +247,45 @@ function syncViewsVisibility(showCoffee, showDeliv) {
   if (dr) dr.style.display = showDeliv ? '' : 'none';
 }
 
+function syncResponsiveCategoryRails() {
+  var wrap = document.querySelector('.wrap');
+  if (!wrap) return;
+  var section = wrap.querySelector(':scope > section');
+  var menuView = document.getElementById('menuView');
+  var deliveryView = document.getElementById('deliveryView');
+  var coffeeRail = document.getElementById('rail');
+  var deliveryRail = document.getElementById('deliveryRail');
+  var coffeeGrid = document.getElementById('grid');
+  var deliveryGrid = document.getElementById('deliveryGrid');
+  var deliveryAnchor = document.getElementById('deliverySubFilter') || deliveryGrid;
+  var query = window.matchMedia ? window.matchMedia('(max-width: 820px)') : null;
+
+  function place() {
+    if (query && query.matches) {
+      if (menuView && coffeeRail && coffeeGrid && coffeeRail.parentElement !== menuView) {
+        menuView.insertBefore(coffeeRail, coffeeGrid);
+      }
+      if (deliveryView && deliveryRail && deliveryAnchor && deliveryRail.parentElement !== deliveryView) {
+        deliveryView.insertBefore(deliveryRail, deliveryAnchor);
+      }
+    } else if (section) {
+      if (coffeeRail) wrap.insertBefore(coffeeRail, section);
+      if (deliveryRail) wrap.insertBefore(deliveryRail, section);
+    }
+    if (typeof window.alignRailWithCard === 'function') {
+      window.requestAnimationFrame(function () { window.alignRailWithCard(); });
+    }
+  }
+
+  place();
+  if (query) {
+    if (typeof query.addEventListener === 'function') query.addEventListener('change', place);
+    else if (typeof query.addListener === 'function') query.addListener(place);
+  }
+}
+
+syncResponsiveCategoryRails();
+
 function syncStaffAndGuestControls(bName2) {
   var canEdit = (typeof canStopMenu === 'function') && canStopMenu(bName2);
   var et = document.getElementById('editToggle');
@@ -257,8 +296,6 @@ function syncStaffAndGuestControls(bName2) {
   var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
   if (ms) ms.hidden = !isStaff;
   if (typeof renderModes === 'function') renderModes();
-  var mb = document.getElementById('mbonusBtn');
-  if (mb) mb.style.display = (typeof mode !== 'undefined' && mode === 'guest' && bName2 === 'coffee') ? '' : 'none';
   var bb = document.getElementById('bonusBox');
   if (bb) bb.style.display = (typeof me !== 'undefined' && me) ? '' : 'none';
   var bt = document.querySelector('.tabs button[data-tab="bonus"]');

@@ -32,7 +32,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `core/views.js` | CSS-инъекция СЛОЯ 2 (layout + `[data-brand]`); `sv()`/`setMode`/`syncBrandViews` — финальные владельцы (перебивают шимы catalog.js); DOM-переезды (deliveryView/ordersView/cashierView → section, deliveryRail → wrap); пилюля `#venueToggle` и дропдаун `#brandSeg`; размещение пуш-бабла; `fitSearch` (ширина поиска); `stripLogoInlineStyles` — inline-страховка размеров марки; кластер шапки Ф5.30 | `window.syncBrandViews`, `window.setMode`, `window.stripLogoInlineStyles`, `window.__fitSearch`, `window.__syncHeaderCluster` |
+| `core/views.js` | CSS-инъекция СЛОЯ 2 (layout + `[data-brand]`); `sv()`/`setMode`/`syncBrandViews` — финальные владельцы (перебивают шимы catalog.js); DOM-переезды видов и responsive-переезды тех же #rail/#deliveryRail между .wrap и catalog view (views.js владеет размещением, не состоянием категорий); пилюля `#venueToggle` и дропдаун `#brandSeg`; размещение пуш-бабла; `fitSearch` (ширина поиска); `stripLogoInlineStyles` — inline-страховка размеров марки; кластер шапки Ф5.30 | `window.syncBrandViews`, `window.setMode`, `window.stripLogoInlineStyles`, `window.__fitSearch`, `window.__syncHeaderCluster` |
 | `admin-extra.js` | `applyBrandChrome()`: содержимое `#tickerTrack` и `.mark` (официальные svg/img; Ф5.39: Пятница — горизонтальный SVG 160×40 без webp-растра); `loadPromos` (модалка админа); guard'ы кофейного меню до загрузки MENU | `window.applyBrandChrome`, `window.loadPromos` |
 | `core/catalog.js` | `loadMenu`, `renderModes`; обработчик переключателя режима делегирует вызов `window.setMode` (реализация находится в `core/views.js`) | `window.loadMenu`, `window.renderModes` |
 | `core/splash.js` | Динамический сплэш `#brandSplash`, выбор бренда `finish()` | — |
@@ -46,10 +46,10 @@
 | --- | --- | --- |
 | `core/menu-content.js` | Общее чистое правило отображения состава: описание пиццы доставки служит текстовым составом, структурированный `comp` остаётся в данных | `getVisibleComposition` |
 | `core/nutrition.js` + `core/nutrition-data.js` | Оценочный расчёт КБЖУ по ТТК, справочнику ингредиентов и вложенным заготовкам | `window.INGREDIENTS_DB`, `window.TECH_CARDS`, `window.calculateDishKbju` |
-| `menu.js` | `#rail` (категории), `#searchInput`, рендер `#grid`; зум фото (`openZoom`); модалка модификаторов; LCP-картинка eager | `window.renderMenu`, `window.renderRail`, `window.openZoom` |
+| `menu.js` | Coffee `#rail` / `data-cat` и состояние фильтра `cat`; рендер `#grid`; mobile horizontal rail uses the same owner and handlers; зум фото и модалка модификаторов | `window.renderMenu`, `window.renderRail`, `window.openZoom` |
 | `menu-editor.js` | `openEditor`/`exitEdit`, сохранение emModal, editToggle | `window.openEditor`, `window.exitEdit` |
 | `core/editor.js` | Делегирование кликов `#grid`; фотозона редактора (`renderZone`/`loadImg`/`closeEditor`); имя гостя | `window.renderZone`, `window.closeEditor`, `window.loadImg` |
-| `delivery.js` | `window.DMENU`, cart (инициализация из LS); `#deliveryRail`; рендер `#deliveryGrid` + скелетоны; стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
+| `delivery.js` | `window.DMENU`, cart (инициализация из LS); Delivery `#deliveryRail` / `dcat`, `syncRailActiveOnScroll()` и horizontal active-item reveal; рендер `#deliveryGrid` + скелетоны; стоп-лист, слоты и предзаказ | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
 | `ui/delivery-search.js` | Поиск в Пятнице (`#dSearch` внутри `.mh-right`) и фильтрация грида | — |
 
 ## 4. Корзина и чекаут
@@ -78,7 +78,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `profile.js` | Готовность `me`, `updateMbonusBadge`, `renderBonus`, `renderProfile`, явное редактирование имени и раскрытие истории; QR-текст под канвасом | `window.renderBonus`, `window.renderProfile` |
+| `profile.js` | Готовность `me`, `renderBonus`, `renderProfile`, явное редактирование имени и раскрытие истории; QR-текст под канвасом | `window.renderBonus`, `window.renderProfile` |
 | `profile-orders.js` | Последний заказ и полный список заказов; общий кэш/запрос для карточки и модалки; обработка «Отследить» | `window.loadMyOrders`, `window.renderOrdersModal`, `window.updateMyOrdersCache`, `window.invalidateMyOrders` |
 | `profile-brand.js` | Включение брендовых секций профиля, блок «Пятница», единый `renderVerifyNote` | `window.applyProfileBrand`, `window.renderVerifyNote` |
 | `core/qr.js` | `drawQR`, полноэкранный `#qrModal`, wake lock | `window.drawQR`, `window.openQRFull`, `window.closeQRFull` |
@@ -128,9 +128,9 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/overlay-core.js` | `syncOverlay` (модалки/шторки/корзина), popstate/Escape/клик по оверлею; TgUx (MainButton, BackButton, haptics) | `window.syncOverlay`, `window.TgUx` |
-| `core/panel.js` | Шторка профиля `#panel`, вкладки `.tabs`, обработчик mbonusBtn | `window.openPanel`, `window.closePanel`, `window.setTab` |
+| `core/panel.js` | Шторка профиля `#panel`, вкладки `.tabs`, переходы «Бонусы» / «Профиль»; отдельного bonus shortcut нет | `window.openPanel`, `window.closePanel`, `window.setTab` |
 | `core/swipe.js` | iOS-свайп закрытия `#panel` | — |
-| `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`); обёртка `.topbar-right` на ≥821px | `window.alignRailWithCard` |
+| `ui/scrolltop.js` | `#scrollTopBtn`; единственный владелец desktop vertical rail position (`alignRailWithCard`); mobile horizontal rails use normal flow; обёртка `.topbar-right` на ≥821px | `window.alignRailWithCard` |
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |

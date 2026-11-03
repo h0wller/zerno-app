@@ -133,7 +133,7 @@ if (window.ztBus) {
 
 1. **Безопасные зоны мобильных устройств (Safe Area):**
 
-* Плавающие элементы (`#scrollTopBtn`, `.chat-fab`, `#cartFab`, `#mbonusBtn`, модальные окна и шторки) обязаны учитывать safe-area:
+* Плавающие элементы (`#scrollTopBtn`, `.chat-fab`, `#cartFab`, модальные окна и шторки) обязаны учитывать safe-area:
 
 ```css
 bottom: calc(20px + env(safe-area-inset-bottom, 0px));

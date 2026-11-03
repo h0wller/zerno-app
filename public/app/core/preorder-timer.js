@@ -101,7 +101,7 @@ function renderTimers() {
   function init() {
     // Запуск строго при переходе в профиль/заказы
     document.addEventListener('click', function (e) {
-      if (e.target && e.target.closest && e.target.closest('#profileTopBtn, .ava, #mbonusBtn, [data-tab="profile"], #myOrders')) {
+      if (e.target && e.target.closest && e.target.closest('#profileTopBtn, .ava, [data-tab="profile"], #myOrders')) {
         setTimeout(renderTimers, 100);
       }
     });

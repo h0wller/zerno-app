@@ -71,12 +71,10 @@ body.cart-open .cartFab,
 body.cart-open #cartFab,
 body.cart-open .chat-fab,
 body.cart-open #chatFab,
-body.cart-open #mbonusBtn,
 body:has(#cartPanel.open) .cartFab,
 body:has(#cartPanel.open) #cartFab,
 body:has(#cartPanel.open) .chat-fab,
-body:has(#cartPanel.open) #chatFab,
-body:has(#cartPanel.open) #mbonusBtn {
+body:has(#cartPanel.open) #chatFab {
   display: none;
   opacity: 0;
   pointer-events: none;

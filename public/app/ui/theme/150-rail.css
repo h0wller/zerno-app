@@ -1,10 +1,4 @@
-/* ── F5.15: мобильный рейл — узкая вертикальная колонка,
-sticky слева на весь скролл
-   (продуктовое решение 27.09: вертикальный рейл на мобиле — фирменный вид;
-   горизонтальная строка из media max-1180 отменена для рейла).
-   .wrap .rail (0,
-2,
-0) перебивает горизонтальный padding/overflow Слоя 2. ── */
+/* D2: mobile category strips live in their catalog views; desktop rails remain vertical. */
 @media (max-width: 820px){
 
 

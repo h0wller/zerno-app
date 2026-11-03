@@ -60,33 +60,8 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
 
     /* ── бонусы ── */
 
-    function updateMbonusBadge() {
-        var mbBtn = document.getElementById("mbonusBtn");
-        if (!mbBtn) return;
-        var stamps = (window.me && typeof window.me.stamps === 'number') ? window.me.stamps : 0;
-        var free = (window.me && typeof window.me.free === 'number') ? window.me.free : 0;
-        mbBtn.dataset.st = stamps + "/10";
-
-        var stNum = document.getElementById("mbonusSt");
-        if (stNum) stNum.textContent = stamps + "/10";
-
-        var beanEl = mbBtn.querySelector('.mb-bean');
-        if (beanEl && !beanEl.querySelector('svg')) {
-            beanEl.innerHTML = BEAN;
-        }
-
-        var mbf = document.getElementById("mbonusFree");
-        if (mbf) {
-            mbf.hidden = free < 1;
-            mbf.textContent = '🎁 ' + free;
-            mbf.title = 'Бесплатных кофе: ' + free;
-        }
-    }
-    window.updateMbonusBadge = updateMbonusBadge;
-
     /* ── бонусы ── */
     function renderBonus() {
-        updateMbonusBadge();
         if (!_meResolved) {
             var noUserEl = document.getElementById('bonusNoUser');
             var boxEl = document.getElementById('bonusBox');
@@ -144,7 +119,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                 }
             };
 
-        updateMbonusBadge();
 
         setTimeout(() => {
             if (me && me.qr) {

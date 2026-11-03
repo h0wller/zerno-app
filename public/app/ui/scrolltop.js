@@ -4,7 +4,21 @@ var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
 
+function clearMobileRailPosition(rail) {
+  if (!rail) return;
+  rail.style.removeProperty('margin-top');
+  rail.style.removeProperty('top');
+  rail.style.removeProperty('max-height');
+  rail.style.removeProperty('transform');
+  rail.classList.remove('rail-position-ready');
+}
+
+function isMobileRailLayout() {
+  return !!(window.matchMedia && window.matchMedia('(max-width: 820px)').matches);
+}
+
 function updateRailStickyPosition(rail, head) {
+  if (isMobileRailLayout()) { clearMobileRailPosition(rail); return; }
   if (!rail || !head) return;
 
   var headRect = head.getBoundingClientRect();
@@ -34,7 +48,9 @@ function alignRailWithCard() {
   var head = document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head');
 
   if (!rail) return;
+  if (isMobileRailLayout()) { clearMobileRailPosition(rail); return; }
   var wrap = rail.parentElement;
+  if (!wrap || !wrap.classList.contains('wrap')) return;
   if (!wrap) return;
 
   var headRect = head && head.getBoundingClientRect();
@@ -63,9 +79,7 @@ function alignRailWithCard() {
     if (topbar) railHeadObserver.observe(topbar);
   }
 }
-function alignMbonusWithRail() {}
 window.alignRailWithCard = alignRailWithCard;
-window.alignMbonusWithRail = alignMbonusWithRail;
 var railScrollTick = false;
 window.addEventListener('scroll', function () {
   if (railScrollTick) return;

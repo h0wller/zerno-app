@@ -49,82 +49,16 @@
   font-weight: 600;
   line-height: 1.15;
 }
-/* ── F5.17: вертикальная раскладка кнопок категорий ── */
-@media (max-width: 820px) {
-
-  .wrap .rail button,
-  .wrap #deliveryRail button {
-    min-height: 60px;
-    padding: 7px 3px;
-    border-radius: 14px;
-    font-size: 9px;
-    line-height: 1.08;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    width: 100%;
-    margin: 0;
-    letter-spacing: 0;
-    text-align: center;
-  }
-
-  .wrap .rail button.on,
-  .wrap #deliveryRail button.on {
-    font-size: 9px;
-  }
-
-  .wrap .rail .re,
-  .wrap #deliveryRail .re {
-    font-size: 20px;
-    margin: 0;
-  }
-}
-/* ── F5.17: бонус-пилюля компакт справа над FAB; у футера растворяется ── */
-.mbonus.near-footer{
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(8px);
-}
-@media (max-width: 820px) {
-.mbonus>*{
-    font-size: 10px;
-    padding: 3px 6px;
-    border-radius: 8px;
-  }
-.mbonus.near-footer{
-    transform: translateY(8px);
-  }
-}
-/* ── F5.18: бейдж бонусов слева + рейл Пятницы ×2 + .on-типографика через body-префикс ── */
+/* F5.18: active rail button typography. */
 body .wrap .rail button.on,
 body .wrap #deliveryRail button.on{
   font-size: 9.5px;
   font-weight: 700;
   line-height: 1.1;
 }
-@media (max-width: 820px) {
-.mbonus>span:not(.mb-free){
-    display: none;
-  }
-.mbonus::before{
-    content: "🎁 " attr(data-st);
-    font-size: 11px;
-    font-weight: 800;
-    color: #fff;
-  }
-.mbonus .mb-free{
-    font-size: 9px;
-    padding: 3px 5px;
-    border-radius: 8px;
-  }
-}
-.mbonus .mb-free[hidden]{
-  display: none !important;
-}
+
+
+
 
 .skeleton-foot{
   height: 46px;
@@ -135,7 +69,7 @@ body .wrap #deliveryRail button.on{
 #cartPromo{
   transition: none
 }
-/* ── Ф5.26: бонус-бейдж выровнен с рейлом (продукт 28.09): геометрия = колонка рейла ── */
+/* F5.26: landscape rail keeps its compact tap target. */
 /* ── Ф5.26: лендскейп-телефон — рейл без центрирующего translate,
 ничего не обрезается ── */
 @media (max-width: 820px) and (max-height: 480px) {
@@ -146,37 +80,6 @@ body .wrap #deliveryRail button.on{
   }
 }
 /* ── F5.28: семья FAB: одна ось right:10, базы 14/80, диаметры 56 ── */
-/* ── F5.29+: бонус-бейдж — базовая геометрия/позиционирование принадлежит Layer 2 (views.js).
-   Здесь остаются только визуальные стили содержимого компонента. ── */
-#mbonusBtn{ cursor: pointer; }
-#mbonusBtn::before{ content: none; }
-#mbonusBtn > span:not(.mb-free){
-  display: inline-flex; align-items: center; gap: 4px;
-  font-weight: 800; color: var(--cream); font-size: 12px;
-}
-#mbonusBtn > span:not(.mb-free) svg{
-  width: 22px; height: 22px; flex: 0 0 22px;
-  padding: 4px; box-sizing: content-box;
-  background: #fff; border-radius: 50%; color: #7B5233;
-}
-#mbonusBtn .mb-stamps{
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 11px; font-weight: 800; color: #fff; white-space: nowrap;
-}
-#mbonusBtn .mb-bean{
-  /* fix-shared-brands: специфичный селектор
-     #mbonusBtn>span:not(.mb-free) svg перебивает размер svg
-     и из-за box-sizing:content-box svg раздувается — режем. */
-  overflow: hidden;
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: #fff; color: #7B5233; flex-shrink: 0;
-}
-#mbonusBtn .mb-bean svg{ width: 13px; height: 13px; display: block; }
-#mbonusBtn .mb-free{
-  font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 8px;
-  background: linear-gradient(120deg, #f3e3ce, #e4c9a5); color: #4a3100;
-}
 @media (max-width: 820px){
   .mh-top,
 .mh {

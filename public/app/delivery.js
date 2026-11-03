@@ -1187,10 +1187,23 @@ attachGridDnD(document.getElementById('deliveryGrid'), {
     }
     if (!currentCat && cards.length) currentCat = resolveCardCat(cards[0]);
     if (currentCat) {
+      var activeButton = null;
       rail.querySelectorAll("button").forEach(function (btn) {
         var bCat = btn.getAttribute("data-dcat") || btn.getAttribute("data-cat") || btn.dataset.dcat || btn.dataset.cat;
-        if (bCat) btn.classList.toggle("on", bCat === currentCat);
+        if (!bCat) return;
+        var active = bCat === currentCat;
+        btn.classList.toggle("on", active);
+        if (active) activeButton = btn;
       });
+      if (activeButton && window.matchMedia && window.matchMedia("(max-width: 820px)").matches) {
+        var railRect = rail.getBoundingClientRect();
+        var activeRect = activeButton.getBoundingClientRect();
+        if (activeRect.left < railRect.left) {
+          rail.scrollLeft -= railRect.left - activeRect.left + 8;
+        } else if (activeRect.right > railRect.right) {
+          rail.scrollLeft += activeRect.right - railRect.right + 8;
+        }
+      }
     }
   }
   window.__syncDeliveryScrollSpy = syncRailActiveOnScroll;
