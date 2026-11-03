@@ -64,7 +64,7 @@ async function register(name, phone) {
   });
   assert.equal(result.status, 200, JSON.stringify(result.json));
   assert.ok(result.json.token);
-  return result.json.token;
+  return { token: result.json.token, customerId: result.json.customer.id };
 }
 
 function orderBody(slot, method = 'delivery', promo) {
@@ -148,8 +148,13 @@ after(async () => {
 });
 
 test('lunch pricing stacks only the staff discount and blocks all other promotions', async () => {
-  const guestToken = await register('Lunch Guest', '+7 900 100-00-11');
-  const staffToken = await register('Lunch Staff', '+7 900 100-00-12');
+  const { token: guestToken, customerId: guestId } = await register('Lunch Guest', '+7 900 100-00-11');
+  const { token: staffToken } = await register('Lunch Staff', '+7 900 100-00-12');
+  const registrationFreeCode = 'SIGNUPFREE1';
+  db.prepare(`INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope,owner)
+    VALUES(?,?,?,?,1,NULL,1,0,?,'delivery',?)`).run(
+    'signup-free-ship', registrationFreeCode, 'freeship', 0, new Date().toISOString(), guestId,
+  );
   const activate = await request('/auth/activate', {
     method: 'POST',
     token: staffToken,
@@ -174,6 +179,23 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
   });
   assert.equal(freeShipBlocked.status, 400);
   assert.equal(db.prepare("SELECT uses FROM promos WHERE code='FREEFIRST'").get().uses, 0);
+
+  const registrationFreeDelivery = await request('/orders', {
+    method: 'POST',
+    token: guestToken,
+    body: orderBody('02.11 | 12:30–13:00', 'delivery', registrationFreeCode),
+  });
+  assert.equal(registrationFreeDelivery.status, 200, JSON.stringify(registrationFreeDelivery.json));
+  assert.equal(registrationFreeDelivery.json.order.discount, 400);
+  assert.equal(registrationFreeDelivery.json.order.fee, 0);
+  assert.equal(registrationFreeDelivery.json.order.promodiscount, 0);
+  assert.equal(registrationFreeDelivery.json.order.promo, registrationFreeCode);
+  assert.equal(registrationFreeDelivery.json.order.total, 1600);
+  assert.equal(db.prepare("SELECT uses FROM promos WHERE code=?").get(registrationFreeCode).uses, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM promo_use WHERE promo='signup-free-ship'").get().n, 1);
+  const freeDeliveryAfterUse = await request('/me/free-delivery', { token: guestToken });
+  assert.equal(freeDeliveryAfterUse.status, 200);
+  assert.equal(freeDeliveryAfterUse.json.code, null);
 
   const fixedBlocked = await request('/orders', {
     method: 'POST',
