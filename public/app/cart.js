@@ -203,10 +203,10 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     var lunchPromo = isLunchPromoActive();
     var pickup = lunchPromo
       ? Math.round(sum * (isStaffUser ? 0.3 : 0.2))
-      : ((t.method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0);
+      : ((method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0);
     var discLabel = lunchPromo
       ? (isStaffUser ? "20% обеденная акция + 10% для своих" : "20% обеденная акция")
-      : (t.method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : ""));
+      : (method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : ""));
     var placeVal = getDeliveryPlace();
     var deliveryPricing = getDeliveryPricing(list, method, placeVal);
     var pd = !lunchPromo && promoInfo ? promoDisc(sum, promoInfo) : 0;
