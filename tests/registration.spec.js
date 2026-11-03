@@ -20,6 +20,110 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     });
   });
 
+  test('guest employee access remains available as a discreet profile link', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'guest-profile-ui-test-token');
+    });
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      const body = pathname === '/api/me'
+        ? {
+            customer: {
+              id: 'guest-ui-test',
+              name: 'Guest UI Test',
+              phone: '+7 999 100-00-00',
+              role: 'guest',
+              cups: 0,
+              stamps: 0,
+              free: 0,
+              history: [],
+              qr: 'guest-ui-test'
+            }
+          }
+        : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
+      });
+    });
+
+    await page.goto('/?brand=delivery');
+    const documentHtml = await page.evaluate(async () => await (await fetch(location.href)).text());
+    const settingsCssRefs = documentHtml.match(/\/app\/ui\/theme\/110-panel\.css\?v=\d+/g) || [];
+    expect(settingsCssRefs).toHaveLength(2);
+    expect(new Set(settingsCssRefs).size).toBe(1);
+    await page.waitForFunction(() => window.me && window.me.role === 'guest');
+    await page.click('#profileTopBtn');
+
+    const entry = page.locator('#activateBtn');
+    const settings = page.locator('#settingsModal');
+    await expect(entry).toBeHidden();
+    await page.locator('#profileSettingsBtn').click();
+    await expect(settings).toHaveClass(/show/);
+    await expect(entry).toBeVisible();
+    await expect(entry).toHaveText('Доступ сотрудника');
+    await expect(entry).toHaveClass(/staff-access-link/);
+    await expect(entry).toHaveAttribute('aria-label', 'Открыть вход по коду сотрудника');
+
+    const geometry = await entry.evaluate((element) => ({
+      width: element.getBoundingClientRect().width,
+      height: element.getBoundingClientRect().height,
+      fontSize: getComputedStyle(element).fontSize,
+      background: getComputedStyle(element).backgroundColor
+    }));
+    expect(geometry.width).toBeLessThan(180);
+    expect(geometry.height).toBeGreaterThanOrEqual(32);
+    expect(geometry.fontSize).toBe('12px');
+    expect(geometry.background).toBe('rgba(0, 0, 0, 0)');
+
+    await entry.click();
+    await expect(settings).not.toHaveClass(/show/);
+    await expect(page.locator('#pinModal')).toHaveClass(/show/);
+
+  });
+
+  test('cashier admin upgrade remains available inside profile settings', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'cashier-profile-ui-test-token');
+    });
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      const body = pathname === '/api/me'
+        ? {
+            customer: {
+              id: 'cashier-ui-test',
+              name: 'Cashier UI Test',
+              phone: '+7 999 100-00-01',
+              role: 'cashier',
+              cups: 0,
+              stamps: 0,
+              free: 0,
+              history: [],
+              qr: 'cashier-ui-test'
+            }
+          }
+        : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
+      });
+    });
+
+    await page.goto('/?brand=delivery');
+    await page.waitForFunction(() => window.me && window.me.role === 'cashier');
+    await page.click('#profileTopBtn');
+    await page.locator('#profileSettingsBtn').click();
+
+    const entry = page.locator('#activateBtn');
+    await expect(entry).toBeVisible();
+    await expect(entry).toHaveText('Повысить до администратора');
+    await entry.click();
+    await expect(page.locator('#settingsModal')).not.toHaveClass(/show/);
+    await expect(page.locator('#pinModal')).toHaveClass(/show/);
+  });
+
   test('F3.61: consent visible, not pre-checked, submit gated without it', async ({ page }) => {
     await page.goto('/?brand=delivery');
     await page.click('#profileTopBtn');
