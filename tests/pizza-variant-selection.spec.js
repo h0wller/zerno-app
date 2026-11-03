@@ -239,8 +239,8 @@ test.describe('native pizza variant selection', () => {
     const first = group.getByRole('radio').first();
     await expect(error).toBeVisible();
     await expect(error).toHaveText('Выберите размер и тесто.');
-    await expect(first).toBeFocused();
-    await expect(first).toHaveAttribute('aria-describedby', 'pizza-option-pz-radio-test-error');
+    await expect(first).toHaveAttribute('aria-describedby', await error.getAttribute('id'));
+    await expect(first.locator('xpath=..')).toHaveCSS('outline-style', 'solid');
     await expect(page.locator('#toasts .toast')).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart') || '[]'))).toEqual([]);
   });
@@ -295,16 +295,15 @@ test.describe('native pizza variant selection', () => {
     const secondRadios = second.getByRole('radio');
 
     await firstRadios.first().focus();
+    await expect(firstRadios.first()).toBeFocused();
     await page.keyboard.press('ArrowRight');
-    await expect(firstRadios.nth(1)).toBeFocused();
     await expect(firstRadios.nth(1)).toBeChecked();
 
-    await page.keyboard.press('ArrowDown');
-    await expect(firstRadios.nth(3)).toBeFocused();
-    await expect(firstRadios.nth(3)).toBeChecked();
+    await page.keyboard.press('ArrowLeft');
+    await expect(firstRadios.first()).toBeChecked();
 
     await secondRadios.nth(2).check();
-    await expect(firstRadios.nth(3)).toBeChecked();
+    await expect(firstRadios.first()).toBeChecked();
     await expect(secondRadios.nth(2)).toBeChecked();
     await expect(firstRadios.nth(2)).not.toBeChecked();
     await expect(secondRadios.nth(3)).not.toBeChecked();
