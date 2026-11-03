@@ -8,14 +8,14 @@ export function calculateOrderDiscounts({
   staffRate = DEFAULT_STAFF_RATE,
 }) {
   const amount = Math.max(0, Number(subtotal) || 0);
-  const staffDiscount = byStaff ? Math.round(amount * staffRate) : 0;
   if (lunchPromo) {
-    const lunchDiscount = Math.round(amount * LUNCH_DISCOUNT_RATE);
+    const combinedRate = LUNCH_DISCOUNT_RATE + (byStaff ? staffRate : 0);
     return {
-      discount: lunchDiscount + staffDiscount,
-      label: staffDiscount ? '20% дневная акция + 10% для своих' : '20% дневная акция',
+      discount: Math.round(amount * combinedRate),
+      label: byStaff ? '20% дневная акция + 10% для своих' : '20% дневная акция',
     };
   }
+  const staffDiscount = byStaff ? Math.round(amount * staffRate) : 0;
   const pickupDiscount = method === 'pickup' ? Math.round(amount * pickupRate) : 0;
   const discount = Math.max(pickupDiscount, staffDiscount);
   return {
