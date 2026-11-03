@@ -54,7 +54,7 @@ const DELIVERY_ITEMS = [
     ]
   },
   {
-    id: 'pz-veg', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Овощная',
+    id: 'pz-veg', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Овощная', tag: 'Любимая позиция',
     desc: 'Песто, баклажаны, цукини, перец, помидоры черри, брокколи, руккола',
     comp: ['песто', 'баклажаны', 'цукини', 'перец', 'черри', 'брокколи', 'руккола'],
     vol: '25/35 см', price: '0', on: 1, opts: [
@@ -139,6 +139,10 @@ test('карточки показывают смысловые бейджи, а 
   await expect(spicyBadge).toHaveClass(/spicy/);
   await expect(recommendedBadge).toHaveText('Рекомендуем');
   await expect(recommendedBadge).toHaveClass(/recommended/);
+  const unknownBadge = page.locator('#deliveryGrid [data-product-id="pz-veg"] .tag');
+  await expect(unknownBadge).toHaveText('Любимая позиция');
+  await expect(unknownBadge).toHaveClass(/neutral/);
+  await expect(unknownBadge).not.toHaveClass(/vegan/);
 
   const badgeOptions = await page.locator('#emTag option').allTextContents();
   expect(badgeOptions).toEqual(expect.arrayContaining([
