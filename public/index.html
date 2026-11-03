@@ -2096,12 +2096,26 @@ html body #tickerTrack .tickerGroup > span {
               <h3>Маргарита</h3>
               <div class="desc">Красный соус, моцарелла</div>
               <div class="comp"><i>красный соус</i><i>моцарелла</i></div>
-              <div class="opts">
-                <button type="button" class="opt-btn sel" data-id="1" data-oi="0"><div class="opt-row"><span class="opt-size">25 см</span><span class="opt-crust">пышное</span></div><div class="opt-row"><span class="opt-weight">415 г</span><span class="opt-price op">535 ₽</span></div></button>
-                <button type="button" class="opt-btn" data-id="1" data-oi="1"><div class="opt-row"><span class="opt-size">35 см</span><span class="opt-crust">пышное</span></div><div class="opt-row"><span class="opt-weight">750 г</span><span class="opt-price op">735 ₽</span></div></button>
-                <button type="button" class="opt-btn" data-id="1" data-oi="2"><div class="opt-row"><span class="opt-size">25 см</span><span class="opt-crust">тонкое</span></div><div class="opt-row"><span class="opt-weight">335 г</span><span class="opt-price op">435 ₽</span></div></button>
-                <button type="button" class="opt-btn" data-id="1" data-oi="3"><div class="opt-row"><span class="opt-size">35 см</span><span class="opt-crust">тонкое</span></div><div class="opt-row"><span class="opt-weight">550 г</span><span class="opt-price op">635 ₽</span></div></button>
-              </div>
+              <fieldset class="opts">
+                <legend>Размер и тесто</legend>
+                <label class="opt-btn" for="pizza-option-1-0">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-0" value="0" data-id="1" data-oi="0">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">25 см</span><span class="opt-crust">пышное</span></span><span class="opt-row opt-bottom"><span class="opt-weight">415 г</span><span class="opt-price">535 ₽</span></span></span>
+                </label>
+                <label class="opt-btn" for="pizza-option-1-1">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-1" value="1" data-id="1" data-oi="1">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">35 см</span><span class="opt-crust">пышное</span></span><span class="opt-row opt-bottom"><span class="opt-weight">750 г</span><span class="opt-price">735 ₽</span></span></span>
+                </label>
+                <label class="opt-btn" for="pizza-option-1-2">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-2" value="2" data-id="1" data-oi="2">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">25 см</span><span class="opt-crust">тонкое</span></span><span class="opt-row opt-bottom"><span class="opt-weight">335 г</span><span class="opt-price">435 ₽</span></span></span>
+                </label>
+                <label class="opt-btn" for="pizza-option-1-3">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-3" value="3" data-id="1" data-oi="3">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">35 см</span><span class="opt-crust">тонкое</span></span><span class="opt-row opt-bottom"><span class="opt-weight">550 г</span><span class="opt-price">635 ₽</span></span></span>
+                </label>
+                <p class="opts-error" id="pizza-option-1-error" hidden>Выберите размер и тесто.</p>
+              </fieldset>
               <div class="steprow" style="margin-top:auto">
                 <button class="cta" data-add="1">Добавить</button>
               </div>
