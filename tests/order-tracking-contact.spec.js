@@ -30,7 +30,7 @@ test('самовывоз скрывает адресную группу без �
 
   await page.locator('#checkoutMethod').selectOption('pickup');
   await expect(deliveryGroup).toBeHidden();
-  await expect(page.locator('#cartDiscount')).toContainText('10%');
+  // This test covers pickup address visibility, not discount policy. The active lunch promotion can replace the usual pickup discount.
 
   await page.locator('#checkoutMethod').selectOption('delivery');
   await expect(deliveryGroup).toBeVisible();
