@@ -75,33 +75,25 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
   function getDeliveryPlace() {
     var placeEl = document.getElementById("checkoutPlace");
-    return (placeEl && placeEl.value && placeEl.value.trim())
-      ? placeEl.value.trim()
-      : "Янтарный";
+    return (placeEl && placeEl.value) ? placeEl.value.trim() : "";
   }
 
   function getDefaultDeliveryRates(normalizedPlace) {
     var isFarZone = /синявино|покровское/i.test(normalizedPlace);
     var isOuterZone = /куликово|яблоновка/i.test(normalizedPlace);
-    return {
-      fee: isFarZone ? 250 : (isOuterZone ? 300 : 200),
-      minOrder: isFarZone ? 1000 : (isOuterZone ? 1200 : 0),
-    };
+    return { fee: isFarZone ? 250 : (isOuterZone ? 300 : 200) };
   }
 
   function getDeliveryZoneRates(placeVal) {
     var baseZoneFee = 0;
-    var minOrder = 0;
-    var normalizedPlace = String(placeVal).toLowerCase().trim();
+    var normalizedPlace = String(placeVal || "").toLowerCase().trim();
+    if (!normalizedPlace) return { baseZoneFee: 0 };
 
     if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
       var zone = deliveryInfo.zones.find(function (entry) {
         return entry.places && entry.places.includes(placeVal);
       });
-      if (zone) {
-        baseZoneFee = Number(zone.fee) || 0;
-        if (Number(zone.min) > 0) minOrder = Number(zone.min);
-      }
+      if (zone) baseZoneFee = Number(zone.fee) || 0;
     }
 
     if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
@@ -112,14 +104,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     var defaults = getDefaultDeliveryRates(normalizedPlace);
     if (!baseZoneFee) baseZoneFee = defaults.fee;
 
-    var configuredMinOrder = Number(window.MIN_DELIVERY_ORDER);
-    if (!minOrder) {
-      minOrder = configuredMinOrder > 0 ? configuredMinOrder : defaults.minOrder;
-    } else if (configuredMinOrder > 0) {
-      minOrder = configuredMinOrder;
-    }
-
-    return { baseZoneFee: baseZoneFee, minOrder: minOrder };
+    return { baseZoneFee: baseZoneFee };
   }
 
   function getLunchPromoTimeParts() {
@@ -176,7 +161,10 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
   function getDeliveryPricing(list, method, placeVal) {
     if (method !== "delivery") {
-      return { fee: 0, baseZoneFee: 0, minOrder: 0 };
+      return { fee: 0, baseZoneFee: 0, awaitingPlace: false };
+    }
+    if (!placeVal) {
+      return { fee: 0, baseZoneFee: 0, awaitingPlace: list.length > 0 };
     }
 
     var rates = getDeliveryZoneRates(placeVal);
@@ -189,7 +177,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     return {
       fee: fee,
       baseZoneFee: rates.baseZoneFee,
-      minOrder: rates.minOrder,
+      awaitingPlace: false,
     };
   }
 
@@ -210,19 +198,25 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     var placeVal = getDeliveryPlace();
     var deliveryPricing = getDeliveryPricing(list, method, placeVal);
     var pd = !lunchPromo && promoInfo ? promoDisc(sum, promoInfo) : 0;
+    var personalFreeShip = !!(
+      promoInfo && promoInfo.kind === "freeship" && freeAutoCode &&
+      String(promoInfo.code || "").toUpperCase() === String(freeAutoCode).toUpperCase()
+    );
 
     return {
       sum: sum,
       pickup: pickup,
       discLabel: discLabel,
+      method: method,
+      isStaffUser: isStaffUser,
       fee: deliveryPricing.fee,
       baseZoneFee: deliveryPricing.baseZoneFee,
       freeShip: !!(promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
+      personalFreeShip: personalFreeShip,
       lunchPromo: lunchPromo,
       placeVal: placeVal,
       pd: pd,
-      minOrder: deliveryPricing.minOrder,
-      belowMin: method === "delivery" && deliveryPricing.minOrder > 0 && sum > 0 && sum < deliveryPricing.minOrder,
+      awaitingPlace: !!deliveryPricing.awaitingPlace,
       total: Math.max(0, sum - pickup - pd + deliveryPricing.fee),
     };
   }
@@ -241,22 +235,86 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     var cntBadge = document.getElementById("cartHeadCount");
     if (cntBadge) cntBadge.textContent = cnt ? "· " + cnt + " шт." : "";
 
+    var subtotalEl = document.getElementById("cartSubtotal");
+    if (subtotalEl) {
+      subtotalEl.innerHTML =
+        '<span class="csl-main"><span>Товары и добавки</span><strong>' + fmt(t.sum) + '</strong></span>';
+      subtotalEl.style.display = list.length ? "block" : "none";
+    }
+
+    var promoDiscountEl = document.getElementById("cartPromoDiscount");
+    if (promoDiscountEl) {
+      if (t.pd > 0) {
+        var promoCodeLabel = (promoInfo && promoInfo.code) || cartPromoCode || "Промокод";
+        var promoReason = promoInfo && promoInfo.kind === "percent"
+          ? "Скидка " + Number(promoInfo.value || 0) + "% по промокоду " + esc(promoCodeLabel)
+          : "Фиксированная скидка по промокоду " + esc(promoCodeLabel);
+        promoDiscountEl.innerHTML =
+          '<span class="csl-main"><span>Промокод · ' + esc(promoCodeLabel) + '</span><strong>−' + fmt(t.pd) + '</strong></span>' +
+          '<small class="csl-explain">' + promoReason + '</small>';
+        promoDiscountEl.style.display = "block";
+      } else {
+        promoDiscountEl.innerHTML = "";
+        promoDiscountEl.style.display = "none";
+      }
+    }
+
     var discEl = document.getElementById("cartDiscount");
     if (discEl) {
-      discEl.textContent = t.pickup ? (t.discLabel || "−10% самовывоз") + ": −" + fmt(t.pickup) : "";
-      discEl.style.display = t.pickup ? "flex" : "none";
+      if (t.pickup > 0) {
+        var discountTitle = t.lunchPromo
+          ? (t.isStaffUser
+            ? "Обеденная акция · 20% + «Для своих» · 10%"
+            : "Обеденная акция · 20%")
+          : (t.method === "pickup" ? "Самовывоз · 10%" : "Для своих · 10%");
+        var discountReason = t.lunchPromo
+          ? (t.isStaffUser
+            ? "Скидки суммируются от суммы блюд · будни, 11:00–15:00"
+            : "Будни, 11:00–15:00 · по времени доставки или самовывоза")
+          : (t.method === "pickup"
+            ? "Скидка за получение заказа самовывозом."
+            : "Скидка для сотрудника.");
+        discEl.innerHTML =
+          '<span class="csl-main"><span>' + discountTitle + '</span><strong>−' + fmt(t.pickup) + '</strong></span>' +
+          '<small class="csl-explain">' + discountReason + '</small>';
+        discEl.style.display = "block";
+      } else {
+        discEl.innerHTML = "";
+        discEl.style.display = "none";
+      }
     }
 
     var feeEl = document.getElementById("cartFee");
     if (feeEl) {
-      var isDelMethod = ((document.getElementById("checkoutMethod") || {}).value || "delivery") === "delivery";
-      if (list.length && isDelMethod) {
-        feeEl.textContent = t.fee > 0 ? "Доставка (" + t.placeVal + "): " + fmt(t.fee) : "Доставка (" + t.placeVal + "): Бесплатно 🎉";
-        feeEl.style.display = "flex";
+      feeEl.classList.toggle("is-free", !!(list.length && t.method === "delivery" && (t.personalFreeShip || t.freeShip)));
+      if (list.length && t.method === "delivery" && t.awaitingPlace) {
+        var pendingDeliveryReason = t.personalFreeShip || t.freeShip
+          ? "Бесплатная доставка уже применена. Выберите населённый пункт, чтобы увидеть размер экономии."
+          : "Выберите населённый пункт — покажем точную стоимость доставки.";
+        feeEl.innerHTML =
+          '<span class="csl-main"><span>Доставка</span><strong>' + (t.personalFreeShip || t.freeShip ? "Бесплатно" : "Уточняется") + '</strong></span>' +
+          '<small class="csl-explain">' + pendingDeliveryReason + '</small>';
+        feeEl.style.display = "block";
+      } else if (list.length && t.method === "delivery") {
+        var feeTitle = t.fee > 0 ? fmt(t.fee) : "Бесплатно";
+        var feeReason = t.personalFreeShip
+          ? "Бонус за регистрацию · экономия " + fmt(t.baseZoneFee)
+          : (t.freeShip ? "Промокод на бесплатную доставку · экономия " + fmt(t.baseZoneFee) : "");
+        feeEl.innerHTML =
+          '<span class="csl-main"><span>Доставка · ' + esc(t.placeVal) + '</span><strong>' + feeTitle + '</strong></span>' +
+          (feeReason ? '<small class="csl-explain">' + feeReason + '</small>' : '');
+        feeEl.style.display = "block";
       } else {
-        feeEl.textContent = "";
+        feeEl.innerHTML = "";
         feeEl.style.display = "none";
       }
+    }
+
+    var totalLabelEl = document.getElementById("cartTotalLabel");
+    if (totalLabelEl) {
+      totalLabelEl.textContent = t.awaitingPlace && list.length && !t.freeShip && !t.personalFreeShip
+        ? "Сумма без доставки"
+        : "Итого к оплате";
     }
 
     syncZoneFeeHint(t);
@@ -264,15 +322,8 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
     var checkBtnEl = document.getElementById("checkoutBtn");
     if (checkBtnEl && checkBtnEl.getAttribute("data-busy") !== "1") {
-      if (t.belowMin) {
-        checkBtnEl.disabled = true;
-        checkBtnEl.classList.add("min-order-locked");
-        checkBtnEl.textContent = "Мин. сумма доставки — " + fmt(t.minOrder) + " (ещё " + fmt(t.minOrder - t.sum) + ")";
-      } else {
-        checkBtnEl.disabled = false;
-        checkBtnEl.classList.remove("min-order-locked");
-        checkBtnEl.textContent = "Оформить заказ";
-      }
+      checkBtnEl.disabled = false;
+      checkBtnEl.textContent = "Оформить заказ";
     }
 
     renderGifts();
@@ -355,9 +406,10 @@ async function refreshPromoLine(sum) {
   if (!line) return;
 
   var lunchPromo = isLunchPromoActive();
+  var user = typeof window.me !== "undefined" ? window.me : null;
+  var personalCode = "";
   if (lunchPromo) {
-    var user = typeof window.me !== "undefined" ? window.me : null;
-    var personalCode = await getPersonalFreeCode();
+    personalCode = await getPersonalFreeCode();
     var canUsePersonalCode = !!(personalCode && user && freeAutoSuppressedFor !== user.id);
     if (canUsePersonalCode) {
       if (cartPromoCode !== personalCode) promoInfo = null;
@@ -379,7 +431,12 @@ async function refreshPromoLine(sum) {
     }
   } else if (!cartPromoCode) {
     var autoCode = await tryAutoFreeCode();
-    if (autoCode) cartPromoCode = autoCode;
+    if (autoCode) {
+      cartPromoCode = autoCode;
+      personalCode = autoCode;
+    }
+  } else if (user && user.id) {
+    personalCode = await getPersonalFreeCode();
   }
 
   if (!cartPromoCode) {
@@ -394,7 +451,14 @@ async function refreshPromoLine(sum) {
     if (r.ok && (!lunchPromo || (r.kind === 'freeship' && r.code === personalCode))) {
       promoInfo = r;
       localStorage.setItem('zt_cartpromo', cartPromoCode);
-      line.innerHTML = '<span>🎟 ' + esc(r.code) + ': ' + (r.kind === 'freeship' ? 'первая доставка бесплатно' : '−' + fmt(promoDisc(sum, r))) + '</span>' + PROMO_CLEAR_BTN;
+      var isPersonalRegistrationCode = r.kind === 'freeship' && personalCode &&
+        String(r.code || '').toUpperCase() === String(personalCode).toUpperCase();
+      var appliedMessage = isPersonalRegistrationCode
+        ? '✓ Бонус за регистрацию применён · первая доставка бесплатно'
+        : (r.kind === 'freeship'
+          ? '🎟 ' + esc(r.code) + ' · бесплатная доставка'
+          : '🎟 Промокод ' + esc(r.code) + ' применён · −' + fmt(promoDisc(sum, r)));
+      line.innerHTML = '<span>' + appliedMessage + '</span>' + PROMO_CLEAR_BTN;
       line.style.color = 'var(--green)';
       bindPromoClear(line);
     } else {
@@ -533,11 +597,13 @@ function clearPromo() {
     }
     hint.hidden = false;
     var info = t || totalsNow();
-    if (info.freeShip) {
+    if (info.awaitingPlace) {
+      hint.innerHTML = "📍 <span>Выберите населённый пункт — покажем точную стоимость доставки</span>";
+    } else if (info.freeShip) {
       hint.innerHTML = "✅ <span><b>" + esc(info.placeVal) + ":</b> доставка бесплатно (бонус за регистрацию)</span>";
     } else {
       hint.innerHTML = "🚗 <span><b>" + esc(info.placeVal) + ":</b> доставка " + fmt(info.baseZoneFee) +
-        " · мин. заказ " + fmt(info.minOrder) + "</span>";
+        "</span>";
     }
   }
 
@@ -576,6 +642,7 @@ function clearPromo() {
   function ensurePlaceOptions() {
     var placeEl = document.getElementById("checkoutPlace");
     if (!placeEl || placeEl.tagName !== "SELECT") return;
+    var previous = placeEl.value;
     var defaultPlaces = ["Янтарный", "Синявино", "Покровское", "Куликово", "Яблоновка", "Донское"];
     var existing = Array.from(placeEl.options).map(function (o) { return o.value.toLowerCase().trim(); });
     defaultPlaces.forEach(function (p) {
@@ -586,9 +653,17 @@ function clearPromo() {
         placeEl.appendChild(opt);
       }
     });
-    if (!placeEl.value) {
-      placeEl.value = "Янтарный";
+    if (!Array.from(placeEl.options).some(function (option) { return option.value === ""; })) {
+      var placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Выберите населённый пункт";
+      placeholder.disabled = true;
+      placeEl.insertBefore(placeholder, placeEl.firstChild);
     }
+    var hasPrevious = previous && Array.from(placeEl.options).some(function (option) {
+      return option.value === previous;
+    });
+    placeEl.value = hasPrevious ? previous : "";
   }
 
   function toggleDeliveryGroup() {
@@ -622,11 +697,11 @@ function clearPromo() {
   function restoreDraft() {
     try {
       var draft = JSON.parse(sessionStorage.getItem("zt_checkout_draft") || "{}");
-      var saved = JSON.parse(localStorage.getItem("zt_saved_address") || "{}");
 
-      var placeVal = draft.place || saved.place;
-      var streetVal = draft.street || saved.street;
-      var houseVal = draft.house || saved.house;
+      // Восстановление сохранённого адреса принадлежит address-autocomplete.js; здесь читаем только черновик чекаута.
+      var placeVal = draft.place || "";
+      var streetVal = draft.street || "";
+      var houseVal = draft.house || "";
 
       if (draft.method && document.getElementById("checkoutMethod")) {
         document.getElementById("checkoutMethod").value = draft.method;
@@ -721,8 +796,13 @@ function clearPromo() {
     var optLabel = c.opt ? (typeof c.opt === "object" ? c.opt.name || "" : c.opt) : "";
     var origProd = allMenu.find(function (x) { return String(x.id) === String(c.id); });
 
+    var baseUnitPrice = Number(c.price) || 0;
     var modSum = (c.modifiers || []).reduce(function (mA, m) { return mA + (Number(m.price) || 0); }, 0);
-    var lineTotal = ((Number(c.price) || 0) + modSum) * (Number(c.qty) || 1);
+    var unitTotal = baseUnitPrice + modSum;
+    var lineTotal = unitTotal * (Number(c.qty) || 1);
+    var priceUpdateNote = Number(c.priceUpdateFrom) > 0
+      ? '<small class="ci-price-update">Цена обновлена по актуальному меню: ' + fmt(c.priceUpdateFrom) + ' → ' + fmt(baseUnitPrice) + '</small>'
+      : '';
 
     var modsHtml = renderAttachedModifiers(c.modifiers, itemIndex);
     var addModSection = renderItemAddModSection(c, itemIndex, origProd, pizzaToppings, rollAddons, !!openModsMap[itemIndex]);
@@ -732,7 +812,11 @@ function clearPromo() {
         '<div class="ci-left">' +
           '<b class="ci-name">' + esc(c.name) + '</b>' +
           (optLabel ? '<div class="ci-opt">' + esc(optLabel) + '</div>' : '') +
-          '<div class="ci-price">' + fmt(lineTotal) + '</div>' +
+          '<div class="ci-price">' +
+            '<span class="ci-unit-price">' + fmt(unitTotal) + ' / шт.</span>' +
+            '<strong class="ci-line-total">' + fmt(lineTotal) + '</strong>' +
+          '</div>' +
+          priceUpdateNote +
         '</div>' +
         '<div class="qty">' +
           '<button type="button" data-ci="' + itemIndex + '" data-act="-">−</button>' +
@@ -1118,11 +1202,6 @@ function renderCartBase() {
       return false;
     }
 
-    var totals = totalsNow();
-    if (totals.belowMin) {
-      toast("Минимальная сумма заказа для доставки — " + fmt(totals.minOrder), "⚠️");
-      return false;
-    }
     return true;
   }
 

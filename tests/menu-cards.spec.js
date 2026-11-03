@@ -33,7 +33,7 @@ const spread = (nums) => Math.max(...nums) - Math.min(...nums);
 
 const DELIVERY_ITEMS = [
   {
-    id: 'pz-marg', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Маргарита',
+    id: 'pz-marg', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Маргарита', tag: 'Острое',
     desc: 'Красный соус, моцарелла', comp: ['красный соус', 'моцарелла'],
     vol: '25/35 см', price: '0', on: 1, opts: [
       { l: '25 см, пышное', w: '415 г', p: 535, sz: 25 },
@@ -43,7 +43,7 @@ const DELIVERY_ITEMS = [
     ]
   },
   {
-    id: 'pz-hamgr', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Ветчина и грибы',
+    id: 'pz-hamgr', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Ветчина и грибы', tag: 'New',
     desc: 'Белый соус, моцарелла, шампиньоны, ветчина, чеддер',
     comp: ['белый соус', 'моцарелла', 'шампиньоны', 'ветчина', 'чеддер'],
     vol: '25/35 см', price: '0', on: 1, opts: [
@@ -54,7 +54,7 @@ const DELIVERY_ITEMS = [
     ]
   },
   {
-    id: 'pz-veg', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Овощная',
+    id: 'pz-veg', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Овощная', tag: 'Любимая позиция',
     desc: 'Песто, баклажаны, цукини, перец, помидоры черри, брокколи, руккола',
     comp: ['песто', 'баклажаны', 'цукини', 'перец', 'черри', 'брокколи', 'руккола'],
     vol: '25/35 см', price: '0', on: 1, opts: [
@@ -122,6 +122,41 @@ test('delivery API seed includes at least six active pizza cards', async ({ requ
     item.section === 'delivery' && item.cat === 'pizza' && Number(item.on) === 1
   );
   expect(activePizzas.length, 'test database must keep the complete active pizza seed').toBeGreaterThanOrEqual(6);
+});
+
+
+test('карточки показывают смысловые бейджи, а редактор предлагает расширенный набор', async ({ page }) => {
+  await routeDeliveryFixture(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  const deliveryResponse = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/dmenu'),
+    { timeout: 10000 }
+  );
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+  const response = await deliveryResponse;
+  expect(response.ok()).toBeTruthy();
+  await expect(page.locator('#deliveryGrid .card[data-product-id="pz-marg"]')).toBeAttached({ timeout: 10000 });
+
+  const spicyBadge = page.locator('#deliveryGrid [data-product-id="pz-marg"] .tag');
+  const recommendedBadge = page.locator('#deliveryGrid [data-product-id="pz-hamgr"] .tag');
+  await expect(spicyBadge).toHaveText('Острое');
+  await expect(spicyBadge).toHaveClass(/spicy/);
+  await expect(recommendedBadge).toHaveText('Новинка');
+  await expect(recommendedBadge).toHaveClass(/new/);
+  const unknownBadge = page.locator('#deliveryGrid [data-product-id="pz-veg"] .tag');
+  await expect(unknownBadge).toHaveText('Любимая позиция');
+  await expect(unknownBadge).toHaveClass(/neutral/);
+  await expect(unknownBadge).not.toHaveClass(/vegan/);
+
+  const badgeOptions = await page.locator('#emTag option').allTextContents();
+  expect(badgeOptions).toEqual(expect.arrayContaining([
+    'Хит', 'Новинка', 'Веганское', 'Острое',
+    'Рекомендуем', 'Популярное', 'Фирменное', 'Сезонное', 'Лимитка',
+    'Для двоих', 'Сытное', 'Лёгкое', 'Пряное', 'Без кофеина'
+  ]));
 });
 
 test.describe('Карточки меню: высота, выравнивание, тап-таргеты', () => {

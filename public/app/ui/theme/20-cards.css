@@ -94,11 +94,25 @@ body.editing .card:hover{
   background: var(--tag-bg, #1B4F8A);
 }
 .tag.hit{ background: var(--tag-hit-bg, #1B5E8A); color: #FFFFFF; }
-.tag.new{
-  background: var(--green);
-}
-.tag.vegan{
-  background: #7BA05B;
+.tag.new{ background: #2F7D4F; color: #FFFFFF; }
+.tag.vegan{ background: #557F42; color: #FFFFFF; }
+.tag.spicy{ background: #A6322A; color: #FFFFFF; }
+.tag.recommended{ background: #1B5E8A; color: #FFFFFF; }
+.tag.seasonal{ background: #6C4A8E; color: #FFFFFF; }
+.tag.limited{ background: #7C3E62; color: #FFFFFF; }
+.tag.decaf{ background: #53636F; color: #FFFFFF; }
+.tag.neutral{ background: #53636F; color: #FFFFFF; }
+.tag.popular{ background: #7656A6; color: #FFFFFF; }
+.tag.signature{ background: #81533B; color: #FFFFFF; }
+.tag.share{ background: #287A70; color: #FFFFFF; }
+.tag.hearty{ background: #A35B2A; color: #FFFFFF; }
+.tag.light{ background: #4B806F; color: #FFFFFF; }
+.tag.recommended,
+.tag.seasonal,
+.tag.limited,
+.tag.decaf,
+.tag.neutral{
+  letter-spacing: 0.02em;
 }
 .stopped .media img,
 .stopped .media .em{

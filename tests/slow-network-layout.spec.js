@@ -411,15 +411,25 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
     await page.goto('/?brand=delivery', { waitUntil: 'commit' });
     await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
+    await page.waitForFunction(() => Array.isArray(window.DMENU) && window.DMENU.length > 0);
+    await page.waitForFunction(() => typeof window.__ensureVenueToggle === 'function');
     expect(await page.evaluate(() => window.MENU.length)).toBe(0);
 
-    const coffeeRequest = page.waitForRequest((request) =>
-      new URL(request.url()).pathname === '/api/menu'
+    const venueToggle = page.locator('#venueToggle');
+    await expect(venueToggle).toBeVisible();
+    await venueToggle.click();
+    const coffeeButton = page.locator('#brandSeg [data-brand="coffee"]');
+    await expect(coffeeButton).toBeVisible();
+
+    const coffeeResponse = page.waitForResponse((response) =>
+      new URL(response.url()).pathname === '/api/menu' &&
+      response.request().method() === 'GET'
     );
-    await page.evaluate(() => {
-      document.querySelector('#brandSeg [data-brand="coffee"]').click();
-    });
-    await coffeeRequest;
+    await coffeeButton.click();
+    const response = await coffeeResponse;
+    expect(response.ok()).toBeTruthy();
+    const payload = await response.json();
+    expect(payload.items.length).toBeGreaterThan(0);
     await expect.poll(() => page.evaluate(() => window.MENU.length)).toBeGreaterThan(0);
     await expect(page.locator('#grid > .card').first()).toBeAttached();
   });

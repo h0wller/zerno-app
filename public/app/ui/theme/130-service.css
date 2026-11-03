@@ -101,7 +101,7 @@ body.is-cashier .cust .acts{
   min-width: 44px;
   min-height: 44px;
   border-radius: 50%;
-  background: #e7ecf0;
+  background: var(--cart-qty-bg, #E7ECF0);
   font-weight: 700;
   position: relative;
   display: grid;
@@ -288,8 +288,7 @@ body.is-cashier .cust .acts{
   resize: vertical;
   min-height: 60px;
 }
-.cart-footer-bar #checkoutBtn:disabled,
-.cart-footer-bar #checkoutBtn.min-order-locked{
+.cart-footer-bar #checkoutBtn:disabled{
   background: var(--line, #D8DFE4);
   border-color: var(--line, #D8DFE4);
   color: var(--soft, #586470);

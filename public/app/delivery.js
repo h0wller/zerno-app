@@ -1,5 +1,6 @@
 import { attachGridDnD, canDragMenu, dragAttr } from './core/dnd.js';
 import { getVisibleComposition } from './core/menu-content.js';
+import { getMenuBadgeClass, getMenuBadgeLabel } from './core/menu-badges.js';
 function getKaliningradTime() {
   if (typeof window !== "undefined" && typeof window.getKaliningradTime === "function" && window.getKaliningradTime !== getKaliningradTime) {
     return window.getKaliningradTime();
@@ -349,6 +350,7 @@ function renderDeliveryCard(p, n0) {
   return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
       '<div class="media" style="--tint:#F3E2CE;position:relative;overflow:hidden;">' +
       mediaContent +
+      (p.tag ? '<span class="tag ' + getMenuBadgeClass(p.tag) + '">' + esc(getMenuBadgeLabel(p.tag)) + '</span>' : '') +
       (p.on ? '' : '<span class="stopbadge">СТОП</span>') +
     '</div>' +
     '<div class="cbody">' +
@@ -487,6 +489,19 @@ document.addEventListener('click', function (e) {
 /* ── Состояния карточек: поддержка Retina и авто-зум ── */
 function patchDeliveryCardMedia(media, product, index) {
   if (!media) return;
+
+  let menuBadge = media.querySelector('.tag');
+  if (product.tag) {
+    if (!menuBadge) {
+      menuBadge = document.createElement('span');
+      media.appendChild(menuBadge);
+    }
+    menuBadge.className = 'tag ' + getMenuBadgeClass(product.tag);
+    menuBadge.textContent = getMenuBadgeLabel(product.tag);
+  } else if (menuBadge) {
+    menuBadge.remove();
+  }
+
   let badge = media.querySelector('.stopbadge');
   if (!product.on && !badge) {
     badge = document.createElement('span');
@@ -688,11 +703,76 @@ function resolveDeliveryAddSelection(addButton, product) {
   return { optionIndex, option, price };
 }
 
+function deliveryOptions(product) {
+  if (Array.isArray(product && product.opts)) return product.opts;
+  if (product && typeof product.opts === 'string') {
+    try {
+      const parsed = JSON.parse(product.opts);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {}
+  }
+  return [];
+}
+
+function syncDeliveryCartPrices(products) {
+  const byId = new Map((products || []).map(product => [String(product.id), product]));
+  let changed = false;
+
+  cart.forEach(item => {
+    const product = byId.get(String(item.id));
+    if (!product) return;
+
+    const optionIndex = item.oi === undefined || item.oi === null || item.oi === ''
+      ? -1
+      : parseInt(item.oi, 10);
+    const options = deliveryOptions(product);
+    const option = Number.isInteger(optionIndex) && optionIndex >= 0
+      ? options[optionIndex]
+      : null;
+    if (optionIndex >= 0 && !option) return;
+
+    const price = option ? Number(option.p) : (Number(product.price) || 0);
+    if (!Number.isFinite(price) || price <= 0) return;
+
+    const nextOpt = option ? (option.l || option.name || '') : null;
+    const nextSize = option ? (Number(option.sz) || 0) : 0;
+    const previousPrice = Number(item.price) || 0;
+    if (previousPrice > 0 && previousPrice !== price && !Number(item.priceUpdateFrom)) {
+      item.priceUpdateFrom = previousPrice;
+    }
+
+    if (previousPrice !== price ||
+        item.name !== product.name ||
+        item.opt !== nextOpt ||
+        Number(item.sz) !== nextSize ||
+        Number(item.oi) !== optionIndex) {
+      item.price = price;
+      item.name = product.name;
+      item.opt = nextOpt;
+      item.sz = nextSize;
+      item.oi = optionIndex;
+      changed = true;
+    }
+  });
+
+  if (changed) localStorage.setItem('zt_cart', JSON.stringify(cart));
+  return changed;
+}
+
 function upsertDeliveryCartItem(product, selection) {
   const id = product.id;
   const key = id + (selection.optionIndex >= 0 ? '_' + selection.optionIndex : '');
   const existing = cart.find(item => String(item.key) === String(key));
   if (existing) {
+    const previousPrice = Number(existing.price) || 0;
+    if (previousPrice > 0 && previousPrice !== selection.price && !Number(existing.priceUpdateFrom)) {
+      existing.priceUpdateFrom = previousPrice;
+    }
+    existing.name = product.name;
+    existing.oi = selection.optionIndex;
+    existing.opt = selection.option ? selection.option.l : null;
+    existing.price = selection.price;
+    existing.sz = selection.option ? (Number(selection.option.sz) || 0) : 0;
     existing.qty++;
     return;
   }
@@ -724,7 +804,10 @@ function handleDeliveryAddClick(e) {
   setTimeout(() => addButton.classList.remove('added'), 700);
   if (typeof updateCartFab === 'function') updateCartFab();
   if (typeof window.renderCart === 'function') window.renderCart();
-  if (typeof toast === 'function') toast('Добавлено в корзину', '🛒');
+  if (typeof toast === 'function') {
+    const choice = selection.option ? ' · ' + selection.option.l : '';
+    toast('Добавлено: ' + product.name + choice + ' · ' + fmt(selection.price), '🛒');
+  }
   return true;
 }
 
@@ -796,9 +879,11 @@ function populatePlaces() {
   if (!deliveryInfo) return;
   const select = $('#checkoutPlace');
   const previous = select.value;
-  const places = deliveryInfo.zones.flatMap(z => z.places);
-  select.innerHTML = places.map(p => `<option>${p}</option>`).join('');
-  if (places.includes(previous)) select.value = previous;
+  const places = Array.from(new Set(deliveryInfo.zones.flatMap(z => z.places || [])));
+  select.innerHTML =
+    '<option value="" disabled>Выберите населённый пункт</option>' +
+    places.map(p => '<option value="' + esc(p) + '">' + esc(p) + '</option>').join('');
+  select.value = places.includes(previous) ? previous : '';
 }
 
 function skelCards(n){
@@ -829,6 +914,7 @@ window.loadDelivery = async function() {
         })
       : await api('/dmenu');
     DMENU = r.items || [];
+    syncDeliveryCartPrices(DMENU);
     if (r.updatedAt) {
       window.meta.updatedAt = r.updatedAt;
       if (typeof window.renderUpd === 'function') window.renderUpd();

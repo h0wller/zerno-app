@@ -258,6 +258,19 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
   assert.equal(afterLunchFixed.json.order.promodiscount, 250);
   assert.equal(db.prepare("SELECT uses FROM promos WHERE code='LUNCHFIXED'").get().uses, 1);
 
+  const singleItemOrder = await request('/orders', {
+    method: 'POST',
+    token: guestToken,
+    body: {
+      ...orderBody('02.11 | 17:00–17:30'),
+      items: [{ id: 'lunch-pizza', oi: 1, qty: 1 }],
+    },
+  });
+  assert.equal(singleItemOrder.status, 200, JSON.stringify(singleItemOrder.json));
+  assert.equal(singleItemOrder.json.order.items.length, 1);
+  assert.equal(singleItemOrder.json.order.items[0].qty, 1);
+  assert.equal(singleItemOrder.json.order.total, 1200);
+
   const mine = await request('/orders/mine', { token: staffToken });
   const saved = (mine.json.orders || []).find((order) => order.id === staffLunch.json.order.id);
   assert.equal(saved.discount_label, '20% обеденная акция + 10% для своих');

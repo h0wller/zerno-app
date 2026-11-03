@@ -262,7 +262,7 @@ test('Задачи 5 и 6: Модалка «Мои заказы» в TMA и по
 test.describe('Спринт 2 — Сетка опций пиццы, отступ корзины, sticky-рейл и чекаут', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('1. Опции пиццы в 2 колонки + подсветка .sel, отступ #deliveryGrid, sticky #deliveryRail и блокировка минимальной суммы', async ({ page }) => {
+  test('1. Опции пиццы в 2 колонки + подсветка .sel, отступ #deliveryGrid, sticky #deliveryRail и чекаут от одной позиции', async ({ page }) => {
     await page.addInitScript(() => {
       sessionStorage.setItem('splashDone', '1');
     });
@@ -313,28 +313,17 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await expect(page.locator('#cartFab')).toBeHidden();
     await expect(page.locator('#chatFab')).toBeHidden();
 
-    // Устанавливаем порог минимального заказа выше текущей корзины (например, 3000 ₽)
-    await page.evaluate(() => {
-      window.MIN_DELIVERY_ORDER = 3000;
-      if (typeof window.paintTotals === 'function') window.paintTotals();
-    });
-
+    // Минимальной суммы заказа нет: одной позиции достаточно для перехода к оформлению.
     const checkoutBtn = page.locator('#checkoutBtn');
-    await expect(checkoutBtn).toBeDisabled();
-    await expect(checkoutBtn).toContainText('Мин. сумма доставки');
-
-    // Reopening refreshes deliveryInfo; it must not unlock a cart below the minimum.
-    await page.locator('#cartClose').click();
-    await page.locator('#cartFab').click();
-    await expect(checkoutBtn).toBeDisabled();
-    await expect(checkoutBtn).toContainText('Мин. сумма доставки');
-
-    // Снимаем повышенный порог — кнопка снова активна
-    await page.evaluate(() => {
-      window.MIN_DELIVERY_ORDER = 0;
-      if (typeof window.paintTotals === 'function') window.paintTotals();
-    });
+    await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
     await expect(checkoutBtn).toBeEnabled();
+    await expect(checkoutBtn).toHaveText('Оформить заказ');
+
+    // Степпер корзины использует тёплый токен бренда «Пятница», а не холодный цвет кофейни.
+    await expect(page.locator('#cartItems .qty button').first()).toHaveCSS(
+      'background-color',
+      'rgb(201, 158, 110)'
+    );
   });
 });
 
