@@ -1191,7 +1191,7 @@ function renderCartBase() {
   });
 
   function canStartCheckout(checkBtn) {
-    if (checkBtn.disabled || checkBtn.getAttribute("data-busy") === "1") return false;
+    if (checkoutInProgress || checkBtn.disabled || checkBtn.getAttribute("data-busy") === "1") return false;
     if (!me) {
       toast("Сначала войдите по номеру", "👤");
       if (typeof openAuth === "function") openAuth();
@@ -1259,12 +1259,12 @@ function renderCartBase() {
     return body;
   }
 
-  function showCheckoutProgress(checkBtn) {
+  function showCheckoutProgress(checkBtn, label) {
     var originalHtml = checkBtn.innerHTML;
     checkBtn.disabled = true;
     checkBtn.setAttribute("data-busy", "1");
     checkBtn.style.pointerEvents = "none";
-    checkBtn.innerHTML = '<span>⏳ Оформляем заказ...</span>';
+    checkBtn.innerHTML = '<span>⏳ ' + (label || "Оформляем заказ...") + '</span>';
 
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
       try { window.Telegram.WebApp.MainButton.showProgress(); } catch (tgErr) {}
@@ -1304,8 +1304,8 @@ function renderCartBase() {
     var slotInput = document.getElementById("checkoutSlot");
     if (slotInput) slotInput.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
 
-    document.querySelectorAll("#deliveryGrid .opts button.sel").forEach(function (button) {
-      button.classList.remove("sel");
+    document.querySelectorAll('#deliveryGrid .opts input[type="radio"]:checked').forEach(function (radio) {
+      radio.checked = false;
     });
 
     if (typeof syncAddButtons === "function") syncAddButtons();
@@ -1347,23 +1347,28 @@ function renderCartBase() {
   }
 
   /* ── Оформление заказа ── */
+  var checkoutInProgress = false;
   var checkBtn = document.getElementById("checkoutBtn");
   if (checkBtn) {
     checkBtn.onclick = async function () {
       if (!canStartCheckout(checkBtn)) return;
 
-      var checkoutInput = await resolveCheckoutInput();
-      if (!checkoutInput) return;
-
-      var body = buildCheckoutRequest(checkoutInput);
-      var originalHtml = showCheckoutProgress(checkBtn);
+      // Acquire the lock synchronously, before async address/time validation starts.
+      checkoutInProgress = true;
+      var originalHtml = showCheckoutProgress(checkBtn, "Проверяем данные...");
       try {
+        var checkoutInput = await resolveCheckoutInput();
+        if (!checkoutInput) return;
+
+        var body = buildCheckoutRequest(checkoutInput);
+        checkBtn.innerHTML = '<span>⏳ Оформляем заказ...</span>';
         var result = await api("/orders", { method: "POST", body: body });
         completeCheckoutSuccess(result, checkoutInput);
       } catch (error) {
         handleCheckoutFailure(error);
       } finally {
-        // Разблокировка при любом исходе: успех, 500 или таймаут.
+        checkoutInProgress = false;
+        // Validation failure, API error and success all release the same lock.
         restoreCheckoutProgress(checkBtn, originalHtml);
       }
     };

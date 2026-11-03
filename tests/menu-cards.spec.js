@@ -21,7 +21,7 @@ const BRANDS = [
 
 /** Тап-таргеты карточек: опции размера, кнопка добавления, степпер количества. */
 const TAP_SELECTORS = [
-  '#deliveryGrid .opts button',
+  '#deliveryGrid .opts label.opt-btn',
   '#deliveryGrid [data-add]',
   '#deliveryGrid [data-step]',
   '#grid .cfoot button',
@@ -338,7 +338,7 @@ test.describe('Карточки меню: высота, выравнивание
         await page.waitForTimeout(500);
 
         // Кладём одну позицию в корзину, чтобы степпер «−/+» перестал быть hidden и тоже попал в замер.
-        const firstOpt = page.locator('#deliveryGrid .opts button').first();
+        const firstOpt = page.locator('#deliveryGrid .opts label.opt-btn').first();
         if (await firstOpt.isVisible().catch(() => false)) await firstOpt.click({ force: true }).catch(() => {});
         await page.locator('#deliveryGrid [data-add]').first().click({ force: true }).catch(() => {});
         await page.waitForTimeout(400);

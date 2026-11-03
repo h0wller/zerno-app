@@ -462,7 +462,7 @@ body > div.wrap,
   contain-intrinsic-block-size: 352px; /* 350 + рамка 2px (1.5px округляется до 1px) = 352 */
 }
 #deliveryGrid .card:nth-child(n+5) {
-  contain-intrinsic-block-size: 480px;
+  contain-intrinsic-block-size: 502px;
 }
 :root { --menu-rail-width: 80px; --menu-rail-gap: 10px; }
 .menu-head {
@@ -500,6 +500,25 @@ html[data-brand="delivery"] {
   --card-border: 2px solid #3A2A1C;
   --card-shadow: 2px 2px 0 #3A2A1C;
   --card-radius: 18px;
+  --flame: #C03B2A;
+  --flame-d: #8E3716;
+  --esp: #3A2A1C;
+  --esp2: #241812;
+  --fr-tan: #C99E6E;
+  --fr-rice: #EFE6D8;
+  --tint-cool: #F3E2CE;
+  --tint-warm: #F3E2CE;
+  --panel: #FAF5EE;
+  --line: #E5DACB;
+  --price-color: #C03B2A;
+  --btn-fire-bg: #C03B2A;
+  --btn-fire-color: #FFFFFF;
+  --btn-fire-border: 2px solid #3A2A1C;
+  --btn-fire-shadow: 3px 3px 0 #3A2A1C;
+  --cta-bg: #C03B2A;
+  --cta-color: #FFFFFF;
+  --cta-border: 2px solid #3A2A1C;
+  --cta-shadow: 3px 3px 0 #3A2A1C;
 }
 body {
   background: var(--paper, #FFFFFF);
@@ -912,78 +931,78 @@ html[data-brand="delivery"] {
   <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <!-- Неблокирующая загрузка слоёв CSS со 100% фолбэк-страховкой для iOS WebKit / Telegram WebView -->
-  <link rel="stylesheet" href="/app/ui/fonts.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=635" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=635" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/fonts.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=636" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=636" media="print" onload="this.media='all'" />
   <script>
     window.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('link[media="print"]').forEach(function (l) { l.media = 'all'; });
     });
   </script>
   <noscript>
-    <link rel="stylesheet" href="/app/ui/fonts.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=635" />
-    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=635" />
+    <link rel="stylesheet" href="/app/ui/fonts.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=636" />
+    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=636" />
   </noscript>
   <!-- [tg-splash-menu-fix-v3] решение о сплэше в <head> = ТО ЖЕ, что в core/splash.js (один в один).
      Расхождение даёт «мигание»: сплэш рисуется в первом кадре, а затем JS его снимает (или наоборот). -->
@@ -1601,6 +1620,26 @@ html[data-brand="delivery"] #deliveryGrid > .card > .cbody {
 }
 
 
+/* Minimal first-frame reserve for native pizza option geometry. Visual states and brand colors are owned by theme CSS. */
+html[data-brand="delivery"] #deliveryGrid fieldset.opts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-inline-size: 0;
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+}
+html[data-brand="delivery"] #deliveryGrid .opts legend {
+  grid-column: 1 / -1;
+  margin: 0 0 4px;
+}
+html[data-brand="delivery"] #deliveryGrid .opts label.opt-btn {
+  min-height: 52px;
+}
+
 /* Mirror the deferred delivery menu geometry to prevent FOUC-induced CLS. */
 html[data-brand="delivery"] #deliveryView .menu-head {
   animation: none;
@@ -1783,6 +1822,7 @@ html[data-brand="delivery"] #deliveryGrid .opts {
   width: 100%;
 }
 html[data-brand="delivery"] #deliveryGrid .opts button,
+html[data-brand="delivery"] #deliveryGrid .opts label.opt-btn,
 html[data-brand="delivery"] #deliveryGrid .opts .opt-btn {
   display: flex;
   flex-direction: column;
@@ -1829,6 +1869,20 @@ html[data-brand="delivery"] #deliveryGrid .card .opts .opt-price {
   font-weight: 800;
   white-space: nowrap;
 }
+
+html[data-brand="delivery"] #deliveryGrid fieldset.opts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; min-inline-size:0; width:100%; box-sizing:border-box; border:0; margin:6px 0 0; padding:6px 0 0; }
+html[data-brand="delivery"] #deliveryGrid .opts legend { grid-column:1 / -1; padding:0; margin:0 0 4px; color:var(--soft,#586470); font-size:11px; font-weight:700; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-radio { position:absolute; width:1px; height:1px; margin:0; opacity:0; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-content { display:flex; flex-direction:column; justify-content:space-between; gap:4px; width:100%; min-width:0; pointer-events:none; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) { background:var(--btn-fire-bg,var(--flame)); border:var(--btn-fire-border,2px solid var(--fr-choc)); color:var(--btn-fire-color,#fff); box-shadow:var(--btn-fire-shadow,2px 2px 0 var(--fr-choc)); }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-size,
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-crust,
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-weight,
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-price { color:var(--btn-fire-color,#fff); opacity:1; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-radio:focus-visible + .opt-content { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; border-radius:6px; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:focus-visible) { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; }
+html[data-brand="delivery"] #deliveryGrid .opts-error { grid-column:1 / -1; margin:2px 0 0; color:var(--flame,#C03B2A); font-size:11px; font-weight:700; }
+
 
 /* Reserve the full-width ticker below the compact topbar before deferred CSS arrives. */
 html body .ticker {
@@ -2082,12 +2136,26 @@ html body #tickerTrack .tickerGroup > span {
               <h3>Маргарита</h3>
               <div class="desc">Красный соус, моцарелла</div>
               <div class="comp"><i>красный соус</i><i>моцарелла</i></div>
-              <div class="opts">
-                <button type="button" class="opt-btn sel" data-id="1" data-oi="0"><div class="opt-row"><span class="opt-size">25 см</span><span class="opt-crust">пышное</span></div><div class="opt-row"><span class="opt-weight">415 г</span><span class="opt-price op">535 ₽</span></div></button>
-                <button type="button" class="opt-btn" data-id="1" data-oi="1"><div class="opt-row"><span class="opt-size">35 см</span><span class="opt-crust">пышное</span></div><div class="opt-row"><span class="opt-weight">750 г</span><span class="opt-price op">735 ₽</span></div></button>
-                <button type="button" class="opt-btn" data-id="1" data-oi="2"><div class="opt-row"><span class="opt-size">25 см</span><span class="opt-crust">тонкое</span></div><div class="opt-row"><span class="opt-weight">335 г</span><span class="opt-price op">435 ₽</span></div></button>
-                <button type="button" class="opt-btn" data-id="1" data-oi="3"><div class="opt-row"><span class="opt-size">35 см</span><span class="opt-crust">тонкое</span></div><div class="opt-row"><span class="opt-weight">550 г</span><span class="opt-price op">635 ₽</span></div></button>
-              </div>
+              <fieldset class="opts">
+                <legend>Размер и тесто</legend>
+                <label class="opt-btn" for="pizza-option-1-0">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-0" value="0" data-id="1" data-oi="0">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">25 см</span><span class="opt-crust">пышное</span></span><span class="opt-row opt-bottom"><span class="opt-weight">415 г</span><span class="opt-price">535 ₽</span></span></span>
+                </label>
+                <label class="opt-btn" for="pizza-option-1-1">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-1" value="1" data-id="1" data-oi="1">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">35 см</span><span class="opt-crust">пышное</span></span><span class="opt-row opt-bottom"><span class="opt-weight">750 г</span><span class="opt-price">735 ₽</span></span></span>
+                </label>
+                <label class="opt-btn" for="pizza-option-1-2">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-2" value="2" data-id="1" data-oi="2">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">25 см</span><span class="opt-crust">тонкое</span></span><span class="opt-row opt-bottom"><span class="opt-weight">335 г</span><span class="opt-price">435 ₽</span></span></span>
+                </label>
+                <label class="opt-btn" for="pizza-option-1-3">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-3" value="3" data-id="1" data-oi="3">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">35 см</span><span class="opt-crust">тонкое</span></span><span class="opt-row opt-bottom"><span class="opt-weight">550 г</span><span class="opt-price">635 ₽</span></span></span>
+                </label>
+                <p class="opts-error" id="pizza-option-1-error" hidden>Выберите размер и тесто.</p>
+              </fieldset>
               <div class="steprow" style="margin-top:auto">
                 <button class="cta" data-add="1">Добавить</button>
               </div>
@@ -2929,7 +2997,7 @@ html body #tickerTrack .tickerGroup > span {
       <button class="btn ghost cart-continue-btn" id="cartClose">Продолжить покупки</button>
     </div>
   </div>
-<script type="module" src="/dist/main.bundle.js?v=635"></script>
+<script type="module" src="/dist/main.bundle.js?v=636"></script>
   <div id="installBanner" hidden style="
         position: fixed;
         left: 12px;

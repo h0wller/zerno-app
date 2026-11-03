@@ -26,7 +26,7 @@ async function ensureCartFabVisible(page) {
   if (!ok) {
     const addBtn = page.locator('#deliveryGrid [data-add], #deliveryGrid .cta').first();
     for (let i = 0; i < 3 && !ok; i++) {
-      const opt = page.locator('#deliveryGrid .opts button').first();
+      const opt = page.locator('#deliveryGrid .opts label.opt-btn').first();
       if (await opt.isVisible().catch(() => false)) await opt.click().catch(() => {});
       await addBtn.click({ timeout: 3000 }).catch(() => {});
       await page.waitForTimeout(250);
@@ -154,7 +154,7 @@ test.describe('PWA Responsive Layout Audit', () => {
                 '#deliveryGrid [data-add]',
                 '#deliveryGrid .cta',
                 '#deliveryGrid [data-step]',
-                '#deliveryGrid .opts button'
+                '#deliveryGrid .opts label.opt-btn'
               ];
               const results = [];
               for (const sel of selectors) {
@@ -213,7 +213,7 @@ test.describe('PWA Responsive Layout Audit', () => {
         await ensureNoModal(page);
 
         // Кликаем по первой опции размера (если доступна)
-        const optBtn = page.locator('#deliveryGrid .opts button').first();
+        const optBtn = page.locator('#deliveryGrid .opts label.opt-btn').first();
         const hasOpts = await optBtn.isVisible().catch(() => false);
         if (hasOpts) {
           await optBtn.click({ force: true });
@@ -280,7 +280,7 @@ test.describe('PWA Responsive Layout Audit', () => {
         await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
         await ensureNoModal(page);
 
-        const optBtn = page.locator('#deliveryGrid .opts button').first();
+        const optBtn = page.locator('#deliveryGrid .opts label.opt-btn').first();
         const hasOpts = await optBtn.isVisible().catch(() => false);
         if (hasOpts) {
           await optBtn.click({ force: true });

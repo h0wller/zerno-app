@@ -1,6 +1,7 @@
 /* public/app/orders.js — F2.5.5: диспетчер заказов на клиенте */
 window.ordersPoll = null;
 let lastOrderNo = 0; /* Ф5.8f-fix: module-private */
+let ordersRenderRevision = 0;
 
 function orderLabel(s) {
   return ({ 
@@ -27,10 +28,10 @@ function orderCard(o) {
   // Отменённые и выполненные заказы терминальны в диспетчерской ленте.
   // Предзаказы остаются видимыми после выполнения, но не предлагают повторно менять статус.
   var next = o.status === 'cancel' || o.status === 'done' ? []
-    : o.status === 'new' ? ['accept', 'done', 'cancel']
-    : o.status === 'accept' ? ['cook', 'done', 'cancel']
-    : o.status === 'cook' ? (o.method === 'pickup' ? ['done', 'cancel'] : ['way', 'done', 'cancel'])
-    : o.status === 'way' ? ['done', 'cancel']
+    : o.status === 'new' ? ['accept', 'done']
+    : o.status === 'accept' ? ['cook', 'done']
+    : o.status === 'cook' ? (o.method === 'pickup' ? ['done'] : ['way', 'done'])
+    : o.status === 'way' ? ['done']
     : ['accept', 'done'];
 
   // Рендер позиций заказа с вложенными модификаторами для кухни и диспетчера
@@ -80,8 +81,10 @@ function orderCard(o) {
 }
 
 async function renderOrders(silent) {
+  const revision = ++ordersRenderRevision;
   try {
     const r = await api('/orders');
+    if (revision !== ordersRenderRevision) return;
     // F2.5.6: предзаказы всегда остаются в работе диспетчера — не скрываем их,
     // даже если статус уже «done» (ручная смена статуса доступна в карточке).
     const list = (r.orders || []).filter(o => o.is_preorder || o.status !== 'done');
@@ -90,7 +93,9 @@ async function renderOrders(silent) {
     if (maxNo) lastOrderNo = maxNo;
     $('#ordersList').innerHTML = list.map(orderCard).join('') || '<div class="hmini">Заказов за последние 3 дня нет</div>';
     injectDelay();
-  } catch (e) { if (!silent) toast(e.message, '⚠️'); }
+  } catch (e) {
+    if (revision === ordersRenderRevision && !silent) toast(e.message, '⚠️');
+  }
 }
 
 document.addEventListener('click', async function (e) {

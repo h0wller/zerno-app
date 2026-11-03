@@ -362,7 +362,7 @@ function ensureTgEnvironment() {
 
       if (
         t.closest(
-          "[data-add], .addBtn, .cta, [data-addon], [data-addon-id], #deliveryGrid .card .cta, #deliveryGrid .opts button, .cfoot button"
+          "[data-add], .addBtn, .cta, [data-addon], [data-addon-id], #deliveryGrid .card .cta, #deliveryGrid .opts .opt-btn, .cfoot button"
         )
       ) {
         haptic("medium");

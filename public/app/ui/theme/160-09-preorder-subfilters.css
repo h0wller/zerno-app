@@ -117,6 +117,7 @@
 }
 
 #deliveryGrid .opts button,
+#deliveryGrid .opts label.opt-btn,
 #deliveryGrid .opts .opt-btn {
   display: flex;
   flex-direction: column;
@@ -183,20 +184,52 @@
   white-space: nowrap;
 }
 
-#deliveryGrid .opts button.sel,
-#deliveryGrid .opts .opt-btn.sel {
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) {
   background: var(--btn-fire-bg, var(--flame));
   border: var(--btn-fire-border, 1.5px solid var(--flame));
   color: var(--btn-fire-color, #FFFFFF);
   box-shadow: var(--btn-fire-shadow, none);
 }
 
-#deliveryGrid .opts button.sel .opt-size,
-#deliveryGrid .opts button.sel .opt-crust,
-#deliveryGrid .opts button.sel .opt-weight,
-#deliveryGrid .opts button.sel .opt-price,
-#deliveryGrid .opts button.sel .op {
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-size,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-crust,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-weight,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-price {
   color: var(--btn-fire-color, #FFFFFF);
   opacity: 1;
 }
 
+
+/* Native pizza option group */
+#deliveryGrid fieldset.opts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-inline-size: 0;
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+}
+#deliveryGrid .opts legend {
+  grid-column: 1 / -1;
+  padding: 0;
+  margin: 0 0 4px;
+  color: var(--soft, #586470);
+  font-size: 11px;
+  font-weight: 700;
+}
+#deliveryGrid .opts label.opt-btn { position: relative; min-height: 52px; cursor: pointer; }
+#deliveryGrid .opts .opt-radio { position:absolute; width:1px; height:1px; margin:0; opacity:0; }
+#deliveryGrid .opts .opt-content { display:flex; flex-direction:column; justify-content:space-between; gap:4px; width:100%; min-width:0; pointer-events:none; }
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) { background:var(--btn-fire-bg,var(--flame)); border:var(--btn-fire-border,1.5px solid var(--flame)); color:var(--btn-fire-color,#fff); box-shadow:var(--btn-fire-shadow,none); }
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-size,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-crust,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-weight,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-price { color:var(--btn-fire-color,#fff); opacity:1; }
+#deliveryGrid .opts .opt-btn:focus-within { outline: 3px solid var(--focus, #1A6DDF); outline-offset: 3px; border-radius: 6px; }
+#deliveryGrid .opts-error { grid-column:1 / -1; margin:2px 0 0; color:var(--flame,#C03B2A); font-size:11px; font-weight:700; }
+
+/* Keep lazy-card reservation aligned with the native fieldset + legend geometry. */
+#deliveryGrid .card:nth-child(n+5) { contain-intrinsic-block-size: 502px; }

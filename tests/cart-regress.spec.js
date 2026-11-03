@@ -54,7 +54,7 @@ test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степп
     await expect(firstCard).toBeVisible({ timeout: 10000 });
 
     // Если у карточки есть выбор размера (пицца), кликаем первый размер
-    const optBtn = firstCard.locator('.opts button').first();
+    const optBtn = firstCard.locator('.opts label.opt-btn').first();
     if ((await optBtn.count()) > 0) {
       await optBtn.click();
     }
@@ -118,7 +118,7 @@ test('корзина: 1 клик = +1, подарок 2×35, пустая = 0 �
 
   await page.goto('/?brand=delivery');
   const card = page.locator('#deliveryGrid .card').first();
-  await card.locator('.opts button', { hasText: '35 см' }).first().click({ timeout: 10000 });
+  await card.locator('.opts label.opt-btn', { hasText: '35 см' }).first().click({ timeout: 10000 });
   await card.locator('button', { hasText: 'Добавить' }).first().click();
   await page.locator('#cartFab').click();
 
@@ -269,17 +269,18 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
 
     await page.goto('/?brand=delivery');
 
-    const firstPizzaCard = page.locator('#deliveryGrid .card:has(.opts button)').first();
+    const firstPizzaCard = page.locator('#deliveryGrid .card:has(.opts input[type="radio"])').first();
     await expect(firstPizzaCard).toBeVisible({ timeout: 10000 });
 
-    // ── Задача 1: Сетка опций пиццы (.opts) и активное состояние .sel ──
+    // ── Задача 1: Сетка опций пиццы (.opts) и checked-state radio ──
     const optsGrid = firstPizzaCard.locator('.opts');
     const gridStyle = await optsGrid.evaluate((el) => window.getComputedStyle(el).display);
     expect(gridStyle).toBe('grid');
 
-    const firstOpt = optsGrid.locator('button').first();
+    const firstOpt = optsGrid.locator('label.opt-btn').first();
+    const firstRadio = firstOpt.locator('input[type="radio"]');
     await firstOpt.click();
-    await expect(firstOpt).toHaveClass(/sel/);
+    await expect(firstRadio).toBeChecked();
 
     // Выбранная опция окрашена акцентным цветом кнопки (--flame #C03B2A), а текст белый (#FFFFFF)
     await expect(firstOpt).toHaveCSS('color', 'rgb(255, 255, 255)');
@@ -373,7 +374,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
             hide() { window.__backBtnVisible = false; },
             onClick(fn) { window.__backClickCallbacks.push(fn); }
           },
-          MainButton: { show() {}, hide() {}, setText() {}, setParams() {}, onClick() {}, showProgress() {}, hideProgress() {} },
+          MainButton: { show() {}, hide() {}, setText() {}, setParams() {}, onClick(fn) { window.__mainButtonClick = fn; }, showProgress() {}, hideProgress() {} },
           HapticFeedback: { impactOccurred() {}, notificationOccurred() {}, selectionChanged() {} }
         }
       };
@@ -451,11 +452,11 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
       window.getKaliningradTime = () => ({ hour: 12, minute: 30 });
     });
 
-    const firstCard = page.locator('#deliveryGrid .card:has(.opts button)').first();
+    const firstCard = page.locator('#deliveryGrid .card:has(.opts input[type="radio"])').first();
     await expect(firstCard).toBeVisible({ timeout: 10000 });
 
     // ── Задача 1: Haptics на выбор опции, первичное добавление (medium) и степпер (light) ──
-    await firstCard.locator('.opts button', { hasText: '35 см' }).first().click();
+    await firstCard.locator('.opts label.opt-btn', { hasText: '35 см' }).first().click();
     await firstCard.locator('.steprow .cta, [data-add]').first().click();
     await firstCard.locator('.steprow [data-step="1"], .steprow .step').last().click();
 
@@ -514,8 +515,49 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await page.locator('#checkoutHouse').fill('70');
     await expect(page.locator('#checkoutBtn')).toBeEnabled();
 
-    // ── Задача 3: Отправка заказа (в TMA #checkoutBtn скрыт под нативной MainButton) ──
+    // ── Задача 3: Повторное нажатие MainButton во время валидации не дублирует заказ ──
+    // Gate the actual slot-validation function, not a delivery-info network request:
+    // background refreshes can otherwise win the route race and make this test nondeterministic.
+    await page.evaluate(() => {
+      const validation = window.CheckoutValidation;
+      const resolveSlot = validation.resolveSlot.bind(validation);
+      window.__checkoutValidationStarted = false;
+      window.__releaseCheckoutValidation = null;
+      validation.resolveSlot = () => {
+        window.__checkoutValidationStarted = true;
+        return new Promise((resolve, reject) => {
+          window.__releaseCheckoutValidation = () => {
+            resolveSlot().then(resolve, reject);
+          };
+        });
+      };
+    });
+
+    let checkoutPosts = 0;
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/orders') {
+        checkoutPosts += 1;
+      }
+    });
+
     await page.locator('#checkoutBtn').dispatchEvent('click');
+    await page.waitForFunction(() => window.__checkoutValidationStarted);
+
+    // During the pending slot validation, Telegram's native button calls checkoutBtn.click().
+    await page.evaluate(() => window.__mainButtonClick());
+    expect(checkoutPosts).toBe(0);
+    await expect(page.locator('#checkoutBtn')).toBeDisabled();
+
+    const orderResponsePromise = page.waitForResponse((response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname === '/api/orders'
+    );
+    await page.evaluate(() => window.__releaseCheckoutValidation());
+    const orderResponse = await orderResponsePromise;
+    expect(orderResponse.ok()).toBeTruthy();
+    await expect.poll(() => checkoutPosts).toBe(1);
+    await expect(page.locator('#checkoutBtn')).toBeEnabled();
+    expect(checkoutPosts).toBe(1);
 
     const trackModal = page.locator('#orderTrackModal');
     await expect(trackModal).toBeVisible();
