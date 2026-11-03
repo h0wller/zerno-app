@@ -127,6 +127,10 @@ before(async () => {
     VALUES(?,?,?,?,?,?,?,?,?,?)`).run(
     'lunch-free-ship', 'FREEFIRST', 'freeship', 1, 1, null, 0, 0, now, 'delivery',
   );
+  db.prepare(`INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope)
+    VALUES(?,?,?,?,?,?,?,?,?,?)`).run(
+    'lunch-fixed', 'LUNCHFIXED', 'fixed', 250, 1, null, 0, 0, now, 'delivery',
+  );
 });
 
 after(async () => {
@@ -171,6 +175,14 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
   assert.equal(freeShipBlocked.status, 400);
   assert.equal(db.prepare("SELECT uses FROM promos WHERE code='FREEFIRST'").get().uses, 0);
 
+  const fixedBlocked = await request('/orders', {
+    method: 'POST',
+    token: guestToken,
+    body: orderBody('02.11 | 12:30–13:00', 'delivery', 'LUNCHFIXED'),
+  });
+  assert.equal(fixedBlocked.status, 400);
+  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='LUNCHFIXED'").get().uses, 0);
+
   const guestLunch = await request('/orders', {
     method: 'POST',
     token: guestToken,
@@ -213,6 +225,16 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
   assert.equal(afterLunch.json.order.promodiscount, 200);
   assert.equal(afterLunch.json.order.gifts.length, 2);
   assert.equal(db.prepare("SELECT uses FROM promos WHERE code='LUNCH10'").get().uses, 1);
+
+  const afterLunchFixed = await request('/orders', {
+    method: 'POST',
+    token: guestToken,
+    body: orderBody('02.11 | 16:30–17:00', 'delivery', 'LUNCHFIXED'),
+  });
+  assert.equal(afterLunchFixed.status, 200, JSON.stringify(afterLunchFixed.json));
+  assert.equal(afterLunchFixed.json.order.discount, 0);
+  assert.equal(afterLunchFixed.json.order.promodiscount, 250);
+  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='LUNCHFIXED'").get().uses, 1);
 
   const mine = await request('/orders/mine', { token: staffToken });
   const saved = (mine.json.orders || []).find((order) => order.id === staffLunch.json.order.id);
