@@ -56,7 +56,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `cart.js` | Единственный владелец мутаций корзины и сохранения; `#cartItems`, аддоны, итоги, подарки, cartFab; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo` |
+| `cart.js` | Единственный владелец мутаций корзины и сохранения; `#cartItems`, аддоны, итоги, подарки, cartFab; состояние раскрытых модификаторов синхронизируется с индексами строк при удалении; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo` |
 | `checkout-validation.js` | Проверка адреса и времени доставки перед оформлением; подсветка ошибочного поля и переключатель «сейчас / ко времени» | `window.CheckoutValidation` |
 | `core/address-dict.js` | Справочник улиц и тарифов | `window.AddressModule` |
 | `core/address-autocomplete.js` | Дропдаун подсказок `#checkoutStreet` | — |
