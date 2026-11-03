@@ -98,7 +98,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await page.locator('#cartClose').click();
   await expect(cartPanel).not.toHaveClass(/open/);
 
-  await page.locator('#deliveryGrid [data-product-id="pz-marg"] .opts button').nth(1).click();
+  await page.locator('#deliveryGrid [data-product-id="pz-marg"] .opts input[type="radio"]').nth(1).click();
   await page.locator('#deliveryGrid [data-product-id="pz-marg"] [data-add]').click();
   await page.locator('#cartFab').click();
   await expect(cartPanel).toHaveClass(/open/);
