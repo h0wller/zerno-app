@@ -1,4 +1,6 @@
 /* public/app/cart.js — Корзина доставки, умные модификаторы блюд и чекаут */
+import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
+
 (function () {
   "use strict";
 
@@ -158,6 +160,18 @@
     if (!time || time.dayOfWeek < 1 || time.dayOfWeek > 5) return false;
     var minuteOfDay = time.hour * 60 + time.minute;
     return minuteOfDay >= 11 * 60 && minuteOfDay < 15 * 60;
+  }
+
+  function scheduleLunchPromoRefresh() {
+    var delay = getNextLunchPromoBoundaryDelay(new Date());
+    window.setTimeout(function () {
+      var slotEl = document.getElementById("checkoutSlot");
+      if (!slotEl || slotEl.value === "asap") {
+        paintTotals();
+        refreshPromoLine(totalsNow().sum);
+      }
+      scheduleLunchPromoRefresh();
+    }, delay + 100);
   }
 
   function getDeliveryPricing(list, method, placeVal) {
@@ -1233,6 +1247,7 @@ function renderCartBase() {
   }
 
   restoreDraft();
+  scheduleLunchPromoRefresh();
 
   /* Кнопка «Перейти в меню» */
   document.addEventListener("click", function (e) {
