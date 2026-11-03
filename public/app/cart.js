@@ -563,7 +563,7 @@ function clearPromo() {
     if (!placeEl) return;
     var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
     var hint = document.getElementById("zoneFeeHint");
-    if (t.method === "pickup") {
+    if (method === "pickup") {
       if (hint) hint.hidden = true;
       return;
     }
@@ -638,7 +638,7 @@ function clearPromo() {
 
   function toggleDeliveryGroup() {
     var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
-    var isPickup = t.method === "pickup";
+    var isPickup = method === "pickup";
     var grp = document.getElementById("checkoutDeliveryGroup");
     if (grp) grp.hidden = isPickup;
     ensurePlaceOptions();
