@@ -132,7 +132,7 @@ test('карточки показывают смысловые бейджи, а 
     sessionStorage.setItem('splashDone', '1');
   });
   const deliveryResponse = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.replace(/\\/+$/, '').endsWith('/dmenu'),
+    new URL(response.url()).pathname.endsWith('/dmenu'),
     { timeout: 10000 }
   );
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
