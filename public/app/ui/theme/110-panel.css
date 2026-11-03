@@ -484,7 +484,6 @@
   border-color: var(--line);
   background: #fff;
 }
-#profileBox > #activateBtn,
 #profileBox > #pushBtn {
   margin: 0;
   padding: 10px 12px;
@@ -492,7 +491,23 @@
   border-color: var(--line);
   background: #fff;
 }
-#profileBox > #activateBtn.staff-access-link {
+#settingsModal .settings-staff-section {
+  display: grid;
+  gap: 8px;
+}
+#settingsModal .settings-staff-section #activateBtn {
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+}
+#settingsModal .settings-staff-section #activateBtn.staff-access-link {
   width: max-content;
   min-height: 32px;
   padding: 4px 0;
@@ -507,7 +522,7 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-#profileBox > #activateBtn.staff-access-link:hover {
+#settingsModal .settings-staff-section #activateBtn.staff-access-link:hover {
   background: transparent;
   color: var(--ink);
 }
