@@ -469,6 +469,7 @@ Zerno — мультибрендовое PWA для двух заведений:
 - [`public/app/core/auth.js`](../../public/app/core/auth.js), [`public/app/core/panel.js`](../../public/app/core/panel.js), [`public/app/profile.js`](../../public/app/profile.js) — auth, профиль и панель.
 - [`public/sw.js`](../../public/sw.js) — текущая версия static cache и App Shell.
 - [CI Quality Gates #1618](https://github.com/h0wller/zerno-app/actions/runs/41667080672) и [Deploy #484](https://github.com/h0wller/zerno-app/actions/runs/41668763499) — успешные workflow для базового коммита.
+- Graphify на момент подготовки draft индексировал `5ba43a2`, а базовая ветка уже была на `4bd2fd3`; граф использовался для навигации, а значимые интерфейсы сверялись с актуальными файлами ветки `pizza`.
 
 ---
 
