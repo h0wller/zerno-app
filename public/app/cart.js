@@ -328,7 +328,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
     var totalLabelEl = document.getElementById("cartTotalLabel");
     if (totalLabelEl) {
-      totalLabelEl.textContent = t.awaitingPlace && list.length
+      totalLabelEl.textContent = t.awaitingPlace && list.length && !t.freeShip && !t.personalFreeShip
         ? "Сумма без доставки"
         : "Итого к оплате";
     }
