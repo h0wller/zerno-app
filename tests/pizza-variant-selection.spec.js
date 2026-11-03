@@ -124,9 +124,8 @@ test.describe('native pizza variant selection', () => {
   test('selects using the visible label text and does not trigger card-level missing-selection feedback', async ({ page }) => {
     await openPizzaMenu(page);
     const card = page.locator('#deliveryGrid .card').first();
-    const optionLabel = card.locator('label.opt-btn', { hasText: '35 см, пышное' });
-    const radio = optionLabel.locator('input[type="radio"]');
-    await optionLabel.click();
+    const radio = card.getByRole('radio', { name: /35 см пышное 750 г 735 ₽/ });
+    await radio.check();
     await expect(radio).toBeChecked();
     await expect(card.locator('.opts-error')).toHaveCount(0);
     await expect(page.locator('#toasts .toast')).toHaveCount(0);
@@ -141,7 +140,7 @@ test.describe('native pizza variant selection', () => {
     await expect(error).toHaveText('Выберите размер и тесто.');
     const first = card.getByRole('radio').first();
     await expect(first).toBeFocused();
-    await expect(first).toHaveAttribute('aria-describedby', /opts-error/);
+    await expect(first).toHaveAttribute('aria-describedby', 'pizza-option-pz-radio-test-error');
     await expect(page.locator('#toasts .toast')).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart') || '[]'))).toEqual([]);
   });
@@ -149,8 +148,8 @@ test.describe('native pizza variant selection', () => {
   test('adds the selected server option using the existing oi/key/price contract', async ({ page }) => {
     await openPizzaMenu(page);
     const card = page.locator('#deliveryGrid .card').first();
-    const optionLabel = card.locator('label.opt-btn', { hasText: '35 см, тонкое' });
-    await optionLabel.click();
+    const radio = card.getByRole('radio', { name: /35 см тонкое 550 г 635 ₽/ });
+    await radio.check();
     await card.locator('[data-add]').click();
     const cart = await page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart') || '[]'));
     expect(cart).toHaveLength(1);
