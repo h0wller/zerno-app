@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isWeekdayLunchDiscountActive, validateDeliverySlot } from '../../server/domain/delivery-hours.js';
+import { getDeliveryHours, isWeekdayLunchDiscountActive, validateDeliverySlot } from '../../server/domain/delivery-hours.js';
 import { calculateOrderDiscounts } from '../../server/domain/order-discounts.js';
 
 test('обеденная акция действует по будням с 11:00 включительно до 15:00 исключительно', () => {
@@ -63,4 +63,14 @@ test('обеденная скидка 30% округляется один раз
     lunchPromo: true,
   });
   assert.equal(result.discount, 32);
+});
+
+test('ASAP uses the current Europe/Kaliningrad time', () => {
+  const atLunchStart = getDeliveryHours(new Date('2026-11-02T09:00:00.000Z'));
+  const beforeLunchEnd = getDeliveryHours(new Date('2026-11-02T12:59:00.000Z'));
+  const atLunchEnd = getDeliveryHours(new Date('2026-11-02T13:00:00.000Z'));
+
+  assert.equal(isWeekdayLunchDiscountActive(atLunchStart), true);
+  assert.equal(isWeekdayLunchDiscountActive(beforeLunchEnd), true);
+  assert.equal(isWeekdayLunchDiscountActive(atLunchEnd), false);
 });
