@@ -102,6 +102,11 @@ body.editing .card:hover{
 .tag.limited{ background: #7C3E62; color: #FFFFFF; }
 .tag.decaf{ background: #53636F; color: #FFFFFF; }
 .tag.neutral{ background: #53636F; color: #FFFFFF; }
+.tag.popular{ background: #7656A6; color: #FFFFFF; }
+.tag.signature{ background: #81533B; color: #FFFFFF; }
+.tag.share{ background: #287A70; color: #FFFFFF; }
+.tag.hearty{ background: #A35B2A; color: #FFFFFF; }
+.tag.light{ background: #4B806F; color: #FFFFFF; }
 .tag.recommended,
 .tag.seasonal,
 .tag.limited,
