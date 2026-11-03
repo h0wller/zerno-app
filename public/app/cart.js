@@ -724,7 +724,7 @@ function clearPromo() {
     try {
       var draft = JSON.parse(sessionStorage.getItem("zt_checkout_draft") || "{}");
 
-      // Сохранённые адреса применяются только после явного выбора в «Мои адреса».
+      // Восстановление сохранённого адреса принадлежит address-autocomplete.js; здесь читаем только черновик чекаута.
       var placeVal = draft.place || "";
       var streetVal = draft.street || "";
       var houseVal = draft.house || "";
