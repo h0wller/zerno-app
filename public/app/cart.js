@@ -306,6 +306,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
     var feeEl = document.getElementById("cartFee");
     if (feeEl) {
+      feeEl.classList.toggle("is-free", !!(list.length && t.method === "delivery" && (t.personalFreeShip || t.freeShip)));
       if (list.length && t.method === "delivery" && t.awaitingPlace) {
         var pendingDeliveryReason = t.personalFreeShip || t.freeShip
           ? "Бесплатная доставка уже применена. Выберите населённый пункт, чтобы увидеть размер экономии."
