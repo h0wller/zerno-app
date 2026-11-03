@@ -3,7 +3,7 @@
    читает CATS лексически (406). Все объявления — top-level var/function. */
 import { attachGridDnD, canDragMenu, dragAttr } from './core/dnd.js';
 import { getVisibleComposition } from './core/menu-content.js';
-import { getMenuBadgeClass } from './core/menu-badges.js';
+import { getMenuBadgeClass, getMenuBadgeLabel } from './core/menu-badges.js';
 import { calculateDishKbju } from './core/nutrition.js';
 window.cat = 'coffee'; /* Ф5.6-финал шаг 4-fix: menu-editor читает cat голым */
 window.query = ''; /* Ф5.6-финал шаг 4-fix2: menu-editor пишет query голым */
@@ -116,7 +116,7 @@ function renderMenu() {
       list
         .map((p, i) => {
           const tg = p.tag
-            ? `<span class="tag ${getMenuBadgeClass(p.tag)}">${esc(p.tag)}</span>`
+            ? `<span class="tag ${getMenuBadgeClass(p.tag)}">${esc(getMenuBadgeLabel(p.tag))}</span>`
             : '';
           const priceStr = fmtMulti(p.price, p);
           const volStr = fmtVol(p.vol);
