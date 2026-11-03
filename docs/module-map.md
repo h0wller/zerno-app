@@ -147,11 +147,13 @@
 
 ## 13. CSS по слоям (подробнее — docs/css-architecture.md)
 
-- СЛОЙ 1 (база): `ui/theme/*.css`, `ui/fonts.css`.
-- СЛОЙ 2 (layout + бренд): `core/views.js` (массив rules).
-- СЛОЙ 3 (компонентный): инжекции внутри модулей (delivery.js steprow, ui/styles.js, пульсы чата).
-- СЛОЙ 4 (critical): инлайн-`<style>` в `index.html`.
-- Брендовые растры (Ф5.39): горизонтальные логотипы — только SVG; квадратные марки — `<picture>` webp+svg разрешён. Владелец содержимого марки — `admin-extra.js`.
+- **Слой 1:** `ui/theme/*.css` и `ui/fonts.css` — базовые компоненты, нейтральная геометрия и responsive-правила.
+- **Слой 2а:** `ui/brand-tokens.css` — только брендовые custom properties.
+- **Слой 2б:** `core/views.js` — централизованная runtime-инъекция массива `rules`: общие layout/system-правила и брендовые overrides. Это соответствует Rule 4 в `scripts/css-audit.mjs`; не считать каждый селектор в views брендированным.
+- **Слой 3:** локальные style-инъекции модулей-владельцев (например, `delivery.js`, `ui/styles.js`, чат).
+- **Слой 4:** `index.html` — critical inline CSS первого кадра, а также HTML-загрузочный контур внешних stylesheets и `<noscript>` fallback. Это связанные, но разные функции shell.
+- **Брендовые растры (Ф5.39):** горизонтальные логотипы — только SVG; квадратные марки — `<picture>` webp+svg разрешён. Владелец содержимого марки — `admin-extra.js`.
+
 
 ## 14. Сервер (кратко)
 
