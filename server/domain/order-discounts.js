@@ -12,7 +12,7 @@ export function calculateOrderDiscounts({
     const combinedRate = LUNCH_DISCOUNT_RATE + (byStaff ? staffRate : 0);
     return {
       discount: Math.round(amount * combinedRate),
-      label: byStaff ? '20% дневная акция + 10% для своих' : '20% дневная акция',
+      label: byStaff ? '20% обеденная акция + 10% для своих' : '20% обеденная акция',
     };
   }
   const staffDiscount = byStaff ? Math.round(amount * staffRate) : 0;
