@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { getKaliningradDateParts } from '../server/domain/delivery-hours.js';
 
 const authHeaders = token => ({ Authorization: 'Bearer ' + token });
 
@@ -6,6 +7,14 @@ function uniquePhone() {
   const digits = '9' + String(Date.now()).slice(-8) + String(Math.floor(Math.random() * 10));
   return '+7 ' + digits.slice(0, 3) + ' ' + digits.slice(3, 6) + '-' +
     digits.slice(6, 8) + '-' + digits.slice(8, 10);
+}
+
+function nextDayAt16Slot() {
+  const current = getKaliningradDateParts(new Date());
+  const nextDay = new Date(Date.UTC(current.year, current.month - 1, current.day + 1));
+  const day = String(nextDay.getUTCDate()).padStart(2, '0');
+  const month = String(nextDay.getUTCMonth() + 1).padStart(2, '0');
+  return day + '.' + month + ' | 16:00–16:30';
 }
 
 async function registerVerifiedGuest(request, src) {
@@ -54,7 +63,8 @@ async function assertFreeDeliveryIsSingleUse(request, token) {
     method: 'delivery',
     place: 'Янтарный',
     addr: 'Тестовая, 1',
-    slot: 'asap',
+    // Keep the free-delivery lifecycle test independent of the real-time lunch promo window.
+    slot: nextDayAt16Slot(),
     pay: 'cash',
     items: [{ id: item.id, qty: 1, oi: Array.isArray(item.opts) && item.opts.length ? 0 : -1 }],
     promo: code,
