@@ -2792,11 +2792,15 @@ html body #tickerTrack .tickerGroup > span {
         <div id="dashOrders"></div>
       </div>
       <hr style="border: 0; border-top: 1px solid var(--line); margin: 14px 0" />
-      <h4 style="margin: 0 0 6px; font-size: 13px">🔔 Массовый пуш гостям (подписавшимся)</h4>
+      <h4 style="margin: 0 0 6px; font-size: 13px">🔔 Массовая рассылка гостям</h4>
       <div class="form">
         <input id="pushText" placeholder="Текст уведомления (напр. Сегодня свежий круассан!)" maxlength="160" />
         <button class="btn fire" id="pushSend">Отправить всем</button>
-        <button class="btn ghost" id="pushHoursSend" type="button">Сообщить о новом графике</button>
+        <button class="btn ghost" id="pushHoursSend" type="button">Разослать зимний график доставки</button>
+      </div>
+      <div class="msub" style="margin-top: 6px">
+        Эта кнопка отправляет готовое сообщение об осенне-зимнем графике (октябрь–апрель: пн–чт 11:00–21:00, пт–вс 11:00–22:00).
+        Получатели — гости с включёнными уведомлениями: Telegram, если он подключён, иначе push.
       </div>
       <h4 style="margin: 14px 0 6px; font-size: 13px">📋 Подписчики пушей</h4>
       <div id="pushSubs" style="max-height: 180px; overflow: auto; display: grid; gap: 4px"></div>

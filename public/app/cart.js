@@ -81,29 +81,19 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
   function getDefaultDeliveryRates(normalizedPlace) {
     var isFarZone = /синявино|покровское/i.test(normalizedPlace);
     var isOuterZone = /куликово|яблоновка/i.test(normalizedPlace);
-    return {
-      fee: isFarZone ? 250 : (isOuterZone ? 300 : 200),
-      minOrder: isFarZone ? 1000 : (isOuterZone ? 1200 : 0),
-    };
+    return { fee: isFarZone ? 250 : (isOuterZone ? 300 : 200) };
   }
 
   function getDeliveryZoneRates(placeVal) {
     var baseZoneFee = 0;
-    var minOrder = 0;
     var normalizedPlace = String(placeVal || "").toLowerCase().trim();
-    if (!normalizedPlace) {
-      var configuredMinimum = Number(window.MIN_DELIVERY_ORDER);
-      return { baseZoneFee: 0, minOrder: configuredMinimum > 0 ? configuredMinimum : 0 };
-    }
+    if (!normalizedPlace) return { baseZoneFee: 0 };
 
     if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
       var zone = deliveryInfo.zones.find(function (entry) {
         return entry.places && entry.places.includes(placeVal);
       });
-      if (zone) {
-        baseZoneFee = Number(zone.fee) || 0;
-        if (Number(zone.min) > 0) minOrder = Number(zone.min);
-      }
+      if (zone) baseZoneFee = Number(zone.fee) || 0;
     }
 
     if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
@@ -114,14 +104,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     var defaults = getDefaultDeliveryRates(normalizedPlace);
     if (!baseZoneFee) baseZoneFee = defaults.fee;
 
-    var configuredMinOrder = Number(window.MIN_DELIVERY_ORDER);
-    if (!minOrder) {
-      minOrder = configuredMinOrder > 0 ? configuredMinOrder : defaults.minOrder;
-    } else if (configuredMinOrder > 0) {
-      minOrder = configuredMinOrder;
-    }
-
-    return { baseZoneFee: baseZoneFee, minOrder: minOrder };
+    return { baseZoneFee: baseZoneFee };
   }
 
   function getLunchPromoTimeParts() {
@@ -178,10 +161,10 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
   function getDeliveryPricing(list, method, placeVal) {
     if (method !== "delivery") {
-      return { fee: 0, baseZoneFee: 0, minOrder: 0, awaitingPlace: false };
+      return { fee: 0, baseZoneFee: 0, awaitingPlace: false };
     }
     if (!placeVal) {
-      return { fee: 0, baseZoneFee: 0, minOrder: 0, awaitingPlace: list.length > 0 };
+      return { fee: 0, baseZoneFee: 0, awaitingPlace: list.length > 0 };
     }
 
     var rates = getDeliveryZoneRates(placeVal);
@@ -194,7 +177,6 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     return {
       fee: fee,
       baseZoneFee: rates.baseZoneFee,
-      minOrder: rates.minOrder,
       awaitingPlace: false,
     };
   }
@@ -234,9 +216,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
       lunchPromo: lunchPromo,
       placeVal: placeVal,
       pd: pd,
-      minOrder: deliveryPricing.minOrder,
       awaitingPlace: !!deliveryPricing.awaitingPlace,
-      belowMin: method === "delivery" && deliveryPricing.minOrder > 0 && sum > 0 && sum < deliveryPricing.minOrder,
       total: Math.max(0, sum - pickup - pd + deliveryPricing.fee),
     };
   }
@@ -342,15 +322,8 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
     var checkBtnEl = document.getElementById("checkoutBtn");
     if (checkBtnEl && checkBtnEl.getAttribute("data-busy") !== "1") {
-      if (t.belowMin) {
-        checkBtnEl.disabled = true;
-        checkBtnEl.classList.add("min-order-locked");
-        checkBtnEl.textContent = "Мин. сумма доставки — " + fmt(t.minOrder) + " (ещё " + fmt(t.minOrder - t.sum) + ")";
-      } else {
-        checkBtnEl.disabled = false;
-        checkBtnEl.classList.remove("min-order-locked");
-        checkBtnEl.textContent = "Оформить заказ";
-      }
+      checkBtnEl.disabled = false;
+      checkBtnEl.textContent = "Оформить заказ";
     }
 
     renderGifts();
@@ -630,7 +603,7 @@ function clearPromo() {
       hint.innerHTML = "✅ <span><b>" + esc(info.placeVal) + ":</b> доставка бесплатно (бонус за регистрацию)</span>";
     } else {
       hint.innerHTML = "🚗 <span><b>" + esc(info.placeVal) + ":</b> доставка " + fmt(info.baseZoneFee) +
-        " · мин. заказ " + fmt(info.minOrder) + "</span>";
+        "</span>";
     }
   }
 
@@ -1229,11 +1202,6 @@ function renderCartBase() {
       return false;
     }
 
-    var totals = totalsNow();
-    if (totals.belowMin) {
-      toast("Минимальная сумма заказа для доставки — " + fmt(totals.minOrder), "⚠️");
-      return false;
-    }
     return true;
   }
 
