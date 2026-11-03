@@ -17,6 +17,7 @@ import {
   isWeekdayLunchDiscountActive,
 } from '../domain/delivery-hours.js';
 import { calculateOrderDiscounts } from '../domain/order-discounts.js';
+import { findFreeDeliveryCode } from '../domain/bonuses.js';
 
 
 const ordersRouter = Router();
@@ -353,7 +354,9 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
 
   let promoCode = '', promoDiscount = 0;
   const pc = String(b.promo || '').trim().toUpperCase();
-  if (lunchPromoActive && pc) {
+  const registrationFreeDeliveryCode = findFreeDeliveryCode(req.user.id);
+  const isRegistrationFreeDelivery = !!pc && pc === registrationFreeDeliveryCode;
+  if (lunchPromoActive && pc && !isRegistrationFreeDelivery) {
     return res.status(400).json({ error: 'Во время обеденной акции промокоды и другие скидки не применяются' });
   }
   if (pc) {
