@@ -210,6 +210,10 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     var placeVal = getDeliveryPlace();
     var deliveryPricing = getDeliveryPricing(list, method, placeVal);
     var pd = !lunchPromo && promoInfo ? promoDisc(sum, promoInfo) : 0;
+    var personalFreeShip = !!(
+      promoInfo && promoInfo.kind === "freeship" && freeAutoCode &&
+      String(promoInfo.code || "").toUpperCase() === String(freeAutoCode).toUpperCase()
+    );
 
     return {
       sum: sum,
@@ -218,6 +222,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
       fee: deliveryPricing.fee,
       baseZoneFee: deliveryPricing.baseZoneFee,
       freeShip: !!(promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
+      personalFreeShip: personalFreeShip,
       lunchPromo: lunchPromo,
       placeVal: placeVal,
       pd: pd,
@@ -243,18 +248,43 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
     var discEl = document.getElementById("cartDiscount");
     if (discEl) {
-      discEl.textContent = t.pickup ? (t.discLabel || "−10% самовывоз") + ": −" + fmt(t.pickup) : "";
-      discEl.style.display = t.pickup ? "flex" : "none";
+      if (t.pickup > 0) {
+        var discountTitle = t.lunchPromo
+          ? (isStaffUser
+            ? "Обеденная акция · 20% + «Для своих» · 10%"
+            : "Обеденная акция · 20%")
+          : (method === "pickup" ? "Самовывоз · 10%" : "Для своих · 10%");
+        var discountReason = t.lunchPromo
+          ? (isStaffUser
+            ? "Скидки суммируются от суммы блюд · будни, 11:00–15:00"
+            : "Будни, 11:00–15:00 · по времени доставки или самовывоза")
+          : (method === "pickup"
+            ? "Скидка за получение заказа самовывозом."
+            : "Скидка для сотрудника.");
+        discEl.innerHTML =
+          '<span class="csl-main"><span>' + discountTitle + '</span><strong>−' + fmt(t.pickup) + '</strong></span>' +
+          '<small class="csl-explain">' + discountReason + '</small>';
+        discEl.style.display = "block";
+      } else {
+        discEl.innerHTML = "";
+        discEl.style.display = "none";
+      }
     }
 
     var feeEl = document.getElementById("cartFee");
     if (feeEl) {
       var isDelMethod = ((document.getElementById("checkoutMethod") || {}).value || "delivery") === "delivery";
       if (list.length && isDelMethod) {
-        feeEl.textContent = t.fee > 0 ? "Доставка (" + t.placeVal + "): " + fmt(t.fee) : "Доставка (" + t.placeVal + "): Бесплатно 🎉";
-        feeEl.style.display = "flex";
+        var feeTitle = t.fee > 0 ? fmt(t.fee) : "Бесплатно";
+        var feeReason = t.personalFreeShip
+          ? "Бонус за регистрацию · экономия " + fmt(t.baseZoneFee)
+          : (t.freeShip ? "Промокод на бесплатную доставку." : "");
+        feeEl.innerHTML =
+          '<span class="csl-main"><span>Доставка (' + esc(t.placeVal) + ')</span><strong>' + feeTitle + '</strong></span>' +
+          (feeReason ? '<small class="csl-explain">' + feeReason + '</small>' : '');
+        feeEl.style.display = "block";
       } else {
-        feeEl.textContent = "";
+        feeEl.innerHTML = "";
         feeEl.style.display = "none";
       }
     }
@@ -355,9 +385,10 @@ async function refreshPromoLine(sum) {
   if (!line) return;
 
   var lunchPromo = isLunchPromoActive();
+  var user = typeof window.me !== "undefined" ? window.me : null;
+  var personalCode = "";
   if (lunchPromo) {
-    var user = typeof window.me !== "undefined" ? window.me : null;
-    var personalCode = await getPersonalFreeCode();
+    personalCode = await getPersonalFreeCode();
     var canUsePersonalCode = !!(personalCode && user && freeAutoSuppressedFor !== user.id);
     if (canUsePersonalCode) {
       if (cartPromoCode !== personalCode) promoInfo = null;
@@ -379,7 +410,12 @@ async function refreshPromoLine(sum) {
     }
   } else if (!cartPromoCode) {
     var autoCode = await tryAutoFreeCode();
-    if (autoCode) cartPromoCode = autoCode;
+    if (autoCode) {
+      cartPromoCode = autoCode;
+      personalCode = autoCode;
+    }
+  } else if (user && user.id) {
+    personalCode = await getPersonalFreeCode();
   }
 
   if (!cartPromoCode) {
@@ -394,7 +430,14 @@ async function refreshPromoLine(sum) {
     if (r.ok && (!lunchPromo || (r.kind === 'freeship' && r.code === personalCode))) {
       promoInfo = r;
       localStorage.setItem('zt_cartpromo', cartPromoCode);
-      line.innerHTML = '<span>🎟 ' + esc(r.code) + ': ' + (r.kind === 'freeship' ? 'первая доставка бесплатно' : '−' + fmt(promoDisc(sum, r))) + '</span>' + PROMO_CLEAR_BTN;
+      var isPersonalRegistrationCode = r.kind === 'freeship' && personalCode &&
+        String(r.code || '').toUpperCase() === String(personalCode).toUpperCase();
+      var appliedMessage = isPersonalRegistrationCode
+        ? '✓ Бонус за регистрацию применён · первая доставка бесплатно'
+        : (r.kind === 'freeship'
+          ? '🎟 ' + esc(r.code) + ' · бесплатная доставка'
+          : '🎟 Промокод ' + esc(r.code) + ' применён · −' + fmt(promoDisc(sum, r)));
+      line.innerHTML = '<span>' + appliedMessage + '</span>' + PROMO_CLEAR_BTN;
       line.style.color = 'var(--green)';
       bindPromoClear(line);
     } else {
