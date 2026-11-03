@@ -203,10 +203,10 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     var lunchPromo = isLunchPromoActive();
     var pickup = lunchPromo
       ? Math.round(sum * (isStaffUser ? 0.3 : 0.2))
-      : ((method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0);
+      : ((t.method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0);
     var discLabel = lunchPromo
       ? (isStaffUser ? "20% обеденная акция + 10% для своих" : "20% обеденная акция")
-      : (method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : ""));
+      : (t.method === "pickup" ? "−10% самовывоз" : (isStaffUser ? "−10% для своих" : ""));
     var placeVal = getDeliveryPlace();
     var deliveryPricing = getDeliveryPricing(list, method, placeVal);
     var pd = !lunchPromo && promoInfo ? promoDisc(sum, promoInfo) : 0;
@@ -219,6 +219,8 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
       sum: sum,
       pickup: pickup,
       discLabel: discLabel,
+      method: method,
+      isStaffUser: isStaffUser,
       fee: deliveryPricing.fee,
       baseZoneFee: deliveryPricing.baseZoneFee,
       freeShip: !!(promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
@@ -234,9 +236,6 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
   function paintTotals() {
     var t = totalsNow();
-    var method = ((document.getElementById("checkoutMethod") || {}).value || "delivery");
-    var isStaffUser = !!(typeof window.me !== "undefined" && window.me &&
-      ["admin", "cashier", "dispatch"].includes(window.me.role));
     var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
     var cnt = list.reduce(function (a, c) { return a + (Number(c.qty) || 1); }, 0);
 
@@ -253,15 +252,15 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     if (discEl) {
       if (t.pickup > 0) {
         var discountTitle = t.lunchPromo
-          ? (isStaffUser
+          ? (t.isStaffUser
             ? "Обеденная акция · 20% + «Для своих» · 10%"
             : "Обеденная акция · 20%")
-          : (method === "pickup" ? "Самовывоз · 10%" : "Для своих · 10%");
+          : (t.method === "pickup" ? "Самовывоз · 10%" : "Для своих · 10%");
         var discountReason = t.lunchPromo
-          ? (isStaffUser
+          ? (t.isStaffUser
             ? "Скидки суммируются от суммы блюд · будни, 11:00–15:00"
             : "Будни, 11:00–15:00 · по времени доставки или самовывоза")
-          : (method === "pickup"
+          : (t.method === "pickup"
             ? "Скидка за получение заказа самовывозом."
             : "Скидка для сотрудника.");
         discEl.innerHTML =
@@ -564,7 +563,7 @@ function clearPromo() {
     if (!placeEl) return;
     var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
     var hint = document.getElementById("zoneFeeHint");
-    if (method === "pickup") {
+    if (t.method === "pickup") {
       if (hint) hint.hidden = true;
       return;
     }
@@ -639,7 +638,7 @@ function clearPromo() {
 
   function toggleDeliveryGroup() {
     var method = (document.getElementById("checkoutMethod") || {}).value || "delivery";
-    var isPickup = method === "pickup";
+    var isPickup = t.method === "pickup";
     var grp = document.getElementById("checkoutDeliveryGroup");
     if (grp) grp.hidden = isPickup;
     ensurePlaceOptions();
@@ -1202,7 +1201,7 @@ function renderCartBase() {
   function buildCheckoutRequest(checkoutInput) {
     var body = {
       method: checkoutInput.method,
-      place: checkoutInput.method === "pickup" ? "Самовывоз" : checkoutInput.placeV,
+      place: checkoutInput.t.method === "pickup" ? "Самовывоз" : checkoutInput.placeV,
       street: checkoutInput.streetV,
       house: checkoutInput.houseV,
       slot: checkoutInput.slotVal,
