@@ -171,6 +171,34 @@
 }
 
 /* Строки блюд */
+.cartPanel .ci-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  margin-top: 3px;
+}
+.cartPanel .ci-unit-price {
+  color: var(--soft, #586470);
+  font-size: 12px;
+  font-weight: 600;
+}
+.cartPanel .ci-line-total {
+  color: var(--flame, #C03B2A);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.cartPanel .ci-price-update {
+  color: var(--soft, #586470);
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+.cartPanel .ci-price-update::before {
+  content: "ⓘ ";
+}
+
 .cartItem .qty button:active {
   transform: scale(0.92);
 }
