@@ -813,12 +813,21 @@ function handleDeliveryGridClick(e) {
   if (handleDeliveryZoomClick(e)) return;
   if (e.target.closest('.edBtn') || e.target.closest('.donoff')) return;
   if (handleDeliveryStepperClick(e)) return;
-  if (e.target.closest('.opts input[type="radio"]')) return;
+  if (e.target.closest('.opts')) return;
   if (handleDeliveryCardClick(e)) return;
   handleDeliveryAddClick(e);
 }
 
 $('#deliveryGrid').addEventListener('click', handleDeliveryGridClick);
+$('#deliveryGrid').addEventListener('change', function (e) {
+  const radio = e.target.closest('.opts input[type="radio"]');
+  if (!radio) return;
+  const optionsBox = radio.closest('.opts');
+  if (!optionsBox) return;
+  const error = optionsBox.querySelector('.opts-error');
+  if (error) error.hidden = true;
+  optionsBox.querySelectorAll('input[type="radio"]').forEach(input => input.removeAttribute('aria-describedby'));
+});
 
 $('#cartFab').onclick = () => { $('#cartPanel').classList.add('open'); };
 $('#cartClose').onclick = () => { $('#cartPanel').classList.remove('open'); };
