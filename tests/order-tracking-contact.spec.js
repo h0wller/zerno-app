@@ -21,6 +21,8 @@ test('самовывоз скрывает адресную группу без �
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
 
+  // Fix the browser clock at 17:00 Kaliningrad time so the normal pickup discount is deterministic.
+  await page.clock.install({ time: new Date('2026-11-02T15:00:00.000Z') });
   await openDeliveryApp(page);
   await page.waitForFunction(() => typeof window.renderCart === 'function');
   await page.evaluate(() => document.getElementById('cartPanel').classList.add('open'));
@@ -30,7 +32,7 @@ test('самовывоз скрывает адресную группу без �
 
   await page.locator('#checkoutMethod').selectOption('pickup');
   await expect(deliveryGroup).toBeHidden();
-  // This test covers pickup address visibility, not discount policy. The active lunch promotion can replace the usual pickup discount.
+  await expect(page.locator('#cartDiscount')).toContainText('10%');
 
   await page.locator('#checkoutMethod').selectOption('delivery');
   await expect(deliveryGroup).toBeVisible();
