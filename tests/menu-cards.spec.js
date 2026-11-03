@@ -131,7 +131,14 @@ test('карточки показывают смысловые бейджи, а 
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   });
-  await page.goto('/?brand=delivery');
+  const deliveryResponse = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.replace(/\\/+$/, '').endsWith('/dmenu'),
+    { timeout: 10000 }
+  );
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+  const response = await deliveryResponse;
+  expect(response.ok()).toBeTruthy();
+  await expect(page.locator('#deliveryGrid .card[data-product-id="pz-marg"]')).toBeAttached({ timeout: 10000 });
 
   const spicyBadge = page.locator('#deliveryGrid [data-product-id="pz-marg"] .tag');
   const recommendedBadge = page.locator('#deliveryGrid [data-product-id="pz-hamgr"] .tag');
