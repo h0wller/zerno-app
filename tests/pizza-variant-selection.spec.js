@@ -85,7 +85,7 @@ function pizzaGroup(card) {
 }
 
 test.describe('native pizza variant selection', () => {
-  test('initial HTML contains the same unselected native radio group as the hydrated menu', async ({ page }) => {
+  test('initial HTML contains an unselected native radio group before menu hydration', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
@@ -93,13 +93,13 @@ test.describe('native pizza variant selection', () => {
       sessionStorage.setItem('splashDone', '1');
     });
 
-    await page.route('**/dmenu**', route => new Promise(resolve => {
-      page.__holdDeliveryMenu = () => resolve(route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ items: ITEMS })
-      }));
-    }));
+    let releaseMenu;
+    const menuResponse = new Promise(resolve => { releaseMenu = resolve; });
+    await page.route('**/dmenu**', route => menuResponse.then(body => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
+    })));
     await page.route('**/api/delivery/info', route => route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -112,6 +112,7 @@ test.describe('native pizza variant selection', () => {
     }));
 
     await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
     const initialCard = page.locator('#deliveryGrid .card[data-product-id="1"]');
     const initialGroup = initialCard.getByRole('group', { name: 'Размер и тесто' });
     await expect(initialGroup).toBeVisible();
@@ -119,10 +120,12 @@ test.describe('native pizza variant selection', () => {
     await expect(initialGroup.getByRole('radio').first()).not.toBeChecked();
     await expect(initialGroup.locator('button')).toHaveCount(0);
 
-    await page.evaluate(() => window.__holdDeliveryMenu());
+    releaseMenu({ items: ITEMS });
     await expect(page.locator('#deliveryGrid .card[data-product-id="pz-radio-test"]')).toBeVisible();
     await expect(page.getByRole('group', { name: 'Размер и тесто' })).toHaveCount(2);
+    await expect(page.locator('#deliveryGrid .card[data-product-id="1"]')).toHaveCount(0);
   });
+
   test('renders two independent native radio groups without a preselected option', async ({ page }) => {
     await openPizzaMenu(page);
 
