@@ -234,6 +234,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
   function paintTotals() {
     var t = totalsNow();
+    var method = ((document.getElementById("checkoutMethod") || {}).value || "delivery");
     var isStaffUser = !!(typeof window.me !== "undefined" && window.me &&
       ["admin", "cashier", "dispatch"].includes(window.me.role));
     var list = typeof cart !== "undefined" && Array.isArray(cart) ? cart : [];
