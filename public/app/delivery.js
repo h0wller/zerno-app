@@ -285,7 +285,7 @@ function renderPizzaOptsHtml(p, opts) {
       return '<label class="opt-btn" for="' + groupName + '-' + i + '">' +
         '<input class="opt-radio" type="radio" name="' + groupName + '" id="' + groupName + '-' + i +
           '" value="' + i + '" data-id="' + esc(String(p.id)) + '" data-oi="' + i + '">' +
-        '<span class="opt-content" aria-hidden="true">' +
+        '<span class="opt-content">' +
           '<span class="opt-row opt-top">' +
             '<span class="opt-size">' + esc(sizeText) + '</span>' +
             '<span class="opt-crust">' + esc(crustText) + '</span>' +
