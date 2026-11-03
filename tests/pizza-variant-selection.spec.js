@@ -255,20 +255,27 @@ test.describe('native pizza variant selection', () => {
     ]);
   });
 
-  test('keeps selections isolated between different pizza cards', async ({ page }) => {
+  test('supports native keyboard selection and independent radio groups', async ({ page }) => {
     await openPizzaMenu(page);
 
     const first = pizzaGroup(pizzaCard(page));
     const second = pizzaGroup(pizzaCard(page, 'pz-radio-test-second'));
-    const firstChoice = first.getByRole('radio', { name: RADIO_NAMES[1] });
-    const secondChoice = second.getByRole('radio', { name: RADIO_NAMES[2] });
+    const firstRadios = first.getByRole('radio');
+    const secondRadios = second.getByRole('radio');
 
-    await firstChoice.check();
-    await secondChoice.check();
+    await firstRadios.first().focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(firstRadios.nth(1)).toBeFocused();
+    await expect(firstRadios.nth(1)).toBeChecked();
 
-    await expect(firstChoice).toBeChecked();
-    await expect(secondChoice).toBeChecked();
-    await expect(first.getByRole('radio', { name: RADIO_NAMES[2] })).not.toBeChecked();
-    await expect(second.getByRole('radio', { name: RADIO_NAMES[1] })).not.toBeChecked();
+    await page.keyboard.press('ArrowDown');
+    await expect(firstRadios.nth(3)).toBeFocused();
+    await expect(firstRadios.nth(3)).toBeChecked();
+
+    await secondRadios.nth(2).check();
+    await expect(firstRadios.nth(3)).toBeChecked();
+    await expect(secondRadios.nth(2)).toBeChecked();
+    await expect(firstRadios.nth(2)).not.toBeChecked();
+    await expect(secondRadios.nth(3)).not.toBeChecked();
   });
 });
