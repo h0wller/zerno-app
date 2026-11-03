@@ -728,13 +728,26 @@ test('cart keeps expanded modifiers attached to the same row after removing an e
   }));
 
   await page.goto('/?brand=delivery');
-  const cards = page.locator('#deliveryGrid .card:has(.opts button)');
+  await page.waitForFunction(() => Array.isArray(window.DMENU) && window.DMENU.length > 0);
+  await page.evaluate(() => {
+    // Ensure the test has an active pizza topping even when the CI menu fixture has none.
+    window.DMENU.push({
+      id: 'playwright-cart-topping',
+      name: 'Чеддер',
+      cat: 'sauces',
+      on: 1,
+      price: 50,
+    });
+  });
+
+  // Match both the legacy option buttons and the native radio labels introduced by PR #133.
+  const cards = page.locator('#deliveryGrid .card:has(.opts)');
   await expect(cards.first()).toBeVisible({ timeout: 10000 });
   await expect(cards.nth(1)).toBeVisible({ timeout: 10000 });
 
   // Add two different cart rows, then open modifiers only on the second one.
   for (const card of [cards.nth(0), cards.nth(1)]) {
-    const option = card.locator('.opts button').first();
+    const option = card.locator('.opts label.opt-btn, .opts button').first();
     await option.click();
     await card.locator('.steprow .cta, [data-add]').first().click();
   }
