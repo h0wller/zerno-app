@@ -22,3 +22,10 @@ test('unknown menu badge labels remain neutral instead of implying vegan', () =>
   assert.equal(getMenuBadgeClass(''), 'neutral');
   assert.equal(getMenuBadgeClass(null), 'neutral');
 });
+
+
+test('legacy English badge values are localized for customer-facing cards', () => {
+  assert.equal(getMenuBadgeLabel('New'), 'Новинка');
+  assert.equal(getMenuBadgeLabel('Vegan'), 'Веганское');
+  assert.equal(getMenuBadgeLabel('Любимая позиция'), 'Любимая позиция');
+});
