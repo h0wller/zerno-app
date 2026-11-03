@@ -57,16 +57,15 @@ npm run build:client
 
 * `API_CACHE` — кэширование меню (`/api/menu`, `/api/dmenu`) на 5 минут.
 
-* **Стили (4-слойная архитектура):**
+* **Стили (4 логических слоя ответственности; слой 2 разделён на 2а/2б):**
 
-1. *Слой 1:* `public/app/ui/theme/*.css` (базовые токены и компоненты).
+  1. *Слой 1:* `public/app/ui/theme/*.css` и `fonts.css` — базовые компоненты, нейтральная геометрия и responsive-правила.
+  2. *Слой 2а:* `public/app/ui/brand-tokens.css` — только custom properties на brand-root selectors.
+  3. *Слой 2б:* `public/app/core/views.js` — централизованная runtime CSS-инъекция: layout/system rules и брендовые overrides. Не все правила обязаны иметь `[data-brand]`: `scripts/css-audit.mjs` разрешает конкретные общие layout/system selectors.
+  4. *Слой 3:* локальные динамические CSS-инъекции в модулях-владельцах компонентов.
+  5. *Слой 4:* `public/index.html` — critical inline CSS первого кадра и HTML-загрузочный контур внешних stylesheets/`noscript` fallback. Эти две функции не следует смешивать.
 
-2. *Слой 2:* `public/app/ui/brand-tokens.css` (токены брендов) + `public/app/core/views.js` (layout и селекторы `[data-brand="delivery"]`).
-
-3. *Слой 3:* Локальные инжекции CSS в компонентных модулях.
-
-4. *Слой 4:* `public/index.html` (только критический Above-the-fold каркас).
-
+  Подробный контракт, реальные ограничения css-audit и порядок загрузки описаны в `docs/css-architecture.md`. `PROJECT_RULES.md` содержит обязательные guardrails; `docs/module-map.md` — DOM/style ownership.
 ---
 
 ## 3. Инфраструктура и боевое окружение
