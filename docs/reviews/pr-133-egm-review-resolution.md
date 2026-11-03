@@ -2,120 +2,109 @@
 
 Pull request: https://github.com/h0wller/zerno-app/pull/133
 Branch: `feat/pizza-native-variant-radios`
-Reviewed HEAD: `bfb9808e9d00e90e1b41d8fec54da73391ac4a26`
+Initial reviewed HEAD: `bfb9808e9d00e90e1b41d8fec54da73391ac4a26`
+Resolution commits: see PR branch history.
 Base: `pizza` (`4bd2fd3ad19bdcd6a060e080100e72302923814e`)
 
 ## Review mode and limits
 
-This is a same-context EGM review and resolution, not an independent Goldfish review. The host did not expose an isolated subagent, and Graphify reported no automated review for PR #133. Graphify's code graph was indexed at the base commit, so it was not treated as current-head evidence. Source claims below were checked against the PR branch files and diff.
+This remains a same-context EGM review and resolution, not an independent Goldfish review. The host did not expose an isolated subagent, and Graphify reported no automated review for PR #133. Graphify's promoted code graph was indexed at the base commit, so it was not treated as current-head evidence. Current source claims were verified through GitHub files and commits.
 
 ## Review summary
 
 - Blocker: 0
-- High: 1
-- Medium: 2
-- Low: 3
-- No implementation changes were made as part of review/resolution.
+- High: 1 (resolved)
+- Medium: 2 (one accepted risk, one resolved)
+- Low: 3 (one resolved, two accepted risks)
+- Runtime logic/CSS changes applied only for accepted findings.
+- Full CI verification is still pending for the final resolution HEAD.
 
 ## Disposition ledger
 
-### EGM-133-01 — High — ACCEPTED / OPEN
+### EGM-133-01 — High — RESOLVED
 
 **Topic:** Conflicting CSS architecture contracts.
 
-**Evidence:**
-- `PROJECT_RULES.md`, section 2, defines a three-layer CSS model and says inline styles in `public/index.html` are allowed only for FOUC prevention and first-frame logo CLS.
-- `docs/css-architecture.md`, sections “4 слоя” and “СЛОЙ 4”, defines a four-layer model and explicitly forbids component styles in `index.html`.
-- `docs/module-map.md`, section 13, also documents four layers and identifies `index.html` as the critical layer.
-- PR #133 places the full native pizza option component styling (fieldset layout, label geometry, palette, checked state, focus, and validation) in `public/index.html`.
+**Evidence:** The old three-layer statement in `PROJECT_RULES.md` conflicted with `docs/css-architecture.md` and `docs/module-map.md`.
 
-**Impact:** Engineers and reviewers cannot determine a single authoritative placement rule for component styles. This affects architecture compliance and future CSS ownership, but does not alone prove a user-visible runtime defect.
+**Resolution evidence:** Repository history confirms the four-layer model was already introduced in commit `0acb316c37ecf1231169e34048af652c1400f6d0` on 2026-09-19, whose message explicitly says “document 4-layer architecture”. Commit `f233964dec2ca9207e43ffb4587dae8bd7ebe5ea` on 2026-10-02 explicitly refers to `docs/css-architecture.md (4-слойная схема)`. This predates PR #133 and establishes that the 3-layer section in PROJECT_RULES was stale.
 
-**Decision:** Keep open. The four-layer contract has broader support in architecture documentation, but the repository does not contain a verified ADR or explicit decision superseding the mandatory three-layer section in `PROJECT_RULES.md`. Do not silently rewrite the normative rules or accept the PR's CSS placement until that decision is confirmed.
+**Change:** Replaced the stale section in `PROJECT_RULES.md` with the four logical layers, clarified that 2a/2b are sublayers rather than extra top-level layers, and linked the detailed architecture and ownership documents.
 
-**Blocks implementation?** Blocks architectural sign-off of the inline component CSS, not the native-radio behavior itself.
+**Disposition:** Resolved. The architecture itself was not newly invented for this PR; the stale normative summary was corrected to match the existing repository contract.
 
 ### EGM-133-02 — Medium — ACCEPTED RISK
 
 **Topic:** Missing validation lifecycle regression test after card rerender.
 
-**Evidence:** `resolveDeliveryAddSelection()` adds `aria-describedby` to the first radio and shows an inline error. `updateFirstDeliveryCard()` replaces the first card's `.cbody.innerHTML`, removing the old radio and error nodes. The review did not establish a stale reference defect because both referenced nodes are removed together.
+**Evidence:** `resolveDeliveryAddSelection()` attaches `aria-describedby` to the first radio and exposes the inline error. `updateFirstDeliveryCard()` replaces the card's `.cbody.innerHTML`, removing the old radio and error nodes together. No stale-reference defect was established.
 
-**Impact:** A future change to card reconciliation could preserve or reattach only part of the validation state without a test catching it.
+**Impact:** Future changes to card reconciliation could preserve only part of the validation state without an automated test detecting it.
 
-**Decision:** Treat as a test coverage gap, not a confirmed defect. Retain the current behavior. Add a test for “missing choice → first-card rerender → attempt add again” when the delivery card rendering lifecycle is next changed.
+**Disposition:** Accepted risk / test coverage gap. Do not add a complex test fixture solely for this path unless card rerender behavior changes. Existing validation tests remain.
 
 **Blocks implementation?** No.
 
-### EGM-133-03 — Medium — ACCEPTED
+### EGM-133-03 — Medium — RESOLVED
 
 **Topic:** Duplicate checked-state and focus styling across CSS owners.
 
-**Evidence:**
-- Checked option styling exists in `public/app/ui/theme/160-09-preorder-subfilters.css`.
-- Matching delivery-brand checked styling is emitted in `public/app/core/views.js`.
-- A further first-frame copy exists in `public/index.html`.
-- Focus outline is applied to both `.opt-radio:focus-visible + .opt-content` and `.opt-btn:has(.opt-radio:focus-visible)` in the theme CSS; the early HTML rules repeat both targets in one selector list.
+**Evidence:** Checked-state CSS existed in theme CSS, `views.js`, and critical CSS. Focus was outlined on both the input's adjacent content and its parent label.
 
-**Impact:** Multiple sources can drift independently. Both focus targets may draw separate outlines around nested regions.
+**Changes:**
+- Removed the duplicate radio-specific checked-state rules from `views.js`.
+- Kept checked-state visual behavior in the theme component stylesheet.
+- Reduced focus styling to one `:focus-within` outline on the option label.
+- Reduced the early `index.html` radio CSS to geometry-only reservation; removed palette, checked-state, typography, and validation styling from the early copy.
 
-**Decision:** Accept the simplification: select one source of truth for checked-state within the chosen CSS architecture and render exactly one visible focus outline. Keep critical first-frame rules only to the extent explicitly allowed by the resolved architecture contract.
+**Disposition:** Resolved at source level. Visual verification remains part of CI/browser validation; do not claim visual acceptance before the run completes.
 
-**Blocks implementation?** Non-blocking for radio functionality; should be cleaned up before calling the CSS implementation final.
+**Blocks implementation?** No, pending CI.
 
-### EGM-133-04 — Low — CONTESTED / CONTEXT-DEPENDENT
+### EGM-133-04 — Low — RESOLVED
 
-**Topic:** Sanitized product IDs could collide when used in radio group names and IDs.
+**Topic:** Product IDs could collide after lossy sanitization.
 
-**Evidence:** `renderPizzaOptsHtml()` maps every character outside `[a-zA-Z0-9_-]` to `-`. Distinct arbitrary strings can therefore collide. The available review evidence did not establish the production type/constraint of product IDs; an assumed server file path was not present, and no matching code search result verified the database contract.
+**Evidence:** `server/db/schema.js` declares `menu.id TEXT PRIMARY KEY`; `server/db/seed.js` uses string IDs such as `pz-marg`. The database does not enforce an alphanumeric-only contract. Replacing all non-`[a-zA-Z0-9_-]` characters with `-` could therefore map distinct IDs to the same radio group name.
 
-**Impact:** If nonnumeric IDs containing different punctuation are permitted, two product groups could share a radio name or element ID. If the production ID is a unique integer, the collision scenario is not applicable.
+**Change:** `renderPizzaOptsHtml()` now encodes the UTF-8 bytes of the complete ID as lowercase hexadecimal. This is reversible and collision-free for distinct strings, while leaving cart `data-id`, `data-oi` and item key semantics unchanged.
 
-**Decision:** Do not change code based on an unverified input domain. Verify the actual `dmenu` ID contract/schema first. If IDs are guaranteed unique integers, close as not applicable; otherwise replace the sanitizer with a collision-free encoding or stable unique identifier.
+**Test:** Added a Playwright case using IDs `pizza/one` and `pizza?one`, which collide under the old lossy replacement, and verifies two separately selectable radio groups.
 
-**Blocks implementation?** No, pending contract verification.
+**Disposition:** Resolved in source; CI still needs to validate the new test.
 
 ### EGM-133-05 — Low — ACCEPTED RISK
 
-**Topic:** Checkout radio reset has no dedicated E2E assertion.
+**Topic:** Checkout radio reset lacks dedicated E2E coverage.
 
-**Evidence:** After successful checkout, `public/app/cart.js` clears all checked delivery option radios. The new test suite does not exercise the successful-checkout-to-cleared-radio path. The user previously performed a manual check, but that is not an automated regression test.
+**Evidence:** `public/app/cart.js` clears all checked delivery radios after successful checkout. The new radio suite does not drive an actual successful checkout through that path. The user previously performed a manual check, but that is not an automated regression test.
 
-**Impact:** A future checkout refactor could leave stale selection visible after an order is submitted.
-
-**Decision:** Retain the implementation. Add automated coverage when checkout flow tests are next extended; no current functional defect is established.
+**Disposition:** Accepted risk. Keep implementation. Add end-to-end checkout coverage when checkout lifecycle tests are next extended.
 
 **Blocks implementation?** No.
 
-### EGM-133-06 — Low — ACCEPTED / OPEN
+### EGM-133-06 — Low — ACCEPTED RISK
 
 **Topic:** Dispatcher render revision guard lacks an overlap-order regression test.
 
-**Evidence:** `renderOrders()` increments a revision before requesting `/orders`, and checks the revision after the request resolves and before rendering; its catch path also suppresses errors from superseded calls. This prevents an older overlapping request from overwriting newer state. The changed test verifies duplicate cancellation controls but not overlapping render completion order.
+**Evidence:** `renderOrders()` increments a revision before requesting `/orders`, checks it after the request resolves and suppresses stale errors. This prevents older overlapping requests from overwriting newer state.
 
-**Impact:** Removing or weakening the guard could reintroduce stale list rendering under concurrent refreshes.
-
-**Decision:** Keep the revision guard; it is justified concurrency protection, not over-engineering. Add a deferred-response Playwright test if dispatcher refresh concurrency is changed or this code is refactored.
+**Disposition:** Accepted risk / coverage gap. Keep the guard; it is justified concurrency protection. Add a deferred-response test if dispatcher refresh concurrency is changed or refactored.
 
 **Blocks implementation?** No.
 
-## Cross-document consistency check
+## Cross-document consistency
 
-The four-layer model appears in both `docs/css-architecture.md` and `docs/module-map.md`; the three-layer model remains in `PROJECT_RULES.md`. Graphify returned only an unverified agent-note about the alleged supersession of the old contract. That note was not treated as an authoritative architecture decision.
+The four-layer model is represented in `docs/css-architecture.md`, `docs/module-map.md`, repository history from 2026-09-19 onward, and now `PROJECT_RULES.md`. A Graphify candidate note was not used as authoritative evidence.
 
-No design document for native pizza variant selection was found at the expected `docs/designs/pizza-variant-selection-*` paths. Consequently, no finding relies on an unavailable design brief or presumed prohibition of `:has()`.
+No feature-specific design document was found at the expected `docs/designs/pizza-variant-selection-*` paths. No finding relies on presumed design constraints from those missing files.
 
 ## Verification status
 
-At the latest check of CI run #1665 (`41717746253`):
-- Code Quality & Guardrails: success.
-- Client bundle build: success.
-- Bonus Lifecycle E2E: success.
-- Bonus Signup Regression: success.
-- Remaining Playwright tests: still in progress.
+The prior run #1666 had Quality Gates successful while the Playwright Regression Suite was still running. Later resolution commits changed the branch again, so that run is not verification of the final resolution HEAD.
 
-No full CI pass is claimed. No tests were run locally as part of this review.
+A fresh CI run is required for the current HEAD. No local tests are claimed in this document.
 
 ## Final recommendation
 
-Keep PR #133 Draft. The main functional implementation has targeted tests for accessible radio groups, independent selection, keyboard operation, validation, and cart payload compatibility. Before final architectural approval, resolve EGM-133-01 and remove the duplicated CSS state/focus rules from EGM-133-03. Leave the context-dependent ID concern open until the actual server/data contract is inspected.
+Keep PR #133 Draft until current-head CI completes. Findings 01, 03 and 04 have source-level resolutions; findings 02, 05 and 06 remain accepted, explicitly bounded coverage risks. Do not merge based only on the earlier successful static audit.
