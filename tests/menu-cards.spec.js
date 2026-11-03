@@ -43,7 +43,7 @@ const DELIVERY_ITEMS = [
     ]
   },
   {
-    id: 'pz-hamgr', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Ветчина и грибы', tag: 'Рекомендуем',
+    id: 'pz-hamgr', section: 'delivery', cat: 'pizza', e: '🍕', name: 'Ветчина и грибы', tag: 'New',
     desc: 'Белый соус, моцарелла, шампиньоны, ветчина, чеддер',
     comp: ['белый соус', 'моцарелла', 'шампиньоны', 'ветчина', 'чеддер'],
     vol: '25/35 см', price: '0', on: 1, opts: [
@@ -144,8 +144,8 @@ test('карточки показывают смысловые бейджи, а 
   const recommendedBadge = page.locator('#deliveryGrid [data-product-id="pz-hamgr"] .tag');
   await expect(spicyBadge).toHaveText('Острое');
   await expect(spicyBadge).toHaveClass(/spicy/);
-  await expect(recommendedBadge).toHaveText('Рекомендуем');
-  await expect(recommendedBadge).toHaveClass(/recommended/);
+  await expect(recommendedBadge).toHaveText('Новинка');
+  await expect(recommendedBadge).toHaveClass(/new/);
   const unknownBadge = page.locator('#deliveryGrid [data-product-id="pz-veg"] .tag');
   await expect(unknownBadge).toHaveText('Любимая позиция');
   await expect(unknownBadge).toHaveClass(/neutral/);
@@ -154,7 +154,8 @@ test('карточки показывают смысловые бейджи, а 
   const badgeOptions = await page.locator('#emTag option').allTextContents();
   expect(badgeOptions).toEqual(expect.arrayContaining([
     'Хит', 'Новинка', 'Веганское', 'Острое',
-    'Рекомендуем', 'Сезонное', 'Лимитка', 'Без кофеина'
+    'Рекомендуем', 'Популярное', 'Фирменное', 'Сезонное', 'Лимитка',
+    'Для двоих', 'Сытное', 'Лёгкое', 'Пряное', 'Без кофеина'
   ]));
 });
 
