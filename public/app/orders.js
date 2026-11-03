@@ -28,10 +28,10 @@ function orderCard(o) {
   // Отменённые и выполненные заказы терминальны в диспетчерской ленте.
   // Предзаказы остаются видимыми после выполнения, но не предлагают повторно менять статус.
   var next = o.status === 'cancel' || o.status === 'done' ? []
-    : o.status === 'new' ? ['accept', 'done', 'cancel']
-    : o.status === 'accept' ? ['cook', 'done', 'cancel']
-    : o.status === 'cook' ? (o.method === 'pickup' ? ['done', 'cancel'] : ['way', 'done', 'cancel'])
-    : o.status === 'way' ? ['done', 'cancel']
+    : o.status === 'new' ? ['accept', 'done']
+    : o.status === 'accept' ? ['cook', 'done']
+    : o.status === 'cook' ? (o.method === 'pickup' ? ['done'] : ['way', 'done'])
+    : o.status === 'way' ? ['done']
     : ['accept', 'done'];
 
   // Рендер позиций заказа с вложенными модификаторами для кухни и диспетчера
