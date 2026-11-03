@@ -126,6 +126,14 @@ test.describe('native pizza variant selection', () => {
     await expect(page.locator('#deliveryGrid .card[data-product-id="1"]')).toHaveCount(0);
   });
 
+  test('encodes distinct product IDs without radio-group name collisions', async ({ page }) => {
+    const collidingBefore = ['pizza/one', 'pizza?one'];
+    const encoded = value => Array.from(new TextEncoder().encode(value))
+      .map(byte => byte.toString(16).padStart(2, '0')).join('');
+    expect(encoded(collidingBefore[0])).not.toBe(encoded(collidingBefore[1]));
+    expect(encoded('pizza/one')).toBe('70697a7a612f6f6e65');
+  });
+
   test('renders two independent native radio groups without a preselected option', async ({ page }) => {
     await openPizzaMenu(page);
 
