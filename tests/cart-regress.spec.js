@@ -272,14 +272,15 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     const firstPizzaCard = page.locator('#deliveryGrid .card:has(.opts input[type="radio"])').first();
     await expect(firstPizzaCard).toBeVisible({ timeout: 10000 });
 
-    // ── Задача 1: Сетка опций пиццы (.opts) и активное состояние .sel ──
+    // ── Задача 1: Сетка опций пиццы (.opts) и checked-state radio ──
     const optsGrid = firstPizzaCard.locator('.opts');
     const gridStyle = await optsGrid.evaluate((el) => window.getComputedStyle(el).display);
     expect(gridStyle).toBe('grid');
 
-    const firstOpt = optsGrid.locator('button').first();
+    const firstOpt = optsGrid.locator('label.opt-btn').first();
+    const firstRadio = firstOpt.locator('input[type="radio"]');
     await firstOpt.click();
-    await expect(firstOpt).toHaveClass(/sel/);
+    await expect(firstRadio).toBeChecked();
 
     // Выбранная опция окрашена акцентным цветом кнопки (--flame #C03B2A), а текст белый (#FFFFFF)
     await expect(firstOpt).toHaveCSS('color', 'rgb(255, 255, 255)');
