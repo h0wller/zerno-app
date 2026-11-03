@@ -184,7 +184,8 @@
 }
 
 #deliveryGrid .opts button.sel,
-#deliveryGrid .opts .opt-btn.sel {
+#deliveryGrid .opts .opt-btn.sel,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) {
   background: var(--btn-fire-bg, var(--flame));
   border: var(--btn-fire-border, 1.5px solid var(--flame));
   color: var(--btn-fire-color, #FFFFFF);
@@ -195,7 +196,11 @@
 #deliveryGrid .opts button.sel .opt-crust,
 #deliveryGrid .opts button.sel .opt-weight,
 #deliveryGrid .opts button.sel .opt-price,
-#deliveryGrid .opts button.sel .op {
+#deliveryGrid .opts button.sel .op,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-size,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-crust,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-weight,
+#deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-price {
   color: var(--btn-fire-color, #FFFFFF);
   opacity: 1;
 }
