@@ -71,7 +71,7 @@ This remains a same-context EGM review and resolution, not an independent Goldfi
 
 **Test:** Added a Playwright regression using IDs `pizza/one` and `pizza?one`, which collide under the old lossy replacement. The test now exercises the same UTF-8/hex naming expression and verifies two separately selectable groups in the DOM.
 
-**Disposition:** Source fix is resolved. CI #1674 exposed an indirect test that manually recreated the encoding instead of invoking the production renderer; that test is being replaced with a regression against the generated markup.
+**Disposition:** Source fix is resolved. The initially indirect test was replaced by a regression that observes names from the production renderer; the first run of that replacement exposed stale fixture group-count and second-card selectors, now corrected. Full CI for the final state is pending.
 
 ### EGM-133-05 — Low — ACCEPTED RISK
 
@@ -116,6 +116,17 @@ Failure triage:
 No application runtime code change is made for these four CI failures: evidence points to incorrect test assumptions rather than a confirmed production defect.
 
 No local tests are claimed. A fresh CI run is required for the updated test and ledger.
+
+## Follow-up CI #1677 — 2026-11-03
+
+CI #1677 (source HEAD `edd727ffd24bb7f195974a425bdf927acc2f2df4`) completed with:
+- Code Quality & Guardrails: passed.
+- Playwright Regression Suite: failed; 430 passed, 4 failed, 1 flaky, 9 skipped.
+- The two deterministic failures repeated across Chromium and Mobile Chrome because the suite expected 2 native radio groups after adding a third fixture product; corrected to expect 3.
+- The other two deterministic failures repeated across Chromium and Mobile Chrome because keyboard independence still selected the removed product ID `pz-radio-test-second`; corrected to use `pizza?one`.
+- `auth-modal-ux.spec.js` had one flaky landscape-phone viewport assertion. Diagnostic context shows the registration button is inside an internally scrollable card (`overflow-y:auto`), while the test asserts full viewport intersection after `scrollIntoViewIfNeeded()`. This is unrelated to pizza radio selection and was not modified without a stable reproduced failure.
+
+The current branch corrects the two deterministic test defects. No application runtime changes were made for CI #1677 failures. A new CI run is required before merge.
 
 ## Final recommendation
 
