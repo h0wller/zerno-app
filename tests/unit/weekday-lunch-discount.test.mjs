@@ -54,3 +54,13 @@ test('вне обеденного окна сохраняется прежний
     subtotal: 1000, method: 'delivery', byStaff: false, lunchPromo: false,
   }).discount, 0);
 });
+
+test('обеденная скидка 30% округляется один раз от исходной суммы', () => {
+  const result = calculateOrderDiscounts({
+    subtotal: 108,
+    method: 'delivery',
+    byStaff: true,
+    lunchPromo: true,
+  });
+  assert.equal(result.discount, 32);
+});
