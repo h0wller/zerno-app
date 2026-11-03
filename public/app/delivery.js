@@ -1,5 +1,6 @@
 import { attachGridDnD, canDragMenu, dragAttr } from './core/dnd.js';
 import { getVisibleComposition } from './core/menu-content.js';
+import { getMenuBadgeClass } from './core/menu-badges.js';
 function getKaliningradTime() {
   if (typeof window !== "undefined" && typeof window.getKaliningradTime === "function" && window.getKaliningradTime !== getKaliningradTime) {
     return window.getKaliningradTime();
@@ -349,6 +350,7 @@ function renderDeliveryCard(p, n0) {
   return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
       '<div class="media" style="--tint:#F3E2CE;position:relative;overflow:hidden;">' +
       mediaContent +
+      (p.tag ? '<span class="tag ' + getMenuBadgeClass(p.tag) + '">' + esc(p.tag) + '</span>' : '') +
       (p.on ? '' : '<span class="stopbadge">СТОП</span>') +
     '</div>' +
     '<div class="cbody">' +
