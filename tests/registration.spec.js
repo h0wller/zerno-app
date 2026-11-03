@@ -79,6 +79,47 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
 
   });
 
+  test('cashier admin upgrade remains available inside profile settings', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'cashier-profile-ui-test-token');
+    });
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      const body = pathname === '/api/me'
+        ? {
+            customer: {
+              id: 'cashier-ui-test',
+              name: 'Cashier UI Test',
+              phone: '+7 999 100-00-01',
+              role: 'cashier',
+              cups: 0,
+              stamps: 0,
+              free: 0,
+              history: [],
+              qr: 'cashier-ui-test'
+            }
+          }
+        : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
+      });
+    });
+
+    await page.goto('/?brand=delivery');
+    await page.waitForFunction(() => window.me && window.me.role === 'cashier');
+    await page.click('#profileTopBtn');
+    await page.locator('#profileSettingsBtn').click();
+
+    const entry = page.locator('#activateBtn');
+    await expect(entry).toBeVisible();
+    await expect(entry).toHaveText('Повысить до администратора');
+    await entry.click();
+    await expect(page.locator('#settingsModal')).not.toHaveClass(/show/);
+    await expect(page.locator('#pinModal')).toHaveClass(/show/);
+  });
+
   test('F3.61: consent visible, not pre-checked, submit gated without it', async ({ page }) => {
     await page.goto('/?brand=delivery');
     await page.click('#profileTopBtn');
