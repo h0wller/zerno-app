@@ -544,12 +544,20 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await validationStartedPromise;
     await firstValidation;
 
-    // Telegram MainButton routes through checkoutBtn.click(); the disabled DOM button must ignore it.
+    // During the pending slot validation, Telegram's native button calls checkoutBtn.click().
     await page.evaluate(() => window.__mainButtonClick());
     expect(checkoutPosts).toBe(0);
+    await expect(page.locator('#checkoutBtn')).toBeDisabled();
 
     releaseValidation();
     await expect.poll(() => checkoutPosts).toBe(1);
+    const orderResponse = await page.waitForResponse((response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname === '/api/orders'
+    );
+    expect(orderResponse.ok()).toBeTruthy();
+    await expect(page.locator('#checkoutBtn')).toBeEnabled();
+    expect(checkoutPosts).toBe(1);
 
     const trackModal = page.locator('#orderTrackModal');
     await expect(trackModal).toBeVisible();
