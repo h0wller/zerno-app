@@ -123,9 +123,10 @@
 
 ## 8. Оставшиеся детали перед runtime PR
 
-Остались два локальных визуально-поведенческих решения, не меняющих принятый паттерн:
+Продуктовое направление native radio group принято. Same-context review технического draft записан в [pizza-variant-selection-design-review.md](./pizza-variant-selection-design-review.md); существенные замечания отражены в [technical design](./pizza-variant-selection-design.md).
 
-1. Видимый компактный legend «Размер и тесто» или визуально скрытый legend с сохранением accessible group name. Рекомендация design draft — оставить короткую видимую подпись; проверить её высоту на 320×568 и 390×844.
-2. Сохранять ли toast одновременно с inline error. Рекомендация — оставить toast только если ручная проверка VoiceOver/TalkBack не приводит к двойному или навязчивому объявлению.
+Решение по ошибке также зафиксировано: inline message + aria-describedby на первом radio + focus transfer; отдельный live-region и toast при Add без выбора не используются. Toast успешного Add сохраняется.
 
-Следующий этап — review technical design draft, затем отдельный runtime PR с RED → GREEN, новыми PZ-01–PZ-12 и проверками существующих cart/card regression suites. PR #131 остаётся документационным; код приложения на этой ветке не менялся.
+Остался один визуальный вопрос: сделать legend «Размер и тесто» короткой видимой подписью или визуально скрыть при сохранении accessible group name. Рекомендация — оставить видимым и проверить высоту карточки на 320×568 и 390×844.
+
+Следующий этап — review технического draft и отдельный runtime PR с RED → GREEN, тестами PZ-01–PZ-12 и существующими cart/card regression suites. PR #131 остаётся документационным; код приложения на этой ветке не менялся.
