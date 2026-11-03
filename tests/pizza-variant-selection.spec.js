@@ -18,6 +18,24 @@ const ITEMS = [{
     { l: '25 см, тонкое', w: '335 г', p: 435, sz: 25 },
     { l: '35 см, тонкое', w: '550 г', p: 635, sz: 35 }
   ]
+}, {
+  id: 'pz-radio-test-second',
+  section: 'delivery',
+  cat: 'pizza',
+  e: '🍕',
+  name: 'Вторая тестовая пицца',
+  desc: 'Томатный соус',
+  comp: ['томатный соус'],
+  vol: '25/35 см',
+  price: '0',
+  on: 1,
+  img: '/media/dishes/1-card.webp',
+  opts: [
+    { l: '25 см, пышное', w: '415 г', p: 535, sz: 25 },
+    { l: '35 см, пышное', w: '750 г', p: 735, sz: 35 },
+    { l: '25 см, тонкое', w: '335 г', p: 435, sz: 25 },
+    { l: '35 см, тонкое', w: '550 г', p: 635, sz: 35 }
+  ]
 }];
 
 async function openPizzaMenu(page) {
@@ -74,19 +92,6 @@ test.describe('native pizza variant selection', () => {
     ]);
     expect(meta.every(item => /г/.test(item.label) && /₽/.test(item.label))).toBeTruthy();
 
-    await page.evaluate(() => {
-      const grid = document.querySelector('#deliveryGrid');
-      const clone = grid.querySelector('.card').cloneNode(true);
-      clone.dataset.productId = 'pz-radio-test-second';
-      clone.querySelectorAll('input[type="radio"]').forEach(input => {
-        input.name += '-second';
-        input.id += '-second';
-      });
-      clone.querySelectorAll('label[for]').forEach(label => {
-        label.htmlFor += '-second';
-      });
-      grid.appendChild(clone);
-    });
     const names = await page.locator('#deliveryGrid fieldset.opts').evaluateAll(groups =>
       groups.map(group => group.querySelector('input[type="radio"]')?.name)
     );
