@@ -94,8 +94,14 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartFee')).toContainText('Выберите населённый пункт');
   await expect(page.locator('#cartTotalLabel')).toHaveText('Сумма без доставки');
 
+  const cartPanel = page.locator('#cartPanel');
+  await page.locator('#cartClose').click();
+  await expect(cartPanel).not.toHaveClass(/open/);
+
   await page.locator('#deliveryGrid [data-product-id="pz-marg"] .opts button').nth(1).click();
   await page.locator('#deliveryGrid [data-product-id="pz-marg"] [data-add]').click();
+  await page.locator('#cartFab').click();
+  await expect(cartPanel).toHaveClass(/open/);
   await expect(row.locator('.qty span')).toHaveText('2');
   await expect(row.locator('.ci-unit-price')).toHaveText('735 ₽ / шт.');
   await expect(row.locator('.ci-line-total')).toHaveText('1 470 ₽');
