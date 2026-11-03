@@ -188,7 +188,7 @@
       ["admin", "cashier", "dispatch"].includes(window.me.role));
     var lunchPromo = isLunchPromoActive();
     var pickup = lunchPromo
-      ? Math.round(sum * 0.2) + (isStaffUser ? Math.round(sum * 0.1) : 0)
+      ? Math.round(sum * (isStaffUser ? 0.3 : 0.2))
       : ((method === "pickup" || isStaffUser) ? Math.round(sum * 0.1) : 0);
     var discLabel = lunchPromo
       ? (isStaffUser ? "20% обеденная акция + 10% для своих" : "20% обеденная акция")
