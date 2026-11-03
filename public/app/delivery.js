@@ -271,10 +271,8 @@ function renderCompositionChips(item) {
 }
 
 function renderPizzaOptsHtml(p, opts) {
-function renderPizzaOptsHtml(p, opts) {
   const groupName = 'pizza-option-' + Array.from(new TextEncoder().encode(String(p.id)))
     .map(byte => byte.toString(16).padStart(2, '0')).join('');
-  return '<fieldset class="opts">' +
   return '<fieldset class="opts">' +
     '<legend>Размер и тесто</legend>' +
     opts.map(function (o, i) {
