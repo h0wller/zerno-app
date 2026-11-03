@@ -33,10 +33,37 @@ test('delivery category rail keeps its existing owner and event handler after mo
 
   const rail = page.locator('#deliveryRail');
   await expect(rail).toBeVisible();
+  await expect(rail.locator('button[data-dcat]').first()).toBeVisible();
   await page.waitForFunction(() => document.querySelectorAll('#deliveryRail button[data-dcat]').length > 1);
   await page.evaluate(() => {
     window.__d2OriginalDeliveryRail = document.getElementById('deliveryRail');
   });
+
+  const reveal = await page.evaluate(() => {
+    const categoryRail = document.getElementById('deliveryRail');
+    const overflowing = categoryRail.scrollWidth > categoryRail.clientWidth + 1;
+    categoryRail.scrollLeft = categoryRail.scrollWidth;
+    const endScrollLeft = categoryRail.scrollLeft;
+    if (typeof window.__syncDeliveryScrollSpy !== 'function') {
+      throw new Error('Delivery ScrollSpy hook is unavailable');
+    }
+    window.__syncDeliveryScrollSpy();
+    const active = categoryRail.querySelector('button.on');
+    if (!active) return { overflowing, endScrollLeft, afterScrollLeft: categoryRail.scrollLeft, activeVisible: false };
+    const railRect = categoryRail.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    return {
+      overflowing,
+      endScrollLeft,
+      afterScrollLeft: categoryRail.scrollLeft,
+      activeCategory: active.dataset.dcat,
+      activeVisible: activeRect.left >= railRect.left - 1 && activeRect.right <= railRect.right + 1
+    };
+  });
+  expect(reveal.overflowing).toBe(true);
+  expect(reveal.activeCategory).toBeTruthy();
+  expect(reveal.activeVisible).toBe(true);
+  expect(reveal.afterScrollLeft).toBeLessThan(reveal.endScrollLeft);
 
   const secondCategory = rail.locator('button[data-dcat]').nth(1);
   const selectedCategory = await secondCategory.getAttribute('data-dcat');

@@ -292,6 +292,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     // ── Задача 3: мобильная навигация категорий — горизонтальная полоса в потоке ──
     const rail = page.locator('#deliveryView > #deliveryRail');
     await expect(rail).toBeVisible();
+    await expect(rail.locator('button[data-dcat]').first()).toBeVisible();
     const railLayout = await rail.evaluate((el) => {
       const style = window.getComputedStyle(el);
       return {
