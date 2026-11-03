@@ -111,9 +111,13 @@ test('регистрационная бесплатная доставка со�
     window.renderCart();
   });
 
-  await expect(page.locator('#cartDiscount')).toContainText('20% обеденная акция');
+  await expect(page.locator('#cartDiscount')).toContainText('Обеденная акция · 20%');
+  await expect(page.locator('#cartDiscount')).toContainText('−200 ₽');
+  await expect(page.locator('#cartDiscount')).toContainText('Будни, 11:00–15:00');
   await expect(page.locator('#cartFee')).toContainText('Бесплатно');
-  await expect(page.locator('#cartPromoLine')).toContainText('первая доставка бесплатно');
+  await expect(page.locator('#cartFee')).toContainText('Бонус за регистрацию');
+  await expect(page.locator('#cartFee')).toContainText('экономия 200 ₽');
+  await expect(page.locator('#cartPromoLine')).toContainText('Бонус за регистрацию применён');
   await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(800);
 });
 
