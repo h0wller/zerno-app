@@ -374,7 +374,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
             hide() { window.__backBtnVisible = false; },
             onClick(fn) { window.__backClickCallbacks.push(fn); }
           },
-          MainButton: { show() {}, hide() {}, setText() {}, setParams() {}, onClick() {}, showProgress() {}, hideProgress() {} },
+          MainButton: { show() {}, hide() {}, setText() {}, setParams() {}, onClick(fn) { window.__mainButtonClick = fn; }, showProgress() {}, hideProgress() {} },
           HapticFeedback: { impactOccurred() {}, notificationOccurred() {}, selectionChanged() {} }
         }
       };
@@ -515,8 +515,41 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await page.locator('#checkoutHouse').fill('70');
     await expect(page.locator('#checkoutBtn')).toBeEnabled();
 
-    // ── Задача 3: Отправка заказа (в TMA #checkoutBtn скрыт под нативной MainButton) ──
+    // ── Задача 3: Повторное нажатие MainButton во время валидации не дублирует заказ ──
+    let holdCheckoutValidation = true;
+    let releaseValidation;
+    let validationStarted;
+    const validationStartedPromise = new Promise((resolve) => { validationStarted = resolve; });
+    const validationReleasePromise = new Promise((resolve) => { releaseValidation = resolve; });
+    await page.route('**/api/delivery/info', async (route) => {
+      if (holdCheckoutValidation) {
+        holdCheckoutValidation = false;
+        validationStarted();
+        await validationReleasePromise;
+      }
+      await route.continue();
+    });
+
+    let checkoutPosts = 0;
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/orders') {
+        checkoutPosts += 1;
+      }
+    });
+
+    const firstValidation = page.waitForRequest((request) =>
+      new URL(request.url()).pathname === '/api/delivery/info'
+    );
     await page.locator('#checkoutBtn').dispatchEvent('click');
+    await validationStartedPromise;
+    await firstValidation;
+
+    // Telegram MainButton routes through checkoutBtn.click(); the disabled DOM button must ignore it.
+    await page.evaluate(() => window.__mainButtonClick());
+    expect(checkoutPosts).toBe(0);
+
+    releaseValidation();
+    await expect.poll(() => checkoutPosts).toBe(1);
 
     const trackModal = page.locator('#orderTrackModal');
     await expect(trackModal).toBeVisible();
