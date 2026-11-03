@@ -105,9 +105,8 @@ test('регистрационная бесплатная доставка со�
 
   await page.goto('/?brand=delivery');
   await page.waitForFunction(() => window.me && window.me.id === 'registered-guest-lunch-test');
-  await page.waitForFunction(() =>
-    window.deliveryInfo && document.querySelector('#checkoutPlace option[value="Янтарный"]')
-  );
+  await page.waitForFunction(() => typeof window.refreshDeliveryInfo === 'function');
+  await page.evaluate(() => window.refreshDeliveryInfo());
   await page.locator('#checkoutPlace').selectOption('Янтарный');
   await page.waitForFunction(() => typeof window.renderCart === 'function');
   await page.evaluate(() => {
