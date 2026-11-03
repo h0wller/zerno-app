@@ -91,7 +91,10 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     var baseZoneFee = 0;
     var minOrder = 0;
     var normalizedPlace = String(placeVal || "").toLowerCase().trim();
-    if (!normalizedPlace) return { baseZoneFee: 0, minOrder: 0 };
+    if (!normalizedPlace) {
+      var configuredMinimum = Number(window.MIN_DELIVERY_ORDER);
+      return { baseZoneFee: 0, minOrder: configuredMinimum > 0 ? configuredMinimum : 0 };
+    }
 
     if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
       var zone = deliveryInfo.zones.find(function (entry) {
@@ -233,7 +236,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
       pd: pd,
       minOrder: deliveryPricing.minOrder,
       awaitingPlace: !!deliveryPricing.awaitingPlace,
-      belowMin: method === "delivery" && !deliveryPricing.awaitingPlace && deliveryPricing.minOrder > 0 && sum > 0 && sum < deliveryPricing.minOrder,
+      belowMin: method === "delivery" && deliveryPricing.minOrder > 0 && sum > 0 && sum < deliveryPricing.minOrder,
       total: Math.max(0, sum - pickup - pd + deliveryPricing.fee),
     };
   }
@@ -315,7 +318,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
         var feeTitle = t.fee > 0 ? fmt(t.fee) : "Бесплатно";
         var feeReason = t.personalFreeShip
           ? "Бонус за регистрацию · экономия " + fmt(t.baseZoneFee)
-          : (t.freeShip ? "Промокод на бесплатную доставку." : "");
+          : (t.freeShip ? "Промокод на бесплатную доставку · экономия " + fmt(t.baseZoneFee) : "");
         feeEl.innerHTML =
           '<span class="csl-main"><span>Доставка · ' + esc(t.placeVal) + '</span><strong>' + feeTitle + '</strong></span>' +
           (feeReason ? '<small class="csl-explain">' + feeReason + '</small>' : '');
