@@ -184,8 +184,6 @@
   white-space: nowrap;
 }
 
-#deliveryGrid .opts button.sel,
-#deliveryGrid .opts .opt-btn.sel,
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) {
   background: var(--btn-fire-bg, var(--flame));
   border: var(--btn-fire-border, 1.5px solid var(--flame));
@@ -193,11 +191,6 @@
   box-shadow: var(--btn-fire-shadow, none);
 }
 
-#deliveryGrid .opts button.sel .opt-size,
-#deliveryGrid .opts button.sel .opt-crust,
-#deliveryGrid .opts button.sel .opt-weight,
-#deliveryGrid .opts button.sel .opt-price,
-#deliveryGrid .opts button.sel .op,
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-size,
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-crust,
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-weight,
@@ -235,8 +228,7 @@
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-crust,
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-weight,
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-price { color:var(--btn-fire-color,#fff); opacity:1; }
-#deliveryGrid .opts .opt-radio:focus-visible + .opt-content { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; border-radius:6px; }
-#deliveryGrid .opts .opt-btn:has(.opt-radio:focus-visible) { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; }
+#deliveryGrid .opts .opt-btn:focus-within { outline: 3px solid var(--focus, #1A6DDF); outline-offset: 3px; border-radius: 6px; }
 #deliveryGrid .opts-error { grid-column:1 / -1; margin:2px 0 0; color:var(--flame,#C03B2A); font-size:11px; font-weight:700; }
 
 /* Keep lazy-card reservation aligned with the native fieldset + legend geometry. */
