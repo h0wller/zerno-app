@@ -208,9 +208,24 @@
 
 
 /* Native pizza option group */
-#deliveryGrid fieldset.opts { min-inline-size:0; border:0; margin:6px 0 0; padding:6px 0 0; }
-#deliveryGrid .opts legend { padding:0; margin:0 0 4px; color:var(--soft,#586470); font-size:11px; font-weight:700; }
-#deliveryGrid .opts label.opt-btn { position:relative; min-height:52px; cursor:pointer; }
+#deliveryGrid fieldset.opts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-inline-size: 0;
+  border: 0;
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+}
+#deliveryGrid .opts legend {
+  grid-column: 1 / -1;
+  padding: 0;
+  margin: 0 0 4px;
+  color: var(--soft, #586470);
+  font-size: 11px;
+  font-weight: 700;
+}
+#deliveryGrid .opts label.opt-btn { position: relative; min-height: 52px; cursor: pointer; }
 #deliveryGrid .opts .opt-radio { position:absolute; width:1px; height:1px; margin:0; opacity:0; }
 #deliveryGrid .opts .opt-content { display:flex; flex-direction:column; justify-content:space-between; gap:4px; width:100%; min-width:0; pointer-events:none; }
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) { background:var(--btn-fire-bg,var(--flame)); border:var(--btn-fire-border,1.5px solid var(--flame)); color:var(--btn-fire-color,#fff); box-shadow:var(--btn-fire-shadow,none); }
