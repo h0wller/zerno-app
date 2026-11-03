@@ -20,6 +20,11 @@
                 '</div>' +
             '</section>' +
 
+            '<section class="settings-section settings-staff-section" id="staffAccessSection" hidden aria-label="Доступ сотрудника">' +
+                '<div class="settings-section-title">Для сотрудников</div>' +
+                '<button class="settings-staff-access-action" id="activateBtn" type="button" hidden>Доступ сотрудника</button>' +
+            '</section>' +
+
             '<section class="settings-section" aria-label="Каналы уведомлений">' +
                 '<div class="settings-section-title">Каналы уведомлений</div>' +
                 '<div class="settings-channel-row">' +
@@ -110,6 +115,8 @@
 
     if (gear) gear.addEventListener('click', openSettings);
     if (closeButton) closeButton.addEventListener('click', closeSettings);
+    var staffAccessButton = document.getElementById('activateBtn');
+    if (staffAccessButton) staffAccessButton.addEventListener('click', closeSettings);
     if (deleteButton) deleteButton.addEventListener('click', openDeleteConfirmation);
 
     modal.addEventListener('click', function (event) {

@@ -484,13 +484,50 @@
   border-color: var(--line);
   background: #fff;
 }
-#profileBox > #activateBtn,
 #profileBox > #pushBtn {
   margin: 0;
   padding: 10px 12px;
   border-style: solid;
   border-color: var(--line);
   background: #fff;
+}
+#settingsModal .settings-staff-section:not([hidden]) {
+  display: grid;
+  gap: 8px;
+}
+#settingsModal .settings-staff-section[hidden] {
+  display: none;
+}
+#settingsModal .settings-staff-section #activateBtn {
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+}
+#settingsModal .settings-staff-section #activateBtn.staff-access-link {
+  width: max-content;
+  min-height: 32px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#settingsModal .settings-staff-section #activateBtn.staff-access-link:hover {
+  background: transparent;
+  color: var(--ink);
 }
 #profileBox .profile-section-heading {
   align-items: center;

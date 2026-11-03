@@ -291,11 +291,20 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                     : r === "cashier"
                         ? "🧾 роль: кассир"
                         : "роль: гость";
-            $("#activateBtn").hidden = !(r === "guest" || r === "cashier");
-            $("#activateBtn").textContent =
-                r === "guest"
-                    ? "🔑 У меня код доступа сотрудника"
-                    : "🔑 Повысить до администратора";
+            const activateButton = $("#activateBtn");
+            const staffAccessSection = $("#staffAccessSection");
+            const isGuest = r === "guest";
+            const hasStaffAction = isGuest || r === "cashier";
+            activateButton.hidden = !hasStaffAction;
+            if (staffAccessSection) staffAccessSection.hidden = !hasStaffAction;
+            activateButton.classList.toggle("staff-access-link", isGuest);
+            activateButton.textContent = isGuest
+                ? "Доступ сотрудника"
+                : "Повысить до администратора";
+            activateButton.setAttribute(
+                "aria-label",
+                isGuest ? "Открыть вход по коду сотрудника" : "Повысить до администратора",
+            );
             refreshPushBtn();
             $("#stCups").textContent = me.cups;
             $("#stStamps").textContent = me.stamps + "/10";
