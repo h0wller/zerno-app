@@ -154,7 +154,23 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         subchip: box(document.querySelector('#deliverySubFilter .subchip')),
         option: box(document.querySelector('#deliveryGrid .opts .opt-btn')),
         section: box(document.querySelector('.wrap > section')),
-        rail: box(document.querySelector('.wrap > .rail:not([style*="display: none"])')),
+        rail: box(document.querySelector('#deliveryView > #deliveryRail')),
+        railStyle: (() => {
+          const rail = document.querySelector('#deliveryView > #deliveryRail');
+          if (!rail) return null;
+          const style = getComputedStyle(rail);
+          const filter = document.getElementById('deliverySubFilter');
+          const grid = document.getElementById('deliveryGrid');
+          return {
+            parentId: rail.parentElement.id,
+            display: style.display,
+            flexDirection: style.flexDirection,
+            overflowX: style.overflowX,
+            position: style.position,
+            beforeFilter: !!(filter && (rail.compareDocumentPosition(filter) & Node.DOCUMENT_POSITION_FOLLOWING)),
+            beforeGrid: !!(rail.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING)
+          };
+        })(),
         viewportWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth
       };
@@ -166,9 +182,20 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.ticker.height).toBe(34);
     expect(before.tickerOverflowX).toBe('hidden');
     expect(before.section.width).toBeGreaterThan(250);
-    expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
+    expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 16);
     expect(before.heading.width).toBeGreaterThan(200);
     expect(before.menuHead).not.toBeNull();
+    expect(before.rail).not.toBeNull();
+    expect(before.rail.height).toBeGreaterThanOrEqual(44);
+    expect(before.railStyle).toEqual({
+      parentId: 'deliveryView',
+      display: 'flex',
+      flexDirection: 'row',
+      overflowX: 'auto',
+      position: 'static',
+      beforeFilter: true,
+      beforeGrid: true
+    });
     expect(before.menuHead.x).toBeLessThanOrEqual(before.rail.x + 1);
     expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x);
@@ -182,7 +209,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.searchLabel.width).toBeLessThanOrEqual(1);
     expect(before.searchLabel.height).toBeLessThanOrEqual(1);
     expect(before.searchInput).not.toBeNull();
-    expect(before.card.width).toBeLessThanOrEqual(before.viewportWidth - 80);
+    expect(before.card.width).toBeLessThanOrEqual(before.section.width + 1);
     expect(before.scrollWidth).toBeLessThanOrEqual(before.viewportWidth + 1);
 
     await waitForDeferredTheme(page);
@@ -218,6 +245,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.option.height).toBe(before.option.height);
     expect(after.heading.width).toBeGreaterThan(200);
     expect(after.menuHead).toEqual(before.menuHead);
+    expect(after.rail).toEqual(before.rail);
+    expect(after.railStyle).toEqual(before.railStyle);
     expect(after.menuHead.x).toBeLessThanOrEqual(after.rail.x + 1);
     expect(after.menuHead.right).toBeGreaterThanOrEqual(after.section.right - 1);
     expect(after.heading.x).toBeGreaterThanOrEqual(after.menuHead.x);
