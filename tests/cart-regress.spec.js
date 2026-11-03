@@ -289,9 +289,26 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     const padBottom = await page.locator('#deliveryGrid').evaluate((el) => parseFloat(window.getComputedStyle(el).paddingBottom));
     expect(padBottom).toBeGreaterThanOrEqual(88);
 
-    // ── Задача 3: Сайдбар категорий #deliveryRail имеет position: sticky ──
-    const railPos = await page.locator('#deliveryRail').evaluate((el) => window.getComputedStyle(el).position);
-    expect(railPos).toBe('sticky');
+    // ── Задача 3: мобильная навигация категорий — горизонтальная полоса в потоке ──
+    const rail = page.locator('#deliveryView > #deliveryRail');
+    await expect(rail).toBeVisible();
+    const railLayout = await rail.evaluate((el) => {
+      const style = window.getComputedStyle(el);
+      return {
+        parent: el.parentElement.id,
+        position: style.position,
+        direction: style.flexDirection,
+        overflowX: style.overflowX,
+        minHeight: Math.min(...Array.from(el.querySelectorAll('button'), (button) => button.getBoundingClientRect().height))
+      };
+    });
+    expect(railLayout).toEqual({
+      parent: 'deliveryView',
+      position: 'static',
+      direction: 'row',
+      overflowX: 'auto',
+      minHeight: 44
+    });
 
     // ── Задача 4: Контраст полей чекаута, прижатие шторки к bottom=viewport.height и скрытие #cartFab ──
     await firstPizzaCard.locator('.steprow .cta, [data-add]').first().click();

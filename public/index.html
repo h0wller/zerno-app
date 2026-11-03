@@ -1472,22 +1472,29 @@ html[data-staff-role="dispatch"][data-brand="delivery"]:not([data-staff-ready]) 
   visibility: hidden !important;
 }
 
-/* The section must stay in column 2 before deferred 160-12-admin-bar-tail.css arrives. */
-html body div.wrap > section {
-  grid-column: 2;
-  grid-row: 1;
-  min-width: 0;
-  width: 100%;
-}
-html body div.wrap > .rail,
-html body div.wrap > #deliveryRail {
-  grid-column: 1;
-  grid-row: 1;
-}
-html body div.wrap > .rail:not(.rail-position-ready),
-html body div.wrap > #rail:not(.rail-position-ready),
-html body div.wrap > #deliveryRail:not(.rail-position-ready) {
-  visibility: hidden;
+/* Desktop reserves the rail column. On mobile the rail nodes start in their final flow positions. */
+@media (min-width: 821px) {
+  html body div.wrap > section {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    width: 100%;
+  }
+  html body div.wrap > .rail,
+  html body div.wrap > #deliveryRail {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  html body div.wrap > .rail:not(.rail-position-ready),
+  html body div.wrap > #rail:not(.rail-position-ready),
+  html body div.wrap > #deliveryRail:not(.rail-position-ready) {
+    visibility: hidden;
+  }
+  /* The nodes start nested in their views; suppress the nested desktop fallback until views.js moves them. */
+  html body .wrap #menuView > #rail,
+  html body .wrap #deliveryView > #deliveryRail {
+    display: none !important;
+  }
 }
 /* Keep screen-reader-only labels out of first-frame flex layout before deferred theme CSS loads. */
 .sr-only {
@@ -1500,12 +1507,17 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
   white-space: nowrap;
 }
 
-/* Reserve delivery layout before deferred theme CSS is available. */
+/* Reserve the D2 one-column mobile shell before deferred theme CSS is available. */
 @media (max-width: 820px) {
   html body div.wrap {
-    grid-template-columns: 80px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
-    padding: 10px 12px 32px 8px;
+    padding: 10px 12px 32px;
+  }
+  html body div.wrap > section {
+    grid-column: 1;
+    min-width: 0;
+    width: 100%;
   }
 }
 html[data-brand="delivery"] .wrap > section,
@@ -2024,9 +2036,6 @@ html body #tickerTrack .tickerGroup > span {
   
 
   <div class="wrap" role="main">
-    <nav class="rail" id="rail"></nav>
-    <div class="rail" id="deliveryRail" style="display: none"></div>
-
     <section>
       <div class="adminBar" id="adminBar" hidden>
         <button id="editToggle">✏️ Редактировать</button>
@@ -2055,6 +2064,7 @@ html body #tickerTrack .tickerGroup > span {
           </div>
         </div>
         <div id="deliveryBanner"></div>
+        <div class="rail" id="deliveryRail" aria-label="Категории доставки"></div>
         <div id="deliverySubFilter" class="subfilter-bar">
           <button type="button" class="subchip on" data-sub="all">Все</button>
           <button type="button" class="subchip" data-sub="chicken">🍗 Курица</button>
@@ -2113,6 +2123,7 @@ html body #tickerTrack .tickerGroup > span {
             </div>
           </div>
         </div>
+        <nav class="rail" id="rail" aria-label="Категории кофе"></nav>
         <div class="grid" id="grid">
           <!-- Статическая карточка первого экрана для мгновенного LCP -->
           <article class="card" data-item-id="esp">

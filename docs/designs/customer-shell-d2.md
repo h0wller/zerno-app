@@ -31,8 +31,8 @@ D2 перестраивает общую оболочку витрины дву�
 
 ## 3. Наблюдаемая текущая архитектура
 
-- `public/index.html`: исходная оболочка. Оба рейла — прямые дети `.wrap` перед общей `section`; поэтому их нельзя вставить в mobile flow только CSS-правилом.
-- `public/app/core/views.js`: владелец переключения бренда, видимости видов и runtime layout; `syncViewsVisibility()` управляет видимостью `#menuView`, `#deliveryView` и соответствующих рейлов. Здесь будет один breakpoint-controller, который переставляет те же DOM-узлы.
+- `public/index.html`: исходная оболочка. Coffee `#rail` находится внутри `#menuView` после `.menu-head` и перед `#grid`; Delivery `#deliveryRail` — внутри `#deliveryView` после `#deliveryBanner` и перед `#deliverySubFilter`. Это нативный mobile DOM-порядок и не требует JS-переезда на первом кадре.
+- `public/app/core/views.js`: владелец переключения бренда, видимости видов и runtime layout; `syncViewsVisibility()` управляет видимостью `#menuView`, `#deliveryView` и соответствующих рейлов. Breakpoint-controller оставляет рейлы внутри view на ширине ≤820 px и переносит те же DOM-узлы в `.wrap` только на desktop; при resize возвращает их обратно.
 - `public/app/menu.js`: владеет Coffee `#rail`, его кнопками `data-cat`, переменной `cat`, click handler и фильтрацией `#grid`. Coffee в текущем коде переключает категорию по клику; отдельный ScrollSpy в просмотренных исходниках не обнаружен.
 - `public/app/delivery.js`: владеет Delivery `#deliveryRail`, `dcat`, click handler, сеткой `#deliveryGrid` и `syncRailActiveOnScroll()`. ScrollSpy определяет текущую категорию по видимым карточкам и переключает `.on` на рейле.
 - `public/app/ui/scrolltop.js`: единственный владелец desktop геометрии вертикального рейла через `alignRailWithCard()` и `updateRailStickyPosition()`. Сейчас он предполагает, что parent рейла — `.wrap`; для mobile flow этот расчёт должен быть отключён и очищать inline sticky-позицию.
@@ -62,11 +62,11 @@ D2 перестраивает общую оболочку витрины дву�
 
 ### 5.1. Responsive rail reparenting
 
-В `views.js` добавить небольшой контроллер на `matchMedia('(max-width: 820px)')`:
+В `views.js` использовать контроллер на `matchMedia('(max-width: 820px)')`:
 - взять исходные ссылки на `.wrap`, общую `section`, оба rail nodes и их target anchors;
-- при mobile поместить Coffee rail перед `#grid` и Delivery rail перед `#deliverySubFilter` (при отсутствии subfilter — перед `#deliveryGrid`);
+- при mobile сохранить исходное расположение rail в соответствующем view; при desktop поместить узлы прямыми детьми `.wrap` перед `section`;
 - при desktop восстановить оба nodes в `.wrap` до `section`;
-- запустить один раз до завершения boot и слушать только change event; не создавать observers/polling loops;
+- на старте выполнить placement без DOM-переезда на mobile; слушать только `change` event для смены breakpoint; не создавать observers/polling loops;
 - не запускать функцию, когда обязательные DOM anchors отсутствуют, и не удалять узлы.
 
 В `scrolltop.js` на mobile сначала очистить `marginTop/top/maxHeight/transform` и `rail-position-ready`, затем выйти. При desktop родитель — `.wrap`, поэтому прежняя формула остаётся применима. Смена breakpoint вызывает существующий resize handler; дополнительно можно вызвать `alignRailWithCard()` из controller только после того, как функция зарегистрирована, либо полагаться на resize.
@@ -91,7 +91,7 @@ D2 перестраивает общую оболочку витрины дву�
 
 ## 6. Альтернативы и причины отклонения
 
-- **CSS-only grid/order:** отклонено. При текущем DOM rail является sibling общей `section`, а требуемое mobile-положение находится между `.menu-head` и grid внутри вложенного view. CSS не меняет parent/DOM order в требуемую структуру.
+- **CSS-only grid/order:** отклонено для прежнего DOM. D2 меняет исходную HTML-структуру так, чтобы один rail-узел уже находился в требуемом mobile flow; desktop reparenting остаётся необходимым для боковой колонки. Никакие копии и CSS-подмены DOM-порядка не используются.
 - **Дублированные mobile/desktop rails:** отклонено. Появится два DOM ID или придётся переносить состояние/обработчики, увеличивается риск рассинхронизации Coffee/Delivery category state.
 - **Один общий category component/state:** отклонено. Бизнес-поведение Coffee и Delivery разное; у Delivery есть ScrollSpy и subfilters, у Coffee фильтр по `cat`. Объединение не нужно для визуального изменения.
 - **Оставить FAB/bonus pill, скрывать только CSS:** отклонено. Это сохраняет ненужный DOM, listeners, CSS и второй отдельный вход в бонусы; пользователь выбрал удаление shortcut и доступ через профиль.
