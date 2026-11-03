@@ -53,12 +53,17 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await page.click('#profileTopBtn');
 
     const entry = page.locator('#activateBtn');
+    const settings = page.locator('#settingsModal');
+    await expect(entry).toBeHidden();
+    await page.locator('#profileSettingsBtn').click();
+    await expect(settings).toHaveClass(/show/);
     await expect(entry).toBeVisible();
     await expect(entry).toHaveText('Доступ сотрудника');
     await expect(entry).toHaveClass(/staff-access-link/);
     await expect(entry).toHaveAttribute('aria-label', 'Открыть вход по коду сотрудника');
 
     await entry.click();
+    await expect(settings).not.toHaveClass(/show/);
     await expect(page.locator('#pinModal')).toHaveClass(/show/);
 
     const geometry = await entry.evaluate((element) => ({
