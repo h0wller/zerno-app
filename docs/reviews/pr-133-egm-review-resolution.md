@@ -17,7 +17,7 @@ This remains a same-context EGM review and resolution, not an independent Goldfi
 - Medium: 2 (one accepted risk, one resolved)
 - Low: 3 (one resolved, two accepted risks)
 - Runtime logic/CSS changes applied only for accepted findings.
-- Full CI verification is still pending for the final resolution HEAD.
+- CI run #1674 failed on the reviewed HEAD; diagnosis and test-only corrections are tracked below. A fresh CI run is required.
 
 ## Disposition ledger
 
@@ -69,9 +69,9 @@ This remains a same-context EGM review and resolution, not an independent Goldfi
 
 **Change:** `renderPizzaOptsHtml()` now encodes the UTF-8 bytes of the complete ID as lowercase hexadecimal. This is reversible and collision-free for distinct strings, while leaving cart `data-id`, `data-oi` and item key semantics unchanged.
 
-**Test:** Added a Playwright case using IDs `pizza/one` and `pizza?one`, which collide under the old lossy replacement, and verifies two separately selectable radio groups.
+**Test:** Added a Playwright regression using IDs `pizza/one` and `pizza?one`, which collide under the old lossy replacement. The test now exercises the same UTF-8/hex naming expression and verifies two separately selectable groups in the DOM.
 
-**Disposition:** Resolved in source; CI still needs to validate the new test.
+**Disposition:** Source fix is resolved. CI #1674 exposed an indirect test that manually recreated the encoding instead of invoking the production renderer; that test is being replaced with a regression against the generated markup.
 
 ### EGM-133-05 — Low — ACCEPTED RISK
 
@@ -103,7 +103,19 @@ No feature-specific design document was found at the expected `docs/designs/pizz
 
 The prior run #1666 had Quality Gates successful while the Playwright Regression Suite was still running. Later resolution commits changed the branch again, so that run is not verification of the final resolution HEAD.
 
-A fresh CI run is required for the current HEAD. No local tests are claimed in this document.
+CI run #1674 (HEAD `dd72eaac166046b7824469cdab0a91bb854c021b`) completed with:
+- Code Quality & Guardrails: passed.
+- Playwright Regression Suite: failed in four configurations, all in `tests/pizza-variant-selection.spec.js`.
+- 429 Playwright tests passed; 4 failed; 9 skipped.
+
+Failure triage:
+- The validation test expected the old pre-hex ID `pizza-option-pz-radio-test-error`; the production DOM correctly emitted `pizza-option-707a2d726164696f2d74657374-error`. Test expectation corrected to read the current error ID from the rendered node.
+- Keyboard test incorrectly assumed `ArrowDown` from the second item in a native radio group would move to visual grid index 3. CSS grid position does not change native radio keyboard order. The regression now checks left/right traversal and checked state instead of imposing visual-grid semantics.
+- The same validation test asserted DOM focus on an almost-zero-sized, transparent radio input; the product styling intentionally exposes focus via the containing label's `:focus-within`. Test now verifies the accessible description link and visible focus outline.
+
+No application runtime code change is made for these four CI failures: evidence points to incorrect test assumptions rather than a confirmed production defect.
+
+No local tests are claimed. A fresh CI run is required for the updated test and ledger.
 
 ## Final recommendation
 
