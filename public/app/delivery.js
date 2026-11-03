@@ -271,7 +271,9 @@ function renderCompositionChips(item) {
 }
 
 function renderPizzaOptsHtml(p, opts) {
-  return '<div class="opts">' +
+  const groupName = 'pizza-option-' + String(p.id).replace(/[^a-zA-Z0-9_-]/g, '-');
+  return '<fieldset class="opts">' +
+    '<legend>Размер и тесто</legend>' +
     opts.map(function (o, i) {
       var lStr = String(o.l || '');
       var parts = lStr.split(',').map(function (s) { return s.trim(); });
@@ -280,18 +282,23 @@ function renderPizzaOptsHtml(p, opts) {
       var weightText = o.w ? esc(o.w) : '';
       var priceText = fmt(o.p);
 
-      return '<button type="button" class="opt-btn" data-id="' + p.id + '" data-oi="' + i + '">' +
-        '<div class="opt-row opt-top">' +
-          '<span class="opt-size">' + esc(sizeText) + '</span>' +
-          '<span class="opt-crust">' + esc(crustText) + '</span>' +
-        '</div>' +
-        '<div class="opt-row opt-bottom">' +
-          '<span class="opt-weight">' + weightText + '</span>' +
-          '<span class="opt-price">' + priceText + '</span>' +
-        '</div>' +
-      '</button>';
+      return '<label class="opt-btn" for="' + groupName + '-' + i + '">' +
+        '<input class="opt-radio" type="radio" name="' + groupName + '" id="' + groupName + '-' + i +
+          '" value="' + i + '" data-id="' + esc(String(p.id)) + '" data-oi="' + i + '">' +
+        '<span class="opt-content" aria-hidden="true">' +
+          '<span class="opt-row opt-top">' +
+            '<span class="opt-size">' + esc(sizeText) + '</span>' +
+            '<span class="opt-crust">' + esc(crustText) + '</span>' +
+          '</span>' +
+          '<span class="opt-row opt-bottom">' +
+            '<span class="opt-weight">' + weightText + '</span>' +
+            '<span class="opt-price">' + priceText + '</span>' +
+          '</span>' +
+        '</span>' +
+      '</label>';
     }).join('') +
-  '</div>';
+    '<p class="opts-error" id="' + groupName + '-error" hidden>Выберите размер и тесто.</p>' +
+  '</fieldset>';
 }
 
 function renderSingleMetaHtml(p) {
@@ -647,53 +654,44 @@ function handleDeliveryStepperClick(e) {
 
 function handleDeliveryCardClick(e) {
   const card = e.target.closest('#deliveryGrid .card');
-  if (!card || e.target.closest('.opts button') || e.target.closest('[data-add]') ||
+  if (!card || e.target.closest('.opts') || e.target.closest('[data-add]') ||
       e.target.closest('.edBtn') || e.target.closest('.donoff')) return false;
 
-  const optsBox = card.querySelector('.opts');
   const addButton = card.querySelector('[data-add]');
   const product = DMENU.find(item => String(item.id) === String(addButton && addButton.dataset.add));
-  if (product && (product.opts || []).length && optsBox) {
-    if (!optsBox.querySelector('.sel')) {
-      optsBox.classList.remove('shake');
-      void optsBox.offsetWidth;
-      optsBox.classList.add('shake');
-      optsBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      if (typeof toast === 'function') toast('Выберите размер и тесто 🍕', '');
-    }
-  } else if (product && addButton) {
-    addButton.click();
-  }
-  return true;
-}
-
-function handleDeliveryOptionClick(e) {
-  const option = e.target.closest('.opts button');
-  if (!option) return false;
-  const group = option.closest('.opts');
-  const wasSelected = option.classList.contains('sel');
-  group.querySelectorAll('button').forEach(button => button.classList.remove('sel'));
-  if (!wasSelected) option.classList.add('sel');
+  if (product && !(product.opts || []).length && addButton) addButton.click();
   return true;
 }
 
 function resolveDeliveryAddSelection(addButton, product) {
   const options = product.opts || [];
   const cardBody = addButton.closest('.cbody');
-  const selectedOption = cardBody ? cardBody.querySelector('.opts button.sel') : null;
+  const optionsBox = cardBody && cardBody.querySelector('.opts');
+  const selectedOption = optionsBox ? optionsBox.querySelector('input[type="radio"]:checked') : null;
   if (!selectedOption && options.length > 0) {
-    const optionsBox = cardBody && cardBody.querySelector('.opts');
     if (optionsBox) {
+      const error = optionsBox.querySelector('.opts-error');
+      if (error) error.hidden = false;
+      const firstOption = optionsBox.querySelector('input[type="radio"]');
+      if (firstOption) {
+        if (error) firstOption.setAttribute('aria-describedby', error.id);
+        firstOption.focus();
+        firstOption.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
       optionsBox.classList.remove('shake');
       void optionsBox.offsetWidth;
       optionsBox.classList.add('shake');
       optionsBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
-    if (typeof toast === 'function') toast('Выберите размер и тесто 🍕', '');
     return null;
   }
 
-  const optionIndex = selectedOption ? parseInt(selectedOption.dataset.oi, 10) : -1;
+  if (optionsBox) {
+    const error = optionsBox.querySelector('.opts-error');
+    if (error) error.hidden = true;
+    optionsBox.querySelectorAll('input[type="radio"]').forEach(radio => radio.removeAttribute('aria-describedby'));
+  }
+  const optionIndex = selectedOption ? Number.parseInt(selectedOption.dataset.oi, 10) : -1;
   const option = options[optionIndex];
   const price = option ? Number(option.p) : (Number(product.price) || 0);
   if (price <= 0) {
@@ -815,8 +813,8 @@ function handleDeliveryGridClick(e) {
   if (handleDeliveryZoomClick(e)) return;
   if (e.target.closest('.edBtn') || e.target.closest('.donoff')) return;
   if (handleDeliveryStepperClick(e)) return;
+  if (e.target.closest('.opts input[type="radio"]')) return;
   if (handleDeliveryCardClick(e)) return;
-  if (handleDeliveryOptionClick(e)) return;
   handleDeliveryAddClick(e);
 }
 

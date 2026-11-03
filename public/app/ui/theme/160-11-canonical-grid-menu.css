@@ -1,5 +1,6 @@
 /* ── Спринт 5: Компактные 2-строчные плашки опций пиццы (.opts button) без переноса на 3-ю строку ── */
 #deliveryGrid .card .opts button,
+#deliveryGrid .card .opts label.opt-btn,
 #deliveryGrid .card .opts .opt-btn {
   padding: 7px 9px;
   display: flex;
