@@ -1831,7 +1831,7 @@ html[data-brand="delivery"] #deliveryGrid .card .opts .opt-price {
   white-space: nowrap;
 }
 
-html[data-brand="delivery"] #deliveryGrid fieldset.opts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; min-inline-size:0; border:0; margin:6px 0 0; padding:6px 0 0; }
+html[data-brand="delivery"] #deliveryGrid fieldset.opts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; min-inline-size:0; width:100%; box-sizing:border-box; border:0; margin:6px 0 0; padding:6px 0 0; }
 html[data-brand="delivery"] #deliveryGrid .opts legend { grid-column:1 / -1; padding:0; margin:0 0 4px; color:var(--soft,#586470); font-size:11px; font-weight:700; }
 html[data-brand="delivery"] #deliveryGrid .opts .opt-radio { position:absolute; width:1px; height:1px; margin:0; opacity:0; }
 html[data-brand="delivery"] #deliveryGrid .opts .opt-content { display:flex; flex-direction:column; justify-content:space-between; gap:4px; width:100%; min-width:0; pointer-events:none; }
@@ -1841,6 +1841,7 @@ html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked)
 html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-weight,
 html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-price { color:var(--btn-fire-color,#fff); opacity:1; }
 html[data-brand="delivery"] #deliveryGrid .opts .opt-radio:focus-visible + .opt-content { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; border-radius:6px; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:focus-visible) { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; }
 html[data-brand="delivery"] #deliveryGrid .opts-error { grid-column:1 / -1; margin:2px 0 0; color:var(--flame,#C03B2A); font-size:11px; font-weight:700; }
 
 
