@@ -10,7 +10,7 @@
 - ASAP uses current Kaliningrad local time. Preorders use the start of the selected, server-validated slot.
 - The discount applies to the menu subtotal, including server-validated paid modifiers. Delivery fee is unchanged.
 - The existing 10% staff discount is the only discount allowed to stack. It is calculated against the original subtotal, so staff receive a total 30%, not 28%.
-- Pickup discount, every delivery promo code (percent, fixed-value and free-shipping), and automatic gifts are suppressed during lunch. Rejected promo codes are not used.
+- Pickup discount, percentage/fixed promo codes and other free-shipping promo codes are suppressed during lunch. The personal one-time free-delivery bonus granted for registration remains available. Automatic gifts are suppressed; rejected promo codes are not used.
 - Outside lunch, existing pickup/staff precedence, promo-code behaviour and gifts remain unchanged.
 - Server calculates the final total. Discount label and amount are persisted and shown in customer confirmation/history and staff notifications/details.
 
