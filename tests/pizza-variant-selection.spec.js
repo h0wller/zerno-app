@@ -66,7 +66,7 @@ test.describe('native pizza variant selection', () => {
     expect(meta.every(item => item.type === 'radio')).toBeTruthy();
     expect(new Set(meta.map(item => item.name)).size).toBe(1);
     expect(meta.every(item => item.name)).toBeTruthy();
-    expect(meta.map(item => item.label.join(' ').replace(/\s+/g, ' ').trim())).toEqual([
+    expect(meta.map(item => item.label.replace(/\s+/g, ' ').trim())).toEqual([
       expect.stringContaining('25 см'),
       expect.stringContaining('35 см'),
       expect.stringContaining('25 см'),
