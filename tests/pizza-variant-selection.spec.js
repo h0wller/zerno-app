@@ -134,6 +134,29 @@ test.describe('native pizza variant selection', () => {
     expect(encoded('pizza/one')).toBe('70697a7a612f6f6e65');
   });
 
+  test('keeps native radio groups independent for IDs that collide under lossy sanitization', async ({ page }) => {
+    const collidingIds = ['pizza/one', 'pizza?one'];
+    const encoded = value => Array.from(new TextEncoder().encode(value))
+      .map(byte => byte.toString(16).padStart(2, '0')).join('');
+    const names = collidingIds.map(id => 'pizza-option-' + encoded(id));
+    expect(names[0]).not.toBe(names[1]);
+
+    await page.setContent(collidingIds.map(id => {
+      const name = 'pizza-option-' + encoded(id);
+      return '<fieldset class="opts"><legend>Размер и тесто</legend>' +
+        '<label for="' + name + '-0"><input id="' + name + '-0" name="' + name +
+        '" type="radio">25 см</label></fieldset>';
+    }).join(''));
+
+    const groups = page.locator('fieldset.opts');
+    await expect(groups).toHaveCount(2);
+    const radios = page.getByRole('radio');
+    await radios.nth(0).check();
+    await radios.nth(1).check();
+    await expect(radios.nth(0)).toBeChecked();
+    await expect(radios.nth(1)).toBeChecked();
+  });
+
   test('renders two independent native radio groups without a preselected option', async ({ page }) => {
     await openPizzaMenu(page);
 
