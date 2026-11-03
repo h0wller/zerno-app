@@ -101,8 +101,9 @@ test.describe('native pizza variant selection', () => {
   test('selects using the visible label text and does not trigger card-level missing-selection feedback', async ({ page }) => {
     await openPizzaMenu(page);
     const card = page.locator('#deliveryGrid .card').first();
-    const radio = card.getByRole('radio', { name: /35 см, пышное/ });
-    await radio.locator('xpath=..').click();
+    const optionLabel = card.locator('label.opt-btn', { hasText: '35 см, пышное' });
+    const radio = optionLabel.locator('input[type="radio"]');
+    await optionLabel.click();
     await expect(radio).toBeChecked();
     await expect(card.locator('.opts-error')).toHaveCount(0);
     await expect(page.locator('#toasts .toast')).toHaveCount(0);
@@ -125,8 +126,8 @@ test.describe('native pizza variant selection', () => {
   test('adds the selected server option using the existing oi/key/price contract', async ({ page }) => {
     await openPizzaMenu(page);
     const card = page.locator('#deliveryGrid .card').first();
-    const radio = card.getByRole('radio', { name: /35 см, тонкое/ });
-    await radio.locator('xpath=..').click();
+    const optionLabel = card.locator('label.opt-btn', { hasText: '35 см, тонкое' });
+    await optionLabel.click();
     await card.locator('[data-add]').click();
     const cart = await page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart') || '[]'));
     expect(cart).toHaveLength(1);
