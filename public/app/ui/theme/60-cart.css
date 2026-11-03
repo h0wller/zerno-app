@@ -139,6 +139,16 @@
 .csl-row.fee {
   padding: 2px 0;
 }
+.csl-row.fee.is-free {
+  padding: 7px 9px;
+  border-left: 3px solid var(--status-success, #2F7D4F);
+  border-radius: 8px;
+  background: rgba(47, 125, 79, 0.075);
+  color: var(--status-success, #2F7D4F);
+}
+.csl-row.fee.is-free .csl-main strong {
+  color: var(--status-success, #2F7D4F);
+}
 .csl-main {
   display: flex;
   align-items: baseline;
