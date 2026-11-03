@@ -217,7 +217,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
       discLabel: discLabel,
       fee: deliveryPricing.fee,
       baseZoneFee: deliveryPricing.baseZoneFee,
-      freeShip: !!(!lunchPromo && promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
+      freeShip: !!(promoInfo && promoInfo.kind === "freeship" && method === "delivery"),
       lunchPromo: lunchPromo,
       placeVal: placeVal,
       pd: pd,
@@ -317,7 +317,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 
   async function tryAutoFreeCode() {
     var u = typeof window.me !== "undefined" ? window.me : null;
-    if (!u || !u.id || freeAutoFor === u.id && freeAutoAttempted) return "";
+    if (!u || !u.id || (freeAutoFor === u.id && freeAutoAttempted)) return "";
     freeAutoFor = u.id;
     freeAutoAttempted = true;
     if (freeAutoSuppressedFor === u.id) return "";
@@ -360,17 +360,22 @@ async function refreshPromoLine(sum) {
     var personalCode = await getPersonalFreeCode();
     var canUsePersonalCode = !!(personalCode && user && freeAutoSuppressedFor !== user.id);
     if (canUsePersonalCode) {
+      if (cartPromoCode !== personalCode) promoInfo = null;
       cartPromoCode = personalCode;
-    } else if (cartPromoCode) {
-      cartPromoCode = '';
-      promoInfo = null;
-      localStorage.removeItem('zt_cartpromo');
       var promoInputDuringLunch = document.getElementById('cartPromo');
-      if (promoInputDuringLunch) promoInputDuringLunch.value = '';
-      line.innerHTML = '<span>Обеденная акция: обычные промокоды отключены. Бонус бесплатной доставки за регистрацию остаётся доступен.</span>';
-      line.style.color = '#B3372B';
-      paintTotals();
-      return;
+      if (promoInputDuringLunch) promoInputDuringLunch.value = personalCode;
+    } else {
+      promoInfo = null;
+      if (cartPromoCode) {
+        cartPromoCode = '';
+        localStorage.removeItem('zt_cartpromo');
+        var blockedPromoInput = document.getElementById('cartPromo');
+        if (blockedPromoInput) blockedPromoInput.value = '';
+        line.innerHTML = '<span>Обеденная акция: обычные промокоды отключены. Бонус бесплатной доставки за регистрацию остаётся доступен.</span>';
+        line.style.color = '#B3372B';
+        paintTotals();
+        return;
+      }
     }
   } else if (!cartPromoCode) {
     var autoCode = await tryAutoFreeCode();
