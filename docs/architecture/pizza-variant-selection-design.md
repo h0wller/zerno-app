@@ -69,11 +69,13 @@ renderPizzaOptsHtml должен создать один fieldset.opts на ка
 resolveDeliveryAddSelection ищет checked radio в текущем .cbody. Если product имеет opts, но checked radio отсутствует:
 - не вызывать upsertDeliveryCartItem;
 - показать inline error «Выберите размер и тесто»;
-- временно связать fieldset с сообщением через aria-describedby;
-- сфокусировать первый radio и прокрутить группу в видимую область;
+- временно связать сообщение через aria-describedby с первым radio, на который переводится фокус;
+- прокрутить группу в видимую область; focus-visible должен оставаться заметным;
+- не добавлять параллельный live-region для того же сообщения: focus + describedby — единый путь объявления ошибки;
+- не вызывать toast при отсутствующем выборе: текущий toast() в core/ui.js создаёт обычный визуальный элемент без aria-live, а inline error уже сообщает ту же ошибку. Успешный Add toast остаётся без изменений;
 - сохранить возврат null, чтобы текущая Add-цепочка не меняла корзину.
 
-При выборе radio ошибка скрывается, aria-describedby очищается. Клик по свободной части карточки использует тот же helper ошибки. Текущий toast можно оставить дополнительной обратной связью только после ручного screen-reader прогона на предмет двойного объявления.
+При выборе radio ошибка скрывается, aria-describedby очищается. Клик по свободной части карточки использует тот же helper ошибки.
 
 ### Временное состояние и повторный render
 
@@ -117,7 +119,7 @@ upsertDeliveryCartItem, cart row rendering, stepper, promo, subtotal и checkout
 | PZ-03 | Выбор второй опции | Она checked, остальные unchecked; marker и checked style согласованы |
 | PZ-04 | Повторный клик по выбранной | Checked не сбрасывается |
 | PZ-05 | Клавиатура | Tab входит/выходит; arrows перемещают/выбирают; Space выбирает focused radio |
-| PZ-06 | Add без выбора | Inline error виден; фокус на первом radio; cart и zt_cart неизменны |
+| PZ-06 | Add без выбора | Inline error виден и связан с первым radio через aria-describedby; фокус там; cart и zt_cart неизменны; отдельный toast не создаётся |
 | PZ-07 | Add выбранной опции | Cart item содержит ожидаемые oi/opt/price/sz/qty |
 | PZ-08 | Повторный Add того же oi | Одна строка; qty увеличен на 1 |
 | PZ-09 | Add другого oi | Две строки и корректная общая сумма |
@@ -168,11 +170,16 @@ Rollback — вернуть прежние renderer, click handler и CSS select
 
 Зафиксировано владельцем продукта: первый сценарий — выбор пиццы; native radio без preselection; inline error при Add без выбора; сохраняется текущая сетка и cart/server contract.
 
-До runtime PR подтвердить два визуальных нюанса:
-1. Видимый компактный legend «Размер и тесто» или визуально скрытый legend с accessible group name. Рекомендация — видимый; проверить высоту на 320×568 и 390×844.
-2. Оставлять ли toast вместе с inline error. Рекомендация — только если ручной screen-reader прогон не создаёт двойного объявления.
+До runtime PR подтвердить один визуальный нюанс:
+- Видимый компактный legend «Размер и тесто» или визуально скрытый legend с тем же accessible group name. Рекомендация — короткая видимая подпись; проверить высоту карточки на 320×568 и 390×844.
+
+Решение по toast зафиксировано: при Add без выбора его не показывать; inline error — единственный источник сообщения об ошибке. Toast успешного Add остаётся.
 
 Не выполнены VoiceOver/TalkBack, axe, Playwright или performance checks для изменённого кода, поскольку реализации ещё нет. Live screenshot pixels не просмотрены. Graphify — статическая подсказка; Playwright-файлы сверены напрямую.
+
+## Review
+
+Same-context review: [pizza-variant-selection-design-review.md](./pizza-variant-selection-design-review.md). Finding UXD-01 синхронизирован: ошибка связывается с первым radio, отдельный live-region и error toast не добавляются. UXD-02 покрыт click-delegation guard и RED test; UXD-03 — картой CSS owners и viewport snapshots; UXD-04 остаётся единственной открытой визуальной деталью.
 
 ## 11. Источники
 
