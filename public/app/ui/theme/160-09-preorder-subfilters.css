@@ -117,6 +117,7 @@
 }
 
 #deliveryGrid .opts button,
+#deliveryGrid .opts label.opt-btn,
 #deliveryGrid .opts .opt-btn {
   display: flex;
   flex-direction: column;
