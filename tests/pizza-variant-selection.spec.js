@@ -61,7 +61,7 @@ test.describe('native pizza variant selection', () => {
       type: node.type,
       name: node.name,
       value: node.value,
-      label: node.labels?.[0]?.innerText || ''
+      label: node.labels?.[0]?.textContent || ''
     })));
     expect(meta.every(item => item.type === 'radio')).toBeTruthy();
     expect(new Set(meta.map(item => item.name)).size).toBe(1);
@@ -74,11 +74,19 @@ test.describe('native pizza variant selection', () => {
     ]);
     expect(meta.every(item => /г/.test(item.label) && /₽/.test(item.label))).toBeTruthy();
 
-    const secondCard = card.evaluateHandle(el => el.cloneNode(true));
-    await page.evaluate(clone => {
+    await page.evaluate(() => {
       const grid = document.querySelector('#deliveryGrid');
+      const clone = grid.querySelector('.card').cloneNode(true);
+      clone.dataset.productId = 'pz-radio-test-second';
+      clone.querySelectorAll('input[type="radio"]').forEach(input => {
+        input.name += '-second';
+        input.id += '-second';
+      });
+      clone.querySelectorAll('label[for]').forEach(label => {
+        label.htmlFor += '-second';
+      });
       grid.appendChild(clone);
-    }, await secondCard);
+    });
     const names = await page.locator('#deliveryGrid fieldset.opts').evaluateAll(groups =>
       groups.map(group => group.querySelector('input[type="radio"]')?.name)
     );
