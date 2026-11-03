@@ -183,7 +183,7 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     var fee = 0;
     if (list.length) {
       // Доставка платная всегда, кроме персонального промокода «первая доставка бесплатно».
-      fee = (!isLunchPromoActive() && promoInfo && promoInfo.kind === "freeship") ? 0 : rates.baseZoneFee;
+      fee = (promoInfo && promoInfo.kind === "freeship") ? 0 : rates.baseZoneFee;
     }
 
     return {
@@ -289,16 +289,46 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     cf.hidden = !shouldShow;
   }
 
-  /* Персональный код «первая доставка бесплатно» (выдаётся за регистрацию) применяем сами, один раз на гостя за сессию. */
+  /* Персональный одноразовый код первой доставки: загружаем один раз на аккаунт и применяем автоматически. */
   var freeAutoFor = "";
+  var freeAutoCode = null;
+  var freeAutoAttempted = false;
+  var freeAutoSuppressedFor = "";
+
+  async function getPersonalFreeCode() {
+    var u = typeof window.me !== "undefined" ? window.me : null;
+    if (!u || !u.id) return "";
+    if (freeAutoFor !== u.id) {
+      freeAutoFor = u.id;
+      freeAutoCode = null;
+      freeAutoAttempted = false;
+      freeAutoSuppressedFor = "";
+    }
+    if (freeAutoCode === null) {
+      try {
+        var r = await api("/me/free-delivery");
+        freeAutoCode = (r && r.code) || "";
+      } catch (e) {
+        freeAutoCode = "";
+      }
+    }
+    return freeAutoCode;
+  }
+
   async function tryAutoFreeCode() {
     var u = typeof window.me !== "undefined" ? window.me : null;
-    if (!u || !u.id || freeAutoFor === u.id) return "";
+    if (!u || !u.id || freeAutoFor === u.id && freeAutoAttempted) return "";
     freeAutoFor = u.id;
-    try {
-      var r = await api("/me/free-delivery");
-      return (r && r.code) || "";
-    } catch (e) { return ""; }
+    freeAutoAttempted = true;
+    if (freeAutoSuppressedFor === u.id) return "";
+    return getPersonalFreeCode();
+  }
+
+  function suppressPersonalFreeCode() {
+    var u = typeof window.me !== "undefined" ? window.me : null;
+    if (u && u.id && freeAutoCode && cartPromoCode === freeAutoCode) {
+      freeAutoSuppressedFor = u.id;
+    }
   }
 
 /* ── PROMO-CLEAR v2: кнопка сброса промокода ── */
@@ -308,6 +338,7 @@ function bindPromoClear(line) {
   var btn = line.querySelector('.promo-clear-btn');
   if (!btn) return;
   btn.onclick = function () {
+    suppressPersonalFreeCode();
     cartPromoCode = '';
     promoInfo = null;
     localStorage.removeItem('zt_cartpromo');
@@ -323,18 +354,25 @@ async function refreshPromoLine(sum) {
   var line = document.getElementById('cartPromoLine');
   if (!line) return;
 
-  if (isLunchPromoActive()) {
-    promoInfo = null;
-    line.innerHTML = cartPromoCode
-      ? '<span>Обеденная акция: промокоды временно не применяются</span>' + PROMO_CLEAR_BTN
-      : '';
-    line.style.color = cartPromoCode ? '#B3372B' : '';
-    bindPromoClear(line);
-    paintTotals();
-    return;
-  }
-
-  if (!cartPromoCode) {
+  var lunchPromo = isLunchPromoActive();
+  if (lunchPromo) {
+    var user = typeof window.me !== "undefined" ? window.me : null;
+    var personalCode = await getPersonalFreeCode();
+    var canUsePersonalCode = !!(personalCode && user && freeAutoSuppressedFor !== user.id);
+    if (canUsePersonalCode) {
+      cartPromoCode = personalCode;
+    } else if (cartPromoCode) {
+      cartPromoCode = '';
+      promoInfo = null;
+      localStorage.removeItem('zt_cartpromo');
+      var promoInputDuringLunch = document.getElementById('cartPromo');
+      if (promoInputDuringLunch) promoInputDuringLunch.value = '';
+      line.innerHTML = '<span>Обеденная акция: обычные промокоды отключены. Бонус бесплатной доставки за регистрацию остаётся доступен.</span>';
+      line.style.color = '#B3372B';
+      paintTotals();
+      return;
+    }
+  } else if (!cartPromoCode) {
     var autoCode = await tryAutoFreeCode();
     if (autoCode) cartPromoCode = autoCode;
   }
@@ -348,7 +386,7 @@ async function refreshPromoLine(sum) {
 
   try {
     var r = await fetch(API_BASE + '/api/promo/info?code=' + encodeURIComponent(cartPromoCode)).then(function (x) { return x.json(); });
-    if (r.ok) {
+    if (r.ok && (!lunchPromo || (r.kind === 'freeship' && r.code === personalCode))) {
       promoInfo = r;
       localStorage.setItem('zt_cartpromo', cartPromoCode);
       line.innerHTML = '<span>🎟 ' + esc(r.code) + ': ' + (r.kind === 'freeship' ? 'первая доставка бесплатно' : '−' + fmt(promoDisc(sum, r))) + '</span>' + PROMO_CLEAR_BTN;
@@ -459,6 +497,7 @@ async function refreshPromoLine(sum) {
   }
 
 function clearPromo() {
+  suppressPersonalFreeCode();
   cartPromoCode = '';
   promoInfo = null;
   localStorage.removeItem('zt_cartpromo');
@@ -1129,7 +1168,7 @@ function renderCartBase() {
         };
       }),
     };
-    if (cartPromoCode && !isLunchPromoActive()) body.promo = cartPromoCode;
+    if (cartPromoCode && (!isLunchPromoActive() || (promoInfo && promoInfo.kind === 'freeship'))) body.promo = cartPromoCode;
 
     // Идемпотентный ID: защита от дублей при сетевом сбое.
     body.client_order_id = "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
