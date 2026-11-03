@@ -38,7 +38,6 @@ test('dispatcher cards render one cancel action for active orders and none for t
       role: 'dispatch',
       cups: 0, stamps: 0, free: 0, history: [], verified: 1
     });
-    window.renderOrders(true);
     window.setMode('orders');
   });
 
