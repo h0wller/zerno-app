@@ -49,6 +49,10 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     });
 
     await page.goto('/?brand=delivery');
+    const documentHtml = await page.evaluate(async () => await (await fetch(location.href)).text());
+    const settingsCssRefs = documentHtml.match(/\/app\/ui\/theme\/110-panel\.css\?v=\d+/g) || [];
+    expect(settingsCssRefs).toHaveLength(2);
+    expect(new Set(settingsCssRefs)).toEqual(new Set(['/app/ui/theme/110-panel.css?v=631']));
     await page.waitForFunction(() => window.me && window.me.role === 'guest');
     await page.click('#profileTopBtn');
 
