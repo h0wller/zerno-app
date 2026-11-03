@@ -489,6 +489,19 @@ document.addEventListener('click', function (e) {
 /* ── Состояния карточек: поддержка Retina и авто-зум ── */
 function patchDeliveryCardMedia(media, product, index) {
   if (!media) return;
+
+  let menuBadge = media.querySelector('.tag');
+  if (product.tag) {
+    if (!menuBadge) {
+      menuBadge = document.createElement('span');
+      media.appendChild(menuBadge);
+    }
+    menuBadge.className = 'tag ' + getMenuBadgeClass(product.tag);
+    menuBadge.textContent = product.tag;
+  } else if (menuBadge) {
+    menuBadge.remove();
+  }
+
   let badge = media.querySelector('.stopbadge');
   if (!product.on && !badge) {
     badge = document.createElement('span');
