@@ -189,3 +189,16 @@ Both failures were the same existing TMA checkout/Live Tracking test in Chromium
 - releases validation, awaits a successful `POST /api/orders`, asserts exactly one POST and that the button is enabled again.
 
 This is a test synchronization correction. No product source change is made in response to #1681. Fresh CI is required for the updated regression at the current HEAD.
+
+
+## Follow-up CI #1685 — 2026-11-03
+
+CI #1685 ran on source HEAD `e78a63538899dacc47f54d71ae75a2dae69f80f4`:
+- Code Quality & Guardrails: passed.
+- Playwright Regression Suite: failed; 431 passed, 2 failed, 2 flaky, 9 skipped.
+- Both deterministic failures were the TMA checkout/Live Tracking regression in Chromium and Mobile Chrome. The run reached the checkout concurrency section but did not observe the expected order POST before timeout.
+- Trace review showed the test held the first `/api/delivery/info` request after installing a route. That request was not causally tied to `CheckoutValidation.resolveSlot()`; a background refresh could satisfy the test's request waiter before the checkout validation path, leaving the concurrency assertion nondeterministic.
+- Replaced the network-level hold with a deferred wrapper around the actual `window.CheckoutValidation.resolveSlot` function. The test now waits until checkout enters slot validation, invokes the native MainButton a second time while that exact promise is pending, then releases the original validator and observes the order response.
+- No product runtime code changed in response to CI #1685. The fix is confined to the regression harness and still verifies the synchronously acquired checkout lock.
+
+A new CI run is required for the updated HEAD. No local tests are claimed.
