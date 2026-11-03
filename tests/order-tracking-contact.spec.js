@@ -105,12 +105,17 @@ test('регистрационная бесплатная доставка со�
 
   await page.goto('/?brand=delivery');
   await page.waitForFunction(() => window.me && window.me.id === 'registered-guest-lunch-test');
+  await page.waitForFunction(() =>
+    window.deliveryInfo && document.querySelector('#checkoutPlace option[value="Янтарный"]')
+  );
+  await page.locator('#checkoutPlace').selectOption('Янтарный');
   await page.waitForFunction(() => typeof window.renderCart === 'function');
   await page.evaluate(() => {
     document.getElementById('cartPanel').classList.add('open');
     window.renderCart();
   });
 
+  await expect(page.locator('#cartSubtotal')).toContainText('1 000 ₽');
   await expect(page.locator('#cartDiscount')).toContainText('Обеденная акция · 20%');
   await expect(page.locator('#cartDiscount')).toContainText('−200 ₽');
   await expect(page.locator('#cartDiscount')).toContainText('Будни, 11:00–15:00');
