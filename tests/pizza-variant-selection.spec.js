@@ -96,6 +96,29 @@ test.describe('native pizza variant selection', () => {
       groups.map(group => group.querySelector('input[type="radio"]')?.name)
     );
     expect(names[0]).not.toBe(names[1]);
+
+    const layout = await group.evaluate(groupEl => {
+      const legend = groupEl.querySelector('legend');
+      const options = Array.from(groupEl.querySelectorAll('label.opt-btn'));
+      const error = groupEl.querySelector('.opts-error');
+      const rect = element => {
+        const box = element.getBoundingClientRect();
+        return { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) };
+      };
+      return {
+        columns: getComputedStyle(groupEl).gridTemplateColumns.split(' ').length,
+        legend: rect(legend),
+        options: options.map(rect),
+        error: rect(error)
+      };
+    });
+    expect(layout.columns).toBe(2);
+    expect(layout.legend.width).toBeGreaterThan(layout.options[0].width);
+    expect(layout.options).toHaveLength(4);
+    expect(layout.options[0].y).toBe(layout.options[1].y);
+    expect(layout.options[2].y).toBe(layout.options[3].y);
+    expect(layout.options[0].x).not.toBe(layout.options[1].x);
+    expect(layout.error.y).toBeGreaterThan(layout.options[3].y);
   });
 
   test('selects using the visible label text and does not trigger card-level missing-selection feedback', async ({ page }) => {
