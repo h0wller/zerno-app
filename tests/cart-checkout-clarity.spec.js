@@ -79,6 +79,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await page.goto('/?brand=delivery');
   await expect(page.locator('#deliveryGrid [data-product-id="pz-marg"]')).toBeAttached();
   await expect.poll(() => page.evaluate(() => window.DMENU.some((item) => item.id === 'pz-marg'))).toBe(true);
+  await page.evaluate(() => window.refreshDeliveryInfo());
   await page.evaluate(() => {
     document.getElementById('cartPanel').classList.add('open');
     window.renderCart();
