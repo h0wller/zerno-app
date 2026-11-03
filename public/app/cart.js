@@ -998,6 +998,17 @@ function renderCartBase() {
     return true;
   }
 
+  function removeCartItemAt(index) {
+    cart.splice(index, 1);
+    var nextOpenModsMap = {};
+    Object.keys(openModsMap).forEach(function (key) {
+      var itemIndex = Number(key);
+      if (itemIndex < index) nextOpenModsMap[itemIndex] = openModsMap[key];
+      else if (itemIndex > index) nextOpenModsMap[itemIndex - 1] = openModsMap[key];
+    });
+    openModsMap = nextOpenModsMap;
+  }
+
   function handleCartQuantityClick(e) {
     var button = e.target.closest("[data-ci]");
     if (!button) return false;
@@ -1011,10 +1022,7 @@ function renderCartBase() {
 
     if (button.dataset.act === "+") item.qty++;
     else if (item.qty > 1) item.qty--;
-    else {
-      cart.splice(index, 1);
-      delete openModsMap[index];
-    }
+    else removeCartItemAt(index);
     persistCartUpdate();
     return true;
   }
@@ -1035,7 +1043,7 @@ function renderCartBase() {
     if (action === "minus") {
       if (inCart) {
         if (inCart.qty > 1) inCart.qty--;
-        else cart.splice(cart.indexOf(inCart), 1);
+        else removeCartItemAt(cart.indexOf(inCart));
       }
     } else if (inCart) {
       inCart.qty++;
