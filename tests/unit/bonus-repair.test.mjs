@@ -6,7 +6,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 
 
 const TMP_DB = path.join(os.tmpdir(), `zerno-repair-${process.pid}-${Date.now()}.db`);
@@ -32,7 +31,7 @@ const grants = (id) => db.prepare('SELECT kind, ts FROM bonus_grants WHERE cid=?
 const bonusHist = (id) => db.prepare("SELECT COUNT(*) n FROM history WHERE cid=? AND a LIKE '🎁 Бонус «%'").get(id).n;
 
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const runScript = (name, args) => spawnSync(process.execPath, [...process.execArgv, path.join(ROOT, 'scripts', name), '--db', TMP_DB, ...args],
   { encoding: 'utf8', env: { ...process.env, DB_PATH: TMP_DB } });
 

@@ -1,29 +1,16 @@
 // scripts/probe-tg-webhook.mjs — отправляет поддельный callback в webhook.
 // Позволяет проверить цепочку без Telegram: Telegram → webhook → сервер → ответ.
-// Запуск: node scripts/probe-tg-webhook.mjs
-import fs from 'node:fs';
+// Запуск: node --env-file=.env scripts/probe-tg-webhook.mjs
 
-const env = Object.fromEntries(
-  fs.readFileSync('.env', 'utf8').split(/\r?\n/)
-    .map(l => l.trim()).filter(l => l && !l.startsWith('#'))
-    .map(l => {
-      const i = l.indexOf('=');
-      if (i < 0) return null;
-      let v = l.slice(i + 1).trim();
-      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-      return [l.slice(0, i).trim(), v];
-    }).filter(Boolean)
-);
-
-const APP_URL = (env.PUBLIC_URL || env.APP_URL || '').replace(/\/+$/, '');
-const SECRET = env.TG_WEBHOOK_SECRET || '';
+const APP_URL = (process.env.PUBLIC_URL || process.env.APP_URL || '').replace(/\/+$/, '');
+const SECRET = process.env.TG_WEBHOOK_SECRET || '';
 const CHAT_ID = process.env.CHAT_ID || '';
 
 if (!APP_URL) { console.error('Нет PUBLIC_URL'); process.exit(1); }
 if (!CHAT_ID) {
   console.error('Укажи CHAT_ID в переменной окружения — свой Telegram user id.');
   console.error('Найти можно через бота @userinfobot, или из логов pm2 (from=...)');
-  console.error('Запуск: CHAT_ID=123456789 node scripts/probe-tg-webhook.mjs');
+  console.error('Запуск: CHAT_ID=123456789 node --env-file=.env scripts/probe-tg-webhook.mjs');
   process.exit(1);
 }
 

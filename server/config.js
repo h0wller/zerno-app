@@ -2,9 +2,8 @@
 // Без side-effect: импорт кодов/портов не открывает SQLite.
 // db берите напрямую из './db/connection.js' там, где он нужен.
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const configDir = path.dirname(fileURLToPath(import.meta.url));
+const configDir = import.meta.dirname;
 const rootDir = path.resolve(configDir, '..');
 
 export const PORT = process.env.PORT || 3000;

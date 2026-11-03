@@ -27,25 +27,7 @@
      } catch (e) {}
    });
  }
- function hoursNow() {
-   const m = new Date().getMonth() + 1;
-   return m >= 5 && m <= 9 ? "8:00–21:00" : "8:00–20:00";
- }
- function hashStr(s) {
-   let h = 9;
-   for (const c of String(s))
-     h = Math.imul(h ^ c.charCodeAt(0), 387420489) >>> 0;
-   return h;
- }
- function rng(a) {
-   return () => {
-     a |= 0;
-     a = (a + 0x6d2b79f5) | 0;
-     let t = Math.imul(a ^ (a >>> 15), 1 | a);
-     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-   };
- }
+
  const fmtMulti = (p) => {
    const s = String(p ?? "");
    if (!s.includes("/")) return fmt(Number(s) || 0);
@@ -55,31 +37,5 @@
      .join(" / ");
  };
 
-  Object.assign(window, { $, clone, esc, fmt, fmtTs, ph10, fmtPhone, bindMask, hoursNow, hashStr, rng, fmtMulti });
-  function getKaliningradTime() {
-    var d = new Date();
-    var h = (d.getUTCHours() + 2) % 24;
-    return { hour: h, minute: d.getUTCMinutes() };
-  }
-  // Часы доставки берём только из /api/delivery/info; без ответа считаем сервис закрытым.
-  function deliveryHours() {
-    var schedule = window.deliveryInfo && (window.deliveryInfo.today || window.deliveryInfo.schedule);
-    if (!schedule) return null;
-
-    var open = Number(schedule.open);
-    var close = Number(schedule.close);
-    if (!Number.isFinite(open) || !Number.isFinite(close) || close <= open) return null;
-    return { open: open, close: close };
-  }
-  function isDeliveryServiceOpen() {
-    var hours = deliveryHours();
-    if (!hours) return false;
-
-    var time = getKaliningradTime();
-    var currentMinute = time.hour * 60 + time.minute;
-    return currentMinute >= hours.open * 60 && currentMinute < hours.close * 60;
-  }
-  window.deliveryHours = deliveryHours;
-  window.getKaliningradTime = getKaliningradTime;
-  window.isDeliveryServiceOpen = isDeliveryServiceOpen;
+  Object.assign(window, { $, clone, esc, fmt, fmtTs, ph10, fmtPhone, bindMask, fmtMulti });
 })();

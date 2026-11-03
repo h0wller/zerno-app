@@ -23,7 +23,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp` |
-| `core/utils.js` | Чистые утилиты форматирования/DOM | `$`, `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `hoursNow`, `hashStr`, `rng`, `fmtMulti` |
+| `core/utils.js` | Чистые утилиты форматирования/DOM | `$`, `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `fmtMulti` |
 | `core/api.js` | Определяет базовый URL API для app-origin и локальных frontend-серверов | `window.API_BASE` |
 | `core/ui.js` | `api()` с обработкой 401; тосты; дата обновления меню; PERF-дедуп одинаковых GET | `window.api`, `window.toast`, `window.renderUpd` |
 | `core/config.js` | Bootstrap /api/config (имя TG-бота), триггеры relink/verifyNote | `window.TG_USERNAME` |
