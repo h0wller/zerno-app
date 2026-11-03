@@ -1201,7 +1201,7 @@ function renderCartBase() {
   function buildCheckoutRequest(checkoutInput) {
     var body = {
       method: checkoutInput.method,
-      place: checkoutInput.t.method === "pickup" ? "Самовывоз" : checkoutInput.placeV,
+      place: checkoutInput.method === "pickup" ? "Самовывоз" : checkoutInput.placeV,
       street: checkoutInput.streetV,
       house: checkoutInput.houseV,
       slot: checkoutInput.slotVal,
