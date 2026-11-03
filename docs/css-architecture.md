@@ -101,7 +101,7 @@ Inline styles в head нужны только для предотвращени�
 
 ### Cache-busting
 
-Изменения CSS/fonts и связанных публичных ассетов должны проходить через существующий механизм: `npm run build:client` вызывает `scripts/bump-sw.mjs`, который инкрементирует `STATIC_CACHE` и синхронизирует `?v=` в stylesheet/bundle links `index.html`. На проверенном базовом коммите механизм обновляет `STATIC_CACHE` и версии ссылок в `index.html` при `npm run build:client`; дополнительно его точный scope задан regex в `scripts/bump-sw.mjs`. Не редактировать номер версии вручную и не считать обычное изменение markdown причиной для cache bump.
+Изменения CSS/fonts и связанных публичных ассетов должны проходить через существующий механизм: `npm run build:client` вызывает `scripts/bump-sw.mjs`, который инкрементирует `STATIC_CACHE` и синхронизирует `?v=` для stylesheet/bundle URLs в `index.html`. Обновление версии выполняется одним механизмом; точный scope задают regex в `scripts/bump-sw.mjs`. Не редактировать номер версии вручную и не считать обычное изменение markdown причиной для cache bump.
 
 ## Правила выбора слоя
 
