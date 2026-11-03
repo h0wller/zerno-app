@@ -1304,8 +1304,8 @@ function renderCartBase() {
     var slotInput = document.getElementById("checkoutSlot");
     if (slotInput) slotInput.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
 
-    document.querySelectorAll("#deliveryGrid .opts button.sel").forEach(function (button) {
-      button.classList.remove("sel");
+    document.querySelectorAll('#deliveryGrid .opts input[type="radio"]:checked').forEach(function (radio) {
+      radio.checked = false;
     });
 
     if (typeof syncAddButtons === "function") syncAddButtons();
