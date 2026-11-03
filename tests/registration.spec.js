@@ -62,10 +62,6 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await expect(entry).toHaveClass(/staff-access-link/);
     await expect(entry).toHaveAttribute('aria-label', 'Открыть вход по коду сотрудника');
 
-    await entry.click();
-    await expect(settings).not.toHaveClass(/show/);
-    await expect(page.locator('#pinModal')).toHaveClass(/show/);
-
     const geometry = await entry.evaluate((element) => ({
       width: element.getBoundingClientRect().width,
       height: element.getBoundingClientRect().height,
@@ -76,6 +72,11 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     expect(geometry.height).toBeGreaterThanOrEqual(32);
     expect(geometry.fontSize).toBe('12px');
     expect(geometry.background).toBe('rgba(0, 0, 0, 0)');
+
+    await entry.click();
+    await expect(settings).not.toHaveClass(/show/);
+    await expect(page.locator('#pinModal')).toHaveClass(/show/);
+
   });
 
   test('F3.61: consent visible, not pre-checked, submit gated without it', async ({ page }) => {
