@@ -14,10 +14,9 @@ This remains a same-context EGM review and resolution, not an independent Goldfi
 
 - Blocker: 0
 - High: 1 (resolved)
-- Medium: 2 (one accepted risk, one resolved)
-- Low: 3 (one resolved, two accepted risks)
-- Runtime logic/CSS changes applied only for accepted findings.
-- CI run #1674 failed on the reviewed HEAD; diagnosis and test-only corrections are tracked below. A fresh CI run is required.
+- Medium: 3 (two source-level resolutions, one accepted server-side idempotency risk)
+- Low: 3 (one resolved, two accepted coverage risks)
+- CI #1679 passed on the pre-follow-up HEAD; the synchronous checkout-lock correction and regression test are tracked below and require fresh CI.
 
 ## Disposition ledger
 
@@ -93,11 +92,54 @@ This remains a same-context EGM review and resolution, not an independent Goldfi
 
 **Blocks implementation?** No.
 
+
+### EGM-133-07 — Medium — RESOLVED
+
+**Topic:** Checkout submission remained unlocked during asynchronous validation.
+
+**Evidence:** `checkBtn.onclick` awaited `resolveCheckoutInput()` before calling `showCheckoutProgress()`. `resolveSlot()` can await delivery-info refresh, leaving the checkout control and Telegram MainButton path able to initiate another handler while the first request is pending.
+
+**Impact:** Two clicks in the validation window could create parallel `POST /api/orders` requests and duplicate real orders.
+
+**Change:** Added a closure-level `checkoutInProgress` lock before the first await. The disabled/busy UI and Telegram MainButton progress now start synchronously; the lock and UI are restored in `finally`, including invalid-input early returns and API errors.
+
+**Regression:** Extended the Telegram checkout flow to hold `/api/delivery/info` during validation, invoke the registered native MainButton callback again, and assert that no POST occurs until validation is released and exactly one order POST follows.
+
+**Disposition:** Resolved at source level. Current-head CI must pass before merge.
+
+### EGM-133-08 — Medium — ACCEPTED RISK
+
+**Topic:** Server-side order idempotency key is not implemented.
+
+**Evidence:** The client generates `client_order_id` and calls it an idempotency key, but the `orders` table has no corresponding column/unique constraint and `POST /api/orders` neither reads nor persists the key. The local checkout lock prevents simultaneous submissions from the same live page, but cannot deduplicate a retry after an ambiguous network timeout, reload, or a second client.
+
+**Impact:** Retrying an order after an uncertain response can still create a second order. This requires a deliberate server/database idempotency contract and migration strategy.
+
+**Disposition:** Accepted follow-up risk; do not describe `client_order_id` as effective server-side idempotency until the server persists and enforces it. Track separately from the native radio UI PR.
+
+**Blocks this PR?** No, provided the client-side concurrent-click regression passes; this PR does not claim to implement server-side retry idempotency.
+
 ## Cross-document consistency
 
 The four-layer model is represented in `docs/css-architecture.md`, `docs/module-map.md`, repository history from 2026-09-19 onward, and now `PROJECT_RULES.md`. A Graphify candidate note was not used as authoritative evidence.
 
 No feature-specific design document was found at the expected `docs/designs/pizza-variant-selection-*` paths. No finding relies on presumed design constraints from those missing files.
+
+
+## Follow-up CI #1679 — final pre-concurrency-fix HEAD
+
+CI #1679 (HEAD `7f4262b248a5b6cfefb0d37395fd3bc23452bba6`) completed successfully:
+- Code Quality & Guardrails: passed.
+- Playwright Regression Suite: passed.
+
+This run did not include EGM-133-07. The latest branch adds the synchronous checkout lock and its Telegram MainButton regression. A new run for that HEAD is required before merge.
+
+## Current verification target
+
+- Source HEAD: `750676a2c1c33da5877321a52250e46ec3b964bd`.
+- `public/app/cart.js`: checkout lock is acquired before async validation and released in `finally`.
+- `tests/cart-regress.spec.js`: delayed validation + second native MainButton invocation must yield exactly one order POST.
+- No local tests are claimed. CI on this exact HEAD is pending.
 
 ## Verification status
 
@@ -130,4 +172,4 @@ The current branch corrects the two deterministic test defects. No application r
 
 ## Final recommendation
 
-Keep PR #133 Draft until current-head CI completes. Findings 01, 03 and 04 have source-level resolutions; findings 02, 05 and 06 remain accepted, explicitly bounded coverage risks. Do not merge based only on the earlier successful static audit.
+Do not merge until CI passes on current source HEAD `750676a2c1c33da5877321a52250e46ec3b964bd`. Findings 01, 03, 04 and 07 have source-level resolutions; findings 02, 05, 06 and 08 remain explicitly bounded coverage/idempotency risks. Independent Goldfish review was unavailable; this is a same-context EGM review.
