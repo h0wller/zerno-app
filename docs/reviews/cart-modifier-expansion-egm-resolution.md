@@ -32,3 +32,16 @@ This is a same-context EGM review and resolution, not an independent Goldfish re
 ## Verification
 - No local tests are claimed.
 - CI must pass on the final PR HEAD before merge.
+
+
+## Follow-up CI #1682 — 2026-11-03
+
+CI #1682 ran on source HEAD `5533a66cb6f6f220d104a5d5f39bb5a0d62da914`:
+- Code Quality & Guardrails: passed.
+- Playwright Regression Suite: failed; 411 passed, 2 failed, 9 skipped.
+- The new cart expansion regression timed out locating `[data-toggle-mods]` on the second cart row. The rendered cart row had no modifier-toggle section because the CI menu data contained no active pizza topping. `renderItemAddModSection()` intentionally returns an empty string when the active topping list is empty.
+- The test now seeds one active, test-only cheddar topping in `window.DMENU` before adding its two pizzas, making the modifier UI precondition explicit and deterministic.
+- The card/option locators now support both legacy option buttons and the native radio-label markup from PR #133, so the regression remains valid after #133 becomes the new `pizza` base.
+- No production cart behavior changed in response to CI #1682.
+
+A new CI run is required for the updated HEAD. No local tests are claimed.
