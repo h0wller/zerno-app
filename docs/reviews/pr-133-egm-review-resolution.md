@@ -173,3 +173,19 @@ The current branch corrects the two deterministic test defects. No application r
 ## Final recommendation
 
 Do not merge until CI passes on current source HEAD `750676a2c1c33da5877321a52250e46ec3b964bd`. Findings 01, 03, 04 and 07 have source-level resolutions; findings 02, 05, 06 and 08 remain explicitly bounded coverage/idempotency risks. Independent Goldfish review was unavailable; this is a same-context EGM review.
+
+
+## Follow-up CI #1681 — 2026-11-03
+
+CI #1681 ran on source HEAD `61779b8bc04c4638cd7b61920872fc43521c18ed`:
+- Code Quality & Guardrails: passed.
+- Bonus Lifecycle E2E: passed.
+- Bonus Signup Regression: passed.
+- Remaining Playwright Tests: failed; 433 passed, 2 failed, 9 skipped.
+
+Both failures were the same existing TMA checkout/Live Tracking test in Chromium and Mobile Chrome. Trace inspection showed the test timed out at its new concurrency section: the initial MainButton re-click correctly hit the disabled checkout button, but the test did not subscribe to the order response before releasing its delayed validation route. The test harness could then miss the fast response / continue against a still-transitioning form. The regression now:
+- asserts the checkout button is disabled during the held validation request;
+- registers `waitForResponse` before releasing the request;
+- releases validation, awaits a successful `POST /api/orders`, asserts exactly one POST and that the button is enabled again.
+
+This is a test synchronization correction. No product source change is made in response to #1681. Fresh CI is required for the updated regression at the current HEAD.
