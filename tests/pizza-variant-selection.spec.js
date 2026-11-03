@@ -105,14 +105,19 @@ test.describe('native pizza variant selection', () => {
         const box = element.getBoundingClientRect();
         return { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) };
       };
+      const optionRects = options.map(rect);
+      const rows = new Set(optionRects.map(option => option.y));
+      const columns = new Set(optionRects.map(option => option.x));
       return {
-        columns: getComputedStyle(groupEl).gridTemplateColumns.split(' ').length,
+        rowCount: rows.size,
+        columnCount: columns.size,
         legend: rect(legend),
-        options: options.map(rect),
+        options: optionRects,
         error: rect(error)
       };
     });
-    expect(layout.columns).toBe(2);
+    expect(layout.rowCount).toBe(2);
+    expect(layout.columnCount).toBe(2);
     expect(layout.legend.width).toBeGreaterThan(layout.options[0].width);
     expect(layout.options).toHaveLength(4);
     expect(layout.options[0].y).toBe(layout.options[1].y);
