@@ -549,13 +549,14 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     expect(checkoutPosts).toBe(0);
     await expect(page.locator('#checkoutBtn')).toBeDisabled();
 
-    releaseValidation();
-    await expect.poll(() => checkoutPosts).toBe(1);
-    const orderResponse = await page.waitForResponse((response) =>
+    const orderResponsePromise = page.waitForResponse((response) =>
       response.request().method() === 'POST' &&
       new URL(response.url()).pathname === '/api/orders'
     );
+    releaseValidation();
+    const orderResponse = await orderResponsePromise;
     expect(orderResponse.ok()).toBeTruthy();
+    await expect.poll(() => checkoutPosts).toBe(1);
     await expect(page.locator('#checkoutBtn')).toBeEnabled();
     expect(checkoutPosts).toBe(1);
 
