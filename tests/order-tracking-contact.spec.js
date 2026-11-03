@@ -21,6 +21,8 @@ test('самовывоз скрывает адресную группу без �
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
 
+  // Fix the browser clock at 17:00 Kaliningrad time so the normal pickup discount is deterministic.
+  await page.clock.install({ time: new Date('2026-11-02T15:00:00.000Z') });
   await openDeliveryApp(page);
   await page.waitForFunction(() => typeof window.renderCart === 'function');
   await page.evaluate(() => document.getElementById('cartPanel').classList.add('open'));
@@ -35,6 +37,84 @@ test('самовывоз скрывает адресную группу без �
   await page.locator('#checkoutMethod').selectOption('delivery');
   await expect(deliveryGroup).toBeVisible();
   expect(pageErrors).toEqual([]);
+});
+
+test('регистрационная бесплатная доставка сохраняется во время обеденной акции', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-02T10:00:00.000Z') });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_user', 'registered-guest-lunch-test-token');
+    localStorage.removeItem('zt_cartpromo');
+    localStorage.setItem('zt_cart', JSON.stringify([{
+      key: 'registration-free-delivery-test',
+      id: 'registration-free-delivery-test',
+      oi: -1,
+      name: 'Тестовая позиция',
+      price: 1000,
+      qty: 1,
+      sz: 0
+    }]));
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  await page.route('**/api/**', async (route) => {
+    const url = new URL(route.request().url());
+    let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+    if (url.pathname === '/api/me') {
+      body = {
+        customer: {
+          id: 'registered-guest-lunch-test',
+          name: 'Lunch Guest',
+          phone: '+7 999 123-45-67',
+          role: 'guest',
+          verified: 1,
+          cups: 0,
+          stamps: 0,
+          free: 0,
+          history: [],
+          qr: 'registered-guest-lunch-test'
+        }
+      };
+    } else if (url.pathname === '/api/me/free-delivery') {
+      body = { code: 'B1234ABCD' };
+    } else if (url.pathname === '/api/promo/info') {
+      body = {
+        ok: true,
+        kind: 'freeship',
+        value: 0,
+        code: url.searchParams.get('code')
+      };
+    } else if (url.pathname === '/api/delivery/info') {
+      body = {
+        zones: [{ fee: 200, places: ['Янтарный'] }],
+        today: { isOpen: true, canAcceptAsap: true, open: 11, close: 22 },
+        schedule: { open: 11, close: 22 },
+        days: [],
+        busySlots: [],
+        weekPromo: null,
+        pizzaMonth: null
+      };
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
+    });
+  });
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => window.me && window.me.id === 'registered-guest-lunch-test');
+  await page.waitForFunction(() => typeof window.renderCart === 'function');
+  await page.evaluate(() => {
+    document.getElementById('cartPanel').classList.add('open');
+    window.renderCart();
+  });
+
+  await expect(page.locator('#cartDiscount')).toContainText('20% обеденная акция');
+  await expect(page.locator('#cartFee')).toContainText('Бесплатно');
+  await expect(page.locator('#cartPromoLine')).toContainText('первая доставка бесплатно');
+  await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(800);
 });
 
 test('контакт из заказа открывает доставочный чат с историей и номером заказа', async ({ page }) => {

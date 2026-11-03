@@ -123,6 +123,7 @@
         '<div class="ot-progress" data-step-idx="' + stepIdx + '">' + stepsHtml + "</div>" +
         '<div class="ot-items-box">' +
           (itemsHtml || '<div class="ot-item-row"><span>Состав заказа сохранён</span></div>') +
+          (order.discount ? '<div class="ot-total-row"><span>' + window.esc(order.discount_label || 'Скидка') + ': −' + window.fmt(order.discount) + '</span></div>' : '') +
           (totalVal ? '<div class="ot-total-row"><span>Итого:</span><b>' + window.fmt(totalVal) + "</b></div>" : "") +
         "</div>" +
         '<div class="ot-actions">' +

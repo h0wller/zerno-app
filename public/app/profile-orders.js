@@ -76,6 +76,7 @@
             (dateText ? ' <span class="moDate">· ' + dateText + '</span>' : '') + '</span>' +
             '<span class="moSt ' + status[1] + '">' + status[0] + ' ' + esc(status[2]) + '</span></div>' +
             '<div class="moSum">' + fmt(order.total) + time + '</div>' +
+            (order.discount ? '<div class="moItems">' + esc(order.discount_label || 'Скидка') + ': −' + fmt(order.discount) + '</div>' : '') +
             (items ? '<div class="moItems">' + items + '</div>' : '') +
             ((Array.isArray(order.gifts) && order.gifts.length) ? '<div class="moGifts">🎁 ' +
                 order.gifts.map(function (gift) { return esc(gift.name || 'Подарок') + ' ×' + (Number(gift.qty) || 1); }).join(', ') + '</div>' : '') +
