@@ -491,9 +491,12 @@
   border-color: var(--line);
   background: #fff;
 }
-#settingsModal .settings-staff-section {
+#settingsModal .settings-staff-section:not([hidden]) {
   display: grid;
   gap: 8px;
+}
+#settingsModal .settings-staff-section[hidden] {
+  display: none;
 }
 #settingsModal .settings-staff-section #activateBtn {
   width: 100%;
