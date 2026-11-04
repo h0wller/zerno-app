@@ -50,7 +50,7 @@ const DELETE_ACCOUNT_LABEL = 'Удалить аккаунт';
                     '<input id="deleteConfirmInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="УДАЛИТЬ">' +
                     '<div class="settings-delete-actions">' +
                         '<button class="btn ghost" id="deleteCancelBtn" type="button">Отмена</button>' +
-                        '<button class="btn danger" id="deleteConfirmBtn" type="button" disabled>Удалить аккаунт</button>' +
+                        '<button class="btn danger" id="deleteConfirmBtn" type="button" disabled>' + DELETE_ACCOUNT_LABEL + '</button>' +
                     '</div>' +
                 '</div>' +
             '</section>' +
