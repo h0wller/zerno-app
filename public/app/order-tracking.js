@@ -64,7 +64,7 @@
         }
         if (e.target.closest("[data-ot-repeat]") &&
             activeTrackOrder && Array.isArray(activeTrackOrder.items)) {
-            window.cart = activeTrackOrder.items.map(function (it) {
+            var repeatedItems = activeTrackOrder.items.map(function (it) {
               return {
                 key: String(it.id) + "_" + (it.opt || "0"),
                 id: it.id,
@@ -77,6 +77,12 @@
                 modifiers: it.modifiers || []
               };
             });
+            // Preserve the shared cart array identity used by delivery.js/cart.js.
+            if (Array.isArray(window.cart)) {
+              window.cart.splice.apply(window.cart, [0, window.cart.length].concat(repeatedItems));
+            } else {
+              window.cart = repeatedItems;
+            }
             localStorage.setItem("zt_cart", JSON.stringify(window.cart));
             if (typeof window.updateCartFab === "function") window.updateCartFab();
             if (typeof window.renderCart === "function") window.renderCart();
