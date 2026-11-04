@@ -321,9 +321,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
       const before = await measureBrand();
       console.log(`[slow-network-layout] ${width}px before CSS`, JSON.stringify(before));
-      releaseThemeCss();
       expect(before.width, `brand mark exists at ${width}px`).not.toBeNull();
-      const expectedGridColumns = width >= 1600 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
       expect(before.gridColumns, `delivery grid has ${expectedGridColumns} columns at ${width}px before CSS`)
         .toBe(expectedGridColumns);
       expect(before.eagerImageCount, `all and only first-row images are eager at ${width}px`)
@@ -340,6 +338,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       expect(before.scrollWidth, `no initial horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
 
+      releaseThemeCss();
       await waitForDeferredTheme(page);
       const after = await measureBrand();
       console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));
