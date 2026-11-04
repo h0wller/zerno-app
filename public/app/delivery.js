@@ -1023,8 +1023,6 @@ window.populateSlots = function () {
   var sel = document.getElementById('checkoutSlot');
   var previousValue = sel ? sel.value : '';
   var previousMode = sel && (sel.dataset.checkoutTimeMode || sel.__checkoutTimeMode);
-  var scheduledWithoutSelection = !!sel && previousMode === 'slot'
-    && (!previousValue || previousValue === 'asap') && !pm;
   var days = {};
   var scheduleDays = deliveryInfo && Array.isArray(deliveryInfo.days) ? deliveryInfo.days : [];
   var allowedOffsets = pm === 'today' ? [0] : pm === 'tomorrow' ? [1] : [0, 1];
