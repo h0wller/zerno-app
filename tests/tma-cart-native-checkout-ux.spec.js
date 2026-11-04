@@ -160,4 +160,12 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await expect(page.locator('#checkoutBtn')).not.toHaveCSS('display', 'none');
   await expect(page.locator('#cartAddons')).not.toHaveCSS('display', 'none');
   await expect(page.locator('#cartAddons .addon-pill-card')).toHaveCount(1);
+
+  await page.evaluate(() => {
+    window.Telegram.WebApp.MainButton = null;
+    window.TgUx.updateMainButton();
+  });
+  await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-native-main'))).toBe(false);
+  await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-cart-open'))).toBe(true);
+  await expect(page.locator('#checkoutBtn')).not.toHaveCSS('display', 'none');
 });
