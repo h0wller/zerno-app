@@ -223,7 +223,10 @@ function ensureTgEnvironment() {
 
     const tg = getTg();
     const mb = tg && tg.MainButton;
-    if (!mb) return;
+    if (!mb) {
+      root.classList.remove("tg-native-main");
+      return;
+    }
     const { count, total } = getCartSummary();
     const shouldShow = isCartOpen && count > 0 && total > 0;
 
