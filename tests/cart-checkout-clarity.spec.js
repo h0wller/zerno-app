@@ -151,7 +151,7 @@ test('cart keeps the current selected price and explains every amount without gu
       .findIndex((node) => node.id === id));
   });
   expect(summaryOrder).toEqual([...summaryOrder].sort((a, b) => a - b));
-
+});
 
 test('checkout time mode follows programmatic preorder slot selection', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-11-02T15:00:00.000Z') });
