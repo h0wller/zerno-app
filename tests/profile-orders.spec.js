@@ -19,6 +19,7 @@ const orderFixture = {
 };
 
 test.describe('Модуль заказов профиля', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
