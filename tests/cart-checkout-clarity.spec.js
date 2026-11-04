@@ -18,6 +18,7 @@ const MENU_ITEM = {
     { l: '35 см, пышное', w: '750 г', p: 735, sz: 35 }
   ]
 };
+
 test('cart keeps the current selected price and explains every amount without guessing the address', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-11-02T15:00:00.000Z') });
   await page.addInitScript(() => {
@@ -145,9 +146,11 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
 
   const summaryOrder = await page.evaluate(() => {
-
-
-});
+    const ids = ['cartSubtotal', 'cartDiscount', 'cartPromoDiscount', 'cartFee'];
+    return ids.map((id) => Array.from(document.querySelector('.cart-summary-lines').children)
+      .findIndex((node) => node.id === id));
+  });
+  expect(summaryOrder).toEqual([...summaryOrder].sort((a, b) => a - b));
 
 
 test('checkout time mode follows programmatic preorder slot selection', async ({ page }) => {
