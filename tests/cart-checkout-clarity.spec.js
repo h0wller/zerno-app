@@ -371,6 +371,7 @@ test('checkout reuses the same idempotency key after a network failure and reloa
 test('successful preorder keeps an explicit empty time selection for the next order', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-11-02T20:30:00.000Z') });
   let submittedOrders = 0;
+  const submittedSlots = [];
 
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -432,6 +433,7 @@ test('successful preorder keeps an explicit empty time selection for the next or
       body = { orders: [] };
     } else if (url.pathname === '/api/orders' && request.method() === 'POST') {
       submittedOrders += 1;
+      submittedSlots.push(request.postDataJSON().slot);
       body = {
         order: {
           id: 'preorder-reset-order-1',
@@ -484,6 +486,7 @@ test('successful preorder keeps an explicit empty time selection for the next or
   await page.locator('#checkoutHouse').fill('1');
   await page.locator('#checkoutBtn').click();
   await expect.poll(() => submittedOrders).toBe(1);
+  expect(submittedSlots).toEqual([availableSlot]);
   await expect(page.locator('#orderTrackModal')).toHaveClass(/show/);
 
   await page.locator('#orderTrackModal [data-ot-close]').click();
