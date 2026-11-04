@@ -100,6 +100,7 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
     scrollBody.append(spacer);
 
     const discount = document.createElement('div');
+    discount.id = 'test-discount-row';
     discount.className = 'csl-row discount';
     discount.innerHTML = '<span class="csl-main"><span>Обеденная акция</span><strong>−131 ₽</strong><small class="csl-explain">Скидка действует в обеденное окно</small></span>';
     document.querySelector('.cart-summary-lines').append(discount);
@@ -134,6 +135,6 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await expect(page.locator('#cartClose')).toHaveCSS('display', 'none');
   await expect(page.locator('#cartAddons')).toHaveCSS('display', 'none');
   await expect(page.locator('#zoneFeeHint')).toHaveCSS('display', 'none');
-  await expect(page.locator('.csl-row.discount')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(page.locator('.csl-row.discount')).toHaveCSS('border-left-width', '0px');
+  await expect(page.locator('#test-discount-row')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(page.locator('#test-discount-row')).toHaveCSS('border-left-width', '0px');
 });
