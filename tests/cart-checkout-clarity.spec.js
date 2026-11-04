@@ -468,13 +468,17 @@ test('successful preorder keeps an explicit empty time selection for the next or
   await expect(page.locator('#orderTrackModal')).toHaveClass(/show/);
 
   await page.locator('#orderTrackModal [data-ot-repeat]').click();
-  await expect(page.locator('#cartFab')).toBeVisible();
   await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+  await expect.poll(() => page.evaluate(() => window.cart.reduce((sum, item) => sum + (Number(item.qty) || 1), 0))).toBe(1);
+  await expect(page.locator('#cartFab')).toBeVisible();
   await expect(slot).toHaveValue('');
   await expect(scheduled).toHaveAttribute('aria-pressed', 'true');
   await expect(asap).toHaveAttribute('aria-pressed', 'false');
   await expect(slotLabel).toBeVisible();
 
+  await page.locator('#checkoutPlace').selectOption('Янтарный');
+  await page.locator('#checkoutStreet').fill('Советская');
+  await page.locator('#checkoutHouse').fill('1');
   await page.locator('#checkoutBtn').click();
   await expect.poll(() => submittedOrders).toBe(1);
   await expect(page.locator('#checkoutSlot')).toHaveClass(/field-error|need-slot/);
