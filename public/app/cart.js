@@ -720,6 +720,7 @@ function clearPromo() {
       var draftSlot = document.getElementById("checkoutSlot");
       if (draftSlot) {
         if (draft.slot) draftSlot.value = draft.slot;
+        else if (draft.timeMode === "slot") draftSlot.value = "";
         if (draft.timeMode === "slot" || draft.timeMode === "asap") {
           draftSlot.__checkoutTimeMode = draft.timeMode;
           draftSlot.dataset.checkoutTimeMode = draft.timeMode;
