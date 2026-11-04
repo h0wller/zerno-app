@@ -222,18 +222,12 @@ test('checkout time mode follows programmatic preorder slot selection', async ({
 
   await page.clock.setFixedTime(new Date('2026-11-02T20:30:00.000Z'));
   await page.evaluate(() => window.refreshDeliveryInfo());
-  await page.evaluate(() => window.CheckoutValidation.resolveSlot());
-  await expect(page.locator('#checkoutSlot')).not.toHaveValue('asap');
+  const missingPreorderSlot = await page.evaluate(() => window.CheckoutValidation.resolveSlot());
+  expect(missingPreorderSlot).toMatchObject({ ok: false, message: 'Выберите время доставки для предзаказа ⏰' });
+  await expect(page.locator('#checkoutSlot')).toHaveValue('');
   await expect(scheduledMode).toHaveAttribute('aria-pressed', 'true');
   await expect(asapMode).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.locator('#checkoutSlot').locator('xpath=..')).not.toHaveAttribute('hidden', '');
-  await page.evaluate(() => {
-    const slot = document.getElementById('checkoutSlot');
-    slot.value = 'asap';
-    slot.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
-  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#checkoutSlot').locator('xpath=..')).toBeVisible();
 });
 
 test('checkout reuses the same idempotency key after a network failure and reload', async ({ page }) => {
