@@ -125,6 +125,8 @@ test('cart keeps the current selected price and explains every amount without gu
 
 
 test('checkout reuses the same idempotency key after a network failure and reload', async ({ page }) => {
+  // Keep checkout inside opening hours so the test exercises ASAP retry, not pre-order slot validation.
+  await page.clock.install({ time: new Date('2026-11-04T13:00:00.000Z') });
   const submittedIds = [];
   let firstAttempt = true;
 
