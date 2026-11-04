@@ -1340,15 +1340,13 @@ function renderCartBase() {
     if (commentInput) commentInput.value = "";
     var slotInput = document.getElementById("checkoutSlot");
     if (slotInput) {
-      slotInput.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
-      slotInput.__checkoutTimeMode = slotInput.value === "" && window.preorderMode && window.preorderMode()
-        ? "slot" : "asap";
+      var nextOrderNeedsPreorder = !!(window.preorderMode && window.preorderMode());
+      slotInput.value = nextOrderNeedsPreorder ? "" : "asap";
+      slotInput.__checkoutTimeMode = nextOrderNeedsPreorder ? "slot" : "asap";
       slotInput.dataset.checkoutTimeMode = slotInput.__checkoutTimeMode;
       if (typeof slotInput.__syncTimeMode === "function") slotInput.__syncTimeMode();
-      if (slotInput.value === "" && typeof window.populateSlots === "function") {
-        window.populateSlots();
-        if (typeof slotInput.__syncTimeMode === "function") slotInput.__syncTimeMode();
-      }
+      if (typeof window.populateSlots === "function") window.populateSlots();
+      if (typeof slotInput.__syncTimeMode === "function") slotInput.__syncTimeMode();
     }
 
     document.querySelectorAll('#deliveryGrid .opts input[type="radio"]:checked').forEach(function (radio) {
