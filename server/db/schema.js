@@ -72,7 +72,8 @@ CREATE TABLE IF NOT EXISTS fcm(
     method TEXT, place TEXT, addr TEXT, slot TEXT, pay TEXT, comment TEXT,
     items TEXT, total INTEGER, discount INTEGER, discount_label TEXT DEFAULT '', fee INTEGER, gifts TEXT,
     is_preorder INTEGER DEFAULT 0, preorder_date TEXT DEFAULT '',
-    status TEXT DEFAULT 'new', created TEXT, updated TEXT)`);
+    status TEXT DEFAULT 'new', created TEXT, updated TEXT,
+    client_order_id TEXT, request_hash TEXT DEFAULT '')`);
 
   const ocols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
   if (ocols.length && !ocols.includes('promo')) db.exec(`ALTER TABLE orders ADD COLUMN promo TEXT DEFAULT ''`);
@@ -83,6 +84,8 @@ CREATE TABLE IF NOT EXISTS fcm(
   if (ocols.length && !ocols.includes('preorder_date')) db.exec(`ALTER TABLE orders ADD COLUMN preorder_date TEXT DEFAULT ''`);
   /* Заказ сотрудника («свой»): снимок роли на момент заказа, а не JOIN по customers.role —
      иначе при понижении сотрудника его старые заказы переехали бы в гостевую выручку. */
+  if (ocols.length && !ocols.includes('client_order_id')) db.exec('ALTER TABLE orders ADD COLUMN client_order_id TEXT');
+  if (ocols.length && !ocols.includes('request_hash')) db.exec("ALTER TABLE orders ADD COLUMN request_hash TEXT DEFAULT ''");
   if (ocols.length && !ocols.includes('by_staff')) {
     db.exec(`ALTER TABLE orders ADD COLUMN by_staff INTEGER DEFAULT 0`);
     // Разовый бэкфилл: ALTER выполняется один раз, поэтому отдельный флаг в meta не нужен.
@@ -114,6 +117,7 @@ CREATE TABLE IF NOT EXISTS fcm(
     CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
     CREATE INDEX IF NOT EXISTS idx_orders_cid ON orders(cid);
     CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_client_order_id ON orders(cid, client_order_id) WHERE client_order_id IS NOT NULL;
     CREATE INDEX IF NOT EXISTS idx_history_cid ON history(cid);
     CREATE INDEX IF NOT EXISTS idx_chat_key ON chat(key);
     CREATE TABLE IF NOT EXISTS bonus_grants(cid TEXT, kind TEXT, ts TEXT, PRIMARY KEY(cid, kind));
