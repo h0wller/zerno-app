@@ -217,13 +217,13 @@ function ensureTgEnvironment() {
       root.classList.remove("tg-cart-open", "tg-native-main");
       return;
     }
-    const tg = getTg();
-    const mb = tg && tg.MainButton;
-    if (!mb) return;
-
     const cartPanel = document.getElementById("cartPanel");
     const isCartOpen = !!(cartPanel && cartPanel.classList.contains("open"));
     root.classList.toggle("tg-cart-open", isCartOpen);
+
+    const tg = getTg();
+    const mb = tg && tg.MainButton;
+    if (!mb) return;
     const { count, total } = getCartSummary();
     const shouldShow = isCartOpen && count > 0 && total > 0;
 
