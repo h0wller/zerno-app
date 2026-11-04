@@ -734,10 +734,7 @@ function clearPromo() {
       }
       toggleDeliveryGroup();
       var slotEl = document.getElementById("checkoutSlot");
-      if (slotEl) {
-        slotEl.dispatchEvent(new Event("change", { bubbles: true }));
-        if (typeof slotEl.__syncTimeMode === "function") slotEl.__syncTimeMode();
-      }
+      if (slotEl && typeof slotEl.__syncTimeMode === "function") slotEl.__syncTimeMode();
     } catch (e) {}
   }
 
