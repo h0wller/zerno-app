@@ -555,8 +555,25 @@ test('scheduled mode without a selected slot survives checkout draft restore', a
     document.getElementById('cartPanel').classList.add('open');
     window.renderCart();
   });
-  await expect(page.locator('#checkoutTimeModeSeg [data-tmode="slot"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#checkoutSlot')).toHaveValue('');
+
+  const restoredState = await page.evaluate(() => {
+    const slot = document.getElementById('checkoutSlot');
+    const draft = JSON.parse(sessionStorage.getItem('zt_checkout_draft') || '{}');
+    return {
+      draftMode: draft.timeMode,
+      draftSlot: draft.slot,
+      slotMode: slot.dataset.checkoutTimeMode || slot.__checkoutTimeMode || null,
+      slotValue: slot.value,
+      selectedMode: document.querySelector('#checkoutTimeModeSeg [data-tmode="slot"]')?.getAttribute('aria-pressed')
+    };
+  });
+  expect(restoredState).toEqual({
+    draftMode: 'slot',
+    draftSlot: '',
+    slotMode: 'slot',
+    slotValue: '',
+    selectedMode: 'true'
+  });
   await expect(page.locator('#checkoutSlot').locator('xpath=..')).toBeVisible();
   const result = await page.evaluate(() => window.CheckoutValidation.resolveSlot());
   expect(result).toMatchObject({ ok: false });
