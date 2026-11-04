@@ -79,7 +79,10 @@ function hashOrderRequest(body) {
 }
 
 function orderFromRow(row) {
-  const { client_order_id, request_hash, eta, ...order } = row;
+  const order = { ...row };
+  delete order.client_order_id;
+  delete order.request_hash;
+  delete order.eta;
   return {
     ...order,
     items: JSON.parse(order.items || '[]'),
