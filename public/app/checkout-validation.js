@@ -38,7 +38,8 @@ function ensureTimeModeToggle() {
     seg.setAttribute("aria-label", "Когда получить заказ");
     var scheduleReady = !!window.deliveryInfo;
     var preorderRequired = scheduleReady && typeof window.preorderMode === "function" && !!window.preorderMode();
-    var isScheduled = slotEl.__checkoutTimeMode === "slot" ||
+    var savedMode = slotEl.dataset.checkoutTimeMode || slotEl.__checkoutTimeMode;
+    var isScheduled = savedMode === "slot" ||
       (slotEl.value && slotEl.value !== "asap") || (!slotEl.value && preorderRequired);
     slotEl.__checkoutTimeMode = isScheduled ? "slot" : "asap";
     seg.innerHTML =
@@ -55,6 +56,7 @@ function ensureTimeModeToggle() {
       else if (preorderRequiredNow) slotEl.__checkoutTimeMode = "slot";
       else if (scheduleReadyNow && !preorderRequiredNow && slotEl.__checkoutTimeMode !== "slot") slotEl.__checkoutTimeMode = "asap";
       else if (!slotEl.__checkoutTimeMode) slotEl.__checkoutTimeMode = "asap";
+      slotEl.dataset.checkoutTimeMode = slotEl.__checkoutTimeMode;
       var isScheduledNow = slotEl.__checkoutTimeMode === "slot";
       seg.querySelectorAll(".tms-btn").forEach(function (b) {
         var isActive = b.dataset.tmode === (isScheduledNow ? "slot" : "asap");
@@ -66,6 +68,7 @@ function ensureTimeModeToggle() {
 
     function syncSlotVisibility(modeVal) {
       slotEl.__checkoutTimeMode = modeVal;
+      slotEl.dataset.checkoutTimeMode = modeVal;
       if (modeVal === "asap") slotEl.value = "asap";
       else if (slotEl.value === "asap") slotEl.value = "";
       syncTimeMode();
