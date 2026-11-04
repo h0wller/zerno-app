@@ -159,4 +159,5 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await expect(page.locator('#cartPanel')).toHaveCSS('height', '844px');
   await expect(page.locator('#checkoutBtn')).not.toHaveCSS('display', 'none');
   await expect(page.locator('#cartAddons')).not.toHaveCSS('display', 'none');
+  await expect(page.locator('#cartAddons .addon-pill-card')).toHaveCount(1);
 });
