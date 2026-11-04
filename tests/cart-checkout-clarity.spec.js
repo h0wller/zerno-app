@@ -437,6 +437,7 @@ test('successful preorder keeps an explicit empty time selection for the next or
   await expect.poll(() => page.evaluate(() =>
     Array.isArray(window.DMENU) && window.DMENU.some((item) => item.id === 'pz-marg')
   )).toBe(true);
+  await page.locator('#skipAuth').click();
   await page.evaluate(() => window.refreshDeliveryInfo());
   await page.evaluate(() => {
     document.getElementById('cartPanel').classList.add('open');
