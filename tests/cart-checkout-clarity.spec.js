@@ -484,6 +484,70 @@ test('successful preorder keeps an explicit empty time selection for the next or
   await expect(page.locator('#checkoutSlot')).toHaveClass(/field-error|need-slot/);
 });
 
+
+test('scheduled mode without a selected slot survives checkout draft restore', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-02T13:00:00.000Z') });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_cart', JSON.stringify([{
+      key: 'pz-marg_1', id: 'pz-marg', oi: 1, name: 'Маргарита',
+      opt: '35 см, пышное', price: 735, sz: 35, qty: 1
+    }]));
+    sessionStorage.setItem('splashDone', '1');
+    sessionStorage.removeItem('zt_checkout_draft');
+  });
+  await page.route('**/api/**', async (route) => {
+    const url = new URL(route.request().url());
+    let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
+    if (url.pathname === '/api/dmenu') {
+      body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
+    } else if (url.pathname === '/api/delivery/info') {
+      body = {
+        zones: [{ fee: 200, min: 0, places: ['Янтарный'] }],
+        today: { isOpen: true, canAcceptAsap: true, open: 11, close: 22 },
+        schedule: { open: 11, close: 22 },
+        days: [
+          { offset: 0, date: '2026-11-02', isOpen: true, open: 11, close: 22 },
+          { offset: 1, date: '2026-11-03', isOpen: true, open: 11, close: 22 }
+        ],
+        busySlots: [], weekPromo: null, pizzaMonth: null
+      };
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+
+  await page.goto('/?brand=delivery');
+  await expect.poll(() => page.evaluate(() => window.DMENU.some(item => item.id === 'pz-marg'))).toBe(true);
+  await page.evaluate(() => window.refreshDeliveryInfo());
+  await page.evaluate(() => {
+    document.getElementById('cartPanel').classList.add('open');
+    window.renderCart();
+  });
+  const asap = page.locator('#checkoutTimeModeSeg [data-tmode="asap"]');
+  const scheduled = page.locator('#checkoutTimeModeSeg [data-tmode="slot"]');
+  const slot = page.locator('#checkoutSlot');
+  await expect(asap).toHaveAttribute('aria-pressed', 'true');
+  await scheduled.click();
+  await expect(scheduled).toHaveAttribute('aria-pressed', 'true');
+  await expect(slot).toHaveValue('');
+  await expect.poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem('zt_checkout_draft') || '{}').timeMode)).toBe('slot');
+
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => window.DMENU.some(item => item.id === 'pz-marg'))).toBe(true);
+  await page.evaluate(() => window.refreshDeliveryInfo());
+  await page.evaluate(() => {
+    document.getElementById('cartPanel').classList.add('open');
+    window.renderCart();
+  });
+  await expect(page.locator('#checkoutTimeModeSeg [data-tmode="slot"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#checkoutSlot')).toHaveValue('');
+  await expect(page.locator('#checkoutSlot').locator('xpath=..')).toBeVisible();
+  const result = await page.evaluate(() => window.CheckoutValidation.resolveSlot());
+  expect(result).toMatchObject({ ok: false });
+  await expect(page.locator('#checkoutSlot')).toHaveValue('');
+});
+
 test('scheduled mode stays active until a slot is selected during service hours', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-11-02T15:00:00.000Z') });
   await page.addInitScript(() => {
