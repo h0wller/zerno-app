@@ -133,8 +133,15 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await expect(page.locator('#checkoutBtn')).toHaveCSS('display', 'none');
   await expect(page.locator('#cartTopClose')).toHaveCSS('display', 'none');
   await expect(page.locator('#cartClose')).toHaveCSS('display', 'none');
-  await expect(page.locator('#cartAddons')).toHaveCSS('display', 'none');
+  await expect(page.locator('#cartAddons')).not.toHaveCSS('display', 'none');
   await expect(page.locator('#zoneFeeHint')).toHaveCSS('display', 'none');
   await expect(page.locator('#test-discount-row')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(page.locator('#test-discount-row')).toHaveCSS('border-left-width', '0px');
+
+  await page.locator('#cartPanel [data-ci][data-act="-"]').click();
+  await expect.poll(() => page.evaluate(() => window.__testTgMainButton.visible)).toBe(false);
+  await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-native-main'))).toBe(false);
+  await expect(page.locator('#cartPanel')).toHaveCSS('height', '844px');
+  await expect(page.locator('#checkoutBtn')).not.toHaveCSS('display', 'none');
+  await expect(page.locator('#cartAddons')).not.toHaveCSS('display', 'none');
 });
