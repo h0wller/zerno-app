@@ -725,6 +725,8 @@ function clearPromo() {
         document.getElementById("checkoutComment").value = draft.comment;
       }
       toggleDeliveryGroup();
+      var slotEl = document.getElementById("checkoutSlot");
+      if (slotEl) slotEl.dispatchEvent(new Event("change", { bubbles: true }));
     } catch (e) {}
   }
 
@@ -1329,7 +1331,10 @@ function renderCartBase() {
     var commentInput = document.getElementById("checkoutComment");
     if (commentInput) commentInput.value = "";
     var slotInput = document.getElementById("checkoutSlot");
-    if (slotInput) slotInput.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
+    if (slotInput) {
+      slotInput.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
+      slotInput.dispatchEvent(new Event("change", { bubbles: true }));
+    }
 
     document.querySelectorAll('#deliveryGrid .opts input[type="radio"]:checked').forEach(function (radio) {
       radio.checked = false;
