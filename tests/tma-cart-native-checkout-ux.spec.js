@@ -66,7 +66,10 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
     let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
 
     if (url.pathname === '/api/dmenu') {
-      body = { items: [], updatedAt: '2026-11-04T00:00:00.000Z' };
+      body = {
+        items: [{ id: 'tma-recommended-drink', name: 'Лимонад к заказу', price: 120, cat: 'drinks', on: 1, e: '🥤' }],
+        updatedAt: '2026-11-04T00:00:00.000Z'
+      };
     } else if (url.pathname === '/api/delivery/info') {
       body = {
         zones: [],
@@ -137,6 +140,9 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await expect(page.locator('#cartTopClose')).toHaveCSS('display', 'none');
   await expect(page.locator('#cartClose')).toHaveCSS('display', 'none');
   await expect(page.locator('#cartAddons')).not.toHaveCSS('display', 'none');
+  await expect(page.locator('#cartAddons .ca-title')).toHaveText('Рекомендуем к заказу');
+  await expect(page.locator('#cartAddons .addon-pill-card')).toHaveCount(1);
+  await expect(page.locator('#cartAddons .ac-name')).toHaveText('Лимонад к заказу');
   await expect(page.locator('#zoneFeeHint')).toHaveCSS('display', 'none');
   await expect(page.locator('#test-discount-row')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(page.locator('#test-discount-row')).toHaveCSS('border-left-width', '0px');
