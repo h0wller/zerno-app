@@ -870,6 +870,8 @@ $('#checkoutMethod').onchange = () => {
 
 $('#cartFab').onclick = async () => {
   window.renderCart();
+  const cartScrollBody = $('#cartScrollBody');
+  if (cartScrollBody) cartScrollBody.scrollTop = 0;
   $('#cartPanel').classList.add('open');
   const checkoutButton = $('#checkoutBtn');
   if (checkoutButton) checkoutButton.disabled = true;
