@@ -48,13 +48,14 @@ test('cart keeps the current selected price and explains every amount without gu
     if (url.pathname === '/api/dmenu') {
       body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
     } else if (url.pathname === '/api/delivery/info') {
+      const isPreorderFixture = new Date().getTime() >= new Date('2026-11-02T20:30:00.000Z').getTime();
       body = {
         zones: [
           { fee: 200, min: 0, places: ['Янтарный'] },
           { fee: 250, min: 1000, places: ['Синявино'] }
         ],
-        today: { isOpen: true, canAcceptAsap: true, open: 11, close: 22 },
-        schedule: { open: 11, close: 22 },
+        today: { isOpen: true, canAcceptAsap: !isPreorderFixture, open: 11, close: isPreorderFixture ? 20 : 22 },
+        schedule: { open: 11, close: isPreorderFixture ? 20 : 22 },
         days: [],
         busySlots: [],
         weekPromo: null,
