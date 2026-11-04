@@ -56,7 +56,10 @@ test('cart keeps the current selected price and explains every amount without gu
         ],
         today: { isOpen: true, canAcceptAsap: !isPreorderFixture, open: 11, close: isPreorderFixture ? 20 : 22 },
         schedule: { open: 11, close: isPreorderFixture ? 20 : 22 },
-        days: [{ offset: 1, isOpen: true, open: 11, close: 22 }],
+        days: [
+          { offset: 0, date: '2026-11-02', isOpen: true, open: 11, close: isPreorderFixture ? 20 : 22 },
+          { offset: 1, date: '2026-11-03', isOpen: true, open: 11, close: 22 }
+        ],
         busySlots: [],
         weekPromo: null,
         pizzaMonth: null
