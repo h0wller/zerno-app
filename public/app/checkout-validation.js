@@ -43,30 +43,7 @@ function ensureTimeModeToggle() {
 
     labelEl.parentNode.insertBefore(seg, labelEl);
 
-    function syncSlotVisibility(modeVal) {
-      seg.querySelectorAll(".tms-btn").forEach(function (b) {
-        var isActive = b.dataset.tmode === modeVal;
-        b.classList.toggle("on", isActive);
-        b.setAttribute("aria-pressed", String(isActive));
-      });
-      if (modeVal === "asap") {
-        slotEl.value = "asap";
-        labelEl.hidden = true;
-      } else {
-        labelEl.hidden = false;
-        if (!slotEl.value || slotEl.value === "asap") {
-          for (var i = 0; i < slotEl.options.length; i++) {
-            if (slotEl.options[i].value && slotEl.options[i].value !== "asap") {
-              slotEl.value = slotEl.options[i].value;
-              break;
-            }
-          }
-        }
-      }
-      slotEl.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-
-    slotEl.addEventListener("change", function () {
+    function syncTimeMode() {
       var isScheduledNow = !!slotEl.value && slotEl.value !== "asap";
       seg.querySelectorAll(".tms-btn").forEach(function (b) {
         var isActive = b.dataset.tmode === (isScheduledNow ? "slot" : "asap");
@@ -74,9 +51,25 @@ function ensureTimeModeToggle() {
         b.setAttribute("aria-pressed", String(isActive));
       });
       labelEl.hidden = !isScheduledNow;
-    });
+    }
 
-    if (!isScheduled) labelEl.hidden = true;
+    function syncSlotVisibility(modeVal) {
+      if (modeVal === "asap") {
+        slotEl.value = "asap";
+      } else if (!slotEl.value || slotEl.value === "asap") {
+        for (var i = 0; i < slotEl.options.length; i++) {
+          if (slotEl.options[i].value && slotEl.options[i].value !== "asap") {
+            slotEl.value = slotEl.options[i].value;
+            break;
+          }
+        }
+      }
+      syncTimeMode();
+      slotEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    slotEl.addEventListener("change", syncTimeMode);
+    syncTimeMode();
 
     seg.addEventListener("click", function (e) {
       var btn = e.target.closest("[data-tmode]");
