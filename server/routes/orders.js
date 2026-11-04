@@ -46,10 +46,7 @@ const DELIVERY = {
 const weekPromo = () => {
   const w = JSON.parse(db.prepare("SELECT value FROM meta WHERE key='week_promo'").get()?.value || 'null');
   if (!w || !w.text) return null;
-  const now = process.env.NODE_ENV === 'test' && process.env.ZERNO_TEST_NOW
-    ? new Date(process.env.ZERNO_TEST_NOW)
-    : new Date();
-  if (w.until && new Date(w.until) < now) return null;
+  if (w.until && new Date(w.until) < new Date()) return null;
   return w;
 };
 
