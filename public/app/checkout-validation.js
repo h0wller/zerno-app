@@ -36,7 +36,8 @@ function ensureTimeModeToggle() {
     seg.className = "time-mode-seg";
     seg.setAttribute("role", "group");
     seg.setAttribute("aria-label", "Когда получить заказ");
-    var preorderRequired = typeof window.preorderMode === "function" && !!window.preorderMode();
+    var scheduleReady = !!window.deliveryInfo;
+    var preorderRequired = scheduleReady && typeof window.preorderMode === "function" && !!window.preorderMode();
     var isScheduled = slotEl.__checkoutTimeMode === "slot" ||
       (slotEl.value && slotEl.value !== "asap") || (!slotEl.value && preorderRequired);
     slotEl.__checkoutTimeMode = isScheduled ? "slot" : "asap";
@@ -47,9 +48,10 @@ function ensureTimeModeToggle() {
     labelEl.parentNode.insertBefore(seg, labelEl);
 
     function syncTimeMode() {
-      var preorderRequiredNow = typeof window.preorderMode === "function" && !!window.preorderMode();
+      var scheduleReadyNow = !!window.deliveryInfo;
+      var preorderRequiredNow = scheduleReadyNow && typeof window.preorderMode === "function" && !!window.preorderMode();
       if (slotEl.value && slotEl.value !== "asap") slotEl.__checkoutTimeMode = "slot";
-      else if (slotEl.value === "asap" && !preorderRequiredNow) slotEl.__checkoutTimeMode = "asap";
+      else if (slotEl.value === "asap") slotEl.__checkoutTimeMode = "asap";
       else if (preorderRequiredNow) slotEl.__checkoutTimeMode = "slot";
       else if (!slotEl.__checkoutTimeMode) slotEl.__checkoutTimeMode = "asap";
       var isScheduledNow = slotEl.__checkoutTimeMode === "slot";
@@ -139,9 +141,9 @@ async function resolveCheckoutSlot() {
     } else if (typeof window.populateSlots === "function") {
       window.populateSlots();
     }
-    var pm = typeof window.preorderMode === "function"
+    var pm = window.deliveryInfo && typeof window.preorderMode === "function"
       ? window.preorderMode()
-      : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);
+      : null;
     var slotElCheck = document.getElementById("checkoutSlot");
     var slotVal = (slotElCheck && slotElCheck.value) || "";
     if (pm && slotElCheck) {
