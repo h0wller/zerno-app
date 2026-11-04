@@ -22,6 +22,7 @@ test.describe('Модуль заказов профиля', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
     mineRequestCount = 0;
@@ -39,13 +40,16 @@ test.describe('Модуль заказов профиля', () => {
       });
     });
 
-    await page.goto('/?brand=delivery', { waitUntil: 'load' });
+    await page.goto('/?brand=delivery');
     await expect.poll(() => page.evaluate(() =>
+      typeof window.boot === 'function' &&
+      typeof window.syncBrandViews === 'function' &&
       typeof window.setUser === 'function' &&
-      typeof window.__profileMeReady === 'function' &&
-      typeof window.renderProfile === 'function' &&
-      typeof window.openPanel === 'function' &&
-      typeof window.applyProfileBrand === 'function'
+      typeof window.openPanel === 'function'
+    )).toBe(true);
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.getAttribute('data-staff-ready') === '1' &&
+      Array.isArray(window.DMENU) && window.DMENU.length > 0
     )).toBe(true);
 
     await page.evaluate(() => {
@@ -67,12 +71,9 @@ test.describe('Модуль заказов профиля', () => {
         ],
         verified: 1
       };
-      window.brand = 'delivery';
-      document.documentElement.setAttribute('data-brand', 'delivery');
-      document.body.setAttribute('data-brand', 'delivery');
       window.setUser('profile-test-token', customer);
+      window.__profileMeReady();
       window.renderProfile();
-      window.applyProfileBrand();
       window.openPanel('profile');
     });
 
