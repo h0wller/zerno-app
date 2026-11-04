@@ -31,11 +31,15 @@ function ensureTimeModeToggle() {
 
     var seg = document.getElementById("checkoutTimeModeSeg");
     if (!seg) {
+      if (typeof window.populateSlots === "function") window.populateSlots();
       seg = document.createElement("div");
       seg.id = "checkoutTimeModeSeg";
       seg.className = "time-mode-seg";
       seg.setAttribute("role", "group");
       seg.setAttribute("aria-label", "Когда получить заказ");
+      seg.innerHTML =
+        '<button type="button" class="tms-btn" data-tmode="asap">⚡ Как можно скорее</button>' +
+        '<button type="button" class="tms-btn" data-tmode="slot">⏰ Ко времени</button>';
       labelEl.parentNode.insertBefore(seg, labelEl);
     }
 
@@ -53,9 +57,11 @@ function ensureTimeModeToggle() {
       }
       slotEl.dataset.checkoutTimeMode = slotEl.__checkoutTimeMode;
       var isScheduled = slotEl.__checkoutTimeMode === "slot";
-      seg.innerHTML =
-        '<button type="button" class="tms-btn' + (!isScheduled ? " on" : "") + '" data-tmode="asap" aria-pressed="' + (!isScheduled) + '">⚡ Как можно скорее</button>' +
-        '<button type="button" class="tms-btn' + (isScheduled ? " on" : "") + '" data-tmode="slot" aria-pressed="' + (!!isScheduled) + '">⏰ Ко времени</button>';
+      seg.querySelectorAll(".tms-btn").forEach(function (button) {
+        var isActive = button.dataset.tmode === (isScheduled ? "slot" : "asap");
+        button.classList.toggle("on", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
       labelEl.hidden = !isScheduled;
     }
 
@@ -64,10 +70,9 @@ function ensureTimeModeToggle() {
       slotEl.dataset.checkoutTimeMode = modeVal;
       if (modeVal === "asap") {
         slotEl.value = "asap";
-      } else {
-        if (slotEl.value === "asap") slotEl.value = "";
-        // A missing/invalidated time is not an ASAP selection. Keep scheduled mode explicit.
-        if (!slotEl.value) slotEl.value = "";
+      } else if (slotEl.value === "asap") {
+        // An empty value still represents an explicit scheduled-mode choice.
+        slotEl.value = "";
       }
       syncTimeMode();
       slotEl.dispatchEvent(new Event("change", { bubbles: true }));
