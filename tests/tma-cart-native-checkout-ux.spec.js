@@ -98,8 +98,6 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
     spacer.id = 'test-cart-scroll-spacer';
     spacer.style.height = '600px';
     scrollBody.append(spacer);
-    scrollBody.scrollTop = 180;
-    window.__staleCartScrollTop = scrollBody.scrollTop;
 
     const discount = document.createElement('div');
     discount.className = 'csl-row discount';
@@ -108,6 +106,17 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
 
     const fab = document.getElementById('cartFab');
     fab.hidden = false;
+    fab.click();
+
+    // First open the cart so its scroll container has a real, measurable viewport.
+    scrollBody.scrollTop = 180;
+    window.__staleCartScrollTop = scrollBody.scrollTop;
+    if (window.__staleCartScrollTop !== 180) {
+      throw new Error('Test setup failed: cart did not become scrollable after opening');
+    }
+
+    // Reopening must reset the previous scroll position.
+    document.getElementById('cartPanel').classList.remove('open');
     fab.click();
   });
 
