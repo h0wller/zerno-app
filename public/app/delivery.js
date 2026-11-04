@@ -55,7 +55,6 @@ window.promoInfo = null;
 window.cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
 
 async function fetchDeliveryInfo() {
-  deliveryInfo = null;
   var response = await fetch(API_BASE + '/api/delivery/info');
   if (!response.ok) throw new Error('Не удалось обновить график работы');
   var info = await response.json();
@@ -1050,17 +1049,22 @@ window.populateSlots = function () {
       }
     }
 
-    if (scheduledWithoutSelection) {
+    if (previousMode === 'slot' && !restoredSelection) {
       sel.value = '';
       sel.__checkoutTimeMode = 'slot';
       sel.dataset.checkoutTimeMode = 'slot';
-    } else if (previousValue && !restoredSelection && !pm) {
-      sel.value = 'asap';
-      sel.__checkoutTimeMode = 'asap';
-      sel.dataset.checkoutTimeMode = 'asap';
+    } else if (previousMode === 'asap' || (previousValue === 'asap' && !restoredSelection)) {
+      sel.value = pm ? '' : 'asap';
+      sel.__checkoutTimeMode = pm ? 'slot' : 'asap';
+      sel.dataset.checkoutTimeMode = sel.__checkoutTimeMode;
     } else if (pm && (!restoredSelection || !sel.value || sel.value === 'asap')) {
       sel.value = '';
       sel.__checkoutTimeMode = 'slot';
+      sel.dataset.checkoutTimeMode = 'slot';
+    } else if (!restoredSelection && !previousMode) {
+      sel.value = pm ? '' : 'asap';
+      sel.__checkoutTimeMode = pm ? 'slot' : 'asap';
+      sel.dataset.checkoutTimeMode = sel.__checkoutTimeMode;
     }
 
     sel.classList.toggle('need-slot', !!pm && !sel.value);
