@@ -465,6 +465,19 @@ body > div.wrap,
   contain-intrinsic-block-size: 502px;
 }
 :root { --menu-rail-width: 80px; --menu-rail-gap: 10px; }
+/* First-paint mirror of 160-11-canonical-grid-menu.css: reserve final rail button geometry
+   before deferred theme stylesheets become active, preventing a mobile CLS jump. */
+html body div.wrap > .rail button,
+html body div.wrap > #rail button,
+html body div.wrap > #deliveryRail button {
+  width: 100%;
+  min-height: 56px;
+  padding: 6px 2px;
+  font-size: 9.5px;
+  line-height: 1.15;
+  white-space: normal;
+  word-break: normal;
+}
 .menu-head {
   margin-left: 0;
   width: 100%;
