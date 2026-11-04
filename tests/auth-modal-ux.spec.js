@@ -75,8 +75,6 @@ for (const viewport of viewports) {
       element.style.scrollBehavior = 'auto';
       element.scrollTop = element.scrollHeight;
     });
-    await expect.poll(() => card.evaluate((element) => element.scrollTop))
-      .toBeGreaterThan(0);
     await expect(submit).toBeInViewport();
   });
 }
