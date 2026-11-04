@@ -685,6 +685,7 @@ function clearPromo() {
         street: (document.getElementById("checkoutStreet") || {}).value,
         house: (document.getElementById("checkoutHouse") || {}).value,
         slot: (document.getElementById("checkoutSlot") || {}).value,
+        timeMode: (document.getElementById("checkoutSlot") || {}).__checkoutTimeMode || "",
         pay: (document.getElementById("checkoutPay") || {}).value,
         comment: (document.getElementById("checkoutComment") || {}).value
       };
@@ -715,8 +716,12 @@ function clearPromo() {
       if (houseVal && document.getElementById("checkoutHouse")) {
         document.getElementById("checkoutHouse").value = houseVal;
       }
-      if (draft.slot && document.getElementById("checkoutSlot")) {
-        document.getElementById("checkoutSlot").value = draft.slot;
+      var draftSlot = document.getElementById("checkoutSlot");
+      if (draftSlot) {
+        if (draft.slot) draftSlot.value = draft.slot;
+        if (draft.timeMode === "slot" || draft.timeMode === "asap") {
+          draftSlot.__checkoutTimeMode = draft.timeMode;
+        }
       }
       if (draft.pay && document.getElementById("checkoutPay")) {
         document.getElementById("checkoutPay").value = draft.pay;
