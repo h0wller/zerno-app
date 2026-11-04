@@ -38,9 +38,18 @@ test.describe('Модуль заказов профиля', () => {
         body: JSON.stringify({ orders })
       });
     });
-    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+    await page.goto('/?brand=delivery', { waitUntil: 'load' });
+    await expect.poll(() => page.evaluate(() =>
+      typeof window.setUser === 'function' &&
+      typeof window.__profileMeReady === 'function' &&
+      typeof window.renderProfile === 'function' &&
+      typeof window.openPanel === 'function' &&
+      typeof window.applyProfileBrand === 'function'
+    )).toBe(true);
+
     await page.evaluate(() => {
-      window.me = {
+      const customer = {
         id: 'profile-test',
         name: 'Тестовый гость',
         phone: '+7 900 000-00-00',
@@ -48,6 +57,7 @@ test.describe('Модуль заказов профиля', () => {
         cups: 2,
         stamps: 2,
         free: 0,
+        qr: 'profile-test',
         history: [
           { ts: '2026-10-29T12:00:00.000Z', a: 'Начислен штамп', by: 'Кассир' },
           { ts: '2026-10-28T12:00:00.000Z', a: 'Покупка кофе', by: 'Кофейня' },
@@ -58,16 +68,21 @@ test.describe('Модуль заказов профиля', () => {
         verified: 1
       };
       window.brand = 'delivery';
-      if (typeof window.__profileMeReady !== 'function') {
-        throw new Error('Profile readiness hook was not initialized');
-      }
-      window.__profileMeReady();
+      document.documentElement.setAttribute('data-brand', 'delivery');
+      document.body.setAttribute('data-brand', 'delivery');
+      window.setUser('profile-test-token', customer);
       window.renderProfile();
+      window.applyProfileBrand();
       window.openPanel('profile');
+      document.getElementById('tabProfile').click();
     });
+
+    await expect(page.locator('#panel')).toHaveClass(/open/);
+    await expect(page.locator('#tabProfile')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#pvProfile')).toBeVisible();
+    await expect(page.locator('#profileBox')).toBeVisible();
     await expect(page.locator('#myOrdersBtn')).toBeVisible();
   });
-
   test('выводит последний заказ в профиле и список в отдельной модалке', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection .profile-section-heading')).toContainText('Последний заказ');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
