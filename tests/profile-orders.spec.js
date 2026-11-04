@@ -74,7 +74,6 @@ test.describe('Модуль заказов профиля', () => {
       window.renderProfile();
       window.applyProfileBrand();
       window.openPanel('profile');
-      document.getElementById('tabProfile').click();
     });
 
     await expect(page.locator('#panel')).toHaveClass(/open/);
