@@ -107,7 +107,7 @@ before(async () => {
     JSON.stringify([{ l: '30 см', p: 800, sz: 30 }, { l: '35 см', p: 1000, sz: 35 }]),
     1,
   );
-  db.prepare("INSERT INTO meta(key,value) VALUES('order_no','40')");
+  db.prepare("INSERT INTO meta(key,value) VALUES('order_no','40')").run();
   db.prepare(`INSERT INTO promos(id,code,kind,value,active,expires,maxuses,uses,created,scope)
     VALUES(?,?,?,?,?,?,?,?,?,?)`).run(
     'idempotency-promo', 'RETRY10', 'percent', 10, 1, null, 1, 0,
@@ -223,6 +223,7 @@ test('different keys and legacy requests without a key remain separate orders', 
 
 test('promo use and order number roll back when order insertion fails', async () => {
   const token = await register('Rollback Guest', '+7 900 200-00-06');
+  const eventsBefore = db.prepare('SELECT COUNT(*) AS n FROM events').get().n;
   db.exec(`
     CREATE TRIGGER fail_order_insert
     BEFORE INSERT ON orders
@@ -242,7 +243,7 @@ test('promo use and order number roll back when order insertion fails', async ()
   assert.equal(db.prepare("SELECT uses FROM promos WHERE code='RETRY10'").get().uses, 0);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM promo_use WHERE promo='idempotency-promo'").get().n, 0);
   assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, '40');
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM events').get().n, 0);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM events').get().n, eventsBefore);
 });
 
 test('malformed client_order_id is rejected before any order side effect', async () => {
