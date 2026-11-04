@@ -1022,6 +1022,8 @@ window.populateSlots = function () {
   var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : 'today';
   var sel = document.getElementById('checkoutSlot');
   var previousValue = sel ? sel.value : '';
+  var scheduledWithoutSelection = !!sel && sel.__checkoutTimeMode === 'slot'
+    && (!previousValue || previousValue === 'asap') && !pm;
   var days = {};
   var scheduleDays = deliveryInfo && Array.isArray(deliveryInfo.days) ? deliveryInfo.days : [];
   var allowedOffsets = pm === 'today' ? [0] : pm === 'tomorrow' ? [1] : [0, 1];
@@ -1046,7 +1048,10 @@ window.populateSlots = function () {
       }
     }
 
-    if (previousValue && !restoredSelection && !pm) {
+    if (scheduledWithoutSelection) {
+      sel.value = '';
+      sel.__checkoutTimeMode = 'slot';
+    } else if (previousValue && !restoredSelection && !pm) {
       sel.value = 'asap';
       sel.__checkoutTimeMode = 'asap';
     } else if (pm && (!restoredSelection || !sel.value || sel.value === 'asap')) {
