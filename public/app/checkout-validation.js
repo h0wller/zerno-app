@@ -34,35 +34,43 @@ function ensureTimeModeToggle() {
     var seg = document.createElement("div");
     seg.id = "checkoutTimeModeSeg";
     seg.className = "time-mode-seg";
+    seg.setAttribute("role", "group");
+    seg.setAttribute("aria-label", "Когда получить заказ");
     var isScheduled = slotEl.value && slotEl.value !== "asap";
     seg.innerHTML =
-      '<button type="button" class="tms-btn' + (!isScheduled ? " on" : "") + '" data-tmode="asap">⚡ Как можно скорее</button>' +
-      '<button type="button" class="tms-btn' + (isScheduled ? " on" : "") + '" data-tmode="slot">⏰ Ко времени</button>';
+      '<button type="button" class="tms-btn' + (!isScheduled ? " on" : "") + '" data-tmode="asap" aria-pressed="' + (!isScheduled) + '">⚡ Как можно скорее</button>' +
+      '<button type="button" class="tms-btn' + (isScheduled ? " on" : "") + '" data-tmode="slot" aria-pressed="' + (!!isScheduled) + '">⏰ Ко времени</button>';
 
     labelEl.parentNode.insertBefore(seg, labelEl);
 
-    function syncSlotVisibility(modeVal) {
+    function syncTimeMode() {
+      var isScheduledNow = !!slotEl.value && slotEl.value !== "asap";
       seg.querySelectorAll(".tms-btn").forEach(function (b) {
-        b.classList.toggle("on", b.dataset.tmode === modeVal);
+        var isActive = b.dataset.tmode === (isScheduledNow ? "slot" : "asap");
+        b.classList.toggle("on", isActive);
+        b.setAttribute("aria-pressed", String(isActive));
       });
+      labelEl.hidden = !isScheduledNow;
+    }
+
+    function syncSlotVisibility(modeVal) {
       if (modeVal === "asap") {
         slotEl.value = "asap";
-        labelEl.hidden = true;
-      } else {
-        labelEl.hidden = false;
-        if (!slotEl.value || slotEl.value === "asap") {
-          for (var i = 0; i < slotEl.options.length; i++) {
-            if (slotEl.options[i].value && slotEl.options[i].value !== "asap") {
-              slotEl.value = slotEl.options[i].value;
-              break;
-            }
+      } else if (!slotEl.value || slotEl.value === "asap") {
+        for (var i = 0; i < slotEl.options.length; i++) {
+          if (slotEl.options[i].value && slotEl.options[i].value !== "asap") {
+            slotEl.value = slotEl.options[i].value;
+            break;
           }
         }
       }
+      syncTimeMode();
       slotEl.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
-    if (!isScheduled) labelEl.hidden = true;
+    slotEl.addEventListener("change", syncTimeMode);
+    slotEl.__syncTimeMode = syncTimeMode;
+    syncTimeMode();
 
     seg.addEventListener("click", function (e) {
       var btn = e.target.closest("[data-tmode]");
@@ -142,6 +150,7 @@ async function resolveCheckoutSlot() {
         if (slotElCheck.options[sIdx].value && slotElCheck.options[sIdx].value !== "asap") {
           slotElCheck.value = slotElCheck.options[sIdx].value;
           slotVal = slotElCheck.value;
+          slotElCheck.dispatchEvent(new Event("change", { bubbles: true }));
           break;
         }
       }
