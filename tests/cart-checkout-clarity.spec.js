@@ -56,7 +56,7 @@ test('cart keeps the current selected price and explains every amount without gu
         ],
         today: { isOpen: true, canAcceptAsap: !isPreorderFixture, open: 11, close: isPreorderFixture ? 20 : 22 },
         schedule: { open: 11, close: isPreorderFixture ? 20 : 22 },
-        days: [],
+        days: [{ offset: 1, isOpen: true, open: 11, close: 22 }],
         busySlots: [],
         weekPromo: null,
         pizzaMonth: null
@@ -142,13 +142,23 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
   await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
 
-  await page.clock.install({ time: new Date('2026-11-02T20:30:00.000Z') });
+  await page.clock.setFixedTime(new Date('2026-11-02T20:30:00.000Z'));
   await page.evaluate(() => window.refreshDeliveryInfo());
   await page.evaluate(() => window.CheckoutValidation.resolveSlot());
   await expect(page.locator('#checkoutSlot')).not.toHaveValue('asap');
   await expect(scheduledMode).toHaveAttribute('aria-pressed', 'true');
   await expect(asapMode).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#checkoutSlot').locator('xpath=..')).not.toHaveAttribute('hidden', '');
+  await page.evaluate(() => {
+    const slot = document.getElementById('checkoutSlot');
+    slot.value = 'asap';
+    slot.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
+  await page.evaluate(() => window.CheckoutValidation.ensureTimeModeToggle());
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
 
   const summaryOrder = await page.evaluate(() => {
     const ids = ['cartSubtotal', 'cartDiscount', 'cartPromoDiscount', 'cartFee'];
