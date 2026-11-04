@@ -115,6 +115,32 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartTotalLabel')).toHaveText('Итого к оплате');
   await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
 
+  const checkoutSections = page.locator('.checkoutForm > .checkout-section');
+  await expect(checkoutSections).toHaveCount(3);
+  await expect(checkoutSections.nth(0).locator('h4')).toHaveText('Получение');
+  await expect(checkoutSections.nth(1).locator('h4')).toHaveText('Когда и как оплатить');
+  await expect(checkoutSections.nth(2).locator('h4')).toHaveText('Проверка заказа');
+  await expect(checkoutSections.nth(0).locator('#checkoutMethod')).toHaveCount(1);
+  await expect(checkoutSections.nth(0).locator('#checkoutPlace, #checkoutStreet, #checkoutHouse')).toHaveCount(3);
+  await expect(checkoutSections.nth(1).locator('#checkoutSlot, #checkoutPay')).toHaveCount(2);
+  await expect(checkoutSections.nth(2).locator('#checkoutComment')).toHaveCount(1);
+  await expect(checkoutSections.nth(2).locator('.cart-promo-section')).toHaveCount(1);
+  await expect(page.locator('#cartItems').evaluate((el) => el.compareDocumentPosition(document.querySelector('.checkoutForm')) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
+
+  const timeMode = page.locator('#checkoutTimeModeSeg');
+  await expect(timeMode).toHaveAttribute('role', 'group');
+  await expect(timeMode).toHaveAttribute('aria-label', 'Когда получить заказ');
+  const asapMode = timeMode.locator('[data-tmode="asap"]');
+  const scheduledMode = timeMode.locator('[data-tmode="slot"]');
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
+  await scheduledMode.click();
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'false');
+  await asapMode.click();
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
+
   const summaryOrder = await page.evaluate(() => {
     const ids = ['cartSubtotal', 'cartDiscount', 'cartPromoDiscount', 'cartFee'];
     return ids.map((id) => Array.from(document.querySelector('.cart-summary-lines').children)
