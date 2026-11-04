@@ -221,6 +221,21 @@ test('different keys and legacy requests without a key remain separate orders', 
   assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, '43');
 });
 
+test('the same key can be used by different customers independently', async () => {
+  const firstToken = await register('Scoped Guest One', '+7 900 200-00-07');
+  const secondToken = await register('Scoped Guest Two', '+7 900 200-00-08');
+  const body = orderBody('ord_customer_scope_007', 1);
+
+  const first = await request('/orders', { method: 'POST', token: firstToken, body });
+  const second = await request('/orders', { method: 'POST', token: secondToken, body });
+
+  assert.equal(first.status, 200, JSON.stringify(first.json));
+  assert.equal(second.status, 200, JSON.stringify(second.json));
+  assert.notEqual(first.json.order.id, second.json.order.id);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 2);
+  assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, '42');
+});
+
 test('promo use and order number roll back when order insertion fails', async () => {
   const token = await register('Rollback Guest', '+7 900 200-00-06');
   const eventsBefore = db.prepare('SELECT COUNT(*) AS n FROM events').get().n;
