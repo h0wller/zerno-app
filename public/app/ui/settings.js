@@ -1,6 +1,6 @@
 /* public/app/ui/settings.js — настройки профиля и управление аккаунтом. */
-const DELETE_ACCOUNT_LABEL = 'Удалить аккаунт';
 (function () {
+    const DELETE_ACCOUNT_LABEL = 'Удалить аккаунт';
     'use strict';
 
     if (document.getElementById('settingsModal')) return;
