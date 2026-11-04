@@ -406,12 +406,10 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
   const discount = pricing.discount;
   const discountLabel = pricing.label;
   const gifts = [];
-  if (!lunchPromoActive) {
-    const wp = weekPromo();
-    if (wp && wp.gift) { const q = wp.threshold > 0 ? Math.floor(sum / wp.threshold) : 1; if (q > 0) gifts.push({ name: wp.gift, qty: q }); }
-    const pm = pizzaMonth();
-    if (pm) { const big = items.reduce((a, i) => a + (i.sz === 35 ? i.qty : 0), 0); if (big >= 2) gifts.push({ name: pm.name + ' — подарок', qty: 1 }); }
-  }
+  const wp = weekPromo();
+  if (wp && wp.gift) { const q = wp.threshold > 0 ? Math.floor(sum / wp.threshold) : 1; if (q > 0) gifts.push({ name: wp.gift, qty: q }); }
+  const pm = pizzaMonth();
+  if (pm) { const big = items.reduce((a, i) => a + (i.sz === 35 ? i.qty : 0), 0); if (big >= 2) gifts.push({ name: pm.name + ' — подарок', qty: 1 }); }
 
   const pc = String(b.promo || '').trim().toUpperCase();
   const registrationFreeDeliveryCode = findFreeDeliveryCode(req.user.id);

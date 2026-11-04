@@ -213,7 +213,10 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
   assert.equal(guestLunch.status, 200, JSON.stringify(guestLunch.json));
   assert.equal(guestLunch.json.order.discount, 400);
   assert.equal(guestLunch.json.order.discount_label, '20% обеденная акция');
-  assert.deepEqual(guestLunch.json.order.gifts, []);
+  assert.deepEqual(guestLunch.json.order.gifts, [
+    { name: 'Подарок недели', qty: 2 },
+    { name: 'Пицца месяца — подарок', qty: 1 },
+  ]);
   assert.equal(guestLunch.json.order.total, 1800);
 
   const staffLunch = await request('/orders', {
@@ -225,7 +228,10 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
   assert.equal(staffLunch.json.order.by_staff, 1);
   assert.equal(staffLunch.json.order.discount, 600);
   assert.equal(staffLunch.json.order.discount_label, '20% обеденная акция + 10% для своих');
-  assert.deepEqual(staffLunch.json.order.gifts, []);
+  assert.deepEqual(staffLunch.json.order.gifts, [
+    { name: 'Подарок недели', qty: 2 },
+    { name: 'Пицца месяца — подарок', qty: 1 },
+  ]);
   assert.equal(staffLunch.json.order.total, 1600);
 
   const pickupLunch = await request('/orders', {
