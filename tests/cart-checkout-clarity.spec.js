@@ -141,6 +141,14 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
   await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
 
+  await page.clock.install({ time: new Date('2026-11-02T20:30:00.000Z') });
+  await page.evaluate(() => window.refreshDeliveryInfo());
+  await page.evaluate(() => window.CheckoutValidation.resolveSlot());
+  await expect(page.locator('#checkoutSlot')).not.toHaveValue('asap');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#checkoutSlot').locator('xpath=..')).not.toHaveAttribute('hidden', '');
+
   const summaryOrder = await page.evaluate(() => {
     const ids = ['cartSubtotal', 'cartDiscount', 'cartPromoDiscount', 'cartFee'];
     return ids.map((id) => Array.from(document.querySelector('.cart-summary-lines').children)
