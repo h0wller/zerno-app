@@ -2,6 +2,8 @@
 (function () {
     'use strict';
 
+    const DELETE_ACCOUNT_LABEL = 'Удалить аккаунт';
+
     if (document.getElementById('settingsModal')) return;
 
     var modal = document.createElement('div');
@@ -49,7 +51,7 @@
                     '<input id="deleteConfirmInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="УДАЛИТЬ">' +
                     '<div class="settings-delete-actions">' +
                         '<button class="btn ghost" id="deleteCancelBtn" type="button">Отмена</button>' +
-                        '<button class="btn danger" id="deleteConfirmBtn" type="button" disabled>Удалить аккаунт</button>' +
+                        '<button class="btn danger" id="deleteConfirmBtn" type="button" disabled>' + DELETE_ACCOUNT_LABEL + '</button>' +
                     '</div>' +
                 '</div>' +
             '</section>' +
@@ -74,7 +76,7 @@
         if (deleteInput) deleteInput.value = '';
         if (deleteConfirm) {
             deleteConfirm.disabled = true;
-            deleteConfirm.textContent = 'Удалить аккаунт';
+            deleteConfirm.textContent = DELETE_ACCOUNT_LABEL;
         }
         if (deleteButton) deleteButton.setAttribute('aria-expanded', 'false');
     }
@@ -153,7 +155,7 @@
         deleteConfirm.textContent = 'Удаляем…';
         var deleted = await window.performAccountDeletion();
         if (!deleted) {
-            deleteConfirm.textContent = 'Удалить аккаунт';
+            deleteConfirm.textContent = DELETE_ACCOUNT_LABEL;
             updateDeleteConfirmation();
         }
     });
