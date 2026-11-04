@@ -37,7 +37,6 @@ test('cart keeps the current selected price and explains every amount without gu
     localStorage.setItem('zt_cartpromo', 'SAVE100');
     localStorage.removeItem('zt_saved_address');
     localStorage.removeItem('zt_saved_addresses');
-    sessionStorage.removeItem('zt_checkout_draft');
     sessionStorage.setItem('splashDone', '1');
   });
 
