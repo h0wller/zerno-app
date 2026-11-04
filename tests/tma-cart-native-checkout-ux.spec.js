@@ -52,6 +52,9 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
     localStorage.setItem('zt_brand', 'delivery');
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_cart', JSON.stringify([{
+      key: 'tma-pizza_1', id: 'tma-pizza', name: 'Маргарита', opt: '25 см', price: 304, qty: 1
+    }]));
     sessionStorage.setItem('splashDone', '1');
   });
 
@@ -87,25 +90,31 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await page.evaluate(() => {
     // Simulate Telegram's WebApp object becoming fully initialized after state.js ran.
     window.Telegram.WebApp.initData = 'auth_date=1793750400&hash=test';
-    window.cart = [{ qty: 1, price: 304 }];
     window.totalsNow = () => ({ total: 304 });
+    window.renderCart();
 
-    const panel = document.getElementById('cartPanel');
-    panel.classList.add('open');
-    window.TgUx.updateMainButton();
-
-    const hint = document.createElement('div');
-    hint.id = 'zoneFeeHint';
-    hint.className = 'addr-fee-hint';
-    hint.textContent = 'Янтарный: доставка бесплатно';
-    document.querySelector('.checkoutForm').append(hint);
+    const scrollBody = document.getElementById('cartScrollBody');
+    const spacer = document.createElement('div');
+    spacer.id = 'test-cart-scroll-spacer';
+    spacer.style.height = '600px';
+    scrollBody.append(spacer);
+    scrollBody.scrollTop = 180;
+    window.__staleCartScrollTop = scrollBody.scrollTop;
 
     const discount = document.createElement('div');
     discount.className = 'csl-row discount';
-    discount.innerHTML = '<span class="csl-main"><span>Обеденная акция</span><strong>−131 ₽</strong></span>';
+    discount.innerHTML = '<span class="csl-main"><span>Обеденная акция</span><strong>−131 ₽</strong><small class="csl-explain">Скидка действует в обеденное окно</small></span>';
     document.querySelector('.cart-summary-lines').append(discount);
+
+    const fab = document.getElementById('cartFab');
+    fab.hidden = false;
+    fab.click();
   });
 
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+  await expect.poll(() => page.evaluate(() => window.__staleCartScrollTop)).toBe(180);
+  await expect.poll(() => page.evaluate(() => document.getElementById('cartScrollBody').scrollTop)).toBe(0);
+  await expect(page.locator('#cartItems .cartItem')).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-native-main'))).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__testTgMainButton.visible)).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__testTgMainButton.params?.text)).toBe('Оформить заказ · 304 ₽');
