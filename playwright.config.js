@@ -11,17 +11,12 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [['html', { open: 'never' }], ['json', { outputFile: 'test-results/results.json' }]],
 
   use: {
     baseURL: testUrl,
-    trace: {
-      mode: 'on-first-retry',
-      screenshots: false,
-      snapshots: false,
-      sources: false,
-      attachments: false,
-    },
+    screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
     // actionTimeout: 10000,
   },
 
