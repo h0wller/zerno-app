@@ -1333,7 +1333,7 @@ function renderCartBase() {
     var slotInput = document.getElementById("checkoutSlot");
     if (slotInput) {
       slotInput.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
-      slotInput.dispatchEvent(new Event("change", { bubbles: true }));
+      if (typeof slotInput.__syncTimeMode === "function") slotInput.__syncTimeMode();
     }
 
     document.querySelectorAll('#deliveryGrid .opts input[type="radio"]:checked').forEach(function (radio) {
