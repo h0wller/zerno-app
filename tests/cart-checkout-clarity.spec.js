@@ -298,4 +298,15 @@ test('checkout reuses the same idempotency key after a network failure and reloa
   await expect.poll(() => page.evaluate(() =>
     localStorage.getItem('zt_pending_order_id:checkout-idempotency-guest')
   )).toBeNull();
+  await expect.poll(() => page.evaluate(() =>
+    sessionStorage.getItem('zt_checkout_draft')
+  )).toBeNull();
+
+  await page.reload();
+  await page.waitForFunction(() =>
+    window.me && window.me.id === 'checkout-idempotency-guest' &&
+    Array.isArray(window.DMENU) && window.DMENU.some(item => item.id === 'pz-marg')
+  );
+  await expect(page.locator('#checkoutMethod')).toHaveValue('delivery');
+  await expect(page.locator('#checkoutPlace')).toHaveValue('');
 });
