@@ -1,4 +1,4 @@
-import { test, before, after } from 'node:test';
+import { test, before, beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
@@ -115,6 +115,16 @@ before(async () => {
   );
 });
 
+beforeEach(() => {
+  db.exec(`
+    DELETE FROM orders;
+    DELETE FROM promo_use;
+    DELETE FROM events;
+    UPDATE promos SET uses=0;
+    UPDATE meta SET value='40' WHERE key='order_no';
+  `);
+});
+
 after(async () => {
   if (db) db.close();
   if (child && child.exitCode === null) {
@@ -134,7 +144,18 @@ test('same client_order_id replays one order and consumes a promo only once', as
   const body = orderBody('ord_retry_same_001', 1, 'RETRY10');
 
   const first = await request('/orders', { method: 'POST', token, body });
-  const retry = await request('/orders', { method: 'POST', token, body });
+  const retryBody = {
+    items: body.items,
+    comment: body.comment,
+    client_order_id: body.client_order_id,
+    method: body.method,
+    place: body.place,
+    addr: body.addr,
+    slot: body.slot,
+    pay: body.pay,
+    promo: body.promo,
+  };
+  const retry = await request('/orders', { method: 'POST', token, body: retryBody });
 
   assert.equal(first.status, 200, JSON.stringify(first.json));
   assert.equal(retry.status, 200, JSON.stringify(retry.json));
@@ -159,6 +180,7 @@ test('same key with a different payload returns a conflict and creates no second
   assert.equal(first.status, 200, JSON.stringify(first.json));
   assert.equal(changed.status, 409, JSON.stringify(changed.json));
   assert.equal(changed.json.code, 'IDEMPOTENCY_KEY_REUSED');
+  assert.equal(changed.json.order.id, first.json.order.id);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 1);
   assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, '41');
 });
