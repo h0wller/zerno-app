@@ -685,7 +685,8 @@ function clearPromo() {
         street: (document.getElementById("checkoutStreet") || {}).value,
         house: (document.getElementById("checkoutHouse") || {}).value,
         slot: (document.getElementById("checkoutSlot") || {}).value,
-        timeMode: (document.getElementById("checkoutSlot") || {}).__checkoutTimeMode || "",
+        timeMode: (document.getElementById("checkoutSlot") || {}).dataset.checkoutTimeMode ||
+          (document.getElementById("checkoutSlot") || {}).__checkoutTimeMode || "",
         pay: (document.getElementById("checkoutPay") || {}).value,
         comment: (document.getElementById("checkoutComment") || {}).value
       };
