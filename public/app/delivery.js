@@ -1122,7 +1122,7 @@ function promoDisc(sum, info){
 }
 
 window.preorderMode = function () {
-  if (!deliveryInfo || !deliveryInfo.today) return 'today';
+  if (!deliveryInfo || !deliveryInfo.today) return null;
 
   var time = getKaliningradTime();
   var currentMinute = Number(time.hour) * 60 + Number(time.minute || 0);
