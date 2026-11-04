@@ -467,15 +467,9 @@ test('successful preorder keeps an explicit empty time selection for the next or
   expect(submittedSlots).toEqual([availableSlot]);
   await expect(page.locator('#orderTrackModal')).toHaveClass(/show/);
 
-  await page.locator('#orderTrackModal [data-ot-close]').click();
-  await page.locator('#cartFab').waitFor({ state: 'detached' });
-  await page.evaluate(() => {
-    const addButton = document.querySelector('#deliveryGrid [data-add="pz-marg"]');
-    if (!addButton) throw new Error('Delivery add button for fixture item was not rendered');
-    addButton.click();
-  });
+  await page.locator('#orderTrackModal [data-ot-repeat]').click();
   await expect(page.locator('#cartFab')).toBeVisible();
-  await page.locator('#cartFab').click();
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
   await expect(slot).toHaveValue('');
   await expect(scheduled).toHaveAttribute('aria-pressed', 'true');
   await expect(asap).toHaveAttribute('aria-pressed', 'false');
