@@ -54,6 +54,8 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
     localStorage.setItem('zt_inst_hide', '1');
     localStorage.setItem('zt_cart', JSON.stringify([{
       key: 'tma-pizza_1', id: 'tma-pizza', name: 'Маргарита', opt: '25 см', price: 304, qty: 1
+    }, {
+      key: 'tma-drink', id: 'tma-drink', name: 'Лимонад', price: 120, qty: 1
     }]));
     sessionStorage.setItem('splashDone', '1');
   });
@@ -64,7 +66,10 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
     let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
 
     if (url.pathname === '/api/dmenu') {
-      body = { items: [], updatedAt: '2026-11-04T00:00:00.000Z' };
+      body = {
+        items: [{ id: 'tma-recommended-drink', name: 'Лимонад к заказу', price: 120, cat: 'drinks', on: 1, e: '🥤' }],
+        updatedAt: '2026-11-04T00:00:00.000Z'
+      };
     } else if (url.pathname === '/api/delivery/info') {
       body = {
         zones: [],
@@ -124,7 +129,8 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await expect(page.locator('#cartPanel')).toHaveClass(/open/);
   await expect.poll(() => page.evaluate(() => window.__staleCartScrollTop)).toBe(180);
   await expect.poll(() => page.evaluate(() => document.getElementById('cartScrollBody').scrollTop)).toBe(0);
-  await expect(page.locator('#cartItems .cartItem')).toBeVisible();
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(2);
+  await expect(page.locator('#cartItems .cartItem').first()).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-native-main'))).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__testTgMainButton.visible)).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__testTgMainButton.params?.text)).toBe('Оформить заказ · 304 ₽');
@@ -133,8 +139,33 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await expect(page.locator('#checkoutBtn')).toHaveCSS('display', 'none');
   await expect(page.locator('#cartTopClose')).toHaveCSS('display', 'none');
   await expect(page.locator('#cartClose')).toHaveCSS('display', 'none');
-  await expect(page.locator('#cartAddons')).toHaveCSS('display', 'none');
+  await expect(page.locator('#cartAddons')).not.toHaveCSS('display', 'none');
+  await expect(page.locator('#cartAddons .ca-title')).toHaveText('Рекомендуем к заказу');
+  await expect(page.locator('#cartAddons .addon-pill-card')).toHaveCount(1);
+  await expect(page.locator('#cartAddons .ac-name')).toHaveText('Лимонад к заказу');
   await expect(page.locator('#zoneFeeHint')).toHaveCSS('display', 'none');
   await expect(page.locator('#test-discount-row')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(page.locator('#test-discount-row')).toHaveCSS('border-left-width', '0px');
+
+  await page.locator('#cartPanel [data-ci="0"][data-act="-"]').click();
+  await expect.poll(() => page.evaluate(() => window.__testTgMainButton.visible)).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-native-main'))).toBe(true);
+  await expect(page.locator('#cartPanel')).toHaveCSS('height', '844px');
+  await expect(page.locator('#checkoutBtn')).toHaveCSS('display', 'none');
+
+  await page.locator('#cartPanel [data-ci="0"][data-act="-"]').click();
+  await expect.poll(() => page.evaluate(() => window.__testTgMainButton.visible)).toBe(false);
+  await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-native-main'))).toBe(false);
+  await expect(page.locator('#cartPanel')).toHaveCSS('height', '844px');
+  await expect(page.locator('#checkoutBtn')).not.toHaveCSS('display', 'none');
+  await expect(page.locator('#cartAddons')).not.toHaveCSS('display', 'none');
+  await expect(page.locator('#cartAddons .addon-pill-card')).toHaveCount(1);
+
+  await page.evaluate(() => {
+    window.Telegram.WebApp.MainButton = null;
+    window.TgUx.updateMainButton();
+  });
+  await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-native-main'))).toBe(false);
+  await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-cart-open'))).toBe(true);
+  await expect(page.locator('#checkoutBtn')).not.toHaveCSS('display', 'none');
 });

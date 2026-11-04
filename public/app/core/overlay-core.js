@@ -212,22 +212,27 @@ function ensureTgEnvironment() {
   }
 
   function updateMainButton() {
+    const root = document.documentElement;
     if (!isTg()) {
-      document.documentElement.classList.remove("tg-native-main");
+      root.classList.remove("tg-cart-open", "tg-native-main");
       return;
     }
-    const tg = getTg();
-    const mb = tg && tg.MainButton;
-    if (!mb) return;
-
     const cartPanel = document.getElementById("cartPanel");
     const isCartOpen = !!(cartPanel && cartPanel.classList.contains("open"));
+    root.classList.toggle("tg-cart-open", isCartOpen);
+
+    const tg = getTg();
+    const mb = tg && tg.MainButton;
+    if (!mb) {
+      root.classList.remove("tg-native-main");
+      return;
+    }
     const { count, total } = getCartSummary();
     const shouldShow = isCartOpen && count > 0 && total > 0;
 
     bindMainButton();
     if (shouldShow) {
-      document.documentElement.classList.add("tg-native-main");
+      root.classList.add("tg-native-main");
       const isDeliv =
         typeof window.brand !== "undefined" && window.brand === "delivery";
       const btnColor = isDeliv ? "#C03B2A" : "#123A6B";
@@ -248,7 +253,7 @@ function ensureTgEnvironment() {
         }
       } catch (_) {}
     } else {
-      document.documentElement.classList.remove("tg-native-main");
+      root.classList.remove("tg-native-main");
       try {
         mb.hide();
       } catch (_) {}

@@ -249,7 +249,7 @@
 
 /* Telegram Mini App: нативная нижняя CTA Telegram — единственное действие оформления. */
 @media (max-width: 820px) {
-  html.tg-native-main body #cartPanel {
+  html.tg-cart-open body #cartPanel {
     height: 100dvh;
     max-height: 100dvh;
     padding-bottom: 0;
@@ -258,15 +258,15 @@
     box-shadow: none;
   }
 
-  html.tg-native-main body #cartPanel .cart-panel-header {
+  html.tg-cart-open body #cartPanel .cart-panel-header {
     padding: 12px 16px 10px;
   }
 
-  html.tg-native-main body #cartPanel .cart-scroll-body {
+  html.tg-cart-open body #cartPanel .cart-scroll-body {
     padding: 10px 16px 14px;
   }
 
-  html.tg-native-main body #cartPanel .cart-footer-bar {
+  html.tg-cart-open body #cartPanel .cart-footer-bar {
     padding: 10px 16px max(12px, env(safe-area-inset-bottom, 0px));
     box-shadow: none;
   }
@@ -274,12 +274,11 @@
   html.tg-native-main body #cartPanel .cart-footer-bar #checkoutBtn,
   html.tg-native-main body #cartPanel #cartTopClose,
   html.tg-native-main body #cartPanel .cart-footer-bar #cartClose,
-  html.tg-native-main body #cartPanel #cartAddons,
   html.tg-native-main body #cartPanel #zoneFeeHint {
     display: none;
   }
 
-  html.tg-native-main body #cartPanel .cart-summary-lines {
+  html.tg-cart-open body #cartPanel .cart-summary-lines {
     gap: 3px;
     margin-bottom: 0;
   }
