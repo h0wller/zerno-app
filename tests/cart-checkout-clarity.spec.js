@@ -216,7 +216,6 @@ test('checkout reuses the same idempotency key after a network failure and reloa
   );
   await page.locator('#cartFab').click();
   await page.locator('#checkoutMethod').selectOption('pickup');
-  await page.locator('#checkoutSlot').selectOption('asap');
   await page.locator('#checkoutBtn').click();
 
   await expect.poll(() => submittedIds.length).toBe(1);
@@ -234,7 +233,6 @@ test('checkout reuses the same idempotency key after a network failure and reloa
   );
   await page.locator('#cartFab').click();
   await page.locator('#checkoutMethod').selectOption('pickup');
-  await page.locator('#checkoutSlot').selectOption('asap');
   await page.locator('#checkoutBtn').click();
 
   await expect.poll(() => submittedIds.length).toBe(2);
