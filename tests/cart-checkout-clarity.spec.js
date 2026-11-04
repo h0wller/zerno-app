@@ -45,7 +45,22 @@ test('cart keeps the current selected price and explains every amount without gu
     const url = new URL(route.request().url());
     let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
 
-    if (url.pathname === '/api/dmenu') {
+    if (url.pathname === '/api/me') {
+      body = {
+        customer: {
+          id: 'successful-preorder-test-guest',
+          name: 'Preorder Test Guest',
+          phone: '+7 999 123-45-67',
+          role: 'guest',
+          verified: 1,
+          cups: 0,
+          stamps: 0,
+          free: 0,
+          history: [],
+          qr: 'successful-preorder-test-guest'
+        }
+      };
+    } else if (url.pathname === '/api/dmenu') {
       body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
     } else if (url.pathname === '/api/delivery/info') {
       const isPreorderFixture = new Date().getTime() >= Date.parse('2026-11-02T20:30:00.000Z');
@@ -384,7 +399,7 @@ test('successful preorder keeps an explicit empty time selection for the next or
       qty: 1
     }]));
     localStorage.removeItem('zt_cartpromo');
-    localStorage.removeItem('zt_user');
+    localStorage.setItem('zt_user', 'successful-preorder-test-token');
     sessionStorage.setItem('splashDone', '1');
     sessionStorage.removeItem('zt_checkout_draft');
   });
