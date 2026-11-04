@@ -82,7 +82,6 @@ function orderFromRow(row) {
   const order = { ...row };
   delete order.client_order_id;
   delete order.request_hash;
-  delete order.eta;
   return {
     ...order,
     items: JSON.parse(order.items || '[]'),
