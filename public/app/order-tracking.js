@@ -86,6 +86,7 @@
             localStorage.setItem("zt_cart", JSON.stringify(window.cart));
             if (typeof window.updateCartFab === "function") window.updateCartFab();
             if (typeof window.renderCart === "function") window.renderCart();
+            if (typeof window.cartFabShow === "function") window.cartFabShow();
             var cPanelEl = document.getElementById("cartPanel");
             if (cPanelEl) cPanelEl.classList.add("open");
             closeOrderTrackModal();
