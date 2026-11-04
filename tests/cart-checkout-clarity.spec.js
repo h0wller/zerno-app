@@ -48,14 +48,18 @@ test('cart keeps the current selected price and explains every amount without gu
     if (url.pathname === '/api/dmenu') {
       body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
     } else if (url.pathname === '/api/delivery/info') {
+      const isPreorderFixture = new Date().getTime() >= new Date('2026-11-02T20:30:00.000Z').getTime();
       body = {
         zones: [
           { fee: 200, min: 0, places: ['Янтарный'] },
           { fee: 250, min: 1000, places: ['Синявино'] }
         ],
-        today: { isOpen: true, canAcceptAsap: true, open: 11, close: 22 },
-        schedule: { open: 11, close: 22 },
-        days: [],
+        today: { isOpen: true, canAcceptAsap: !isPreorderFixture, open: 11, close: isPreorderFixture ? 20 : 22 },
+        schedule: { open: 11, close: isPreorderFixture ? 20 : 22 },
+        days: [
+          { offset: 0, date: '2026-11-02', isOpen: true, open: 11, close: isPreorderFixture ? 20 : 22 },
+          { offset: 1, date: '2026-11-03', isOpen: true, open: 11, close: 22 }
+        ],
         busySlots: [],
         weekPromo: null,
         pizzaMonth: null
@@ -115,6 +119,32 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartTotalLabel')).toHaveText('Итого к оплате');
   await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
 
+  const checkoutSections = page.locator('.checkoutForm > .checkout-section');
+  await expect(checkoutSections).toHaveCount(3);
+  await expect(checkoutSections.nth(0).locator('h4')).toHaveText('Получение');
+  await expect(checkoutSections.nth(1).locator('h4')).toHaveText('Когда и как оплатить');
+  await expect(checkoutSections.nth(2).locator('h4')).toHaveText('Проверка заказа');
+  await expect(checkoutSections.nth(0).locator('#checkoutMethod')).toHaveCount(1);
+  await expect(checkoutSections.nth(0).locator('#checkoutPlace, #checkoutStreet, #checkoutHouse')).toHaveCount(3);
+  await expect(checkoutSections.nth(1).locator('#checkoutSlot, #checkoutPay')).toHaveCount(2);
+  await expect(checkoutSections.nth(2).locator('#checkoutComment')).toHaveCount(1);
+  await expect(checkoutSections.nth(2).locator('.cart-promo-section')).toHaveCount(1);
+  await expect(page.locator('#cartItems').evaluate((el) => el.compareDocumentPosition(document.querySelector('.checkoutForm')) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
+
+  const timeMode = page.locator('#checkoutTimeModeSeg');
+  await expect(timeMode).toHaveAttribute('role', 'group');
+  await expect(timeMode).toHaveAttribute('aria-label', 'Когда получить заказ');
+  const asapMode = timeMode.locator('[data-tmode="asap"]');
+  const scheduledMode = timeMode.locator('[data-tmode="slot"]');
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
+  await scheduledMode.click();
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'false');
+  await asapMode.click();
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
+
   const summaryOrder = await page.evaluate(() => {
     const ids = ['cartSubtotal', 'cartDiscount', 'cartPromoDiscount', 'cartFee'];
     return ids.map((id) => Array.from(document.querySelector('.cart-summary-lines').children)
@@ -123,6 +153,88 @@ test('cart keeps the current selected price and explains every amount without gu
   expect(summaryOrder).toEqual([...summaryOrder].sort((a, b) => a - b));
 });
 
+test('checkout time mode follows programmatic preorder slot selection', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-02T15:00:00.000Z') });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_cart', JSON.stringify([{
+      key: 'pz-marg_1',
+      id: 'pz-marg',
+      oi: 1,
+      name: 'Маргарита',
+      opt: '35 см, пышное',
+      price: 735,
+      sz: 35,
+      qty: 1
+    }]));
+    localStorage.removeItem('zt_cartpromo');
+    localStorage.removeItem('zt_saved_address');
+    localStorage.removeItem('zt_saved_addresses');
+    sessionStorage.removeItem('zt_checkout_draft');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  await page.route('**/api/**', async (route) => {
+    const url = new URL(route.request().url());
+    let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
+    if (url.pathname === '/api/dmenu') {
+      body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
+    } else if (url.pathname === '/api/delivery/info') {
+      const isPreorderFixture = new Date().getTime() >= new Date('2026-11-02T20:30:00.000Z').getTime();
+      body = {
+        zones: [{ fee: 200, min: 0, places: ['Янтарный'] }],
+        today: { isOpen: true, canAcceptAsap: !isPreorderFixture, open: 11, close: isPreorderFixture ? 20 : 22 },
+        schedule: { open: 11, close: isPreorderFixture ? 20 : 22 },
+        days: [
+          { offset: 0, date: '2026-11-02', isOpen: true, open: 11, close: isPreorderFixture ? 20 : 22 },
+          { offset: 1, date: '2026-11-03', isOpen: true, open: 11, close: 22 }
+        ],
+        busySlots: [],
+        weekPromo: null,
+        pizzaMonth: null
+      };
+    } else if (url.pathname === '/api/me/free-delivery') {
+      body = { code: '' };
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+
+  await page.goto('/?brand=delivery');
+  await expect.poll(() => page.evaluate(() => Array.isArray(window.DMENU) && window.DMENU.some((item) => item.id === 'pz-marg'))).toBe(true);
+  await page.evaluate(() => window.refreshDeliveryInfo());
+  await page.evaluate(() => {
+    document.getElementById('cartPanel').classList.add('open');
+    window.renderCart();
+  });
+
+  const timeMode = page.locator('#checkoutTimeModeSeg');
+  const asapMode = timeMode.locator('[data-tmode="asap"]');
+  const scheduledMode = timeMode.locator('[data-tmode="slot"]');
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
+  await scheduledMode.click();
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'false');
+  await asapMode.click();
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
+
+  await page.clock.setFixedTime(new Date('2026-11-02T20:30:00.000Z'));
+  await page.evaluate(() => window.refreshDeliveryInfo());
+  await page.evaluate(() => window.CheckoutValidation.resolveSlot());
+  await expect(page.locator('#checkoutSlot')).not.toHaveValue('asap');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#checkoutSlot').locator('xpath=..')).not.toHaveAttribute('hidden', '');
+  await page.evaluate(() => {
+    const slot = document.getElementById('checkoutSlot');
+    slot.value = 'asap';
+    slot.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect(asapMode).toHaveAttribute('aria-pressed', 'true');
+  await expect(scheduledMode).toHaveAttribute('aria-pressed', 'false');
+});
 
 test('checkout reuses the same idempotency key after a network failure and reload', async ({ page }) => {
   // Keep checkout inside opening hours so the test exercises ASAP retry, not pre-order slot validation.
@@ -243,4 +355,15 @@ test('checkout reuses the same idempotency key after a network failure and reloa
   await expect.poll(() => page.evaluate(() =>
     localStorage.getItem('zt_pending_order_id:checkout-idempotency-guest')
   )).toBeNull();
+  await expect.poll(() => page.evaluate(() =>
+    sessionStorage.getItem('zt_checkout_draft')
+  )).toBeNull();
+
+  await page.reload();
+  await page.waitForFunction(() =>
+    window.me && window.me.id === 'checkout-idempotency-guest' &&
+    Array.isArray(window.DMENU) && window.DMENU.some(item => item.id === 'pz-marg')
+  );
+  await expect(page.locator('#checkoutMethod')).toHaveValue('delivery');
+  await expect(page.locator('#checkoutPlace')).toHaveValue('');
 });
