@@ -13,6 +13,70 @@
     return 0; // new
   }
 
+
+  function openDeliveryChat() {
+    var chatState = window.chatState;
+    if (chatState) {
+      if (typeof chatState.setChosenSupportCtx === "function") chatState.setChosenSupportCtx("delivery");
+      if (typeof chatState.setSupportPending === "function") chatState.setSupportPending(false);
+      if (typeof chatState.setChatCtx === "function") chatState.setChatCtx("delivery");
+    }
+    document.body.classList.remove("support-pending");
+    if (typeof window.hideSupportOverlay === "function") window.hideSupportOverlay();
+
+    var chatPanel = document.getElementById("chatPanel");
+    if (chatPanel) chatPanel.classList.add("open");
+    var chatFab = document.getElementById("chatFab");
+    if (chatFab) chatFab.classList.add("open");
+    closeOrderTrackModal();
+
+    if (typeof window.setBotName === "function") window.setBotName();
+    if (typeof window.reloadChatThread === "function") window.reloadChatThread();
+
+    var input = document.getElementById("chatInput");
+    var orderNo = activeTrackOrder && (activeTrackOrder.no || activeTrackOrder.id);
+    if (input) {
+      input.value = "Здравствуйте! У меня вопрос по заказу" +
+        (orderNo ? " №" + orderNo : "") + ".";
+      input.focus();
+    }
+  }
+
+  function repeatTrackedOrder() {
+    if (!activeTrackOrder || !Array.isArray(activeTrackOrder.items)) return;
+    window.cart = activeTrackOrder.items.map(function (item) {
+      return {
+        key: String(item.id) + "_" + (item.opt || "0"),
+        id: item.id,
+        oi: typeof item.oi === "number" ? item.oi : -1,
+        name: item.name || "Блюдо",
+        opt: item.opt || null,
+        price: Number(item.price) || 0,
+        sz: Number(item.sz) || 0,
+        qty: Number(item.qty) || 1,
+        modifiers: item.modifiers || []
+      };
+    });
+    localStorage.setItem("zt_cart", JSON.stringify(window.cart));
+    if (typeof window.updateCartFab === "function") window.updateCartFab();
+    if (typeof window.renderCart === "function") window.renderCart();
+    var cartPanel = document.getElementById("cartPanel");
+    if (cartPanel) cartPanel.classList.add("open");
+    closeOrderTrackModal();
+    window.toast("Заказ добавлен в корзину", "🛒");
+  }
+
+  function handleTrackModalClick(event) {
+    var target = event.target;
+    if (target === event.currentTarget || target.closest("[data-ot-close]")) {
+      closeOrderTrackModal();
+    } else if (target.closest("[data-ot-chat]")) {
+      openDeliveryChat();
+    } else if (target.closest("[data-ot-repeat]")) {
+      repeatTrackedOrder();
+    }
+  }
+
   function renderTrackModalContent(order) {
     if (!order) return;
     activeTrackOrder = order;
@@ -23,69 +87,7 @@
       modal.className = "modal";
       document.body.appendChild(modal);
 
-      modal.addEventListener("click", function (e) {
-        if (e.target === modal || e.target.closest("[data-ot-close]")) {
-          closeOrderTrackModal();
-          return;
-        }
-        if (e.target.closest("[data-ot-chat]")) {
-          var chatState = window.chatState;
-          if (chatState) {
-            if (typeof chatState.setChosenSupportCtx === "function") {
-              chatState.setChosenSupportCtx("delivery");
-            }
-            if (typeof chatState.setSupportPending === "function") {
-              chatState.setSupportPending(false);
-            }
-            if (typeof chatState.setChatCtx === "function") {
-              chatState.setChatCtx("delivery");
-            }
-          }
-          document.body.classList.remove("support-pending");
-          if (typeof window.hideSupportOverlay === "function") window.hideSupportOverlay();
-
-          var cp = document.getElementById("chatPanel");
-          if (cp) cp.classList.add("open");
-          var fab = document.getElementById("chatFab");
-          if (fab) fab.classList.add("open");
-          closeOrderTrackModal();
-
-          if (typeof window.setBotName === "function") window.setBotName();
-          if (typeof window.reloadChatThread === "function") window.reloadChatThread();
-
-          var input = document.getElementById("chatInput");
-          var orderNo = activeTrackOrder && (activeTrackOrder.no || activeTrackOrder.id);
-          if (input) {
-            input.value = "Здравствуйте! У меня вопрос по заказу" +
-              (orderNo ? " №" + orderNo : "") + ".";
-            input.focus();
-          }
-          return;
-        }
-        if (e.target.closest("[data-ot-repeat]") &&
-            activeTrackOrder && Array.isArray(activeTrackOrder.items)) {
-            window.cart = activeTrackOrder.items.map(function (it) {
-              return {
-                key: String(it.id) + "_" + (it.opt || "0"),
-                id: it.id,
-                oi: typeof it.oi === "number" ? it.oi : -1,
-                name: it.name || "Блюдо",
-                opt: it.opt || null,
-                price: Number(it.price) || 0,
-                sz: Number(it.sz) || 0,
-                qty: Number(it.qty) || 1,
-                modifiers: it.modifiers || []
-              };
-            });
-            localStorage.setItem("zt_cart", JSON.stringify(window.cart));
-            if (typeof window.updateCartFab === "function") window.updateCartFab();
-            if (typeof window.renderCart === "function") window.renderCart();
-            var cPanelEl = document.getElementById("cartPanel");
-            if (cPanelEl) cPanelEl.classList.add("open");
-            closeOrderTrackModal();
-            window.toast("Заказ добавлен в корзину", "🛒");
-        }
-      });
+      modal.addEventListener("click", handleTrackModalClick);
     }
 
     var stepIdx = statusStepIndex(order.status || "new");
