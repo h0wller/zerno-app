@@ -147,6 +147,13 @@ test('cart keeps the current selected price and explains every amount without gu
       .findIndex((node) => node.id === id));
   });
   expect(summaryOrder).toEqual([...summaryOrder].sort((a, b) => a - b));
+
+  await page.locator('#checkoutMethod').selectOption('pickup');
+  await expect(page.locator('#checkoutDeliveryGroup')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1323);
+  await page.locator('#checkoutMethod').selectOption('delivery');
+  await expect(page.locator('#checkoutDeliveryGroup')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
 });
 
 
