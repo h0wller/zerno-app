@@ -871,8 +871,12 @@ $('#checkoutMethod').onchange = () => {
 $('#cartFab').onclick = async () => {
   window.renderCart();
   const cartScrollBody = $('#cartScrollBody');
-  if (cartScrollBody) cartScrollBody.scrollTop = 0;
   $('#cartPanel').classList.add('open');
+  // Reset after the sheet becomes visible; while closed, the browser may clamp
+  // scrollTop against the collapsed scroll viewport and restore the old offset.
+  requestAnimationFrame(() => {
+    if (cartScrollBody) cartScrollBody.scrollTop = 0;
+  });
   const checkoutButton = $('#checkoutBtn');
   if (checkoutButton) checkoutButton.disabled = true;
   try {
