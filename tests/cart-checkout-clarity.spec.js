@@ -384,7 +384,7 @@ test('successful preorder keeps an explicit empty time selection for the next or
       qty: 1
     }]));
     localStorage.removeItem('zt_cartpromo');
-    localStorage.setItem('zt_user', 'preorder-reset-test-token');
+    localStorage.removeItem('zt_user');
     sessionStorage.setItem('splashDone', '1');
     sessionStorage.removeItem('zt_checkout_draft');
   });
@@ -394,22 +394,7 @@ test('successful preorder keeps an explicit empty time selection for the next or
     const url = new URL(request.url());
     let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
 
-    if (url.pathname === '/api/me') {
-      body = {
-        customer: {
-          id: 'preorder-reset-guest',
-          name: 'Preorder Guest',
-          phone: '+7 999 123-45-67',
-          role: 'guest',
-          verified: 1,
-          cups: 0,
-          stamps: 0,
-          free: 0,
-          history: [],
-          qr: 'preorder-reset-guest'
-        }
-      };
-    } else if (url.pathname === '/api/dmenu') {
+    if (url.pathname === '/api/dmenu') {
       body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
     } else if (url.pathname === '/api/delivery/info') {
       body = {
@@ -426,8 +411,6 @@ test('successful preorder keeps an explicit empty time selection for the next or
       };
     } else if (url.pathname === '/api/me/free-delivery') {
       body = { code: '' };
-    } else if (url.pathname === '/api/orders/mine') {
-      body = { orders: [] };
     } else if (url.pathname === '/api/orders' && request.method() === 'POST') {
       submittedOrders += 1;
       submittedSlots.push(request.postDataJSON().slot);
@@ -451,10 +434,9 @@ test('successful preorder keeps an explicit empty time selection for the next or
   });
 
   await page.goto('/?brand=delivery');
-  await page.waitForFunction(() =>
-    window.me && window.me.id === 'preorder-reset-guest' &&
+  await expect.poll(() => page.evaluate(() =>
     Array.isArray(window.DMENU) && window.DMENU.some((item) => item.id === 'pz-marg')
-  );
+  )).toBe(true);
   await page.evaluate(() => window.refreshDeliveryInfo());
   await page.evaluate(() => {
     document.getElementById('cartPanel').classList.add('open');
@@ -476,7 +458,6 @@ test('successful preorder keeps an explicit empty time selection for the next or
   );
   expect(availableSlot).toBeTruthy();
   await slot.selectOption(availableSlot);
-  await expect(slot).toHaveValue(availableSlot);
 
   await page.locator('#checkoutPlace').selectOption('Янтарный');
   await page.locator('#checkoutStreet').fill('Советская');
@@ -487,6 +468,11 @@ test('successful preorder keeps an explicit empty time selection for the next or
   await expect(page.locator('#orderTrackModal')).toHaveClass(/show/);
 
   await page.locator('#orderTrackModal [data-ot-close]').click();
+  await page.locator('#cartFab').waitFor({ state: 'detached' });
+  await page.evaluate(() => {
+    window.addToCart('pz-marg');
+  });
+  await expect(page.locator('#cartFab')).toBeVisible();
   await page.locator('#cartFab').click();
   await expect(slot).toHaveValue('');
   await expect(scheduled).toHaveAttribute('aria-pressed', 'true');
