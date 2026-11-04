@@ -73,6 +73,7 @@ window.refreshDeliveryInfo = function () {
       .then(function (info) {
         populatePlaces();
         window.populateSlots();
+        if (typeof window.restoreCheckoutDraft === "function") window.restoreCheckoutDraft();
         if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome(true);
         return info;
       })
