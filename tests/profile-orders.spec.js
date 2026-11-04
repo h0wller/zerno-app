@@ -83,6 +83,12 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#pvProfile')).toBeVisible();
     await expect(page.locator('#profileBox')).toBeVisible();
     await expect(page.locator('#myOrdersBtn')).toBeVisible();
+    await expect(page.locator('#fridayInfo')).toBeVisible();
+    await expect(page.locator('#fridayInfo a[aria-label="ВКонтакте"]')).toHaveAttribute('href', 'https://vk.ru/fridaypizza39');
+    await expect(page.locator('#fridayInfo a[aria-label="Яндекс Карты"]')).toHaveAttribute('href', /yandex\.ru\/maps/);
+    await expect.poll(() => page.locator('#fridayInfo').evaluate(element =>
+      element.nextElementSibling?.classList.contains('profile-history-section')
+    )).toBe(true);
   });
   test('выводит последний заказ в профиле и список в отдельной модалке', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection .profile-section-heading')).toContainText('Последний заказ');
