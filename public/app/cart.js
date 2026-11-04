@@ -721,6 +721,7 @@ function clearPromo() {
         if (draft.slot) draftSlot.value = draft.slot;
         if (draft.timeMode === "slot" || draft.timeMode === "asap") {
           draftSlot.__checkoutTimeMode = draft.timeMode;
+          draftSlot.dataset.checkoutTimeMode = draft.timeMode;
         }
       }
       if (draft.pay && document.getElementById("checkoutPay")) {
@@ -1338,6 +1339,9 @@ function renderCartBase() {
     var slotInput = document.getElementById("checkoutSlot");
     if (slotInput) {
       slotInput.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
+      slotInput.__checkoutTimeMode = slotInput.value === "" && window.preorderMode && window.preorderMode()
+        ? "slot" : "asap";
+      slotInput.dataset.checkoutTimeMode = slotInput.__checkoutTimeMode;
       if (typeof slotInput.__syncTimeMode === "function") slotInput.__syncTimeMode();
       if (slotInput.value === "" && typeof window.populateSlots === "function") {
         window.populateSlots();
