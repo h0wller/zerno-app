@@ -66,6 +66,16 @@ function ensureTimeModeToggle() {
       slotEl.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
+    slotEl.addEventListener("change", function () {
+      var isScheduledNow = !!slotEl.value && slotEl.value !== "asap";
+      seg.querySelectorAll(".tms-btn").forEach(function (b) {
+        var isActive = b.dataset.tmode === (isScheduledNow ? "slot" : "asap");
+        b.classList.toggle("on", isActive);
+        b.setAttribute("aria-pressed", String(isActive));
+      });
+      labelEl.hidden = !isScheduledNow;
+    });
+
     if (!isScheduled) labelEl.hidden = true;
 
     seg.addEventListener("click", function (e) {
@@ -146,6 +156,7 @@ async function resolveCheckoutSlot() {
         if (slotElCheck.options[sIdx].value && slotElCheck.options[sIdx].value !== "asap") {
           slotElCheck.value = slotElCheck.options[sIdx].value;
           slotVal = slotElCheck.value;
+          slotElCheck.dispatchEvent(new Event("change", { bubbles: true }));
           break;
         }
       }
