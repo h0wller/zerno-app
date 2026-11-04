@@ -1,4 +1,5 @@
 /* public/app/ui/settings.js — настройки профиля и управление аккаунтом. */
+const DELETE_ACCOUNT_LABEL = DELETE_ACCOUNT_LABEL;
 (function () {
     'use strict';
 
@@ -74,7 +75,7 @@
         if (deleteInput) deleteInput.value = '';
         if (deleteConfirm) {
             deleteConfirm.disabled = true;
-            deleteConfirm.textContent = 'Удалить аккаунт';
+            deleteConfirm.textContent = DELETE_ACCOUNT_LABEL;
         }
         if (deleteButton) deleteButton.setAttribute('aria-expanded', 'false');
     }
@@ -153,7 +154,7 @@
         deleteConfirm.textContent = 'Удаляем…';
         var deleted = await window.performAccountDeletion();
         if (!deleted) {
-            deleteConfirm.textContent = 'Удалить аккаунт';
+            deleteConfirm.textContent = DELETE_ACCOUNT_LABEL;
             updateDeleteConfirmation();
         }
     });
