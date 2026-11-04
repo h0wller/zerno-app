@@ -34,16 +34,20 @@ function ensureTimeModeToggle() {
     var seg = document.createElement("div");
     seg.id = "checkoutTimeModeSeg";
     seg.className = "time-mode-seg";
+    seg.setAttribute("role", "group");
+    seg.setAttribute("aria-label", "Когда получить заказ");
     var isScheduled = slotEl.value && slotEl.value !== "asap";
     seg.innerHTML =
-      '<button type="button" class="tms-btn' + (!isScheduled ? " on" : "") + '" data-tmode="asap">⚡ Как можно скорее</button>' +
-      '<button type="button" class="tms-btn' + (isScheduled ? " on" : "") + '" data-tmode="slot">⏰ Ко времени</button>';
+      '<button type="button" class="tms-btn' + (!isScheduled ? " on" : "") + '" data-tmode="asap" aria-pressed="' + (!isScheduled) + '">⚡ Как можно скорее</button>' +
+      '<button type="button" class="tms-btn' + (isScheduled ? " on" : "") + '" data-tmode="slot" aria-pressed="' + (!!isScheduled) + '">⏰ Ко времени</button>';
 
     labelEl.parentNode.insertBefore(seg, labelEl);
 
     function syncSlotVisibility(modeVal) {
       seg.querySelectorAll(".tms-btn").forEach(function (b) {
-        b.classList.toggle("on", b.dataset.tmode === modeVal);
+        var isActive = b.dataset.tmode === modeVal;
+        b.classList.toggle("on", isActive);
+        b.setAttribute("aria-pressed", String(isActive));
       });
       if (modeVal === "asap") {
         slotEl.value = "asap";
