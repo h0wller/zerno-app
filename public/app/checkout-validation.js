@@ -36,7 +36,8 @@ function ensureTimeModeToggle() {
     seg.className = "time-mode-seg";
     seg.setAttribute("role", "group");
     seg.setAttribute("aria-label", "Когда получить заказ");
-    var isScheduled = slotEl.value && slotEl.value !== "asap";
+    var preorderRequired = typeof window.preorderMode === "function" && !!window.preorderMode();
+    var isScheduled = (slotEl.value && slotEl.value !== "asap") || (!slotEl.value && preorderRequired);
     seg.innerHTML =
       '<button type="button" class="tms-btn' + (!isScheduled ? " on" : "") + '" data-tmode="asap" aria-pressed="' + (!isScheduled) + '">⚡ Как можно скорее</button>' +
       '<button type="button" class="tms-btn' + (isScheduled ? " on" : "") + '" data-tmode="slot" aria-pressed="' + (!!isScheduled) + '">⏰ Ко времени</button>';
@@ -44,7 +45,8 @@ function ensureTimeModeToggle() {
     labelEl.parentNode.insertBefore(seg, labelEl);
 
     function syncTimeMode() {
-      var isScheduledNow = !!slotEl.value && slotEl.value !== "asap";
+      var preorderRequiredNow = typeof window.preorderMode === "function" && !!window.preorderMode();
+      var isScheduledNow = (!!slotEl.value && slotEl.value !== "asap") || (!slotEl.value && preorderRequiredNow);
       seg.querySelectorAll(".tms-btn").forEach(function (b) {
         var isActive = b.dataset.tmode === (isScheduledNow ? "slot" : "asap");
         b.classList.toggle("on", isActive);
@@ -56,13 +58,8 @@ function ensureTimeModeToggle() {
     function syncSlotVisibility(modeVal) {
       if (modeVal === "asap") {
         slotEl.value = "asap";
-      } else if (!slotEl.value || slotEl.value === "asap") {
-        for (var i = 0; i < slotEl.options.length; i++) {
-          if (slotEl.options[i].value && slotEl.options[i].value !== "asap") {
-            slotEl.value = slotEl.options[i].value;
-            break;
-          }
-        }
+      } else if (slotEl.value === "asap") {
+        slotEl.value = "";
       }
       syncTimeMode();
       slotEl.dispatchEvent(new Event("change", { bubbles: true }));
@@ -144,16 +141,15 @@ async function resolveCheckoutSlot() {
     var slotElCheck = document.getElementById("checkoutSlot");
     var slotModeBtn = document.querySelector('#checkoutTimeModeSeg .tms-btn.on[data-tmode="slot"]');
     var slotVal = (slotElCheck && slotElCheck.value) || "";
-    if ((pm || slotModeBtn) && (!slotVal || slotVal === "asap") && slotElCheck) {
+    if (pm && slotElCheck) {
       ensureTimeModeToggle();
-      for (var sIdx = 0; sIdx < slotElCheck.options.length; sIdx++) {
-        if (slotElCheck.options[sIdx].value && slotElCheck.options[sIdx].value !== "asap") {
-          slotElCheck.value = slotElCheck.options[sIdx].value;
-          slotVal = slotElCheck.value;
-          slotElCheck.dispatchEvent(new Event("change", { bubbles: true }));
-          break;
-        }
-      }
+      if (!slotVal || slotVal === "asap") slotElCheck.value = "";
+      slotVal = slotElCheck.value || "";
+      if (typeof slotElCheck.__syncTimeMode === "function") slotElCheck.__syncTimeMode();
+    } else if (slotModeBtn && (!slotVal || slotVal === "asap") && slotElCheck) {
+      slotElCheck.value = "";
+      slotVal = "";
+      if (typeof slotElCheck.__syncTimeMode === "function") slotElCheck.__syncTimeMode();
     }
 
     var isPreorder = !!pm || (slotVal && slotVal !== "asap");
