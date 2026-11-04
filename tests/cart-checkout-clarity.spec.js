@@ -470,7 +470,9 @@ test('successful preorder keeps an explicit empty time selection for the next or
   await page.locator('#orderTrackModal [data-ot-close]').click();
   await page.locator('#cartFab').waitFor({ state: 'detached' });
   await page.evaluate(() => {
-    window.addToCart('pz-marg');
+    const addButton = document.querySelector('#deliveryGrid [data-add="pz-marg"]');
+    if (!addButton) throw new Error('Delivery add button for fixture item was not rendered');
+    addButton.click();
   });
   await expect(page.locator('#cartFab')).toBeVisible();
   await page.locator('#cartFab').click();
