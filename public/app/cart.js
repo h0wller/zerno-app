@@ -1436,6 +1436,7 @@ function renderCartBase() {
     };
   }
 
+  window.restoreCheckoutDraft = restoreDraft;
   restoreDraft();
   scheduleLunchPromoRefresh();
 
