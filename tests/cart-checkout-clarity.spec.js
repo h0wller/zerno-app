@@ -122,3 +122,125 @@ test('cart keeps the current selected price and explains every amount without gu
   });
   expect(summaryOrder).toEqual([...summaryOrder].sort((a, b) => a - b));
 });
+
+
+test('checkout reuses the same idempotency key after a network failure and reload', async ({ page }) => {
+  const submittedIds = [];
+  let firstAttempt = true;
+
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_user', 'checkout-idempotency-test-token');
+    localStorage.setItem('zt_cart', JSON.stringify([{
+      key: 'pz-marg_1',
+      id: 'pz-marg',
+      oi: 1,
+      name: 'Маргарита',
+      opt: '35 см, пышное',
+      price: 735,
+      sz: 35,
+      qty: 1
+    }]));
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  await page.route('**/api/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
+
+    if (url.pathname === '/api/me') {
+      body = {
+        customer: {
+          id: 'checkout-idempotency-guest',
+          name: 'Checkout Guest',
+          phone: '+7 999 123-45-67',
+          role: 'guest',
+          verified: 1,
+          cups: 0,
+          stamps: 0,
+          free: 0,
+          history: [],
+          qr: 'checkout-idempotency-guest'
+        }
+      };
+    } else if (url.pathname === '/api/dmenu') {
+      body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
+    } else if (url.pathname === '/api/delivery/info') {
+      body = {
+        zones: [{ fee: 200, min: 0, places: ['Янтарный'] }],
+        today: { isOpen: true, canAcceptAsap: true, open: 11, close: 22 },
+        schedule: { open: 11, close: 22 },
+        days: [],
+        busySlots: [],
+        weekPromo: null,
+        pizzaMonth: null
+      };
+    } else if (url.pathname === '/api/me/free-delivery') {
+      body = { code: null };
+    } else if (url.pathname === '/api/promo/info') {
+      body = { ok: true, kind: 'fixed', value: 0, code: url.searchParams.get('code') };
+    } else if (url.pathname === '/api/orders/mine') {
+      body = { orders: [] };
+    } else if (url.pathname === '/api/orders' && request.method() === 'POST') {
+      const payload = request.postDataJSON();
+      submittedIds.push(payload.client_order_id);
+      if (firstAttempt) {
+        firstAttempt = false;
+        await route.abort('failed');
+        return;
+      }
+      body = {
+        order: {
+          id: 'idempotency-order-1',
+          no: 901,
+          status: 'new',
+          total: 735,
+          items: [{ id: 'pz-marg', name: 'Маргарита', qty: 1, price: 735 }]
+        }
+      };
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
+    });
+  });
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.me && window.me.id === 'checkout-idempotency-guest' &&
+    Array.isArray(window.DMENU) && window.DMENU.some(item => item.id === 'pz-marg')
+  );
+  await page.locator('#cartFab').click();
+  await page.locator('#checkoutMethod').selectOption('pickup');
+  await page.locator('#checkoutSlot').selectOption('asap');
+  await page.locator('#checkoutBtn').click();
+
+  await expect.poll(() => submittedIds.length).toBe(1);
+  await expect(page.locator('#checkoutBtn')).toBeEnabled();
+  const firstId = submittedIds[0];
+  expect(firstId).toMatch(/^ord_[A-Za-z0-9_-]+$/);
+  await expect.poll(() => page.evaluate(() =>
+    localStorage.getItem('zt_pending_order_id:checkout-idempotency-guest')
+  )).toBe(firstId);
+
+  await page.reload();
+  await page.waitForFunction(() =>
+    window.me && window.me.id === 'checkout-idempotency-guest' &&
+    Array.isArray(window.DMENU) && window.DMENU.some(item => item.id === 'pz-marg')
+  );
+  await page.locator('#cartFab').click();
+  await page.locator('#checkoutMethod').selectOption('pickup');
+  await page.locator('#checkoutSlot').selectOption('asap');
+  await page.locator('#checkoutBtn').click();
+
+  await expect.poll(() => submittedIds.length).toBe(2);
+  expect(submittedIds[1]).toBe(firstId);
+  await expect(page.locator('#orderTrackModal')).toHaveClass(/show/);
+  await expect.poll(() => page.evaluate(() =>
+    localStorage.getItem('zt_pending_order_id:checkout-idempotency-guest')
+  )).toBeNull();
+});
