@@ -1022,7 +1022,8 @@ window.populateSlots = function () {
   var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : 'today';
   var sel = document.getElementById('checkoutSlot');
   var previousValue = sel ? sel.value : '';
-  var scheduledWithoutSelection = !!sel && sel.__checkoutTimeMode === 'slot'
+  var previousMode = sel && (sel.dataset.checkoutTimeMode || sel.__checkoutTimeMode);
+  var scheduledWithoutSelection = !!sel && previousMode === 'slot'
     && (!previousValue || previousValue === 'asap') && !pm;
   var days = {};
   var scheduleDays = deliveryInfo && Array.isArray(deliveryInfo.days) ? deliveryInfo.days : [];
@@ -1051,9 +1052,11 @@ window.populateSlots = function () {
     if (scheduledWithoutSelection) {
       sel.value = '';
       sel.__checkoutTimeMode = 'slot';
+      sel.dataset.checkoutTimeMode = 'slot';
     } else if (previousValue && !restoredSelection && !pm) {
       sel.value = 'asap';
       sel.__checkoutTimeMode = 'asap';
+      sel.dataset.checkoutTimeMode = 'asap';
     } else if (pm && (!restoredSelection || !sel.value || sel.value === 'asap')) {
       sel.value = '';
       sel.__checkoutTimeMode = 'slot';
