@@ -334,7 +334,9 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     if (!cf) return;
     var isDel = checkIsDelivery();
     var isGuestOrAdmin = typeof mode === "undefined" || mode === "guest" || mode === "admin";
-    var hasItems = typeof cart !== "undefined" && cart.length > 0;
+    var currentCart = Array.isArray(window.cart) ? window.cart :
+      (typeof cart !== "undefined" && Array.isArray(cart) ? cart : []);
+    var hasItems = currentCart.length > 0;
     var shouldShow = isGuestOrAdmin && isDel && hasItems;
     cf.classList.toggle("visible", shouldShow);
     cf.hidden = !shouldShow;
