@@ -1035,16 +1035,28 @@ window.populateSlots = function () {
 
   if (sel) {
     sel.innerHTML = renderSlotGroupOptions(days, pm);
+    var restoredSelection = false;
     if (previousValue) {
       for (var i = 0; i < sel.options.length; i++) {
         if (sel.options[i].value === previousValue && !sel.options[i].disabled) {
           sel.value = previousValue;
+          restoredSelection = true;
           break;
         }
       }
     }
+
+    if (previousValue && !restoredSelection && !pm) {
+      sel.value = 'asap';
+      sel.__checkoutTimeMode = 'asap';
+    } else if (pm && (!restoredSelection || !sel.value || sel.value === 'asap')) {
+      sel.value = '';
+      sel.__checkoutTimeMode = 'slot';
+    }
+
     sel.classList.toggle('need-slot', !!pm && !sel.value);
     setupSlotDisplayToggle(sel);
+    if (typeof sel.__syncTimeMode === 'function') sel.__syncTimeMode();
   }
 };
 

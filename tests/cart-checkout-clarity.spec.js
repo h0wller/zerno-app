@@ -48,7 +48,7 @@ test('cart keeps the current selected price and explains every amount without gu
     if (url.pathname === '/api/dmenu') {
       body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
     } else if (url.pathname === '/api/delivery/info') {
-      const isPreorderFixture = new Date().getTime() >= new Date('2026-11-02T20:30:00.000Z').getTime();
+      const isPreorderFixture = new Date().getTime() >= Date.parse('2026-11-02T20:30:00.000Z');
       body = {
         zones: [
           { fee: 200, min: 0, places: ['Янтарный'] },
@@ -181,7 +181,7 @@ test('checkout time mode follows programmatic preorder slot selection', async ({
     if (url.pathname === '/api/dmenu') {
       body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
     } else if (url.pathname === '/api/delivery/info') {
-      const isPreorderFixture = new Date().getTime() >= new Date('2026-11-02T20:30:00.000Z').getTime();
+      const isPreorderFixture = new Date().getTime() >= Date.parse('2026-11-02T20:30:00.000Z');
       body = {
         zones: [{ fee: 200, min: 0, places: ['Янтарный'] }],
         today: { isOpen: true, canAcceptAsap: !isPreorderFixture, open: 11, close: isPreorderFixture ? 20 : 22 },
@@ -286,7 +286,10 @@ test('checkout reuses the same idempotency key after a network failure and reloa
         zones: [{ fee: 200, min: 0, places: ['Янтарный'] }],
         today: { isOpen: true, canAcceptAsap: true, open: 11, close: 22 },
         schedule: { open: 11, close: 22 },
-        days: [],
+        days: [
+          { offset: 0, date: '2026-11-04', isOpen: true, open: 11, close: 22 },
+          { offset: 1, date: '2026-11-05', isOpen: true, open: 11, close: 22 }
+        ],
         busySlots: [],
         weekPromo: null,
         pizzaMonth: null

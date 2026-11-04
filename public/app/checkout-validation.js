@@ -37,7 +37,8 @@ function ensureTimeModeToggle() {
     seg.setAttribute("role", "group");
     seg.setAttribute("aria-label", "Когда получить заказ");
     var preorderRequired = typeof window.preorderMode === "function" && !!window.preorderMode();
-    var isScheduled = (slotEl.value && slotEl.value !== "asap") || (!slotEl.value && preorderRequired);
+    var isScheduled = slotEl.__checkoutTimeMode === "slot" ||
+      (slotEl.value && slotEl.value !== "asap") || (!slotEl.value && preorderRequired);
     slotEl.__checkoutTimeMode = isScheduled ? "slot" : "asap";
     seg.innerHTML =
       '<button type="button" class="tms-btn' + (!isScheduled ? " on" : "") + '" data-tmode="asap" aria-pressed="' + (!isScheduled) + '">⚡ Как можно скорее</button>' +
@@ -48,8 +49,8 @@ function ensureTimeModeToggle() {
     function syncTimeMode() {
       var preorderRequiredNow = typeof window.preorderMode === "function" && !!window.preorderMode();
       if (slotEl.value && slotEl.value !== "asap") slotEl.__checkoutTimeMode = "slot";
-      else if (slotEl.value === "asap") slotEl.__checkoutTimeMode = "asap";
-      else if (preorderRequiredNow && slotEl.__checkoutTimeMode !== "slot") slotEl.__checkoutTimeMode = "slot";
+      else if (slotEl.value === "asap" && !preorderRequiredNow) slotEl.__checkoutTimeMode = "asap";
+      else if (preorderRequiredNow) slotEl.__checkoutTimeMode = "slot";
       else if (!slotEl.__checkoutTimeMode) slotEl.__checkoutTimeMode = "asap";
       var isScheduledNow = slotEl.__checkoutTimeMode === "slot";
       seg.querySelectorAll(".tms-btn").forEach(function (b) {
@@ -148,7 +149,6 @@ async function resolveCheckoutSlot() {
       slotElCheck.__checkoutTimeMode = "slot";
       if (!slotVal || slotVal === "asap") slotElCheck.value = "";
       slotVal = slotElCheck.value || "";
-      if (typeof slotElCheck.__syncTimeMode === "function") slotElCheck.__syncTimeMode();
     }
     var isScheduled = !!slotElCheck && slotElCheck.__checkoutTimeMode === "slot";
     var isPreorder = !!pm || (!!slotVal && slotVal !== "asap");
