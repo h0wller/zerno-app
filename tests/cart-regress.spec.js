@@ -755,3 +755,55 @@ test('1. Чат Ника без ложного вызова сотрудника
   await expect(zeroPrices).toHaveCount(0);
 });
 });
+
+test('cart keeps expanded modifiers attached to the same row after removing an earlier item', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  await page.route('**/api/delivery/info', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ today: { open: 11, close: 22 }, days: [], zones: [] })
+  }));
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => Array.isArray(window.DMENU) && window.DMENU.length > 0);
+  await page.evaluate(() => {
+    // Ensure the test has an active pizza topping even when the CI menu fixture has none.
+    window.DMENU.push({
+      id: 'playwright-cart-topping',
+      name: 'Чеддер',
+      cat: 'sauces',
+      on: 1,
+      price: 50,
+    });
+  });
+
+  // Match the native radio labels introduced by PR #133.
+  const cards = page.locator('#deliveryGrid .card:has(.opts)');
+  await expect(cards.first()).toBeVisible({ timeout: 10000 });
+  await expect(cards.nth(1)).toBeVisible({ timeout: 10000 });
+
+  // Add two different cart rows, then open modifiers only on the second one.
+  for (const card of [cards.nth(0), cards.nth(1)]) {
+    const option = card.locator('.opts label.opt-btn, .opts button').first();
+    await option.click();
+    await card.locator('.steprow .cta, [data-add]').first().click();
+  }
+
+  await page.locator('#cartFab').click();
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(2);
+  const secondRow = page.locator('#cartItems .cartItem').nth(1);
+  await secondRow.locator('[data-toggle-mods]').click();
+  await expect(secondRow.locator('.ci-mod-chips-wrap')).toBeVisible();
+
+  // Removing the first row shifts the expanded row from index 1 to index 0.
+  await page.locator('#cartItems .cartItem').first().locator('[data-ci][data-act="-"]').click();
+  const remainingRow = page.locator('#cartItems .cartItem').first();
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+  await expect(remainingRow.locator('.ci-mod-chips-wrap')).toBeVisible();
+  await expect(remainingRow.locator('[data-toggle-mods]')).toContainText('Скрыть добавки');
+});
