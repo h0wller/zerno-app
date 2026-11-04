@@ -271,10 +271,10 @@
     box-shadow: none;
   }
 
-  html.tg-cart-open body #cartPanel .cart-footer-bar #checkoutBtn,
-  html.tg-cart-open body #cartPanel #cartTopClose,
-  html.tg-cart-open body #cartPanel .cart-footer-bar #cartClose,
-  html.tg-cart-open body #cartPanel #zoneFeeHint {
+  html.tg-native-main body #cartPanel .cart-footer-bar #checkoutBtn,
+  html.tg-native-main body #cartPanel #cartTopClose,
+  html.tg-native-main body #cartPanel .cart-footer-bar #cartClose,
+  html.tg-native-main body #cartPanel #zoneFeeHint {
     display: none;
   }
 
@@ -285,23 +285,23 @@
 }
 
 /* В TMA скидки остаются понятными строками, а не отдельными цветными карточками. */
-html.tg-cart-open body #cartPanel .csl-row.discount,
-html.tg-cart-open body #cartPanel .csl-row.fee.is-free {
+html.tg-native-main body #cartPanel .csl-row.discount,
+html.tg-native-main body #cartPanel .csl-row.fee.is-free {
   padding: 3px 0;
   border-left: 0;
   border-radius: 0;
   background: transparent;
 }
 
-html.tg-cart-open body #cartPanel .csl-row.discount {
+html.tg-native-main body #cartPanel .csl-row.discount {
   color: var(--soft, #586470);
 }
 
-html.tg-cart-open body #cartPanel .csl-row.discount .csl-main strong,
-html.tg-cart-open body #cartPanel .csl-row.fee.is-free .csl-main strong {
+html.tg-native-main body #cartPanel .csl-row.discount .csl-main strong,
+html.tg-native-main body #cartPanel .csl-row.fee.is-free .csl-main strong {
   color: var(--status-success, #2F7D4F);
 }
 
-html.tg-cart-open body #cartPanel .csl-row.discount .csl-explain {
+html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
   display: none;
 }
