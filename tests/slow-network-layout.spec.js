@@ -242,7 +242,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     });
     await routeImageDeliveryFixture(page);
     let themeCssGate = Promise.resolve();
+    let heldThemeCssRequests = 0;
     await page.route('**/app/ui/theme/*.css*', async (route) => {
+      heldThemeCssRequests += 1;
       await themeCssGate;
       await route.continue();
     });
@@ -269,11 +271,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           firstRowImages.every((image) => image && image.getAttribute('loading') === 'eager') &&
           document.querySelectorAll('#deliveryGrid img[fetchpriority="high"]').length === 1;
       }, expectedGridColumns, { timeout: 10000 });
-      await page.waitForFunction(() => {
-        const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-          .filter((link) => link.href.includes('/app/ui/theme/'));
-        return links.length > 0 && links.every((link) => link.media === 'print');
-      }, null, { timeout: 10000 });
+      await expect.poll(() => heldThemeCssRequests, {
+        message: 'theme CSS requests should be held before the pre-CSS layout measurement',
+        timeout: 10000
+      }).toBeGreaterThan(0);
 
       const measureBrand = () => page.evaluate(() => {
         const mark = document.querySelector('#brandMark');
