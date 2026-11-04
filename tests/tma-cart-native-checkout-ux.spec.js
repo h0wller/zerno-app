@@ -54,6 +54,8 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
     localStorage.setItem('zt_inst_hide', '1');
     localStorage.setItem('zt_cart', JSON.stringify([{
       key: 'tma-pizza_1', id: 'tma-pizza', name: 'Маргарита', opt: '25 см', price: 304, qty: 1
+    }, {
+      key: 'tma-drink', id: 'tma-drink', name: 'Лимонад', price: 120, qty: 1
     }]));
     sessionStorage.setItem('splashDone', '1');
   });
@@ -138,7 +140,13 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await expect(page.locator('#test-discount-row')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(page.locator('#test-discount-row')).toHaveCSS('border-left-width', '0px');
 
-  await page.locator('#cartPanel [data-ci][data-act="-"]').click();
+  await page.locator('#cartPanel [data-ci="0"][data-act="-"]').click();
+  await expect.poll(() => page.evaluate(() => window.__testTgMainButton.visible)).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-native-main'))).toBe(true);
+  await expect(page.locator('#cartPanel')).toHaveCSS('height', '844px');
+  await expect(page.locator('#checkoutBtn')).toHaveCSS('display', 'none');
+
+  await page.locator('#cartPanel [data-ci="0"][data-act="-"]').click();
   await expect.poll(() => page.evaluate(() => window.__testTgMainButton.visible)).toBe(false);
   await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-native-main'))).toBe(false);
   await expect(page.locator('#cartPanel')).toHaveCSS('height', '844px');
