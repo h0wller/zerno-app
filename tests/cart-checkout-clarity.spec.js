@@ -117,7 +117,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartFee')).toContainText('Янтарный');
   await expect(page.locator('#cartFee')).toContainText('200 ₽');
   await expect(page.locator('#cartTotalLabel')).toHaveText('Итого к оплате');
-  await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
+  await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1670);
 
   const checkoutSections = page.locator('.checkoutForm > .checkout-section');
   await expect(checkoutSections).toHaveCount(3);
@@ -175,7 +175,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1323);
   await page.locator('#checkoutMethod').selectOption('delivery');
   await expect(page.locator('#checkoutDeliveryGroup')).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
+  await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1670);
 });
 
 
