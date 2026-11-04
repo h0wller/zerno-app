@@ -172,7 +172,6 @@ test('checkout time mode follows programmatic preorder slot selection', async ({
     localStorage.removeItem('zt_saved_addresses');
     sessionStorage.removeItem('zt_checkout_draft');
     sessionStorage.setItem('splashDone', '1');
-    sessionStorage.removeItem('zt_checkout_draft');
   });
 
   await page.route('**/api/**', async (route) => {
