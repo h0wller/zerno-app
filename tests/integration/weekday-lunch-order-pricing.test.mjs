@@ -114,7 +114,7 @@ before(async () => {
       text: 'Тестовая неделя',
       threshold: 1000,
       gift: 'Подарок недели',
-      until: '2026-11-03T23:59:00.000Z',
+      until: '2099-11-03T23:59:00.000Z',
     }));
   db.prepare("INSERT INTO meta(key,value) VALUES('pizza_month',?)")
     .run(JSON.stringify({ on: true, name: 'Пицца месяца' }));

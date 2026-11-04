@@ -1240,6 +1240,24 @@ function renderCartBase() {
     };
   }
 
+  function pendingClientOrderStorageKey() {
+    return "zt_pending_order_id:" + String(me && me.id ? me.id : "unknown");
+  }
+
+  function getPendingClientOrderId() {
+    var storageKey = pendingClientOrderStorageKey();
+    var clientOrderId = localStorage.getItem(storageKey);
+    if (!clientOrderId) {
+      clientOrderId = "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem(storageKey, clientOrderId);
+    }
+    return clientOrderId;
+  }
+
+  function clearPendingClientOrderId() {
+    localStorage.removeItem(pendingClientOrderStorageKey());
+  }
+
   function buildCheckoutRequest(checkoutInput) {
     var body = {
       method: checkoutInput.method,
@@ -1262,8 +1280,8 @@ function renderCartBase() {
     };
     if (cartPromoCode && (!isLunchPromoActive() || (promoInfo && promoInfo.kind === 'freeship'))) body.promo = cartPromoCode;
 
-    // Идемпотентный ID: защита от дублей при сетевом сбое.
-    body.client_order_id = "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    // Reuse the same key across retries and reloads until the server confirms the order.
+    body.client_order_id = getPendingClientOrderId();
     return body;
   }
 
@@ -1281,6 +1299,7 @@ function renderCartBase() {
   }
 
   function completeCheckoutSuccess(result, checkoutInput) {
+    clearPendingClientOrderId();
     toast("Заказ #" + (result.order && result.order.no ? result.order.no : "") + " оформлен!", "🎉");
 
     if (checkoutInput.method !== "pickup" && window.AddressBook && typeof window.AddressBook.autoAdd === "function") {
@@ -1331,6 +1350,19 @@ function renderCartBase() {
   }
 
   function handleCheckoutFailure(error) {
+    if (error && error.data && error.data.code === "IDEMPOTENCY_KEY_REUSED" && error.data.order) {
+      clearPendingClientOrderId();
+      if (typeof loadMyOrders === "function") loadMyOrders({ force: true });
+      toast(
+        "Предыдущая попытка уже создала заказ #" + error.data.order.no + ". Текущая корзина сохранена.",
+        "⚠️"
+      );
+      if (typeof window.openOrderTrackModal === "function") {
+        window.openOrderTrackModal(error.data.order);
+      }
+      return;
+    }
+
     try {
       var slot = document.getElementById("checkoutSlot");
       var preorderSlot = slot ? slot.value : "";

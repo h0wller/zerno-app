@@ -1,5 +1,6 @@
 /* server/routes/orders.js — module-07: заказы доставки + delivery-конфиг */
 import { Router } from 'express';
+import { createHash } from 'node:crypto';
 import { WEBAPP_URL } from '../config.js';
 import { db } from '../db/connection.js';
 import { userGuard, adminGuard, dispatchGuard } from '../middleware/auth.js';
@@ -54,7 +55,36 @@ const pizzaMonth = () => {
   return (m && m.on && m.name) ? m : null;
 };
 
+
 const STAFF_ROLES = ['cashier', 'dispatch', 'admin'];
+
+function sortJsonValue(value) {
+  if (Array.isArray(value)) return value.map(sortJsonValue);
+  if (value && typeof value === 'object') {
+    return Object.keys(value).sort().reduce((result, key) => {
+      result[key] = sortJsonValue(value[key]);
+      return result;
+    }, {});
+  }
+  return value;
+}
+
+function hashOrderRequest(body) {
+  const payload = { ...body };
+  delete payload.client_order_id;
+  return createHash('sha256').update(JSON.stringify(sortJsonValue(payload))).digest('hex');
+}
+
+function orderFromRow(row) {
+  const order = { ...row };
+  delete order.client_order_id;
+  delete order.request_hash;
+  return {
+    ...order,
+    items: JSON.parse(order.items || '[]'),
+    gifts: JSON.parse(order.gifts || '[]'),
+  };
+}
 
 export const ORDER_STATUS = {
   new: '🆕 Заказ принят',
@@ -217,6 +247,37 @@ ordersRouter.get('/api/delivery/addr', (req, res) => {
 /* ── Создание заказа с валидацией модификаторов ── */
 ordersRouter.post('/api/orders', userGuard, (req, res) => {
   const b = req.body || {};
+  const hasClientOrderId = Object.prototype.hasOwnProperty.call(b, 'client_order_id');
+  const clientOrderId = hasClientOrderId ? b.client_order_id : null;
+  if (hasClientOrderId && (
+    typeof clientOrderId !== 'string'
+    || !/^[A-Za-z0-9_-]{8,128}$/.test(clientOrderId)
+  )) {
+    return res.status(400).json({
+      error: 'Некорректный идентификатор попытки заказа',
+      code: 'INVALID_CLIENT_ORDER_ID',
+    });
+  }
+  const requestHash = clientOrderId ? hashOrderRequest(b) : null;
+
+  // Fast replay path: return an already-created order before re-validating mutable menu,
+  // promo or slot state. The same lookup is repeated inside the write transaction below.
+  if (clientOrderId) {
+    const existing = db.prepare(
+      'SELECT * FROM orders WHERE cid=? AND client_order_id=?'
+    ).get(req.user.id, clientOrderId);
+    if (existing) {
+      const existingOrder = orderFromRow(existing);
+      if (existing.request_hash !== requestHash) {
+        return res.status(409).json({
+          error: 'Предыдущая попытка с этим ключом уже создала заказ с другими данными. Проверьте его перед новым оформлением.',
+          code: 'IDEMPOTENCY_KEY_REUSED',
+          order: existingOrder,
+        });
+      }
+      return res.json({ order: existingOrder });
+    }
+  }
   const method = b.method === 'pickup' ? 'pickup' : 'delivery';
   let fee = 0;
   let addrStr = '';
@@ -352,54 +413,112 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     if (pm) { const big = items.reduce((a, i) => a + (i.sz === 35 ? i.qty : 0), 0); if (big >= 2) gifts.push({ name: pm.name + ' — подарок', qty: 1 }); }
   }
 
-  let promoCode = '', promoDiscount = 0;
   const pc = String(b.promo || '').trim().toUpperCase();
   const registrationFreeDeliveryCode = findFreeDeliveryCode(req.user.id);
   const isRegistrationFreeDelivery = !!pc && pc === registrationFreeDeliveryCode;
-  if (lunchPromoActive && pc && !isRegistrationFreeDelivery) {
-    return res.status(400).json({ error: 'Во время обеденной акции промокоды и другие скидки не применяются' });
-  }
-  if (pc) {
-    const p = db.prepare('SELECT * FROM promos WHERE code=?').get(pc);
-    if (!p || !p.active || (p.scope || 'coffee') !== 'delivery') return res.status(400).json({ error: 'Промокод не найден для доставки' });
-    if (p.expires && new Date(p.expires) < new Date()) return res.status(410).json({ error: 'Промокод истёк' });
-    if (p.maxuses > 0 && p.uses >= p.maxuses) return res.status(410).json({ error: 'Промокод использован' });
-    if (db.prepare('SELECT 1 FROM promo_use WHERE promo=? AND cid=?').get(p.id, req.user.id))
-      return res.status(409).json({ error: 'Вы уже использовали этот промокод' });
-    if (p.owner && p.owner !== req.user.id) return res.status(400).json({ error: 'Промокод не найден для доставки' });
-    if (p.kind === 'freeship') {
-      // Первая доставка бесплатно: сумма блюд не меняется, обнуляется только плата за доставку.
-      if (method !== 'delivery') return res.status(400).json({ error: 'Этот промокод действует только на доставку' });
-      fee = 0;
-      promoDiscount = 0;
-    } else {
-      promoDiscount = p.kind === 'percent' ? Math.round(sum * Math.min(90, p.value) / 100) : Math.min(p.value || 0, sum);
-    }
-    promoCode = p.code;
-    db.prepare('INSERT INTO promo_use(promo,cid,ts) VALUES(?,?,?)').run(p.id, req.user.id, nowISO());
-    db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(p.id);
-  }
 
-  const total = Math.max(0, sum - discount - promoDiscount + fee);
-  const no = ((db.prepare("SELECT value FROM meta WHERE key='order_no'").get()?.value | 0) + 1);
-  db.prepare("INSERT INTO meta(key,value) VALUES('order_no',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(String(no));
-  
-  const o = { 
-    id: uid('o'), no, cid: req.user.id, name: req.user.name, phone: req.user.phone, method,
-    place: method === 'delivery' ? String(b.place).trim() : '',  
-    addr: addrStr,
-    slot: slotStr, 
-    pay: b.pay === 'card' ? 'card' : 'cash',
-    comment: String(b.comment || '').slice(0, 300), 
-    items, total, discount, discount_label: discountLabel, fee, gifts, promo: promoCode, promodiscount: promoDiscount, 
-    is_preorder: isPreorder, preorder_date: preorderDate, by_staff: byStaff,
-    status: 'new', created: nowISO(), updated: nowISO() 
-  };
-  
-  db.prepare(`INSERT INTO orders(id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,discount_label,fee,gifts,is_preorder,preorder_date,by_staff,status,created,updated) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(o.id, o.no, o.cid, o.name, o.phone, o.method, o.place, o.addr, o.slot, o.pay, o.comment,
-    JSON.stringify(o.items), o.total, o.discount, o.discount_label, o.fee, JSON.stringify(o.gifts), o.is_preorder, o.preorder_date, o.by_staff, o.status, o.created, o.updated);
-  
+  // Promo consumption, order numbering, and order insertion share one SQLite transaction.
+  // BEGIN IMMEDIATE serializes competing writers; the unique index is the final idempotency guard.
+  const creation = db.transaction(() => {
+    if (clientOrderId) {
+      const existing = db.prepare(
+        'SELECT * FROM orders WHERE cid=? AND client_order_id=?'
+      ).get(req.user.id, clientOrderId);
+      if (existing) {
+        return {
+          conflict: existing.request_hash !== requestHash,
+          order: orderFromRow(existing),
+        };
+      }
+    }
+
+    let promoCode = '';
+    let promoDiscount = 0;
+    let orderFee = fee;
+
+    if (lunchPromoActive && pc && !isRegistrationFreeDelivery) {
+      return {
+        status: 400,
+        error: 'Во время обеденной акции промокоды и другие скидки не применяются',
+      };
+    }
+
+    if (pc) {
+      const p = db.prepare('SELECT * FROM promos WHERE code=?').get(pc);
+      if (!p || !p.active || (p.scope || 'coffee') !== 'delivery') {
+        return { status: 400, error: 'Промокод не найден для доставки' };
+      }
+      if (p.expires && new Date(p.expires) < new Date()) {
+        return { status: 410, error: 'Промокод истёк' };
+      }
+      if (p.maxuses > 0 && p.uses >= p.maxuses) {
+        return { status: 410, error: 'Промокод использован' };
+      }
+      if (db.prepare('SELECT 1 FROM promo_use WHERE promo=? AND cid=?').get(p.id, req.user.id)) {
+        return { status: 409, error: 'Вы уже использовали этот промокод' };
+      }
+      if (p.owner && p.owner !== req.user.id) {
+        return { status: 400, error: 'Промокод не найден для доставки' };
+      }
+      if (p.kind === 'freeship') {
+        // Первая доставка бесплатно: сумма блюд не меняется, обнуляется только плата за доставку.
+        if (method !== 'delivery') {
+          return { status: 400, error: 'Этот промокод действует только на доставку' };
+        }
+        orderFee = 0;
+        promoDiscount = 0;
+      } else {
+        promoDiscount = p.kind === 'percent'
+          ? Math.round(sum * Math.min(90, p.value) / 100)
+          : Math.min(p.value || 0, sum);
+      }
+      promoCode = p.code;
+      db.prepare('INSERT INTO promo_use(promo,cid,ts) VALUES(?,?,?)').run(p.id, req.user.id, nowISO());
+      db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(p.id);
+    }
+
+    const total = Math.max(0, sum - discount - promoDiscount + orderFee);
+    const no = ((db.prepare("SELECT value FROM meta WHERE key='order_no'").get()?.value | 0) + 1);
+    db.prepare("INSERT INTO meta(key,value) VALUES('order_no',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+      .run(String(no));
+
+    const o = {
+      id: uid('o'), no, cid: req.user.id, name: req.user.name, phone: req.user.phone, method,
+      place: method === 'delivery' ? String(b.place).trim() : '',
+      addr: addrStr,
+      slot: slotStr,
+      pay: b.pay === 'card' ? 'card' : 'cash',
+      comment: String(b.comment || '').slice(0, 300),
+      items, total, discount, discount_label: discountLabel, fee: orderFee, gifts, promo: promoCode, promodiscount: promoDiscount,
+      is_preorder: isPreorder, preorder_date: preorderDate, by_staff: byStaff,
+      status: 'new', created: nowISO(), updated: nowISO(),
+    };
+
+    db.prepare(`INSERT INTO orders(
+      id,no,cid,name,phone,method,place,addr,slot,pay,comment,items,total,discount,discount_label,
+      fee,gifts,is_preorder,preorder_date,by_staff,status,created,updated,client_order_id,request_hash
+    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(
+        o.id, o.no, o.cid, o.name, o.phone, o.method, o.place, o.addr, o.slot, o.pay, o.comment,
+        JSON.stringify(o.items), o.total, o.discount, o.discount_label, o.fee, JSON.stringify(o.gifts),
+        o.is_preorder, o.preorder_date, o.by_staff, o.status, o.created, o.updated,
+        clientOrderId, requestHash,
+      );
+
+    return { created: true, order: o };
+  }).immediate();
+
+  if (creation.status) return res.status(creation.status).json({ error: creation.error });
+  if (creation.conflict) {
+    return res.status(409).json({
+      error: 'Предыдущая попытка с этим ключом уже создала заказ с другими данными. Проверьте его перед новым оформлением.',
+      code: 'IDEMPOTENCY_KEY_REUSED',
+      order: creation.order,
+    });
+  }
+  if (!creation.created) return res.json({ order: creation.order });
+
+  const o = creation.order;
   orderNotifyStaff(o);
   orderNotifyCustomer(o);
   res.json({ order: o });
