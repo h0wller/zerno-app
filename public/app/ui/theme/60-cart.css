@@ -272,6 +272,7 @@
   }
 
   html.tg-native-main body #cartPanel .cart-footer-bar #checkoutBtn,
+  html.tg-native-main body #cartPanel #cartTopClose,
   html.tg-native-main body #cartPanel .cart-footer-bar #cartClose,
   html.tg-native-main body #cartPanel #cartAddons,
   html.tg-native-main body #cartPanel #zoneFeeHint {
