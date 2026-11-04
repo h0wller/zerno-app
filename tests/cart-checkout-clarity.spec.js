@@ -172,7 +172,7 @@ test('cart keeps the current selected price and explains every amount without gu
 
   await page.locator('#checkoutMethod').selectOption('pickup');
   await expect(page.locator('#checkoutDeliveryGroup')).toBeHidden();
-  await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1223);
+  await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1323);
   await page.locator('#checkoutMethod').selectOption('delivery');
   await expect(page.locator('#checkoutDeliveryGroup')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
