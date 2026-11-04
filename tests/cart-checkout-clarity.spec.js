@@ -367,3 +367,133 @@ test('checkout reuses the same idempotency key after a network failure and reloa
   await expect(page.locator('#checkoutMethod')).toHaveValue('delivery');
   await expect(page.locator('#checkoutPlace')).toHaveValue('');
 });
+
+test('successful preorder keeps an explicit empty time selection for the next order', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-02T20:30:00.000Z') });
+  let submittedOrders = 0;
+
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_cart', JSON.stringify([{
+      key: 'pz-marg_1',
+      id: 'pz-marg',
+      oi: 1,
+      name: 'Маргарита',
+      opt: '35 см, пышное',
+      price: 735,
+      sz: 35,
+      qty: 1
+    }]));
+    localStorage.removeItem('zt_cartpromo');
+    localStorage.setItem('zt_user', 'preorder-reset-test-token');
+    sessionStorage.setItem('splashDone', '1');
+    sessionStorage.removeItem('zt_checkout_draft');
+  });
+
+  await page.route('**/api/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
+
+    if (url.pathname === '/api/me') {
+      body = {
+        customer: {
+          id: 'preorder-reset-guest',
+          name: 'Preorder Guest',
+          phone: '+7 999 123-45-67',
+          role: 'guest',
+          verified: 1,
+          cups: 0,
+          stamps: 0,
+          free: 0,
+          history: [],
+          qr: 'preorder-reset-guest'
+        }
+      };
+    } else if (url.pathname === '/api/dmenu') {
+      body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
+    } else if (url.pathname === '/api/delivery/info') {
+      body = {
+        zones: [{ fee: 200, min: 0, places: ['Янтарный'] }],
+        today: { isOpen: true, canAcceptAsap: false, open: 11, close: 20 },
+        schedule: { open: 11, close: 20 },
+        days: [
+          { offset: 0, date: '2026-11-02', isOpen: true, open: 11, close: 20 },
+          { offset: 1, date: '2026-11-03', isOpen: true, open: 11, close: 22 }
+        ],
+        busySlots: [],
+        weekPromo: null,
+        pizzaMonth: null
+      };
+    } else if (url.pathname === '/api/me/free-delivery') {
+      body = { code: '' };
+    } else if (url.pathname === '/api/orders/mine') {
+      body = { orders: [] };
+    } else if (url.pathname === '/api/orders' && request.method() === 'POST') {
+      submittedOrders += 1;
+      body = {
+        order: {
+          id: 'preorder-reset-order-1',
+          no: 902,
+          status: 'new',
+          total: 735,
+          slot: request.postDataJSON().slot,
+          items: [{ id: 'pz-marg', name: 'Маргарита', qty: 1, price: 735 }]
+        }
+      };
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
+    });
+  });
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.me && window.me.id === 'preorder-reset-guest' &&
+    Array.isArray(window.DMENU) && window.DMENU.some((item) => item.id === 'pz-marg')
+  );
+  await page.evaluate(() => window.refreshDeliveryInfo());
+  await page.evaluate(() => {
+    document.getElementById('cartPanel').classList.add('open');
+    window.renderCart();
+  });
+
+  const slot = page.locator('#checkoutSlot');
+  const slotLabel = slot.locator('xpath=..');
+  const mode = page.locator('#checkoutTimeModeSeg');
+  const asap = mode.locator('[data-tmode="asap"]');
+  const scheduled = mode.locator('[data-tmode="slot"]');
+  await expect(scheduled).toHaveAttribute('aria-pressed', 'true');
+  await expect(asap).toHaveAttribute('aria-pressed', 'false');
+  await expect(slotLabel).toBeVisible();
+  await expect(slot).toHaveValue('');
+
+  const availableSlot = await slot.locator('option:not([disabled])').evaluateAll((options) =>
+    options.map((option) => option.value).find((value) => value && value !== 'asap')
+  );
+  expect(availableSlot).toBeTruthy();
+  await slot.selectOption(availableSlot);
+  await expect(slot).toHaveValue(availableSlot);
+
+  await page.locator('#checkoutPlace').selectOption('Янтарный');
+  await page.locator('#checkoutStreet').fill('Советская');
+  await page.locator('#checkoutHouse').fill('1');
+  await page.locator('#checkoutBtn').click();
+  await expect.poll(() => submittedOrders).toBe(1);
+  await expect(page.locator('#orderTrackModal')).toHaveClass(/show/);
+
+  await page.locator('#orderTrackModal [data-ot-close]').click();
+  await page.locator('#cartFab').click();
+  await expect(slot).toHaveValue('');
+  await expect(scheduled).toHaveAttribute('aria-pressed', 'true');
+  await expect(asap).toHaveAttribute('aria-pressed', 'false');
+  await expect(slotLabel).toBeVisible();
+
+  await page.locator('#checkoutBtn').click();
+  await expect.poll(() => submittedOrders).toBe(1);
+  await expect(page.locator('#checkoutSlot')).toHaveClass(/field-error|need-slot/);
+});
