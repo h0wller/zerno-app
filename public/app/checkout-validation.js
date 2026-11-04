@@ -54,7 +54,6 @@ function ensureTimeModeToggle() {
       if (slotEl.value && slotEl.value !== "asap") slotEl.__checkoutTimeMode = "slot";
       else if (slotEl.value === "asap") slotEl.__checkoutTimeMode = "asap";
       else if (preorderRequiredNow) slotEl.__checkoutTimeMode = "slot";
-      else if (scheduleReadyNow && !preorderRequiredNow && slotEl.__checkoutTimeMode !== "slot") slotEl.__checkoutTimeMode = "asap";
       else if (!slotEl.__checkoutTimeMode) slotEl.__checkoutTimeMode = "asap";
       slotEl.dataset.checkoutTimeMode = slotEl.__checkoutTimeMode;
       var isScheduledNow = slotEl.__checkoutTimeMode === "slot";
