@@ -120,6 +120,7 @@ beforeEach(() => {
     DELETE FROM orders;
     DELETE FROM promo_use;
     DELETE FROM events;
+    DROP TRIGGER IF EXISTS fail_order_insert;
     UPDATE promos SET uses=0;
     UPDATE meta SET value='40' WHERE key='order_no';
   `);
@@ -218,6 +219,30 @@ test('different keys and legacy requests without a key remain separate orders', 
   assert.equal(legacy.status, 200, JSON.stringify(legacy.json));
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 3);
   assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, '43');
+});
+
+test('promo use and order number roll back when order insertion fails', async () => {
+  const token = await register('Rollback Guest', '+7 900 200-00-06');
+  db.exec(`
+    CREATE TRIGGER fail_order_insert
+    BEFORE INSERT ON orders
+    BEGIN
+      SELECT RAISE(ABORT, 'forced order insert failure');
+    END;
+  `);
+
+  const result = await request('/orders', {
+    method: 'POST',
+    token,
+    body: orderBody('ord_rollback_006', 1, 'RETRY10'),
+  });
+
+  assert.equal(result.status, 500);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 0);
+  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='RETRY10'").get().uses, 0);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM promo_use WHERE promo='idempotency-promo'").get().n, 0);
+  assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, '40');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM events').get().n, 0);
 });
 
 test('malformed client_order_id is rejected before any order side effect', async () => {
