@@ -69,6 +69,7 @@ function ensureTimeModeToggle() {
     }
 
     slotEl.addEventListener("change", syncTimeMode);
+    slotEl.__syncTimeMode = syncTimeMode;
     syncTimeMode();
 
     seg.addEventListener("click", function (e) {
