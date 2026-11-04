@@ -126,7 +126,8 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await expect(page.locator('#cartPanel')).toHaveClass(/open/);
   await expect.poll(() => page.evaluate(() => window.__staleCartScrollTop)).toBe(180);
   await expect.poll(() => page.evaluate(() => document.getElementById('cartScrollBody').scrollTop)).toBe(0);
-  await expect(page.locator('#cartItems .cartItem')).toBeVisible();
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(2);
+  await expect(page.locator('#cartItems .cartItem').first()).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('tg-native-main'))).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__testTgMainButton.visible)).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__testTgMainButton.params?.text)).toBe('Оформить заказ · 304 ₽');
