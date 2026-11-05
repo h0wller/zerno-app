@@ -81,6 +81,7 @@ for (const viewport of VIEWPORTS) {
         stampCells: [...stamps.children].map(rect),
         promo: rect(promo),
         promoRow: rect(row),
+        bonusBounds: rect(bonus),
         freeCard: freeCard ? rect(freeCard) : null,
         overflow
       };
@@ -91,8 +92,8 @@ for (const viewport of VIEWPORTS) {
     expect(measurements.overflow, JSON.stringify(measurements.overflow)).toHaveLength(0);
     expect(measurements.stampCells).toHaveLength(10);
     expect(measurements.promo.width).toBeGreaterThan(0);
-    expect(measurements.promoRow.right).toBeLessThanOrEqual(measurements.bonus.client + 1);
-    expect(measurements.freeCard.right).toBeLessThanOrEqual(measurements.bonus.client + 1);
+    expect(measurements.promoRow.right).toBeLessThanOrEqual(measurements.bonusBounds.right + 1);
+    expect(measurements.freeCard.right).toBeLessThanOrEqual(measurements.bonusBounds.right + 1);
 
     await testInfo.attach('coffee-bonus-' + viewport.width + 'px', {
       body: await page.screenshot({ fullPage: false }),
