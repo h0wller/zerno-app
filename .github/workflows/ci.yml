@@ -49,7 +49,7 @@ jobs:
           - group: Staff API
             project: chromium
             specs: tests/staff-stops.spec.js tests/admin-reorder.spec.js
-            workers: 2
+            workers: 1
           - group: Cart and checkout
             project: chromium
             specs: tests/cart-regress.spec.js tests/cart-checkout-clarity.spec.js tests/tma-cart-native-checkout-ux.spec.js tests/order-tracking-contact.spec.js tests/dispatcher-cancel-action.spec.js
@@ -64,7 +64,7 @@ jobs:
             workers: 2
           - group: Responsive UI
             project: chromium
-            specs: tests/pour-accessibility.spec.js tests/pwa-responsive.spec.js tests/staff-topbar-layout.spec.js tests/coffee-header-layout.spec.js tests/friday-info-responsive.spec.js tests/poster-hours.spec.js tests/menu-header-rail-layout.spec.js tests/coffee-profile-visual.spec.js
+            specs: tests/pour-accessibility.spec.js tests/pwa-responsive.spec.js tests/staff-topbar-layout.spec.js tests/coffee-header-layout.spec.js tests/friday-info-responsive.spec.js tests/poster-hours.spec.js tests/menu-header-rail-layout.spec.js tests/coffee-profile-visual.spec.js tests/chat-support.spec.js tests/menu-image-fallback.spec.js
             workers: 2
           - group: Visual stability
             project: chromium
@@ -93,6 +93,15 @@ jobs:
         run: npm ci
       - name: Build client bundle
         run: npm run build:client
+      - name: Verify staff layout code is present in the production bundle
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const bundle = readFileSync('public/dist/main.bundle.js', 'utf8');
+          for (const marker of ['zt_role', 'data-staff-role', 'data-staff-ready']) {
+            if (!bundle.includes(marker)) throw new Error('Production bundle is missing ' + marker);
+          }
+          NODE
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Run isolated regression group
