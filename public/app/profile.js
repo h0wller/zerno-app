@@ -69,6 +69,8 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
 
         var stNum = document.getElementById("mbonusSt");
         if (stNum) stNum.textContent = stamps + "/10";
+        var bonusCount = document.getElementById("bonusCount");
+        if (bonusCount) bonusCount.textContent = stamps + "/10";
 
         var beanEl = mbBtn.querySelector('.mb-bean');
         if (beanEl && !beanEl.querySelector('svg')) {
