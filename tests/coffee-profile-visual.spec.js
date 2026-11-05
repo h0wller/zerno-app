@@ -59,12 +59,18 @@ for (const viewport of VIEWPORTS) {
         const r = element.getBoundingClientRect();
         return { left: r.left, right: r.right, width: r.width, height: r.height };
       };
-      const overflow = [...bonus.querySelectorAll('*')].map(element => ({
-        selector: element.id ? '#' + element.id : element.className && typeof element.className === 'string' ? '.' + element.className.trim().replace(/\s+/g, '.') : element.tagName.toLowerCase(),
-        right: element.getBoundingClientRect().right,
-        left: element.getBoundingClientRect().left,
-        width: element.getBoundingClientRect().width
-      })).filter(item => item.width > 0 && (item.left < bonus.getBoundingClientRect().left - 1 || item.right > bonus.getBoundingClientRect().right + 1));
+      const bonusRect = bonus.getBoundingClientRect();
+      const overflow = [...bonus.querySelectorAll('*')].map(element => {
+        const style = getComputedStyle(element);
+        const r = element.getBoundingClientRect();
+        return {
+          selector: element.id ? '#' + element.id : element.className && typeof element.className === 'string' ? '.' + element.className.trim().replace(/\s+/g, '.') : element.tagName.toLowerCase(),
+          right: r.right,
+          left: r.left,
+          width: r.width,
+          visible: style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0
+        };
+      }).filter(item => item.visible && item.width > 0 && (item.left < bonusRect.left - 1 || item.right > bonusRect.right + 1));
       return {
         viewportWidth: window.innerWidth,
         documentWidth: document.documentElement.scrollWidth,
