@@ -229,19 +229,34 @@ test('Задачи 5 и 6: Модалка «Мои заказы» в TMA и по
   await expect(ordersModal).toBeVisible();
   await expect(ordersModal).toHaveClass(/show/);
 
-// Закрываем модалку заказов
+// Закрываем модалку заказов и удаляем тестовую сессию перед сменой бренда.
   await ordersModal.locator('.omClose').click();
   await expect(ordersModal).toBeHidden();
-
-  // Переключаем бренд на Кофейню, где в профиле отображается QR-код гостя
   await page.evaluate(() => {
-    window.brand = 'coffee';
-    if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
-    if (typeof window.renderProfile === 'function') window.renderProfile();
+    localStorage.removeItem('zt_user');
+    sessionStorage.removeItem('zt_user');
   });
 
-  // ── Проверка Задачи 6: Полноэкранный QR (100vw x 100dvh, #FFFFFF) и Screen Wake Lock ──
-  await page.locator('#qrOpenProfile, #qrMain').first().click();
+  // Открываем отдельный coffee document вместо мутации brand внутри активного TMA delivery panel.
+  await page.goto('/?brand=coffee');
+  await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('data-brand'))).toBe('coffee');
+  await page.waitForFunction(() => typeof window.openPanel === 'function' && typeof window.setUser === 'function');
+  await page.evaluate(() => {
+    window.setUser('qr-regression-coffee-token', {
+      id: 777777, name: 'QR regression guest', phone: '+79990001122',
+      stamps: 5, free: 1, cups: 15, qr: 'Z-777777', role: 'guest', verified: 1
+    });
+    window.__profileMeReady();
+    window.renderAll();
+    window.openPanel('bonus');
+  });
+  await expect(page.locator('#panel')).toHaveClass(/open/);
+  await expect(page.locator('#tabBonus')).toHaveAttribute('aria-selected', 'true');
+
+  // ── Проверка Задачи 6: один QR action во вкладке «Бонусы» и Screen Wake Lock ──
+  const bonusQrButton = page.locator('#qrOpenBonus');
+  await expect(bonusQrButton).toBeVisible();
+  await bonusQrButton.click();
 
   const qrModal = page.locator('#qrModal');
   await expect(qrModal).toBeVisible();

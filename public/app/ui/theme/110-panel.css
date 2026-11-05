@@ -1,4 +1,54 @@
 /* ══ правая панель ══ */
+
+
+/* Coffee panel and menu components are uniquely identified by DOM ids. */
+#panel #pvBonus { padding: var(--loyalty-panel-padding, 14px); }
+#pvBonus .bonus-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px; }
+#pvBonus .bonus-eyebrow { color:var(--loyalty-muted, var(--soft)); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin:0 0 3px; }
+#pvBonus .bonus-heading h3 { color:var(--ink); font:700 14px/1.25 "Golos Text",system-ui,sans-serif; margin:0; }
+#pvBonus .bonus-count { flex:0 0 auto; border:1px solid var(--loyalty-border, var(--line)); border-radius:999px; padding:5px 9px; color:var(--loyalty-accent, var(--flame)); font-size:12px; font-weight:800; font-variant-numeric:tabular-nums; }
+#pvBonus .stamps { grid-template-columns:repeat(5,minmax(0,1fr)); gap:var(--loyalty-stamp-gap, 9px); padding:var(--loyalty-stamp-padding, 16px); border-radius:14px; box-shadow:none; min-width:0; }
+#pvBonus .stamp { min-width:0; width:100%; max-width:48px; justify-self:center; }
+#pvBonus .stamp.n, #pvBonus .stamp.e { animation:none; border-width:1px; }
+#pvBonus .prog { margin-top:8px; font-size:12px; line-height:1.4; }
+#pvBonus .freeCard { margin-top:8px; padding:10px 12px; gap:8px; border-width:1px; border-radius:12px; box-shadow:none; background:var(--loyalty-card-bg, #fff); min-width:0; }
+#pvBonus .freeCard .fe { font-size:22px; animation:none; flex:0 0 auto; }
+#pvBonus .freeCard > div { min-width:0; overflow-wrap:anywhere; }
+#pvBonus .freeCard b { font:700 13px/1.3 "Golos Text",system-ui,sans-serif; color:var(--loyalty-gift-text, var(--ink)); }
+#pvBonus .freeCard small { display:block; margin-top:2px; font-size:11px; line-height:1.35; overflow-wrap:anywhere; }
+#pvBonus .qrbox { padding:10px; margin-top:8px; border-radius:12px; box-shadow:none; }
+#pvBonus .qrbox .findrow { display:flex; gap:8px; min-width:0; }
+#pvBonus .qrbox .findrow input { min-width:0; width:100%; flex:1 1 auto; }
+#pvBonus .qrbox .findrow button { flex:0 0 56px; min-width:56px; }
+#pvBonus .bonus-qr-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--loyalty-qr-bg, #fff); }
+#pvBonus .bonus-qr-copy { min-width:0; display:grid; gap:2px; }
+#pvBonus .bonus-qr-copy b { font-size:12px; }
+#pvBonus .bonus-qr-copy small { margin:0; font-size:10.5px; line-height:1.3; }
+#pvBonus .bonus-qr-row .demoBtn { width:auto; flex:0 0 auto; margin:0; min-height:40px; padding:8px 12px; border:1px solid var(--line); border-radius:10px; color:var(--loyalty-accent, var(--flame)); font-size:12px; }
+#pvBonus .bonus-qr-canvas { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+#profileCoffeeSection .stats { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+#profileCoffeeSection .stat { min-width:0; padding:9px 3px; border-radius:11px; box-shadow:none; }
+#profileCoffeeSection .stat b { font-size:var(--loyalty-profile-stat-size, 19px); }
+#profileCoffeeSection .stat span { font-size:9px; letter-spacing:.02em; }
+.profile-qr-access { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:#fff; font-size:11px; color:var(--soft); }
+.profile-qr-access canvas { display:none; }
+.profile-qr-access > span { min-width:0; }
+.profile-qr-link { color:var(--flame); font-size:11px; font-weight:700; text-decoration:underline; text-underline-offset:3px; flex:0 0 auto; }
+@media(max-width:420px) { #menuView .menu-head { padding-bottom:8px; } #menuView h1 { font-size:clamp(18px,5vw,21px); line-height:1.2; } #pvBonus .stamps { padding:8px; gap:5px; } #pvBonus .bonus-qr-row { align-items:center; gap:6px; padding:8px 9px; } #pvBonus .bonus-qr-row .demoBtn { padding-inline:10px; } }
+@media(prefers-reduced-motion:reduce) { #pvBonus .stamp.n, #pvBonus .freeCard .fe { animation:none; } }
+#menuView .mh-top {   align-items: center;   row-gap: 8px; }
+#menuView .mh-top > div:first-child {   display: contents; }
+#menuView .mh-top h1 {   flex: 1 1 100%;   margin: 0; }
+#menuView .mh-top h2.vh { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+#menuView .mh-top .upd { display: none; }
+#menuView .mh-top .mh-right {   flex: 1 1 100%;   width: 100%;   max-width: none;   margin: 0; }
+#menuView .coffee-menu-search {   min-height: 44px;   padding: 0 12px;   gap: 9px;   border: 1px solid rgba(18, 58, 107, 0.14);   border-radius: 12px;   background: #fff;   box-shadow: none; }
+#menuView .coffee-menu-search .search-icon {   width: 17px;   height: 17px;   flex: 0 0 17px;   fill: none;   stroke: #586470;   stroke-width: 1.8;   stroke-linecap: round; }
+#menuView .coffee-menu-search input {   font-size: 15px;   font-weight: 500; }
+#menuView .coffee-menu-search input::placeholder {   color: #7b8792;   opacity: 1; }
+#menuView .coffee-menu-search:focus-within {   border-color: rgba(18, 58, 107, 0.5);   box-shadow: 0 0 0 2px rgba(18, 58, 107, 0.08); }
+#menuView .search-shortcut {   display: none; }
+@media (max-width: 420px) { #menuView .menu-head { padding-bottom: 8px; } #menuView h1 { font-size: clamp(18px, 5vw, 21px); line-height: 1.2; } }
 .panel{
   position: sticky;
   top: 118px;
@@ -599,3 +649,7 @@
     flex: 1 1 100%;
   }
 }
+
+
+
+
