@@ -139,7 +139,7 @@ test('coffee menu heading includes the full marina tagline on mobile and desktop
 
     const heading = page.locator('#menuView .menu-head h1');
     await expect(heading).toBeVisible();
-    await expect(heading).toHaveText(/^Меню\\s+кофейня на берегу моря$/);
+    await expect(heading).toHaveText(/^Меню\s+кофейня на берегу моря$/);
 
     const geometry = await heading.evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -147,7 +147,7 @@ test('coffee menu heading includes the full marina tagline on mobile and desktop
         left: rect.left,
         right: rect.right,
         viewportWidth: document.documentElement.clientWidth,
-        text: element.innerText.replace(/\\s+/g, ' ').trim(),
+        text: element.innerText.replace(/\s+/g, ' ').trim(),
       };
     });
     expect(geometry.text).toBe('Меню кофейня на берегу моря');
