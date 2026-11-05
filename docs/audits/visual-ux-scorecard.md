@@ -100,7 +100,7 @@ Staff phase (after guest baseline): CASHIER, DISPATCH, ADMIN. Use the same captu
 | COF-MENU · 390×844 | 7.4 | Ticker clips; floating loyalty control crowds card media |
 | COF-MENU · 768×1024 | 8.1 | Better two-column balance; ticker still clips |
 | COF-MENU · 1440×900 | 7.5 | Menu is readable, but a large unused right-side area weakens composition |
-| DEL-MENU · 320×740 | 6.6 | Floating cart action obscures the Add area; horizontal filter chips are clipped |
+| DEL-MENU · 320×740 | 6.6 | Floating support/chat FAB obscures the Add area; horizontal filter chips are clipped |
 | DEL-MENU · 390×844 | 6.6 | Floating cart action overlaps the Add button; filter chips and ticker clip |
 | DEL-MENU · 1440×900 | 7.8 | Product selection controls are clear; empty right column and duplicate category navigation reduce balance |
 
@@ -114,8 +114,8 @@ These are provisional screen scores for the rendered CI state, not product accep
 | COF-MENU-M | 390×844 | Guest first viewport | Header, ticker, rail, search and card overlay inspected |
 | COF-MENU-T | 768×1024 | Guest first viewport | Two-column menu and navigation inspected |
 | COF-MENU-D | 1440×900 | Guest first viewport | Three-column catalog and right-side panel inspected |
-| DEL-MENU-XS | 320×740 | Guest first viewport | Filter clipping and floating cart/Add overlap inspected |
-| DEL-MENU-M | 390×844 | Guest first viewport | Floating cart button visibly covers part of the Add control |
+| DEL-MENU-XS | 320×740 | Guest first viewport | Filter clipping and floating support FAB/Add overlap inspected |
+| DEL-MENU-M | 390×844 | Guest first viewport | Floating support/chat button visibly covers part of the Add control |
 | DEL-MENU-D | 1440×900 | Guest first viewport | Three-column cards, duplicate category navigation and right-side area inspected |
 
 Artifact: `visual-ux-baseline-test-42089915249.zip` (GitHub Actions run `42089915249`). It contains 16 viewport PNGs and 8 state metadata JSON files. The full-page hydrated catalog PNGs are supplementary; score rows above use first-viewport captures at the same viewport.
