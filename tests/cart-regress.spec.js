@@ -807,3 +807,114 @@ test('cart keeps expanded modifiers attached to the same row after removing an e
   await expect(remainingRow.locator('.ci-mod-chips-wrap')).toBeVisible();
   await expect(remainingRow.locator('[data-toggle-mods]')).toContainText('Скрыть добавки');
 });
+
+
+test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
+  for (const viewport of [
+    { name: 'iPhone SE', width: 375, height: 667 },
+    { name: 'iPhone 14/15', width: 390, height: 844 },
+    { name: 'Desktop', width: 1280, height: 800 },
+  ]) {
+    test(viewport.name + ' (' + viewport.width + 'px): add, minus and plus buttons have 44px hit areas', async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        localStorage.setItem('zt_onb', '1');
+        localStorage.setItem('zt_inst_hide', '1');
+        sessionStorage.setItem('splashDone', '1');
+      });
+
+      await page.route('**/api/delivery/info', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ today: { open: 11, close: 22 }, days: [], zones: [] })
+      }));
+      await page.route('**/dmenu**', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: [
+            {
+              id: 'cart-addon-pizza', name: 'Тестовая пицца', section: 'delivery',
+              cat: 'pizza', on: 1, price: 500, desc: 'Томатный соус и сыр',
+              opts: [{ l: '25 см, пышное', w: '400 г', p: 500, sz: 25 }],
+              comp: ['томатный соус', 'моцарелла'], e: '🍕'
+            },
+            {
+              id: 'cart-addon-drink', name: 'Лимонад', section: 'delivery',
+              cat: 'drinks', on: 1, price: 120, e: '🥤'
+            }
+          ]
+        })
+      }));
+
+      await page.goto('/?brand=delivery');
+      await expect(page.locator('#deliveryGrid .card[data-product-id="cart-addon-pizza"]')).toBeVisible({ timeout: 10000 });
+
+      const pizza = page.locator('#deliveryGrid .card[data-product-id="cart-addon-pizza"]');
+      await pizza.locator('.opts label.opt-btn').first().click();
+      await pizza.locator('[data-add]').click();
+
+      await page.locator('#cartFab').click();
+      await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+      const addonCard = page.locator('#cartAddons .addon-pill-card').filter({ hasText: 'Лимонад' });
+      await expect(addonCard).toBeVisible({ timeout: 5000 });
+
+      const initialGeometry = await addonCard.evaluate((card) => {
+        const rect = (element) => {
+          const box = element.getBoundingClientRect();
+          return { width: box.width, height: box.height };
+        };
+        return {
+          card: rect(card),
+          action: rect(card.querySelector('.ac-act')),
+          button: rect(card.querySelector('.ac-add-btn')),
+        };
+      });
+      expect(initialGeometry.card.width).toBe(240);
+      expect(initialGeometry.card.height).toBe(54);
+      expect(initialGeometry.action.width).toBe(104);
+      expect(initialGeometry.action.height).toBe(44);
+      expect(initialGeometry.button.width).toBeGreaterThanOrEqual(44);
+      expect(initialGeometry.button.height).toBeGreaterThanOrEqual(44);
+
+      const addButton = addonCard.locator('.ac-add-btn');
+      await expect(addButton).toHaveAccessibleName('Добавить Лимонад в корзину');
+      await addButton.click();
+      await expect(addonCard).toHaveClass(/in-cart/);
+      const stepper = addonCard.locator('.ac-stepper');
+      await expect(stepper).toBeVisible();
+
+      const stepGeometry = await stepper.evaluate((stepperElement) => {
+        const rect = (element) => {
+          const box = element.getBoundingClientRect();
+          return { width: box.width, height: box.height };
+        };
+        return {
+          stepper: rect(stepperElement),
+          buttons: [...stepperElement.querySelectorAll('.ac-step')].map(rect),
+        };
+      });
+      expect(stepGeometry.stepper.width).toBe(104);
+      expect(stepGeometry.stepper.height).toBe(44);
+      expect(stepGeometry.buttons).toHaveLength(2);
+      for (const button of stepGeometry.buttons) {
+        expect(button.width).toBeGreaterThanOrEqual(44);
+        expect(button.height).toBeGreaterThanOrEqual(44);
+      }
+
+      const minus = addonCard.locator('[data-ac-act="minus"]');
+      const plus = addonCard.locator('[data-ac-act="plus"]');
+      await expect(minus).toHaveAccessibleName('Уменьшить количество Лимонад');
+      await expect(plus).toHaveAccessibleName('Увеличить количество Лимонад');
+      await plus.click();
+      await expect(addonCard.locator('.ac-qty')).toHaveText('2');
+      await minus.click();
+      await expect(addonCard.locator('.ac-qty')).toHaveText('1');
+
+      await testInfo.attach('cart-addons-' + viewport.width + 'px', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png',
+      });
+    });
+  }
+});
