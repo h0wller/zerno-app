@@ -100,6 +100,13 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(items).toHaveLength(6);
     expect(items[0].id).toBe('responsive-image-0');
     await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
+    await page.waitForFunction(() => {
+      const rail = document.querySelector('#deliveryRail');
+      return rail &&
+        rail.classList.contains('rail-position-ready') &&
+        getComputedStyle(rail).display !== 'none' &&
+        rail.getBoundingClientRect().width > 0;
+    });
 
     const productCards = page.locator('#deliveryGrid > .card[data-product-id]');
     const images = await productCards.locator('img').evaluateAll((nodes) =>
