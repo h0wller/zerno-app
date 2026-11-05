@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const BASE = process.env.TEST_URL;
+const BASE = process.env.TEST_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 const OUT = path.join('artifacts', 'visual-audit');
 const VIEWPORTS = [
   { id: 'xs', width: 320, height: 740 },
@@ -10,8 +10,6 @@ const VIEWPORTS = [
   { id: 't', width: 768, height: 1024 },
   { id: 'd', width: 1440, height: 900 },
 ];
-
-if (!BASE) throw new Error('TEST_URL is required for read-only visual audit capture');
 
 test.use({
   serviceWorkers: 'block',
@@ -31,13 +29,20 @@ async function prepareColdGuest(page, brand, viewport) {
       localStorage.setItem('zt_brand', selectedBrand);
     } catch {}
   }, brand);
+
   await page.goto(`${BASE}/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
 }
 
 async function waitForHydratedStorefront(page, brand) {
-  const target = brand === 'delivery' ? '#deliveryGrid' : '#grid';
-  await expect(page.locator(target)).toBeVisible({ timeout: 30000 });
-  await expect(page.locator(`${target} .skeleton-card`)).toHaveCount(0, { timeout: 30000 }).catch(() => {});
+  const grid = brand === 'delivery' ? '#deliveryGrid' : '#grid';
+  const cards = brand === 'delivery'
+    ? page.locator('#deliveryGrid .card:not(.skeleton-card)')
+    : page.locator('#grid .card:not(.skeleton-card)');
+
+  await expect(page.locator(grid)).toBeVisible({ timeout: 30000 });
+  await expect(cards.first()).toBeVisible({ timeout: 30000 });
+  await expect(page.locator(`${grid} .skeleton-card`)).toHaveCount(0, { timeout: 30000 });
+
   await page.evaluate(async () => {
     if (document.fonts?.ready) await document.fonts.ready;
     const images = [...document.images].filter((img) => img.getBoundingClientRect().width > 0);
@@ -46,31 +51,39 @@ async function waitForHydratedStorefront(page, brand) {
 }
 
 async function capture(page, meta) {
-  const safe = [
+  const id = [
     meta.brand.toUpperCase(),
     'GUEST',
     meta.state.toUpperCase(),
     meta.viewport.id.toUpperCase(),
   ].join('-');
-  const file = `${safe}.png`;
+  const file = `${id}.png`;
+
   await page.screenshot({
     path: path.join(OUT, file),
     fullPage: meta.fullPage ?? false,
     animations: 'disabled',
   });
+
   const runtime = await page.evaluate(() => ({
     title: document.title,
     brand: document.documentElement.dataset.brand || null,
+    staffRole: document.documentElement.getAttribute('data-staff-role'),
     viewport: { width: innerWidth, height: innerHeight },
-    document: { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight },
+    document: {
+      width: document.documentElement.scrollWidth,
+      height: document.documentElement.scrollHeight,
+    },
     visibleImages: [...document.images].filter((image) => {
       const rect = image.getBoundingClientRect();
       const style = getComputedStyle(image);
-      return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+      return rect.width > 0 && rect.height > 0
+        && style.display !== 'none' && style.visibility !== 'hidden';
     }).length,
   }));
+
   return {
-    id: safe,
+    id,
     file,
     url: page.url(),
     timestamp: new Date().toISOString(),
@@ -78,32 +91,32 @@ async function capture(page, meta) {
     brand: meta.brand,
     state: meta.state,
     viewport: meta.viewport,
+    deviceScaleFactor: 1,
     fullPage: meta.fullPage ?? false,
-    evidence: 'production-read-only-playwright',
+    captureSource: process.env.TEST_URL ? 'production-read-only-playwright' : 'isolated-playwright-test-server',
     runtime,
   };
 }
 
 for (const brand of ['coffee', 'delivery']) {
   for (const viewport of VIEWPORTS) {
-    test(`visual audit: ${brand} guest first paint and hydrated menu ${viewport.id}`, async ({ page }) => {
+    test(`visual audit: ${brand} guest menu ${viewport.id}`, async ({ page }) => {
       await prepareColdGuest(page, brand, viewport);
-      const first = await capture(page, { brand, viewport, state: 'first-paint' });
+
+      const initial = await capture(page, {
+        brand, viewport, state: 'initial-guest-state',
+      });
+
       await waitForHydratedStorefront(page, brand);
-      const hydrated = await capture(page, { brand, viewport, state: 'hydrated-menu', fullPage: true });
+      const hydrated = await capture(page, {
+        brand, viewport, state: 'hydrated-menu', fullPage: true,
+      });
+
+      expect(hydrated.runtime.staffRole).toBeNull();
+      expect(hydrated.runtime.document.width).toBeLessThanOrEqual(viewport.width);
+
       const metadataPath = path.join(OUT, `${brand}-guest-${viewport.id}.json`);
-      fs.writeFileSync(metadataPath, JSON.stringify({ first, hydrated }, null, 2));
+      fs.writeFileSync(metadataPath, JSON.stringify({ initial, hydrated }, null, 2));
     });
   }
 }
-
-test('visual audit: delivery read-only catalog does not leak horizontal overflow', async ({ page }) => {
-  const viewport = { id: 'm', width: 390, height: 844 };
-  await prepareColdGuest(page, 'delivery', viewport);
-  await waitForHydratedStorefront(page, 'delivery');
-  const widths = await page.evaluate(() => ({
-    viewport: innerWidth,
-    scrollWidth: document.documentElement.scrollWidth,
-  }));
-  expect(widths.scrollWidth).toBeLessThanOrEqual(widths.viewport);
-});
