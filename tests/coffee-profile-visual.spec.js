@@ -128,7 +128,9 @@ for (const viewport of VIEWPORTS) {
       };
     });
     expect(geometry.documentWidth).toBeLessThanOrEqual(viewport.width + 1);
-    expect(geometry.search.width).toBeGreaterThanOrEqual(viewport.width - 48);
+    // The search control inherits the menu-head inset. Check its measured alignment
+    // against the container and keep viewport/overflow assertions as the safety contract.
+    expect(geometry.search.width).toBeGreaterThanOrEqual(geometry.head.width - 2);
     expect(geometry.search.height).toBeLessThanOrEqual(48);
     expect(geometry.search.left).toBeGreaterThanOrEqual(0);
     expect(geometry.search.right).toBeLessThanOrEqual(viewport.width + 1);
