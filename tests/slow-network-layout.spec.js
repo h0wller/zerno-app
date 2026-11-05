@@ -99,6 +99,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     const items = (await response.json()).items;
     expect(items).toHaveLength(6);
     expect(items[0].id).toBe('responsive-image-0');
+    await expect(page.locator('#deliveryView')).toBeVisible({ timeout: 10000 });
+    await page.waitForFunction(() => {
+      const rail = document.querySelector('#deliveryRail');
+      return rail &&
+        rail.classList.contains('rail-position-ready') &&
+        getComputedStyle(rail).display !== 'none' &&
+        rail.getBoundingClientRect().width > 0;
+    }, null, { timeout: 10000 });
     await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
 
     const productCards = page.locator('#deliveryGrid > .card[data-product-id]');
