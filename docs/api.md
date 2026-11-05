@@ -36,8 +36,8 @@
 | `POST /api/auth/set-pin` | Сменить PIN текущего профиля | `pin`; userGuard |
 | `POST /api/auth/activate-guest` | Активировать профиль кодом кассира | `code`; userGuard |
 | `POST /api/auth/activate` | Войти в режим сотрудника по коду роли | `code`; userGuard |
-| `POST /api/staff/activate-guest` | Активация гостя сотрудником | Проверить role guard в реализации |
-| `GET /api/staff/pending` | Гости, ожидающие активации | Проверить role guard в реализации |
+| `POST /api/staff/activate-guest` | Активация ожидающего гостя сотрудником | pendingGuard |
+| `GET /api/staff/pending` | Гости, ожидающие активации | pendingGuard |
 | `POST /api/auth/deactivate` | Деактивировать режим сотрудника | Авторизованный пользователь |
 | `POST /api/exit` | Завершить текущую сессию | Авторизованный пользователь |
 | `GET /api/me` | Текущий профиль | userGuard |
@@ -92,11 +92,11 @@
 | `POST /api/chat/send` | Сообщение гостя | Публичный |
 | `POST /api/chat/botlog` | Лог/событие чат-бота | По реализации |
 | `GET /api/chat/thread` | Получить тред; query `ctx` задаёт контекст | Публичный |
-| `GET /api/chat/list` | Список тредов | staffGuard |
-| `GET /api/chat/dialog` | Данные диалога | По реализации |
-| `POST /api/chat/reply` | Ответ сотрудника | staffGuard |
-| `POST /api/chat/close` | Закрыть тред | staffGuard |
-| `POST /api/chat/open` | Переоткрыть тред | staffGuard |
+| `GET /api/chat/list` | Список тредов с фильтрацией по контексту и роли | chatGuard |
+| `GET /api/chat/dialog` | Получить сообщения диалога сотрудником | chatGuard |
+| `POST /api/chat/reply` | Ответить гостю | chatGuard |
+| `POST /api/chat/close` | Закрыть тред | chatGuard |
+| `POST /api/chat/open` | Переоткрыть тред | chatGuard |
 
 ## Промокоды и бонусы
 
@@ -118,13 +118,13 @@
 | Метод и путь | Назначение | Доступ |
 |---|---|---|
 | `GET /api/vapid` | Публичный VAPID-ключ | Публичный |
-| `POST /api/push/subscribe` | Web Push подписка | По реализации |
+| `POST /api/push/subscribe` | Создать или обновить Web Push подписку | userGuard |
 | `POST /api/push/test` | Тестовая отправка push текущему профилю | userGuard |
-| `POST /api/push/fcm` | Регистрация FCM-токена | По реализации |
+| `POST /api/push/fcm` | Регистрация FCM-токена | userGuard |
 | `GET /api/push/subs` | Данные push-подписок | adminGuard |
 | `POST /api/push/send` | Административная отправка push | adminGuard |
 | `POST /api/push/send-hours-update` | Уведомление об изменении расписания доставки | adminGuard |
-| `POST /api/push/unsubscribe` | Отписать Web Push endpoint | По реализации |
+| `POST /api/push/unsubscribe` | Отписать Web Push endpoint текущего профиля | userGuard |
 | `POST /api/push/del` | Удалить FCM token | По реализации |
 
 ## Статистика
