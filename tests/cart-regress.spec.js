@@ -229,9 +229,13 @@ test('Задачи 5 и 6: Модалка «Мои заказы» в TMA и по
   await expect(ordersModal).toBeVisible();
   await expect(ordersModal).toHaveClass(/show/);
 
-// Закрываем модалку заказов
+// Закрываем модалку заказов и удаляем тестовую сессию перед сменой бренда.
   await ordersModal.locator('.omClose').click();
   await expect(ordersModal).toBeHidden();
+  await page.evaluate(() => {
+    localStorage.removeItem('zt_user');
+    sessionStorage.removeItem('zt_user');
+  });
 
   // Открываем отдельный coffee document вместо мутации brand внутри активного TMA delivery panel.
   await page.goto('/?brand=coffee');
