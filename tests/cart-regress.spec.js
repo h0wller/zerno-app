@@ -809,13 +809,13 @@ test('cart keeps expanded modifiers attached to the same row after removing an e
 });
 
 
-test.describe('Cart add-on recommendations: mobile touch targets', () => {
+test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
   for (const viewport of [
     { name: 'iPhone SE', width: 375, height: 667 },
     { name: 'iPhone 14/15', width: 390, height: 844 },
     { name: 'Desktop', width: 1280, height: 800 },
   ]) {
-    test(`${viewport.name} (${viewport.width}px): add and quantity controls expose 44px hit areas`, async ({ page }) => {
+    test(viewport.name + ' (' + viewport.width + 'px): add, minus and plus buttons have 44px hit areas', async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => {
         localStorage.setItem('zt_onb', '1');
@@ -870,39 +870,51 @@ test.describe('Cart add-on recommendations: mobile touch targets', () => {
           button: rect(card.querySelector('.ac-add-btn')),
         };
       });
-      expect(initialGeometry.card.width).toBe(185);
+      expect(initialGeometry.card.width).toBe(240);
       expect(initialGeometry.card.height).toBe(54);
-      expect(initialGeometry.action.width).toBeGreaterThanOrEqual(44);
-      expect(initialGeometry.action.height).toBeGreaterThanOrEqual(44);
-      expect(initialGeometry.button.width).toBe(28);
-      expect(initialGeometry.button.height).toBe(28);
+      expect(initialGeometry.action.width).toBe(104);
+      expect(initialGeometry.action.height).toBe(44);
+      expect(initialGeometry.button.width).toBeGreaterThanOrEqual(44);
+      expect(initialGeometry.button.height).toBeGreaterThanOrEqual(44);
 
-      await addonCard.locator('.ac-add-btn').click();
+      const addButton = addonCard.locator('.ac-add-btn');
+      await expect(addButton).toHaveAccessibleName('Добавить Лимонад в корзину');
+      await addButton.click();
       await expect(addonCard).toHaveClass(/in-cart/);
-      await expect(addonCard.locator('.ac-stepper')).toBeVisible();
+      const stepper = addonCard.locator('.ac-stepper');
+      await expect(stepper).toBeVisible();
 
-      const stepGeometry = await addonCard.locator('.ac-stepper').evaluate((stepper) => {
+      const stepGeometry = await stepper.evaluate((stepperElement) => {
         const rect = (element) => {
           const box = element.getBoundingClientRect();
           return { width: box.width, height: box.height };
         };
         return {
-          stepper: rect(stepper),
-          buttons: [...stepper.querySelectorAll('.ac-step')].map(rect)
+          stepper: rect(stepperElement),
+          buttons: [...stepperElement.querySelectorAll('.ac-step')].map(rect),
         };
       });
-      expect(stepGeometry.stepper.width).toBeGreaterThanOrEqual(44);
-      expect(stepGeometry.stepper.height).toBeGreaterThanOrEqual(44);
+      expect(stepGeometry.stepper.width).toBe(104);
+      expect(stepGeometry.stepper.height).toBe(44);
       expect(stepGeometry.buttons).toHaveLength(2);
       for (const button of stepGeometry.buttons) {
-        expect(button.width).toBeGreaterThanOrEqual(21);
-        expect(button.height).toBeGreaterThanOrEqual(42);
+        expect(button.width).toBeGreaterThanOrEqual(44);
+        expect(button.height).toBeGreaterThanOrEqual(44);
       }
 
-      await addonCard.locator('[data-ac-act="plus"]').click();
+      const minus = addonCard.locator('[data-ac-act="minus"]');
+      const plus = addonCard.locator('[data-ac-act="plus"]');
+      await expect(minus).toHaveAccessibleName('Уменьшить количество Лимонад');
+      await expect(plus).toHaveAccessibleName('Увеличить количество Лимонад');
+      await plus.click();
       await expect(addonCard.locator('.ac-qty')).toHaveText('2');
-      await addonCard.locator('[data-ac-act="minus"]').click();
+      await minus.click();
       await expect(addonCard.locator('.ac-qty')).toHaveText('1');
+
+      await testInfo.attach('cart-addons-' + viewport.width + 'px', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png',
+      });
     });
   }
 });
