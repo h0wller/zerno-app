@@ -120,3 +120,66 @@ for (const brand of ['coffee', 'delivery']) {
     });
   }
 }
+
+
+for (const viewport of VIEWPORTS.filter(({ id }) => id === 'xs' || id === 'm')) {
+  test(`visual audit: delivery support FAB clears menu actions at ${viewport.id}`, async ({ page }) => {
+    await prepareColdGuest(page, 'delivery', viewport);
+    await waitForHydratedStorefront(page, 'delivery');
+
+    const collisions = await page.evaluate(() => {
+      const fab = document.querySelector('#chatFab');
+      if (!fab) return { visible: false, collisions: ['#chatFab missing'] };
+
+      const fabRect = fab.getBoundingClientRect();
+      const fabStyle = getComputedStyle(fab);
+      const visible = fabRect.width > 0 && fabRect.height > 0
+        && fabStyle.display !== 'none'
+        && fabStyle.visibility !== 'hidden';
+
+      const targets = [
+        ...document.querySelectorAll('#deliveryGrid .opts label.opt-btn'),
+        ...document.querySelectorAll('#deliveryGrid [data-add]'),
+        ...document.querySelectorAll('#deliveryRail button'),
+      ].filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0
+          && style.display !== 'none'
+          && style.visibility !== 'hidden';
+      });
+
+      const overlaps = (a, b) => (
+        a.left < b.right && a.right > b.left
+        && a.top < b.bottom && a.bottom > b.top
+      );
+
+      return {
+        visible,
+        fab: {
+          left: fabRect.left,
+          right: fabRect.right,
+          top: fabRect.top,
+          bottom: fabRect.bottom,
+        },
+        collisions: targets
+          .filter((element) => overlaps(fabRect, element.getBoundingClientRect()))
+          .map((element) => ({
+            selector: element.matches('[data-add]')
+              ? '#deliveryGrid [data-add]'
+              : element.matches('.opt-btn')
+                ? '#deliveryGrid .opts .opt-btn'
+                : '#deliveryRail button',
+            text: (element.textContent || '').trim().slice(0, 40),
+          })),
+      };
+    });
+
+    expect(collisions.visible).toBe(true);
+    expect(collisions.collisions).toEqual([]);
+    await page.screenshot({
+      path: path.join(OUT, `DELIVERY-SUPPORT-FAB-CLEAR-${viewport.id.toUpperCase()}.png`),
+      animations: 'disabled',
+    });
+  });
+}
