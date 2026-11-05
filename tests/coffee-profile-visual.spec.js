@@ -105,6 +105,12 @@ for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+    await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('data-brand'))).toBe('coffee');
+    await expect.poll(() => page.locator('#menuView .coffee-menu-search').count()).toBe(1);
+    await page.waitForFunction(() => {
+      const search = document.querySelector('#menuView .coffee-menu-search');
+      return search && search.querySelector('input') && getComputedStyle(search).display !== 'none';
+    });
     const search = page.locator('#menuView .coffee-menu-search');
     await expect(search).toBeVisible();
     await expect(search.locator('input')).toHaveAttribute('placeholder', 'Найти напиток или десерт…');
@@ -148,6 +154,8 @@ for (const viewport of VIEWPORTS) {
 test('coffee profile keeps one QR action and avoids a duplicate large QR on the profile tab', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await installCoffeeGuest(page, 6, 1);
+  await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('data-brand'))).toBe('coffee');
+  await expect(page.locator('#bonusBox')).toBeVisible();
   await expect(page.locator('#bonusCount')).toHaveText('6/10');
   await expect(page.locator('#qrOpenBonus')).toBeVisible();
   await expect(page.locator('#qrOpenProfile')).toHaveCount(0);
