@@ -12,6 +12,7 @@ Dual-brand PWA / Telegram Mini App for «…и кофе» and «Пятница»
 6. `docs/ui-checklist.md` — UI acceptance and screenshot protocol.
 7. `docs/testing/slow-network-layout.md` — first-paint/CLS regression contract.
 8. `docs/openapi.yaml` — API contract (verify route implementation before assuming every operation is current).
+9. `docs/documentation-audit-2026-11-05.md` — documentation inventory and unresolved drift checks.
 
 ## Project commands
 
