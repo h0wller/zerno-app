@@ -96,12 +96,12 @@ Staff phase (after guest baseline): CASHIER, DISPATCH, ADMIN. Use the same captu
 
 | Screen / viewport | Score | Primary evidence |
 |---|---:|---|
-| COF-MENU · 320×740 | 7.5 | Header/ticker clipping; floating loyalty control crowds the next card |
-| COF-MENU · 390×844 | 7.4 | Ticker clips; floating loyalty control crowds card media |
+| COF-MENU · 320×740 | 7.5 | Header/ticker clipping; support/chat FAB crowds the next card |
+| COF-MENU · 390×844 | 7.4 | Ticker clips; support/chat FAB crowds card media |
 | COF-MENU · 768×1024 | 8.1 | Better two-column balance; ticker still clips |
 | COF-MENU · 1440×900 | 7.5 | Menu is readable, but a large unused right-side area weakens composition |
 | DEL-MENU · 320×740 | 6.6 | Floating support/chat FAB obscures the Add area; horizontal filter chips are clipped |
-| DEL-MENU · 390×844 | 6.6 | Floating cart action overlaps the Add button; filter chips and ticker clip |
+| DEL-MENU · 390×844 | 6.6 | Support/chat FAB overlaps the Add button; filter chips and ticker clip |
 | DEL-MENU · 1440×900 | 7.8 | Product selection controls are clear; empty right column and duplicate category navigation reduce balance |
 
 These are provisional screen scores for the rendered CI state, not product acceptance scores. Replace/reconfirm them with the production capture before considering the baseline frozen. The seven component scores are recorded in the score register above.
@@ -120,7 +120,7 @@ These are provisional screen scores for the rendered CI state, not product accep
 
 Artifact: `visual-ux-baseline-test-42089915249.zip` (GitHub Actions run `42089915249`). It contains 16 viewport PNGs and 8 state metadata JSON files. The full-page hydrated catalog PNGs are supplementary; score rows above use first-viewport captures at the same viewport.
 
-**First confirmed UX finding from the test screenshots:** on delivery XS/M, the fixed cart floating action overlaps the product card's Add control. This should be the first focused improvement candidate. Keep order/cart logic unchanged; adjust only the visual collision/available space and add a screenshot regression asserting that the two bounding boxes do not intersect.
+**First confirmed UX finding from the test screenshots:** on delivery XS/M, the fixed support/chat FAB (#chatFab), not cart FAB (#cartFab), overlaps the product card's Add control. This should be the first focused improvement candidate. Keep order/cart logic unchanged; adjust only the visual collision/available space and add a screenshot regression asserting that the two bounding boxes do not intersect.
 
 ## Screenshot register
 
@@ -128,13 +128,19 @@ Keep one row per physical screenshot, even when several screenshots belong to on
 
 | Screenshot ID | Screen ID | Commit/build | Brand/role | Viewport | State | Source | Evidence quality | File |
 |---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — | — |
+| COF-MENU-XS | COF-MENU | f06a94b | coffee / guest-cold-context | 320×740 | first-viewport | Playwright CI test server, run 42089915249 | supporting | `COFFEE-GUEST-INITIAL-GUEST-STATE-XS.png` |
+| COF-MENU-M | COF-MENU | f06a94b | coffee / guest-cold-context | 390×844 | first-viewport | Playwright CI test server, run 42089915249 | supporting | `COFFEE-GUEST-INITIAL-GUEST-STATE-M.png` |
+| COF-MENU-T | COF-MENU | f06a94b | coffee / guest-cold-context | 768×1024 | first-viewport | Playwright CI test server, run 42089915249 | supporting | `COFFEE-GUEST-INITIAL-GUEST-STATE-T.png` |
+| COF-MENU-D | COF-MENU | f06a94b | coffee / guest-cold-context | 1440×900 | first-viewport | Playwright CI test server, run 42089915249 | supporting | `COFFEE-GUEST-INITIAL-GUEST-STATE-D.png` |
+| DEL-MENU-XS | DEL-MENU | f06a94b | delivery / guest-cold-context | 320×740 | first-viewport | Playwright CI test server, run 42089915249 | supporting | `DELIVERY-GUEST-INITIAL-GUEST-STATE-XS.png` |
+| DEL-MENU-M | DEL-MENU | f06a94b | delivery / guest-cold-context | 390×844 | first-viewport | Playwright CI test server, run 42089915249 | supporting | `DELIVERY-GUEST-INITIAL-GUEST-STATE-M.png` |
+| DEL-MENU-D | DEL-MENU | f06a94b | delivery / guest-cold-context | 1440×900 | first-viewport | Playwright CI test server, run 42089915249 | supporting | `DELIVERY-GUEST-INITIAL-GUEST-STATE-D.png` |
 
 Suggested filename: `<screenshot-id>__<commit-short>__<state>.png`.
 
 ## Score register
 
-One row per screen and viewport. Fill scores only after inspecting the matching screenshot. All 56 baseline cells start unassessed; do not substitute CI pass/fail for visual review.
+One row per screen and viewport. Fill scores only after inspecting the matching screenshot. The register covers all 56 screen/viewport combinations. Rows with inspected screenshots carry provisional scores; all others remain unassessed. Do not substitute CI pass/fail for visual review.
 
 | Screen ID | Viewport | Hierarchy | Composition | Typography | Navigation | Actions | Density | Responsive/a11y | Total /10 | Critical finding |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
@@ -142,8 +148,8 @@ One row per screen and viewport. Fill scores only after inspecting the matching 
 | COF-HOME | M | — | — | — | — | — | — | — | — | Not assessed |
 | COF-HOME | T | — | — | — | — | — | — | — | — | Not assessed |
 | COF-HOME | D | — | — | — | — | — | — | — | — | Not assessed |
-| COF-MENU | XS | 8 | 7 | 8 | 7.5 | 7.5 | 7 | 7 | 7.5 | Ticker text clipped at right edge; test media are placeholders |
-| COF-MENU | M | 8 | 7 | 8 | 7.5 | 7 | 7 | 6.5 | 7.4 | Ticker clips horizontally; floating loyalty action crowds second card media |
+| COF-MENU | XS | 8 | 7 | 8 | 7.5 | 7.5 | 7 | 7 | 7.5 | Ticker clipped; support/chat FAB crowds the next card; test media are placeholders |
+| COF-MENU | M | 8 | 7 | 8 | 7.5 | 7 | 7 | 6.5 | 7.4 | Ticker clips horizontally; support/chat FAB crowds second card media |
 | COF-MENU | T | 8.5 | 8 | 8.3 | 8 | 7.5 | 8 | 7.8 | 8.1 | Ticker content clipped at right edge |
 | COF-MENU | D | 8.5 | 6.5 | 8.2 | 7.5 | 7 | 7 | 7 | 7.5 | Wide unused right-side area weakens overall composition |
 | COF-ITEM | XS | — | — | — | — | — | — | — | — | Not assessed |
