@@ -29,7 +29,7 @@ function updateRailStickyPosition(rail, head) {
   var headRect = head.getBoundingClientRect();
   if (!headRect.height) {
     rail.classList.remove('rail-position-ready');
-    resetDeliveryChatFabPosition(fab);
+    resetDeliveryChatFabPosition(fab, rail);
     return;
   }
 
@@ -44,7 +44,7 @@ function updateRailStickyPosition(rail, head) {
     var laneBottom = (window.innerHeight || document.documentElement.clientHeight)
       - defaultBottom - fabHeight - 12;
   } else {
-    resetDeliveryChatFabPosition(fab);
+    resetDeliveryChatFabPosition(fab, rail);
   }
 
   var topbar = document.querySelector('header.topbar');
