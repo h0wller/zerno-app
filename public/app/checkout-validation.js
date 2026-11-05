@@ -25,51 +25,75 @@ function flagField(el) {
 
 function ensureTimeModeToggle() {
     var slotEl = document.getElementById("checkoutSlot");
-    if (!slotEl || document.getElementById("checkoutTimeModeSeg")) return;
+    if (!slotEl) return;
     var labelEl = slotEl.closest("label") || slotEl.parentElement;
     if (!labelEl) return;
 
-    if (typeof window.populateSlots === "function") window.populateSlots();
+    var seg = document.getElementById("checkoutTimeModeSeg");
+    if (!seg) {
+      if (typeof window.populateSlots === "function") window.populateSlots();
+      seg = document.createElement("div");
+      seg.id = "checkoutTimeModeSeg";
+      seg.className = "time-mode-seg";
+      seg.setAttribute("role", "group");
+      seg.setAttribute("aria-label", "Когда получить заказ");
+      seg.innerHTML =
+        '<button type="button" class="tms-btn" data-tmode="asap">⚡ Как можно скорее</button>' +
+        '<button type="button" class="tms-btn" data-tmode="slot">⏰ Ко времени</button>';
+      labelEl.parentNode.insertBefore(seg, labelEl);
+    }
 
-    var seg = document.createElement("div");
-    seg.id = "checkoutTimeModeSeg";
-    seg.className = "time-mode-seg";
-    var isScheduled = slotEl.value && slotEl.value !== "asap";
-    seg.innerHTML =
-      '<button type="button" class="tms-btn' + (!isScheduled ? " on" : "") + '" data-tmode="asap">⚡ Как можно скорее</button>' +
-      '<button type="button" class="tms-btn' + (isScheduled ? " on" : "") + '" data-tmode="slot">⏰ Ко времени</button>';
-
-    labelEl.parentNode.insertBefore(seg, labelEl);
+    function syncTimeMode() {
+      var preorderRequiredNow = !!window.deliveryInfo &&
+        typeof window.preorderMode === "function" && !!window.preorderMode();
+      if (slotEl.value && slotEl.value !== "asap") {
+        slotEl.__checkoutTimeMode = "slot";
+      } else if (slotEl.value === "asap") {
+        slotEl.__checkoutTimeMode = "asap";
+      } else if (preorderRequiredNow) {
+        slotEl.__checkoutTimeMode = "slot";
+      } else if (slotEl.__checkoutTimeMode !== "slot") {
+        slotEl.__checkoutTimeMode = "asap";
+      }
+      slotEl.dataset.checkoutTimeMode = slotEl.__checkoutTimeMode;
+      var isScheduled = slotEl.__checkoutTimeMode === "slot";
+      seg.querySelectorAll(".tms-btn").forEach(function (button) {
+        var isActive = button.dataset.tmode === (isScheduled ? "slot" : "asap");
+        button.classList.toggle("on", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+      labelEl.hidden = !isScheduled;
+    }
 
     function syncSlotVisibility(modeVal) {
-      seg.querySelectorAll(".tms-btn").forEach(function (b) {
-        b.classList.toggle("on", b.dataset.tmode === modeVal);
-      });
+      slotEl.__checkoutTimeMode = modeVal;
+      slotEl.dataset.checkoutTimeMode = modeVal;
       if (modeVal === "asap") {
         slotEl.value = "asap";
-        labelEl.hidden = true;
-      } else {
-        labelEl.hidden = false;
-        if (!slotEl.value || slotEl.value === "asap") {
-          for (var i = 0; i < slotEl.options.length; i++) {
-            if (slotEl.options[i].value && slotEl.options[i].value !== "asap") {
-              slotEl.value = slotEl.options[i].value;
-              break;
-            }
-          }
-        }
+      } else if (slotEl.value === "asap") {
+        // An empty value still represents an explicit scheduled-mode choice.
+        slotEl.value = "";
       }
+      syncTimeMode();
       slotEl.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
-    if (!isScheduled) labelEl.hidden = true;
+    if (!slotEl.__timeModeChangeBound) {
+      slotEl.addEventListener("change", syncTimeMode);
+      slotEl.__timeModeChangeBound = true;
+    }
+    slotEl.__syncTimeMode = syncTimeMode;
+    syncTimeMode();
 
-    seg.addEventListener("click", function (e) {
-      var btn = e.target.closest("[data-tmode]");
-      if (!btn) return;
-      e.preventDefault();
-      syncSlotVisibility(btn.dataset.tmode);
-    });
+    if (!seg.__timeModeClickBound) {
+      seg.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-tmode]");
+        if (!btn) return;
+        e.preventDefault();
+        syncSlotVisibility(btn.dataset.tmode);
+      });
+      seg.__timeModeClickBound = true;
+    }
   }
 
 function resolveCheckoutAddress(method) {
@@ -130,25 +154,22 @@ async function resolveCheckoutSlot() {
     } else if (typeof window.populateSlots === "function") {
       window.populateSlots();
     }
-    var pm = typeof window.preorderMode === "function"
+    var pm = window.deliveryInfo && typeof window.preorderMode === "function"
       ? window.preorderMode()
-      : (typeof window.assertServiceOpen === "function" && !window.assertServiceOpen() ? "tomorrow" : null);
+      : null;
     var slotElCheck = document.getElementById("checkoutSlot");
-    var slotModeBtn = document.querySelector('#checkoutTimeModeSeg .tms-btn.on[data-tmode="slot"]');
     var slotVal = (slotElCheck && slotElCheck.value) || "";
-    if ((pm || slotModeBtn) && (!slotVal || slotVal === "asap") && slotElCheck) {
+    if (pm && slotElCheck) {
       ensureTimeModeToggle();
-      for (var sIdx = 0; sIdx < slotElCheck.options.length; sIdx++) {
-        if (slotElCheck.options[sIdx].value && slotElCheck.options[sIdx].value !== "asap") {
-          slotElCheck.value = slotElCheck.options[sIdx].value;
-          slotVal = slotElCheck.value;
-          break;
-        }
-      }
+      slotElCheck.__checkoutTimeMode = "slot";
+      if (!slotVal || slotVal === "asap") slotElCheck.value = "";
+      slotVal = slotElCheck.value || "";
     }
-
-    var isPreorder = !!pm || (slotVal && slotVal !== "asap");
-    if (isPreorder && (!slotVal || slotVal === "asap")) {
+    var isScheduled = !!slotElCheck && slotElCheck.__checkoutTimeMode === "slot";
+    var isPreorder = !!pm || (!!slotVal && slotVal !== "asap");
+    if ((pm || isScheduled) && (!slotVal || slotVal === "asap")) {
+      ensureTimeModeToggle();
+      if (slotElCheck && typeof slotElCheck.__syncTimeMode === "function") slotElCheck.__syncTimeMode();
       return { ok: false, field: slotElCheck, message: "Выберите время доставки для предзаказа ⏰", icon: "⚠️" };
     }
 

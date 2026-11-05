@@ -44,7 +44,7 @@
 
   function repeatTrackedOrder() {
     if (!activeTrackOrder || !Array.isArray(activeTrackOrder.items)) return;
-    window.cart = activeTrackOrder.items.map(function (item) {
+    var repeatedItems = activeTrackOrder.items.map(function (item) {
       return {
         key: String(item.id) + "_" + (item.opt || "0"),
         id: item.id,
@@ -57,9 +57,16 @@
         modifiers: item.modifiers || []
       };
     });
+    // Preserve the shared cart array identity used by delivery.js/cart.js.
+    if (Array.isArray(window.cart)) {
+      window.cart.splice.apply(window.cart, [0, window.cart.length].concat(repeatedItems));
+    } else {
+      window.cart = repeatedItems;
+    }
     localStorage.setItem("zt_cart", JSON.stringify(window.cart));
     if (typeof window.updateCartFab === "function") window.updateCartFab();
     if (typeof window.renderCart === "function") window.renderCart();
+    if (typeof window.cartFabShow === "function") window.cartFabShow();
     var cartPanel = document.getElementById("cartPanel");
     if (cartPanel) cartPanel.classList.add("open");
     closeOrderTrackModal();

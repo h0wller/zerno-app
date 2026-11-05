@@ -240,15 +240,41 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
+    await routeImageDeliveryFixture(page);
+    let themeCssGate = Promise.resolve();
+    let heldThemeCssRequests = 0;
     await page.route('**/app/ui/theme/*.css*', async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 900));
+      heldThemeCssRequests += 1;
+      await themeCssGate;
       await route.continue();
     });
 
     for (const width of [320, 390, 480, 519, 520, 690, 691, 820, 821, 1023, 1024, 1180, 1181, 1599, 1600]) {
+      let releaseThemeCss;
+      themeCssGate = new Promise((resolve) => { releaseThemeCss = resolve; });
       await page.setViewportSize({ width, height: 844 });
       await page.goto('/?brand=delivery', { waitUntil: 'commit' });
       await expect(page.locator('#deliveryGrid > .card[data-product-id]').first()).toBeAttached({ timeout: 10000 });
+      await page.waitForFunction(() =>
+        Array.isArray(window.DMENU) &&
+        window.DMENU.length === 6 &&
+        document.querySelectorAll('#deliveryGrid > .card[data-product-id]').length === 6
+      );
+      const expectedGridColumns = width >= 1600 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
+      await page.waitForFunction((expectedColumns) => {
+        const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
+        if (cards.length !== 6) return false;
+        const firstTop = cards[0].getBoundingClientRect().top;
+        const firstRow = cards.filter((card) => Math.abs(card.getBoundingClientRect().top - firstTop) <= 1);
+        const firstRowImages = firstRow.map((card) => card.querySelector('.media img[src]'));
+        return firstRow.length === expectedColumns &&
+          firstRowImages.every((image) => image && image.getAttribute('loading') === 'eager') &&
+          document.querySelectorAll('#deliveryGrid img[fetchpriority="high"]').length === 1;
+      }, expectedGridColumns, { timeout: 10000 });
+      await expect.poll(() => heldThemeCssRequests, {
+        message: 'theme CSS requests should be held before the pre-CSS layout measurement',
+        timeout: 10000
+      }).toBeGreaterThan(0);
 
       const measureBrand = () => page.evaluate(() => {
         const mark = document.querySelector('#brandMark');
@@ -297,7 +323,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       const before = await measureBrand();
       console.log(`[slow-network-layout] ${width}px before CSS`, JSON.stringify(before));
       expect(before.width, `brand mark exists at ${width}px`).not.toBeNull();
-      const expectedGridColumns = width >= 1600 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
       expect(before.gridColumns, `delivery grid has ${expectedGridColumns} columns at ${width}px before CSS`)
         .toBe(expectedGridColumns);
       expect(before.eagerImageCount, `all and only first-row images are eager at ${width}px`)
@@ -314,6 +339,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       expect(before.scrollWidth, `no initial horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
 
+      releaseThemeCss();
       await waitForDeferredTheme(page);
       const after = await measureBrand();
       console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));

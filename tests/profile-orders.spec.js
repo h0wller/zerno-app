@@ -19,9 +19,11 @@ const orderFixture = {
 };
 
 test.describe('Модуль заказов профиля', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
     mineRequestCount = 0;
@@ -38,9 +40,21 @@ test.describe('Модуль заказов профиля', () => {
         body: JSON.stringify({ orders })
       });
     });
-    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+    await page.goto('/?brand=delivery');
+    await expect.poll(() => page.evaluate(() =>
+      typeof window.boot === 'function' &&
+      typeof window.syncBrandViews === 'function' &&
+      typeof window.setUser === 'function' &&
+      typeof window.openPanel === 'function'
+    )).toBe(true);
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.getAttribute('data-staff-ready') === '1' &&
+      Array.isArray(window.DMENU) && window.DMENU.length > 0
+    )).toBe(true);
+
     await page.evaluate(() => {
-      window.me = {
+      const customer = {
         id: 'profile-test',
         name: 'Тестовый гость',
         phone: '+7 900 000-00-00',
@@ -48,6 +62,7 @@ test.describe('Модуль заказов профиля', () => {
         cups: 2,
         stamps: 2,
         free: 0,
+        qr: 'profile-test',
         history: [
           { ts: '2026-10-29T12:00:00.000Z', a: 'Начислен штамп', by: 'Кассир' },
           { ts: '2026-10-28T12:00:00.000Z', a: 'Покупка кофе', by: 'Кофейня' },
@@ -57,17 +72,24 @@ test.describe('Модуль заказов профиля', () => {
         ],
         verified: 1
       };
-      window.brand = 'delivery';
-      if (typeof window.__profileMeReady !== 'function') {
-        throw new Error('Profile readiness hook was not initialized');
-      }
+      window.setUser('profile-test-token', customer);
       window.__profileMeReady();
       window.renderProfile();
       window.openPanel('profile');
     });
-    await expect(page.locator('#myOrdersBtn')).toBeVisible();
-  });
 
+    await expect(page.locator('#panel')).toHaveClass(/open/);
+    await expect(page.locator('#tabProfile')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#pvProfile')).toBeVisible();
+    await expect(page.locator('#profileBox')).toBeVisible();
+    await expect(page.locator('#myOrdersBtn')).toBeVisible();
+    await expect(page.locator('#fridayInfo')).toBeVisible();
+    await expect(page.locator('#fridayInfo a[aria-label="ВКонтакте"]')).toHaveAttribute('href', 'https://vk.ru/fridaypizza39');
+    await expect(page.locator('#fridayInfo a[aria-label="Яндекс Карты"]')).toHaveAttribute('href', /yandex\.ru\/maps/);
+    await expect.poll(() => page.locator('#fridayInfo').evaluate(element =>
+      element.nextElementSibling?.classList.contains('profile-history-section')
+    )).toBe(true);
+  });
   test('выводит последний заказ в профиле и список в отдельной модалке', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection .profile-section-heading')).toContainText('Последний заказ');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');

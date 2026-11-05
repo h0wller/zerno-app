@@ -70,8 +70,26 @@ for (const viewport of viewports) {
     expect(layout.overflowY).toBe('auto');
     expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentWidth + 1);
 
-    await card.locator('#regBtn').scrollIntoViewIfNeeded();
-    await expect(card.locator('#regBtn')).toBeInViewport();
+    const submit = card.locator('#regBtn');
+    await submit.evaluate((element) => {
+      const scrollContainer = element.closest('.authcard');
+      scrollContainer.style.scrollBehavior = 'auto';
+      element.scrollIntoView({ block: 'end', inline: 'nearest', behavior: 'instant' });
+    });
+    const submitGeometry = await submit.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        top: rect.top,
+        bottom: rect.bottom,
+        viewportHeight: window.innerHeight,
+        cardScrollTop: element.closest('.authcard').scrollTop,
+        cardScrollHeight: element.closest('.authcard').scrollHeight,
+        cardClientHeight: element.closest('.authcard').clientHeight,
+      };
+    });
+    expect(submitGeometry.top, JSON.stringify(submitGeometry)).toBeGreaterThanOrEqual(-1);
+    expect(submitGeometry.bottom, JSON.stringify(submitGeometry)).toBeLessThanOrEqual(submitGeometry.viewportHeight + 1);
+    await expect(submit).toBeInViewport();
   });
 }
 

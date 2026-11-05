@@ -334,7 +334,9 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     if (!cf) return;
     var isDel = checkIsDelivery();
     var isGuestOrAdmin = typeof mode === "undefined" || mode === "guest" || mode === "admin";
-    var hasItems = typeof cart !== "undefined" && cart.length > 0;
+    var currentCart = Array.isArray(window.cart) ? window.cart :
+      (typeof cart !== "undefined" && Array.isArray(cart) ? cart : []);
+    var hasItems = currentCart.length > 0;
     var shouldShow = isGuestOrAdmin && isDel && hasItems;
     cf.classList.toggle("visible", shouldShow);
     cf.hidden = !shouldShow;
@@ -685,6 +687,8 @@ function clearPromo() {
         street: (document.getElementById("checkoutStreet") || {}).value,
         house: (document.getElementById("checkoutHouse") || {}).value,
         slot: (document.getElementById("checkoutSlot") || {}).value,
+        timeMode: (document.getElementById("checkoutSlot") || {}).dataset.checkoutTimeMode ||
+          (document.getElementById("checkoutSlot") || {}).__checkoutTimeMode || "",
         pay: (document.getElementById("checkoutPay") || {}).value,
         comment: (document.getElementById("checkoutComment") || {}).value
       };
@@ -715,8 +719,14 @@ function clearPromo() {
       if (houseVal && document.getElementById("checkoutHouse")) {
         document.getElementById("checkoutHouse").value = houseVal;
       }
-      if (draft.slot && document.getElementById("checkoutSlot")) {
-        document.getElementById("checkoutSlot").value = draft.slot;
+      var draftSlot = document.getElementById("checkoutSlot");
+      if (draftSlot) {
+        if (draft.slot) draftSlot.value = draft.slot;
+        else if (draft.timeMode === "slot") draftSlot.value = "";
+        if (draft.timeMode === "slot" || draft.timeMode === "asap") {
+          draftSlot.__checkoutTimeMode = draft.timeMode;
+          draftSlot.dataset.checkoutTimeMode = draft.timeMode;
+        }
       }
       if (draft.pay && document.getElementById("checkoutPay")) {
         document.getElementById("checkoutPay").value = draft.pay;
@@ -725,6 +735,8 @@ function clearPromo() {
         document.getElementById("checkoutComment").value = draft.comment;
       }
       toggleDeliveryGroup();
+      var slotEl = document.getElementById("checkoutSlot");
+      if (slotEl && typeof slotEl.__syncTimeMode === "function") slotEl.__syncTimeMode();
     } catch (e) {}
   }
 
@@ -1329,7 +1341,15 @@ function renderCartBase() {
     var commentInput = document.getElementById("checkoutComment");
     if (commentInput) commentInput.value = "";
     var slotInput = document.getElementById("checkoutSlot");
-    if (slotInput) slotInput.value = (window.preorderMode && window.preorderMode()) ? "" : "asap";
+    if (slotInput) {
+      var nextOrderNeedsPreorder = !!(window.preorderMode && window.preorderMode());
+      slotInput.value = nextOrderNeedsPreorder ? "" : "asap";
+      slotInput.__checkoutTimeMode = nextOrderNeedsPreorder ? "slot" : "asap";
+      slotInput.dataset.checkoutTimeMode = slotInput.__checkoutTimeMode;
+      if (typeof slotInput.__syncTimeMode === "function") slotInput.__syncTimeMode();
+      if (typeof window.populateSlots === "function") window.populateSlots();
+      if (typeof slotInput.__syncTimeMode === "function") slotInput.__syncTimeMode();
+    }
 
     document.querySelectorAll('#deliveryGrid .opts input[type="radio"]:checked').forEach(function (radio) {
       radio.checked = false;
@@ -1414,6 +1434,7 @@ function renderCartBase() {
     };
   }
 
+  window.restoreCheckoutDraft = restoreDraft;
   restoreDraft();
   scheduleLunchPromoRefresh();
 

@@ -55,7 +55,6 @@ window.promoInfo = null;
 window.cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
 
 async function fetchDeliveryInfo() {
-  deliveryInfo = null;
   var response = await fetch(API_BASE + '/api/delivery/info');
   if (!response.ok) throw new Error('Не удалось обновить график работы');
   var info = await response.json();
@@ -73,6 +72,7 @@ window.refreshDeliveryInfo = function () {
       .then(function (info) {
         populatePlaces();
         window.populateSlots();
+        if (typeof window.restoreCheckoutDraft === "function") window.restoreCheckoutDraft();
         if (typeof window.applyBrandChrome === 'function') window.applyBrandChrome(true);
         return info;
       })
@@ -1022,6 +1022,7 @@ window.populateSlots = function () {
   var pm = typeof window.preorderMode === 'function' ? window.preorderMode() : 'today';
   var sel = document.getElementById('checkoutSlot');
   var previousValue = sel ? sel.value : '';
+  var previousMode = sel && (sel.dataset.checkoutTimeMode || sel.__checkoutTimeMode);
   var days = {};
   var scheduleDays = deliveryInfo && Array.isArray(deliveryInfo.days) ? deliveryInfo.days : [];
   var allowedOffsets = pm === 'today' ? [0] : pm === 'tomorrow' ? [1] : [0, 1];
@@ -1035,16 +1036,38 @@ window.populateSlots = function () {
 
   if (sel) {
     sel.innerHTML = renderSlotGroupOptions(days, pm);
+    var restoredSelection = false;
     if (previousValue) {
       for (var i = 0; i < sel.options.length; i++) {
         if (sel.options[i].value === previousValue && !sel.options[i].disabled) {
           sel.value = previousValue;
+          restoredSelection = true;
           break;
         }
       }
     }
+
+    if (previousMode === 'slot' && !restoredSelection) {
+      sel.value = '';
+      sel.__checkoutTimeMode = 'slot';
+      sel.dataset.checkoutTimeMode = 'slot';
+    } else if (previousMode === 'asap' || (previousValue === 'asap' && !restoredSelection)) {
+      sel.value = pm ? '' : 'asap';
+      sel.__checkoutTimeMode = pm ? 'slot' : 'asap';
+      sel.dataset.checkoutTimeMode = sel.__checkoutTimeMode;
+    } else if (pm && (!restoredSelection || !sel.value || sel.value === 'asap')) {
+      sel.value = '';
+      sel.__checkoutTimeMode = 'slot';
+      sel.dataset.checkoutTimeMode = 'slot';
+    } else if (!restoredSelection && !previousMode) {
+      sel.value = pm ? '' : 'asap';
+      sel.__checkoutTimeMode = pm ? 'slot' : 'asap';
+      sel.dataset.checkoutTimeMode = sel.__checkoutTimeMode;
+    }
+
     sel.classList.toggle('need-slot', !!pm && !sel.value);
     setupSlotDisplayToggle(sel);
+    if (typeof sel.__syncTimeMode === 'function') sel.__syncTimeMode();
   }
 };
 
@@ -1105,7 +1128,7 @@ function promoDisc(sum, info){
 }
 
 window.preorderMode = function () {
-  if (!deliveryInfo || !deliveryInfo.today) return 'today';
+  if (!deliveryInfo || !deliveryInfo.today) return null;
 
   var time = getKaliningradTime();
   var currentMinute = Number(time.hour) * 60 + Number(time.minute || 0);
