@@ -119,7 +119,7 @@
 |---|---|---|
 | `GET /api/vapid` | Публичный VAPID-ключ | Публичный |
 | `POST /api/push/subscribe` | Web Push подписка | По реализации |
-| `POST /api/push/test` | Тестовая отправка push | adminGuard |
+| `POST /api/push/test` | Тестовая отправка push текущему профилю | userGuard |
 | `POST /api/push/fcm` | Регистрация FCM-токена | По реализации |
 | `GET /api/push/subs` | Данные push-подписок | adminGuard |
 | `POST /api/push/send` | Административная отправка push | adminGuard |
