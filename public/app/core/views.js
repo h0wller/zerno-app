@@ -98,7 +98,7 @@ var rules = [
  '[data-brand="delivery"] #brandSeg,[data-brand="delivery"] #modeSeg{background:var(--esp)}',
  '[data-brand="delivery"] #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on{background:#8B2B20;color:#fff}',
  '[data-brand="delivery"] #cartFab,[data-brand="delivery"] .chat-fab{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc)}',
- '@media(max-width:820px){html[data-brand="delivery"] #chatFab{left:10px;right:auto}}',
+ '@media(max-width:820px){html[data-brand="delivery"] #chatFab{left:104px;right:auto}}',
  '[data-brand="delivery"] #cartPanel,[data-brand="delivery"] .cartPanel{background:var(--fr-rice);border:3px solid var(--fr-choc);border-bottom:none}',
  '[data-brand="delivery"] .cartPanel .cartItem{border-bottom:1.5px dashed rgba(58,42,28,.3);color:#3A2A1C;font-weight:600}',
   '[data-brand="delivery"] #scrollTopBtn{background:var(--fr-paper,#F6EEE1);border:1.5px solid #3a2a1c}',
