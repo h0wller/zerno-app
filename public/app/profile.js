@@ -102,6 +102,9 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         var bbx = document.getElementById("bonusBox");
         if (bbx) bbx.hidden = !me;
 
+        var count = document.getElementById("bonusCount");
+        if (count) count.textContent = (me ? Math.max(0, Number(me.stamps) || 0) : 0) + "/10";
+
         if (!me) return;
 
         let h = "";
