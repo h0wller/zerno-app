@@ -88,6 +88,40 @@ For every screen, capture the first viewport and a full-page/scroll capture wher
 
 Staff phase (after guest baseline): CASHIER, DISPATCH, ADMIN. Use the same capture metadata and scoring dimensions, but do not combine these with customer-facing averages.
 
+## Preliminary visual review — CI screenshot set (2026-11-05)
+
+**Evidence class:** supporting, not final production baseline. Screenshots are actual rendered pixels from the Playwright CI test server with fixture/test catalog data. They are suitable for evaluating shell geometry, hierarchy, typography, navigation and visible overlays; they are not suitable for judging real production product photography, catalog completeness, live promotion content or the final production guest state.
+
+**Weighted scores (7 dimensions, out of 10):**
+
+| Screen / viewport | Score | Primary evidence |
+|---|---:|---|
+| COF-MENU · 320×740 | 7.5 | Header/ticker clipping; floating loyalty control crowds the next card |
+| COF-MENU · 390×844 | 7.4 | Ticker clips; floating loyalty control crowds card media |
+| COF-MENU · 768×1024 | 8.1 | Better two-column balance; ticker still clips |
+| COF-MENU · 1440×900 | 7.5 | Menu is readable, but a large unused right-side area weakens composition |
+| DEL-MENU · 320×740 | 6.6 | Floating cart action obscures the Add area; horizontal filter chips are clipped |
+| DEL-MENU · 390×844 | 6.6 | Floating cart action overlaps the Add button; filter chips and ticker clip |
+| DEL-MENU · 1440×900 | 7.8 | Product selection controls are clear; empty right column and duplicate category navigation reduce balance |
+
+These are provisional screen scores for the rendered CI state, not product acceptance scores. Replace/reconfirm them with the production capture before considering the baseline frozen. The seven component scores are recorded in the score register above.
+
+### Screenshot evidence inspected
+
+| Screenshot ID | Viewport | Capture state | Evidence notes |
+|---|---:|---|---|
+| COF-MENU-XS | 320×740 | Guest first viewport | Header, ticker, rail, search and first card inspected |
+| COF-MENU-M | 390×844 | Guest first viewport | Header, ticker, rail, search and card overlay inspected |
+| COF-MENU-T | 768×1024 | Guest first viewport | Two-column menu and navigation inspected |
+| COF-MENU-D | 1440×900 | Guest first viewport | Three-column catalog and right-side panel inspected |
+| DEL-MENU-XS | 320×740 | Guest first viewport | Filter clipping and floating cart/Add overlap inspected |
+| DEL-MENU-M | 390×844 | Guest first viewport | Floating cart button visibly covers part of the Add control |
+| DEL-MENU-D | 1440×900 | Guest first viewport | Three-column cards, duplicate category navigation and right-side area inspected |
+
+Artifact: `visual-ux-baseline-test-42089915249.zip` (GitHub Actions run `42089915249`). It contains 16 viewport PNGs and 8 state metadata JSON files. The full-page hydrated catalog PNGs are supplementary; score rows above use first-viewport captures at the same viewport.
+
+**First confirmed UX finding from the test screenshots:** on delivery XS/M, the fixed cart floating action overlaps the product card's Add control. This should be the first focused improvement candidate. Keep order/cart logic unchanged; adjust only the visual collision/available space and add a screenshot regression asserting that the two bounding boxes do not intersect.
+
 ## Screenshot register
 
 Keep one row per physical screenshot, even when several screenshots belong to one screen ID.
@@ -108,10 +142,10 @@ One row per screen and viewport. Fill scores only after inspecting the matching 
 | COF-HOME | M | — | — | — | — | — | — | — | — | Not assessed |
 | COF-HOME | T | — | — | — | — | — | — | — | — | Not assessed |
 | COF-HOME | D | — | — | — | — | — | — | — | — | Not assessed |
-| COF-MENU | XS | — | — | — | — | — | — | — | — | Not assessed |
-| COF-MENU | M | — | — | — | — | — | — | — | — | Not assessed |
-| COF-MENU | T | — | — | — | — | — | — | — | — | Not assessed |
-| COF-MENU | D | — | — | — | — | — | — | — | — | Not assessed |
+| COF-MENU | XS | 8 | 7 | 8 | 7.5 | 7.5 | 7 | 7 | 7.5 | Ticker text clipped at right edge; test media are placeholders |
+| COF-MENU | M | 8 | 7 | 8 | 7.5 | 7 | 7 | 6.5 | 7.4 | Ticker clips horizontally; floating loyalty action crowds second card media |
+| COF-MENU | T | 8.5 | 8 | 8.3 | 8 | 7.5 | 8 | 7.8 | 8.1 | Ticker content clipped at right edge |
+| COF-MENU | D | 8.5 | 6.5 | 8.2 | 7.5 | 7 | 7 | 7 | 7.5 | Wide unused right-side area weakens overall composition |
 | COF-ITEM | XS | — | — | — | — | — | — | — | — | Not assessed |
 | COF-ITEM | M | — | — | — | — | — | — | — | — | Not assessed |
 | COF-ITEM | T | — | — | — | — | — | — | — | — | Not assessed |
@@ -136,10 +170,10 @@ One row per screen and viewport. Fill scores only after inspecting the matching 
 | DEL-HOME | M | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-HOME | T | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-HOME | D | — | — | — | — | — | — | — | — | Not assessed |
-| DEL-MENU | XS | — | — | — | — | — | — | — | — | Not assessed |
-| DEL-MENU | M | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-MENU | XS | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5 | 6.6 | Floating cart action overlaps Add area; top filter chips are cut off |
+| DEL-MENU | M | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5.5 | 6.6 | Floating cart action covers part of Add button; filter chips and ticker clip |
 | DEL-MENU | T | — | — | — | — | — | — | — | — | Not assessed |
-| DEL-MENU | D | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-MENU | D | 8.5 | 7.2 | 8 | 7.5 | 8 | 7 | 7.5 | 7.8 | Empty right-side profile column; top filters and left category rail duplicate navigation |
 | DEL-ITEM | XS | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-ITEM | M | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-ITEM | T | — | — | — | — | — | — | — | — | Not assessed |
