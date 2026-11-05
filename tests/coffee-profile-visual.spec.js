@@ -114,7 +114,24 @@ for (const viewport of VIEWPORTS) {
     const search = page.locator('#menuView .coffee-menu-search');
     await expect(search).toBeVisible();
     await expect(search.locator('input')).toHaveAttribute('placeholder', 'Найти напиток или десерт…');
-    await expect(page.locator('#menuView .mh-top h2.vh')).toBeHidden();
+    const sectionHeading = page.locator('#menuView .mh-top h2.vh');
+    await expect(sectionHeading).toHaveText('Разделы меню');
+    const headingBounds = await sectionHeading.evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        position: style.position,
+        width: rect.width,
+        height: rect.height,
+        overflow: style.overflow,
+        clip: style.clip
+      };
+    });
+    expect(headingBounds.position).toBe('absolute');
+    expect(headingBounds.width).toBeLessThanOrEqual(1);
+    expect(headingBounds.height).toBeLessThanOrEqual(1);
+    expect(headingBounds.overflow).toBe('hidden');
+    expect(headingBounds.clip).not.toBe('auto');
     await expect(page.locator('#menuView .mh-top .upd')).toBeHidden();
     await expect(page.locator('#menuView h1')).toBeVisible();
 
