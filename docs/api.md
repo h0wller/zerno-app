@@ -65,9 +65,9 @@
 
 | Метод и путь | Назначение | Доступ |
 |---|---|---|
-| `POST /api/orders` | Создать заказ | Маршрут публичный; сервер валидирует заказ |
-| `GET /api/orders` | Получить заказы пользователя | userGuard |
-| `GET /api/orders/mine` | История заказов пользователя | userGuard |
+| `POST /api/orders` | Создать заказ | userGuard; сервер валидирует заказ |
+| `GET /api/orders` | Очередь заказов за последние три дня | dispatchGuard; фильтры `status`, `staff`, `done` |
+| `GET /api/orders/mine` | История заказов текущего пользователя | userGuard |
 | `POST /api/orders/:id/status` | Изменить статус заказа | dispatchGuard |
 | `POST /api/orders/:id/delay` | Задержать один заказ | dispatchGuard |
 | `POST /api/orders/delay-all` | Массово задержать активные заказы | dispatchGuard |
