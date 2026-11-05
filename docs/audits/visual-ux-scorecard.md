@@ -100,16 +100,66 @@ Suggested filename: `<screenshot-id>__<commit-short>__<state>.png`.
 
 ## Score register
 
-One row per screen and viewport. Fill scores only after inspecting the screenshot.
+One row per screen and viewport. Fill scores only after inspecting the matching screenshot. All 56 baseline cells start unassessed; do not substitute CI pass/fail for visual review.
 
 | Screen ID | Viewport | Hierarchy | Composition | Typography | Navigation | Actions | Density | Responsive/a11y | Total /10 | Critical finding |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | COF-HOME | XS | — | — | — | — | — | — | — | — | Not assessed |
 | COF-HOME | M | — | — | — | — | — | — | — | — | Not assessed |
+| COF-HOME | T | — | — | — | — | — | — | — | — | Not assessed |
+| COF-HOME | D | — | — | — | — | — | — | — | — | Not assessed |
+| COF-MENU | XS | — | — | — | — | — | — | — | — | Not assessed |
+| COF-MENU | M | — | — | — | — | — | — | — | — | Not assessed |
+| COF-MENU | T | — | — | — | — | — | — | — | — | Not assessed |
+| COF-MENU | D | — | — | — | — | — | — | — | — | Not assessed |
+| COF-ITEM | XS | — | — | — | — | — | — | — | — | Not assessed |
+| COF-ITEM | M | — | — | — | — | — | — | — | — | Not assessed |
+| COF-ITEM | T | — | — | — | — | — | — | — | — | Not assessed |
+| COF-ITEM | D | — | — | — | — | — | — | — | — | Not assessed |
+| COF-PROFILE | XS | — | — | — | — | — | — | — | — | Not assessed |
+| COF-PROFILE | M | — | — | — | — | — | — | — | — | Not assessed |
+| COF-PROFILE | T | — | — | — | — | — | — | — | — | Not assessed |
+| COF-PROFILE | D | — | — | — | — | — | — | — | — | Not assessed |
+| COF-BONUS | XS | — | — | — | — | — | — | — | — | Not assessed |
+| COF-BONUS | M | — | — | — | — | — | — | — | — | Not assessed |
+| COF-BONUS | T | — | — | — | — | — | — | — | — | Not assessed |
+| COF-BONUS | D | — | — | — | — | — | — | — | — | Not assessed |
+| COF-CART | XS | — | — | — | — | — | — | — | — | Not assessed |
+| COF-CART | M | — | — | — | — | — | — | — | — | Not assessed |
+| COF-CART | T | — | — | — | — | — | — | — | — | Not assessed |
+| COF-CART | D | — | — | — | — | — | — | — | — | Not assessed |
+| COF-CHECKOUT | XS | — | — | — | — | — | — | — | — | Not assessed |
+| COF-CHECKOUT | M | — | — | — | — | — | — | — | — | Not assessed |
+| COF-CHECKOUT | T | — | — | — | — | — | — | — | — | Not assessed |
+| COF-CHECKOUT | D | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-HOME | XS | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-HOME | M | — | — | — | — | — | — | — | — | Not assessed |
-
-The full register must contain every screen/viewport listed above once the corresponding screenshot has been inspected.
+| DEL-HOME | T | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-HOME | D | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-MENU | XS | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-MENU | M | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-MENU | T | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-MENU | D | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-ITEM | XS | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-ITEM | M | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-ITEM | T | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-ITEM | D | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-CART | XS | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-CART | M | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-CART | T | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-CART | D | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-CHECKOUT | XS | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-CHECKOUT | M | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-CHECKOUT | T | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-CHECKOUT | D | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-PROFILE | XS | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-PROFILE | M | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-PROFILE | T | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-PROFILE | D | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-ORDER | XS | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-ORDER | M | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-ORDER | T | — | — | — | — | — | — | — | — | Not assessed |
+| DEL-ORDER | D | — | — | — | — | — | — | — | — | Not assessed |
 
 ## Findings ledger
 
