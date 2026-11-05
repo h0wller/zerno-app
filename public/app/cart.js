@@ -530,13 +530,14 @@ async function refreshPromoLine(sum) {
         ? '<img src="' + esc(p.img) + '" alt="" class="ac-img" loading="lazy" />'
         : '<div class="ac-emoji">' + (p.e || (p.cat === "drinks" ? "🥤" : "🥫")) + "</div>";
 
+      var addonLabel = esc(p.name);
       var actHtml = qty > 0
         ? '<div class="ac-stepper">' +
-            '<button type="button" class="ac-step" data-ac-act="minus" data-addon-id="' + p.id + '">−</button>' +
+            '<button type="button" class="ac-step" aria-label="Уменьшить количество ' + addonLabel + '" data-ac-act="minus" data-addon-id="' + p.id + '">−</button>' +
             '<span class="ac-qty">' + qty + "</span>" +
-            '<button type="button" class="ac-step" data-ac-act="plus" data-addon-id="' + p.id + '">+</button>' +
+            '<button type="button" class="ac-step" aria-label="Увеличить количество ' + addonLabel + '" data-ac-act="plus" data-addon-id="' + p.id + '">+</button>' +
           "</div>"
-        : '<button type="button" class="ac-add-btn" data-addon-id="' + p.id + '">＋</button>';
+        : '<button type="button" class="ac-add-btn" aria-label="Добавить ' + addonLabel + ' в корзину" data-addon-id="' + p.id + '">＋</button>';
 
       return '<div class="addon-pill-card' + (qty > 0 ? " in-cart" : "") + '">' +
         '<div class="ac-media">' + imgHtml + "</div>" +
