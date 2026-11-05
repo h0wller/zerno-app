@@ -175,7 +175,15 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   });
   expect(repeatedLargeQR).toBe(false);
 
-  await page.locator('#profileCoffeeSection [data-open-bonus-tab]').click();
+  await page.locator('#profileCoffeeSection [data-open-bonus-tab]').focus();
+  await page.keyboard.press('Enter');
   await expect(page.locator('#tabBonus')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#qrOpenBonus')).toBeVisible();
+  await expect(page.locator('#tabBonus')).toBeFocused();
+
+  const menuHeading = page.locator('#menuView .mh-top h2.vh');
+  await expect(menuHeading).toHaveCount(1);
+  await expect(menuHeading).toHaveCSS('position', 'absolute');
+  await expect(menuHeading).toHaveCSS('width', '1px');
+  await expect(page.locator('#menuView .mh-top .upd')).toBeHidden();
 });

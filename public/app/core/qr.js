@@ -123,7 +123,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!trigger) return;
     event.preventDefault();
     const bonusTab = document.getElementById('tabBonus');
-    if (bonusTab) bonusTab.click();
+    if (bonusTab) {
+      bonusTab.click();
+      bonusTab.focus();
+    }
   });
 
   /* ── НОВОЕ: клик по самому QR-холсту открывает полный экран ── */
