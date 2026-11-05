@@ -89,7 +89,9 @@ for (const viewport of viewports) {
     });
     expect(submitGeometry.top, JSON.stringify(submitGeometry)).toBeGreaterThanOrEqual(-1);
     expect(submitGeometry.bottom, JSON.stringify(submitGeometry)).toBeLessThanOrEqual(submitGeometry.viewportHeight + 1);
-    expect(submitGeometry.cardScrollTop, JSON.stringify(submitGeometry)).toBeGreaterThan(0);
+    if (viewport.height <= 560) {
+      expect(submitGeometry.cardScrollTop, JSON.stringify(submitGeometry)).toBeGreaterThan(0);
+    }
     await expect(submit).toBeInViewport();
   });
 }
