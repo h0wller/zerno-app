@@ -141,6 +141,7 @@ for (const viewport of VIEWPORTS.filter(({ id }) => id === 'xs' || id === 'm')) 
         ...document.querySelectorAll('#deliveryGrid .opts label.opt-btn'),
         ...document.querySelectorAll('#deliveryGrid [data-add]'),
         ...document.querySelectorAll('#deliveryRail button'),
+        ...document.querySelectorAll('#rail button'),
       ].filter((element) => {
         const rect = element.getBoundingClientRect();
         const style = getComputedStyle(element);
@@ -169,7 +170,7 @@ for (const viewport of VIEWPORTS.filter(({ id }) => id === 'xs' || id === 'm')) 
               ? '#deliveryGrid [data-add]'
               : element.matches('.opt-btn')
                 ? '#deliveryGrid .opts .opt-btn'
-                : '#deliveryRail button',
+                : element.closest('#rail') ? '#rail button' : '#deliveryRail button',
             text: (element.textContent || '').trim().slice(0, 40),
           })),
       };
