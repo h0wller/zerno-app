@@ -122,64 +122,98 @@ for (const brand of ['coffee', 'delivery']) {
 }
 
 
-for (const viewport of VIEWPORTS.filter(({ id }) => id === 'xs' || id === 'm')) {
-  test(`visual audit: delivery support FAB clears menu actions at ${viewport.id}`, async ({ page }) => {
+
+const FAB_VIEWPORTS = [
+  { id: 'xs', width: 320, height: 740 },
+  { id: 'm', width: 390, height: 844 },
+  { id: 'landscape', width: 812, height: 375 },
+];
+
+for (const viewport of FAB_VIEWPORTS) {
+  test(`visual audit: delivery support FAB sits below the rail at ${viewport.id}`, async ({ page }) => {
     await prepareColdGuest(page, 'delivery', viewport);
     await waitForHydratedStorefront(page, 'delivery');
 
-    const collisions = await page.evaluate(() => {
+    const layout = await page.evaluate(() => {
       const fab = document.querySelector('#chatFab');
-      if (!fab) return { visible: false, collisions: ['#chatFab missing'] };
+      const rail = document.querySelector('#deliveryRail');
+      if (!fab || !rail) {
+        return { visible: false, reason: !fab ? '#chatFab missing' : '#deliveryRail missing' };
+      }
 
-      const fabRect = fab.getBoundingClientRect();
       const fabStyle = getComputedStyle(fab);
-      const visible = fabRect.width > 0 && fabRect.height > 0
+      const visible = fab.getBoundingClientRect().width > 0
+        && fab.getBoundingClientRect().height > 0
         && fabStyle.display !== 'none'
         && fabStyle.visibility !== 'hidden';
-
-      const targets = [
-        ...document.querySelectorAll('#deliveryGrid .opts label.opt-btn'),
-        ...document.querySelectorAll('#deliveryGrid [data-add]'),
-        ...document.querySelectorAll('#deliveryRail button'),
-        ...document.querySelectorAll('#rail button'),
-      ].filter((element) => {
-        const rect = element.getBoundingClientRect();
-        const style = getComputedStyle(element);
-        return rect.width > 0 && rect.height > 0
-          && style.display !== 'none'
-          && style.visibility !== 'hidden';
-      });
-
+      const fabRect = fab.getBoundingClientRect();
+      const railRect = rail.getBoundingClientRect();
       const overlaps = (a, b) => (
         a.left < b.right && a.right > b.left
         && a.top < b.bottom && a.bottom > b.top
       );
+      const isVisible = (element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0
+          && style.display !== 'none' && style.visibility !== 'hidden';
+      };
+      const articleTargets = [...document.querySelectorAll('#deliveryGrid .card')]
+        .filter(isVisible);
+      const optionTargets = [
+        ...document.querySelectorAll('#deliveryGrid .opts label.opt-btn'),
+        ...document.querySelectorAll('#deliveryGrid [data-add]'),
+      ].filter(isVisible);
+      const railTargets = [...rail.querySelectorAll('button')]
+        .filter(isVisible)
+        .filter((element) => {
+          const rect = element.getBoundingClientRect();
+          return rect.top < railRect.bottom && rect.bottom > railRect.top;
+        });
 
       return {
         visible,
+        viewport: { width: innerWidth, height: innerHeight },
         fab: {
           left: fabRect.left,
           right: fabRect.right,
           top: fabRect.top,
           bottom: fabRect.bottom,
+          centerX: fabRect.left + fabRect.width / 2,
         },
-        collisions: targets
+        rail: {
+          left: railRect.left,
+          right: railRect.right,
+          top: railRect.top,
+          bottom: railRect.bottom,
+          centerX: railRect.left + railRect.width / 2,
+        },
+        railCenterDelta: Math.abs(
+          (fabRect.left + fabRect.width / 2) - (railRect.left + railRect.width / 2)
+        ),
+        gapBelowRail: fabRect.top - railRect.bottom,
+        collisions: [...articleTargets, ...optionTargets, ...railTargets]
           .filter((element) => overlaps(fabRect, element.getBoundingClientRect()))
           .map((element) => ({
             selector: element.matches('[data-add]')
               ? '#deliveryGrid [data-add]'
               : element.matches('.opt-btn')
                 ? '#deliveryGrid .opts .opt-btn'
-                : element.closest('#rail') ? '#rail button' : '#deliveryRail button',
+                : element.matches('.card') ? '#deliveryGrid .card'
+                  : '#deliveryRail button',
             text: (element.textContent || '').trim().slice(0, 40),
           })),
       };
     });
 
-    expect(collisions.visible).toBe(true);
-    expect(collisions.collisions).toEqual([]);
+    expect(layout.visible, JSON.stringify(layout)).toBe(true);
+    expect(layout.railCenterDelta, JSON.stringify(layout)).toBeLessThanOrEqual(1);
+    expect(layout.gapBelowRail, JSON.stringify(layout)).toBeGreaterThanOrEqual(8);
+    expect(layout.fab.bottom, JSON.stringify(layout)).toBeLessThanOrEqual(viewport.height);
+    expect(layout.collisions, JSON.stringify(layout)).toEqual([]);
+
     await page.screenshot({
-      path: path.join(OUT, `DELIVERY-SUPPORT-FAB-CLEAR-${viewport.id.toUpperCase()}.png`),
+      path: path.join(OUT, `DELIVERY-SUPPORT-FAB-BELOW-RAIL-${viewport.id.toUpperCase()}.png`),
       animations: 'disabled',
     });
   });
