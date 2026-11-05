@@ -645,3 +645,13 @@ html body #authModal.tg-mode .mhint{
 #checkoutStreet.field-error{ animation: none; transition: none; }
 }
 
+
+
+/* F-07: move delivery support out of the product-action column on mobile.
+   The cart launcher stays on the right; support uses the free left gutter. */
+@media (max-width: 820px) {
+  html[data-brand="delivery"] #chatFab {
+    left: 10px;
+    right: auto;
+  }
+}
