@@ -117,8 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (closeBtn) closeBtn.addEventListener('click', e => { e.stopPropagation(); closeQRFull(); });
   const openB = document.getElementById('qrOpenBonus');
   if (openB) openB.onclick = openQRFull;
-  const openP = document.getElementById('qrOpenProfile');
-  if (openP) openP.onclick = openQRFull;
 
   /* ── НОВОЕ: клик по самому QR-холсту открывает полный экран ── */
   ['qrMini', 'qrMain'].forEach(function (id) {
