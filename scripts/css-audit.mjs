@@ -56,7 +56,7 @@ const allowedGeneric = ['html.in-tg', '.grid', '.card', '.wrap', '.rail', '.pane
 const badLines = viewsLines.filter(l => {
   /* Ф3.34: ранние разрешения (layer-2 layout + тикер-владелец) — гарантированно до return true */
   if (allowedGeneric.some(s => l.startsWith(s))) return false;
-  if (l.startsWith('body.editing') || l.startsWith('.ticker') || l.startsWith('#tickerTrack')) return false;
+  if (l.startsWith('.ticker') || l.startsWith('#tickerTrack')) return false;
 
   if (l.startsWith('/*') || l.startsWith('*')) return false;   // JS-комментарии внутри массива — не правила
   // layout/media/system — разрешены
