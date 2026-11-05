@@ -578,7 +578,7 @@ paths:
           application/json:
             schema: { type: object, required: [key, text], properties: { key: { type: string, maxLength: 64 }, text: { type: string, maxLength: 2000 } } }
       responses:
-        '200': { description: {ok:true} }
+        '200': { description: 'Операция выполнена успешно (ok: true)' }
         '400': { description: Некорректное сообщение }
 
   /api/chat/list:
@@ -619,7 +619,7 @@ paths:
           application/json:
             schema: { type: object, required: [key, text], properties: { key: { type: string, maxLength: 64 }, text: { type: string, maxLength: 2000 } } }
       responses:
-        '200': { description: {ok:true} }
+        '200': { description: 'Операция выполнена успешно (ok: true)' }
         '400': { description: Некорректное сообщение }
         '403': { $ref: '#/components/responses/Forbidden' }
 
@@ -634,7 +634,7 @@ paths:
           application/json:
             schema: { type: object, required: [key], properties: { key: { type: string, maxLength: 64 } } }
       responses:
-        '200': { description: {ok:true} }
+        '200': { description: 'Операция выполнена успешно (ok: true)' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/chat/open:
@@ -763,7 +763,7 @@ paths:
           application/json:
             schema: { type: object, required: [phone], properties: { phone: { type: string } } }
       responses:
-        '200': { description: {ok:true} }
+        '200': { description: 'Операция выполнена успешно (ok: true)' }
         '400': { description: Telegram не привязан }
         '404': { description: Профиль не найден }
         '429': { description: Слишком частый запрос }
@@ -812,7 +812,7 @@ paths:
       tags: [Auth]
       summary: Отозвать токен текущей сессии
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: {ok:true} } }
+      responses: { '200': { description: 'Операция выполнена успешно (ok: true)' } }
 
   /api/me/notify:
     put:
@@ -852,7 +852,7 @@ paths:
           application/json:
             schema: { type: object, required: [id], properties: { id: { type: string } } }
       responses:
-        '200': { description: {ok:true} }
+        '200': { description: 'Операция выполнена успешно (ok: true)' }
         '404': { description: Гость не найден }
         '409': { description: Уже активирован }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -942,7 +942,7 @@ paths:
           name: id
           required: true
           schema: { type: string }
-      responses: { '200': { description: {ok:true} } }
+      responses: { '200': { description: 'Операция выполнена успешно (ok: true)' } }
 
   /api/promos/{id}:
     delete:
@@ -954,7 +954,7 @@ paths:
           name: id
           required: true
           schema: { type: string }
-      responses: { '200': { description: {ok:true} } }
+      responses: { '200': { description: 'Операция выполнена успешно (ok: true)' } }
 
   /api/me/free-delivery:
     get:
@@ -981,7 +981,7 @@ paths:
           application/json:
             schema: { type: object, required: [token], properties: { token: { type: string } } }
       responses:
-        '200': { description: {ok:true} }
+        '200': { description: 'Операция выполнена успешно (ok: true)' }
         '400': { description: Пустой token }
 
   /api/push/subs:
@@ -1016,7 +1016,7 @@ paths:
       tags: [Push]
       summary: Удалить push-подписки текущего пользователя
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: {ok:true} } }
+      responses: { '200': { description: 'Операция выполнена успешно (ok: true)' } }
 
   /api/push/del:
     post:
@@ -1028,7 +1028,7 @@ paths:
         content:
           application/json:
             schema: { type: object, required: [cid], properties: { cid: { type: string } } }
-      responses: { '200': { description: {ok:true} } }
+      responses: { '200': { description: 'Операция выполнена успешно (ok: true)' } }
 
   /api/stats/orders:
     get:
