@@ -118,6 +118,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const openB = document.getElementById('qrOpenBonus');
   if (openB) openB.onclick = openQRFull;
 
+  document.addEventListener('click', function (event) {
+    const trigger = event.target.closest('[data-open-bonus-tab]');
+    if (!trigger) return;
+    event.preventDefault();
+    const bonusTab = document.getElementById('tabBonus');
+    if (bonusTab) bonusTab.click();
+  });
+
   /* ── НОВОЕ: клик по самому QR-холсту открывает полный экран ── */
   ['qrMini', 'qrMain'].forEach(function (id) {
     var cv = document.getElementById(id);
