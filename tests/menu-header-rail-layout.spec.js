@@ -34,18 +34,35 @@ for (const brand of CASES) {
       if (viewport.width <= 820) {
         await expect(topbar).toHaveCSS('border-bottom-width', '0px');
       }
-      const initialRail = await page.evaluate(({ headSelector, railSelector }) => {
+      const initialRail = await page.evaluate(({ headSelector, railSelector, reserveSupportFab }) => {
         const head = document.querySelector(headSelector).getBoundingClientRect();
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const topbar = document.querySelector('header.topbar').getBoundingClientRect();
         const clearanceTop = Math.max(0, head.bottom, topbar.bottom) + 12;
-        const targetCenter = (clearanceTop + window.innerHeight - 12) / 2;
+        const supportFab = reserveSupportFab && document.querySelector('#chatFab');
+        const fabVisible = supportFab
+          && !supportFab.hidden
+          && getComputedStyle(supportFab).display !== 'none'
+          && supportFab.getBoundingClientRect().height > 0;
+        let laneBottom = window.innerHeight - 12;
+        if (fabVisible) {
+          const fabStyle = getComputedStyle(supportFab);
+          let bottomInset = Number(supportFab.dataset.railDefaultBottom);
+          if (!Number.isFinite(bottomInset)) bottomInset = parseFloat(fabStyle.bottom) || 14;
+          const fabHeight = supportFab.getBoundingClientRect().height || 56;
+          laneBottom = window.innerHeight - bottomInset - fabHeight - 12;
+        }
+        const targetCenter = (clearanceTop + laneBottom) / 2;
         return {
           centerDelta: Math.abs((rail.top + rail.height / 2) - targetCenter),
           headGap: rail.top - head.bottom,
           topbarGap: rail.top - topbar.bottom,
         };
-      }, { headSelector: brand.head, railSelector: brand.rail });
+      }, {
+        headSelector: brand.head,
+        railSelector: brand.rail,
+        reserveSupportFab: brand.brand === 'delivery' && viewport.width <= 820,
+      });
       expect(initialRail.centerDelta).toBeLessThanOrEqual(2);
       expect(initialRail.headGap, 'rail must start below the menu title and search').toBeGreaterThanOrEqual(8);
       expect(initialRail.topbarGap, 'rail must not overlap the topbar').toBeGreaterThanOrEqual(8);
@@ -99,14 +116,31 @@ for (const brand of CASES) {
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      await expect.poll(() => page.evaluate(({ headSelector, railSelector }) => {
+      await expect.poll(() => page.evaluate(({ headSelector, railSelector, reserveSupportFab }) => {
         const head = document.querySelector(headSelector).getBoundingClientRect();
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const topbar = document.querySelector('header.topbar').getBoundingClientRect();
         const clearanceTop = Math.max(0, head.bottom, topbar.bottom) + 12;
-        const targetCenter = (clearanceTop + window.innerHeight - 12) / 2;
+        const supportFab = reserveSupportFab && document.querySelector('#chatFab');
+        const fabVisible = supportFab
+          && !supportFab.hidden
+          && getComputedStyle(supportFab).display !== 'none'
+          && supportFab.getBoundingClientRect().height > 0;
+        let laneBottom = window.innerHeight - 12;
+        if (fabVisible) {
+          const fabStyle = getComputedStyle(supportFab);
+          let bottomInset = Number(supportFab.dataset.railDefaultBottom);
+          if (!Number.isFinite(bottomInset)) bottomInset = parseFloat(fabStyle.bottom) || 14;
+          const fabHeight = supportFab.getBoundingClientRect().height || 56;
+          laneBottom = window.innerHeight - bottomInset - fabHeight - 12;
+        }
+        const targetCenter = (clearanceTop + laneBottom) / 2;
         return Math.abs((rail.top + rail.height / 2) - targetCenter);
-      }, { headSelector: brand.head, railSelector: brand.rail }), { timeout: 5000 }).toBeLessThanOrEqual(2);
+      }, {
+        headSelector: brand.head,
+        railSelector: brand.rail,
+        reserveSupportFab: brand.brand === 'delivery' && viewport.width <= 820,
+      }), { timeout: 5000 }).toBeLessThanOrEqual(2);
       const afterScroll = await page.evaluate(({ headSelector, railSelector }) => {
         const head = document.querySelector(headSelector).getBoundingClientRect();
         const rail = document.querySelector(railSelector).getBoundingClientRect();
