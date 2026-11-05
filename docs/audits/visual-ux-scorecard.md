@@ -120,7 +120,7 @@ These are provisional screen scores for the rendered CI state, not product accep
 
 Artifact: `visual-ux-baseline-test-42089915249.zip` (GitHub Actions run `42089915249`). It contains 16 viewport PNGs and 8 state metadata JSON files. The full-page hydrated catalog PNGs are supplementary; score rows above use first-viewport captures at the same viewport.
 
-**First confirmed UX finding from the test screenshots:** on delivery XS/M, the fixed support/chat FAB (#chatFab), not cart FAB (#cartFab), overlaps the product card's Add control. This should be the first focused improvement candidate. Keep order/cart logic unchanged; adjust only the visual collision/available space and add a screenshot regression asserting that the two bounding boxes do not intersect.
+**First confirmed UX finding from the test screenshots:** the fixed support launcher `#chatFab.chat-fab` (distinct from the cart launcher `#cartFab`) overlaps the product card's `Добавить` control on delivery XS/M. This should be the first focused improvement candidate. Keep order/cart behavior unchanged; adjust only the support FAB collision/placement and add a screenshot regression asserting that `#chatFab` and the product `[data-add]` bounding boxes do not intersect.
 
 ## Screenshot register
 
@@ -176,8 +176,8 @@ One row per screen and viewport. Fill scores only after inspecting the matching 
 | DEL-HOME | M | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-HOME | T | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-HOME | D | — | — | — | — | — | — | — | — | Not assessed |
-| DEL-MENU | XS | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5 | 6.6 | Floating cart action overlaps Add area; top filter chips are cut off |
-| DEL-MENU | M | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5.5 | 6.6 | Floating cart action covers part of Add button; filter chips and ticker clip |
+| DEL-MENU | XS | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5 | 6.6 | Support/chat FAB (#chatFab) overlaps Add area; top filter chips are cut off |
+| DEL-MENU | M | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5.5 | 6.6 | Support/chat FAB (#chatFab) covers part of Add button; filter chips and ticker clip |
 | DEL-MENU | T | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-MENU | D | 8.5 | 7.2 | 8 | 7.5 | 8 | 7 | 7.5 | 7.8 | Empty right-side profile column; top filters and left category rail duplicate navigation |
 | DEL-ITEM | XS | — | — | — | — | — | — | — | — | Not assessed |
