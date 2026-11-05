@@ -148,6 +148,7 @@ for (const viewport of FAB_VIEWPORTS) {
         && fabStyle.visibility !== 'hidden';
       const fabRect = fab.getBoundingClientRect();
       const railRect = rail.getBoundingClientRect();
+      const railStyle = getComputedStyle(rail);
       const overlaps = (a, b) => (
         a.left < b.right && a.right > b.left
         && a.top < b.bottom && a.bottom > b.top
@@ -187,6 +188,10 @@ for (const viewport of FAB_VIEWPORTS) {
           top: railRect.top,
           bottom: railRect.bottom,
           centerX: railRect.left + railRect.width / 2,
+          overflowY: railStyle.overflowY,
+          scrollHeight: rail.scrollHeight,
+          clientHeight: rail.clientHeight,
+          needsScroll: rail.scrollHeight > rail.clientHeight + 1,
         },
         railCenterDelta: Math.abs(
           (fabRect.left + fabRect.width / 2) - (railRect.left + railRect.width / 2)
@@ -206,15 +211,16 @@ for (const viewport of FAB_VIEWPORTS) {
       };
     });
 
+    await page.screenshot({
+      path: path.join(OUT, `DELIVERY-SUPPORT-FAB-BELOW-RAIL-${viewport.id.toUpperCase()}.png`),
+      animations: 'disabled',
+    });
+
     expect(layout.visible, JSON.stringify(layout)).toBe(true);
     expect(layout.railCenterDelta, JSON.stringify(layout)).toBeLessThanOrEqual(1);
     expect(layout.gapBelowRail, JSON.stringify(layout)).toBeGreaterThanOrEqual(8);
     expect(layout.fab.bottom, JSON.stringify(layout)).toBeLessThanOrEqual(viewport.height);
     expect(layout.collisions, JSON.stringify(layout)).toEqual([]);
 
-    await page.screenshot({
-      path: path.join(OUT, `DELIVERY-SUPPORT-FAB-BELOW-RAIL-${viewport.id.toUpperCase()}.png`),
-      animations: 'disabled',
-    });
   });
 }
