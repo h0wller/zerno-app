@@ -167,10 +167,19 @@ for (const viewport of FAB_VIEWPORTS) {
       ].filter(isVisible);
       const railTargets = [...rail.querySelectorAll('button')]
         .filter(isVisible)
-        .filter((element) => {
+        .map((element) => {
           const rect = element.getBoundingClientRect();
-          return rect.top < railRect.bottom && rect.bottom > railRect.top;
-        });
+          return {
+            element,
+            rect: {
+              left: Math.max(rect.left, railRect.left),
+              right: Math.min(rect.right, railRect.right),
+              top: Math.max(rect.top, railRect.top),
+              bottom: Math.min(rect.bottom, railRect.bottom),
+            },
+          };
+        })
+        .filter(({ rect }) => rect.right > rect.left && rect.bottom > rect.top);
 
       return {
         visible,
@@ -197,9 +206,13 @@ for (const viewport of FAB_VIEWPORTS) {
           (fabRect.left + fabRect.width / 2) - (railRect.left + railRect.width / 2)
         ),
         gapBelowRail: fabRect.top - railRect.bottom,
-        collisions: [...articleTargets, ...optionTargets, ...railTargets]
-          .filter((element) => overlaps(fabRect, element.getBoundingClientRect()))
-          .map((element) => ({
+        collisions: [
+          ...articleTargets.map((element) => ({ element, rect: element.getBoundingClientRect() })),
+          ...optionTargets.map((element) => ({ element, rect: element.getBoundingClientRect() })),
+          ...railTargets,
+        ]
+          .filter(({ rect }) => overlaps(fabRect, rect))
+          .map(({ element }) => ({
             selector: element.matches('[data-add]')
               ? '#deliveryGrid [data-add]'
               : element.matches('.opt-btn')
@@ -217,6 +230,7 @@ for (const viewport of FAB_VIEWPORTS) {
     });
 
     expect(layout.visible, JSON.stringify(layout)).toBe(true);
+    expect(!layout.rail.needsScroll || ['auto', 'scroll'].includes(layout.rail.overflowY), JSON.stringify(layout)).toBe(true);
     expect(layout.railCenterDelta, JSON.stringify(layout)).toBeLessThanOrEqual(1);
     expect(layout.gapBelowRail, JSON.stringify(layout)).toBeGreaterThanOrEqual(8);
     expect(layout.fab.bottom, JSON.stringify(layout)).toBeLessThanOrEqual(viewport.height);
