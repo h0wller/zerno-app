@@ -4,7 +4,8 @@ var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
 
-function resetDeliveryChatFabPosition(fab) {
+function resetDeliveryChatFabPosition(fab, rail) {
+  if (rail && rail.id === 'deliveryRail') rail.style.overflowY = '';
   if (!fab) return;
   fab.style.left = '';
   fab.style.right = '';
@@ -21,7 +22,7 @@ function updateRailStickyPosition(rail, head) {
     && window.getComputedStyle(fab).display !== 'none';
 
   if (!rail || !head) {
-    resetDeliveryChatFabPosition(fab);
+    resetDeliveryChatFabPosition(fab, rail);
     return;
   }
 
@@ -63,6 +64,8 @@ function updateRailStickyPosition(rail, head) {
   rail.classList.add('rail-position-ready');
 
   if (isDeliveryMobile) {
+    // A constrained landscape rail must clip and scroll its own category buttons.
+    if (rail.style.overflowY !== 'auto') rail.style.overflowY = 'auto';
     var railRect = rail.getBoundingClientRect();
     var fabWidth = fab.getBoundingClientRect().width || 56;
     var fabLeft = railRect.left + (railRect.width - fabWidth) / 2;
