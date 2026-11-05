@@ -250,7 +250,6 @@ test('Задачи 5 и 6: Модалка «Мои заказы» в TMA и по
   await expect(page.locator('#tabBonus')).toHaveAttribute('aria-selected', 'true');
 
   // ── Проверка Задачи 6: один QR action во вкладке «Бонусы» и Screen Wake Lock ──
-  await expect(page.locator('#tabBonus')).toHaveAttribute('aria-selected', 'true');
   const bonusQrButton = page.locator('#qrOpenBonus');
   await expect(bonusQrButton).toBeVisible();
   await bonusQrButton.click();
