@@ -57,7 +57,7 @@ var rules = [
  'html[data-brand="coffee"] #menuView .coffee-menu-search input::placeholder {   color: #7b8792;   opacity: 1; }',
  'html[data-brand="coffee"] #menuView .coffee-menu-search:focus-within {   border-color: rgba(18, 58, 107, 0.5);   box-shadow: 0 0 0 2px rgba(18, 58, 107, 0.08); }',
  'html[data-brand="coffee"] #menuView .search-shortcut {   display: none; }',
- '@media (max-width: 420px) {   .menu-head {     padding-bottom: 8px;   }   h1 {     font-size: clamp(18px, 5vw, 21px);     line-height: 1.2;   } }',
+ '@media (max-width: 420px) { html[data-brand="coffee"] #menuView .menu-head { padding-bottom: 8px; } html[data-brand="coffee"] #menuView h1 { font-size: clamp(18px, 5vw, 21px); line-height: 1.2; } }',
 
  'html[data-brand="delivery"] a, html[data-brand="delivery"] a:visited, html[data-brand="delivery"] a:hover, html[data-brand="delivery"] a:active, html[data-brand="delivery"] a:focus { text-decoration: none; }',
  'html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView { background: var(--cashier-bg, #F6EEE1); }',
