@@ -486,11 +486,19 @@ test('successful preorder keeps an explicit empty time selection for the next or
   await expect(page.locator('#cartPanel')).toHaveClass(/open/);
   await expect.poll(() => page.evaluate(() => window.cart.reduce((sum, item) => sum + (Number(item.qty) || 1), 0))).toBe(1);
   await expect.poll(() => page.evaluate(() => window.cart === window.__cartReferenceBeforeRepeat)).toBe(true);
-  await expect(page.locator('#cartFab')).toBeVisible();
+  // The FAB is intentionally hidden while the cart drawer is open; verify it returns after close.
+  const cartFab = page.locator('#cartFab');
+  await expect(cartFab).toBeHidden();
   await expect(slot).toHaveValue('');
   await expect(scheduled).toHaveAttribute('aria-pressed', 'true');
   await expect(asap).toHaveAttribute('aria-pressed', 'false');
   await expect(slotLabel).toBeVisible();
+
+  await page.locator('#cartClose').click();
+  await expect(page.locator('#cartPanel')).not.toHaveClass(/open/);
+  await expect(cartFab).toBeVisible();
+  await cartFab.click();
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
 
   await page.locator('#checkoutPlace').selectOption('Янтарный');
   await page.locator('#checkoutStreet').fill('Советская');
