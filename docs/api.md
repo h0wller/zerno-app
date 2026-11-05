@@ -6,9 +6,9 @@
 
 - Bearer-токен: `Authorization: Bearer <token>`.
 - `userGuard` — авторизованный пользователь.
-- `staffGuard` — сотрудник с кассовыми полномочиями.
-- `dispatchGuard` — диспетчерские и административные полномочия.
-- `adminGuard` — администратор.
+- `staffGuard` — кассир или администратор.
+- `dispatchGuard` — кассир, диспетчер или администратор; очередь заказов и операции диспетчеризации доступны всем трём ролям.
+- `menuGuard` — кассир, диспетчер или администратор; для не-администраторов `PUT /api/menu/:id` разрешает только переключение `on` в собственной секции (кассир — coffee, диспетчер — delivery).\n- `chatGuard` — кассир, диспетчер или администратор; кассир видит кофейные треды, диспетчер — delivery-треды.\n- `adminGuard` — администратор.
 - Доступ следует проверять по middleware в конкретном роутере. Пометка «по реализации» означает, что краткая таблица намеренно не выводит роль только из названия пути.
 - `POST /__test/otp` подключён только при `NODE_ENV=test`; это не production API.
 
@@ -50,15 +50,15 @@
 | Метод и путь | Назначение | Доступ |
 |---|---|---|
 | `GET /api/menu` | Публичное меню кофейни | Публичный |
-| `GET /api/menu/all` | Полное меню, включая выключенные позиции | adminGuard |
+| `GET /api/menu/all` | Полное меню, включая выключенные позиции | menuGuard (cashier, dispatch, admin) |
 | `POST /api/menu` | Создать позицию меню | adminGuard |
 | `PUT /api/menu/reorder` | Изменить порядок позиций | adminGuard |
-| `PUT /api/menu/:id` | Обновить позицию меню | adminGuard |
+| `PUT /api/menu/:id` | Администратор редактирует позицию; сотрудник переключает только стоп-лист своей секции | menuGuard |
 | `DELETE /api/menu/:id` | Удалить позицию меню | adminGuard |
 | `POST /api/menu/upload` | Загрузить изображение позиции | adminGuard |
 | `GET /api/dmenu` | Меню доставки | Публичный |
 | `GET /api/delivery/info` | Часы, зоны, интервалы и конфигурация доставки | Публичный |
-| `GET /api/delivery/addr` | Адресные данные доставки | См. middleware в orders route |
+| `GET /api/delivery/addr` | Подсказки улиц по населённому пункту (`place`, `q`) | Публичный |
 | `PUT /api/admin/weekpromo` | Изменить недельную акцию | adminGuard |
 
 ## Заказы
@@ -66,7 +66,7 @@
 | Метод и путь | Назначение | Доступ |
 |---|---|---|
 | `POST /api/orders` | Создать заказ | userGuard; сервер валидирует заказ |
-| `GET /api/orders` | Очередь заказов за последние три дня | dispatchGuard; фильтры `status`, `staff`, `done` |
+| `GET /api/orders` | Очередь заказов для персонала: без `status` — последние три дня; с `status` — до 50 заказов этого статуса без ограничения по дате | dispatchGuard (cashier, dispatch, admin); фильтры `status`, `staff`, `done` |
 | `GET /api/orders/mine` | История заказов текущего пользователя | userGuard |
 | `POST /api/orders/:id/status` | Изменить статус заказа | dispatchGuard |
 | `POST /api/orders/:id/delay` | Задержать один заказ | dispatchGuard |
@@ -82,6 +82,7 @@
 | `POST /api/staff/customers` | Создать профиль клиента сотрудником | staffGuard |
 | `POST /api/staff/stamp` | Начислить или списать штампы | staffGuard |
 | `POST /api/staff/redeem` | Списать бесплатный кофе | staffGuard |
+| `POST /api/redeem` | Списать доступный бесплатный кофе текущего пользователя | userGuard |
 | `POST /api/staff/scan` | Проверить QR гостя | staffGuard |
 | `GET /api/staff/log` | Журнал операций кассы | staffGuard |
 
@@ -91,7 +92,7 @@
 |---|---|---|
 | `POST /api/chat/send` | Сообщение гостя | Публичный |
 | `POST /api/chat/botlog` | Лог/событие чат-бота | По реализации |
-| `GET /api/chat/thread` | Получить тред; query `ctx` задаёт контекст | Публичный |
+| `GET /api/chat/thread` | Получить новые сообщения треда | Публичный; query `key` обязателен, `after` — необязательный ID последнего полученного сообщения; `ctx` задаётся при отправке сообщения гостя |
 | `GET /api/chat/list` | Список тредов с фильтрацией по контексту и роли | chatGuard |
 | `GET /api/chat/dialog` | Получить сообщения диалога сотрудником | chatGuard |
 | `POST /api/chat/reply` | Ответить гостю | chatGuard |
@@ -102,8 +103,8 @@
 
 | Метод и путь | Назначение | Доступ |
 |---|---|---|
-| `POST /api/promo/redeem` | Активировать промокод | userGuard |
-| `GET /api/promo/info` | Проверить условия промокода | Публичный |
+| `POST /api/promo/redeem` | Активировать кофейный промокод, начисляющий штампы или бесплатный кофе | userGuard; delivery-коды отклоняются с 400 и применяются в корзине доставки |
+| `GET /api/promo/info` | Проверить delivery-промокод для корзины доставки | Публичный; возвращает только активные коды с scope=delivery |
 | `GET /api/me/free-delivery` | Получить персональный одноразовый код бесплатной доставки | userGuard |
 | `GET /api/promos` | Список промокодов | adminGuard |
 | `POST /api/promos` | Создать промокод | adminGuard |
@@ -125,7 +126,7 @@
 | `POST /api/push/send` | Административная отправка push | adminGuard |
 | `POST /api/push/send-hours-update` | Уведомление об изменении расписания доставки | adminGuard |
 | `POST /api/push/unsubscribe` | Отписать Web Push endpoint текущего профиля | userGuard |
-| `POST /api/push/del` | Удалить FCM token | По реализации |
+| `POST /api/push/del` | Удалить Web Push-подписки из `subs` для `cid` | adminGuard; FCM-токены из таблицы `fcm` этим маршрутом не удаляются |
 
 ## Статистика
 
