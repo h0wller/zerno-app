@@ -30,3 +30,12 @@ The CI workflow is `.github/workflows/ci.yml`; deployment is `.github/workflows/
 - Historical audits remain historical; do not rewrite past outcomes as current facts.
 - Put current UX findings in `docs/frontend-todo.md` and acceptance/screenshot evidence in `docs/ui-checklist.md`.
 - Every current test statement must reference a commit and CI run; old test counts are historical.
+
+## Live visual audit evidence — 2026-11-05
+
+Preliminary production scrape only. Browser auth state could not be isolated and Playwright is unavailable in the Firecrawl interaction runtime. Do not treat these images as guest-state baselines:
+
+- [Delivery URL — preliminary mobile screenshot (390×844)](https://storage.googleapis.com/firecrawl-scrape-media/screenshot-aa24e812-9067-461d-a64f-9da51fc4596c.png)
+- [Coffee URL — preliminary mobile screenshot (390×844)](https://storage.googleapis.com/firecrawl-scrape-media/screenshot-0192a71c-9682-4943-b01a-1a8d7285f3e4.png)
+
+The screenshots were captured from live scrape requests to the production URL variants `?brand=delivery` and `?brand=coffee`. Their text extraction included both brand DOM and staff UI; visibility/authentication must be verified in isolated browser contexts before any issue is classified as a defect.
