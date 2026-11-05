@@ -602,76 +602,7 @@
 
 
 
-/* Coffee first-screen and loyalty panel: quieter hierarchy, compact mobile fit. */
-html[data-brand="coffee"] #menuView .coffee-menu-search {
-  min-height: 46px;
-  padding: 0 14px;
-  gap: 10px;
-  border: 1px solid rgba(18, 58, 107, 0.16);
-  border-radius: 13px;
-  background: #fff;
-  box-shadow: none;
-}
-html[data-brand="coffee"] #menuView .coffee-menu-search .search-icon {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 17px;
-  fill: none;
-  stroke: #586470;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-}
-html[data-brand="coffee"] #menuView .coffee-menu-search input {
-  font-size: 15px;
-  font-weight: 500;
-}
-html[data-brand="coffee"] #menuView .coffee-menu-search input::placeholder {
-  color: #7b8792;
-  opacity: 1;
-}
-html[data-brand="coffee"] #menuView .coffee-menu-search:focus-within {
-  border-color: rgba(18, 58, 107, 0.5);
-  box-shadow: 0 0 0 2px rgba(18, 58, 107, 0.08);
-}
-html[data-brand="coffee"] #menuView .search-shortcut {
-  display: none;
-}
-html[data-brand="coffee"] #menuView .coffee-menu-updated {
-  margin-top: 3px;
-  font-size: 10px;
-  line-height: 1.2;
-  color: #87919a;
-}
-html[data-brand="coffee"] #menuView .coffee-menu-updated #updWhen {
-  color: inherit;
-  font-weight: 500;
-}
-html[data-brand="coffee"] #menuView .mh-top {
-  align-items: center;
-  row-gap: 8px;
-}
-html[data-brand="coffee"] #menuView .mh-top > div:first-child {
-  display: contents;
-}
-html[data-brand="coffee"] #menuView .mh-top h1 {
-  flex: 1 1 100%;
-  margin-bottom: 0;
-}
-html[data-brand="coffee"] #menuView .mh-top h2.vh {
-  display: none;
-}
-html[data-brand="coffee"] #menuView .mh-top .mh-right {
-  flex: 1 1 100%;
-  width: 100%;
-  max-width: none;
-  margin: 0;
-}
-html[data-brand="coffee"] #menuView .mh-top .upd {
-  display: none;
-}
-html[data-brand="coffee"] #menuView .mh-top .upd .adminBadge {
-  display: inline-flex;
-}
+/* Coffee loyalty panel: compact, responsive and low-noise. */
 html[data-brand="coffee"] #panel #pvBonus {
   padding: 12px;
 }
