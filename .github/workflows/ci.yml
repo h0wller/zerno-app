@@ -16,53 +16,38 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-
       - name: Setup Node.js 22
         uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'npm'
-
-      # Dependabot can omit nested lockfile entries while leaving their
-      # parent dependency ranges intact. Normalize the lockfile with the
-      # same npm version before npm ci validates it.
       - name: Normalize dependency lockfile
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
       - name: Install dependencies
         run: npm ci
-
-      # Запускаем только статические проверки и линтеры (без браузера)
       - name: Run Static Audits & Linters
         run: npm run check && npm run pretest && npm run lint:code && npm run lint:dup && npm run lint:dead && npm run lint:layers
-
-      # Контрактный смоук API (сервер поднимается в фоне скриптом)
       - name: Run Contract Smoke Tests
         run: npm run smoke
 
-  e2e-tests:
-    name: Playwright Regression Suite
+  e2e-prep:
+    name: Build client and install browser dependencies
     needs: quality-gates
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-
       - name: Setup Node.js 22
         uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'npm'
-
       - name: Normalize dependency lockfile
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
       - name: Install dependencies
         run: npm ci
-
       - name: Build client bundle
         run: npm run build:client
-
       - name: Verify staff layout code is present in the production bundle
         run: |
           node --input-type=module <<'NODE'
@@ -73,35 +58,127 @@ jobs:
           }
           NODE
 
+  e2e:
+    name: E2E / ${{ matrix.group }}
+    needs: e2e-prep
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: Auth
+            project: chromium
+            specs: tests/registration.spec.js tests/auth-modal-ux.spec.js
+            workers: 2
+          - group: Bonuses
+            project: chromium
+            specs: tests/bonus-lifecycle.spec.js tests/bonus-signup.spec.js
+            workers: 1
+          - group: Staff API
+            project: chromium
+            specs: tests/staff-stops.spec.js tests/admin-reorder.spec.js
+            workers: 2
+          - group: Cart and checkout
+            project: chromium
+            specs: tests/cart-regress.spec.js tests/cart-checkout-clarity.spec.js tests/tma-cart-native-checkout-ux.spec.js tests/order-tracking-contact.spec.js tests/dispatcher-cancel-action.spec.js
+            workers: 2
+          - group: Menu and search
+            project: chromium
+            specs: tests/menu-cards.spec.js tests/menu-composition.spec.js tests/menu-nutrition.spec.js tests/delivery-search.spec.js tests/delivery-update-timestamp.spec.js tests/pizza-variant-selection.spec.js
+            workers: 3
+          - group: Profile
+            project: chromium
+            specs: tests/profile-orders.spec.js tests/swipe-panel-close.spec.js tests/address-book.spec.js
+            workers: 2
+          - group: Responsive UI
+            project: chromium
+            specs: tests/pour-accessibility.spec.js tests/pwa-responsive.spec.js tests/staff-topbar-layout.spec.js tests/coffee-header-layout.spec.js tests/friday-info-responsive.spec.js tests/poster-hours.spec.js tests/menu-header-rail-layout.spec.js tests/coffee-profile-visual.spec.js
+            workers: 2
+          - group: Visual stability
+            project: chromium
+            specs: tests/slow-network-layout.spec.js tests/splash-copy.spec.js tests/splash-owner.spec.js tests/splash-cls.spec.js
+            workers: 1
+          - group: UI baseline
+            project: chromium
+            specs: tests/ui-baseline.spec.js
+            workers: 1
+          - group: PWA
+            project: chromium
+            specs: tests/pwa-notifications.spec.js
+            workers: 1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Normalize dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies
+        run: npm ci
+      - name: Build client bundle
+        run: npm run build:client
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-
-      - name: Run Bonus Lifecycle E2E
-        run: npx playwright test tests/bonus-lifecycle.spec.js --project=chromium
-
-      # Keep the welcome/signup regression visible as an independent CI gate.
-      - name: Run Bonus Signup Regression
-        run: npx playwright test tests/bonus-signup.spec.js
+      - name: Run isolated regression group
+        run: npx playwright test ${{ matrix.specs }} --project="${{ matrix.project }}" --workers=${{ matrix.workers }}
         env:
           PORT: 3000
           ADMIN_CODE: '3364'
           CASHIER_CODE: '2468'
           DISPATCH_CODE: '5719'
-
-      - name: Run Remaining Playwright Tests
-        run: npx playwright test --grep-invert "Signup Bonuses Suite|Bonus Lifecycle Suite"
-        env:
-          PORT: 3000
-          ADMIN_CODE: '3364'
-          CASHIER_CODE: '2468'
-          DISPATCH_CODE: '5719'
-
-      # Keep responsive layout screenshots available for visual review on green and red runs.
-      - name: Upload Playwright Diagnostics
+      - name: Upload group diagnostics
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-diagnostics
+          name: playwright-${{ matrix.group }}-${{ github.run_id }}
           path: playwright-report/
           retention-days: 7
 
+  e2e-mobile:
+    name: E2E / Mobile Chrome responsive
+    needs: e2e-prep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Normalize dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies
+        run: npm ci
+      - name: Build client bundle
+        run: npm run build:client
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run focused mobile viewport regressions
+        run: >-
+          npx playwright test
+          tests/auth-modal-ux.spec.js
+          tests/cart-regress.spec.js
+          tests/pwa-responsive.spec.js
+          tests/coffee-profile-visual.spec.js
+          tests/menu-header-rail-layout.spec.js
+          tests/swipe-panel-close.spec.js
+          tests/slow-network-layout.spec.js
+          --project="Mobile Chrome"
+          --workers=1
+        env:
+          PORT: 3000
+          ADMIN_CODE: '3364'
+          CASHIER_CODE: '2468'
+          DISPATCH_CODE: '5719'
+      - name: Upload mobile diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-Mobile-Chrome-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 7
