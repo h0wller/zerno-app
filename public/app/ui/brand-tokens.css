@@ -148,6 +148,16 @@ body[data-brand="coffee"] {
   --nutrition-toggle-active-bg: #FFFFFF;
   --nutrition-toggle-active-border: none;
   --nutrition-toggle-active-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --loyalty-card-bg: #FBF7F0;
+  --loyalty-qr-bg: #FFFFFF;
+  --loyalty-muted: #71808D;
+  --loyalty-accent: #123A6B;
+  --loyalty-gift-text: #4A3100;
+  --loyalty-border: rgba(18, 58, 107, 0.14);
+  --loyalty-stamp-gap: 6px;
+  --loyalty-stamp-padding: 10px;
+  --loyalty-panel-padding: 12px;
+  --loyalty-profile-stat-size: 16px;
 
 }
 
