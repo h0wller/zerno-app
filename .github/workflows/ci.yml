@@ -145,7 +145,7 @@ jobs:
           tests/auth-modal-ux.spec.js
           tests/cart-regress.spec.js
           tests/pwa-responsive.spec.js
-          tests/coffee-profile-visual.spec.js
+          tests/coffee-header-layout.spec.js
           tests/menu-header-rail-layout.spec.js
           tests/swipe-panel-close.spec.js
           tests/slow-network-layout.spec.js
