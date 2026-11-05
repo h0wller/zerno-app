@@ -203,3 +203,69 @@ html .wrap > #panel:not(.open):not(.show) {
     row-gap: 0;
   }
 }
+
+
+/* Quieter search for the coffee menu; delivery styling remains shared and unchanged. */
+html[data-brand="coffee"] #menuView .mh-top {
+  align-items: center;
+  row-gap: 8px;
+}
+html[data-brand="coffee"] #menuView .mh-top > div:first-child {
+  display: contents;
+}
+html[data-brand="coffee"] #menuView .mh-top h1 {
+  flex: 1 1 100%;
+  margin: 0;
+}
+html[data-brand="coffee"] #menuView .mh-top h2.vh,
+html[data-brand="coffee"] #menuView .mh-top .upd {
+  display: none;
+}
+html[data-brand="coffee"] #menuView .mh-top .mh-right {
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+html[data-brand="coffee"] #menuView .coffee-menu-search {
+  min-height: 44px;
+  padding: 0 12px;
+  gap: 9px;
+  border: 1px solid rgba(18, 58, 107, 0.14);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+html[data-brand="coffee"] #menuView .coffee-menu-search .search-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  fill: none;
+  stroke: #586470;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+html[data-brand="coffee"] #menuView .coffee-menu-search input {
+  font-size: 15px;
+  font-weight: 500;
+}
+html[data-brand="coffee"] #menuView .coffee-menu-search input::placeholder {
+  color: #7b8792;
+  opacity: 1;
+}
+html[data-brand="coffee"] #menuView .coffee-menu-search:focus-within {
+  border-color: rgba(18, 58, 107, 0.5);
+  box-shadow: 0 0 0 2px rgba(18, 58, 107, 0.08);
+}
+html[data-brand="coffee"] #menuView .search-shortcut {
+  display: none;
+}
+@media (max-width: 420px) {
+  html[data-brand="coffee"] #menuView .menu-head {
+    padding-bottom: 8px;
+  }
+  html[data-brand="coffee"] #menuView h1 {
+    font-size: clamp(18px, 5vw, 21px);
+    line-height: 1.2;
+  }
+}
