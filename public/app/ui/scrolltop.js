@@ -4,19 +4,54 @@ var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
 
+function resetDeliveryChatFabPosition(fab) {
+  if (!fab) return;
+  fab.style.left = '';
+  fab.style.right = '';
+  fab.style.top = '';
+  fab.style.bottom = '';
+  delete fab.dataset.railDefaultBottom;
+}
+
 function updateRailStickyPosition(rail, head) {
-  if (!rail || !head) return;
+  var fab = document.getElementById('chatFab');
+  var isDeliveryMobile = document.documentElement.dataset.brand === 'delivery'
+    && window.innerWidth <= 820
+    && fab && !fab.hidden
+    && window.getComputedStyle(fab).display !== 'none';
+
+  if (!rail || !head) {
+    resetDeliveryChatFabPosition(fab);
+    return;
+  }
 
   var headRect = head.getBoundingClientRect();
   if (!headRect.height) {
     rail.classList.remove('rail-position-ready');
+    resetDeliveryChatFabPosition(fab);
     return;
+  }
+
+  if (isDeliveryMobile) {
+    var fabStyle = window.getComputedStyle(fab);
+    var defaultBottom = Number(fab.dataset.railDefaultBottom);
+    if (!Number.isFinite(defaultBottom)) {
+      defaultBottom = parseFloat(fabStyle.bottom) || 14;
+      fab.dataset.railDefaultBottom = String(defaultBottom);
+    }
+    var fabHeight = fab.getBoundingClientRect().height || parseFloat(fabStyle.height) || 56;
+    var laneBottom = (window.innerHeight || document.documentElement.clientHeight)
+      - defaultBottom - fabHeight - 12;
+  } else {
+    resetDeliveryChatFabPosition(fab);
   }
 
   var topbar = document.querySelector('header.topbar');
   var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
   var laneTop = Math.max(0, topbarBottom, headRect.bottom) + 12;
-  var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
+  if (!isDeliveryMobile) {
+    laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
+  }
   var availableHeight = Math.max(0, laneBottom - laneTop);
   var stickyTop = laneTop + availableHeight / 2;
 
@@ -26,6 +61,16 @@ function updateRailStickyPosition(rail, head) {
   if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
   if (rail.style.transform !== 'translateY(-50%)') rail.style.transform = 'translateY(-50%)';
   rail.classList.add('rail-position-ready');
+
+  if (isDeliveryMobile) {
+    var railRect = rail.getBoundingClientRect();
+    var fabWidth = fab.getBoundingClientRect().width || 56;
+    var fabLeft = railRect.left + (railRect.width - fabWidth) / 2;
+    fab.style.left = Math.round(fabLeft) + 'px';
+    fab.style.right = 'auto';
+    fab.style.bottom = 'auto';
+    fab.style.top = Math.round(railRect.bottom + 12) + 'px';
+  }
 }
 
 function alignRailWithCard() {
