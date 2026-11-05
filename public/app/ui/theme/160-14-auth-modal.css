@@ -236,7 +236,7 @@
   .modal#authModal {
     padding: max(8px, env(safe-area-inset-top, 0px)) 10px max(8px, env(safe-area-inset-bottom, 0px));
     align-items: flex-start;
-    overflow-y: auto;
+    overflow-y: hidden;
   }
 
   #authModal .authcard {
@@ -246,6 +246,7 @@
     margin-block: 0;
     overflow-y: auto;
     scroll-padding-block: 16px;
+    overscroll-behavior: contain;
   }
 
   #authModal .auth-head {
