@@ -240,8 +240,14 @@ test('Задачи 5 и 6: Модалка «Мои заказы» в TMA и по
     if (typeof window.renderProfile === 'function') window.renderProfile();
   });
 
-  // ── Проверка Задачи 6: Полноэкранный QR (100vw x 100dvh, #FFFFFF) и Screen Wake Lock ──
-  await page.locator('#qrOpenProfile, #qrMain').first().click();
+  // ── Проверка Задачи 6: один QR action во вкладке «Бонусы» и Screen Wake Lock ──
+  await page.locator('#profileTopBtn').click();
+  await expect(page.locator('#panel')).toHaveClass(/open/);
+  await page.locator('#tabBonus').click();
+  await expect(page.locator('#tabBonus')).toHaveAttribute('aria-selected', 'true');
+  const bonusQrButton = page.locator('#qrOpenBonus');
+  await expect(bonusQrButton).toBeVisible();
+  await bonusQrButton.click();
 
   const qrModal = page.locator('#qrModal');
   await expect(qrModal).toBeVisible();
