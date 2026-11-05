@@ -168,7 +168,6 @@
   padding: 2px 2px 4px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  cursor: grab;
 }
 .ca-cards-scroll::-webkit-scrollbar {
   display: none;
@@ -234,6 +233,10 @@
 }
 .ac-act {
   flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
 }
 .ac-add-btn {
   width: 28px;
@@ -257,22 +260,26 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   background: var(--flame, #C03B2A);
   border: 1px solid var(--fr-choc, var(--flame));
   color: #FFFFFF;
-  padding: 0 3px;
-  gap: 2px;
+  padding: 0;
+  gap: 0;
 }
 .ac-step {
+  flex: 1 1 0;
+  min-width: 22px;
+  height: 42px;
   border: none;
   background: none;
   color: #FFFFFF;
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
-  padding: 0 3px;
+  padding: 0;
   line-height: 1;
 }
 .ac-qty {
@@ -281,4 +288,3 @@
   min-width: 14px;
   text-align: center;
 }
-
