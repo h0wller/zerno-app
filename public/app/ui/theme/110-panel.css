@@ -39,7 +39,7 @@
 #menuView .mh-top {   align-items: center;   row-gap: 8px; }
 #menuView .mh-top > div:first-child {   display: contents; }
 #menuView .mh-top h1 {   flex: 1 1 100%;   margin: 0; }
-#menuView .mh-top h2.vh, .mh-top .upd {   display: none; }
+#menuView .mh-top h2.vh, #menuView .mh-top .upd {   display: none; }
 #menuView .mh-top .mh-right {   flex: 1 1 100%;   width: 100%;   max-width: none;   margin: 0; }
 #menuView .coffee-menu-search {   min-height: 44px;   padding: 0 12px;   gap: 9px;   border: 1px solid rgba(18, 58, 107, 0.14);   border-radius: 12px;   background: #fff;   box-shadow: none; }
 #menuView .coffee-menu-search .search-icon {   width: 17px;   height: 17px;   flex: 0 0 17px;   fill: none;   stroke: #586470;   stroke-width: 1.8;   stroke-linecap: round; }
