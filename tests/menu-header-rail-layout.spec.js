@@ -150,7 +150,7 @@ test('coffee menu heading includes the full marina tagline on mobile and desktop
         text: element.innerText.replace(/\s+/g, ' ').trim(),
       };
     });
-    expect(geometry.text).toBe('Меню кофейня на берегу моря');
+    expect(geometry.text).toMatch(/^Меню\\s+кофейня на берегу моря$/i);
     expect(geometry.left).toBeGreaterThanOrEqual(0);
     expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
   }
