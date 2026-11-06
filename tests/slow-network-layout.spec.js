@@ -866,7 +866,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         };
       };
       const header = document.querySelector('header.topbar');
-      const modeSeg = document.querySelector('#modeSeg');
+      const modeSeg = document.querySelector('#adminBar #modeSeg');
       return {
         role: document.documentElement.getAttribute('data-staff-role'),
         ready: document.documentElement.hasAttribute('data-staff-ready'),
@@ -879,7 +879,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           paddingBottom: getComputedStyle(header).paddingBottom,
           gridTemplateRows: getComputedStyle(header).gridTemplateRows
         },
-        modeSeg: rect('#modeSeg'),
+        modeSeg: rect('#adminBar #modeSeg'),
         modeSegStyle: modeSeg && {
           marginTop: getComputedStyle(modeSeg).marginTop,
           height: getComputedStyle(modeSeg).height,

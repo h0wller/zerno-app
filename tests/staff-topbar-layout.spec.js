@@ -35,6 +35,8 @@ test('staff mode switch fits inside the menu actions rail before and after hydra
   await page.goto('/?brand=delivery');
   const mode = page.locator('#adminBar #modeSeg');
   await expect(mode).toBeAttached();
+  await expect(page.locator('#brandSeg')).toBeAttached();
+  await expect(page.locator('header.topbar #modeSeg')).toHaveCount(0);
   await page.evaluate(() => {
     document.getElementById('modeSeg').innerHTML =
       ['Кофейня', 'Доставка', 'Заказы', 'Касса']

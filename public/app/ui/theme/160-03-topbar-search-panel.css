@@ -170,13 +170,31 @@ html .wrap > #panel:not(.open):not(.show) {
 }
 
 /* [fix-all v3] END F5.62 */
-/* Staff mode switch is part of the menu actions rail; global header stays one row. */
+/* Reserve a stable slot in the menu actions rail before staff auth resolves. */
+#adminBar[data-staff-rail] {
+  display: flex;
+}
+#adminBar[data-staff-rail] #modeSeg {
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 0;
+  height: 46px;
+  min-height: 46px;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  box-sizing: border-box;
+}
+html:not([data-staff-ready]) #adminBar[data-staff-rail] #modeSeg {
+  visibility: hidden;
+}
+html:not([data-staff-role]) #adminBar[data-staff-rail] #modeSeg {
+  visibility: hidden;
+}
 @media (max-width: 820px) {
-  html[data-staff-role] body #adminBar #modeSeg {
+  #adminBar[data-staff-rail] #modeSeg {
     height: 46px;
     min-height: 46px;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
   }
 }
+
