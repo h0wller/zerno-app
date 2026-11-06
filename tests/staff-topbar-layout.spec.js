@@ -12,7 +12,10 @@ test('single staff action does not stretch the admin bar across the content colu
   const bar = page.locator('#adminBar');
   await bar.evaluate((element) => {
     element.hidden = false;
-    Array.from(element.children).forEach((button, index) => { button.hidden = index > 0; });
+    element.style.display = 'flex';
+    Array.from(element.children).forEach((button, index) => {
+      button.hidden = index > 0;
+    });
   });
   await expect(bar).toBeVisible();
   const dimensions = await bar.evaluate((element) => ({
