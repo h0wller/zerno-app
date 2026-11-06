@@ -178,3 +178,16 @@ html body div.wrap > section {
   flex: 1 1 100%;
   box-sizing: border-box;
 }
+
+
+.menu-head #modeSeg { display:flex; flex-wrap:nowrap; align-items:center; gap:6px; width:100%; max-width:100%; min-width:0; margin:10px 0 0; padding:0; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.menu-head #modeSeg::-webkit-scrollbar { display:none; }
+.menu-head #modeSeg button { flex:0 0 auto; min-height:44px; height:44px; min-width:44px; padding:0 14px; border:1px solid var(--line,#D8DFE4); border-radius:999px; background:var(--card,#fff); color:var(--ink,#101418); font:700 13px/1.1 "Golos Text",system-ui,sans-serif; white-space:nowrap; }
+html[data-brand="coffee"] .menu-head #modeSeg button.on { background:#fff; color:#123A6B; border-color:#3E8FD0; box-shadow:none; }
+html[data-brand="delivery"] .menu-head #modeSeg button.on { background:#3A2A1C; color:#F3EDE6; border-color:#3A2A1C; box-shadow:none; }
+.menu-head #editToggle { display:inline-flex; align-items:center; justify-content:center; flex:0 0 44px; width:44px; min-width:44px; max-width:44px; min-height:44px; height:44px; margin:0 0 0 auto; padding:0; border:1px solid var(--line,#D8DFE4); border-radius:12px; background:var(--card,#fff); color:var(--flame,#123A6B); box-shadow:none; font-size:0; }
+.menu-head #editToggle::before { content:"✎"; font-size:21px; line-height:1; }
+.menu-head #editToggle.on::before { content:"✓"; font-size:20px; }
+.menu-head .mh-top > div:first-child { align-items:center; }
+.menu-head h1 { min-width:0; }
+@media(max-width:820px) { .menu-head #editToggle { position:absolute; top:8px; right:8px; } .menu-head h1 { padding-right:48px; font-size:clamp(19px,5vw,23px); } }
