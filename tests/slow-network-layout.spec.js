@@ -175,7 +175,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.tickerOverflowX).toBe('hidden');
     expect(before.section.width).toBeGreaterThan(250);
     expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
-    expect(before.heading.width).toBeGreaterThan(200);
+    // The compact heading intentionally contains only «Меню», not the old brand tagline.
+    expect(before.heading.width).toBeGreaterThan(60);
+    expect(before.heading.width).toBeLessThan(200);
     expect(before.menuHead).not.toBeNull();
     expect(before.menuHead.x).toBeLessThanOrEqual(before.rail.x + 1);
     expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
