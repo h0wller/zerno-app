@@ -122,7 +122,7 @@ var rules = [
  '@media(min-width:0){body.is-cashier .ticker,body.is-admin .ticker{display:none}}',
   '[data-brand="delivery"] #modeSeg button:not(.on){color:#F3EDE6}'
 ];
-css.textContent = rules.join('\\n') + '\\n[data-brand="coffee"] #modeSeg button.on{background:#fff;color:#123A6B;border:1px solid #3E8FD0;box-shadow:none}';
+css.textContent = rules.join('\n') + '\n[data-brand="coffee"] #modeSeg button.on{background:#fff;color:#123A6B;border:1px solid #3E8FD0;box-shadow:none}';color:#123A6B;border:1px solid #3E8FD0;box-shadow:none}';
 document.head.appendChild(css);
 
 /* ========== 2. DOM-инъекции стафф-панелей ========== */
