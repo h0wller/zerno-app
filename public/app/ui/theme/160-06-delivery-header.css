@@ -334,3 +334,44 @@
     max-height: 44px;
   }
 }
+
+
+/* Mobile header actions share the reserved right-hand slot with the profile avatar. */
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+@media (max-width: 820px) {
+  html body header.topbar .topbar-actions {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  html body header.topbar .topbar-actions #profileTopBtn {
+    position: static;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    margin: 0;
+  }
+  html body header.topbar .topbar-actions #mbonusBtn {
+    position: static;
+    width: 78px;
+    min-width: 74px;
+    max-width: 86px;
+    height: 40px;
+    margin: 0;
+    padding: 0 8px;
+    flex: 0 0 auto;
+  }
+}

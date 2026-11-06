@@ -292,29 +292,35 @@ header.topbar,
     justify-self: center;
     margin-top: 4px;
   }
-  .topbar #mbonusBtn {
+  .topbar .topbar-actions {
     grid-column: 3;
     grid-row: 1;
     justify-self: end;
-    order: 0;
-    margin: 0 56px 0 0;
+    align-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 0;
+  }
+  .topbar .topbar-actions #mbonusBtn {
     position: static;
-    width: auto;
-    max-width: none;
-    height: 44px;
-    padding: 0 14px;
+    width: 78px;
+    min-width: 74px;
+    max-width: 86px;
+    height: 40px;
+    margin: 0;
+    padding: 0 8px;
     flex-direction: row;
     border-radius: 999px;
     align-self: center;
   }
-  .topbar #profileTopBtn {
-    grid-column: 3;
-    grid-row: 1;
-    justify-self: end;
-    order: 0;
+  .topbar .topbar-actions #profileTopBtn {
     position: static;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
     margin: 0;
-    margin-left: 0;
     align-self: center;
   }
 }
@@ -1155,27 +1161,46 @@ html[data-brand="delivery"] {
   }
 }
 
-/* Reserve the mobile bonus control's final geometry before deferred theme CSS. */
+/* Reserve the topbar action group before deferred theme CSS. */
 @media (max-width: 820px) {
-  html body #mbonusBtn {
-    position: fixed;
-    left: 12px;
+  html body header.topbar .topbar-actions {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  html body header.topbar #mbonusBtn {
+    position: static;
+    left: auto;
     right: auto;
     top: auto;
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    width: 56px;
-    min-width: 56px;
-    max-width: 56px;
-    height: 56px;
+    bottom: auto;
+    width: 78px;
+    min-width: 74px;
+    max-width: 86px;
+    height: 40px;
     margin: 0;
-    padding: 6px 4px;
+    padding: 0 8px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    z-index: 95;
+    z-index: auto;
     transform: none;
+  }
+  html body header.topbar #profileTopBtn {
+    position: static;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    margin: 0;
   }
 }
 
@@ -2084,11 +2109,13 @@ html body #tickerTrack .tickerGroup > span {
       <div>
         <b id="brandTitle" aria-label="…и кофе">…и к<span class="bean" aria-hidden="true"><svg viewBox="3.5 1.5 21 24"><g transform="translate(3 3)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#23272C"/></g></g><g transform="translate(2 2)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="translate(1 1)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="currentColor"/><path d="M12 3.6C8.4 7.8 15.6 16.2 12 20.4" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/></g></svg></span>фе</b><small id="brandSub">кофейня на берегу моря</small>      </div>
     </div>
-    <button class="mbonus" id="mbonusBtn" type="button" aria-label="Бонусы 0/10">
-      <span class="mb-stamps"><span class="mb-bean"></span><span id="mbonusSt">0/10</span></span>
-      <span class="mb-free" id="mbonusFree" hidden>🎁 0</span>
-    </button>
-    <button class="ava" id="profileTopBtn" title="Профиль" aria-label="Профиль пользователя">?</button>
+    <div class="topbar-actions">
+      <button class="mbonus" id="mbonusBtn" type="button" aria-label="Бонусы 0/10">
+        <span class="mb-stamps"><span class="mb-bean"></span><span id="mbonusSt">0/10</span></span>
+        <span class="mb-free" id="mbonusFree" hidden>🎁 0</span>
+      </button>
+      <button class="ava" id="profileTopBtn" title="Профиль" aria-label="Профиль пользователя">?</button>
+    </div>
     <div class="modeSeg" id="modeSeg" hidden></div>
   </header>
   <div class="ticker" role="region" aria-label="Объявления">

@@ -127,7 +127,7 @@ for (const brand of CASES) {
 }
 
 
-test('coffee menu heading includes the full marina tagline on mobile and desktop', async ({ page }) => {
+test('coffee menu heading is compact on mobile and retains the desktop tagline', async ({ page }) => {
   for (const viewport of [
     { width: 320, height: 740 },
     { width: 390, height: 844 },
@@ -139,7 +139,15 @@ test('coffee menu heading includes the full marina tagline on mobile and desktop
 
     const heading = page.locator('#menuView .menu-head h1');
     await expect(heading).toBeVisible();
-    await expect(heading).toHaveText(/^Меню\s+кофейня на берегу моря$/);
+    if (viewport.width <= 820) {
+      await expect(heading.locator('em')).toBeHidden();
+      await expect(page.locator('#menuView .menu-head .upd')).toBeHidden();
+      expect((await heading.innerText()).trim()).toBe('Меню');
+    } else {
+      await expect(heading.locator('em')).toBeVisible();
+      expect((await heading.innerText()).replace(/\s+/g, ' ').trim())
+        .toBe('Меню кофейня на берегу моря');
+    }
 
     const geometry = await heading.evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -147,11 +155,117 @@ test('coffee menu heading includes the full marina tagline on mobile and desktop
         left: rect.left,
         right: rect.right,
         viewportWidth: document.documentElement.clientWidth,
-        text: element.innerText.replace(/\s+/g, ' ').trim(),
       };
     });
-    expect(geometry.text).toMatch(/^Меню\s+кофейня на берегу моря$/i);
     expect(geometry.left).toBeGreaterThanOrEqual(0);
     expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
   }
+});
+
+
+function relativeLuminance(color) {
+  const channels = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => {
+    const channel = value / 255;
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrastRatio(first, second) {
+  const values = [relativeLuminance(first), relativeLuminance(second)].sort((a, b) => b - a);
+  return (values[0] + 0.05) / (values[1] + 0.05);
+}
+
+for (const brandName of ['coffee', 'delivery']) {
+  test(brandName + ': mobile menu header is compact and staff actions stay in a single scrollable row', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brandName, { waitUntil: 'domcontentloaded' });
+
+    const view = page.locator(brandName === 'coffee' ? '#menuView' : '#deliveryView');
+    const menuHead = view.locator('.menu-head');
+    await expect(menuHead).toBeVisible();
+    await expect(menuHead.locator('h1 em')).toBeHidden();
+    await expect(menuHead.locator('.upd')).toBeHidden();
+
+    const adminBar = page.locator('#adminBar');
+    await adminBar.evaluate(element => {
+      element.hidden = false;
+      element.querySelectorAll('button').forEach(button => { button.hidden = false; });
+    });
+    await expect(adminBar).toBeVisible();
+
+    const layout = await page.evaluate(({ brandName }) => {
+      const view = document.querySelector(brandName === 'coffee' ? '#menuView' : '#deliveryView');
+      const menuHead = view.querySelector('.menu-head');
+      const adminBar = document.querySelector('#adminBar');
+      const edit = document.querySelector('#editToggle');
+      const actions = document.querySelector('.topbar-actions');
+      const bonus = document.querySelector('#mbonusBtn');
+      const profile = document.querySelector('#profileTopBtn');
+      const mode = document.querySelector('#modeSeg');
+      const buttons = Array.from(adminBar.querySelectorAll('button:not([hidden])'));
+      const rows = new Set(buttons.map(button => Math.round(button.getBoundingClientRect().top)));
+      const rail = document.querySelector(brandName === 'coffee' ? '#rail' : '#deliveryRail');
+      const rect = element => {
+        const r = element.getBoundingClientRect();
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
+      };
+      const modeButton = mode.querySelector('button.on');
+      return {
+        menuHead: rect(menuHead),
+        adminBar: rect(adminBar),
+        adminDisplay: getComputedStyle(adminBar).display,
+        adminWrap: getComputedStyle(adminBar).flexWrap,
+        adminOverflowX: getComputedStyle(adminBar).overflowX,
+        adminButtonRows: rows.size,
+        editInMenu: !!(edit && edit.closest('.menu-head')),
+        editDisplay: edit ? getComputedStyle(edit).display : null,
+        headerActions: actions ? rect(actions) : null,
+        bonus: rect(bonus),
+        bonusPosition: getComputedStyle(bonus).position,
+        bonusParent: bonus.parentElement.className,
+        profile: rect(profile),
+        modeHiddenForGuest: mode.hidden,
+        modeButtonColors: modeButton ? [getComputedStyle(modeButton).backgroundColor, getComputedStyle(mode).backgroundColor] : null,
+        railTop: rect(rail).top,
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: document.documentElement.clientWidth
+      };
+    }, { brandName });
+
+    expect(layout.adminDisplay).toBe('flex');
+    expect(layout.adminWrap).toBe('nowrap');
+    expect(layout.adminOverflowX).toBe('auto');
+    expect(layout.adminButtonRows).toBe(1);
+    expect(layout.editInMenu).toBe(true);
+    expect(layout.headerActions).not.toBeNull();
+    expect(layout.bonusParent).toBe('topbar-actions');
+    expect(layout.bonusPosition).toBe('static');
+    expect(layout.modeHiddenForGuest).toBe(true);
+    expect(layout.railTop).toBeGreaterThanOrEqual(layout.menuHead.bottom + 8);
+    expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
+
+    await testInfo.attach(brandName + '-mobile-menu-admin-row-390px', {
+      body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+      contentType: 'image/png'
+    });
+  });
+}
+
+test('coffee admin mode has a clearly distinguishable active mode tab', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+  const mode = page.locator('#modeSeg');
+  await mode.evaluate(element => {
+    element.hidden = false;
+    element.innerHTML = '<button type="button">Гость</button><button type="button">Кассир</button><button type="button">Заказы</button><button type="button" class="on">Админ</button>';
+  });
+  const colors = await mode.evaluate(element => {
+    const active = element.querySelector('button.on');
+    return [getComputedStyle(active).backgroundColor, getComputedStyle(element).backgroundColor];
+  });
+  expect(contrastRatio(colors[0], colors[1])).toBeGreaterThanOrEqual(3);
+  await expect(mode.locator('button.on')).toHaveCSS('color', 'rgb(18, 58, 107)');
 });
