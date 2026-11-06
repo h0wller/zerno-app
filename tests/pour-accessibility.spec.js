@@ -60,50 +60,53 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.subchips.every((height) => height >= 44)).toBe(true);
   });
 
-  test('mobile staff header and mode switch stay compact without shrinking 44px controls', async ({ page }) => {
+  test('menu row stays compact and staff modes keep the switcher in the topbar', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.addInitScript(() => {
-      localStorage.setItem('zt_onb', '1');
-      localStorage.setItem('zt_inst_hide', '1');
-      sessionStorage.setItem('splashDone', '1');
-    });
-    await page.goto('/?brand=delivery');
-    await page.waitForFunction(() => typeof window.syncBrandViews === 'function');
     await page.evaluate(() => {
-      window.me = { role: 'admin' };
-      window.mode = 'admin';
-      document.documentElement.setAttribute('data-staff-role', 'admin');
+      window.setUser('accessibility-layout-admin-token', {
+        role: 'admin', name: 'Accessibility Test Admin', phone: '+70000000001',
+        verified: 1, qr: 'accessibility-layout-admin', stamps: 0, free: 0, history: []
+      });
+      window.mode = 'guest';
       window.syncBrandViews();
     });
 
-    const metrics = await page.evaluate(() => {
+    const menuMetrics = await page.evaluate(() => {
       const header = document.querySelector('header.topbar').getBoundingClientRect();
-      const menuHead = document.querySelector('#deliveryView .menu-head');
-      const menuBox = menuHead.getBoundingClientRect();
-      const mode = document.getElementById('modeSeg');
-      const modeBox = mode.getBoundingClientRect();
+      const seg = document.getElementById('modeSeg');
+      const row = seg.closest('.menu-controls-row');
+      const edit = document.getElementById('editToggle');
       return {
-        viewportWidth: document.documentElement.clientWidth,
         headerHeight: header.height,
-        modeParent: mode.parentElement,
-        menuHead,
-        modeLeft: modeBox.left,
-        modeRight: modeBox.right,
-        menuRight: menuBox.right,
-        modeHeight: modeBox.height,
-        buttonHeights: Array.from(mode.querySelectorAll('button')).map(button => button.getBoundingClientRect().height),
-        editParent: document.getElementById('editToggle').parentElement
+        modeInMenuRow: !!row && row.parentElement === document.querySelector('#deliveryView .mh-top > div:first-child'),
+        editInMenuRow: edit.parentElement === row,
+        rowHeight: row.getBoundingClientRect().height,
+        buttonHeights: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().height)
       };
     });
+    expect(menuMetrics.headerHeight).toBeLessThanOrEqual(64);
+    expect(menuMetrics.modeInMenuRow).toBe(true);
+    expect(menuMetrics.editInMenuRow).toBe(true);
+    expect(menuMetrics.rowHeight).toBeGreaterThanOrEqual(44);
+    expect(menuMetrics.buttonHeights.every(height => height >= 44)).toBe(true);
 
-    expect(metrics.headerHeight).toBeLessThanOrEqual(64);
-    expect(metrics.modeParent).toBe(metrics.menuHead);
-    expect(metrics.editParent).toBe(metrics.menuHead);
-    expect(metrics.modeLeft).toBeGreaterThanOrEqual(0);
-    expect(metrics.modeRight).toBeLessThanOrEqual(metrics.menuRight + 1);
-    expect(metrics.modeHeight).toBeGreaterThanOrEqual(44);
-    expect(metrics.buttonHeights.length).toBeGreaterThan(0);
-    expect(metrics.buttonHeights.every(height => height >= 44)).toBe(true);
+    await page.evaluate(() => window.setMode('admin'));
+    const adminMetrics = await page.evaluate(() => {
+      const header = document.querySelector('header.topbar').getBoundingClientRect();
+      const seg = document.getElementById('modeSeg');
+      return {
+        headerHeight: header.height,
+        modeInHeader: seg.parentElement === document.querySelector('header.topbar'),
+        modeTop: seg.getBoundingClientRect().top,
+        modeBottom: seg.getBoundingClientRect().bottom,
+        buttonHeights: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().height)
+      };
+    });
+    expect(adminMetrics.modeInHeader).toBe(true);
+    expect(adminMetrics.headerHeight).toBeGreaterThan(64);
+    expect(adminMetrics.modeTop).toBeGreaterThanOrEqual(0);
+    expect(adminMetrics.modeBottom).toBeLessThanOrEqual(adminMetrics.headerHeight + 1);
+    expect(adminMetrics.buttonHeights.every(height => height >= 44)).toBe(true);
   });
 
   test('floating controls and confetti canvas have accessible landmark treatment', async ({ page }) => {
