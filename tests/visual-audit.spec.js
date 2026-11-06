@@ -50,6 +50,16 @@ async function waitForHydratedStorefront(page, brand) {
   });
 }
 
+async function waitForHydratedSidebar(page, brand) {
+  const tab = page.locator(brand === 'delivery' ? '#tabProfile' : '#tabBonus');
+  const panel = page.locator(brand === 'delivery' ? '#pvProfile' : '#pvBonus');
+  const guestPrompt = page.locator(brand === 'delivery' ? '#profileNoUser' : '#bonusNoUser');
+
+  await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
+  await expect(panel).toBeVisible({ timeout: 10000 });
+  await expect(guestPrompt).toBeVisible({ timeout: 10000 });
+}
+
 async function capture(page, meta) {
   const id = [
     meta.brand.toUpperCase(),
@@ -80,6 +90,14 @@ async function capture(page, meta) {
       return rect.width > 0 && rect.height > 0
         && style.display !== 'none' && style.visibility !== 'hidden';
     }).length,
+    sidebar: {
+      activeTab: document.querySelector('.tabs [role="tab"][aria-selected="true"]')?.dataset.tab || null,
+      bonusPanelHidden: document.getElementById('pvBonus')?.hidden ?? null,
+      profilePanelHidden: document.getElementById('pvProfile')?.hidden ?? null,
+      bonusGuestPromptHidden: document.getElementById('bonusNoUser')?.hidden ?? null,
+      profileGuestPromptHidden: document.getElementById('profileNoUser')?.hidden ?? null,
+      profileBoxHidden: document.getElementById('profileBox')?.hidden ?? null,
+    },
   }));
 
   return {
@@ -108,6 +126,7 @@ for (const brand of ['coffee', 'delivery']) {
       });
 
       await waitForHydratedStorefront(page, brand);
+      await waitForHydratedSidebar(page, brand);
       const hydrated = await capture(page, {
         brand, viewport, state: 'hydrated-menu', fullPage: true,
       });
