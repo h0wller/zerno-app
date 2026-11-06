@@ -204,11 +204,28 @@ test('baseline: стафф-режим прячет delivery-меню сразу 
 });
 
 test('baseline: админ', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await loginAs(page, { code: ADMIN });
+  await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
   await waitModeSeg(page);
 
   await modeBtn(page, 'admin', 'Админ').click();
-  await expect(page.locator('#adminBar')).toBeVisible({ timeout: 10000 });
+  const adminBar = page.locator('#adminBar');
+  await expect(adminBar).toBeVisible({ timeout: 10000 });
+  await expect(adminBar).toHaveCSS('flex-wrap', 'nowrap');
+  await expect(adminBar).toHaveCSS('overflow-x', 'auto');
+
+  const activeMode = page.locator('#modeSeg [data-mode="admin"]');
+  await expect(activeMode).toHaveCSS('background-color', 'rgb(187, 215, 242)');
+  await expect(activeMode).toHaveCSS('color', 'rgb(18, 58, 107)');
+
+  await expect.poll(() => page.evaluate(() => {
+    const head = document.querySelector('#menuView .menu-head');
+    const rail = document.querySelector('#rail');
+    if (!head || !rail) return -Infinity;
+    return rail.getBoundingClientRect().top - head.getBoundingClientRect().bottom;
+  }), { timeout: 5000 }).toBeGreaterThanOrEqual(8);
+
   await shot(page, '07-admin');
 });
 
