@@ -64,7 +64,7 @@ jobs:
             workers: 2
           - group: Responsive UI
             project: chromium
-            specs: tests/pour-accessibility.spec.js tests/pwa-responsive.spec.js tests/staff-topbar-layout.spec.js tests/coffee-header-layout.spec.js tests/friday-info-responsive.spec.js tests/poster-hours.spec.js tests/menu-header-rail-layout.spec.js tests/coffee-profile-visual.spec.js tests/chat-support.spec.js tests/menu-image-fallback.spec.js tests/delivery-desktop-filter-layout.spec.js
+            specs: tests/pour-accessibility.spec.js tests/pwa-responsive.spec.js tests/staff-topbar-layout.spec.js tests/coffee-header-layout.spec.js tests/friday-info-responsive.spec.js tests/poster-hours.spec.js tests/menu-header-rail-layout.spec.js tests/coffee-profile-visual.spec.js tests/chat-support.spec.js tests/menu-image-fallback.spec.js tests/delivery-filter-scroll.spec.js tests/delivery-desktop-filter-layout.spec.js
             workers: 2
           - group: Visual stability
             project: chromium
