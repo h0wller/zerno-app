@@ -246,7 +246,7 @@ html body div.wrap > section {
   box-shadow: none;
   font-size: 0;
 }
-.menu-controls-row #editToggle::before { content: "✎"; font-size: 21px; line-height: 1; }
+.menu-controls-row #editToggle::before { content: "✏️"; font-size: 21px; line-height: 1; }
 .menu-controls-row #editToggle.on::before { content: "✓"; font-size: 20px; }
 @media (max-width: 820px) {
   .menu-head .menu-controls-row h1 { font-size: clamp(17px,4.7vw,21px); }
