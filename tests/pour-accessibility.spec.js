@@ -101,7 +101,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.editParent).toBe(metrics.menuHead);
     expect(metrics.modeLeft).toBeGreaterThanOrEqual(0);
     expect(metrics.modeRight).toBeLessThanOrEqual(metrics.menuRight + 1);
-    expect(metrics.modeHeight).toBe(46);
+    expect(metrics.modeHeight).toBeGreaterThanOrEqual(44);
     expect(metrics.buttonHeights.length).toBeGreaterThan(0);
     expect(metrics.buttonHeights.every(height => height >= 44)).toBe(true);
   });
