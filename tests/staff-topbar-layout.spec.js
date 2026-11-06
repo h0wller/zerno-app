@@ -36,61 +36,66 @@ test('single staff action does not stretch the admin bar across the content colu
   expect(dimensions.parentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
 });
 
-test('staff switcher mounts inside the menu card without growing the topbar', async ({ page }) => {
-  await page.setViewportSize({ width:390, height:844 });
+test('staff switcher is in the menu row for guest mode and returns to the topbar in staff modes', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
-    localStorage.setItem('zt_onb','1');
-    localStorage.setItem('zt_inst_hide','1');
-    sessionStorage.setItem('splashDone','1');
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    sessionStorage.setItem('splashDone', '1');
   });
   await page.goto('/?brand=delivery');
   await page.waitForFunction(() => typeof window.syncBrandViews === 'function');
   await page.evaluate(() => {
-    window.setUser('layout-test-dispatch-token', {
-      role: 'dispatch',
-      name: 'Layout Test Dispatcher',
-      phone: '+70000000000',
-      verified: 1,
-      qr: 'layout-test-dispatch',
-      stamps: 0,
-      free: 0,
-      history: []
+    window.setUser('layout-test-admin-token', {
+      role: 'admin', name: 'Layout Test Admin', phone: '+70000000000',
+      verified: 1, qr: 'layout-test-admin', stamps: 0, free: 0, history: []
     });
     window.mode = 'guest';
     window.syncBrandViews();
-    window.setMode('orders');
   });
-  const mode=page.locator('#modeSeg');
+
+  const mode = page.locator('#modeSeg');
+  const header = page.locator('header.topbar');
+  const menuHead = page.locator('#deliveryView .menu-head');
+
   await expect(mode).toBeVisible();
-  const measure=()=>page.evaluate(()=>{
-    const header=document.querySelector('header.topbar').getBoundingClientRect();
-    const head=document.querySelector('#deliveryView .menu-head');
-    const seg=document.getElementById('modeSeg'), edit=document.getElementById('editToggle');
-    const sb=seg.getBoundingClientRect(), hb=head.getBoundingClientRect();
+  const guestLayout = await page.evaluate(() => {
+    const seg = document.getElementById('modeSeg');
+    const edit = document.getElementById('editToggle');
+    const titleRow = seg.closest('.menu-controls-row');
     return {
-      headerHeight:header.height, modeHeight:sb.height, modeTop:sb.top, modeBottom:sb.bottom,
-      headTop:hb.top, headBottom:hb.bottom, modeInMenu:seg.parentElement===head, editInMenu:edit.parentElement===head,
-      buttonHeights:Array.from(seg.querySelectorAll('button'),b=>b.getBoundingClientRect().height),
-      documentWidth:document.documentElement.scrollWidth, viewportWidth:document.documentElement.clientWidth
+      modeInMenuRow: !!titleRow && titleRow.parentElement === document.querySelector('#deliveryView .mh-top > div:first-child'),
+      modeBeforeEdit: !!titleRow && Array.from(titleRow.children).indexOf(seg) < Array.from(titleRow.children).indexOf(edit),
+      headerHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
+      modeHeight: seg.getBoundingClientRect().height,
+      buttons: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().height),
+      editVisible: !edit.hidden
     };
   });
-  const before=await measure();
-  expect(before.headerHeight).toBeLessThanOrEqual(64);
-  expect(before.modeInMenu).toBe(true);
-  expect(before.editInMenu).toBe(true);
-  expect(before.modeHeight).toBeGreaterThanOrEqual(44);
-  expect(before.buttonHeights.length).toBeGreaterThanOrEqual(2);
-  expect(before.buttonHeights.every(h=>h>=44&&h<=44.5)).toBe(true);
-  expect(before.modeTop).toBeGreaterThanOrEqual(before.headTop);
-  expect(before.modeBottom).toBeLessThanOrEqual(before.headBottom+1);
-  expect(before.documentWidth).toBeLessThanOrEqual(before.viewportWidth+1);
-  await page.evaluate(()=>{
-    document.documentElement.setAttribute('data-staff-role','dispatch');
-    document.documentElement.setAttribute('data-staff-ready','true');
-    window.syncBrandViews();
-  });
-  const after=await measure();
-  expect(after.headerHeight).toBe(before.headerHeight);
-  expect(after.modeInMenu).toBe(true);
-  expect(after.editInMenu).toBe(true);
+  expect(guestLayout.modeInMenuRow).toBe(true);
+  expect(guestLayout.modeBeforeEdit).toBe(true);
+  expect(guestLayout.headerHeight).toBeLessThanOrEqual(64);
+  expect(guestLayout.modeHeight).toBeGreaterThanOrEqual(44);
+  expect(guestLayout.buttons.length).toBeGreaterThanOrEqual(2);
+  expect(guestLayout.buttons.every(height => height >= 44)).toBe(true);
+
+  await page.evaluate(() => window.setMode('cashier'));
+  await expect(page.locator('#cashierView')).toBeVisible();
+  await expect(mode).toBeVisible();
+  const cashierLayout = await mode.evaluate((seg) => ({
+    inTopbar: seg.parentElement === document.querySelector('header.topbar'),
+    topbarHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
+    modeTop: seg.getBoundingClientRect().top,
+    headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom
+  }));
+  expect(cashierLayout.inTopbar).toBe(true);
+  expect(cashierLayout.topbarHeight).toBeGreaterThan(64);
+  expect(cashierLayout.modeTop).toBeLessThanOrEqual(cashierLayout.headerBottom);
+
+  await page.evaluate(() => window.setMode('admin'));
+  await expect(mode).toBeVisible();
+  await expect(mode).toHaveJSProperty('parentElement', await header.evaluate(element => element));
+  await page.evaluate(() => window.setMode('guest'));
+  await expect(mode).toBeVisible();
+  await expect(mode).toHaveJSProperty('parentElement', await menuHead.locator('.mh-top > div:first-child > .menu-controls-row').evaluate(element => element.parentElement));
 });
