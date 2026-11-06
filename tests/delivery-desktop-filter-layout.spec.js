@@ -26,7 +26,7 @@ const items = [
 }));
 
 for (const width of [1024, 1440]) {
-  test(`delivery ingredient filters wrap without clipping at ${width}px`, async ({ page }) => {
+  test(`delivery ingredient filters wrap without clipping at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
     await page.addInitScript(() => {
       localStorage.clear();
@@ -80,6 +80,11 @@ for (const width of [1024, 1440]) {
     expect(await page.evaluate(() =>
       document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1
     )).toBe(true);
+
+    await testInfo.attach(`delivery-filter-wrap-${width}px`, {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
 
     const lastFilter = chips.last();
     await lastFilter.click();
