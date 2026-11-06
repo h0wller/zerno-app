@@ -1379,13 +1379,34 @@ html[data-staff-role] body header.topbar {
     align-content: center;
   }
 }
-/* Staff placeholders live inside the menu card, not the sticky header. */
+/* Reserve space for the staff switcher where it belongs before the app hydrates. */
 @media(max-width:820px) {
-  html[data-staff-role]:not([data-staff-ready]) body .menu-head #modeSeg[hidden] { display:flex!important; width:100%; min-height:44px; margin-top:10px; visibility:hidden!important; }
-  html[data-staff-role]:not([data-staff-ready]) body .menu-head #editToggle[hidden] { display:inline-flex!important; width:44px; height:44px; visibility:hidden!important; }
+  html[data-staff-role]:not([data-staff-ready]) body header.topbar #modeSeg[hidden] {
+    display:flex!important;
+    grid-column:1/-1;
+    grid-row:2;
+    width:max-content;
+    max-width:100%;
+    min-height:44px;
+    height:46px;
+    visibility:hidden!important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head #editToggle[hidden] {
+    display:inline-flex!important;
+    width:44px;
+    height:44px;
+    visibility:hidden!important;
+  }
 }
 @media(min-width:821px) {
-  html[data-staff-role]:not([data-staff-ready]) body .menu-head #modeSeg[hidden] { display:flex!important; width:100%; min-height:44px; margin-top:10px; visibility:hidden!important; }
+  html[data-staff-role]:not([data-staff-ready]) body header.topbar #modeSeg[hidden] {
+    display:flex!important;
+    grid-row:2;
+    width:max-content;
+    max-width:100%;
+    min-height:44px;
+    visibility:hidden!important;
+  }
 }
 
 html[data-staff-role] body #adminBar.adminBar {
