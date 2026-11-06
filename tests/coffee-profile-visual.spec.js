@@ -203,6 +203,8 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(page.locator('#qrModal')).toHaveClass(/show/);
   await page.locator('#qrClose').click();
   await expect(page.locator('#qrModal')).not.toHaveClass(/show/);
+  await expect(page.locator('#qrOpenBonus')).toBeHidden();
+  await page.locator('#tabBonus').click();
   await expect(page.locator('#qrOpenBonus')).toBeVisible();
 
   const menuHeading = page.locator('#menuView .mh-top h2.vh');
