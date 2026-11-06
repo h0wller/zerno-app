@@ -73,7 +73,7 @@
 
 /* Desktop/tablet: show the complete ingredient set without a hidden horizontal tail. */
 @media (min-width: 821px) {
-  #deliveryView .subfilter-bar {
+  #deliveryView #deliverySubFilter {
     flex-wrap: wrap;
     overflow-x: visible;
     overflow-y: visible;
