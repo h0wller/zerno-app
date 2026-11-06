@@ -53,6 +53,7 @@ for (const viewport of VIEWPORTS) {
       const box = document.querySelector('#bonusBox');
       const stamps = document.querySelector('#stampGrid');
       const promo = document.querySelector('#promoInput');
+      const promoButton = document.querySelector('#promoBtn');
       const row = promo.closest('.findrow');
       const freeCard = document.querySelector('.freeCard');
       const rect = element => {
@@ -80,6 +81,9 @@ for (const viewport of VIEWPORTS) {
         stamps: rect(stamps),
         stampCells: [...stamps.children].map(rect),
         promo: rect(promo),
+        promoButton: rect(promoButton),
+        promoButtonWhiteSpace: getComputedStyle(promoButton).whiteSpace,
+        promoButtonFlex: getComputedStyle(promoButton).flex,
         promoRow: rect(row),
         bonusBounds: rect(bonus),
         freeCard: freeCard ? rect(freeCard) : null,
@@ -92,6 +96,10 @@ for (const viewport of VIEWPORTS) {
     expect(measurements.overflow, JSON.stringify(measurements.overflow)).toHaveLength(0);
     expect(measurements.stampCells).toHaveLength(10);
     expect(measurements.promo.width).toBeGreaterThan(0);
+    expect(measurements.promoButton.width).toBeGreaterThanOrEqual(54);
+    expect(measurements.promoButtonWhiteSpace).toBe('nowrap');
+    expect(measurements.promoButton.top + measurements.promoButton.height)
+      .toBeLessThanOrEqual(measurements.promoRow.bottom + 1);
     expect(measurements.promoRow.right).toBeLessThanOrEqual(measurements.bonusBounds.right + 1);
     expect(measurements.freeCard.right).toBeLessThanOrEqual(measurements.bonusBounds.right + 1);
 
@@ -172,15 +180,10 @@ for (const viewport of VIEWPORTS) {
 test('coffee profile keeps one QR action and avoids a duplicate large QR on the profile tab', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await installCoffeeGuest(page, 6, 1);
-  const swipeHint = page.locator('#pvBonus .swipeHintChip');
-  await expect(swipeHint).toBeVisible();
-  const swipeHintLayout = await swipeHint.evaluate(element => {
-    const hint = element.getBoundingClientRect();
-    const content = document.querySelector('#bonusBox').getBoundingClientRect();
-    return { position: getComputedStyle(element).position, bottom: hint.bottom, contentTop: content.top };
-  });
-  expect(swipeHintLayout.position).toBe('relative');
-  expect(swipeHintLayout.bottom).toBeLessThanOrEqual(swipeHintLayout.contentTop + 1);
+  // Profile swipe-to-close remains available, but the explanatory chip must never be injected.
+  await page.waitForTimeout(500);
+  await expect(page.locator('#panel .swipeHintChip')).toHaveCount(0);
+  await expect(page.locator('#panel')).not.toHaveClass(/swipe-hint/);
   await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('data-brand'))).toBe('coffee');
   await expect(page.locator('#bonusBox')).toBeVisible();
   await expect(page.locator('#bonusCount')).toHaveText('6/10');
@@ -192,6 +195,36 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await page.locator('#tabProfile').click();
   await expect(page.locator('#pvProfile')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection')).toBeVisible();
+
+  const socialLayout = await page.locator('#profileCoffeeSection .coffee-place-links').evaluate(nav => {
+    const host = nav.getBoundingClientRect();
+    const items = Array.from(nav.querySelectorAll('.coffee-place-link'), element => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, width: rect.width };
+    });
+    const gaps = items.slice(1).map((item, index) => item.left - items[index].right);
+    return {
+      host: { left: host.left, right: host.right, width: host.width },
+      items,
+      gaps,
+    };
+  });
+  expect(socialLayout.items).toHaveLength(3);
+  expect(socialLayout.items[0].left).toBeCloseTo(socialLayout.host.left, 0);
+  expect(socialLayout.items.at(-1).right).toBeCloseTo(socialLayout.host.right, 0);
+  expect(Math.max(...socialLayout.gaps) - Math.min(...socialLayout.gaps)).toBeLessThanOrEqual(2);
+
+  const overlay = page.locator('#overlay');
+  await page.evaluate(() => window.closePanel());
+  await expect(page.locator('#panel')).not.toHaveClass(/open/);
+  await expect(overlay).not.toHaveClass(/show/);
+  await expect.poll(() => overlay.evaluate(element => getComputedStyle(element).pointerEvents)).toBe('none');
+  await expect.poll(() => overlay.evaluate(element => Number(getComputedStyle(element).opacity))).toBe(0);
+  await page.evaluate(() => window.openPanel('profile'));
+  await expect(page.locator('#panel')).toHaveClass(/open/);
+  await page.evaluate(() => window.closePanel());
+  await expect(overlay).not.toHaveClass(/show/);
+  await expect.poll(() => overlay.evaluate(element => Number(getComputedStyle(element).opacity))).toBe(0);
   await expect(page.locator('#profileCoffeeSection .profile-qr-access')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('#profileCoffeeSection #profileStampProgress')).toBeVisible();
