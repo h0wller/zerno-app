@@ -71,6 +71,36 @@
   display: none;
 }
 
+/* On narrow screens, make a clipped filter row visibly discoverable without
+   stealing taps or reducing the horizontal scroll lane. */
+@media (max-width: 820px) {
+  .subfilter-bar.has-overflow::after {
+    content: "";
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    display: block;
+    flex: 0 0 28px;
+    width: 28px;
+    min-height: 44px;
+    margin-left: -28px;
+    border-radius: 0 999px 999px 0;
+    background: linear-gradient(90deg, transparent, var(--fr-paper, var(--card)) 78%);
+    pointer-events: none;
+    transition: opacity 0.16s ease;
+  }
+  .subfilter-bar.has-overflow.at-end::after {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subfilter-bar.has-overflow::after {
+    transition: none;
+  }
+}
+
+
 /* Desktop/tablet: keep ingredient filters in one horizontal rail with a visible scrollbar. */
 @media (min-width: 821px) {
   #deliveryView #deliverySubFilter {
