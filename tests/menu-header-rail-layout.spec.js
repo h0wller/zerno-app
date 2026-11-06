@@ -142,7 +142,13 @@ test('menu headings stay compact without brand taglines on mobile and desktop', 
       const heading = page.locator(view + ' .menu-head h1');
       await expect(heading).toBeVisible();
       await expect(heading.locator('em')).toBeHidden();
-      await expect(heading).toHaveText('Меню');
+      await expect.poll(() => heading.evaluate(element =>
+        Array.from(element.childNodes)
+          .filter(node => node.nodeType === Node.TEXT_NODE)
+          .map(node => node.textContent)
+          .join('')
+          .trim()
+      )).toBe('Меню');
       await expect(page.locator(view + ' .menu-head .upd')).toBeHidden();
 
       const geometry = await heading.evaluate((element) => {
