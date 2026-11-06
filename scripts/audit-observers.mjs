@@ -8,7 +8,7 @@ const ALLOWLIST = {
   'public/app/cashier.js': 1,           // локальный контейнер cash-view
   'public/app/core/chat-head.js': 1,    // самоотключающийся класс шапки чата
   'public/app/core/overlay-core.js': 1, // изолированный #cartPanel в TG
-  'public/app/core/swipe.js': 1,        // самоотключающийся хинт первого свайпа
+  'public/app/core/swipe.js': 0,        // подсказка удалена; обработчик жеста не создаёт наблюдателей
   'public/app/core/views.js': 1,        // центральный координатор шторки #panel
 };
 

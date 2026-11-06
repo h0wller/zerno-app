@@ -154,6 +154,8 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
   gap: 9px;
 }
 .coffee-place-link,
@@ -287,6 +289,13 @@
   justify-self: start;
   font-size: 12px;
   font-weight: 700;
+}
+
+/* Кнопка промокода не должна переносить «ОК» даже на узких экранах. */
+#pvBonus .findrow #promoBtn {
+  flex: 0 0 auto;
+  min-width: 54px;
+  white-space: nowrap;
 }
 
 /* Бонусы: подарок, основной QR и промокод без скрытого холста. */
