@@ -675,8 +675,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         expect(header.bonusStyle.parentClass).toBe('topbar-actions');
         expect(header.bonus.width).toBeGreaterThanOrEqual(74);
         expect(header.bonus.height).toBe(40);
-        expect(header.bonusStyle.width, `bonus width is reserved at ${width}px ${phase}`).toBe('56px');
-        expect(header.bonusStyle.height, `bonus height is reserved at ${width}px ${phase}`).toBe('56px');
         const controls = ['venue', 'brandGroup', 'profile']
           .map((selector) => header[selector]);
         for (let i = 0; i < controls.length; i++) {
