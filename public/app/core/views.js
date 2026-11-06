@@ -437,6 +437,9 @@ window.setMode = function (m) {
   syncModeControls(m);
   startModeServices(m);
   if (typeof renderModes === 'function') renderModes();
+  // syncModeVisibility() calls sv() before the new mode controls are rendered.
+  // Run one final sync so controls moved into the active menu head reflect the new mode.
+  if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   notifyModeActivated(m);
 };
 
