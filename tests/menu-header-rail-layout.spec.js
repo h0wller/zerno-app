@@ -127,7 +127,7 @@ for (const brand of CASES) {
 }
 
 
-test('coffee menu heading includes the full marina tagline on mobile and desktop', async ({ page }) => {
+test('coffee menu heading is compact on mobile and retains the desktop tagline', async ({ page }) => {
   for (const viewport of [
     { width: 320, height: 740 },
     { width: 390, height: 844 },
@@ -139,7 +139,15 @@ test('coffee menu heading includes the full marina tagline on mobile and desktop
 
     const heading = page.locator('#menuView .menu-head h1');
     await expect(heading).toBeVisible();
-    await expect(heading).toHaveText(/^Меню\s+кофейня на берегу моря$/);
+    if (viewport.width <= 820) {
+      await expect(heading.locator('em')).toBeHidden();
+      await expect(page.locator('#menuView .menu-head .upd')).toBeHidden();
+      expect((await heading.innerText()).trim()).toBe('Меню');
+    } else {
+      await expect(heading.locator('em')).toBeVisible();
+      expect((await heading.innerText()).replace(/\s+/g, ' ').trim())
+        .toBe('Меню кофейня на берегу моря');
+    }
 
     const geometry = await heading.evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -147,10 +155,8 @@ test('coffee menu heading includes the full marina tagline on mobile and desktop
         left: rect.left,
         right: rect.right,
         viewportWidth: document.documentElement.clientWidth,
-        text: element.innerText.replace(/\s+/g, ' ').trim(),
       };
     });
-    expect(geometry.text).toMatch(/^Меню\s+кофейня на берегу моря$/i);
     expect(geometry.left).toBeGreaterThanOrEqual(0);
     expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
   }
@@ -158,7 +164,7 @@ test('coffee menu heading includes the full marina tagline on mobile and desktop
 
 
 function relativeLuminance(color) {
-  const channels = color.match(/[\\d.]+/g).slice(0, 3).map(Number).map(value => {
+  const channels = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => {
     const channel = value / 255;
     return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
   });
