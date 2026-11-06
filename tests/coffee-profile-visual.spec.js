@@ -172,6 +172,15 @@ for (const viewport of VIEWPORTS) {
 test('coffee profile keeps one QR action and avoids a duplicate large QR on the profile tab', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await installCoffeeGuest(page, 6, 1);
+  const swipeHint = page.locator('#pvBonus .swipeHintChip');
+  await expect(swipeHint).toBeVisible();
+  const swipeHintLayout = await swipeHint.evaluate(element => {
+    const hint = element.getBoundingClientRect();
+    const content = document.querySelector('#bonusBox').getBoundingClientRect();
+    return { position: getComputedStyle(element).position, bottom: hint.bottom, contentTop: content.top };
+  });
+  expect(swipeHintLayout.position).toBe('relative');
+  expect(swipeHintLayout.bottom).toBeLessThanOrEqual(swipeHintLayout.contentTop + 1);
   await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('data-brand'))).toBe('coffee');
   await expect(page.locator('#bonusBox')).toBeVisible();
   await expect(page.locator('#bonusCount')).toHaveText('6/10');
