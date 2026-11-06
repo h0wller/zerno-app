@@ -7,8 +7,8 @@ css.textContent=
 '@media(max-width:820px){'+
 '#panel.open.swipe-hint{animation:panelNudge 1.1s cubic-bezier(.3,1.4,.4,1) 1}'+
 '@keyframes panelNudge{0%{transform:none}30%{transform:translateX(-18px)}60%{transform:translateX(6px)}100%{transform:none}}'+
-'.swipeHintChip{position:fixed;left:10px;top:50%;z-index:330;background:rgba(16,20,24,.78);color:#fff;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:700;pointer-events:none;animation:hintFade 1.6s forwards}'+
-'@keyframes hintFade{0%{opacity:0;transform:translateY(-50%) translateX(-8px)}20%{opacity:1;transform:translateY(-50%)}80%{opacity:1;transform:translateY(-50%)}100%{opacity:0;transform:translateY(-50%) translateX(-8px)}}'+
+'.swipeHintChip{position:relative;display:table;width:fit-content;max-width:calc(100% - 8px);margin:0 auto 10px;z-index:1;background:rgba(16,20,24,.78);color:#fff;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:700;line-height:1.3;text-align:center;box-sizing:border-box;pointer-events:none;animation:hintFade 1.6s forwards}'+
+'@keyframes hintFade{0%{opacity:0;transform:translateX(-8px)}20%{opacity:1;transform:none}80%{opacity:1;transform:none}100%{opacity:0;transform:translateX(-8px)}}'+
 '}';
 document.head.appendChild(css);
 var p=document.getElementById('panel');if(!p)return;
@@ -83,7 +83,9 @@ function hint() {
   var c = document.createElement('div');
   c.className = 'swipeHintChip';
   c.textContent = '→ свайп вправо закроет профиль';
-  document.body.appendChild(c);
+  var activeTab = p.querySelector('.pv:not([hidden])');
+  if (activeTab) activeTab.insertBefore(c, activeTab.firstChild);
+  else p.appendChild(c);
   setTimeout(function() { c.remove(); }, 1700);
   p.addEventListener('animationend', function h() {
     p.classList.remove('swipe-hint');
