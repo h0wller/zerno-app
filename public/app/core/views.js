@@ -298,7 +298,10 @@ function syncStaffAndGuestControls(bName2) {
       return !button.hidden;
     });
     var isAdmin = typeof me !== 'undefined' && !!me && me.role === 'admin';
-    adminBar.hidden = !(canEdit || isAdmin || hasAdminActions);
+    var editRemainsInBar = editToggle && editToggle.parentElement === adminBar && canEdit;
+    adminBar.hidden = isMenuMode
+      ? !hasAdminActions
+      : !(editRemainsInBar || isAdmin || hasAdminActions);
     adminBar.style.display = adminBar.hidden ? 'none' : '';
   }
   var mb = document.getElementById('mbonusBtn');
