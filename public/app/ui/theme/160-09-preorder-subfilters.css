@@ -71,6 +71,83 @@
   display: none;
 }
 
+/* On narrow screens, make a clipped filter row visibly discoverable without
+   stealing taps or reducing the horizontal scroll lane. */
+@media (max-width: 820px) {
+  .subfilter-bar.has-overflow::after {
+    content: "";
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    display: block;
+    flex: 0 0 28px;
+    width: 28px;
+    min-height: 44px;
+    margin-left: -28px;
+    border-radius: 0 999px 999px 0;
+    background: linear-gradient(90deg, transparent, var(--fr-paper, var(--card)) 78%);
+    pointer-events: none;
+    transition: opacity 0.16s ease;
+  }
+  .subfilter-bar.has-overflow.at-end::after {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subfilter-bar.has-overflow::after {
+    transition: none;
+  }
+}
+
+
+/* Desktop/tablet: keep ingredient filters in one horizontal rail with a visible scrollbar. */
+@media (min-width: 821px) {
+  #deliveryView #deliverySubFilter {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--fr-tan, var(--line)) var(--fr-rice, var(--panel));
+    padding-bottom: 8px;
+  }
+
+  #deliveryView #deliverySubFilter::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+
+  #deliveryView #deliverySubFilter::-webkit-scrollbar-track {
+    background: var(--fr-rice, var(--panel));
+    border-radius: 999px;
+  }
+
+  #deliveryView #deliverySubFilter::-webkit-scrollbar-thumb {
+    background: var(--fr-tan, var(--line));
+    border-radius: 999px;
+  }
+
+  #deliveryView #deliverySubFilter.has-overflow::after {
+    content: "";
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    display: block;
+    flex: 0 0 32px;
+    width: 32px;
+    min-height: 44px;
+    margin-left: -32px;
+    border-radius: 0 999px 999px 0;
+    background: linear-gradient(90deg, transparent, var(--fr-paper, var(--card)) 78%);
+    pointer-events: none;
+    transition: opacity 0.16s ease;
+  }
+
+  #deliveryView #deliverySubFilter.has-overflow.at-end::after {
+    opacity: 0;
+  }
+}
+
 .subchip {
   flex: 0 0 auto;
   height: 44px;
@@ -230,19 +307,6 @@
 #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-price { color:var(--btn-fire-color,#fff); opacity:1; }
 #deliveryGrid .opts .opt-btn:focus-within { outline: 3px solid var(--focus, #1A6DDF); outline-offset: 3px; border-radius: 6px; }
 #deliveryGrid .opts-error { grid-column:1 / -1; margin:2px 0 0; color:var(--flame,#C03B2A); font-size:11px; font-weight:700; }
-
-/* Narrow mobile: allow the crust descriptor to wrap within its option button instead of ellipsizing it. */
-@media (max-width: 360px) {
-  html body #deliveryView #deliveryGrid .card .opts .opt-row.opt-top {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 1px 4px;
-  }
-  html body #deliveryView #deliveryGrid .card .opts .opt-row.opt-top .opt-crust {
-    flex: 0 0 auto;
-    max-width: 100%;
-  }
-}
 
 /* Keep lazy-card reservation aligned with the native fieldset + legend geometry. */
 #deliveryGrid .card:nth-child(n+5) { contain-intrinsic-block-size: 502px; }
