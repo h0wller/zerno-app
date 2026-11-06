@@ -248,39 +248,55 @@ function syncViewsVisibility(showCoffee, showDeliv) {
 function syncStaffAndGuestControls(bName2) {
   var canEdit = (typeof canStopMenu === 'function') && canStopMenu(bName2);
   var currentMode = typeof mode !== 'undefined' ? mode : 'guest';
-  // The mode selector is the entry point for staff modes, so keep it visible
-  // for authenticated staff even while the current view is still "guest".
-  var staffViewActive = true;
+  var isMenuMode = currentMode === 'guest';
   var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
   var menuHead = activeView && activeView.querySelector('.menu-head');
-  var et = document.getElementById('editToggle');
-  var ms = document.getElementById('modeSeg');
+  var title = menuHead && menuHead.querySelector('.mh-top > div:first-child > h1');
+  var menuRow = menuHead && menuHead.querySelector('.menu-controls-row');
+  var topbar = document.querySelector('header.topbar');
+  var adminBar = document.getElementById('adminBar');
+  var editToggle = document.getElementById('editToggle');
+  var modeSeg = document.getElementById('modeSeg');
+  var isStaff = !!(typeof me !== 'undefined' && me &&
+    (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
 
-  // Move existing nodes; their IDs and delegated event handlers remain unchanged.
-  if (et) {
-    if (menuHead && et.parentElement !== menuHead) menuHead.appendChild(et);
-    et.hidden = !canEdit;
-    et.setAttribute('aria-label', 'Редактировать меню');
-    et.title = 'Редактировать меню';
+  if (title && !menuRow) {
+    menuRow = document.createElement('div');
+    menuRow.className = 'menu-controls-row';
+    title.parentNode.insertBefore(menuRow, title);
+    menuRow.appendChild(title);
   }
-  if (ms) {
-    if (menuHead && ms.parentElement !== menuHead) menuHead.appendChild(ms);
-    var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
-    ms.hidden = !isStaff || !staffViewActive;
+
+  // Keep the existing nodes so delegated click handlers and IDs survive mode changes.
+  if (isMenuMode && menuRow) {
+    if (modeSeg && modeSeg.parentElement !== menuRow) menuRow.appendChild(modeSeg);
+    if (editToggle && canEdit && editToggle.parentElement !== menuRow) menuRow.appendChild(editToggle);
+  } else {
+    if (modeSeg && topbar && modeSeg.parentElement !== topbar) topbar.appendChild(modeSeg);
+    if (editToggle && adminBar && editToggle.parentElement !== adminBar) adminBar.insertBefore(editToggle, adminBar.firstChild);
+  }
+
+  if (editToggle) {
+    editToggle.hidden = !canEdit;
+    editToggle.setAttribute('aria-label', 'Редактировать меню');
+    editToggle.title = 'Редактировать меню';
+  }
+  if (modeSeg) {
+    modeSeg.hidden = !isStaff;
+    if (topbar) topbar.classList.toggle('has-mode-switcher', !isMenuMode && isStaff);
   }
   if (typeof renderModes === 'function') renderModes();
 
-  var ab = document.getElementById('adminBar');
-  if (ab) {
-    var hasAdminActions = Array.prototype.some.call(ab.querySelectorAll(':scope > button'), function (button) {
+  if (adminBar) {
+    var hasAdminActions = Array.prototype.some.call(adminBar.querySelectorAll(':scope > button'), function (button) {
       return !button.hidden;
     });
     var isAdmin = typeof me !== 'undefined' && !!me && me.role === 'admin';
-    ab.hidden = !isAdmin && !hasAdminActions;
-    ab.style.display = ab.hidden ? 'none' : '';
+    adminBar.hidden = !(canEdit || isAdmin || hasAdminActions);
+    adminBar.style.display = adminBar.hidden ? 'none' : '';
   }
   var mb = document.getElementById('mbonusBtn');
-  if (mb) mb.style.display = (typeof mode !== 'undefined' && mode === 'guest' && bName2 === 'coffee') ? '' : 'none';
+  if (mb) mb.style.display = (currentMode === 'guest' && bName2 === 'coffee') ? '' : 'none';
   var bb = document.getElementById('bonusBox');
   if (bb) bb.style.display = (typeof me !== 'undefined' && me) ? '' : 'none';
   var bt = document.querySelector('.tabs button[data-tab="bonus"]');
