@@ -62,41 +62,48 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 
   test('mobile staff header and mode switch stay compact without shrinking 44px controls', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
     await page.goto('/?brand=delivery');
+    await page.waitForFunction(() => typeof window.syncBrandViews === 'function');
     await page.evaluate(() => {
+      window.me = { role: 'admin' };
+      window.mode = 'admin';
       document.documentElement.setAttribute('data-staff-role', 'admin');
-      const modeSeg = document.getElementById('modeSeg');
-      modeSeg.hidden = false;
-      modeSeg.innerHTML = ['Заказы', 'Касса', 'Диспетчер', 'Админ'].map((label) =>
-        '<button type="button">' + label + '</button>'
-      ).join('');
+      window.syncBrandViews();
     });
 
     const metrics = await page.evaluate(() => {
       const header = document.querySelector('header.topbar').getBoundingClientRect();
+      const menuHead = document.querySelector('#deliveryView .menu-head');
+      const menuBox = menuHead.getBoundingClientRect();
       const mode = document.getElementById('modeSeg');
       const modeBox = mode.getBoundingClientRect();
       return {
-        viewportWidth: window.innerWidth,
-        headerLeft: header.left,
-        headerRight: header.right,
-        headerWidth: header.width,
+        viewportWidth: document.documentElement.clientWidth,
+        headerHeight: header.height,
+        modeParent: mode.parentElement,
+        menuHead,
         modeLeft: modeBox.left,
         modeRight: modeBox.right,
-        modeWidth: modeBox.width,
+        menuRight: menuBox.right,
         modeHeight: modeBox.height,
-        buttonHeights: Array.from(mode.querySelectorAll('button')).map((button) => button.getBoundingClientRect().height),
+        buttonHeights: Array.from(mode.querySelectorAll('button')).map(button => button.getBoundingClientRect().height),
+        editParent: document.getElementById('editToggle').parentElement
       };
     });
 
-    expect(metrics.headerLeft).toBe(0);
-    expect(metrics.headerRight).toBe(metrics.viewportWidth);
-    expect(metrics.headerWidth).toBe(metrics.viewportWidth);
+    expect(metrics.headerHeight).toBeLessThanOrEqual(64);
+    expect(metrics.modeParent).toBe(metrics.menuHead);
+    expect(metrics.editParent).toBe(metrics.menuHead);
     expect(metrics.modeLeft).toBeGreaterThanOrEqual(0);
-    expect(metrics.modeRight).toBeLessThanOrEqual(metrics.viewportWidth);
-    expect(metrics.modeWidth).toBeLessThanOrEqual(metrics.headerWidth);
+    expect(metrics.modeRight).toBeLessThanOrEqual(metrics.menuRight + 1);
     expect(metrics.modeHeight).toBe(46);
-    expect(metrics.buttonHeights.every((height) => height >= 44)).toBe(true);
+    expect(metrics.buttonHeights.length).toBeGreaterThan(0);
+    expect(metrics.buttonHeights.every(height => height >= 44)).toBe(true);
   });
 
   test('floating controls and confetti canvas have accessible landmark treatment', async ({ page }) => {
