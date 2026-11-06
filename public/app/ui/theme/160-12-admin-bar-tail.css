@@ -179,7 +179,7 @@ html body div.wrap > section {
   box-sizing: border-box;
 }
 
-
+/* The guest menu uses one compact title/control row. Staff work modes use the topbar row. */
 .menu-head .menu-controls-row {
   display: flex;
   align-items: center;
@@ -248,12 +248,9 @@ html body div.wrap > section {
 }
 .menu-controls-row #editToggle::before { content: "✎"; font-size: 21px; line-height: 1; }
 .menu-controls-row #editToggle.on::before { content: "✓"; font-size: 20px; }
-
 @media (max-width: 820px) {
   .menu-head .menu-controls-row h1 { font-size: clamp(17px,4.7vw,21px); }
 }
-
-/* In cashier, orders and admin the switcher remains in the sticky app header. */
 html body header.topbar.has-mode-switcher {
   height: calc(110px + var(--sat, env(safe-area-inset-top, 0px)));
   min-height: calc(110px + var(--sat, env(safe-area-inset-top, 0px)));
