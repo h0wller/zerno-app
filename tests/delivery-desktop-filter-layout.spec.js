@@ -10,7 +10,7 @@ const items = [
   ['salmon', 'Лосось'],
   ['tuna', 'Тунец'],
   ['shrimp', 'Креветки'],
-  ['cheese', 'Сырная'],
+  ['cheese', 'Моцарелла'],
 ].map(([id, ingredient], index) => ({
   id: 'desktop-filter-' + id,
   cat: 'pizza',
