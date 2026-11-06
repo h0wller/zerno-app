@@ -69,6 +69,12 @@ for (const width of [320, 390]) {
     await expect.poll(() => bar.evaluate((element) =>
       getComputedStyle(element, '::after').opacity
     )).toBe('1');
+    await expect.poll(() => bar.evaluate((element) =>
+      getComputedStyle(element, '::after').backgroundImage
+    )).toContain('linear-gradient');
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1
+    )).toBe(true);
 
     await bar.evaluate((element) => {
       element.scrollLeft = element.scrollWidth;
