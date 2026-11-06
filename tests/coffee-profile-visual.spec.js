@@ -196,6 +196,13 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('#profileCoffeeSection #profileStampProgress')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection #profileStampsRemaining')).toBeVisible();
+  const reviewLayout = await page.locator('.coffee-review-card').evaluate(card => {
+    const prompt = card.querySelector('.coffee-review-prompt').getBoundingClientRect();
+    const button = card.querySelector('#reviewBtn').getBoundingClientRect();
+    return { cardWidth: card.getBoundingClientRect().width, promptWidth: prompt.width, buttonWidth: button.width };
+  });
+  expect(reviewLayout.promptWidth).toBeGreaterThan(48);
+  expect(reviewLayout.buttonWidth).toBeLessThan(reviewLayout.cardWidth * 0.7);
   await testInfo.attach('coffee-profile-390px', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png'
