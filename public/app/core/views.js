@@ -271,9 +271,8 @@ function syncStaffAndGuestControls(bName2) {
     var hasAdminActions = Array.prototype.some.call(ab.querySelectorAll(':scope > button'), function (button) {
       return !button.hidden;
     });
-    var isStaff = typeof me !== 'undefined' && !!me &&
-      (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch');
-    ab.hidden = !isStaff && !hasAdminActions;
+    var isAdmin = typeof me !== 'undefined' && !!me && me.role === 'admin';
+    ab.hidden = !isAdmin && !hasAdminActions;
     ab.style.display = ab.hidden ? 'none' : '';
   }
   var mb = document.getElementById('mbonusBtn');
