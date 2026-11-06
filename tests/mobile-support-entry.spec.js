@@ -28,9 +28,13 @@ for (const brand of BRANDS) {
 
       const support = page.locator('#chatFab');
       const search = page.locator(`${brand.view} .mh-right .search`);
-      const noScriptBlock = indexHtml.match(/<noscript>([\\s\\S]*?)<\\/noscript>/i)?.[1] || '';
-      expect(noScriptBlock).toMatch(/<link rel="stylesheet" href="\\/app\\/ui\\/theme\\/160-15-mobile-support-toolbar\\.css\\?v=\\d+"\\s*\\/>/);
-      expect(noScriptBlock).not.toMatch(/160-15-mobile-support-toolbar\\.css[^>]*media=/);
+      const noScriptStart = indexHtml.indexOf('<noscript>');
+      const noScriptEnd = indexHtml.indexOf('</noscript>', noScriptStart);
+      const noScriptBlock = noScriptStart >= 0 && noScriptEnd > noScriptStart
+        ? indexHtml.slice(noScriptStart, noScriptEnd)
+        : '';
+      expect(noScriptBlock).toContain('<link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=');
+      expect(noScriptBlock).not.toContain('160-15-mobile-support-toolbar.css" media=');
       await expect(support).toBeVisible({ timeout: 15000 });
       await expect(search).toBeVisible({ timeout: 15000 });
 
@@ -80,6 +84,15 @@ for (const brand of BRANDS) {
       const crossBreakpointWidth = viewport.width <= 820 ? 1440 : 390;
       await page.setViewportSize({ width: crossBreakpointWidth, height: 900 });
       if (crossBreakpointWidth <= 820) {
+        await expect(support).toHaveCSS('position', 'relative');
+        await expect.poll(() => support.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
+      } else {
+        await expect(support).toHaveCSS('position', 'fixed');
+        await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
+      }
+
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      if (viewport.width <= 820) {
         await expect(support).toHaveCSS('position', 'relative');
         await expect.poll(() => support.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
       } else {
