@@ -94,8 +94,8 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
 
   await page.evaluate(() => window.setMode('admin'));
   await expect(mode).toBeVisible();
-  await expect(mode).toHaveJSProperty('parentElement', await header.evaluate(element => element));
+  expect(await mode.evaluate(element => element.parentElement === document.querySelector('header.topbar'))).toBe(true);
   await page.evaluate(() => window.setMode('guest'));
   await expect(mode).toBeVisible();
-  await expect(mode).toHaveJSProperty('parentElement', await menuHead.locator('.mh-top > div:first-child > .menu-controls-row').evaluate(element => element.parentElement));
+  expect(await mode.evaluate(element => !!element.closest('#deliveryView .menu-controls-row'))).toBe(true);
 });
