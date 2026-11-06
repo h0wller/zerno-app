@@ -269,10 +269,16 @@ function syncStaffAndGuestControls(bName2) {
 
   // Keep the existing nodes so delegated click handlers and IDs survive mode changes.
   if (isMenuMode && menuRow) {
-    if (modeSeg && modeSeg.parentElement !== menuRow) menuRow.appendChild(modeSeg);
+    if (modeSeg && modeSeg.parentElement !== menuRow) {
+      if (typeof menuRow.moveBefore === 'function') menuRow.moveBefore(modeSeg, null);
+      else menuRow.appendChild(modeSeg);
+    }
     if (editToggle && canEdit && editToggle.parentElement !== menuRow) menuRow.appendChild(editToggle);
   } else {
-    if (modeSeg && topbar && modeSeg.parentElement !== topbar) topbar.appendChild(modeSeg);
+    if (modeSeg && topbar && modeSeg.parentElement !== topbar) {
+      if (typeof topbar.moveBefore === 'function') topbar.moveBefore(modeSeg, null);
+      else topbar.appendChild(modeSeg);
+    }
     if (editToggle && adminBar && editToggle.parentElement !== adminBar) adminBar.insertBefore(editToggle, adminBar.firstChild);
   }
 
