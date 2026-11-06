@@ -180,3 +180,11 @@
 }
 /* F5.14 P5: пилюля бонусов слева от круглого FAB чата на ≤820px */
 
+
+
+/* Coffee staff mode: lift the active tab out of the dark selector surface. */
+html[data-brand="coffee"] #modeSeg button.on {
+  background: #BBD7F2;
+  color: #123A6B;
+  box-shadow: 0 2px 7px rgba(18, 58, 107, 0.16);
+}
