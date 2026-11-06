@@ -50,14 +50,18 @@ async function waitForHydratedStorefront(page, brand) {
   });
 }
 
-async function waitForHydratedSidebar(page, brand) {
+async function waitForHydratedSidebar(page, brand, viewport) {
   const tab = page.locator(brand === 'delivery' ? '#tabProfile' : '#tabBonus');
-  const panel = page.locator(brand === 'delivery' ? '#pvProfile' : '#pvBonus');
-  const guestPrompt = page.locator(brand === 'delivery' ? '#profileNoUser' : '#bonusNoUser');
-
   await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
-  await expect(panel).toBeVisible({ timeout: 10000 });
-  await expect(guestPrompt).toBeVisible({ timeout: 10000 });
+
+  // At tablet/mobile widths the account panel is an intentionally closed drawer.
+  // Only desktop renders it as the third storefront column in the captured viewport.
+  if (viewport.width > 1180) {
+    const panel = page.locator(brand === 'delivery' ? '#pvProfile' : '#pvBonus');
+    const guestPrompt = page.locator(brand === 'delivery' ? '#profileNoUser' : '#bonusNoUser');
+    await expect(panel).toBeVisible({ timeout: 10000 });
+    await expect(guestPrompt).toBeVisible({ timeout: 10000 });
+  }
 }
 
 async function capture(page, meta) {
@@ -126,7 +130,7 @@ for (const brand of ['coffee', 'delivery']) {
       });
 
       await waitForHydratedStorefront(page, brand);
-      await waitForHydratedSidebar(page, brand);
+      await waitForHydratedSidebar(page, brand, viewport);
       const hydrated = await capture(page, {
         brand, viewport, state: 'hydrated-menu', fullPage: true,
       });
