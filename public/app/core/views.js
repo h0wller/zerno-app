@@ -247,14 +247,38 @@ function syncViewsVisibility(showCoffee, showDeliv) {
 
 function syncStaffAndGuestControls(bName2) {
   var canEdit = (typeof canStopMenu === 'function') && canStopMenu(bName2);
+  var currentMode = typeof mode !== 'undefined' ? mode : 'guest';
+  // The mode selector is the entry point for staff modes, so keep it visible
+  // for authenticated staff even while the current view is still "guest".
+  var staffViewActive = true;
+  var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
+  var menuHead = activeView && activeView.querySelector('.menu-head');
   var et = document.getElementById('editToggle');
-  if (et) et.hidden = !canEdit;
-  var ab = document.getElementById('adminBar');
-  if (ab) ab.hidden = !(canEdit || (typeof mode !== 'undefined' && mode === 'admin'));
   var ms = document.getElementById('modeSeg');
-  var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
-  if (ms) ms.hidden = !isStaff;
+
+  // Move existing nodes; their IDs and delegated event handlers remain unchanged.
+  if (et) {
+    if (menuHead && et.parentElement !== menuHead) menuHead.appendChild(et);
+    et.hidden = !canEdit;
+    et.setAttribute('aria-label', 'Редактировать меню');
+    et.title = 'Редактировать меню';
+  }
+  if (ms) {
+    if (menuHead && ms.parentElement !== menuHead) menuHead.appendChild(ms);
+    var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
+    ms.hidden = !isStaff || !staffViewActive;
+  }
   if (typeof renderModes === 'function') renderModes();
+
+  var ab = document.getElementById('adminBar');
+  if (ab) {
+    var hasAdminActions = Array.prototype.some.call(ab.querySelectorAll(':scope > button'), function (button) {
+      return !button.hidden;
+    });
+    var isAdmin = typeof me !== 'undefined' && !!me && me.role === 'admin';
+    ab.hidden = !isAdmin && !hasAdminActions;
+    ab.style.display = ab.hidden ? 'none' : '';
+  }
   var mb = document.getElementById('mbonusBtn');
   if (mb) mb.style.display = (typeof mode !== 'undefined' && mode === 'guest' && bName2 === 'coffee') ? '' : 'none';
   var bb = document.getElementById('bonusBox');
@@ -417,6 +441,9 @@ window.setMode = function (m) {
   syncModeControls(m);
   startModeServices(m);
   if (typeof renderModes === 'function') renderModes();
+  // syncModeVisibility() calls sv() before the new mode controls are rendered.
+  // Run one final sync so controls moved into the active menu head reflect the new mode.
+  if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   notifyModeActivated(m);
 };
 
