@@ -482,6 +482,14 @@ html body div.wrap > #deliveryRail button {
   margin-left: 0;
   width: 100%;
 }
+/* Keep the compact menu heading from the first paint; otherwise deferred theme CSS
+   removes the tagline/update pill and shifts the search row on slow connections. */
+#menuView .menu-head h1 em,
+#deliveryView .menu-head h1 em,
+#menuView .menu-head .upd,
+#deliveryView .menu-head .upd {
+  display: none;
+}
 @media (max-width: 820px) {
   html body #menuView .menu-head,
   html body #deliveryView .menu-head {
