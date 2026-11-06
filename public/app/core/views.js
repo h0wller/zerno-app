@@ -262,7 +262,8 @@ function syncStaffAndGuestControls(bName2) {
   if (ms) {
     if (menuHead && ms.parentElement !== menuHead) menuHead.appendChild(ms);
     var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
-    ms.hidden = !isStaff;
+    var staffViewActive = typeof mode !== 'undefined' && mode !== 'guest';
+    ms.hidden = !isStaff || !staffViewActive;
   }
   if (typeof renderModes === 'function') renderModes();
 
