@@ -221,7 +221,7 @@ for (const brandName of ['coffee', 'delivery']) {
         bonusParent: bonus.parentElement.className,
         profile: rect(profile),
         modeHiddenForGuest: mode.hidden,
-        modeButtonContrast: modeButton ? contrastRatio(getComputedStyle(modeButton).backgroundColor, getComputedStyle(mode).backgroundColor) : null,
+        modeButtonColors: modeButton ? [getComputedStyle(modeButton).backgroundColor, getComputedStyle(mode).backgroundColor] : null,
         railTop: rect(rail).top,
         documentWidth: document.documentElement.scrollWidth,
         viewportWidth: document.documentElement.clientWidth
@@ -256,12 +256,10 @@ test('coffee admin mode has a clearly distinguishable active mode tab', async ({
     element.hidden = false;
     element.innerHTML = '<button type="button">Гость</button><button type="button">Кассир</button><button type="button">Заказы</button><button type="button" class="on">Админ</button>';
   });
-  const contrast = await mode.evaluate(element => {
+  const colors = await mode.evaluate(element => {
     const active = element.querySelector('button.on');
-    const background = getComputedStyle(active).backgroundColor;
-    const surface = getComputedStyle(element).backgroundColor;
-    return contrastRatio(background, surface);
+    return [getComputedStyle(active).backgroundColor, getComputedStyle(element).backgroundColor];
   });
-  expect(contrast).toBeGreaterThanOrEqual(3);
+  expect(contrastRatio(colors[0], colors[1])).toBeGreaterThanOrEqual(3);
   await expect(mode.locator('button.on')).toHaveCSS('color', 'rgb(18, 58, 107)');
 });
