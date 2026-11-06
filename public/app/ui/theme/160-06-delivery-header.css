@@ -334,3 +334,8 @@
     max-height: 44px;
   }
 }
+
+
+.topbar .topbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:6px; min-width:0; }
+@media(max-width:820px) { html body header.topbar .topbar-actions { grid-column:3; grid-row:1; justify-self:end; align-self:center; max-width:100%; } html body header.topbar .topbar-actions #profileTopBtn { width:40px; height:40px; min-width:40px; margin:0; } }
+@media(min-width:821px) { .topbar .topbar-actions { grid-column:3; grid-row:1; justify-self:end; align-self:center; margin:0; } }
