@@ -198,11 +198,12 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   });
   expect(repeatedLargeQR).toBe(false);
 
-  await page.locator('#profileCoffeeSection [data-open-bonus-tab]').focus();
+  await page.locator('#profileCoffeeSection [data-open-profile-qr]').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#tabBonus')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#qrModal')).toHaveClass(/show/);
+  await page.locator('#qrClose').click();
+  await expect(page.locator('#qrModal')).not.toHaveClass(/show/);
   await expect(page.locator('#qrOpenBonus')).toBeVisible();
-  await expect(page.locator('#tabBonus')).toBeFocused();
 
   const menuHeading = page.locator('#menuView .mh-top h2.vh');
   await expect(menuHeading).toHaveCount(1);
