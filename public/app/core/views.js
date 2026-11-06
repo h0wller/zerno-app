@@ -247,6 +247,8 @@ function syncViewsVisibility(showCoffee, showDeliv) {
 
 function syncStaffAndGuestControls(bName2) {
   var canEdit = (typeof canStopMenu === 'function') && canStopMenu(bName2);
+  var currentMode = typeof mode !== 'undefined' ? mode : 'guest';
+  var staffViewActive = currentMode === 'admin' || currentMode === 'cashier' || currentMode === 'orders';
   var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
   var menuHead = activeView && activeView.querySelector('.menu-head');
   var et = document.getElementById('editToggle');
@@ -262,7 +264,6 @@ function syncStaffAndGuestControls(bName2) {
   if (ms) {
     if (menuHead && ms.parentElement !== menuHead) menuHead.appendChild(ms);
     var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
-    var staffViewActive = typeof mode !== 'undefined' && mode !== 'guest';
     ms.hidden = !isStaff || !staffViewActive;
   }
   if (typeof renderModes === 'function') renderModes();
