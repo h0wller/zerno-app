@@ -77,6 +77,14 @@ for (const width of [1024, 1440]) {
       document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1
     )).toBe(true);
 
+    await expect(bar).toHaveClass(/has-overflow/);
+    await expect.poll(() => bar.evaluate((element) =>
+      getComputedStyle(element, '::after').backgroundImage
+    )).toContain('linear-gradient');
+    await expect.poll(() => bar.evaluate((element) =>
+      getComputedStyle(element, '::after').opacity
+    )).toBe('1');
+
     await testInfo.attach(`delivery-filter-rail-${width}px-start`, {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png',
@@ -92,13 +100,28 @@ for (const width of [1024, 1440]) {
     expect(scrollState.maxScroll).toBeGreaterThan(0);
     expect(scrollState.scrollLeft).toBeGreaterThan(0);
     expect(scrollState.scrollLeft).toBeGreaterThanOrEqual(scrollState.maxScroll - 2);
+    await expect.poll(() => bar.evaluate((element) =>
+      element.classList.contains('at-end')
+    )).toBe(true);
+    await expect.poll(() => bar.evaluate((element) =>
+      getComputedStyle(element, '::after').opacity
+    )).toBe('0');
 
     await testInfo.attach(`delivery-filter-rail-${width}px-end`, {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png',
     });
 
+    await bar.evaluate((element) => { element.scrollLeft = 0; });
+    await expect.poll(() => bar.evaluate((element) =>
+      element.classList.contains('at-end')
+    )).toBe(false);
+    await expect.poll(() => bar.evaluate((element) =>
+      getComputedStyle(element, '::after').opacity
+    )).toBe('1');
+
     const lastFilter = chips.last();
+    await bar.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
     await lastFilter.click();
     await expect(lastFilter).toHaveClass(/on/);
     await expect(page.locator('#deliveryGrid [data-product-id="desktop-filter-cheese"]')).toBeVisible();
