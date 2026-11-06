@@ -44,7 +44,7 @@ for (const width of [320, 360, 390]) {
       contentType: 'application/json',
       body: JSON.stringify({ today: { open: 11, close: 22 }, days: [], zones: [], busySlots: [] }),
     }));
-    await page.route(/\\/media\\/dishes\\/.*$/, (route) => route.fulfill({
+    await page.route('**/media/dishes/**', (route) => route.fulfill({
       status: 200,
       contentType: 'image/gif',
       body: Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'base64'),
