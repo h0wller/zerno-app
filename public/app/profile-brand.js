@@ -29,7 +29,7 @@
           '<span>Оставить отзыв</span>' +
         '</a>' +
       '</div>' +
-    '</details>'
+    '</details>';
   var historySection=pb.querySelector('.profile-history-section');
   if(historySection)pb.insertBefore(d,historySection);else pb.appendChild(d);
 })();
