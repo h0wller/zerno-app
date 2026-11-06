@@ -1,15 +1,23 @@
-/* Staff actions keep their natural width; wrap only when the viewport requires it. */
+/* Staff actions stay in one compact, horizontally scrollable mobile strip. */
 html body #adminBar.adminBar:not([hidden]) {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
-  width: fit-content;
+  width: max-content;
   max-width: 100%;
   margin: 0 0 12px;
   padding: 0;
   position: static;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   box-sizing: border-box;
+}
+html body #adminBar.adminBar::-webkit-scrollbar {
+  display: none;
 }
 html body #adminBar.adminBar > button,
 html body #editToggle,
@@ -17,9 +25,9 @@ html body #promoToggle,
 html body #dashToggle,
 html body #chatsToggle2 {
   position: static;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   width: auto;
-  max-width: 100%;
+  max-width: none;
   min-width: 0;
   min-height: 44px;
   height: 44px;
@@ -36,6 +44,35 @@ html body #chatsToggle2 {
   text-overflow: ellipsis;
   border-radius: 12px;
   box-sizing: border-box;
+}
+
+/* Внутри выбранного раздела достаточно названия меню: не дублируем бренд в заголовке. */
+#menuView .menu-head h1 em,
+#deliveryView .menu-head h1 em,
+#menuView .menu-head .upd,
+#deliveryView .menu-head .upd {
+  display: none;
+}
+
+/* Редактор остаётся доступен, но не конкурирует с остальными действиями. */
+#adminBar #editToggle {
+  order: 4;
+}
+@media (max-width: 820px) {
+  #adminBar #editToggle {
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    padding: 0;
+    font-size: 0;
+    border-radius: 12px;
+  }
+  #adminBar #editToggle::before {
+    content: "✏️";
+    font-size: 18px;
+    line-height: 1;
+  }
 }
 
 /* Скрываем распирающий карточку текстовый бейдж внутри .upd (режим уже виден в #modeSeg и #adminBar) */
