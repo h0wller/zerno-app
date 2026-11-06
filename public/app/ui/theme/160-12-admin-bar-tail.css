@@ -156,7 +156,7 @@ html body div.wrap > section {
   html body #deliveryView .menu-head h1 em,
   html body #menuView .menu-head .upd,
   html body #deliveryView .menu-head .upd {
-    display: none !important;
+    display: none;
   }
   html body #menuView .menu-head h1,
   html body #deliveryView .menu-head h1 {
@@ -222,11 +222,5 @@ html body div.wrap > section {
     padding: 0 12px;
     border-radius: 999px;
     white-space: nowrap;
-  }
-  html[data-brand="coffee"] body #modeSeg button.on {
-    background: #FFFFFF;
-    color: #123A6B;
-    border: 1px solid #3E8FD0;
-    box-shadow: none;
   }
 }
