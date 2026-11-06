@@ -84,11 +84,13 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
   await expect(mode).toBeVisible();
   const cashierLayout = await mode.evaluate((seg) => ({
     inTopbar: seg.parentElement === document.querySelector('header.topbar'),
+    topbarTop: document.querySelector('header.topbar').getBoundingClientRect().top,
     topbarHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
     modeTop: seg.getBoundingClientRect().top,
     headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom
   }));
   expect(cashierLayout.inTopbar).toBe(true);
+  expect(cashierLayout.topbarTop).toBeLessThanOrEqual(1);
   expect(cashierLayout.topbarHeight).toBeGreaterThan(64);
   expect(cashierLayout.modeTop).toBeLessThanOrEqual(cashierLayout.headerBottom);
 
@@ -96,11 +98,13 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
   await expect(page.locator('#ordersView')).toBeVisible();
   const ordersLayout = await mode.evaluate((seg) => ({
     inTopbar: seg.parentElement === document.querySelector('header.topbar'),
+    topbarTop: document.querySelector('header.topbar').getBoundingClientRect().top,
     topbarHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
     modeBottom: seg.getBoundingClientRect().bottom,
     headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom
   }));
   expect(ordersLayout.inTopbar).toBe(true);
+  expect(ordersLayout.topbarTop).toBeLessThanOrEqual(1);
   expect(ordersLayout.topbarHeight).toBeGreaterThan(64);
   expect(ordersLayout.modeBottom).toBeLessThanOrEqual(ordersLayout.headerBottom);
 
