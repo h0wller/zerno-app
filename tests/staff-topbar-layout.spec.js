@@ -3,21 +3,29 @@ import { test, expect } from '@playwright/test';
 test.use({ serviceWorkers: 'block' });
 
 test('single staff action does not stretch the admin bar across the content column', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
     sessionStorage.setItem('splashDone', '1');
   });
   await page.goto('/?brand=delivery');
-  const bar = page.locator('#adminBar');
-  await bar.evaluate((element) => {
-    element.hidden = false;
-    element.style.display = 'flex';
-    Array.from(element.children).forEach((button, index) => {
-      button.hidden = index > 0;
+  await page.waitForFunction(() => typeof window.syncBrandViews === 'function');
+  await page.evaluate(() => {
+    window.setUser('layout-test-admin-token', {
+      role: 'admin', name: 'Layout Test Admin', phone: '+70000000000',
+      verified: 1, qr: 'layout-test-admin', stamps: 0, free: 0, history: []
     });
+    window.mode = 'guest';
+    window.syncBrandViews();
+    window.setMode('admin');
   });
+  const bar = page.locator('#adminBar');
   await expect(bar).toBeVisible();
+  await page.evaluate(() => {
+    const element = document.getElementById('adminBar');
+    element.querySelectorAll('button').forEach((button, index) => { button.hidden = index > 0; });
+  });
   const dimensions = await bar.evaluate((element) => ({
     parentWidth: element.getBoundingClientRect().width,
     buttonWidth: element.querySelector('button:not([hidden])').getBoundingClientRect().width,
