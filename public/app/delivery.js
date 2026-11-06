@@ -181,6 +181,8 @@ function matchesIngredient(p, ingId) {
   return grp.re.test(str);
 }
 
+var deliverySubFilterCueResizeObserver = null;
+
 function syncDeliverySubFilterCue(bar) {
   if (!bar) return;
 
@@ -212,6 +214,13 @@ function ensureSubFilterBar() {
     window.addEventListener('resize', function () {
       syncDeliverySubFilterCue(bar);
     }, { passive: true });
+
+    if (typeof ResizeObserver !== 'undefined' && !deliverySubFilterCueResizeObserver) {
+      deliverySubFilterCueResizeObserver = new ResizeObserver(function () {
+        syncDeliverySubFilterCue(bar);
+      });
+      deliverySubFilterCueResizeObserver.observe(bar);
+    }
   }
 
   return bar;
