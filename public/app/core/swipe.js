@@ -75,33 +75,7 @@ p.addEventListener('touchend', function() {
   }
 }, { passive: true });
 
-function hint() {
-  if (window.innerWidth > 820) return;
-  if (sessionStorage.getItem('zt_swipehint')) return;
-  sessionStorage.setItem('zt_swipehint', '1');
-  p.classList.add('swipe-hint');
-  var c = document.createElement('div');
-  c.className = 'swipeHintChip';
-  c.textContent = '→ свайп вправо закроет профиль';
-  var activeTab = p.querySelector('.pv:not([hidden])');
-  if (activeTab) activeTab.insertBefore(c, activeTab.firstChild);
-  else p.appendChild(c);
-  setTimeout(function() { c.remove(); }, 1700);
-  p.addEventListener('animationend', function h() {
-    p.classList.remove('swipe-hint');
-    p.removeEventListener('animationend', h);
-  });
-}
-
-if (!sessionStorage.getItem('zt_swipehint') && typeof MutationObserver !== 'undefined') {
-  var swipeObs = new MutationObserver(function() {
-    if (p.classList.contains('open')) {
-      setTimeout(hint, 350);
-      swipeObs.disconnect();
-    }
-  });
-  swipeObs.observe(p, { attributes: true, attributeFilter: ['class'] });
-}
+// Жест остаётся доступен; визуальная подсказка по запросу удалена из профиля.
 })();
 
 (function() {
