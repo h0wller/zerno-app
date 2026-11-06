@@ -65,6 +65,20 @@ async function waitForHydratedSidebar(page, brand, viewport) {
 }
 
 async function capture(page, meta) {
+  if (meta.fullPage) {
+    const gridSelector = meta.brand === 'delivery' ? '#deliveryGrid' : '#grid';
+    await page.addStyleTag({
+      content: gridSelector + ' > .card { content-visibility: visible !important; }',
+    });
+    await expect.poll(() => page.locator(gridSelector + ' > .card:not(.skeleton-card)').evaluateAll((cards) =>
+      cards.every((card) => {
+        const title = card.querySelector('h3');
+        const rect = title && title.getBoundingClientRect();
+        return !!rect && rect.width > 0 && rect.height > 0;
+      })
+    )).toBe(true);
+  }
+
   const id = [
     meta.brand.toUpperCase(),
     'GUEST',
@@ -82,6 +96,7 @@ async function capture(page, meta) {
   const runtime = await page.evaluate(() => ({
     title: document.title,
     brand: document.documentElement.dataset.brand || null,
+    fullPageContentVisibilityOverride: meta.fullPage === true,
     staffRole: document.documentElement.getAttribute('data-staff-role'),
     viewport: { width: innerWidth, height: innerHeight },
     document: {
@@ -131,15 +146,22 @@ for (const brand of ['coffee', 'delivery']) {
 
       await waitForHydratedStorefront(page, brand);
       await waitForHydratedSidebar(page, brand, viewport);
+
+      const hydratedViewport = await capture(page, {
+        brand, viewport, state: 'hydrated-menu-viewport',
+      });
       const hydrated = await capture(page, {
         brand, viewport, state: 'hydrated-menu', fullPage: true,
       });
 
+      expect(hydratedViewport.runtime.staffRole).toBeNull();
+      expect(hydratedViewport.runtime.document.width).toBeLessThanOrEqual(viewport.width);
       expect(hydrated.runtime.staffRole).toBeNull();
       expect(hydrated.runtime.document.width).toBeLessThanOrEqual(viewport.width);
+      expect(hydrated.runtime.fullPageContentVisibilityOverride).toBe(true);
 
       const metadataPath = path.join(OUT, `${brand}-guest-${viewport.id}.json`);
-      fs.writeFileSync(metadataPath, JSON.stringify({ initial, hydrated }, null, 2));
+      fs.writeFileSync(metadataPath, JSON.stringify({ initial, hydratedViewport, hydrated }, null, 2));
     });
   }
 }
