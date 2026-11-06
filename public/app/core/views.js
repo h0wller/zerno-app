@@ -263,8 +263,8 @@ function syncStaffAndGuestControls(bName2) {
   var validStaffRoles = ['admin', 'cashier', 'dispatch'];
   var confirmedStaff = !!(typeof me !== 'undefined' && me &&
     validStaffRoles.indexOf(me.role) !== -1);
-  // Cached role is a layout hint only until /api/me validates the session.
-  var isStaff = confirmedStaff || (!staffReady && validStaffRoles.indexOf(staffRoleHint) !== -1);
+  // The auth-session role attribute is the canonical layout signal; before readiness it only reserves hidden space.
+  var isStaff = validStaffRoles.indexOf(staffRoleHint) !== -1;
 
   if (isStaff && isMenuMode && title && !menuRow) {
     menuRow = document.createElement('div');
@@ -298,8 +298,8 @@ function syncStaffAndGuestControls(bName2) {
     if (topbar) topbar.classList.toggle('has-mode-switcher', !isMenuMode && isStaff);
   }
   if (typeof renderModes === 'function') renderModes();
-  // renderModes() only knows the validated user object; keep cached-role placeholders hidden.
-  if (modeSeg && !staffReady) modeSeg.hidden = true;
+  // renderModes() rebuilds the buttons and their hidden state; restore the auth-session gate afterwards.
+  if (modeSeg) modeSeg.hidden = !isStaff || !staffReady;
 
   if (adminBar) {
     var hasAdminActions = Array.prototype.some.call(adminBar.querySelectorAll(':scope > button'), function (button) {
