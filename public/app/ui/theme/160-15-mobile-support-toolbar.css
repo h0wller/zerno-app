@@ -64,3 +64,10 @@
     outline-offset: 3px;
   }
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab {
+    transition: none;
+  }
+}

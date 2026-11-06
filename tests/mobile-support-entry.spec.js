@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 test.use({ serviceWorkers: 'block' });
 
+const indexHtml = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
 const BRANDS = [
   { id: 'coffee', view: '#menuView' },
   { id: 'delivery', view: '#deliveryView' },
@@ -26,6 +28,9 @@ for (const brand of BRANDS) {
 
       const support = page.locator('#chatFab');
       const search = page.locator(`${brand.view} .mh-right .search`);
+      const noScriptBlock = indexHtml.match(/<noscript>([\\s\\S]*?)<\\/noscript>/i)?.[1] || '';
+      expect(noScriptBlock).toMatch(/<link rel="stylesheet" href="\\/app\\/ui\\/theme\\/160-15-mobile-support-toolbar\\.css\\?v=\\d+"\\s*\\/>/);
+      expect(noScriptBlock).not.toMatch(/160-15-mobile-support-toolbar\\.css[^>]*media=/);
       await expect(support).toBeVisible({ timeout: 15000 });
       await expect(search).toBeVisible({ timeout: 15000 });
 
@@ -61,6 +66,22 @@ for (const brand of BRANDS) {
         await expect(page.locator('#chatPanel')).toHaveClass(/open/);
         await support.click();
         await expect(page.locator('#chatPanel')).not.toHaveClass(/open/);
+      } else {
+        await expect(support).toHaveCSS('position', 'fixed');
+        await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
+      }
+
+      const cartPanel = page.locator('#cartPanel');
+      await cartPanel.evaluate((element) => element.classList.add('open'));
+      await expect(support).toBeHidden();
+      await cartPanel.evaluate((element) => element.classList.remove('open'));
+      await expect(support).toBeVisible();
+
+      const crossBreakpointWidth = viewport.width <= 820 ? 1440 : 390;
+      await page.setViewportSize({ width: crossBreakpointWidth, height: 900 });
+      if (crossBreakpointWidth <= 820) {
+        await expect(support).toHaveCSS('position', 'relative');
+        await expect.poll(() => support.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
       } else {
         await expect(support).toHaveCSS('position', 'fixed');
         await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
