@@ -247,7 +247,7 @@ function syncViewsVisibility(showCoffee, showDeliv) {
 
 function syncStaffAndGuestControls(bName2) {
   var canEdit = (typeof canStopMenu === 'function') && canStopMenu(bName2);
-  var currentMode = typeof mode !== 'undefined' ? mode : 'guest';
+  var currentMode = typeof window.mode === 'string' ? window.mode : (typeof mode !== 'undefined' ? mode : 'guest');
   var isMenuMode = currentMode === 'guest';
   var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
   var menuHead = activeView && activeView.querySelector('.menu-head');
