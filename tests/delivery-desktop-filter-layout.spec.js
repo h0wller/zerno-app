@@ -25,8 +25,9 @@ const items = [
   img: '',
 }));
 
-test('delivery desktop ingredient filters wrap instead of clipping at 1440px', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+for (const width of [1024, 1440]) {
+  test(`delivery ingredient filters wrap without clipping at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
   await page.addInitScript(() => {
     localStorage.clear();
     sessionStorage.clear();
@@ -82,5 +83,6 @@ test('delivery desktop ingredient filters wrap instead of clipping at 1440px', a
   await lastFilter.click();
   await expect(lastFilter).toHaveClass(/on/);
   await expect(page.locator('#deliveryGrid [data-product-id="desktop-filter-cheese"]')).toBeVisible();
-  await expect(page.locator('#deliveryGrid [data-product-id="desktop-filter-chicken"]')).toHaveCount(0);
-});
+    await expect(page.locator('#deliveryGrid [data-product-id="desktop-filter-chicken"]')).toHaveCount(0);
+  });
+}
