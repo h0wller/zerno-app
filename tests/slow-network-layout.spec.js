@@ -606,7 +606,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         const venueStyle = venueWrap && getComputedStyle(venueWrap);
         const ticker = document.querySelector('.ticker');
         const tickerRect = ticker && ticker.getBoundingClientRect();
-        const controls = ['.venueWrap', '#headerBrand', '#profileTopBtn']
+        const controls = ['.venueWrap', '#headerBrand', '.topbar-actions']
           .map((selector) => document.querySelector(selector))
           .filter(Boolean)
           .map((element) => element.getBoundingClientRect());
@@ -619,6 +619,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           brandTitle: rect('#brandTitle'),
           brandGroup: rect('#headerBrand'),
           profile: rect('#profileTopBtn'),
+          actions: rect('.topbar-actions'),
           groupCenter: (groupLeft + groupRight) / 2,
           controlCenterSpread: Math.max(...verticalCenters) - Math.min(...verticalCenters),
           ticker: tickerRect ? {
@@ -638,7 +639,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
               width: style.width,
               height: style.height,
               left: style.left,
-              bottom: style.bottom
+              bottom: style.bottom,
+              parentClass: bonus.parentElement.className
             };
           })(),
           topbar: topbarRect ? {
@@ -665,9 +667,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile', 'bonus']) {
           expect(header[selector], `${selector} is visible at ${width}px ${phase}`).not.toBeNull();
         }
-        expect(header.bonusStyle.position, `bonus stays fixed at ${width}px ${phase}`).toBe('fixed');
-        expect(header.bonusStyle.width, `bonus width is reserved at ${width}px ${phase}`).toBe('56px');
-        expect(header.bonusStyle.height, `bonus height is reserved at ${width}px ${phase}`).toBe('56px');
+        expect(header.bonusStyle.position, `bonus stays in the topbar at ${width}px ${phase}`).toBe('static');
+        expect(header.bonusStyle.width, `bonus width is reserved at ${width}px ${phase}`).toBe('78px');
+        expect(header.bonusStyle.height, `bonus height is reserved at ${width}px ${phase}`).toBe('40px');
+        expect(header.bonusStyle.parentClass).toBe('topbar-actions');
         const controls = ['venue', 'brandGroup', 'profile']
           .map((selector) => header[selector]);
         for (let i = 0; i < controls.length; i++) {
