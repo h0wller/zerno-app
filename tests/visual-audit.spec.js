@@ -50,7 +50,35 @@ async function waitForHydratedStorefront(page, brand) {
   });
 }
 
+async function waitForHydratedSidebar(page, brand, viewport) {
+  const tab = page.locator(brand === 'delivery' ? '#tabProfile' : '#tabBonus');
+  await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
+
+  // At tablet/mobile widths the account panel is an intentionally closed drawer.
+  // Only desktop renders it as the third storefront column in the captured viewport.
+  if (viewport.width > 1180) {
+    const panel = page.locator(brand === 'delivery' ? '#pvProfile' : '#pvBonus');
+    const guestPrompt = page.locator(brand === 'delivery' ? '#profileNoUser' : '#bonusNoUser');
+    await expect(panel).toBeVisible({ timeout: 10000 });
+    await expect(guestPrompt).toBeVisible({ timeout: 10000 });
+  }
+}
+
 async function capture(page, meta) {
+  if (meta.fullPage) {
+    const gridSelector = meta.brand === 'delivery' ? '#deliveryGrid' : '#grid';
+    await page.addStyleTag({
+      content: gridSelector + ' > .card { content-visibility: visible !important; }',
+    });
+    await expect.poll(() => page.locator(gridSelector + ' > .card:not(.skeleton-card)').evaluateAll((cards) =>
+      cards.every((card) => {
+        const title = card.querySelector('h3');
+        const rect = title && title.getBoundingClientRect();
+        return !!rect && rect.width > 0 && rect.height > 0;
+      })
+    )).toBe(true);
+  }
+
   const id = [
     meta.brand.toUpperCase(),
     'GUEST',
@@ -65,9 +93,11 @@ async function capture(page, meta) {
     animations: 'disabled',
   });
 
-  const runtime = await page.evaluate(() => ({
+  const fullPageContentVisibilityOverride = meta.fullPage === true;
+  const runtime = await page.evaluate((fullPageOverride) => ({
     title: document.title,
     brand: document.documentElement.dataset.brand || null,
+    fullPageContentVisibilityOverride: fullPageOverride,
     staffRole: document.documentElement.getAttribute('data-staff-role'),
     viewport: { width: innerWidth, height: innerHeight },
     document: {
@@ -80,7 +110,15 @@ async function capture(page, meta) {
       return rect.width > 0 && rect.height > 0
         && style.display !== 'none' && style.visibility !== 'hidden';
     }).length,
-  }));
+    sidebar: {
+      activeTab: document.querySelector('.tabs [role="tab"][aria-selected="true"]')?.dataset.tab || null,
+      bonusPanelHidden: document.getElementById('pvBonus')?.hidden ?? null,
+      profilePanelHidden: document.getElementById('pvProfile')?.hidden ?? null,
+      bonusGuestPromptHidden: document.getElementById('bonusNoUser')?.hidden ?? null,
+      profileGuestPromptHidden: document.getElementById('profileNoUser')?.hidden ?? null,
+      profileBoxHidden: document.getElementById('profileBox')?.hidden ?? null,
+    },
+  }), fullPageContentVisibilityOverride);
 
   return {
     id,
@@ -108,15 +146,23 @@ for (const brand of ['coffee', 'delivery']) {
       });
 
       await waitForHydratedStorefront(page, brand);
+      await waitForHydratedSidebar(page, brand, viewport);
+
+      const hydratedViewport = await capture(page, {
+        brand, viewport, state: 'hydrated-menu-viewport',
+      });
       const hydrated = await capture(page, {
         brand, viewport, state: 'hydrated-menu', fullPage: true,
       });
 
+      expect(hydratedViewport.runtime.staffRole).toBeNull();
+      expect(hydratedViewport.runtime.document.width).toBeLessThanOrEqual(viewport.width);
       expect(hydrated.runtime.staffRole).toBeNull();
       expect(hydrated.runtime.document.width).toBeLessThanOrEqual(viewport.width);
+      expect(hydrated.runtime.fullPageContentVisibilityOverride).toBe(true);
 
       const metadataPath = path.join(OUT, `${brand}-guest-${viewport.id}.json`);
-      fs.writeFileSync(metadataPath, JSON.stringify({ initial, hydrated }, null, 2));
+      fs.writeFileSync(metadataPath, JSON.stringify({ initial, hydratedViewport, hydrated }, null, 2));
     });
   }
 }
