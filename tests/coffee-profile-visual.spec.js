@@ -53,6 +53,7 @@ for (const viewport of VIEWPORTS) {
       const bonus = document.querySelector('#pvBonus');
       const box = document.querySelector('#bonusBox');
       const stamps = document.querySelector('#stampGrid');
+      const promoBox = document.querySelector('#pvBonus .qrbox');
       const promo = document.querySelector('#promoInput');
       const promoButton = document.querySelector('#promoBtn');
       const row = promo ? promo.closest('.findrow') : null;
@@ -81,6 +82,7 @@ for (const viewport of VIEWPORTS) {
         box: rect(box),
         stamps: rect(stamps),
         stampCells: [...stamps.children].map(rect),
+        promoBoxVisible: !!promoBox && getComputedStyle(promoBox).display !== 'none' && getComputedStyle(promoBox).visibility !== 'hidden',
         promo: rect(promo),
         promoButton: rect(promoButton),
         promoButtonWhiteSpace: getComputedStyle(promoButton).whiteSpace,
@@ -96,6 +98,7 @@ for (const viewport of VIEWPORTS) {
     expect(measurements.bonus.scroll, JSON.stringify(measurements)).toBeLessThanOrEqual(measurements.bonus.client + 1);
     expect(measurements.overflow, JSON.stringify(measurements.overflow)).toHaveLength(0);
     expect(measurements.stampCells).toHaveLength(10);
+    expect(measurements.promoBoxVisible).toBe(true);
     expect(measurements.promo.width).toBeGreaterThan(0);
     expect(measurements.promoButton.width).toBeGreaterThanOrEqual(53.5);
     expect(measurements.promoButtonWhiteSpace).toBe('nowrap');
@@ -227,9 +230,10 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(overlay).not.toHaveClass(/show/);
   await expect.poll(() => overlay.evaluate(element => Number(getComputedStyle(element).opacity))).toBe(0);
 
-  // Reopen the profile before asserting its contents; a closed panel must remain hidden.
+  // Reopen the drawer and select the profile tab before checking profile-only content.
   await page.evaluate(() => window.openPanel('profile'));
   await expect(page.locator('#panel')).toHaveClass(/open/);
+  await page.locator('#tabProfile').click();
   await expect(page.locator('#pvProfile')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection .profile-qr-access')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
