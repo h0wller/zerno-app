@@ -189,16 +189,19 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 
     const order = await page.locator('header.topbar').evaluate((header) => {
       const childIndex = (selector) => Array.from(header.children).indexOf(header.querySelector(selector));
-      return [
-        childIndex('.venueWrap'),
-        childIndex('#headerBrand'),
-        childIndex('#mbonusBtn'),
-        childIndex('#profileTopBtn'),
-        childIndex('#modeSeg'),
-      ];
+      const actions = header.querySelector('.topbar-actions');
+      return {
+        order: [childIndex('.venueWrap'), childIndex('#headerBrand'), childIndex('.topbar-actions')],
+        actionsOwnBonus: !!(actions && actions.querySelector('#mbonusBtn')),
+        actionsOwnProfile: !!(actions && actions.querySelector('#profileTopBtn')),
+        modeOutsideHeader: !header.contains(document.querySelector('#modeSeg')),
+      };
     });
-    expect(order.every((index) => index >= 0)).toBe(true);
-    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(order.order.every((index) => index >= 0)).toBe(true);
+    expect(order.order).toEqual([...order.order].sort((a, b) => a - b));
+    expect(order.actionsOwnBonus).toBe(true);
+    expect(order.actionsOwnProfile).toBe(true);
+    expect(order.modeOutsideHeader).toBe(true);
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect.poll(() => page.locator('#tickerTrack').evaluate((track) => getComputedStyle(track).animationName)).toBe('none');
