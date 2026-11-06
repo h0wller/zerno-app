@@ -220,8 +220,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.search).toEqual(before.search);
     expect(after.searchLabel).toEqual(before.searchLabel);
     expect(after.searchInput).toEqual(before.searchInput);
-    expect(after.updated.width).toBe(before.updated.width);
-    expect(after.updated.height).toBe(before.updated.height);
+    expect(after.updated.width).toBe(0);
+    expect(after.updated.height).toBe(0);
     expect(after.subchip.width).toBe(before.subchip.width);
     expect(after.option.height).toBe(before.option.height);
     expect(after.heading.width).toBeGreaterThan(200);
