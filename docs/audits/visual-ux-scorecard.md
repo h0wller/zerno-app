@@ -258,3 +258,27 @@ Do not label a code smell or DOM scrape oddity as a UX defect without user-visib
 - Preserve existing CLS, accessibility, keyboard/focus, safe-area and checkout contracts.
 - No business logic/API/DB/order/discount/loyalty changes in visual-only work.
 - Update the screenshot register and score register after each accepted visual PR.
+
+
+## Incoming iOS PWA review — backlog (2026-11-06)
+These are user-reported review notes pending individual evidence/acceptance; do not score as completed until before/after screenshots are inspected.
+
+### G. Feedback from iOS PWA visual review (390×844 pt)
+- [ ] **Profile hint removal** — remove the explanatory swipe chip entirely; preserve the native swipe-to-close gesture and verify clean first-open/return behavior.
+- [ ] **Profile dismissal backdrop** — after closing the profile drawer, verify that the underlying page returns to the intended blurred/unblurred state with no stale overlay, pointer interception or scroll lock. Do not add a global blur without identifying the backdrop owner.
+- [ ] **Promo action** — keep the “OK” action on one line at 320/375/390 px; retain keyboard activation and promo validation.
+- [ ] **Coffee profile social links** — distribute the three icon links evenly across the full usable width of their actual card, including safe horizontal insets; retain 42 px touch targets and accessible names.
+- [ ] **Checkout recipient block** — replace the current dynamically injected “Получатель” strip with a clear “Получатель заказа” section. Show account name and phone only once, preserve auto-fill, define what is editable, and verify the exact payload submitted to /api/orders before changing fields or server contracts.
+- [ ] **Support FAB stacking and icon** — put support launcher below cart/modal layers, preserve visibility on the menu and prevent overlap with product add controls; use an explicit recognizable support icon and retain aria-label.
+- [ ] **Admin controls ownership** — keep the edit action inside the staff admin actions rail; avoid duplicating the existing #editToggle. Verify keyboard reachability and role-based visibility.
+- [ ] **Role switch placement** — move #modeSeg into the menu header/action block beside the staff/admin actions, not into a second row of the global topbar. Preserve #brandSeg brand choice, role permissions, renderModes() and hydration reservation behavior.
+- [ ] **iOS safe-area top strip** — inspect actual iOS PWA visual capture and computed env(safe-area-inset-top), header padding/height, body background and viewport insets. Remove the visible strip without double-applying the safe-area offset or regressing notch devices.
+- [ ] Re-capture iOS PWA screenshots for 320/375/390 px and desktop staff states after each bounded PR; record exact commit/viewport/state and inspect image artifacts, not lint alone.
+
+### Proposed bounded PR sequence
+1. Profile polish (#177): hint, promo one-line, social distribution, close/backdrop lifecycle.
+2. Checkout recipient redesign: markup/state/payload contract separately from visual-only profile work.
+3. Staff menu header: role switch + admin rail placement, one edit action, reduced topbar height.
+4. Support launcher: lower z-index, clear icon, collision tests with product Add action.
+5. Safe-area strip: diagnosis and minimal CSS/viewport fix with iOS-specific evidence.
+
