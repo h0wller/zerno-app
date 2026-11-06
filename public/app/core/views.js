@@ -257,10 +257,16 @@ function syncStaffAndGuestControls(bName2) {
   var adminBar = document.getElementById('adminBar');
   var editToggle = document.getElementById('editToggle');
   var modeSeg = document.getElementById('modeSeg');
-  var isStaff = !!(typeof me !== 'undefined' && me &&
-    (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
+  var root = document.documentElement;
+  var staffRoleHint = root.getAttribute('data-staff-role');
+  var staffReady = root.hasAttribute('data-staff-ready');
+  var validStaffRoles = ['admin', 'cashier', 'dispatch'];
+  var confirmedStaff = !!(typeof me !== 'undefined' && me &&
+    validStaffRoles.indexOf(me.role) !== -1);
+  // Cached role is a layout hint only until /api/me validates the session.
+  var isStaff = confirmedStaff || (!staffReady && validStaffRoles.indexOf(staffRoleHint) !== -1);
 
-  if (title && !menuRow) {
+  if (isStaff && isMenuMode && title && !menuRow) {
     menuRow = document.createElement('div');
     menuRow.className = 'menu-controls-row';
     title.parentNode.insertBefore(menuRow, title);
@@ -268,7 +274,7 @@ function syncStaffAndGuestControls(bName2) {
   }
 
   // Keep the existing nodes so delegated click handlers and IDs survive mode changes.
-  if (isMenuMode && menuRow) {
+  if (isStaff && isMenuMode && menuRow) {
     if (modeSeg && modeSeg.parentElement !== menuRow) {
       if (typeof menuRow.moveBefore === 'function') menuRow.moveBefore(modeSeg, null);
       else menuRow.appendChild(modeSeg);
@@ -288,16 +294,18 @@ function syncStaffAndGuestControls(bName2) {
     editToggle.title = 'Редактировать меню';
   }
   if (modeSeg) {
-    modeSeg.hidden = !isStaff;
+    modeSeg.hidden = !isStaff || !staffReady;
     if (topbar) topbar.classList.toggle('has-mode-switcher', !isMenuMode && isStaff);
   }
   if (typeof renderModes === 'function') renderModes();
+  // renderModes() only knows the validated user object; keep cached-role placeholders hidden.
+  if (modeSeg && !staffReady) modeSeg.hidden = true;
 
   if (adminBar) {
     var hasAdminActions = Array.prototype.some.call(adminBar.querySelectorAll(':scope > button'), function (button) {
       return !button.hidden;
     });
-    var isAdmin = typeof me !== 'undefined' && !!me && me.role === 'admin';
+    var isAdmin = confirmedStaff && me.role === 'admin';
     var editRemainsInBar = editToggle && editToggle.parentElement === adminBar && canEdit;
     adminBar.hidden = isMenuMode
       ? !hasAdminActions
