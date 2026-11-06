@@ -71,13 +71,30 @@
   display: none;
 }
 
-/* Desktop/tablet: show the complete ingredient set without a hidden horizontal tail. */
+/* Desktop/tablet: keep ingredient filters in one horizontal rail with a visible scrollbar. */
 @media (min-width: 821px) {
   #deliveryView #deliverySubFilter {
-    flex-wrap: wrap;
-    overflow-x: visible;
-    overflow-y: visible;
-    padding-bottom: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--fr-tan, var(--line)) var(--fr-rice, var(--panel));
+    padding-bottom: 8px;
+  }
+
+  #deliveryView #deliverySubFilter::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+
+  #deliveryView #deliverySubFilter::-webkit-scrollbar-track {
+    background: var(--fr-rice, var(--panel));
+    border-radius: 999px;
+  }
+
+  #deliveryView #deliverySubFilter::-webkit-scrollbar-thumb {
+    background: var(--fr-tan, var(--line));
+    border-radius: 999px;
   }
 }
 
