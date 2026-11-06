@@ -360,9 +360,6 @@
   opacity: 1;
   pointer-events: auto;
 }
-#pvBonus .qrbox {
-  margin-top: 20px !important;
-}
 @media (max-width: 420px) {
   #pvBonus .bonus-qr-row {
     align-items: stretch;
