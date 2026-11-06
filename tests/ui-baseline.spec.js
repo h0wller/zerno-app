@@ -206,6 +206,7 @@ test('baseline: стафф-режим прячет delivery-меню сразу 
 test('baseline: админ', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await loginAs(page, { code: ADMIN });
+  await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
   await waitModeSeg(page);
 
   await modeBtn(page, 'admin', 'Админ').click();
