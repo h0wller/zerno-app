@@ -268,8 +268,13 @@ function syncStaffAndGuestControls(bName2) {
 
   var ab = document.getElementById('adminBar');
   if (ab) {
-    var hasAdminActions = Array.prototype.some.call(ab.querySelectorAll(':scope > button'), function (button) { return !button.hidden; });
-    ab.hidden = !((typeof mode !== 'undefined' && mode === 'admin') || hasAdminActions);
+    var hasAdminActions = Array.prototype.some.call(ab.querySelectorAll(':scope > button'), function (button) {
+      return !button.hidden;
+    });
+    var isStaff = typeof me !== 'undefined' && !!me &&
+      (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch');
+    ab.hidden = !isStaff && !hasAdminActions;
+    ab.style.display = ab.hidden ? 'none' : '';
   }
   var mb = document.getElementById('mbonusBtn');
   if (mb) mb.style.display = (typeof mode !== 'undefined' && mode === 'guest' && bName2 === 'coffee') ? '' : 'none';
