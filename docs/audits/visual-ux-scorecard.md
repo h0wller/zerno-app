@@ -99,10 +99,10 @@ Staff phase (after guest baseline): CASHIER, DISPATCH, ADMIN. Use the same captu
 | COF-MENU · 320×740 | 7.5 | Header/ticker clipping; support/chat FAB crowds the next card |
 | COF-MENU · 390×844 | 7.4 | Ticker clips; support/chat FAB crowds card media |
 | COF-MENU · 768×1024 | 8.1 | Better two-column balance; ticker still clips |
-| COF-MENU · 1440×900 | 7.5 | Menu is readable, but a large unused right-side area weakens composition |
+| COF-MENU · 1440×900 | 7.5 | Menu and bonus sign-up card are visible; lower sidebar area remains quiet, pending production review |
 | DEL-MENU · 320×740 | 6.6 | Floating support/chat FAB obscures the Add area; horizontal filter chips are clipped |
 | DEL-MENU · 390×844 | 6.6 | Support/chat FAB overlaps the Add button; filter chips and ticker clip |
-| DEL-MENU · 1440×900 | 7.8 | Product selection controls are clear; empty right column and duplicate category navigation reduce balance |
+| DEL-MENU · 1440×900 | 7.8 | Profile sign-in card is visible; ingredient-filter chips clip at the right edge; category rail and ingredient filters are distinct navigation levels |
 
 These are provisional screen scores for the rendered CI state, not product acceptance scores. Replace/reconfirm them with the production capture before considering the baseline frozen. The seven component scores are recorded in the score register above.
 
@@ -116,9 +116,13 @@ These are provisional screen scores for the rendered CI state, not product accep
 | COF-MENU-D | 1440×900 | Guest first viewport | Three-column catalog and right-side panel inspected |
 | DEL-MENU-XS | 320×740 | Guest first viewport | Filter clipping and floating support FAB/Add overlap inspected |
 | DEL-MENU-M | 390×844 | Guest first viewport | Floating support/chat button visibly covers part of the Add control |
-| DEL-MENU-D | 1440×900 | Guest first viewport | Three-column cards, duplicate category navigation and right-side area inspected |
+| DEL-MENU-D | 1440×900 | Guest first viewport | Three-column cards, hydrated guest profile prompt and ingredient-filter clipping inspected |
 
 Artifact: `visual-ux-baseline-test-42089915249.zip` (GitHub Actions run `42089915249`). It contains 16 viewport PNGs and 8 state metadata JSON files. The full-page hydrated catalog PNGs are supplementary; score rows above use first-viewport captures at the same viewport.
+
+**Hydration/capture correction (2026-11-06, run `42185234269`, test server):** the earlier “empty right-side delivery profile” observation was invalid. The cold screenshot was captured before the guest profile resolver completed; the stable hydrated desktop capture shows the selected Profile tab and visible phone sign-in prompt. At widths up to 1180px the profile panel is an intentionally closed drawer, so its body is not expected to be visible in the storefront viewport. The horizontal row contains ingredient filters; the left rail contains menu categories and they are not duplicate navigation.
+
+The capture now records three separate states: cold first viewport, hydrated first viewport (normal CSS, `fullPage: false`), and supplementary full-page catalog. The full-page capture temporarily sets `content-visibility: visible` on catalog cards so off-screen content is rendered; metadata records `fullPageContentVisibilityOverride: true`. Do not use that supplemental image as a first-viewport score source. The screenshots remain test-server evidence, not production acceptance evidence.
 
 **First confirmed UX finding from the test screenshots:** the fixed support launcher `#chatFab.chat-fab` (distinct from the cart launcher `#cartFab`) overlaps the product card's `Добавить` control on delivery XS/M. This should be the first focused improvement candidate. Keep order/cart behavior unchanged; adjust only the support FAB collision/placement and add a screenshot regression asserting that `#chatFab` and the product `[data-add]` bounding boxes do not intersect.
 
@@ -136,6 +140,11 @@ Keep one row per physical screenshot, even when several screenshots belong to on
 | DEL-MENU-M | DEL-MENU | f06a94b | delivery / guest-cold-context | 390×844 | first-viewport | Playwright CI test server, run 42089915249 | supporting | `DELIVERY-GUEST-INITIAL-GUEST-STATE-M.png` |
 | DEL-MENU-D | DEL-MENU | f06a94b | delivery / guest-cold-context | 1440×900 | first-viewport | Playwright CI test server, run 42089915249 | supporting | `DELIVERY-GUEST-INITIAL-GUEST-STATE-D.png` |
 
+| COF-MENU-HYDRATED-D | COF-MENU | d5e1ddc | coffee / guest | 1440×900 | hydrated first viewport | Playwright CI test server, run 42185234269 | supporting | `COFFEE-GUEST-HYDRATED-MENU-VIEWPORT-D.png` |
+| DEL-MENU-HYDRATED-D | DEL-MENU | d5e1ddc | delivery / guest | 1440×900 | hydrated first viewport | Playwright CI test server, run 42185234269 | supporting | `DELIVERY-GUEST-HYDRATED-MENU-VIEWPORT-D.png` |
+| COF-MENU-FULL-D | COF-MENU | d5e1ddc | coffee / guest | 1440×900 | full-page supplemental | Playwright CI test server, run 42185234269; content-visibility override | supporting only | `COFFEE-GUEST-HYDRATED-MENU-D.png` |
+| DEL-MENU-FULL-D | DEL-MENU | d5e1ddc | delivery / guest | 1440×900 | full-page supplemental | Playwright CI test server, run 42185234269; content-visibility override | supporting only | `DELIVERY-GUEST-HYDRATED-MENU-D.png` |
+
 Suggested filename: `<screenshot-id>__<commit-short>__<state>.png`.
 
 ## Score register
@@ -151,7 +160,7 @@ One row per screen and viewport. Fill scores only after inspecting the matching 
 | COF-MENU | XS | 8 | 7 | 8 | 7.5 | 7.5 | 7 | 7 | 7.5 | Ticker clipped; support/chat FAB crowds the next card; test media are placeholders |
 | COF-MENU | M | 8 | 7 | 8 | 7.5 | 7 | 7 | 6.5 | 7.4 | Ticker clips horizontally; support/chat FAB crowds second card media |
 | COF-MENU | T | 8.5 | 8 | 8.3 | 8 | 7.5 | 8 | 7.8 | 8.1 | Ticker content clipped at right edge |
-| COF-MENU | D | 8.5 | 6.5 | 8.2 | 7.5 | 7 | 7 | 7 | 7.5 | Wide unused right-side area weakens overall composition |
+| COF-MENU | D | 8.5 | 6.5 | 8.2 | 7.5 | 7 | 7 | 7 | 7.5 | Bonus sign-up card visible; quiet area below is not yet confirmed as a defect |
 | COF-ITEM | XS | — | — | — | — | — | — | — | — | Not assessed |
 | COF-ITEM | M | — | — | — | — | — | — | — | — | Not assessed |
 | COF-ITEM | T | — | — | — | — | — | — | — | — | Not assessed |
@@ -179,7 +188,7 @@ One row per screen and viewport. Fill scores only after inspecting the matching 
 | DEL-MENU | XS | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5 | 6.6 | Support/chat FAB (#chatFab) overlaps Add area; top filter chips are cut off |
 | DEL-MENU | M | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5.5 | 6.6 | Support/chat FAB (#chatFab) covers part of Add button; filter chips and ticker clip |
 | DEL-MENU | T | — | — | — | — | — | — | — | — | Not assessed |
-| DEL-MENU | D | 8.5 | 7.2 | 8 | 7.5 | 8 | 7 | 7.5 | 7.8 | Empty right-side profile column; top filters and left category rail duplicate navigation |
+| DEL-MENU | D | 8.5 | 7.2 | 8 | 7.5 | 8 | 7 | 7.5 | 7.8 | Profile sign-in card visible; desktop ingredient filters clip; category rail and ingredient filters are not duplicates |
 | DEL-ITEM | XS | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-ITEM | M | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-ITEM | T | — | — | — | — | — | — | — | — | Not assessed |
