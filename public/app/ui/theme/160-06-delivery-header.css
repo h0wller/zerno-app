@@ -299,18 +299,6 @@
     min-width: 44px;
     padding: 0;
   }
-html[data-staff-role] body header.topbar {
-    height: calc(102px + var(--sat, env(safe-area-inset-top, 0px)));
-    min-height: calc(102px + var(--sat, env(safe-area-inset-top, 0px)));
-    grid-template-rows: 48px 50px;
-    align-content: start;
-  }
-  html[data-staff-role] body header.topbar .brand,
-  html[data-staff-role] body header.topbar #headerBrand.brand {
-    height: 44px;
-    min-height: 44px;
-    max-height: 44px;
-  }
 }
 
 
