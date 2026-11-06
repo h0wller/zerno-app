@@ -247,9 +247,20 @@ function syncViewsVisibility(showCoffee, showDeliv) {
 function syncStaffAndGuestControls(bName2) {
   var canEdit = (typeof canStopMenu === 'function') && canStopMenu(bName2);
   var et = document.getElementById('editToggle');
-  if (et) et.hidden = !canEdit;
+  if (et) {
+    var menuHead = document.querySelector((bName2 === 'delivery' ? '#deliveryView' : '#menuView') + ' .menu-head');
+    if (menuHead && et.parentElement !== menuHead) menuHead.appendChild(et);
+    et.hidden = !canEdit;
+    et.setAttribute('aria-label', 'Редактировать меню');
+    et.title = 'Редактировать меню';
+  }
   var ab = document.getElementById('adminBar');
-  if (ab) ab.hidden = !(canEdit || (typeof mode !== 'undefined' && mode === 'admin'));
+  if (ab) {
+    var hasAdminActions = Array.prototype.some.call(ab.querySelectorAll(':scope > button'), function (button) {
+      return !button.hidden;
+    });
+    ab.hidden = !(typeof mode !== 'undefined' && mode === 'admin') && !hasAdminActions;
+  }
   var ms = document.getElementById('modeSeg');
   var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
   if (ms) ms.hidden = !isStaff;
@@ -302,6 +313,9 @@ function sv() {
 
   syncViewsVisibility(showCoffee, showDeliv);
   syncStaffAndGuestControls(bName);
+  if (typeof window.alignRailWithCard === 'function') {
+    requestAnimationFrame(window.alignRailWithCard);
+  }
 
   var staff = (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders'));
   syncChatFab(staff, bName);
