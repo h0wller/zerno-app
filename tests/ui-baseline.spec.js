@@ -154,7 +154,7 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(page.locator('#profileBox')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('#profileStampProgress')).toBeVisible();
-  await expect(page.locator('#profile-qr-access')).toBeVisible();
+  await expect(page.locator('.profile-qr-access')).toBeVisible();
   await expect(page.locator('.profile-qr-link')).toHaveText('Показать QR');
   await expect(page.locator('.coffee-place-links .coffee-place-link')).toHaveCount(3);
   await expect(page.locator('.coffee-review-card')).toContainText('Понравилось?');
