@@ -127,31 +127,36 @@ for (const brand of CASES) {
 }
 
 
-test('coffee menu heading includes the full marina tagline on mobile and desktop', async ({ page }) => {
-  for (const viewport of [
-    { width: 320, height: 740 },
-    { width: 390, height: 844 },
-    { width: 1440, height: 900 },
-  ]) {
-    await page.setViewportSize(viewport);
-    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-    await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+test('menu headings stay compact without brand taglines on mobile and desktop', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 390, height: 844 },
+      { width: 1440, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+      await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
 
-    const heading = page.locator('#menuView .menu-head h1');
-    await expect(heading).toBeVisible();
-    await expect(heading).toHaveText(/^Меню\s+кофейня на берегу моря$/);
+      const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
+      const heading = page.locator(view + ' .menu-head h1');
+      await expect(heading).toBeVisible();
+      await expect(heading.locator('em')).toBeHidden();
+      await expect(heading).toHaveText('Меню');
+      await expect(page.locator(view + ' .menu-head .upd')).toBeHidden();
 
-    const geometry = await heading.evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      return {
-        left: rect.left,
-        right: rect.right,
-        viewportWidth: document.documentElement.clientWidth,
-        text: element.innerText.replace(/\s+/g, ' ').trim(),
-      };
-    });
-    expect(geometry.text).toMatch(/^Меню\s+кофейня на берегу моря$/i);
-    expect(geometry.left).toBeGreaterThanOrEqual(0);
-    expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+      const geometry = await heading.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          left: rect.left,
+          right: rect.right,
+          viewportWidth: document.documentElement.clientWidth,
+          text: element.innerText.replace(/\\s+/g, ' ').trim(),
+        };
+      });
+      expect(geometry.text).toBe('Меню');
+      expect(geometry.left).toBeGreaterThanOrEqual(0);
+      expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+    }
   }
 });
