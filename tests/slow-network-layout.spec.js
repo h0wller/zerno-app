@@ -730,7 +730,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     }
   });
 
-  test('cached staff role keeps delivery header and editor bar stable during auth hydration', async ({ page }) => {
+  test('cached staff role keeps the compact menu row stable during auth hydration', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_user', 'staff-layout-test-token');
       localStorage.setItem('zt_role', 'admin');
@@ -883,6 +883,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           gridTemplateRows: getComputedStyle(header).gridTemplateRows
         },
         modeSeg: rect('#modeSeg'),
+        modeSegInMenuRow: !!(modeSeg && modeSeg.closest('.menu-controls-row')),
         modeSegStyle: modeSeg && {
           marginTop: getComputedStyle(modeSeg).marginTop,
           height: getComputedStyle(modeSeg).height,
@@ -900,9 +901,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.modeSeg.hidden).toBe(true);
     expect(before.modeSeg.display).toBe('flex');
     expect(before.modeSeg.visibility).toBe('hidden');
+    expect(before.modeSegInMenuRow).toBe(true);
+    expect(before.header.height).toBe(60);
     expect(before.adminBar.hidden).toBe(true);
-    expect(before.adminBar.display).toBe('flex');
-    expect(before.adminBar.visibility).toBe('hidden');
+    expect(before.adminBar.display).toBe('none');
 
     // The first-paint/CSS/font settle is asserted by the neighboring layout tests.
     // Drain those earlier entries so this threshold measures only the delayed auth interval.
@@ -945,6 +947,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           gridTemplateRows: getComputedStyle(header).gridTemplateRows
         },
         modeSeg: rect('#modeSeg'),
+        modeSegInMenuRow: !!(modeSeg && modeSeg.closest('.menu-controls-row')),
         modeSegStyle: modeSeg && {
           marginTop: getComputedStyle(modeSeg).marginTop,
           height: getComputedStyle(modeSeg).height,
@@ -964,8 +967,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.role).toBe('admin');
     expect(after.modeSeg.hidden).toBe(false);
     expect(after.modeSeg.visibility).toBe('visible');
-    expect(after.adminBar.hidden).toBe(false);
-    expect(after.adminBar.visibility).toBe('visible');
+    expect(after.modeSegInMenuRow).toBe(true);
+    expect(after.adminBar.hidden).toBe(true);
+    expect(after.adminBar.display).toBe('none');
     expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
