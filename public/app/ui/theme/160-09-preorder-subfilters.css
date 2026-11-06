@@ -75,27 +75,20 @@
    stealing taps or reducing the horizontal scroll lane. */
 @media (max-width: 820px) {
   .subfilter-bar.has-overflow::after {
-    content: "›";
+    content: "";
     position: sticky;
     right: 0;
     z-index: 2;
-    display: inline-flex;
+    display: block;
     flex: 0 0 28px;
     width: 28px;
     min-height: 44px;
     margin-left: -28px;
-    padding-right: 6px;
-    box-sizing: border-box;
-    align-items: center;
-    justify-content: flex-end;
     border-radius: 0 999px 999px 0;
-    color: var(--fr-choc, var(--ink));
-    background: linear-gradient(90deg, transparent, var(--fr-paper, var(--card)) 68%);
-    font: 700 22px / 1 system-ui, sans-serif;
+    background: linear-gradient(90deg, transparent, var(--fr-paper, var(--card)) 78%);
     pointer-events: none;
     transition: opacity 0.16s ease;
   }
-
   .subfilter-bar.has-overflow.at-end::after {
     opacity: 0;
   }
