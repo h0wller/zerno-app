@@ -233,12 +233,12 @@
 
 /* Narrow mobile: allow the crust descriptor to wrap within its option button instead of ellipsizing it. */
 @media (max-width: 360px) {
-  html[data-brand="delivery"] #deliveryGrid .card .opts .opt-row.opt-top {
+  html body #deliveryView #deliveryGrid .card .opts .opt-row.opt-top {
     flex-wrap: wrap;
     justify-content: flex-start;
     gap: 1px 4px;
   }
-  html[data-brand="delivery"] #deliveryGrid .card .opts .opt-row.opt-top .opt-crust {
+  html body #deliveryView #deliveryGrid .card .opts .opt-row.opt-top .opt-crust {
     flex: 0 0 auto;
     max-width: 100%;
   }
