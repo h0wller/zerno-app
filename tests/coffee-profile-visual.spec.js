@@ -11,6 +11,7 @@ async function installCoffeeGuest(page, stamps, free) {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
     sessionStorage.setItem('splashDone', '1');
+    sessionStorage.removeItem('zt_swipehint');
   });
   await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
   await expect.poll(() => page.evaluate(() =>
@@ -196,7 +197,7 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(page.locator('#pvProfile')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection')).toBeVisible();
 
-  const socialLayout = await page.locator('#profileCoffeeSection .coffee-place-links').evaluate(nav => {
+  const socialLayout = await page.locator('#profileBox .coffee-place-links').evaluate(nav => {
     const host = nav.getBoundingClientRect();
     const items = Array.from(nav.querySelectorAll('.coffee-place-link'), element => {
       const rect = element.getBoundingClientRect();
