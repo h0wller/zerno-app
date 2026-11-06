@@ -350,6 +350,9 @@ test.describe('Модуль заказов профиля', () => {
     await expect(info).not.toContainText('самовывоз');
     await expect(info).not.toContainText('Ежедневно 11:00–22:00');
 
+    await info.locator('.friday-info-details summary').click();
+    await expect(info.locator('.friday-info-body')).toBeVisible();
+
     const vk = info.getByRole('link', { name: 'ВКонтакте' });
     const yandex = info.getByRole('link', { name: 'Яндекс Карты' });
     await expect(vk).toHaveAttribute('href', 'https://vk.ru/fridaypizza39');
