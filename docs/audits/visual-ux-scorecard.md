@@ -96,12 +96,12 @@ Staff phase (after guest baseline): CASHIER, DISPATCH, ADMIN. Use the same captu
 
 | Screen / viewport | Score | Primary evidence |
 |---|---:|---|
-| COF-MENU · 320×740 | 7.5 | Header/ticker clipping; support/chat FAB crowds the next card |
+| COF-MENU · 320×740 | 7.5 | Ticker is an intentional looping marquee; support/chat launcher crowded the next card in this pre-#167 capture |
 | COF-MENU · 390×844 | 7.4 | Ticker clips; support/chat FAB crowds card media |
-| COF-MENU · 768×1024 | 8.1 | Better two-column balance; ticker still clips |
+| COF-MENU · 768×1024 | 8.1 | Better two-column balance; ticker uses the intended continuous marquee |
 | COF-MENU · 1440×900 | 7.5 | Menu and bonus sign-up card are visible; lower sidebar area remains quiet, pending production review |
 | DEL-MENU · 320×740 | 6.6 | Floating support/chat FAB obscures the Add area; horizontal filter chips are clipped |
-| DEL-MENU · 390×844 | 6.6 | Support/chat FAB overlaps the Add button; filter chips and ticker clip |
+| DEL-MENU · 390×844 | 6.6 | Support/chat FAB overlapped Add in the pre-#167 capture; ingredient filters continue horizontally; ticker is an intentional marquee |
 | DEL-MENU · 1440×900 | 7.8 | Profile sign-in card is visible; ingredient-filter chips clip at the right edge; category rail and ingredient filters are distinct navigation levels |
 
 These are provisional screen scores for the rendered CI state, not product acceptance scores. Replace/reconfirm them with the production capture before considering the baseline frozen. The seven component scores are recorded in the score register above.
@@ -119,6 +119,8 @@ These are provisional screen scores for the rendered CI state, not product accep
 | DEL-MENU-D | 1440×900 | Guest first viewport | Three-column cards, hydrated guest profile prompt and ingredient-filter clipping inspected |
 
 Artifact: `visual-ux-baseline-test-42089915249.zip` (GitHub Actions run `42089915249`). It contains 16 viewport PNGs and 8 state metadata JSON files. The full-page hydrated catalog PNGs are supplementary; score rows above use first-viewport captures at the same viewport.
+
+**Ticker behavior clarification (2026-11-06, source/test review):** the ticker's clipped viewport is intentional. `admin-extra.js` adds a hidden duplicate announcement group only when the complete text group overflows, then loops the pair with `zt-marquee`. Under `prefers-reduced-motion: reduce`, the animation is disabled and `.tickerViewport` becomes horizontally scrollable. `tests/pour-accessibility.spec.js` verifies the duplicate group, animation, 34px height, zero header gap, reduced-motion mode, and manual scroll. Do not file a ticker defect solely because text extends beyond the viewport in a static screenshot; verify that the marquee runs or that reduced-motion scrolling works.
 
 **Hydration/capture correction (2026-11-06, run `42185234269`, test server):** the earlier “empty right-side delivery profile” observation was invalid. The cold screenshot was captured before the guest profile resolver completed; the stable hydrated desktop capture shows the selected Profile tab and visible phone sign-in prompt. At widths up to 1180px the profile panel is an intentionally closed drawer, so its body is not expected to be visible in the storefront viewport. The horizontal row contains ingredient filters; the left rail contains menu categories and they are not duplicate navigation.
 
@@ -157,9 +159,9 @@ One row per screen and viewport. Fill scores only after inspecting the matching 
 | COF-HOME | M | — | — | — | — | — | — | — | — | Not assessed |
 | COF-HOME | T | — | — | — | — | — | — | — | — | Not assessed |
 | COF-HOME | D | — | — | — | — | — | — | — | — | Not assessed |
-| COF-MENU | XS | 8 | 7 | 8 | 7.5 | 7.5 | 7 | 7 | 7.5 | Ticker clipped; support/chat FAB crowds the next card; test media are placeholders |
+| COF-MENU | XS | 8 | 7 | 8 | 7.5 | 7.5 | 7 | 7 | 7.5 | Ticker is an intended marquee; support/chat crowded the next card in the pre-#167 capture; test media are placeholders |
 | COF-MENU | M | 8 | 7 | 8 | 7.5 | 7 | 7 | 6.5 | 7.4 | Ticker clips horizontally; support/chat FAB crowds second card media |
-| COF-MENU | T | 8.5 | 8 | 8.3 | 8 | 7.5 | 8 | 7.8 | 8.1 | Ticker content clipped at right edge |
+| COF-MENU | T | 8.5 | 8 | 8.3 | 8 | 7.5 | 8 | 7.8 | 8.1 | Ticker is an intended looping marquee, not static truncation |
 | COF-MENU | D | 8.5 | 6.5 | 8.2 | 7.5 | 7 | 7 | 7 | 7.5 | Bonus sign-up card visible; quiet area below is not yet confirmed as a defect |
 | COF-ITEM | XS | — | — | — | — | — | — | — | — | Not assessed |
 | COF-ITEM | M | — | — | — | — | — | — | — | — | Not assessed |
@@ -186,7 +188,7 @@ One row per screen and viewport. Fill scores only after inspecting the matching 
 | DEL-HOME | T | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-HOME | D | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-MENU | XS | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5 | 6.6 | Support/chat FAB (#chatFab) overlaps Add area; top filter chips are cut off |
-| DEL-MENU | M | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5.5 | 6.6 | Support/chat FAB (#chatFab) covers part of Add button; filter chips and ticker clip |
+| DEL-MENU | M | 8 | 6.5 | 7.5 | 6.5 | 5 | 6.5 | 5.5 | 6.6 | Support/chat FAB (#chatFab) covered Add in pre-#167 capture; ingredient filters are horizontally scrollable and ticker is an intended marquee |
 | DEL-MENU | T | — | — | — | — | — | — | — | — | Not assessed |
 | DEL-MENU | D | 8.5 | 7.2 | 8 | 7.5 | 8 | 7 | 7.5 | 7.8 | Profile sign-in card visible; desktop ingredient filters clip; category rail and ingredient filters are not duplicates |
 | DEL-ITEM | XS | — | — | — | — | — | — | — | — | Not assessed |
