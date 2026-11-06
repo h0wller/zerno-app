@@ -25,7 +25,7 @@ test('single staff action does not stretch the admin bar across the content colu
   expect(dimensions.parentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
 });
 
-test('staff mode switch fits its reserved topbar row before and after hydration', async ({ page }) => {
+test('staff mode switch fits inside the menu actions rail before and after hydration', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -33,8 +33,10 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
     sessionStorage.setItem('splashDone', '1');
   });
   await page.goto('/?brand=delivery');
-  const mode = page.locator('#modeSeg');
+  const mode = page.locator('#adminBar #modeSeg');
   await expect(mode).toBeAttached();
+  await expect(page.locator('#brandSeg')).toBeAttached();
+  await expect(page.locator('header.topbar #modeSeg')).toHaveCount(0);
   await page.evaluate(() => {
     document.getElementById('modeSeg').innerHTML =
       ['Кофейня', 'Доставка', 'Заказы', 'Касса']
@@ -44,12 +46,17 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
 
   const measure = () => page.evaluate(() => {
     const header = document.querySelector('header.topbar');
+    const admin = document.getElementById('adminBar');
     const mode = document.getElementById('modeSeg');
     const headerBox = header.getBoundingClientRect();
+    const adminBox = admin.getBoundingClientRect();
     const modeBox = mode.getBoundingClientRect();
     return {
-      headerBottom: headerBox.bottom,
+      headerHeight: headerBox.height,
+      adminHeight: adminBox.height,
+      adminBottom: adminBox.bottom,
       modeHeight: modeBox.height,
+      modeTop: modeBox.top,
       modeBottom: modeBox.bottom,
       gridRows: getComputedStyle(header).gridTemplateRows,
       buttonHeights: Array.from(mode.querySelectorAll('button'), (button) => button.getBoundingClientRect().height),
@@ -64,7 +71,9 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
   expect(placeholder.modeHeight).toBe(46);
   expect(placeholder.buttonHeights).toHaveLength(4);
   expect(placeholder.buttonHeights.every((height) => height >= 44 && height <= 44.5)).toBe(true);
-  expect(placeholder.modeBottom).toBeLessThanOrEqual(placeholder.headerBottom + 1);
+  expect(placeholder.modeTop).toBeGreaterThanOrEqual(0);
+  expect(placeholder.modeBottom).toBeLessThanOrEqual(placeholder.adminBottom + 1);
+  expect(placeholder.headerHeight).toBeLessThanOrEqual(70);
 
   await page.evaluate(() => {
     document.documentElement.setAttribute('data-staff-ready', 'true');
@@ -74,6 +83,7 @@ test('staff mode switch fits its reserved topbar row before and after hydration'
   const hydrated = await measure();
   expect(hydrated.modeHeight).toBe(46);
   expect(hydrated.buttonHeights.every((height) => height >= 44 && height <= 44.5)).toBe(true);
-  expect(hydrated.modeBottom).toBeLessThanOrEqual(hydrated.headerBottom + 1);
-  expect(hydrated.gridRows.split(' ').length).toBeGreaterThanOrEqual(2);
+  expect(hydrated.modeBottom).toBeLessThanOrEqual(hydrated.adminBottom + 1);
+  expect(hydrated.headerHeight).toBeLessThanOrEqual(70);
+  expect(hydrated.gridRows.split(' ').length).toBe(1);
 });
