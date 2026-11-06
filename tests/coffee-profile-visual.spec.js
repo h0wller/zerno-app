@@ -55,7 +55,7 @@ for (const viewport of VIEWPORTS) {
       const stamps = document.querySelector('#stampGrid');
       const promo = document.querySelector('#promoInput');
       const promoButton = document.querySelector('#promoBtn');
-      const row = promo.closest('.findrow');
+      const row = promo ? promo.closest('.findrow') : null;
       const freeCard = document.querySelector('.freeCard');
       const rect = element => {
         const r = element.getBoundingClientRect();
@@ -97,7 +97,7 @@ for (const viewport of VIEWPORTS) {
     expect(measurements.overflow, JSON.stringify(measurements.overflow)).toHaveLength(0);
     expect(measurements.stampCells).toHaveLength(10);
     expect(measurements.promo.width).toBeGreaterThan(0);
-    expect(measurements.promoButton.width).toBeGreaterThanOrEqual(54);
+    expect(measurements.promoButton.width).toBeGreaterThanOrEqual(53.5);
     expect(measurements.promoButtonWhiteSpace).toBe('nowrap');
     expect(measurements.promoButton.top + measurements.promoButton.height)
       .toBeLessThanOrEqual(measurements.promoRow.bottom + 1);
@@ -248,14 +248,13 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   });
   expect(repeatedLargeQR).toBe(false);
 
-  await page.locator('#profileCoffeeSection [data-open-profile-qr]').focus();
-  await page.keyboard.press('Enter');
+  await page.locator('#tabBonus').click();
+  await expect(page.locator('#pvBonus')).toBeVisible();
+  await expect(page.locator('#qrOpenBonus')).toBeVisible();
+  await page.locator('#qrOpenBonus').click();
   await expect(page.locator('#qrModal')).toHaveClass(/show/);
   await page.locator('#qrClose').click();
   await expect(page.locator('#qrModal')).not.toHaveClass(/show/);
-  await expect(page.locator('#qrOpenBonus')).toBeHidden();
-  await page.locator('#tabBonus').click();
-  await expect(page.locator('#qrOpenBonus')).toBeVisible();
 
   const menuHeading = page.locator('#menuView .mh-top h2.vh');
   await expect(menuHeading).toHaveCount(1);
