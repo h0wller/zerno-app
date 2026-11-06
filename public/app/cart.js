@@ -633,11 +633,15 @@ function clearPromo() {
         '<div class="checkout-recipient-heading"><span class="checkout-recipient-icon" aria-hidden="true">👤</span>' +
         '<div><b>Данные получателя</b><small>Подставлены из вашего профиля</small></div></div>' +
         '<div class="checkout-recipient-values">' +
-        '<span class="checkout-recipient-name">' + esc(user.name || "Гость") + '</span>' +
+        '<span class="checkout-recipient-name" id="checkoutGuestName">' + esc(user.name || "Гость") + '</span>' +
         (user.phone ? '<span class="checkout-recipient-phone">' + esc(user.phone) + '</span>' : '') +
         '</div>';
     }
   }
+
+  window.syncCheckoutGuestAutofill = syncCheckoutGuestAutofill;
+  document.addEventListener("zerno:user-ready", syncCheckoutGuestAutofill);
+  document.addEventListener("zerno:user-updated", syncCheckoutGuestAutofill);
 
   function ensurePlaceOptions() {
     var placeEl = document.getElementById("checkoutPlace");
