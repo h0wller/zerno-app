@@ -108,31 +108,43 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         if (!me) return;
 
         let h = "";
-        for (let i = 0; i < 10; i++)
-            h +=
-                i < me.stamps
-                    ? `<div class="stamp f ${i === me.stamps - 1 ? "last" : ""}">${stampIcon(i)}</div>`
-                    : i === me.stamps && !me.free
-                        ? `<div class="stamp n"></div>`
-                        : `<div class="stamp e"></div>`;
+        for (let i = 0; i < 10; i++) {
+            if (i === 9) {
+                h += `<div class="stamp ${i < me.stamps ? "f" : "e"} stamp-gift" aria-label="Подарок">🎁</div>`;
+                continue;
+            }
+            h += i < me.stamps
+                ? `<div class="stamp f ${i === me.stamps - 1 ? "last" : ""}">${stampIcon(i)}</div>`
+                : i === me.stamps && !me.free
+                    ? `<div class="stamp n"></div>`
+                    : `<div class="stamp e"></div>`;
+        }
         var sg = document.getElementById("stampGrid");
         if (sg) sg.innerHTML = h;
 
+        var freeCount = Math.max(0, Number(me.free) || 0);
+        var stampCount = Math.max(0, Math.min(10, Number(me.stamps) || 0));
+        var remainingStamps = Math.max(0, 10 - stampCount);
         var bp = document.getElementById("bonusProg");
         if (bp) {
-            bp.innerHTML =
-                me.free > 0
-                    ? `У вас <b>${me.free} бесплатный(х) кофе</b> 🎉`
-                    : `До бесплатного кофе: <b>${10 - me.stamps} ${cupWord(10 - me.stamps)}</b> из 10`;
+            bp.innerHTML = freeCount > 0
+                ? `У вас <b>${freeCount} ${freeCount === 1 ? "бесплатный кофе" : "бесплатных кофе"}</b> 🎉`
+                : `Ещё <b>${remainingStamps}</b> до бесплатного кофе`;
         }
 
         var fsEl = document.getElementById("freeSlot");
         if (fsEl) {
-            fsEl.innerHTML =
-                me.free > 0
-                    ? `<div class="freeCard"><span class="fe">🎁</span>
-<div><b>Кофе за наш счёт ×${me.free}</b><small>Покажите этот экран кассиру</small></div></div>`
-                    : "";
+            fsEl.innerHTML = freeCount > 0
+                ? `<div class="freeCard"><span class="fe">🎁</span>
+<div class="free-card-copy"><b>Кофе за наш счёт ×${freeCount}</b><small>Подарок можно получить у кассира</small></div>
+<button type="button" class="free-card-action" data-show-free-qr>Показать кассиру</button></div>`
+                : "";
+            var showGiftQr = fsEl.querySelector("[data-show-free-qr]");
+            if (showGiftQr) {
+                showGiftQr.onclick = function () {
+                    if (typeof window.openQRFull === "function") window.openQRFull();
+                };
+            }
         }
 
         const burnBtn = document.getElementById("burnFree");
@@ -314,6 +326,18 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             $("#stCups").textContent = me.cups;
             $("#stStamps").textContent = me.stamps + "/10";
             $("#stFree").textContent = me.free;
+            var profileStampCount = Math.max(0, Math.min(10, Number(me.stamps) || 0));
+            var profileStampBar = document.getElementById("profileStampProgress");
+            var profileStampFill = document.getElementById("profileStampProgressFill");
+            var profileStampLabel = document.getElementById("profileStampsRemaining");
+            if (profileStampBar) profileStampBar.setAttribute("aria-valuenow", String(profileStampCount));
+            if (profileStampFill) profileStampFill.style.width = (profileStampCount * 10) + "%";
+            if (profileStampLabel) {
+                var profileRemaining = Math.max(0, 10 - profileStampCount);
+                profileStampLabel.textContent = profileRemaining > 0
+                    ? "до подарка — " + profileRemaining
+                    : "подарок доступен";
+            }
             renderHistory();
 
             if (typeof window.syncBrandViews === "function") window.syncBrandViews();

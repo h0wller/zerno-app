@@ -350,6 +350,9 @@ test.describe('Модуль заказов профиля', () => {
     await expect(info).not.toContainText('самовывоз');
     await expect(info).not.toContainText('Ежедневно 11:00–22:00');
 
+    await info.locator('.friday-info-details summary').click();
+    await expect(info.locator('.friday-info-body')).toBeVisible();
+
     const vk = info.getByRole('link', { name: 'ВКонтакте' });
     const yandex = info.getByRole('link', { name: 'Яндекс Карты' });
     await expect(vk).toHaveAttribute('href', 'https://vk.ru/fridaypizza39');
@@ -457,7 +460,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(coffeeVenue.locator('.coffee-place-link svg')).toHaveCount(3);
 
     const coffeeReview = page.locator('#reviewBtn');
-    await expect(coffeeReview).toHaveText('Оставить отзыв');
+    await expect(coffeeReview).toContainText('Оставить отзыв');
     await expect(coffeeReview.locator('svg')).toHaveCount(0);
     await expect.poll(() => coffeeReview.evaluate(element => getComputedStyle(element).justifyContent))
       .toBe('center');

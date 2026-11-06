@@ -169,9 +169,18 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-test('coffee profile keeps one QR action and avoids a duplicate large QR on the profile tab', async ({ page }) => {
+test('coffee profile keeps one QR action and avoids a duplicate large QR on the profile tab', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await installCoffeeGuest(page, 6, 1);
+  const swipeHint = page.locator('#pvBonus .swipeHintChip');
+  await expect(swipeHint).toBeVisible();
+  const swipeHintLayout = await swipeHint.evaluate(element => {
+    const hint = element.getBoundingClientRect();
+    const content = document.querySelector('#bonusBox').getBoundingClientRect();
+    return { position: getComputedStyle(element).position, bottom: hint.bottom, contentTop: content.top };
+  });
+  expect(swipeHintLayout.position).toBe('relative');
+  expect(swipeHintLayout.bottom).toBeLessThanOrEqual(swipeHintLayout.contentTop + 1);
   await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('data-brand'))).toBe('coffee');
   await expect(page.locator('#bonusBox')).toBeVisible();
   await expect(page.locator('#bonusCount')).toHaveText('6/10');
@@ -184,7 +193,20 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(page.locator('#pvProfile')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection .profile-qr-access')).toBeVisible();
-  await expect(page.locator('#profileCoffeeSection .stats')).toBeVisible();
+  await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
+  await expect(page.locator('#profileCoffeeSection #profileStampProgress')).toBeVisible();
+  await expect(page.locator('#profileCoffeeSection #profileStampsRemaining')).toBeVisible();
+  const reviewLayout = await page.locator('.coffee-review-card').evaluate(card => {
+    const prompt = card.querySelector('.coffee-review-prompt').getBoundingClientRect();
+    const button = card.querySelector('#reviewBtn').getBoundingClientRect();
+    return { cardWidth: card.getBoundingClientRect().width, promptWidth: prompt.width, buttonWidth: button.width };
+  });
+  expect(reviewLayout.promptWidth).toBeGreaterThan(48);
+  expect(reviewLayout.buttonWidth).toBeLessThan(reviewLayout.cardWidth * 0.7);
+  await testInfo.attach('coffee-profile-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
 
   const repeatedLargeQR = await page.locator('#profileCoffeeSection canvas').evaluate(element => {
     const rect = element.getBoundingClientRect();
@@ -192,11 +214,14 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   });
   expect(repeatedLargeQR).toBe(false);
 
-  await page.locator('#profileCoffeeSection [data-open-bonus-tab]').focus();
+  await page.locator('#profileCoffeeSection [data-open-profile-qr]').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#tabBonus')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#qrModal')).toHaveClass(/show/);
+  await page.locator('#qrClose').click();
+  await expect(page.locator('#qrModal')).not.toHaveClass(/show/);
+  await expect(page.locator('#qrOpenBonus')).toBeHidden();
+  await page.locator('#tabBonus').click();
   await expect(page.locator('#qrOpenBonus')).toBeVisible();
-  await expect(page.locator('#tabBonus')).toBeFocused();
 
   const menuHeading = page.locator('#menuView .mh-top h2.vh');
   await expect(menuHeading).toHaveCount(1);

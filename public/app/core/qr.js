@@ -119,6 +119,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (openB) openB.onclick = openQRFull;
 
   document.addEventListener('click', function (event) {
+    const qrTrigger = event.target.closest('[data-open-profile-qr]');
+    if (qrTrigger) {
+      event.preventDefault();
+      openQRFull();
+      return;
+    }
+
     const trigger = event.target.closest('[data-open-bonus-tab]');
     if (!trigger) return;
     event.preventDefault();
