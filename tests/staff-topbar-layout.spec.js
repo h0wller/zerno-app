@@ -35,11 +35,19 @@ test('staff switcher mounts inside the menu card without growing the topbar', as
   await page.goto('/?brand=delivery');
   await page.waitForFunction(() => typeof window.syncBrandViews === 'function');
   await page.evaluate(() => {
-    window.me={role:'dispatch'};
-    window.mode='orders';
-    document.documentElement.setAttribute('data-staff-role','dispatch');
+    window.setUser('layout-test-dispatch-token', {
+      role: 'dispatch',
+      name: 'Layout Test Dispatcher',
+      phone: '+70000000000',
+      verified: 1,
+      qr: 'layout-test-dispatch',
+      stamps: 0,
+      free: 0,
+      history: []
+    });
+    window.mode = 'guest';
     window.syncBrandViews();
-    window.renderModes();
+    window.setMode('orders');
   });
   const mode=page.locator('#modeSeg');
   await expect(mode).toBeVisible();
