@@ -248,7 +248,9 @@ function syncViewsVisibility(showCoffee, showDeliv) {
 function syncStaffAndGuestControls(bName2) {
   var canEdit = (typeof canStopMenu === 'function') && canStopMenu(bName2);
   var currentMode = typeof mode !== 'undefined' ? mode : 'guest';
-  var staffViewActive = currentMode === 'admin' || currentMode === 'cashier' || currentMode === 'orders';
+  // The mode selector is the entry point for staff modes, so keep it visible
+  // for authenticated staff even while the current view is still "guest".
+  var staffViewActive = true;
   var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
   var menuHead = activeView && activeView.querySelector('.menu-head');
   var et = document.getElementById('editToggle');
