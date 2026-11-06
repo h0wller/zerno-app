@@ -93,10 +93,11 @@ async function capture(page, meta) {
     animations: 'disabled',
   });
 
-  const runtime = await page.evaluate(() => ({
+  const fullPageContentVisibilityOverride = meta.fullPage === true;
+  const runtime = await page.evaluate((fullPageOverride) => ({
     title: document.title,
     brand: document.documentElement.dataset.brand || null,
-    fullPageContentVisibilityOverride: meta.fullPage === true,
+    fullPageContentVisibilityOverride: fullPageOverride,
     staffRole: document.documentElement.getAttribute('data-staff-role'),
     viewport: { width: innerWidth, height: innerHeight },
     document: {
@@ -117,7 +118,7 @@ async function capture(page, meta) {
       profileGuestPromptHidden: document.getElementById('profileNoUser')?.hidden ?? null,
       profileBoxHidden: document.getElementById('profileBox')?.hidden ?? null,
     },
-  }));
+  }), fullPageContentVisibilityOverride);
 
   return {
     id,
