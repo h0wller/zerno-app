@@ -181,6 +181,16 @@ function matchesIngredient(p, ingId) {
   return grp.re.test(str);
 }
 
+function syncDeliverySubFilterCue(bar) {
+  if (!bar) return;
+
+  var hasOverflow = !bar.hidden && bar.scrollWidth > bar.clientWidth + 1;
+  bar.classList.toggle('has-overflow', hasOverflow);
+
+  var maxScroll = Math.max(0, bar.scrollWidth - bar.clientWidth);
+  bar.classList.toggle('at-end', hasOverflow && bar.scrollLeft >= maxScroll - 2);
+}
+
 function ensureSubFilterBar() {
   var bar = document.getElementById('deliverySubFilter');
   if (!bar) {
@@ -193,6 +203,17 @@ function ensureSubFilterBar() {
       grid.parentNode.insertBefore(bar, grid);
     }
   }
+
+  if (bar && bar.dataset.scrollCueBound !== '1') {
+    bar.dataset.scrollCueBound = '1';
+    bar.addEventListener('scroll', function () {
+      syncDeliverySubFilterCue(bar);
+    }, { passive: true });
+    window.addEventListener('resize', function () {
+      syncDeliverySubFilterCue(bar);
+    }, { passive: true });
+  }
+
   return bar;
 }
 
@@ -208,6 +229,7 @@ function renderSubFilter(categoryItems) {
       var on = (activeAddonTab === tab.id) ? ' on' : '';
       return '<button type="button" class="subchip' + on + '" data-addon-tab="' + tab.id + '">' + tab.label + '</button>';
     }).join('');
+    syncDeliverySubFilterCue(bar);
     return;
   }
 
@@ -216,6 +238,7 @@ function renderSubFilter(categoryItems) {
     if (!chips.length) {
       bar.hidden = true;
       bar.innerHTML = '';
+      syncDeliverySubFilterCue(bar);
       return;
     }
     bar.hidden = false;
@@ -226,9 +249,11 @@ function renderSubFilter(categoryItems) {
       return '<button type="button" class="subchip' + on + '" data-ing="' + c.id + '">' + c.label + '</button>';
     }).join('');
     bar.innerHTML = html;
+    syncDeliverySubFilterCue(bar);
   } else {
     bar.hidden = true;
     bar.innerHTML = '';
+    syncDeliverySubFilterCue(bar);
   }
 }
 
