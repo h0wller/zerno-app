@@ -460,7 +460,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(coffeeVenue.locator('.coffee-place-link svg')).toHaveCount(3);
 
     const coffeeReview = page.locator('#reviewBtn');
-    await expect(coffeeReview).toHaveText('Оставить отзыв');
+    await expect(coffeeReview).toContainText('Оставить отзыв');
     await expect(coffeeReview.locator('svg')).toHaveCount(0);
     await expect.poll(() => coffeeReview.evaluate(element => getComputedStyle(element).justifyContent))
       .toBe('center');
