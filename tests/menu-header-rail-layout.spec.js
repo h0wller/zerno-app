@@ -166,3 +166,52 @@ test('menu headings stay compact without brand taglines on mobile and desktop', 
     }
   }
 });
+
+
+test('coffee: category rail never covers menu title or search input on mobile', async ({ page }, testInfo) => {
+  for (const viewport of [
+    { width: 320, height: 740 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+
+    const heading = page.locator('#menuView .menu-head h1');
+    const searchInput = page.locator('#menuView .coffee-menu-search input');
+    const rail = page.locator('#rail');
+    await expect(heading).toBeVisible({ timeout: 10000 });
+    await expect(searchInput).toBeVisible({ timeout: 10000 });
+    await expect(rail).toBeVisible({ timeout: 10000 });
+
+    const intersections = await page.evaluate(() => {
+      const headingElement = document.querySelector('#menuView .menu-head h1');
+      const range = document.createRange();
+      range.selectNodeContents(headingElement);
+      const headingText = range.getBoundingClientRect();
+      const search = document.querySelector('#menuView .coffee-menu-search input').getBoundingClientRect();
+      const buttons = Array.from(document.querySelectorAll('#rail button')).map((button) => {
+        const rect = button.getBoundingClientRect();
+        return { label: button.textContent.trim(), left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+      });
+      const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      return {
+        headingText: { left: headingText.left, right: headingText.right, top: headingText.top, bottom: headingText.bottom },
+        search: { left: search.left, right: search.right, top: search.top, bottom: search.bottom },
+        headingOverlaps: buttons.filter((button) => overlaps(button, headingText)).map((button) => button.label),
+        searchOverlaps: buttons.filter((button) => overlaps(button, search)).map((button) => button.label),
+      };
+    });
+
+    expect(intersections.headingOverlaps, 'category buttons must not cover the visible menu title').toEqual([]);
+    expect(intersections.searchOverlaps, 'category buttons must not cover the search input').toEqual([]);
+    await testInfo.attach(`coffee-search-rail-clearance-${viewport.width}px`, {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
+  }
+});
