@@ -1,0 +1,73 @@
+/* Mobile support action stays with menu tools, not over catalog cards. */
+@media (max-width: 820px) {
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > .search {
+    flex: 1 1 0%;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+  }
+
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab {
+    position: relative;
+    inset: auto;
+    z-index: 2;
+    display: inline-flex;
+    flex: 0 0 96px;
+    width: 96px;
+    min-width: 96px;
+    max-width: 96px;
+    height: 44px;
+    padding: 0 8px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    box-shadow: none;
+    transform: none;
+    transition: background-color .15s ease, border-color .15s ease;
+    font: 700 12px/1 "Golos Text", system-ui, sans-serif;
+    color: #fff;
+  }
+
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab svg,
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab::before {
+    display: none;
+  }
+
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab::after {
+    content: "Поддержка";
+    position: static;
+    font: inherit;
+    white-space: nowrap;
+  }
+
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab.open::after {
+    content: "Закрыть";
+  }
+
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab .ub {
+    top: -6px;
+    right: -6px;
+  }
+
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab:focus-visible {
+    outline: 2px solid var(--flame, #123A6B);
+    outline-offset: 3px;
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab {
+    transition: none;
+  }
+}

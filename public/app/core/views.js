@@ -268,7 +268,16 @@ function syncStaffAndGuestControls(bName2) {
 function syncChatFab(staff, bName2) {
   var cfab = document.getElementById('chatFab');
   if (!cfab) return;
-  cfab.style.display = staff ? 'none' : '';
+  var supportHost = document.getElementById('supportLauncherHost');
+  var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
+  var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  var supportTarget = mobileViewport && activeView
+    ? activeView.querySelector('.mh-right')
+    : supportHost;
+  if (supportTarget && cfab.parentElement !== supportTarget) supportTarget.appendChild(cfab);
+  var cartPanel = document.getElementById('cartPanel');
+  var cartOpen = !!(cartPanel && cartPanel.classList.contains('open'));
+  cfab.style.display = (staff || cartOpen) ? 'none' : '';
   if (staff) {
     var p = document.getElementById('chatPanel');
     if (p) p.classList.remove('open');
@@ -333,6 +342,17 @@ function sv() {
 }
 
 window.sv = sv;
+var supportViewport = window.matchMedia && window.matchMedia('(max-width: 820px)');
+if (supportViewport) {
+  var refreshSupportPlacement = function () {
+    if (typeof window.sv === 'function') window.sv();
+  };
+  if (supportViewport.addEventListener) {
+    supportViewport.addEventListener('change', refreshSupportPlacement);
+  } else if (supportViewport.addListener) {
+    supportViewport.addListener(refreshSupportPlacement);
+  }
+}
 window.syncBrandViews = function() {
   sv();
 };
@@ -576,11 +596,26 @@ sv();
   }
 
   var panelEl = document.getElementById('panel');
-  if (panelEl && typeof MutationObserver !== 'undefined') {
-    new MutationObserver(refresh).observe(panelEl, {
-      attributes: true,
-      attributeFilter: ['class', 'hidden', 'style'],
+  var cartPanelEl = document.getElementById('cartPanel');
+  if ((panelEl || cartPanelEl) && typeof MutationObserver !== 'undefined') {
+    var viewObserver = new MutationObserver(function () {
+      refresh();
+      var currentBrand = (typeof brand !== 'undefined' && (brand === 'delivery' || brand === 'test')) ? brand : 'coffee';
+      var staff = typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders');
+      syncChatFab(staff, currentBrand);
     });
+    if (panelEl) {
+      viewObserver.observe(panelEl, {
+        attributes: true,
+        attributeFilter: ['class', 'hidden', 'style'],
+      });
+    }
+    if (cartPanelEl) {
+      viewObserver.observe(cartPanelEl, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+    }
   }
 
   window.addEventListener('resize', schedulePlace, { passive: true });
