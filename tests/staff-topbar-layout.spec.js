@@ -92,6 +92,18 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
   expect(cashierLayout.topbarHeight).toBeGreaterThan(64);
   expect(cashierLayout.modeTop).toBeLessThanOrEqual(cashierLayout.headerBottom);
 
+  await page.evaluate(() => window.setMode('orders'));
+  await expect(page.locator('#ordersView')).toBeVisible();
+  const ordersLayout = await mode.evaluate((seg) => ({
+    inTopbar: seg.parentElement === document.querySelector('header.topbar'),
+    topbarHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
+    modeBottom: seg.getBoundingClientRect().bottom,
+    headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom
+  }));
+  expect(ordersLayout.inTopbar).toBe(true);
+  expect(ordersLayout.topbarHeight).toBeGreaterThan(64);
+  expect(ordersLayout.modeBottom).toBeLessThanOrEqual(ordersLayout.headerBottom);
+
   await page.evaluate(() => window.setMode('admin'));
   await expect(mode).toBeVisible();
   expect(await mode.evaluate(element => element.parentElement === document.querySelector('header.topbar'))).toBe(true);
