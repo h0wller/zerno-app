@@ -1,0 +1,45 @@
+---
+title: "Ponytail audit disposition — 2026-11-04"
+description: "Baseline: pizza at a929f82a22e996e0478b3372628c621bc39a2187."
+---
+Baseline: `pizza` at `a929f82a22e996e0478b3372628c621bc39a2187`.
+
+This document records the disposition of the audit findings from the 2026-11-04 `npm run audit` output. It deliberately distinguishes repaired warnings from accepted duplication and deferred CSS ownership work. Static-analysis rules remain enabled; no finding is hidden with an ignore or threshold change.
+
+## ESLint warnings
+
+| Finding | Disposition | Rationale / evidence |
+|---|---|---|
+| `public/app/order-tracking.js`: cognitive complexity 37 | Fixed in this PR | Delegated modal click behavior was split into `handleTrackModalClick`, `openDeliveryChat`, and `repeatTrackedOrder`. The branches retain their previous side effects: overlay and support context, bot/thread refresh, prefilled chat input, cart reconstruction, localStorage persistence, cart FAB/render, modal close and toast. CI must confirm that the warning is gone. |
+| `public/app/ui/settings.js`: repeated “Удалить аккаунт” literal | Fixed in this PR | `DELETE_ACCOUNT_LABEL` is used for the initial confirmation button and its reset state; the confirmation markup now uses the same constant. The distinct phrase “Удалить аккаунт и данные” remains separate because it labels a different action. |
+
+## Strict jscpd findings
+
+The strict run reported five clone pairs. They are not all equivalent abstractions.
+
+| Clone pair | Disposition | Reason |
+|---|---|---|
+| `public/app/core/auth.js`: account deletion vs logout | Keep separate | Deletion invokes `DELETE /api/me`, attempts native push unsubscribe best-effort, and aborts UI cleanup with an error on server failure. Logout posts `/push/unsubscribe` where a subscription exists, calls `/exit`, then clears the local session. These are different lifecycle and failure contracts. |
+| `public/app/profile-orders.js` vs `public/app/ui/settings.js`: Tab focus trap | Defer shared helper | The core wrap logic is similar, but the orders modal and settings modal have separate open/close, nested order-tracker and focus-restoration behavior. A shared helper is reasonable only as a separate accessibility refactor with keyboard/focus E2E coverage for both modal lifecycles. |
+| `server/routes/auth.js`: Telegram-link registration vs normal registration | Keep separate | The former starts from a Telegram-confirmed number, links immediately, sets consent, issues the welcome grant and QR-aware bonus. The latter can be SMS/Telegram OTP or unverified activation-code flow; it has additional token cleanup when linking fails and different verification branches. |
+| `server/routes/auth.js` vs `server/routes/tg.js`: Telegram registration | Keep separate | Mini App link flow and bot-contact verification run in different trust/event contexts. The former accepts a QR source and can grant the QR bonus; the bot contact flow derives identity from the verified contact and grants signup bonus. Their token and failure handling are not interchangeable. |
+| `server/routes/auth.js`: profile update vs notification update | Keep separate | They update different columns and have different route contracts. The common database-update/response shape is not enough to justify a helper. |
+
+The clone count intentionally remains non-zero. Do not silence `jscpd` or mechanically deduplicate these paths merely to reach zero.
+
+## CSS duplicate-selector audit
+
+The audit reported 53 duplicate selector blocks. The informational layer count is not itself an error. Selector duplication is not automatically redundant: cascade order, specificity, brand boundaries, critical CSS, and runtime styles may be semantically significant.
+
+| Candidate | Disposition | Next verification |
+|---|---|---|
+| `.ticker` declared in critical/index styling and in `views.js` | Defer to CSS ownership migration | Identify first-paint constraints and brand-specific behavior; consolidate into the correct layer only after responsive visual snapshots and slow-network CLS checks. |
+| `.opts button` declared in critical/index styling and in `views.js` | Defer to component ownership migration | Compare computed styles and cascade for coffee/delivery product modifiers at mobile and desktop breakpoints before moving declarations. |
+| Remaining duplicate blocks | Keep visible pending classification | Classify as exact duplicate, intentional override, brand override, or critical-CSS fallback. Remove only exact duplicates with no cascade change. |
+
+## Verification policy
+
+- CI is the source of truth for the branch-specific ESLint, strict jscpd, contract-smoke and Playwright outcomes.
+- A clean static job does not by itself prove the browser behavior is unchanged; visual and keyboard flows remain part of acceptance.
+- No merge or production deployment is implied by this audit.
+

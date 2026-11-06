@@ -1,0 +1,95 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Zerno App",
+  "colors": {
+    "primary": "#F3F8FC",
+    "light": "#F3F8FC",
+    "dark": "#0B1220"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Overview",
+        "pages": [
+          "index"
+        ]
+      },
+      {
+        "group": "Get started",
+        "pages": [
+          "read-if-u-ai",
+          "module-map",
+          "css-architecture",
+          "frontend-todo",
+          "ui-checklist"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "api",
+          "guardrails",
+          "nutrition-estimates",
+          "bonus-grants-runbook",
+          "notes"
+        ]
+      },
+      {
+        "group": "Runbooks",
+        "pages": [
+          "network-incident-runbook",
+          "postmortem-2026-10-09-db-migration",
+          "telegram-notification-investigation-2026-10-29"
+        ]
+      },
+      {
+        "group": "Architecture",
+        "pages": [
+          "architecture/adr-dom-reactivity"
+        ]
+      },
+      {
+        "group": "Testing & UI",
+        "pages": [
+          "testing/slow-network-layout",
+          "css-tech-debt",
+          "documentation-audit-2026-11-05"
+        ]
+      },
+      {
+        "group": "Audits",
+        "pages": [
+          "audits/visual-ux-scorecard",
+          "audits/ponytail-audit-2026-11-04",
+          "audits/pour-audit-2026-11-02"
+        ]
+      },
+      {
+        "group": "Reviews",
+        "pages": [
+          "reviews/cart-modifier-expansion-egm-resolution",
+          "reviews/order-idempotency-egm-resolution",
+          "reviews/pr-133-egm-review-resolution"
+        ]
+      },
+      {
+        "group": "Promotions",
+        "pages": [
+          "promotions/weekday-lunch-discount"
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/h0wller/zerno-app"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/h0wller/zerno-app"
+    }
+  }
+}
