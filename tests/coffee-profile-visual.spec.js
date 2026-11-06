@@ -169,7 +169,7 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-test('coffee profile keeps one QR action and avoids a duplicate large QR on the profile tab', async ({ page }) => {
+test('coffee profile keeps one QR action and avoids a duplicate large QR on the profile tab', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await installCoffeeGuest(page, 6, 1);
   await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('data-brand'))).toBe('coffee');
@@ -187,6 +187,10 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('#profileCoffeeSection #profileStampProgress')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection #profileStampsRemaining')).toBeVisible();
+  await testInfo.attach('coffee-profile-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
 
   const repeatedLargeQR = await page.locator('#profileCoffeeSection canvas').evaluate(element => {
     const rect = element.getBoundingClientRect();
