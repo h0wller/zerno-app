@@ -51,7 +51,7 @@ html body #chatsToggle2 {
 #deliveryView .menu-head h1 em,
 #menuView .menu-head .upd,
 #deliveryView .menu-head .upd {
-  display: none !important;
+  display: none;
 }
 
 /* Редактор остаётся доступен, но не конкурирует с остальными действиями. */
