@@ -640,8 +640,15 @@ function clearPromo() {
   }
 
   window.syncCheckoutGuestAutofill = syncCheckoutGuestAutofill;
-  document.addEventListener("zerno:user-ready", syncCheckoutGuestAutofill);
-  document.addEventListener("zerno:user-updated", syncCheckoutGuestAutofill);
+  if (typeof window.__profileMeReady === "function") {
+    var resolveProfileMeReady = window.__profileMeReady;
+    window.__profileMeReady = function () {
+      resolveProfileMeReady.apply(this, arguments);
+      syncCheckoutGuestAutofill();
+    };
+  } else {
+    syncCheckoutGuestAutofill();
+  }
 
   function ensurePlaceOptions() {
     var placeEl = document.getElementById("checkoutPlace");
