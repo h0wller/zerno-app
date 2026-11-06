@@ -184,7 +184,9 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(page.locator('#pvProfile')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection .profile-qr-access')).toBeVisible();
-  await expect(page.locator('#profileCoffeeSection .stats')).toBeVisible();
+  await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
+  await expect(page.locator('#profileCoffeeSection #profileStampProgress')).toBeVisible();
+  await expect(page.locator('#profileCoffeeSection #profileStampsRemaining')).toBeVisible();
 
   const repeatedLargeQR = await page.locator('#profileCoffeeSection canvas').evaluate(element => {
     const rect = element.getBoundingClientRect();
