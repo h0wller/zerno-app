@@ -96,6 +96,26 @@
     background: var(--fr-tan, var(--line));
     border-radius: 999px;
   }
+
+  #deliveryView #deliverySubFilter.has-overflow::after {
+    content: "";
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    display: block;
+    flex: 0 0 32px;
+    width: 32px;
+    min-height: 44px;
+    margin-left: -32px;
+    border-radius: 0 999px 999px 0;
+    background: linear-gradient(90deg, transparent, var(--fr-paper, var(--card)) 78%);
+    pointer-events: none;
+    transition: opacity 0.16s ease;
+  }
+
+  #deliveryView #deliverySubFilter.has-overflow.at-end::after {
+    opacity: 0;
+  }
 }
 
 .subchip {
