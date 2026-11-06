@@ -173,8 +173,13 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   expect(identity.avatarLeft).toBeLessThan(identity.nameLeft);
   expect(Math.abs(identity.nameTop - identity.settingsTop)).toBeLessThanOrEqual(2);
 
+  await panel.locator('.tabs .btn-back').click();
+  await expect(page.locator('#overlay')).not.toHaveClass(/show/);
   await page.locator('#venueToggle').click();
   await page.locator('#brandSeg [data-brand="delivery"]').click();
+  await page.locator('#profileTopBtn').click();
+  await expect(panel).toBeVisible();
+  await panel.locator('.tabs button[data-tab="profile"]').click();
   await expect(page.locator('#fridayInfo')).toBeVisible();
   await expect(page.locator('#fridayInfo .friday-info-details summary')).toContainText('О заведении');
   await expect(page.locator('#fridayInfo .friday-info-details')).toHaveJSProperty('open', false);
@@ -182,8 +187,13 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await page.locator('#fridayInfo .friday-info-details summary').click();
   await expect(page.locator('#fridayInfo .friday-info-body')).toBeVisible();
 
+  await panel.locator('.tabs .btn-back').click();
+  await expect(page.locator('#overlay')).not.toHaveClass(/show/);
   await page.locator('#venueToggle').click();
   await page.locator('#brandSeg [data-brand="coffee"]').click();
+  await page.locator('#profileTopBtn').click();
+  await expect(panel).toBeVisible();
+  await panel.locator('.tabs button[data-tab="profile"]').click();
   await expect(page.locator('.coffee-review-card')).toBeVisible();
   await shot(page, '03-profile');
 
