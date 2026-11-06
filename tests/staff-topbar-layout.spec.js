@@ -36,7 +36,8 @@ test('staff switcher mounts inside the menu card without growing the topbar', as
   await page.waitForFunction(() => typeof window.syncBrandViews === 'function');
   await page.evaluate(() => {
     window.me={role:'dispatch'};
-    window.mode='guest';
+    window.mode='orders';
+    document.documentElement.setAttribute('data-staff-role','dispatch');
     window.syncBrandViews();
     window.renderModes();
   });
