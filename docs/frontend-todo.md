@@ -1,7 +1,7 @@
 # Frontend roadmap & UX audit — Zerno
 
 **Base branch:** `pizza`
-**Last documentation reconciliation:** 2026-11-05
+**Last documentation reconciliation:** 2026-11-06
 
 ## Current source-of-truth and status
 
@@ -20,11 +20,13 @@ Historical milestone logs below remain historical. Do not use their old test cou
 This is an audit queue, not a declaration that each item is defective.
 
 ### A. Evidence collection and screenshot baseline
-- [ ] Isolated guest sessions for coffee and delivery.
-- [ ] Screenshots: mobile 390×844 and desktop 1440×900; capture cold, hydrated, menu, cart, checkout and profile states.
+- [x] Deterministic isolated guest sessions for coffee and delivery.
+- [x] Cold and hydrated first-viewport guest menu screenshots at 320×740, 390×844, 768×1024 and 1440×900; CI run 42185234269 (test server).
+- [x] Supplemental full-page hydrated catalog captures; `content-visibility` is temporarily disabled only for these long screenshots and is flagged in JSON metadata. Do not use them for first-viewport scoring.
+- [ ] Production guest baseline, and customer cart/checkout/profile states; test-server screenshots are not production acceptance evidence.
 - [ ] Staff sessions: cashier, dispatcher, admin after guest baseline.
-- [ ] Verify ticker and rail placement, header dimensions, logo rendering, menu/card hierarchy, text wrapping and controls.
-- [ ] Attach screenshots to findings/PRs; record commit, role, brand and viewport.
+- [ ] Verify ticker placement, header dimensions, logo rendering, menu/card hierarchy, text wrapping and controls against production screenshots.
+- [x] Attach screenshots to findings/PRs; record commit, role, brand and viewport.
 
 ### B. Header, ticker, search and rail
 - [ ] Header width/height and compactness.
