@@ -613,33 +613,30 @@ function clearPromo() {
   function syncCheckoutGuestAutofill() {
     var cPanelEl = document.getElementById("cartPanel");
     if (!cPanelEl) return;
-    var gBar = document.getElementById("checkoutGuestBar");
+    var recipientCard = document.getElementById("checkoutGuestBar");
     var user = typeof window.me !== "undefined" ? window.me : null;
     if (!user || (!user.name && !user.phone)) {
-      if (gBar) gBar.hidden = true;
+      if (recipientCard) recipientCard.hidden = true;
       return;
     }
     var methodEl = document.getElementById("checkoutMethod");
-    if (!gBar && methodEl) {
-      var wrapLabel = methodEl.closest("label") || methodEl.parentElement;
-      if (wrapLabel && wrapLabel.parentNode) {
-        gBar = document.createElement("div");
-        gBar.id = "checkoutGuestBar";
-        gBar.className = "checkout-guest-bar";
-        wrapLabel.parentNode.insertBefore(gBar, wrapLabel);
-      }
+    if (!recipientCard && methodEl) {
+      recipientCard = document.createElement("div");
+      recipientCard.id = "checkoutGuestBar";
+      recipientCard.className = "checkout-recipient-card";
+      var section = methodEl.closest(".checkout-section");
+      if (section) section.insertBefore(recipientCard, methodEl.closest("label") || methodEl);
     }
-    if (gBar) {
-      gBar.hidden = false;
-      gBar.innerHTML =
-        '<span class="cgb-label">👤 Получатель:</span>' +
-        '<b class="cgb-val" id="checkoutGuestName">' + esc(user.name || "Гость") + "</b>" +
-        (user.phone ? '<span class="cgb-phone" id="checkoutGuestPhone">' + esc(user.phone) + "</span>" : "");
+    if (recipientCard) {
+      recipientCard.hidden = false;
+      recipientCard.innerHTML =
+        '<div class="checkout-recipient-heading"><span class="checkout-recipient-icon" aria-hidden="true">👤</span>' +
+        '<div><b>Данные получателя</b><small>Подставлены из вашего профиля</small></div></div>' +
+        '<div class="checkout-recipient-values">' +
+        '<span class="checkout-recipient-name">' + esc(user.name || "Гость") + '</span>' +
+        (user.phone ? '<span class="checkout-recipient-phone">' + esc(user.phone) + '</span>' : '') +
+        '</div>';
     }
-    var nameInp = document.getElementById("checkoutName");
-    if (nameInp && !nameInp.value && user.name) nameInp.value = user.name;
-    var phoneInp = document.getElementById("checkoutPhone");
-    if (phoneInp && !phoneInp.value && user.phone) phoneInp.value = user.phone;
   }
 
   function ensurePlaceOptions() {
