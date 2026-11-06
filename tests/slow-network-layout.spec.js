@@ -175,7 +175,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.tickerOverflowX).toBe('hidden');
     expect(before.section.width).toBeGreaterThan(250);
     expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
-    expect(before.heading.width).toBeGreaterThan(200);
+    // The compact heading intentionally contains only «Меню», not the old brand tagline.
+    expect(before.heading.width).toBeGreaterThan(60);
+    expect(before.heading.width).toBeLessThan(200);
     expect(before.menuHead).not.toBeNull();
     expect(before.menuHead.x).toBeLessThanOrEqual(before.rail.x + 1);
     expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
@@ -220,11 +222,13 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.search).toEqual(before.search);
     expect(after.searchLabel).toEqual(before.searchLabel);
     expect(after.searchInput).toEqual(before.searchInput);
-    expect(after.updated.width).toBe(before.updated.width);
-    expect(after.updated.height).toBe(before.updated.height);
+    expect(after.updated.width).toBe(0);
+    expect(after.updated.height).toBe(0);
     expect(after.subchip.width).toBe(before.subchip.width);
     expect(after.option.height).toBe(before.option.height);
-    expect(after.heading.width).toBeGreaterThan(200);
+    // The compact heading intentionally contains only «Меню», not the old brand tagline.
+    expect(after.heading.width).toBeGreaterThan(60);
+    expect(after.heading.width).toBeLessThan(200);
     expect(after.menuHead).toEqual(before.menuHead);
     expect(after.menuHead.x).toBeLessThanOrEqual(after.rail.x + 1);
     expect(after.menuHead.right).toBeGreaterThanOrEqual(after.section.right - 1);
