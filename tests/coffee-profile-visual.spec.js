@@ -253,7 +253,8 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   });
   expect(repeatedLargeQR).toBe(false);
 
-  await page.locator('#tabBonus').click();
+  await page.evaluate(() => window.openPanel('bonus'));
+  await expect(page.locator('#panel')).toHaveClass(/open/);
   await expect(page.locator('#pvBonus')).toBeVisible();
   await expect(page.locator('#qrOpenBonus')).toBeVisible();
   await page.locator('#qrOpenBonus').click();
