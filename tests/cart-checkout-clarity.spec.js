@@ -120,7 +120,11 @@ test('cart keeps the current selected price and explains every amount without gu
 
   const checkoutSections = page.locator('.checkoutForm > .checkout-section');
   await expect(checkoutSections).toHaveCount(3);
-  await expect(checkoutSections.nth(0).locator('h4')).toHaveText('Получение');
+  await expect(checkoutSections.nth(0).locator('h4')).toHaveText('Получение заказа');
+  await expect(checkoutSections.nth(0).locator('.checkout-recipient-card')).toContainText('Данные получателя');
+  await expect(checkoutSections.nth(0).locator('.checkout-recipient-card')).toContainText('Тестовый гость');
+  await expect(checkoutSections.nth(0).locator('.checkout-recipient-card')).toContainText('+7 999 123-45-67');
+  await expect(checkoutSections.nth(0).locator('#checkoutMethod')).toHaveCount(1);
   await expect(checkoutSections.nth(1).locator('h4')).toHaveText('Когда и как оплатить');
   await expect(checkoutSections.nth(2).locator('h4')).toHaveText('Проверка заказа');
   await expect(checkoutSections.nth(0).locator('#checkoutMethod')).toHaveCount(1);
