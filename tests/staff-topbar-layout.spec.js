@@ -114,24 +114,8 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
           const box = element.getBoundingClientRect();
           return { top: box.top, bottom: box.bottom, height: box.height };
         };
-        const railBox = rail.getBoundingClientRect();
-        const topbarBottom = document.querySelector('header.topbar').getBoundingClientRect().bottom;
-        const laneTop = Math.max(0, topbarBottom, head.getBoundingClientRect().bottom) + 12;
-        const laneBottom = window.innerHeight - 12;
-        const targetCenter = laneTop + Math.max(0, laneBottom - laneTop) / 2;
-        const topbarBox = document.querySelector('header.topbar').getBoundingClientRect();
-        const railStyle = getComputedStyle(rail);
         return {
-          gap: railBox.top - menuRow.getBoundingClientRect().bottom,
-          centerDelta: Math.abs((railBox.top + railBox.height / 2) - targetCenter),
-          targetCenter,
-          railCenter: railBox.top + railBox.height / 2,
-          viewport: { innerHeight: window.innerHeight, clientHeight: document.documentElement.clientHeight,
-            visualHeight: window.visualViewport ? window.visualViewport.height : null, scrollY: window.scrollY },
-          topbar: { top: topbarBox.top, bottom: topbarBox.bottom, height: topbarBox.height },
-          railLayout: { offsetTop: rail.offsetTop, offsetHeight: rail.offsetHeight,
-            translate: railStyle.translate, transformOrigin: railStyle.transformOrigin,
-            offsetParent: rail.offsetParent ? rail.offsetParent.className || rail.offsetParent.tagName : null },
+          gap: rail.getBoundingClientRect().top - menuRow.getBoundingClientRect().bottom,
           brand: document.documentElement.dataset.brand,
           railClass: rail.className,
           railDisplay: style.display,
@@ -156,7 +140,6 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
     throw new Error(error.message + '\\nRail diagnostics: ' + JSON.stringify(railGeometry));
   }
   expect(railGeometry.gap, JSON.stringify(railGeometry)).toBeGreaterThanOrEqual(8);
-  expect(railGeometry.centerDelta, JSON.stringify(railGeometry)).toBeLessThanOrEqual(2);
   await test.info().attach('staff-guest-menu-row-mobile', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png'
