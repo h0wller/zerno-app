@@ -360,14 +360,124 @@ paths:
                   items:     { type: array, items: { $ref: '#/components/schemas/MenuItem' } }
                   updatedAt: { type: string, format: date-time }
 
+    post:
+      tags: [Menu]
+      summary: Создать позицию меню
+      description: Только adminGuard; создаёт запись меню и возвращает её id.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Поля новой позиции меню; сервер применяет значения по умолчанию для необязательных полей.
+              properties:
+                id: { type: string }
+                name: { type: string }
+                section: { type: string, enum: [coffee, delivery] }
+                price: { type: string }
+                on: { type: boolean }
+                comp: { type: array, items: { type: object } }
+                opts: { type: array, items: { type: object } }
+      responses:
+        '200': { description: Позиция создана; возвращает ok и id }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/menu/reorder:
+    put:
+      tags: [Menu]
+      summary: Изменить порядок позиций меню
+      description: Только adminGuard; brand выбирает секцию, ids задаёт новый порядок. Пустой или неполный список отклоняется.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                brand: { type: string, enum: [coffee, delivery] }
+                ids: { type: array, items: { type: string }, minItems: 1 }
+      responses:
+        '200': { description: Порядок обновлён }
+        '400': { description: Пустой порядок }
+        '409': { description: Не все позиции найдены в выбранной секции }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /api/menu/all:
     get:
       tags: [Menu]
-      summary: Всё меню, включая выключенные позиции (admin)
+      summary: Всё меню, включая выключенные позиции (menuGuard: cashier, dispatch, admin)
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: OK }
         '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/menu/{id}:
+    put:
+      tags: [Menu]
+      summary: Обновить позицию меню или переключить её стоп-лист
+      description: menuGuard; cashier может менять только on для coffee, dispatch — только on для delivery; admin может редактировать все поля.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                on: { type: boolean }
+                name: { type: string }
+                section: { type: string, enum: [coffee, delivery] }
+                price: { type: string }
+                comp: { type: array, items: { type: object } }
+                opts: { type: array, items: { type: object } }
+      responses:
+        '200': { description: Позиция обновлена }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Позиция не найдена }
+    delete:
+      tags: [Menu]
+      summary: Удалить позицию меню
+      description: Только adminGuard.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Позиция удалена }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/menu/upload:
+    post:
+      tags: [Menu]
+      summary: Загрузить изображение позиции меню
+      description: Только adminGuard; принимает data URL и сохраняет responsive WebP варианты.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                id: { type: string }
+                data: { type: string, description: Data URL изображения }
+      responses:
+        '200': { description: Возвращает ok и URL загруженного изображения }
+        '400': { description: Некорректные данные изображения }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { description: Ошибка сохранения изображения }
 
   /api/dmenu:
     get:
@@ -845,15 +955,6 @@ paths:
               additionalProperties: true
       responses: { '200': { description: Возвращает customer } }
 
-  /api/redeem:
-    post:
-      tags: [Auth]
-      summary: Погасить бесплатный кофе текущего пользователя
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: Результат погашения }
-        '400': { description: Нет доступных подарков }
-
   /api/staff/activate-guest:
     post:
       tags: [Staff]
@@ -1120,6 +1221,29 @@ paths:
                   code: { type: string, nullable: true, description: "Промокод доставки, если выдан" }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /api/tg/webhook:
+    post:
+      tags: [System]
+      summary: Входящий webhook Telegram Bot API
+      description: Проверяет заголовок x-telegram-bot-api-secret-token. При отсутствующем секрете возвращает 503; при неверном — 403. BearerAuth не используется.
+      parameters:
+        - in: header
+          name: x-telegram-bot-api-secret-token
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Telegram Update object; точная структура определяется Telegram Bot API.
+              additionalProperties: true
+      responses:
+        '200': { description: Update принят в обработку }
+        '403': { description: Неверный webhook secret }
+        '503': { description: Webhook secret не настроен }
+
   /api/tg/diag:
     get:
       tags: [Admin]
@@ -1129,5 +1253,4 @@ paths:
       responses:
         '200': { description: OK }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
         '403': { $ref: '#/components/responses/Forbidden' }
