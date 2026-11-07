@@ -87,11 +87,7 @@
   }
   body.is-cashier header.topbar,
   body.is-admin header.topbar {
-    position: relative;
-    transform: none;
-    flex: 0 0 auto;
     order: 0;
-    z-index: 50;
   }
   header.topbar div.venueWrap {
     position: relative;
