@@ -1,20 +1,43 @@
 /* Mobile support action stays with menu tools, not over catalog cards. */
 @media (max-width: 820px) {
+  :is(#menuView, #deliveryView) .menu-head .mh-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  :is(#menuView, #deliveryView) .menu-head .mh-top > div:first-child {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
     gap: 8px;
+    width: auto;
     min-width: 0;
+    max-width: 100%;
+    margin-left: 0;
+    box-sizing: border-box;
   }
 
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > .search {
     flex: 1 1 0%;
     width: auto;
     min-width: 0;
-    max-width: none;
+    max-width: 100%;
     margin: 0;
+    box-sizing: border-box;
   }
 
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab {
