@@ -1,7 +1,7 @@
 # Documentation audit — Zerno App
 
 **Reviewed branch:** `pizza`  
-**Reviewed commit:** `401fa8fe727854249dbd4f93e990f768eb579255`  
+**Reviewed commit:** `401fa8fe727854249dbd4f93d1ddcf52cb599df8`  
 **Date:** 2026-11-07  
 **Purpose:** reconcile documentation statements with the repository state. Historical evidence remains historical. This audit does not claim that every operational or domain document has been re-verified.
 
@@ -95,7 +95,7 @@ The following remain outside the scope of this reconciliation and must not be re
 - ADRs and `perf-report.md` source calculations;
 - complete OpenAPI schemas and Postman import/client generation.
 
-Operational infrastructure facts such as public server IP, current DNS/proxy configuration and production secret values were not independently checked. Never copy CI test PINs into production configuration; verify production `.env` out of band. The default employee PIN values in `server/config.js` are development fallbacks, not production secrets.
+Operational infrastructure facts such as public server IP, current DNS/proxy configuration and production secret values were not independently checked. Never copy CI test PINs into production configuration; verify production `.env` out of band. `server/config.js` falls back to `3364/2468/5719` whenever the corresponding environment variable is unset; this fallback has no `NODE_ENV` guard. CI supplies the same values explicitly for tests. Production must set explicit unique secrets; the actual production `.env` values were not inspected.
 
 ## 8. Verification performed
 
