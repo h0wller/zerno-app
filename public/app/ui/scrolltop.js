@@ -39,6 +39,29 @@ function alignRailWithCard() {
   if (!wrap) return;
 
   var headRect = head && head.getBoundingClientRect();
+  var menuRow = head && head.querySelector('.menu-controls-row');
+  var modeSeg = document.getElementById('modeSeg');
+  var staffMenuContext = !!(menuRow && modeSeg && modeSeg.parentElement === menuRow);
+
+  // The existing sticky-center calculation needs enough parent height to reach
+  // its viewport lane. An empty staff menu can otherwise end .wrap before the
+  // centered rail fits, pulling the rail back over the new menu-controls row.
+  // Extend only this staff guest state; the shared sticky positioning is unchanged.
+  if (headRect && headRect.height && staffMenuContext) {
+    var topbarForRunway = document.querySelector('header.topbar');
+    var topbarBottomForRunway = topbarForRunway ? topbarForRunway.getBoundingClientRect().bottom : 0;
+    var laneTopForRunway = Math.max(0, topbarBottomForRunway, headRect.bottom) + 12;
+    var laneBottomForRunway = (window.innerHeight || document.documentElement.clientHeight) - 12;
+    var stickyTopForRunway = laneTopForRunway
+      + Math.max(0, laneBottomForRunway - laneTopForRunway) / 2;
+    var requiredBottom = stickyTopForRunway + rail.offsetHeight;
+    var requiredHeight = Math.max(0, Math.ceil(requiredBottom - wrap.getBoundingClientRect().top + 16));
+    var runwayHeight = requiredHeight + 'px';
+    if (wrap.style.minHeight !== runwayHeight) wrap.style.minHeight = runwayHeight;
+  } else if (wrap.style.minHeight) {
+    wrap.style.minHeight = '';
+  }
+
   if (headRect && headRect.height) {
     var wrapRect = wrap.getBoundingClientRect();
     var wrapStyle = window.getComputedStyle(wrap);
