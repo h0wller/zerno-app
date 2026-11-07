@@ -1,37 +1,28 @@
 /* Mobile support action stays with menu tools, not over catalog cards. */
 @media (max-width: 820px) {
-  :is(#menuView, #deliveryView) .menu-head .mh-top {
-    display: flex;
-    align-items: center;
-    flex-wrap: nowrap;
-    gap: 8px;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-
-  :is(#menuView, #deliveryView) .menu-head .mh-top > div:first-child {
-    flex: 0 1 auto;
+  #menuView .menu-head .mh-top,
+  #deliveryView .menu-head .mh-top {
     min-width: 0;
     max-width: 100%;
   }
 
-  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right {
+  #menuView .menu-head .mh-top .mh-right,
+  #deliveryView .menu-head .mh-top .mh-right {
     display: flex;
-    flex: 1 1 auto;
+    flex: 1 1 100%;
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
     gap: 8px;
-    width: auto;
+    width: 100%;
     min-width: 0;
     max-width: 100%;
     margin-left: 0;
     box-sizing: border-box;
   }
 
-  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > .search {
+  #menuView .menu-head .mh-top .mh-right > .search,
+  #deliveryView .menu-head .mh-top .mh-right > .search {
     flex: 1 1 0%;
     width: auto;
     min-width: 0;
@@ -40,7 +31,8 @@
     box-sizing: border-box;
   }
 
-  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab {
+  #menuView .menu-head .mh-top .mh-right > #chatFab.chat-fab,
+  #deliveryView .menu-head .mh-top .mh-right > #chatFab.chat-fab {
     position: relative;
     inset: auto;
     z-index: 2;
@@ -61,28 +53,34 @@
     color: #fff;
   }
 
-  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab svg,
-  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab::before {
+  #menuView .menu-head .mh-top .mh-right > #chatFab.chat-fab svg,
+  #deliveryView .menu-head .mh-top .mh-right > #chatFab.chat-fab svg,
+  #menuView .menu-head .mh-top .mh-right > #chatFab.chat-fab::before,
+  #deliveryView .menu-head .mh-top .mh-right > #chatFab.chat-fab::before {
     display: none;
   }
 
-  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab::after {
+  #menuView .menu-head .mh-top .mh-right > #chatFab.chat-fab::after,
+  #deliveryView .menu-head .mh-top .mh-right > #chatFab.chat-fab::after {
     content: "Поддержка";
     position: static;
     font: inherit;
     white-space: nowrap;
   }
 
-  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab.open::after {
+  #menuView .menu-head .mh-top .mh-right > #chatFab.chat-fab.open::after,
+  #deliveryView .menu-head .mh-top .mh-right > #chatFab.chat-fab.open::after {
     content: "Закрыть";
   }
 
-  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab .ub {
+  #menuView .menu-head .mh-top .mh-right > #chatFab.chat-fab .ub,
+  #deliveryView .menu-head .mh-top .mh-right > #chatFab.chat-fab .ub {
     top: -6px;
     right: -6px;
   }
 
-  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab:focus-visible {
+  #menuView .menu-head .mh-top .mh-right > #chatFab.chat-fab:focus-visible,
+  #deliveryView .menu-head .mh-top .mh-right > #chatFab.chat-fab:focus-visible {
     outline: 2px solid var(--flame, #123A6B);
     outline-offset: 3px;
   }
