@@ -101,23 +101,42 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
   expect(guestLayout.buttonWidths).toEqual([44, 44, 44, 44]);
   expect(guestLayout.modeScrollWidth).toBeLessThanOrEqual(guestLayout.modeClientWidth + 1);
   await expect(page.locator('#deliveryRail')).toHaveClass(/rail-position-ready/);
-  await expect.poll(() => page.evaluate(() => {
-    const rail = document.getElementById('deliveryRail');
-    const menuRow = document.querySelector('#deliveryView .menu-controls-row');
-    return rail.getBoundingClientRect().top - menuRow.getBoundingClientRect().bottom;
-  }), { timeout: 5000 }).toBeGreaterThanOrEqual(8);
-  const railGeometry = await page.evaluate(() => {
-    const rail = document.getElementById('deliveryRail');
-    const menuRow = document.querySelector('#deliveryView .menu-controls-row');
-    const head = document.querySelector('#deliveryView .menu-head');
-    return {
-      gap: rail.getBoundingClientRect().top - menuRow.getBoundingClientRect().bottom,
-      headBottom: head.getBoundingClientRect().bottom,
-      marginTop: getComputedStyle(rail).marginTop,
-      top: getComputedStyle(rail).top,
-      positionReady: rail.classList.contains('rail-position-ready')
-    };
-  });
+  let railGeometry;
+  try {
+    await expect.poll(async () => {
+      railGeometry = await page.evaluate(() => {
+        const rail = document.getElementById('deliveryRail');
+        const menuRow = document.querySelector('#deliveryView .menu-controls-row');
+        const head = document.querySelector('#deliveryView .menu-head');
+        const wrap = document.querySelector('.wrap');
+        const style = getComputedStyle(rail);
+        const rect = (element) => {
+          const box = element.getBoundingClientRect();
+          return { top: box.top, bottom: box.bottom, height: box.height };
+        };
+        return {
+          gap: rail.getBoundingClientRect().top - menuRow.getBoundingClientRect().bottom,
+          brand: document.documentElement.dataset.brand,
+          railClass: rail.className,
+          railDisplay: style.display,
+          railPosition: style.position,
+          railInlineMarginTop: rail.style.marginTop,
+          railMarginTop: style.marginTop,
+          railInlineTop: rail.style.top,
+          railTop: style.top,
+          railInlineTransform: rail.style.transform,
+          railTransform: style.transform,
+          head: rect(head),
+          menuRow: rect(menuRow),
+          rail: rect(rail),
+          wrap: rect(wrap)
+        };
+      });
+      return railGeometry.gap;
+    }, { timeout: 5000 }).toBeGreaterThanOrEqual(8);
+  } catch (error) {
+    throw new Error(error.message + '\\nRail diagnostics: ' + JSON.stringify(railGeometry));
+  }
   expect(railGeometry.gap, JSON.stringify(railGeometry)).toBeGreaterThanOrEqual(8);
   await test.info().attach('staff-guest-menu-row-mobile', {
     body: await page.screenshot({ fullPage: false }),
