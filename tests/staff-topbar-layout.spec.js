@@ -119,9 +119,19 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
         const laneTop = Math.max(0, topbarBottom, head.getBoundingClientRect().bottom) + 12;
         const laneBottom = window.innerHeight - 12;
         const targetCenter = laneTop + Math.max(0, laneBottom - laneTop) / 2;
+        const topbarBox = document.querySelector('header.topbar').getBoundingClientRect();
+        const railStyle = getComputedStyle(rail);
         return {
           gap: railBox.top - menuRow.getBoundingClientRect().bottom,
           centerDelta: Math.abs((railBox.top + railBox.height / 2) - targetCenter),
+          targetCenter,
+          railCenter: railBox.top + railBox.height / 2,
+          viewport: { innerHeight: window.innerHeight, clientHeight: document.documentElement.clientHeight,
+            visualHeight: window.visualViewport ? window.visualViewport.height : null, scrollY: window.scrollY },
+          topbar: { top: topbarBox.top, bottom: topbarBox.bottom, height: topbarBox.height },
+          railLayout: { offsetTop: rail.offsetTop, offsetHeight: rail.offsetHeight,
+            translate: railStyle.translate, transformOrigin: railStyle.transformOrigin,
+            offsetParent: rail.offsetParent ? rail.offsetParent.className || rail.offsetParent.tagName : null },
           brand: document.documentElement.dataset.brand,
           railClass: rail.className,
           railDisplay: style.display,
