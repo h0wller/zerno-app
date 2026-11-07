@@ -62,14 +62,39 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 
   test('menu row stays compact and staff modes keep the switcher in the topbar', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.evaluate(() => {
-      window.setUser('accessibility-layout-admin-token', {
-        role: 'admin', name: 'Accessibility Test Admin', phone: '+70000000001',
-        verified: 1, qr: 'accessibility-layout-admin', stamps: 0, free: 0, history: []
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      const body = pathname === '/api/me'
+        ? {
+            customer: {
+              id: 'accessibility-layout-admin',
+              name: 'Accessibility Layout Admin',
+              phone: '+70000000001',
+              role: 'admin',
+              verified: 1,
+              qr: 'accessibility-layout-admin',
+              cups: 0,
+              stamps: 0,
+              free: 0,
+              history: []
+            }
+          }
+        : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
       });
-      window.mode = 'guest';
-      window.syncBrandViews();
     });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'playwright-accessibility-admin-token');
+      localStorage.setItem('zt_role', 'admin');
+    });
+    await page.reload();
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'admin' &&
+      document.documentElement.hasAttribute('data-staff-ready')
+    );
 
     const menuMetrics = await page.evaluate(() => {
       const header = document.querySelector('header.topbar').getBoundingClientRect();
