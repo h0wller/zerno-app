@@ -95,6 +95,10 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
   expect(guestLayout.modeHeight).toBeGreaterThanOrEqual(44);
   expect(guestLayout.buttons.length).toBeGreaterThanOrEqual(2);
   expect(guestLayout.buttons.every(height => height >= 44)).toBe(true);
+  await test.info().attach('staff-guest-menu-row-mobile', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
 
   await page.evaluate(() => window.setMode('cashier'));
   await expect(page.locator('#cashierView')).toBeVisible();
@@ -103,6 +107,7 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
     inTopbar: seg.parentElement === document.querySelector('header.topbar'),
     topbarTop: document.querySelector('header.topbar').getBoundingClientRect().top,
     topbarHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
+    topbarPosition: getComputedStyle(document.querySelector('header.topbar')).position,
     modeTop: seg.getBoundingClientRect().top,
     headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom
   }));
@@ -110,6 +115,11 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
   expect(cashierLayout.topbarTop).toBeLessThanOrEqual(1);
   expect(cashierLayout.topbarHeight).toBeGreaterThan(64);
   expect(cashierLayout.modeTop).toBeLessThanOrEqual(cashierLayout.headerBottom);
+  expect(cashierLayout.topbarPosition).toBe('sticky');
+  await test.info().attach('staff-cashier-topbar-mobile', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
 
   await page.evaluate(() => window.setMode('orders'));
   await expect(page.locator('#ordersView')).toBeVisible();
@@ -124,6 +134,10 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
   expect(ordersLayout.topbarTop).toBeLessThanOrEqual(1);
   expect(ordersLayout.topbarHeight).toBeGreaterThan(64);
   expect(ordersLayout.modeBottom).toBeLessThanOrEqual(ordersLayout.headerBottom);
+  await test.info().attach('staff-orders-topbar-mobile', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
 
   await page.evaluate(() => window.setMode('admin'));
   await expect(mode).toBeVisible();
