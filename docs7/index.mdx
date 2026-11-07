@@ -1,46 +1,19 @@
 ---
-title: "Zerno App — documentation index"
-description: "Dual-brand PWA / Telegram Mini App for «…и кофе» and «Пятница»."
+title: "Documentation mirror retired"
+description: "This Mintlify/Context7 snapshot is deprecated. Use docs/ as the only maintained source of truth."
 ---
 
-Dual-brand PWA / Telegram Mini App for «…и кофе» and «Пятница».
+# Documentation mirror retired
 
-## Start here
+`docs7/` is a historical imported snapshot and is no longer maintained. Its copied pages may be stale and must not be used as current project instructions or API facts.
 
-1. `PROJECT_RULES.md` — mandatory engineering guardrails.
-2. [`docs/read-if-u-ai.md`](/read-if-u-ai) — system, stack, deployment and project context.
-3. [`docs/module-map.md`](/module-map) — canonical DOM/module ownership map.
-4. [`docs/css-architecture.md`](/css-architecture) — CSS responsibility layers and cascade rules.
-5. [`docs/frontend-todo.md`](/frontend-todo) — current frontend/UX audit queue and roadmap.
-6. [`docs/ui-checklist.md`](/ui-checklist) — UI acceptance and screenshot protocol.
-7. [`docs/testing/slow-network-layout.md`](/testing/slow-network-layout) — first-paint/CLS regression contract.
-8. `docs/openapi.yaml` — API contract (verify route implementation before assuming every operation is current).
-9. [`docs/documentation-audit-2026-11-05.md`](/documentation-audit-2026-11-05) — documentation inventory and unresolved drift checks.
+The canonical documentation lives in the repository's `docs/` directory:
 
-## Project commands
+- [Project architecture and stack](https://github.com/h0wller/zerno-app/blob/pizza/docs/read-if-u-ai.md)
+- [Module ownership map](https://github.com/h0wller/zerno-app/blob/pizza/docs/module-map.md)
+- [Frontend UX roadmap](https://github.com/h0wller/zerno-app/blob/pizza/docs/frontend-todo.md)
+- [API route index](https://github.com/h0wller/zerno-app/blob/pizza/docs/api.md)
+- [OpenAPI specification](https://github.com/h0wller/zerno-app/blob/pizza/docs/openapi.yaml)
+- [Current documentation audit](https://github.com/h0wller/zerno-app/blob/pizza/docs/documentation-audit-2026-11-07.md)
 
-See root `package.json` for canonical script definitions:
-- `npm run pretest`
-- `npm run audit`
-- `npm run build:client`
-- `npm run test:e2e`
-
-The CI workflow is `.github/workflows/ci.yml`; deployment is `.github/workflows/deploy.yml`.
-
-## Documentation maintenance
-
-- Update module ownership in [`docs/module-map.md`](/module-map) in the same PR as ownership changes.
-- Update architecture docs with source code when ownership/cascade rules change.
-- Historical audits remain historical; do not rewrite past outcomes as current facts.
-- Put current UX findings in [`docs/frontend-todo.md`](/frontend-todo) and acceptance/screenshot evidence in [`docs/ui-checklist.md`](/ui-checklist).
-- Every current test statement must reference a commit and CI run; old test counts are historical.
-
-## Live visual audit evidence — 2026-11-05
-
-Preliminary production scrape only. Browser auth state could not be isolated and Playwright is unavailable in the Firecrawl interaction runtime. Do not treat these images as guest-state baselines:
-
-- [Delivery URL — preliminary mobile screenshot (390×844)](https://storage.googleapis.com/firecrawl-scrape-media/screenshot-aa24e812-9067-461d-a64f-9da51fc4596c.png)
-- [Coffee URL — preliminary mobile screenshot (390×844)](https://storage.googleapis.com/firecrawl-scrape-media/screenshot-0192a71c-9682-4943-b01a-1a8d7285f3e4.png)
-
-The screenshots were captured from live scrape requests to the production URL variants `?brand=delivery` and `?brand=coffee`. Their text extraction included both brand DOM and staff UI; visibility/authentication must be verified in isolated browser contexts before any issue is classified as a defect.
-
+Use the files in `docs/` and the source code on branch `pizza` when answering questions about the current application.
