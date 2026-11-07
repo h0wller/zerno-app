@@ -126,6 +126,8 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
           railTop: style.top,
           railInlineTransform: rail.style.transform,
           railTransform: style.transform,
+          wrapBottom: wrap.getBoundingClientRect().bottom,
+          canCenterWithinWrap: wrap.getBoundingClientRect().bottom >= parseFloat(style.top) + rail.offsetHeight,
           head: rect(head),
           menuRow: rect(menuRow),
           rail: rect(rail),
