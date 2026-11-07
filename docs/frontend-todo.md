@@ -1,7 +1,7 @@
 # Frontend roadmap & UX audit — Zerno
 
 **Base branch:** `pizza`
-**Last documentation reconciliation:** 2026-11-06
+**Last documentation reconciliation:** 2026-11-07
 
 ## Current source-of-truth and status
 
@@ -12,7 +12,7 @@ Historical milestone logs below remain historical. Do not use their old test cou
 - CSS model: four logical layers with brand sublayers 2a/2b; see `docs/css-architecture.md`.
 - UI acceptance: `docs/ui-checklist.md`.
 - Slow-network layout: `docs/testing/slow-network-layout.md`.
-- API contract: `docs/openapi.yaml`; `docs/api.md` is a historical endpoint index until fully reconciled against route handlers and schemas.
+- API reference: `docs/api.md` is the concise route/guard index, checked against the 77 production method/path/guard entries on `pizza`; `docs/openapi.yaml` carries request/response details and still requires schema-level verification.
 - New product work: spec → review → implementation → tests.
 
 ## Active UX audit — client before staff
@@ -83,3 +83,18 @@ The list above does not imply that current production screenshots have been visu
 - Merge only when CI is green and relevant browser states have been reviewed.
 - Update `docs/module-map.md` for ownership changes.
 - Never regenerate snapshot baselines as a substitute for investigating an unexpected diff.
+
+
+## G. iOS PWA visual-review feedback (390×844 pt)
+
+Completed on the current `pizza` baseline:
+- [x] Profile swipe hint removal, promo action on one line, coffee social-link distribution and clean drawer dismissal — [PR #177](https://github.com/h0wller/zerno-app/pull/177), merged as `401fa8f`.
+- [x] Mobile support launcher integrated into the storefront toolbar; preserves chat behavior and avoids floating overlap with product actions — [PR #167](https://github.com/h0wller/zerno-app/pull/167), merged as `52083e2`.
+
+Still active / under review:
+- [ ] **Checkout recipient block** — [PR #179](https://github.com/h0wller/zerno-app/pull/179) is draft. Preserve the existing server-derived recipient contract; do not add recipient fields to `POST /api/orders` without a separate API decision.
+- [ ] **Staff controls placement** — [PR #182](https://github.com/h0wller/zerno-app/pull/182) is draft. Current proposal: in guest menu mode, keep `#modeSeg` in the menu-title row and place the single existing `#editToggle` there when permitted; in cashier/dispatch/admin work modes, restore `#modeSeg` to the topbar and `#editToggle` to `#adminBar`. Preserve role gating, IDs, keyboard reachability and hydration behavior. This supersedes the older #178 wording that required the edit action to remain in the admin rail in every mode.
+- [ ] **iOS safe-area top strip** — still open; no implementation PR is recorded. Inspect real iOS PWA screenshots and computed safe-area/header values before changing CSS.
+- [ ] Re-capture affected screens at 320/375/390 px and desktop staff states after each PR; inspect actual PNGs and record commit, viewport and role.
+
+The former #178 proposal to schedule #177 and #167 is obsolete because both are merged. Do not score CI capture alone as visual acceptance.
