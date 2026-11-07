@@ -14,17 +14,26 @@ function updateRailStickyPosition(rail, head) {
   }
 
   var topbar = document.querySelector('header.topbar');
+  var menuRow = head.querySelector('.menu-controls-row');
+  var modeSeg = document.getElementById('modeSeg');
+  var staffGuestMenu = !!(menuRow && modeSeg && modeSeg.parentElement === menuRow);
   var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
   var laneTop = Math.max(0, topbarBottom, headRect.bottom) + 12;
   var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
   var availableHeight = Math.max(0, laneBottom - laneTop);
   var stickyTop = laneTop + availableHeight / 2;
 
+  // The rail is below the complete menu header in normal flow on first paint.
+  // A sticky threshold should not pull it into the header before scrolling.
+  var flowTop = rail.getBoundingClientRect().top;
+  var isAtStickyThreshold = flowTop <= stickyTop + 1;
+  var transform = staffGuestMenu && !isAtStickyThreshold ? 'none' : 'translateY(-50%)';
+
   var top = stickyTop + 'px';
   var maxHeight = availableHeight + 'px';
   if (rail.style.top !== top) rail.style.top = top;
   if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
-  if (rail.style.transform !== 'translateY(-50%)') rail.style.transform = 'translateY(-50%)';
+  if (rail.style.transform !== transform) rail.style.transform = transform;
   rail.classList.add('rail-position-ready');
 }
 
