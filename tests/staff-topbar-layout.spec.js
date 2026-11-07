@@ -23,6 +23,7 @@ test('single staff action does not stretch the admin bar across the content colu
   expect(dimensions.parentWidth).toBeLessThanOrEqual(240);
   expect(dimensions.buttonWidth).toBeLessThanOrEqual(220);
   expect(dimensions.parentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
+  await expect(page.locator('#deliveryView .menu-head')).toBeVisible();
 });
 
 test('staff mode switch fits its reserved topbar row before and after hydration', async ({ page }) => {
