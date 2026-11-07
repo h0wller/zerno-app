@@ -2,24 +2,49 @@ import { test, expect } from '@playwright/test';
 
 test.use({ serviceWorkers: 'block' });
 
-test('single staff action does not stretch the admin bar across the content column', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript(() => {
+async function mockStaffSession(page, role = 'admin') {
+  await page.addInitScript((staffRole) => {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_user', 'playwright-staff-layout-token');
+    localStorage.setItem('zt_role', staffRole);
     sessionStorage.setItem('splashDone', '1');
-  });
-  await page.goto('/?brand=delivery');
-  await page.waitForFunction(() => typeof window.syncBrandViews === 'function');
-  await page.evaluate(() => {
-    window.setUser('layout-test-admin-token', {
-      role: 'admin', name: 'Layout Test Admin', phone: '+70000000000',
-      verified: 1, qr: 'layout-test-admin', stamps: 0, free: 0, history: []
+  }, role);
+  await page.route('**/api/**', async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const customer = {
+      id: 'staff-layout-test',
+      name: 'Staff Layout Test',
+      phone: '+70000000000',
+      role,
+      verified: 1,
+      cups: 0,
+      stamps: 0,
+      free: 0,
+      history: [],
+      qr: 'staff-layout-test'
+    };
+    const body = pathname === '/api/me'
+      ? { customer }
+      : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
     });
-    window.mode = 'guest';
-    window.syncBrandViews();
-    window.setMode('admin');
   });
+}
+
+test('single staff action does not stretch the admin bar across the content column', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockStaffSession(page);
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.me && window.me.role === 'admin' &&
+    document.documentElement.hasAttribute('data-staff-ready') &&
+    typeof window.syncBrandViews === 'function'
+  );
+  await page.evaluate(() => window.setMode('admin'));
   const bar = page.locator('#adminBar');
   await expect(bar).toBeVisible();
   await page.evaluate(() => {
@@ -38,21 +63,13 @@ test('single staff action does not stretch the admin bar across the content colu
 
 test('staff switcher is in the menu row for guest mode and returns to the topbar in staff modes', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript(() => {
-    localStorage.setItem('zt_onb', '1');
-    localStorage.setItem('zt_inst_hide', '1');
-    sessionStorage.setItem('splashDone', '1');
-  });
+  await mockStaffSession(page);
   await page.goto('/?brand=delivery');
-  await page.waitForFunction(() => typeof window.syncBrandViews === 'function');
-  await page.evaluate(() => {
-    window.setUser('layout-test-admin-token', {
-      role: 'admin', name: 'Layout Test Admin', phone: '+70000000000',
-      verified: 1, qr: 'layout-test-admin', stamps: 0, free: 0, history: []
-    });
-    window.mode = 'guest';
-    window.syncBrandViews();
-  });
+  await page.waitForFunction(() =>
+    window.me && window.me.role === 'admin' &&
+    document.documentElement.hasAttribute('data-staff-ready') &&
+    typeof window.syncBrandViews === 'function'
+  );
 
   const mode = page.locator('#modeSeg');
   const header = page.locator('header.topbar');
