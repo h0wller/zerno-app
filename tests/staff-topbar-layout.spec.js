@@ -89,8 +89,6 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
       buttonWidths: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().width),
       modeScrollWidth: seg.scrollWidth,
       modeClientWidth: seg.clientWidth,
-      railTop: document.getElementById('deliveryRail').getBoundingClientRect().top,
-      menuRowBottom: titleRow.getBoundingClientRect().bottom,
       editVisible: !edit.hidden
     };
   });
@@ -102,7 +100,25 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
   expect(guestLayout.buttons.every(height => height >= 44)).toBe(true);
   expect(guestLayout.buttonWidths).toEqual([44, 44, 44, 44]);
   expect(guestLayout.modeScrollWidth).toBeLessThanOrEqual(guestLayout.modeClientWidth + 1);
-  expect(guestLayout.railTop).toBeGreaterThanOrEqual(guestLayout.menuRowBottom + 4);
+  await expect(page.locator('#deliveryRail')).toHaveClass(/rail-position-ready/);
+  await expect.poll(() => page.evaluate(() => {
+    const rail = document.getElementById('deliveryRail');
+    const menuRow = document.querySelector('#deliveryView .menu-controls-row');
+    return rail.getBoundingClientRect().top - menuRow.getBoundingClientRect().bottom;
+  }), { timeout: 5000 }).toBeGreaterThanOrEqual(8);
+  const railGeometry = await page.evaluate(() => {
+    const rail = document.getElementById('deliveryRail');
+    const menuRow = document.querySelector('#deliveryView .menu-controls-row');
+    const head = document.querySelector('#deliveryView .menu-head');
+    return {
+      gap: rail.getBoundingClientRect().top - menuRow.getBoundingClientRect().bottom,
+      headBottom: head.getBoundingClientRect().bottom,
+      marginTop: getComputedStyle(rail).marginTop,
+      top: getComputedStyle(rail).top,
+      positionReady: rail.classList.contains('rail-position-ready')
+    };
+  });
+  expect(railGeometry.gap, JSON.stringify(railGeometry)).toBeGreaterThanOrEqual(8);
   await test.info().attach('staff-guest-menu-row-mobile', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png'
