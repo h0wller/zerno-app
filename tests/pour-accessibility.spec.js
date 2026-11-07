@@ -60,43 +60,78 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.subchips.every((height) => height >= 44)).toBe(true);
   });
 
-  test('mobile staff header and mode switch stay compact without shrinking 44px controls', async ({ page }) => {
+  test('menu row stays compact and staff modes keep the switcher in the topbar', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/?brand=delivery');
-    await page.evaluate(() => {
-      document.documentElement.setAttribute('data-staff-role', 'admin');
-      const modeSeg = document.getElementById('modeSeg');
-      modeSeg.hidden = false;
-      modeSeg.innerHTML = ['Заказы', 'Касса', 'Диспетчер', 'Админ'].map((label) =>
-        '<button type="button">' + label + '</button>'
-      ).join('');
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      const body = pathname === '/api/me'
+        ? {
+            customer: {
+              id: 'accessibility-layout-admin',
+              name: 'Accessibility Layout Admin',
+              phone: '+70000000001',
+              role: 'admin',
+              verified: 1,
+              qr: 'accessibility-layout-admin',
+              cups: 0,
+              stamps: 0,
+              free: 0,
+              history: []
+            }
+          }
+        : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
+      });
     });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'playwright-accessibility-admin-token');
+      localStorage.setItem('zt_role', 'admin');
+    });
+    await page.reload();
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'admin' &&
+      document.documentElement.hasAttribute('data-staff-ready')
+    );
 
-    const metrics = await page.evaluate(() => {
+    const menuMetrics = await page.evaluate(() => {
       const header = document.querySelector('header.topbar').getBoundingClientRect();
-      const mode = document.getElementById('modeSeg');
-      const modeBox = mode.getBoundingClientRect();
+      const seg = document.getElementById('modeSeg');
+      const row = seg.closest('.menu-controls-row');
+      const edit = document.getElementById('editToggle');
       return {
-        viewportWidth: window.innerWidth,
-        headerLeft: header.left,
-        headerRight: header.right,
-        headerWidth: header.width,
-        modeLeft: modeBox.left,
-        modeRight: modeBox.right,
-        modeWidth: modeBox.width,
-        modeHeight: modeBox.height,
-        buttonHeights: Array.from(mode.querySelectorAll('button')).map((button) => button.getBoundingClientRect().height),
+        headerHeight: header.height,
+        modeInMenuRow: !!row && row.parentElement === document.querySelector('#deliveryView .mh-top > div:first-child'),
+        editInMenuRow: edit.parentElement === row,
+        rowHeight: row.getBoundingClientRect().height,
+        buttonHeights: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().height)
       };
     });
+    expect(menuMetrics.headerHeight).toBeLessThanOrEqual(64);
+    expect(menuMetrics.modeInMenuRow).toBe(true);
+    expect(menuMetrics.editInMenuRow).toBe(true);
+    expect(menuMetrics.rowHeight).toBeGreaterThanOrEqual(44);
+    expect(menuMetrics.buttonHeights.every(height => height >= 44)).toBe(true);
 
-    expect(metrics.headerLeft).toBe(0);
-    expect(metrics.headerRight).toBe(metrics.viewportWidth);
-    expect(metrics.headerWidth).toBe(metrics.viewportWidth);
-    expect(metrics.modeLeft).toBeGreaterThanOrEqual(0);
-    expect(metrics.modeRight).toBeLessThanOrEqual(metrics.viewportWidth);
-    expect(metrics.modeWidth).toBeLessThanOrEqual(metrics.headerWidth);
-    expect(metrics.modeHeight).toBe(46);
-    expect(metrics.buttonHeights.every((height) => height >= 44)).toBe(true);
+    await page.evaluate(() => window.setMode('admin'));
+    const adminMetrics = await page.evaluate(() => {
+      const header = document.querySelector('header.topbar').getBoundingClientRect();
+      const seg = document.getElementById('modeSeg');
+      return {
+        headerHeight: header.height,
+        modeInHeader: seg.parentElement === document.querySelector('header.topbar'),
+        modeTop: seg.getBoundingClientRect().top,
+        modeBottom: seg.getBoundingClientRect().bottom,
+        buttonHeights: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().height)
+      };
+    });
+    expect(adminMetrics.modeInHeader).toBe(true);
+    expect(adminMetrics.headerHeight).toBeGreaterThan(64);
+    expect(adminMetrics.modeTop).toBeGreaterThanOrEqual(0);
+    expect(adminMetrics.modeBottom).toBeLessThanOrEqual(adminMetrics.headerHeight + 1);
+    expect(adminMetrics.buttonHeights.every(height => height >= 44)).toBe(true);
   });
 
   test('floating controls and confetti canvas have accessible landmark treatment', async ({ page }) => {
@@ -189,16 +224,20 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 
     const order = await page.locator('header.topbar').evaluate((header) => {
       const childIndex = (selector) => Array.from(header.children).indexOf(header.querySelector(selector));
-      return [
-        childIndex('.venueWrap'),
-        childIndex('#headerBrand'),
-        childIndex('#mbonusBtn'),
-        childIndex('#profileTopBtn'),
-        childIndex('#modeSeg'),
-      ];
+      const actions = header.querySelector('.topbar-actions');
+      return {
+        order: [childIndex('.venueWrap'), childIndex('#headerBrand'), childIndex('.topbar-actions')],
+        actionsOwnBonus: !!(actions && actions.querySelector('#mbonusBtn')),
+        actionsOwnProfile: !!(actions && actions.querySelector('#profileTopBtn')),
+        modeHiddenForPublicGuest: !!document.querySelector('#modeSeg')?.hidden &&
+          document.querySelector('#modeSeg').getBoundingClientRect().height === 0,
+      };
     });
-    expect(order.every((index) => index >= 0)).toBe(true);
-    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(order.order.every((index) => index >= 0)).toBe(true);
+    expect(order.order).toEqual([...order.order].sort((a, b) => a - b));
+    expect(order.actionsOwnBonus).toBe(true);
+    expect(order.actionsOwnProfile).toBe(true);
+    expect(order.modeHiddenForPublicGuest).toBe(true);
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect.poll(() => page.locator('#tickerTrack').evaluate((track) => getComputedStyle(track).animationName)).toBe('none');

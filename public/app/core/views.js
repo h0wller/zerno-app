@@ -247,22 +247,81 @@ function syncViewsVisibility(showCoffee, showDeliv) {
 
 function syncStaffAndGuestControls(bName2) {
   var canEdit = (typeof canStopMenu === 'function') && canStopMenu(bName2);
-  var et = document.getElementById('editToggle');
-  if (et) et.hidden = !canEdit;
-  var ab = document.getElementById('adminBar');
-  if (ab) ab.hidden = !(canEdit || (typeof mode !== 'undefined' && mode === 'admin'));
-  var ms = document.getElementById('modeSeg');
-  var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
-  if (ms) ms.hidden = !isStaff;
+  var currentMode = typeof window.mode === 'string' ? window.mode : (typeof mode !== 'undefined' ? mode : 'guest');
+  var isMenuMode = currentMode === 'guest';
+  var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
+  var menuHead = activeView && activeView.querySelector('.menu-head');
+  var title = menuHead && menuHead.querySelector('.mh-top > div:first-child > h1');
+  var menuRow = menuHead && menuHead.querySelector('.menu-controls-row');
+  var topbar = document.querySelector('header.topbar');
+  var adminBar = document.getElementById('adminBar');
+  var editToggle = document.getElementById('editToggle');
+  var modeSeg = document.getElementById('modeSeg');
+  var root = document.documentElement;
+  var staffRoleHint = root.getAttribute('data-staff-role');
+  var staffReady = root.hasAttribute('data-staff-ready');
+  var validStaffRoles = ['admin', 'cashier', 'dispatch'];
+  var confirmedStaff = !!(typeof me !== 'undefined' && me &&
+    validStaffRoles.indexOf(me.role) !== -1);
+  // The auth-session role attribute is the canonical layout signal; before readiness it only reserves hidden space.
+  var isStaff = validStaffRoles.indexOf(staffRoleHint) !== -1;
+
+  if (isStaff && isMenuMode && title && !menuRow) {
+    menuRow = document.createElement('div');
+    menuRow.className = 'menu-controls-row';
+    title.parentNode.insertBefore(menuRow, title);
+    menuRow.appendChild(title);
+  }
+
+  // Keep the existing nodes so delegated click handlers and IDs survive mode changes.
+  if (isStaff && isMenuMode && menuRow) {
+    if (modeSeg && modeSeg.parentElement !== menuRow) {
+      if (typeof menuRow.moveBefore === 'function') menuRow.moveBefore(modeSeg, null);
+      else menuRow.appendChild(modeSeg);
+    }
+    if (editToggle && canEdit && editToggle.parentElement !== menuRow) menuRow.appendChild(editToggle);
+  } else {
+    if (modeSeg && topbar && modeSeg.parentElement !== topbar) {
+      if (typeof topbar.moveBefore === 'function') topbar.moveBefore(modeSeg, null);
+      else topbar.appendChild(modeSeg);
+    }
+    if (editToggle && adminBar && editToggle.parentElement !== adminBar) adminBar.insertBefore(editToggle, adminBar.firstChild);
+  }
+
+  if (editToggle) {
+    editToggle.hidden = !canEdit;
+    editToggle.setAttribute('aria-label', 'Редактировать меню');
+    editToggle.title = 'Редактировать меню';
+  }
+  if (modeSeg) {
+    modeSeg.hidden = !isStaff || !staffReady;
+    if (topbar) topbar.classList.toggle('has-mode-switcher', !isMenuMode && isStaff);
+  }
   if (typeof renderModes === 'function') renderModes();
+  // renderModes() rebuilds the buttons and their hidden state; restore the auth-session gate afterwards.
+  if (modeSeg) modeSeg.hidden = !isStaff || !staffReady;
+
+  if (adminBar) {
+    var hasAdminActions = Array.prototype.some.call(adminBar.querySelectorAll(':scope > button'), function (button) {
+      return !button.hidden;
+    });
+    var isAdmin = confirmedStaff && me.role === 'admin';
+    var editRemainsInBar = editToggle && editToggle.parentElement === adminBar && canEdit;
+    adminBar.hidden = isMenuMode
+      ? !hasAdminActions
+      : !(editRemainsInBar || isAdmin || hasAdminActions);
+    adminBar.style.display = adminBar.hidden ? 'none' : '';
+  }
   var mb = document.getElementById('mbonusBtn');
-  if (mb) mb.style.display = (typeof mode !== 'undefined' && mode === 'guest' && bName2 === 'coffee') ? '' : 'none';
+  if (mb) mb.style.display = (currentMode === 'guest' && bName2 === 'coffee') ? '' : 'none';
   var bb = document.getElementById('bonusBox');
   if (bb) bb.style.display = (typeof me !== 'undefined' && me) ? '' : 'none';
   var bt = document.querySelector('.tabs button[data-tab="bonus"]');
   if (bt) bt.style.display = (bName2 === 'delivery') ? 'none' : '';
   if (bName2 === 'delivery' && typeof setTab === 'function') setTab('profile');
   if (typeof me !== 'undefined' && me && typeof renderProfile === 'function') renderProfile();
+  // Reposition the category rail synchronously after the menu-head height changes.
+  if (typeof window.alignRailWithCard === 'function') window.alignRailWithCard();
 }
 
 function syncChatFab(staff, bName2) {
@@ -417,6 +476,9 @@ window.setMode = function (m) {
   syncModeControls(m);
   startModeServices(m);
   if (typeof renderModes === 'function') renderModes();
+  // syncModeVisibility() calls sv() before the new mode controls are rendered.
+  // Run one final sync so controls moved into the active menu head reflect the new mode.
+  if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   notifyModeActivated(m);
 };
 

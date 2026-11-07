@@ -601,7 +601,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           const box = element.getBoundingClientRect();
           const style = getComputedStyle(element);
           if (style.display === 'none' || style.visibility === 'hidden' || !box.width || !box.height) return null;
-          return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+          return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height };
         };
         const topbar = document.querySelector('header.topbar');
         const topbarRect = topbar && topbar.getBoundingClientRect();
@@ -610,7 +610,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         const venueStyle = venueWrap && getComputedStyle(venueWrap);
         const ticker = document.querySelector('.ticker');
         const tickerRect = ticker && ticker.getBoundingClientRect();
-        const controls = ['.venueWrap', '#headerBrand', '#profileTopBtn']
+        const controls = ['.venueWrap', '#headerBrand', '.topbar-actions']
           .map((selector) => document.querySelector(selector))
           .filter(Boolean)
           .map((element) => element.getBoundingClientRect());
@@ -623,6 +623,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           brandTitle: rect('#brandTitle'),
           brandGroup: rect('#headerBrand'),
           profile: rect('#profileTopBtn'),
+          actions: rect('.topbar-actions'),
           groupCenter: (groupLeft + groupRight) / 2,
           controlCenterSpread: Math.max(...verticalCenters) - Math.min(...verticalCenters),
           ticker: tickerRect ? {
@@ -642,7 +643,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
               width: style.width,
               height: style.height,
               left: style.left,
-              bottom: style.bottom
+              bottom: style.bottom,
+              parentClass: bonus.parentElement.className
             };
           })(),
           topbar: topbarRect ? {
@@ -669,9 +671,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile', 'bonus']) {
           expect(header[selector], `${selector} is visible at ${width}px ${phase}`).not.toBeNull();
         }
-        expect(header.bonusStyle.position, `bonus stays fixed at ${width}px ${phase}`).toBe('fixed');
-        expect(header.bonusStyle.width, `bonus width is reserved at ${width}px ${phase}`).toBe('56px');
-        expect(header.bonusStyle.height, `bonus height is reserved at ${width}px ${phase}`).toBe('56px');
+        expect(header.bonusStyle.position, `bonus is inline at ${width}px ${phase}`).toBe('static');
+        expect(header.bonusStyle.parentClass).toBe('topbar-actions');
+        expect(header.bonus.width).toBeGreaterThanOrEqual(74);
+        expect(header.bonus.height).toBe(40);
         const controls = ['venue', 'brandGroup', 'profile']
           .map((selector) => header[selector]);
         for (let i = 0; i < controls.length; i++) {
@@ -727,7 +730,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     }
   });
 
-  test('cached staff role keeps delivery header and editor bar stable during auth hydration', async ({ page }) => {
+  test('cached staff role keeps the compact menu row stable during auth hydration', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_user', 'staff-layout-test-token');
       localStorage.setItem('zt_role', 'admin');
@@ -880,6 +883,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           gridTemplateRows: getComputedStyle(header).gridTemplateRows
         },
         modeSeg: rect('#modeSeg'),
+        modeSegInMenuRow: !!(modeSeg && modeSeg.closest('.menu-controls-row')),
         modeSegStyle: modeSeg && {
           marginTop: getComputedStyle(modeSeg).marginTop,
           height: getComputedStyle(modeSeg).height,
@@ -897,9 +901,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.modeSeg.hidden).toBe(true);
     expect(before.modeSeg.display).toBe('flex');
     expect(before.modeSeg.visibility).toBe('hidden');
+    expect(before.modeSegInMenuRow).toBe(true);
+    expect(before.header.height).toBe(60);
     expect(before.adminBar.hidden).toBe(true);
-    expect(before.adminBar.display).toBe('flex');
-    expect(before.adminBar.visibility).toBe('hidden');
+    expect(before.adminBar.display).toBe('none');
 
     // The first-paint/CSS/font settle is asserted by the neighboring layout tests.
     // Drain those earlier entries so this threshold measures only the delayed auth interval.
@@ -942,6 +947,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           gridTemplateRows: getComputedStyle(header).gridTemplateRows
         },
         modeSeg: rect('#modeSeg'),
+        modeSegInMenuRow: !!(modeSeg && modeSeg.closest('.menu-controls-row')),
         modeSegStyle: modeSeg && {
           marginTop: getComputedStyle(modeSeg).marginTop,
           height: getComputedStyle(modeSeg).height,
@@ -961,8 +967,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.role).toBe('admin');
     expect(after.modeSeg.hidden).toBe(false);
     expect(after.modeSeg.visibility).toBe('visible');
-    expect(after.adminBar.hidden).toBe(false);
-    expect(after.adminBar.visibility).toBe('visible');
+    expect(after.modeSegInMenuRow).toBe(true);
+    expect(after.adminBar.hidden).toBe(true);
+    expect(after.adminBar.display).toBe('none');
     expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
