@@ -597,6 +597,55 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await expect(page.locator('#cartItems .cartItem').first()).toContainText('Маргарита');
   });
 
+test.describe('Mobile delivery search and support toolbar geometry', () => {
+  for (const width of [320, 390]) {
+    test(`keeps delivery search and support inside the menu header at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.addInitScript(() => {
+        sessionStorage.setItem('splashDone', '1');
+      });
+
+      await page.goto('/?brand=delivery');
+      await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible({ timeout: 10000 });
+
+      const toolbar = page.locator('#deliveryView .menu-head .mh-top .mh-right');
+      const search = toolbar.locator(':scope > .search');
+      const support = toolbar.locator(':scope > #chatFab');
+      await expect(search).toBeVisible();
+      await expect(support).toBeVisible();
+
+      const geometry = await page.evaluate(() => {
+        const selectors = {
+          viewport: document.documentElement,
+          menuHead: document.querySelector('#deliveryView .menu-head'),
+          toolbar: document.querySelector('#deliveryView .menu-head .mh-top .mh-right'),
+          search: document.querySelector('#deliveryView .menu-head .mh-top .mh-right > .search'),
+          support: document.querySelector('#deliveryView .menu-head .mh-top .mh-right > #chatFab')
+        };
+        return Object.fromEntries(Object.entries(selectors).map(([key, element]) => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return [key, {
+            left: rect.left,
+            right: rect.right,
+            width: rect.width,
+            display: style.display,
+            minWidth: style.minWidth,
+            flexBasis: style.flexBasis
+          }];
+        }));
+      });
+
+      expect(geometry.menuHead.width).toBeGreaterThan(0);
+      expect(geometry.toolbar.right).toBeLessThanOrEqual(width + 1);
+      expect(geometry.search.left).toBeGreaterThanOrEqual(geometry.toolbar.left - 1);
+      expect(geometry.search.right).toBeLessThanOrEqual(geometry.support.left - 7);
+      expect(geometry.support.right).toBeLessThanOrEqual(geometry.toolbar.right + 1);
+      expect(geometry.search.width).toBeGreaterThanOrEqual(width === 320 ? 120 : 180);
+    });
+  }
+});
+
 test.describe('Спринт 4 — Тикер, полноширинная шапка меню, рейл и стабильность шапки', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
