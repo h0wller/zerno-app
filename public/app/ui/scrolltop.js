@@ -37,6 +37,8 @@ function alignRailWithCard() {
   var wrap = rail.parentElement;
   if (!wrap) return;
 
+  // Keep the category rail below the full menu header in normal flow.
+  // The sticky positioning routine handles only the viewport lane.
   var headRect = head && head.getBoundingClientRect();
   if (headRect && headRect.height) {
     var wrapRect = wrap.getBoundingClientRect();
