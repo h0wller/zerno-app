@@ -25,14 +25,7 @@ function updateRailStickyPosition(rail, head) {
   if (rail.style.top !== top) rail.style.top = top;
   if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
 
-  // A sticky item cannot reach the viewport-centered lane when its short
-  // .wrap parent ends above that target. In that case, keep it in normal
-  // flow below the menu head instead of translating it back over the title.
-  var wrap = rail.parentElement;
-  var wrapBottom = wrap ? wrap.getBoundingClientRect().bottom : laneBottom;
-  var canCenterWithinWrap = wrapBottom >= stickyTop + rail.offsetHeight;
-  var transform = canCenterWithinWrap ? 'translateY(-50%)' : 'none';
-  if (rail.style.transform !== transform) rail.style.transform = transform;
+  if (rail.style.transform !== 'translateY(-50%)') rail.style.transform = 'translateY(-50%)';
   rail.classList.add('rail-position-ready');
 }
 
