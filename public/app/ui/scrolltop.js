@@ -77,6 +77,23 @@ function alignRailWithCard() {
 
   updateRailStickyPosition(rail, head);
 
+  // The staff guest grid can place the rail's normal-flow center a little
+  // above the viewport lane. Calibrate that offset so it is centered before
+  // the first scroll, while leaving an already-sticky rail untouched.
+  if (headRect && headRect.height && staffMenuContext) {
+    var railRect = rail.getBoundingClientRect();
+    var railCenter = railRect.top + railRect.height / 2;
+    var targetCenter = parseFloat(rail.style.top);
+    if (Number.isFinite(targetCenter) && Math.abs(railCenter - targetCenter) > 2) {
+      var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      var currentDocumentCenter = railCenter + scrollY;
+      var correction = targetCenter - currentDocumentCenter;
+      var currentMarginTop = parseFloat(rail.style.marginTop) || 0;
+      var correctedMarginTop = Math.max(0, currentMarginTop + correction) + 'px';
+      if (rail.style.marginTop !== correctedMarginTop) rail.style.marginTop = correctedMarginTop;
+    }
+  }
+
   var topbar = document.querySelector('header.topbar');
   if (typeof ResizeObserver === 'function' && (observedRailHead !== head || observedRailTopbar !== topbar)) {
     if (railHeadObserver) railHeadObserver.disconnect();
