@@ -85,9 +85,8 @@ function alignRailWithCard() {
     var railCenter = railRect.top + railRect.height / 2;
     var targetCenter = parseFloat(rail.style.top);
     if (Number.isFinite(targetCenter) && Math.abs(railCenter - targetCenter) > 2) {
-      var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-      var currentDocumentCenter = railCenter + scrollY;
-      var correction = targetCenter - currentDocumentCenter;
+      // Both coordinates are viewport-relative (getBoundingClientRect and CSS top).
+      var correction = targetCenter - railCenter;
       var currentMarginTop = parseFloat(rail.style.marginTop) || 0;
       var correctedMarginTop = Math.max(0, currentMarginTop + correction) + 'px';
       if (rail.style.marginTop !== correctedMarginTop) rail.style.marginTop = correctedMarginTop;
