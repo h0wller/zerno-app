@@ -1,5 +1,7 @@
 # Documentation audit register — Zerno
 
+> **Superseded:** this is the historical 2026-11-05 register. The current reconciliation is [documentation-audit-2026-11-07.md](documentation-audit-2026-11-07.md). Do not use the old follow-up list as current status.
+
 **Reviewed against:** `pizza` at `216abe2bca4b79982af2ddf470dee00db00360be`
 **Date:** 2026-11-05
 **Purpose:** show which source documents were inspected and whether their current content was changed. This is not a claim that every historical statement in every document has been re-proven.
