@@ -90,6 +90,7 @@ The list above does not imply that current production screenshots have been visu
 Completed on the current `pizza` baseline:
 - [x] Profile swipe hint removal, promo action on one line, coffee social-link distribution and clean drawer dismissal — [PR #177](https://github.com/h0wller/zerno-app/pull/177), merged as `401fa8f`.
 - [x] Mobile support launcher integrated into the storefront toolbar; preserves chat behavior and avoids floating overlap with product actions — [PR #167](https://github.com/h0wller/zerno-app/pull/167), merged as `52083e2`.
+- [ ] Support launcher icon/accessibility label and cart/modal stacking on states where the control remains fixed; verify on iOS PWA and desktop before marking the original FAB request fully closed.
 
 Still active / under review:
 - [ ] **Checkout recipient block** — [PR #179](https://github.com/h0wller/zerno-app/pull/179) is draft. Preserve the existing server-derived recipient contract; do not add recipient fields to `POST /api/orders` without a separate API decision.

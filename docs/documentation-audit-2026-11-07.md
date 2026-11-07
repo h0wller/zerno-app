@@ -26,7 +26,7 @@ The previous 2026-11-05 register is superseded. The highest-confidence drift ite
 | Staff mode switcher / edit control placement | #182 open, draft | Described as proposed behavior, not completed |
 | iOS safe-area top strip | No implementation PR recorded | Remains open pending real iOS evidence |
 
-The #178 draft is stale relative to #177 and #167. Its former proposed sequence incorrectly scheduled already-merged work. The current staff-controls proposal follows #182: in guest menu mode, `#modeSeg` and the single permitted `#editToggle` sit in the menu-title row; in cashier/dispatch/admin modes, `#modeSeg` returns to the topbar and `#editToggle` returns to `#adminBar`. This is a draft implementation direction, not a merged UX acceptance. The old #178 requirement that edit always remain in the admin rail is no longer the active proposal.
+The #178 draft is stale relative to #177 and #167. Its former proposed sequence incorrectly scheduled already-merged work. PR #167 resolves the mobile support FAB collision by moving the existing control into the mobile storefront toolbar; the icon/accessibility label and cart/modal layering on states where the launcher remains fixed still require direct verification. The current staff-controls proposal follows #182: in guest menu mode, `#modeSeg` and the single permitted `#editToggle` sit in the menu-title row; in cashier/dispatch/admin modes, `#modeSeg` returns to the topbar and `#editToggle` returns to `#adminBar`. This is a draft implementation direction, not a merged UX acceptance. The old #178 requirement that edit always remain in the admin rail is no longer the active proposal.
 
 ## 2. Stack, build, audit and deployment
 
