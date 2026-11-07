@@ -320,8 +320,10 @@ function syncStaffAndGuestControls(bName2) {
   if (bt) bt.style.display = (bName2 === 'delivery') ? 'none' : '';
   if (bName2 === 'delivery' && typeof setTab === 'function') setTab('profile');
   if (typeof me !== 'undefined' && me && typeof renderProfile === 'function') renderProfile();
-  // Reposition the category rail synchronously after the menu-head height changes.
-  if (typeof window.alignRailWithCard === 'function') window.alignRailWithCard();
+  // Only the staff menu row changes the menu-head height; leave public guest rail geometry untouched.
+  if (isStaff && isMenuMode && typeof window.alignRailWithCard === 'function') {
+    window.alignRailWithCard();
+  }
 }
 
 function syncChatFab(staff, bName2) {
