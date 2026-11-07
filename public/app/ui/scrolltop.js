@@ -83,9 +83,11 @@ function alignRailWithCard() {
   if (headRect && headRect.height && staffMenuContext) {
     var railRect = rail.getBoundingClientRect();
     var railCenter = railRect.top + railRect.height / 2;
-    var targetCenter = parseFloat(rail.style.top);
+    var targetTop = parseFloat(rail.style.top);
+    var targetCenter = targetTop + railRect.height / 2;
     if (Number.isFinite(targetCenter) && Math.abs(railCenter - targetCenter) > 2) {
-      // Both coordinates are viewport-relative (getBoundingClientRect and CSS top).
+      // getBoundingClientRect() is viewport-relative; convert the center
+      // target into the same coordinate space, then adjust normal-flow offset.
       var correction = targetCenter - railCenter;
       var currentMarginTop = parseFloat(rail.style.marginTop) || 0;
       var correctedMarginTop = Math.max(0, currentMarginTop + correction) + 'px';
