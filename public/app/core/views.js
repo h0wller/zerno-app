@@ -281,6 +281,9 @@ function syncStaffAndGuestControls(bName2) {
     }
     if (editToggle && canEdit && editToggle.parentElement !== menuRow) menuRow.appendChild(editToggle);
   } else {
+    // Remove the temporary sticky runway when the menu row is no longer active.
+    var menuWrap = activeView && activeView.closest('.wrap');
+    if (menuWrap && menuWrap.style.minHeight) menuWrap.style.minHeight = '';
     if (modeSeg && topbar && modeSeg.parentElement !== topbar) {
       if (typeof topbar.moveBefore === 'function') topbar.moveBefore(modeSeg, null);
       else topbar.appendChild(modeSeg);
