@@ -86,6 +86,10 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
       headerHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
       modeHeight: seg.getBoundingClientRect().height,
       buttons: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().height),
+      modeScrollWidth: seg.scrollWidth,
+      modeClientWidth: seg.clientWidth,
+      railTop: document.getElementById('deliveryRail').getBoundingClientRect().top,
+      menuRowBottom: titleRow.getBoundingClientRect().bottom,
       editVisible: !edit.hidden
     };
   });
@@ -93,8 +97,10 @@ test('staff switcher is in the menu row for guest mode and returns to the topbar
   expect(guestLayout.modeBeforeEdit).toBe(true);
   expect(guestLayout.headerHeight).toBeLessThanOrEqual(64);
   expect(guestLayout.modeHeight).toBeGreaterThanOrEqual(44);
-  expect(guestLayout.buttons.length).toBeGreaterThanOrEqual(2);
+  expect(guestLayout.buttons).toHaveLength(4);
   expect(guestLayout.buttons.every(height => height >= 44)).toBe(true);
+  expect(guestLayout.modeScrollWidth).toBeLessThanOrEqual(guestLayout.modeClientWidth + 1);
+  expect(guestLayout.railTop).toBeGreaterThanOrEqual(guestLayout.menuRowBottom + 4);
   await test.info().attach('staff-guest-menu-row-mobile', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png'
