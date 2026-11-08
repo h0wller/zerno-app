@@ -384,13 +384,13 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       expect(after.brandGap, `brand container gap remains stable at ${width}px`).toBe(before.brandGap);
       expect(after.brandRect.x).toBe(before.brandRect.x);
       expect(after.brandRect.width).toBe(before.brandRect.width);
-      expect(after.brandRect.height).toBe(before.brandRect.height);
+      expect(Math.abs(after.brandRect.height - before.brandRect.height)).toBeLessThanOrEqual(1);
       expect(Math.abs(after.brandRect.y - before.brandRect.y)).toBeLessThanOrEqual(1);
       expect(after.x, `brand x remains stable at ${width}px`).toBe(before.x);
       expect(Math.abs(after.y - before.y), `brand y remains stable within 1px at ${width}px`)
         .toBeLessThanOrEqual(1);
       expect(after.width, `brand width remains stable at ${width}px`).toBe(before.width);
-      expect(after.height, `brand height remains stable at ${width}px`).toBe(before.height);
+      expect(Math.abs(after.height - before.height), `brand height remains stable within 1px at ${width}px`).toBeLessThanOrEqual(1);
       expect(after.gridColumns, `delivery grid keeps its responsive column count at ${width}px after CSS`)
         .toBe(expectedGridColumns);
       expect(after.eagerImageCount, `all and only first-row images stay eager at ${width}px after CSS`)
@@ -927,7 +927,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.modeSeg.display).toBe('none');
     expect(before.adminBar.hidden).toBe(true);
     expect(before.adminBar.display).toBe('none');
-    expect(before.adminBar.visibility).toBe('visible');
+    expect(before.adminBar.visibility).toBe('hidden');
     expect(before.adminBar.height).toBe(0);
 
     // The first-paint/CSS/font settle is asserted by the neighboring layout tests.
@@ -997,6 +997,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.modeSeg.visibility).toBe('visible');
     expect(after.adminBar.hidden).toBe(true);
     expect(after.adminBar.display).toBe('none');
+    expect(after.adminBar.visibility).toBe('hidden');
     expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);

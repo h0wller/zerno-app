@@ -1060,7 +1060,7 @@ html body #adminBar.adminBar[hidden] { display:none; }
     max-height: 32px;
     margin: 0;
     padding: 0;
-    gap: 3px;
+    gap: 2px;
     overflow: visible;
     box-sizing: border-box;
   }
@@ -1075,10 +1075,10 @@ html body #adminBar.adminBar[hidden] { display:none; }
     min-height: 32px;
     max-height: 32px;
     margin: 0;
-    padding: 0 2px;
+    padding: 0;
     align-items: center;
     justify-content: center;
-    font: 700 clamp(10px, 2.8vw, 11px)/1 "Golos Text", system-ui, sans-serif;
+    font: 700 clamp(9px, 2.6vw, 10px)/1 "Golos Text", system-ui, sans-serif;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: clip;
@@ -1198,5 +1198,12 @@ html body #adminBar.adminBar[hidden] { display:none; }
 @media (max-width: 820px) {
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > h1 em {
     display: none;
+  }
+}
+
+/* Delivery role labels retain AAA contrast against the dark chocolate switcher surface. */
+@media (max-width: 820px) {
+  html[data-brand="delivery"] body #modeSeg button:not(.on) {
+    color: #AFC0D0;
   }
 }

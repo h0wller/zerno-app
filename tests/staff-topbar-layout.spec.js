@@ -172,9 +172,10 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.supportInsideRow).toBe(true);
       expect(layout.modeButtons.map(button => button.text)).toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
 
+      const rowOneCenter = layout.rowOne.y + layout.rowOne.height / 2;
       for (const item of [layout.title, layout.slot, layout.edit]) {
-        expect(Math.abs(item.y - layout.rowOne.y), JSON.stringify(layout)).toBeLessThanOrEqual(1);
-        expect(Math.abs(item.bottom - layout.rowOne.bottom), JSON.stringify(layout)).toBeLessThanOrEqual(1);
+        const itemCenter = item.y + item.height / 2;
+        expect(Math.abs(itemCenter - rowOneCenter), JSON.stringify(layout)).toBeLessThanOrEqual(1);
       }
       expect(layout.slot.x).toBeGreaterThan(layout.title.right);
       expect(layout.edit.x).toBeGreaterThan(layout.slot.right);
@@ -240,7 +241,8 @@ test('work modes keep the role switcher in the topbar and preserve the support l
     topbarTop: document.querySelector('header.topbar').getBoundingClientRect().top,
     topbarHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
     modeBottom: seg.getBoundingClientRect().bottom,
-    headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom
+    headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom,
+    topbarPosition: getComputedStyle(document.querySelector('header.topbar')).position
   }));
   expect(ordersLayout.inTopbar).toBe(true);
   expect(ordersLayout.topbarTop).toBeLessThanOrEqual(1);

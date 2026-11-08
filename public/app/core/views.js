@@ -306,6 +306,7 @@ function syncStaffAndGuestControls(bName2) {
       function (button) { return !button.hidden; }
     );
     var mobileMenuToolbar = menuPlacement &&
+      (currentMode === 'guest' || currentMode === 'admin') &&
       window.matchMedia('(max-width: 820px)').matches;
     adminBar.hidden = !staffReady || mobileMenuToolbar ||
       !((confirmedStaff && me.role === 'admin') || canEdit || hasAdminActions);
