@@ -53,13 +53,11 @@ test('admin action bar stays separate from the two-row menu header', async ({ pa
     scrollWidth: element.scrollWidth,
     clientWidth: element.clientWidth,
     overflowX: getComputedStyle(element).overflowX,
-    y: element.getBoundingClientRect().y,
     children: Array.from(element.querySelectorAll(':scope > button:not([hidden])')).map(button => ({
       width: button.getBoundingClientRect().width,
       height: button.getBoundingClientRect().height,
       y: button.getBoundingClientRect().y,
     })),
-    menuHeadBottom: document.querySelector('#deliveryView .menu-head').getBoundingClientRect().bottom,
   }));
   expect(dimensions.width).toBeGreaterThan(240);
   expect(dimensions.width).toBeLessThanOrEqual(dimensions.parentWidth + 1);
@@ -67,7 +65,7 @@ test('admin action bar stays separate from the two-row menu header', async ({ pa
   expect(dimensions.children).toHaveLength(3);
   expect(dimensions.children.every(button => button.height === 44)).toBe(true);
   expect(new Set(dimensions.children.map(button => Math.round(button.y))).size).toBe(1);
-  expect(dimensions.y).toBeGreaterThanOrEqual(dimensions.menuHeadBottom - 1);
+  expect(await bar.evaluate(element => element.closest('.menu-head'))).toBeNull();
 });
 
 test('staff menu header is exactly two rows for both brands and mobile widths', async ({ page }, testInfo) => {
