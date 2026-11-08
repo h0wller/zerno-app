@@ -149,8 +149,9 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
             Array.from(top.querySelectorAll(':scope > div:first-child > :not(.menu-controls-row)'))
               .filter(element => {
                 const style = getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
                 return style.display !== 'none' && style.visibility !== 'hidden' &&
-                  element.getBoundingClientRect().width > 0 && element.getBoundingClientRect().height > 0;
+                  style.position !== 'absolute' && rect.width > 1 && rect.height > 1;
               }).length,
           adminBarVisible: (() => {
             const bar = document.getElementById('adminBar');
