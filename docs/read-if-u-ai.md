@@ -27,13 +27,13 @@
 
 * **Среда выполнения:** Node.js 22 (ESM).
 
-* **Фреймворк:** Express 4.x + `compression` (Gzip/Deflate).
+* **Фреймворк:** Express 5.x (`express: ^5.3.0`) + `compression` (Gzip/Deflate).
 
 * **База данных:** SQLite через драйвер `better-sqlite3` (локальная база с миграциями, WAL-режим).
 
 * **Медиа-обработка:** `sharp` (автоматическая нарезка загруженных блюд в Retina WebP).
 
-* **Уведомления:** Web Push (`web-push` через VAPID), Firebase Admin (`firebase-admin` для нативных пушей Capacitor), бот Telegram через вебхуки (`node-fetch` к `api.telegram.org`).
+* **Уведомления:** Web Push (`web-push` через VAPID), Firebase Admin (`firebase-admin` для нативных пушей Capacitor), бот Telegram через вебхуки. Сервер использует встроенный глобальный `fetch` Node.js 22; `node-fetch` не является зависимостью проекта.
 
 * **КРИТИЧЕСКИЙ ФАКТ:** В проекте **НЕТ WebSockets**! Все обновления заказов, журналов и чата работают через HTTP REST API с контролируемым поллингом (`/api/orders`, `/api/chat/thread`).
 
@@ -100,7 +100,7 @@ npm run build:client
 
 Перед предложением любых изменений в коде необходимо соблюдать следующие правила:
 
-* **Инкремент кэша Service Worker:** Любая правка файлов в `public/*` **обязательно** сопровождается инкрементом версии `STATIC_CACHE` в `public/sw.js` (например, `zerno-static-v347 -> v348`), иначе мобильные клиенты PWA продолжат исполнять старый кэш.
+* **Инкремент кэша Service Worker:** `npm run build:client` запускает `npm run bump:sw` (`scripts/bump-sw.mjs`) перед сборкой bundle. Поэтому ручной инкремент `STATIC_CACHE` не требуется, если перед релизом/проверкой выполняется штатная сборка. Не пропускайте сборку после клиентских изменений; поведение самого `public/sw.js` проверяйте по его текущему коду.
 
 * **Правило одного владельца DOM (Single Source of Truth):** Никаких параллельных мутаций одного DOM-узла из разных модулей. Карта закреплена в `docs/module-map.md`:
 
@@ -119,25 +119,24 @@ npm run audit
 
 ```
 
-Команда запускает:
+Команда выполняет последовательность из скрипта `audit` в `package.json`:
 
-1. `node --check server.js`
+1. `npm run check` → `node --check server.js`.
+2. `npm run pretest` → синтаксическая проверка `views.js`, проверка существующего client bundle, CSS audit, brands-check, audit-observers и unit-тесты (`tests/unit` + `tests/integration`).
+3. `npm run lint:code` → ESLint для `public/`, `server/`, `scripts/` с `--max-warnings 50` (ESLint 10 Flat Config + SonarJS).
+4. `npm run lint:dup` → jscpd light и strict.
+5. `npm run lint:dead` → Knip.
+6. `npm run lint:layers` → dependency-cruiser.
+7. `npm run smoke` → контрактные smoke-тесты.
+8. `npm run test:e2e` → повторная сборка клиента и Playwright E2E.
 
-2. `node scripts/css-audit.mjs` (проверка соблюдения 4 слоев CSS)
-
-3. `eslint public/ server/ scripts/` (ESLint 9 Flat Config + SonarJS)
-
-4. `jscpd` (проверка отсутствия дублирования логики и стилей)
-
-5. `knip` (поиск неиспользуемого кода)
-
-6. `dependency-cruiser` (контроль однонаправленности слоев: `server` не импортирует `public`, UI не зависит от деталей ядра).
+Точные команды и состав шагов всегда сверяйте с корневым `package.json`: эта документация — пояснение, а не независимый источник конфигурации.
 
 ---
 
 ## 6. Коды сотрудников (F3.60)
 
-* **Источник правды:** `.env` на сервере — `ADMIN_CODE`, `CASHIER_CODE`, `DISPATCH_CODE`. Dev-дефолты в `server/config.js` (`3364/2468/5719`) существуют только для локальной разработки и не должны использоваться в проде.
+* **Production secrets:** `.env`/переменные окружения процесса должны явно задавать `ADMIN_CODE`, `CASHIER_CODE`, `DISPATCH_CODE` уникальными секретами. Важно: `server/config.js` подставляет `3364/2468/5719`, если соответствующая переменная не задана; этот fallback не ограничен проверкой `NODE_ENV` и не является только локальным. GitHub Actions передаёт те же значения явно для тестовых Playwright-сценариев. Не считать их production-секретами и не оставлять production без явной настройки.
 * **Смена кода:** правка `/var/www/app/.env` → `pm2 reload zerno-app`. Смена кодов НЕ выкидывает активных сотрудников: код проверяется только при `POST /api/auth/activate` (через `safeEqual`), роль хранится в `customers.role` (SQLite), сессия — независимая строка в таблице `tokens`. Ротация кодов безопасна для текущих сессий.
 * **Диагностика:** `GET /api/tg/diag` (adminGuard, обработчик в `server.js`) возвращает `codes_present: { admin, cashier, dispatch }` — только факты наличия значений в окружении, сами коды не наружу.
 * **Защита от самопонижения:** админ не может понизить себя до кассира/диспетчера кодом активации — `POST /api/auth/activate` вернёт `409`. Снятие прав — только через `POST /api/auth/deactivate` (с защитой последнего админа).
@@ -150,6 +149,6 @@ npm run audit
 
 * **Ветка для релиза:** `pizza`.
 
-* **Пайплайн:** Прохождение `CI Quality Gates` -> SSH-подключение к VPS Timeweb -> `git reset --hard` -> `npm ci --omit=dev` -> `pm2 reload zerno-app`.
+* **Пайплайн:** workflow запускается после завершения `CI Quality Gates` для ветки `pizza` и деплоит только при успешном CI (либо вручную через `workflow_dispatch`). На VPS выполняются `git fetch origin`, `git reset --hard` на выбранный commit, `npm install --package-lock-only`, `npm ci`, `BUILD_NUM=$(git rev-list --count HEAD) npm run build:client`, `npm prune --omit=dev`, `pm2 reload zerno-app` и проверка `pm2 status zerno-app`.
 
-* **Сборка клиента:** При изменениях в клиентском коде перед коммитом локально выполняется `npm run build:client`, формирующий `public/dist/main.bundle.js`.
+* **Сборка клиента:** `build:client` запускается на сервере в deploy workflow и локально/в CI по необходимости. Скрипт сначала выполняет `bump:sw`, затем собирает `public/dist/main.bundle.js`. Локальная сборка перед каждым коммитом не является обязательным шагом deploy workflow.

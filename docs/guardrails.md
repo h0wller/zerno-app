@@ -1,145 +1,71 @@
 # Anti-AI-Slop Guardrails
 
-Пять автоматических барьеров против «ИИ-слопа» в `zerno-app`.
-Запускаются в CI на каждом PR в `main` / push в `pizza`.
+Шесть автоматических барьеров качества в `zerno-app`. Это описание текущей конфигурации, а не исторического плана внедрения.
 
 ## Что защищает от чего
 
 | Барьер | Что ловит | Где конфиг |
 |---|---|---|
-| jscpd (light) | Скопированные блоки в HTML/CSS/MD | `.jscpd.json` |
-| jscpd (strict) | Скопированные блоки в JS-логике | `.jscpd.strict.json` |
+| jscpd (light) | Повторяющиеся блоки в HTML/CSS/MD | `.jscpd.json` |
+| jscpd (strict) | Повторяющиеся блоки в JS-логике | `.jscpd.strict.json` |
 | Knip | Мёртвый код, неиспользуемые файлы и экспорты | `knip.json` |
-| ESLint + SonarJS | Когнитивная сложность, дубли строк, одинаковые ветки | `eslint.config.js` |
-| ESLint + Playwright | Забытый `await`, `.only` в коммите, тесты без ассертов | `eslint.config.js` (tests) |
-| dependency-cruiser | Нарушения слоёв, циклы, тест-хелперы в проде | `.dependency-cruiser.js` |
+| ESLint + SonarJS | Ошибки JS, когнитивную сложность и дубли | `eslint.config.js` |
+| ESLint + Playwright | Ошибки в тестах, забытый `await`, `.only` и слабые assertions | `eslint.config.js` |
+| dependency-cruiser | Нарушения слоёв, циклы и запрещённые зависимости | `.dependency-cruiser.js` |
+
+## Когда запускаются
+
+`.github/workflows/ci.yml` запускается:
+- на каждом `pull_request` без фильтра по целевой ветке;
+- на `push` в `main` и `pizza`.
+
+В job `Code Quality & Guardrails` выполняются `check`, `pretest`, `lint:code`, `lint:dup`, `lint:dead`, `lint:layers` и `smoke`. E2E-группы и визуальный capture запускаются отдельными jobs после успешного quality gate.
 
 ## Локальный запуск
 
 ```bash
-npm run lint:code    # ESLint
-npm run lint:dup     # jscpd (light + strict)
+npm run lint:code    # ESLint, --max-warnings 50
+npm run lint:dup     # jscpd light + strict
 npm run lint:dead    # Knip
 npm run lint:layers  # dependency-cruiser
-npm run audit        # всё вместе + pretest/css-audit
+npm run audit        # check + pretest + lint + smoke + E2E
 ```
 
-## Классические скрипты (важно)
+Точные команды определяются корневым `package.json`. Текущий ESLint-порог — `--max-warnings 50`; это допускаемый предел предупреждений, а не целевой уровень качества.
 
-Пять файлов подключены отдельными `<script defer>` в `public/index.html`
-и **не входят в граф импортов `main.js`**:
- 
+## Классические скрипты
+
+Четыре файла подключены отдельными классическими `<script defer>` в `public/index.html` и не входят в граф ESM-импортов `public/app/main.js`:
+
 - `public/app/core/address-dict.js`
 - `public/app/core/address-autocomplete.js`
 - `public/app/core/address-book.js`
 - `public/app/core/preorder-timer.js`
 
-Они общаются с остальным кодом через top-level глобалы и window-шимы.
+Они взаимодействуют с остальным кодом через глобалы и window-контракты.
 
-**При добавлении шестого классического скрипта** — обновить три места:
+При добавлении ещё одного классического скрипта обновите все три реестра:
+1. `knip.json` → `entry`;
+2. `.dependency-cruiser.js` → `no-orphans.from.pathNot`;
+3. `eslint.config.js` → блок классических скриптов из `index.html`.
 
-1. `knip.json` → `entry`
-2. `.dependency-cruiser.js` → `no-orphans.from.pathNot`
-3. `eslint.config.js` → блок «Классические скрипты из index.html»
+## Пороги и исторические baseline
 
-## Философия порогов
+- jscpd light: порог для повторов в разметке и стилях задан в `.jscpd.json`.
+- jscpd strict: порог задан в `.jscpd.strict.json`.
+- ESLint: текущий предел — 50 предупреждений из `package.json`.
+- Knip и dependency-cruiser: конфигурация и исключения находятся в корневых config-файлах.
 
-- **jscpd light**: 10% для вёрстки — карточки и медиа-запросы естественно повторяются.
-- **jscpd strict**: 3% целевой для JS. **Стартовое значение — по факту первого прогона.**
-- **SonarJS cognitive-complexity**: 25 — компромисс для легаси (`views.js`, `chat-core.js`
-  содержат функции с CC 30+). После рефакторинга снизить до 15.
-- **Knip** на первом прогоне найдёт много кандидатов — миграция на ESM не завершена.
+Таблица baseline от 2026-10-01 и значения 48/60 ESLint warnings — исторический снимок, не текущая настройка. Номера строк и списки технического долга из того отчёта также исторические; перед работой найдите символ по имени, а не по старому номеру строки. Фактические текущие показатели следует фиксировать только по свежему запуску на конкретном commit SHA.
 
-## Калибровка порогов (baseline)
+## Исторический план внедрения
 
-Перед включением в блокирующий CI замерить фактические значения:
+Старый план из четырёх PR, включая `continue-on-error: true`, бюджеты 200 → 100 → 0 и обещание перейти к `--max-warnings 0`, оставлен только как историческая запись. Он не описывает действующий pipeline и не должен использоваться как инструкция для текущей разработки.
 
-```bash
-# jscpd strict — фактический процент
-npx jscpd --config .jscpd.strict.json --threshold 100 server/ public/app/
+## При красном CI
 
-# ESLint — сколько предупреждений
-npx eslint public/ server/ scripts/ --format=json | jq '[.[] | .warningCount] | add'
-
-# depcruiser — orphan-warn (после правки pathNot должно быть 0)
-npx depcruise --config .dependency-cruiser.js public server
-
-# Knip — сколько в отчёте
-npx knip
-```
-
-Зафиксировать полученные числа в этом файле (секция «Baseline на дату»)
-и выставить стартовые пороги = факт + 1..2.
-
-### Baseline (заполнить после первого прогона)
-
-| Инструмент | Факт | Стартовый порог | Целевой |
-|---|---|---|---|
-| jscpd strict | _TBD_ | _TBD_ | 3% |
-| ESLint warnings | _TBD_ | _TBD_ | 0 |
-| Knip candidates | _TBD_ | — | 0 |
-
-## Что делать при красном CI
-
-1. **jscpd** — вынести дубль в общий модуль (`public/app/core/utils.js`
-   или `server/utils/*`) или добавить `// jscpd:ignore-start/end` вокруг
-   оправданного совпадения.
-2. **Knip** — удалить мёртвое или добавить в `entry`/`ignore` с комментарием.
-3. **ESLint sonarjs** — разбить функцию, вынести строковый литерал в константу,
-   объединить одинаковые ветки.
-4. **ESLint playwright** — добавить `await`/ассерт, убрать `.only`,
-   не использовать `waitForTimeout`.
-5. **dependency-cruiser** — разорвать цикл через общий модуль, перевернуть
-   зависимость core↔ui, убрать импорт тестов в прод.
-
-## Бюджет предупреждений ESLint
-
-`--max-warnings` в `package.json` — трекер долга. Спускается по спринтам:
-
-| Этап | Значение | Комментарий |
-|---|---|---|
-| PR 1 | 200 | Барьеры видны, CI зелёный при легаси-долге |
-| +1 спринт | 100 | Половина расчищена |
-| +2 спринта | 0 | Ключевые правила переводятся в `error` |
-
-## Порядок внедрения (4 PR)
-
-| PR | Что | CI |
-|---|---|---|
-| 1 | Конфиги + docs + калибровка | `continue-on-error: true` |
-| 2 | OpenAPI-спецификация | без изменений |
-| 3 | validate.js + 3 auth-роута + e2e-прогон | без изменений |
-| 4 | quality-gates обязателен, `--max-warnings 0` | блокирующий |
-### Baseline (2026-10-01)
-
-| Инструмент | Факт | Стартовый порог | Целевой |
-|---|---|---|---|
-| jscpd strict | 2.64% (21 клон) | 3% (уже проходит) | 3% |
-| ESLint warnings | 48 | 60 | 0 |
-| ESLint errors | 0 | 0 | 0 |
-| Knip candidates | 1 (`validate.js`, до PR 3) | — | 0 |
-| depcruise violations | 0 | 0 | 0 |
-
-Известный технический долг (не блокирует CI, чинится в PR 2+):
-
-- **Cognitive Complexity > 25**:
-  - `views.js:332` — 77
-  - `delivery.js:150` — 91
-  - `cart.js:489` — 74
-  - `delivery.js:345` — 41
-  - `catalog.js:45` — 39
-  - `auth.js:241` — 31
-  - `chat-core.js:117` — 31
-  - `preorder-timer.js:51` — 44
-  - `delivery.js:96` — 30
-  - `overlay.js:274`, `deeplink.js:191`, `orders.js:26`, `profile.js:88` — 26
-
-- **Дубли строк/функций**:
-  - `ui/cashier-log.js:26` — identical to line 3
-  - `server/domain/loyalty.js:7` ↔ `server/routes/tg.js:46` — `stampBar` дублируется
-  - `public/app/address.js` — 8× дубль строки
-
-- **Orphan/unused**:
-  - `public/app/core/overlay.js` — не подключён к `main.js`, проверить статус
-  - `public/app/ui/dropdowns.js` — пустой файл, вероятно на удаление
-  - `server/middleware/validate.js` — подключится в PR 3
+1. **jscpd** — проверить реальный повтор; вынести общую логику или документировать узкое обоснованное исключение.
+2. **Knip** — удалить неиспользуемое либо добавить подтверждённый entry/ignore с комментарием.
+3. **ESLint/SonarJS** — исправить проблему в исходнике; не снижать порог только ради зелёного CI.
+4. **ESLint Playwright** — добавить корректное ожидание и проверку результата, убрать `.only`, не маскировать гонки произвольными задержками.
+5. **dependency-cruiser** — исправить направление зависимости или цикл, не расширять allowlist без обоснования.

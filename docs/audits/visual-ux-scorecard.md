@@ -258,3 +258,18 @@ Do not label a code smell or DOM scrape oddity as a UX defect without user-visib
 - Preserve existing CLS, accessibility, keyboard/focus, safe-area and checkout contracts.
 - No business logic/API/DB/order/discount/loyalty changes in visual-only work.
 - Update the screenshot register and score register after each accepted visual PR.
+
+
+## G. iOS PWA visual-review feedback (390×844 pt)
+
+These items are tracked separately from the numeric score register. A checked item means the bounded implementation PR is merged; it does not imply a new production baseline score.
+
+- [x] **Profile polish** — hint removed, promo action kept on one line, coffee social links distributed across the card, drawer dismissal cleaned up. [PR #177](https://github.com/h0wller/zerno-app/pull/177), merged into `pizza` as `401fa8f`.
+- [x] **Mobile support launcher placement** — existing `#chatFab` moved into the active mobile storefront toolbar; this resolves the mobile floating-button collision with product actions. [PR #167](https://github.com/h0wller/zerno-app/pull/167), merged into `pizza` as `52083e2`.
+- [ ] **Support icon/accessibility and stacking** — verify the actual icon and accessible name, plus relative layering against cart/modal overlays wherever the launcher remains fixed (including desktop); these details are not established by the mobile toolbar move alone.
+- [ ] **Checkout recipient block** — [PR #179](https://github.com/h0wller/zerno-app/pull/179), draft. Keep profile-derived recipient facts and the existing `POST /api/orders` contract; visual copy must not imply editability that the UI does not provide.
+- [ ] **Staff controls placement** — [PR #182](https://github.com/h0wller/zerno-app/pull/182), draft. Candidate behavior: guest menu mode places `#modeSeg` and the single permitted `#editToggle` in the menu-title row; staff work modes return `#modeSeg` to the topbar and `#editToggle` to `#adminBar`. This is the current PR proposal, not merged acceptance. Preserve role gates, keyboard access and hydration reservation.
+- [ ] **iOS safe-area top strip** — no PR yet. Diagnose `env(safe-area-inset-top)`, viewport inset, body background and header padding using real iOS PWA captures before implementing a fix.
+- [ ] Re-capture 320/375/390 px and desktop staff states after the remaining bounded PRs; inspect PNG artifacts before changing scores.
+
+The sequence in the superseded #178 draft is no longer current: #177 and #167 are complete; #179, #182 and the safe-area investigation remain.
