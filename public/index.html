@@ -2819,8 +2819,8 @@ html body #tickerTrack .tickerGroup > span {
     padding:6px 10px; box-sizing:border-box;
   }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top {
-    display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:68px 44px;
-    gap:4px; width:100%; min-width:0; max-width:100%; height:116px;
+    display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:68px 44px !important;
+    gap:4px; width:100%; min-width:0; max-width:100%; height:116px !important;
     overflow:visible; box-sizing:border-box;
   }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
@@ -2838,7 +2838,7 @@ html body #tickerTrack .tickerGroup > span {
     gap:5px; min-width:0; max-width:100%; white-space:nowrap; overflow:visible;
     font-size:clamp(16px,4.5vw,19px); line-height:1.1;
   }
-  html body :is(#menuView,#deliveryView) .menu-head h1 em {
+  html[data-brand] body :is(#menuView,#deliveryView) .menu-head h1 em {
     display:inline-flex !important; flex:0 1 auto; align-items:center;
     min-width:0; max-width:100%; margin:0; padding:3px 7px;
     font:700 10px/1.15 "Golos Text",system-ui,sans-serif;
