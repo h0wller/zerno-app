@@ -109,7 +109,7 @@ html body div.wrap > #deliveryRail {
   transform: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   align-self: start;
   width: 80px;
   min-width: 80px;
