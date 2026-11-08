@@ -118,6 +118,7 @@ test('mobile support uses an icon and delivery search keeps an inset from the me
     const button = page.locator('#chatFab');
     await expect(button).toBeVisible();
     await expect(button.locator('svg')).toHaveCount(1);
+    await expect(button.locator('svg path').first()).toHaveAttribute('d', /M3 13/);
     await expect(button).toHaveAttribute('aria-label', /поддерж/i);
     if (brand === 'delivery') {
       const spacing = await page.locator('#deliveryView .menu-head').evaluate(el => {
