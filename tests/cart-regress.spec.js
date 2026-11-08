@@ -751,8 +751,10 @@ test('1. Чат Ника без ложного вызова сотрудника
   await page.evaluate(() => window.setMode('admin'));
 
   const adminBar = page.locator('#adminBar');
-  await expect(adminBar).toBeVisible();
-  await expect(page.locator('#chatsToggle2')).toContainText('Чаты гостей');
+  await expect(adminBar).toBeHidden();
+  await expect(page.locator('#deliveryView .menu-head .menu-controls-row')).toBeVisible();
+  await expect(page.locator('#modeSeg')).toBeVisible();
+  await expect(page.locator('#editToggle')).toBeVisible();
 
   const delViewBox = await page.locator('#deliveryView').boundingBox();
   expect(delViewBox.x).toBeLessThan(120);
