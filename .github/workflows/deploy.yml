@@ -1,10 +1,12 @@
 name: Deploy to Timeweb
 on:
-  workflow_run:
-    workflows: ["CI Quality Gates"]
-    branches: [pizza]
-    types: [completed]
   workflow_dispatch:
+    inputs:
+      confirm_production:
+        description: "Confirm an intentional production deployment to Timeweb"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -13,7 +15,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_production == true }}
     steps:
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.2.5
