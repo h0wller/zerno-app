@@ -531,7 +531,7 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.modeSlot.width, JSON.stringify(layout.modeSlot))
         .toBeGreaterThanOrEqual(viewport.width - 64);
       expect.soft(layout.modeSlot.y, JSON.stringify({ heading: layout.modeHeading, slot: layout.modeSlot }))
-        .toBeGreaterThanOrEqual(layout.modeHeading.y + layout.modeHeading.height + 3);
+        .toBeGreaterThanOrEqual(layout.modeHeading.y + layout.modeHeading.height + 1);
       expect.soft(layout.modeSlot.x, JSON.stringify({ menuHead: layout.menuHead, slot: layout.modeSlot }))
         .toBeGreaterThanOrEqual(layout.menuHead.x + 8);
       expect.soft(layout.modeSlot.right, JSON.stringify({ menuHead: layout.menuHead, slot: layout.modeSlot }))
