@@ -1506,21 +1506,25 @@ html[data-brand="delivery"] {
     overflow:hidden;
   }
   html[data-staff-role] body header.topbar.has-mode-switcher {
-    height:calc(92px + var(--sat, env(safe-area-inset-top, 0px)));
-    min-height:calc(92px + var(--sat, env(safe-area-inset-top, 0px)));
-    grid-template-rows:52px 32px;
-    align-content:start;
+    height:calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    min-height:calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    grid-template-rows:52px 0;
+    align-content:center;
   }
-  html[data-staff-role] body header.topbar.has-mode-switcher #modeSeg {
-    grid-column:1 / -1;
-    grid-row:2;
+  html[data-staff-role] body header.topbar.has-mode-switcher > #headerBrand.brand {
+    display:none;
+  }
+  html[data-staff-role] body header.topbar.has-mode-switcher > #modeSeg {
+    grid-column:2;
+    grid-row:1;
     justify-self:center;
     align-self:center;
     display:flex;
     width:max-content;
-    max-width:100%;
+    max-width:min(100%,250px);
     height:32px;
     min-height:32px;
+    max-height:32px;
     margin:0;
     padding:0;
     gap:3px;
