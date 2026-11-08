@@ -13,20 +13,23 @@ function updateRailStickyPosition(rail, head) {
     return;
   }
 
+  var isDelivery = document.documentElement.dataset.brand === 'delivery';
   var topbar = document.querySelector('header.topbar');
   var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
   var laneTop = Math.max(12, topbarBottom + 12);
   var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
   var availableHeight = Math.max(0, laneBottom - laneTop);
-  // Rails align with the menu card at rest and stick below the topbar while scrolling.
-  var stickyTop = laneTop;
-  var transform = 'none';
 
-  var top = stickyTop + 'px';
-  var maxHeight = availableHeight + 'px';
+  // The delivery rail fills the catalog grid row; only the sticky top offset follows the fixed header.
+  var top = laneTop + 'px';
+  var maxHeight = isDelivery ? 'none' : availableHeight + 'px';
   if (rail.style.top !== top) rail.style.top = top;
   if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
-  if (rail.style.transform !== transform) rail.style.transform = transform;
+  if (rail.style.transform !== 'none') rail.style.transform = 'none';
+  if (isDelivery) {
+    if (rail.style.alignSelf !== 'stretch') rail.style.alignSelf = 'stretch';
+    if (rail.style.height !== 'auto') rail.style.height = 'auto';
+  }
   rail.classList.add('rail-position-ready');
 }
 
@@ -48,17 +51,19 @@ function alignRailWithCard() {
     var wrapContentTop = wrapRect.top
       + (parseFloat(wrapStyle.paddingTop) || 0)
       + (parseFloat(wrapStyle.borderTopWidth) || 0);
-    // Staff/admin rails start below the full menu toolbar; guest mobile rails start below search;
-    // guest tablet/desktop rails align to the menu card's top edge.
+    // Delivery rail is aligned to the menu card itself; it must not follow subfilter or search rows.
+    var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
     var menuRow = head.querySelector('.menu-controls-row');
     var modeSeg = document.getElementById('modeSeg');
     var staffGuestMenu = !!(menuRow && modeSeg &&
       modeSeg.closest('.menu-controls-row') === menuRow);
     var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
     var searchRow = head.querySelector('.mh-right');
-    var desiredTop = staffGuestMenu
-      ? headRect.bottom + 12
-      : (mobileViewport && searchRow ? searchRow.getBoundingClientRect().bottom + 12 : headRect.top);
+    var desiredTop = isDeliveryBrand
+      ? headRect.top
+      : (staffGuestMenu
+        ? headRect.bottom + 12
+        : (mobileViewport && searchRow ? searchRow.getBoundingClientRect().bottom + 12 : headRect.top));
 
     var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
