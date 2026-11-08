@@ -283,9 +283,12 @@ test('baseline: админ', async ({ page }) => {
 
   await modeBtn(page, 'admin', 'Админ').click();
   const adminBar = page.locator('#adminBar');
-  await expect(adminBar).toBeVisible({ timeout: 10000 });
-  await expect(adminBar).toHaveCSS('flex-wrap', 'nowrap');
-  await expect(adminBar).toHaveCSS('overflow-x', 'auto');
+  await expect(adminBar).toBeHidden();
+  const menuToolbar = page.locator('#menuView .menu-head .menu-controls-row');
+  await expect(menuToolbar).toBeVisible();
+  await expect(page.locator('#modeSeg')).toBeVisible();
+  await expect(page.locator('#editToggle')).toBeVisible();
+  await expect(page.locator('#menuView .menu-head .mh-right .search')).toBeVisible();
 
   const activeMode = page.locator('#modeSeg [data-mode="admin"]');
   await expect(activeMode).toHaveCSS('background-color', 'rgb(187, 215, 242)');

@@ -11,8 +11,10 @@ if (IN_TG) document.body.classList.add('in-tg');
 /* Ф3.56: safe-area фолбэк строго для iOS standalone без вызова принудительного reflow */
 (function () {
   var isStandalone = (navigator.standalone === true) || matchMedia('(display-mode: standalone)').matches;
-  var isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  var isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (isStandalone && isIos) {
+    document.documentElement.classList.add('is-ios-standalone');
     document.documentElement.style.setProperty('--sat', '47px');
   }
 })();
@@ -109,19 +111,6 @@ var rules = [
 
  '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
   '[data-brand="coffee"] #modeSeg button.on{background:#BBD7F2;color:#123A6B;box-shadow:0 2px 7px rgba(18,58,107,.16)}',
- 
-
- '@media(min-width:1181px){body.is-cashier .panel{display:none}body.is-cashier .wrap{grid-template-columns:1fr}.topbar > :last-child{margin-left:0!important}#profileTopBtn{margin-left:auto;}}',
- '@media(max-width:640px){#modeSeg button,.modes button,.seg button{padding:6px 7px;font-size:10px}.chat{right:8px}.mh-right{margin-left:0;width:100%}}',
- '@media (max-width: 600px) { .topbar { padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 0 !important; min-height: 0 !important; gap: 0 8px !important; } .topbar .brand { font-size: 18px !important; } .topbar .brand small { font-size: 10px !important; } }',
-'[data-brand="delivery"] #deliveryView .menu-head { margin: 4px 0 12px; width: 100%; background: linear-gradient(135deg, #FFFDF9 0%, #F6EEE1 100%); border: 2px solid var(--fr-tan, #D9C7AD); box-shadow: 3px 3px 0 rgba(58,42,28,0.08); }',
- '[data-brand="delivery"] #deliveryView .menu-head h1 { font: 900 clamp(20px, 3vw, 28px)/1.15 "Unbounded", "Golos Text", sans-serif; color: #3a2a1c; margin: 0; }',
- '[data-brand="delivery"] #deliveryView .menu-head h1 em { display: inline-flex; align-items: center; font: 700 11px/1.2 "Golos Text", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: #742116; background: rgba(192,59,42,0.1); border: 1px solid rgba(192,59,42,0.25); border-radius: 999px; padding: 4px 10px; margin-left: 0; max-width: 100%; white-space: normal; box-sizing: border-box; vertical-align: middle; }', '[data-brand="delivery"] .brand b { font: 900 18px "Unbounded", "Golos Text", sans-serif ; color: #3a2a1c ; }',
-  '[data-brand="delivery"] .brand small { color: #3a2a1c; }',
- '[data-brand="delivery"] .subchip{border:2px solid var(--fr-tan);background:var(--fr-paper);color:var(--fr-choc)}',
- '[data-brand="delivery"] .subchip.on{background:var(--flame);border-color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff}',
- '@media(min-width:0){body.is-cashier .ticker,body.is-admin .ticker{display:none}}',
-  '[data-brand="delivery"] #modeSeg button:not(.on){color:#F3EDE6}'
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
@@ -316,7 +305,11 @@ function syncStaffAndGuestControls(bName2) {
       adminBar.querySelectorAll(':scope > button:not(#editToggle)'),
       function (button) { return !button.hidden; }
     );
-    adminBar.hidden = !staffReady || !((confirmedStaff && me.role === 'admin') || canEdit || hasAdminActions);
+    var mobileMenuToolbar = menuPlacement &&
+      (currentMode === 'guest' || currentMode === 'admin') &&
+      window.matchMedia('(max-width: 820px)').matches;
+    adminBar.hidden = !staffReady || mobileMenuToolbar ||
+      !((confirmedStaff && me.role === 'admin') || canEdit || hasAdminActions);
     adminBar.style.removeProperty('display');
   }
 

@@ -114,7 +114,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.support.height).toBe(44);
     expect(metrics.scrollTop.width).toBe(32);
     expect(metrics.scrollTop.height).toBe(32);
-    expect(metrics.menuHead.maxHeight).toBe('none');
+    expect(metrics.menuHead.maxHeight).toBe('100px');
     expect(metrics.menuHead.overflow).not.toBe('hidden');
     expect(metrics.search).toBe(40);
     expect(metrics.addButton.width).toBeGreaterThanOrEqual(metrics.addButton.rowWidth - 1);
@@ -176,7 +176,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(menuMetrics.headerHeight).toBeLessThanOrEqual(64);
     expect(menuMetrics.modeInMenuRow).toBe(true);
     expect(menuMetrics.editInMenuRow).toBe(true);
-    expect(menuMetrics.rowHeight).toBe(32);
+    expect(menuMetrics.rowHeight).toBe(36);
     expect(menuMetrics.buttonHeights).toHaveLength(4);
     expect(menuMetrics.buttonHeights.every(height => height === 32)).toBe(true);
 
@@ -196,7 +196,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(adminMetrics.menuVisible).toBe(true);
     expect(adminMetrics.modeInMenuRow).toBe(true);
     expect(adminMetrics.headerHeight).toBeLessThanOrEqual(64);
-    expect(adminMetrics.rowHeight).toBe(32);
+    expect(adminMetrics.rowHeight).toBe(36);
     expect(adminMetrics.buttonHeights.every(height => height === 32)).toBe(true);
   });
 

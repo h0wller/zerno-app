@@ -12,6 +12,9 @@
         var urlBrand = m ? decodeURIComponent(m[1]).toLowerCase() : (qs.has('delivery') ? 'delivery' : (qs.has('coffee') ? 'coffee' : ''));
 
         var isPwa = (navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+        var isIosStandalone = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isPwa && isIosStandalone) document.documentElement.classList.add('is-ios-standalone');
         var isTg = /Telegram/i.test(navigator.userAgent) || qs.get('src') === 'tg' || !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
         var isActionDeepLink = !!(qs.get('tab') || qs.get('support') || qs.get('order'));
         var splashDone = sessionStorage.getItem('splashDone') === '1';
@@ -81,11 +84,11 @@
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right:not(:has(> #supportLauncherHost))::after {
     content:"";
     display:block;
-    flex:0 0 32px;
-    width:32px;
-    min-width:32px;
-    height:32px;
-    min-height:32px;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
     box-sizing:border-box;
   }
 }
@@ -112,6 +115,30 @@
 /* 1. Мгновенно прячем все элементы с атрибутом [hidden], модалки, QR и панель списания кофе до загрузки theme/*.css *//* 1. Прячем элементы с [hidden] и закрытые модалки (учитываем и .show, и .open) */
 [hidden] {
   display: none !important;
+}
+
+/* Mobile staff menu reserves its two-row toolbar only; no legacy shortcut strip. */
+@media (max-width:820px) {
+  html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
+    display:none !important;
+    height:0;
+    min-height:0;
+    margin:0;
+    padding:0;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    grid-template-rows:36px 44px !important;
+    height:84px !important;
+    min-height:84px !important;
+    max-height:84px !important;
+    overflow:visible !important;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    overflow:visible !important;
+  }
 }
 
 .modal:not(.show):not(.open),
@@ -518,13 +545,10 @@ html body div.wrap > #deliveryRail button.on {
   margin-left: 0;
   width: 100%;
 }
-/* Keep the compact menu heading from the first paint; otherwise deferred theme CSS
-   removes the tagline/update pill and shifts the search row on slow connections. */
-#menuView .menu-head h1 em,
-#deliveryView .menu-head h1 em,
-#menuView .menu-head .upd,
-#deliveryView .menu-head .upd {
-  display: none;
+/* Keep only the update timestamp compact; the brand context stays visible from first paint. */
+@media (max-width:820px) {
+  #menuView .menu-head .upd,
+  #deliveryView .menu-head .upd { display:none; }
 }
 @media (max-width: 820px) {
   html body #menuView .menu-head,
@@ -845,7 +869,6 @@ html[data-brand="delivery"] {
     max-height:none;
     overflow:visible;
   }
-  html body .menu-head h1 em,
   html body .menu-head .upd { display:none; }
 
   html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right:not(:has(> #supportLauncherHost))::after {
@@ -908,6 +931,146 @@ html[data-brand="delivery"] {
   }
 }
 
+
+/* iOS standalone content already starts below the native status-bar safe area. */
+@media (max-width:820px) {
+  html.is-ios-standalone[data-staff-role] body header.topbar,
+  html.is-ios-standalone[data-staff-role] body header.topbar.has-mode-switcher {
+    height:60px;
+    min-height:60px;
+    max-height:60px;
+    grid-template-rows:52px 0;
+    padding:4px 12px 0;
+    align-content:center;
+  }
+  html.is-ios-standalone[data-staff-role] body header.topbar > #topbar-actions {
+    grid-column:3;
+    grid-row:1;
+    justify-self:end;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    width:max-content;
+    max-width:100%;
+    min-width:0;
+    margin:0;
+  }
+  html.is-ios-standalone[data-staff-role] body header.topbar > #topbar-actions > #profileTopBtn {
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+  }
+  html.is-ios-standalone[data-staff-role] body header.topbar .venueWrap > #venueToggle {
+    flex:0 0 52px;
+    width:52px;
+    min-width:52px;
+    max-width:52px;
+    height:48px;
+    min-height:48px;
+    max-height:48px;
+    padding:0;
+  }
+}
+
+
+/* Reserve staff controls across the complete mobile viewport row before theme CSS. */
+@media (max-width:820px) {
+  html body header.topbar {
+    grid-template-columns:minmax(52px,1fr) minmax(0,auto) minmax(52px,1fr);
+  }
+  html body header.topbar > #topbar-actions {
+    grid-column:3;
+    grid-row:1;
+    justify-self:end;
+    align-self:center;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    width:max-content;
+    max-width:100%;
+    min-width:0;
+    margin:0;
+    padding:0;
+    position:relative;
+    z-index:2;
+  }
+  html body header.topbar > #topbar-actions > #profileTopBtn {
+    display:grid;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    padding:0;
+    place-items:center;
+  }
+  html body header.topbar .venueWrap > #venueToggle.venueToggle {
+    box-sizing:border-box;
+    flex:0 0 52px;
+    width:52px;
+    min-width:52px;
+    max-width:52px;
+    height:48px;
+    min-height:48px;
+    max-height:48px;
+    padding:0;
+  }
+  html[data-staff-role] body #adminBar.adminBar:not([hidden]) {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+    width:calc(100% + 90px);
+    max-width:calc(100vw - 20px);
+    min-width:0;
+    margin:0 0 12px -90px;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body #adminBar.adminBar > button:not([hidden]) {
+    display:inline-flex;
+    box-sizing:border-box;
+    width:100%;
+    min-width:0;
+    max-width:none;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:0 6px;
+    font-size:clamp(10px,2.8vw,12px);
+    line-height:1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    justify-content:center;
+  }
+}
+/* Keep the three staff actions on one compact row at every mobile width. */
+@media (max-width:350px) {
+  html[data-staff-role] body #adminBar.adminBar:not([hidden]) {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  html[data-staff-role] body #adminBar.adminBar > #promoToggle:not([hidden]),
+  html[data-staff-role] body #adminBar.adminBar > #dashToggle:not([hidden]),
+  html[data-staff-role] body #adminBar.adminBar > #chatsToggle2:not([hidden]) {
+    grid-column:auto;
+    width:100%;
+    min-width:0;
+    max-width:none;
+    padding:0 3px;
+    font-size:10px;
+  }
+}
 </style>
 <script id="perf-lighthouse-bridge">
     (() => {
@@ -1224,7 +1387,7 @@ html[data-brand="delivery"] {
 
 /* Match the late views.js <=600px topbar override before the first frame. */
 @media (max-width: 600px) {
-  .topbar {
+  html:not(.is-ios-standalone) .topbar {
     padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 0 !important;
     min-height: 0 !important;
     gap: 0 8px !important;
@@ -1600,12 +1763,14 @@ html[data-brand="delivery"] {
   html[data-staff-role]:not([data-staff-ready]) body .menu-controls-row .mode-seg-slot {
     height:32px;
     min-height:32px;
+    max-height:32px;
   }
   html[data-staff-role]:not([data-staff-ready]) body .menu-controls-row #modeSeg[hidden] {
     display:flex;
     visibility:hidden;
     height:32px;
     min-height:32px;
+    max-height:32px;
   }
   html[data-staff-role]:not([data-staff-ready]) body #adminBar[hidden] {
     display:flex;
@@ -1664,62 +1829,92 @@ html[data-brand="delivery"] {
   html[data-staff-role]:not([data-staff-ready]) body #adminBar[hidden] { display:none; }
 }
 
-/* Critical staff layout: reserve the title/role row and search/support row before deferred CSS. */
+/* Critical staff menu toolbar: exactly two rows before JS and deferred theme CSS. */
 @media (max-width:820px) {
-  html body .menu-head .mh-top {
+  html body :is(#menuView,#deliveryView) .menu-head {
+    box-sizing:border-box;
+    height:100px;
+    min-height:100px;
+    max-height:100px;
+    overflow:visible;
+    padding:6px 10px;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
     display:grid;
     grid-template-columns:minmax(0,1fr);
-    grid-template-rows:32px 32px;
+    grid-template-rows:36px 44px;
     gap:4px;
     width:100%;
     min-width:0;
     max-width:100%;
-    height:68px;
+    height:84px;
+    min-height:84px;
+    max-height:84px;
+    overflow:visible;
     box-sizing:border-box;
   }
-  html body .menu-head .mh-top > div:first-child {
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
     grid-column:1;
     grid-row:1;
-    display:flex;
-    align-items:center;
+    display:block;
     width:100%;
     min-width:0;
     max-width:100%;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    overflow:hidden;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
   }
   html body .menu-head .menu-controls-row {
-    display:flex;
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) 32px;
+    grid-template-rows:36px;
     align-items:center;
-    flex-wrap:nowrap;
-    gap:10px;
+    column-gap:6px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > h1 {
+    grid-column:1;
+    grid-row:1;
+    display:inline-flex;
+    align-items:center;
+    width:auto;
+    min-width:0;
+    max-width:none;
+    margin:0;
+    white-space:nowrap;
+    overflow:visible;
+    font-size:clamp(15px,4vw,18px);
+    line-height:1;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2;
+    grid-row:1;
+    display:flex;
+    flex:1 1 auto;
+    align-items:center;
+    justify-content:stretch;
     width:100%;
     min-width:0;
     max-width:100%;
     height:32px;
     min-height:32px;
     max-height:32px;
+    overflow:visible;
   }
-  html body .menu-controls-row > h1 {
-    flex:0 0 auto;
-    min-width:0;
-    white-space:nowrap;
-    font-size:clamp(16px,4.4vw,19px);
-    line-height:1;
-  }
-  html body .menu-controls-row > .mode-seg-slot {
-    display:flex;
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
     flex:1 1 auto;
-    min-width:0;
-    height:32px;
-    align-items:center;
-    overflow:hidden;
-  }
-  html body .menu-controls-row > .mode-seg-slot > #modeSeg {
-    display:flex;
-    flex:1 1 0%;
     width:100%;
     min-width:0;
     max-width:100%;
@@ -1728,32 +1923,34 @@ html[data-brand="delivery"] {
     max-height:32px;
     margin:0;
     padding:0;
-    gap:5px;
-    align-items:center;
-    justify-content:flex-start;
-    overflow-x:auto;
-    overflow-y:hidden;
-    overscroll-behavior-x:contain;
-    scrollbar-width:none;
-    -webkit-overflow-scrolling:touch;
+    gap:3px;
+    overflow:visible;
+    box-sizing:border-box;
   }
-  html body .menu-controls-row > .mode-seg-slot > #modeSeg::-webkit-scrollbar { display:none; }
-  html body .menu-controls-row > .mode-seg-slot > #modeSeg[hidden] { display:none; }
-  html body .menu-controls-row > .mode-seg-slot > #modeSeg button {
-    flex:0 0 24px;
-    width:24px;
-    min-width:24px;
-    max-width:24px;
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+    display:flex;
+    flex:1 1 0;
+    width:100%;
+    min-width:0;
+    max-width:none;
     height:32px;
     min-height:32px;
     max-height:32px;
-    padding:0 4px;
-    font:700 9px/1 "Golos Text",system-ui,sans-serif;
+    margin:0;
+    padding:0 2px;
+    align-items:center;
+    justify-content:center;
+    font:700 clamp(10px,2.8vw,11px)/1 "Golos Text",system-ui,sans-serif;
     white-space:nowrap;
-    border-radius:8px;
+    overflow:hidden;
+    text-overflow:clip;
+    box-sizing:border-box;
   }
-  html body .menu-controls-row > #editToggle {
+  html body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3;
+    grid-row:1;
     display:inline-flex;
+    position:static;
     flex:0 0 32px;
     width:32px;
     min-width:32px;
@@ -1766,10 +1963,15 @@ html[data-brand="delivery"] {
     align-items:center;
     justify-content:center;
     font-size:0;
+    box-sizing:border-box;
   }
-  html body .menu-controls-row > #editToggle::before { content:"✏️"; font-size:15px; }
-  html body #deliveryView .menu-head .mh-top > .mh-right,
-  html body #menuView .menu-head .mh-top > .mh-right {
+  html body .menu-head .menu-controls-row > #editToggle::before {
+    content:"✏️";
+    font-size:15px;
+    line-height:1;
+  }
+  html body .menu-head .menu-controls-row > #editToggle.on::before { content:"✓"; }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
     grid-column:1;
     grid-row:2;
     display:flex;
@@ -1778,66 +1980,64 @@ html[data-brand="delivery"] {
     width:100%;
     min-width:0;
     max-width:100%;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    flex:0 1 0%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
     margin:0;
-    overflow:hidden;
-    box-sizing:border-box;
-  }
-  html body #deliveryView .menu-head .mh-top > .mh-right > .search,
-  html body #menuView .menu-head .mh-top > .mh-right > .search {
-    display:flex;
-    flex:1 1 0%;
-    width:0;
-    min-width:0;
-    max-width:100%;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    padding:0 10px;
-    margin:0;
-    box-sizing:border-box;
-  }
-  html body #deliveryView .menu-head .mh-top > .mh-right > .search input,
-  html body #menuView .menu-head .mh-top > .mh-right > .search input {
-    flex:1 1 0%;
-    width:0;
-    min-width:0;
-    max-width:100%;
-    height:30px;
-    min-height:30px;
-    max-height:30px;
     padding:0;
+    overflow:visible;
     box-sizing:border-box;
   }
-  html body #deliveryView .menu-head .mh-top > .mh-right > #chatFab.chat-fab,
-  html body #menuView .menu-head .mh-top > .mh-right > #chatFab.chat-fab {
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
+    display:flex;
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+    margin:0;
+    padding:0 10px;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input,
+  html body #deliveryView #dSearch,
+  html body #menuView #searchInput {
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    margin:0;
+    padding:0;
+    line-height:36px;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost,
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
+    display:flex;
     position:relative;
     inset:auto;
-    z-index:2;
-    display:inline-flex;
-    flex:0 0 32px;
-    width:32px;
-    min-width:32px;
-    max-width:32px;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    padding:0;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
     margin:0;
+    padding:0;
     align-items:center;
     justify-content:center;
-    border-radius:10px;
+    overflow:visible;
+    box-sizing:border-box;
   }
-  html body #deliveryView .menu-head .mh-top > .mh-right > #chatFab.chat-fab::after,
-  html body #menuView .menu-head .mh-top > .mh-right > #chatFab.chat-fab::after { content:none; }
-  html body #deliveryView .menu-head .mh-top > .mh-right > #chatFab.chat-fab svg,
-  html body #menuView .menu-head .mh-top > .mh-right > #chatFab.chat-fab svg { display:block; width:16px; height:16px; }
   html body .menu-head .upd { display:none; }
-  html body .menu-head h1 em { display:none; }
-  html body .menu-head { height:80px; min-height:80px; max-height:80px; overflow:hidden; padding:6px 10px; }
+
+  /* Preserve the other first-frame mobile controls without adding rows to the menu head. */
   html body header.topbar #profileTopBtn,
   html body #scrollTopBtn {
     width:32px;
@@ -1874,7 +2074,12 @@ html[data-brand="delivery"] {
     box-shadow:0 2px 8px rgba(196,59,50,.2);
   }
   html body #deliveryGrid .steprow,
-  html body #grid .steprow { display:flex; justify-content:center; align-items:center; width:100%; }
+  html body #grid .steprow {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    width:100%;
+  }
   html body #deliveryGrid .steprow > .cta[data-add],
   html body #grid .steprow > .cta[data-add] {
     display:flex;
@@ -1889,7 +2094,11 @@ html[data-brand="delivery"] {
     padding:0 12px;
   }
   html body #deliveryGrid .cta.incart,
-  html body #grid .cta.incart { width:auto; flex:0 0 auto; padding:0 12px; }
+  html body #grid .cta.incart {
+    width:auto;
+    flex:0 0 auto;
+    padding:0 12px;
+  }
 }
 /* The section must stay in column 2 before deferred 160-12-admin-bar-tail.css arrives. */
 html body div.wrap > section {
@@ -2070,7 +2279,7 @@ html[data-brand="delivery"] #deliveryView .menu-head h1 {
   font: 800 clamp(20px, 2.8vw, 28px)/1.15 "Unbounded", "Golos Text", system-ui, sans-serif;
 }
 html[data-brand="delivery"] #deliveryView .menu-head h1 em {
-  display: none;
+  display: inline-flex;
   align-items: center;
   font: 700 11px/1.2 "Golos Text", sans-serif;
   text-transform: uppercase;
@@ -2341,65 +2550,100 @@ html[data-brand="delivery"] #deliveryGrid .opts-error { grid-column:1 / -1; marg
 }
 
 
-/* Match the deferred mobile menu toolbar on first paint; prevent search/support CLS. */
+/* Match the approved two-row mobile menu toolbar on first paint; avoid search/support CLS. */
 @media (max-width:820px) {
+  html body :is(#menuView,#deliveryView) .menu-head { box-sizing:border-box; min-height:100px; max-height:100px; height:100px; overflow:visible; padding:6px 10px; }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top {
-    display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:32px 32px;
-    gap:4px; width:100%; min-width:0; max-width:100%; height:68px; box-sizing:border-box;
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:36px 44px;
+    gap:4px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:84px;
+    min-height:84px;
+    max-height:84px;
+    overflow:visible;
+    box-sizing:border-box;
   }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
-    grid-column:1; grid-row:1; display:flex; align-items:center; width:100%;
-    min-width:0; max-width:100%; height:32px; min-height:32px; max-height:32px; overflow:hidden;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
-    grid-column:1; grid-row:2; display:flex; align-items:center; flex:0 1 auto;
-    width:100%; min-width:0; max-width:100%; height:32px; min-height:32px; max-height:32px;
-    margin:0; overflow:hidden; box-sizing:border-box;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
-    display:flex; flex:1 1 0%; width:auto; min-width:0; max-width:100%;
-    height:32px; min-height:32px; max-height:32px; padding:0 10px; margin:0; box-sizing:border-box;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input {
-    flex:1 1 0%; width:0; min-width:0; max-width:100%; height:30px;
-    min-height:30px; max-height:30px; padding:0; box-sizing:border-box;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #chatFab.chat-fab {
-    display:inline-flex; flex:0 0 32px; width:32px; min-width:32px; max-width:32px;
-    height:32px; min-height:32px; max-height:32px; margin:0; padding:0; box-sizing:border-box;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #chatFab.chat-fab > svg {
-    display:block; width:16px; height:16px;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #chatFab.chat-fab::before,
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #chatFab.chat-fab::after { content:none; }
-}
-/* Reserve the landmark support launcher in the mobile search row before deferred CSS. */
-@media (max-width:820px) {
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost {
-    position:relative;
-    inset:auto;
-    z-index:2;
-    display:flex;
-    flex:0 0 32px;
-    width:32px;
-    min-width:32px;
-    max-width:32px;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    margin:0;
-    padding:0;
-    align-items:center;
-    justify-content:center;
-    box-sizing:border-box;
+    grid-column:1;
+    grid-row:1;
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
     overflow:visible;
   }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
-    position:relative;
-    inset:auto;
-    z-index:2;
+  html body .menu-head .menu-controls-row {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) 32px;
+    grid-template-rows:36px;
+    align-items:center;
+    column-gap:6px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > h1 { grid-column:1; grid-row:1; min-width:0; white-space:nowrap; }
+  html body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2;
+    grid-row:1;
+    display:flex;
+    flex:1 1 auto;
+    align-items:center;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    overflow:visible;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    flex:1 1 auto;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    gap:3px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg button {
+    flex:1 1 0;
+    width:100%;
+    min-width:0;
+    max-width:none;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    padding:0 2px;
+    font:700 clamp(10px,2.8vw,11px)/1 "Golos Text",system-ui,sans-serif;
+    white-space:nowrap;
+    overflow:hidden;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3;
+    grid-row:1;
     display:inline-flex;
+    position:static;
     flex:0 0 32px;
     width:32px;
     min-width:32px;
@@ -2411,21 +2655,68 @@ html[data-brand="delivery"] #deliveryGrid .opts-error { grid-column:1 / -1; marg
     padding:0;
     align-items:center;
     justify-content:center;
-    border-radius:10px;
-    box-sizing:border-box;
     font-size:0;
   }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab > svg {
-    display:block;
-    width:16px;
-    height:16px;
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    grid-column:1;
+    grid-row:2;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    overflow:visible;
+    box-sizing:border-box;
   }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab::before,
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab::after {
-    content:none;
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
+    display:flex;
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+    padding:0 10px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input {
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    padding:0;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost,
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
+    display:flex;
+    position:relative;
+    inset:auto;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:0;
+    margin:0;
+    align-items:center;
+    justify-content:center;
+    overflow:visible;
+    box-sizing:border-box;
   }
 }
-
 /* Compact mobile subfilters must match their deferred 32px rules on first paint. */
 @media (max-width:820px) {
   html body #deliveryView .subfilter-bar .subchip,
@@ -2583,7 +2874,6 @@ html body #tickerTrack .tickerGroup > span {
     max-height:none;
     overflow:visible;
   }
-  html body .menu-head h1 em,
   html body .menu-head .upd { display:none; }
 
   html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right:not(:has(> #supportLauncherHost))::after {
@@ -2646,6 +2936,212 @@ html body #tickerTrack .tickerGroup > span {
   }
 }
 
+/* Final first-paint mirror: exact two-row staff menu header, no extra rows or reserved blank space. */
+@media (max-width:820px) {
+  html body :is(#menuView,#deliveryView) .menu-head {
+    box-sizing:border-box;
+    height:100px;
+    min-height:100px;
+    max-height:100px;
+    overflow:visible;
+    padding:6px 10px;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:36px 44px;
+    gap:4px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:84px;
+    min-height:84px;
+    max-height:84px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    grid-column:1;
+    grid-row:1;
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) 32px;
+    grid-template-rows:36px;
+    align-items:center;
+    column-gap:6px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > h1 {
+    grid-column:1;
+    grid-row:1;
+    display:inline-flex;
+    align-items:center;
+    flex:0 0 auto;
+    width:auto;
+    min-width:0;
+    max-width:none;
+    margin:0;
+    white-space:nowrap;
+    overflow:visible;
+    font-size:clamp(15px,4vw,18px);
+    line-height:1;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2;
+    grid-row:1;
+    display:flex;
+    flex:1 1 auto;
+    align-items:center;
+    justify-content:stretch;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    overflow:visible;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    flex:1 1 auto;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    gap:2px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+    display:flex;
+    flex:1 1 0;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    align-items:center;
+    justify-content:center;
+    font:700 clamp(9px,2.6vw,10px)/1 "Golos Text",system-ui,sans-serif;
+    letter-spacing:-0.02em;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:clip;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3;
+    grid-row:1;
+    display:inline-flex;
+    position:static;
+    flex:0 0 32px;
+    width:32px;
+    min-width:32px;
+    max-width:32px;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    align-items:center;
+    justify-content:center;
+    font-size:0;
+  }
+  html body .menu-head .menu-controls-row > #editToggle::before {
+    content:"✏️";
+    font-size:15px;
+    line-height:1;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    grid-column:1;
+    grid-row:2;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
+    display:flex;
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+    padding:0 10px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input {
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    padding:0;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost,
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
+    display:flex;
+    position:relative;
+    inset:auto;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    padding:0;
+    align-items:center;
+    justify-content:center;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab svg {
+    width:16px;
+    height:16px;
+  }
+}
 </style>
 </head>
 
