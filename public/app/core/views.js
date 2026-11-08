@@ -335,8 +335,14 @@ function syncChatFab(staff, bName2) {
   var cfab = document.getElementById('chatFab');
   var supportHost = document.getElementById('supportLauncherHost');
   if (!cfab || !supportHost) return;
-  // Keep support out of the menu/search layout at every breakpoint.
-  if (supportHost.parentElement !== document.body) document.body.appendChild(supportHost);
+  var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
+  var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  var supportTarget = !staff && mobileViewport && activeView
+    ? activeView.querySelector('.mh-right')
+    : document.body;
+  if (supportTarget && supportHost.parentElement !== supportTarget) {
+    supportTarget.appendChild(supportHost);
+  }
   var cartPanel = document.getElementById('cartPanel');
   var cartOpen = !!(cartPanel && cartPanel.classList.contains('open'));
   cfab.style.display = (staff || cartOpen) ? 'none' : '';
