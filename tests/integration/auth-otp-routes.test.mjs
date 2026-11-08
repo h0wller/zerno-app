@@ -1,14 +1,27 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import net from 'node:net';
 import { once } from 'node:events';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-const port = 43000 + Math.floor(Math.random() * 1000);
+async function reservePort() {
+  const listener = net.createServer();
+  await new Promise((resolve, reject) => {
+    listener.once('error', reject);
+    listener.listen(0, '127.0.0.1', resolve);
+  });
+  const port = listener.address().port;
+  await new Promise(resolve => listener.close(resolve));
+  return port;
+}
+
+const port = await reservePort();
 const base = `http://127.0.0.1:${port}`;
+const root = path.resolve(import.meta.dirname, '../..');
 const dbPath = path.join(os.tmpdir(), `zerno-auth-test-${randomUUID()}.db`);
 let server;
 let output = '';
@@ -16,7 +29,7 @@ let output = '';
 async function waitForServer() {
   const deadline = Date.now() + 20000;
   while (Date.now() < deadline) {
-    if (server.exitCode !== null) throw new Error(`Test server exited (${server.exitCode}):\n${output}`);
+    if (server.exitCode !== null) throw new Error(`Test server exited (code=${server.exitCode}, signal=${server.signalCode ?? 'none'}):\n${output}`);
     try {
       const response = await fetch(`${base}/api/health`);
       if (response.ok) return;
@@ -44,17 +57,21 @@ async function seedOtp(key, code, expiresInMs = 300000) {
 
 before(async () => {
   server = spawn(process.execPath, ['server.js'], {
+    cwd: root,
     env: {
       ...process.env,
       NODE_ENV: 'test',
       PORT: String(port),
       DB_PATH: dbPath,
+      TELEGRAM_BOT_TOKEN: '',
+      PUBLIC_URL: '',
       TG_WEBHOOK_SECRET: ''
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
   server.stdout.on('data', chunk => { output += chunk.toString(); });
   server.stderr.on('data', chunk => { output += chunk.toString(); });
+  server.on('error', error => { output += `\nSpawn error: ${error.stack || error.message}`; });
   await waitForServer();
 });
 
