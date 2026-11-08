@@ -283,7 +283,10 @@ test('baseline: админ', async ({ page }) => {
 
   await modeBtn(page, 'admin', 'Админ').click();
   const adminBar = page.locator('#adminBar');
-  await expect(adminBar).toBeHidden();
+  await expect(adminBar).toBeVisible();
+  for (const action of ['#promoToggle', '#dashToggle', '#chatsToggle2']) {
+    await expect(page.locator(action)).toBeVisible();
+  }
   const menuToolbar = page.locator('#menuView .menu-head .menu-controls-row');
   await expect(menuToolbar).toBeVisible();
   await expect(page.locator('#modeSeg')).toBeVisible();
