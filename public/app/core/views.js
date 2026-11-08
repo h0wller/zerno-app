@@ -113,7 +113,7 @@ var rules = [
 
  '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
   '[data-brand="coffee"] #modeSeg button.on{background:#BBD7F2;color:#123A6B;box-shadow:0 2px 7px rgba(18,58,107,.16)}',
-  '@media(max-width:820px){[data-brand="delivery"] body #deliveryView .menu-head{padding:8px 16px!important}}',
+  '[data-brand="delivery"] body #deliveryView .menu-head{padding:8px 16px}',
   '@media(min-width:820px){[data-brand="delivery"] body #deliveryView #deliverySubFilter>.subchip.on,[data-brand="delivery"] body #deliveryView .subfilter-bar>.subchip.on{background:#C03B2A;border-color:#3A2A1C;color:#fff}}',
 ];
 css.textContent = rules.join('\n');
