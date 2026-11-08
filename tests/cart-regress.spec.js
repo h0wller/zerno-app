@@ -41,12 +41,13 @@ test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степп
     // Цвет текста не должен совпадать с цветом фона
     expect(avaStyles.color).not.toBe(avaStyles.bg);
 
-    // ── Проверка Задачи 4: Сабфильтры не сплющены, hit target 44px ──
+    // ── Mobile subfilters: compact 32px height with natural width preserved ──
     const subchip = page.locator('.subchip').first();
     if ((await subchip.count()) > 0) {
       await expect(subchip).toBeVisible();
       const chipBox = await subchip.boundingBox();
-      expect(Math.round(chipBox.height)).toBe(44);
+      expect(Math.round(chipBox.height)).toBe(32);
+      expect(chipBox.width).toBeGreaterThanOrEqual(58);
     }
 
     // ── Проверка Задачи 3: Степпер +/− скрыт при qty=0 и 40x40px при qty>0 ──
@@ -640,13 +641,20 @@ test.describe('Спринт 4 — Тикер, полноширинная шап�
 
     // ── Задача 2: Поиск НЕ наезжает на левый сайдбар #deliveryRail + sticky-позиция при скролле ──
     const rail = page.locator('#deliveryRail');
-    const search = page.locator('#deliveryView .search, .mh-top .search').first();
+    const search = page.locator('#deliveryView #dSearch').locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " search ")]').first();
     await expect(rail).toBeVisible();
     await expect(search).toBeVisible();
 
     const railBox = await rail.boundingBox();
     const searchBox = await search.boundingBox();
     const menuHeadBox = await page.locator('#deliveryView .menu-head').boundingBox();
+    const searchLayout = await page.locator('#deliveryView .mh-top').evaluate((element) => ({
+      display: getComputedStyle(element).display,
+      gridRows: getComputedStyle(element).gridTemplateRows,
+      searchParentWidth: element.querySelector('.mh-right').getBoundingClientRect().width,
+      searchParentLeft: element.querySelector('.mh-right').getBoundingClientRect().left,
+    }));
+    expect(searchLayout.display).toBe('grid');
     // Поиск находится в полноширинной шапке над рейлом: горизонтальное пересечение колонок допустимо,
     // но сами элементы не должны пересекаться по вертикали.
     expect(searchBox.x).toBeGreaterThanOrEqual(menuHeadBox.x);

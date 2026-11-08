@@ -2,78 +2,331 @@ import { test, expect } from '@playwright/test';
 
 test.use({ serviceWorkers: 'block' });
 
-test('single staff action does not stretch the admin bar across the content column', async ({ page }) => {
-  await page.addInitScript(() => {
+async function mockStaffSession(page, role = 'admin') {
+  await page.addInitScript((staffRole) => {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_user', 'playwright-staff-layout-token');
+    localStorage.setItem('zt_role', staffRole);
     sessionStorage.setItem('splashDone', '1');
+  }, role);
+  await page.route('**/api/**', async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const customer = {
+      id: 'staff-layout-test',
+      name: 'Staff Layout Test',
+      phone: '+70000000000',
+      role,
+      verified: 1,
+      cups: 0,
+      stamps: 0,
+      free: 0,
+      history: [],
+      qr: 'staff-layout-test'
+    };
+    const body = pathname === '/api/me'
+      ? { customer }
+      : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
+    });
   });
+}
+
+test('admin action bar spans the content row and scrolls horizontally', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockStaffSession(page);
   await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.me && window.me.role === 'admin' &&
+    document.documentElement.hasAttribute('data-staff-ready') &&
+    typeof window.syncBrandViews === 'function'
+  );
+  await page.evaluate(() => window.setMode('admin'));
   const bar = page.locator('#adminBar');
-  await bar.evaluate((element) => {
-    element.hidden = false;
-    Array.from(element.children).forEach((button, index) => { button.hidden = index > 0; });
-  });
   await expect(bar).toBeVisible();
   const dimensions = await bar.evaluate((element) => ({
-    parentWidth: element.getBoundingClientRect().width,
-    buttonWidth: element.querySelector('button:not([hidden])').getBoundingClientRect().width,
+    width: element.getBoundingClientRect().width,
+    parentWidth: element.parentElement.getBoundingClientRect().width,
+    scrollWidth: element.scrollWidth,
+    clientWidth: element.clientWidth,
+    overflowX: getComputedStyle(element).overflowX,
+    children: Array.from(element.querySelectorAll(':scope > button:not([hidden])')).map(button => ({
+      width: button.getBoundingClientRect().width,
+      height: button.getBoundingClientRect().height,
+    })),
     viewportWidth: document.documentElement.clientWidth,
   }));
-  expect(dimensions.parentWidth).toBeLessThanOrEqual(240);
-  expect(dimensions.buttonWidth).toBeLessThanOrEqual(220);
-  expect(dimensions.parentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
+  expect(dimensions.width).toBeGreaterThan(240);
+  expect(dimensions.width).toBeLessThanOrEqual(dimensions.parentWidth + 1);
+  expect(dimensions.width).toBeLessThanOrEqual(dimensions.viewportWidth);
+  expect(dimensions.overflowX).toBe('auto');
+  expect(dimensions.children.length).toBeGreaterThan(1);
+  expect(dimensions.children.every(button => button.height === 32)).toBe(true);
+  expect(dimensions.scrollWidth).toBeGreaterThanOrEqual(dimensions.clientWidth);
 });
 
-test('staff mode switch fits its reserved topbar row before and after hydration', async ({ page }) => {
+test('staff switcher stays in the visible menu heading and replaces the logo when menu is absent', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript(() => {
-    localStorage.setItem('zt_onb', '1');
-    localStorage.setItem('zt_inst_hide', '1');
-    sessionStorage.setItem('splashDone', '1');
-  });
+  await mockStaffSession(page);
   await page.goto('/?brand=delivery');
-  const mode = page.locator('#modeSeg');
-  await expect(mode).toBeAttached();
-  await page.evaluate(() => {
-    document.getElementById('modeSeg').innerHTML =
-      ['Кофейня', 'Доставка', 'Заказы', 'Касса']
-        .map((label) => '<button type="button">' + label + '</button>')
-        .join('');
-  });
+  await page.waitForFunction(() =>
+    window.me && window.me.role === 'admin' &&
+    document.documentElement.hasAttribute('data-staff-ready') &&
+    typeof window.syncBrandViews === 'function'
+  );
 
-  const measure = () => page.evaluate(() => {
-    const header = document.querySelector('header.topbar');
-    const mode = document.getElementById('modeSeg');
-    const headerBox = header.getBoundingClientRect();
-    const modeBox = mode.getBoundingClientRect();
+  const mode = page.locator('#modeSeg');
+  const header = page.locator('header.topbar');
+  const menuHead = page.locator('#deliveryView .menu-head');
+
+  await expect(mode).toBeVisible();
+  const guestLayout = await page.evaluate(() => {
+    const seg = document.getElementById('modeSeg');
+    const edit = document.getElementById('editToggle');
+    const titleRow = seg.closest('.menu-controls-row');
     return {
-      headerBottom: headerBox.bottom,
-      modeHeight: modeBox.height,
-      modeBottom: modeBox.bottom,
-      gridRows: getComputedStyle(header).gridTemplateRows,
-      buttonHeights: Array.from(mode.querySelectorAll('button'), (button) => button.getBoundingClientRect().height),
+      modeInMenuRow: !!titleRow && titleRow.parentElement === document.querySelector('#deliveryView .mh-top > div:first-child'),
+      titleInsideRow: !!titleRow && titleRow.contains(titleRow.parentElement?.querySelector('h1')),
+      searchInSecondRow: document.querySelector('#deliveryView .mh-top > .mh-right .search')?.parentElement === document.querySelector('#deliveryView .mh-top > .mh-right'),
+      searchHeight: document.querySelector('#deliveryView .mh-top > .mh-right .search')?.getBoundingClientRect().height,
+      supportIsSibling: document.getElementById('supportLauncherHost')?.parentElement === document.querySelector('#deliveryView .mh-top > .mh-right'),
+      supportFabInsideLandmark: document.getElementById('chatFab')?.parentElement === document.getElementById('supportLauncherHost'),
+      modeBeforeEdit: !!titleRow && Array.from(titleRow.children).indexOf(seg.closest('.mode-seg-slot')) < Array.from(titleRow.children).indexOf(edit),
+      controlsRight: !!titleRow && Math.abs(edit.getBoundingClientRect().right-titleRow.getBoundingClientRect().right)<=2,
+      modeBeforeEditGap: edit.getBoundingClientRect().left-seg.getBoundingClientRect().right,
+      adminBarInMenuRow: document.getElementById('adminBar').parentElement===titleRow,
+      fabVisibleForGuestView: getComputedStyle(document.getElementById('chatFab')).display !== 'none',
+      railWidth: document.getElementById('deliveryRail').getBoundingClientRect().width,
+      headerHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
+      modeHeight: seg.getBoundingClientRect().height,
+      buttons: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().height),
+      buttonWidths: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().width),
+      editBox: { width: edit.getBoundingClientRect().width, height: edit.getBoundingClientRect().height },
+      editNextToRoles: !!titleRow && Array.from(titleRow.children).indexOf(edit) > Array.from(titleRow.children).indexOf(seg),
+      modeScrollWidth: seg.scrollWidth,
+      modeClientWidth: seg.clientWidth,
+      editVisible: !edit.hidden
     };
   });
-
+  expect(guestLayout.modeInMenuRow).toBe(true);
+  expect(guestLayout.modeBeforeEdit).toBe(true);
+  expect(guestLayout.controlsRight).toBe(true);
+  expect(guestLayout.modeBeforeEditGap).toBeGreaterThanOrEqual(0);
+  expect(guestLayout.modeBeforeEditGap).toBeGreaterThanOrEqual(8);
+  expect(guestLayout.adminBarInMenuRow).toBe(false);
+  expect(guestLayout.fabVisibleForGuestView).toBe(true);
+  expect(guestLayout.railWidth).toBe(80);
+  const supportFab = page.locator('#chatFab');
+  await expect(supportFab).toBeVisible();
+  // A repeated sync in the same brand/mode must preserve the currently selected panel tab.
   await page.evaluate(() => {
-    document.documentElement.setAttribute('data-staff-role', 'dispatch');
-    document.documentElement.removeAttribute('data-staff-ready');
+    window.setTab('profile');
+    window.syncBrandViews();
   });
-  const placeholder = await measure();
-  expect(placeholder.modeHeight).toBe(46);
-  expect(placeholder.buttonHeights).toHaveLength(4);
-  expect(placeholder.buttonHeights.every((height) => height >= 44 && height <= 44.5)).toBe(true);
-  expect(placeholder.modeBottom).toBeLessThanOrEqual(placeholder.headerBottom + 1);
-
+  await expect(page.locator('.tabs button[data-tab="profile"]')).toHaveAttribute('aria-selected', 'true');
   await page.evaluate(() => {
-    document.documentElement.setAttribute('data-staff-ready', 'true');
-    document.getElementById('modeSeg').hidden = false;
+    document.documentElement.dataset.brand = 'coffee';
+    window.brand = 'coffee';
+    window.syncBrandViews();
   });
+  await expect(supportFab).toBeVisible();
+  await page.evaluate(() => {
+    document.documentElement.dataset.brand = 'delivery';
+    window.brand = 'delivery';
+    window.syncBrandViews();
+  });
+  await expect(supportFab.locator('svg')).toBeVisible();
+  await expect(supportFab.locator('.chat-fab-label')).toHaveCount(0);
+  // Admin-only controls belong to the explicit admin mode, not guest browsing.
+  await page.evaluate(() => window.setMode('admin'));
   await expect(mode).toBeVisible();
-  const hydrated = await measure();
-  expect(hydrated.modeHeight).toBe(46);
-  expect(hydrated.buttonHeights.every((height) => height >= 44 && height <= 44.5)).toBe(true);
-  expect(hydrated.modeBottom).toBeLessThanOrEqual(hydrated.headerBottom + 1);
-  expect(hydrated.gridRows.split(' ').length).toBeGreaterThanOrEqual(2);
+  expect(await mode.evaluate((element) => element.parentElement.classList.contains('mode-seg-slot'))).toBe(true);
+  const adminBarState = await page.evaluate(() => {
+    const root = document.documentElement;
+    const bar = document.getElementById('adminBar');
+    return {
+      roleAttribute: root.getAttribute('data-staff-role'),
+      staffReady: root.hasAttribute('data-staff-ready'),
+      windowMeRole: window.me && window.me.role,
+      mode: window.mode,
+      modeInMenuRow: !!document.getElementById('modeSeg').closest('.menu-controls-row'),
+      brand: window.brand,
+      rootBrand: root.getAttribute('data-brand'),
+      hidden: bar.hidden,
+      display: getComputedStyle(bar).display,
+      actionButtons: Array.from(bar.querySelectorAll(':scope > button')).map(button => ({
+        id: button.id,
+        hidden: button.hidden,
+        display: getComputedStyle(button).display
+      }))
+    };
+  });
+  console.log('[staff-actionbar] after brand switch', JSON.stringify(adminBarState));
+  expect(adminBarState.mode).toBe('admin');
+  expect(adminBarState.modeInMenuRow).toBe(true);
+  expect(adminBarState.hidden, JSON.stringify(adminBarState)).toBe(false);
+  await expect(page.locator('#adminBar')).toBeVisible();
+  await expect(page.locator('#promoToggle')).toBeVisible();
+  await expect(page.locator('#dashToggle')).toBeVisible();
+  await expect(page.locator('#chatsToggle2')).toBeVisible();
+  expect(guestLayout.headerHeight).toBeLessThanOrEqual(64);
+  expect(guestLayout.modeHeight).toBe(32);
+  expect(guestLayout.buttons).toHaveLength(4);
+  expect(guestLayout.buttons.every(height => height === 32)).toBe(true);
+  expect(guestLayout.buttonWidths.every(width => width > 0 && width <= 76)).toBe(true);
+  expect(guestLayout.editNextToRoles).toBe(true);
+  expect(guestLayout.editBox).toEqual({ width: 32, height: 32 });
+  expect(guestLayout.modeScrollWidth).toBeLessThanOrEqual(guestLayout.modeClientWidth + 1);
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.evaluate(() => window.syncBrandViews());
+  const desktopSupport = await page.evaluate(() => {
+    const host = document.getElementById('supportLauncherHost');
+    const fab = document.getElementById('chatFab');
+    return {
+      hostAtBody: host.parentElement === document.body,
+      fabInsideLandmark: fab.parentElement === host,
+      duplicateHostCount: document.querySelectorAll('#supportLauncherHost').length
+    };
+  });
+  expect(desktopSupport).toEqual({
+    hostAtBody: true,
+    fabInsideLandmark: true,
+    duplicateHostCount: 1
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => window.syncBrandViews());
+  const mobileSupport = await page.evaluate(() => {
+    const host = document.getElementById('supportLauncherHost');
+    return {
+      hostBesideSearch: host.parentElement === document.querySelector('#deliveryView .mh-right'),
+      fabInsideLandmark: document.getElementById('chatFab').parentElement === host
+    };
+  });
+  expect(mobileSupport).toEqual({ hostBesideSearch: true, fabInsideLandmark: true });
+
+  await expect(page.locator('#deliveryRail')).toHaveClass(/rail-position-ready/);
+  let railGeometry;
+  try {
+    await expect.poll(async () => {
+      railGeometry = await page.evaluate(() => {
+        const rail = document.getElementById('deliveryRail');
+        const menuRow = document.querySelector('#deliveryView .menu-controls-row');
+        const head = document.querySelector('#deliveryView .menu-head');
+        const wrap = document.querySelector('.wrap');
+        const style = getComputedStyle(rail);
+        const rect = (element) => {
+          const box = element.getBoundingClientRect();
+          return { top: box.top, bottom: box.bottom, height: box.height };
+        };
+        const railBox = rail.getBoundingClientRect();
+        const topbarBottom = document.querySelector('header.topbar').getBoundingClientRect().bottom;
+        const laneTop = Math.max(0, topbarBottom, head.getBoundingClientRect().bottom) + 12;
+        const laneBottom = window.innerHeight - 12;
+        const targetCenter = laneTop + Math.max(0, laneBottom - laneTop) / 2;
+        const railParent = rail.parentElement;
+        const railParentStyle = getComputedStyle(railParent);
+        const railStyle = getComputedStyle(rail);
+        return {
+          gap: railBox.top - menuRow.getBoundingClientRect().bottom,
+          centerDelta: Math.abs((railBox.top + railBox.height / 2) - targetCenter),
+          brand: document.documentElement.dataset.brand,
+          railClass: rail.className,
+          railDisplay: style.display,
+          railPosition: style.position,
+          railInlineMarginTop: rail.style.marginTop,
+          railMarginTop: style.marginTop,
+          railInlineTop: rail.style.top,
+          railTop: style.top,
+          railInlineTransform: rail.style.transform,
+          railTransform: style.transform,
+          wrapBottom: wrap.getBoundingClientRect().bottom,
+          canCenterWithinWrap: wrap.getBoundingClientRect().bottom >= parseFloat(style.top) + rail.offsetHeight,
+          railAlignSelf: railStyle.alignSelf,
+          railJustifySelf: railStyle.justifySelf,
+          railGridRow: railStyle.gridRow,
+          railContainingBlock: rail.parentElement.className,
+          railParentHeight: railParent.getBoundingClientRect().height,
+          railParentDisplay: railParentStyle.display,
+          railParentAlignItems: railParentStyle.alignItems,
+          railParentOverflowY: railParentStyle.overflowY,
+          railOffsetTop: rail.offsetTop,
+          railOffsetHeight: rail.offsetHeight,
+          railScrollHeight: rail.scrollHeight,
+          railClientHeight: rail.clientHeight,
+          head: rect(head),
+          menuRow: rect(menuRow),
+          rail: rect(rail),
+          wrap: rect(wrap)
+        };
+      });
+      return railGeometry.gap;
+    }, { timeout: 5000 }).toBeGreaterThanOrEqual(8);
+  } catch (error) {
+    throw new Error(error.message + '\\nRail diagnostics: ' + JSON.stringify(railGeometry));
+  }
+  expect(railGeometry.gap, JSON.stringify(railGeometry)).toBeGreaterThanOrEqual(8);
+  expect(railGeometry.centerDelta, JSON.stringify(railGeometry)).toBeLessThanOrEqual(2);
+  await test.info().attach('staff-guest-menu-row-mobile', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+
+  await page.evaluate(() => window.setMode('cashier'));
+  await expect(page.locator('#cashierView')).toBeVisible();
+  await expect(mode).toBeVisible();
+  const cashierLayout = await mode.evaluate((seg) => ({
+    inTopbar: seg.parentElement === document.querySelector('header.topbar'),
+    topbarTop: document.querySelector('header.topbar').getBoundingClientRect().top,
+    topbarHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
+    topbarPosition: getComputedStyle(document.querySelector('header.topbar')).position,
+    modeTop: seg.getBoundingClientRect().top,
+    headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom
+  }));
+  expect(cashierLayout.inTopbar).toBe(true);
+  expect(cashierLayout.topbarTop).toBeLessThanOrEqual(1);
+  expect(cashierLayout.topbarHeight).toBeLessThanOrEqual(64);
+  expect(cashierLayout.modeTop).toBeLessThanOrEqual(cashierLayout.headerBottom);
+  expect(cashierLayout.topbarPosition).toBe('sticky');
+  await test.info().attach('staff-cashier-topbar-mobile', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+
+  await page.evaluate(() => window.setMode('orders'));
+  await expect(page.locator('#ordersView')).toBeVisible();
+  const ordersLayout = await mode.evaluate((seg) => ({
+    inTopbar: seg.parentElement === document.querySelector('header.topbar'),
+    topbarTop: document.querySelector('header.topbar').getBoundingClientRect().top,
+    topbarHeight: document.querySelector('header.topbar').getBoundingClientRect().height,
+    modeBottom: seg.getBoundingClientRect().bottom,
+    headerBottom: document.querySelector('header.topbar').getBoundingClientRect().bottom
+  }));
+  expect(ordersLayout.inTopbar).toBe(true);
+  expect(ordersLayout.topbarTop).toBeLessThanOrEqual(1);
+  expect(ordersLayout.topbarHeight).toBeLessThanOrEqual(64);
+  expect(ordersLayout.modeBottom).toBeLessThanOrEqual(ordersLayout.headerBottom);
+  await test.info().attach('staff-orders-topbar-mobile', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+
+  await page.evaluate(() => window.setMode('admin'));
+  await expect(mode).toBeVisible();
+  const adminLayout = await mode.evaluate(element => ({
+    inMenuRow: !!element.closest('.menu-controls-row'),
+    menuVisible: getComputedStyle(document.getElementById('deliveryView')).display !== 'none',
+    parent: element.parentElement.className
+  }));
+  expect(adminLayout.menuVisible).toBe(true);
+  expect(adminLayout.inMenuRow).toBe(true);
+  expect(adminLayout.parent).toBe('mode-seg-slot');
+
+  await page.evaluate(() => window.setMode('guest'));
+  await expect(mode).toBeVisible();
+  expect(await mode.evaluate(element => element.parentElement.classList.contains('mode-seg-slot'))).toBe(true);
+  expect(await page.locator('#editToggle').evaluate(element => element.parentElement.classList.contains('menu-controls-row'))).toBe(true);
 });

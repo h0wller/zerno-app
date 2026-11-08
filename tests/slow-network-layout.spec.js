@@ -156,6 +156,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         brandTitleDisplay: brandTitle && getComputedStyle(brandTitle).display,
         brandSubDisplay: brandSub && getComputedStyle(brandSub).display,
         search: box(document.querySelector('#deliveryView .mh-right .search')),
+        addButton: box(document.querySelector('#deliveryGrid .cta[data-add]')),
+        addRow: box(document.querySelector('#deliveryGrid .cta[data-add]')?.closest('.steprow')),
+        activeSubchipColor: document.querySelector('#deliverySubFilter .subchip.on') && getComputedStyle(document.querySelector('#deliverySubFilter .subchip.on')).backgroundColor,
         searchLabel: box(document.querySelector('#deliveryView label[for="dSearch"]')),
         searchInput: box(document.querySelector('#dSearch')),
         updated: box(document.querySelector('#deliveryView .menu-head .upd')),
@@ -183,6 +186,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x);
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right + 1);
+    expect(before.menuHead.height).toBeLessThanOrEqual(80);
+    expect(before.search.height).toBe(32);
+    expect(before.addButton.width).toBeGreaterThanOrEqual(before.addRow.width - 1);
+    expect(before.activeSubchipColor).toBe('rgb(196, 59, 50)');
     expect(before.card.width).toBeGreaterThan(200);
     expect(before.media.height).toBe(180);
     expect(before.brandMark).not.toBeNull();
@@ -230,6 +237,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.heading.width).toBeGreaterThan(60);
     expect(after.heading.width).toBeLessThan(200);
     expect(after.menuHead).toEqual(before.menuHead);
+    expect(after.menuHead.height).toBeLessThanOrEqual(80);
+    expect(after.search.height).toBe(32);
+    expect(after.addButton).toEqual(before.addButton);
+    expect(after.addRow).toEqual(before.addRow);
+    expect(after.activeSubchipColor).toBe('rgb(196, 59, 50)');
     expect(after.menuHead.x).toBeLessThanOrEqual(after.rail.x + 1);
     expect(after.menuHead.right).toBeGreaterThanOrEqual(after.section.right - 1);
     expect(after.heading.x).toBeGreaterThanOrEqual(after.menuHead.x);
@@ -879,7 +891,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           paddingBottom: getComputedStyle(header).paddingBottom,
           gridTemplateRows: getComputedStyle(header).gridTemplateRows
         },
-        modeSeg: rect('#modeSeg'),
+        modeSeg: Object.assign(rect('#modeSeg') || {}, {
+          parentClass: modeSeg && modeSeg.parentElement && modeSeg.parentElement.className
+        }),
+        modeSlot: rect('.menu-controls-row .mode-seg-slot'),
+        menuRow: rect('.menu-controls-row'),
         modeSegStyle: modeSeg && {
           marginTop: getComputedStyle(modeSeg).marginTop,
           height: getComputedStyle(modeSeg).height,
@@ -895,11 +911,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.role).toBe('admin');
     expect(before.ready).toBe(false);
     expect(before.modeSeg.hidden).toBe(true);
-    expect(before.modeSeg.display).toBe('flex');
-    expect(before.modeSeg.visibility).toBe('hidden');
+    expect(before.modeSeg.display).toBe('none');
     expect(before.adminBar.hidden).toBe(true);
-    expect(before.adminBar.display).toBe('flex');
-    expect(before.adminBar.visibility).toBe('hidden');
+    expect(before.adminBar.display).toBe('none');
 
     // The first-paint/CSS/font settle is asserted by the neighboring layout tests.
     // Drain those earlier entries so this threshold measures only the delayed auth interval.
@@ -941,7 +955,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           paddingBottom: getComputedStyle(header).paddingBottom,
           gridTemplateRows: getComputedStyle(header).gridTemplateRows
         },
-        modeSeg: rect('#modeSeg'),
+        modeSeg: Object.assign(rect('#modeSeg') || {}, {
+          parentClass: modeSeg && modeSeg.parentElement && modeSeg.parentElement.className
+        }),
+        modeSlot: rect('.menu-controls-row .mode-seg-slot'),
+        menuRow: rect('.menu-controls-row'),
         modeSegStyle: modeSeg && {
           marginTop: getComputedStyle(modeSeg).marginTop,
           height: getComputedStyle(modeSeg).height,
@@ -966,8 +984,15 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
-    expect(Math.abs(after.modeSeg.top - before.modeSeg.top)).toBeLessThanOrEqual(1);
-    expect(Math.abs(after.modeSeg.height - before.modeSeg.height)).toBeLessThanOrEqual(1);
+    // The role switcher is deliberately hidden until the API confirms the cached role.
+    // Its box therefore does not exist before hydration; compare the stable menu row and
+    // verify the visible 32px slot after hydration instead of comparing display:none coords.
+    expect(after.modeSeg.height).toBe(32);
+    expect(after.modeSeg.parentClass).toBe('mode-seg-slot');
+    expect(after.modeSlot.height).toBe(32);
+    expect(after.menuRow.height).toBe(32);
+    expect(after.modeSeg.top).toBeGreaterThanOrEqual(after.menuRow.top - 1);
+    expect(after.modeSeg.top + after.modeSeg.height).toBeLessThanOrEqual(after.menuRow.top + after.menuRow.height + 1);
     expect(Math.abs(after.adminBar.height - before.adminBar.height)).toBeLessThanOrEqual(1);
     expect(after.cls).toBeLessThan(0.01);
   });

@@ -116,7 +116,10 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-${{ matrix.group }}-${{ github.run_id }}
-          path: playwright-report/
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
           retention-days: 7
 
   visual-audit-capture:
@@ -193,5 +196,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-Mobile-Chrome-${{ github.run_id }}
-          path: playwright-report/
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
           retention-days: 7

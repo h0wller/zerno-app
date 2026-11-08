@@ -14,17 +14,24 @@ function updateRailStickyPosition(rail, head) {
   }
 
   var topbar = document.querySelector('header.topbar');
+  var menuRow = head.querySelector('.menu-controls-row');
+  var modeSeg = document.getElementById('modeSeg');
+  var staffGuestMenu = !!(menuRow && modeSeg &&
+    modeSeg.closest('.menu-controls-row') === menuRow);
   var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
   var laneTop = Math.max(0, topbarBottom, headRect.bottom) + 12;
   var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
   var availableHeight = Math.max(0, laneBottom - laneTop);
-  var stickyTop = laneTop + availableHeight / 2;
+  // A staff menu rail is centered in normal flow, then sticks below the menu
+  // header while scrolling. Other views retain the viewport-centered rail.
+  var stickyTop = staffGuestMenu ? laneTop : laneTop + availableHeight / 2;
+  var transform = staffGuestMenu ? 'none' : 'translateY(-50%)';
 
   var top = stickyTop + 'px';
   var maxHeight = availableHeight + 'px';
   if (rail.style.top !== top) rail.style.top = top;
   if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
-  if (rail.style.transform !== 'translateY(-50%)') rail.style.transform = 'translateY(-50%)';
+  if (rail.style.transform !== transform) rail.style.transform = transform;
   rail.classList.add('rail-position-ready');
 }
 
@@ -37,15 +44,34 @@ function alignRailWithCard() {
   var wrap = rail.parentElement;
   if (!wrap) return;
 
+  // Keep the category rail below the full menu header in normal flow.
+  // The sticky positioning routine handles only the viewport lane.
   var headRect = head && head.getBoundingClientRect();
   if (headRect && headRect.height) {
     var wrapRect = wrap.getBoundingClientRect();
     var wrapStyle = window.getComputedStyle(wrap);
-    var offset = headRect.bottom - wrapRect.top
-      - (parseFloat(wrapStyle.paddingTop) || 0)
-      - (parseFloat(wrapStyle.borderTopWidth) || 0)
-      + 12;
-    var marginTop = Math.max(0, offset) + 'px';
+    var wrapContentTop = wrapRect.top
+      + (parseFloat(wrapStyle.paddingTop) || 0)
+      + (parseFloat(wrapStyle.borderTopWidth) || 0);
+    var menuRow = head.querySelector('.menu-controls-row');
+    var modeSeg = document.getElementById('modeSeg');
+    var staffGuestMenu = !!(menuRow && modeSeg &&
+      modeSeg.closest('.menu-controls-row') === menuRow);
+    var desiredTop;
+
+    if (staffGuestMenu) {
+      var topbar = document.querySelector('header.topbar');
+      var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
+      var laneTop = Math.max(0, topbarBottom, headRect.bottom) + 12;
+      var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
+      var availableHeight = Math.max(0, laneBottom - laneTop);
+      var railHeight = rail.offsetHeight || rail.getBoundingClientRect().height;
+      desiredTop = laneTop + Math.max(0, (availableHeight - railHeight) / 2);
+    } else {
+      desiredTop = headRect.bottom + 12;
+    }
+
+    var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
   } else if (rail.style.marginTop !== '0px') {
     rail.style.marginTop = '0px';

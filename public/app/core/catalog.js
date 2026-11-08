@@ -23,7 +23,7 @@
         if (role === "cashier" || role === "admin")
           btns.push({ m: "cashier", l: "Кассир" });
         if (role === "dispatch" || role === "cashier" || role === "admin")
-          btns.push({ m: "orders", l: "🍕 Заказы" });
+          btns.push({ m: "orders", l: "Заказы" });
         if (role === "admin") btns.push({ m: "admin", l: "Админ" });
         const seg = $("#modeSeg");
         seg.innerHTML = btns

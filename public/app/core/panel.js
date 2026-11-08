@@ -115,6 +115,18 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /* ── Экспорт в глобальную область видимости (контракт F1.3) ── */
+/* A delivery storefront opens on Profile once; later syncs preserve user tab choice. */
+(function () {
+  var initialDelivery = document.documentElement.getAttribute('data-brand') === 'delivery';
+  var key = '__deliveryProfileDefaultInitialised';
+  if (!initialDelivery || window[key]) return;
+  window[key] = true;
+  if (typeof window.setTab === 'function') window.setTab('profile');
+  else document.addEventListener('DOMContentLoaded', function () {
+    if (typeof window.setTab === 'function') window.setTab('profile');
+  }, { once: true });
+})();
+
 window.setTab = setTab;
 window.openPanel = openPanel;
 window.closePanel = closePanel;

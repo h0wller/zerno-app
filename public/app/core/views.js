@@ -247,34 +247,104 @@ function syncViewsVisibility(showCoffee, showDeliv) {
 
 function syncStaffAndGuestControls(bName2) {
   var canEdit = (typeof canStopMenu === 'function') && canStopMenu(bName2);
-  var et = document.getElementById('editToggle');
-  if (et) et.hidden = !canEdit;
-  var ab = document.getElementById('adminBar');
-  if (ab) ab.hidden = !(canEdit || (typeof mode !== 'undefined' && mode === 'admin'));
-  var ms = document.getElementById('modeSeg');
-  var isStaff = !!(typeof me !== 'undefined' && me && (me.role === 'admin' || me.role === 'cashier' || me.role === 'dispatch'));
-  if (ms) ms.hidden = !isStaff;
+  var currentMode = typeof window.mode === 'string' ? window.mode : (typeof mode !== 'undefined' ? mode : 'guest');
+  var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
+  var menuHead = activeView && activeView.querySelector('.menu-head');
+  var menuRow = menuHead && menuHead.querySelector('.menu-controls-row');
+  var titleHost = menuHead && menuHead.querySelector('.mh-top > div:first-child');
+  var title = titleHost && titleHost.querySelector('h1');
+  var topbar = document.querySelector('header.topbar');
+  var adminBar = document.getElementById('adminBar');
+  var editToggle = document.getElementById('editToggle');
+  var modeSeg = document.getElementById('modeSeg');
+  var root = document.documentElement;
+  var roleHint = root.getAttribute('data-staff-role');
+  var staffReady = root.hasAttribute('data-staff-ready');
+  var validStaffRoles = ['admin', 'cashier', 'dispatch'];
+  var isStaff = validStaffRoles.indexOf(roleHint) !== -1;
+  var confirmedStaff = !!(typeof me !== 'undefined' && me &&
+    validStaffRoles.indexOf(me.role) !== -1);
+  var menuIsVisible = !!(menuHead && titleHost && activeView &&
+    !activeView.hidden && getComputedStyle(activeView).display !== 'none');
+  var menuPlacement = !!(isStaff && menuIsVisible);
+
+  // The role switcher belongs to the visible "Меню" block in guest and admin modes.
+  if (menuPlacement && titleHost) {
+    if (!menuRow) {
+      menuRow = document.createElement('div');
+      menuRow.className = 'menu-controls-row';
+      titleHost.insertBefore(menuRow, title);
+    }
+    if (menuRow.parentElement !== titleHost) titleHost.insertBefore(menuRow, title);
+    if (title && title.parentElement !== menuRow) menuRow.appendChild(title);
+    var modeSlot = menuRow.querySelector('.mode-seg-slot');
+    if (!modeSlot) {
+      modeSlot = document.createElement('div');
+      modeSlot.className = 'mode-seg-slot';
+      menuRow.appendChild(modeSlot);
+    }
+    if (modeSeg && modeSeg.parentElement !== modeSlot) modeSlot.appendChild(modeSeg);
+    if (editToggle && editToggle.parentElement !== menuRow) menuRow.appendChild(editToggle);
+  } else {
+    if (title && menuRow && menuRow.parentElement && title.parentElement !== menuRow) {
+      menuRow.parentElement.insertBefore(title, menuRow);
+    }
+    if (menuRow && menuRow.parentElement) menuRow.remove();
+    if (modeSeg && topbar && modeSeg.parentElement !== topbar) topbar.appendChild(modeSeg);
+    if (editToggle && adminBar && editToggle.parentElement !== adminBar) {
+      adminBar.insertBefore(editToggle, adminBar.firstChild);
+    }
+  }
+
+  if (editToggle) {
+    editToggle.hidden = !canEdit || !staffReady;
+    editToggle.setAttribute('aria-label', 'Редактировать меню');
+    editToggle.title = 'Редактировать меню';
+  }
+  if (modeSeg) {
+    modeSeg.hidden = !isStaff || !staffReady;
+    if (topbar) {
+      topbar.classList.toggle('has-mode-switcher', !!isStaff && !menuPlacement);
+      topbar.classList.toggle('has-menu-role-switcher', menuPlacement);
+    }
+  }
   if (typeof renderModes === 'function') renderModes();
+  if (modeSeg) modeSeg.hidden = !isStaff || !staffReady;
+
+  if (adminBar) {
+    var hasAdminActions = Array.prototype.some.call(
+      adminBar.querySelectorAll(':scope > button:not(#editToggle)'),
+      function (button) { return !button.hidden; }
+    );
+    adminBar.hidden = !staffReady || !((confirmedStaff && me.role === 'admin') || canEdit || hasAdminActions);
+    adminBar.style.removeProperty('display');
+  }
+
   var mb = document.getElementById('mbonusBtn');
-  if (mb) mb.style.display = (typeof mode !== 'undefined' && mode === 'guest' && bName2 === 'coffee') ? '' : 'none';
+  if (mb) mb.style.display = (currentMode === 'guest' && bName2 === 'coffee') ? '' : 'none';
   var bb = document.getElementById('bonusBox');
   if (bb) bb.style.display = (typeof me !== 'undefined' && me) ? '' : 'none';
   var bt = document.querySelector('.tabs button[data-tab="bonus"]');
   if (bt) bt.style.display = (bName2 === 'delivery') ? 'none' : '';
-  if (bName2 === 'delivery' && typeof setTab === 'function') setTab('profile');
-  if (typeof me !== 'undefined' && me && typeof renderProfile === 'function') renderProfile();
+  if (confirmedStaff && typeof renderProfile === 'function') renderProfile();
+  if (menuPlacement && typeof window.alignRailWithCard === 'function') {
+    window.alignRailWithCard();
+  }
 }
-
 function syncChatFab(staff, bName2) {
   var cfab = document.getElementById('chatFab');
-  if (!cfab) return;
   var supportHost = document.getElementById('supportLauncherHost');
+  if (!cfab || !supportHost) return;
   var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
   var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
   var supportTarget = mobileViewport && activeView
     ? activeView.querySelector('.mh-right')
-    : supportHost;
-  if (supportTarget && cfab.parentElement !== supportTarget) supportTarget.appendChild(cfab);
+    : document.body;
+  if (supportTarget && supportTarget !== supportHost &&
+      supportHost.parentElement !== supportTarget && !supportHost.contains(supportTarget)) {
+    if (typeof supportTarget.moveBefore === 'function') supportTarget.moveBefore(supportHost, null);
+    else supportTarget.appendChild(supportHost);
+  }
   var cartPanel = document.getElementById('cartPanel');
   var cartOpen = !!(cartPanel && cartPanel.classList.contains('open'));
   cfab.style.display = (staff || cartOpen) ? 'none' : '';
@@ -417,6 +487,9 @@ window.setMode = function (m) {
   syncModeControls(m);
   startModeServices(m);
   if (typeof renderModes === 'function') renderModes();
+  // syncModeVisibility() calls sv() before the new mode controls are rendered.
+  // Run one final sync so controls moved into the active menu head reflect the new mode.
+  if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   notifyModeActivated(m);
 };
 
@@ -490,22 +563,56 @@ sv();
 (function () {
   function ensure() {
     var seg = document.getElementById('brandSeg');
-    if (!seg || document.getElementById('venueToggle')) return;
-    var vw = document.createElement('div'); vw.className = 'venueWrap';
-    seg.parentNode.insertBefore(vw, seg);
-    var vt = document.createElement('button');
-    vt.id = 'venueToggle'; vt.type = 'button'; vt.className = 'venueToggle';
-    vt.setAttribute('aria-haspopup', 'listbox'); vt.setAttribute('aria-expanded', 'false');
-    vw.appendChild(vt); vw.appendChild(seg);
-    vt.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var open = seg.classList.toggle('open');
-      seg.style.display = open ? 'flex' : 'none';
-      vt.setAttribute('aria-expanded', open ? 'true' : 'false');
+    var header = document.querySelector('header.topbar');
+    if (!seg || !header) return;
+
+    var venue = document.getElementById('venueToggle');
+    var wrap = seg.closest('.venueWrap');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'venueWrap';
+      seg.parentNode.insertBefore(wrap, seg);
+      wrap.appendChild(seg);
+    }
+    if (!venue) {
+      venue = document.createElement('button');
+      venue.id = 'venueToggle';
+      venue.type = 'button';
+      venue.className = 'venueToggle';
+      venue.setAttribute('aria-haspopup', 'listbox');
+      venue.setAttribute('aria-expanded', 'false');
+      wrap.insertBefore(venue, seg);
+      venue.addEventListener('click', function (event) {
+        event.stopPropagation();
+        var open = seg.classList.toggle('open');
+        seg.style.display = open ? 'flex' : 'none';
+        venue.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      document.addEventListener('click', function (event) {
+        if (!wrap.contains(event.target)) {
+          seg.classList.remove('open');
+          seg.style.display = 'none';
+          venue.setAttribute('aria-expanded', 'false');
+        }
+      });
+    } else if (venue.parentElement !== wrap) {
+      wrap.insertBefore(venue, seg);
+    }
+
+    var headerControls = document.getElementById('topbar-actions');
+    if (!headerControls) {
+      headerControls = document.createElement('div');
+      headerControls.id = 'topbar-actions';
+      headerControls.className = 'topbar-actions';
+      header.appendChild(headerControls);
+    }
+    ['mbonusBtn', 'profileTopBtn'].forEach(function (id) {
+      var control = document.getElementById(id);
+      if (control && control.parentElement !== headerControls) headerControls.appendChild(control);
     });
-    document.addEventListener('click', function (e) {
-      if (!vw.contains(e.target)) { seg.classList.remove('open'); seg.style.display = 'none'; vt.setAttribute('aria-expanded', 'false'); }
-    });
+
+    if (wrap.parentElement !== header) header.insertBefore(wrap, header.firstChild);
+    if (headerControls.parentElement !== header) header.appendChild(headerControls);
     label();
   }
 
@@ -517,7 +624,7 @@ sv();
     vt.setAttribute('data-active-brand', curBrand);
     vt.innerHTML = '<span class="vt-label">Сменить заведение</span> <span class="vt-icon">' + (isDel ? '🍕' : '🌊') + '</span> <span class="vt-arrow">▾</span>';
   }
-  window.__syncHeaderCluster = function () {};
+  window.__syncHeaderCluster = ensure;
   window.__ensureVenueToggle = ensure;
   window.__labelVenueToggle = function () { 
     label(); 

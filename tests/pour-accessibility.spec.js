@@ -4,6 +4,7 @@ test.use({ serviceWorkers: 'block' });
 
 test.describe('Pour accessibility audit — delivery brand', () => {
   test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
@@ -13,7 +14,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     await expect(page.locator('#dSearch')).toBeVisible();
   });
 
-  test('delivery search has a persistent label, 44px target and visible boundary', async ({ page }) => {
+  test('delivery search has a persistent label, 32px compact height and visible boundary', async ({ page }) => {
     const input = page.locator('#dSearch');
     await expect(page.locator('label[for="dSearch"]')).toHaveText('Поиск по меню доставки');
 
@@ -24,79 +25,169 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       return {
         inputHeight: box.height,
         containerHeight: search.getBoundingClientRect().height,
+        boxSizing: getComputedStyle(element).boxSizing,
         borderColor: style.borderTopColor,
         backgroundColor: style.backgroundColor,
       };
     });
 
-    expect(metrics.inputHeight).toBeGreaterThanOrEqual(44);
-    expect(metrics.containerHeight).toBeGreaterThanOrEqual(44);
+    expect(metrics.inputHeight).toBeLessThanOrEqual(32);
+    expect(metrics.containerHeight).toBe(32);
     expect(contrastRatio(metrics.borderColor, metrics.backgroundColor)).toBeGreaterThanOrEqual(3);
   });
 
-  test('header, edit and delivery filter controls have 44px hit targets', async ({ page }) => {
+  test('compact menu controls and search use 32px height while preserving natural widths', async ({ page }) => {
     const metrics = await page.evaluate(() => {
       const probe = document.createElement('button');
       probe.textContent = 'Тест';
       const modeSeg = document.getElementById('modeSeg');
-      const wasHidden = modeSeg.hidden;
+      const edit = document.getElementById('editToggle');
+      const modeParent = modeSeg.parentNode;
+      const modeNext = modeSeg.nextSibling;
+      const editParent = edit.parentNode;
+      const editNext = edit.nextSibling;
+      const wasModeHidden = modeSeg.hidden;
+      const wasEditHidden = edit.hidden;
+      const fixture = document.createElement('div');
+      fixture.className = 'menu-head';
+      const row = document.createElement('div');
+      row.className = 'menu-controls-row';
+      const slot = document.createElement('div');
+      slot.className = 'mode-seg-slot';
+      fixture.appendChild(row);
+      row.appendChild(slot);
+      slot.appendChild(modeSeg);
+      row.appendChild(edit);
+      document.body.appendChild(fixture);
       modeSeg.hidden = false;
+      edit.hidden = false;
       modeSeg.appendChild(probe);
       const modeHeight = probe.getBoundingClientRect().height;
+      const roleButtonRect = modeSeg.querySelector('button')?.getBoundingClientRect();
+      const roleButton = {
+        width: roleButtonRect?.width ?? 0,
+        height: roleButtonRect?.height ?? 0
+      };
+      const modeButtonHeight = roleButton.height;
       probe.remove();
-      modeSeg.hidden = wasHidden;
+      const editMinHeight = parseFloat(getComputedStyle(edit).minHeight);
+      if (modeNext && modeNext.parentNode === modeParent) modeParent.insertBefore(modeSeg, modeNext);
+      else modeParent.appendChild(modeSeg);
+      if (editNext && editNext.parentNode === editParent) editParent.insertBefore(edit, editNext);
+      else editParent.appendChild(edit);
+      modeSeg.hidden = wasModeHidden;
+      edit.hidden = wasEditHidden;
+      fixture.remove();
 
       return {
         modeHeight,
-        editMinHeight: parseFloat(getComputedStyle(document.getElementById('editToggle')).minHeight),
+        modeButtonHeight,
+        editMinHeight,
         subchips: Array.from(document.querySelectorAll('#deliverySubFilter .subchip'))
-          .map((element) => element.getBoundingClientRect().height),
+          .map((element) => ({ height: element.getBoundingClientRect().height, width: element.getBoundingClientRect().width })),
+        profile: document.getElementById('profileTopBtn').getBoundingClientRect().toJSON(),
+        scrollTop: document.getElementById('scrollTopBtn').getBoundingClientRect().toJSON(),
+        menuHead: document.querySelector('#deliveryView .menu-head').getBoundingClientRect().height,
+        search: document.querySelector('#deliveryView .mh-right .search').getBoundingClientRect().height,
+        addButton: (() => { const el = document.querySelector('#deliveryGrid .cta[data-add]'); const r = el.getBoundingClientRect(); const row = el.closest('.steprow').getBoundingClientRect(); return { width:r.width, rowWidth:row.width, height:r.height }; })(),
+        activeChip: (() => { const el = document.querySelector('#deliverySubFilter .subchip.on'); const s=getComputedStyle(el); return { bg:s.backgroundColor, color:s.color }; })(),
+        roleButton,
       };
     });
 
-    expect(metrics.modeHeight).toBeGreaterThanOrEqual(44);
-    expect(metrics.editMinHeight).toBeGreaterThanOrEqual(44);
+    expect(metrics.modeHeight).toBe(32);
+    expect(metrics.modeButtonHeight).toBe(32);
+    expect(metrics.editMinHeight).toBe(32);
     expect(metrics.subchips.length).toBeGreaterThan(0);
-    expect(metrics.subchips.every((height) => height >= 44)).toBe(true);
+    expect(metrics.subchips.every((chip) => chip.height === 32 && chip.width >= 58),
+      `subchip geometry must remain at least 58×32px: ${JSON.stringify(metrics.subchips)}`).toBe(true);
+    expect(metrics.profile.width).toBe(32);
+    expect(metrics.profile.height).toBe(32);
+    expect(metrics.scrollTop.width).toBe(32);
+    expect(metrics.scrollTop.height).toBe(32);
+    expect(metrics.menuHead).toBeLessThanOrEqual(80);
+    expect(metrics.search).toBe(32);
+    expect(metrics.addButton.width).toBeGreaterThanOrEqual(metrics.addButton.rowWidth - 1);
+    expect(metrics.activeChip.bg).toBe('rgb(196, 59, 50)');
+    expect(metrics.activeChip.color).toBe('rgb(255, 255, 255)');
+    expect(metrics.roleButton.height).toBe(32);
+    expect(metrics.roleButton.width).toBeGreaterThan(metrics.roleButton.height);
   });
 
-  test('mobile staff header and mode switch stay compact without shrinking 44px controls', async ({ page }) => {
+  test('menu row stays compact and admin keeps the switcher with the visible menu', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/?brand=delivery');
-    await page.evaluate(() => {
-      document.documentElement.setAttribute('data-staff-role', 'admin');
-      const modeSeg = document.getElementById('modeSeg');
-      modeSeg.hidden = false;
-      modeSeg.innerHTML = ['Заказы', 'Касса', 'Диспетчер', 'Админ'].map((label) =>
-        '<button type="button">' + label + '</button>'
-      ).join('');
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      const body = pathname === '/api/me'
+        ? {
+            customer: {
+              id: 'accessibility-layout-admin',
+              name: 'Accessibility Layout Admin',
+              phone: '+70000000001',
+              role: 'admin',
+              verified: 1,
+              qr: 'accessibility-layout-admin',
+              cups: 0,
+              stamps: 0,
+              free: 0,
+              history: []
+            }
+          }
+        : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
+      });
     });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'playwright-accessibility-admin-token');
+      localStorage.setItem('zt_role', 'admin');
+    });
+    await page.reload();
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'admin' &&
+      document.documentElement.hasAttribute('data-staff-ready')
+    );
 
-    const metrics = await page.evaluate(() => {
+    const menuMetrics = await page.evaluate(() => {
       const header = document.querySelector('header.topbar').getBoundingClientRect();
-      const mode = document.getElementById('modeSeg');
-      const modeBox = mode.getBoundingClientRect();
+      const seg = document.getElementById('modeSeg');
+      const row = seg.closest('.menu-controls-row');
+      const edit = document.getElementById('editToggle');
       return {
-        viewportWidth: window.innerWidth,
-        headerLeft: header.left,
-        headerRight: header.right,
-        headerWidth: header.width,
-        modeLeft: modeBox.left,
-        modeRight: modeBox.right,
-        modeWidth: modeBox.width,
-        modeHeight: modeBox.height,
-        buttonHeights: Array.from(mode.querySelectorAll('button')).map((button) => button.getBoundingClientRect().height),
+        headerHeight: header.height,
+        modeInMenuRow: !!row && row.parentElement === document.querySelector('#deliveryView .mh-top > div:first-child'),
+        editInMenuRow: edit.parentElement === row,
+        rowHeight: row.getBoundingClientRect().height,
+        buttonHeights: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().height)
       };
     });
+    expect(menuMetrics.headerHeight).toBeLessThanOrEqual(64);
+    expect(menuMetrics.modeInMenuRow).toBe(true);
+    expect(menuMetrics.editInMenuRow).toBe(true);
+    expect(menuMetrics.rowHeight).toBe(32);
+    expect(menuMetrics.buttonHeights).toHaveLength(4);
+    expect(menuMetrics.buttonHeights.every(height => height === 32)).toBe(true);
 
-    expect(metrics.headerLeft).toBe(0);
-    expect(metrics.headerRight).toBe(metrics.viewportWidth);
-    expect(metrics.headerWidth).toBe(metrics.viewportWidth);
-    expect(metrics.modeLeft).toBeGreaterThanOrEqual(0);
-    expect(metrics.modeRight).toBeLessThanOrEqual(metrics.viewportWidth);
-    expect(metrics.modeWidth).toBeLessThanOrEqual(metrics.headerWidth);
-    expect(metrics.modeHeight).toBe(46);
-    expect(metrics.buttonHeights.every((height) => height >= 44)).toBe(true);
+    await page.evaluate(() => window.setMode('admin'));
+    const adminMetrics = await page.evaluate(() => {
+      const header = document.querySelector('header.topbar').getBoundingClientRect();
+      const seg = document.getElementById('modeSeg');
+      const row = seg.closest('.menu-controls-row');
+      return {
+        headerHeight: header.height,
+        modeInMenuRow: !!row && seg.parentElement.classList.contains('mode-seg-slot'),
+        menuVisible: getComputedStyle(document.getElementById('deliveryView')).display !== 'none',
+        rowHeight: row?.getBoundingClientRect().height,
+        buttonHeights: Array.from(seg.querySelectorAll('button')).map(button => button.getBoundingClientRect().height)
+      };
+    });
+    expect(adminMetrics.menuVisible).toBe(true);
+    expect(adminMetrics.modeInMenuRow).toBe(true);
+    expect(adminMetrics.headerHeight).toBeLessThanOrEqual(64);
+    expect(adminMetrics.rowHeight).toBe(32);
+    expect(adminMetrics.buttonHeights.every(height => height === 32)).toBe(true);
   });
 
   test('floating controls and confetti canvas have accessible landmark treatment', async ({ page }) => {
@@ -189,16 +280,20 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 
     const order = await page.locator('header.topbar').evaluate((header) => {
       const childIndex = (selector) => Array.from(header.children).indexOf(header.querySelector(selector));
-      return [
-        childIndex('.venueWrap'),
-        childIndex('#headerBrand'),
-        childIndex('#mbonusBtn'),
-        childIndex('#profileTopBtn'),
-        childIndex('#modeSeg'),
-      ];
+      const actions = header.querySelector('.topbar-actions');
+      return {
+        order: [childIndex('.venueWrap'), childIndex('#headerBrand'), childIndex('.topbar-actions')],
+        actionsOwnBonus: !!(actions && actions.querySelector('#mbonusBtn')),
+        actionsOwnProfile: !!(actions && actions.querySelector('#profileTopBtn')),
+        modeHiddenForPublicGuest: !!document.querySelector('#modeSeg')?.hidden &&
+          document.querySelector('#modeSeg').getBoundingClientRect().height === 0,
+      };
     });
-    expect(order.every((index) => index >= 0)).toBe(true);
-    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(order.order.every((index) => index >= 0)).toBe(true);
+    expect(order.order).toEqual([...order.order].sort((a, b) => a - b));
+    expect(order.actionsOwnBonus).toBe(true);
+    expect(order.actionsOwnProfile).toBe(true);
+    expect(order.modeHiddenForPublicGuest).toBe(true);
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect.poll(() => page.locator('#tickerTrack').evaluate((track) => getComputedStyle(track).animationName)).toBe('none');

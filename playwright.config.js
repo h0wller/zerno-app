@@ -5,14 +5,14 @@ const testUrl = process.env.TEST_URL || `http://localhost:${testPort}`;
 
 export default defineConfig({
   testDir: './tests',
-  outputDir: 'playwright-report/test-results',
+  outputDir: 'test-results',
   // Только e2e: unit-тесты (*.test.mjs) запускаются через node --test (npm run test:unit).
   testMatch: '**/*.spec.js',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [['html', { open: 'never' }], ['json', { outputFile: 'playwright-report/results.json' }]],
+  reporter: [['html', { outputFolder: 'playwright-report', open: 'never' }], ['json', { outputFile: 'playwright-report/results.json' }]],
 
   use: {
     baseURL: testUrl,
