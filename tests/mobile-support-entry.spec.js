@@ -27,6 +27,7 @@ for (const brand of BRANDS) {
       await page.goto(`/?brand=${brand.id}`, { waitUntil: 'domcontentloaded' });
 
       const support = page.locator('#chatFab');
+      const supportHost = page.locator('#supportLauncherHost');
       const search = page.locator(`${brand.view} .mh-right .search`);
       const noScriptStart = indexHtml.indexOf('<noscript>');
       const noScriptEnd = indexHtml.indexOf('</noscript>', noScriptStart);
@@ -36,16 +37,20 @@ for (const brand of BRANDS) {
       expect(noScriptBlock).toContain('<link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=');
       expect(noScriptBlock).not.toContain('160-15-mobile-support-toolbar.css" media=');
       await expect(support).toBeVisible({ timeout: 15000 });
+      await expect(supportHost).toHaveCount(1);
+      await expect(supportHost).toHaveAttribute('aria-label', 'Поддержка');
+      await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
       await expect(search).toBeVisible({ timeout: 15000 });
 
       if (viewport.width <= 820) {
         await expect(support).toHaveCSS('position', 'relative');
-        await expect.poll(() => support.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
+        await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
 
         const geometry = await page.evaluate(({ view }) => {
           const toolbar = document.querySelector(`${view} .mh-right`);
           const searchRect = toolbar.querySelector('.search').getBoundingClientRect();
           const supportRect = toolbar.querySelector('#chatFab').getBoundingClientRect();
+          const supportHostRect = toolbar.querySelector('#supportLauncherHost').getBoundingClientRect();
           const toolbarRect = toolbar.getBoundingClientRect();
           const intersects = searchRect.left < supportRect.right
             && searchRect.right > supportRect.left
@@ -53,8 +58,10 @@ for (const brand of BRANDS) {
             && searchRect.bottom > supportRect.top;
           return {
             intersects,
-            supportInsideToolbar: supportRect.left >= toolbarRect.left
-              && supportRect.right <= toolbarRect.right,
+            supportInsideToolbar: supportHostRect.left >= toolbarRect.left
+              && supportHostRect.right <= toolbarRect.right,
+            supportInsideLandmark: toolbar.querySelector('#chatFab').parentElement
+              === toolbar.querySelector('#supportLauncherHost'),
             verticalCenterDelta: Math.abs(
               (searchRect.top + searchRect.height / 2)
               - (supportRect.top + supportRect.height / 2)
@@ -64,15 +71,18 @@ for (const brand of BRANDS) {
 
         expect(geometry.intersects, 'support action must not overlap the search input').toBe(false);
         expect(geometry.supportInsideToolbar).toBe(true);
+        expect(geometry.supportInsideLandmark).toBe(true);
         expect(geometry.verticalCenterDelta).toBeLessThanOrEqual(8);
 
         await support.click();
         await expect(page.locator('#chatPanel')).toHaveClass(/open/);
-        await support.click();
+        const closeChat = page.locator('#chatClose');
+        await expect(closeChat).toBeVisible();
+        await closeChat.click();
         await expect(page.locator('#chatPanel')).not.toHaveClass(/open/);
       } else {
         await expect(support).toHaveCSS('position', 'fixed');
-        await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
+        await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
       }
 
       const cartPanel = page.locator('#cartPanel');
@@ -85,19 +95,19 @@ for (const brand of BRANDS) {
       await page.setViewportSize({ width: crossBreakpointWidth, height: 900 });
       if (crossBreakpointWidth <= 820) {
         await expect(support).toHaveCSS('position', 'relative');
-        await expect.poll(() => support.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
+        await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
       } else {
         await expect(support).toHaveCSS('position', 'fixed');
-        await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
+        await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
       }
 
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       if (viewport.width <= 820) {
         await expect(support).toHaveCSS('position', 'relative');
-        await expect.poll(() => support.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
+        await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
       } else {
         await expect(support).toHaveCSS('position', 'fixed');
-        await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
+        await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
       }
     });
   }

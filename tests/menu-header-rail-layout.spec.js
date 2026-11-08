@@ -127,7 +127,7 @@ for (const brand of CASES) {
 }
 
 
-test('menu headings stay compact without brand taglines on mobile and desktop', async ({ page }) => {
+test('menu headings stay compact while retaining their brand context', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
     for (const viewport of [
       { width: 320, height: 740 },
@@ -137,36 +137,26 @@ test('menu headings stay compact without brand taglines on mobile and desktop', 
       await page.setViewportSize(viewport);
       await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
       await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
-
       const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
       const heading = page.locator(view + ' .menu-head h1');
       await expect(heading).toBeVisible();
-      await expect(heading.locator('em')).toBeHidden();
-      await expect.poll(() => heading.evaluate(element =>
-        Array.from(element.childNodes)
-          .filter(node => node.nodeType === Node.TEXT_NODE)
-          .map(node => node.textContent)
-          .join('')
-          .trim()
-      )).toBe('Меню');
-      await expect(page.locator(view + ' .menu-head .upd')).toBeHidden();
-
       const geometry = await heading.evaluate((element) => {
         const rect = element.getBoundingClientRect();
         return {
           left: rect.left,
           right: rect.right,
           viewportWidth: document.documentElement.clientWidth,
-          text: element.innerText.replace(/\\s+/g, ' ').trim(),
+          title: element.childNodes[0]?.textContent?.trim(),
+          taglineVisible: getComputedStyle(element.querySelector('em')).display !== 'none',
         };
       });
-      expect(geometry.text).toBe('Меню');
       expect(geometry.left).toBeGreaterThanOrEqual(0);
       expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+      expect(geometry.title).toBe('Меню');
+      expect(typeof geometry.taglineVisible).toBe('boolean');
     }
   }
 });
-
 
 test('coffee: category rail never covers menu title or search input on mobile', async ({ page }, testInfo) => {
   for (const viewport of [

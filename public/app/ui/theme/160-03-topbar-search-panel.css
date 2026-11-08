@@ -166,29 +166,58 @@ html .wrap > #panel:not(.open):not(.show) {
     flex: 1 1 auto;
   }
 }
-/* [5] Search на мобильном = 100% в обоих брендах */
-@media (max-width: 820px) {
-  #menuView .mh-top .mh-right,
-  #deliveryView .mh-top .mh-right {
-    width: 100%; max-width: 100%;
-    flex: 1 1 100%;
-    margin-left: 0;
+/* [5] Mobile search is constrained by the grid track inside the full-width menu head. */
+@media (max-width:820px) {
+  #menuView .mh-top,
+  #deliveryView .mh-top {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:32px 32px;
+    gap:4px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
   }
-  #menuView .mh-top .mh-right .search,
-  #deliveryView .mh-top .mh-right .search {
-    width: 100%; max-width: 100%;
-    flex: 1 1 100%;
-    min-width: 0;
+  #menuView .mh-top > div:first-child,
+  #deliveryView .mh-top > div:first-child {
+    grid-column:1;
+    grid-row:1;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+  }
+  #menuView .mh-top > .mh-right,
+  #deliveryView .mh-top > .mh-right {
+    display:flex;
+    grid-column:1;
+    grid-row:2;
+    flex:0 1 auto;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    overflow:hidden;
+    margin-left:0;
+    box-sizing:border-box;
+  }
+  #menuView .mh-top > .mh-right .search,
+  #deliveryView .mh-top > .mh-right .search {
+    display:flex;
+    flex:1 1 0%;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    box-sizing:border-box;
   }
 }
-
 /* [fix-all v3] END F5.62 */
 /* Keep the staff mode switch at the same reserved height before and after auth hydration. */
 @media (max-width: 820px) {
   html[data-staff-role] body header.topbar #modeSeg {
-    height: 46px;
-    min-height: 46px;
-    margin-top: 4px;
+    height: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    margin-top: 0;
     padding: 0;
     box-sizing: border-box;
   }

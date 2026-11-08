@@ -181,3 +181,26 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
 #deliveryGrid .card .opts .opt-btn {
   min-height: 44px;
 }
+
+
+/* Mobile category rail buttons retain the canonical first-paint geometry. */
+@media (max-width:820px) {
+  html body div.wrap > .rail button,
+  html body div.wrap > #rail button,
+  html body div.wrap > #deliveryRail button {
+    box-sizing:border-box;
+    width:100%;
+    min-height:56px;
+    padding:6px 2px;
+    font-size:9.5px;
+    line-height:1.15;
+    white-space:normal;
+    word-break:normal;
+  }
+  html body div.wrap > .rail button.on,
+  html body div.wrap > #rail button.on,
+  html body div.wrap > #deliveryRail button.on {
+    font-size:9.5px;
+    line-height:1.15;
+  }
+}
