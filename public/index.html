@@ -76,26 +76,6 @@
     })();
     </script>
     <style id="critical-css">
-/* Keep the support slot's width stable before syncChatFab relocates its landmark. */
-@media (max-width:820px) {
-  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right:not(:has(> #supportLauncherHost))::after {
-    content:"";
-    display:block;
-    flex:0 0 32px;
-    width:32px;
-    min-width:32px;
-    height:32px;
-    min-height:32px;
-    box-sizing:border-box;
-  }
-}
-/* Reserve compact delivery chip height before deferred styles. */
-@media (max-width:820px) {
-  html[data-brand="delivery"] body #deliveryView .subfilter-bar .subchip {
-    box-sizing:border-box; height:32px; min-height:32px; max-height:32px;
-  }
-}
-
 /* Reserve catalog add CTA target before deferred 20-cards.css applies. */
 @media (max-width: 820px) {
   #deliveryGrid .steprow > .cta[data-add],
@@ -518,14 +498,7 @@ html body div.wrap > #deliveryRail button.on {
   margin-left: 0;
   width: 100%;
 }
-/* Keep the compact menu heading from the first paint; otherwise deferred theme CSS
-   removes the tagline/update pill and shifts the search row on slow connections. */
-#menuView .menu-head h1 em,
-#deliveryView .menu-head h1 em,
-#menuView .menu-head .upd,
-#deliveryView .menu-head .upd {
-  display: none;
-}
+/* Brand context and the delivery update marker remain visible in the menu heading. */
 @media (max-width: 820px) {
   html body #menuView .menu-head,
   html body #deliveryView .menu-head {
@@ -811,7 +784,109 @@ button {
 html[data-brand="delivery"] {
   --line: #E5DACB;
 }
-    </style>
+    
+/* Emergency mobile storefront contract: mirror the hydrated 44px customer controls on first paint. */
+@media (max-width:820px) {
+  html body #menuView .menu-head,
+  html body #deliveryView .menu-head {
+    width:calc(100% + var(--menu-rail-width,80px) + var(--menu-rail-gap,10px));
+    max-width:none;
+    margin-left:calc(0px - var(--menu-rail-width,80px) - var(--menu-rail-gap,10px));
+    height:auto;
+    min-height:0;
+    max-height:none;
+    overflow:visible;
+    padding:14px 16px;
+  }
+  html body #menuView .menu-head h1 em,
+  html body #deliveryView .menu-head h1 em { display:inline-flex; }
+  html[data-brand="delivery"] body #deliveryView .menu-head h1 em {
+    color:#742116;
+    background:rgba(192,59,42,.1);
+    border:1px solid rgba(192,59,42,.25);
+  }
+  html body #deliveryView .menu-head .upd { display:inline-flex; }
+  html body .menu-head .mh-top {
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:10px;
+    width:100%;
+    height:auto;
+    min-height:0;
+    max-height:none;
+  }
+  html body .menu-head .mh-top > div:first-child {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:6px 12px;
+    width:100%;
+    height:auto;
+    min-height:0;
+    max-height:none;
+    overflow:visible;
+  }
+  html body #menuView .menu-head .mh-top > .mh-right,
+  html body #deliveryView .menu-head .mh-top > .mh-right {
+    display:flex;
+    flex:1 1 100%;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:auto;
+    min-height:44px;
+    max-height:none;
+    margin:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body #menuView .menu-head .mh-top > .mh-right > .search,
+  html body #deliveryView .menu-head .mh-top > .mh-right > .search {
+    display:flex;
+    flex:1 1 100%;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body #menuView .menu-head .mh-top > .mh-right > .search input,
+  html body #deliveryView .menu-head .mh-top > .mh-right > .search input {
+    flex:1 1 100%;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:42px;
+    min-height:42px;
+    max-height:42px;
+    box-sizing:border-box;
+  }
+  html body #menuView .subfilter-bar .subchip,
+  html body #deliveryView .subfilter-bar .subchip,
+  html body #deliverySubFilter .subchip {
+    box-sizing:border-box;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+  }
+  html body header.topbar #profileTopBtn,
+  html body header.topbar button#venueToggle.venueToggle {
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:0;
+    box-sizing:border-box;
+  }
+}
+</style>
 <script id="perf-lighthouse-bridge">
     (() => {
       const ua = navigator.userAgent;
@@ -1341,9 +1416,9 @@ html[data-brand="delivery"] {
     width:3em;
     min-width:3em;
     max-width:3em;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
+    height:38px;
+    min-height:38px;
+    max-height:38px;
     box-sizing:border-box;
     align-self:center;
     margin-top:0;
@@ -1513,8 +1588,8 @@ html[data-brand="delivery"] {
   html[data-staff-role]:not([data-staff-ready]) body #adminBar[hidden] {
     display:flex;
     visibility:hidden;
-    min-height:32px;
-    height:32px;
+    min-height:44px;
+    height:44px;
     margin:0 0 8px;
     overflow:hidden;
   }
@@ -1567,779 +1642,6 @@ html[data-brand="delivery"] {
   html[data-staff-role]:not([data-staff-ready]) body #adminBar[hidden] { display:none; }
 }
 
-/* Critical staff layout: reserve the title/role row and search/support row before deferred CSS. */
-@media (max-width:820px) {
-  html body .menu-head .mh-top {
-    display:grid;
-    grid-template-columns:minmax(0,1fr);
-    grid-template-rows:32px 32px;
-    gap:4px;
-    width:100%;
-    min-width:0;
-    max-width:100%;
-    height:68px;
-    box-sizing:border-box;
-  }
-  html body .menu-head .mh-top > div:first-child {
-    grid-column:1;
-    grid-row:1;
-    display:flex;
-    align-items:center;
-    width:100%;
-    min-width:0;
-    max-width:100%;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    overflow:hidden;
-  }
-  html body .menu-head .menu-controls-row {
-    display:flex;
-    align-items:center;
-    flex-wrap:nowrap;
-    gap:10px;
-    width:100%;
-    min-width:0;
-    max-width:100%;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-  }
-  html body .menu-controls-row > h1 {
-    flex:0 0 auto;
-    min-width:0;
-    white-space:nowrap;
-    font-size:clamp(16px,4.4vw,19px);
-    line-height:1;
-  }
-  html body .menu-controls-row > .mode-seg-slot {
-    display:flex;
-    flex:1 1 auto;
-    min-width:0;
-    height:32px;
-    align-items:center;
-    overflow:hidden;
-  }
-  html body .menu-controls-row > .mode-seg-slot > #modeSeg {
-    display:flex;
-    flex:1 1 0%;
-    width:100%;
-    min-width:0;
-    max-width:100%;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    margin:0;
-    padding:0;
-    gap:5px;
-    align-items:center;
-    justify-content:flex-start;
-    overflow-x:auto;
-    overflow-y:hidden;
-    overscroll-behavior-x:contain;
-    scrollbar-width:none;
-    -webkit-overflow-scrolling:touch;
-  }
-  html body .menu-controls-row > .mode-seg-slot > #modeSeg::-webkit-scrollbar { display:none; }
-  html body .menu-controls-row > .mode-seg-slot > #modeSeg[hidden] { display:none; }
-  html body .menu-controls-row > .mode-seg-slot > #modeSeg button {
-    flex:0 0 24px;
-    width:24px;
-    min-width:24px;
-    max-width:24px;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    padding:0 4px;
-    font:700 9px/1 "Golos Text",system-ui,sans-serif;
-    white-space:nowrap;
-    border-radius:8px;
-  }
-  html body .menu-controls-row > #editToggle {
-    display:inline-flex;
-    flex:0 0 32px;
-    width:32px;
-    min-width:32px;
-    max-width:32px;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    margin:0;
-    padding:0;
-    align-items:center;
-    justify-content:center;
-    font-size:0;
-  }
-  html body .menu-controls-row > #editToggle::before { content:"✏️"; font-size:15px; }
-  html body #deliveryView .menu-head .mh-top > .mh-right,
-  html body #menuView .menu-head .mh-top > .mh-right {
-    grid-column:1;
-    grid-row:2;
-    display:flex;
-    align-items:center;
-    gap:8px;
-    width:100%;
-    min-width:0;
-    max-width:100%;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    flex:0 1 0%;
-    margin:0;
-    overflow:hidden;
-    box-sizing:border-box;
-  }
-  html body #deliveryView .menu-head .mh-top > .mh-right > .search,
-  html body #menuView .menu-head .mh-top > .mh-right > .search {
-    display:flex;
-    flex:1 1 0%;
-    width:0;
-    min-width:0;
-    max-width:100%;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    padding:0 10px;
-    margin:0;
-    box-sizing:border-box;
-  }
-  html body #deliveryView .menu-head .mh-top > .mh-right > .search input,
-  html body #menuView .menu-head .mh-top > .mh-right > .search input {
-    flex:1 1 0%;
-    width:0;
-    min-width:0;
-    max-width:100%;
-    height:30px;
-    min-height:30px;
-    max-height:30px;
-    padding:0;
-    box-sizing:border-box;
-  }
-  html body #deliveryView .menu-head .mh-top > .mh-right > #chatFab.chat-fab,
-  html body #menuView .menu-head .mh-top > .mh-right > #chatFab.chat-fab {
-    position:relative;
-    inset:auto;
-    z-index:2;
-    display:inline-flex;
-    flex:0 0 32px;
-    width:32px;
-    min-width:32px;
-    max-width:32px;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    padding:0;
-    margin:0;
-    align-items:center;
-    justify-content:center;
-    border-radius:10px;
-  }
-  html body #deliveryView .menu-head .mh-top > .mh-right > #chatFab.chat-fab::after,
-  html body #menuView .menu-head .mh-top > .mh-right > #chatFab.chat-fab::after { content:none; }
-  html body #deliveryView .menu-head .mh-top > .mh-right > #chatFab.chat-fab svg,
-  html body #menuView .menu-head .mh-top > .mh-right > #chatFab.chat-fab svg { display:block; width:16px; height:16px; }
-  html body .menu-head .upd { display:none; }
-  html body .menu-head h1 em { display:none; }
-  html body .menu-head { height:80px; min-height:80px; max-height:80px; overflow:hidden; padding:6px 10px; }
-  html body header.topbar #profileTopBtn,
-  html body #scrollTopBtn {
-    width:32px;
-    min-width:32px;
-    max-width:32px;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    padding:0;
-    flex:0 0 32px;
-  }
-  html body #deliveryView .subfilter-bar .subchip,
-  html body #menuView .subfilter-bar .subchip,
-  html body #deliverySubFilter .subchip {
-    width:auto;
-    min-width:58px;
-    max-width:none;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    padding:0 14px;
-    flex:0 0 auto;
-    border-radius:10px;
-    background:var(--panel,#fff);
-    border:1px solid var(--line,#e2e8f0);
-    color:var(--ink,#20252b);
-  }
-  html body #deliveryView .subfilter-bar .subchip.on,
-  html body #menuView .subfilter-bar .subchip.on,
-  html body #deliverySubFilter .subchip.on {
-    background:#c43b32;
-    border-color:#c43b32;
-    color:#fff;
-    box-shadow:0 2px 8px rgba(196,59,50,.2);
-  }
-  html body #deliveryGrid .steprow,
-  html body #grid .steprow { display:flex; justify-content:center; align-items:center; width:100%; }
-  html body #deliveryGrid .steprow > .cta[data-add],
-  html body #grid .steprow > .cta[data-add] {
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    width:100%;
-    min-width:0;
-    max-width:100%;
-    flex:1 1 100%;
-    margin:0;
-    box-sizing:border-box;
-    padding:0 12px;
-  }
-  html body #deliveryGrid .cta.incart,
-  html body #grid .cta.incart { width:auto; flex:0 0 auto; padding:0 12px; }
-}
-/* The section must stay in column 2 before deferred 160-12-admin-bar-tail.css arrives. */
-html body div.wrap > section {
-  grid-column: 2;
-  grid-row: 1;
-  min-width: 0;
-  width: 100%;
-}
-html body div.wrap > .rail,
-html body div.wrap > #deliveryRail {
-  grid-column: 1;
-  grid-row: 1;
-}
-html body div.wrap > .rail:not(.rail-position-ready),
-html body div.wrap > #rail:not(.rail-position-ready),
-html body div.wrap > #deliveryRail:not(.rail-position-ready) {
-  visibility: hidden;
-}
-/* Keep screen-reader-only labels out of first-frame flex layout before deferred theme CSS loads. */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-/* Reserve delivery layout before deferred theme CSS is available. */
-@media (max-width: 820px) {
-  html body div.wrap {
-    grid-template-columns: 80px minmax(0, 1fr);
-    gap: 10px;
-    padding: 10px 12px 32px 8px;
-  }
-}
-html[data-brand="delivery"] .wrap > section,
-html[data-brand="delivery"] #deliveryView,
-html[data-brand="delivery"] #deliveryView .mh-top,
-html[data-brand="delivery"] #deliveryView .mh-top > div,
-html[data-brand="delivery"] #deliveryView .mh-right {
-  min-width: 0;
-  max-width: 100%;
-}
-html[data-brand="delivery"] .wrap > section,
-html[data-brand="delivery"] #deliveryView {
-  width: 100%;
-}
-html[data-brand="delivery"] #deliveryView .mh-top {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-}
-html[data-brand="delivery"] #deliveryView .mh-right .search,
-html[data-brand="delivery"] #deliveryView .mh-right input {
-  max-width: 100%;
-}
-#deliveryView .mh-right .search input {
-  flex: 1;
-  min-width: 0;
-}
-html[data-brand="delivery"] #deliveryGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  width: 100%;
-  min-width: 0;
-  align-items: stretch;
-  overflow-anchor: none;
-}
-
-/* Keep the critical first frame aligned with the canonical responsive menu grid. */
-@media (min-width: 520px) and (max-width: 1180px) {
-  html[data-brand="delivery"] #deliveryGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1181px) {
-  html[data-brand="delivery"] #deliveryGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-  }
-}
-@media (min-width: 1600px) {
-  html[data-brand="delivery"] #deliveryGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-html[data-brand="delivery"] #deliveryGrid > .card {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  min-width: 0;
-  min-height: 340px;
-  box-sizing: border-box;
-  overflow: hidden;
-  border: 2px solid #3A2A1C;
-  border-radius: 18px;
-  background: #F6EEE1;
-}
-html[data-brand="delivery"] #deliveryGrid > .card > .media {
-  position: relative;
-  display: grid;
-  width: 100%;
-  height: 180px;
-  min-height: 180px;
-  overflow: hidden;
-}
-html[data-brand="delivery"] #deliveryGrid > .card > .media img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-html[data-brand="delivery"] #deliveryGrid > .card > .cbody {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  padding: 13px 14px 14px;
-}
-
-
-/* Minimal first-frame reserve for native pizza option geometry. Visual states and brand colors are owned by theme CSS. */
-html[data-brand="delivery"] #deliveryGrid fieldset.opts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  min-inline-size: 0;
-  width: 100%;
-  box-sizing: border-box;
-  border: 0;
-  margin: 6px 0 0;
-  padding: 6px 0 0;
-}
-html[data-brand="delivery"] #deliveryGrid .opts legend {
-  grid-column: 1 / -1;
-  margin: 0 0 4px;
-}
-html[data-brand="delivery"] #deliveryGrid .opts label.opt-btn {
-  min-height: 52px;
-}
-
-/* Mirror the deferred delivery menu geometry to prevent FOUC-induced CLS. */
-html[data-brand="delivery"] #deliveryView .menu-head {
-  animation: none;
-  width: calc(100% + var(--menu-rail-width,80px) + var(--menu-rail-gap,10px));
-  max-width: none;
-  box-sizing: border-box;
-  margin: 2px 0 14px calc(0px - var(--menu-rail-width,80px) - var(--menu-rail-gap,10px));
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1.5px solid var(--line, #D8DFE4);
-}
-html[data-brand="delivery"] #deliveryView .mh-top {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-  width: 100%;
-}
-html[data-brand="delivery"] #deliveryView .mh-top > div:first-child {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  width: 100%;
-}
-html[data-brand="delivery"] #deliveryView .menu-head h1 {
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  font: 800 clamp(20px, 2.8vw, 28px)/1.15 "Unbounded", "Golos Text", system-ui, sans-serif;
-}
-html[data-brand="delivery"] #deliveryView .menu-head h1 em {
-  display: none;
-  align-items: center;
-  font: 700 11px/1.2 "Golos Text", sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #742116 !important;
-  background: rgba(192, 59, 42, 0.1);
-  border: 1px solid rgba(192, 59, 42, 0.25);
-  border-radius: 999px;
-  padding: 4px 10px;
-  margin-left: 0;
-  max-width: 100%;
-  white-space: normal;
-  box-sizing: border-box;
-  vertical-align: middle;
-}
-html[data-brand="delivery"] #deliveryView .menu-head .upd {
-  margin: 0 0 0 auto;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(47, 125, 79, 0.08);
-  border: 1px solid rgba(47, 125, 79, 0.2);
-  font: 600 11.5px/1.3 "Golos Text", system-ui, sans-serif;
-  white-space: nowrap;
-  color: var(--soft);
-  letter-spacing: 0.02em;
-  text-transform: none;
-  color: #241812;
-  width: min(183px, 100%);
-  min-width: 0;
-  min-height: 26px;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-html[data-brand="delivery"] #deliveryView .mh-right,
-html[data-brand="delivery"] #deliveryView .mh-right .search {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  margin: 0;
-  box-sizing: border-box;
-}
-html[data-brand="delivery"] #deliveryView .mh-right {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  flex-wrap: wrap;
-  flex: 1 1 100%;
-}
-html[data-brand="delivery"] #deliveryView .mh-right .search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 47px;
-  min-height: 47px;
-  padding: 0 16px;
-  border: 1.5px solid #7B8793;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(18, 58, 107, 0.05);
-  flex: 1 1 100%;
-}
-html[data-brand="delivery"] #deliveryView .mh-right .search input {
-  border: none;
-  flex: 1;
-  min-height: 44px;
-  min-width: 0;
-  font-size: 16px;
-  background: transparent;
-  color: #101418;
-}
-html[data-brand="delivery"] #deliveryView .subfilter-bar {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  margin-bottom: 12px;
-  padding: 4px 2px 8px;
-  min-height: 38px;
-}
-html[data-brand="delivery"] #deliveryView .subfilter-bar .subchip {
-  flex: 0 0 auto;
-  height: 44px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 0 14px;
-  border: 2px solid var(--fr-tan, #D9C7AD);
-  background: var(--fr-paper, #F6EEE1);
-  color: var(--fr-choc, #3A2A1C);
-  border-radius: 999px;
-  font: 600 13px/1 "Golos Text", system-ui, sans-serif;
-  white-space: nowrap;
-  box-sizing: border-box;
-}
-html[data-brand="delivery"] #deliveryGrid .card .cbody h3 {
-  font-size: 15.5px;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: calc(15.5px * 1.3 * 2);
-}
-html[data-brand="delivery"] #deliveryGrid .card .cbody .desc {
-  font-size: 12.5px;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 37px;
-}
-html[data-brand="delivery"] #deliveryGrid .card .comp {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 5px;
-  margin-top: 2px;
-  overflow: hidden;
-}
-html[data-brand="delivery"] #deliveryGrid .card .comp i {
-  font-style: normal;
-  flex: 0 0 auto;
-  padding: 3px 9px;
-  font: 600 10.5px "Golos Text", system-ui, sans-serif;
-}
-html[data-brand="delivery"] #deliveryGrid .card .steprow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: auto;
-  padding-top: 8px;
-}
-html[data-brand="delivery"] #deliveryGrid .opts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 6px;
-  padding-top: 6px;
-  width: 100%;
-}
-html[data-brand="delivery"] #deliveryGrid .opts button,
-html[data-brand="delivery"] #deliveryGrid .opts label.opt-btn,
-html[data-brand="delivery"] #deliveryGrid .opts .opt-btn {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: stretch;
-  gap: 3px;
-  padding: 7px 9px;
-  border: 2px solid var(--fr-tan, #D9C7AD);
-  background: #fff;
-  min-height: 48px;
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-html[data-brand="delivery"] #deliveryGrid .card .opts .opt-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 4px;
-  width: 100%;
-  white-space: nowrap;
-}
-html[data-brand="delivery"] #deliveryGrid .card .opts .opt-size {
-  font-size: 12.5px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-html[data-brand="delivery"] #deliveryGrid .card .opts .opt-crust {
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-html[data-brand="delivery"] #deliveryGrid .card .opts .opt-weight {
-  font-size: 10.5px;
-  white-space: nowrap;
-}
-html[data-brand="delivery"] #deliveryGrid .card .opts .opt-price {
-  font-size: 13px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-html[data-brand="delivery"] #deliveryGrid fieldset.opts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; min-inline-size:0; width:100%; box-sizing:border-box; border:0; margin:6px 0 0; padding:6px 0 0; }
-html[data-brand="delivery"] #deliveryGrid .opts legend { grid-column:1 / -1; padding:0; margin:0 0 4px; color:var(--soft,#586470); font-size:11px; font-weight:700; }
-html[data-brand="delivery"] #deliveryGrid .opts .opt-radio { position:absolute; width:1px; height:1px; margin:0; opacity:0; }
-html[data-brand="delivery"] #deliveryGrid .opts .opt-content { display:flex; flex-direction:column; justify-content:space-between; gap:4px; width:100%; min-width:0; pointer-events:none; }
-html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) { background:var(--btn-fire-bg,var(--flame)); border:var(--btn-fire-border,2px solid var(--fr-choc)); color:var(--btn-fire-color,#fff); box-shadow:var(--btn-fire-shadow,2px 2px 0 var(--fr-choc)); }
-html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-size,
-html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-crust,
-html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-weight,
-html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-price { color:var(--btn-fire-color,#fff); opacity:1; }
-html[data-brand="delivery"] #deliveryGrid .opts .opt-radio:focus-visible + .opt-content { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; border-radius:6px; }
-html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:focus-visible) { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; }
-html[data-brand="delivery"] #deliveryGrid .opts-error { grid-column:1 / -1; margin:2px 0 0; color:var(--flame,#C03B2A); font-size:11px; font-weight:700; }
-
-
-/* First-paint mirror of 160-15: reserve the final mobile support/search row before deferred theme CSS. */
-@media (max-width: 820px) {
-  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > .search {
-    flex: 1 1 0%;
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    margin: 0;
-  }
-  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab {
-    position: relative;
-    inset: auto;
-    z-index: 2;
-    display: inline-flex;
-    flex: 0 0 32px;
-    width: 32px;
-    min-width: 32px;
-    max-width: 32px;
-    height: 32px;
-    min-height: 32px;
-    max-height: 32px;
-    padding: 0;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    box-shadow: none;
-    transform: none;
-    font-size: 0;
-    color: #fff;
-  }
-  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab svg {
-    display: block;
-    width: 16px;
-    height: 16px;
-  }
-  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab::before {
-    display: none;
-  }
-  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab::after {
-    content: "Поддержка";
-    position: static;
-    font: inherit;
-    white-space: nowrap;
-  }
-  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab.open::after {
-    content: "Закрыть";
-  }
-  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab .ub {
-    top: -6px;
-    right: -6px;
-  }
-}
-
-
-/* Match the deferred mobile menu toolbar on first paint; prevent search/support CLS. */
-@media (max-width:820px) {
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
-    display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:32px 32px;
-    gap:4px; width:100%; min-width:0; max-width:100%; height:68px; box-sizing:border-box;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
-    grid-column:1; grid-row:1; display:flex; align-items:center; width:100%;
-    min-width:0; max-width:100%; height:32px; min-height:32px; max-height:32px; overflow:hidden;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
-    grid-column:1; grid-row:2; display:flex; align-items:center; flex:0 1 auto;
-    width:100%; min-width:0; max-width:100%; height:32px; min-height:32px; max-height:32px;
-    margin:0; overflow:hidden; box-sizing:border-box;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
-    display:flex; flex:1 1 0%; width:auto; min-width:0; max-width:100%;
-    height:32px; min-height:32px; max-height:32px; padding:0 10px; margin:0; box-sizing:border-box;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input {
-    flex:1 1 0%; width:0; min-width:0; max-width:100%; height:30px;
-    min-height:30px; max-height:30px; padding:0; box-sizing:border-box;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #chatFab.chat-fab {
-    display:inline-flex; flex:0 0 32px; width:32px; min-width:32px; max-width:32px;
-    height:32px; min-height:32px; max-height:32px; margin:0; padding:0; box-sizing:border-box;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #chatFab.chat-fab > svg {
-    display:block; width:16px; height:16px;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #chatFab.chat-fab::before,
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #chatFab.chat-fab::after { content:none; }
-}
-/* Reserve the landmark support launcher in the mobile search row before deferred CSS. */
-@media (max-width:820px) {
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost {
-    position:relative;
-    inset:auto;
-    z-index:2;
-    display:flex;
-    flex:0 0 32px;
-    width:32px;
-    min-width:32px;
-    max-width:32px;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    margin:0;
-    padding:0;
-    align-items:center;
-    justify-content:center;
-    box-sizing:border-box;
-    overflow:visible;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
-    position:relative;
-    inset:auto;
-    z-index:2;
-    display:inline-flex;
-    flex:0 0 32px;
-    width:32px;
-    min-width:32px;
-    max-width:32px;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    margin:0;
-    padding:0;
-    align-items:center;
-    justify-content:center;
-    border-radius:10px;
-    box-sizing:border-box;
-    font-size:0;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab > svg {
-    display:block;
-    width:16px;
-    height:16px;
-  }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab::before,
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab::after {
-    content:none;
-  }
-}
-
-/* Compact mobile subfilters must match their deferred 32px rules on first paint. */
-@media (max-width:820px) {
-  html body #deliveryView .subfilter-bar .subchip,
-  html body #menuView .subfilter-bar .subchip,
-  html body #deliverySubFilter .subchip {
-    box-sizing:border-box;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-  }
-}
 /* Reserve the full-width ticker below the compact topbar before deferred CSS arrives. */
 html body .ticker {
   display: flex;
