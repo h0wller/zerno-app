@@ -362,9 +362,7 @@ for (const brand of ['coffee', 'delivery']) {
         window.setMode('admin');
       });
 
-      await expect(page.locator('#promoToggle')).toBeVisible();
-      await expect(page.locator('#dashToggle')).toBeVisible();
-      await expect(page.locator('#chatsToggle2')).toBeVisible();
+      await expect(page.locator('#adminBar')).toBeHidden();
       await expect(page.locator('#chatFab')).toBeVisible();
 
       const layout = await page.evaluate((brand) => {
@@ -511,9 +509,9 @@ for (const brand of ['coffee', 'delivery']) {
 
       expect.soft(layout.adminBar.x, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(16);
       expect.soft(layout.adminBar.right, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(viewport.width - 8);
-      expect.soft(layout.adminBar.buttons).toHaveLength(3);
-      expect.soft(new Set(layout.adminBar.buttons.map(button => Math.round(button.y))).size,
-        JSON.stringify(layout.adminBar.buttons)).toBe(1);
+      expect.soft(layout.adminBar.display).toBe('none');
+      expect.soft(layout.adminBar.buttons).toHaveLength(0);
+      expect.soft(layout.adminBar.buttons).toHaveLength(0);
       expect.soft(layout.adminBar.buttons.every(button => button.width >= (viewport.width <= 350 ? 80 : 90)),
         JSON.stringify(layout.adminBar.buttons)).toBe(true);
       expect.soft(layout.adminBar.buttons.every(button =>
@@ -530,14 +528,14 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.menuHead, 'mobile menu header must retain its full content width').not.toBeNull();
       expect.soft(layout.modeSlot.width, JSON.stringify(layout.modeSlot))
         .toBeGreaterThanOrEqual(viewport.width - 64);
-      expect.soft(layout.modeSlot.y, JSON.stringify({ heading: layout.modeHeading, slot: layout.modeSlot }))
-        .toBeGreaterThanOrEqual(layout.modeHeading.y + layout.modeHeading.height + 1);
+      expect.soft(Math.abs(layout.modeSlot.y - layout.modeHeading.y), JSON.stringify({ heading: layout.modeHeading, slot: layout.modeSlot }))
+        .toBeLessThanOrEqual(1);
       expect.soft(layout.modeSlot.x, JSON.stringify({ menuHead: layout.menuHead, slot: layout.modeSlot }))
         .toBeGreaterThanOrEqual(layout.menuHead.x + 8);
       expect.soft(layout.modeSlot.right, JSON.stringify({ menuHead: layout.menuHead, slot: layout.modeSlot }))
         .toBeLessThanOrEqual(layout.menuHead.right - 8);
-      expect.soft(layout.modeEdit.y, JSON.stringify({ heading: layout.modeHeading, edit: layout.modeEdit }))
-        .toBeLessThanOrEqual(layout.modeHeading.y + layout.modeHeading.height + 1);
+      expect.soft(Math.abs(layout.modeEdit.y - layout.modeHeading.y), JSON.stringify({ heading: layout.modeHeading, edit: layout.modeEdit }))
+        .toBeLessThanOrEqual(1);
       expect.soft(layout.modeEdit.x, JSON.stringify({ heading: layout.modeHeading, edit: layout.modeEdit }))
         .toBeGreaterThanOrEqual(layout.modeHeading.x + layout.modeHeading.width - layout.modeEdit.width - 1);
       expect.soft(layout.modeSwitcher.width, JSON.stringify(layout.modeSwitcher))
@@ -583,7 +581,6 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.support.right).toBeLessThanOrEqual(viewport.width - 8);
       expect.soft(layout.documentWidth).toBeLessThanOrEqual(viewport.width + 1);
 
-      await page.evaluate(() => document.getElementById('adminBar').scrollTo({ left: 0 }));
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(80);
       await page.evaluate(() => document.querySelector('.toasts')?.remove());
@@ -591,9 +588,7 @@ for (const brand of ['coffee', 'delivery']) {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
       });
-      await page.locator('#adminBar').evaluate((element) => {
-        element.scrollTo({ left: 0, behavior: 'instant' });
-      });
+      
     });
   }
 }
