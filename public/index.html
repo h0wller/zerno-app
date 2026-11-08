@@ -2800,6 +2800,13 @@ html body #tickerTrack .tickerGroup > span {
   }
 }
 /* Anchor both wordmark lines inside a fixed slot; font swaps cannot change their geometry. */
+@media (max-width: 1023px) {
+  html[data-brand="coffee"] body header.topbar #brandTitle {
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+}
 @media (max-width: 690px) {
   html[data-brand="coffee"] body header.topbar div#headerBrand.brand > div:not(.mark) {
     position: relative !important;
