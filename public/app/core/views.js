@@ -305,10 +305,10 @@ function syncStaffAndGuestControls(bName2) {
       adminBar.querySelectorAll(':scope > button:not(#editToggle)'),
       function (button) { return !button.hidden; }
     );
-    var mobileMenuToolbar = menuPlacement &&
-      (currentMode === 'guest' || currentMode === 'admin') &&
+    var mobileGuestMenu = menuPlacement &&
+      currentMode === 'guest' &&
       window.matchMedia('(max-width: 820px)').matches;
-    adminBar.hidden = !staffReady || mobileMenuToolbar ||
+    adminBar.hidden = !staffReady || mobileGuestMenu ||
       !((confirmedStaff && me.role === 'admin') || canEdit || hasAdminActions);
     adminBar.style.removeProperty('display');
   }
