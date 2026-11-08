@@ -142,18 +142,31 @@ test('menu headings stay compact while retaining their brand context', async ({ 
       await expect(heading).toBeVisible();
       const geometry = await heading.evaluate((element) => {
         const rect = element.getBoundingClientRect();
+        const tagline = element.querySelector('em');
+        const update = element.closest('.menu-head')?.querySelector('.upd');
+        const search = element.closest('.menu-head')?.querySelector('.mh-right .search');
         return {
           left: rect.left,
           right: rect.right,
           viewportWidth: document.documentElement.clientWidth,
           title: element.childNodes[0]?.textContent?.trim(),
-          taglineVisible: getComputedStyle(element.querySelector('em')).display !== 'none',
+          taglineVisible: !!tagline && getComputedStyle(tagline).display !== 'none'
+            && tagline.getBoundingClientRect().width > 0,
+          updateVisible: !!update && getComputedStyle(update).display !== 'none'
+            && update.getBoundingClientRect().width > 0,
+          searchHeight: search?.getBoundingClientRect().height ?? 0,
+          menuHeadHeight: element.closest('.menu-head')?.getBoundingClientRect().height ?? 0,
         };
       });
       expect(geometry.left).toBeGreaterThanOrEqual(0);
       expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
       expect(geometry.title).toBe('Меню');
-      expect(typeof geometry.taglineVisible).toBe('boolean');
+      expect(geometry.taglineVisible).toBe(true);
+      if (viewport.width <= 820) {
+        expect(geometry.menuHeadHeight).toBeGreaterThanOrEqual(100);
+        expect(geometry.searchHeight).toBeGreaterThanOrEqual(44);
+      }
+      if (brand === 'delivery') expect(geometry.updateVisible).toBe(true);
     }
   }
 });
