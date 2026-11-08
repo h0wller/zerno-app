@@ -128,3 +128,29 @@ for (const width of [1024, 1440]) {
     await expect(page.locator('#deliveryGrid [data-product-id="desktop-filter-chicken"]')).toHaveCount(0);
   });
 }
+
+
+test('delivery desktop header uses the brand font, preserves cart centering, and highlights active filter', async ({ page }) => {
+  for (const width of [820, 821, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.addInitScript(() => { sessionStorage.setItem('splashDone', '1'); localStorage.clear(); });
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+    const brand = page.locator('header.topbar #headerBrand');
+    await expect(brand).toBeVisible();
+    const details = await brand.evaluate((element) => {
+      const text = element.querySelector('b, small, .brand-text');
+      return { visible: !!text && getComputedStyle(text).display !== 'none', font: text && getComputedStyle(text).fontFamily };
+    });
+    expect(details.visible, 'delivery brand text must be visible at >=820px').toBe(true);
+    expect(details.font).toContain('Unbounded');
+    const cart = page.locator('#cartFab');
+    await expect(cart).toBeVisible();
+    const cartCenter = await cart.evaluate(el => { const r=el.getBoundingClientRect(); return r.left+r.width/2; });
+    expect(Math.abs(cartCenter - width / 2), 'cart launcher must remain centered').toBeLessThanOrEqual(2);
+    const active = page.locator('#deliverySubFilter .subchip.on');
+    await expect(active).toBeVisible();
+    const activeStyles = await active.evaluate(el => ({ bg:getComputedStyle(el).backgroundColor, color:getComputedStyle(el).color }));
+    expect(activeStyles.bg).toBe('rgb(192, 59, 42)');
+    expect(activeStyles.color).toBe('rgb(255, 255, 255)');
+  }
+});

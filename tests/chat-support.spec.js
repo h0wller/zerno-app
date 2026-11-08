@@ -108,3 +108,24 @@ test('вызов сотрудника появляется по запросу/�
   await expect(page.locator('.chatHint', { hasText: 'Позвать сотрудника' })).toHaveCount(0);
   await expect(page.locator('.chatHint.armed')).toHaveCount(0);
 });
+
+
+test('mobile support uses an icon and delivery search keeps an inset from the menu card edge', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => { sessionStorage.setItem('splashDone', '1'); localStorage.clear(); });
+    await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+    const button = page.locator('#chatFab');
+    await expect(button).toBeVisible();
+    await expect(button.locator('svg')).toHaveCount(1);
+    await expect(button).toHaveAttribute('aria-label', /поддерж/i);
+    if (brand === 'delivery') {
+      const spacing = await page.locator('#deliveryView .menu-head').evaluate(el => {
+        const style=getComputedStyle(el), search=el.querySelector('.search').getBoundingClientRect(), box=el.getBoundingClientRect();
+        return { paddingLeft:parseFloat(style.paddingLeft), inset:search.left-box.left };
+      });
+      expect(spacing.paddingLeft).toBeGreaterThanOrEqual(12);
+      expect(spacing.inset).toBeGreaterThanOrEqual(12);
+    }
+  }
+});

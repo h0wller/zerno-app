@@ -214,3 +214,23 @@ test('coffee: category rail never covers menu title or search input on mobile', 
     });
   }
 });
+
+
+test('coffee and delivery category rails align to the top edge of the menu card', async ({ page }) => {
+  for (const brand of CASES) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    const positions = await page.evaluate(({headSelector,railSelector}) => {
+      const head=document.querySelector(headSelector).getBoundingClientRect();
+      const rail=document.querySelector(railSelector).getBoundingClientRect();
+      return { headTop:head.top, railTop:rail.top };
+    }, {headSelector:brand.head,railSelector:brand.rail});
+    expect(Math.abs(positions.railTop-positions.headTop), brand.brand + ' rail should align with menu card top').toBeLessThanOrEqual(2);
+    const gap = await page.locator(brand.rail + ' button').evaluateAll(buttons => {
+      const rects=buttons.map(button=>button.getBoundingClientRect());
+      return rects.slice(1).map((rect,i)=>rect.top-rects[i].bottom);
+    });
+    expect(gap.every(value => value >= 9), brand.brand + ' rail button gap should be at least 9px').toBe(true);
+  }
+});
