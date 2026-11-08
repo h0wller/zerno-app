@@ -330,3 +330,136 @@ test('staff switcher stays in the visible menu heading and replaces the logo whe
   expect(await mode.evaluate(element => element.parentElement.classList.contains('mode-seg-slot'))).toBe(true);
   expect(await page.locator('#editToggle').evaluate(element => element.parentElement.classList.contains('menu-controls-row'))).toBe(true);
 });
+
+for (const brand of ['coffee', 'delivery']) {
+  for (const viewport of [
+    { width: 320, height: 740 },
+    { width: 390, height: 844 }
+  ]) {
+    test(`${brand}: iOS PWA admin header and actions fit ${viewport.width}px`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await mockStaffSession(page, 'admin');
+      await page.goto(`/?brand=${brand}`);
+      await page.waitForFunction(() =>
+        window.me && window.me.role === 'admin' &&
+        document.documentElement.hasAttribute('data-staff-ready') &&
+        typeof window.setMode === 'function'
+      );
+
+      await page.evaluate(() => {
+        document.documentElement.classList.add('is-ios-standalone');
+        document.documentElement.style.setProperty('--sat', '47px');
+        window.setMode('admin');
+      });
+
+      await expect(page.locator('#promoToggle')).toBeVisible();
+      await expect(page.locator('#dashToggle')).toBeVisible();
+      await expect(page.locator('#chatsToggle2')).toBeVisible();
+      await expect(page.locator('#chatFab')).toBeVisible();
+
+      const layout = await page.evaluate(() => {
+        const rect = (selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return null;
+          const box = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            x: box.x,
+            right: box.right,
+            y: box.y,
+            width: box.width,
+            height: box.height,
+            display: style.display,
+            visibility: style.visibility
+          };
+        };
+        const header = document.querySelector('header.topbar');
+        const headerStyle = getComputedStyle(header);
+        const actions = document.getElementById('topbar-actions');
+        const bar = document.getElementById('adminBar');
+        const visibleButtons = Array.from(bar.querySelectorAll(':scope > button:not([hidden])'))
+          .map((button) => {
+            const box = button.getBoundingClientRect();
+            return {
+              id: button.id,
+              x: box.x,
+              right: box.right,
+              width: box.width,
+              height: box.height,
+              text: button.textContent.trim()
+            };
+          });
+        const support = document.getElementById('supportLauncherHost');
+        const fab = document.getElementById('chatFab');
+        const supportRect = support.getBoundingClientRect();
+        const fabRect = fab.getBoundingClientRect();
+        return {
+          viewportWidth: document.documentElement.clientWidth,
+          documentWidth: document.documentElement.scrollWidth,
+          header: {
+            height: header.getBoundingClientRect().height,
+            paddingTop: headerStyle.paddingTop,
+            background: headerStyle.backgroundColor
+          },
+          venue: rect('#venueToggle'),
+          brand: rect('#headerBrand'),
+          actions: actions ? {
+            ...rect('#topbar-actions'),
+            profile: rect('#profileTopBtn')
+          } : null,
+          adminBar: {
+            ...rect('#adminBar'),
+            clientWidth: bar.clientWidth,
+            scrollWidth: bar.scrollWidth,
+            buttons: visibleButtons
+          },
+          support: {
+            width: supportRect.width,
+            height: supportRect.height,
+            right: supportRect.right,
+            fabWidth: fabRect.width,
+            fabHeight: fabRect.height,
+            fabInsideHost: fab.parentElement === support
+          }
+        };
+      });
+
+      expect(layout.header.height, JSON.stringify(layout.header)).toBe(60);
+      expect(layout.header.paddingTop, JSON.stringify(layout.header)).toBe('4px');
+      expect(layout.venue.width, JSON.stringify(layout.venue)).toBeGreaterThanOrEqual(52);
+      expect(layout.venue.height, JSON.stringify(layout.venue)).toBeGreaterThanOrEqual(48);
+      expect(layout.actions, 'profile and bonus actions must use the dedicated right-hand grid cell').not.toBeNull();
+      expect(layout.actions.profile.right, JSON.stringify(layout.actions)).toBeLessThanOrEqual(viewport.width - 10);
+      expect(Math.abs(
+        (layout.brand.x + layout.brand.width / 2) - viewport.width / 2
+      ), JSON.stringify(layout.brand)).toBeLessThanOrEqual(2);
+
+      expect(layout.adminBar.x, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(10);
+      expect(layout.adminBar.right, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(viewport.width - 8);
+      expect(layout.adminBar.buttons).toHaveLength(3);
+      expect(layout.adminBar.buttons.every(button =>
+        button.height >= 40 &&
+        button.x >= layout.adminBar.x - 1 &&
+        button.right <= layout.adminBar.right + 1
+      ), JSON.stringify(layout.adminBar)).toBe(true);
+      expect(layout.adminBar.scrollWidth, JSON.stringify(layout.adminBar))
+        .toBeLessThanOrEqual(layout.adminBar.clientWidth + 1);
+
+      expect(layout.support.width).toBe(44);
+      expect(layout.support.height).toBe(44);
+      expect(layout.support.fabWidth).toBe(44);
+      expect(layout.support.fabHeight).toBe(44);
+      expect(layout.support.fabInsideHost).toBe(true);
+      expect(layout.support.right).toBeLessThanOrEqual(viewport.width - 8);
+      expect(layout.documentWidth).toBeLessThanOrEqual(viewport.width + 1);
+
+      await page.evaluate(() => document.getElementById('adminBar').scrollTo({ left: 0 }));
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(80);
+      await page.screenshot({ fullPage: false });
+      await page.locator('#adminBar').evaluate((element) => {
+        element.scrollTo({ left: 0, behavior: 'instant' });
+      });
+    });
+  }
+}
