@@ -1043,6 +1043,23 @@ html[data-brand="delivery"] {
     grid-column:1 / -1;
   }
 }
+
+/* iOS narrow staff action row: match the final theme before first paint. */
+
+@media (max-width:350px) {
+  html[data-staff-role] body #adminBar.adminBar:not([hidden]) {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  html[data-staff-role] body #adminBar.adminBar > #promoToggle:not([hidden]),
+  html[data-staff-role] body #adminBar.adminBar > #dashToggle:not([hidden]) {
+    grid-column:auto;
+  }
+  html[data-staff-role] body #adminBar.adminBar > #chatsToggle2:not([hidden]) {
+    grid-column:1 / -1;
+    width:100%;
+    max-width:none;
+  }
+}
 </style>
 <script id="perf-lighthouse-bridge">
     (() => {
