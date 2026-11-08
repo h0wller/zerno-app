@@ -122,6 +122,14 @@ html body div.wrap > #deliveryRail {
   scrollbar-width: none;
   z-index: 10;
 }
+
+
+/* Delivery rail fills the same grid row as the full menu/card column. */
+html body div.wrap > #deliveryRail {
+  align-self: stretch;
+  height: auto;
+  max-height: none;
+}
 @media (min-width: 1181px) {
   html body div.wrap > .rail,
   html body div.wrap > #rail,
