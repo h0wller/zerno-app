@@ -150,6 +150,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         tickerOverflowX: ticker && getComputedStyle(ticker).overflowX,
         heading: box(heading),
         menuHead: box(document.querySelector('#deliveryView .menu-head')),
+        menuHeadStyle: (() => { const style = getComputedStyle(document.querySelector('#deliveryView .menu-head')); return { maxHeight: style.maxHeight, overflow: style.overflow }; })(),
+        subchipHeight: document.querySelector('#deliverySubFilter .subchip')?.getBoundingClientRect().height,
         card: box(card),
         media: box(media),
         brandMark: box(document.querySelector('#brandMark')),
@@ -186,10 +188,12 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x);
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right + 1);
-    expect(before.menuHead.height).toBeLessThanOrEqual(80);
-    expect(before.search.height).toBe(32);
+    expect(before.menuHeadStyle.maxHeight).toBe('none');
+    expect(before.menuHeadStyle.overflow).not.toBe('hidden');
+    expect(before.search.height).toBe(40);
+    expect(before.subchipHeight).toBe(40);
     expect(before.addButton.width).toBeGreaterThanOrEqual(before.addRow.width - 1);
-    expect(before.activeSubchipColor).toBe('rgb(196, 59, 50)');
+    expect(before.activeSubchipColor).toBe('rgb(192, 59, 42)');
     expect(before.card.width).toBeGreaterThan(200);
     expect(before.media.height).toBe(180);
     expect(before.brandMark).not.toBeNull();
@@ -237,11 +241,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.heading.width).toBeGreaterThan(60);
     expect(after.heading.width).toBeLessThan(200);
     expect(after.menuHead).toEqual(before.menuHead);
-    expect(after.menuHead.height).toBeLessThanOrEqual(80);
-    expect(after.search.height).toBe(32);
+    expect(after.menuHeadStyle.maxHeight).toBe('none');
+    expect(after.menuHeadStyle.overflow).not.toBe('hidden');
+    expect(after.search.height).toBe(40);
+    expect(after.subchipHeight).toBe(40);
+    expect(after.subchipHeight).toBe(before.subchipHeight);
     expect(after.addButton).toEqual(before.addButton);
     expect(after.addRow).toEqual(before.addRow);
-    expect(after.activeSubchipColor).toBe('rgb(196, 59, 50)');
+    expect(after.activeSubchipColor).toBe('rgb(192, 59, 42)');
     expect(after.menuHead.x).toBeLessThanOrEqual(after.rail.x + 1);
     expect(after.menuHead.right).toBeGreaterThanOrEqual(after.section.right - 1);
     expect(after.heading.x).toBeGreaterThanOrEqual(after.menuHead.x);
