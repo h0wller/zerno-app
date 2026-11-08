@@ -618,7 +618,7 @@ html body div.wrap > section {
 
 
 /* The hidden attribute is authoritative during staff-role hydration. */
-html body #adminBar.adminBar[hidden] { display:none !important; }
+html body #adminBar.adminBar[hidden] { display:none; }
 
 
 /* Keep the menu-heading role row compact at mobile widths. */
