@@ -395,6 +395,7 @@ for (const brand of ['coffee', 'delivery']) {
               id: button.id,
               x: box.x,
               right: box.right,
+              y: box.y,
               width: box.width,
               height: box.height,
               text: button.textContent.trim()
@@ -448,6 +449,14 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.adminBar.x, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(16);
       expect.soft(layout.adminBar.right, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(viewport.width - 8);
       expect.soft(layout.adminBar.buttons).toHaveLength(3);
+      if (viewport.width > 350) {
+        expect.soft(new Set(layout.adminBar.buttons.map(button => Math.round(button.y))).size,
+          JSON.stringify(layout.adminBar.buttons)).toBe(1);
+      } else {
+        expect.soft(Math.abs(layout.adminBar.buttons[0].y - layout.adminBar.buttons[1].y)).toBeLessThanOrEqual(1);
+        expect.soft(layout.adminBar.buttons[2].y).toBeGreaterThan(layout.adminBar.buttons[0].y);
+        expect.soft(layout.adminBar.buttons[2].width).toBeCloseTo(layout.adminBar.width, 0);
+      }
       expect.soft(layout.adminBar.buttons.every(button =>
         button.height >= 40 &&
         button.x >= layout.adminBar.x - 1 &&
@@ -467,6 +476,7 @@ for (const brand of ['coffee', 'delivery']) {
       await page.evaluate(() => document.getElementById('adminBar').scrollTo({ left: 0 }));
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(80);
+      await page.evaluate(() => document.querySelector('.toasts')?.remove());
       await testInfo.attach(`${brand}-staff-pwa-${viewport.width}px`, {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
