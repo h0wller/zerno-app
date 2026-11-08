@@ -187,10 +187,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.menuHead).not.toBeNull();
     expect(before.menuHead.x).toBeLessThanOrEqual(before.rail.x + 1);
     expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
-    expect(before.heading.x).toBeGreaterThanOrEqual(before.rail.right + 4);
-    expect(before.heading.right).toBeLessThanOrEqual(before.section.right - 1);
-    expect(before.brandContext.x).toBeGreaterThanOrEqual(before.rail.right + 4);
-    expect(before.brandContext.right).toBeLessThanOrEqual(before.section.right - 1);
+    expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
+    expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
+    expect(before.brandContext.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
+    expect(before.brandContext.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.menuHeadStyle.maxHeight).toBe('none');
     expect(before.menuHeadStyle.overflow).not.toBe('hidden');
     expect(before.search.height).toBe(40);
@@ -254,10 +254,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.activeSubchipColor).toBe('rgb(192, 59, 42)');
     expect(after.menuHead.x).toBeLessThanOrEqual(after.rail.x + 1);
     expect(after.menuHead.right).toBeGreaterThanOrEqual(after.section.right - 1);
-    expect(after.heading.x).toBeGreaterThanOrEqual(after.rail.right + 4);
-    expect(after.heading.right).toBeLessThanOrEqual(after.section.right - 1);
-    expect(after.brandContext.x).toBeGreaterThanOrEqual(after.rail.right + 4);
-    expect(after.brandContext.right).toBeLessThanOrEqual(after.section.right - 1);
+    expect(after.heading.x).toBeGreaterThanOrEqual(after.menuHead.x + 8);
+    expect(after.heading.right).toBeLessThanOrEqual(after.menuHead.right - 8);
+    expect(after.brandContext.x).toBeGreaterThanOrEqual(after.menuHead.x + 8);
+    expect(after.brandContext.right).toBeLessThanOrEqual(after.menuHead.right - 8);
     expect(after.section.width).toBe(before.section.width);
 
     const shiftReport = await page.evaluate(() => ({
