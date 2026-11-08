@@ -444,7 +444,9 @@ for (const brand of ['coffee', 'delivery']) {
           modeSlot: modeSlotRect ? {
             x: modeSlotRect.x,
             right: modeSlotRect.right,
+            y: modeSlotRect.y,
             width: modeSlotRect.width,
+            height: modeSlotRect.height,
             overflowX: getComputedStyle(modeSlot).overflowX,
             overflowY: getComputedStyle(modeSlot).overflowY
           } : null,
