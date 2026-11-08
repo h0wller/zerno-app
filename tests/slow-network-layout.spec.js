@@ -365,11 +365,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         .toBe(before.firstRowImageCount);
       expect(before.highPriorityImageCount, `only the first-row LCP image has high priority at ${width}px`)
         .toBe(before.firstRowImageCount ? 1 : 0);
+      expect(before.titleDisplay, `coffee wordmark remains visible at ${width}px before CSS`).not.toBe('none');
       if (width <= 1023) {
-        expect(before.titleDisplay, `coffee title hidden at ${width}px before CSS`).toBe('none');
-        expect(before.subDisplay, `coffee subtitle hidden at ${width}px before CSS`).toBe('none');
+        expect(before.subDisplay, `coffee secondary subtitle stays hidden at ${width}px before CSS`).toBe('none');
       } else {
-        expect(before.titleDisplay, `desktop brand title visible at ${width}px before CSS`).not.toBe('none');
         expect(before.subDisplay, `desktop brand subtitle visible at ${width}px before CSS`).not.toBe('none');
       }
       expect(before.scrollWidth, `no initial horizontal overflow at ${width}px`)
