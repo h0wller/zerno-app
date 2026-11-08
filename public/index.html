@@ -12,6 +12,9 @@
         var urlBrand = m ? decodeURIComponent(m[1]).toLowerCase() : (qs.has('delivery') ? 'delivery' : (qs.has('coffee') ? 'coffee' : ''));
 
         var isPwa = (navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+        var isIosStandalone = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isPwa && isIosStandalone) document.documentElement.classList.add('is-ios-standalone');
         var isTg = /Telegram/i.test(navigator.userAgent) || qs.get('src') === 'tg' || !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
         var isActionDeepLink = !!(qs.get('tab') || qs.get('support') || qs.get('order'));
         var splashDone = sessionStorage.getItem('splashDone') === '1';
