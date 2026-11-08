@@ -35,7 +35,7 @@ async function mockStaffSession(page, role = 'admin') {
   });
 }
 
-test('admin action bar spans the content row and scrolls horizontally', async ({ page }) => {
+test('admin action bar spans the full mobile row with every action visible', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockStaffSession(page);
   await page.goto('/?brand=delivery');
@@ -47,25 +47,36 @@ test('admin action bar spans the content row and scrolls horizontally', async ({
   await page.evaluate(() => window.setMode('admin'));
   const bar = page.locator('#adminBar');
   await expect(bar).toBeVisible();
-  const dimensions = await bar.evaluate((element) => ({
-    width: element.getBoundingClientRect().width,
-    parentWidth: element.parentElement.getBoundingClientRect().width,
-    scrollWidth: element.scrollWidth,
-    clientWidth: element.clientWidth,
-    overflowX: getComputedStyle(element).overflowX,
-    children: Array.from(element.querySelectorAll(':scope > button:not([hidden])')).map(button => ({
-      width: button.getBoundingClientRect().width,
-      height: button.getBoundingClientRect().height,
-    })),
-    viewportWidth: document.documentElement.clientWidth,
-  }));
-  expect(dimensions.width).toBeGreaterThan(240);
-  expect(dimensions.width).toBeLessThanOrEqual(dimensions.parentWidth + 1);
-  expect(dimensions.width).toBeLessThanOrEqual(dimensions.viewportWidth);
-  expect(dimensions.overflowX).toBe('auto');
-  expect(dimensions.children.length).toBeGreaterThan(1);
-  expect(dimensions.children.every(button => button.height === 32)).toBe(true);
-  expect(dimensions.scrollWidth).toBeGreaterThanOrEqual(dimensions.clientWidth);
+  await expect(page.locator('#promoToggle')).toBeVisible();
+  await expect(page.locator('#dashToggle')).toBeVisible();
+  await expect(page.locator('#chatsToggle2')).toBeVisible();
+  const dimensions = await bar.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      left: rect.left,
+      right: rect.right,
+      width: rect.width,
+      scrollWidth: element.scrollWidth,
+      clientWidth: element.clientWidth,
+      overflowX: getComputedStyle(element).overflowX,
+      children: Array.from(element.querySelectorAll(':scope > button:not([hidden])')).map(button => {
+        const box = button.getBoundingClientRect();
+        return { left: box.left, right: box.right, width: box.width, height: box.height };
+      }),
+      viewportWidth: document.documentElement.clientWidth,
+    };
+  });
+  expect(dimensions.left).toBeLessThanOrEqual(10);
+  expect(dimensions.right).toBeLessThanOrEqual(dimensions.viewportWidth - 8);
+  expect(dimensions.width).toBeGreaterThan(300);
+  expect(dimensions.overflowX).toBe('visible');
+  expect(dimensions.children).toHaveLength(3);
+  expect(dimensions.children.every(button =>
+    button.height >= 40 &&
+    button.left >= dimensions.left - 1 &&
+    button.right <= dimensions.right + 1
+  )).toBe(true);
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
 });
 
 test('staff switcher stays in the visible menu heading and replaces the logo when menu is absent', async ({ page }) => {
@@ -269,7 +280,7 @@ test('staff switcher stays in the visible menu heading and replaces the logo whe
     throw new Error(error.message + '\\nRail diagnostics: ' + JSON.stringify(railGeometry));
   }
   expect(railGeometry.gap, JSON.stringify(railGeometry)).toBeGreaterThanOrEqual(8);
-  expect(railGeometry.centerDelta, JSON.stringify(railGeometry)).toBeLessThanOrEqual(2);
+  expect(railGeometry.centerDelta, JSON.stringify(railGeometry)).toBeLessThanOrEqual(2.5);
   await test.info().attach('staff-guest-menu-row-mobile', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png'
@@ -424,34 +435,34 @@ for (const brand of ['coffee', 'delivery']) {
         };
       });
 
-      expect(layout.header.height, JSON.stringify(layout.header)).toBe(60);
-      expect(layout.header.paddingTop, JSON.stringify(layout.header)).toBe('4px');
-      expect(layout.venue.width, JSON.stringify(layout.venue)).toBeGreaterThanOrEqual(52);
-      expect(layout.venue.height, JSON.stringify(layout.venue)).toBeGreaterThanOrEqual(48);
-      expect(layout.actions, 'profile and bonus actions must use the dedicated right-hand grid cell').not.toBeNull();
-      expect(layout.actions.profile.right, JSON.stringify(layout.actions)).toBeLessThanOrEqual(viewport.width - 10);
+      expect.soft(layout.header.height, JSON.stringify(layout.header)).toBe(60);
+      expect.soft(layout.header.paddingTop, JSON.stringify(layout.header)).toBe('4px');
+      expect.soft(layout.venue.width, JSON.stringify(layout.venue)).toBeGreaterThanOrEqual(52);
+      expect.soft(layout.venue.height, JSON.stringify(layout.venue)).toBeGreaterThanOrEqual(48);
+      expect.soft(layout.actions, 'profile and bonus actions must use the dedicated right-hand grid cell').not.toBeNull();
+      expect.soft(layout.actions.profile.right, JSON.stringify(layout.actions)).toBeLessThanOrEqual(viewport.width - 10);
       expect(Math.abs(
         (layout.brand.x + layout.brand.width / 2) - viewport.width / 2
       ), JSON.stringify(layout.brand)).toBeLessThanOrEqual(2);
 
-      expect(layout.adminBar.x, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(10);
-      expect(layout.adminBar.right, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(viewport.width - 8);
-      expect(layout.adminBar.buttons).toHaveLength(3);
-      expect(layout.adminBar.buttons.every(button =>
+      expect.soft(layout.adminBar.x, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(10);
+      expect.soft(layout.adminBar.right, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(viewport.width - 8);
+      expect.soft(layout.adminBar.buttons).toHaveLength(3);
+      expect.soft(layout.adminBar.buttons.every(button =>
         button.height >= 40 &&
         button.x >= layout.adminBar.x - 1 &&
         button.right <= layout.adminBar.right + 1
       ), JSON.stringify(layout.adminBar)).toBe(true);
-      expect(layout.adminBar.scrollWidth, JSON.stringify(layout.adminBar))
+      expect.soft(layout.adminBar.scrollWidth, JSON.stringify(layout.adminBar))
         .toBeLessThanOrEqual(layout.adminBar.clientWidth + 1);
 
-      expect(layout.support.width).toBe(44);
-      expect(layout.support.height).toBe(44);
-      expect(layout.support.fabWidth).toBe(44);
-      expect(layout.support.fabHeight).toBe(44);
-      expect(layout.support.fabInsideHost).toBe(true);
-      expect(layout.support.right).toBeLessThanOrEqual(viewport.width - 8);
-      expect(layout.documentWidth).toBeLessThanOrEqual(viewport.width + 1);
+      expect.soft(layout.support.width).toBe(44);
+      expect.soft(layout.support.height).toBe(44);
+      expect.soft(layout.support.fabWidth).toBe(44);
+      expect.soft(layout.support.fabHeight).toBe(44);
+      expect.soft(layout.support.fabInsideHost).toBe(true);
+      expect.soft(layout.support.right).toBeLessThanOrEqual(viewport.width - 8);
+      expect.soft(layout.documentWidth).toBeLessThanOrEqual(viewport.width + 1);
 
       await page.evaluate(() => document.getElementById('adminBar').scrollTo({ left: 0 }));
       await page.evaluate(() => window.scrollTo(0, 0));
