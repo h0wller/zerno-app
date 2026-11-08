@@ -39,7 +39,17 @@ for (const brand of CASES) {
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         return Math.abs(head.top - rail.top);
       }, { headSelector: brand.head, railSelector: brand.rail });
-      expect(initialRailDelta, 'rail top aligns with menu card top').toBeLessThanOrEqual(2);
+      if (viewport.width <= 820) {
+      const searchGap = await page.evaluate(({ headSelector, railSelector }) => {
+        const head = document.querySelector(headSelector);
+        const rail = document.querySelector(railSelector);
+        const searchRow = head.querySelector('.mh-right');
+        return rail.getBoundingClientRect().top - searchRow.getBoundingClientRect().bottom;
+      }, { headSelector: brand.head, railSelector: brand.rail });
+      expect(searchGap, 'mobile rail starts below search/support row').toBeGreaterThanOrEqual(10);
+    } else {
+      expect(initialRailDelta, 'desktop rail top aligns with menu card top').toBeLessThanOrEqual(2);
+    }
       await expect.poll(() => ticker.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 5000 }).toBe(brand.tickerBg);
 
       const layout = await page.evaluate(({ headSelector, railSelector }) => {
