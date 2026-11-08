@@ -196,7 +196,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.top.height).toBe(84);
 
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(80);
+      await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 4000 });
       await testInfo.attach(brand + '-staff-two-row-' + width + 'px', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
