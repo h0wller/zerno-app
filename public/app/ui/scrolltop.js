@@ -59,8 +59,10 @@ function alignRailWithCard() {
       modeSeg.closest('.menu-controls-row') === menuRow);
     var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
     var searchRow = head.querySelector('.mh-right');
-    var desiredTop = isDeliveryBrand
-      ? headRect.top
+    var deliveryCards = isDeliveryBrand ? document.querySelector('#deliveryView #deliveryGrid') : null;
+    var deliveryCardsRect = deliveryCards && deliveryCards.getBoundingClientRect();
+    var desiredTop = isDeliveryBrand && deliveryCardsRect
+      ? deliveryCardsRect.top
       : (staffGuestMenu
         ? headRect.bottom + 12
         : (mobileViewport && searchRow ? searchRow.getBoundingClientRect().bottom + 12 : headRect.top));
@@ -81,6 +83,10 @@ function alignRailWithCard() {
     observedRailTopbar = topbar;
     if (head) railHeadObserver.observe(head);
     if (topbar) railHeadObserver.observe(topbar);
+    if (isDelivery) {
+      var deliveryView = document.getElementById('deliveryView');
+      if (deliveryView) railHeadObserver.observe(deliveryView);
+    }
   }
 }
 function alignMbonusWithRail() {}
