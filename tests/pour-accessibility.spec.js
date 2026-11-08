@@ -63,7 +63,12 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       edit.hidden = false;
       modeSeg.appendChild(probe);
       const modeHeight = probe.getBoundingClientRect().height;
-      const modeButtonHeight = modeSeg.querySelector('button')?.getBoundingClientRect().height ?? 0;
+      const roleButtonRect = modeSeg.querySelector('button')?.getBoundingClientRect();
+      const roleButton = {
+        width: roleButtonRect?.width ?? 0,
+        height: roleButtonRect?.height ?? 0
+      };
+      const modeButtonHeight = roleButton.height;
       probe.remove();
       const editMinHeight = parseFloat(getComputedStyle(edit).minHeight);
       if (modeNext && modeNext.parentNode === modeParent) modeParent.insertBefore(modeSeg, modeNext);
