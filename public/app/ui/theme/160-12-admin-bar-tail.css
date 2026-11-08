@@ -1036,6 +1036,7 @@ html body #adminBar.adminBar[hidden] { display:none; }
     display: flex;
     flex: 1 1 auto;
     align-items: center;
+    align-self: center;
     justify-content: stretch;
     width: 100%;
     min-width: 0;
@@ -1044,6 +1045,7 @@ html body #adminBar.adminBar[hidden] { display:none; }
     min-height: 32px;
     max-height: 32px;
     overflow: visible;
+    contain: size;
   }
 
   html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
