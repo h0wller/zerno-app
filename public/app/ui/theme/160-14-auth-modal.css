@@ -233,20 +233,20 @@
 }
 
 @media (max-height: 560px) {
-  /* Scroll the dialog viewport itself; grid centering can place an oversized card below the fold. */
   .modal#authModal {
-    display: block;
     padding: max(8px, env(safe-area-inset-top, 0px)) 10px max(8px, env(safe-area-inset-bottom, 0px));
-    overflow-x: hidden;
-    overflow-y: auto;
+    align-items: flex-start;
+    overflow-y: hidden;
   }
 
   #authModal .authcard {
-    width: min(440px, 100%);
-    min-height: 0;
-    max-height: none;
-    margin: 0 auto;
-    overflow: visible;
+    height: auto;
+    min-height: min(100%, 0px);
+    max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    margin-block: 0;
+    overflow-y: auto;
+    scroll-padding-block: 16px;
+    overscroll-behavior: contain;
   }
 
   #authModal .auth-head {
