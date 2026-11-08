@@ -398,6 +398,7 @@ for (const brand of ['coffee', 'delivery']) {
               y: box.y,
               width: box.width,
               height: box.height,
+              gridRow: getComputedStyle(button).gridRowStart,
               text: button.textContent.trim()
             };
           });
@@ -405,6 +406,9 @@ for (const brand of ['coffee', 'delivery']) {
         const fab = document.getElementById('chatFab');
         const supportRect = support.getBoundingClientRect();
         const fabRect = fab.getBoundingClientRect();
+        const supportRow = support.parentElement;
+        const supportRowRect = supportRow.getBoundingClientRect();
+        const supportRowStyle = getComputedStyle(supportRow);
         return {
           viewportWidth: document.documentElement.clientWidth,
           documentWidth: document.documentElement.scrollWidth,
@@ -436,7 +440,12 @@ for (const brand of ['coffee', 'delivery']) {
             right: supportRect.right,
             fabWidth: fabRect.width,
             fabHeight: fabRect.height,
-            fabInsideHost: fab.parentElement === support
+            fabInsideHost: fab.parentElement === support,
+            rowHeight: supportRowRect.height,
+            rowClientHeight: supportRow.clientHeight,
+            rowOverflowY: supportRowStyle.overflowY,
+            hostBottom: supportRect.bottom,
+            rowBottom: supportRowRect.bottom
           }
         };
       });
@@ -460,6 +469,7 @@ for (const brand of ['coffee', 'delivery']) {
         JSON.stringify(layout.adminBar.buttons)).toBe(true);
       expect.soft(layout.adminBar.buttons.every(button =>
         button.height >= 40 &&
+        button.gridRow === '1' &&
         button.x >= layout.adminBar.x - 1 &&
         button.right <= layout.adminBar.right + 1
       ), JSON.stringify(layout.adminBar)).toBe(true);
@@ -479,6 +489,11 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.support.fabWidth).toBe(44);
       expect.soft(layout.support.fabHeight).toBe(44);
       expect.soft(layout.support.fabInsideHost).toBe(true);
+      expect.soft(layout.support.rowHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(44);
+      expect.soft(layout.support.rowClientHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(44);
+      expect.soft(layout.support.rowOverflowY, JSON.stringify(layout.support)).toBe('visible');
+      expect.soft(layout.support.hostBottom, JSON.stringify(layout.support))
+        .toBeLessThanOrEqual(layout.support.rowBottom + 1);
       expect.soft(layout.support.right).toBeLessThanOrEqual(viewport.width - 8);
       expect.soft(layout.documentWidth).toBeLessThanOrEqual(viewport.width + 1);
 
