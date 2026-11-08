@@ -347,7 +347,7 @@ for (const brand of ['coffee', 'delivery']) {
     { width: 320, height: 740 },
     { width: 390, height: 844 }
   ]) {
-    test(`${brand}: iOS PWA admin header and actions fit ${viewport.width}px`, async ({ page }) => {
+    test(`${brand}: iOS PWA admin header and actions fit ${viewport.width}px`, async ({ page }, testInfo) => {
       await page.setViewportSize(viewport);
       await mockStaffSession(page, 'admin');
       await page.goto(`/?brand=${brand}`);
@@ -467,7 +467,10 @@ for (const brand of ['coffee', 'delivery']) {
       await page.evaluate(() => document.getElementById('adminBar').scrollTo({ left: 0 }));
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(80);
-      await page.screenshot({ fullPage: false });
+      await testInfo.attach(`${brand}-staff-pwa-${viewport.width}px`, {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
       await page.locator('#adminBar').evaluate((element) => {
         element.scrollTo({ left: 0, behavior: 'instant' });
       });
