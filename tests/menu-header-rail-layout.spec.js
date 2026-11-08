@@ -210,17 +210,17 @@ test('coffee: category rail never covers menu title or search input on mobile', 
 });
 
 
-test('coffee and delivery category rails align to the top edge of the menu card', async ({ page }) => {
+test('coffee rail aligns to its menu card and delivery rail aligns to product cards', async ({ page }) => {
   for (const brand of CASES) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
-    const positions = await page.evaluate(({headSelector,railSelector}) => {
-      const head=document.querySelector(headSelector).getBoundingClientRect();
-      const rail=document.querySelector(railSelector).getBoundingClientRect();
-      return { headTop:head.top, railTop:rail.top };
-    }, {headSelector:brand.head,railSelector:brand.rail});
-    expect(Math.abs(positions.railTop-positions.headTop), brand.brand + ' rail should align with menu card top').toBeLessThanOrEqual(2);
+    const geometry = await page.evaluate(({headSelector,railSelector,brandName}) => {
+      const anchor = document.querySelector(brandName === 'delivery' ? '#deliveryGrid' : headSelector);
+      const rail = document.querySelector(railSelector).getBoundingClientRect();
+      return { anchorTop:anchor.getBoundingClientRect().top, railTop:rail.top };
+    }, {headSelector:brand.head,railSelector:brand.rail,brandName:brand.brand});
+    expect(Math.abs(geometry.railTop-geometry.anchorTop), brand.brand + ' rail aligns to its card anchor').toBeLessThanOrEqual(2);
     const gap = await page.locator(brand.rail + ' button').evaluateAll(buttons => {
       const rects=buttons.map(button=>button.getBoundingClientRect());
       return rects.slice(1).map((rect,i)=>rect.top-rects[i].bottom);
@@ -230,33 +230,35 @@ test('coffee and delivery category rails align to the top edge of the menu card'
 });
 
 
-test('delivery rail follows the menu card and fills the full delivery view height', async ({ page }) => {
+test('delivery rail aligns to the first product card and fills the product-card column', async ({ page }) => {
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
 
     const geometry = await page.evaluate(() => {
-      const card = document.querySelector('#deliveryView .menu-head');
+      const menuHead = document.querySelector('#deliveryView .menu-head');
+      const grid = document.querySelector('#deliveryGrid');
       const rail = document.querySelector('#deliveryRail');
-      const view = document.querySelector('#deliveryView');
-      const cardRect = card.getBoundingClientRect();
+      const menuRect = menuHead.getBoundingClientRect();
+      const gridRect = grid.getBoundingClientRect();
       const railRect = rail.getBoundingClientRect();
-      const viewRect = view.getBoundingClientRect();
       return {
-        padding: getComputedStyle(card).padding,
-        cardTop: cardRect.top,
+        padding: getComputedStyle(menuHead).padding,
+        menuHeadBottom: menuRect.bottom,
+        gridTop: gridRect.top,
+        gridBottom: gridRect.bottom,
         railTop: railRect.top,
         railBottom: railRect.bottom,
-        viewBottom: viewRect.bottom,
         railAlignSelf: getComputedStyle(rail).alignSelf,
         railMaxHeight: getComputedStyle(rail).maxHeight
       };
     });
 
     expect(geometry.padding, 'delivery menu card padding').toBe('8px 16px');
-    expect(Math.abs(geometry.railTop - geometry.cardTop), 'delivery rail aligns with the menu card, not subfilters').toBeLessThanOrEqual(2);
-    expect(Math.abs(geometry.railBottom - geometry.viewBottom), 'delivery rail fills the full delivery view height').toBeLessThanOrEqual(4);
+    expect(geometry.gridTop).toBeGreaterThan(geometry.menuHeadBottom);
+    expect(Math.abs(geometry.railTop - geometry.gridTop), 'delivery rail aligns to product cards, not category filters').toBeLessThanOrEqual(2);
+    expect(Math.abs(geometry.railBottom - geometry.gridBottom), 'delivery rail fills the full product-card column').toBeLessThanOrEqual(4);
     expect(geometry.railAlignSelf).toBe('stretch');
     expect(geometry.railMaxHeight).toBe('none');
   }
