@@ -191,8 +191,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.brandContext.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.brandContext.right).toBeLessThanOrEqual(before.menuHead.right - 8);
-    expect(before.menuHeadStyle.maxHeight).toBe('none');
-    expect(before.menuHeadStyle.overflow).not.toBe('hidden');
+    expect(before.menuHeadStyle.maxHeight).toBe('100px');
+    expect(before.menuHeadStyle.overflow).toBe('visible');
     expect(before.search.height).toBe(40);
     expect(before.subchipHeight).toBe(40);
     expect(before.addButton.width).toBeGreaterThanOrEqual(before.addRow.width - 1);
@@ -1000,10 +1000,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
     // Reserve the final role row geometry while the cached role is still being confirmed.
     // Revealing the switcher must not resize its slot or the two-row title toolbar.
-    expect(after.modeSeg.height).toBe(36);
+    expect(after.modeSeg.height).toBe(32);
     expect(after.modeSeg.parentClass).toBe('mode-seg-slot');
-    expect(after.modeSlot.height).toBe(36);
-    expect(after.menuRow.height).toBe(84);
+    expect(after.modeSlot.height).toBe(32);
+    expect(after.menuRow.height).toBe(36);
+    expect(after.menuHead.height).toBe(100);
     expect(before.modeSlot.height).toBe(after.modeSlot.height);
     expect(before.menuRow.height).toBe(after.menuRow.height);
     expect(after.modeSeg.top).toBeGreaterThanOrEqual(after.menuRow.top - 1);
