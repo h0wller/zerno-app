@@ -415,9 +415,9 @@ for (const brand of ['coffee', 'delivery']) {
         const activeRow = document.querySelector(menuView + ' .menu-controls-row');
         const modeSlot = activeRow?.querySelector(':scope > .mode-seg-slot');
         const modeSlotRect = modeSlot?.getBoundingClientRect();
-        const headingElement = activeRow?.querySelector(':scope > h1');
+        const headingElement = activeRow?.querySelector('h1');
         const headingBox = headingElement?.getBoundingClientRect();
-        const editElement = activeRow?.querySelector(':scope > #editToggle');
+        const editElement = activeRow?.querySelector('#editToggle');
         const editBox = editElement?.getBoundingClientRect();
         return {
           viewportWidth: document.documentElement.clientWidth,
