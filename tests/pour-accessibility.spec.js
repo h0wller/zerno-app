@@ -14,7 +14,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     await expect(page.locator('#dSearch')).toBeVisible();
   });
 
-  test('delivery search has a persistent label, 32px compact height and visible boundary', async ({ page }) => {
+  test('delivery search has a persistent label, 40px height and visible boundary', async ({ page }) => {
     const input = page.locator('#dSearch');
     await expect(page.locator('label[for="dSearch"]')).toHaveText('Поиск по меню доставки');
 
@@ -31,12 +31,12 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       };
     });
 
-    expect(metrics.inputHeight).toBeLessThanOrEqual(32);
-    expect(metrics.containerHeight).toBe(32);
+    expect(metrics.inputHeight).toBe(36);
+    expect(metrics.containerHeight).toBe(40);
     expect(contrastRatio(metrics.borderColor, metrics.backgroundColor)).toBeGreaterThanOrEqual(3);
   });
 
-  test('compact menu controls and search use 32px height while preserving natural widths', async ({ page }) => {
+  test('role controls stay compact while search, filters and header taps remain comfortable', async ({ page }) => {
     const metrics = await page.evaluate(() => {
       const probe = document.createElement('button');
       probe.textContent = 'Тест';
@@ -87,8 +87,11 @@ test.describe('Pour accessibility audit — delivery brand', () => {
           .map((element) => ({ height: element.getBoundingClientRect().height, width: element.getBoundingClientRect().width })),
         profile: document.getElementById('profileTopBtn').getBoundingClientRect().toJSON(),
         scrollTop: document.getElementById('scrollTopBtn').getBoundingClientRect().toJSON(),
-        menuHead: document.querySelector('#deliveryView .menu-head').getBoundingClientRect().height,
+        menuHead: (() => { const element = document.querySelector('#deliveryView .menu-head'); const style = getComputedStyle(element); return { height: element.getBoundingClientRect().height, maxHeight: style.maxHeight, overflow: style.overflow }; })(),
         search: document.querySelector('#deliveryView .mh-right .search').getBoundingClientRect().height,
+        venue: document.getElementById('venueToggle').getBoundingClientRect().toJSON(),
+        supportHost: document.getElementById('supportLauncherHost').getBoundingClientRect().toJSON(),
+        support: document.getElementById('chatFab').getBoundingClientRect().toJSON(),
         addButton: (() => { const el = document.querySelector('#deliveryGrid .cta[data-add]'); const r = el.getBoundingClientRect(); const row = el.closest('.steprow').getBoundingClientRect(); return { width:r.width, rowWidth:row.width, height:r.height }; })(),
         activeChip: (() => { const el = document.querySelector('#deliverySubFilter .subchip.on'); const s=getComputedStyle(el); return { bg:s.backgroundColor, color:s.color }; })(),
         roleButton,
@@ -99,16 +102,23 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.modeButtonHeight).toBe(32);
     expect(metrics.editMinHeight).toBe(32);
     expect(metrics.subchips.length).toBeGreaterThan(0);
-    expect(metrics.subchips.every((chip) => chip.height === 32 && chip.width >= 58),
-      `subchip geometry must remain at least 58×32px: ${JSON.stringify(metrics.subchips)}`).toBe(true);
-    expect(metrics.profile.width).toBe(32);
-    expect(metrics.profile.height).toBe(32);
+    expect(metrics.subchips.every((chip) => chip.height === 40 && chip.width >= 58),
+      `subchip geometry must remain at least 58×40px: ${JSON.stringify(metrics.subchips)}`).toBe(true);
+    expect(metrics.profile.width).toBe(44);
+    expect(metrics.profile.height).toBe(44);
+    expect(metrics.venue.width).toBeGreaterThanOrEqual(44);
+    expect(metrics.venue.height).toBeGreaterThanOrEqual(44);
+    expect(metrics.supportHost.width).toBe(44);
+    expect(metrics.supportHost.height).toBe(44);
+    expect(metrics.support.width).toBe(44);
+    expect(metrics.support.height).toBe(44);
     expect(metrics.scrollTop.width).toBe(32);
     expect(metrics.scrollTop.height).toBe(32);
-    expect(metrics.menuHead).toBeLessThanOrEqual(80);
-    expect(metrics.search).toBe(32);
+    expect(metrics.menuHead.maxHeight).toBe('none');
+    expect(metrics.menuHead.overflow).not.toBe('hidden');
+    expect(metrics.search).toBe(40);
     expect(metrics.addButton.width).toBeGreaterThanOrEqual(metrics.addButton.rowWidth - 1);
-    expect(metrics.activeChip.bg).toBe('rgb(196, 59, 50)');
+    expect(metrics.activeChip.bg).toBe('rgb(192, 59, 42)');
     expect(metrics.activeChip.color).toBe('rgb(255, 255, 255)');
     expect(metrics.roleButton.height).toBe(32);
     expect(metrics.roleButton.width).toBeGreaterThan(metrics.roleButton.height);
