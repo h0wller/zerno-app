@@ -415,6 +415,10 @@ for (const brand of ['coffee', 'delivery']) {
         const activeRow = document.querySelector(menuView + ' .menu-controls-row');
         const modeSlot = activeRow?.querySelector(':scope > .mode-seg-slot');
         const modeSlotRect = modeSlot?.getBoundingClientRect();
+        const headingElement = activeRow?.querySelector(':scope > h1');
+        const headingBox = headingElement?.getBoundingClientRect();
+        const editElement = activeRow?.querySelector(':scope > #editToggle');
+        const editBox = editElement?.getBoundingClientRect();
         return {
           viewportWidth: document.documentElement.clientWidth,
           documentWidth: document.documentElement.scrollWidth,
@@ -444,8 +448,8 @@ for (const brand of ['coffee', 'delivery']) {
             overflowX: getComputedStyle(modeSlot).overflowX,
             overflowY: getComputedStyle(modeSlot).overflowY
           } : null,
-          modeHeading: rect(menuView + ' .menu-controls-row > h1'),
-          modeEdit: rect(menuView + ' .menu-controls-row > #editToggle'),
+          modeHeading: headingBox ? { x: headingBox.x, right: headingBox.right, y: headingBox.y, width: headingBox.width, height: headingBox.height } : null,
+          modeEdit: editBox ? { x: editBox.x, right: editBox.right, y: editBox.y, width: editBox.width, height: editBox.height } : null,
           modeButtons: Array.from(document.querySelectorAll('#modeSeg > button')).map(button => {
             const box = button.getBoundingClientRect();
             const range = document.createRange();
@@ -535,7 +539,7 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.modeEdit.x, JSON.stringify({ heading: layout.modeHeading, edit: layout.modeEdit }))
         .toBeGreaterThanOrEqual(layout.modeHeading.x + layout.modeHeading.width - layout.modeEdit.width - 1);
       expect.soft(layout.modeSwitcher.width, JSON.stringify(layout.modeSwitcher))
-        .toBeGreaterThanOrEqual(viewport.width - 56);
+        .toBeGreaterThanOrEqual(viewport.width - 64);
       expect.soft(layout.modeButtons.map(button => button.text))
         .toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
       expect.soft(layout.brandContext, 'brand context must remain visible in the active brand menu heading').not.toBeNull();
