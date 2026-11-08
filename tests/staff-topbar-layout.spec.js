@@ -35,37 +35,30 @@ async function mockStaffSession(page, role = 'admin') {
   });
 }
 
-test('admin action bar stays separate from the two-row menu header', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await mockStaffSession(page);
-  await page.goto('/?brand=delivery');
-  await page.waitForFunction(() =>
-    window.me && window.me.role === 'admin' &&
-    document.documentElement.hasAttribute('data-staff-ready') &&
-    typeof window.syncBrandViews === 'function'
-  );
-  await page.evaluate(() => window.setMode('admin'));
-  const bar = page.locator('#adminBar');
-  await expect(bar).toBeVisible();
-  const dimensions = await bar.evaluate((element) => ({
-    width: element.getBoundingClientRect().width,
-    parentWidth: element.parentElement.getBoundingClientRect().width,
-    scrollWidth: element.scrollWidth,
-    clientWidth: element.clientWidth,
-    overflowX: getComputedStyle(element).overflowX,
-    children: Array.from(element.querySelectorAll(':scope > button:not([hidden])')).map(button => ({
-      width: button.getBoundingClientRect().width,
-      height: button.getBoundingClientRect().height,
-      y: button.getBoundingClientRect().y,
-    })),
-  }));
-  expect(dimensions.width).toBeGreaterThan(240);
-  expect(dimensions.width).toBeLessThanOrEqual(dimensions.parentWidth + 1);
-  expect(dimensions.overflowX).toBe('visible');
-  expect(dimensions.children).toHaveLength(3);
-  expect(dimensions.children.every(button => button.height === 44)).toBe(true);
-  expect(new Set(dimensions.children.map(button => Math.round(button.y))).size).toBe(1);
-  expect(await bar.evaluate(element => element.closest('.menu-head'))).toBeNull();
+test('mobile menu header has only the two requested rows', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: width === 320 ? 740 : 844 });
+      await mockStaffSession(page);
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(() =>
+        window.me && window.me.role === 'admin' &&
+        document.documentElement.hasAttribute('data-staff-ready')
+      );
+      await page.evaluate(() => window.setMode('admin'));
+      await expect(page.locator('#adminBar')).toBeHidden();
+      const header = page.locator((brand === 'coffee' ? '#menuView' : '#deliveryView') + ' .menu-head');
+      await expect(header.locator('.menu-controls-row')).toBeVisible();
+      await expect(header.locator('.mh-right')).toBeVisible();
+      const rows = await header.locator('.mh-top').evaluate(top =>
+        Array.from(top.children).map(element =>
+          element.classList.contains('menu-controls-row') ? 'title-roles-edit' :
+          element.classList.contains('mh-right') ? 'search-support' : 'unexpected'
+        )
+      );
+      expect(rows).toEqual(['title-roles-edit', 'search-support']);
+    }
+  }
 });
 
 test('staff menu header is exactly two rows for both brands and mobile widths', async ({ page }, testInfo) => {
