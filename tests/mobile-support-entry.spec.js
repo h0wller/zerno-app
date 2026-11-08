@@ -17,7 +17,7 @@ const VIEWPORTS = [
 
 for (const brand of BRANDS) {
   for (const viewport of VIEWPORTS) {
-    test(`${brand.id}: support remains a floating launcher outside the search row at ${viewport.name}`, async ({ page }) => {
+    test(`${brand.id}: support stays in a separate 44px action beside the search on mobile at ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => {
         localStorage.clear();
@@ -41,12 +41,13 @@ for (const brand of BRANDS) {
       await expect(supportHost).toHaveAttribute('aria-label', 'Поддержка');
       await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
       await expect(search).toBeVisible({ timeout: 15000 });
-      await expect(support).toHaveCSS('position', 'fixed');
-      await expect(support).toHaveCSS('width', '56px');
-      await expect(support).toHaveCSS('height', '56px');
-      await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
-
       if (viewport.width <= 820) {
+        await expect(support).toHaveCSS('position', 'relative');
+        await expect(support).toHaveCSS('width', '44px');
+        await expect(support).toHaveCSS('height', '44px');
+        await expect.poll(() => supportHost.evaluate((el) =>
+          el.parentElement === document.querySelector(`${brand.view} .mh-right`)
+        )).toBe(true);
         const geometry = await page.evaluate(({ view }) => {
           const toolbar = document.querySelector(`${view} .mh-right`);
           const searchRect = toolbar.querySelector('.search').getBoundingClientRect();
@@ -62,6 +63,7 @@ for (const brand of BRANDS) {
             toolbarWidth: toolbarRect.width,
             searchHeight: searchRect.height,
             supportInsideToolbar: toolbar.contains(supportHost),
+            supportIsSiblingOfSearch: supportHost.previousElementSibling === toolbar.querySelector('.search'),
             supportRight: supportRect.right,
             supportBottom: supportRect.bottom,
             viewportWidth: document.documentElement.clientWidth,
@@ -70,9 +72,10 @@ for (const brand of BRANDS) {
           };
         }, { view: brand.view });
 
-        expect(geometry.searchWidth).toBeGreaterThanOrEqual(geometry.toolbarWidth - 2);
+        expect(geometry.searchWidth).toBeGreaterThanOrEqual(viewport.width <= 320 ? 120 : 180);
         expect(geometry.searchHeight).toBeGreaterThanOrEqual(44);
-        expect(geometry.supportInsideToolbar).toBe(false);
+        expect(geometry.supportInsideToolbar).toBe(true);
+        expect(geometry.supportIsSiblingOfSearch).toBe(true);
         expect(geometry.intersects).toBe(false);
         expect(geometry.supportRight).toBeLessThanOrEqual(geometry.viewportWidth + 1);
         expect(geometry.supportBottom).toBeLessThanOrEqual(geometry.viewportHeight + 1);
@@ -93,14 +96,30 @@ for (const brand of BRANDS) {
 
       const crossBreakpointWidth = viewport.width <= 820 ? 1440 : 390;
       await page.setViewportSize({ width: crossBreakpointWidth, height: 900 });
-      await expect(support).toHaveCSS('position', 'fixed');
-      await expect(support).toHaveCSS('width', '56px');
-      await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
+      if (crossBreakpointWidth <= 820) {
+        await expect(support).toHaveCSS('position', 'relative');
+        await expect(support).toHaveCSS('width', '44px');
+        await expect.poll(() => supportHost.evaluate((el) =>
+          el.parentElement === document.querySelector(`${brand.view} .mh-right`)
+        )).toBe(true);
+      } else {
+        await expect(support).toHaveCSS('position', 'fixed');
+        await expect(support).toHaveCSS('width', '56px');
+        await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
+      }
 
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await expect(support).toHaveCSS('position', 'fixed');
-      await expect(support).toHaveCSS('width', '56px');
-      await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
+      if (viewport.width <= 820) {
+        await expect(support).toHaveCSS('position', 'relative');
+        await expect(support).toHaveCSS('width', '44px');
+        await expect.poll(() => supportHost.evaluate((el) =>
+          el.parentElement === document.querySelector(`${brand.view} .mh-right`)
+        )).toBe(true);
+      } else {
+        await expect(support).toHaveCSS('position', 'fixed');
+        await expect(support).toHaveCSS('width', '56px');
+        await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
+      }
     });
   }
 }
