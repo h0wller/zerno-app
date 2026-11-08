@@ -305,7 +305,9 @@ function syncStaffAndGuestControls(bName2) {
       adminBar.querySelectorAll(':scope > button:not(#editToggle)'),
       function (button) { return !button.hidden; }
     );
-    adminBar.hidden = !staffReady || !((confirmedStaff && me.role === 'admin') || canEdit || hasAdminActions);
+    var mobileMenuToolbar = menuPlacement && window.matchMedia('(max-width: 820px)').matches;
+    adminBar.hidden = !staffReady || mobileMenuToolbar ||
+      !((confirmedStaff && me.role === 'admin') || canEdit || hasAdminActions);
     adminBar.style.removeProperty('display');
   }
 
