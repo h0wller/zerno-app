@@ -1187,9 +1187,9 @@ html body #adminBar.adminBar[hidden] { display:none; }
 }
 
 
-/* Mobile staff menu keeps exactly two visible toolbar rows; legacy shortcuts are not a third row. */
+/* A hidden admin action bar must never reserve a third row in the mobile menu. */
 @media (max-width: 820px) {
-  html[data-staff-role] body #adminBar.adminBar:not([hidden]) {
-    display: none;
+  html[data-staff-role] body #adminBar.adminBar[hidden] {
+    display: none !important;
   }
 }
