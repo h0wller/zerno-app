@@ -107,7 +107,7 @@ test('staff switcher stays in the visible menu heading and replaces the logo whe
       supportFabInsideLandmark: document.getElementById('chatFab')?.parentElement === document.getElementById('supportLauncherHost'),
       modeBeforeEdit: !!titleRow && Array.from(titleRow.children).indexOf(seg.closest('.mode-seg-slot')) < Array.from(titleRow.children).indexOf(edit),
       controlsRight: !!titleRow && Math.abs(edit.getBoundingClientRect().right-titleRow.getBoundingClientRect().right)<=2,
-      modeBeforeEditGap: edit.getBoundingClientRect().left-seg.getBoundingClientRect().right,
+      rolesBelowEdit: seg.getBoundingClientRect().top >= edit.getBoundingClientRect().bottom + 3,
       adminBarInMenuRow: document.getElementById('adminBar').parentElement===titleRow,
       fabVisibleForGuestView: getComputedStyle(document.getElementById('chatFab')).display !== 'none',
       railWidth: document.getElementById('deliveryRail').getBoundingClientRect().width,
@@ -125,8 +125,7 @@ test('staff switcher stays in the visible menu heading and replaces the logo whe
   expect(guestLayout.modeInMenuRow).toBe(true);
   expect(guestLayout.modeBeforeEdit).toBe(true);
   expect(guestLayout.controlsRight).toBe(true);
-  expect(guestLayout.modeBeforeEditGap).toBeGreaterThanOrEqual(0);
-  expect(guestLayout.modeBeforeEditGap).toBeGreaterThanOrEqual(8);
+  expect(guestLayout.rolesBelowEdit).toBe(true);
   expect(guestLayout.adminBarInMenuRow).toBe(false);
   expect(guestLayout.fabVisibleForGuestView).toBe(true);
   expect(guestLayout.railWidth).toBe(80);
@@ -184,9 +183,9 @@ test('staff switcher stays in the visible menu heading and replaces the logo whe
   await expect(page.locator('#dashToggle')).toBeVisible();
   await expect(page.locator('#chatsToggle2')).toBeVisible();
   expect(guestLayout.headerHeight).toBeLessThanOrEqual(64);
-  expect(guestLayout.modeHeight).toBe(32);
+  expect(guestLayout.modeHeight).toBe(36);
   expect(guestLayout.buttons).toHaveLength(4);
-  expect(guestLayout.buttons.every(height => height === 32)).toBe(true);
+  expect(guestLayout.buttons.every(height => height === 36)).toBe(true);
   expect(guestLayout.buttonWidths.every(width => width > 0 && width <= 76)).toBe(true);
   expect(guestLayout.editNextToRoles).toBe(true);
   expect(guestLayout.editBox).toEqual({ width: 32, height: 32 });
@@ -435,7 +434,7 @@ for (const brand of ['coffee', 'delivery']) {
             buttons: visibleButtons
           },
           modeSwitcher: rect('#modeSeg'),
-          menuRail: rect(brand === 'coffee' ? '#rail' : '#deliveryRail'),
+          menuHead: rect(brand === 'coffee' ? '#menuView .menu-head' : '#deliveryView .menu-head'),
           modeSlot: modeSlotRect ? {
             x: modeSlotRect.x,
             right: modeSlotRect.right,
@@ -520,31 +519,31 @@ for (const brand of ['coffee', 'delivery']) {
 
       expect.soft(layout.modeSlot, 'role switcher must have an unclipped full-width slot')
         .not.toBeNull();
-      expect.soft(layout.menuRail, 'active menu rail must anchor the content column').not.toBeNull();
+      expect.soft(layout.menuHead, 'mobile menu header must retain its full content width').not.toBeNull();
       expect.soft(layout.modeSlot.width, JSON.stringify(layout.modeSlot))
-        .toBeGreaterThanOrEqual(viewport.width - 120);
+        .toBeGreaterThanOrEqual(viewport.width - 56);
       expect.soft(layout.modeSlot.y, JSON.stringify({ heading: layout.modeHeading, slot: layout.modeSlot }))
         .toBeGreaterThanOrEqual(layout.modeHeading.y + layout.modeHeading.height + 3);
-      expect.soft(layout.modeSlot.x, JSON.stringify({ rail: layout.menuRail, slot: layout.modeSlot }))
-        .toBeGreaterThanOrEqual(layout.menuRail.right + 4);
-      expect.soft(layout.modeSlot.right, JSON.stringify(layout.modeSlot))
-        .toBeLessThanOrEqual(viewport.width - 8);
+      expect.soft(layout.modeSlot.x, JSON.stringify({ menuHead: layout.menuHead, slot: layout.modeSlot }))
+        .toBeGreaterThanOrEqual(layout.menuHead.x + 8);
+      expect.soft(layout.modeSlot.right, JSON.stringify({ menuHead: layout.menuHead, slot: layout.modeSlot }))
+        .toBeLessThanOrEqual(layout.menuHead.right - 8);
       expect.soft(layout.modeEdit.y, JSON.stringify({ heading: layout.modeHeading, edit: layout.modeEdit }))
         .toBeLessThanOrEqual(layout.modeHeading.y + layout.modeHeading.height + 1);
       expect.soft(layout.modeEdit.x, JSON.stringify({ heading: layout.modeHeading, edit: layout.modeEdit }))
         .toBeGreaterThanOrEqual(layout.modeHeading.x + layout.modeHeading.width - layout.modeEdit.width - 1);
       expect.soft(layout.modeSwitcher.width, JSON.stringify(layout.modeSwitcher))
-        .toBeGreaterThanOrEqual(viewport.width - 120);
+        .toBeGreaterThanOrEqual(viewport.width - 56);
       expect.soft(layout.modeButtons.map(button => button.text))
         .toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
       expect.soft(layout.brandContext, 'brand context must remain visible in the active brand menu heading').not.toBeNull();
       expect.soft(layout.brandContext.display).not.toBe('none');
       expect.soft(layout.brandContext.width).toBeGreaterThan(0);
-      expect.soft(layout.menuRowOrder).toEqual(['h1', 'edit', 'roles']);
+      expect.soft(layout.menuRowOrder).toEqual(['h1', 'roles', 'edit']);
       expect.soft(layout.modeButtons.every(button =>
         !button.hidden &&
         button.display !== 'none' &&
-        button.width >= (viewport.width <= 350 ? 48 : 56) &&
+        button.width >= (viewport.width <= 350 ? 60 : 72) &&
         button.fontSize >= 11 &&
         button.textWidth <= button.width - 4 &&
         button.scrollWidth <= button.clientWidth + 1 &&
