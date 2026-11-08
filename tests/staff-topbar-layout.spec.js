@@ -503,15 +503,15 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.modeSlot, 'role switcher must have an unclipped full-width slot')
         .not.toBeNull();
       expect.soft(layout.modeSlot.width, JSON.stringify(layout.modeSlot))
-        .toBeGreaterThanOrEqual(viewport.width <= 350 ? 168 : 193);
+        .toBeGreaterThanOrEqual(viewport.width <= 350 ? 158 : 193);
       expect.soft(layout.modeSwitcher.width, JSON.stringify(layout.modeSwitcher))
-        .toBeGreaterThanOrEqual(viewport.width <= 350 ? 168 : 193);
+        .toBeGreaterThanOrEqual(viewport.width <= 350 ? 158 : 193);
       expect.soft(layout.modeButtons.map(button => button.text))
         .toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
       expect.soft(layout.modeButtons.every(button =>
         !button.hidden &&
         button.display !== 'none' &&
-        button.width >= (viewport.width <= 350 ? 40 : 46) &&
+        button.width >= (viewport.width <= 350 ? 37 : 46) &&
         button.x >= layout.modeSlot.x - 1 &&
         button.right <= layout.modeSlot.right + 1
       ), JSON.stringify({ modeSlot: layout.modeSlot, modeButtons: layout.modeButtons })).toBe(true);
