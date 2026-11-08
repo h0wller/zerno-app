@@ -751,8 +751,7 @@ html body #adminBar.adminBar[hidden] { display:none !important; }
   }
 
   html body #deliveryView #deliverySubFilter .subchip,
-  html body #deliveryView .subfilter-bar .subchip,
-  html body #menuView .subfilter-bar .subchip {
+  html body #deliveryView .subfilter-bar .subchip {
     box-sizing:border-box;
     height:40px;
     min-height:40px;
@@ -764,13 +763,11 @@ html body #adminBar.adminBar[hidden] { display:none !important; }
     padding:0 14px;
   }
   html body #deliveryView #deliverySubFilter .subchip:hover,
-  html body #deliveryView .subfilter-bar .subchip:hover,
-  html body #menuView .subfilter-bar .subchip:hover {
+  html body #deliveryView .subfilter-bar .subchip:hover {
     background:var(--fr-rice,var(--panel));
   }
   html body #deliveryView #deliverySubFilter .subchip.on,
-  html body #deliveryView .subfilter-bar .subchip.on,
-  html body #menuView .subfilter-bar .subchip.on {
+  html body #deliveryView .subfilter-bar .subchip.on {
     background:var(--flame);
     border-color:var(--fr-choc);
     color:#fff;
