@@ -138,13 +138,14 @@ test('delivery desktop header uses the brand font, preserves cart centering, and
     const brand = page.locator('header.topbar #headerBrand');
     await expect(brand).toBeVisible();
     const details = await brand.evaluate((element) => {
-      const text = element.querySelector('b, small, .brand-text');
-      return { visible: !!text && getComputedStyle(text).display !== 'none', font: text && getComputedStyle(text).fontFamily };
+      const text = element.querySelector('small#brandSub');
+      return { visible: !!text && getComputedStyle(text).display !== 'none', font: text && getComputedStyle(text).fontFamily, color: text && getComputedStyle(text).color };
     });
     expect(details.visible, 'delivery brand text must be visible at >=820px').toBe(true);
     expect(details.font).toContain('Unbounded');
+    expect(details.color).toBe('rgb(58, 42, 28)');
     const cart = page.locator('#cartFab');
-    await expect(cart).toBeVisible();
+    await expect(cart).toBeAttached();
     const cartCenter = await cart.evaluate(el => { const r=el.getBoundingClientRect(); return r.left+r.width/2; });
     expect(Math.abs(cartCenter - width / 2), 'cart launcher must remain centered').toBeLessThanOrEqual(2);
     const active = page.locator('#deliverySubFilter .subchip.on');
