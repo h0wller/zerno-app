@@ -409,6 +409,11 @@ for (const brand of ['coffee', 'delivery']) {
         const supportRow = support.parentElement;
         const supportRowRect = supportRow.getBoundingClientRect();
         const supportRowStyle = getComputedStyle(supportRow);
+        const supportTop = supportRow.closest('.mh-top');
+        const supportTopRect = supportTop.getBoundingClientRect();
+        const supportTopStyle = getComputedStyle(supportTop);
+        const modeSlot = document.querySelector('.menu-controls-row > .mode-seg-slot');
+        const modeSlotRect = modeSlot?.getBoundingClientRect();
         return {
           viewportWidth: document.documentElement.clientWidth,
           documentWidth: document.documentElement.scrollWidth,
@@ -430,9 +435,23 @@ for (const brand of ['coffee', 'delivery']) {
             buttons: visibleButtons
           },
           modeSwitcher: rect('#modeSeg'),
+          modeSlot: modeSlotRect ? {
+            x: modeSlotRect.x,
+            right: modeSlotRect.right,
+            width: modeSlotRect.width,
+            overflowX: getComputedStyle(modeSlot).overflowX,
+            overflowY: getComputedStyle(modeSlot).overflowY
+          } : null,
           modeButtons: Array.from(document.querySelectorAll('#modeSeg > button')).map(button => {
             const box = button.getBoundingClientRect();
-            return { width: box.width, text: button.textContent.trim(), hidden: button.hidden };
+            return {
+              x: box.x,
+              right: box.right,
+              width: box.width,
+              text: button.textContent.trim(),
+              hidden: button.hidden,
+              display: getComputedStyle(button).display
+            };
           }),
           support: {
             width: supportRect.width,
@@ -440,12 +459,17 @@ for (const brand of ['coffee', 'delivery']) {
             right: supportRect.right,
             fabWidth: fabRect.width,
             fabHeight: fabRect.height,
+            fabTop: fabRect.top,
+            fabBottom: fabRect.bottom,
             fabInsideHost: fab.parentElement === support,
+            rowTop: supportRowRect.top,
             rowHeight: supportRowRect.height,
             rowClientHeight: supportRow.clientHeight,
             rowOverflowY: supportRowStyle.overflowY,
             hostBottom: supportRect.bottom,
-            rowBottom: supportRowRect.bottom
+            rowBottom: supportRowRect.bottom,
+            topHeight: supportTopRect.height,
+            topOverflowY: supportTopStyle.overflowY
           }
         };
       });
@@ -476,15 +500,21 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.adminBar.scrollWidth, JSON.stringify(layout.adminBar))
         .toBeLessThanOrEqual(layout.adminBar.clientWidth + 1);
 
-      if (brand === 'coffee') {
-        expect.soft(layout.modeSwitcher.width, JSON.stringify(layout.modeSwitcher))
-          .toBeGreaterThanOrEqual(viewport.width <= 350 ? 190 : 240);
-        expect.soft(layout.modeButtons.map(button => button.text))
-          .toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
-        expect.soft(layout.modeButtons.every(button =>
-          !button.hidden && button.width >= (viewport.width <= 350 ? 46 : 58)
-        ), JSON.stringify(layout.modeButtons)).toBe(true);
-      }
+      expect.soft(layout.modeSlot, 'role switcher must have an unclipped full-width slot')
+        .not.toBeNull();
+      expect.soft(layout.modeSlot.width, JSON.stringify(layout.modeSlot))
+        .toBeGreaterThanOrEqual(viewport.width <= 350 ? 168 : 193);
+      expect.soft(layout.modeSwitcher.width, JSON.stringify(layout.modeSwitcher))
+        .toBeGreaterThanOrEqual(viewport.width <= 350 ? 168 : 193);
+      expect.soft(layout.modeButtons.map(button => button.text))
+        .toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
+      expect.soft(layout.modeButtons.every(button =>
+        !button.hidden &&
+        button.display !== 'none' &&
+        button.width >= (viewport.width <= 350 ? 40 : 46) &&
+        button.x >= layout.modeSlot.x - 1 &&
+        button.right <= layout.modeSlot.right + 1
+      ), JSON.stringify({ modeSlot: layout.modeSlot, modeButtons: layout.modeButtons })).toBe(true);
 
       expect.soft(layout.support.width).toBe(44);
       expect.soft(layout.support.height).toBe(44);
@@ -494,6 +524,12 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.support.rowHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(44);
       expect.soft(layout.support.rowClientHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(44);
       expect.soft(layout.support.rowOverflowY, JSON.stringify(layout.support)).toBe('visible');
+      expect.soft(layout.support.topHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(80);
+      expect.soft(layout.support.topOverflowY, JSON.stringify(layout.support)).toBe('visible');
+      expect.soft(layout.support.fabTop, JSON.stringify(layout.support))
+        .toBeGreaterThanOrEqual(layout.support.rowTop - 1);
+      expect.soft(layout.support.fabBottom, JSON.stringify(layout.support))
+        .toBeLessThanOrEqual(layout.support.rowBottom + 1);
       expect.soft(layout.support.hostBottom, JSON.stringify(layout.support))
         .toBeLessThanOrEqual(layout.support.rowBottom + 1);
       expect.soft(layout.support.right).toBeLessThanOrEqual(viewport.width - 8);
