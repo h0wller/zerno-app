@@ -285,7 +285,11 @@ test('baseline: админ', async ({ page }) => {
   const adminBar = page.locator('#adminBar');
   await expect(adminBar).toBeVisible({ timeout: 10000 });
   await expect(adminBar).toHaveCSS('flex-wrap', 'nowrap');
-  await expect(adminBar).toHaveCSS('overflow-x', 'auto');
+  await expect(adminBar).toHaveCSS('overflow-x', 'visible');
+  await expect(page.locator('#promoToggle')).toBeVisible();
+  await expect(page.locator('#dashToggle')).toBeVisible();
+  await expect(page.locator('#chatsToggle2')).toBeVisible();
+  await expect(adminBar.locator(':scope > button:not([hidden])')).toHaveCount(3);
 
   const activeMode = page.locator('#modeSeg [data-mode="admin"]');
   await expect(activeMode).toHaveCSS('background-color', 'rgb(187, 215, 242)');
