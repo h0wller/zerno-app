@@ -11,8 +11,10 @@ if (IN_TG) document.body.classList.add('in-tg');
 /* Ф3.56: safe-area фолбэк строго для iOS standalone без вызова принудительного reflow */
 (function () {
   var isStandalone = (navigator.standalone === true) || matchMedia('(display-mode: standalone)').matches;
-  var isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  var isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (isStandalone && isIos) {
+    document.documentElement.classList.add('is-ios-standalone');
     document.documentElement.style.setProperty('--sat', '47px');
   }
 })();
