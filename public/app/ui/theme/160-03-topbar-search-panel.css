@@ -172,7 +172,7 @@ html .wrap > #panel:not(.open):not(.show) {
   #deliveryView .mh-top {
     display:grid;
     grid-template-columns:minmax(0,1fr);
-    grid-template-rows:32px 32px;
+    grid-template-rows:32px 40px;
     gap:4px;
     width:100%;
     min-width:0;
