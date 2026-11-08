@@ -845,6 +845,10 @@ html body #adminBar.adminBar[hidden] { display:none !important; }
     align-content:center;
   }
 
+  html[data-staff-role] body #adminBar.adminBar > #chatsToggle2:not([hidden]) {
+    grid-column:auto;
+  }
+
   html[data-staff-role] body #adminBar.adminBar > #promoToggle:not([hidden]),
   html[data-staff-role] body #adminBar.adminBar > #dashToggle:not([hidden]),
   html[data-staff-role] body #adminBar.adminBar > #chatsToggle2:not([hidden]) {
