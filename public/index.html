@@ -807,8 +807,9 @@ html[data-brand="delivery"] {
   }
   html body #deliveryView .menu-head .upd { display:inline-flex; }
   html body .menu-head .mh-top {
-    display:flex;
-    flex-direction:column;
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto;
     align-items:stretch;
     gap:10px;
     width:100%;
@@ -817,6 +818,8 @@ html[data-brand="delivery"] {
     max-height:none;
   }
   html body .menu-head .mh-top > div:first-child {
+    grid-column:1;
+    grid-row:1;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -830,6 +833,8 @@ html[data-brand="delivery"] {
   }
   html body #menuView .menu-head .mh-top > .mh-right,
   html body #deliveryView .menu-head .mh-top > .mh-right {
+    grid-column:1;
+    grid-row:2;
     display:flex;
     flex:1 1 100%;
     width:100%;
