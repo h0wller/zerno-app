@@ -111,7 +111,7 @@ var rules = [
 
  '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
   '[data-brand="coffee"] #modeSeg button.on{background:#BBD7F2;color:#123A6B;box-shadow:0 2px 7px rgba(18,58,107,.16)}',
-  '@media(max-width:820px){[data-brand="coffee"] .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg{box-sizing:border-box;flex:0 0 clamp(160px,50vw,194px);width:clamp(160px,50vw,194px);min-width:clamp(160px,50vw,194px);max-width:clamp(160px,50vw,194px);justify-content:stretch;gap:0;overflow:hidden}[data-brand="coffee"] .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg button{box-sizing:border-box;flex:1 1 0;width:50%;min-width:0;max-width:none;padding:0 8px;font-size:10px;text-align:center}}',
+  '@media(max-width:820px){[data-brand="coffee"] .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg{box-sizing:border-box;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));flex:0 0 clamp(190px,62vw,244px);width:clamp(190px,62vw,244px);min-width:clamp(190px,62vw,244px);max-width:clamp(190px,62vw,244px);justify-content:stretch;gap:0;overflow:hidden}[data-brand="coffee"] .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg button{box-sizing:border-box;display:flex;flex:1 1 0;width:auto;min-width:0;max-width:none;padding:0 3px;font-size:9px;text-align:center;justify-content:center;white-space:nowrap}}',
  
 
  '@media(min-width:1181px){body.is-cashier .panel{display:none}body.is-cashier .wrap{grid-template-columns:1fr}.topbar > :last-child{margin-left:0!important}#profileTopBtn{margin-left:auto;}}',
