@@ -14,7 +14,7 @@ const VIEWPORTS = [
 
 for (const brand of CASES) {
   for (const viewport of VIEWPORTS) {
-    test(`${brand.brand}: menu header geometry and viewport-centered rail at ${viewport.name}`, async ({ page }) => {
+    test(`${brand.brand}: menu header geometry and card-aligned rail at ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
       await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
@@ -34,21 +34,12 @@ for (const brand of CASES) {
       if (viewport.width <= 820) {
         await expect(topbar).toHaveCSS('border-bottom-width', '0px');
       }
-      const initialRail = await page.evaluate(({ headSelector, railSelector }) => {
+      const initialRailDelta = await page.evaluate(({ headSelector, railSelector }) => {
         const head = document.querySelector(headSelector).getBoundingClientRect();
         const rail = document.querySelector(railSelector).getBoundingClientRect();
-        const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-        const clearanceTop = Math.max(0, head.bottom, topbar.bottom) + 12;
-        const targetCenter = (clearanceTop + window.innerHeight - 12) / 2;
-        return {
-          centerDelta: Math.abs((rail.top + rail.height / 2) - targetCenter),
-          headGap: rail.top - head.bottom,
-          topbarGap: rail.top - topbar.bottom,
-        };
+        return Math.abs(head.top - rail.top);
       }, { headSelector: brand.head, railSelector: brand.rail });
-      expect(initialRail.centerDelta).toBeLessThanOrEqual(2);
-      expect(initialRail.headGap, 'rail must start below the menu title and search').toBeGreaterThanOrEqual(8);
-      expect(initialRail.topbarGap, 'rail must not overlap the topbar').toBeGreaterThanOrEqual(8);
+      expect(initialRailDelta, 'rail top aligns with menu card top').toBeLessThanOrEqual(2);
       await expect.poll(() => ticker.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 5000 }).toBe(brand.tickerBg);
 
       const layout = await page.evaluate(({ headSelector, railSelector }) => {
@@ -99,14 +90,11 @@ for (const brand of CASES) {
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      await expect.poll(() => page.evaluate(({ headSelector, railSelector }) => {
-        const head = document.querySelector(headSelector).getBoundingClientRect();
+      await expect.poll(() => page.evaluate(({ railSelector }) => {
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-        const clearanceTop = Math.max(0, head.bottom, topbar.bottom) + 12;
-        const targetCenter = (clearanceTop + window.innerHeight - 12) / 2;
-        return Math.abs((rail.top + rail.height / 2) - targetCenter);
-      }, { headSelector: brand.head, railSelector: brand.rail }), { timeout: 5000 }).toBeLessThanOrEqual(2);
+        return rail.top - topbar.bottom;
+      }, { railSelector: brand.rail }), { timeout: 5000 }).toBeGreaterThanOrEqual(10);
       const afterScroll = await page.evaluate(({ headSelector, railSelector }) => {
         const head = document.querySelector(headSelector).getBoundingClientRect();
         const rail = document.querySelector(railSelector).getBoundingClientRect();
@@ -117,11 +105,7 @@ for (const brand of CASES) {
           topbarBottom: topbar.bottom,
         };
       }, { headSelector: brand.head, railSelector: brand.rail });
-      expect(afterScroll.railTop).toBeGreaterThanOrEqual(Math.max(
-        0,
-        afterScroll.menuHeadBottom,
-        afterScroll.topbarBottom
-      ) + 8);
+      expect(afterScroll.railTop).toBeGreaterThanOrEqual(afterScroll.topbarBottom + 10);
     });
   }
 }
