@@ -46,7 +46,7 @@ test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степп
     if ((await subchip.count()) > 0) {
       await expect(subchip).toBeVisible();
       const chipBox = await subchip.boundingBox();
-      expect(Math.round(chipBox.height)).toBe(32);
+      expect(Math.round(chipBox.height)).toBe(40);
       expect(chipBox.width).toBeGreaterThanOrEqual(58);
     }
 
