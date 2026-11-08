@@ -368,7 +368,7 @@ for (const brand of ['coffee', 'delivery']) {
       await expect(page.locator('#chatsToggle2')).toBeVisible();
       await expect(page.locator('#chatFab')).toBeVisible();
 
-      const layout = await page.evaluate(() => {
+      const layout = await page.evaluate((brand) => {
         const rect = (selector) => {
           const element = document.querySelector(selector);
           if (!element) return null;
@@ -466,7 +466,10 @@ for (const brand of ['coffee', 'delivery']) {
               display: style.display
             };
           }),
-          brandContext: rect('.menu-head h1 em'),
+          brandContext: rect(brand === 'coffee' ? '#menuView .menu-head h1 em' : '#deliveryView .menu-head h1 em'),
+          menuRowOrder: Array.from(document.querySelector('.menu-controls-row').children).map(element =>
+            element.id === 'editToggle' ? 'edit' : element.classList.contains('mode-seg-slot') ? 'roles' : element.tagName.toLowerCase()
+          ),
           support: {
             width: supportRect.width,
             height: supportRect.height,
@@ -486,7 +489,7 @@ for (const brand of ['coffee', 'delivery']) {
             topOverflowY: supportTopStyle.overflowY
           }
         };
-      });
+      }, brand);
 
       expect.soft(layout.header.height, JSON.stringify(layout.header)).toBe(60);
       expect.soft(layout.header.paddingTop, JSON.stringify(layout.header)).toBe('4px');
@@ -529,7 +532,10 @@ for (const brand of ['coffee', 'delivery']) {
         .toBeGreaterThanOrEqual(viewport.width - 55);
       expect.soft(layout.modeButtons.map(button => button.text))
         .toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
-      expect.soft(layout.brandContext, 'brand context must remain visible in the menu heading').not.toBeNull();
+      expect.soft(layout.brandContext, 'brand context must remain visible in the active brand menu heading').not.toBeNull();
+      expect.soft(layout.brandContext.display).not.toBe('none');
+      expect.soft(layout.brandContext.width).toBeGreaterThan(0);
+      expect.soft(layout.menuRowOrder).toEqual(['h1', 'edit', 'roles']);
       expect.soft(layout.modeButtons.every(button =>
         !button.hidden &&
         button.display !== 'none' &&
@@ -554,7 +560,7 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.support.rowHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(44);
       expect.soft(layout.support.rowClientHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(44);
       expect.soft(layout.support.rowOverflowY, JSON.stringify(layout.support)).toBe('visible');
-      expect.soft(layout.support.topHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(80);
+      expect.soft(layout.support.topHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(116);
       expect.soft(layout.support.topOverflowY, JSON.stringify(layout.support)).toBe('visible');
       expect.soft(layout.support.fabTop, JSON.stringify(layout.support))
         .toBeGreaterThanOrEqual(layout.support.rowTop - 1);
