@@ -43,6 +43,20 @@ for (const brand of BRANDS) {
       await expect(search).toBeVisible({ timeout: 15000 });
 
       if (viewport.width <= 820) {
+        const targets = await page.evaluate(({ view }) => {
+          const box = (element) => {
+            const rect = element.getBoundingClientRect();
+            return { width: rect.width, height: rect.height };
+          };
+          return {
+            launcherHost: box(document.querySelector(`${view} #supportLauncherHost`)),
+            launcher: box(document.querySelector(`${view} #chatFab`)),
+            search: box(document.querySelector(`${view} .mh-right .search`))
+          };
+        }, { view: brand.view });
+        expect(targets.launcherHost).toEqual({ width: 44, height: 44 });
+        expect(targets.launcher).toEqual({ width: 44, height: 44 });
+        expect(targets.search.height).toBe(40);
         await expect(support).toHaveCSS('position', 'relative');
         await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
 

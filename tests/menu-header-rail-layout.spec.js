@@ -153,7 +153,7 @@ test('menu headings stay compact while retaining their brand context', async ({ 
       expect(geometry.left).toBeGreaterThanOrEqual(0);
       expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
       expect(geometry.title).toBe('Меню');
-      expect(typeof geometry.taglineVisible).toBe('boolean');
+      expect(geometry.taglineVisible).toBe(false);
     }
   }
 });
