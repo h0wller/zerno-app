@@ -437,6 +437,22 @@ body[data-brand="delivery"] .topbar .brand .mark {
     z-index: 1;
     overflow: visible;
   }
+  html[data-brand="coffee"] header.topbar div#headerBrand.brand > div:not(.mark) {
+    display:flex;
+    position:relative;
+    flex:0 1 128px;
+    min-width:0;
+    overflow:visible;
+  }
+  html[data-brand="coffee"] header.topbar div#headerBrand.brand #brandTitle {
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    font-size:clamp(15px,4.8vw,19px);
+    line-height:24px;
+    white-space:nowrap;
+  }
+  html[data-brand="coffee"] header.topbar div#headerBrand.brand #brandSub { display:none !important; }
   html[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark,
   body[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark {
     width: min(196px, 60vw);
