@@ -17,7 +17,7 @@ const VIEWPORTS = [
 
 for (const brand of BRANDS) {
   for (const viewport of VIEWPORTS) {
-    test(`${brand.id}: support action belongs to the menu toolbar at ${viewport.name}`, async ({ page }) => {
+    test(`${brand.id}: support remains a floating launcher outside the search row at ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => {
         localStorage.clear();
@@ -41,49 +41,49 @@ for (const brand of BRANDS) {
       await expect(supportHost).toHaveAttribute('aria-label', 'Поддержка');
       await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
       await expect(search).toBeVisible({ timeout: 15000 });
+      await expect(support).toHaveCSS('position', 'fixed');
+      await expect(support).toHaveCSS('width', '56px');
+      await expect(support).toHaveCSS('height', '56px');
+      await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
 
       if (viewport.width <= 820) {
-        await expect(support).toHaveCSS('position', 'relative');
-        await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
-
         const geometry = await page.evaluate(({ view }) => {
           const toolbar = document.querySelector(`${view} .mh-right`);
           const searchRect = toolbar.querySelector('.search').getBoundingClientRect();
-          const supportRect = toolbar.querySelector('#chatFab').getBoundingClientRect();
-          const supportHostRect = toolbar.querySelector('#supportLauncherHost').getBoundingClientRect();
           const toolbarRect = toolbar.getBoundingClientRect();
+          const supportHost = document.getElementById('supportLauncherHost');
+          const supportRect = document.getElementById('chatFab').getBoundingClientRect();
           const intersects = searchRect.left < supportRect.right
             && searchRect.right > supportRect.left
             && searchRect.top < supportRect.bottom
             && searchRect.bottom > supportRect.top;
           return {
-            intersects,
-            supportInsideToolbar: supportHostRect.left >= toolbarRect.left
-              && supportHostRect.right <= toolbarRect.right,
-            supportInsideLandmark: toolbar.querySelector('#chatFab').parentElement
-              === toolbar.querySelector('#supportLauncherHost'),
-            verticalCenterDelta: Math.abs(
-              (searchRect.top + searchRect.height / 2)
-              - (supportRect.top + supportRect.height / 2)
-            ),
+            searchWidth: searchRect.width,
+            toolbarWidth: toolbarRect.width,
+            searchHeight: searchRect.height,
+            supportInsideToolbar: toolbar.contains(supportHost),
+            supportRight: supportRect.right,
+            supportBottom: supportRect.bottom,
+            viewportWidth: document.documentElement.clientWidth,
+            viewportHeight: window.innerHeight,
+            intersects
           };
         }, { view: brand.view });
 
-        expect(geometry.intersects, 'support action must not overlap the search input').toBe(false);
-        expect(geometry.supportInsideToolbar).toBe(true);
-        expect(geometry.supportInsideLandmark).toBe(true);
-        expect(geometry.verticalCenterDelta).toBeLessThanOrEqual(8);
-
-        await support.click();
-        await expect(page.locator('#chatPanel')).toHaveClass(/open/);
-        const closeChat = page.locator('#chatClose');
-        await expect(closeChat).toBeVisible();
-        await closeChat.click();
-        await expect(page.locator('#chatPanel')).not.toHaveClass(/open/);
-      } else {
-        await expect(support).toHaveCSS('position', 'fixed');
-        await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
+        expect(geometry.searchWidth).toBeGreaterThanOrEqual(geometry.toolbarWidth - 2);
+        expect(geometry.searchHeight).toBeGreaterThanOrEqual(44);
+        expect(geometry.supportInsideToolbar).toBe(false);
+        expect(geometry.intersects).toBe(false);
+        expect(geometry.supportRight).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+        expect(geometry.supportBottom).toBeLessThanOrEqual(geometry.viewportHeight + 1);
       }
+
+      await support.click();
+      await expect(page.locator('#chatPanel')).toHaveClass(/open/);
+      const closeChat = page.locator('#chatClose');
+      await expect(closeChat).toBeVisible();
+      await closeChat.click();
+      await expect(page.locator('#chatPanel')).not.toHaveClass(/open/);
 
       const cartPanel = page.locator('#cartPanel');
       await cartPanel.evaluate((element) => element.classList.add('open'));
@@ -93,22 +93,14 @@ for (const brand of BRANDS) {
 
       const crossBreakpointWidth = viewport.width <= 820 ? 1440 : 390;
       await page.setViewportSize({ width: crossBreakpointWidth, height: 900 });
-      if (crossBreakpointWidth <= 820) {
-        await expect(support).toHaveCSS('position', 'relative');
-        await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
-      } else {
-        await expect(support).toHaveCSS('position', 'fixed');
-        await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
-      }
+      await expect(support).toHaveCSS('position', 'fixed');
+      await expect(support).toHaveCSS('width', '56px');
+      await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
 
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      if (viewport.width <= 820) {
-        await expect(support).toHaveCSS('position', 'relative');
-        await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
-      } else {
-        await expect(support).toHaveCSS('position', 'fixed');
-        await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
-      }
+      await expect(support).toHaveCSS('position', 'fixed');
+      await expect(support).toHaveCSS('width', '56px');
+      await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
     });
   }
 }
