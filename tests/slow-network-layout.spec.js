@@ -926,9 +926,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.modeSeg.hidden).toBe(true);
     expect(before.modeSeg.display).toBe('none');
     expect(before.adminBar.hidden).toBe(true);
-    expect(before.adminBar.display).toBe('grid');
-    expect(before.adminBar.visibility).toBe('hidden');
-    expect(before.adminBar.height).toBe(44);
+    expect(before.adminBar.display).toBe('none');
+    expect(before.adminBar.visibility).toBe('visible');
+    expect(before.adminBar.height).toBe(0);
 
     // The first-paint/CSS/font settle is asserted by the neighboring layout tests.
     // Drain those earlier entries so this threshold measures only the delayed auth interval.
@@ -995,8 +995,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.role).toBe('admin');
     expect(after.modeSeg.hidden).toBe(false);
     expect(after.modeSeg.visibility).toBe('visible');
-    expect(after.adminBar.hidden).toBe(false);
-    expect(after.adminBar.visibility).toBe('visible');
+    expect(after.adminBar.hidden).toBe(true);
+    expect(after.adminBar.display).toBe('none');
     expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
@@ -1007,13 +1007,13 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.modeSlot.height).toBe(32);
     expect(after.menuRow.height).toBe(36);
     expect(after.menuHead.height).toBe(100);
-    expect(before.modeSlot.height).toBe(36);
+    expect(before.modeSlot.height).toBe(32);
     expect(after.modeSlot.height).toBe(32);
     expect(before.menuRow.height).toBe(36);
     expect(after.menuRow.height).toBe(36);
     expect(after.modeSeg.top).toBeGreaterThanOrEqual(after.menuRow.top - 1);
     expect(after.modeSeg.top + after.modeSeg.height).toBeLessThanOrEqual(after.menuRow.top + after.menuRow.height + 1);
-    expect(Math.abs(after.adminBar.height - before.adminBar.height)).toBeLessThanOrEqual(1);
+    expect(after.adminBar.height).toBe(before.adminBar.height);
     expect(after.cls).toBeLessThan(0.01);
   });
 
