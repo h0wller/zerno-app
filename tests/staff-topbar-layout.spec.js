@@ -231,6 +231,7 @@ test('work modes keep the role switcher in the topbar and preserve the support l
   expect(cashierLayout.topbarHeight).toBeLessThanOrEqual(64);
   expect(cashierLayout.modeTop).toBeLessThanOrEqual(cashierLayout.headerBottom);
   expect(cashierLayout.topbarPosition).toBe('sticky');
+  await expect(page.locator('#adminBar')).toBeVisible();
 
   await page.evaluate(() => window.setMode('orders'));
   await expect(page.locator('#ordersView')).toBeVisible();
@@ -246,4 +247,6 @@ test('work modes keep the role switcher in the topbar and preserve the support l
   expect(ordersLayout.topbarHeight).toBeLessThanOrEqual(64);
   expect(ordersLayout.modeBottom).toBeLessThanOrEqual(ordersLayout.headerBottom);
   expect(ordersLayout.topbarPosition).toBe('sticky');
+  await expect(page.locator('#adminBar')).toBeVisible();
+  await expect(page.locator('#chatsToggle2')).toBeVisible();
 });
