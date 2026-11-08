@@ -64,7 +64,7 @@ test('admin action bar spans the content row and scrolls horizontally', async ({
   expect(dimensions.width).toBeLessThanOrEqual(dimensions.viewportWidth);
   expect(dimensions.overflowX).toBe('auto');
   expect(dimensions.children.length).toBeGreaterThan(1);
-  expect(dimensions.children.every(button => button.height === 32)).toBe(true);
+  expect(dimensions.children.every(button => button.height === 44)).toBe(true);
   expect(dimensions.scrollWidth).toBeGreaterThanOrEqual(dimensions.clientWidth);
 });
 
@@ -92,8 +92,10 @@ test('staff switcher stays in the visible menu heading and replaces the logo whe
       titleInsideRow: !!titleRow && titleRow.contains(titleRow.parentElement?.querySelector('h1')),
       searchInSecondRow: document.querySelector('#deliveryView .mh-top > .mh-right .search')?.parentElement === document.querySelector('#deliveryView .mh-top > .mh-right'),
       searchHeight: document.querySelector('#deliveryView .mh-top > .mh-right .search')?.getBoundingClientRect().height,
-      supportIsSibling: document.getElementById('supportLauncherHost')?.parentElement === document.querySelector('#deliveryView .mh-top > .mh-right'),
+      supportAtBody: document.getElementById('supportLauncherHost')?.parentElement === document.body,
       supportFabInsideLandmark: document.getElementById('chatFab')?.parentElement === document.getElementById('supportLauncherHost'),
+      supportFabPosition: getComputedStyle(document.getElementById('chatFab')).position,
+      supportFabWidth: document.getElementById('chatFab').getBoundingClientRect().width,
       modeBeforeEdit: !!titleRow && Array.from(titleRow.children).indexOf(seg.closest('.mode-seg-slot')) < Array.from(titleRow.children).indexOf(edit),
       controlsRight: !!titleRow && Math.abs(edit.getBoundingClientRect().right-titleRow.getBoundingClientRect().right)<=2,
       modeBeforeEditGap: edit.getBoundingClientRect().left-seg.getBoundingClientRect().right,
@@ -118,6 +120,9 @@ test('staff switcher stays in the visible menu heading and replaces the logo whe
   expect(guestLayout.modeBeforeEditGap).toBeGreaterThanOrEqual(8);
   expect(guestLayout.adminBarInMenuRow).toBe(false);
   expect(guestLayout.fabVisibleForGuestView).toBe(true);
+  expect(guestLayout.supportAtBody).toBe(true);
+  expect(guestLayout.supportFabPosition).toBe('fixed');
+  expect(guestLayout.supportFabWidth).toBe(56);
   expect(guestLayout.railWidth).toBe(80);
   const supportFab = page.locator('#chatFab');
   await expect(supportFab).toBeVisible();
@@ -202,11 +207,12 @@ test('staff switcher stays in the visible menu heading and replaces the logo whe
   const mobileSupport = await page.evaluate(() => {
     const host = document.getElementById('supportLauncherHost');
     return {
-      hostBesideSearch: host.parentElement === document.querySelector('#deliveryView .mh-right'),
+      hostBesideSearch: document.querySelector('#deliveryView .mh-right').contains(host),
+      hostAtBody: host.parentElement === document.body,
       fabInsideLandmark: document.getElementById('chatFab').parentElement === host
     };
   });
-  expect(mobileSupport).toEqual({ hostBesideSearch: true, fabInsideLandmark: true });
+  expect(mobileSupport).toEqual({ hostBesideSearch: false, hostAtBody: true, fabInsideLandmark: true });
 
   await expect(page.locator('#deliveryRail')).toHaveClass(/rail-position-ready/);
   let railGeometry;
