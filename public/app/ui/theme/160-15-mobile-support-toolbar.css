@@ -105,8 +105,7 @@
     max-height:40px;
   }
 
-  html body #modeSeg button,
-  html body .menu-controls-row #modeSeg button {
+  html body #modeSeg button {
     box-sizing:border-box;
     height:32px;
     min-height:32px;
@@ -118,6 +117,16 @@
     min-width:0;
     max-width:none;
     white-space:nowrap;
+  }
+  html body .menu-controls-row #modeSeg button {
+    font-size:clamp(9px,2.6vw,10px);
+    padding:0;
+    flex:1 1 0;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:clip;
   }
 }
 

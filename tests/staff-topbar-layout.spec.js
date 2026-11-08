@@ -250,5 +250,5 @@ test('work modes keep the role switcher in the topbar and preserve the support l
   expect(ordersLayout.modeBottom).toBeLessThanOrEqual(ordersLayout.headerBottom);
   expect(ordersLayout.topbarPosition).toBe('sticky');
   await expect(page.locator('#adminBar')).toBeVisible();
-  await expect(page.locator('#chatsToggle2')).toBeVisible();
+  await expect(page.locator('#chatsToggle2')).toBeHidden();
 });

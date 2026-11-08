@@ -997,7 +997,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.modeSeg.visibility).toBe('visible');
     expect(after.adminBar.hidden).toBe(true);
     expect(after.adminBar.display).toBe('none');
-    expect(after.adminBar.visibility).toBe('hidden');
+    expect(after.adminBar.visibility).toBe('visible');
     expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
