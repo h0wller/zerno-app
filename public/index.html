@@ -1840,9 +1840,9 @@ html[data-brand="delivery"] {
 @media (max-width:820px) {
   html body :is(#menuView,#deliveryView) .menu-head {
     box-sizing:border-box;
-    height:auto;
-    min-height:0;
-    max-height:none;
+    height:100px;
+    min-height:100px;
+    max-height:100px;
     overflow:visible;
     padding:6px 10px;
   }
@@ -2559,7 +2559,7 @@ html[data-brand="delivery"] #deliveryGrid .opts-error { grid-column:1 / -1; marg
 
 /* Match the approved two-row mobile menu toolbar on first paint; avoid search/support CLS. */
 @media (max-width:820px) {
-  html body :is(#menuView,#deliveryView) .menu-head { min-height:0; max-height:none; height:auto; overflow:visible; }
+  html body :is(#menuView,#deliveryView) .menu-head { box-sizing:border-box; min-height:100px; max-height:100px; height:100px; overflow:visible; padding:6px 10px; }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top {
     display:grid;
     grid-template-columns:minmax(0,1fr);
