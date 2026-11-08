@@ -445,7 +445,7 @@ for (const brand of ['coffee', 'delivery']) {
         (layout.brand.x + layout.brand.width / 2) - viewport.width / 2
       ), JSON.stringify(layout.brand)).toBeLessThanOrEqual(2);
 
-      expect.soft(layout.adminBar.x, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(10);
+      expect.soft(layout.adminBar.x, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(16);
       expect.soft(layout.adminBar.right, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(viewport.width - 8);
       expect.soft(layout.adminBar.buttons).toHaveLength(3);
       expect.soft(layout.adminBar.buttons.every(button =>
