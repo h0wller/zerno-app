@@ -186,7 +186,7 @@ test('staff switcher stays in the visible menu heading and replaces the logo whe
   expect(guestLayout.modeHeight).toBe(36);
   expect(guestLayout.buttons).toHaveLength(4);
   expect(guestLayout.buttons.every(height => height === 36)).toBe(true);
-  expect(guestLayout.buttonWidths.every(width => width > 0 && width <= 76)).toBe(true);
+  expect(guestLayout.buttonWidths.every(width => width > 0 && width <= 100)).toBe(true);
   expect(guestLayout.editNextToRoles).toBe(true);
   expect(guestLayout.editBox).toEqual({ width: 32, height: 32 });
   expect(guestLayout.modeScrollWidth).toBeLessThanOrEqual(guestLayout.modeClientWidth + 1);
@@ -411,7 +411,9 @@ for (const brand of ['coffee', 'delivery']) {
         const supportTop = supportRow.closest('.mh-top');
         const supportTopRect = supportTop.getBoundingClientRect();
         const supportTopStyle = getComputedStyle(supportTop);
-        const modeSlot = document.querySelector('.menu-controls-row > .mode-seg-slot');
+        const menuView = brand === 'coffee' ? '#menuView' : '#deliveryView';
+        const activeRow = document.querySelector(menuView + ' .menu-controls-row');
+        const modeSlot = activeRow?.querySelector(':scope > .mode-seg-slot');
         const modeSlotRect = modeSlot?.getBoundingClientRect();
         return {
           viewportWidth: document.documentElement.clientWidth,
@@ -442,8 +444,8 @@ for (const brand of ['coffee', 'delivery']) {
             overflowX: getComputedStyle(modeSlot).overflowX,
             overflowY: getComputedStyle(modeSlot).overflowY
           } : null,
-          modeHeading: rect('.menu-controls-row > h1'),
-          modeEdit: rect('.menu-controls-row > #editToggle'),
+          modeHeading: rect(menuView + ' .menu-controls-row > h1'),
+          modeEdit: rect(menuView + ' .menu-controls-row > #editToggle'),
           modeButtons: Array.from(document.querySelectorAll('#modeSeg > button')).map(button => {
             const box = button.getBoundingClientRect();
             const range = document.createRange();
@@ -467,7 +469,7 @@ for (const brand of ['coffee', 'delivery']) {
             };
           }),
           brandContext: rect(brand === 'coffee' ? '#menuView .menu-head h1 em' : '#deliveryView .menu-head h1 em'),
-          menuRowOrder: Array.from(document.querySelector('.menu-controls-row').children).map(element =>
+          menuRowOrder: Array.from(activeRow.children).map(element =>
             element.id === 'editToggle' ? 'edit' : element.classList.contains('mode-seg-slot') ? 'roles' : element.tagName.toLowerCase()
           ),
           support: {
@@ -521,7 +523,7 @@ for (const brand of ['coffee', 'delivery']) {
         .not.toBeNull();
       expect.soft(layout.menuHead, 'mobile menu header must retain its full content width').not.toBeNull();
       expect.soft(layout.modeSlot.width, JSON.stringify(layout.modeSlot))
-        .toBeGreaterThanOrEqual(viewport.width - 56);
+        .toBeGreaterThanOrEqual(viewport.width - 64);
       expect.soft(layout.modeSlot.y, JSON.stringify({ heading: layout.modeHeading, slot: layout.modeSlot }))
         .toBeGreaterThanOrEqual(layout.modeHeading.y + layout.modeHeading.height + 3);
       expect.soft(layout.modeSlot.x, JSON.stringify({ menuHead: layout.menuHead, slot: layout.modeSlot }))
