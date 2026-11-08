@@ -312,11 +312,3 @@
 #deliveryGrid .card:nth-child(n+5) { contain-intrinsic-block-size: 502px; }
 
 
-@media (min-width:820px) {
-  html[data-brand="delivery"] body #deliveryView #deliverySubFilter > .subchip.on,
-  html[data-brand="delivery"] body #deliveryView .subfilter-bar > .subchip.on {
-    background:#C03B2A;
-    border-color:#3A2A1C;
-    color:#FFFFFF;
-  }
-}
