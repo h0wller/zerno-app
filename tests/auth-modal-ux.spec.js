@@ -71,11 +71,13 @@ for (const viewport of viewports) {
     expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentWidth + 1);
 
     const submit = card.locator('#regBtn');
-    await submit.evaluate((element) => {
-      const scrollContainer = element.closest('.authcard');
-      scrollContainer.style.scrollBehavior = 'auto';
-      element.scrollIntoView({ block: 'end', inline: 'nearest', behavior: 'instant' });
-    });
+    if (viewport.height <= 560) {
+      await card.hover();
+      await page.mouse.wheel(0, 800);
+      await expect.poll(() => card.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    } else {
+      await submit.scrollIntoViewIfNeeded();
+    }
     const submitGeometry = await submit.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       return {
