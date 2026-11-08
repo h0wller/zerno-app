@@ -228,3 +228,51 @@ test('coffee and delivery category rails align to the top edge of the menu card'
     expect(gap.every(value => value >= 9), brand.brand + ' rail button gap should be at least 9px').toBe(true);
   }
 });
+
+
+test('delivery rail follows the menu card and fills the full delivery view height', async ({ page }) => {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+    const geometry = await page.evaluate(() => {
+      const card = document.querySelector('#deliveryView .menu-head');
+      const rail = document.querySelector('#deliveryRail');
+      const view = document.querySelector('#deliveryView');
+      const cardRect = card.getBoundingClientRect();
+      const railRect = rail.getBoundingClientRect();
+      const viewRect = view.getBoundingClientRect();
+      return {
+        padding: getComputedStyle(card).padding,
+        cardTop: cardRect.top,
+        railTop: railRect.top,
+        railBottom: railRect.bottom,
+        viewBottom: viewRect.bottom,
+        railAlignSelf: getComputedStyle(rail).alignSelf,
+        railMaxHeight: getComputedStyle(rail).maxHeight
+      };
+    });
+
+    expect(geometry.padding, 'delivery menu card padding').toBe('8px 16px');
+    expect(Math.abs(geometry.railTop - geometry.cardTop), 'delivery rail aligns with the menu card, not subfilters').toBeLessThanOrEqual(2);
+    expect(Math.abs(geometry.railBottom - geometry.viewBottom), 'delivery rail fills the full delivery view height').toBeLessThanOrEqual(4);
+    expect(geometry.railAlignSelf).toBe('stretch');
+    expect(geometry.railMaxHeight).toBe('none');
+  }
+});
+
+test('coffee wordmark “и кофе” remains visible beside the logo on mobile and tablet', async ({ page }) => {
+  for (const width of [390, 820, 1024]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+    const title = page.locator('header.topbar #brandTitle');
+    await expect(title).toBeAttached();
+    await expect(title).toBeVisible();
+    await expect(title).toHaveAttribute('aria-label', '…и кофе');
+    const bounds = await title.boundingBox();
+    expect(bounds?.width ?? 0).toBeGreaterThan(20);
+    expect(bounds?.height ?? 0).toBeGreaterThan(10);
+  }
+});
