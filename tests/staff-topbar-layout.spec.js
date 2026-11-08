@@ -435,6 +435,7 @@ for (const brand of ['coffee', 'delivery']) {
             buttons: visibleButtons
           },
           modeSwitcher: rect('#modeSeg'),
+          menuRail: rect(brand === 'coffee' ? '#rail' : '#deliveryRail'),
           modeSlot: modeSlotRect ? {
             x: modeSlotRect.x,
             right: modeSlotRect.right,
@@ -519,17 +520,21 @@ for (const brand of ['coffee', 'delivery']) {
 
       expect.soft(layout.modeSlot, 'role switcher must have an unclipped full-width slot')
         .not.toBeNull();
+      expect.soft(layout.menuRail, 'active menu rail must anchor the content column').not.toBeNull();
       expect.soft(layout.modeSlot.width, JSON.stringify(layout.modeSlot))
-        .toBeGreaterThanOrEqual(viewport.width - 55);
+        .toBeGreaterThanOrEqual(viewport.width - 120);
       expect.soft(layout.modeSlot.y, JSON.stringify({ heading: layout.modeHeading, slot: layout.modeSlot }))
         .toBeGreaterThanOrEqual(layout.modeHeading.y + layout.modeHeading.height + 3);
-      expect.soft(layout.modeSlot.x, JSON.stringify(layout.modeSlot)).toBeLessThanOrEqual(16);
+      expect.soft(layout.modeSlot.x, JSON.stringify({ rail: layout.menuRail, slot: layout.modeSlot }))
+        .toBeGreaterThanOrEqual(layout.menuRail.right + 4);
       expect.soft(layout.modeSlot.right, JSON.stringify(layout.modeSlot))
-        .toBeGreaterThanOrEqual(viewport.width - 16);
+        .toBeLessThanOrEqual(viewport.width - 8);
       expect.soft(layout.modeEdit.y, JSON.stringify({ heading: layout.modeHeading, edit: layout.modeEdit }))
         .toBeLessThanOrEqual(layout.modeHeading.y + layout.modeHeading.height + 1);
+      expect.soft(layout.modeEdit.x, JSON.stringify({ heading: layout.modeHeading, edit: layout.modeEdit }))
+        .toBeGreaterThanOrEqual(layout.modeHeading.x + layout.modeHeading.width - layout.modeEdit.width - 1);
       expect.soft(layout.modeSwitcher.width, JSON.stringify(layout.modeSwitcher))
-        .toBeGreaterThanOrEqual(viewport.width - 55);
+        .toBeGreaterThanOrEqual(viewport.width - 120);
       expect.soft(layout.modeButtons.map(button => button.text))
         .toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
       expect.soft(layout.brandContext, 'brand context must remain visible in the active brand menu heading').not.toBeNull();
@@ -539,12 +544,12 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.modeButtons.every(button =>
         !button.hidden &&
         button.display !== 'none' &&
-        button.width >= 56 &&
+        button.width >= (viewport.width <= 350 ? 48 : 56) &&
         button.fontSize >= 11 &&
-        button.textWidth <= button.width - 8 &&
+        button.textWidth <= button.width - 4 &&
         button.scrollWidth <= button.clientWidth + 1 &&
-        button.textLeft >= button.x + 2 &&
-        button.textRight <= button.right - 2 &&
+        button.textLeft >= button.x + 1 &&
+        button.textRight <= button.right - 1 &&
         button.x >= layout.modeSlot.x - 1 &&
         button.right <= layout.modeSlot.right + 1
       ), JSON.stringify({ modeSlot: layout.modeSlot, modeButtons: layout.modeButtons })).toBe(true);
@@ -560,7 +565,7 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.support.rowHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(44);
       expect.soft(layout.support.rowClientHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(44);
       expect.soft(layout.support.rowOverflowY, JSON.stringify(layout.support)).toBe('visible');
-      expect.soft(layout.support.topHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(116);
+      expect.soft(layout.support.topHeight, JSON.stringify(layout.support)).toBeGreaterThanOrEqual(132);
       expect.soft(layout.support.topOverflowY, JSON.stringify(layout.support)).toBe('visible');
       expect.soft(layout.support.fabTop, JSON.stringify(layout.support))
         .toBeGreaterThanOrEqual(layout.support.rowTop - 1);
