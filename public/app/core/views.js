@@ -63,7 +63,7 @@ var rules = [
  '@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
  '@media(max-width:819px){[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] .topbar .brand > div:not(.mark){display:none!important}}',
  '@media(min-width:820px){[data-brand="delivery"] body header.topbar #headerBrand.brand>div:not(.mark){display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px}[data-brand="delivery"] body header.topbar #brandTitle{color:#3A2A1C;font:800 clamp(13px,1.15vw,17px)/1.15 "Unbounded","Golos Text",sans-serif}[data-brand="delivery"] body header.topbar #brandSub{display:block;color:#3A2A1C;font:600 clamp(9px,.75vw,11px)/1.2 "Unbounded","Golos Text",sans-serif}}',
-'@media(max-width:1023px){[data-brand="coffee"] .topbar .brand #brandSub{display:none!important}}',
+'@media(max-width:1023px){[data-brand="coffee"] .topbar .brand #brandTitle{display:block!important}[data-brand="coffee"] .topbar .brand #brandSub{display:none!important}}',
  '@media(max-width:690px){[data-brand="coffee"] .topbar .brand small,[data-brand="coffee"] .topbar .brand .brand-text{display:none!important}[data-brand="coffee"] .topbar .brand .mark{width:52px!important;height:52px!important;min-width:52px!important;max-height:52px!important}[data-brand="coffee"] .topbar .brand > div:not(.mark){overflow:visible!important;padding-right:4px}}',
 '[data-brand="coffee"] .topbar .brand b#brandTitle .bean{display:inline-block;width:.8em;height:.8em;margin:0 .03em;vertical-align:-.04em;color:#2F95F5}',
 '[data-brand="coffee"] .topbar .brand b#brandTitle .bean svg{display:block;width:100%;height:100%;overflow:visible}',
@@ -113,7 +113,7 @@ var rules = [
 
  '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
   '[data-brand="coffee"] #modeSeg button.on{background:#BBD7F2;color:#123A6B;box-shadow:0 2px 7px rgba(18,58,107,.16)}',
-  '@media(max-width:820px){[data-brand="delivery"] body #deliveryView .menu-head{padding-left:14px!important;padding-right:14px!important}}',
+  '@media(max-width:820px){[data-brand="delivery"] body #deliveryView .menu-head{padding:8px 16px!important}}',
   '@media(min-width:820px){[data-brand="delivery"] body #deliveryView #deliverySubFilter>.subchip.on,[data-brand="delivery"] body #deliveryView .subfilter-bar>.subchip.on{background:#C03B2A;border-color:#3A2A1C;color:#fff}}',
 ];
 css.textContent = rules.join('\n');
