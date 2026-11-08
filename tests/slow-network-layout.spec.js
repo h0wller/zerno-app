@@ -908,6 +908,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         }),
         modeSlot: rect('.menu-controls-row .mode-seg-slot'),
         menuRow: rect('.menu-controls-row'),
+        menuHead: rect('.menu-head'),
         modeSegStyle: modeSeg && {
           marginTop: getComputedStyle(modeSeg).marginTop,
           height: getComputedStyle(modeSeg).height,
