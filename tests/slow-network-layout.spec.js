@@ -1007,8 +1007,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.modeSlot.height).toBe(32);
     expect(after.menuRow.height).toBe(36);
     expect(after.menuHead.height).toBe(100);
-    expect(before.modeSlot.height).toBe(after.modeSlot.height);
-    expect(before.menuRow.height).toBe(after.menuRow.height);
+    expect(before.modeSlot.height).toBe(36);
+    expect(after.modeSlot.height).toBe(32);
+    expect(before.menuRow.height).toBe(36);
+    expect(after.menuRow.height).toBe(36);
     expect(after.modeSeg.top).toBeGreaterThanOrEqual(after.menuRow.top - 1);
     expect(after.modeSeg.top + after.modeSeg.height).toBeLessThanOrEqual(after.menuRow.top + after.menuRow.height + 1);
     expect(Math.abs(after.adminBar.height - before.adminBar.height)).toBeLessThanOrEqual(1);
