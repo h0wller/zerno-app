@@ -240,9 +240,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.updated.height).toBe(0);
     expect(after.subchip.width).toBe(before.subchip.width);
     expect(after.option.height).toBe(before.option.height);
-    // The compact heading intentionally contains only «Меню», not the old brand tagline.
     expect(after.heading.width).toBeGreaterThan(60);
-    expect(after.heading.width).toBeLessThan(200);
+    expect(after.brandContext).not.toBeNull();
+    expect(after.brandContext.width).toBeGreaterThan(0);
     expect(after.menuHead).toEqual(before.menuHead);
     expect(after.menuHeadStyle.maxHeight).toBe('none');
     expect(after.menuHeadStyle.overflow).not.toBe('hidden');
@@ -254,8 +254,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.activeSubchipColor).toBe('rgb(192, 59, 42)');
     expect(after.menuHead.x).toBeLessThanOrEqual(after.rail.x + 1);
     expect(after.menuHead.right).toBeGreaterThanOrEqual(after.section.right - 1);
-    expect(after.heading.x).toBeGreaterThanOrEqual(after.menuHead.x);
-    expect(after.heading.right).toBeLessThanOrEqual(after.menuHead.right + 1);
+    expect(after.heading.x).toBeGreaterThanOrEqual(after.rail.right + 4);
+    expect(after.heading.right).toBeLessThanOrEqual(after.section.right - 1);
+    expect(after.brandContext.x).toBeGreaterThanOrEqual(after.rail.right + 4);
+    expect(after.brandContext.right).toBeLessThanOrEqual(after.section.right - 1);
     expect(after.section.width).toBe(before.section.width);
 
     const shiftReport = await page.evaluate(() => ({
