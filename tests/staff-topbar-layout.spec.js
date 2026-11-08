@@ -441,7 +441,7 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.venue.height, JSON.stringify(layout.venue)).toBeGreaterThanOrEqual(48);
       expect.soft(layout.actions, 'profile and bonus actions must use the dedicated right-hand grid cell').not.toBeNull();
       expect.soft(layout.actions.profile.right, JSON.stringify(layout.actions)).toBeLessThanOrEqual(viewport.width - 10);
-      expect(Math.abs(
+      expect.soft(Math.abs(
         (layout.brand.x + layout.brand.width / 2) - viewport.width / 2
       ), JSON.stringify(layout.brand)).toBeLessThanOrEqual(2);
 
