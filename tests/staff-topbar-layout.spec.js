@@ -478,10 +478,12 @@ for (const brand of ['coffee', 'delivery']) {
 
       if (brand === 'coffee') {
         expect.soft(layout.modeSwitcher.width, JSON.stringify(layout.modeSwitcher))
-          .toBeGreaterThanOrEqual(viewport.width <= 350 ? 160 : 190);
-        expect.soft(layout.modeButtons.length).toBe(2);
-        expect.soft(layout.modeButtons.every(button => !button.hidden && button.width >= 78),
-          JSON.stringify(layout.modeButtons)).toBe(true);
+          .toBeGreaterThanOrEqual(viewport.width <= 350 ? 190 : 240);
+        expect.soft(layout.modeButtons.map(button => button.text))
+          .toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
+        expect.soft(layout.modeButtons.every(button =>
+          !button.hidden && button.width >= (viewport.width <= 350 ? 46 : 58)
+        ), JSON.stringify(layout.modeButtons)).toBe(true);
       }
 
       expect.soft(layout.support.width).toBe(44);
