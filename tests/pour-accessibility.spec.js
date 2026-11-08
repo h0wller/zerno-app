@@ -98,8 +98,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       };
     });
 
-    expect(metrics.modeHeight).toBe(32);
-    expect(metrics.modeButtonHeight).toBe(32);
+    expect(metrics.modeHeight).toBe(36);
+    expect(metrics.modeButtonHeight).toBe(36);
     expect(metrics.editMinHeight).toBe(32);
     expect(metrics.subchips.length).toBeGreaterThan(0);
     expect(metrics.subchips.every((chip) => chip.height === 40 && chip.width >= 58),
@@ -120,7 +120,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.addButton.width).toBeGreaterThanOrEqual(metrics.addButton.rowWidth - 1);
     expect(metrics.activeChip.bg).toBe('rgb(192, 59, 42)');
     expect(metrics.activeChip.color).toBe('rgb(255, 255, 255)');
-    expect(metrics.roleButton.height).toBe(32);
+    expect(metrics.roleButton.height).toBe(36);
     expect(metrics.roleButton.width).toBeGreaterThan(metrics.roleButton.height);
   });
 
@@ -176,9 +176,9 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(menuMetrics.headerHeight).toBeLessThanOrEqual(64);
     expect(menuMetrics.modeInMenuRow).toBe(true);
     expect(menuMetrics.editInMenuRow).toBe(true);
-    expect(menuMetrics.rowHeight).toBe(32);
+    expect(menuMetrics.rowHeight).toBe(84);
     expect(menuMetrics.buttonHeights).toHaveLength(4);
-    expect(menuMetrics.buttonHeights.every(height => height === 32)).toBe(true);
+    expect(menuMetrics.buttonHeights.every(height => height === 36)).toBe(true);
 
     await page.evaluate(() => window.setMode('admin'));
     const adminMetrics = await page.evaluate(() => {
@@ -196,8 +196,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(adminMetrics.menuVisible).toBe(true);
     expect(adminMetrics.modeInMenuRow).toBe(true);
     expect(adminMetrics.headerHeight).toBeLessThanOrEqual(64);
-    expect(adminMetrics.rowHeight).toBe(32);
-    expect(adminMetrics.buttonHeights.every(height => height === 32)).toBe(true);
+    expect(adminMetrics.rowHeight).toBe(84);
+    expect(adminMetrics.buttonHeights.every(height => height === 36)).toBe(true);
   });
 
   test('floating controls and confetti canvas have accessible landmark treatment', async ({ page }) => {
