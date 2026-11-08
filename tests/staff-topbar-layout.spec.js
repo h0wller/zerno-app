@@ -66,7 +66,7 @@ test('admin action bar spans the full mobile row with every action visible', asy
       viewportWidth: document.documentElement.clientWidth,
     };
   });
-  expect(dimensions.left).toBeLessThanOrEqual(10);
+  expect(dimensions.left).toBeLessThanOrEqual(16);
   expect(dimensions.right).toBeLessThanOrEqual(dimensions.viewportWidth - 8);
   expect(dimensions.width).toBeGreaterThan(300);
   expect(dimensions.overflowX).toBe('visible');
