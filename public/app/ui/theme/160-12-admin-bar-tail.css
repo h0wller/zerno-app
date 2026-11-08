@@ -1183,3 +1183,11 @@ html body #adminBar.adminBar[hidden] { display:none !important; }
 
   html body .menu-head .upd { display: none; }
 }
+
+
+/* Mobile staff menu keeps exactly two visible toolbar rows; legacy shortcuts are not a third row. */
+@media (max-width: 820px) {
+  html[data-staff-role] body #adminBar.adminBar {
+    display: none;
+  }
+}
