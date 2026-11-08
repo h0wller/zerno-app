@@ -244,3 +244,10 @@ html body div.wrap > section {
     white-space:nowrap;
   }
 }
+
+/* Delivery brand marker keeps its warm red treatment after shared typography loads. */
+html[data-brand="delivery"] body #deliveryView .menu-head h1 em {
+  color:#742116 !important;
+  background:rgba(192,59,42,.1);
+  border:1px solid rgba(192,59,42,.25);
+}
