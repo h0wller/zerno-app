@@ -1660,7 +1660,10 @@ html[data-brand="delivery"] {
     align-items:flex-start;
     justify-content:center;
     gap:0;
-    min-width:0;
+    width:clamp(86px,27vw,104px);
+    min-width:clamp(86px,27vw,104px);
+    max-width:clamp(86px,27vw,104px);
+    flex:0 0 clamp(86px,27vw,104px);
   }
   html[data-brand="delivery"] body header.topbar #brandTitle {
     display:block !important;
