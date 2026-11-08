@@ -149,6 +149,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         },
         tickerOverflowX: ticker && getComputedStyle(ticker).overflowX,
         heading: box(heading),
+        brandContext: box(document.querySelector('#deliveryView .menu-head h1 em')),
         menuHead: box(document.querySelector('#deliveryView .menu-head')),
         menuHeadStyle: (() => { const style = getComputedStyle(document.querySelector('#deliveryView .menu-head')); return { maxHeight: style.maxHeight, overflow: style.overflow }; })(),
         subchipHeight: document.querySelector('#deliverySubFilter .subchip')?.getBoundingClientRect().height,
@@ -180,14 +181,16 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.tickerOverflowX).toBe('hidden');
     expect(before.section.width).toBeGreaterThan(250);
     expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
-    // The compact heading intentionally contains only «Меню», not the old brand tagline.
     expect(before.heading.width).toBeGreaterThan(60);
-    expect(before.heading.width).toBeLessThan(200);
+    expect(before.brandContext).not.toBeNull();
+    expect(before.brandContext.width).toBeGreaterThan(0);
     expect(before.menuHead).not.toBeNull();
     expect(before.menuHead.x).toBeLessThanOrEqual(before.rail.x + 1);
     expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
-    expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x);
-    expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right + 1);
+    expect(before.heading.x).toBeGreaterThanOrEqual(before.rail.right + 4);
+    expect(before.heading.right).toBeLessThanOrEqual(before.section.right - 1);
+    expect(before.brandContext.x).toBeGreaterThanOrEqual(before.rail.right + 4);
+    expect(before.brandContext.right).toBeLessThanOrEqual(before.section.right - 1);
     expect(before.menuHeadStyle.maxHeight).toBe('none');
     expect(before.menuHeadStyle.overflow).not.toBe('hidden');
     expect(before.search.height).toBe(40);
@@ -993,13 +996,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
-    // The role switcher stays hidden until the API confirms the cached role.
-    // The admin action row reserves its final 44px height invisibly before hydration,
-    // so revealing the controls does not move the menu or change the reserved box.
-    expect(after.modeSeg.height).toBe(32);
+    // Reserve the final role row geometry while the cached role is still being confirmed.
+    // Revealing the switcher must not resize its slot or the two-row title toolbar.
+    expect(after.modeSeg.height).toBe(36);
     expect(after.modeSeg.parentClass).toBe('mode-seg-slot');
-    expect(after.modeSlot.height).toBe(32);
-    expect(after.menuRow.height).toBe(32);
+    expect(after.modeSlot.height).toBe(36);
+    expect(after.menuRow.height).toBe(84);
+    expect(before.modeSlot.height).toBe(after.modeSlot.height);
+    expect(before.menuRow.height).toBe(after.menuRow.height);
     expect(after.modeSeg.top).toBeGreaterThanOrEqual(after.menuRow.top - 1);
     expect(after.modeSeg.top + after.modeSeg.height).toBeLessThanOrEqual(after.menuRow.top + after.menuRow.height + 1);
     expect(Math.abs(after.adminBar.height - before.adminBar.height)).toBeLessThanOrEqual(1);
