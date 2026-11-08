@@ -3031,7 +3031,7 @@ html body #tickerTrack .tickerGroup > span {
     max-height:32px;
     margin:0;
     padding:0;
-    gap:3px;
+    gap:2px;
     overflow:visible;
     box-sizing:border-box;
   }
@@ -3040,17 +3040,19 @@ html body #tickerTrack .tickerGroup > span {
     flex:1 1 0;
     width:100%;
     min-width:0;
-    max-width:none;
+    max-width:100%;
     height:32px;
     min-height:32px;
     max-height:32px;
     margin:0;
-    padding:0 2px;
+    padding:0;
     align-items:center;
     justify-content:center;
-    font:700 clamp(10px,2.8vw,11px)/1 "Golos Text",system-ui,sans-serif;
+    font:700 clamp(9px,2.6vw,10px)/1 "Golos Text",system-ui,sans-serif;
+    letter-spacing:-0.02em;
     white-space:nowrap;
     overflow:hidden;
+    text-overflow:clip;
     box-sizing:border-box;
   }
   html body .menu-head .menu-controls-row > #editToggle {
