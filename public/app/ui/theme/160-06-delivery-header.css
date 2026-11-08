@@ -380,7 +380,7 @@
 
 /* iOS standalone: header safe area is owned by the native shell, not counted twice. */
 @media (max-width:820px) {
-  html.is-ios-standalone[data-staff-role] body header.topbar {
+  html.is-ios-standalone body header.topbar {
     height:60px;
     min-height:60px;
     max-height:60px;
