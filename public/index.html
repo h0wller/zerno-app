@@ -84,11 +84,11 @@
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right:not(:has(> #supportLauncherHost))::after {
     content:"";
     display:block;
-    flex:0 0 32px;
-    width:32px;
-    min-width:32px;
-    height:32px;
-    min-height:32px;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
     box-sizing:border-box;
   }
 }
@@ -134,8 +134,10 @@
     box-sizing:border-box;
   }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top {
-    grid-template-rows:32px 44px !important;
-    height:80px !important;
+    grid-template-rows:36px 44px !important;
+    height:84px !important;
+    min-height:84px !important;
+    max-height:84px !important;
     overflow:visible !important;
   }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
