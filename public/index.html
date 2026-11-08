@@ -1654,9 +1654,23 @@ html[data-brand="delivery"] {
 
 /* Hide delivery descriptor only on compact mobile. */
 @media (max-width: 819px) {
-  html[data-brand="delivery"] .topbar .brand b,
-  html[data-brand="delivery"] .topbar .brand small,
-  html[data-brand="delivery"] .topbar .brand > div:not(.mark) { display:none !important; }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand > div:not(.mark) {
+    display:flex !important;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    gap:0;
+    min-width:0;
+  }
+  html[data-brand="delivery"] body header.topbar #brandTitle {
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    color:#3A2A1C;
+    font:800 clamp(11px,3.6vw,14px)/1.05 "Unbounded","Golos Text",sans-serif;
+    white-space:nowrap;
+  }
+  html[data-brand="delivery"] body header.topbar #brandSub { display:none !important; }
 }
 @media (min-width:820px) {
   html[data-brand="delivery"] body header.topbar #headerBrand.brand > div:not(.mark) { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:2px; }
