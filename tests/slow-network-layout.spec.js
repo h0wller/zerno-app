@@ -920,7 +920,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.modeSeg.hidden).toBe(true);
     expect(before.modeSeg.display).toBe('none');
     expect(before.adminBar.hidden).toBe(true);
-    expect(before.adminBar.display).toBe('none');
+    expect(before.adminBar.display).toBe('grid');
+    expect(before.adminBar.visibility).toBe('hidden');
+    expect(before.adminBar.height).toBe(44);
 
     // The first-paint/CSS/font settle is asserted by the neighboring layout tests.
     // Drain those earlier entries so this threshold measures only the delayed auth interval.
@@ -991,9 +993,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
-    // The role switcher is deliberately hidden until the API confirms the cached role.
-    // Its box therefore does not exist before hydration; compare the stable menu row and
-    // verify the visible 32px slot after hydration instead of comparing display:none coords.
+    // The role switcher stays hidden until the API confirms the cached role.
+    // The admin action row reserves its final 44px height invisibly before hydration,
+    // so revealing the controls does not move the menu or change the reserved box.
     expect(after.modeSeg.height).toBe(32);
     expect(after.modeSeg.parentClass).toBe('mode-seg-slot');
     expect(after.modeSlot.height).toBe(32);
