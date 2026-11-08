@@ -50,12 +50,14 @@ test('mobile menu header has only the two requested rows', async ({ page }) => {
       const header = page.locator((brand === 'coffee' ? '#menuView' : '#deliveryView') + ' .menu-head');
       await expect(header.locator('.menu-controls-row')).toBeVisible();
       await expect(header.locator('.mh-right')).toBeVisible();
-      const rows = await header.locator('.mh-top').evaluate(top =>
-        Array.from(top.children).map(element =>
-          element.classList.contains('menu-controls-row') ? 'title-roles-edit' :
-          element.classList.contains('mh-right') ? 'search-support' : 'unexpected'
-        )
-      );
+      const rows = await header.locator('.mh-top').evaluate(top => {
+        const titleHost = top.querySelector(':scope > div:first-child');
+        const searchHost = top.querySelector(':scope > .mh-right');
+        return [
+          titleHost?.querySelector(':scope > .menu-controls-row') ? 'title-roles-edit' : 'unexpected',
+          searchHost ? 'search-support' : 'unexpected',
+        ];
+      });
       expect(rows).toEqual(['title-roles-edit', 'search-support']);
     }
   }
@@ -139,12 +141,23 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
               element.classList.contains('mode-seg-slot') ? 'roles' :
                 element.tagName.toLowerCase()
           ),
-          headerChildren: Array.from(top.children).map(element =>
-            element.classList.contains('menu-controls-row') ? 'title-roles-edit' :
-              element.classList.contains('mh-right') ? 'search-support' : 'unexpected'
-          ),
-          extraRows: top.querySelectorAll(':scope > :not(.menu-controls-row):not(.mh-right)').length,
-          adminBarInsideHeader: head.contains(document.getElementById('adminBar')),
+          headerChildren: [
+            top.querySelector(':scope > div:first-child > .menu-controls-row') ? 'title-roles-edit' : 'unexpected',
+            top.querySelector(':scope > .mh-right') ? 'search-support' : 'unexpected',
+          ],
+          extraRows: top.children.length - 2 +
+            Array.from(top.querySelectorAll(':scope > div:first-child > :not(.menu-controls-row)'))
+              .filter(element => {
+                const style = getComputedStyle(element);
+                return style.display !== 'none' && style.visibility !== 'hidden' &&
+                  element.getBoundingClientRect().width > 0 && element.getBoundingClientRect().height > 0;
+              }).length,
+          adminBarVisible: (() => {
+            const bar = document.getElementById('adminBar');
+            const style = getComputedStyle(bar);
+            const rect = bar.getBoundingClientRect();
+            return !bar.hidden && style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+          })(),
           supportInsideRow: host.parentElement === rowTwo && fab.parentElement === host,
           documentWidth: document.documentElement.scrollWidth,
           viewportWidth: document.documentElement.clientWidth,
@@ -154,7 +167,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.rowOrder).toEqual(['h1', 'roles', 'edit']);
       expect(layout.headerChildren).toEqual(['title-roles-edit', 'search-support']);
       expect(layout.extraRows).toBe(0);
-      expect(layout.adminBarInsideHeader).toBe(false);
+      expect(layout.adminBarVisible).toBe(false);
       expect(layout.supportInsideRow).toBe(true);
       expect(layout.modeButtons.map(button => button.text)).toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
 
