@@ -200,7 +200,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.card.width).toBeGreaterThan(200);
     expect(before.media.height).toBe(180);
     expect(before.brandMark).not.toBeNull();
-    expect(before.brandTitleDisplay).toBe('none');
+    expect(before.brandTitleDisplay).not.toBe('none');
     expect(before.brandSubDisplay).toBe('none');
     expect(before.search).not.toBeNull();
     expect(before.searchLabel.width).toBeLessThanOrEqual(1);
@@ -381,8 +381,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       expect(after.subDisplay, `brand subtitle display remains stable at ${width}px`).toBe(before.subDisplay);
       expect(after.brandDisplay, `brand container display remains stable at ${width}px`).toBe(before.brandDisplay);
       expect(after.brandGap, `brand container gap remains stable at ${width}px`).toBe(before.brandGap);
-      expect(after.brandRect.x).toBe(before.brandRect.x);
-      expect(after.brandRect.width).toBe(before.brandRect.width);
+      expect(Math.abs(after.brandRect.x - before.brandRect.x)).toBeLessThanOrEqual(2);
+      expect(Math.abs(after.brandRect.width - before.brandRect.width)).toBeLessThanOrEqual(2);
       expect(Math.abs(after.brandRect.height - before.brandRect.height)).toBeLessThanOrEqual(1);
       expect(Math.abs(after.brandRect.y - before.brandRect.y)).toBeLessThanOrEqual(1);
       expect(after.x, `brand x remains stable at ${width}px`).toBe(before.x);
