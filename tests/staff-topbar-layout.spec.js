@@ -425,6 +425,11 @@ for (const brand of ['coffee', 'delivery']) {
             scrollWidth: bar.scrollWidth,
             buttons: visibleButtons
           },
+          modeSwitcher: rect('#modeSeg'),
+          modeButtons: Array.from(document.querySelectorAll('#modeSeg > button')).map(button => {
+            const box = button.getBoundingClientRect();
+            return { width: box.width, text: button.textContent.trim(), hidden: button.hidden };
+          }),
           support: {
             width: supportRect.width,
             height: supportRect.height,
@@ -449,14 +454,10 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.adminBar.x, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(16);
       expect.soft(layout.adminBar.right, JSON.stringify(layout.adminBar)).toBeLessThanOrEqual(viewport.width - 8);
       expect.soft(layout.adminBar.buttons).toHaveLength(3);
-      if (viewport.width > 350) {
-        expect.soft(new Set(layout.adminBar.buttons.map(button => Math.round(button.y))).size,
-          JSON.stringify(layout.adminBar.buttons)).toBe(1);
-      } else {
-        expect.soft(Math.abs(layout.adminBar.buttons[0].y - layout.adminBar.buttons[1].y)).toBeLessThanOrEqual(1);
-        expect.soft(layout.adminBar.buttons[2].y).toBeGreaterThan(layout.adminBar.buttons[0].y);
-        expect.soft(layout.adminBar.buttons[2].width).toBeCloseTo(layout.adminBar.width, 0);
-      }
+      expect.soft(new Set(layout.adminBar.buttons.map(button => Math.round(button.y))).size,
+        JSON.stringify(layout.adminBar.buttons)).toBe(1);
+      expect.soft(layout.adminBar.buttons.every(button => button.width >= (viewport.width <= 350 ? 80 : 90)),
+        JSON.stringify(layout.adminBar.buttons)).toBe(true);
       expect.soft(layout.adminBar.buttons.every(button =>
         button.height >= 40 &&
         button.x >= layout.adminBar.x - 1 &&
@@ -464,6 +465,14 @@ for (const brand of ['coffee', 'delivery']) {
       ), JSON.stringify(layout.adminBar)).toBe(true);
       expect.soft(layout.adminBar.scrollWidth, JSON.stringify(layout.adminBar))
         .toBeLessThanOrEqual(layout.adminBar.clientWidth + 1);
+
+      if (brand === 'coffee') {
+        expect.soft(layout.modeSwitcher.width, JSON.stringify(layout.modeSwitcher))
+          .toBeGreaterThanOrEqual(viewport.width <= 350 ? 160 : 190);
+        expect.soft(layout.modeButtons.length).toBe(2);
+        expect.soft(layout.modeButtons.every(button => !button.hidden && button.width >= 78),
+          JSON.stringify(layout.modeButtons)).toBe(true);
+      }
 
       expect.soft(layout.support.width).toBe(44);
       expect.soft(layout.support.height).toBe(44);
