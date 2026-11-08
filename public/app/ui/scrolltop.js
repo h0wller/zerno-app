@@ -48,12 +48,17 @@ function alignRailWithCard() {
     var wrapContentTop = wrapRect.top
       + (parseFloat(wrapStyle.paddingTop) || 0)
       + (parseFloat(wrapStyle.borderTopWidth) || 0);
-    // Guest storefront rails align with the card top; staff/admin retain a clear lane below the full toolbar.
+    // Staff/admin rails start below the full menu toolbar; guest mobile rails start below search;
+    // guest tablet/desktop rails align to the menu card's top edge.
     var menuRow = head.querySelector('.menu-controls-row');
     var modeSeg = document.getElementById('modeSeg');
     var staffGuestMenu = !!(menuRow && modeSeg &&
       modeSeg.closest('.menu-controls-row') === menuRow);
-    var desiredTop = staffGuestMenu ? headRect.bottom + 12 : headRect.top;
+    var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+    var searchRow = head.querySelector('.mh-right');
+    var desiredTop = staffGuestMenu
+      ? headRect.bottom + 12
+      : (mobileViewport && searchRow ? searchRow.getBoundingClientRect().bottom + 12 : headRect.top);
 
     var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
