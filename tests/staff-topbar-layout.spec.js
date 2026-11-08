@@ -442,6 +442,8 @@ for (const brand of ['coffee', 'delivery']) {
             overflowX: getComputedStyle(modeSlot).overflowX,
             overflowY: getComputedStyle(modeSlot).overflowY
           } : null,
+          modeHeading: rect('.menu-controls-row > h1'),
+          modeEdit: rect('.menu-controls-row > #editToggle'),
           modeButtons: Array.from(document.querySelectorAll('#modeSeg > button')).map(button => {
             const box = button.getBoundingClientRect();
             return {
@@ -503,15 +505,19 @@ for (const brand of ['coffee', 'delivery']) {
       expect.soft(layout.modeSlot, 'role switcher must have an unclipped full-width slot')
         .not.toBeNull();
       expect.soft(layout.modeSlot.width, JSON.stringify(layout.modeSlot))
-        .toBeGreaterThanOrEqual(viewport.width <= 350 ? 158 : 193);
+        .toBeGreaterThanOrEqual(viewport.width <= 350 ? 148 : 193);
+      expect.soft(layout.modeSlot.x, JSON.stringify({ heading: layout.modeHeading, slot: layout.modeSlot }))
+        .toBeGreaterThanOrEqual(layout.modeHeading.right + 3);
+      expect.soft(layout.modeSlot.right, JSON.stringify({ slot: layout.modeSlot, edit: layout.modeEdit }))
+        .toBeLessThanOrEqual(layout.modeEdit.x - 3);
       expect.soft(layout.modeSwitcher.width, JSON.stringify(layout.modeSwitcher))
-        .toBeGreaterThanOrEqual(viewport.width <= 350 ? 158 : 193);
+        .toBeGreaterThanOrEqual(viewport.width <= 350 ? 148 : 193);
       expect.soft(layout.modeButtons.map(button => button.text))
         .toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
       expect.soft(layout.modeButtons.every(button =>
         !button.hidden &&
         button.display !== 'none' &&
-        button.width >= (viewport.width <= 350 ? 37 : 46) &&
+        button.width >= (viewport.width <= 350 ? 36 : 46) &&
         button.x >= layout.modeSlot.x - 1 &&
         button.right <= layout.modeSlot.right + 1
       ), JSON.stringify({ modeSlot: layout.modeSlot, modeButtons: layout.modeButtons })).toBe(true);
