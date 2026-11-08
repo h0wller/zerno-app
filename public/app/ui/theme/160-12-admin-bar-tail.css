@@ -771,10 +771,10 @@ html body #adminBar.adminBar[hidden] { display:none !important; }
   html body #deliveryView #deliverySubFilter .subchip.on,
   html body #deliveryView .subfilter-bar .subchip.on,
   html body #menuView .subfilter-bar .subchip.on {
-    background:var(--flame,#C03B2A);
-    border-color:var(--fr-choc,#3A2A1C);
+    background:var(--flame);
+    border-color:var(--fr-choc);
     color:#fff;
-    box-shadow:2px 2px 0 var(--fr-choc,#3A2A1C);
+    box-shadow:2px 2px 0 var(--fr-choc);
   }
 
   html body header.topbar #profileTopBtn,
