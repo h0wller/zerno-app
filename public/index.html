@@ -117,6 +117,35 @@
   display: none !important;
 }
 
+/* Cached staff sessions reserve the one-row admin action bar before auth hydration. */
+@media (max-width:820px) {
+  html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-template-rows:44px;
+    grid-auto-flow:column;
+    width:calc(100% + 90px);
+    max-width:calc(100vw - 20px);
+    height:44px;
+    min-height:44px;
+    margin:0 0 12px -90px;
+    visibility:hidden;
+    pointer-events:none;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    grid-template-rows:32px 44px !important;
+    height:80px !important;
+    overflow:visible !important;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    overflow:visible !important;
+  }
+}
+
 .modal:not(.show):not(.open),
 .sheet:not(.show):not(.open),
 .dialog:not(.show):not(.open),
