@@ -176,8 +176,8 @@ html .wrap > #panel:not(.open):not(.show) {
   }
   #menuView .mh-top .mh-right .search,
   #deliveryView .mh-top .mh-right .search {
-    width: 100%; max-width: 100%;
-    flex: 1 1 100%;
+    width: auto; max-width: 100%;
+    flex: 1 1 0%;
     min-width: 0;
   }
 }
