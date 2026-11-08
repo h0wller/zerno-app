@@ -14,18 +14,13 @@ function updateRailStickyPosition(rail, head) {
   }
 
   var topbar = document.querySelector('header.topbar');
-  var menuRow = head.querySelector('.menu-controls-row');
-  var modeSeg = document.getElementById('modeSeg');
-  var staffGuestMenu = !!(menuRow && modeSeg &&
-    modeSeg.closest('.menu-controls-row') === menuRow);
   var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
-  var laneTop = Math.max(0, topbarBottom, headRect.bottom) + 12;
+  var laneTop = Math.max(12, topbarBottom + 12);
   var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
   var availableHeight = Math.max(0, laneBottom - laneTop);
-  // A staff menu rail is centered in normal flow, then sticks below the menu
-  // header while scrolling. Other views retain the viewport-centered rail.
-  var stickyTop = staffGuestMenu ? laneTop : laneTop + availableHeight / 2;
-  var transform = staffGuestMenu ? 'none' : 'translateY(-50%)';
+  // Rails align with the menu card at rest and stick below the topbar while scrolling.
+  var stickyTop = laneTop;
+  var transform = 'none';
 
   var top = stickyTop + 'px';
   var maxHeight = availableHeight + 'px';
@@ -53,23 +48,8 @@ function alignRailWithCard() {
     var wrapContentTop = wrapRect.top
       + (parseFloat(wrapStyle.paddingTop) || 0)
       + (parseFloat(wrapStyle.borderTopWidth) || 0);
-    var menuRow = head.querySelector('.menu-controls-row');
-    var modeSeg = document.getElementById('modeSeg');
-    var staffGuestMenu = !!(menuRow && modeSeg &&
-      modeSeg.closest('.menu-controls-row') === menuRow);
-    var desiredTop;
-
-    if (staffGuestMenu) {
-      var topbar = document.querySelector('header.topbar');
-      var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
-      var laneTop = Math.max(0, topbarBottom, headRect.bottom) + 12;
-      var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
-      var availableHeight = Math.max(0, laneBottom - laneTop);
-      var railHeight = rail.offsetHeight || rail.getBoundingClientRect().height;
-      desiredTop = laneTop + Math.max(0, (availableHeight - railHeight) / 2);
-    } else {
-      desiredTop = headRect.bottom + 12;
-    }
+    // Align both rails with the menu card's top edge in normal flow.
+    var desiredTop = headRect.top;
 
     var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
