@@ -46,7 +46,10 @@ test('mobile menu header has only the two requested rows', async ({ page }) => {
         document.documentElement.hasAttribute('data-staff-ready')
       );
       await page.evaluate(() => window.setMode('admin'));
-      await expect(page.locator('#adminBar')).toBeHidden();
+      await expect(page.locator('#adminBar')).toBeVisible();
+      for (const action of ['#promoToggle', '#dashToggle', '#chatsToggle2']) {
+        await expect(page.locator(action)).toBeVisible();
+      }
       const header = page.locator((brand === 'coffee' ? '#menuView' : '#deliveryView') + ' .menu-head');
       await expect(header.locator('.menu-controls-row')).toBeVisible();
       await expect(header.locator('.mh-right')).toBeVisible();
@@ -159,6 +162,14 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
             const rect = bar.getBoundingClientRect();
             return !bar.hidden && style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
           })(),
+          adminActionsVisible: ['promoToggle', 'dashToggle', 'chatsToggle2'].every(id => {
+            const button = document.getElementById(id);
+            if (!button || button.hidden) return false;
+            const style = getComputedStyle(button);
+            const rect = button.getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' &&
+              rect.width > 0 && rect.height > 0;
+          }),
           supportInsideRow: host.parentElement === rowTwo && fab.parentElement === host,
           documentWidth: document.documentElement.scrollWidth,
           viewportWidth: document.documentElement.clientWidth,
@@ -168,7 +179,8 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.rowOrder).toEqual(['h1', 'roles', 'edit']);
       expect(layout.headerChildren).toEqual(['title-roles-edit', 'search-support']);
       expect(layout.extraRows).toBe(0);
-      expect(layout.adminBarVisible).toBe(false);
+      expect(layout.adminBarVisible).toBe(true);
+      expect(layout.adminActionsVisible).toBe(true);
       expect(layout.supportInsideRow).toBe(true);
       expect(layout.modeButtons.map(button => button.text)).toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
 
@@ -202,6 +214,94 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
         contentType: 'image/png'
       });
     }
+  }
+});
+
+async function readStandaloneHeaderLayout(page) {
+  return page.locator('header.topbar').evaluate(header => {
+    const visibleContent = Array.from(header.querySelectorAll('#venueToggle, #headerBrand, #topbar-actions'))
+      .filter(element => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' &&
+          rect.width > 0 && rect.height > 0;
+      });
+    return {
+      position: getComputedStyle(header).position,
+      topOffset: getComputedStyle(header).top,
+      paddingTop: Number.parseFloat(getComputedStyle(header).paddingTop),
+      height: header.getBoundingClientRect().height,
+      top: header.getBoundingClientRect().top,
+      contentTop: Math.min(...visibleContent.map(element => element.getBoundingClientRect().top)),
+      scrollY: window.scrollY,
+      hasStaffRole: document.documentElement.hasAttribute('data-staff-role')
+    };
+  });
+}
+
+test('iOS standalone guest header stays pinned below the safe area on both brands', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route('**/api/**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    const body = pathname === '/api/me'
+      ? { customer: null }
+      : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
+    });
+  });
+
+  for (const brand of ['coffee', 'delivery']) {
+    await page.goto('/?brand=' + brand);
+    await expect(page.locator('header.topbar')).toBeVisible();
+    await page.evaluate(() => {
+      document.documentElement.classList.add('is-ios-standalone');
+      document.documentElement.style.setProperty('--sat', '47px');
+      document.body.style.minHeight = '1600px';
+      window.scrollTo(0, 560);
+    });
+
+    const layout = await readStandaloneHeaderLayout(page);
+    expect(layout.hasStaffRole).toBe(false);
+    expect(layout.position).toBe('sticky');
+    expect(layout.topOffset).toBe('0px');
+    expect(layout.paddingTop).toBeGreaterThanOrEqual(47);
+    expect(layout.height).toBeGreaterThanOrEqual(107);
+    expect(layout.contentTop).toBeGreaterThanOrEqual(47);
+    expect(layout.scrollY).toBeGreaterThan(0);
+    expect(Math.abs(layout.top)).toBeLessThanOrEqual(1);
+  }
+});
+
+test('iOS standalone staff header keeps the same safe-area geometry on both brands', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockStaffSession(page);
+
+  for (const brand of ['coffee', 'delivery']) {
+    await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'admin' &&
+      document.documentElement.hasAttribute('data-staff-ready')
+    );
+    await page.evaluate(() => window.setMode('admin'));
+    await page.evaluate(() => {
+      document.documentElement.classList.add('is-ios-standalone');
+      document.documentElement.style.setProperty('--sat', '47px');
+      document.body.style.minHeight = '1600px';
+      window.scrollTo(0, 560);
+    });
+
+    const layout = await readStandaloneHeaderLayout(page);
+    expect(layout.hasStaffRole).toBe(true);
+    expect(layout.position).toBe('sticky');
+    expect(layout.topOffset).toBe('0px');
+    expect(layout.paddingTop).toBeGreaterThanOrEqual(47);
+    expect(layout.height).toBeGreaterThanOrEqual(107);
+    expect(layout.contentTop).toBeGreaterThanOrEqual(47);
+    expect(layout.scrollY).toBeGreaterThan(0);
+    expect(Math.abs(layout.top)).toBeLessThanOrEqual(1);
   }
 });
 
