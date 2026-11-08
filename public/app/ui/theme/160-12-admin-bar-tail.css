@@ -1076,7 +1076,7 @@ html body #adminBar.adminBar[hidden] { display:none !important; }
     padding: 0 2px;
     align-items: center;
     justify-content: center;
-    font: 700 clamp(8px, 2.65vw, 10px)/1 "Golos Text", system-ui, sans-serif;
+    font: 700 clamp(10px, 2.8vw, 11px)/1 "Golos Text", system-ui, sans-serif;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: clip;
