@@ -316,9 +316,9 @@ test('coffee profile groups bonus explanations in one collapsed disclosure', asy
 
   const content = help.locator('.profile-loyalty-help-content');
   await expect(content).toBeHidden();
-  await expect(help).toContainText('кассир начисляет штамп по вашему QR');
+  await expect(help).toContainText('кассир сканирует ваш QR и начисляет 1 штамп');
   await expect(help).toContainText('10 штампов — бесплатный кофе');
-  await expect(help).toContainText('Приветственный кофе и бесплатная первая доставка');
+  await expect(help).toContainText('При регистрации доступны приветственный кофе и бесплатная первая доставка');
 
   await help.locator('summary').click();
   await expect(help).toHaveAttribute('open', '');
