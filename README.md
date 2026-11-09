@@ -4,8 +4,9 @@ Dual-brand PWA / Telegram Mini App for «…и кофе» and «Пятница»
 
 ## Start here
 
-1. `PROJECT_RULES.md` — mandatory engineering guardrails.
-2. `docs/read-if-u-ai.md` — system, stack, deployment and project context.
+1. `AGENTS.md` — AI entry point, canonical source map and mandatory project-reading rules.
+2. `PROJECT_RULES.md` — mandatory engineering guardrails.
+3. `docs/read-if-u-ai.md` — system, stack, deployment and project context.
 3. `docs/module-map.md` — canonical DOM/module ownership map.
 4. `docs/css-architecture.md` — CSS responsibility layers and cascade rules.
 5. `docs/frontend-todo.md` — current frontend/UX audit queue and roadmap.
