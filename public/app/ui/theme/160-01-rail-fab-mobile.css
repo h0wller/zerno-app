@@ -399,7 +399,7 @@ html body #authModal.tg-mode .mhint{
   letter-spacing: 0.02em;
 }
 /* Tablet and desktop keep the cart pill centered on the viewport. */
-@media (min-width: 821px){
+@media (min-width: 820px){
   .cartFab { left:50%; right:auto; transform:translateX(-50%) scale(0.92); }
   .cartFab.visible { transform:translateX(-50%) scale(1); }
   .cartFab:hover { transform:translateX(-50%) scale(1.03); }
