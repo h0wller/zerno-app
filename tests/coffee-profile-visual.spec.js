@@ -277,7 +277,7 @@ test('coffee profile keeps a single QR action on the bonuses tab', async ({ page
     const rect = element.getBoundingClientRect();
     return { top: rect.top, bottom: rect.bottom, right: rect.right };
   });
-  expect(closeBounds.top).toBeGreaterThanOrEqual(18);
+  expect(closeBounds.top).toBeGreaterThanOrEqual(26);
   expect(closeBounds.bottom).toBeLessThan(100);
   await page.locator('#qrClose').click();
   await expect(page.locator('#qrModal')).not.toHaveClass(/show/);
