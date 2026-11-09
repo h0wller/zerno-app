@@ -242,6 +242,13 @@ test.describe('Модуль заказов профиля', () => {
     await expect(name).toHaveAttribute('readonly', '');
     await page.locator('#nameEditBtn').click();
     await expect(name).not.toHaveAttribute('readonly', '');
+    const editGeometry = await page.evaluate(() => {
+      const input = document.querySelector('#nameInput').getBoundingClientRect();
+      const actions = document.querySelector('#nameEditActions').getBoundingClientRect();
+      return { inputWidth: input.width, inputTop: input.top, inputBottom: input.bottom, actionsTop: actions.top, actionsWidth: actions.width };
+    });
+    expect(editGeometry.inputWidth).toBeGreaterThan(150);
+    expect(editGeometry.actionsTop).toBeGreaterThanOrEqual(editGeometry.inputTop);
     await name.fill('Новое имя');
     await page.locator('#nameSaveBtn').click();
     await expect(name).toHaveAttribute('readonly', '');
