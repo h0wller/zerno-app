@@ -520,7 +520,7 @@ test.describe('Модуль заказов профиля', () => {
     expect(await info.evaluate(element => getComputedStyle(element).textAlign)).toBe('left');
   });
 
-  test('кнопка закрытия списка заказов остаётся нейтральной в обоих брендах', async ({ page }) => {
+  test('кнопка закрытия списка заказов использует брендовый объём в обоих брендах', async ({ page }) => {
     await page.locator('#myOrdersBtn').click();
     const close = page.locator('#ordersModal .omClose');
     await expect(close).toBeVisible();
@@ -531,11 +531,11 @@ test.describe('Модуль заказов профиля', () => {
         document.body.setAttribute('data-brand', value);
       }, brand);
       await expect.poll(() => close.evaluate(element => getComputedStyle(element).backgroundColor))
-        .toBe('rgba(0, 0, 0, 0)');
+        .not.toBe('rgba(0, 0, 0, 0)');
       await expect.poll(() => close.evaluate(element => getComputedStyle(element).boxShadow))
-        .toBe('none');
+        .toContain('3px 3px');
       await expect.poll(() => close.evaluate(element => getComputedStyle(element).borderTopWidth))
-        .toBe('1px');
+        .toBe('2px');
     }
   });
 
