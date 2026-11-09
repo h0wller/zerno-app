@@ -111,6 +111,7 @@ test.describe('Модуль заказов профиля', () => {
         identityBackground: getComputedStyle(identity).backgroundColor,
         identityBorder: getComputedStyle(identity).borderTopWidth,
         historyBackground: getComputedStyle(history).backgroundColor,
+        historyBorderTop: getComputedStyle(history).borderTopWidth,
         orderShadow: getComputedStyle(order).boxShadow,
         orderBorder: getComputedStyle(order).borderTopWidth,
         detailsRadius: getComputedStyle(details).borderRadius,
@@ -130,6 +131,7 @@ test.describe('Модуль заказов профиля', () => {
     expect(presentation.identityBackground).toBe('rgba(0, 0, 0, 0)');
     expect(presentation.identityBorder).toBe('0px');
     expect(presentation.historyBackground).toBe('rgba(0, 0, 0, 0)');
+    expect(presentation.historyBorderTop).toBe('0px');
     expect(presentation.orderShadow).toBe('none');
     expect(presentation.orderBorder).toBe('1px');
     expect(presentation.detailsRadius).toBe('0px');
@@ -180,6 +182,8 @@ test.describe('Модуль заказов профиля', () => {
     const modal = page.locator('#ordersModal');
     await expect(modal).toHaveClass(/show/);
     await expect(modal.locator('#omList .myOrderCard')).toContainText('Заказ #P-1042');
+    await expect(modal.locator('#omList .myOrderCard .moTrack')).toHaveCSS('border-top-width', '2px');
+    await expect(modal.locator('#omList .myOrderCard .moTrack')).toHaveCSS('box-shadow', /3px 3px/);
     await expect(modal.locator('[data-open-track="profile-order-1"]')).toBeVisible();
     await testInfo.attach('delivery-profile-orders-modal-390px', {
       body: await page.screenshot({ animations: 'disabled' }),
