@@ -310,9 +310,10 @@
   min-width: 0;
 }
 .profile-name-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   min-width: 0;
 }
 .phead input#nameInput {
