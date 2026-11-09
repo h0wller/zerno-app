@@ -42,9 +42,22 @@
   grid-row: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  align-content: center;
-  align-self: stretch;
+  grid-template-rows: 44px auto;
+  align-content: start;
+  align-self: start;
   min-width: 0;
+}
+#profileBox .profile-identity-copy > .profile-name-row {
+  grid-column: 1;
+  grid-row: 1;
+}
+#profileBox .profile-identity-copy > .ph {
+  grid-column: 1;
+  grid-row: 2;
+}
+#profileBox .profile-identity-copy > .profile-role {
+  grid-column: 1;
+  grid-row: 3;
 }
 #profileBox .profile-name-row {
   display: grid;
@@ -122,7 +135,7 @@
   grid-column: 3;
   grid-row: 1;
   justify-self: end;
-  align-self: center;
+  align-self: start;
   display: inline-grid;
   place-items: center;
   width: 44px;
