@@ -239,8 +239,37 @@ test.describe('Модуль заказов профиля', () => {
     });
 
     const name = page.locator('#nameInput');
+    const editButton = page.getByRole('button', { name: 'Изменить имя' });
     await expect(name).toHaveAttribute('readonly', '');
-    await page.locator('#nameEditBtn').click();
+    await expect(editButton).toHaveAccessibleName('Изменить имя');
+    await expect(editButton.locator('svg')).toBeVisible();
+
+    const editPresentation = await editButton.evaluate(button => {
+      const rect = button.getBoundingClientRect();
+      const style = getComputedStyle(button);
+      const icon = button.querySelector('svg');
+      const iconStyle = getComputedStyle(icon);
+      return {
+        width: rect.width,
+        height: rect.height,
+        background: style.backgroundColor,
+        shadow: style.boxShadow,
+        iconWidth: icon.getBoundingClientRect().width,
+        iconHeight: icon.getBoundingClientRect().height,
+        stroke: iconStyle.stroke,
+        fill: iconStyle.fill
+      };
+    });
+    expect(editPresentation.width).toBeGreaterThanOrEqual(44);
+    expect(editPresentation.height).toBeGreaterThanOrEqual(44);
+    expect(editPresentation.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(editPresentation.shadow).not.toBe('none');
+    expect(editPresentation.iconWidth).toBeGreaterThanOrEqual(20);
+    expect(editPresentation.iconHeight).toBeGreaterThanOrEqual(20);
+    expect(editPresentation.stroke).not.toBe('none');
+    expect(editPresentation.fill).toBe('none');
+
+    await editButton.click();
     await expect(name).not.toHaveAttribute('readonly', '');
     await name.fill('Новое имя');
     await page.locator('#nameSaveBtn').click();
