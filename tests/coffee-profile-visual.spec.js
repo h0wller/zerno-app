@@ -213,7 +213,7 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
     return { borderTopWidth: style.borderTopWidth, boxShadow: style.boxShadow };
   });
   expect(primaryAction.borderTopWidth).toBe('0px');
-  expect(primaryAction.boxShadow).not.toMatch(/\d+px\s+\d+px\s+0(?:px)?\b/);
+  expect(primaryAction.boxShadow).not.toMatch(/(?:^|,\s*)[^,]*?\d+px\s+\d+px\s+0(?:px)?\s+/);
   expect(primaryAction.boxShadow).toContain('0px 6px 16px');
 
   const socialLayout = await page.locator('#profileBox .coffee-place-links').evaluate(nav => {

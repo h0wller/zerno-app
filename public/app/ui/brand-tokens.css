@@ -131,6 +131,7 @@ body[data-brand="coffee"] {
   --profile-btn-secondary-color: #123A6B;
   --profile-btn-secondary-shadow: none;
   --profile-focus-ring: #123A6B;
+  --profile-orders-close-border: 1.5px solid rgba(18, 58, 107, 0.2);
 
   --cart-panel-bg: var(--card, #FFFFFF);
   --cart-panel-border: 2px solid var(--line, #D8DFE4);
@@ -352,6 +353,7 @@ body[data-brand="delivery"] {
   --profile-btn-active-transform: translate(2px, 2px);
   --profile-btn-radius: 10px;
   --profile-focus-ring: var(--fr-choc, #3A2A1C);
+  --profile-orders-close-border: 2px solid var(--fr-choc, #3A2A1C);
 
   --cart-panel-bg: var(--fr-rice, #EFE6D8);
   --cart-panel-border: 3px solid var(--fr-choc, #3A2A1C);

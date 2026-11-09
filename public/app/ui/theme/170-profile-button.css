@@ -755,6 +755,10 @@
 }
 
 #fridayInfo .friday-info-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   min-height: 46px;
   padding: 9px 0;
   color: var(--ink);
@@ -1172,6 +1176,10 @@
 #ordersModal .omCard {
   box-sizing: border-box;
   padding: 22px;
+}
+
+#ordersModal .omCard .omClose {
+  border: var(--profile-orders-close-border, var(--profile-btn-secondary-border, 2px solid var(--ink)));
 }
 
 #ordersModal .omCard h3 {
