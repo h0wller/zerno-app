@@ -316,7 +316,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
         bottomDelta: Math.abs(rail.bottom - grid.bottom),
       };
     });
-    expect(railGeometry.position).toBe('relative');
+    expect(railGeometry.position).toBe('sticky');
     expect(railGeometry.topDelta).toBeLessThanOrEqual(2);
     expect(railGeometry.bottomDelta).toBeLessThanOrEqual(2);
 
