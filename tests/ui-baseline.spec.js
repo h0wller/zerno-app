@@ -20,7 +20,10 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-const shot = (page, name) => page.screenshot({ path: path.join(OUT, name + '.png') });
+const shot = async (page, name, testInfo) => {
+  const body = await page.screenshot({ path: path.join(OUT, name + '.png') });
+  if (testInfo) await testInfo.attach(name + '.png', { body, contentType: 'image/png' });
+};
 
 async function closeOverlay(page) {
   await page.evaluate(() => {
@@ -141,7 +144,7 @@ test('baseline: гостевые экраны', async ({ page }) => {
   await shot(page, '02-delivery-menu');
 });
 
-test('baseline: профиль и бонусы (зарегистрирован)', async ({ page }) => {
+test('baseline: профиль и бонусы (зарегистрирован)', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await loginAs(page);
   await assertBootTemplate(page);
@@ -185,7 +188,7 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(panel).toBeVisible();
   await panel.locator('.tabs button[data-tab="profile"]').click();
   await expect(page.locator('#fridayInfo')).toBeVisible();
-  await shot(page, '03-delivery-profile');
+  await shot(page, '03-delivery-profile', testInfo);
   await expect(page.locator('#fridayInfo .friday-info-details summary')).toContainText('О заведении');
   await expect(page.locator('#fridayInfo .friday-info-details')).toHaveJSProperty('open', false);
   await expect(page.locator('#fridayInfo .friday-info-link')).toHaveCount(2);
@@ -200,7 +203,7 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(panel).toBeVisible();
   await panel.locator('.tabs button[data-tab="profile"]').click();
   await expect(page.locator('.coffee-review-card')).toBeVisible();
-  await shot(page, '03-profile');
+  await shot(page, '03-profile', testInfo);
 
   await panel.locator('.tabs button[data-tab="bonus"]').click();
   await expect(page.locator('#bonusBox')).toBeVisible({ timeout: 10000 });
@@ -232,7 +235,7 @@ test('baseline: профиль и бонусы (зарегистрирован)'
     window.renderBonus();
   });
   await expect(page.locator('#bonusProg')).toContainText('2 бесплатных кофе');
-  await shot(page, '04-bonus');
+  await shot(page, '04-bonus', testInfo);
 });
 
 test('baseline: кассир', async ({ page }) => {
