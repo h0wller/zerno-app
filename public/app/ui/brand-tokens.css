@@ -223,6 +223,10 @@ body[data-brand="delivery"] {
   --panel-bg: var(--fr-paper, #F6EEE1);
   --panel-border: 3px solid var(--fr-choc, #3A2A1C);
   --panel-shadow: -8px 0 30px rgba(58, 42, 28, 0.2);
+  --profile-section-bg: var(--fr-rice, #EFE6D8);
+  --profile-section-border: 2px solid var(--fr-choc, #3A2A1C);
+  --profile-section-radius: 16px;
+  --profile-section-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
   --tab-on-bg: var(--fr-tan, #C99E6E);
   --tab-on-color: var(--fr-choc, #3A2A1C);
   --tab-on-border: 2px solid var(--fr-choc, #3A2A1C);
