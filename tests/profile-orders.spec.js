@@ -81,6 +81,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#panel')).toHaveClass(/open/);
     await expect(page.locator('#tabBonus, #tabProfile, #pvBonus')).toHaveCount(0);
     await expect(page.locator('#pvProfile')).toBeVisible();
+    await expect(page.locator('#pvProfile')).toHaveCSS('background-color', 'rgb(243, 228, 208)');
     await expect(page.locator('#profileBox')).toBeVisible();
     await expect(page.locator('#myOrdersBtn')).toBeVisible();
     await expect(page.locator('#fridayInfo')).toBeVisible();
@@ -239,6 +240,7 @@ test.describe('Модуль заказов профиля', () => {
 
     const settings = page.locator('#settingsModal');
     await expect(settings).toHaveClass(/show/);
+    await expect(settings.locator('.settings-card')).toHaveCSS('background-color', 'rgb(244, 229, 210)');
     const settingsWidth = await settings.locator('.settings-card').evaluate(element => element.getBoundingClientRect().width);
     expect(settingsWidth).toBeLessThanOrEqual(401);
     await expect(settings.locator('#setPinGo2')).toBeVisible();
