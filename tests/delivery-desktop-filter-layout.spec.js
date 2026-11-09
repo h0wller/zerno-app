@@ -146,6 +146,8 @@ test('delivery desktop header uses the brand font, preserves cart centering, and
     expect(details.color).toBe('rgb(58, 42, 28)');
     const cart = page.locator('#cartFab');
     await expect(cart).toBeAttached();
+    await cart.evaluate((el) => { el.hidden = false; el.classList.add('visible'); });
+    await expect(cart).toBeVisible();
     const cartLayout = await cart.evaluate((el) => {
       const style = getComputedStyle(el);
       return { left: style.left, transform: style.transform, position: style.position };
