@@ -405,5 +405,11 @@
   #panel.open .tabs .btn-back {
     color: var(--soft);
     font-weight: 700;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: none;
+  }
+  #panel.open .tabs button.on {
+    transform: none;
   }
 }
