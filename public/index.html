@@ -1681,8 +1681,17 @@ html[data-brand="delivery"] {
   html[data-brand="delivery"] body header.topbar #brandSub { display:block; color:#3A2A1C; font:600 clamp(9px,.75vw,11px)/1.2 "Unbounded","Golos Text",sans-serif; }
 }
 @media (min-width:820px) and (max-width:1023px) {
-  html[data-brand="delivery"] body header.topbar #headerBrand.brand { width:auto; gap:8px; }
-  html[data-brand="delivery"] body header.topbar #headerBrand.brand .mark { width:clamp(92px,14vw,136px); max-width:136px; }
+  /* Reserve post-font wordmark width before deferred CSS to avoid a 27px header shift at 820px. */
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand {
+    width:min(346px,calc(10vw + 244px));
+    min-width:min(346px,calc(10vw + 244px));
+    max-width:min(346px,calc(10vw + 244px));
+    gap:8px;
+  }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand .mark {
+    width:clamp(92px,14vw,136px);
+    max-width:136px;
+  }
 }
 @media (max-width: 480px) {
   :root {
