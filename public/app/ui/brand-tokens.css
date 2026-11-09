@@ -158,6 +158,10 @@ body[data-brand="coffee"] {
   --loyalty-stamp-padding: 10px;
   --loyalty-panel-padding: 12px;
   --loyalty-profile-stat-size: 16px;
+  --profile-section-bg: #FFFFFF;
+  --profile-section-border: 1.5px solid rgba(62, 143, 208, 0.22);
+  --profile-section-radius: 16px;
+  --profile-section-shadow: 0 4px 14px rgba(18, 58, 107, 0.06);
 
 }
 
