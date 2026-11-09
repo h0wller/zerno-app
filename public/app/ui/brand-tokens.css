@@ -162,6 +162,14 @@ body[data-brand="coffee"] {
   --profile-section-border: 1.5px solid rgba(62, 143, 208, 0.22);
   --profile-section-radius: 16px;
   --profile-section-shadow: 0 4px 14px rgba(18, 58, 107, 0.06);
+  --profile-canvas: var(--panel, #F3F8FC);
+  --profile-divider: rgba(18, 58, 107, 0.14);
+  --profile-surface: rgba(255, 255, 255, 0.62);
+  --profile-surface-muted: rgba(18, 58, 107, 0.045);
+  --profile-accent-soft: rgba(62, 143, 208, 0.12);
+  --profile-modal-surface: var(--panel, #F3F8FC);
+  --profile-modal-border: 1px solid rgba(18, 58, 107, 0.16);
+  --profile-modal-shadow: 0 22px 60px rgba(18, 58, 107, 0.18);
 
 }
 
@@ -227,6 +235,14 @@ body[data-brand="delivery"] {
   --profile-section-border: 2px solid var(--fr-choc, #3A2A1C);
   --profile-section-radius: 16px;
   --profile-section-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --profile-canvas: var(--panel, #FAF5EE);
+  --profile-divider: rgba(58, 42, 28, 0.16);
+  --profile-surface: rgba(255, 255, 255, 0.58);
+  --profile-surface-muted: rgba(58, 42, 28, 0.045);
+  --profile-accent-soft: rgba(192, 59, 42, 0.09);
+  --profile-modal-surface: var(--panel, #FAF5EE);
+  --profile-modal-border: 1px solid rgba(58, 42, 28, 0.18);
+  --profile-modal-shadow: 0 22px 60px rgba(58, 42, 28, 0.2);
   --loyalty-card-bg: var(--fr-paper, #F6EEE1);
   --loyalty-qr-bg: var(--fr-rice, #EFE6D8);
   --loyalty-muted: var(--fr-choc, #3A2A1C);
