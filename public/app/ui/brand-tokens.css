@@ -117,10 +117,25 @@ body[data-brand="coffee"] {
   --venue-toggle-color: var(--ink, #101418);
   --venue-toggle-shadow: none;
 
-  --profile-btn-bg: #FFFFFF;
-  --profile-btn-border: 1.5px solid var(--line, #D8DFE4);
-  --profile-btn-color: var(--ink, #101418);
-  --profile-btn-shadow: none;
+  --profile-btn-bg: #123A6B;
+  --profile-btn-border: none;
+  --profile-btn-color: #FFFFFF;
+  --profile-btn-shadow: 0 4px 12px rgba(18, 58, 107, 0.22);
+  --profile-btn-shadow-hover: 0 7px 18px rgba(18, 58, 107, 0.28);
+  --profile-btn-shadow-active: 0 1px 3px rgba(18, 58, 107, 0.2);
+  --profile-btn-hover-transform: translateY(-1px);
+  --profile-btn-active-transform: translateY(0);
+  --profile-btn-radius: 12px;
+  --profile-btn-secondary-bg: #EAF1F9;
+  --profile-btn-secondary-border: 1.5px solid rgba(18, 58, 107, 0.2);
+  --profile-btn-secondary-color: #123A6B;
+  --profile-btn-secondary-shadow: 0 2px 6px rgba(18, 58, 107, 0.12);
+  --profile-btn-secondary-shadow-hover: 0 4px 10px rgba(18, 58, 107, 0.18);
+  --profile-btn-secondary-shadow-active: 0 1px 3px rgba(18, 58, 107, 0.14);
+  --profile-review-btn-bg: #123A6B;
+  --profile-review-btn-color: #FFFFFF;
+  --profile-canvas-image: none;
+  --profile-modal-image: none;
 
   --cart-panel-bg: var(--card, #FFFFFF);
   --cart-panel-border: 2px solid var(--line, #D8DFE4);
@@ -223,10 +238,10 @@ body[data-brand="delivery"] {
   --panel-bg: var(--fr-paper, #F6EEE1);
   --panel-border: 3px solid var(--fr-choc, #3A2A1C);
   --panel-shadow: -8px 0 30px rgba(58, 42, 28, 0.2);
-  --profile-section-bg: var(--fr-rice, #EFE6D8);
-  --profile-section-border: 2px solid var(--fr-choc, #3A2A1C);
-  --profile-section-radius: 16px;
-  --profile-section-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --profile-section-bg: var(--fr-paper, #F6EEE1);
+  --profile-section-border: 1.5px solid rgba(58, 42, 28, 0.18);
+  --profile-section-radius: 14px;
+  --profile-section-shadow: 0 2px 0 rgba(58, 42, 28, 0.07);
   --loyalty-card-bg: var(--fr-paper, #F6EEE1);
   --loyalty-qr-bg: var(--fr-rice, #EFE6D8);
   --loyalty-muted: var(--fr-choc, #3A2A1C);
@@ -243,6 +258,7 @@ body[data-brand="delivery"] {
   --modal-bg: var(--fr-rice, #EFE6D8);
   --modal-bg-image: radial-gradient(rgba(58, 42, 28, 0.08) 1px, transparent 1.5px);
   --modal-bg-size: 10px 10px;
+  --profile-modal-size: auto;
   --modal-border: 3px solid var(--fr-choc, #3A2A1C);
   --modal-radius: 18px;
   --modal-shadow: 6px 6px 0 var(--fr-choc, #3A2A1C), 0 20px 50px rgba(0, 0, 0, 0.35);
@@ -305,10 +321,25 @@ body[data-brand="delivery"] {
   --venue-toggle-color: var(--fr-choc, #3A2A1C);
   --venue-toggle-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
 
-  --profile-btn-bg: #E8A33D;
+  --profile-btn-bg: var(--flame, #C03B2A);
   --profile-btn-border: 2px solid var(--fr-choc, #3A2A1C);
-  --profile-btn-color: #3A2A1C;
-  --profile-btn-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --profile-btn-color: #FFFFFF;
+  --profile-btn-shadow: 3px 3px 0 var(--fr-choc, #3A2A1C);
+  --profile-btn-shadow-hover: 4px 4px 0 var(--fr-choc, #3A2A1C);
+  --profile-btn-shadow-active: 1px 1px 0 var(--fr-choc, #3A2A1C);
+  --profile-btn-hover-transform: translate(-1px, -1px);
+  --profile-btn-active-transform: translate(2px, 2px);
+  --profile-btn-radius: 10px;
+  --profile-btn-secondary-bg: #FFF9F0;
+  --profile-btn-secondary-border: 1.5px solid var(--fr-choc, #3A2A1C);
+  --profile-btn-secondary-color: var(--fr-choc, #3A2A1C);
+  --profile-btn-secondary-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --profile-btn-secondary-shadow-hover: 3px 3px 0 var(--fr-choc, #3A2A1C);
+  --profile-btn-secondary-shadow-active: 1px 1px 0 var(--fr-choc, #3A2A1C);
+  --profile-review-btn-bg: #E8A33D;
+  --profile-review-btn-color: var(--fr-choc, #3A2A1C);
+  --profile-canvas-image: none;
+  --profile-modal-image: none;
 
   --cart-panel-bg: var(--fr-rice, #EFE6D8);
   --cart-panel-border: 3px solid var(--fr-choc, #3A2A1C);

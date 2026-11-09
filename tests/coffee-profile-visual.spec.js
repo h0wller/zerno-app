@@ -238,6 +238,10 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   const qrStyle = await page.locator('#qrOpenProfile').evaluate(button => getComputedStyle(button));
   expect(qrStyle.boxShadow).not.toBe('none');
   expect(qrStyle.backgroundColor).toBe('rgb(18, 58, 107)');
+  await testInfo.attach('coffee-profile-redesign-390px', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png'
+  });
 
   const backgroundImage = await page.locator('#pvProfile').evaluate(element => getComputedStyle(element).backgroundImage);
   expect(backgroundImage).toBe('none');
