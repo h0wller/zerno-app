@@ -158,7 +158,7 @@ test('delivery desktop header uses the brand font, preserves cart centering, and
     });
     expect(cartGeometry.position).toBe('fixed');
     expect(Math.abs(cartGeometry.center - cartGeometry.viewportCenter),
-      'cart pill must be visually centered in the viewport').toBeLessThanOrEqual(2);
+      'cart pill must be visually centered in the viewport').toBeLessThanOrEqual(1);
     const active = page.locator('#deliverySubFilter .subchip.on');
     await expect(active).toBeVisible();
     const activeStyles = await active.evaluate(el => ({ bg:getComputedStyle(el).backgroundColor, color:getComputedStyle(el).color }));
