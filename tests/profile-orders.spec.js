@@ -90,6 +90,60 @@ test.describe('Модуль заказов профиля', () => {
       element.nextElementSibling?.classList.contains('profile-history-section')
     )).toBe(true);
   });
+  test('спойлер «О заведении» оформлен в едином стиле профиля доставки', async ({ page }, testInfo) => {
+    const details = page.locator('#fridayInfo .friday-info-details');
+    const summary = details.locator('summary');
+
+    await expect(details).toHaveCount(1);
+    await expect(summary).toHaveText('О заведении');
+    await expect(details).not.toHaveAttribute('open', '');
+
+    const presentation = await details.evaluate(element => {
+      const summary = element.querySelector('summary');
+      const icon = getComputedStyle(summary, '::before');
+      const chevron = getComputedStyle(summary.querySelector('.friday-info-chevron'));
+      const body = element.querySelector('.friday-info-body');
+      const address = element.querySelector('.friday-info-address');
+      return {
+        borderRadius: getComputedStyle(element).borderRadius,
+        borderWidth: getComputedStyle(element).borderTopWidth,
+        summaryDisplay: getComputedStyle(summary).display,
+        summaryMinHeight: Number.parseFloat(getComputedStyle(summary).minHeight),
+        iconWidth: icon.width,
+        chevronWidth: chevron.width,
+        bodyBackground: getComputedStyle(body).backgroundColor,
+        addressRadius: getComputedStyle(address).borderRadius
+      };
+    });
+
+    expect(presentation.borderRadius).toBe('16px');
+    expect(presentation.borderWidth).toBe('2px');
+    expect(presentation.summaryDisplay).toBe('flex');
+    expect(presentation.summaryMinHeight).toBeGreaterThanOrEqual(52);
+    expect(presentation.iconWidth).toBe('30px');
+    expect(presentation.chevronWidth).toBe('30px');
+    expect(presentation.bodyBackground).toBe('rgb(246, 238, 225)');
+    expect(presentation.addressRadius).toBe('12px');
+
+    await details.scrollIntoViewIfNeeded();
+    await testInfo.attach('delivery-profile-about-collapsed-390px', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png'
+    });
+
+    await summary.click();
+    await expect(details).toHaveAttribute('open', '');
+    await expect(details.locator('.friday-info-body')).toBeVisible();
+    await expect(details.locator('.friday-info-hours-row')).toHaveCount(2);
+    await expect(details.getByRole('link', { name: 'ВКонтакте' })).toBeVisible();
+    await expect(details.getByRole('link', { name: 'Яндекс Карты' })).toBeVisible();
+
+    await testInfo.attach('delivery-profile-about-expanded-390px', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png'
+    });
+  });
+
   test('выводит последний заказ в профиле и список в отдельной модалке', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection .profile-section-heading')).toContainText('Последний заказ');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
