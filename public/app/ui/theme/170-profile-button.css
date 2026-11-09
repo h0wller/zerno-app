@@ -938,3 +938,22 @@ body:has(#settingsModal.show) #overlay {
   -webkit-backdrop-filter: blur(8px) saturate(0.82);
   backdrop-filter: blur(8px) saturate(0.82);
 }
+
+
+/* Keep the edit glyph optically and geometrically centered.
+   The generic .profile-name-action padding is for text actions and must not
+   shrink/offset the grid used by this icon-only control. */
+#profileBox #nameEditBtn.profile-name-edit-icon {
+  display: grid;
+  grid-template: 22px / 22px;
+  place-content: center;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+}
+#profileBox #nameEditBtn.profile-name-edit-icon > svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+}
