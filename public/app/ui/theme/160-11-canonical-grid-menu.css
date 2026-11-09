@@ -205,6 +205,3 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
     line-height:1.15;
   }
 }
-
-/* Delivery has no right-hand coffee panel, so its catalog uses the full content column. */
-@media (min-width:821px) { html[data-brand="delivery"] body > div.wrap { grid-template-columns:92px minmax(0,1fr); } }
