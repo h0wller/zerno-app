@@ -95,7 +95,7 @@ test.describe('Модуль заказов профиля', () => {
     const summary = details.locator('summary');
 
     await expect(details).toHaveCount(1);
-    await expect(summary).toHaveText('О заведении');
+    await expect(summary.locator('span').first()).toHaveText('О заведении');
     await expect(details).not.toHaveAttribute('open', '');
 
     const presentation = await details.evaluate(element => {
