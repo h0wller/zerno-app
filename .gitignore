@@ -115,7 +115,10 @@ docs/inline-core-dump.txt
 # Backups от скриптов
 *.bak
 *.bak-*
-repomix-output.xml
+# Repomix artifacts — generation is currently not used
+repomix*.xml
+repomix*.config.json
+.repomix*/
 lh-cold-.json
 .env.example
 # Pre-fix бэкапы от fix-all*.mjs

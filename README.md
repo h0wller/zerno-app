@@ -18,7 +18,6 @@ Dual-brand PWA / Telegram Mini App for «…и кофе» and «Пятница»
 12. `docs/notes.md` and `docs/nutrition-estimates.md` — product/technical notes.
 13. `docs/promotions/` and `docs/reviews/` — promotion specifications and engineering review records.
 14. `docs/audits/` — UX scorecard and audit evidence.
-15. `perf-report.md` — performance report.
 16. `docs/documentation-audit-2026-11-07.md` — current documentation reconciliation; the 2026-11-05 register is historical.
 
 ## Project commands
@@ -50,4 +49,4 @@ Every screenshot finding must record source, commit, brand, role, viewport and s
 
 ## Documentation source of truth
 
-`docs/` is the canonical maintained documentation tree. `docs7/` is a deprecated Mintlify/Context7 snapshot and is intentionally not maintained in parallel; its navigation is reduced to a notice directing readers to the canonical files in `docs/`. Do not cite `docs7/` pages as current project facts.
+`docs/` is the only maintained documentation tree. The retired `docs7/` mirror and the obsolete root `perf-report.md` snapshot are removed. Do not recreate duplicate documentation mirrors. Repomix output files are not maintained or committed; Git ignores `repomix*.xml` and Repomix config artifacts.
