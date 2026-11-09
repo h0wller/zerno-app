@@ -14,7 +14,7 @@ const VIEWPORTS = [
 
 for (const brand of CASES) {
   for (const viewport of VIEWPORTS) {
-    test(`${brand.brand}: menu header geometry and card-aligned rail at ${viewport.name}`, async ({ page }) => {
+    test(`${brand.brand}: menu header geometry and card-aligned rail at ${viewport.name}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
       await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
@@ -127,6 +127,10 @@ for (const brand of CASES) {
           const rect = element.getBoundingClientRect();
           return Math.abs(rect.top - Math.max(12, (window.innerHeight - element.clientHeight) / 2));
         }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
+        await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
+          body: await page.screenshot({ animations: 'disabled' }),
+          contentType: 'image/png',
+        });
       } else {
         const gridSelector = brand.brand === 'delivery' ? '#deliveryGrid' : '#grid';
         await expect.poll(() => page.evaluate(({ railSelector, gridSelector }) => {
