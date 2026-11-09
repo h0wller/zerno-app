@@ -200,7 +200,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.card.width).toBeGreaterThan(200);
     expect(before.media.height).toBe(180);
     expect(before.brandMark).not.toBeNull();
-    expect(before.brandTitleDisplay).not.toBe('none');
+    expect(before.brandTitleDisplay).toBe('none');
     expect(before.brandSubDisplay).toBe('none');
     expect(before.search).not.toBeNull();
     expect(before.searchLabel.width).toBeLessThanOrEqual(1);
