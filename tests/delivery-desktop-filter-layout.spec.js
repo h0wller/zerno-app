@@ -148,13 +148,9 @@ test('delivery desktop header uses the brand font, preserves cart centering, and
     await expect(cart).toBeAttached();
     await cart.evaluate((el) => { el.hidden = false; el.classList.add('visible'); });
     await expect(cart).toBeVisible();
-    const cartLayout = await cart.evaluate((el) => {
-      const style = getComputedStyle(el);
-      return { left: style.left, transform: style.transform, position: style.position };
-    });
-    expect(cartLayout.position).toBe('fixed');
-    expect(cartLayout.left).toBe('50%');
-    expect(cartLayout.transform).not.toBe('none');
+    await expect(cart).toHaveCSS('position', 'fixed');
+    await expect(cart).toHaveCSS('left', '50%');
+    await expect(cart).toHaveCSS('transform', /matrix\(1, 0, 0, 1, -?\d+(\.\d+)?, 0\)/);
     const active = page.locator('#deliverySubFilter .subchip.on');
     await expect(active).toBeVisible();
     const activeStyles = await active.evaluate(el => ({ bg:getComputedStyle(el).backgroundColor, color:getComputedStyle(el).color }));
