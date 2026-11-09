@@ -168,7 +168,7 @@ test('menu headings stay compact while retaining their brand context', async ({ 
       expect(geometry.left).toBeGreaterThanOrEqual(0);
       expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
       expect(geometry.title).toBe('Меню');
-      expect(geometry.taglineVisible).toBe(true);
+      expect(geometry.taglineVisible, 'the descriptor badge is hidden only on 320px narrow screens').toBe(viewport.width > 320);
       expect(geometry.left).toBeGreaterThanOrEqual(geometry.menuHeadLeft + 8);
       expect(geometry.right).toBeLessThanOrEqual(geometry.menuHeadRight - 8);
     }
@@ -285,5 +285,34 @@ test('coffee wordmark “и кофе” remains visible beside the logo on mobil
     const bounds = await title.boundingBox();
     expect(bounds?.width ?? 0).toBeGreaterThan(20);
     expect(bounds?.height ?? 0).toBeGreaterThan(10);
+  }
+});
+
+test('delivery: pizza option labels use compact typography only at 320px', async ({ page }) => {
+  for (const viewport of [
+    { width: 320, height: 740, expected: { size: 11, crust: 9.5, weight: 9, price: 11.5 } },
+    { width: 390, height: 844, expected: { size: 12.5, crust: 11, weight: 10.5, price: 13 } },
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+    const options = page.locator('#deliveryGrid .card .opts').first();
+    await expect(options).toBeVisible({ timeout: 15000 });
+    await expect(options.locator('.opt-size').first()).toBeVisible();
+
+    const fontSizes = await options.evaluate((fieldset) => {
+      const size = (selector) => {
+        const element = fieldset.querySelector(selector);
+        return element ? Number.parseFloat(getComputedStyle(element).fontSize) : null;
+      };
+      return {
+        size: size('.opt-size'),
+        crust: size('.opt-crust'),
+        weight: size('.opt-weight'),
+        price: size('.opt-price'),
+      };
+    });
+    expect(fontSizes).toEqual(viewport.expected);
   }
 });
