@@ -194,6 +194,7 @@ test('visual audit: coffee profile loyalty without duplicate progress UI at 390p
     window.__profileMeReady();
     window.renderBonus();
     window.renderProfile();
+    window.renderVerifyNote();
     window.openPanel('profile');
   });
 
