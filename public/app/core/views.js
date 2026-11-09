@@ -327,10 +327,8 @@ function syncStaffAndGuestControls(bName2) {
 
   var mb = document.getElementById('mbonusBtn');
   if (mb) mb.style.display = (currentMode === 'guest' && bName2 === 'coffee') ? '' : 'none';
-  var bb = document.getElementById('bonusBox');
-  if (bb) bb.style.display = (typeof me !== 'undefined' && me) ? '' : 'none';
-  var bt = document.querySelector('.tabs button[data-tab="bonus"]');
-  if (bt) bt.style.display = (bName2 === 'delivery') ? 'none' : '';
+  var loyalty = document.getElementById('profileCoffeeSection');
+  if (loyalty) loyalty.hidden = !me || bName2 !== 'coffee';
   if (confirmedStaff && typeof renderProfile === 'function') renderProfile();
   if (menuPlacement && typeof window.alignRailWithCard === 'function') {
     window.alignRailWithCard();

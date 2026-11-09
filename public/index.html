@@ -3599,48 +3599,14 @@ html body #tickerTrack .tickerGroup > span {
     </section>
 
     <aside class="panel" id="panel" aria-label="Личный кабинет">
-      <div class="tabs" role="tablist" aria-label="Разделы личного кабинета">
-        <button class="btn-back" type="button" aria-label="Закрыть личный кабинет">← Назад</button>
-        <button id="tabBonus" type="button" role="tab" data-tab="bonus" class="on" aria-controls="pvBonus" aria-selected="true" tabindex="0">Бонусы</button>
-        <button id="tabProfile" type="button" role="tab" data-tab="profile" aria-controls="pvProfile" aria-selected="false" tabindex="-1">Профиль</button>
+      <div class="tabs" role="group" aria-label="Действия профиля">
+        <button class="btn-back" type="button" aria-label="Закрыть профиль">← Назад</button>
       </div>
 
-      <div class="pv" id="pvBonus" role="tabpanel" aria-labelledby="tabBonus" tabindex="0">
-        <div id="bonusNoUser">
-          <div class="authPrompt">
-            <span class="ap">🎁</span>
-            <b>Копите на бесплатный кофе</b>
-            <p>
-              Каждый 10-й кофе — за наш счёт. Создайте профиль по номеру
-              телефона — штампы начисляет кассир.
-            </p>
-            <button data-auth>Создать профиль</button>
-          </div>
-        </div>
-        <div id="bonusBox" hidden>
-          <div class="bonus-heading">
-            <div><p class="bonus-eyebrow">Программа лояльности</p><h3>Каждый 10-й кофе — за наш счёт</h3></div>
-            <span class="bonus-count" id="bonusCount" aria-live="polite">0/10</span>
-          </div>
-          <div class="stamps" id="stampGrid" aria-label="Карта из десяти штампов"></div>
-          <div class="prog" id="bonusProg"></div>
-          <div class="bonus-qr-row">
-            <div class="bonus-qr-copy"><b>Штампы на кассе</b><small>Покажите QR кассиру для начисления штампа.</small></div>
-            <button class="demoBtn" id="qrOpenBonus" type="button">Показать QR</button>
-          </div>
-          <div id="freeSlot"></div>
-          <div class="qrbox" style="margin-top: 20px">
-            <small style="display: block; margin: 0 0 8px">Есть промокод?</small>
-            <div class="findrow">
-              <input id="promoInput" name="promoInput" placeholder="Например MORE10"
-                style="text-transform: uppercase" />
-              <button class="btn fire" id="promoBtn">OK</button>
-            </div>
-          </div>
-        </div>
+      <div class="pv" id="pvProfile" role="tabpanel" aria-labelledby="profileTopBtn" tabindex="0">
       </div>
 
-      <div class="pv" id="pvProfile" role="tabpanel" aria-labelledby="tabProfile" tabindex="0" hidden>
+      <div class="pv" id="pvProfile" role="tabpanel" aria-labelledby="profileTopBtn" tabindex="0">
         <div id="profileNoUser">
           <div class="authPrompt">
             <span class="ap">👤</span>
@@ -3676,19 +3642,18 @@ html body #tickerTrack .tickerGroup > span {
             🔔 Включить уведомления
           </button>
 
-          <section class="profile-brand-section profile-coffee-only" id="profileCoffeeSection" aria-label="Бонусы кофейни">
-            <div class="stats" aria-label="Статистика посещений" hidden>
-              <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
-              <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
-              <div class="stat"><b id="stFree">0</b><span>подарков</span></div>
-            </div>
+          <section class="profile-brand-section profile-coffee-only" id="profileCoffeeSection" aria-label="Программа лояльности">
+            <div class="loyalty-heading"><span>Кофейная карта</span><strong id="bonusCount" aria-live="polite">0/10</strong></div>
+            <div class="stamps" id="stampGrid" aria-label="Карта из десяти штампов"></div>
             <div class="profile-stamps-summary">
-              <div class="profile-stamps-track" id="profileStampProgress" role="progressbar"
-                aria-label="Прогресс до подарка" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
-                <span id="profileStampProgressFill"></span>
-              </div>
-              <span id="profileStampsRemaining">до подарка — 10</span>
+              <div class="profile-stamps-track" id="profileStampProgress" role="progressbar" aria-label="Прогресс до подарка" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"><span id="profileStampProgressFill"></span></div>
+              <span id="profileStampsRemaining">До подарка — 10</span>
             </div>
+            <div id="bonusProg" class="loyalty-status" aria-live="polite"></div>
+            <button class="btn fire loyalty-qr-action" id="qrOpenBonus" type="button">Показать QR</button>
+            <details class="loyalty-promo"><summary>Есть промокод?</summary>
+              <div class="findrow"><input id="promoInput" name="promoInput" placeholder="Промокод" autocomplete="off" /><button class="btn fire" id="promoBtn" type="button">OK</button></div>
+            </details>
           </section>
           <section class="profile-brand-section profile-delivery-only" id="profileOrdersSection" aria-label="Заказы доставки" hidden>
             <div class="profile-section-heading">

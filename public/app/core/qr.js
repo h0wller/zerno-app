@@ -122,11 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const trigger = event.target.closest('[data-open-bonus-tab]');
     if (!trigger) return;
     event.preventDefault();
-    const bonusTab = document.getElementById('tabBonus');
-    if (bonusTab) {
-      bonusTab.click();
-      bonusTab.focus();
-    }
+    if (typeof window.openPanel === 'function') window.openPanel('profile');
   });
 
 });

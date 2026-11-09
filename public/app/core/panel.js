@@ -4,29 +4,17 @@ openAuth (auth.js), me (state.js). Все потребители обращаю�
 (function () {
 'use strict';
 
-/* ── Переключение вкладок Бонусы / Профиль ── */
-function setTab(t) {
-    if (t === 'bonus' && window.brand === 'delivery') t = 'profile';
-    document.querySelectorAll('.tabs button[data-tab]').forEach(function (button) {
-        var selected = button.dataset.tab === t;
-        button.classList.toggle('on', selected);
-        button.setAttribute('aria-selected', String(selected));
-        button.tabIndex = selected ? 0 : -1;
-    });
-    var pvBonus = document.getElementById('pvBonus');
-    var pvProfile = document.getElementById('pvProfile');
-    if (pvBonus) pvBonus.hidden = t !== 'bonus';
-    if (pvProfile) pvProfile.hidden = t !== 'profile';
-    var bonusBox = document.getElementById('bonusBox');
-    if (bonusBox) bonusBox.hidden = t !== 'bonus';
+/* Legacy 'bonus' and 'profile' routes share the single profile surface. */
+function setTab() {
+    var profile = document.getElementById('pvProfile');
+    if (profile) profile.hidden = false;
 }
 
 /* ── Открытие шторки (мобильная версия ≤820px) ── */
 var panelReturnFocus = null;
-function openPanel(tab) {
-    if (tab === 'bonus' && window.brand === 'delivery') tab = 'profile';
-    setTab(tab);
-    if (tab === 'profile' && window.me && typeof window.loadMyOrders === 'function') {
+function openPanel() {
+    setTab();
+    if (window.brand === 'delivery' && window.me && typeof window.loadMyOrders === 'function') {
         window.loadMyOrders();
     }
     if (window.innerWidth <= 1180) {
@@ -34,8 +22,8 @@ function openPanel(tab) {
         if (panel) {
             if (!panel.classList.contains('open')) panelReturnFocus = document.activeElement;
             panel.classList.add('open');
-            var activeTab = panel.querySelector('.tabs [data-tab="' + tab + '"]');
-            if (activeTab) activeTab.focus();
+            var back = panel.querySelector('.tabs .btn-back');
+            if (back) back.focus();
         }
         if (typeof syncOverlay === 'function') syncOverlay();
         if (window.TgUx) window.TgUx.sync();
@@ -65,26 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
       seen[b.dataset.tab] = 1;
     });
   })();
-  var tabs = document.querySelector('.tabs');
-    if (tabs) {
-        tabs.addEventListener('click', function (event) {
-            var button = event.target.closest('[data-tab]');
-            if (button) setTab(button.dataset.tab);
-        });
-        tabs.addEventListener('keydown', function (event) {
-            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-            var buttons = Array.prototype.slice.call(tabs.querySelectorAll('[data-tab]')).filter(function (button) {
-                return !button.hidden && button.style.display !== 'none';
-            });
-            if (!buttons.length) return;
-            var current = buttons.indexOf(document.activeElement);
-            var next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
-                : (current + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
-            event.preventDefault();
-            buttons[next].focus();
-            setTab(buttons[next].dataset.tab);
-        });
-    }
+
 
     /* Кнопка «← Назад» (вместо inline onclick) */
     var backBtn = document.querySelector('.tabs .btn-back');
@@ -106,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (mbonusBtn) {
         mbonusBtn.onclick = function () {
             if (typeof me !== 'undefined' && me) {
-                openPanel('bonus');
+                openPanel('profile');
             } else if (typeof openAuth === 'function') {
                 openAuth();
             }
