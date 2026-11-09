@@ -364,6 +364,11 @@
   color: var(--soft);
   text-align: right;
 }
+@media (max-width: 375px) {
+  #fridayInfo .friday-info-hours-row span {
+    text-align: left;
+  }
+}
 #fridayInfo .friday-info-links {
   display: flex;
   flex-direction: row;
