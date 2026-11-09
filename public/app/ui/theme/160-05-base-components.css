@@ -325,7 +325,7 @@
   padding: 9px 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--profile-section-bg, var(--card-bg, #fff));
 }
 #settingsModal .settings-channel-row .chk input {
   flex: 0 0 auto;
