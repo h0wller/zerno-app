@@ -321,8 +321,9 @@
   align-items: center;
   gap: 8px;
   padding: 12px;
-  border: 1px solid rgba(18, 58, 107, 0.22);
-  background: #F3F8FC;
+  border: 1px solid var(--loyalty-border, var(--line));
+  border-radius: 14px;
+  background: var(--loyalty-card-bg, var(--card-bg, #fff));
 }
 #pvBonus .free-card-copy {
   display: grid;
@@ -333,6 +334,9 @@
   display: grid;
   gap: 8px;
   padding: 12px;
+  border: 1px solid var(--loyalty-border, var(--line));
+  border-radius: 14px;
+  background: var(--loyalty-card-bg, var(--card-bg, #fff));
 }
 #pvBonus .bonus-qr-copy b {
   font-size: 13px;
@@ -346,8 +350,10 @@
   padding: 11px 14px;
   border: 0;
   border-radius: 11px;
-  background: var(--loyalty-accent, var(--flame));
-  color: #fff;
+  background: var(--btn-fire-bg, var(--loyalty-accent, var(--flame)));
+  color: var(--btn-fire-color, #fff);
+  border: var(--btn-fire-border, none);
+  box-shadow: var(--btn-fire-shadow, none);
   font-size: 14px;
   font-weight: 800;
 }
