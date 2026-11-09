@@ -1184,3 +1184,9 @@ html body #adminBar.adminBar[hidden] { display:none; }
 html body #modeSeg button:not(.on) {
   color: #AFC0D0;
 }
+
+/* 320px: remove the clipped descriptor badge from the menu heading. */
+@media (max-width:350px) {
+  html body #menuView .menu-head h1 > em,
+  html body #deliveryView .menu-head h1 > em { display:none !important; }
+}
