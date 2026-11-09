@@ -152,7 +152,6 @@ test('baseline: профиль и бонусы (зарегистрирован)'
 
   await expect(page.locator('#profileBox')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
-  await expect(page.locator('#profileStampProgress')).toBeVisible();
   await expect(page.locator('.profile-qr-access')).toBeVisible();
   await expect(page.locator('.profile-qr-link')).toHaveText('Показать QR');
   await page.locator('.profile-qr-link').click();
@@ -202,9 +201,6 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   });
   await expect(page.locator('#stampGrid .stamp')).toHaveCount(10);
   await expect(page.locator('#stampGrid .stamp-gift')).toContainText('🎁');
-  await expect(page.locator('#bonusProg')).toContainText('Ещё 4 до бесплатного кофе');
-  await expect(page.locator('#profileStampsRemaining')).toHaveText('до подарка — 4');
-  await expect(page.locator('#profileStampProgress')).toHaveAttribute('aria-valuenow', '6');
   await expect(page.locator('#qrMini, #qrMain, #qrOpenBonus, #tabBonus, #tabProfile, #pvBonus')).toHaveCount(0);
   await expect(page.locator('#qrOpenProfile')).toHaveText('Показать QR');
   await expect(page.locator('#qrOpenProfile')).toHaveCount(1);
@@ -213,8 +209,8 @@ test('baseline: профиль и бонусы (зарегистрирован)'
     window.me = { ...window.me, free: 1 };
     window.renderBonus();
   });
-  await expect(page.locator('#bonusProg')).toContainText('Подарок доступен: 1');
   await expect(page.locator('#freeSlot')).toContainText('Бесплатный кофе ×1');
+  await expect(page.locator('#profileStampProgress, #profileStampsRemaining, #bonusProg')).toHaveCount(0);
   await expect(page.locator('#freeSlot [data-show-free-qr]')).toHaveCount(0);
   await expect(page.locator('#qrOpenProfile')).toHaveText('Показать QR');
   await page.locator('#qrOpenProfile').click();
@@ -225,8 +221,8 @@ test('baseline: профиль и бонусы (зарегистрирован)'
     window.me = { ...window.me, free: 2 };
     window.renderBonus();
   });
-  await expect(page.locator('#bonusProg')).toContainText('Подарок доступен: 2');
   await expect(page.locator('#qrOpenProfile')).toHaveText('Показать QR');
+  await expect(page.locator('#profileStampProgress, #profileStampsRemaining, #bonusProg')).toHaveCount(0);
   await shot(page, '04-bonus');
 });
 
