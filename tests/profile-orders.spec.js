@@ -178,25 +178,17 @@ test.describe('Модуль заказов профиля', () => {
     expect(mineRequestCount).toBe(1);
 
     await expect(modal.locator('.omClose')).toBeFocused();
-    const closeColors = await modal.locator('.omClose').evaluate(element => {
+    const closePresentation = await modal.locator('.omClose').evaluate(element => {
       const style = getComputedStyle(element);
-      const bgProbe = document.createElement('span');
-      const textProbe = document.createElement('span');
-      bgProbe.style.color = style.getPropertyValue('--mclose-bg').trim();
-      textProbe.style.color = style.getPropertyValue('--mclose-color').trim();
-      document.body.append(bgProbe, textProbe);
-      const result = {
+      return {
         background: style.backgroundColor,
-        tokenBackground: getComputedStyle(bgProbe).color,
-        color: style.color,
-        tokenColor: getComputedStyle(textProbe).color
+        borderWidth: style.borderTopWidth,
+        shadow: style.boxShadow
       };
-      bgProbe.remove();
-      textProbe.remove();
-      return result;
     });
-    expect(closeColors.background).toBe(closeColors.tokenBackground);
-    expect(closeColors.color).toBe(closeColors.tokenColor);
+    expect(closePresentation.background).toBe('rgba(0, 0, 0, 0)');
+    expect(closePresentation.borderWidth).toBe('1px');
+    expect(closePresentation.shadow).toBe('none');
 
     await modal.locator('[data-open-track="profile-order-1"]').click();
     const trackModal = page.locator('#orderTrackModal');
@@ -445,10 +437,10 @@ test.describe('Модуль заказов профиля', () => {
         bottom: row.bottom
       };
     });
-    expect(socialLayout.justifyContent).toBe('center');
-    expect(socialLayout.gap).toBe('28px');
-    expect(socialLayout.distance).toBeGreaterThanOrEqual(27);
-    expect(socialLayout.distance).toBeLessThanOrEqual(29);
+    expect(socialLayout.justifyContent).toBe('flex-start');
+    expect(socialLayout.gap).toBe('18px');
+    expect(socialLayout.distance).toBeGreaterThanOrEqual(17);
+    expect(socialLayout.distance).toBeLessThanOrEqual(19);
     expect(socialLayout.centerOffset).toBeLessThanOrEqual(1);
 
     const summerHours = info.locator('.friday-info-hours-row').first().locator('span');
