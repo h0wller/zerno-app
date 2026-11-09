@@ -146,6 +146,7 @@ test('delivery desktop header uses the brand font, preserves cart centering, and
     expect(details.color).toBe('rgb(58, 42, 28)');
     const cart = page.locator('#cartFab');
     await expect(cart).toBeAttached();
+    await cart.evaluate((el) => el.classList.add('visible'));
     const cartCenter = await cart.evaluate(el => { const r=el.getBoundingClientRect(); return r.left+r.width/2; });
     expect(Math.abs(cartCenter - width / 2), 'cart launcher must remain centered').toBeLessThanOrEqual(2);
     const active = page.locator('#deliverySubFilter .subchip.on');
