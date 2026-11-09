@@ -313,18 +313,6 @@
   gap: 2px;
   min-width: 0;
 }
-#pvBonus .free-card-action {
-  grid-column: 1 / -1;
-  width: 100%;
-  min-height: 48px;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 11px;
-  background: var(--loyalty-accent, var(--flame));
-  color: #fff;
-  font-size: 14px;
-  font-weight: 800;
-}
 #pvBonus .bonus-qr-row {
   display: grid;
   gap: 8px;
