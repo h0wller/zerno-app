@@ -311,8 +311,9 @@ test('delivery: pizza option labels use compact typography only at 320px', async
         crust: size('.opt-crust'),
         weight: size('.opt-weight'),
         price: size('.opt-price'),
+        crustsFit: [...fieldset.querySelectorAll('.opt-crust')].every((element) => element.scrollWidth <= element.clientWidth),
       };
     });
-    expect(fontSizes).toEqual(viewport.expected);
+    expect(fontSizes).toEqual({ ...viewport.expected, crustsFit: true });
   }
 });
