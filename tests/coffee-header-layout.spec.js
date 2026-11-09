@@ -46,16 +46,19 @@ test('coffee wordmark “и кофе” remains visible beside the logo without 
 test('coffee mobile visible wordmark is centered as one logo-and-text group', async ({page}) => {
   await page.setViewportSize({width:390,height:844});
   const group=page.locator('header.topbar #headerBrand');
-  const m=await group.evaluate(el=>{
-    const mark=el.querySelector('.mark').getBoundingClientRect();
-    const title=el.querySelector('#brandTitle').getBoundingClientRect();
+  await expect(group).toBeVisible();
+  await expect(page.locator('#brandMark')).toBeVisible();
+  await expect(page.locator('#brandTitle')).toBeVisible();
+  const m=await page.evaluate(()=>{
+    const mark=document.getElementById('brandMark').getBoundingClientRect();
+    const title=document.getElementById('brandTitle').getBoundingClientRect();
     const profile=document.getElementById('profileTopBtn').getBoundingClientRect();
     return {left:mark.left,right:title.right,center:(mark.left+title.right)/2,viewportCenter:innerWidth/2,
       markRight:mark.right,titleLeft:title.left,titleRight:title.right,profileLeft:profile.left,
-      width:el.getBoundingClientRect().width};
+      groupWidth:document.getElementById('headerBrand').getBoundingClientRect().width};
   });
   expect(Math.abs(m.center-m.viewportCenter)).toBeLessThanOrEqual(2);
-  expect(m.width).toBeLessThanOrEqual(196);
+  expect(m.groupWidth).toBeLessThanOrEqual(196);
   expect(m.titleLeft).toBeGreaterThanOrEqual(m.markRight);
   expect(m.titleRight).toBeLessThan(m.profileLeft-8);
 });
