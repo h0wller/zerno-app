@@ -315,9 +315,11 @@
   align-items: center;
   gap: 7px;
   min-width: 0;
+  width: 100%;
 }
 .phead input#nameInput {
-  grid-column: 1 / -1;
+  grid-column: 1;
+  grid-row: 1;
   box-sizing: border-box;
   min-width: 0;
   width: 100%;
@@ -353,11 +355,20 @@
 .profile-name-action.is-primary { color: var(--flame); }
 .profile-name-actions {
   grid-column: 1 / -1;
+  grid-row: 2;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   flex-wrap: nowrap;
   gap: 8px;
+}
+.profile-name-actions[hidden],
+.profile-name-edit-icon[hidden] {
+  display: none;
+}
+.profile-name-edit-icon {
+  grid-column: 2;
+  grid-row: 1;
 }
 .phead .ph {
   font-size: 13px;
