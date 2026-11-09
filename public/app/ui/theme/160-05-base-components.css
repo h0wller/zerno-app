@@ -284,8 +284,12 @@
 
 /* ── Настройки профиля: компактная ширина и общая ритмика ── */
 #settingsModal .settings-card {
+  box-sizing: border-box;
   width: min(400px, 100%);
   max-width: 400px;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px;
 }
 #settingsModal .settings-card h3 {
