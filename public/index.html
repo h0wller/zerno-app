@@ -3218,6 +3218,17 @@ html body #tickerTrack .tickerGroup > span {
     height:16px;
   }
 }
+
+  /* 320px: hide the descriptor pill that collides with the search row and compact pizza options. */
+  @media (max-width: 320px) {
+    html[data-brand="coffee"] #menuView .menu-head h1 em,
+    html[data-brand="delivery"] #deliveryView .menu-head h1 em { display: none; }
+
+    html[data-brand="delivery"] #deliveryGrid .card .opts .opt-size { font-size: 10px; }
+    html[data-brand="delivery"] #deliveryGrid .card .opts .opt-crust { font-size: 8px; }
+    html[data-brand="delivery"] #deliveryGrid .card .opts .opt-weight { font-size: 8.5px; }
+    html[data-brand="delivery"] #deliveryGrid .card .opts .opt-price { font-size: 10.5px; }
+  }
 </style>
 </head>
 
