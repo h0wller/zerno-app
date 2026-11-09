@@ -79,7 +79,7 @@ test.describe('Модуль заказов профиля', () => {
     });
 
     await expect(page.locator('#panel')).toHaveClass(/open/);
-    await expect(page.locator('#tabProfile')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#tabBonus, #tabProfile, #pvBonus')).toHaveCount(0);
     await expect(page.locator('#pvProfile')).toBeVisible();
     await expect(page.locator('#profileBox')).toBeVisible();
     await expect(page.locator('#myOrdersBtn')).toBeVisible();
@@ -423,14 +423,14 @@ test.describe('Модуль заказов профиля', () => {
       .toBe('rgb(255, 255, 255)');
   });
 
-  test('содержимое профиля меняется вместе с брендом, вкладки доступны с клавиатуры', async ({ page }) => {
+  test('содержимое профиля меняется вместе с брендом, единая панель без вкладок', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection')).toBeVisible();
     await expect(page.locator('#profileCoffeeSection')).toBeHidden();
+    await expect(page.locator('#qrOpenProfile')).toBeHidden();
     await expect(page.locator('#profileBox .coffee-venue-card')).toBeHidden();
     await expect(page.locator('#profileBox .coffee-review-card')).toBeHidden();
-    await expect(page.locator('#tabBonus')).toBeHidden();
+    await expect(page.locator('#tabBonus, #tabProfile, #pvBonus')).toHaveCount(0);
     await page.evaluate(() => window.openPanel('bonus'));
-    await expect(page.locator('#tabProfile')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('#pvProfile')).toBeVisible();
     await expect(page.locator('#fridayInfo')).toBeVisible();
     await expect(page.locator('#fridayInfo').evaluate(el => el.parentElement.id)).resolves.toBe('profileBox');
@@ -486,23 +486,19 @@ test.describe('Модуль заказов профиля', () => {
       window.syncBrandViews();
     });
 
-    const bonusTab = page.locator('#tabBonus');
-    const profileTab = page.locator('#tabProfile');
-    await profileTab.focus();
-    await profileTab.press('ArrowLeft');
-    await expect(bonusTab).toHaveAttribute('aria-selected', 'true');
-    await expect(profileTab).toHaveAttribute('aria-selected', 'false');
+    await expect(page.locator('#tabBonus, #tabProfile, #pvBonus')).toHaveCount(0);
+    await page.locator('#panel .tabs .btn-back').focus();
+    await expect(page.locator('#panel .tabs .btn-back')).toBeFocused();
   });
 
-  test('delivery profile footer actions remain balanced at narrow mobile widths', async ({ page }, testInfo) => {
+  test('delivery profile back action fits at narrow mobile widths', async ({ page }, testInfo) => {
     for (const width of [320, 390]) {
       await page.setViewportSize({ width, height: 844 });
       await expect(page.locator('#panel')).toHaveClass(/open/);
-      await expect(page.locator('#tabBonus')).toBeHidden();
+      await expect(page.locator('#tabBonus, #tabProfile, #pvBonus')).toHaveCount(0);
 
       const layout = await page.evaluate(() => {
         const back = document.querySelector('#panel .tabs .btn-back');
-        const profile = document.querySelector('#panel .tabs #tabProfile');
         const footer = document.querySelector('#panel .tabs');
         const rect = element => {
           const box = element.getBoundingClientRect();
@@ -510,21 +506,16 @@ test.describe('Модуль заказов профиля', () => {
         };
         return {
           back: rect(back),
-          profile: rect(profile),
           footer: rect(footer),
-          backFlex: getComputedStyle(back).flex,
-          profileFlex: getComputedStyle(profile).flex,
+          childCount: footer.children.length,
         };
       });
 
+      expect(layout.childCount, 'only the back action remains in the panel toolbar').toBe(1);
       expect(layout.back.height, 'Back action keeps a comfortable touch target').toBeGreaterThanOrEqual(44);
-      expect(layout.profile.height, 'Profile action keeps a comfortable touch target').toBeGreaterThanOrEqual(44);
       expect(layout.back.width, 'Back action is not compressed into an icon-width button').toBeGreaterThan(100);
-      expect(layout.profile.width, 'Profile action is not compressed into an icon-width button').toBeGreaterThan(100);
-      expect(Math.abs(layout.back.width - layout.profile.width), 'both footer actions share the available width').toBeLessThanOrEqual(3);
-      expect(layout.profile.left - layout.back.right, 'footer actions have a visible gap').toBeGreaterThanOrEqual(6);
       expect(layout.back.left).toBeGreaterThanOrEqual(layout.footer.left);
-      expect(layout.profile.right).toBeLessThanOrEqual(layout.footer.right);
+      expect(layout.back.right).toBeLessThanOrEqual(layout.footer.right);
       await testInfo.attach(`delivery-profile-footer-${width}px`, {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',

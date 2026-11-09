@@ -51,16 +51,15 @@ async function waitForHydratedStorefront(page, brand) {
 }
 
 async function waitForHydratedSidebar(page, brand, viewport) {
-  const tab = page.locator(brand === 'delivery' ? '#tabProfile' : '#tabBonus');
-  await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
+  const profile = page.locator('#pvProfile');
+  await expect(profile).toBeAttached({ timeout: 10000 });
 
   // At tablet/mobile widths the account panel is an intentionally closed drawer.
   // Only desktop renders it as the third storefront column in the captured viewport.
   if (viewport.width > 1180) {
-    const panel = page.locator(brand === 'delivery' ? '#pvProfile' : '#pvBonus');
-    const guestPrompt = page.locator(brand === 'delivery' ? '#profileNoUser' : '#bonusNoUser');
-    await expect(panel).toBeVisible({ timeout: 10000 });
-    await expect(guestPrompt).toBeVisible({ timeout: 10000 });
+    await expect(profile).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#profileNoUser')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#profileBox')).toBeHidden();
   }
 }
 
@@ -111,12 +110,12 @@ async function capture(page, meta) {
         && style.display !== 'none' && style.visibility !== 'hidden';
     }).length,
     sidebar: {
-      activeTab: document.querySelector('.tabs [role="tab"][aria-selected="true"]')?.dataset.tab || null,
-      bonusPanelHidden: document.getElementById('pvBonus')?.hidden ?? null,
+      activePanel: document.getElementById('pvProfile') && !document.getElementById('pvProfile').hidden
+        ? 'profile' : null,
       profilePanelHidden: document.getElementById('pvProfile')?.hidden ?? null,
-      bonusGuestPromptHidden: document.getElementById('bonusNoUser')?.hidden ?? null,
       profileGuestPromptHidden: document.getElementById('profileNoUser')?.hidden ?? null,
       profileBoxHidden: document.getElementById('profileBox')?.hidden ?? null,
+      coffeeLoyaltyHidden: document.getElementById('profileCoffeeSection')?.hidden ?? null,
     },
   }), fullPageContentVisibilityOverride);
 
@@ -166,3 +165,141 @@ for (const brand of ['coffee', 'delivery']) {
     });
   }
 }
+
+test('visual audit: coffee profile loyalty without duplicate progress UI at 390px', async ({ page }) => {
+  const viewport = { id: 'm', width: 390, height: 844 };
+  await prepareColdGuest(page, 'coffee', viewport);
+
+  await expect.poll(() => page.evaluate(() =>
+    document.documentElement.getAttribute('data-staff-ready') === '1' &&
+    typeof window.setUser === 'function' &&
+    typeof window.openPanel === 'function'
+  )).toBe(true);
+
+  await page.evaluate(() => {
+    const customer = {
+      id: 'visual-coffee-loyalty-guest',
+      name: 'Тестовый гость',
+      phone: '+7 900 000-00-00',
+      role: 'guest',
+      cups: 18,
+      stamps: 6,
+      free: 1,
+      qr: 'visual-coffee-loyalty-guest',
+      history: [],
+      verified: 1
+    };
+
+    window.setUser('visual-coffee-loyalty-token', customer);
+    window.__profileMeReady();
+    window.renderBonus();
+    window.renderProfile();
+    window.renderVerifyNote();
+    window.openPanel('profile');
+  });
+
+  await expect(page.locator('#panel')).toHaveClass(/open/);
+  await expect(page.locator('#pvProfile')).toBeVisible();
+  await expect(page.locator('#profileBox')).toBeVisible();
+  await expect(page.locator('#profileCoffeeSection')).toBeVisible();
+  await expect(page.locator('#bonusBox')).toBeVisible();
+  await expect(page.locator('#bonusCount')).toHaveText('6/10');
+  await expect(page.locator('#stampGrid .stamp')).toHaveCount(10);
+  await expect(page.locator('#freeSlot .freeCard')).toContainText('Бесплатный кофе ×1');
+  await expect(page.locator('#profileCoffeeSection .profile-qr-access')).toBeVisible();
+  await expect(page.locator('#qrOpenProfile')).toHaveText('Показать QR');
+  await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
+
+  const help = page.locator('#verifyNote .profile-loyalty-help');
+  await expect(help).toHaveCount(1);
+  await expect(help.locator('summary span').first()).toHaveText('Как работают бонусы?');
+  await expect(help).not.toHaveAttribute('open', '');
+  await expect(page.locator('#verifyNote > small')).toHaveCount(0);
+  await expect(help).toContainText('Приветственный бонус');
+
+  // The stamp grid and the reward card are the only loyalty status displays.
+  await expect(page.locator(
+    '#profileStampProgress, #profileStampsRemaining, #bonusProg, .profile-stamps-summary'
+  )).toHaveCount(0);
+
+  await page.evaluate(async () => {
+    if (document.fonts?.ready) await document.fonts.ready;
+    document.querySelector('#panel').scrollTop = 0;
+  });
+
+  const imagePath = path.join(OUT, 'COFFEE-PROFILE-LOYALTY-390.png');
+  await page.screenshot({
+    path: imagePath,
+    fullPage: false,
+    animations: 'disabled',
+    caret: 'hide'
+  });
+
+  await help.locator('summary').click();
+  await expect(help).toHaveAttribute('open', '');
+  await expect(help.locator('.profile-loyalty-help-content')).toBeVisible();
+  await expect(help).toContainText('10 штампов — бесплатный кофе');
+  await expect(help.getByRole('link', { name: 'Telegram-бота' }))
+    .toHaveAttribute('href', 'https://t.me/and_coffee_bot');
+  await page.screenshot({
+    path: path.join(OUT, 'COFFEE-PROFILE-LOYALTY-390-EXPANDED.png'),
+    fullPage: false,
+    animations: 'disabled',
+    caret: 'hide'
+  });
+
+  await help.locator('summary').click();
+  await expect(help).not.toHaveAttribute('open', '');
+  const promo = page.locator('#profileCoffeeSection .profile-promo-details');
+  await promo.scrollIntoViewIfNeeded();
+  await expect(promo).toBeVisible();
+  await page.screenshot({
+    path: path.join(OUT, 'COFFEE-PROFILE-PROMO-390.png'),
+    fullPage: false,
+    animations: 'disabled',
+    caret: 'hide'
+  });
+  await promo.locator('summary').click();
+  await expect(promo).toHaveAttribute('open', '');
+  await expect(page.locator('#promoInput')).toBeVisible();
+  await page.screenshot({
+    path: path.join(OUT, 'COFFEE-PROFILE-PROMO-390-EXPANDED.png'),
+    fullPage: false,
+    animations: 'disabled',
+    caret: 'hide'
+  });
+
+  const runtime = await page.evaluate(() => ({
+    brand: document.documentElement.dataset.brand || null,
+    staffRole: document.documentElement.getAttribute('data-staff-role'),
+    viewport: { width: innerWidth, height: innerHeight },
+    stamps: document.querySelectorAll('#stampGrid .stamp').length,
+    stampCount: document.querySelector('#bonusCount')?.textContent?.trim() || null,
+    freeReward: document.querySelector('#freeSlot')?.innerText?.trim() || null,
+    progressElements: document.querySelectorAll(
+      '#profileStampProgress, #profileStampsRemaining, #bonusProg, .profile-stamps-summary'
+    ).length,
+    qrActions: document.querySelectorAll('#qrOpenProfile').length,
+    profileVisible: !document.querySelector('#pvProfile')?.hidden,
+    loyaltyVisible: !document.querySelector('#profileCoffeeSection')?.hidden
+  }));
+
+  expect(runtime.brand).toBe('coffee');
+  expect(runtime.staffRole).toBeNull();
+  expect(runtime.viewport).toEqual({ width: 390, height: 844 });
+  expect(runtime.progressElements).toBe(0);
+  expect(runtime.qrActions).toBe(1);
+  expect(runtime.profileVisible).toBe(true);
+  expect(runtime.loyaltyVisible).toBe(true);
+
+  fs.writeFileSync(
+    path.join(OUT, 'coffee-profile-loyalty-390.json'),
+    JSON.stringify({
+      screenshot: path.basename(imagePath),
+      commit: process.env.GITHUB_SHA || null,
+      viewport,
+      runtime
+    }, null, 2)
+  );
+});
+

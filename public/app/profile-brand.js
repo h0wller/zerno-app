@@ -114,20 +114,26 @@ window.renderVerifyNote=function(){
 
   var html = '';
 
-  // ── Секция 1: справка (всегда для авторизованного) ──
+  // Инструкции собраны в один закрытый по умолчанию disclosure.
   if(showInfo){
-    html += '<small style="color:#5B6B7A;background:#EDF2F6;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">Как устроены бонусы:<br>🫘 штампы — кассир начисляет по вашему QR<br>🎁 приветственный напиток и бесплатная доставка — за регистрацию<br>🧾 активация профиля — код из 4 цифр на кассе</small>';
+    html += '<details class="profile-loyalty-help">' +
+      '<summary><span>Как работают бонусы?</span><span class="profile-loyalty-help-chevron" aria-hidden="true">⌄</span></summary>' +
+      '<div class="profile-loyalty-help-content">' +
+        '<p>🫘 <b>Штампы.</b> После покупки кассир сканирует ваш QR и начисляет 1 штамп. 10 штампов — бесплатный кофе.</p>' +
+        (showTgBonus
+          ? '<p>🎁 <b>Приветственный бонус.</b> При регистрации доступны приветственный кофе и бесплатная первая доставка. Чтобы получить их, откройте <a href="https://t.me/and_coffee_bot">Telegram-бота</a> и нажмите «Поделиться номером».</p>'
+          : '') +
+        (showActivation
+          ? '<p>🧾 <b>Активация профиля.</b> Введите четырёхзначный код, который назовёт кассир.</p>'
+          : '') +
+      '</div>' +
+    '</details>';
   }
 
-  // ── Секция 2: активация кодом (только гость без верификации) ──
+  // Поле активации остаётся видимым — пользователю не нужно открывать справку,
+  // чтобы завершить обязательный шаг.
   if(showActivation){
-    html += '<small style="color:#8A4B2A;background:#FFF6F0;border:1.5px dashed #E4B49A;border-radius:12px;padding:8px 12px;display:block;margin-bottom:8px">🧾 Кассир назовёт 4 цифры кода активации — введите их:</small>'
-         +  '<div style="display:flex;gap:8px"><input id="actCode" inputmode="numeric" maxlength="4" placeholder="Код" style="flex:1"><button class="btn fire" id="actBtn">Активировать</button></div>';
-  }
-
-  // ── Секция 3: приветствие за регистрацию (только не-сотрудникам) ──
-  if(showTgBonus){
-    html += '<small style="color:#163B6B;background:#EAF1F9;border:1.5px dashed #B9CDE4;border-radius:12px;padding:8px 12px;display:block;margin-top:8px">🎁 <b>Приветственный напиток и бесплатная первая доставка</b> за регистрацию. Быстрее всего — в <a href="https://t.me/and_coffee_bot" style="color:#1F4E8C;font-weight:800">Telegram</a>: откройте бота и нажмите «Поделиться номером»</small>';
+    html += '<div class="profile-activation-row"><label class="profile-activation-label" for="actCode">Код активации</label><input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код активации"><button class="btn fire" id="actBtn">Активировать</button></div>';
   }
 
   n.hidden = false;

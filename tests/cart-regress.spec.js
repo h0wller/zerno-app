@@ -249,14 +249,16 @@ test('Задачи 5 и 6: Модалка «Мои заказы» в TMA и по
     });
     window.__profileMeReady();
     window.renderAll();
-    window.openPanel('bonus');
+    window.openPanel('profile');
   });
   await expect(page.locator('#panel')).toHaveClass(/open/);
-  await expect(page.locator('#tabBonus')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#tabBonus, #tabProfile, #pvBonus')).toHaveCount(0);
+  await expect(page.locator('#pvProfile')).toBeVisible();
 
-  // ── Проверка Задачи 6: один QR action во вкладке «Бонусы» и Screen Wake Lock ──
-  const bonusQrButton = page.locator('#qrOpenBonus');
+  // ── Проверка Задачи 6: единственный QR action в профиле и Screen Wake Lock ──
+  const bonusQrButton = page.locator('#qrOpenProfile');
   await expect(bonusQrButton).toBeVisible();
+  await expect(page.locator('#qrOpenProfile')).toHaveCount(1);
   await bonusQrButton.click();
 
   const qrModal = page.locator('#qrModal');

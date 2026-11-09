@@ -326,11 +326,12 @@ function syncStaffAndGuestControls(bName2) {
   }
 
   var mb = document.getElementById('mbonusBtn');
-  if (mb) mb.style.display = (currentMode === 'guest' && bName2 === 'coffee') ? '' : 'none';
+  if (mb) {
+    mb.hidden = true;
+    mb.style.display = 'none';
+  }
   var bb = document.getElementById('bonusBox');
   if (bb) bb.style.display = (typeof me !== 'undefined' && me) ? '' : 'none';
-  var bt = document.querySelector('.tabs button[data-tab="bonus"]');
-  if (bt) bt.style.display = (bName2 === 'delivery') ? 'none' : '';
   if (confirmedStaff && typeof renderProfile === 'function') renderProfile();
   if (menuPlacement && typeof window.alignRailWithCard === 'function') {
     window.alignRailWithCard();
@@ -611,7 +612,7 @@ sv();
       headerControls.className = 'topbar-actions';
       header.appendChild(headerControls);
     }
-    ['mbonusBtn', 'profileTopBtn'].forEach(function (id) {
+    ['profileTopBtn'].forEach(function (id) {
       var control = document.getElementById(id);
       if (control && control.parentElement !== headerControls) headerControls.appendChild(control);
     });

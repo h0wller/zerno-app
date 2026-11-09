@@ -127,9 +127,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  border: 1.5px solid var(--line);
-  border-radius: 14px;
-  background: #fff;
+  border: var(--profile-section-border, 1.5px solid var(--line));
+  border-radius: var(--profile-section-radius, 14px);
+  background: var(--profile-section-bg, var(--card-bg, #fff));
 }
 #settingsModal .settings-section + .settings-section {
   border-top: 1px solid var(--line);
@@ -148,9 +148,9 @@
 }
 #settingsModal .settings-account-action {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
+  border: var(--profile-section-border, 1px solid var(--line));
+  border-radius: var(--profile-section-radius, 12px);
+  background: var(--profile-section-bg, var(--card-bg, #fff));
   color: var(--ink);
   text-align: left;
   font-size: 13px;
@@ -193,12 +193,13 @@
   color: var(--soft);
 }
 #settingsModal .settings-delete-confirm input {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   padding: 10px 12px;
-  border: 1.5px solid var(--line);
+  border: var(--modal-input-border, 1.5px solid var(--line));
   border-radius: 10px;
-  background: #fff;
+  background: var(--modal-input-bg, #fff);
   color: var(--ink);
 }
 #settingsModal .settings-delete-confirm input:focus-visible {
@@ -284,8 +285,12 @@
 
 /* ── Настройки профиля: компактная ширина и общая ритмика ── */
 #settingsModal .settings-card {
+  box-sizing: border-box;
   width: min(400px, 100%);
   max-width: 400px;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px;
 }
 #settingsModal .settings-card h3 {
@@ -321,7 +326,7 @@
   padding: 9px 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--profile-section-bg, var(--card-bg, #fff));
 }
 #settingsModal .settings-channel-row .chk input {
   flex: 0 0 auto;

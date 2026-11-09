@@ -90,87 +90,59 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
     function renderBonus() {
         updateMbonusBadge();
         if (!_meResolved) {
-            var noUserEl = document.getElementById('bonusNoUser');
-            var boxEl = document.getElementById('bonusBox');
-            if (noUserEl) noUserEl.hidden = true;
-            if (boxEl) boxEl.hidden = true;
             _onMeResolved(function () { try { renderBonus(); } catch (e) { } });
             return;
         }
-        var bnu = document.getElementById("bonusNoUser");
-        if (bnu) bnu.hidden = !!me;
-        var bbx = document.getElementById("bonusBox");
-        if (bbx) bbx.hidden = !me;
 
+        var box = document.getElementById("bonusBox");
+        if (box) box.hidden = !me;
         var count = document.getElementById("bonusCount");
-        if (count) count.textContent = (me ? Math.max(0, Number(me.stamps) || 0) : 0) + "/10";
+        var stampGrid = document.getElementById("stampGrid");
+        var freeSlot = document.getElementById("freeSlot");
+        var stampCount = me ? Math.max(0, Math.min(10, Number(me.stamps) || 0)) : 0;
+        var freeCount = me ? Math.max(0, Number(me.free) || 0) : 0;
 
-        if (!me) return;
+        if (count) count.textContent = stampCount + "/10";
+        if (!me) {
+            if (stampGrid) stampGrid.replaceChildren();
+            if (freeSlot) freeSlot.replaceChildren();
+            return;
+        }
 
-        let h = "";
-        for (let i = 0; i < 10; i++) {
+        var stampsHtml = "";
+        for (var i = 0; i < 10; i++) {
             if (i === 9) {
-                h += `<div class="stamp ${i < me.stamps ? "f" : "e"} stamp-gift" aria-label="Подарок">🎁</div>`;
-                continue;
+                stampsHtml += '<div class="stamp ' + (i < stampCount ? "f" : "e") + ' stamp-gift" aria-label="Подарок">🎁</div>';
+            } else if (i < stampCount) {
+                stampsHtml += '<div class="stamp f' + (i === stampCount - 1 ? " last" : "") + '">' + stampIcon(i) + '</div>';
+            } else {
+                stampsHtml += '<div class="stamp ' + (i === stampCount && !freeCount ? "n" : "e") + '"></div>';
             }
-            h += i < me.stamps
-                ? `<div class="stamp f ${i === me.stamps - 1 ? "last" : ""}">${stampIcon(i)}</div>`
-                : i === me.stamps && !me.free
-                    ? `<div class="stamp n"></div>`
-                    : `<div class="stamp e"></div>`;
         }
-        var sg = document.getElementById("stampGrid");
-        if (sg) sg.innerHTML = h;
+        if (stampGrid) stampGrid.innerHTML = stampsHtml;
 
-        var freeCount = Math.max(0, Number(me.free) || 0);
-        var stampCount = Math.max(0, Math.min(10, Number(me.stamps) || 0));
-        var remainingStamps = Math.max(0, 10 - stampCount);
-        var bp = document.getElementById("bonusProg");
-        if (bp) {
-            bp.innerHTML = freeCount > 0
-                ? `У вас <b>${freeCount} ${freeCount === 1 ? "бесплатный кофе" : "бесплатных кофе"}</b> 🎉`
-                : `Ещё <b>${remainingStamps}</b> до бесплатного кофе`;
-        }
-
-        var fsEl = document.getElementById("freeSlot");
-        if (fsEl) {
-            fsEl.innerHTML = freeCount > 0
-                ? `<div class="freeCard"><span class="fe">🎁</span>
-<div class="free-card-copy"><b>Кофе за наш счёт ×${freeCount}</b><small>Подарок можно получить у кассира</small></div>
-<button type="button" class="free-card-action" data-show-free-qr>Показать кассиру</button></div>`
+        if (freeSlot) {
+            freeSlot.innerHTML = freeCount > 0
+                ? '<div class="freeCard"><span class="fe" aria-hidden="true">🎁</span><div class="free-card-copy"><b>Бесплатный кофе ×' + freeCount + '</b><small>Покажите QR кассиру, чтобы получить подарок</small></div></div>'
                 : "";
-            var showGiftQr = fsEl.querySelector("[data-show-free-qr]");
-            if (showGiftQr) {
-                showGiftQr.onclick = function () {
-                    if (typeof window.openQRFull === "function") window.openQRFull();
-                };
-            }
         }
 
-        const burnBtn = document.getElementById("burnFree");
-        if (burnBtn)
-            burnBtn.onclick = async () => {
+        var burnBtn = document.getElementById("burnFree");
+        if (burnBtn) {
+            burnBtn.onclick = async function () {
                 try {
-                    const r = await api("/redeem", { method: "POST" });
-                    me = r.customer;
+                    var result = await api("/redeem", { method: "POST" });
+                    me = result.customer;
                     renderBonus();
                     renderProfile();
                     toast("Бесплатный кофе погашен. Вкусного!", "☕");
-                } catch (e) {
-                    toast(e.message, "⚠️");
+                } catch (error) {
+                    toast(error.message, "⚠️");
                 }
             };
+        }
 
         updateMbonusBadge();
-
-        setTimeout(() => {
-            if (me && me.qr) {
-                const qm = document.getElementById('qrMini');
-                const qmain = document.getElementById('qrMain');
-                if (qm && typeof drawQR === 'function') drawQR(qm, me.qr);
-                if (qmain && typeof drawQR === 'function') drawQR(qmain, me.qr);
-            }
-        }, 50);
     }
 
     /* ── профиль ── */
@@ -326,18 +298,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             $("#stCups").textContent = me.cups;
             $("#stStamps").textContent = me.stamps + "/10";
             $("#stFree").textContent = me.free;
-            var profileStampCount = Math.max(0, Math.min(10, Number(me.stamps) || 0));
-            var profileStampBar = document.getElementById("profileStampProgress");
-            var profileStampFill = document.getElementById("profileStampProgressFill");
-            var profileStampLabel = document.getElementById("profileStampsRemaining");
-            if (profileStampBar) profileStampBar.setAttribute("aria-valuenow", String(profileStampCount));
-            if (profileStampFill) profileStampFill.style.width = (profileStampCount * 10) + "%";
-            if (profileStampLabel) {
-                var profileRemaining = Math.max(0, 10 - profileStampCount);
-                profileStampLabel.textContent = profileRemaining > 0
-                    ? "до подарка — " + profileRemaining
-                    : "подарок доступен";
-            }
+            renderBonus();
             renderHistory();
 
             if (typeof window.syncBrandViews === "function") window.syncBrandViews();
@@ -348,30 +309,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
 
     Object.assign(window, { renderBonus, renderProfile });
 
-})();
-
-(function patchQR() {
-    if (typeof window.renderProfile !== 'function') return;
-    const _rp = window.renderProfile;
-    window.renderProfile = function () {
-        const r = _rp.apply(this, arguments);
-        setTimeout(() => {
-            try {
-                if (!me || !me.qr) return;
-                const pBox = document.getElementById('profileBox');
-                if (!pBox) return;
-                const target = pBox.querySelector('.qrbox small');
-                if (target && !target.parentNode.querySelector('.qrCodeText')) {
-                    const d = document.createElement('div');
-                    d.className = 'qrCodeText';
-                    d.style.cssText = 'text-align:center;font-weight:800;letter-spacing:.14em;margin:6px 0 2px;color:inherit;font-size:18px';
-                    d.textContent = me.qr;
-                    target.parentNode.insertBefore(d, target.nextSibling);
-                }
-            } catch (e) { }
-        }, 50);
-        return r;
-    };
 })();
 
 document.addEventListener('click', function (e) {

@@ -656,17 +656,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           } : null,
           headerShadow: topbarStyle.boxShadow,
           bonus: rect('#mbonusBtn'),
-          bonusStyle: (() => {
+          bonusHidden: (() => {
             const bonus = document.querySelector('#mbonusBtn');
-            if (!bonus) return null;
-            const style = getComputedStyle(bonus);
-            return {
-              position: style.position,
-              width: style.width,
-              height: style.height,
-              left: style.left,
-              bottom: style.bottom
-            };
+            return !bonus || bonus.hidden || getComputedStyle(bonus).display === 'none';
           })(),
           topbar: topbarRect ? {
             y: topbarRect.y,
@@ -689,12 +681,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       });
 
       const assertHeader = (header, phase) => {
-        for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile', 'bonus']) {
+        for (const selector of ['venue', 'brandMark', 'brandTitle', 'profile']) {
           expect(header[selector], `${selector} is visible at ${width}px ${phase}`).not.toBeNull();
         }
-        expect(header.bonusStyle.position, `bonus stays fixed at ${width}px ${phase}`).toBe('fixed');
-        expect(header.bonusStyle.width, `bonus width is reserved at ${width}px ${phase}`).toBe('56px');
-        expect(header.bonusStyle.height, `bonus height is reserved at ${width}px ${phase}`).toBe('56px');
+        expect(header.bonus, `legacy bonus pill stays absent at ${width}px ${phase}`).toBeNull();
+        expect(header.bonusHidden, `legacy bonus pill is hidden at ${width}px ${phase}`).toBe(true);
         const controls = ['venue', 'brandGroup', 'profile']
           .map((selector) => header[selector]);
         for (let i = 0; i < controls.length; i++) {
@@ -732,7 +723,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       assertHeader(after, 'after CSS');
 
       expect(after.bonus).toEqual(before.bonus);
-      expect(after.bonusStyle).toEqual(before.bonusStyle);
       for (const selector of ['venue', 'brandGroup', 'profile']) {
         for (const edge of ['left', 'right', 'top', 'bottom']) {
           expect(Math.abs(after[selector][edge] - before[selector][edge]),

@@ -36,24 +36,29 @@ async function installCoffeeGuest(page, stamps, free) {
     window.__profileMeReady();
     window.renderBonus();
     window.renderProfile();
-    window.openPanel('bonus');
+    window.renderVerifyNote();
+    window.openPanel('profile');
   }, { stamps, free });
   await expect(page.locator('#panel')).toHaveClass(/open/);
-  await expect(page.locator('#pvBonus')).toBeVisible();
+  await expect(page.locator('#pvProfile')).toBeVisible();
+  await expect(page.locator('#profileBox')).toBeVisible();
+  await expect(page.locator('#profileCoffeeSection')).toBeVisible();
   await expect(page.locator('#bonusBox')).toBeVisible();
+  await expect(page.locator('.profile-promo-details')).not.toHaveAttribute('open', '');
 }
 
 for (const viewport of VIEWPORTS) {
-  test('coffee bonus panel fits without horizontal overflow at ' + viewport.name, async ({ page }, testInfo) => {
+  test('coffee unified profile loyalty section fits without horizontal overflow at ' + viewport.name, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await installCoffeeGuest(page, 9, 2);
+    await page.locator('#profileCoffeeSection .profile-promo-details summary').click();
 
     const measurements = await page.evaluate(() => {
       const panel = document.querySelector('#panel');
-      const bonus = document.querySelector('#pvBonus');
+      const bonus = document.querySelector('#profileCoffeeSection');
       const box = document.querySelector('#bonusBox');
       const stamps = document.querySelector('#stampGrid');
-      const promoBox = document.querySelector('#pvBonus .qrbox');
+      const promoBox = document.querySelector('#profileCoffeeSection .profile-promo-details .qrbox');
       const promo = document.querySelector('#promoInput');
       const promoButton = document.querySelector('#promoBtn');
       const row = promo ? promo.closest('.findrow') : null;
@@ -87,6 +92,7 @@ for (const viewport of VIEWPORTS) {
         promoButton: rect(promoButton),
         promoButtonWhiteSpace: getComputedStyle(promoButton).whiteSpace,
         promoButtonFlex: getComputedStyle(promoButton).flex,
+        promoRowDisplay: getComputedStyle(row).display,
         promoRow: rect(row),
         bonusBounds: rect(bonus),
         freeCard: freeCard ? rect(freeCard) : null,
@@ -102,8 +108,10 @@ for (const viewport of VIEWPORTS) {
     expect(measurements.promo.width).toBeGreaterThan(0);
     expect(measurements.promoButton.width).toBeGreaterThanOrEqual(53.5);
     expect(measurements.promoButtonWhiteSpace).toBe('nowrap');
-    expect(measurements.promoButton.top + measurements.promoButton.height)
-      .toBeLessThanOrEqual(measurements.promoRow.bottom + 1);
+    expect(measurements.promoRowDisplay).toBe('grid');
+    expect(measurements.promoButton.left).toBeGreaterThanOrEqual(measurements.promo.right - 1);
+    expect(Math.abs(measurements.promoButton.top - measurements.promo.top)).toBeLessThanOrEqual(2);
+    expect(measurements.promoButton.right).toBeLessThanOrEqual(measurements.promoRow.right + 1);
     expect(measurements.promoRow.right).toBeLessThanOrEqual(measurements.bonusBounds.right + 1);
     expect(measurements.freeCard.right).toBeLessThanOrEqual(measurements.bonusBounds.right + 1);
 
@@ -191,12 +199,12 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('data-brand'))).toBe('coffee');
   await expect(page.locator('#bonusBox')).toBeVisible();
   await expect(page.locator('#bonusCount')).toHaveText('6/10');
-  await expect(page.locator('#qrOpenBonus')).toBeVisible();
-  await expect(page.locator('#qrOpenProfile')).toHaveCount(0);
-  await expect(page.locator('#qrMain')).toHaveCount(1);
-  await expect(page.locator('#qrMini')).toHaveCount(1);
-
-  await page.locator('#tabProfile').click();
+  await expect(page.locator('#qrOpenProfile')).toBeVisible();
+  await expect(page.locator('#qrOpenProfile')).toHaveCount(1);
+  await expect(page.locator('#tabBonus, #tabProfile, #pvBonus, #qrMain, #qrMini')).toHaveCount(0);
+  await expect(page.locator('#stampGrid .stamp')).toHaveCount(10);
+  await expect(page.locator('#freeSlot')).toContainText('Бесплатный кофе ×1');
+  await expect(page.locator('[data-show-free-qr]')).toHaveCount(0);
   await expect(page.locator('#pvProfile')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection')).toBeVisible();
 
@@ -233,12 +241,10 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   // Reopen the drawer and select the profile tab before checking profile-only content.
   await page.evaluate(() => window.openPanel('profile'));
   await expect(page.locator('#panel')).toHaveClass(/open/);
-  await page.locator('#tabProfile').click();
   await expect(page.locator('#pvProfile')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection .profile-qr-access')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
-  await expect(page.locator('#profileCoffeeSection #profileStampProgress')).toBeVisible();
-  await expect(page.locator('#profileCoffeeSection #profileStampsRemaining')).toBeVisible();
+  await expect(page.locator('#profileCoffeeSection #profileStampProgress, #profileCoffeeSection #profileStampsRemaining, #profileCoffeeSection #bonusProg')).toHaveCount(0);
   const reviewLayout = await page.locator('.coffee-review-card').evaluate(card => {
     const prompt = card.querySelector('.coffee-review-prompt').getBoundingClientRect();
     const button = card.querySelector('#reviewBtn').getBoundingClientRect();
@@ -251,20 +257,45 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
     contentType: 'image/png'
   });
 
-  const repeatedLargeQR = await page.locator('#profileCoffeeSection canvas').evaluate(element => {
-    const rect = element.getBoundingClientRect();
-    return rect.width > 100 || rect.height > 100;
-  });
-  expect(repeatedLargeQR).toBe(false);
+  await expect(page.locator('#profileCoffeeSection canvas, #qrMain, #qrMini')).toHaveCount(0);
 
-  await page.evaluate(() => window.openPanel('bonus'));
+  await page.evaluate(() => window.openPanel('profile'));
   await expect(page.locator('#panel')).toHaveClass(/open/);
-  await expect(page.locator('#pvBonus')).toBeVisible();
-  await expect(page.locator('#qrOpenBonus')).toBeVisible();
-  await page.locator('#qrOpenBonus').click();
+  await expect(page.locator('#pvProfile')).toBeVisible();
+  await expect(page.locator('#qrOpenProfile')).toBeVisible();
+  await page.locator('#qrOpenProfile').click();
   await expect(page.locator('#qrModal')).toHaveClass(/show/);
   await page.locator('#qrClose').click();
   await expect(page.locator('#qrModal')).not.toHaveClass(/show/);
+
+  await expect(page.locator('#qrOpenProfile')).toHaveText('Показать QR');
+  await page.route('**/api/promo/redeem', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        customer: {
+          id: 'coffee-visual-guest',
+          name: 'Тестовый гость',
+          phone: '+7 900 000-00-00',
+          role: 'guest',
+          cups: 18,
+          stamps: 7,
+          free: 1,
+          qr: 'coffee-visual-guest',
+          history: [],
+          verified: 1
+        },
+        msg: 'Промокод применён'
+      })
+    });
+  });
+  await page.locator('.profile-promo-details summary').click();
+  await page.locator('#promoInput').fill('MORE10');
+  await page.locator('#promoBtn').click();
+  await expect(page.locator('#bonusCount')).toHaveText('7/10');
+  await expect(page.locator('#promoInput')).toHaveValue('');
+  await expect(page.locator('#qrOpenProfile')).toHaveText('Показать QR');
 
   const menuHeading = page.locator('#menuView .mh-top h2.vh');
   await expect(menuHeading).toHaveCount(1);
@@ -272,3 +303,54 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(menuHeading).toHaveCSS('width', '1px');
   await expect(page.locator('#menuView .mh-top .upd')).toBeHidden();
 });
+
+test('coffee profile groups bonus explanations in one collapsed disclosure', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installCoffeeGuest(page, 6, 1);
+
+  const help = page.locator('#verifyNote .profile-loyalty-help');
+  await expect(help).toHaveCount(1);
+
+  const helpPresentation = await help.evaluate(element => {
+    const panel = getComputedStyle(element);
+    const summary = getComputedStyle(element.querySelector('summary'));
+    return {
+      radius: panel.borderRadius,
+      summaryDisplay: summary.display,
+      summaryMinHeight: Number.parseFloat(summary.minHeight)
+    };
+  });
+  expect(helpPresentation.radius).toBe('16px');
+  expect(helpPresentation.summaryDisplay).toBe('flex');
+  expect(helpPresentation.summaryMinHeight).toBeGreaterThanOrEqual(52);
+
+  const promo = page.locator('#profileCoffeeSection .profile-promo-details');
+  const promoPresentation = await promo.evaluate(element => {
+    const panel = getComputedStyle(element);
+    const summary = getComputedStyle(element.querySelector('summary'));
+    return {
+      radius: panel.borderRadius,
+      summaryDisplay: summary.display,
+      summaryMinHeight: Number.parseFloat(summary.minHeight)
+    };
+  });
+  expect(promoPresentation.radius).toBe('16px');
+  expect(promoPresentation.summaryDisplay).toBe('flex');
+  expect(promoPresentation.summaryMinHeight).toBeGreaterThanOrEqual(48);
+  await expect(help.locator('summary span').first()).toHaveText('Как работают бонусы?');
+  await expect(help).not.toHaveAttribute('open', '');
+  await expect(page.locator('#verifyNote > small')).toHaveCount(0);
+
+  const content = help.locator('.profile-loyalty-help-content');
+  await expect(content).toBeHidden();
+  await expect(help).toContainText('кассир сканирует ваш QR и начисляет 1 штамп');
+  await expect(help).toContainText('10 штампов — бесплатный кофе');
+  await expect(help).toContainText('При регистрации доступны приветственный кофе и бесплатная первая доставка');
+
+  await help.locator('summary').click();
+  await expect(help).toHaveAttribute('open', '');
+  await expect(content).toBeVisible();
+  await expect(content.getByRole('link', { name: 'Telegram' }))
+    .toHaveAttribute('href', 'https://t.me/and_coffee_bot');
+});
+
