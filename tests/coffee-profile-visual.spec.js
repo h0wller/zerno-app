@@ -91,6 +91,7 @@ for (const viewport of VIEWPORTS) {
         promoButton: rect(promoButton),
         promoButtonWhiteSpace: getComputedStyle(promoButton).whiteSpace,
         promoButtonFlex: getComputedStyle(promoButton).flex,
+        promoRowDisplay: getComputedStyle(row).display,
         promoRow: rect(row),
         bonusBounds: rect(bonus),
         freeCard: freeCard ? rect(freeCard) : null,
@@ -106,8 +107,10 @@ for (const viewport of VIEWPORTS) {
     expect(measurements.promo.width).toBeGreaterThan(0);
     expect(measurements.promoButton.width).toBeGreaterThanOrEqual(53.5);
     expect(measurements.promoButtonWhiteSpace).toBe('nowrap');
-    expect(measurements.promoButton.top + measurements.promoButton.height)
-      .toBeLessThanOrEqual(measurements.promoRow.bottom + 1);
+    expect(measurements.promoRowDisplay).toBe('grid');
+    expect(measurements.promoButton.left).toBeGreaterThanOrEqual(measurements.promo.right - 1);
+    expect(Math.abs(measurements.promoButton.top - measurements.promo.top)).toBeLessThanOrEqual(2);
+    expect(measurements.promoButton.right).toBeLessThanOrEqual(measurements.promoRow.right + 1);
     expect(measurements.promoRow.right).toBeLessThanOrEqual(measurements.bonusBounds.right + 1);
     expect(measurements.freeCard.right).toBeLessThanOrEqual(measurements.bonusBounds.right + 1);
 

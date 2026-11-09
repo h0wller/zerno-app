@@ -158,6 +158,10 @@ body[data-brand="coffee"] {
   --loyalty-stamp-padding: 10px;
   --loyalty-panel-padding: 12px;
   --loyalty-profile-stat-size: 16px;
+  --profile-section-bg: #FFFFFF;
+  --profile-section-border: 1.5px solid rgba(62, 143, 208, 0.22);
+  --profile-section-radius: 16px;
+  --profile-section-shadow: 0 4px 14px rgba(18, 58, 107, 0.06);
 
 }
 
@@ -219,6 +223,16 @@ body[data-brand="delivery"] {
   --panel-bg: var(--fr-paper, #F6EEE1);
   --panel-border: 3px solid var(--fr-choc, #3A2A1C);
   --panel-shadow: -8px 0 30px rgba(58, 42, 28, 0.2);
+  --profile-section-bg: var(--fr-rice, #EFE6D8);
+  --profile-section-border: 2px solid var(--fr-choc, #3A2A1C);
+  --profile-section-radius: 16px;
+  --profile-section-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --loyalty-card-bg: var(--fr-paper, #F6EEE1);
+  --loyalty-qr-bg: var(--fr-rice, #EFE6D8);
+  --loyalty-muted: var(--fr-choc, #3A2A1C);
+  --loyalty-accent: var(--flame, #C03B2A);
+  --loyalty-gift-text: var(--fr-choc, #3A2A1C);
+  --loyalty-border: rgba(58, 42, 28, 0.24);
   --tab-on-bg: var(--fr-tan, #C99E6E);
   --tab-on-color: var(--fr-choc, #3A2A1C);
   --tab-on-border: 2px solid var(--fr-choc, #3A2A1C);
