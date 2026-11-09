@@ -165,6 +165,10 @@ test.describe('Модуль заказов профиля', () => {
 
     const settings = page.locator('#settingsModal');
     await expect(settings).toHaveClass(/show/);
+    const settingsBackdrop = page.locator('#overlay');
+    await expect(settingsBackdrop).toHaveClass(/show/);
+    await expect(settingsBackdrop).toHaveCSS('backdrop-filter', /blur\\(8px\\)/);
+    await expect(settingsBackdrop).toHaveCSS('background-color', 'rgba(16, 20, 24, 0.48)');
     const settingsWidth = await settings.locator('.settings-card').evaluate(element => element.getBoundingClientRect().width);
     expect(settingsWidth).toBeLessThanOrEqual(401);
     await expect(settings.locator('#setPinGo2')).toBeVisible();
@@ -238,6 +242,26 @@ test.describe('Модуль заказов профиля', () => {
       });
     });
 
+    const headerGeometry = await page.evaluate(() => {
+      const rect = selector => {
+        const r = document.querySelector(selector).getBoundingClientRect();
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      };
+      return {
+        avatar: rect('#profileBox .phead .ava'),
+        copy: rect('#profileBox .profile-identity-copy'),
+        name: rect('#profileBox #nameInput'),
+        role: rect('#profileBox .profile-role'),
+        edit: rect('#profileBox #nameEditBtn'),
+        gear: rect('#profileBox #profileSettingsBtn')
+      };
+    });
+    expect(headerGeometry.avatar.right).toBeLessThanOrEqual(headerGeometry.copy.left);
+    expect(headerGeometry.copy.right).toBeLessThanOrEqual(headerGeometry.gear.left);
+    expect(headerGeometry.name.right).toBeLessThanOrEqual(headerGeometry.edit.left);
+    expect(headerGeometry.edit.right).toBeLessThanOrEqual(headerGeometry.copy.right);
+    expect(headerGeometry.role.left).toBeGreaterThanOrEqual(headerGeometry.copy.left);
+    expect(headerGeometry.role.right).toBeLessThanOrEqual(headerGeometry.copy.right);
     const name = page.locator('#nameInput');
     const editButton = page.getByRole('button', { name: 'Изменить имя' });
     await expect(name).toHaveAttribute('readonly', '');
