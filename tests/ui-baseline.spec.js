@@ -150,7 +150,6 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   const panel = page.locator('#panel');
   await expect(panel).toBeVisible({ timeout: 8000 });
 
-  await panel.locator('.tabs button[data-tab="profile"]').click();
   await expect(page.locator('#profileBox')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('#profileStampProgress')).toBeVisible();
@@ -179,7 +178,6 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await page.locator('#brandSeg [data-brand="delivery"]').click();
   await page.locator('#profileTopBtn').click();
   await expect(panel).toBeVisible();
-  await panel.locator('.tabs button[data-tab="profile"]').click();
   await expect(page.locator('#fridayInfo')).toBeVisible();
   await expect(page.locator('#fridayInfo .friday-info-details summary')).toContainText('О заведении');
   await expect(page.locator('#fridayInfo .friday-info-details')).toHaveJSProperty('open', false);
@@ -193,11 +191,9 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await page.locator('#brandSeg [data-brand="coffee"]').click();
   await page.locator('#profileTopBtn').click();
   await expect(panel).toBeVisible();
-  await panel.locator('.tabs button[data-tab="profile"]').click();
   await expect(page.locator('.coffee-review-card')).toBeVisible();
   await shot(page, '03-profile');
 
-  await panel.locator('.tabs button[data-tab="bonus"]').click();
   await expect(page.locator('#bonusBox')).toBeVisible({ timeout: 10000 });
   await page.evaluate(() => {
     window.me = { ...window.me, stamps: 6, free: 0, qr: window.me.qr || 'baseline-profile-qr' };
@@ -209,16 +205,19 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(page.locator('#bonusProg')).toContainText('Ещё 4 до бесплатного кофе');
   await expect(page.locator('#profileStampsRemaining')).toHaveText('до подарка — 4');
   await expect(page.locator('#profileStampProgress')).toHaveAttribute('aria-valuenow', '6');
-  await expect(page.locator('#qrMini')).toBeVisible();
-  await expect(page.locator('#qrOpenBonus')).toHaveText('Показать QR');
+  await expect(page.locator('#qrMini, #qrMain, #qrOpenBonus, #tabBonus, #tabProfile, #pvBonus')).toHaveCount(0);
+  await expect(page.locator('#qrOpenProfile')).toHaveText('Показать QR');
+  await expect(page.locator('#qrOpenProfile')).toHaveCount(1);
 
   await page.evaluate(() => {
     window.me = { ...window.me, free: 1 };
     window.renderBonus();
   });
-  await expect(page.locator('#bonusProg')).toContainText('1 бесплатный кофе');
-  await expect(page.locator('#freeSlot [data-show-free-qr]')).toHaveText('Показать кассиру');
-  await page.locator('#freeSlot [data-show-free-qr]').click();
+  await expect(page.locator('#bonusProg')).toContainText('Подарок доступен: 1');
+  await expect(page.locator('#freeSlot')).toContainText('Бесплатный кофе ×1');
+  await expect(page.locator('#freeSlot [data-show-free-qr]')).toHaveCount(0);
+  await expect(page.locator('#qrOpenProfile')).toHaveText('Показать QR');
+  await page.locator('#qrOpenProfile').click();
   await expect(page.locator('#qrModal')).toHaveClass(/show/);
   await page.locator('#qrClose').click();
 
@@ -226,7 +225,8 @@ test('baseline: профиль и бонусы (зарегистрирован)'
     window.me = { ...window.me, free: 2 };
     window.renderBonus();
   });
-  await expect(page.locator('#bonusProg')).toContainText('2 бесплатных кофе');
+  await expect(page.locator('#bonusProg')).toContainText('Подарок доступен: 2');
+  await expect(page.locator('#qrOpenProfile')).toHaveText('Показать QR');
   await shot(page, '04-bonus');
 });
 
