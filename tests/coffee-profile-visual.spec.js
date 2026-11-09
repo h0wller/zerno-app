@@ -302,3 +302,27 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(menuHeading).toHaveCSS('width', '1px');
   await expect(page.locator('#menuView .mh-top .upd')).toBeHidden();
 });
+
+test('coffee profile groups bonus explanations in one collapsed disclosure', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installCoffeeGuest(page, 6, 1);
+
+  const help = page.locator('#verifyNote .profile-loyalty-help');
+  await expect(help).toHaveCount(1);
+  await expect(help.locator('summary')).toHaveText('Как работают бонусы?');
+  await expect(help).not.toHaveAttribute('open', '');
+  await expect(page.locator('#verifyNote > small')).toHaveCount(0);
+
+  const content = help.locator('.profile-loyalty-help-content');
+  await expect(content).toBeHidden();
+  await expect(help).toContainText('кассир начисляет штамп по вашему QR');
+  await expect(help).toContainText('10 штампов — бесплатный кофе');
+  await expect(help).toContainText('Приветственный кофе и бесплатная первая доставка');
+
+  await help.locator('summary').click();
+  await expect(help).toHaveAttribute('open', '');
+  await expect(content).toBeVisible();
+  await expect(content.getByRole('link', { name: 'Telegram' }))
+    .toHaveAttribute('href', 'https://t.me/and_coffee_bot');
+});
+
