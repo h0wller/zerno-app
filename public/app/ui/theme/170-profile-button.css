@@ -269,7 +269,20 @@
 }
 
 /* Кнопка промокода не должна переносить «ОК» даже на узких экранах. */
+#pvBonus .findrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+#pvBonus .findrow input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
 #pvBonus .findrow #promoBtn {
+  box-sizing: border-box;
   flex: 0 0 auto;
   min-width: 54px;
   white-space: nowrap;
