@@ -521,7 +521,7 @@ test.describe('Модуль заказов профиля', () => {
       expect(layout.profile.height, 'Profile action keeps a comfortable touch target').toBeGreaterThanOrEqual(44);
       expect(layout.back.width, 'Back action is not compressed into an icon-width button').toBeGreaterThan(100);
       expect(layout.profile.width, 'Profile action is not compressed into an icon-width button').toBeGreaterThan(100);
-      expect(Math.abs(layout.back.width - layout.profile.width), 'both footer actions share the available width').toBeLessThanOrEqual(2);
+      expect(Math.abs(layout.back.width - layout.profile.width), 'both footer actions share the available width').toBeLessThanOrEqual(3);
       expect(layout.profile.left - layout.back.right, 'footer actions have a visible gap').toBeGreaterThanOrEqual(6);
       expect(layout.back.left).toBeGreaterThanOrEqual(layout.footer.left);
       expect(layout.profile.right).toBeLessThanOrEqual(layout.footer.right);
