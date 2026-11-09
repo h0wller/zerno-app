@@ -104,6 +104,8 @@ for (const viewport of VIEWPORTS) {
     expect(measurements.promoButtonWhiteSpace).toBe('nowrap');
     expect(measurements.promoButton.top + measurements.promoButton.height)
       .toBeLessThanOrEqual(measurements.promoRow.bottom + 1);
+    expect(measurements.promoButton.left).toBeGreaterThanOrEqual(measurements.promo.right - 1);
+    expect(Math.abs(measurements.promoButton.top - measurements.promo.top)).toBeLessThanOrEqual(2);
     expect(measurements.promoRow.right).toBeLessThanOrEqual(measurements.bonusBounds.right + 1);
     expect(measurements.freeCard.right).toBeLessThanOrEqual(measurements.bonusBounds.right + 1);
 
