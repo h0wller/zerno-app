@@ -150,7 +150,7 @@ test.describe('Модуль заказов профиля', () => {
       contentType: 'image/png'
     });
   });
-  test('выводит последний заказ в профиле и список в отдельной модалке', async ({ page }) => {
+  test('выводит последний заказ в профиле и список в отдельной модалке', async ({ page }, testInfo) => {
     await expect(page.locator('#profileOrdersSection .profile-section-heading')).toContainText('Последний заказ');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Филадельфия с огурцом');
@@ -228,7 +228,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#myOrdersBtn')).toBeFocused();
   });
 
-  test('настройки профиля содержат управление аккаунтом без общего сброса хранилища', async ({ page }) => {
+  test('настройки профиля содержат управление аккаунтом без общего сброса хранилища', async ({ page }, testInfo) => {
     await page.locator('#profileBox .gear').click();
 
     const settings = page.locator('#settingsModal');
