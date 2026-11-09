@@ -284,11 +284,30 @@
   font-weight: 700;
 }
 
-/* Кнопка промокода не должна переносить «ОК» даже на узких экранах. */
-#pvBonus .findrow #promoBtn {
+/* Поле и действие промокода остаются в одной строке на узких экранах. */
+#pvBonus .qrbox .findrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px;
+  grid-template-rows: auto;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+#pvBonus .qrbox .findrow > #promoInput {
+  grid-column: 1;
+  grid-row: 1;
   box-sizing: border-box;
-  flex: 0 0 auto;
-  min-width: 54px;
+  width: 100%;
+  min-width: 0;
+  flex: none;
+}
+#pvBonus .qrbox .findrow > #promoBtn {
+  grid-column: 2;
+  grid-row: 1;
+  box-sizing: border-box;
+  width: 56px;
+  min-width: 56px;
+  flex: none;
   white-space: nowrap;
 }
 
