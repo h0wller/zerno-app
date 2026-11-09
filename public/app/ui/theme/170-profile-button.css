@@ -87,10 +87,12 @@
 #profileBox .profile-name-edit-icon[hidden] {
   display: none;
 }
-#profileBox .profile-name-edit-icon svg {
+#profileBox .profile-name-row > #nameEditBtn.profile-name-edit-icon svg {
   display: block;
   width: 22px;
   height: 22px;
+  max-width: none;
+  max-height: none;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.9;
