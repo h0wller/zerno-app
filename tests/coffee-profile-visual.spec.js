@@ -309,7 +309,7 @@ test('coffee profile groups bonus explanations in one collapsed disclosure', asy
 
   const help = page.locator('#verifyNote .profile-loyalty-help');
   await expect(help).toHaveCount(1);
-  await expect(help.locator('summary')).toHaveText('Как работают бонусы?');
+  await expect(help.locator('summary span').first()).toHaveText('Как работают бонусы?');
   await expect(help).not.toHaveAttribute('open', '');
   await expect(page.locator('#verifyNote > small')).toHaveCount(0);
 
