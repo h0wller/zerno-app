@@ -335,20 +335,6 @@
   font-size: 14px;
   font-weight: 800;
 }
-#pvBonus .bonus-qr-canvas {
-  position: static;
-  display: block;
-  width: min(196px, 100%);
-  height: auto;
-  aspect-ratio: 1;
-  margin: 12px auto 0;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
-  opacity: 1;
-  pointer-events: auto;
-}
 @media (max-width: 420px) {
   #pvBonus .bonus-qr-row {
     align-items: stretch;
