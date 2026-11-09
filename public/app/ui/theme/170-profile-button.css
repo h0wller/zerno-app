@@ -726,7 +726,7 @@
 
 #profileBox .phead {
   grid-template-columns: 48px minmax(0, 1fr) 40px;
-  align-items: center;
+  align-items: start;
   gap: 12px;
 }
 
@@ -738,7 +738,7 @@
   box-shadow: none;
 }
 #profileBox #profileSettingsBtn {
-  align-self: center;
+  align-self: start;
 }
 
 #profileBox input#nameInput {
