@@ -36,6 +36,7 @@ async function installCoffeeGuest(page, stamps, free) {
     window.__profileMeReady();
     window.renderBonus();
     window.renderProfile();
+    window.renderVerifyNote();
     window.openPanel('profile');
   }, { stamps, free });
   await expect(page.locator('#panel')).toHaveClass(/open/);
