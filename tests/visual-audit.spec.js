@@ -209,6 +209,13 @@ test('visual audit: coffee profile loyalty without duplicate progress UI at 390p
   await expect(page.locator('#qrOpenProfile')).toHaveText('Показать QR');
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
 
+  const help = page.locator('#verifyNote .profile-loyalty-help');
+  await expect(help).toHaveCount(1);
+  await expect(help.locator('summary span').first()).toHaveText('Как работают бонусы?');
+  await expect(help).not.toHaveAttribute('open', '');
+  await expect(page.locator('#verifyNote > small')).toHaveCount(0);
+  await expect(help).toContainText('Приветственный бонус');
+
   // The stamp grid and the reward card are the only loyalty status displays.
   await expect(page.locator(
     '#profileStampProgress, #profileStampsRemaining, #bonusProg, .profile-stamps-summary'
@@ -222,6 +229,19 @@ test('visual audit: coffee profile loyalty without duplicate progress UI at 390p
   const imagePath = path.join(OUT, 'COFFEE-PROFILE-LOYALTY-390.png');
   await page.screenshot({
     path: imagePath,
+    fullPage: false,
+    animations: 'disabled',
+    caret: 'hide'
+  });
+
+  await help.locator('summary').click();
+  await expect(help).toHaveAttribute('open', '');
+  await expect(help.locator('.profile-loyalty-help-content')).toBeVisible();
+  await expect(help).toContainText('10 штампов — бесплатный кофе');
+  await expect(help.getByRole('link', { name: 'Telegram-бота' }))
+    .toHaveAttribute('href', 'https://t.me/and_coffee_bot');
+  await page.screenshot({
+    path: path.join(OUT, 'COFFEE-PROFILE-LOYALTY-390-EXPANDED.png'),
     fullPage: false,
     animations: 'disabled',
     caret: 'hide'
