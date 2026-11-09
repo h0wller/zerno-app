@@ -336,6 +336,9 @@ html body #authModal.tg-mode .mhint{
 /* CART-PILL-PATCH v2: плавающая корзина-пилюля */
 .cartFab{
   position: fixed;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%) scale(0.92);
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%) scale(0.92);
@@ -398,13 +401,7 @@ html body #authModal.tg-mode .mhint{
   color: #FFFFFF;
   letter-spacing: 0.02em;
 }
-/* Tablet and desktop keep the cart pill centered on the viewport. */
-@media (min-width: 820px){
-  .cartFab { left:50%; right:auto; transform:translateX(-50%) scale(0.92); }
-  .cartFab.visible { transform:translateX(-50%) scale(1); }
-  .cartFab:hover { transform:translateX(-50%) scale(1.03); }
-  .cartFab:active { transform:translateX(-50%) scale(0.97); }
-}
+
 /* [tg-rudiments-cleanup-v1] */
 #authModal.tg-mode small,
 #authModal.tg-mode .mhint,
