@@ -506,6 +506,9 @@ function renderDeliveryMenu() {
   renderDeliveryGrid(list);
   patchDeliveryCards(list);
   syncDeliveryImagePriorities();
+  if (typeof window.alignRailWithCard === 'function') {
+    requestAnimationFrame(window.alignRailWithCard);
+  }
 
   const addCard = document.getElementById('addDelivCard');
   if (addCard) addCard.onclick = () => openEditor(null, 'delivery');
