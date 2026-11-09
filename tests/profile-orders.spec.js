@@ -494,7 +494,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(profileTab).toHaveAttribute('aria-selected', 'false');
   });
 
-  test('delivery profile footer actions remain balanced at narrow mobile widths', async ({ page }) => {
+  test('delivery profile footer actions remain balanced at narrow mobile widths', async ({ page }, testInfo) => {
     for (const width of [320, 390]) {
       await page.setViewportSize({ width, height: 844 });
       await expect(page.locator('#panel')).toHaveClass(/open/);
@@ -525,6 +525,10 @@ test.describe('Модуль заказов профиля', () => {
       expect(layout.profile.left - layout.back.right, 'footer actions have a visible gap').toBeGreaterThanOrEqual(6);
       expect(layout.back.left).toBeGreaterThanOrEqual(layout.footer.left);
       expect(layout.profile.right).toBeLessThanOrEqual(layout.footer.right);
+      await testInfo.attach(`delivery-profile-footer-${width}px`, {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
     }
   });
 
