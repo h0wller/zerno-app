@@ -323,7 +323,7 @@ label.chk{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #FFFFFF;
+  background: var(--modal-bg, #fff);
   pointer-events: auto;
 }
 #qrModal.show .modal-card,
@@ -335,17 +335,21 @@ label.chk{
   border-radius: 0;
   border: none;
   box-shadow: none;
-  background: #FFFFFF;
+  background-color: var(--modal-bg, #fff);
+  background-image: var(--modal-bg-image, none);
+  background-size: var(--modal-bg-size, auto);
+  color: var(--ink, #101418);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  padding: calc(72px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
 }
+#qrModal .mclose { top: calc(18px + env(safe-area-inset-top, 0px)); right: max(18px, env(safe-area-inset-right, 0px)); }
 .qrcard{
   width: min(430px, 100%);
   text-align: center;
-  background: #fff;
+  background: var(--modal-bg, #fff);
   cursor: pointer;
   user-select: none;
 }
