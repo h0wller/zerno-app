@@ -252,6 +252,16 @@ test('coffee profile keeps a single QR action on the bonuses tab', async ({ page
   });
 
   await expect(page.locator('#profileCoffeeSection canvas, #profileCoffeeSection [data-open-profile-qr]')).toHaveCount(0);
+  const profileSections = await page.locator('#profileBox > .profile-identity, #profileBox > .profile-brand-section, #profileBox > .placebox').evaluateAll(elements =>
+    elements.map(element => ({
+      background: getComputedStyle(element).backgroundColor,
+      border: getComputedStyle(element).borderTopWidth,
+      radius: getComputedStyle(element).borderTopLeftRadius
+    }))
+  );
+  expect(profileSections.length).toBeGreaterThan(1);
+  expect(profileSections.every(section => section.background !== 'rgba(0, 0, 0, 0)')).toBe(true);
+  expect(profileSections.every(section => Number.parseFloat(section.radius) >= 12)).toBe(true);
 
   await page.evaluate(() => window.openPanel('bonus'));
   await expect(page.locator('#panel')).toHaveClass(/open/);
