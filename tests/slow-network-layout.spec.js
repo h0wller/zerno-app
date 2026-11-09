@@ -369,7 +369,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       if (width < 820) {
         expect(before.subDisplay, `delivery brand subtitle stays hidden on compact mobile at ${width}px before CSS`).toBe('none');
       } else {
-        expect(before.subDisplay, `delivery brand descriptor is absent for coffee-only markup at ${width}px before CSS`).toBe('none');
+        expect(before.subDisplay, `delivery brand subtitle stays available on tablet/desktop at ${width}px before CSS`).not.toBe('none');
       }
       expect(before.scrollWidth, `no initial horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
