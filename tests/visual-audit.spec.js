@@ -248,6 +248,27 @@ test('visual audit: coffee profile loyalty without duplicate progress UI at 390p
     caret: 'hide'
   });
 
+  await help.locator('summary').click();
+  await expect(help).not.toHaveAttribute('open', '');
+  const promo = page.locator('#profileCoffeeSection .profile-promo-details');
+  await promo.scrollIntoViewIfNeeded();
+  await expect(promo).toBeVisible();
+  await page.screenshot({
+    path: path.join(OUT, 'COFFEE-PROFILE-PROMO-390.png'),
+    fullPage: false,
+    animations: 'disabled',
+    caret: 'hide'
+  });
+  await promo.locator('summary').click();
+  await expect(promo).toHaveAttribute('open', '');
+  await expect(page.locator('#promoInput')).toBeVisible();
+  await page.screenshot({
+    path: path.join(OUT, 'COFFEE-PROFILE-PROMO-390-EXPANDED.png'),
+    fullPage: false,
+    animations: 'disabled',
+    caret: 'hide'
+  });
+
   const runtime = await page.evaluate(() => ({
     brand: document.documentElement.dataset.brand || null,
     staffRole: document.documentElement.getAttribute('data-staff-role'),
