@@ -43,19 +43,35 @@
   align-self: start;
 }
 #profileBox .profile-name-row {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
   align-items: center;
+  gap: 7px;
   width: 100%;
   min-width: 0;
 }
 #profileBox input#nameInput {
-  flex: 1 1 auto;
-  width: 1px;
+  grid-column: 1;
+  grid-row: 1;
+  box-sizing: border-box;
+  width: 100%;
   min-width: 0;
 }
+#profileBox .profile-name-edit-icon {
+  grid-column: 2;
+  grid-row: 1;
+}
 #profileBox .profile-name-actions {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
   flex-wrap: nowrap;
+  gap: 8px;
+}
+#profileBox .profile-name-actions[hidden],
+#profileBox .profile-name-edit-icon[hidden] {
+  display: none;
 }
 #profileBox #profileSettingsBtn {
   grid-column: 3;
