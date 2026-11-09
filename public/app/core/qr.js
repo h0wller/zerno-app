@@ -136,18 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* ── НОВОЕ: клик по самому QR-холсту открывает полный экран ── */
-  ['qrMini', 'qrMain'].forEach(function (id) {
-    var cv = document.getElementById(id);
-    if (!cv || cv.dataset.qrClick) return;
-    cv.dataset.qrClick = '1';
-    cv.style.cursor = 'zoom-in';
-    cv.title = 'Открыть на весь экран';
-    cv.addEventListener('click', function (e) {
-      e.stopPropagation();
-      openQRFull();
-    });
-  });
 });
 /* ── Ф5.8e: ESM-шимы: boot renderAll и CLOSE-карта overlay.js ── */
 window.drawQR = drawQR;
