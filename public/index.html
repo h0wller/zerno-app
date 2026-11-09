@@ -2850,6 +2850,17 @@ html body #tickerTrack .tickerGroup > span {
     max-height: 36px !important;
     flex: 0 0 128px !important;
   }
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand > div:not(.mark) {
+    width:max-content !important;
+    min-width:0 !important;
+    max-width:calc(60vw - 60px) !important;
+    flex:0 0 auto !important;
+  }
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand #brandTitle {
+    width:max-content !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
   html[data-brand="coffee"] body header.topbar div#headerBrand.brand #brandTitle {
     display:block !important;
     font-size:clamp(15px,4.8vw,19px) !important;
