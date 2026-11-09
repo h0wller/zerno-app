@@ -21,15 +21,21 @@ function updateRailStickyPosition(rail, head) {
   var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
   var availableHeight = Math.max(0, laneBottom - laneTop);
 
-  // The delivery rail fills the catalog grid row; only the sticky top offset follows the fixed header.
-  var top = laneTop + 'px';
-  var maxHeight = isDelivery ? 'none' : availableHeight + 'px';
-  if (rail.style.top !== top) rail.style.top = top;
-  if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
-  if (rail.style.transform !== 'none') rail.style.transform = 'none';
-  if (isDelivery && rail.style.alignSelf !== 'stretch') {
-    rail.style.alignSelf = 'stretch';
+  // Delivery rail follows the product-card column in normal flow so its top and bottom
+  // stay aligned with the catalog; coffee rail remains sticky below the header.
+  if (isDelivery) {
+    if (rail.style.position !== 'relative') rail.style.position = 'relative';
+    if (rail.style.top !== 'auto') rail.style.top = 'auto';
+    if (rail.style.maxHeight !== 'none') rail.style.maxHeight = 'none';
+    if (rail.style.alignSelf !== 'stretch') rail.style.alignSelf = 'stretch';
+  } else {
+    if (rail.style.position !== 'sticky') rail.style.position = 'sticky';
+    var top = laneTop + 'px';
+    var maxHeight = availableHeight + 'px';
+    if (rail.style.top !== top) rail.style.top = top;
+    if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
   }
+  if (rail.style.transform !== 'none') rail.style.transform = 'none';
   rail.classList.add('rail-position-ready');
 }
 
