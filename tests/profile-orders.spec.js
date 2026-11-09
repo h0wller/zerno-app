@@ -194,6 +194,20 @@ test.describe('Модуль заказов профиля', () => {
     const trackModal = page.locator('#orderTrackModal');
     await expect(trackModal).toHaveClass(/show/);
     await expect(trackModal.locator('.ot-card')).toBeVisible();
+    const trackingActions = await trackModal.locator('.ot-actions .btn').evaluateAll(elements => elements.map(element => {
+      const style = getComputedStyle(element);
+      return {
+        shadow: style.boxShadow,
+        borderWidth: style.borderTopWidth,
+        minHeight: Number.parseFloat(style.minHeight)
+      };
+    }));
+    expect(trackingActions).toHaveLength(2);
+    for (const action of trackingActions) {
+      expect(action.shadow).toBe('none');
+      expect(action.borderWidth).toBe('1px');
+      expect(action.minHeight).toBeGreaterThanOrEqual(44);
+    }
     await testInfo.attach('delivery-profile-tracking-modal-390px', {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png'
@@ -234,6 +248,26 @@ test.describe('Модуль заказов профиля', () => {
     await expect(settings.locator('#deleteAccBtn')).toBeVisible();
     await expect(settings.locator('#deleteConfirmPanel')).toBeHidden();
     await expect(settings.locator('#deleteConfirmBtn')).toBeDisabled();
+    const pinRow = settings.locator('.set-row');
+    const pinRowPresentation = await pinRow.evaluate(element => {
+      const label = element.querySelector('span');
+      const button = element.querySelector('#setPinGo2');
+      const style = getComputedStyle(element);
+      const buttonStyle = getComputedStyle(button);
+      return {
+        display: style.display,
+        labelWhiteSpace: getComputedStyle(label).whiteSpace,
+        buttonWidth: button.getBoundingClientRect().width,
+        buttonScrollWidth: button.scrollWidth,
+        buttonClientWidth: button.clientWidth,
+        buttonShadow: buttonStyle.boxShadow
+      };
+    });
+    expect(pinRowPresentation.display).toBe('grid');
+    expect(pinRowPresentation.labelWhiteSpace).toBe('nowrap');
+    expect(pinRowPresentation.buttonWidth).toBeLessThanOrEqual(156);
+    expect(pinRowPresentation.buttonScrollWidth).toBeLessThanOrEqual(pinRowPresentation.buttonClientWidth);
+    expect(pinRowPresentation.buttonShadow).toBe('none');
     await testInfo.attach('delivery-profile-settings-390px', {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png'
