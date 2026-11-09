@@ -1683,10 +1683,10 @@ html[data-brand="delivery"] {
 @media (min-width:820px) and (max-width:1023px) {
   /* Reserve post-font wordmark width before deferred CSS to avoid a 27px header shift at 820px. */
   html[data-brand="delivery"] body header.topbar #headerBrand.brand {
-    width:min(346px,calc(10vw + 244px));
-    min-width:min(346px,calc(10vw + 244px));
-    max-width:min(346px,calc(10vw + 244px));
-    gap:8px;
+    width:min(346px,calc(10vw + 244px)) !important;
+    min-width:min(346px,calc(10vw + 244px)) !important;
+    max-width:min(346px,calc(10vw + 244px)) !important;
+    gap:8px !important;
   }
   html[data-brand="delivery"] body header.topbar #headerBrand.brand .mark {
     width:clamp(92px,14vw,136px);
