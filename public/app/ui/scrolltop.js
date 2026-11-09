@@ -3,6 +3,7 @@
 var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
+var observedRailGrid = null;
 
 function updateRailStickyPosition(rail, head) {
   if (!rail || !head) return;
@@ -26,9 +27,8 @@ function updateRailStickyPosition(rail, head) {
   if (rail.style.top !== top) rail.style.top = top;
   if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
   if (rail.style.transform !== 'none') rail.style.transform = 'none';
-  if (isDelivery) {
-    if (rail.style.alignSelf !== 'stretch') rail.style.alignSelf = 'stretch';
-    if (rail.style.height !== 'auto') rail.style.height = 'auto';
+  if (isDelivery && rail.style.alignSelf !== 'stretch') {
+    rail.style.alignSelf = 'stretch';
   }
   rail.classList.add('rail-position-ready');
 }
@@ -69,6 +69,14 @@ function alignRailWithCard() {
 
     var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
+    if (isDeliveryBrand && deliveryCardsRect && deliveryCardsRect.height > 0) {
+      var deliveryHeight = deliveryCardsRect.height + 'px';
+      if (rail.style.height !== deliveryHeight) rail.style.height = deliveryHeight;
+      if (rail.style.alignSelf !== 'stretch') rail.style.alignSelf = 'stretch';
+      if (rail.style.maxHeight !== 'none') rail.style.maxHeight = 'none';
+    } else if (!isDeliveryBrand && rail.style.height) {
+      rail.style.removeProperty('height');
+    }
   } else if (rail.style.marginTop !== '0px') {
     rail.style.marginTop = '0px';
   }
@@ -76,13 +84,17 @@ function alignRailWithCard() {
   updateRailStickyPosition(rail, head);
 
   var topbar = document.querySelector('header.topbar');
-  if (typeof ResizeObserver === 'function' && (observedRailHead !== head || observedRailTopbar !== topbar)) {
+  var deliveryGrid = isDelivery ? document.getElementById('deliveryGrid') : null;
+  if (typeof ResizeObserver === 'function' &&
+      (observedRailHead !== head || observedRailTopbar !== topbar || observedRailGrid !== deliveryGrid)) {
     if (railHeadObserver) railHeadObserver.disconnect();
     railHeadObserver = new ResizeObserver(alignRailWithCard);
     observedRailHead = head;
     observedRailTopbar = topbar;
+    observedRailGrid = deliveryGrid;
     if (head) railHeadObserver.observe(head);
     if (topbar) railHeadObserver.observe(topbar);
+    if (deliveryGrid) railHeadObserver.observe(deliveryGrid);
     if (isDelivery) {
       var deliveryView = document.getElementById('deliveryView');
       if (deliveryView) railHeadObserver.observe(deliveryView);
