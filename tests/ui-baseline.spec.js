@@ -151,7 +151,7 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(panel).toBeVisible({ timeout: 8000 });
 
   await expect(page.locator('#profileBox')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('#pvProfile')).toHaveCSS('background-color', 'rgb(245, 240, 228)');
+  await expect(page.locator('#pvProfile')).toHaveCSS('background-color', 'rgb(243, 248, 252)');
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('.profile-qr-access')).toBeVisible();
   await expect(page.locator('.profile-qr-link')).toHaveText('Показать QR');
