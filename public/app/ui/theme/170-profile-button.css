@@ -696,7 +696,9 @@
 /* ── Profile composition: one calm canvas, clear hierarchy, restrained surfaces ── */
 #panel #pvProfile {
   padding: 16px 16px 20px;
-  background: var(--profile-canvas, var(--panel, #fff));
+  background-color: var(--profile-canvas, var(--panel, #fff));
+  background-image: var(--profile-canvas-image, none);
+  background-size: var(--profile-canvas-size, auto);
 }
 
 #profileBox:not([hidden]) {
@@ -1296,7 +1298,8 @@
 #ordersModal .omCard,
 #orderTrackModal .ot-card {
   background: var(--profile-modal-surface, var(--profile-canvas, var(--panel)));
-  background-image: none;
+  background-image: var(--profile-modal-image, none);
+  background-size: var(--profile-modal-size, auto);
   border: var(--profile-modal-border, 1px solid var(--line));
   border-radius: 20px;
   box-shadow: var(--profile-modal-shadow, 0 22px 60px rgba(0,0,0,.16));
