@@ -160,7 +160,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#myOrdersBtn')).toBeFocused();
   });
 
-  test('настройки профиля содержат управление аккаунтом без общего сброса хранилища', async ({ page }) => {
+  test('настройки профиля содержат управление аккаунтом без общего сброса хранилища', async ({ page }, testInfo) => {
     await page.locator('#profileBox .gear').click();
 
     const settings = page.locator('#settingsModal');
@@ -178,6 +178,10 @@ test.describe('Модуль заказов профиля', () => {
     await expect(settings.locator('#deleteAccBtn')).toBeVisible();
     await expect(settings.locator('#deleteConfirmPanel')).toBeHidden();
     await expect(settings.locator('#deleteConfirmBtn')).toBeDisabled();
+    await testInfo.attach('settings-modal-390', {
+      body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+      contentType: 'image/png'
+    });
     await expect(page.locator('#setPinBtn, #notifyDetails, #ntTg, #ntWeb, #resetBtn, #resetGo2')).toHaveCount(0);
 
     await settings.locator('#deleteAccBtn').click();
@@ -276,16 +280,22 @@ test.describe('Модуль заказов профиля', () => {
       return {
         width: rect.width,
         height: rect.height,
+        padding: style.padding,
         background: style.backgroundColor,
         shadow: style.boxShadow,
         iconWidth: icon.getBoundingClientRect().width,
         iconHeight: icon.getBoundingClientRect().height,
+        iconCenterOffsetX: Math.abs(icon.getBoundingClientRect().left + icon.getBoundingClientRect().width / 2 - (rect.left + rect.width / 2)),
+        iconCenterOffsetY: Math.abs(icon.getBoundingClientRect().top + icon.getBoundingClientRect().height / 2 - (rect.top + rect.height / 2)),
         stroke: iconStyle.stroke,
         fill: iconStyle.fill
       };
     });
     expect(editPresentation.width).toBeGreaterThanOrEqual(44);
     expect(editPresentation.height).toBeGreaterThanOrEqual(44);
+    expect(editPresentation.padding).toBe('0px');
+    expect(editPresentation.iconCenterOffsetX).toBeLessThanOrEqual(0.5);
+    expect(editPresentation.iconCenterOffsetY).toBeLessThanOrEqual(0.5);
     expect(editPresentation.background).not.toBe('rgba(0, 0, 0, 0)');
     expect(editPresentation.shadow).not.toBe('none');
     expect(editPresentation.iconWidth).toBeGreaterThanOrEqual(20);
