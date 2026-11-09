@@ -122,7 +122,7 @@ test.describe('Модуль заказов профиля', () => {
     expect(presentation.summaryMinHeight).toBeGreaterThanOrEqual(52);
     expect(presentation.iconWidth).toBe('30px');
     expect(presentation.chevronWidth).toBe('30px');
-    expect(presentation.bodyBackground).toBe('rgb(246, 238, 225)');
+    expect(presentation.bodyBackground).toBe('rgb(250, 245, 238)');
     expect(presentation.addressRadius).toBe('12px');
 
     await details.scrollIntoViewIfNeeded();
