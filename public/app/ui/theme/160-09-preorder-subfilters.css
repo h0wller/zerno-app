@@ -311,4 +311,11 @@
 /* Keep lazy-card reservation aligned with the native fieldset + legend geometry. */
 #deliveryGrid .card:nth-child(n+5) { contain-intrinsic-block-size: 502px; }
 
-
+/* 320px cards: compact option labels so both crust names fit without truncation. */
+@media (max-width:350px) {
+  #deliveryGrid .opts .opt-size { font-size:10px; }
+  #deliveryGrid .opts .opt-crust { font-size:8px; }
+  #deliveryGrid .opts .opt-weight { font-size:8.5px; }
+  #deliveryGrid .opts .opt-price,
+  #deliveryGrid .opts button .op { font-size:10.5px; }
+}
