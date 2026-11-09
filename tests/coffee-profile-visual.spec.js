@@ -181,7 +181,7 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-test('coffee profile keeps one QR action and avoids a duplicate large QR on the profile tab', async ({ page }, testInfo) => {
+test('coffee profile keeps a single QR action on the bonuses tab', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await installCoffeeGuest(page, 6, 1);
   // Profile swipe-to-close remains available, but the explanatory chip must never be injected.
