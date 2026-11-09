@@ -167,7 +167,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(settings).toHaveClass(/show/);
     const settingsBackdrop = page.locator('#overlay');
     await expect(settingsBackdrop).toHaveClass(/show/);
-    await expect(settingsBackdrop).toHaveCSS('backdrop-filter', /blur\\(8px\\) saturate\\(0\\.82\\)/);
+    await expect(settingsBackdrop).toHaveCSS('backdrop-filter', /blur\(8px\) saturate\(0\.82\)/);
     await expect(settingsBackdrop).toHaveCSS('background-color', 'rgba(16, 20, 24, 0.48)');
     const settingsWidth = await settings.locator('.settings-card').evaluate(element => element.getBoundingClientRect().width);
     expect(settingsWidth).toBeLessThanOrEqual(401);
