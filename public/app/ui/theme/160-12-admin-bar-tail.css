@@ -1184,15 +1184,3 @@ html body #adminBar.adminBar[hidden] { display:none; }
 html body #modeSeg button:not(.on) {
   color: #AFC0D0;
 }
-
-/* 320px: the menu descriptor badge has no usable line width; keep the heading clean.
-   Pizza option labels get a small type reduction so both dough choices remain legible. */
-@media (max-width: 320px) {
-  html body #menuView .menu-head h1 em,
-  html body #deliveryView .menu-head h1 em { display: none; }
-
-  #deliveryGrid .card .opts .opt-size { font-size: 10px; }
-  #deliveryGrid .card .opts .opt-crust { font-size: 8px; }
-  #deliveryGrid .card .opts .opt-weight { font-size: 8.5px; }
-  #deliveryGrid .card .opts .opt-price { font-size: 10.5px; }
-}
