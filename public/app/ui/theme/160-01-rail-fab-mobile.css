@@ -336,11 +336,9 @@ html body #authModal.tg-mode .mhint{
 /* CART-PILL-PATCH v2: плавающая корзина-пилюля */
 .cartFab{
   position: fixed;
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%) scale(0.92);
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
+  right: auto;
   transform: translateX(-50%) scale(0.92);
   z-index: 90;
   display: flex;
