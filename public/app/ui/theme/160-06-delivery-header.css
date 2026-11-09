@@ -469,4 +469,15 @@
   }
 }
 
-
+/* Mobile wordmarks: Delivery is logo-only; Coffee's mark and text form one centered group. */
+@media (max-width:820px) {
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand { width:min(196px,60vw); min-width:0; max-width:min(196px,60vw); gap:0; justify-self:center; }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand > div:not(.mark),
+  html[data-brand="delivery"] body header.topbar #brandTitle,
+  html[data-brand="delivery"] body header.topbar #brandSub { display:none !important; }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand .mark { width:min(196px,60vw); min-width:0; max-width:min(196px,60vw); flex:0 1 auto; }
+  html[data-brand="coffee"] body header.topbar #headerBrand.brand { width:196px; min-width:0; max-width:min(196px,60vw); display:flex; align-items:center; justify-content:center; gap:8px; justify-self:center; }
+  html[data-brand="coffee"] body header.topbar #headerBrand.brand .mark { width:52px; min-width:52px; max-width:52px; height:52px; flex:0 0 52px; }
+  html[data-brand="coffee"] body header.topbar #headerBrand.brand > div:not(.mark) { display:flex; flex:0 1 128px; width:128px; min-width:0; max-width:128px; align-items:center; justify-content:center; }
+  html[data-brand="coffee"] body header.topbar #headerBrand.brand #brandTitle { display:block !important; visibility:visible !important; opacity:1 !important; white-space:nowrap; }
+}

@@ -453,15 +453,11 @@ body[data-brand="delivery"] .topbar .brand .mark {
     white-space:nowrap;
   }
   html[data-brand="coffee"] header.topbar div#headerBrand.brand #brandSub { display:none !important; }
+  html[data-brand="delivery"] header.topbar div#headerBrand.brand > div:not(.mark),
+  body[data-brand="delivery"] header.topbar div#headerBrand.brand > div:not(.mark) { display:none !important; }
+  html[data-brand="delivery"] header.topbar div#headerBrand.brand { width:min(196px,60vw); min-width:0; max-width:min(196px,60vw); gap:0; }
   html[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark,
-  body[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark {
-    width: min(196px, 60vw);
-    min-width: min(196px, 60vw);
-    max-width: min(196px, 60vw);
-    height: 48px;
-    max-height: 48px;
-    flex: 0 0 min(196px, 60vw);
-  }
+  body[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark { width:min(196px,60vw); min-width:0; max-width:min(196px,60vw); height:48px; max-height:48px; flex:0 1 auto; }
   header.topbar button#profileTopBtn.ava {
     position: static;
     transform: none;
@@ -502,21 +498,12 @@ body > div.wrap,
   }
 }
 @media (min-width: 821px) and (max-width: 1180px) {
-  body > div.wrap,
-  .wrap {
-    grid-template-columns: 92px minmax(0, 1fr) 350px;
-    gap: 18px;
-    padding: 18px;
-  }
+  body > div.wrap, .wrap { grid-template-columns:92px minmax(0,1fr) 350px; gap:18px; padding:18px; }
 }
+@media (min-width:821px) { html[data-brand="delivery"] body > div.wrap { grid-template-columns:92px minmax(0,1fr); } }
 @media (min-width: 1181px) {
-  body > div.wrap,
-  .wrap {
-    grid-template-columns: 92px minmax(0, 1fr) 350px;
-    gap: 22px;
-    padding: 22px;
-    max-width: 1480px;
-  }
+  body > div.wrap, .wrap { grid-template-columns:92px minmax(0,1fr) 350px; gap:22px; padding:22px; max-width:1480px; }
+  html[data-brand="delivery"] body > div.wrap { grid-template-columns:92px minmax(0,1fr); }
 }
 #grid .card:nth-child(n+5),
 #deliveryGrid .card:nth-child(n+5),
@@ -1654,26 +1641,11 @@ html[data-brand="delivery"] {
 
 /* Hide delivery descriptor only on compact mobile. */
 @media (max-width: 819px) {
-  html[data-brand="delivery"] body header.topbar #headerBrand.brand > div:not(.mark) {
-    display:flex !important;
-    flex-direction:column;
-    align-items:flex-start;
-    justify-content:center;
-    gap:0;
-    width:clamp(86px,27vw,104px);
-    min-width:clamp(86px,27vw,104px);
-    max-width:clamp(86px,27vw,104px);
-    flex:0 0 clamp(86px,27vw,104px);
-  }
-  html[data-brand="delivery"] body header.topbar #brandTitle {
-    display:block !important;
-    visibility:visible !important;
-    opacity:1 !important;
-    color:#3A2A1C;
-    font:800 clamp(11px,3.6vw,14px)/1.05 "Unbounded","Golos Text",sans-serif;
-    white-space:nowrap;
-  }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand { width:min(196px,60vw); min-width:0; max-width:min(196px,60vw); gap:0; }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand > div:not(.mark),
+  html[data-brand="delivery"] body header.topbar #brandTitle,
   html[data-brand="delivery"] body header.topbar #brandSub { display:none !important; }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand .mark { width:min(196px,60vw); min-width:0; max-width:min(196px,60vw); flex:0 1 auto; }
 }
 @media (min-width:820px) {
   html[data-brand="delivery"] body header.topbar #headerBrand.brand > div:not(.mark) { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:2px; }
@@ -2096,17 +2068,8 @@ html[data-brand="delivery"] {
   html body .menu-head .upd { display:none; }
 
   /* Preserve the other first-frame mobile controls without adding rows to the menu head. */
-  html body header.topbar #profileTopBtn,
-  html body #scrollTopBtn {
-    width:32px;
-    min-width:32px;
-    max-width:32px;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    padding:0;
-    flex:0 0 32px;
-  }
+  html body header.topbar #profileTopBtn { width:32px; min-width:32px; max-width:32px; height:32px; min-height:32px; max-height:32px; padding:0; flex:0 0 32px; }
+  html body #scrollTopBtn { box-sizing:border-box; width:44px; min-width:44px; max-width:44px; height:44px; min-height:44px; max-height:44px; padding:0; font-size:22px; }
   html body #deliveryView .subfilter-bar .subchip,
   html body #menuView .subfilter-bar .subchip,
   html body #deliverySubFilter .subchip {

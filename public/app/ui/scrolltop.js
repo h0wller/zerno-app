@@ -20,20 +20,11 @@ function updateRailStickyPosition(rail, head) {
   var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
   var availableHeight = Math.max(0, laneBottom - laneTop);
 
-  // Delivery rail follows the product-card column in normal flow so its top and bottom
-  // stay aligned with the catalog; coffee rail remains sticky below the header.
-  if (isDelivery) {
-    if (rail.style.position !== 'relative') rail.style.position = 'relative';
-    if (rail.style.top !== 'auto') rail.style.top = 'auto';
-    if (rail.style.maxHeight !== 'none') rail.style.maxHeight = 'none';
-    if (rail.style.alignSelf !== 'stretch') rail.style.alignSelf = 'stretch';
-  } else {
-    if (rail.style.position !== 'sticky') rail.style.position = 'sticky';
-    var top = laneTop + 'px';
-    var maxHeight = availableHeight + 'px';
-    if (rail.style.top !== top) rail.style.top = top;
-    if (rail.style.maxHeight !== maxHeight) rail.style.maxHeight = maxHeight;
-  }
+  // Both brand rails follow their catalog column in normal flow, aligned with the first card row.
+  if (rail.style.position !== 'relative') rail.style.position = 'relative';
+  if (rail.style.top !== 'auto') rail.style.top = 'auto';
+  if (rail.style.maxHeight !== 'none') rail.style.maxHeight = 'none';
+  if (rail.style.alignSelf !== 'stretch') rail.style.alignSelf = 'stretch';
   if (rail.style.transform !== 'none') rail.style.transform = 'none';
   rail.classList.add('rail-position-ready');
 }
@@ -64,13 +55,11 @@ function alignRailWithCard() {
       modeSeg.closest('.menu-controls-row') === menuRow);
     var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
     var searchRow = head.querySelector('.mh-right');
-    var deliveryCards = isDeliveryBrand ? document.querySelector('#deliveryView #deliveryGrid') : null;
-    var deliveryCardsRect = deliveryCards && deliveryCards.getBoundingClientRect();
-    var desiredTop = isDeliveryBrand && deliveryCardsRect
-      ? deliveryCardsRect.top
-      : (staffGuestMenu
-        ? headRect.bottom + 12
-        : (mobileViewport && searchRow ? searchRow.getBoundingClientRect().bottom + 12 : headRect.top));
+    var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
+    var catalogRect = catalog && catalog.getBoundingClientRect();
+    var desiredTop = mobileViewport && searchRow
+      ? searchRow.getBoundingClientRect().bottom + 12
+      : (catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top));
 
     var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;

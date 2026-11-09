@@ -104,14 +104,14 @@ html body div.wrap > .rail,
 html body div.wrap > #rail,
 html body div.wrap > #deliveryRail {
   grid-column: 1;
-  position: sticky;
-  top: calc(var(--topbar-h, 60px) + env(safe-area-inset-top, 0px) + 12px);
+  position:relative;
+  top:auto;
   transform: none;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  align-self: start;
-  width: 80px;
+  align-self:stretch;
+  width:80px;
   min-width: 80px;
   height: fit-content;
   max-height: calc(100dvh - var(--topbar-h, 60px) - env(safe-area-inset-top, 0px) - 24px);
@@ -124,12 +124,9 @@ html body div.wrap > #deliveryRail {
 }
 
 
-/* Delivery rail fills the same grid row as the full menu/card column. */
-html body div.wrap > #deliveryRail {
-  align-self: stretch;
-  height: auto;
-  max-height: none;
-}
+/* Both brand rails fill the menu section's grid row. */
+html body div.wrap > #rail,
+html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height:none; }
 @media (min-width: 1181px) {
   html body div.wrap > .rail,
   html body div.wrap > #rail,
@@ -165,15 +162,11 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
   }
 }
 
-/* CSS fallback before scrolltop.js measures the unobstructed viewport lane. */
-@media (max-width: 820px) {
+/* Normal-flow category rails need no sticky viewport offset in the first frame. */
+@media (max-width:820px) {
   html body div.wrap > .rail,
   html body div.wrap > #rail,
-  html body div.wrap > #deliveryRail {
-    top: calc(var(--topbar-h, 60px) + var(--sat, env(safe-area-inset-top, 0px)) + 12px);
-    transform: none;
-    max-height: calc(100dvh - var(--topbar-h, 60px) - var(--sat, env(safe-area-inset-top, 0px)) - 24px);
-  }
+  html body div.wrap > #deliveryRail { top:auto; transform:none; max-height:none; }
 }
 
 
@@ -212,3 +205,6 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
     line-height:1.15;
   }
 }
+
+/* Delivery has no right-hand coffee panel, so its catalog uses the full content column. */
+@media (min-width:821px) { html[data-brand="delivery"] body > div.wrap { grid-template-columns:92px minmax(0,1fr); } }

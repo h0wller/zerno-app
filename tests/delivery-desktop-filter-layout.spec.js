@@ -130,20 +130,29 @@ for (const width of [1024, 1440]) {
 }
 
 
-test('delivery desktop header uses the brand font, preserves cart centering, and highlights active filter', async ({ page }) => {
-  for (const width of [820, 821, 1024, 1440]) {
+test('delivery header uses brand typography on desktop and logo-only on mobile', async ({page}) => {
+  for (const width of [390, 820, 821, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.addInitScript(() => { sessionStorage.setItem('splashDone', '1'); localStorage.clear(); });
     await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
     const brand = page.locator('header.topbar #headerBrand');
     await expect(brand).toBeVisible();
-    const details = await brand.evaluate((element) => {
-      const text = element.querySelector('small#brandSub');
-      return { visible: !!text && getComputedStyle(text).display !== 'none', font: text && getComputedStyle(text).fontFamily, color: text && getComputedStyle(text).color };
+    const details=await brand.evaluate(el=>{
+      const text=el.querySelector('small#brandSub'),title=el.querySelector('#brandTitle'),mark=el.querySelector('.mark'),r=el.getBoundingClientRect();
+      return {tv:!!text&&getComputedStyle(text).display!=='none',titleVisible:!!title&&getComputedStyle(title).display!=='none',
+        font:text&&getComputedStyle(text).fontFamily,color:text&&getComputedStyle(text).color,
+        markVisible:!!mark&&getComputedStyle(mark).display!=='none',center:r.left+r.width/2};
     });
-    expect(details.visible, 'delivery brand text must be visible at >=820px').toBe(true);
-    expect(details.font).toContain('Unbounded');
-    expect(details.color).toBe('rgb(58, 42, 28)');
+    expect(details.markVisible).toBe(true);
+    if(width<=820){
+      expect(details.tv).toBe(false);
+      expect(details.titleVisible).toBe(false);
+      expect(Math.abs(details.center-width/2)).toBeLessThanOrEqual(1);
+    } else {
+      expect(details.tv).toBe(true);
+      expect(details.font).toContain('Unbounded');
+      expect(details.color).toBe('rgb(58, 42, 28)');
+    }
     const cart = page.locator('#cartFab');
     await expect(cart).toBeAttached();
     await cart.evaluate((el) => { el.hidden = false; el.classList.add('visible'); });

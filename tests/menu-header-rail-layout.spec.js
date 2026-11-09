@@ -50,12 +50,13 @@ for (const brand of CASES) {
         }, { headSelector: brand.head, railSelector: brand.rail });
         expect(searchGap, 'coffee rail starts below search/support row').toBeGreaterThanOrEqual(10);
       } else {
-        const initialRailDelta = await page.evaluate(({ headSelector, railSelector }) => {
-          const head = document.querySelector(headSelector).getBoundingClientRect();
-          const rail = document.querySelector(railSelector).getBoundingClientRect();
-          return Math.abs(head.top - rail.top);
-        }, { headSelector: brand.head, railSelector: brand.rail });
-        expect(initialRailDelta, 'coffee desktop rail aligns with menu card top').toBeLessThanOrEqual(2);
+        await expect(page.locator('#grid .card').first()).toBeVisible({timeout:15000});
+        const delta=await page.evaluate(selector=>{
+          const rail=document.querySelector(selector).getBoundingClientRect();
+          const grid=document.querySelector('#grid').getBoundingClientRect();
+          return Math.abs(rail.top-grid.top);
+        },brand.rail);
+        expect(delta,'coffee desktop rail aligns with first catalog row').toBeLessThanOrEqual(2);
       }
       await expect.poll(() => ticker.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 5000 }).toBe(brand.tickerBg);
 
@@ -114,18 +115,11 @@ for (const brand of CASES) {
           return Math.max(Math.abs(rail.top - grid.top), Math.abs(rail.bottom - grid.bottom));
         }), { timeout: 5000 }).toBeLessThanOrEqual(2);
       } else {
-        await expect.poll(() => page.evaluate(({ railSelector }) => {
-          const rail = document.querySelector(railSelector).getBoundingClientRect();
-          const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-          return rail.top - topbar.bottom;
-        }, { railSelector: brand.rail }), { timeout: 5000 }).toBeGreaterThanOrEqual(10);
-        const afterScroll = await page.evaluate(({ headSelector, railSelector }) => {
-          const head = document.querySelector(headSelector).getBoundingClientRect();
-          const rail = document.querySelector(railSelector).getBoundingClientRect();
-          const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-          return { railTop: rail.top, menuHeadBottom: head.bottom, topbarBottom: topbar.bottom };
-        }, { headSelector: brand.head, railSelector: brand.rail });
-        expect(afterScroll.railTop).toBeGreaterThanOrEqual(afterScroll.topbarBottom + 10);
+        await expect.poll(()=>page.evaluate(selector=>{
+          const rail=document.querySelector(selector).getBoundingClientRect();
+          const grid=document.querySelector('#grid').getBoundingClientRect();
+          return Math.abs(rail.top-grid.top);
+        },brand.rail),{timeout:5000}).toBeLessThanOrEqual(2);
       }
     });
   }
@@ -259,39 +253,23 @@ test('coffee rail aligns to its menu card and delivery rail aligns to product ca
 });
 
 
-test('delivery rail aligns to the first product card and fills the product-card column', async ({ page }) => {
-  for (const width of [390, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
-    await expect.poll(() => page.evaluate(() => document.querySelector('#deliveryRail').classList.contains('rail-position-ready'))).toBe(true);
-
-    const geometry = await page.evaluate(() => {
-      const menuHead = document.querySelector('#deliveryView .menu-head');
-      const grid = document.querySelector('#deliveryGrid');
-      const rail = document.querySelector('#deliveryRail');
-      const menuRect = menuHead.getBoundingClientRect();
-      const gridRect = grid.getBoundingClientRect();
-      const railRect = rail.getBoundingClientRect();
-      return {
-        padding: getComputedStyle(menuHead).padding,
-        menuHeadBottom: menuRect.bottom,
-        gridTop: gridRect.top,
-        gridBottom: gridRect.bottom,
-        railTop: railRect.top,
-        railBottom: railRect.bottom,
-        railAlignSelf: getComputedStyle(rail).alignSelf,
-        railMaxHeight: getComputedStyle(rail).maxHeight
-      };
-    });
-
-    expect(geometry.padding, 'delivery menu card padding').toBe('8px 16px');
-    expect(geometry.gridTop).toBeGreaterThan(geometry.menuHeadBottom);
-    expect(Math.abs(geometry.railTop - geometry.gridTop), 'delivery rail aligns to product cards, not category filters').toBeLessThanOrEqual(2);
-    expect(Math.abs(geometry.railBottom - geometry.gridBottom), 'delivery rail fills the full product-card column').toBeLessThanOrEqual(4);
-    expect(geometry.railAlignSelf).toBe('stretch');
-    expect(geometry.railMaxHeight).toBe('none');
+test('both brand rails align to the catalog row on desktop', async ({page}) => {
+  for (const brand of CASES) {
+    await page.setViewportSize({width:1440,height:900});
+    await page.addInitScript(() => sessionStorage.setItem('splashDone','1'));
+    await page.goto('/?brand='+brand.brand,{waitUntil:'domcontentloaded'});
+    const gridSelector=brand.brand==='coffee'?'#grid':'#deliveryGrid';
+    await expect(page.locator(gridSelector+' .card').first()).toBeVisible({timeout:15000});
+    await expect.poll(()=>page.locator(brand.rail).evaluate(el=>el.classList.contains('rail-position-ready'))).toBe(true);
+    const m=await page.evaluate(({railSelector,gridSelector})=>{
+      const grid=document.querySelector(gridSelector).getBoundingClientRect();
+      const rail=document.querySelector(railSelector),rect=rail.getBoundingClientRect();
+      return {gt:grid.top,gb:grid.bottom,rt:rect.top,rb:rect.bottom,pos:getComputedStyle(rail).position,align:getComputedStyle(rail).alignSelf};
+    },{railSelector:brand.rail,gridSelector});
+    expect(Math.abs(m.rt-m.gt)).toBeLessThanOrEqual(2);
+    expect(Math.abs(m.rb-m.gb)).toBeLessThanOrEqual(4);
+    expect(m.pos).toBe('relative');
+    expect(m.align).toBe('stretch');
   }
 });
 
