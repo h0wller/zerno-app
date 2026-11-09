@@ -44,6 +44,16 @@ for (const width of [1024, 1440]) {
 
     const bar = page.locator('#deliveryView #deliverySubFilter');
     await expect(bar).toBeVisible();
+    const aligned = await page.evaluate(() => {
+      const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
+      const head = document.querySelector('#deliveryView .menu-head').getBoundingClientRect();
+      const filters = document.querySelector('#deliveryView #deliverySubFilter').getBoundingClientRect();
+      return { gridLeft:grid.left, gridRight:grid.right, headLeft:head.left, headRight:head.right, filterLeft:filters.left, filterRight:filters.right };
+    });
+    expect(Math.abs(aligned.headLeft-aligned.gridLeft), 'delivery menu head starts with first card').toBeLessThanOrEqual(2);
+    expect(Math.abs(aligned.headRight-aligned.gridRight), 'delivery menu head ends with last card').toBeLessThanOrEqual(2);
+    expect(Math.abs(aligned.filterLeft-aligned.gridLeft), 'delivery filters start with first card').toBeLessThanOrEqual(2);
+    expect(Math.abs(aligned.filterRight-aligned.gridRight), 'delivery filters end with last card').toBeLessThanOrEqual(2);
     const chips = bar.locator('.subchip');
     await expect(chips).toHaveCount(9);
 
