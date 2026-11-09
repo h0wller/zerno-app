@@ -275,10 +275,10 @@ test('Задачи 5 и 6: Модалка «Мои заказы» в TMA и по
   expect(wakeLockActive).toBe(true);
 });
 
-test.describe('Спринт 2 — Сетка опций пиццы, отступ корзины, sticky-рейл и чекаут', () => {
+test.describe('Спринт 2 — Сетка опций пиццы, отступ корзины, rail доставки и чекаут', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('1. Опции пиццы в 2 колонки + подсветка .sel, отступ #deliveryGrid, sticky #deliveryRail и чекаут от одной позиции', async ({ page }) => {
+  test('1. Опции пиццы в 2 колонки + подсветка .sel, отступ #deliveryGrid, rail рядом с карточками и чекаут от одной позиции', async ({ page }) => {
     await page.addInitScript(() => {
       sessionStorage.setItem('splashDone', '1');
     });
