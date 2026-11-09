@@ -136,15 +136,8 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         if (fsEl) {
             fsEl.innerHTML = freeCount > 0
                 ? `<div class="freeCard"><span class="fe">🎁</span>
-<div class="free-card-copy"><b>Кофе за наш счёт ×${freeCount}</b><small>Подарок можно получить у кассира</small></div>
-<button type="button" class="free-card-action" data-show-free-qr>Показать кассиру</button></div>`
+<div class="free-card-copy"><b>Кофе за наш счёт ×${freeCount}</b><small>Подарок можно получить у кассира. Покажите QR из блока «Штампы на кассе».</small></div></div>`
                 : "";
-            var showGiftQr = fsEl.querySelector("[data-show-free-qr]");
-            if (showGiftQr) {
-                showGiftQr.onclick = function () {
-                    if (typeof window.openQRFull === "function") window.openQRFull();
-                };
-            }
         }
 
         const burnBtn = document.getElementById("burnFree");
