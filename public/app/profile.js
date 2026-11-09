@@ -156,14 +156,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
 
         updateMbonusBadge();
 
-        setTimeout(() => {
-            if (me && me.qr) {
-                const qm = document.getElementById('qrMini');
-                const qmain = document.getElementById('qrMain');
-                if (qm && typeof drawQR === 'function') drawQR(qm, me.qr);
-                if (qmain && typeof drawQR === 'function') drawQR(qmain, me.qr);
-            }
-        }, 50);
     }
 
     /* ── профиль ── */
