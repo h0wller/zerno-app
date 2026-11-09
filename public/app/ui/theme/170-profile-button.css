@@ -292,24 +292,24 @@
 }
 
 /* Кнопка промокода не должна переносить «ОК» даже на узких экранах. */
-#pvBonus .findrow #promoBtn {
+#profileCoffeeSection .findrow #promoBtn {
   flex: 0 0 auto;
   min-width: 54px;
   white-space: nowrap;
 }
 
 /* Бонусы: подарок, основной QR и промокод без скрытого холста. */
-#pvBonus .stamp-gift {
+#profileCoffeeSection .stamp-gift {
   display: grid;
   place-items: center;
   font-size: 18px;
   line-height: 1;
   border-style: dashed;
 }
-#pvBonus .stamp-gift.f {
+#profileCoffeeSection .stamp-gift.f {
   border-style: solid;
 }
-#pvBonus .freeCard {
+#profileCoffeeSection .freeCard {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
   align-items: center;
@@ -318,12 +318,12 @@
   border: 1px solid rgba(18, 58, 107, 0.22);
   background: #F3F8FC;
 }
-#pvBonus .free-card-copy {
+#profileCoffeeSection .free-card-copy {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
-#pvBonus .free-card-action {
+#profileCoffeeSection .free-card-action {
   grid-column: 1 / -1;
   width: 100%;
   min-height: 48px;
@@ -335,18 +335,18 @@
   font-size: 14px;
   font-weight: 800;
 }
-#pvBonus .bonus-qr-row {
+#profileCoffeeSection .bonus-qr-row {
   display: grid;
   gap: 8px;
   padding: 12px;
 }
-#pvBonus .bonus-qr-copy b {
+#profileCoffeeSection .bonus-qr-copy b {
   font-size: 13px;
 }
-#pvBonus .bonus-qr-copy small {
+#profileCoffeeSection .bonus-qr-copy small {
   font-size: 11px;
 }
-#pvBonus .bonus-qr-row .demoBtn {
+#profileCoffeeSection .bonus-qr-row .demoBtn {
   width: 100%;
   min-height: 50px;
   padding: 11px 14px;
@@ -357,7 +357,7 @@
   font-size: 14px;
   font-weight: 800;
 }
-#pvBonus .bonus-qr-canvas {
+#profileCoffeeSection .bonus-qr-canvas {
   position: static;
   display: block;
   width: min(196px, 100%);
@@ -372,12 +372,12 @@
   pointer-events: auto;
 }
 @media (max-width: 420px) {
-  #pvBonus .bonus-qr-row {
+  #profileCoffeeSection .bonus-qr-row {
     align-items: stretch;
     gap: 8px;
     padding: 10px;
   }
-  #pvBonus .bonus-qr-row .demoBtn {
+  #profileCoffeeSection .bonus-qr-row .demoBtn {
     min-height: 50px;
     padding-inline: 12px;
   }

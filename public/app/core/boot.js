@@ -80,12 +80,6 @@ function renderAll() {
     if (typeof renderChips === 'function') renderChips();
     if (typeof renderVerifyNote === 'function') renderVerifyNote();
 
-    const s = (window.me && window.me.qr) || 'guest';
-    const qm = $('#qrMini');
-    const qmain = $('#qrMain');
-    if (qm && typeof drawQR === 'function') drawQR(qm, s);
-    if (qmain && typeof drawQR === 'function') drawQR(qmain, s);
-
     if (window.mode === 'cashier' && typeof renderLog === 'function') renderLog();
   });
 }

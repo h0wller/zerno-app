@@ -115,9 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (card) card.addEventListener('click', closeQRFull);
   const closeBtn = document.getElementById('qrClose');
   if (closeBtn) closeBtn.addEventListener('click', e => { e.stopPropagation(); closeQRFull(); });
-  const openB = document.getElementById('qrOpenBonus');
-  if (openB) openB.onclick = openQRFull;
-
   document.addEventListener('click', function (event) {
     const qrTrigger = event.target.closest('[data-open-profile-qr]');
     if (qrTrigger) {
@@ -129,25 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const trigger = event.target.closest('[data-open-bonus-tab]');
     if (!trigger) return;
     event.preventDefault();
-    const bonusTab = document.getElementById('tabBonus');
-    if (bonusTab) {
-      bonusTab.click();
-      bonusTab.focus();
-    }
+    if (typeof window.openPanel === 'function') window.openPanel('profile');
   });
 
   /* ── НОВОЕ: клик по самому QR-холсту открывает полный экран ── */
-  ['qrMini', 'qrMain'].forEach(function (id) {
-    var cv = document.getElementById(id);
-    if (!cv || cv.dataset.qrClick) return;
-    cv.dataset.qrClick = '1';
-    cv.style.cursor = 'zoom-in';
-    cv.title = 'Открыть на весь экран';
-    cv.addEventListener('click', function (e) {
-      e.stopPropagation();
-      openQRFull();
-    });
-  });
+  /* QR is rendered only in #qrFull by openQRFull(). */
 });
 /* ── Ф5.8e: ESM-шимы: boot renderAll и CLOSE-карта overlay.js ── */
 window.drawQR = drawQR;
