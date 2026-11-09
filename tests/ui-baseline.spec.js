@@ -154,9 +154,10 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(page.locator('#profileBox')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('#profileStampProgress')).toBeVisible();
-  await expect(page.locator('.profile-qr-access')).toBeVisible();
-  await expect(page.locator('.profile-qr-link')).toHaveText('Показать QR');
-  await page.locator('.profile-qr-link').click();
+  await expect(page.locator('.profile-qr-access, .profile-qr-link, #qrMain')).toHaveCount(0);
+  await panel.locator('.tabs button[data-tab="bonus"]').click();
+  await expect(page.locator('#qrOpenBonus')).toBeVisible();
+  await page.locator('#qrOpenBonus').click();
   await expect(page.locator('#qrModal')).toHaveClass(/show/);
   await page.locator('#qrClose').click();
   await expect(page.locator('.coffee-place-links .coffee-place-link')).toHaveCount(3);
@@ -209,18 +210,18 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(page.locator('#bonusProg')).toContainText('Ещё 4 до бесплатного кофе');
   await expect(page.locator('#profileStampsRemaining')).toHaveText('до подарка — 4');
   await expect(page.locator('#profileStampProgress')).toHaveAttribute('aria-valuenow', '6');
-  await expect(page.locator('#qrMini')).toBeVisible();
+  await expect(page.locator('#qrMini, #qrMain, .profile-qr-link')).toHaveCount(0);
   await expect(page.locator('#qrOpenBonus')).toHaveText('Показать QR');
+  await expect(page.locator('#pvBonus [data-show-free-qr]')).toHaveCount(0);
 
   await page.evaluate(() => {
     window.me = { ...window.me, free: 1 };
     window.renderBonus();
   });
   await expect(page.locator('#bonusProg')).toContainText('1 бесплатный кофе');
-  await expect(page.locator('#freeSlot [data-show-free-qr]')).toHaveText('Показать кассиру');
-  await page.locator('#freeSlot [data-show-free-qr]').click();
-  await expect(page.locator('#qrModal')).toHaveClass(/show/);
-  await page.locator('#qrClose').click();
+  await expect(page.locator('#freeSlot')).toContainText('Кофе за наш счёт ×1');
+  await expect(page.locator('#freeSlot [data-show-free-qr]')).toHaveCount(0);
+  await expect(page.locator('#pvBonus #qrOpenBonus')).toBeVisible();
 
   await page.evaluate(() => {
     window.me = { ...window.me, free: 2 };
