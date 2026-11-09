@@ -1073,9 +1073,8 @@
 
 #profileBox > .profile-history-section {
   margin: 0;
-  padding: 14px 0 0;
+  padding: 8px 0 0;
   border: 0;
-  border-top: 1px solid var(--profile-divider, var(--line));
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -1518,9 +1517,12 @@
 #profileBox .profile-name-edit-icon,
 #profileBox #profileSettingsBtn,
 #profileBox .profile-name-action,
+#profileBox .myOrderCard .moTrack,
+#ordersModal .myOrderCard .moTrack,
 #profileBox #pushBtn,
 #profileBox .profile-all-orders,
 #profileBox #myOrdersBtn,
+#panel.open .tabs .btn-back,
 #profileBox .profile-history-toggle,
 #profileBox .profile-qr-link,
 #profileBox .free-card-action,
@@ -1568,6 +1570,7 @@
 
 #profileBox .profile-all-orders,
 #profileBox .profile-history-toggle,
+#panel.open .tabs .btn-back,
 #profileBox .profile-name-action,
 #profileBox .coffee-review-button,
 #profileBox .friday-info-review,
@@ -1618,9 +1621,12 @@
   #profileBox .profile-name-edit-icon:hover,
   #profileBox #profileSettingsBtn:hover,
   #profileBox .profile-name-action:hover,
+  #profileBox .myOrderCard .moTrack:hover,
+  #ordersModal .myOrderCard .moTrack:hover,
   #profileBox #pushBtn:hover,
   #profileBox .profile-all-orders:hover,
   #profileBox #myOrdersBtn:hover,
+  #panel.open .tabs .btn-back:hover,
   #profileBox .profile-history-toggle:hover,
   #profileBox .profile-qr-link:hover,
   #profileBox .free-card-action:hover,
@@ -1643,9 +1649,12 @@
 #profileBox .profile-name-edit-icon:active,
 #profileBox #profileSettingsBtn:active,
 #profileBox .profile-name-action:active,
+#profileBox .myOrderCard .moTrack:active,
+#ordersModal .myOrderCard .moTrack:active,
 #profileBox #pushBtn:active,
 #profileBox .profile-all-orders:active,
 #profileBox #myOrdersBtn:active,
+#panel.open .tabs .btn-back:active,
 #profileBox .profile-history-toggle:active,
 #profileBox .profile-qr-link:active,
 #profileBox .free-card-action:active,
@@ -1668,9 +1677,12 @@
   #profileBox .profile-name-edit-icon,
   #profileBox #profileSettingsBtn,
   #profileBox .profile-name-action,
+  #profileBox .myOrderCard .moTrack,
+  #ordersModal .myOrderCard .moTrack,
   #profileBox #pushBtn,
   #profileBox .profile-all-orders,
   #profileBox #myOrdersBtn,
+  #panel.open .tabs .btn-back,
   #profileBox .profile-history-toggle,
   #profileBox .profile-qr-link,
   #profileBox .free-card-action,
