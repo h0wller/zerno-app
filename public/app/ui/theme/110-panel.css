@@ -53,8 +53,8 @@
   position: sticky;
   top: 118px;
   max-height: calc(100vh - 140px);
-  background: #fffcf5;
-  border: 1.5px solid rgba(62, 143, 208, 0.25);
+  background: var(--panel-bg, var(--panel, #fff));
+  border: var(--panel-border, 1px solid var(--line));
   border-radius: 22px;
   display: flex;
   flex-direction: column;
