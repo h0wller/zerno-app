@@ -248,10 +248,10 @@
   display: block;
   margin: 0;
   overflow: hidden;
-  border: var(--profile-section-border, 2px solid var(--profile-section-text, var(--ink)));
+  border: var(--profile-section-border, 2px solid var(--ink));
   border-radius: var(--profile-section-radius, 16px);
   background: var(--profile-section-bg, var(--panel));
-  box-shadow: var(--profile-section-shadow, 2px 2px 0 var(--profile-section-text, var(--ink)));
+  box-shadow: var(--profile-section-shadow, 2px 2px 0 var(--ink));
 }
 #fridayInfo .friday-info-details > summary {
   display: flex;
@@ -290,9 +290,9 @@
   place-items: center;
   width: 30px;
   height: 30px;
-  border: 1px solid var(--profile-section-line, var(--line));
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--profile-section-bg, var(--panel));
+  background: var(--fr-rice, var(--panel));
   color: var(--loyalty-accent, var(--ink));
   font-size: 16px;
   line-height: 1;
@@ -303,16 +303,16 @@
   place-items: center;
   width: 30px;
   height: 30px;
-  border: 1px solid var(--profile-section-line, var(--line));
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--profile-section-bg, var(--panel));
-  color: var(--profile-section-text, var(--ink));
+  background: var(--fr-rice, var(--panel));
+  color: var(--ink);
   font-size: 17px;
   line-height: 1;
   transition: transform 180ms ease, background-color 160ms ease;
 }
 #fridayInfo .friday-info-details[open] > summary {
-  background: var(--profile-section-bg, var(--panel));
+  background: var(--fr-rice, var(--panel));
 }
 #fridayInfo .friday-info-details[open] .friday-info-chevron {
   transform: rotate(180deg);
@@ -322,12 +322,12 @@
   gap: 8px;
   padding: 10px 11px 12px;
   border-top: 1px solid var(--line);
-  background: var(--panel);
+  background: var(--fr-paper, var(--panel));
 }
 #fridayInfo .friday-info-address,
 #fridayInfo .friday-info-hours {
   padding: 10px 11px;
-  border: 1px solid var(--profile-section-line, var(--line));
+  border: 1px solid var(--line);
   border-radius: 12px;
   background: #fff;
 }
