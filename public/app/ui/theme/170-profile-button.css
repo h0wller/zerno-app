@@ -235,76 +235,158 @@
   white-space: nowrap;
 }
 
-/* «Пятница»: компактное раскрытие адреса и графика, ссылки-иконки. */
+/* «Пятница»: спойлер сведений о заведении в крафтовой визуальной системе. */
 #profileBox > #fridayInfo {
+  margin: 12px 0;
   padding: 0;
-  border-color: var(--line);
-  background: #fff;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
-.friday-info-details {
+#fridayInfo .friday-info-details {
+  display: block;
   margin: 0;
+  overflow: hidden;
+  border: var(--profile-section-border, 1px solid var(--line));
+  border-radius: var(--profile-section-radius, 16px);
+  background: var(--profile-section-bg, var(--card-bg, #fff));
+  box-shadow: var(--profile-section-shadow, none);
 }
-.friday-info-details > summary {
+#fridayInfo .friday-info-details > summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 44px;
-  padding: 10px 12px;
-  color: var(--ink);
+  gap: 10px;
+  min-height: 52px;
+  padding: 10px 13px;
+  color: var(--fr-choc, var(--ink));
   font-size: 13px;
   font-weight: 800;
+  line-height: 1.25;
   cursor: pointer;
   list-style: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease;
 }
-.friday-info-details > summary::-webkit-details-marker {
+#fridayInfo .friday-info-details > summary::-webkit-details-marker {
   display: none;
 }
-.friday-info-chevron {
-  color: var(--soft);
-  font-size: 18px;
-  line-height: 1;
-  transition: transform 160ms ease;
+#fridayInfo .friday-info-details > summary:focus-visible {
+  outline: 2px solid var(--loyalty-accent, var(--flame));
+  outline-offset: -3px;
+  border-radius: 13px;
 }
-.friday-info-details[open] .friday-info-chevron {
+#fridayInfo .friday-info-details > summary > span:first-child {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
+}
+#fridayInfo .friday-info-details > summary > span:first-child::before {
+  content: "⌂";
+  display: grid;
+  flex: 0 0 30px;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--fr-tan, var(--fr-rice, #EFE6D8));
+  color: var(--fr-choc, var(--ink));
+  font-size: 17px;
+  line-height: 1;
+}
+#fridayInfo .friday-info-chevron {
+  display: grid;
+  flex: 0 0 30px;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--fr-tan, var(--fr-rice, #EFE6D8));
+  color: var(--fr-choc, var(--ink));
+  font-size: 17px;
+  line-height: 1;
+  transition: transform 180ms ease, background-color 160ms ease;
+}
+#fridayInfo .friday-info-details[open] > summary {
+  background: var(--fr-tan, var(--fr-rice, #EFE6D8));
+}
+#fridayInfo .friday-info-details[open] .friday-info-chevron {
   transform: rotate(180deg);
 }
-.friday-info-body {
+#fridayInfo .friday-info-body {
   display: grid;
-  gap: 10px;
-  padding: 0 12px 12px;
+  gap: 8px;
+  padding: 10px 11px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--fr-paper, var(--profile-section-bg, #fff));
 }
-.friday-info-address {
+#fridayInfo .friday-info-address {
   margin: 0;
-  color: var(--ink);
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--profile-section-bg, #fff);
+  color: var(--fr-choc, var(--ink));
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
-.friday-info-hours {
+#fridayInfo .friday-info-hours {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   color: var(--soft);
   font-size: 11.5px;
   line-height: 1.4;
 }
-.friday-info-hours-row {
+#fridayInfo .friday-info-hours-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  align-items: start;
   gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--profile-section-bg, #fff);
 }
-.friday-info-hours-row b {
-  color: var(--ink);
+#fridayInfo .friday-info-hours-row b {
+  display: block;
+  margin: 0;
+  color: var(--fr-choc, var(--ink));
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
 }
-.friday-info-links {
+#fridayInfo .friday-info-hours-row span {
+  color: var(--soft);
+  text-align: right;
+}
+#fridayInfo .friday-info-links {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 9px;
+  justify-content: center;
+  gap: 10px 28px;
+  margin-top: 8px;
 }
-.friday-info-review {
+#fridayInfo .friday-info-review {
   justify-self: start;
   font-size: 12px;
   font-weight: 700;
+}
+@media (hover: hover) {
+  #fridayInfo .friday-info-details > summary:hover {
+    background: var(--fr-tan, var(--fr-rice, #EFE6D8));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #fridayInfo .friday-info-details > summary,
+  #fridayInfo .friday-info-chevron {
+    transition: none;
+  }
 }
 
 /* Единый визуальный паттерн раскрывающихся блоков в профиле кофейни. */
