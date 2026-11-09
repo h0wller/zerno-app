@@ -54,14 +54,11 @@ function alignRailWithCard() {
     var staffGuestMenu = !!(menuRow && modeSeg &&
       modeSeg.closest('.menu-controls-row') === menuRow);
     var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
-    var searchRow = head.querySelector('.mh-right');
     var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
     var catalogRect = catalog && catalog.getBoundingClientRect();
-    var desiredTop = mobileViewport && searchRow
-      ? searchRow.getBoundingClientRect().bottom + 12
-      : (catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top));
-
-    var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
+    var marginTop = mobileViewport
+      ? '0px'
+      : Math.max(0, (catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top)) - wrapContentTop) + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
     if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
   } else if (rail.style.marginTop !== '0px') {

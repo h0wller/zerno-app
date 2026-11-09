@@ -530,6 +530,7 @@ html body div.wrap > section {
   html body .menu-head .upd { display:none; }
   html body .menu-head { height:80px; min-height:80px; max-height:80px; overflow:hidden; padding:6px 10px; }
   html body header.topbar #profileTopBtn { width:32px; min-width:32px; max-width:32px; height:32px; min-height:32px; max-height:32px; padding:0; flex:0 0 32px; }
+  html body nav[aria-label="Навигация по странице"] #scrollTopBtn,
   html body #scrollTopBtn { box-sizing:border-box; width:44px; min-width:44px; max-width:44px; height:44px; min-height:44px; max-height:44px; padding:0; font-size:22px; }
   html body #deliveryView .subfilter-bar .subchip,
   html body #menuView .subfilter-bar .subchip,
