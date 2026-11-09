@@ -98,16 +98,13 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         if (box) box.hidden = !me;
         var count = document.getElementById("bonusCount");
         var stampGrid = document.getElementById("stampGrid");
-        var progress = document.getElementById("bonusProg");
         var freeSlot = document.getElementById("freeSlot");
         var stampCount = me ? Math.max(0, Math.min(10, Number(me.stamps) || 0)) : 0;
         var freeCount = me ? Math.max(0, Number(me.free) || 0) : 0;
-        var remainingStamps = Math.max(0, 10 - stampCount);
 
         if (count) count.textContent = stampCount + "/10";
         if (!me) {
             if (stampGrid) stampGrid.replaceChildren();
-            if (progress) progress.textContent = "";
             if (freeSlot) freeSlot.replaceChildren();
             return;
         }
@@ -124,11 +121,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         }
         if (stampGrid) stampGrid.innerHTML = stampsHtml;
 
-        if (progress) {
-            progress.innerHTML = freeCount > 0
-                ? 'Подарок доступен: <b>' + freeCount + '</b>'
-                : 'Ещё <b>' + remainingStamps + '</b> до бесплатного кофе';
-        }
         if (freeSlot) {
             freeSlot.innerHTML = freeCount > 0
                 ? '<div class="freeCard"><span class="fe" aria-hidden="true">🎁</span><div class="free-card-copy"><b>Бесплатный кофе ×' + freeCount + '</b><small>Покажите QR кассиру, чтобы получить подарок</small></div></div>'
@@ -306,19 +298,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             $("#stCups").textContent = me.cups;
             $("#stStamps").textContent = me.stamps + "/10";
             $("#stFree").textContent = me.free;
-            var profileStampCount = Math.max(0, Math.min(10, Number(me.stamps) || 0));
-            var profileStampBar = document.getElementById("profileStampProgress");
-            var profileStampFill = document.getElementById("profileStampProgressFill");
-            var profileStampLabel = document.getElementById("profileStampsRemaining");
-            if (profileStampBar) profileStampBar.setAttribute("aria-valuenow", String(profileStampCount));
-            if (profileStampFill) profileStampFill.style.width = (profileStampCount * 10) + "%";
-            if (profileStampLabel) {
-                var profileRemaining = Math.max(0, 10 - profileStampCount);
-                var profileFreeCount = Math.max(0, Number(me.free) || 0);
-                profileStampLabel.textContent = profileFreeCount > 0
-                    ? "подарок доступен ×" + profileFreeCount
-                    : "до подарка — " + profileRemaining;
-            }
             renderBonus();
             renderHistory();
 
