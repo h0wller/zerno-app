@@ -51,6 +51,44 @@ for (const [key, b] of Object.entries(BRANDS)) {
   }
 }
 
+function tokenBlock(source, brand) {
+  const marker = 'html[data-brand="' + brand + '"],';
+  const start = source.indexOf(marker);
+  const open = source.indexOf('{', start);
+  if (start < 0 || open < 0) return '';
+  let depth = 0;
+  for (let index = open; index < source.length; index++) {
+    if (source[index] === '{') depth++;
+    if (source[index] === '}') {
+      depth--;
+      if (depth === 0) return source.slice(open + 1, index);
+    }
+  }
+  return '';
+}
+
+// Guard only profile and loyalty tokens; catalog/menu palettes are out of scope.
+for (const brand of ['coffee', 'delivery']) {
+  const body = tokenBlock(tokens, brand);
+  if (!body) {
+    bad('бренд "' + brand + '": не удалось прочитать блок брендовых токенов');
+    continue;
+  }
+  const declarations = body.matchAll(/^[ \\t]*(--(?:profile|loyalty)-[\\w-]+)[ \\t]*:[ \\t]*([^;\\n]+);/gm);
+  for (const [, token, value] of declarations) {
+    if (brand === 'coffee') {
+      if (/\\d+px\\s+\\d+px\\s+0(?:px)?\\b/i.test(value)) {
+        bad('coffee ' + token + ': жёсткая offset-тень не соответствует айдентике кофейни');
+      }
+      if (/--fr-[\\w-]+|#3A2A1C|#C03B2A/i.test(value)) {
+        bad('coffee ' + token + ': обнаружена палитра доставки');
+      }
+    } else if (/#123A6B|#3E8FD0|#1B4F8A/i.test(value)) {
+      bad('delivery ' + token + ': обнаружена палитра кофейни');
+    }
+  }
+}
+
 const sw = readFileSync(path.join(ROOT, 'public', 'sw.js'), 'utf8');
 for (const p of ['/app/ui/brand-tokens.css', '/app/brands/registry.js']) {
   if (!sw.includes(`'${p}'`) && !sw.includes(`"${p}"`)) bad(`sw.js: в STATIC_ASSETS нет ${p}`);

@@ -181,6 +181,7 @@ test.describe('Модуль заказов профиля', () => {
 
     const modal = page.locator('#ordersModal');
     await expect(modal).toHaveClass(/show/);
+    await expect(modal.locator('.omCard h3')).toHaveCSS('font-family', /unbounded/i);
     await expect(modal.locator('#omList .myOrderCard')).toContainText('Заказ #P-1042');
     await expect(modal.locator('#omList .myOrderCard .moTrack')).toHaveCSS('border-top-width', '2px');
     await expect(modal.locator('#omList .myOrderCard .moTrack')).toHaveCSS('box-shadow', /3px 3px/);
@@ -255,6 +256,7 @@ test.describe('Модуль заказов профиля', () => {
 
     const settings = page.locator('#settingsModal');
     await expect(settings).toHaveClass(/show/);
+    await expect(settings.locator('.settings-card h3')).toHaveCSS('font-family', /unbounded/i);
     await expect(settings.locator('.settings-card')).toHaveCSS('background-color', 'rgb(239, 230, 216)');
     await expect(settings.locator('.settings-card')).toHaveCSS('background-image', /radial-gradient/);
     const settingsWidth = await settings.locator('.settings-card').evaluate(element => element.getBoundingClientRect().width);
@@ -494,7 +496,6 @@ test.describe('Модуль заказов профиля', () => {
     expect(socialLayout.distance).toBeGreaterThanOrEqual(27);
     expect(socialLayout.distance).toBeLessThanOrEqual(29);
     expect(socialLayout.centerOffset).toBeLessThanOrEqual(1);
-    expect(socialLayout.centerOffset).toBeLessThanOrEqual(1);
 
     const summerHours = info.locator('.friday-info-hours-row').first().locator('span');
     await expect.poll(() => summerHours.evaluate(element => getComputedStyle(element).textAlign))
@@ -524,23 +525,32 @@ test.describe('Модуль заказов профиля', () => {
     expect(await info.evaluate(element => getComputedStyle(element).textAlign)).toBe('left');
   });
 
-  test('кнопка закрытия списка заказов использует брендовый объём в обоих брендах', async ({ page }) => {
+  test('кнопка закрытия списка заказов сохраняет разный стиль брендов', async ({ page }) => {
     await page.locator('#myOrdersBtn').click();
     const close = page.locator('#ordersModal .omClose');
     await expect(close).toBeVisible();
 
-    for (const brand of ['delivery', 'coffee']) {
-      await page.evaluate(value => {
-        document.documentElement.setAttribute('data-brand', value);
-        document.body.setAttribute('data-brand', value);
-      }, brand);
-      await expect.poll(() => close.evaluate(element => getComputedStyle(element).backgroundColor))
-        .not.toBe('rgba(0, 0, 0, 0)');
-      await expect.poll(() => close.evaluate(element => getComputedStyle(element).boxShadow))
-        .toContain('3px 3px');
-      await expect.poll(() => close.evaluate(element => getComputedStyle(element).borderTopWidth))
-        .toBe('2px');
-    }
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-brand', 'coffee');
+      document.body.setAttribute('data-brand', 'coffee');
+    });
+    await expect.poll(() => close.evaluate(element => getComputedStyle(element).backgroundColor))
+      .toBe('rgb(234, 241, 249)');
+    await expect.poll(() => close.evaluate(element => getComputedStyle(element).borderTopWidth))
+      .toBe('1.5px');
+    await expect.poll(() => close.evaluate(element => getComputedStyle(element).boxShadow))
+      .not.toContain('3px 3px');
+
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-brand', 'delivery');
+      document.body.setAttribute('data-brand', 'delivery');
+    });
+    await expect.poll(() => close.evaluate(element => getComputedStyle(element).backgroundColor))
+      .toBe('rgb(255, 249, 240)');
+    await expect.poll(() => close.evaluate(element => getComputedStyle(element).borderTopWidth))
+      .toBe('2px');
+    await expect.poll(() => close.evaluate(element => getComputedStyle(element).boxShadow))
+      .toContain('3px 3px');
   });
 
   test('содержимое профиля меняется вместе с брендом, единая панель без вкладок', async ({ page }) => {

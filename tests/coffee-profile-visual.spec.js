@@ -208,6 +208,14 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(page.locator('#pvProfile')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection')).toBeVisible();
 
+  const primaryAction = await page.locator('#profileCoffeeSection .profile-qr-link').evaluate(element => {
+    const style = getComputedStyle(element);
+    return { borderTopWidth: style.borderTopWidth, boxShadow: style.boxShadow };
+  });
+  expect(primaryAction.borderTopWidth).toBe('0px');
+  expect(primaryAction.boxShadow).not.toMatch(/\d+px\s+\d+px\s+0(?:px)?\b/);
+  expect(primaryAction.boxShadow).toContain('0px 6px 16px');
+
   const socialLayout = await page.locator('#profileBox .coffee-place-links').evaluate(nav => {
     const host = nav.getBoundingClientRect();
     const items = Array.from(nav.querySelectorAll('.coffee-place-link'), element => {
@@ -354,3 +362,62 @@ test('coffee profile groups bonus explanations in one collapsed disclosure', asy
     .toHaveAttribute('href', 'https://t.me/and_coffee_bot');
 });
 
+test('coffee profile modals retain coffee identity at 390px', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route('**/api/orders/mine', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        orders: [{
+          id: 'coffee-profile-order-1',
+          no: 'C-1042',
+          created: '2026-11-09T10:00:00.000Z',
+          status: 'way',
+          total: 320,
+          items: [{ id: 43, name: 'Капучино', qty: 1, price: 320 }],
+          gifts: []
+        }]
+      })
+    });
+  });
+  await installCoffeeGuest(page, 6, 1);
+
+  await page.locator('#profileSettingsBtn').click();
+  const settings = page.locator('#settingsModal');
+  await expect(settings).toHaveClass(/show/);
+  await testInfo.attach('coffee-profile-settings-modal-390px', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png'
+  });
+  await page.locator('#setClose').click();
+  await expect(settings).not.toHaveClass(/show/);
+
+  await page.evaluate(() => window.renderOrdersModal());
+  const orders = page.locator('#ordersModal');
+  await expect(orders).toHaveClass(/show/);
+  await expect(orders.locator('#omList')).toContainText('Заказ #C-1042');
+  await testInfo.attach('coffee-profile-orders-modal-390px', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png'
+  });
+  await page.locator('#ordersModal .omClose').click();
+  await expect(orders).not.toHaveClass(/show/);
+
+  await page.evaluate(() => window.openOrderTrackModal({
+    id: 'coffee-profile-order-1',
+    no: 'C-1042',
+    status: 'way',
+    total: 320,
+    items: [{ id: 43, name: 'Капучино', qty: 1, price: 320 }]
+  }));
+  const tracking = page.locator('#orderTrackModal');
+  await expect(tracking).toHaveClass(/show/);
+  await expect(tracking.locator('.ot-title')).toContainText('Заказ #C-1042');
+  await testInfo.attach('coffee-profile-tracking-modal-390px', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png'
+  });
+  await page.locator('#orderTrackModal [data-ot-close]').click();
+  await expect(tracking).not.toHaveClass(/show/);
+});
