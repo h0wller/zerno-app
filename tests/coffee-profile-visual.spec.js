@@ -192,9 +192,9 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(page.locator('#bonusBox')).toBeVisible();
   await expect(page.locator('#bonusCount')).toHaveText('6/10');
   await expect(page.locator('#qrOpenBonus')).toBeVisible();
-  await expect(page.locator('#qrOpenProfile')).toHaveCount(0);
-  await expect(page.locator('#qrMain')).toHaveCount(1);
-  await expect(page.locator('#qrMini')).toHaveCount(1);
+  await expect(page.locator('#qrOpenProfile, #qrMain, #qrMini, [data-open-profile-qr]')).toHaveCount(0);
+  await expect(page.locator('#pvBonus [data-show-free-qr]')).toHaveCount(0);
+  await expect(page.locator('#qrOpenBonus')).toHaveCount(1);
 
   await page.locator('#tabProfile').click();
   await expect(page.locator('#pvProfile')).toBeVisible();
@@ -235,7 +235,7 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
   await expect(page.locator('#panel')).toHaveClass(/open/);
   await page.locator('#tabProfile').click();
   await expect(page.locator('#pvProfile')).toBeVisible();
-  await expect(page.locator('#profileCoffeeSection .profile-qr-access')).toBeVisible();
+  await expect(page.locator('#profileCoffeeSection .profile-qr-access, #profileCoffeeSection canvas, #profileCoffeeSection [data-open-profile-qr]')).toHaveCount(0);
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('#profileCoffeeSection #profileStampProgress')).toBeVisible();
   await expect(page.locator('#profileCoffeeSection #profileStampsRemaining')).toBeVisible();
@@ -251,18 +251,22 @@ test('coffee profile keeps one QR action and avoids a duplicate large QR on the 
     contentType: 'image/png'
   });
 
-  const repeatedLargeQR = await page.locator('#profileCoffeeSection canvas').evaluate(element => {
-    const rect = element.getBoundingClientRect();
-    return rect.width > 100 || rect.height > 100;
-  });
-  expect(repeatedLargeQR).toBe(false);
+  await expect(page.locator('#profileCoffeeSection canvas, #profileCoffeeSection [data-open-profile-qr]')).toHaveCount(0);
 
   await page.evaluate(() => window.openPanel('bonus'));
   await expect(page.locator('#panel')).toHaveClass(/open/);
   await expect(page.locator('#pvBonus')).toBeVisible();
   await expect(page.locator('#qrOpenBonus')).toBeVisible();
+  await expect(page.locator('#freeSlot')).toContainText('Кофе за наш счёт ×1');
+  await expect(page.locator('#freeSlot [data-show-free-qr]')).toHaveCount(0);
   await page.locator('#qrOpenBonus').click();
   await expect(page.locator('#qrModal')).toHaveClass(/show/);
+  const closeBounds = await page.locator('#qrClose').evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    return { top: rect.top, bottom: rect.bottom, right: rect.right };
+  });
+  expect(closeBounds.top).toBeGreaterThanOrEqual(18);
+  expect(closeBounds.bottom).toBeLessThan(100);
   await page.locator('#qrClose').click();
   await expect(page.locator('#qrModal')).not.toHaveClass(/show/);
 
