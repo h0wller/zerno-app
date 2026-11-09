@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.use({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
 
-test('coffee header subtitle fits its reserved slot without reaching the profile button', async ({ page }) => {
+test('coffee wordmark “и кофе” remains visible beside the logo without reaching the profile button', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
@@ -10,9 +10,11 @@ test('coffee header subtitle fits its reserved slot without reaching the profile
   });
 
   await page.goto('/?brand=coffee');
-  const subtitle = page.locator('#brandSub');
-  await expect(subtitle).toHaveText('кофейня на берегу моря');
-  await expect(page.locator('#profileTopBtn')).toBeVisible();
+  const wordmark = page.locator('#brandTitle');
+  const profile = page.locator('#profileTopBtn');
+  await expect(wordmark).toBeVisible();
+  await expect(wordmark).toHaveAttribute('aria-label', '…и кофе');
+  await expect(profile).toBeVisible();
 
   await page.waitForFunction(() => {
     const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
@@ -22,22 +24,21 @@ test('coffee header subtitle fits its reserved slot without reaching the profile
   await page.evaluate(() => document.fonts.ready);
 
   const metrics = await page.evaluate(() => {
-    const subtitle = document.getElementById('brandSub');
+    const wordmark = document.getElementById('brandTitle');
     const profile = document.getElementById('profileTopBtn');
-    const subtitleRect = subtitle.getBoundingClientRect();
+    const wordmarkRect = wordmark.getBoundingClientRect();
     const profileRect = profile.getBoundingClientRect();
     return {
-      clientWidth: subtitle.clientWidth,
-      scrollWidth: subtitle.scrollWidth,
-      fontSize: parseFloat(getComputedStyle(subtitle).fontSize),
-      letterSpacing: getComputedStyle(subtitle).letterSpacing,
-      subtitleRight: subtitleRect.right,
+      text: wordmark.getAttribute('aria-label'),
+      clientWidth: wordmark.clientWidth,
+      scrollWidth: wordmark.scrollWidth,
+      wordmarkRight: wordmarkRect.right,
       profileLeft: profileRect.left,
     };
   });
 
+  expect(metrics.text).toBe('…и кофе');
   expect(metrics.clientWidth).toBeGreaterThanOrEqual(120);
   expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
-  expect(metrics.fontSize).toBeLessThanOrEqual(9);
-  expect(metrics.subtitleRight).toBeLessThan(metrics.profileLeft - 8);
+  expect(metrics.wordmarkRight).toBeLessThan(metrics.profileLeft - 8);
 });
