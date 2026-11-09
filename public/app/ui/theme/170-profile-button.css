@@ -978,8 +978,8 @@
 }
 
 #fridayInfo .friday-info-links {
-  justify-content: flex-start;
-  gap: 18px;
+  justify-content: center;
+  gap: 28px;
   margin: 0;
   padding-top: 9px;
   border-top: 1px solid var(--profile-divider, var(--line));
