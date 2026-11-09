@@ -107,22 +107,26 @@ for (const brand of CASES) {
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      await expect.poll(() => page.evaluate(({ railSelector }) => {
-        const rail = document.querySelector(railSelector).getBoundingClientRect();
-        const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-        return rail.top - topbar.bottom;
-      }, { railSelector: brand.rail }), { timeout: 5000 }).toBeGreaterThanOrEqual(10);
-      const afterScroll = await page.evaluate(({ headSelector, railSelector }) => {
-        const head = document.querySelector(headSelector).getBoundingClientRect();
-        const rail = document.querySelector(railSelector).getBoundingClientRect();
-        const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-        return {
-          railTop: rail.top,
-          menuHeadBottom: head.bottom,
-          topbarBottom: topbar.bottom,
-        };
-      }, { headSelector: brand.head, railSelector: brand.rail });
-      expect(afterScroll.railTop).toBeGreaterThanOrEqual(afterScroll.topbarBottom + 10);
+      if (brand.brand === 'delivery') {
+        await expect.poll(() => page.evaluate(() => {
+          const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
+          const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
+          return Math.max(Math.abs(rail.top - grid.top), Math.abs(rail.bottom - grid.bottom));
+        }), { timeout: 5000 }).toBeLessThanOrEqual(2);
+      } else {
+        await expect.poll(() => page.evaluate(({ railSelector }) => {
+          const rail = document.querySelector(railSelector).getBoundingClientRect();
+          const topbar = document.querySelector('header.topbar').getBoundingClientRect();
+          return rail.top - topbar.bottom;
+        }, { railSelector: brand.rail }), { timeout: 5000 }).toBeGreaterThanOrEqual(10);
+        const afterScroll = await page.evaluate(({ headSelector, railSelector }) => {
+          const head = document.querySelector(headSelector).getBoundingClientRect();
+          const rail = document.querySelector(railSelector).getBoundingClientRect();
+          const topbar = document.querySelector('header.topbar').getBoundingClientRect();
+          return { railTop: rail.top, menuHeadBottom: head.bottom, topbarBottom: topbar.bottom };
+        }, { headSelector: brand.head, railSelector: brand.rail });
+        expect(afterScroll.railTop).toBeGreaterThanOrEqual(afterScroll.topbarBottom + 10);
+      }
     });
   }
 }
