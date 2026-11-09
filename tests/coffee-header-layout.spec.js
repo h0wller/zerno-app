@@ -45,6 +45,12 @@ test('coffee wordmark “и кофе” remains visible beside the logo without 
 
 test('coffee mobile visible wordmark is centered as one logo-and-text group', async ({page}) => {
   await page.setViewportSize({width:390,height:844});
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
   const group=page.locator('header.topbar #headerBrand');
   await expect(group).toBeVisible();
   await expect(page.locator('#brandMark')).toBeVisible();
