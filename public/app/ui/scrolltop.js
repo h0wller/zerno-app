@@ -4,10 +4,13 @@ var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
 
+var railStickyLayout = null;
+
 function updateRailStickyPosition(rail, head) {
   if (!rail || !head) return;
 
   if (!head.getBoundingClientRect().height) {
+    railStickyLayout = null;
     rail.classList.remove('rail-position-ready');
     return;
   }
@@ -17,13 +20,33 @@ function updateRailStickyPosition(rail, head) {
     var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
     var maxRailHeight = Math.max(0, viewportHeight - 24);
     var visibleRailHeight = Math.min(rail.scrollHeight, maxRailHeight);
+    var stickyTop = Math.max(12, (viewportHeight - visibleRailHeight) / 2);
+    var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
 
-    rail.style.position = 'sticky';
-    rail.style.top = Math.max(12, (viewportHeight - visibleRailHeight) / 2) + 'px';
-    rail.style.maxHeight = maxRailHeight + 'px';
-    rail.style.overflowY = rail.scrollHeight > maxRailHeight ? 'auto' : 'visible';
-    rail.style.alignSelf = 'start';
+    if (!railStickyLayout || railStickyLayout.rail !== rail) {
+      railStickyLayout = {
+        rail: rail,
+        documentTop: rail.getBoundingClientRect().top + scrollY
+      };
+    }
+
+    // Preserve the catalog-aligned start; engage sticky only once the page begins scrolling.
+    var shouldStick = scrollY > 0 && scrollY >= railStickyLayout.documentTop - stickyTop;
+    if (shouldStick) {
+      rail.style.position = 'sticky';
+      rail.style.top = stickyTop + 'px';
+      rail.style.maxHeight = maxRailHeight + 'px';
+      rail.style.overflowY = rail.scrollHeight > maxRailHeight ? 'auto' : 'visible';
+      rail.style.alignSelf = 'start';
+    } else {
+      rail.style.position = 'relative';
+      rail.style.top = 'auto';
+      rail.style.maxHeight = 'none';
+      rail.style.overflowY = '';
+      rail.style.alignSelf = 'start';
+    }
   } else {
+    railStickyLayout = null;
     rail.style.position = 'relative';
     rail.style.top = 'auto';
     rail.style.maxHeight = 'none';
@@ -41,6 +64,12 @@ function alignRailWithCard() {
   var head = document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head');
 
   if (!rail) return;
+  railStickyLayout = null;
+  rail.style.position = 'relative';
+  rail.style.top = 'auto';
+  rail.style.maxHeight = 'none';
+  rail.style.overflowY = '';
+  rail.style.alignSelf = 'start';
   var wrap = rail.parentElement;
   if (!wrap) return;
 
