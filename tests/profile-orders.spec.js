@@ -551,9 +551,25 @@ test.describe('Модуль заказов профиля', () => {
           return [];
         }
       });
+      const probe = document.createElement('button');
+      probe.style.cssText = 'border:1.5px solid rgba(18,58,107,.2);position:fixed;left:-10000px';
+      document.body.appendChild(probe);
+      const probeStyle = getComputedStyle(probe);
+      const probeResult = {
+        border: probeStyle.border,
+        borderTopWidth: probeStyle.borderTopWidth,
+        typedTopWidth: probe.computedStyleMap
+          ? String(probe.computedStyleMap().get('border-top-width'))
+          : 'unsupported'
+      };
+      probe.remove();
       return {
         border: computed.border,
         borderTopWidth: computed.borderTopWidth,
+        typedTopWidth: element.computedStyleMap
+          ? String(element.computedStyleMap().get('border-top-width'))
+          : 'unsupported',
+        probe: probeResult,
         profileOrdersCloseBorder: getComputedStyle(document.documentElement)
           .getPropertyValue('--profile-orders-close-border').trim(),
         mcloseBorder: getComputedStyle(document.documentElement)
