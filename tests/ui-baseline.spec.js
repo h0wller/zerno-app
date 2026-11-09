@@ -169,7 +169,7 @@ test('baseline: профиль и бонусы (зарегистрирован)'
     return { avatarLeft: avatar.left, nameLeft: name.left, nameTop: name.top, settingsTop: settings.top };
   });
   expect(identity.avatarLeft).toBeLessThan(identity.nameLeft);
-  expect(Math.abs(identity.nameTop - identity.settingsTop)).toBeLessThanOrEqual(2);
+  expect(Math.abs(identity.nameTop - identity.settingsTop), JSON.stringify(identity)).toBeLessThanOrEqual(2);
 
   await panel.locator('.tabs .btn-back').click();
   await expect(page.locator('#overlay')).not.toHaveClass(/show/);
