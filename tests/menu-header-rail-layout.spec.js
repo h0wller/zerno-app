@@ -290,7 +290,7 @@ test('coffee wordmark “и кофе” remains visible beside the logo on mobil
 
 test('delivery: pizza option labels use compact typography only at 320px', async ({ page }) => {
   for (const viewport of [
-    { width: 320, height: 740, expected: { size: 11, crust: 9.5, weight: 9, price: 11.5 } },
+    { width: 320, height: 740, expected: { size: 10, crust: 8, weight: 8.5, price: 10.5 } },
     { width: 390, height: 844, expected: { size: 12.5, crust: 11, weight: 10.5, price: 13 } },
   ]) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
