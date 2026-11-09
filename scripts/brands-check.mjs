@@ -74,13 +74,13 @@ for (const brand of ['coffee', 'delivery']) {
     bad('бренд "' + brand + '": не удалось прочитать блок брендовых токенов');
     continue;
   }
-  const declarations = body.matchAll(/^[ \\t]*(--(?:profile|loyalty)-[\\w-]+)[ \\t]*:[ \\t]*([^;\\n]+);/gm);
+  const declarations = body.matchAll(/^[ \t]*(--(?:profile|loyalty)-[\w-]+)[ \t]*:[ \t]*([^;\n]+);/gm);
   for (const [, token, value] of declarations) {
     if (brand === 'coffee') {
-      if (/\\d+px\\s+\\d+px\\s+0(?:px)?\\b/i.test(value)) {
+      if (/\d+px\s+\d+px\s+0(?:px)?\b/i.test(value)) {
         bad('coffee ' + token + ': жёсткая offset-тень не соответствует айдентике кофейни');
       }
-      if (/--fr-[\\w-]+|#3A2A1C|#C03B2A/i.test(value)) {
+      if (/--fr-[\w-]+|#3A2A1C|#C03B2A/i.test(value)) {
         bad('coffee ' + token + ': обнаружена палитра доставки');
       }
     } else if (/#123A6B|#3E8FD0|#1B4F8A/i.test(value)) {
