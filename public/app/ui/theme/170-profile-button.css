@@ -717,7 +717,11 @@
 
 #profileBox > .profile-identity {
   padding: 4px 0 15px;
+  border: 0;
   border-bottom: 1px solid var(--profile-divider, var(--line));
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 #profileBox .phead {
@@ -732,6 +736,9 @@
   min-width: 48px;
   border: 0;
   box-shadow: none;
+}
+#profileBox #profileSettingsBtn {
+  align-self: center;
 }
 
 #profileBox input#nameInput {
@@ -818,6 +825,10 @@
 #profileBox > .profile-brand-section {
   margin: 0;
   padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 #profileBox .profile-section-heading,
@@ -988,7 +999,11 @@
   display: grid;
   gap: 9px;
   padding: 14px 0 0;
+  border: 0;
   border-top: 1px solid var(--profile-divider, var(--line));
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   line-height: 1.5;
 }
 
@@ -1031,8 +1046,11 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 0 0;
+  border: 0;
   border-top: 1px solid var(--profile-divider, var(--line));
+  border-radius: 0;
   background: transparent;
+  box-shadow: none;
 }
 
 #profileBox .coffee-review-prompt {
@@ -1054,7 +1072,11 @@
 #profileBox > .profile-history-section {
   margin: 0;
   padding: 14px 0 0;
+  border: 0;
   border-top: 1px solid var(--profile-divider, var(--line));
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 #profileBox .profile-history-heading {
@@ -1351,9 +1373,12 @@
 }
 
 #settingsModal .settings-danger-zone {
-  border: 1px solid rgba(179, 55, 43, .24);
+  border: 1px solid var(--status-danger);
   border-radius: 12px;
-  background: rgba(179, 55, 43, .045);
+  background: var(--tint-danger);
+}
+#settingsModal .settings-section.settings-danger-zone {
+  border: 1px solid var(--status-danger);
 }
 
 #settingsModal .settings-delete-confirm {
