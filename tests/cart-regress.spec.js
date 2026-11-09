@@ -275,10 +275,10 @@ test('Задачи 5 и 6: Модалка «Мои заказы» в TMA и по
   expect(wakeLockActive).toBe(true);
 });
 
-test.describe('Спринт 2 — Сетка опций пиццы, отступ корзины, sticky-рейл и чекаут', () => {
+test.describe('Спринт 2 — Сетка опций пиццы, отступ корзины, rail доставки и чекаут', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('1. Опции пиццы в 2 колонки + подсветка .sel, отступ #deliveryGrid, sticky #deliveryRail и чекаут от одной позиции', async ({ page }) => {
+  test('1. Опции пиццы в 2 колонки + подсветка .sel, отступ #deliveryGrid, rail рядом с карточками и чекаут от одной позиции', async ({ page }) => {
     await page.addInitScript(() => {
       sessionStorage.setItem('splashDone', '1');
     });
@@ -306,9 +306,19 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     const padBottom = await page.locator('#deliveryGrid').evaluate((el) => parseFloat(window.getComputedStyle(el).paddingBottom));
     expect(padBottom).toBeGreaterThanOrEqual(88);
 
-    // ── Задача 3: Сайдбар категорий #deliveryRail имеет position: sticky ──
-    const railPos = await page.locator('#deliveryRail').evaluate((el) => window.getComputedStyle(el).position);
-    expect(railPos).toBe('sticky');
+    // ── Задача 3: delivery rail follows the product-card grid in normal flow ──
+    const railGeometry = await page.evaluate(() => {
+      const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
+      const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
+      return {
+        position: getComputedStyle(document.querySelector('#deliveryRail')).position,
+        topDelta: Math.abs(rail.top - grid.top),
+        bottomDelta: Math.abs(rail.bottom - grid.bottom),
+      };
+    });
+    expect(railGeometry.position).toBe('relative');
+    expect(railGeometry.topDelta).toBeLessThanOrEqual(2);
+    expect(railGeometry.bottomDelta).toBeLessThanOrEqual(2);
 
     // ── Задача 4: Контраст полей чекаута, прижатие шторки к bottom=viewport.height и скрытие #cartFab ──
     await firstPizzaCard.locator('.steprow .cta, [data-add]').first().click();

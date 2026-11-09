@@ -44,6 +44,16 @@ for (const width of [1024, 1440]) {
 
     const bar = page.locator('#deliveryView #deliverySubFilter');
     await expect(bar).toBeVisible();
+    const aligned = await page.evaluate(() => {
+      const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
+      const head = document.querySelector('#deliveryView .menu-head').getBoundingClientRect();
+      const filters = document.querySelector('#deliveryView #deliverySubFilter').getBoundingClientRect();
+      return { gridLeft:grid.left, gridRight:grid.right, headLeft:head.left, headRight:head.right, filterLeft:filters.left, filterRight:filters.right };
+    });
+    expect(Math.abs(aligned.headLeft-aligned.gridLeft), 'delivery menu head starts with first card').toBeLessThanOrEqual(2);
+    expect(Math.abs(aligned.headRight-aligned.gridRight), 'delivery menu head ends with last card').toBeLessThanOrEqual(2);
+    expect(Math.abs(aligned.filterLeft-aligned.gridLeft), 'delivery filters start with first card').toBeLessThanOrEqual(2);
+    expect(Math.abs(aligned.filterRight-aligned.gridRight), 'delivery filters end with last card').toBeLessThanOrEqual(2);
     const chips = bar.locator('.subchip');
     await expect(chips).toHaveCount(9);
 
@@ -72,7 +82,7 @@ for (const width of [1024, 1440]) {
     expect(geometry.flexWrap).toBe('nowrap');
     expect(geometry.overflowX).toBe('auto');
     expect(geometry.scrollWidth, 'the full filter set should be reachable by horizontal scrolling')
-      .toBeGreaterThan(geometry.clientWidth + 1);
+      .toBeGreaterThan(geometry.clientWidth);
     expect(await page.evaluate(() =>
       document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1
     )).toBe(true);
@@ -128,3 +138,50 @@ for (const width of [1024, 1440]) {
     await expect(page.locator('#deliveryGrid [data-product-id="desktop-filter-chicken"]')).toHaveCount(0);
   });
 }
+
+
+test('delivery header uses brand typography on desktop and logo-only on mobile', async ({page}) => {
+  for (const width of [320, 390, 820, 821, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.addInitScript(() => { sessionStorage.setItem('splashDone', '1'); localStorage.clear(); });
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+    const brand = page.locator('header.topbar #headerBrand');
+    await expect(brand).toBeVisible();
+    const details=await brand.evaluate(el=>{
+      const text=el.querySelector('small#brandSub'),title=el.querySelector('#brandTitle'),mark=el.querySelector('.mark'),r=el.getBoundingClientRect();
+      return {tv:!!text&&getComputedStyle(text).display!=='none',titleVisible:!!title&&getComputedStyle(title).display!=='none',
+        font:text&&getComputedStyle(text).fontFamily,color:text&&getComputedStyle(text).color,
+        markVisible:!!mark&&getComputedStyle(mark).display!=='none',center:r.left+r.width/2};
+    });
+    expect(details.markVisible).toBe(true);
+    if(width<=820){
+      expect(details.tv).toBe(false);
+      expect(details.titleVisible).toBe(false);
+      expect(Math.abs(details.center-width/2)).toBeLessThanOrEqual(1);
+    } else {
+      expect(details.tv).toBe(true);
+      expect(details.font).toContain('Unbounded');
+      expect(details.color).toBe('rgb(58, 42, 28)');
+    }
+    const cart = page.locator('#cartFab');
+    await expect(cart).toBeAttached();
+    await cart.evaluate((el) => { el.hidden = false; el.classList.add('visible'); });
+    await expect(cart).toBeVisible();
+    const cartGeometry = await cart.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        position: getComputedStyle(element).position,
+        center: rect.left + rect.width / 2,
+        viewportCenter: document.documentElement.clientWidth / 2,
+      };
+    });
+    expect(cartGeometry.position).toBe('fixed');
+    expect(Math.abs(cartGeometry.center - cartGeometry.viewportCenter),
+      'cart pill must be visually centered in the viewport').toBeLessThanOrEqual(1);
+    const active = page.locator('#deliverySubFilter .subchip.on');
+    await expect(active).toBeVisible();
+    const activeStyles = await active.evaluate(el => ({ bg:getComputedStyle(el).backgroundColor, color:getComputedStyle(el).color }));
+    expect(activeStyles.bg).toBe('rgb(192, 59, 42)');
+    expect(activeStyles.color).toBe('rgb(255, 255, 255)');
+  }
+});

@@ -61,8 +61,15 @@ var rules = [
  '@media(max-width:820px){#brandSeg{overflow-x:auto;scrollbar-width:none}#modeSeg{overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}',
  '@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}',
  '@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
- '@media(max-width:1023px){[data-brand="delivery"] .topbar .brand b,[data-brand="delivery"] .topbar .brand small,[data-brand="delivery"] .topbar .brand > div:not(.mark){display:none!important}}',
-'@media(max-width:690px){[data-brand="coffee"] .topbar .brand small,[data-brand="coffee"] .topbar .brand .brand-text{display:none!important}[data-brand="coffee"] .topbar .brand .mark{width:52px!important;height:52px!important;min-width:52px!important;max-height:52px!important}[data-brand="coffee"] .topbar .brand > div:not(.mark){overflow:visible!important;padding-right:4px}}',
+  '@media(max-width:820px){[data-brand="delivery"] body header.topbar #headerBrand.brand{width:min(196px,60vw);min-width:0;max-width:min(196px,60vw);gap:0;justify-self:center}[data-brand="delivery"] body header.topbar #headerBrand.brand>div:not(.mark),[data-brand="delivery"] body header.topbar #brandTitle,[data-brand="delivery"] body header.topbar #brandSub{display:none!important}[data-brand="delivery"] body header.topbar #headerBrand.brand .mark{width:min(196px,60vw);min-width:0;max-width:min(196px,60vw);flex:0 1 auto}}',
+
+  '@media(max-width:820px){[data-brand="coffee"] body header.topbar #headerBrand.brand{position:static;left:auto;top:auto;transform:none;margin:0;grid-column:2;justify-self:center;width:148px;min-width:148px;max-width:148px;display:flex;align-items:center;justify-content:center;gap:8px;z-index:1}[data-brand="coffee"] body header.topbar #headerBrand.brand .mark{width:52px;min-width:52px;max-width:52px;height:52px;flex:0 0 52px}[data-brand="coffee"] body header.topbar #headerBrand.brand>div:not(.mark){display:flex;flex:0 0 88px;width:88px;min-width:88px;max-width:88px;align-items:center;justify-content:center}[data-brand="coffee"] body header.topbar #headerBrand.brand #brandTitle{display:block;visibility:visible;opacity:1;width:88px;min-width:88px;max-width:88px;white-space:nowrap}}',
+
+  '@media(min-width:821px){[data-brand="delivery"] body>div.wrap{grid-template-columns:92px minmax(0,1fr)}}',
+ '@media(min-width:820px){[data-brand="delivery"] body header.topbar #headerBrand.brand>div:not(.mark){display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px}[data-brand="delivery"] body header.topbar #brandTitle{color:#3A2A1C;font:800 clamp(13px,1.15vw,17px)/1.15 "Unbounded","Golos Text",sans-serif}[data-brand="delivery"] body header.topbar #brandSub{display:block;color:#3A2A1C;font:600 clamp(9px,.75vw,11px)/1.2 "Unbounded","Golos Text",sans-serif}}',
+  '@media(min-width:820px) and (max-width:1023px){html[data-brand="delivery"] body header.topbar #headerBrand.brand{width:min(346px,calc(10vw + 244px))!important;min-width:min(346px,calc(10vw + 244px))!important;max-width:min(346px,calc(10vw + 244px))!important;gap:8px!important}[data-brand="delivery"] body header.topbar #headerBrand.brand>div:not(.mark){width:202px;min-width:202px;max-width:202px;flex:0 0 202px}}',
+'@media(max-width:1023px){[data-brand="coffee"] .topbar .brand #brandTitle{display:block!important}[data-brand="coffee"] .topbar .brand #brandSub{display:none!important}}',
+ '@media(max-width:690px){[data-brand="coffee"] .topbar .brand small,[data-brand="coffee"] .topbar .brand .brand-text{display:none!important}[data-brand="coffee"] .topbar .brand .mark{width:52px!important;height:52px!important;min-width:52px!important;max-height:52px!important}[data-brand="coffee"] .topbar .brand > div:not(.mark){overflow:visible!important;padding-right:4px}}',
 '[data-brand="coffee"] .topbar .brand b#brandTitle .bean{display:inline-block;width:.8em;height:.8em;margin:0 .03em;vertical-align:-.04em;color:#2F95F5}',
 '[data-brand="coffee"] .topbar .brand b#brandTitle .bean svg{display:block;width:100%;height:100%;overflow:visible}',
 '@media(max-width:690px){[data-brand="delivery"] .topbar .brand .mark{width:196px!important;max-width:min(60vw,210px)!important;height:48px!important;max-height:48px!important}}', '[data-brand="delivery"] .topbar .brand .mark{width:var(--mark-w,160px);height:var(--mark-h,40px);max-height:var(--mark-h,40px);max-width:min(60vw,420px);flex:0 1 auto;border-radius:8px}',
@@ -111,6 +118,8 @@ var rules = [
 
  '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
   '[data-brand="coffee"] #modeSeg button.on{background:#BBD7F2;color:#123A6B;box-shadow:0 2px 7px rgba(18,58,107,.16)}',
+  '[data-brand="delivery"] body #deliveryView .menu-head{padding:8px 16px}',
+  '@media(min-width:820px){[data-brand="delivery"] body #deliveryView #deliverySubFilter>.subchip.on,[data-brand="delivery"] body #deliveryView .subfilter-bar>.subchip.on{background:#C03B2A;border-color:#3A2A1C;color:#fff}}',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
@@ -202,7 +211,10 @@ function syncBrandTitle(isDel) {
       bTitle.innerHTML = '…и к<span class="bean" aria-hidden="true"><svg viewBox="3.5 1.5 21 24"><g transform="translate(3 3)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#23272C"/></g></g><g transform="translate(2 2)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="translate(1 1)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="currentColor"/><path d="M12 3.6C8.4 7.8 15.6 16.2 12 20.4" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/></g></svg></span>фе';
     }
   }
-  if (bSub) bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
+  if (bSub) {
+    bSub.textContent = isDel ? 'доставка пиццы и роллов' : 'кофейня на берегу моря';
+    bSub.hidden = !isDel;
+  }
 }
 
 function syncBrandChromeState(bName, isDel) {
@@ -356,9 +368,9 @@ function syncChatFab(staff, bName2) {
   if (isOpen) {
     cfab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/></svg>' + badgeHtml;
   } else if (bName2 === 'delivery') {
-    cfab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 2C8.43 2 5.23 3.54 3.01 6L12 22l8.99-16C18.78 3.55 15.57 2 12 2zM7.5 7c.83 0 1.5.67 1.5 1.5S8.33 10 7.5 10 6 9.33 6 8.5 6.67 7 7.5 7zm4.5 7c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-4.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5z" fill="#fff"/></svg>' + badgeHtml;
+    cfab.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 13v-1a9 9 0 0 1 18 0v1" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="2.5" y="12" width="4" height="7" rx="2" fill="none" stroke="#fff" stroke-width="2"/><rect x="17.5" y="12" width="4" height="7" rx="2" fill="none" stroke="#fff" stroke-width="2"/><path d="M19.5 19a3 3 0 0 1-3 3H13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="10" y="20" width="4" height="2" rx="1" fill="#fff"/></svg>' + badgeHtml;
   } else {
-    cfab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z" fill="#fff"/></svg>' + badgeHtml;
+    cfab.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 13v-1a9 9 0 0 1 18 0v1" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="2.5" y="12" width="4" height="7" rx="2" fill="none" stroke="#fff" stroke-width="2"/><rect x="17.5" y="12" width="4" height="7" rx="2" fill="none" stroke="#fff" stroke-width="2"/><path d="M19.5 19a3 3 0 0 1-3 3H13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="10" y="20" width="4" height="2" rx="1" fill="#fff"/></svg>' + badgeHtml;
   }
 }
 

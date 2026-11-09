@@ -262,7 +262,6 @@ html body div.wrap > section {
   html body #adminBar > button,
   html body #pageNavigation button,
   html body #chatFab,
-  html body #scrollTopBtn,
   html body .tabs button,
   html body .topbar-actions > button,
   html body #deliverySubFilter .subchip {
@@ -291,12 +290,10 @@ html body div.wrap > section {
   html body header.topbar #profileTopBtn,
   html body header.topbar #venueToggle,
   html body #chatFab,
-  html body #scrollTopBtn,
   html body #pageNavigation button,
   html body .tabs button,
   html body .topbar-actions > button { flex:0 0 32px; }
   html body #chatFab svg,
-  html body #scrollTopBtn svg,
   html body #pageNavigation button svg { width:16px; height:16px; }
 
   /* Text CTAs keep their normal dimensions; only the horizontal padding is compact. */
@@ -532,17 +529,9 @@ html body div.wrap > section {
   }
   html body .menu-head .upd { display:none; }
   html body .menu-head { height:80px; min-height:80px; max-height:80px; overflow:hidden; padding:6px 10px; }
-  html body header.topbar #profileTopBtn,
-  html body #scrollTopBtn {
-    width:32px;
-    min-width:32px;
-    max-width:32px;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-    padding:0;
-    flex:0 0 32px;
-  }
+  html body header.topbar #profileTopBtn { width:32px; min-width:32px; max-width:32px; height:32px; min-height:32px; max-height:32px; padding:0; flex:0 0 32px; }
+  html body nav[aria-label="Навигация по странице"] #scrollTopBtn,
+  html body #scrollTopBtn { box-sizing:border-box; width:44px; min-width:44px; max-width:44px; height:44px; min-height:44px; max-height:44px; padding:0; font-size:22px; }
   html body #deliveryView .subfilter-bar .subchip,
   html body #menuView .subfilter-bar .subchip,
   html body #deliverySubFilter .subchip {
@@ -1194,4 +1183,10 @@ html body #adminBar.adminBar[hidden] { display:none; }
 /* Inactive role labels keep AAA contrast on the dark switcher surface. */
 html body #modeSeg button:not(.on) {
   color: #AFC0D0;
+}
+
+/* 320px: remove the clipped descriptor badge from the menu heading. */
+@media (max-width:350px) {
+  html body #menuView .menu-head h1 > em,
+  html body #deliveryView .menu-head h1 > em { display:none; }
 }

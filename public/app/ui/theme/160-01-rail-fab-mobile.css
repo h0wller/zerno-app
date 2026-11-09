@@ -338,6 +338,7 @@ html body #authModal.tg-mode .mhint{
   position: fixed;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
+  right: auto;
   transform: translateX(-50%) scale(0.92);
   z-index: 90;
   display: flex;
@@ -398,24 +399,7 @@ html body #authModal.tg-mode .mhint{
   color: #FFFFFF;
   letter-spacing: 0.02em;
 }
-/* Планшет/Десктоп: прижимаем справа от каталога,
-не перекрывая чат */
-@media (min-width: 821px){
-  .cartFab {
-    left: auto;
-    right: 80px;
-    transform: scale(0.92);
-  }
-  .cartFab.visible {
-    transform: scale(1);
-  }
-  .cartFab:hover {
-    transform: scale(1.03);
-  }
-  .cartFab:active {
-    transform: scale(0.97);
-  }
-}
+
 /* [tg-rudiments-cleanup-v1] */
 #authModal.tg-mode small,
 #authModal.tg-mode .mhint,

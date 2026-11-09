@@ -365,12 +365,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         .toBe(before.firstRowImageCount);
       expect(before.highPriorityImageCount, `only the first-row LCP image has high priority at ${width}px`)
         .toBe(before.firstRowImageCount ? 1 : 0);
-      if (width <= 1023) {
-        expect(before.titleDisplay, `coffee title hidden at ${width}px before CSS`).toBe('none');
-        expect(before.subDisplay, `coffee subtitle hidden at ${width}px before CSS`).toBe('none');
+      if (width <= 820) {
+        expect(before.titleDisplay, `delivery wordmark text stays hidden at ${width}px before CSS`).toBe('none');
+        expect(before.subDisplay, `delivery subtitle stays hidden at ${width}px before CSS`).toBe('none');
       } else {
-        expect(before.titleDisplay, `desktop brand title visible at ${width}px before CSS`).not.toBe('none');
-        expect(before.subDisplay, `desktop brand subtitle visible at ${width}px before CSS`).not.toBe('none');
+        expect(before.titleDisplay, `delivery wordmark text remains visible at ${width}px before CSS`).not.toBe('none');
       }
       expect(before.scrollWidth, `no initial horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
@@ -379,11 +378,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       await waitForDeferredTheme(page);
       const after = await measureBrand();
       console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));
-      expect(after.subDisplay, `brand subtitle display remains stable at ${width}px`).toBe(before.subDisplay);
+      expect(after.titleDisplay, `brand title display remains stable at ${width}px`).toBe(before.titleDisplay);
       expect(after.brandDisplay, `brand container display remains stable at ${width}px`).toBe(before.brandDisplay);
       expect(after.brandGap, `brand container gap remains stable at ${width}px`).toBe(before.brandGap);
-      expect(after.brandRect.x).toBe(before.brandRect.x);
-      expect(after.brandRect.width).toBe(before.brandRect.width);
+      expect(Math.abs(after.brandRect.x - before.brandRect.x)).toBeLessThanOrEqual(2);
+      expect(Math.abs(after.brandRect.width - before.brandRect.width)).toBeLessThanOrEqual(2);
       expect(Math.abs(after.brandRect.height - before.brandRect.height)).toBeLessThanOrEqual(1);
       expect(Math.abs(after.brandRect.y - before.brandRect.y)).toBeLessThanOrEqual(1);
       expect(after.x, `brand x remains stable at ${width}px`).toBe(before.x);

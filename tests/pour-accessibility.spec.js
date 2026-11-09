@@ -112,8 +112,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.supportHost.height).toBe(44);
     expect(metrics.support.width).toBe(44);
     expect(metrics.support.height).toBe(44);
-    expect(metrics.scrollTop.width).toBe(32);
-    expect(metrics.scrollTop.height).toBe(32);
+    expect(metrics.scrollTop.width).toBe(44);
+    expect(metrics.scrollTop.height).toBe(44);
     expect(metrics.menuHead.maxHeight).toBe('100px');
     expect(metrics.menuHead.overflow).not.toBe('hidden');
     expect(metrics.search).toBe(40);
