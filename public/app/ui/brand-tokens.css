@@ -121,6 +121,7 @@ body[data-brand="coffee"] {
   --profile-btn-border: 2px solid #101418;
   --profile-btn-color: #FFFFFF;
   --profile-btn-shadow: 3px 3px 0 #101418;
+  --profile-btn-shadow-color: #101418;
   --profile-btn-secondary-bg: #EAF1F9;
   --profile-btn-secondary-border: 2px solid #101418;
   --profile-btn-secondary-color: #123A6B;
@@ -337,6 +338,7 @@ body[data-brand="delivery"] {
   --profile-btn-border: 2px solid var(--fr-choc, #3A2A1C);
   --profile-btn-color: #3A2A1C;
   --profile-btn-shadow: 3px 3px 0 var(--fr-choc, #3A2A1C);
+  --profile-btn-shadow-color: var(--fr-choc, #3A2A1C);
   --profile-btn-secondary-bg: #FFF9F0;
   --profile-btn-secondary-border: 2px solid var(--fr-choc, #3A2A1C);
   --profile-btn-secondary-color: var(--fr-choc, #3A2A1C);
