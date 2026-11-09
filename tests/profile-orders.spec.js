@@ -536,49 +536,22 @@ test.describe('Модуль заказов профиля', () => {
     });
     await expect.poll(() => close.evaluate(element => getComputedStyle(element).backgroundColor))
       .toBe('rgb(234, 241, 249)');
+    // Chromium serializes a declared 1.5px border as 1px in computed CSSOM,
+    // including an ordinary inline-style probe; verify the brand token itself
+    // and the effective solid border/color instead of asserting that rounded value.
     const coffeeCloseStyle = await close.evaluate(element => {
       const computed = getComputedStyle(element);
-      const matchedRules = [...document.styleSheets].flatMap(sheet => {
-        try {
-          return [...sheet.cssRules]
-            .filter(rule => rule.selectorText && rule.selectorText.includes('.omClose'))
-            .map(rule => ({
-              sheet: sheet.href,
-              selector: rule.selectorText,
-              border: rule.style && rule.style.getPropertyValue('border')
-            }));
-        } catch (_) {
-          return [];
-        }
-      });
-      const probe = document.createElement('button');
-      probe.style.cssText = 'border:1.5px solid rgba(18,58,107,.2);position:fixed;left:-10000px';
-      document.body.appendChild(probe);
-      const probeStyle = getComputedStyle(probe);
-      const probeResult = {
-        border: probeStyle.border,
-        borderTopWidth: probeStyle.borderTopWidth,
-        typedTopWidth: probe.computedStyleMap
-          ? String(probe.computedStyleMap().get('border-top-width'))
-          : 'unsupported'
-      };
-      probe.remove();
       return {
-        border: computed.border,
-        borderTopWidth: computed.borderTopWidth,
-        typedTopWidth: element.computedStyleMap
-          ? String(element.computedStyleMap().get('border-top-width'))
-          : 'unsupported',
-        probe: probeResult,
+        borderTopStyle: computed.borderTopStyle,
+        borderTopColor: computed.borderTopColor,
         profileOrdersCloseBorder: getComputedStyle(document.documentElement)
-          .getPropertyValue('--profile-orders-close-border').trim(),
-        mcloseBorder: getComputedStyle(document.documentElement)
-          .getPropertyValue('--mclose-border').trim(),
-        matchesProfileCloseSelector: element.matches('#ordersModal .omCard .omClose'),
-        matchedRules
+          .getPropertyValue('--profile-orders-close-border').trim()
       };
     });
-    expect(coffeeCloseStyle.borderTopWidth, JSON.stringify(coffeeCloseStyle)).toBe('1.5px');
+    expect(coffeeCloseStyle.profileOrdersCloseBorder)
+      .toBe('1.5px solid rgba(18, 58, 107, 0.2)');
+    expect(coffeeCloseStyle.borderTopStyle).toBe('solid');
+    expect(coffeeCloseStyle.borderTopColor).toBe('rgba(18, 58, 107, 0.2)');
     await expect.poll(() => close.evaluate(element => getComputedStyle(element).boxShadow))
       .not.toContain('3px 3px');
 
