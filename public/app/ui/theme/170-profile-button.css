@@ -431,9 +431,13 @@
   border-bottom: 1px solid currentColor;
 }
 #profileCoffeeSection .profile-promo-details[open] > .qrbox {
+  margin-top: 0;
   padding: 12px;
+  border: 0;
   border-top: 1px solid var(--line);
+  border-radius: 0;
   background: #F8FAFC;
+  box-shadow: none;
 }
 @media (hover: hover) {
   #verifyNote .profile-loyalty-help > summary:hover,
