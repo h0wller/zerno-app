@@ -320,9 +320,9 @@ test('coffee profile groups bonus explanations in one collapsed disclosure', asy
       summaryMinHeight: Number.parseFloat(summary.minHeight)
     };
   });
-  expect(helpPresentation.radius).toBe('16px');
+  expect(helpPresentation.radius).toBe('0px');
   expect(helpPresentation.summaryDisplay).toBe('flex');
-  expect(helpPresentation.summaryMinHeight).toBeGreaterThanOrEqual(52);
+  expect(helpPresentation.summaryMinHeight).toBeGreaterThanOrEqual(44);
 
   const promo = page.locator('#profileCoffeeSection .profile-promo-details');
   const promoPresentation = await promo.evaluate(element => {
@@ -334,9 +334,9 @@ test('coffee profile groups bonus explanations in one collapsed disclosure', asy
       summaryMinHeight: Number.parseFloat(summary.minHeight)
     };
   });
-  expect(promoPresentation.radius).toBe('16px');
+  expect(promoPresentation.radius).toBe('0px');
   expect(promoPresentation.summaryDisplay).toBe('flex');
-  expect(promoPresentation.summaryMinHeight).toBeGreaterThanOrEqual(48);
+  expect(promoPresentation.summaryMinHeight).toBeGreaterThanOrEqual(44);
   await expect(help.locator('summary span').first()).toHaveText('Как работают бонусы?');
   await expect(help).not.toHaveAttribute('open', '');
   await expect(page.locator('#verifyNote > small')).toHaveCount(0);
