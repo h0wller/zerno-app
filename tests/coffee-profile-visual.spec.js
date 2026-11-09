@@ -47,6 +47,9 @@ for (const viewport of VIEWPORTS) {
   test('coffee bonus panel fits without horizontal overflow at ' + viewport.name, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await installCoffeeGuest(page, 9, 2);
+    await expect.poll(() => page.locator('#promoInput').evaluate(input =>
+      getComputedStyle(input.closest('.findrow')).display
+    )).toBe('grid');
 
     const measurements = await page.evaluate(() => {
       const panel = document.querySelector('#panel');
