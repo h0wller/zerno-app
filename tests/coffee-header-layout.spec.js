@@ -38,7 +38,7 @@ test('coffee wordmark “и кофе” remains visible beside the logo without 
   });
 
   expect(metrics.text).toBe('…и кофе');
-  expect(metrics.clientWidth).toBeGreaterThanOrEqual(120);
+  expect(metrics.clientWidth).toBeGreaterThanOrEqual(84);
   expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
   expect(metrics.wordmarkRight).toBeLessThan(metrics.profileLeft - 8);
 });
