@@ -739,6 +739,7 @@
 }
 #profileBox #profileSettingsBtn {
   align-self: start;
+  margin-top: 4px;
 }
 
 #profileBox input#nameInput {
