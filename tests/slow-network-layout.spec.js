@@ -365,11 +365,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         .toBe(before.firstRowImageCount);
       expect(before.highPriorityImageCount, `only the first-row LCP image has high priority at ${width}px`)
         .toBe(before.firstRowImageCount ? 1 : 0);
-      expect(before.titleDisplay, `delivery brand title remains visible at ${width}px before CSS`).not.toBe('none');
-      if (width < 820) {
-        expect(before.subDisplay, `delivery brand subtitle stays hidden on compact mobile at ${width}px before CSS`).toBe('none');
+      if (width <= 820) {
+        expect(before.titleDisplay, `delivery wordmark text stays hidden at ${width}px before CSS`).toBe('none');
+        expect(before.subDisplay, `delivery subtitle stays hidden at ${width}px before CSS`).toBe('none');
       } else {
-        expect(before.subDisplay, `delivery brand subtitle stays available on tablet/desktop at ${width}px before CSS`).not.toBe('none');
+        expect(before.titleDisplay, `delivery wordmark text remains visible at ${width}px before CSS`).not.toBe('none');
       }
       expect(before.scrollWidth, `no initial horizontal overflow at ${width}px`)
         .toBeLessThanOrEqual(width + 1);
@@ -378,7 +378,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       await waitForDeferredTheme(page);
       const after = await measureBrand();
       console.log(`[slow-network-layout] ${width}px after CSS`, JSON.stringify(after));
-      expect(after.subDisplay, `brand subtitle display remains stable at ${width}px`).toBe(before.subDisplay);
+      expect(after.titleDisplay, `brand title display remains stable at ${width}px`).toBe(before.titleDisplay);
       expect(after.brandDisplay, `brand container display remains stable at ${width}px`).toBe(before.brandDisplay);
       expect(after.brandGap, `brand container gap remains stable at ${width}px`).toBe(before.brandGap);
       expect(Math.abs(after.brandRect.x - before.brandRect.x)).toBeLessThanOrEqual(2);

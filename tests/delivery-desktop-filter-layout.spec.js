@@ -131,7 +131,7 @@ for (const width of [1024, 1440]) {
 
 
 test('delivery header uses brand typography on desktop and logo-only on mobile', async ({page}) => {
-  for (const width of [390, 820, 821, 1024, 1440]) {
+  for (const width of [320, 390, 820, 821, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.addInitScript(() => { sessionStorage.setItem('splashDone', '1'); localStorage.clear(); });
     await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
