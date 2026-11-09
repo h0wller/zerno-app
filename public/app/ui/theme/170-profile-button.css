@@ -906,8 +906,6 @@
   margin: 0;
   overflow: visible;
   border: 0;
-  border-top: 1px solid var(--profile-divider, var(--line));
-  border-bottom: 1px solid var(--profile-divider, var(--line));
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -1510,6 +1508,174 @@
   #profileBox .profile-name-action,
   #profileBox .profile-all-orders,
   #profileBox .profile-history-toggle {
+    transition: none;
+  }
+}
+
+
+/* ── Raised brand actions: consistent weight across profile and its modals ── */
+#profileBox .profile-name-edit-icon,
+#profileBox #profileSettingsBtn,
+#profileBox .profile-name-action,
+#profileBox #pushBtn,
+#profileBox .profile-all-orders,
+#profileBox .profile-history-toggle,
+#profileBox .profile-qr-link,
+#profileBox .free-card-action,
+#profileBox .bonus-qr-row .demoBtn,
+#profileBox .coffee-review-button,
+#profileBox .friday-info-link,
+#profileBox .friday-info-review,
+#settingsModal .omClose,
+#ordersModal .omClose,
+#settingsModal .mclose,
+#orderTrackModal .mclose,
+#settingsModal #setPinGo2,
+#settingsModal .settings-account-action:not(.is-danger),
+#orderTrackModal .ot-actions .btn.ghost {
+  border: var(--profile-btn-secondary-border, 2px solid var(--ink));
+  border-radius: 11px;
+  background: var(--profile-btn-secondary-bg, var(--profile-surface, #fff));
+  box-shadow: var(--profile-btn-secondary-shadow, 3px 3px 0 var(--ink));
+  color: var(--profile-btn-secondary-color, var(--ink));
+  font-weight: 800;
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+#profileBox #pushBtn,
+#profileBox .profile-name-action.is-primary,
+#profileBox .profile-qr-link,
+#profileBox .free-card-action,
+#profileBox .bonus-qr-row .demoBtn,
+#profileBox .profile-activation-row button,
+#profileBox .friday-info-review,
+#orderTrackModal .ot-actions .btn.fire {
+  border: var(--profile-btn-border, 2px solid var(--ink));
+  background: var(--profile-btn-bg, var(--flame));
+  box-shadow: var(--profile-btn-shadow, 3px 3px 0 var(--ink));
+  color: var(--profile-btn-color, #fff);
+}
+
+#profileBox .profile-name-edit-icon,
+#profileBox #profileSettingsBtn,
+#profileBox .friday-info-link {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+}
+
+#profileBox .profile-all-orders,
+#profileBox .profile-history-toggle,
+#profileBox .profile-name-action,
+#profileBox .coffee-review-button,
+#profileBox .friday-info-review,
+#settingsModal #setPinGo2,
+#settingsModal .settings-account-action:not(.is-danger),
+#orderTrackModal .ot-actions .btn {
+  min-height: 42px;
+  padding: 9px 13px;
+}
+
+#profileBox .profile-name-edit-icon,
+#profileBox #profileSettingsBtn {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+}
+
+#profileBox .friday-info-link {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  flex-basis: 36px;
+}
+
+#ordersModal .omClose,
+#settingsModal .mclose,
+#orderTrackModal .mclose {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+#settingsModal .settings-account-action.is-danger,
+#settingsModal .settings-delete-actions .danger {
+  border: 2px solid var(--status-danger);
+  box-shadow: 3px 3px 0 var(--status-danger);
+  font-weight: 800;
+}
+
+#profileBox :is(button, a):focus-visible,
+#settingsModal :is(button, a):focus-visible,
+#ordersModal :is(button, a):focus-visible,
+#orderTrackModal :is(button, a):focus-visible {
+  outline: 2px solid var(--profile-btn-bg, var(--flame));
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  #profileBox .profile-name-edit-icon:hover,
+  #profileBox #profileSettingsBtn:hover,
+  #profileBox .profile-name-action:hover,
+  #profileBox #pushBtn:hover,
+  #profileBox .profile-all-orders:hover,
+  #profileBox .profile-history-toggle:hover,
+  #profileBox .profile-qr-link:hover,
+  #profileBox .free-card-action:hover,
+  #profileBox .bonus-qr-row .demoBtn:hover,
+  #profileBox .coffee-review-button:hover,
+  #profileBox .friday-info-link:hover,
+  #profileBox .friday-info-review:hover,
+  #settingsModal .omClose:hover,
+  #ordersModal .omClose:hover,
+  #settingsModal .mclose:hover,
+  #orderTrackModal .mclose:hover,
+  #settingsModal #setPinGo2:hover,
+  #settingsModal .settings-account-action:not(.is-danger):hover,
+  #orderTrackModal .ot-actions .btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--profile-btn-color, var(--ink));
+  }
+}
+
+#profileBox .profile-name-edit-icon:active,
+#profileBox #profileSettingsBtn:active,
+#profileBox .profile-name-action:active,
+#profileBox #pushBtn:active,
+#profileBox .profile-all-orders:active,
+#profileBox .profile-history-toggle:active,
+#profileBox .profile-qr-link:active,
+#profileBox .free-card-action:active,
+#profileBox .bonus-qr-row .demoBtn:active,
+#profileBox .coffee-review-button:active,
+#profileBox .friday-info-link:active,
+#profileBox .friday-info-review:active,
+#settingsModal .omClose:active,
+#ordersModal .omClose:active,
+#settingsModal .mclose:active,
+#orderTrackModal .mclose:active,
+#settingsModal #setPinGo2:active,
+#settingsModal .settings-account-action:not(.is-danger):active,
+#orderTrackModal .ot-actions .btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--profile-btn-color, var(--ink));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #profileBox .profile-name-edit-icon,
+  #profileBox #profileSettingsBtn,
+  #profileBox .profile-name-action,
+  #profileBox #pushBtn,
+  #profileBox .profile-all-orders,
+  #profileBox .profile-history-toggle,
+  #profileBox .profile-qr-link,
+  #profileBox .free-card-action,
+  #profileBox .bonus-qr-row .demoBtn,
+  #profileBox .coffee-review-button,
+  #profileBox .friday-info-link,
+  #profileBox .friday-info-review,
+  #settingsModal :is(.omClose, .mclose, #setPinGo2, .settings-account-action),
+  #ordersModal .omClose,
+  #orderTrackModal :is(.mclose, .ot-actions .btn) {
     transition: none;
   }
 }
