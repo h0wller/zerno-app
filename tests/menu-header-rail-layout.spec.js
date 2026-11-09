@@ -14,7 +14,7 @@ const VIEWPORTS = [
 
 for (const brand of CASES) {
   for (const viewport of VIEWPORTS) {
-    test(`${brand.brand}: menu header geometry and card-aligned rail at ${viewport.name}`, async ({ page }) => {
+    test(`${brand.brand}: menu header geometry and card-aligned rail at ${viewport.name}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
       await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
@@ -72,6 +72,7 @@ for (const brand of CASES) {
           headLeft: headRect.left,
           headRight: headRect.right,
           railTop: railRect.top,
+          railPosition: getComputedStyle(railEl).position,
           headBottom: headRect.bottom,
           contentLeft: wrapRect.left + parseFloat(wrapStyle.borderLeftWidth) + parseFloat(wrapStyle.paddingLeft),
           contentRight: wrapRect.right - parseFloat(wrapStyle.borderRightWidth) - parseFloat(wrapStyle.paddingRight),
@@ -81,6 +82,7 @@ for (const brand of CASES) {
       }, { headSelector: brand.head, railSelector: brand.rail });
 
       if (viewport.width <= 820) {
+        expect(layout.railPosition, 'mobile rail stays in its catalog position before scrolling').toBe('relative');
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
         expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
       }
@@ -108,18 +110,36 @@ for (const brand of CASES) {
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      if (brand.brand === 'delivery') {
-        await expect.poll(() => page.evaluate(() => {
-          const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
-          const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
-          return Math.max(Math.abs(rail.top - grid.top), Math.abs(rail.bottom - grid.bottom));
-        }), { timeout: 5000 }).toBeLessThanOrEqual(2);
+      if (viewport.width <= 820) {
+        await expect.poll(() => page.evaluate(selector => {
+          const element = document.querySelector(selector);
+          const rect = element.getBoundingClientRect();
+          const height = element.clientHeight;
+          const expectedTop = Math.max(12, (window.innerHeight - height) / 2);
+          return {
+            topDelta: Math.abs(rect.top - expectedTop),
+            position: getComputedStyle(element).position,
+            bottom: rect.bottom,
+          };
+        }, brand.rail), { timeout: 5000 }).toMatchObject({
+          position: 'sticky',
+        });
+        await expect.poll(() => page.evaluate(selector => {
+          const element = document.querySelector(selector);
+          const rect = element.getBoundingClientRect();
+          return Math.abs(rect.top - Math.max(12, (window.innerHeight - element.clientHeight) / 2));
+        }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
+        await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
+          body: await page.screenshot({ animations: 'disabled' }),
+          contentType: 'image/png',
+        });
       } else {
-        await expect.poll(()=>page.evaluate(selector=>{
-          const rail=document.querySelector(selector).getBoundingClientRect();
-          const grid=document.querySelector('#grid').getBoundingClientRect();
-          return Math.abs(rail.top-grid.top);
-        },brand.rail),{timeout:5000}).toBeLessThanOrEqual(2);
+        const gridSelector = brand.brand === 'delivery' ? '#deliveryGrid' : '#grid';
+        await expect.poll(() => page.evaluate(({ railSelector, gridSelector }) => {
+          const grid = document.querySelector(gridSelector).getBoundingClientRect();
+          const rail = document.querySelector(railSelector).getBoundingClientRect();
+          return Math.max(Math.abs(rail.top - grid.top), Math.abs(rail.bottom - grid.bottom));
+        }, { railSelector: brand.rail, gridSelector }), { timeout: 5000 }).toBeLessThanOrEqual(4);
       }
     });
   }

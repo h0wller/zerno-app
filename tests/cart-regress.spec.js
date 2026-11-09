@@ -306,19 +306,17 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     const padBottom = await page.locator('#deliveryGrid').evaluate((el) => parseFloat(window.getComputedStyle(el).paddingBottom));
     expect(padBottom).toBeGreaterThanOrEqual(88);
 
-    // ── Задача 3: delivery rail follows the product-card grid in normal flow ──
+    // ── Задача 3: delivery rail starts aligned to the first product-card row ──
     const railGeometry = await page.evaluate(() => {
       const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
       const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
       return {
         position: getComputedStyle(document.querySelector('#deliveryRail')).position,
         topDelta: Math.abs(rail.top - grid.top),
-        bottomDelta: Math.abs(rail.bottom - grid.bottom),
       };
     });
     expect(railGeometry.position).toBe('relative');
     expect(railGeometry.topDelta).toBeLessThanOrEqual(2);
-    expect(railGeometry.bottomDelta).toBeLessThanOrEqual(2);
 
     // ── Задача 4: Контраст полей чекаута, прижатие шторки к bottom=viewport.height и скрытие #cartFab ──
     await firstPizzaCard.locator('.steprow .cta, [data-add]').first().click();

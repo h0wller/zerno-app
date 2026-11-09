@@ -4,28 +4,57 @@ var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
 
+var railStickyLayout = null;
+
 function updateRailStickyPosition(rail, head) {
   if (!rail || !head) return;
 
-  var headRect = head.getBoundingClientRect();
-  if (!headRect.height) {
+  if (!head.getBoundingClientRect().height) {
+    railStickyLayout = null;
     rail.classList.remove('rail-position-ready');
     return;
   }
 
-  var isDelivery = document.documentElement.dataset.brand === 'delivery';
-  var topbar = document.querySelector('header.topbar');
-  var topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
-  var laneTop = Math.max(12, topbarBottom + 12);
-  var laneBottom = (window.innerHeight || document.documentElement.clientHeight) - 12;
-  var availableHeight = Math.max(0, laneBottom - laneTop);
+  var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  if (mobileViewport) {
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    var maxRailHeight = Math.max(0, viewportHeight - 24);
+    var visibleRailHeight = Math.min(rail.scrollHeight, maxRailHeight);
+    var stickyTop = Math.max(12, (viewportHeight - visibleRailHeight) / 2);
+    var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
 
-  // Both brand rails follow their catalog column in normal flow, aligned with the first card row.
-  if (rail.style.position !== 'relative') rail.style.position = 'relative';
-  if (rail.style.top !== 'auto') rail.style.top = 'auto';
-  if (rail.style.maxHeight !== 'none') rail.style.maxHeight = 'none';
-  if (rail.style.alignSelf !== 'stretch') rail.style.alignSelf = 'stretch';
-  if (rail.style.transform !== 'none') rail.style.transform = 'none';
+    if (!railStickyLayout || railStickyLayout.rail !== rail) {
+      railStickyLayout = {
+        rail: rail,
+        documentTop: rail.getBoundingClientRect().top + scrollY
+      };
+    }
+
+    // Preserve the catalog-aligned start; engage sticky only once the page begins scrolling.
+    var shouldStick = scrollY > 0 && scrollY >= railStickyLayout.documentTop - stickyTop;
+    if (shouldStick) {
+      rail.style.position = 'sticky';
+      rail.style.top = stickyTop + 'px';
+      rail.style.maxHeight = maxRailHeight + 'px';
+      rail.style.overflowY = rail.scrollHeight > maxRailHeight ? 'auto' : 'visible';
+      rail.style.alignSelf = 'start';
+    } else {
+      rail.style.position = 'relative';
+      rail.style.top = 'auto';
+      rail.style.maxHeight = 'none';
+      rail.style.overflowY = '';
+      rail.style.alignSelf = 'start';
+    }
+  } else {
+    railStickyLayout = null;
+    rail.style.position = 'relative';
+    rail.style.top = 'auto';
+    rail.style.maxHeight = 'none';
+    rail.style.overflowY = '';
+    rail.style.alignSelf = 'stretch';
+  }
+
+  rail.style.transform = 'none';
   rail.classList.add('rail-position-ready');
 }
 
@@ -35,6 +64,12 @@ function alignRailWithCard() {
   var head = document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head');
 
   if (!rail) return;
+  railStickyLayout = null;
+  rail.style.position = 'relative';
+  rail.style.top = 'auto';
+  rail.style.maxHeight = 'none';
+  rail.style.overflowY = '';
+  rail.style.alignSelf = 'start';
   var wrap = rail.parentElement;
   if (!wrap) return;
 

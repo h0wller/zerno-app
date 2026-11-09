@@ -262,7 +262,6 @@ html body div.wrap > section {
   html body #adminBar > button,
   html body #pageNavigation button,
   html body #chatFab,
-  html body .tabs button,
   html body .topbar-actions > button,
   html body #deliverySubFilter .subchip {
     box-sizing:border-box;
@@ -291,7 +290,6 @@ html body div.wrap > section {
   html body header.topbar #venueToggle,
   html body #chatFab,
   html body #pageNavigation button,
-  html body .tabs button,
   html body .topbar-actions > button { flex:0 0 32px; }
   html body #chatFab svg,
   html body #pageNavigation button svg { width:16px; height:16px; }
