@@ -114,7 +114,11 @@ test.describe('Модуль заказов профиля', () => {
         orderShadow: getComputedStyle(order).boxShadow,
         orderBorder: getComputedStyle(order).borderTopWidth,
         detailsRadius: getComputedStyle(details).borderRadius,
+        detailsBorderTop: getComputedStyle(details).borderTopWidth,
+        detailsBorderBottom: getComputedStyle(details).borderBottomWidth,
         detailsShadow: getComputedStyle(details).boxShadow,
+        ordersButtonShadow: getComputedStyle(document.querySelector('#myOrdersBtn')).boxShadow,
+        settingsButtonShadow: getComputedStyle(document.querySelector('#profileSettingsBtn')).boxShadow,
         summaryDisplay: getComputedStyle(summary).display,
         summaryMinHeight: Number.parseFloat(getComputedStyle(summary).minHeight),
         iconDisplay: getComputedStyle(summary.querySelector('span:first-child'), '::before').display,
@@ -129,7 +133,11 @@ test.describe('Модуль заказов профиля', () => {
     expect(presentation.orderShadow).toBe('none');
     expect(presentation.orderBorder).toBe('1px');
     expect(presentation.detailsRadius).toBe('0px');
+    expect(presentation.detailsBorderTop).toBe('0px');
+    expect(presentation.detailsBorderBottom).toBe('0px');
     expect(presentation.detailsShadow).toBe('none');
+    expect(presentation.ordersButtonShadow).toContain('3px 3px');
+    expect(presentation.settingsButtonShadow).toContain('3px 3px');
     expect(presentation.summaryDisplay).toBe('flex');
     expect(presentation.summaryMinHeight).toBeGreaterThanOrEqual(44);
     expect(presentation.iconDisplay).toBe('none');
@@ -188,9 +196,9 @@ test.describe('Модуль заказов профиля', () => {
         shadow: style.boxShadow
       };
     });
-    expect(closePresentation.background).toBe('rgba(0, 0, 0, 0)');
-    expect(closePresentation.borderWidth).toBe('1px');
-    expect(closePresentation.shadow).toBe('none');
+    expect(closePresentation.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(closePresentation.borderWidth).toBe('2px');
+    expect(closePresentation.shadow).toContain('3px 3px');
 
     await modal.locator('[data-open-track="profile-order-1"]').click();
     const trackModal = page.locator('#orderTrackModal');
@@ -201,13 +209,15 @@ test.describe('Модуль заказов профиля', () => {
       return {
         shadow: style.boxShadow,
         borderWidth: style.borderTopWidth,
+        background: style.backgroundColor,
         minHeight: Number.parseFloat(style.minHeight)
       };
     }));
     expect(trackingActions).toHaveLength(2);
     for (const action of trackingActions) {
-      expect(action.shadow).toBe('none');
-      expect(action.borderWidth).toBe('1px');
+      expect(action.shadow).toContain('3px 3px');
+      expect(action.borderWidth).toBe('2px');
+      expect(action.background).not.toBe('rgba(0, 0, 0, 0)');
       expect(action.minHeight).toBeGreaterThanOrEqual(44);
     }
     await testInfo.attach('delivery-profile-tracking-modal-390px', {
@@ -271,7 +281,7 @@ test.describe('Модуль заказов профиля', () => {
     expect(pinRowPresentation.labelWhiteSpace).toBe('nowrap');
     expect(pinRowPresentation.buttonWidth).toBeLessThanOrEqual(156);
     expect(pinRowPresentation.buttonScrollWidth).toBeLessThanOrEqual(pinRowPresentation.buttonClientWidth);
-    expect(pinRowPresentation.buttonShadow).toBe('none');
+    expect(pinRowPresentation.buttonShadow).toContain('3px 3px');
     await testInfo.attach('delivery-profile-settings-390px', {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png'
