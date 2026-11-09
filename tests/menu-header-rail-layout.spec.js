@@ -145,6 +145,15 @@ test('menu headings stay compact while retaining their brand context', async ({ 
       const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
       const heading = page.locator(view + ' .menu-head h1');
       await expect(heading).toBeVisible();
+      if (brand === 'coffee') {
+        const brandTitle = page.locator('#brandTitle');
+        await expect(brandTitle).toBeVisible();
+        await expect(brandTitle).toHaveAttribute('aria-label', '…и кофе');
+        const logoBox = await brandTitle.boundingBox();
+        expect(logoBox && logoBox.width, 'coffee wordmark must retain visible width beside its logo mark').toBeGreaterThan(0);
+      } else {
+        await expect(page.locator('#deliveryView .menu-head')).toHaveCSS('padding', '8px 16px');
+      }
       const geometry = await heading.evaluate((element, view) => {
         const rect = element.getBoundingClientRect();
         const menuHead = element.closest('.menu-head');
