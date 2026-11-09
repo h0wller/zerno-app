@@ -1291,7 +1291,6 @@
 }
 
 #ordersModal .omCard h3 {
-  margin: 0 44px 14px 0 !important;
   color: var(--ink);
   font: 700 18px/1.25 "Golos Text", system-ui, sans-serif;
 }
@@ -1382,6 +1381,18 @@
   }
   #profileBox:not([hidden]) {
     gap: 16px;
+  }
+  #profileBox .profile-section-heading {
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  #profileBox .profile-section-heading h4 {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #profileOrdersSection .profile-section-heading #myOrdersBtn {
+    width: auto;
+    flex: 0 0 auto;
   }
   #profileBox > #profileCoffeeSection {
     padding: 12px;
