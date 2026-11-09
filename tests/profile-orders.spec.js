@@ -100,7 +100,7 @@ test.describe('Модуль заказов профиля', () => {
 
     const presentation = await details.evaluate(element => {
       const summary = element.querySelector('summary');
-      const icon = getComputedStyle(summary, '::before');
+      const icon = getComputedStyle(summary.querySelector('span:first-child'), '::before');
       const chevron = getComputedStyle(summary.querySelector('.friday-info-chevron'));
       const body = element.querySelector('.friday-info-body');
       const address = element.querySelector('.friday-info-address');
