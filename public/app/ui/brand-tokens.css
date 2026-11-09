@@ -117,10 +117,14 @@ body[data-brand="coffee"] {
   --venue-toggle-color: var(--ink, #101418);
   --venue-toggle-shadow: none;
 
-  --profile-btn-bg: #FFFFFF;
-  --profile-btn-border: 1.5px solid var(--line, #D8DFE4);
-  --profile-btn-color: var(--ink, #101418);
-  --profile-btn-shadow: none;
+  --profile-btn-bg: #3F5EA6;
+  --profile-btn-border: 2px solid #101418;
+  --profile-btn-color: #FFFFFF;
+  --profile-btn-shadow: 3px 3px 0 #101418;
+  --profile-btn-secondary-bg: #EAF1F9;
+  --profile-btn-secondary-border: 2px solid #101418;
+  --profile-btn-secondary-color: #123A6B;
+  --profile-btn-secondary-shadow: 3px 3px 0 #101418;
 
   --cart-panel-bg: var(--card, #FFFFFF);
   --cart-panel-border: 2px solid var(--line, #D8DFE4);
@@ -332,7 +336,11 @@ body[data-brand="delivery"] {
   --profile-btn-bg: #E8A33D;
   --profile-btn-border: 2px solid var(--fr-choc, #3A2A1C);
   --profile-btn-color: #3A2A1C;
-  --profile-btn-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  --profile-btn-shadow: 3px 3px 0 var(--fr-choc, #3A2A1C);
+  --profile-btn-secondary-bg: #FFF9F0;
+  --profile-btn-secondary-border: 2px solid var(--fr-choc, #3A2A1C);
+  --profile-btn-secondary-color: var(--fr-choc, #3A2A1C);
+  --profile-btn-secondary-shadow: 3px 3px 0 var(--fr-choc, #3A2A1C);
 
   --cart-panel-bg: var(--fr-rice, #EFE6D8);
   --cart-panel-border: 3px solid var(--fr-choc, #3A2A1C);
