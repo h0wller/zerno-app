@@ -155,6 +155,17 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('#profileStampProgress')).toBeVisible();
   await expect(page.locator('.profile-qr-access, .profile-qr-link, #qrMain, #qrMini')).toHaveCount(0);
+
+  const identity = await page.evaluate(() => {
+    const avatar = document.querySelector('#profileBox .phead .ava').getBoundingClientRect();
+    const name = document.querySelector('#profileBox #nameInput').getBoundingClientRect();
+    const settings = document.querySelector('#profileBox #profileSettingsBtn').getBoundingClientRect();
+    return { avatarLeft: avatar.left, nameLeft: name.left, nameTop: name.top, settingsTop: settings.top };
+  });
+  expect(identity.nameLeft).toBeGreaterThan(identity.avatarLeft);
+  expect(identity.nameLeft - identity.avatarLeft).toBeGreaterThanOrEqual(52);
+  expect(Math.abs(identity.nameTop - identity.settingsTop)).toBeLessThanOrEqual(2);
+
   await panel.locator('.tabs button[data-tab="bonus"]').click();
   await expect(page.locator('#qrOpenBonus')).toBeVisible();
   await page.locator('#qrOpenBonus').click();
@@ -165,14 +176,6 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(page.locator('.coffee-review-card')).toContainText('Оставить отзыв');
   await expect(panel.locator('.tabs .btn-back')).toHaveCSS('flex-grow', '1');
 
-  const identity = await page.evaluate(() => {
-    const avatar = document.querySelector('#profileBox .phead .ava').getBoundingClientRect();
-    const name = document.querySelector('#profileBox #nameInput').getBoundingClientRect();
-    const settings = document.querySelector('#profileBox #profileSettingsBtn').getBoundingClientRect();
-    return { avatarLeft: avatar.left, nameLeft: name.left, nameTop: name.top, settingsTop: settings.top };
-  });
-  expect(identity.avatarLeft).toBeLessThan(identity.nameLeft);
-  expect(Math.abs(identity.nameTop - identity.settingsTop)).toBeLessThanOrEqual(2);
 
   await panel.locator('.tabs .btn-back').click();
   await expect(page.locator('#overlay')).not.toHaveClass(/show/);
@@ -182,6 +185,7 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(panel).toBeVisible();
   await panel.locator('.tabs button[data-tab="profile"]').click();
   await expect(page.locator('#fridayInfo')).toBeVisible();
+  await shot(page, '03-delivery-profile');
   await expect(page.locator('#fridayInfo .friday-info-details summary')).toContainText('О заведении');
   await expect(page.locator('#fridayInfo .friday-info-details')).toHaveJSProperty('open', false);
   await expect(page.locator('#fridayInfo .friday-info-link')).toHaveCount(2);
