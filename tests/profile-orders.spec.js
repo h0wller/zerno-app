@@ -90,43 +90,51 @@ test.describe('Модуль заказов профиля', () => {
       element.nextElementSibling?.classList.contains('profile-history-section')
     )).toBe(true);
   });
-  test('спойлер «О заведении» оформлен в едином стиле профиля доставки', async ({ page }, testInfo) => {
+  test('профиль доставки использует общую плоскую композицию', async ({ page }, testInfo) => {
     const details = page.locator('#fridayInfo .friday-info-details');
     const summary = details.locator('summary');
-
     await expect(details).toHaveCount(1);
     await expect(summary.locator('span').first()).toHaveText('О заведении');
     await expect(details).not.toHaveAttribute('open', '');
 
-    const presentation = await details.evaluate(element => {
-      const summary = element.querySelector('summary');
-      const icon = getComputedStyle(summary.querySelector('span:first-child'), '::before');
-      const chevron = getComputedStyle(summary.querySelector('.friday-info-chevron'));
-      const body = element.querySelector('.friday-info-body');
-      const address = element.querySelector('.friday-info-address');
+    const presentation = await page.evaluate(() => {
+      const identity = document.querySelector('#profileBox > .profile-identity');
+      const history = document.querySelector('#profileBox > .profile-history-section');
+      const order = document.querySelector('#profileBox .myOrderCard');
+      const details = document.querySelector('#fridayInfo .friday-info-details');
+      const summary = details.querySelector('summary');
+      const body = details.querySelector('.friday-info-body');
+      const address = details.querySelector('.friday-info-address');
       return {
-        borderRadius: getComputedStyle(element).borderRadius,
-        borderWidth: getComputedStyle(element).borderTopWidth,
+        identityBackground: getComputedStyle(identity).backgroundColor,
+        identityBorder: getComputedStyle(identity).borderTopWidth,
+        historyBackground: getComputedStyle(history).backgroundColor,
+        orderShadow: getComputedStyle(order).boxShadow,
+        orderBorder: getComputedStyle(order).borderTopWidth,
+        detailsRadius: getComputedStyle(details).borderRadius,
+        detailsShadow: getComputedStyle(details).boxShadow,
         summaryDisplay: getComputedStyle(summary).display,
         summaryMinHeight: Number.parseFloat(getComputedStyle(summary).minHeight),
-        iconWidth: icon.width,
-        chevronWidth: chevron.width,
+        iconDisplay: getComputedStyle(summary.querySelector('span:first-child'), '::before').display,
         bodyBackground: getComputedStyle(body).backgroundColor,
-        addressRadius: getComputedStyle(address).borderRadius
+        addressBackground: getComputedStyle(address).backgroundColor
       };
     });
 
-    expect(presentation.borderRadius).toBe('16px');
-    expect(presentation.borderWidth).toBe('2px');
+    expect(presentation.identityBackground).toBe('rgba(0, 0, 0, 0)');
+    expect(presentation.identityBorder).toBe('0px');
+    expect(presentation.historyBackground).toBe('rgba(0, 0, 0, 0)');
+    expect(presentation.orderShadow).toBe('none');
+    expect(presentation.orderBorder).toBe('1px');
+    expect(presentation.detailsRadius).toBe('0px');
+    expect(presentation.detailsShadow).toBe('none');
     expect(presentation.summaryDisplay).toBe('flex');
-    expect(presentation.summaryMinHeight).toBeGreaterThanOrEqual(52);
-    expect(presentation.iconWidth).toBe('30px');
-    expect(presentation.chevronWidth).toBe('30px');
-    expect(presentation.bodyBackground).toBe('rgb(250, 245, 238)');
-    expect(presentation.addressRadius).toBe('12px');
+    expect(presentation.summaryMinHeight).toBeGreaterThanOrEqual(44);
+    expect(presentation.iconDisplay).toBe('none');
+    expect(presentation.bodyBackground).toBe('rgba(0, 0, 0, 0)');
+    expect(presentation.addressBackground).toBe('rgba(0, 0, 0, 0)');
 
-    await details.scrollIntoViewIfNeeded();
-    await testInfo.attach('delivery-profile-about-collapsed-390px', {
+    await testInfo.attach('delivery-profile-composition-390px', {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png'
     });
@@ -137,13 +145,11 @@ test.describe('Модуль заказов профиля', () => {
     await expect(details.locator('.friday-info-hours-row')).toHaveCount(2);
     await expect(details.getByRole('link', { name: 'ВКонтакте' })).toBeVisible();
     await expect(details.getByRole('link', { name: 'Яндекс Карты' })).toBeVisible();
-
     await testInfo.attach('delivery-profile-about-expanded-390px', {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png'
     });
   });
-
   test('выводит последний заказ в профиле и список в отдельной модалке', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection .profile-section-heading')).toContainText('Последний заказ');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
@@ -165,6 +171,10 @@ test.describe('Модуль заказов профиля', () => {
     await expect(modal).toHaveClass(/show/);
     await expect(modal.locator('#omList .myOrderCard')).toContainText('Заказ #P-1042');
     await expect(modal.locator('[data-open-track="profile-order-1"]')).toBeVisible();
+    await testInfo.attach('delivery-profile-orders-modal-390px', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png'
+    });
     expect(mineRequestCount).toBe(1);
 
     await expect(modal.locator('.omClose')).toBeFocused();
@@ -192,6 +202,10 @@ test.describe('Модуль заказов профиля', () => {
     const trackModal = page.locator('#orderTrackModal');
     await expect(trackModal).toHaveClass(/show/);
     await expect(trackModal.locator('.ot-card')).toBeVisible();
+    await testInfo.attach('delivery-profile-tracking-modal-390px', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png'
+    });
     const stack = await page.evaluate(() => {
       const orders = document.getElementById('ordersModal');
       const track = document.getElementById('orderTrackModal');
@@ -228,6 +242,10 @@ test.describe('Модуль заказов профиля', () => {
     await expect(settings.locator('#deleteAccBtn')).toBeVisible();
     await expect(settings.locator('#deleteConfirmPanel')).toBeHidden();
     await expect(settings.locator('#deleteConfirmBtn')).toBeDisabled();
+    await testInfo.attach('delivery-profile-settings-390px', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png'
+    });
     await expect(page.locator('#setPinBtn, #notifyDetails, #ntTg, #ntWeb, #resetBtn, #resetGo2')).toHaveCount(0);
 
     await settings.locator('#deleteAccBtn').click();
@@ -461,20 +479,23 @@ test.describe('Модуль заказов профиля', () => {
     expect(await info.evaluate(element => getComputedStyle(element).textAlign)).toBe('left');
   });
 
-  test('кнопка закрытия списка заказов использует кофейные брендированные токены', async ({ page }) => {
+  test('кнопка закрытия списка заказов остаётся нейтральной в обоих брендах', async ({ page }) => {
     await page.locator('#myOrdersBtn').click();
     const close = page.locator('#ordersModal .omClose');
     await expect(close).toBeVisible();
 
-    await page.evaluate(() => {
-      document.documentElement.setAttribute('data-brand', 'coffee');
-      document.body.setAttribute('data-brand', 'coffee');
-    });
-
-    await expect.poll(() => close.evaluate(element => getComputedStyle(element).backgroundColor))
-      .toBe('rgb(18, 58, 107)');
-    await expect.poll(() => close.evaluate(element => getComputedStyle(element).color))
-      .toBe('rgb(255, 255, 255)');
+    for (const brand of ['delivery', 'coffee']) {
+      await page.evaluate(value => {
+        document.documentElement.setAttribute('data-brand', value);
+        document.body.setAttribute('data-brand', value);
+      }, brand);
+      await expect.poll(() => close.evaluate(element => getComputedStyle(element).backgroundColor))
+        .toBe('rgba(0, 0, 0, 0)');
+      await expect.poll(() => close.evaluate(element => getComputedStyle(element).boxShadow))
+        .toBe('none');
+      await expect.poll(() => close.evaluate(element => getComputedStyle(element).borderTopWidth))
+        .toBe('1px');
+    }
   });
 
   test('содержимое профиля меняется вместе с брендом, единая панель без вкладок', async ({ page }) => {
