@@ -1178,10 +1178,6 @@
   padding: 22px;
 }
 
-#ordersModal .omCard .omClose {
-  border: var(--profile-orders-close-border, var(--profile-btn-secondary-border, 2px solid var(--ink)));
-}
-
 #ordersModal .omCard h3 {
   color: var(--modal-title-color, var(--ink));
   font-family: var(--modal-title-font, "Golos Text", system-ui, sans-serif);
@@ -1546,6 +1542,10 @@
 #orderTrackModal .ot-actions .btn:active {
   transform: var(--profile-btn-active-transform, none);
   box-shadow: var(--profile-btn-shadow-active, none);
+}
+
+#ordersModal .omCard .omClose {
+  border: var(--profile-orders-close-border, var(--profile-btn-secondary-border, 2px solid var(--ink)));
 }
 
 @media (prefers-reduced-motion: reduce) {
