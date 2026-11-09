@@ -437,10 +437,11 @@ test.describe('Модуль заказов профиля', () => {
         bottom: row.bottom
       };
     });
-    expect(socialLayout.justifyContent).toBe('flex-start');
-    expect(socialLayout.gap).toBe('18px');
-    expect(socialLayout.distance).toBeGreaterThanOrEqual(17);
-    expect(socialLayout.distance).toBeLessThanOrEqual(19);
+    expect(socialLayout.justifyContent).toBe('center');
+    expect(socialLayout.gap).toBe('28px');
+    expect(socialLayout.distance).toBeGreaterThanOrEqual(27);
+    expect(socialLayout.distance).toBeLessThanOrEqual(29);
+    expect(socialLayout.centerOffset).toBeLessThanOrEqual(1);
     expect(socialLayout.centerOffset).toBeLessThanOrEqual(1);
 
     const summerHours = info.locator('.friday-info-hours-row').first().locator('span');
