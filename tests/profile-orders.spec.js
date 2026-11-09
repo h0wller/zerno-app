@@ -189,6 +189,31 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#setPinModal')).toHaveClass(/show/);
   });
 
+  test('визуальный снимок профиля и настроек Пятницы', async ({ page }, testInfo) => {
+    await testInfo.attach('delivery-profile-390px', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png'
+    });
+
+    const profileSurface = await page.locator('#profileBox > .profile-identity').evaluate(element =>
+      getComputedStyle(element).backgroundColor
+    );
+    expect(profileSurface).toBe('rgb(239, 230, 216)');
+
+    await page.locator('#profileBox .gear').click();
+    const settings = page.locator('#settingsModal');
+    await expect(settings).toHaveClass(/show/);
+    await expect(settings.locator('.settings-card')).toBeVisible();
+    await testInfo.attach('delivery-profile-settings-390px', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png'
+    });
+    const settingsSurface = await settings.locator('.set-row').evaluate(element =>
+      getComputedStyle(element).backgroundColor
+    );
+    expect(settingsSurface).toBe(profileSurface);
+  });
+
   test('клик по затемнению закрывает настройки, но оставляет профиль открытым', async ({ page }) => {
     const panel = page.locator('#panel');
     const panelWasOpen = await panel.evaluate(element => element.classList.contains('open'));
