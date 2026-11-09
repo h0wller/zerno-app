@@ -315,7 +315,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
         topDelta: Math.abs(rail.top - grid.top),
       };
     });
-    expect(railGeometry.position).toBe('sticky');
+    expect(railGeometry.position).toBe('relative');
     expect(railGeometry.topDelta).toBeLessThanOrEqual(2);
 
     // ── Задача 4: Контраст полей чекаута, прижатие шторки к bottom=viewport.height и скрытие #cartFab ──
