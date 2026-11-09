@@ -1519,6 +1519,7 @@
 #profileBox .profile-name-action,
 #profileBox #pushBtn,
 #profileBox .profile-all-orders,
+#profileBox #myOrdersBtn,
 #profileBox .profile-history-toggle,
 #profileBox .profile-qr-link,
 #profileBox .free-card-action,
@@ -1618,6 +1619,7 @@
   #profileBox .profile-name-action:hover,
   #profileBox #pushBtn:hover,
   #profileBox .profile-all-orders:hover,
+  #profileBox #myOrdersBtn:hover,
   #profileBox .profile-history-toggle:hover,
   #profileBox .profile-qr-link:hover,
   #profileBox .free-card-action:hover,
@@ -1633,7 +1635,7 @@
   #settingsModal .settings-account-action:not(.is-danger):hover,
   #orderTrackModal .ot-actions .btn:hover {
     transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0 var(--profile-btn-color, var(--ink));
+    box-shadow: 4px 4px 0 var(--profile-btn-shadow-color, var(--ink));
   }
 }
 
@@ -1642,6 +1644,7 @@
 #profileBox .profile-name-action:active,
 #profileBox #pushBtn:active,
 #profileBox .profile-all-orders:active,
+#profileBox #myOrdersBtn:active,
 #profileBox .profile-history-toggle:active,
 #profileBox .profile-qr-link:active,
 #profileBox .free-card-action:active,
@@ -1657,7 +1660,7 @@
 #settingsModal .settings-account-action:not(.is-danger):active,
 #orderTrackModal .ot-actions .btn:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--profile-btn-color, var(--ink));
+  box-shadow: 1px 1px 0 var(--profile-btn-shadow-color, var(--ink));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1666,6 +1669,7 @@
   #profileBox .profile-name-action,
   #profileBox #pushBtn,
   #profileBox .profile-all-orders,
+  #profileBox #myOrdersBtn,
   #profileBox .profile-history-toggle,
   #profileBox .profile-qr-link,
   #profileBox .free-card-action,
