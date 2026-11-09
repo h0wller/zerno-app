@@ -536,8 +536,33 @@ test.describe('Модуль заказов профиля', () => {
     });
     await expect.poll(() => close.evaluate(element => getComputedStyle(element).backgroundColor))
       .toBe('rgb(234, 241, 249)');
-    await expect.poll(() => close.evaluate(element => getComputedStyle(element).borderTopWidth))
-      .toBe('1.5px');
+    const coffeeCloseStyle = await close.evaluate(element => {
+      const computed = getComputedStyle(element);
+      const matchedRules = [...document.styleSheets].flatMap(sheet => {
+        try {
+          return [...sheet.cssRules]
+            .filter(rule => rule.selectorText && rule.selectorText.includes('.omClose'))
+            .map(rule => ({
+              sheet: sheet.href,
+              selector: rule.selectorText,
+              border: rule.style && rule.style.getPropertyValue('border')
+            }));
+        } catch (_) {
+          return [];
+        }
+      });
+      return {
+        border: computed.border,
+        borderTopWidth: computed.borderTopWidth,
+        profileOrdersCloseBorder: getComputedStyle(document.documentElement)
+          .getPropertyValue('--profile-orders-close-border').trim(),
+        mcloseBorder: getComputedStyle(document.documentElement)
+          .getPropertyValue('--mclose-border').trim(),
+        matchesProfileCloseSelector: element.matches('#ordersModal .omCard .omClose'),
+        matchedRules
+      };
+    });
+    expect(coffeeCloseStyle.borderTopWidth, JSON.stringify(coffeeCloseStyle)).toBe('1.5px');
     await expect.poll(() => close.evaluate(element => getComputedStyle(element).boxShadow))
       .not.toContain('3px 3px');
 
