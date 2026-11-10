@@ -174,16 +174,29 @@ body.editing .card .stopbadge {
 
 
 #myOrders .myOrderCard.is-compact { padding: 12px; }
-#myOrders .moTrack,
-#omList .moTrack {
+#myOrders .moTrack {
   margin-top: 10px;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  color: var(--flame);
-  background: #fff;
-  font-size: 12px;
+  padding: 10px 14px;
+  min-height: 44px;
+  border: var(--profile-btn-border, 1px solid var(--line));
+  border-radius: var(--profile-btn-radius, 10px);
+  color: var(--profile-btn-color, var(--flame));
+  background: var(--profile-btn-bg, #fff);
+  box-shadow: var(--profile-btn-shadow, none);
+  font-size: 13px;
   font-weight: 800;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+@media (hover: hover) {
+  #myOrders .moTrack:hover {
+    transform: var(--profile-btn-hover-transform, none);
+    box-shadow: var(--profile-btn-shadow-hover, var(--profile-btn-shadow, none));
+  }
+}
+#myOrders .moTrack:active {
+  transform: var(--profile-btn-active-transform, none);
+  box-shadow: var(--profile-btn-shadow-active, none);
 }
 #omList {
   display: grid;
@@ -192,8 +205,7 @@ body.editing .card .stopbadge {
 
 
 /* ── Однозначное основное действие в карточке заказа ── */
-#myOrders .moTrack,
-#omList .moTrack {
+#myOrders .moTrack {
   display: flex;
   width: 100%;
   align-items: center;

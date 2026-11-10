@@ -120,6 +120,7 @@ var rules = [
   '[data-brand="coffee"] #modeSeg button.on{background:#BBD7F2;color:#123A6B;box-shadow:0 2px 7px rgba(18,58,107,.16)}',
   '[data-brand="delivery"] body #deliveryView .menu-head{padding:8px 16px}',
   '@media(min-width:820px){[data-brand="delivery"] body #deliveryView #deliverySubFilter>.subchip.on,[data-brand="delivery"] body #deliveryView .subfilter-bar>.subchip.on{background:#C03B2A;border-color:#3A2A1C;color:#fff}}',
+ '[data-brand="delivery"] #qrModal.show,[data-brand="delivery"] #qrModal.show .modal-card,[data-brand="delivery"] #setPinModal.show .modal-card{background-image:none}',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);

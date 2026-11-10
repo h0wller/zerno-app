@@ -160,11 +160,15 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#myOrdersBtn')).toBeFocused();
   });
 
-  test('настройки профиля содержат управление аккаунтом без общего сброса хранилища', async ({ page }) => {
+  test('настройки профиля содержат управление аккаунтом без общего сброса хранилища', async ({ page }, testInfo) => {
     await page.locator('#profileBox .gear').click();
 
     const settings = page.locator('#settingsModal');
     await expect(settings).toHaveClass(/show/);
+    const settingsBackdrop = page.locator('#overlay');
+    await expect(settingsBackdrop).toHaveClass(/show/);
+    await expect(settingsBackdrop).toHaveCSS('backdrop-filter', /blur\(8px\) saturate\(0\.82\)/);
+    await expect(settingsBackdrop).toHaveCSS('background-color', 'rgba(16, 20, 24, 0.48)');
     const settingsWidth = await settings.locator('.settings-card').evaluate(element => element.getBoundingClientRect().width);
     expect(settingsWidth).toBeLessThanOrEqual(401);
     await expect(settings.locator('#setPinGo2')).toBeVisible();
@@ -174,6 +178,10 @@ test.describe('Модуль заказов профиля', () => {
     await expect(settings.locator('#deleteAccBtn')).toBeVisible();
     await expect(settings.locator('#deleteConfirmPanel')).toBeHidden();
     await expect(settings.locator('#deleteConfirmBtn')).toBeDisabled();
+    await testInfo.attach('settings-modal-390', {
+      body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+      contentType: 'image/png'
+    });
     await expect(page.locator('#setPinBtn, #notifyDetails, #ntTg, #ntWeb, #resetBtn, #resetGo2')).toHaveCount(0);
 
     await settings.locator('#deleteAccBtn').click();
@@ -187,6 +195,85 @@ test.describe('Модуль заказов профиля', () => {
 
     await settings.locator('#setPinGo2').click();
     await expect(page.locator('#setPinModal')).toHaveClass(/show/);
+  });
+
+
+
+  test('настройки возвращают фокус на шестерёнку при закрытии', async ({ page }) => {
+    const gear = page.locator('#profileSettingsBtn');
+    await gear.click();
+    const closeButton = page.locator('#settingsModal #setClose');
+    await expect(closeButton).toBeFocused();
+    await closeButton.click();
+    await expect(page.locator('#settingsModal')).not.toHaveClass(/show/);
+    await expect(gear).toBeFocused();
+    await expect(gear).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('профильные QR и PIN модалки не наследуют точечный фон Пятницы', async ({ page, browser }, testInfo) => {
+    const modalBackground = locator => locator.evaluate(element => getComputedStyle(element).backgroundImage);
+    const openCoffee = await browser.newPage({ viewport: { width: 390, height: 844 } });
+
+    await openCoffee.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await openCoffee.goto('/?brand=coffee');
+    await expect.poll(() => openCoffee.evaluate(() =>
+      typeof window.setUser === 'function' &&
+      typeof window.openPanel === 'function' &&
+      document.documentElement.getAttribute('data-staff-ready') === '1'
+    )).toBe(true);
+    await openCoffee.evaluate(() => {
+      const customer = {
+        id: 'profile-test',
+        name: 'Тестовый гость',
+        phone: '+7 900 000-00-00',
+        role: 'guest',
+        cups: 2,
+        stamps: 2,
+        free: 0,
+        qr: 'profile-test',
+        history: [],
+        verified: 1
+      };
+      window.setUser('profile-test-token', customer);
+      window.__profileMeReady();
+      window.renderProfile();
+      window.openPanel('profile');
+    });
+    await expect(openCoffee.locator('#profileBox')).toBeVisible();
+    const qrButton = openCoffee.locator('#qrOpenProfile');
+    await expect(qrButton).toBeVisible();
+
+    await qrButton.click();
+    const qr = openCoffee.locator('#qrModal');
+    await expect(qr).toHaveClass(/show/);
+    await expect.poll(() => modalBackground(qr)).toBe('none');
+    await expect.poll(() => modalBackground(qr.locator('.modal-card'))).toBe('none');
+    await testInfo.attach('coffee-profile-qr-390', {
+      body: await openCoffee.screenshot({ fullPage: false, animations: 'disabled' }),
+      contentType: 'image/png'
+    });
+    await openCoffee.locator('#qrClose').click();
+    await expect(qr).not.toHaveClass(/show/);
+    await openCoffee.close();
+
+    const settings = page.locator('#settingsModal');
+    await expect(page.locator('#profileSettingsBtn')).toBeVisible();
+    await page.locator('#profileSettingsBtn').click();
+    await expect(settings).toHaveClass(/show/);
+    await page.locator('#setPinGo2').click();
+    const pin = page.locator('#setPinModal');
+    await expect(pin).toHaveClass(/show/);
+    await expect.poll(() => modalBackground(pin.locator('.modal-card'))).toBe('none');
+    await testInfo.attach('delivery-profile-pin-390', {
+      body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+      contentType: 'image/png'
+    });
+    await page.locator('#setPinClose').click();
+    await expect(pin).not.toHaveClass(/show/);
   });
 
   test('клик по затемнению закрывает настройки, но оставляет профиль открытым', async ({ page }) => {
@@ -215,6 +302,21 @@ test.describe('Модуль заказов профиля', () => {
     await expect.poll(() => panel.evaluate(element => element.classList.contains('open'))).toBe(panelWasOpen);
   });
 
+
+  test('focus-visible is visible for profile actions in both brand themes', async ({ page }) => {
+    const edit = page.locator('#nameEditBtn');
+    await edit.focus();
+    await expect(edit).toBeFocused();
+    await expect(edit).toHaveCSS('outline-style', 'solid');
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-brand', 'coffee');
+      document.body.setAttribute('data-brand', 'coffee');
+      if (typeof window.applyProfileBrand === 'function') window.applyProfileBrand();
+    });
+    await edit.focus();
+    await expect(edit).toHaveCSS('outline-style', 'solid');
+  });
+
   test('имя редактируется явно и сохраняется отдельным действием', async ({ page }) => {
     await page.route('**/api/me', async route => {
       if (route.request().method() !== 'PUT') return route.continue();
@@ -238,9 +340,64 @@ test.describe('Модуль заказов профиля', () => {
       });
     });
 
+    const headerGeometry = await page.evaluate(() => {
+      const rect = selector => {
+        const r = document.querySelector(selector).getBoundingClientRect();
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      };
+      return {
+        avatar: rect('#profileBox .phead .ava'),
+        copy: rect('#profileBox .profile-identity-copy'),
+        name: rect('#profileBox #nameInput'),
+        role: rect('#profileBox .profile-role'),
+        edit: rect('#profileBox #nameEditBtn'),
+        gear: rect('#profileBox #profileSettingsBtn')
+      };
+    });
+    expect(headerGeometry.avatar.right).toBeLessThanOrEqual(headerGeometry.copy.left);
+    expect(headerGeometry.copy.right).toBeLessThanOrEqual(headerGeometry.gear.left);
+    expect(headerGeometry.name.right).toBeLessThanOrEqual(headerGeometry.edit.left);
+    expect(headerGeometry.edit.right).toBeLessThanOrEqual(headerGeometry.copy.right);
+    expect(headerGeometry.role.left).toBeGreaterThanOrEqual(headerGeometry.copy.left);
+    expect(headerGeometry.role.right).toBeLessThanOrEqual(headerGeometry.copy.right);
     const name = page.locator('#nameInput');
+    const editButton = page.getByRole('button', { name: 'Изменить имя' });
     await expect(name).toHaveAttribute('readonly', '');
-    await page.locator('#nameEditBtn').click();
+    await expect(editButton).toHaveAccessibleName('Изменить имя');
+    await expect(editButton.locator('svg')).toBeVisible();
+
+    const editPresentation = await editButton.evaluate(button => {
+      const rect = button.getBoundingClientRect();
+      const style = getComputedStyle(button);
+      const icon = button.querySelector('svg');
+      const iconStyle = getComputedStyle(icon);
+      return {
+        width: rect.width,
+        height: rect.height,
+        padding: style.padding,
+        background: style.backgroundColor,
+        shadow: style.boxShadow,
+        iconWidth: icon.getBoundingClientRect().width,
+        iconHeight: icon.getBoundingClientRect().height,
+        iconCenterOffsetX: Math.abs(icon.getBoundingClientRect().left + icon.getBoundingClientRect().width / 2 - (rect.left + rect.width / 2)),
+        iconCenterOffsetY: Math.abs(icon.getBoundingClientRect().top + icon.getBoundingClientRect().height / 2 - (rect.top + rect.height / 2)),
+        stroke: iconStyle.stroke,
+        fill: iconStyle.fill
+      };
+    });
+    expect(editPresentation.width).toBeGreaterThanOrEqual(44);
+    expect(editPresentation.height).toBeGreaterThanOrEqual(44);
+    expect(editPresentation.padding).toBe('0px');
+    expect(editPresentation.iconCenterOffsetX).toBeLessThanOrEqual(0.5);
+    expect(editPresentation.iconCenterOffsetY).toBeLessThanOrEqual(0.5);
+    expect(editPresentation.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(editPresentation.shadow).not.toBe('none');
+    expect(editPresentation.iconWidth).toBeGreaterThanOrEqual(20);
+    expect(editPresentation.iconHeight).toBeGreaterThanOrEqual(20);
+    expect(editPresentation.stroke).not.toBe('none');
+    expect(editPresentation.fill).toBe('none');
+
+    await editButton.click();
     await expect(name).not.toHaveAttribute('readonly', '');
     await name.fill('Новое имя');
     await page.locator('#nameSaveBtn').click();
