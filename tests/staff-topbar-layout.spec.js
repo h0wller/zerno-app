@@ -427,6 +427,23 @@ test('mobile staff controls keep 32px visuals inside 44px hit cells', async ({ p
         }));
         const menuRect = rect(row);
         const styleInfo = {
+          documentCss: {
+            stylesheets: [...document.styleSheets].map(sheet => ({
+              href: sheet.href,
+              media: sheet.media?.mediaText || '',
+              disabled: sheet.disabled
+            })).filter(sheet => sheet.href && sheet.href.includes('160-12-admin-bar-tail')),
+            staffToolbarRules: [...document.styleSheets].flatMap(sheet => {
+              if (!sheet.href || !sheet.href.includes('160-12-admin-bar-tail')) return [];
+              try {
+                return [...sheet.cssRules]
+                  .filter(rule => rule.cssText.includes('.menu-controls-row') && (rule.cssText.includes('grid-template-columns') || rule.cssText.includes('min-width: 176px')))
+                  .map(rule => rule.cssText);
+              } catch (error) {
+                return ['stylesheet unreadable: ' + String(error)];
+              }
+            })
+          },
           row: {
             rect: rect(row),
             gridTemplateColumns: getComputedStyle(row).gridTemplateColumns,
