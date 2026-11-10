@@ -518,7 +518,7 @@ async function refreshPromoLine(sum) {
 
     var tabsHtml = tabs.map(function (t) {
       var isOn = activeAddonTab === t.id;
-      return '<button type="button" class="addon-tab-btn' + (isOn ? " on" : "") + '" data-atab="' + t.id + '">' + t.l + "</button>";
+      return '<button type="button" class="addon-tab-btn' + (isOn ? " on" : "") + '" data-atab="' + t.id + '" aria-pressed="' + (isOn ? "true" : "false") + '">' + t.l + "</button>";
     }).join("");
 
     var cardsHtml = filtered.map(function (p) {
@@ -553,7 +553,7 @@ async function refreshPromoLine(sum) {
       '<div class="cart-addons-wrap">' +
         '<div class="cart-addons-head">' +
           '<span class="ca-title">Рекомендуем к заказу</span>' +
-          '<div class="ca-tabs-scroll">' + tabsHtml + "</div>" +
+          '<div class="ca-tabs-scroll" role="group" aria-label="Категории рекомендаций">' + tabsHtml + "</div>" +
         "</div>" +
         '<div class="ca-cards-scroll">' +
           (cardsHtml || '<div class="ca-empty">Нет позиций</div>') +
@@ -805,7 +805,7 @@ function clearPromo() {
     var unitTotal = baseUnitPrice + modSum;
     var lineTotal = unitTotal * (Number(c.qty) || 1);
     var priceUpdateNote = Number(c.priceUpdateFrom) > 0
-      ? '<small class="ci-price-update">Цена обновлена по актуальному меню: ' + fmt(c.priceUpdateFrom) + ' → ' + fmt(baseUnitPrice) + '</small>'
+      ? '<small class="ci-price-update"><span class="ci-price-update-label">Цена обновлена по меню</span><strong class="ci-price-update-values">' + fmt(c.priceUpdateFrom) + ' → ' + fmt(baseUnitPrice) + '</strong></small>'
       : '';
 
     var modsHtml = renderAttachedModifiers(c.modifiers, itemIndex);
@@ -823,9 +823,9 @@ function clearPromo() {
           priceUpdateNote +
         '</div>' +
         '<div class="qty">' +
-          '<button type="button" data-ci="' + itemIndex + '" data-act="-">−</button>' +
+          '<button type="button" data-ci="' + itemIndex + '" data-act="-" aria-label="Уменьшить количество ' + esc(c.name) + '">−</button>' +
           '<span>' + c.qty + '</span>' +
-          '<button type="button" data-ci="' + itemIndex + '" data-act="+">+</button>' +
+          '<button type="button" data-ci="' + itemIndex + '" data-act="+" aria-label="Увеличить количество ' + esc(c.name) + '">+</button>' +
         '</div>' +
       '</div>' +
       modsHtml +

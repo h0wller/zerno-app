@@ -239,23 +239,42 @@
   display: grid;
   place-items: center;
 }
+
+/* Пока позиция не добавлена, не резервируем всю ширину степпера: отдаём её названию. */
+.addon-pill-card:not(.in-cart) .ac-act {
+  width: 56px;
+}
+
 .ac-add-btn {
+  box-sizing: border-box;
   width: 44px;
+  min-width: 44px;
   height: 44px;
-  border-radius: 8px;
-  background: var(--panel, #F3F8FC);
-  border: 1px solid var(--line, #D8DFE4);
-  color: var(--ink, #101418);
-  font-size: 15px;
-  font-weight: 800;
+  min-height: 44px;
+  border: 1.5px solid var(--fr-choc, #3a2a1c);
+  border-radius: 12px;
+  background: var(--flame, #C03B2A);
+  color: #FFFFFF;
+  box-shadow: 2px 2px 0 var(--fr-choc, #3a2a1c);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
   display: grid;
   place-items: center;
   cursor: pointer;
+  transition: transform .14s ease, box-shadow .14s ease, background-color .14s ease;
 }
 .ac-add-btn:hover {
-  background: var(--flame, #C03B2A);
-  border-color: var(--fr-choc, var(--flame));
-  color: #FFFFFF;
+  background: var(--flame-d, #8E3716);
+}
+.ac-add-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--fr-choc, #3a2a1c);
+}
+.ac-add-btn:focus-visible,
+.ac-step:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--flame, #C03B2A) 40%, transparent);
+  outline-offset: 2px;
 }
 .ac-stepper {
   display: flex;
@@ -266,7 +285,8 @@
   border-radius: 8px;
   background: var(--flame, #C03B2A);
   border: 0;
-  box-shadow: inset 0 0 0 1px var(--fr-choc, var(--flame));
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1.5px var(--fr-choc, var(--flame)), 2px 2px 0 var(--fr-choc, #3a2a1c);
   color: #FFFFFF;
   padding: 0;
   gap: 0;
@@ -284,6 +304,12 @@
   cursor: pointer;
   padding: 0;
   line-height: 1;
+  border-radius: 8px;
+  transition: background-color .14s ease;
+}
+.ac-step:hover,
+.ac-step:active {
+  background: var(--flame-d, #8E3716);
 }
 .ac-qty {
   flex: 1 1 14px;

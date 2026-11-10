@@ -4135,7 +4135,13 @@ html body #tickerTrack .tickerGroup > span {
         <h3>Корзина</h3>
         <span id="cartHeadCount" class="cph-count"></span>
       </div>
-      <button type="button" class="cart-top-close" id="cartTopClose" aria-label="Закрыть корзину">✕</button>
+      <div class="cart-header-actions">
+        <button type="button" class="btn ghost cart-continue-btn" id="cartClose" aria-label="Продолжить покупки">
+          <span class="cart-continue-full">Продолжить покупки</span>
+          <span class="cart-continue-short" aria-hidden="true">В меню</span>
+        </button>
+        <button type="button" class="cart-top-close" id="cartTopClose" aria-label="Закрыть корзину">✕</button>
+      </div>
     </div>
 
     <!-- 2. Скроллируемая область -->
@@ -4227,7 +4233,6 @@ html body #tickerTrack .tickerGroup > span {
         </div>
       </div>
       <button class="cta" id="checkoutBtn">Оформить заказ</button>
-      <button class="btn ghost cart-continue-btn" id="cartClose">Продолжить покупки</button>
     </div>
   </div>
 <script type="module" src="/dist/main.bundle.js?v=644"></script>
