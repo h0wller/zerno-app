@@ -317,7 +317,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(edit).toHaveCSS('outline-style', 'solid');
   });
 
-  test('имя редактируется явно и сохраняется отдельным действием', async ({ page }) => {
+  test('редактирование имени переиспользует карандаш и шестерёнку как отмену и сохранение', async ({ page }) => {
     await page.route('**/api/me', async route => {
       if (route.request().method() !== 'PUT') return route.continue();
       const payload = route.request().postDataJSON();
@@ -340,69 +340,59 @@ test.describe('Модуль заказов профиля', () => {
       });
     });
 
-    const headerGeometry = await page.evaluate(() => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    const name = page.locator('#nameInput');
+    const cancel = page.getByRole('button', { name: 'Изменить имя' });
+    const save = page.getByRole('button', { name: 'Настройки профиля' });
+    await expect(name).toHaveAttribute('readonly', '');
+    await expect(cancel.locator('svg')).toBeVisible();
+
+    await cancel.click();
+    await expect(name).not.toHaveAttribute('readonly', '');
+    await expect(page.getByRole('button', { name: 'Отменить изменение имени' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Сохранить имя' })).toBeVisible();
+    await expect(page.locator('#nameEditActions')).toHaveCount(0);
+
+    const editingGeometry = await page.evaluate(() => {
+      const selectors = ['#nameInput', '#nameEditBtn', '#profileSettingsBtn', '#phoneLbl', '#roleLbl'];
       const rect = selector => {
         const r = document.querySelector(selector).getBoundingClientRect();
-        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
       };
+      const nodes = selectors.map(rect);
       return {
-        avatar: rect('#profileBox .phead .ava'),
-        copy: rect('#profileBox .profile-identity-copy'),
-        name: rect('#profileBox #nameInput'),
-        role: rect('#profileBox .profile-role'),
-        edit: rect('#profileBox #nameEditBtn'),
-        gear: rect('#profileBox #profileSettingsBtn')
+        nodes,
+        actionCenters: selectors.slice(1, 3).map(selector => {
+          const r = document.querySelector(selector).getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }),
+        rowsSeparated: nodes[3].top >= nodes[0].bottom && nodes[4].top >= nodes[3].bottom
       };
     });
-    expect(headerGeometry.avatar.right).toBeLessThanOrEqual(headerGeometry.copy.left);
-    expect(headerGeometry.copy.right).toBeLessThanOrEqual(headerGeometry.gear.left);
-    expect(headerGeometry.name.right).toBeLessThanOrEqual(headerGeometry.edit.left);
-    expect(headerGeometry.edit.right).toBeLessThanOrEqual(headerGeometry.copy.right);
-    expect(headerGeometry.role.left).toBeGreaterThanOrEqual(headerGeometry.copy.left);
-    expect(headerGeometry.role.right).toBeLessThanOrEqual(headerGeometry.copy.right);
-    const name = page.locator('#nameInput');
-    const editButton = page.getByRole('button', { name: 'Изменить имя' });
+    expect(editingGeometry.nodes[1].width).toBeGreaterThanOrEqual(44);
+    expect(editingGeometry.nodes[1].height).toBeGreaterThanOrEqual(44);
+    expect(editingGeometry.nodes[2].width).toBeGreaterThanOrEqual(44);
+    expect(editingGeometry.nodes[2].height).toBeGreaterThanOrEqual(44);
+    expect(editingGeometry.nodes[1].top).toBe(editingGeometry.nodes[0].top);
+    expect(editingGeometry.nodes[2].top).toBe(editingGeometry.nodes[0].top);
+    expect(editingGeometry.nodes[1].bottom).toBe(editingGeometry.nodes[0].bottom);
+    expect(editingGeometry.nodes[2].bottom).toBe(editingGeometry.nodes[0].bottom);
+    expect(editingGeometry.rowsSeparated).toBe(true);
+    expect(editingGeometry.nodes[1].left).toBeGreaterThanOrEqual(editingGeometry.nodes[0].right);
+    expect(editingGeometry.nodes[2].left).toBeGreaterThanOrEqual(editingGeometry.nodes[1].right);
+
+    await name.fill('Черновик');
+    await page.getByRole('button', { name: 'Отменить изменение имени' }).click();
     await expect(name).toHaveAttribute('readonly', '');
-    await expect(editButton).toHaveAccessibleName('Изменить имя');
-    await expect(editButton.locator('svg')).toBeVisible();
+    await expect(name).toHaveValue('Тестовый гость');
+    await expect(page.getByRole('button', { name: 'Настройки профиля' })).toBeVisible();
 
-    const editPresentation = await editButton.evaluate(button => {
-      const rect = button.getBoundingClientRect();
-      const style = getComputedStyle(button);
-      const icon = button.querySelector('svg');
-      const iconStyle = getComputedStyle(icon);
-      return {
-        width: rect.width,
-        height: rect.height,
-        padding: style.padding,
-        background: style.backgroundColor,
-        shadow: style.boxShadow,
-        iconWidth: icon.getBoundingClientRect().width,
-        iconHeight: icon.getBoundingClientRect().height,
-        iconCenterOffsetX: Math.abs(icon.getBoundingClientRect().left + icon.getBoundingClientRect().width / 2 - (rect.left + rect.width / 2)),
-        iconCenterOffsetY: Math.abs(icon.getBoundingClientRect().top + icon.getBoundingClientRect().height / 2 - (rect.top + rect.height / 2)),
-        stroke: iconStyle.stroke,
-        fill: iconStyle.fill
-      };
-    });
-    expect(editPresentation.width).toBeGreaterThanOrEqual(44);
-    expect(editPresentation.height).toBeGreaterThanOrEqual(44);
-    expect(editPresentation.padding).toBe('0px');
-    expect(editPresentation.iconCenterOffsetX).toBeLessThanOrEqual(0.5);
-    expect(editPresentation.iconCenterOffsetY).toBeLessThanOrEqual(0.5);
-    expect(editPresentation.background).not.toBe('rgba(0, 0, 0, 0)');
-    expect(editPresentation.shadow).not.toBe('none');
-    expect(editPresentation.iconWidth).toBeGreaterThanOrEqual(20);
-    expect(editPresentation.iconHeight).toBeGreaterThanOrEqual(20);
-    expect(editPresentation.stroke).not.toBe('none');
-    expect(editPresentation.fill).toBe('none');
-
-    await editButton.click();
-    await expect(name).not.toHaveAttribute('readonly', '');
+    await page.getByRole('button', { name: 'Изменить имя' }).click();
     await name.fill('Новое имя');
-    await page.locator('#nameSaveBtn').click();
+    await page.getByRole('button', { name: 'Сохранить имя' }).click();
     await expect(name).toHaveAttribute('readonly', '');
     await expect(name).toHaveValue('Новое имя');
+    await expect(page.getByRole('button', { name: 'Настройки профиля' })).toBeVisible();
   });
 
   test('смена аккаунта очищает старый заказ и игнорирует поздний ответ прежней сессии', async ({ page }) => {
