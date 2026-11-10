@@ -1188,3 +1188,92 @@ html body #modeSeg button:not(.on) {
   html body #menuView .menu-head h1 > em,
   html body #deliveryView .menu-head h1 > em { display:none; }
 }
+
+/* Staff menu controls: 44px hit cells with unchanged 32px visual surfaces. */
+@media (max-width: 820px) {
+  html body .menu-head .menu-controls-row > .mode-seg-slot {
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    overflow: visible;
+    contain: none;
+  }
+
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(44px, 1fr));
+    grid-template-rows: 44px;
+    gap: 0;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    overflow: visible;
+  }
+
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+    position: relative;
+    display: flex;
+    width: 100%;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 6px 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    transform: none;
+    overflow: visible;
+    isolation: isolate;
+  }
+
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 6px 0;
+    border: 1.5px solid var(--profile-btn-border-color, currentColor);
+    border-radius: 9px;
+    background: var(--mode-seg-bg, transparent);
+    pointer-events: none;
+  }
+
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on::before {
+    background: var(--mode-seg-active-bg, currentColor);
+    border-color: var(--mode-seg-active-border, currentColor);
+  }
+
+  html body .menu-head .menu-controls-row > #editToggle {
+    position: relative;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    flex: 0 0 44px;
+    padding: 6px;
+    box-sizing: border-box;
+    border-radius: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    transform: none;
+    overflow: visible;
+  }
+
+  html body .menu-head .menu-controls-row > #editToggle::after {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    z-index: -1;
+    border: 1.5px solid currentColor;
+    border-radius: 9px;
+    background: transparent;
+    pointer-events: none;
+  }
+}
+
