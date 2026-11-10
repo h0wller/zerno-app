@@ -166,10 +166,22 @@ test('baseline: профиль и бонусы (зарегистрирован)'
     const avatar = document.querySelector('#profileBox .phead .ava').getBoundingClientRect();
     const name = document.querySelector('#profileBox #nameInput').getBoundingClientRect();
     const settings = document.querySelector('#profileBox #profileSettingsBtn').getBoundingClientRect();
-    return { avatarLeft: avatar.left, nameLeft: name.left, nameTop: name.top, settingsTop: settings.top };
+    return {
+      avatarTop: avatar.top,
+      avatarLeft: avatar.left,
+      nameLeft: name.left,
+      nameTop: name.top,
+      nameBottom: name.bottom,
+      settingsLeft: settings.left,
+      settingsTop: settings.top,
+      settingsBottom: settings.bottom,
+    };
   });
+  expect(identity.avatarTop).toBeGreaterThanOrEqual(identity.nameBottom);
   expect(identity.avatarLeft).toBeLessThan(identity.nameLeft);
   expect(Math.abs(identity.nameTop - identity.settingsTop)).toBeLessThanOrEqual(2);
+  expect(Math.abs(identity.nameBottom - identity.settingsBottom)).toBeLessThanOrEqual(2);
+  expect(identity.settingsLeft).toBeGreaterThan(identity.nameLeft);
 
   await panel.locator('.tabs .btn-back').click();
   await expect(page.locator('#overlay')).not.toHaveClass(/show/);
