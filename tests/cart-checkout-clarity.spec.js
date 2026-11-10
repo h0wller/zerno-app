@@ -19,6 +19,11 @@ const MENU_ITEM = {
   ]
 };
 
+const RECOMMENDED_ITEMS = [
+  { id: 'test-drink', cat: 'drinks', name: 'Лимонад к заказу', price: 180, on: 1, e: '🥤' },
+  { id: 'test-sauce', cat: 'sauces', name: 'Соус сырный', price: 70, on: 1, e: '🥫' }
+];
+
 test('cart keeps the current selected price and explains every amount without guessing the address', async ({ page }, testInfo) => {
   await page.clock.install({ time: new Date('2026-11-02T15:00:00.000Z') });
   await page.addInitScript(() => {
@@ -45,7 +50,7 @@ test('cart keeps the current selected price and explains every amount without gu
     let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
 
     if (url.pathname === '/api/dmenu') {
-      body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
+      body = { items: [MENU_ITEM, ...RECOMMENDED_ITEMS], updatedAt: '2026-11-03T10:00:00.000Z' };
     } else if (url.pathname === '/api/delivery/info') {
       const isPreorderFixture = new Date().getTime() >= Date.parse('2026-11-02T20:30:00.000Z');
       body = {
@@ -117,6 +122,19 @@ test('cart keeps the current selected price and explains every amount without gu
   });
   await page.setViewportSize(desktopViewport);
 
+  const recommendations = page.locator('#cartAddons');
+  await expect(recommendations.locator('.ca-title')).toHaveText('Рекомендуем к заказу');
+  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(2);
+  await expect(recommendations.locator('.ac-name')).toHaveText(['Лимонад к заказу', 'Соус сырный']);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await recommendations.scrollIntoViewIfNeeded();
+  await testInfo.attach('cart-recommendations-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  await page.evaluate(() => { document.getElementById('cartScrollBody').scrollTop = 0; });
+  await page.setViewportSize(desktopViewport);
+
   const row = page.locator('#cartItems .cartItem[data-cart-idx="0"]');
   await expect(row.locator('.ci-unit-price')).toHaveText('735 ₽ / шт.');
   await expect(row.locator('.ci-line-total')).toHaveText('735 ₽');
@@ -159,6 +177,10 @@ test('cart keeps the current selected price and explains every amount without gu
   for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 740 }]) {
     await page.setViewportSize(viewport);
     await page.locator('.checkoutForm').scrollIntoViewIfNeeded();
+    if (viewport.width === 390) {
+      const footerHeight = await page.locator('#cartFooterBar').evaluate((el) => el.getBoundingClientRect().height);
+      expect(footerHeight).toBeLessThan(270);
+    }
     const overflow = await page.evaluate(() =>
       document.documentElement.scrollWidth > window.innerWidth ||
       document.getElementById('cartScrollBody').scrollWidth > document.getElementById('cartScrollBody').clientWidth
