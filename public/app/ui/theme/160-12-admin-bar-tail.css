@@ -1009,7 +1009,7 @@ html body #modeSeg button:not(.on) {
 
   html[data-staff-role] body .menu-head .menu-controls-row {
     display: grid;
-    grid-template-columns: 50px minmax(176px,1fr) 44px;
+    grid-template-columns: 50px 176px 44px;
     grid-template-rows: 44px;
     align-items: center;
     column-gap: 4px;
@@ -1044,12 +1044,12 @@ html body #modeSeg button:not(.on) {
     grid-column: 2;
     grid-row: 1;
     display: flex;
-    flex: 1 1 auto;
+    flex: 0 0 176px;
     align-items: center;
     justify-content: stretch;
-    width: 100%;
+    width: 176px;
     min-width: 176px;
-    max-width: 100%;
+    max-width: 176px;
     height: 44px;
     min-height: 44px;
     max-height: 44px;
@@ -1061,12 +1061,12 @@ html body #modeSeg button:not(.on) {
     position: relative;
     isolation: isolate;
     display: grid;
-    grid-template-columns: repeat(4,minmax(44px,1fr));
+    grid-template-columns: repeat(4,44px);
     grid-template-rows: 44px;
-    flex: 1 1 auto;
-    width: 100%;
+    flex: 0 0 176px;
+    width: 176px;
     min-width: 176px;
-    max-width: 100%;
+    max-width: 176px;
     height: 44px;
     min-height: 44px;
     max-height: 44px;
