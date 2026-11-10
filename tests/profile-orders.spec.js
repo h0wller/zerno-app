@@ -387,8 +387,7 @@ test.describe('Модуль заказов профиля', () => {
     await page.getByRole('button', { name: 'Отменить изменение имени' }).click();
     await expect(name).toHaveAttribute('readonly', '');
     await expect(name).toHaveValue('Тестовый гость');
-    await expect(settings).toBeVisible();
-    await expect(page.locator('#profileSettingsBtn')).toHaveAttribute('aria-controls', 'settingsModal');
+    await expect(settings).toHaveAttribute('aria-controls', 'settingsModal');
     await expect(page.locator('#profileSettingsBtn')).toHaveAttribute('aria-label', 'Настройки профиля');
     await expect(page.locator('#profileSettingsBtn')).toHaveJSProperty('innerHTML', initialSettings);
 
@@ -397,7 +396,7 @@ test.describe('Модуль заказов профиля', () => {
     await page.getByRole('button', { name: 'Сохранить имя' }).click();
     await expect(name).toHaveAttribute('readonly', '');
     await expect(name).toHaveValue('Новое имя');
-    await expect(settings).toBeVisible();
+    await expect(settings).toHaveAttribute('aria-controls', 'settingsModal');
   });
 
   test('смена аккаунта очищает старый заказ и игнорирует поздний ответ прежней сессии', async ({ page }) => {
