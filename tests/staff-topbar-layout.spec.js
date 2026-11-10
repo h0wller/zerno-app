@@ -427,21 +427,13 @@ test('mobile staff controls receive taps across the usable visual button edges',
         ).toBe(true);
       }
 
-      // Trial clicks run browser actionability/hit-target checks but dispatch no click event.
+      // Playwright trial checks center-point actionability without dispatching clicks.
+      // The four edge hit-points above are checked independently with elementFromPoint,
+      // which keeps samples tied to the measured DOMRect and rounded visual geometry.
       for (let index = 0; index < 4; index += 1) {
-        const box = await roleButtons.nth(index).boundingBox();
-        expect(box, 'role control must have a rendered box').not.toBeNull();
-        await roleButtons.nth(index).click({ trial: true, position: { x: box.width / 2, y: 2 } });
-        await roleButtons.nth(index).click({ trial: true, position: { x: box.width - 2, y: box.height / 2 } });
-        await roleButtons.nth(index).click({ trial: true, position: { x: box.width / 2, y: box.height - 2 } });
-        await roleButtons.nth(index).click({ trial: true, position: { x: 2, y: box.height / 2 } });
+        await roleButtons.nth(index).click({ trial: true });
       }
-      const editBox = await edit.boundingBox();
-      expect(editBox, 'edit control must have a rendered box').not.toBeNull();
-      await edit.click({ trial: true, position: { x: editBox.width / 2, y: 2 } });
-      await edit.click({ trial: true, position: { x: editBox.width - 2, y: editBox.height / 2 } });
-      await edit.click({ trial: true, position: { x: editBox.width / 2, y: editBox.height - 2 } });
-      await edit.click({ trial: true, position: { x: 2, y: editBox.height / 2 } });
+      await edit.click({ trial: true });
 
       const overlaps = await page.evaluate((viewSelector) => {
         const root = document.querySelector(viewSelector);
