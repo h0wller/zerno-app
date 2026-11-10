@@ -489,8 +489,8 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
 
 #cartAddons {
   margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--fr-tan, var(--line, #d8dfe4));
+  padding-top: 0;
+  border-top: 0;
 }
 
 #cartAddons:empty {
