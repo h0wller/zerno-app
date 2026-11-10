@@ -144,10 +144,10 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(recommendations.locator('.ac-name')).toHaveText(['Лимонад к заказу', 'Соус сырный']);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('#cartClose')).toHaveText('В меню');
-  const headerActionsOverflow = await page.locator('.cart-header-actions').evaluate((el) =>
+  const recommendationsHeaderOverflow = await page.locator('.cart-header-actions').evaluate((el) =>
     el.getBoundingClientRect().right > el.parentElement.getBoundingClientRect().right + 1
   );
-  expect(headerActionsOverflow).toBe(false);
+  expect(recommendationsHeaderOverflow).toBe(false);
   await recommendations.scrollIntoViewIfNeeded();
   const recommendationTabsFit = await recommendations.locator('.ca-tabs-scroll').evaluate((el) =>
     el.scrollWidth <= el.clientWidth
