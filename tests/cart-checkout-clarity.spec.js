@@ -151,6 +151,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
 
   await page.locator('.checkoutForm').scrollIntoViewIfNeeded();
+  await page.evaluate(() => document.getElementById('toasts')?.remove());
   await testInfo.attach('cart-checkout-' + desktopViewport.width + 'px', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png',
