@@ -40,8 +40,12 @@ test('cart keeps the current selected price and explains every amount without gu
       qty: 1
     }]));
     localStorage.setItem('zt_cartpromo', 'SAVE100');
-    localStorage.removeItem('zt_saved_address');
-    localStorage.removeItem('zt_saved_addresses');
+    const savedAddresses = [
+      { id: 'saved-1', place: 'Янтарный', street: 'Советская', house: '70Г' },
+      { id: 'saved-2', place: 'Янтарный', street: 'Балтийская', house: '1' }
+    ];
+    localStorage.setItem('zt_saved_addresses', JSON.stringify(savedAddresses));
+    localStorage.setItem('zt_saved_address', JSON.stringify(savedAddresses[0]));
     sessionStorage.setItem('splashDone', '1');
   });
 
@@ -153,6 +157,23 @@ test('cart keeps the current selected price and explains every amount without gu
   );
   expect(recommendationsHeaderOverflow).toBe(false);
   await recommendations.scrollIntoViewIfNeeded();
+  const addButton = recommendations.locator('.ac-add-btn').first();
+  await expect(addButton).toHaveAccessibleName('Добавить Лимонад к заказу в корзину');
+  await expect(addButton.locator('.ac-add-label')).toHaveCount(0);
+  const addActionGeometry = await addButton.evaluate((button) => {
+    const action = button.parentElement;
+    const buttonRect = button.getBoundingClientRect();
+    const actionRect = action.getBoundingClientRect();
+    return {
+      buttonWidth: Math.round(buttonRect.width), buttonHeight: Math.round(buttonRect.height),
+      actionWidth: Math.round(actionRect.width), actionLeft: Math.round(actionRect.left),
+      buttonLeft: Math.round(buttonRect.left)
+    };
+  });
+  expect(addActionGeometry.buttonWidth).toBe(44);
+  expect(addActionGeometry.buttonHeight).toBe(44);
+  expect(addActionGeometry.actionWidth).toBe(44);
+  expect(Math.abs(addActionGeometry.actionLeft - addActionGeometry.buttonLeft)).toBeLessThan(1);
   const recommendationTabsFit = await recommendations.locator('.ca-tabs-scroll').evaluate((el) =>
     el.scrollWidth <= el.clientWidth
   );
@@ -166,6 +187,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await page.setViewportSize(desktopViewport);
 
   const row = page.locator('#cartItems .cartItem[data-cart-idx="0"]');
+  await expect.poll(() => row.evaluate((el) => getComputedStyle(el).borderBottomStyle)).toBe('solid');
   await expect(row.locator('.ci-unit-price')).toHaveText('735 ₽ / шт.');
   await expect(row.locator('.ci-line-total')).toHaveText('735 ₽');
   await expect(row.locator('.ci-name')).toHaveText('Маргарита');
@@ -201,6 +223,8 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartFee')).toContainText('200 ₽');
   await expect(page.locator('#cartTotalLabel')).toHaveText('Итого к оплате');
   await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
+  const summaryFontSize = await page.locator('#cartFooterBar .csl-row').first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect(summaryFontSize).toBeLessThanOrEqual(12);
 
   await page.locator('.checkoutForm').scrollIntoViewIfNeeded();
   await page.evaluate(() => document.getElementById('toasts')?.remove());
@@ -225,6 +249,37 @@ test('cart keeps the current selected price and explains every amount without gu
       contentType: 'image/png',
     });
   }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#checkoutPlace').scrollIntoViewIfNeeded();
+  const addressBookButton = page.locator('#addrBookBtn');
+  await expect(addressBookButton).toBeVisible();
+  await addressBookButton.click();
+  const addressSheet = page.locator('#addrBookSheet');
+  await expect(addressSheet).toBeVisible();
+  await expect(addressSheet).toHaveClass(/open/);
+  await expect(addressSheet.locator('.abs-row')).toHaveCount(2);
+  const addressSheetGeometry = await addressSheet.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const close = el.querySelector('.abs-close').getBoundingClientRect();
+    const action = el.querySelector('.abs-ico').getBoundingClientRect();
+    return {
+      left: Math.round(rect.left), right: Math.round(rect.right), bottom: Math.round(rect.bottom),
+      closeWidth: Math.round(close.width), actionWidth: Math.round(action.width), actionHeight: Math.round(action.height)
+    };
+  });
+  expect(addressSheetGeometry.left).toBeGreaterThanOrEqual(0);
+  expect(addressSheetGeometry.right).toBeLessThanOrEqual(390);
+  expect(addressSheetGeometry.bottom).toBeLessThanOrEqual(844);
+  expect(addressSheetGeometry.closeWidth).toBe(44);
+  expect(addressSheetGeometry.actionWidth).toBe(44);
+  expect(addressSheetGeometry.actionHeight).toBe(44);
+  await testInfo.attach('cart-address-book-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+  await addressSheet.locator('.abs-close').click();
+  await expect(addressSheet).toBeHidden();
+  await expect(page.locator('#checkoutPlace')).toHaveValue('Янтарный');
   await page.setViewportSize(desktopViewport);
 
   const checkoutSections = page.locator('.checkoutForm > .checkout-section');

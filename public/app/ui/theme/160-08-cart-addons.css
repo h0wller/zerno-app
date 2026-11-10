@@ -260,20 +260,19 @@
 
 /* До первого добавления показываем понятную компактную CTA вместо одинокого плюса. */
 .addon-pill-card:not(.in-cart) .ac-act {
-  width: 88px;
+  width: 44px;
 }
 
 .ac-add-btn {
   box-sizing: border-box;
-  width: 88px;
-  min-width: 88px;
+  width: 44px;
+  min-width: 44px;
   height: 44px;
   min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 0 8px;
+  padding: 0;
   border: 1.5px solid var(--fr-choc, #3a2a1c);
   border-radius: 12px;
   background: var(--flame, #C03B2A);
@@ -292,13 +291,6 @@
   transform: translate(2px, 2px);
   box-shadow: 0 0 0 var(--fr-choc, #3a2a1c);
 }
-.ac-add-btn .ac-add-label {
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-}
-
 .ac-add-btn:focus-visible,
 .ac-step:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--flame, #C03B2A) 40%, transparent);
