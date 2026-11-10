@@ -140,7 +140,7 @@ test('TMA cart uses one native checkout action when Telegram becomes ready after
   await expect(page.locator('#cartTopClose')).toHaveCSS('display', 'none');
   await expect(page.locator('#cartClose')).toHaveCSS('display', 'none');
   await expect(page.locator('#cartAddons')).not.toHaveCSS('display', 'none');
-  await expect(page.locator('#cartAddons .ca-title')).toHaveText('Рекомендуем к заказу');
+  await expect(page.locator('#cartAddons .ca-title')).toHaveText('Добавим к заказу?');
   await expect(page.locator('#cartAddons .addon-pill-card')).toHaveCount(1);
   await expect(page.locator('#cartAddons .ac-name')).toHaveText('Лимонад к заказу');
   await expect(page.locator('#zoneFeeHint')).toHaveCSS('display', 'none');

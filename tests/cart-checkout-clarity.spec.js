@@ -202,7 +202,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await increaseRecommendation.click();
   await expect(recommendations.locator('.ac-qty')).toHaveText('2');
   await expect(drinkCartRow.locator('.qty span')).toHaveText('2');
-  await expect(page.locator('#cartSubtotal')).toContainText(/1\\s*095 ₽/);
+  await expect(page.locator('#cartSubtotal')).toContainText('1 095 ₽');
 
   const decreaseRecommendation = recommendations.locator('.addon-pill-card').first().locator('[data-ac-act="minus"]');
   await decreaseRecommendation.click();
