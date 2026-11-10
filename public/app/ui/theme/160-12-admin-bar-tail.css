@@ -925,7 +925,7 @@ html body #modeSeg button:not(.on) {
 
 /* Shared mobile staff toolbar: 44px hit cells with centered 32px brand faces. */
 @media (max-width: 820px) {
-  html body :is(#menuView,#deliveryView) .menu-head {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
     box-sizing: border-box;
     height: 108px;
     min-height: 108px;
@@ -934,7 +934,7 @@ html body #modeSeg button:not(.on) {
     padding: 6px 10px;
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
     display: grid;
     grid-template-columns: minmax(0,1fr);
     grid-template-rows: 44px 44px;
@@ -949,7 +949,7 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
     grid-column: 1;
     grid-row: 1;
     display: block;
@@ -964,7 +964,7 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html body .menu-head .menu-controls-row {
+  html[data-staff-role] body .menu-head .menu-controls-row {
     display: grid;
     grid-template-columns: max-content minmax(176px,1fr) 44px;
     grid-template-rows: 44px;
@@ -980,7 +980,7 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html body .menu-head .menu-controls-row > h1 {
+  html[data-staff-role] body .menu-head .menu-controls-row > h1 {
     grid-column: 1;
     grid-row: 1;
     display: inline-flex;
@@ -996,7 +996,7 @@ html body #modeSeg button:not(.on) {
     line-height: 1;
   }
 
-  html body .menu-head .menu-controls-row > .mode-seg-slot {
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
     grid-column: 2;
     grid-row: 1;
     display: flex;
@@ -1013,7 +1013,7 @@ html body #modeSeg button:not(.on) {
     contain: none;
   }
 
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
     position: relative;
     isolation: isolate;
     display: grid;
@@ -1036,7 +1036,7 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg::before {
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg::before {
     content: "";
     position: absolute;
     z-index: -1;
@@ -1046,7 +1046,7 @@ html body #modeSeg button:not(.on) {
     pointer-events: none;
   }
 
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
     position: relative;
     isolation: isolate;
     display: flex;
@@ -1069,7 +1069,7 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button::before {
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button::before {
     content: "";
     position: absolute;
     z-index: -1;
@@ -1080,25 +1080,25 @@ html body #modeSeg button:not(.on) {
     pointer-events: none;
   }
 
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on {
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on {
     color: var(--staff-mode-active-color);
   }
 
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on::before {
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on::before {
     background: var(--staff-mode-active-bg);
     box-shadow: var(--staff-mode-active-shadow);
   }
 
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button:focus-visible {
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button:focus-visible {
     outline: none;
   }
 
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button:focus-visible::before {
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button:focus-visible::before {
     outline: 2px solid var(--staff-focus-ring,var(--esp));
     outline-offset: 2px;
   }
 
-  html body .menu-head .menu-controls-row > #editToggle {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
     grid-column: 3;
     grid-row: 1;
     position: relative;
@@ -1125,7 +1125,7 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html body .menu-head .menu-controls-row > #editToggle::before {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle::before {
     content: "✏️";
     position: relative;
     z-index: 1;
@@ -1133,11 +1133,11 @@ html body #modeSeg button:not(.on) {
     line-height: 1;
   }
 
-  html body .menu-head .menu-controls-row > #editToggle.on::before {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle.on::before {
     content: "✓";
   }
 
-  html body .menu-head .menu-controls-row > #editToggle::after {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle::after {
     content: "";
     position: absolute;
     z-index: -1;
@@ -1149,24 +1149,24 @@ html body #modeSeg button:not(.on) {
     pointer-events: none;
   }
 
-  html body .menu-head .menu-controls-row > #editToggle.on {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle.on {
     color: var(--staff-edit-active-color);
   }
 
-  html body .menu-head .menu-controls-row > #editToggle.on::after {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle.on::after {
     background: var(--staff-edit-active-bg);
   }
 
-  html body .menu-head .menu-controls-row > #editToggle:focus-visible {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle:focus-visible {
     outline: none;
   }
 
-  html body .menu-head .menu-controls-row > #editToggle:focus-visible::after {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle:focus-visible::after {
     outline: 2px solid var(--staff-focus-ring,var(--esp));
     outline-offset: 2px;
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
     grid-column: 1;
     grid-row: 2;
     display: flex;
@@ -1184,7 +1184,7 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
     display: flex;
     flex: 1 1 auto;
     width: auto;
@@ -1198,9 +1198,9 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input,
-  html body #deliveryView #dSearch,
-  html body #menuView #searchInput {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input,
+  html[data-staff-role] body #deliveryView #dSearch,
+  html[data-staff-role] body #menuView #searchInput {
     flex: 1 1 auto;
     width: auto;
     min-width: 0;
@@ -1214,5 +1214,5 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html body .menu-head .upd { display: none; }
+  html[data-staff-role] body .menu-head .upd { display: none; }
 }
