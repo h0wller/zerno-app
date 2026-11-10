@@ -130,7 +130,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await page.setViewportSize(desktopViewport);
 
   const recommendations = page.locator('#cartAddons');
-  await expect(recommendations.locator('.ca-title')).toHaveText('Добавим к заказу?');
+  await expect(recommendations.locator('.ca-title')).toHaveText('Рекомендуем к заказу');
   await expect(recommendations.locator('.ca-tabs-scroll')).toHaveAttribute('role', 'group');
   const allRecommendations = recommendations.locator('[data-atab="all"]');
   const sauceRecommendations = recommendations.locator('[data-atab="sauces"]');
@@ -191,7 +191,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartHeadCount')).toContainText('2 шт.');
   await expect(page.locator('#cartSubtotal')).toContainText('915 ₽');
   await expect(recommendations.locator('.addon-pill-card').first()).toHaveClass(/in-cart/);
-  await expect(recommendations.locator('.ac-in-cart-label')).toHaveText('В корзине');
+  await expect(recommendations.locator('.ac-in-cart-label')).toHaveCount(0);
   await expect(recommendations.locator('.ac-qty')).toHaveText('1');
   await recommendations.locator('.addon-pill-card').first().scrollIntoViewIfNeeded();
   await testInfo.attach('cart-recommendations-after-add-390px', {
@@ -223,8 +223,8 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(row.locator('.ci-line-total')).toHaveText('735 ₽');
   await expect(row.locator('.ci-name')).toHaveText('Маргарита');
   await expect(row.locator('.ci-opt')).toHaveText('35 см, пышное');
-  await expect(row.locator('.ci-price-update-label')).toHaveText('Цена в меню изменилась');
-  await expect(row.locator('.ci-price-update-values')).toHaveText('690 ₽→735 ₽');
+  await expect(row.locator('.ci-price-update')).toHaveText('Цена обновлена по актуальному меню: 690 ₽ → 735 ₽');
+  await expect(row.locator('.ci-price-update')).toHaveCSS('font-size', '10.5px');
   await expect(row.locator('[data-act="-"]')).toHaveAccessibleName('Уменьшить количество Маргарита');
   await expect(row.locator('[data-act="+"]')).toHaveAccessibleName('Увеличить количество Маргарита');
 
