@@ -1204,6 +1204,7 @@ html body #modeSeg button:not(.on) {
     display: grid;
     grid-template-columns: minmax(0,1fr);
     grid-template-rows: 44px 48px;
+    row-gap: 4px;
     gap: 0;
     width: 100%;
     min-width: 0;
@@ -1239,9 +1240,9 @@ html body #modeSeg button:not(.on) {
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    height: 48px;
-    min-height: 48px;
-    max-height: 48px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
     margin: 0;
     box-sizing: border-box;
   }
