@@ -11,6 +11,9 @@
     else localStorage.removeItem('zt_user');
 
     window.me = customer;
+    if (window.ztBus && typeof window.ztBus.emit === 'function') {
+      window.ztBus.emit('auth:user-changed', customer);
+    }
     var staffRole = token && customer && ['admin', 'cashier', 'dispatch'].indexOf(customer.role) !== -1
       ? customer.role
       : '';
