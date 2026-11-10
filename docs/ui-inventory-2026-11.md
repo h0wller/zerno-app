@@ -1,60 +1,74 @@
-# UI inventory and production capture log — 2026-11
+# UI inventory and baseline capture — 2026-11
 
-> Status: partial. Static source inventory is recorded below. Production browser evidence currently covers one guest coffee-brand desktop session only. Do not treat this file as a complete responsive baseline or a visual approval.
+> Status: CI screenshot matrix captured for both brands and all four target viewports. This is an isolated Playwright test-server baseline, not a production screenshot set. A separate read-only production spot check is recorded below.
 
 ## Capture provenance
 
-- Date: 2026-11-10.
-- Environment: production, read-only browser session.
-- URL: `https://friday.andcoffee.online/?brand=coffee`.
-- Brand route: `?brand=coffee`.
-- Browser viewport reported by the capture: 1065 × 991.
-- Guest state: confirmed; no authenticated user and no staff role.
-- Hydration: completed; no pending scripts reported.
-- No cart, checkout, order placement or account write action was performed.
-- Deployment commit/version marker: not exposed in the inspected HTML.
-- Screenshot binary / downloadable PNG was not returned by the browser run. The result is structured browser evidence, not an archived screenshot artifact.
+### CI / pull request artifact
 
-The capture agent reported no visible product-image loading or layout-clipping issue in this one viewport. This is a narrow observation, not proof of mobile or cross-brand correctness.
+- PR: [#203](https://github.com/h0wller/zerno-app/pull/203)
+- Workflow run: [CI Quality Gates #42823289479](https://github.com/h0wller/zerno-app/actions/runs/42823289479)
+- Source branch: `docs/brand-system-baseline-2026-11`
+- Source head SHA: `9b042d12737f8648969c8ce6bc436d19439185c5`
+- Visual capture job: **E2E / Visual UX capture** — success.
+- UI baseline job: **E2E / UI baseline** — success.
+- Artifact: `visual-ux-baseline-test-42823289479`
+- Artifact ID: `13768141683`
+- Artifact size: 4,231,528 bytes; 28 PNG screenshots and 9 JSON metadata files.
+- Artifact retention shown by GitHub: until 2026-12-10.
+- Screenshot source: `isolated-playwright-test-server`, base URL `http://localhost:3000`; this was not a production URL.
+- Test code source: `tests/visual-audit.spec.js`.
 
-## Capture gaps
+The test runs in an isolated browser context, blocks service workers, clears local/session storage before each route, sets the selected brand, waits for the menu grid/cards and skeleton removal, waits for fonts and visible images, and records cold, hydrated viewport, and hydrated full-page states. It asserts that the user is not in a staff role and that document `scrollWidth` does not exceed the viewport.
 
-The originally requested baseline matrix is not complete:
+### Captured screenshot matrix
 
 | Brand | 320 × 740 | 390 × 844 | 768 × 1024 | 1440 × 900 |
 |---|---|---|---|---|
-| Coffee | Pending | Pending | Pending | Pending |
-| Friday / delivery | Pending | Pending | Pending | Pending |
+| Coffee | Captured | Captured | Captured | Captured |
+| Delivery / Пятница | Captured | Captured | Captured | Captured |
 
-The only captured session used 1065 × 991, not one of the target viewports. The delivery route was not navigated to. No computed-style or element bounding-box measurements were returned. Do not fill these gaps with estimates.
+For each of the eight brand/viewport combinations the artifact contains three states: initial guest state, hydrated menu viewport, and hydrated full-page menu. It also contains four additional coffee profile/loyalty/promo screenshots at 390 × 844.
 
-## Production observations — coffee
+Main artifact filenames:
 
-Observed at `/?brand=coffee`:
+- `COFFEE-GUEST-HYDRATED-MENU-VIEWPORT-{XS,M,T,D}.png`
+- `COFFEE-GUEST-HYDRATED-MENU-{XS,M,T,D}.png`
+- `COFFEE-GUEST-INITIAL-GUEST-STATE-{XS,M,T,D}.png`
+- `DELIVERY-GUEST-HYDRATED-MENU-VIEWPORT-{XS,M,T,D}.png`
+- `DELIVERY-GUEST-HYDRATED-MENU-{XS,M,T,D}.png`
+- `DELIVERY-GUEST-INITIAL-GUEST-STATE-{XS,M,T,D}.png`
+- `COFFEE-PROFILE-LOYALTY-390{,-EXPANDED}.png`
+- `COFFEE-PROFILE-PROMO-390{,-EXPANDED}.png`
 
-- Document title: `Пятница «…и кофе» — доставка и кофейня`.
-- HTML class included `brand-coffee splash-skipped no-splash`.
-- Brand route and `brand-coffee` class agreed.
-- No `data-brand` attribute was reported on html/body by the capture.
-- No data-version / data-commit marker was exposed in the HTML.
-- Venue switch control and brand mark were present.
-- Search input was visible with coffee-menu copy.
-- Ticker was present and scrollable.
-- Category rail was visible with coffee categories.
-- Product grid and product cards were visible.
-- Cart FAB and chat FAB were present.
-- Guest profile entry showed phone-number login prompt.
-- Product images were reported as 300 × 300 px source/display dimensions.
-- No purchase or checkout action was used.
+The JSON files use `role: guest-cold-context`, `staffRole: null`, `deviceScaleFactor: 1`, and document dimensions equal to the viewport widths in all eight guest captures. The full-page document heights vary by brand and viewport; the metadata reports no horizontal overflow in these runs.
 
-### Important verification item: brand token selector contract
+## Visual review notes from the captured PNGs
 
-The checked-in `public/app/ui/brand-tokens.css` scopes token blocks to:
+### Coffee
 
-- `html[data-brand="coffee"]` and `body[data-brand="coffee"]`
-- `html[data-brand="delivery"]` and `body[data-brand="delivery"]`
+- At 320 px the shell remains legible and the category rail is vertical beside the product card column.
+- The search placeholder is clipped by the available input width at this narrow size; this appears to be text truncation inside the field, not page-level horizontal overflow.
+- At 390 px the cards remain a single-column sequence beside the category rail.
+- At tablet width the menu changes to a two-column card grid.
+- At desktop width the menu uses a multi-column grid with the guest profile panel to the right.
 
-The production capture reported `brand-coffee` as an HTML class and no `data-brand` attribute on html/body. This is a **contract mismatch to verify**, not yet a confirmed styling defect: the capture did not return computed custom-property values, and another runtime mechanism may set or mirror the tokens. Before editing token selectors, inspect production computed values for `--btn-fire-bg`, `--modal-bg`, `--modal-title-font`, `--profile-btn-bg` and inspect the relevant brand initialization code. Do not add broad compatibility selectors without tracing the runtime owner.
+### Delivery / Пятница
+
+- The kraft-paper background, chocolate borders and terracotta actions are visibly distinct from the coffee visual language.
+- At 320 px the horizontal filter chips continue beyond the visible width while remaining inside the horizontal rail; the vertical category rail and product card remain visible.
+- At 390 px and tablet the card list expands while retaining the delivery-specific border/shadow treatment.
+- At desktop width the menu uses a three-column card grid and a separate guest profile panel.
+
+### Profile / loyalty
+
+The four additional profile screenshots use a deterministic guest fixture set by the test itself (name `Тестовый гость`, 6/10 stamps, one free coffee reward). They are test-fixture evidence, not live customer information or production account data.
+
+## Separate production spot check
+
+A read-only browser session on 2026-11-10 opened `https://friday.andcoffee.online/?brand=coffee` at 1065 × 991. The page hydrated, showed coffee branding, menu/search/category rail, cart and chat FABs, and guest profile login prompt. No authenticated state or staff role was used. The HTML exposed no deployment commit/version marker.
+
+This spot check does not replace the CI screenshot matrix: it covered coffee only at one viewport, and the browser automation returned structured notes rather than a PNG artifact. The CI PNGs above are explicitly from the isolated test server.
 
 ## Static source inventory
 
@@ -62,16 +76,16 @@ The production capture reported `brand-coffee` as an HTML class and no `data-bra
 
 Source: `public/app/ui/brand-tokens.css`.
 
-- Coffee uses navy `#123A6B`, blue `#3E8FD0`, white/light surfaces, soft borders and restrained shadows.
+- Coffee uses navy `#123A6B`, blue `#3E8FD0`, light surfaces and restrained shadows.
 - Delivery uses terracotta `#C03B2A`, chocolate `#3A2A1C`, kraft/tan `#C99E6E`, rice `#EFE6D8`, paper `#F6EEE1`, outlined controls and hard offset shadows.
-- Token families include cards, CTA, panels/tabs, modal/auth, avatar, chat, header/ticker, venue switch, profile, cart, nutrition, composition and loyalty.
+- Token families cover cards, CTA, panels/tabs, modal/auth, avatar, chat, header/ticker, venue switch, profile, cart, nutrition, composition and loyalty.
 - Coffee modal title token is `inherit`; delivery modal title token is `"Unbounded", "Golos Text", sans-serif`.
 
 ### Font layer
 
 Source: `public/app/ui/fonts.css`.
 
-Local font-face declarations include Golos Text, Prata and Unbounded. The declaration file alone does not establish which face/weight is actually rendered for each UI role. Computed font-family, font-weight, font-size and line-height must be collected from production at each target viewport.
+Local font-face declarations include Golos Text, Prata and Unbounded. The declarations do not alone establish which family/weight is actually rendered by every UI role. Computed styles are not included in the visual-audit artifact and remain to be captured separately.
 
 ### CSS / DOM ownership
 
@@ -87,11 +101,21 @@ Canonical references:
 - `public/app/cart.js` and `public/app/checkout-validation.js` — cart and checkout.
 - `public/app/profile.js`, `profile-orders.js`, `profile-brand.js` — profile.
 
-### Compact control / hit-area inventory
+### Compact controls and hit-area inventory
 
-Static CSS inspection shows that the profile composition includes 36 × 36 px visible icon controls and 44 px minimum-height full-width actions. Earlier shell/profile rules also contain 44 px controls. This confirms that the codebase has mixed compact and touch-sized controls.
+Static CSS inspection shows mixed sizing: profile composition includes compact icon controls and 44 px minimum-height full-width actions; other shell and cart controls also use 44 px dimensions. The screenshot artifact is not a complete DOM bounding-box or hit-test inventory. A complete inventory still requires runtime measurements for each control, including pseudo-element hit areas and overlap checks. Do not globally replace 44 px values.
 
-This is **not** a complete 32 × 32 / 44 × 44 selector inventory. A complete list requires a repository-wide search over all loaded stylesheets and dynamically injected styles, plus runtime measurements of rendered boxes and hit testing. Do not globally replace 44 px values.
+## Additional CI artifacts
+
+The same PR run also uploaded supplementary reports:
+
+- `playwright-Responsive UI-42823289479` — artifact ID `13768240359`.
+- `playwright-Mobile Chrome-42823289479` — artifact ID `13767359412`.
+- `playwright-Profile-42823289479` — artifact ID `13767264577`.
+- `playwright-Visual stability-42823289479` — artifact ID `13768405240`.
+- `playwright-UI baseline-42823289479` — artifact ID `13767003911`.
+
+Open the workflow run's **Artifacts** section to download these files. GitHub artifact links expire according to the retention dates shown there.
 
 ## Open PR collision register
 
@@ -104,22 +128,16 @@ Last checked on 2026-11-10:
 
 Refresh this register before creating implementation branches.
 
-## Next evidence to collect
+## Remaining evidence and acceptance
 
-1. Repeat production capture for coffee and delivery at 320 × 740, 390 × 844, 768 × 1024 and 1440 × 900.
-2. Store actual PNG screenshots and JSON metadata as a GitHub Actions artifact.
-3. Record computed styles and bounding boxes for header, ticker, category rail, search, product cards, profile trigger, cart FAB and chat FAB.
-4. Record `scrollWidth` versus viewport width and test hit-target overlap.
-5. Verify the brand-token selector contract described above.
-6. Only then mark the baseline complete and start the first implementation PR.
-
-## Acceptance checklist
-
-- [ ] Both brands captured.
-- [ ] All eight target viewport/brand combinations captured.
-- [ ] Production commit/version identified or explicitly recorded as unavailable.
-- [ ] Screenshots stored as artifacts with metadata.
-- [ ] Computed typography and token values recorded.
+- [x] Both brands captured at 320 × 740, 390 × 844, 768 × 1024 and 1440 × 900 in CI.
+- [x] Cold guest, hydrated viewport and hydrated full-page screenshots stored as workflow artifacts.
+- [x] Staff role absent in guest matrix; CI test asserts viewport width is not exceeded by document scroll width.
+- [x] One live production spot check completed for coffee at 1065 × 991.
+- [ ] Production screenshot matrix with PNG artifacts and version/deployment identity.
+- [ ] Computed typography and token values recorded for both brands.
 - [ ] 32 px visible controls and 44 px hit areas inventoried separately.
-- [ ] Overlap, clipping, horizontal overflow and focus visibility checked.
-- [ ] Findings mapped to CSS layer and DOM owner.
+- [ ] Hit-test overlap, clipped focus rings and safe-area placement checked across roles.
+- [ ] Findings mapped to exact selectors and DOM owners.
+
+The baseline is sufficient to compare the current CI-rendered UI across the requested guest viewport matrix. It is not yet a production baseline and does not approve any UI change for merge.
