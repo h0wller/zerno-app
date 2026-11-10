@@ -354,7 +354,7 @@ test('work modes keep the role switcher in the topbar and preserve the support l
 });
 
 
-test('mobile staff controls receive taps across the full visual button surface', async ({ page }) => {
+test('mobile staff controls receive taps across the usable visual button edges', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
     for (const width of [320, 390]) {
       await page.setViewportSize({ width, height: width === 320 ? 740 : 844 });
@@ -381,30 +381,40 @@ test('mobile staff controls receive taps across the full visual button surface',
           ...row.querySelectorAll('#modeSeg > button'),
           row.querySelector('#editToggle')
         ];
-        const rect = element => {
+        const box = element => {
           const value = element.getBoundingClientRect();
           return { x:value.x, y:value.y, width:value.width, height:value.height, right:value.right, bottom:value.bottom };
         };
-        const points = element => {
-          const box = element.getBoundingClientRect();
-          const inset = Math.min(2, box.width / 4, box.height / 4);
+        const samplePoints = element => {
+          const rect = element.getBoundingClientRect();
+          const midX = rect.left + rect.width / 2;
+          const midY = rect.top + rect.height / 2;
+          const inset = 2;
+          // Midpoints of each edge stay inside rounded/pill corners while testing the
+          // real outer hit boundary, rather than rectangular points outside the shape.
           return [
-            { x:box.left + inset, y:box.top + inset, point:'top-left' },
-            { x:box.right - inset, y:box.top + inset, point:'top-right' },
-            { x:box.left + inset, y:box.bottom - inset, point:'bottom-left' },
-            { x:box.right - inset, y:box.bottom - inset, point:'bottom-right' }
+            { x:midX, y:rect.top + inset, point:'top-edge' },
+            { x:rect.right - inset, y:midY, point:'right-edge' },
+            { x:midX, y:rect.bottom - inset, point:'bottom-edge' },
+            { x:rect.left + inset, y:midY, point:'left-edge' }
           ];
         };
         return controls.map(element => ({
           id: element.id || element.textContent.trim(),
-          rect: rect(element),
-          hitPoints: points(element).map(point => ({
-            ...point,
-            hit: (() => {
-              const target = document.elementFromPoint(point.x, point.y);
-              return !!target && (target === element || element.contains(target));
-            })()
-          }))
+          rect: box(element),
+          borderRadius: getComputedStyle(element).borderRadius,
+          hitPoints: samplePoints(element).map(point => {
+            const target = document.elementFromPoint(point.x, point.y);
+            return {
+              ...point,
+              target: target ? {
+                tag: target.tagName.toLowerCase(),
+                id: target.id || null,
+                className: typeof target.className === 'string' ? target.className : null
+              } : null,
+              hit: !!target && (target === element || element.contains(target))
+            };
+          })
         }));
       }, view);
 
@@ -413,34 +423,41 @@ test('mobile staff controls receive taps across the full visual button surface',
         expect(control.rect.width, control.id + ' visual width').toBeGreaterThan(0);
         expect(control.rect.height, control.id + ' visual height').toBe(32);
         expect(control.hitPoints.every(point => point.hit),
-          control.id + ' must receive input at all four visual corners: ' + JSON.stringify(control.hitPoints)
+          control.id + ' must receive input along all four usable visual edges: ' + JSON.stringify(control)
         ).toBe(true);
       }
 
-      // Playwright's trial actionability checks the browser's actual hit target without
-      // dispatching a click, so this test cannot enter a staff mode or enable edit mode.
+      // Trial clicks run browser actionability/hit-target checks but dispatch no click event.
       for (let index = 0; index < 4; index += 1) {
-        await roleButtons.nth(index).click({ trial: true, position: { x: 2, y: 2 } });
-        await roleButtons.nth(index).click({ trial: true, position: { x: -2, y: -2 } });
+        const box = await roleButtons.nth(index).boundingBox();
+        expect(box, 'role control must have a rendered box').not.toBeNull();
+        await roleButtons.nth(index).click({ trial: true, position: { x: box.width / 2, y: 1 } });
+        await roleButtons.nth(index).click({ trial: true, position: { x: box.width - 1, y: box.height / 2 } });
+        await roleButtons.nth(index).click({ trial: true, position: { x: box.width / 2, y: box.height - 1 } });
+        await roleButtons.nth(index).click({ trial: true, position: { x: 1, y: box.height / 2 } });
       }
-      await edit.click({ trial: true, position: { x: 2, y: 2 } });
-      await edit.click({ trial: true, position: { x: -2, y: -2 } });
+      const editBox = await edit.boundingBox();
+      expect(editBox, 'edit control must have a rendered box').not.toBeNull();
+      await edit.click({ trial: true, position: { x: editBox.width / 2, y: 1 } });
+      await edit.click({ trial: true, position: { x: editBox.width - 1, y: editBox.height / 2 } });
+      await edit.click({ trial: true, position: { x: editBox.width / 2, y: editBox.height - 1 } });
+      await edit.click({ trial: true, position: { x: 1, y: editBox.height / 2 } });
 
-      const distances = await page.evaluate((viewSelector) => {
+      const overlaps = await page.evaluate((viewSelector) => {
         const root = document.querySelector(viewSelector);
         const controls = [...root.querySelectorAll('.menu-controls-row #modeSeg > button, .menu-controls-row #editToggle')];
         const boxes = controls.map(element => element.getBoundingClientRect());
-        const pairDistances = [];
+        const collisions = [];
         for (let i = 0; i < boxes.length; i += 1) {
           for (let j = i + 1; j < boxes.length; j += 1) {
-            const horizontal = Math.max(boxes[i].left - boxes[j].right, boxes[j].left - boxes[i].right, 0);
-            const vertical = Math.max(boxes[i].top - boxes[j].bottom, boxes[j].top - boxes[i].bottom, 0);
-            pairDistances.push({ a:i, b:j, distance:Math.hypot(horizontal, vertical) });
+            const overlapX = Math.min(boxes[i].right, boxes[j].right) - Math.max(boxes[i].left, boxes[j].left);
+            const overlapY = Math.min(boxes[i].bottom, boxes[j].bottom) - Math.max(boxes[i].top, boxes[j].top);
+            if (overlapX > 0 && overlapY > 0) collisions.push({ a:i, b:j, overlapX, overlapY });
           }
         }
-        return pairDistances;
+        return collisions;
       }, view);
-      expect(distances.every(item => item.distance >= 0)).toBe(true);
+      expect(overlaps, 'visible staff controls must not occupy the same pixels').toEqual([]);
     }
   }
 });
