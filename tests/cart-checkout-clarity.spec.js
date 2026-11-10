@@ -175,10 +175,44 @@ test('cart keeps the current selected price and explains every amount without gu
   );
   expect(recommendationTabsFit).toBe(true);
   await expect(recommendations.locator('[data-atab="drinks"]')).toBeVisible();
-  await testInfo.attach('cart-recommendations-390px', {
+  await testInfo.attach('cart-recommendations-before-add-390px', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png',
   });
+  await expect(recommendations.locator('.addon-pill-card').first()).not.toHaveClass(/in-cart/);
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+
+  // Adding a recommendation must update the real cart row, count, subtotal and card state.
+  await addButton.click();
+  const drinkCartRow = page.locator('#cartItems .cartItem').nth(1);
+  await expect(drinkCartRow.locator('.ci-name')).toHaveText('Лимонад к заказу');
+  await expect(drinkCartRow.locator('.ci-unit-price')).toHaveText('180 ₽ / шт.');
+  await expect(drinkCartRow.locator('.qty span')).toHaveText('1');
+  await expect(page.locator('#cartHeadCount')).toContainText('2 шт.');
+  await expect(page.locator('#cartSubtotal')).toContainText('915 ₽');
+  await expect(recommendations.locator('.addon-pill-card').first()).toHaveClass(/in-cart/);
+  await expect(recommendations.locator('.ac-in-cart-label')).toHaveText('В корзине');
+  await expect(recommendations.locator('.ac-qty')).toHaveText('1');
+  await testInfo.attach('cart-recommendations-after-add-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+
+  const increaseRecommendation = recommendations.locator('.addon-pill-card').first().locator('[data-ac-act="plus"]');
+  await increaseRecommendation.click();
+  await expect(recommendations.locator('.ac-qty')).toHaveText('2');
+  await expect(drinkCartRow.locator('.qty span')).toHaveText('2');
+  await expect(page.locator('#cartSubtotal')).toContainText('1 095 ₽');
+
+  const decreaseRecommendation = recommendations.locator('.addon-pill-card').first().locator('[data-ac-act="minus"]');
+  await decreaseRecommendation.click();
+  await expect(recommendations.locator('.ac-qty')).toHaveText('1');
+  await expect(drinkCartRow.locator('.qty span')).toHaveText('1');
+  await decreaseRecommendation.click();
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+  await expect(recommendations.locator('.addon-pill-card').first()).not.toHaveClass(/in-cart/);
+  await expect(page.locator('#cartSubtotal')).toContainText('735 ₽');
+
   await page.evaluate(() => { document.getElementById('cartScrollBody').scrollTop = 0; });
   await page.setViewportSize(desktopViewport);
 
@@ -188,8 +222,8 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(row.locator('.ci-line-total')).toHaveText('735 ₽');
   await expect(row.locator('.ci-name')).toHaveText('Маргарита');
   await expect(row.locator('.ci-opt')).toHaveText('35 см, пышное');
-  await expect(row.locator('.ci-price-update-label')).toHaveText('Цена обновлена по меню');
-  await expect(row.locator('.ci-price-update-values')).toHaveText('690 ₽ → 735 ₽');
+  await expect(row.locator('.ci-price-update-label')).toHaveText('Цена изменилась после добавления в корзину');
+  await expect(row.locator('.ci-price-update-values')).toHaveText('Было 690 ₽ · сейчас 735 ₽');
   await expect(row.locator('[data-act="-"]')).toHaveAccessibleName('Уменьшить количество Маргарита');
   await expect(row.locator('[data-act="+"]')).toHaveAccessibleName('Увеличить количество Маргарита');
 
