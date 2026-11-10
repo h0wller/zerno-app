@@ -21,7 +21,8 @@ const MENU_ITEM = {
 
 const RECOMMENDED_ITEMS = [
   { id: 'test-drink', cat: 'drinks', name: 'Лимонад к заказу', price: 180, on: 1, e: '🥤' },
-  { id: 'test-sauce', cat: 'sauces', name: 'Соус сырный', price: 70, on: 1, e: '🥫' }
+  { id: 'test-sauce', cat: 'sauces', name: 'Соус сырный', price: 70, on: 1, e: '🥫' },
+  { id: 'test-topping', cat: 'sauces', name: 'Шампиньоны', price: 90, on: 1, e: '🍄' }
 ];
 
 test('cart keeps the current selected price and explains every amount without guessing the address', async ({ page }, testInfo) => {
@@ -130,6 +131,8 @@ test('cart keeps the current selected price and explains every amount without gu
   await page.setViewportSize(desktopViewport);
 
   const recommendations = page.locator('#cartAddons');
+  const recommendationsOrder = await page.locator('#cartItems').evaluate((items) => items.nextElementSibling?.id);
+  expect(recommendationsOrder).toBe('cartAddons');
   await expect(recommendations.locator('.ca-title')).toHaveText('Рекомендуем к заказу');
   await expect(recommendations.locator('.ca-tabs-scroll')).toHaveAttribute('role', 'group');
   const allRecommendations = recommendations.locator('[data-atab="all"]');
@@ -187,7 +190,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(recommendations.locator('.addon-pill-card').first()).not.toHaveClass(/in-cart/);
   await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
 
-  // Adding a recommendation must update the real cart row, count, subtotal and card state.
+  // A recommendation button has fixed geometry before and after adding; qty never widens the menu cell.
   await addButton.click();
   const drinkCartRow = page.locator('#cartItems .cartItem').nth(1);
   await expect(drinkCartRow.locator('.ci-name')).toHaveText('Лимонад к заказу');
@@ -196,28 +199,57 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartHeadCount')).toContainText('2 шт.');
   await expect(page.locator('#cartSubtotal')).toContainText('915 ₽');
   await expect(recommendations.locator('.addon-pill-card').first()).toHaveClass(/in-cart/);
-  await expect(recommendations.locator('.ac-in-cart-label')).toHaveCount(0);
-  await expect(recommendations.locator('.ac-qty')).toHaveText('1');
+  await expect(recommendations.locator('.ac-count')).toHaveText('1');
   await recommendations.locator('.addon-pill-card').first().scrollIntoViewIfNeeded();
+  const addedCardGeometry = await recommendations.locator('.addon-pill-card').first().evaluate((card) => ({
+    cardWidth: Math.round(card.getBoundingClientRect().width),
+    actionWidth: Math.round(card.querySelector('.ac-act').getBoundingClientRect().width),
+    buttonWidth: Math.round(card.querySelector('.ac-add-btn').getBoundingClientRect().width)
+  }));
+  expect(addedCardGeometry).toEqual({ cardWidth: 240, actionWidth: 44, buttonWidth: 44 });
   await testInfo.attach('cart-recommendations-after-add-390px', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png',
   });
 
-  const increaseRecommendation = recommendations.locator('.addon-pill-card').first().locator('[data-ac-act="plus"]');
-  await increaseRecommendation.click();
-  await expect(recommendations.locator('.ac-qty')).toHaveText('2');
+  // The same fixed-width add action adds another unit; quantity is reduced from the actual cart row.
+  await addButton.click();
+  await expect(recommendations.locator('.ac-count')).toHaveText('2');
   await expect(drinkCartRow.locator('.qty span')).toHaveText('2');
   await expect(page.locator('#cartSubtotal')).toContainText('1 095 ₽');
-
-  const decreaseRecommendation = recommendations.locator('.addon-pill-card').first().locator('[data-ac-act="minus"]');
-  await decreaseRecommendation.click();
-  await expect(recommendations.locator('.ac-qty')).toHaveText('1');
+  await drinkCartRow.locator('[data-act="-"]').click();
+  await expect(recommendations.locator('.ac-count')).toHaveText('1');
   await expect(drinkCartRow.locator('.qty span')).toHaveText('1');
-  await decreaseRecommendation.click();
+  await expect(page.locator('#cartSubtotal')).toContainText('915 ₽');
+  await drinkCartRow.locator('[data-act="-"]').click();
   await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
   await expect(recommendations.locator('.addon-pill-card').first()).not.toHaveClass(/in-cart/);
   await expect(page.locator('#cartSubtotal')).toContainText('735 ₽');
+
+  // A pizza topping is an embedded modifier of Margarita, never a second cart item/card.
+  const margaritaRow = page.locator('#cartItems .cartItem[data-cart-idx="0"]');
+  await margaritaRow.locator('.ci-toggle-mods-btn').click();
+  const mushroomChip = margaritaRow.locator('.ci-mod-chip[data-mod-id="test-topping"]');
+  await expect(mushroomChip).toBeVisible();
+  await mushroomChip.click();
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+  await expect(margaritaRow.locator('.ci-mod-badge')).toContainText('Шампиньоны');
+  await expect(margaritaRow.locator('.ci-unit-price')).toHaveText('825 ₽ / шт.');
+  await expect(margaritaRow.locator('.ci-line-total')).toHaveText('825 ₽');
+  await expect(margaritaRow.locator('.ci-mod-del')).toHaveCount(1);
+  const modifierLivesInsidePizzaCard = await margaritaRow.locator('.ci-mods-list').evaluate((list) =>
+    list.parentElement === list.closest('.cartItem')
+  );
+  expect(modifierLivesInsidePizzaCard).toBe(true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#cartScrollBody').evaluate((el) => { el.scrollTop = 0; });
+  await testInfo.attach('cart-margarita-with-topping-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  await margaritaRow.locator('.ci-mod-del').click();
+  await expect(margaritaRow.locator('.ci-mod-badge')).toHaveCount(0);
+  await expect(margaritaRow.locator('.ci-unit-price')).toHaveText('735 ₽ / шт.');
 
   await page.evaluate(() => { document.getElementById('cartScrollBody').scrollTop = 0; });
   await page.setViewportSize(desktopViewport);
