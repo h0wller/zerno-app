@@ -154,20 +154,34 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         nameEditing = editing;
         var input = document.getElementById('nameInput');
         var edit = document.getElementById('nameEditBtn');
-        var actions = document.getElementById('nameEditActions');
-        var save = document.getElementById('nameSaveBtn');
+        var gear = document.getElementById('profileSettingsBtn');
         if (input) {
             input.readOnly = !editing;
             input.setAttribute('aria-readonly', String(!editing));
         }
-        if (edit) edit.hidden = editing;
-        if (actions) actions.hidden = !editing;
-        if (save) save.disabled = false;
+        if (edit) {
+            edit.hidden = false;
+            edit.setAttribute('aria-label', editing ? 'Отменить изменение имени' : 'Изменить имя');
+            edit.title = editing ? 'Отменить изменение имени' : 'Изменить имя';
+            edit.innerHTML = editing
+                ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>'
+                : '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></svg>';
+        }
+        if (gear) {
+            gear.disabled = false;
+            gear.setAttribute('aria-label', editing ? 'Сохранить имя' : 'Настройки профиля');
+            gear.title = editing ? 'Сохранить имя' : 'Настройки профиля';
+            gear.setAttribute('aria-controls', editing ? 'nameInput' : 'settingsModal');
+            if (editing) gear.setAttribute('aria-expanded', 'false');
+            gear.innerHTML = editing
+                ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6" /></svg>'
+                : '⚙️';
+        }
     }
 
     async function saveProfileName() {
         var input = document.getElementById('nameInput');
-        var save = document.getElementById('nameSaveBtn');
+        var save = document.getElementById('profileSettingsBtn');
         if (!input || !me || !nameEditing) return;
         var name = input.value.trim() || me.name || 'Гость';
         if (name === me.name) {
@@ -215,21 +229,20 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
     (function bindProfileControls() {
         var input = document.getElementById('nameInput');
         var edit = document.getElementById('nameEditBtn');
-        var save = document.getElementById('nameSaveBtn');
-        var cancel = document.getElementById('nameCancelBtn');
+        var gear = document.getElementById('profileSettingsBtn');
         var historyToggle = document.getElementById('historyToggleBtn');
         if (edit) edit.addEventListener('click', function () {
             if (!me || !input) return;
+            if (nameEditing) {
+                input.value = me.name || '';
+                setNameEditing(false);
+                edit.focus();
+                return;
+            }
             input.value = me.name || '';
             setNameEditing(true);
             input.focus();
             input.select();
-        });
-        if (save) save.addEventListener('click', saveProfileName);
-        if (cancel) cancel.addEventListener('click', function () {
-            if (input && me) input.value = me.name || '';
-            setNameEditing(false);
-            if (edit) edit.focus();
         });
         if (input) input.addEventListener('keydown', function (event) {
             if (event.key === 'Enter' && nameEditing) {
@@ -237,7 +250,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                 saveProfileName();
             } else if (event.key === 'Escape' && nameEditing) {
                 event.preventDefault();
-                if (cancel) cancel.click();
+                if (edit) edit.click();
             }
         });
         if (historyToggle) historyToggle.addEventListener('click', function () {
@@ -307,7 +320,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         }
     }
 
-    Object.assign(window, { renderBonus, renderProfile });
+    Object.assign(window, { renderBonus, renderProfile, saveProfileName });
 
 })();
 

@@ -3619,20 +3619,18 @@ html body #tickerTrack .tickerGroup > span {
         <div id="profileBox" hidden>
           <section class="profile-identity">
             <div class="phead">
-              <div class="ava" id="avInit" aria-hidden="true">А</div>
-              <div class="profile-identity-copy">
-                <div class="profile-name-row">
-                  <input id="nameInput" name="nameInput" maxlength="24" readonly aria-label="Имя в профиле" />
-                  <button class="profile-name-action profile-name-edit-icon" id="nameEditBtn" type="button" aria-label="Изменить имя" title="Изменить имя"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></svg></button>
-                  <div class="profile-name-actions" id="nameEditActions" hidden>
-                    <button class="profile-name-action is-primary" id="nameSaveBtn" type="button">Сохранить</button>
-                    <button class="profile-name-action" id="nameCancelBtn" type="button">Отмена</button>
-                  </div>
-                </div>
-                <div class="ph" id="phoneLbl"></div>
-                <div class="profile-role" id="roleLbl"></div>
+              <div class="profile-name-row">
+                <input id="nameInput" name="nameInput" maxlength="24" readonly aria-label="Имя в профиле" />
+                <button class="profile-name-action profile-name-edit-icon" id="nameEditBtn" type="button" aria-label="Изменить имя" title="Изменить имя"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></svg></button>
               </div>
               <button class="gear" id="profileSettingsBtn" type="button" title="Настройки профиля" aria-label="Настройки профиля" aria-controls="settingsModal" aria-expanded="false">⚙️</button>
+              <div class="profile-meta-row">
+                <div class="ava" id="avInit" aria-hidden="true">А</div>
+                <div class="profile-meta-copy">
+                  <div class="ph" id="phoneLbl"></div>
+                  <div class="profile-role" id="roleLbl"></div>
+                </div>
+              </div>
             </div>
           </section>
           <button class="demoBtn" id="pushBtn" hidden>

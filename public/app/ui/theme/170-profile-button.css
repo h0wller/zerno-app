@@ -24,47 +24,68 @@
   #profileTopBtn { width: 48px; height: 48px; min-width: 48px; font-size: 18px; }
 }
 
-/* Profile identity: avatar, two-row copy and settings button never share a cell. */
+/* Profile identity: first row contains name and actions; second row contains avatar and account details. */
 #profileBox .phead {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 44px;
-  grid-template-rows: auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
 }
-#profileBox .phead .ava {
-  grid-column: 1;
-  grid-row: 1;
+#profileBox .phead > .profile-name-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-rows: 44px;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 calc(100% - 54px);
+  width: calc(100% - 54px);
+  min-width: 0;
+  grid-column: auto;
+  grid-row: auto;
+}
+#profileBox .phead > #profileSettingsBtn {
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  grid-column: auto;
+  grid-row: auto;
   align-self: center;
 }
-#profileBox .profile-identity-copy {
-  grid-column: 2;
-  grid-row: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 44px auto;
-  align-content: start;
-  align-self: start;
+#profileBox .profile-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 100%;
+  width: 100%;
   min-width: 0;
 }
-#profileBox .profile-identity-copy > .profile-name-row {
-  grid-column: 1;
-  grid-row: 1;
+#profileBox .profile-meta-row .ava {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  align-self: center;
 }
-#profileBox .profile-identity-copy > .ph {
-  grid-column: 1;
-  grid-row: 2;
+#profileBox .profile-meta-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
-#profileBox .profile-identity-copy > .profile-role {
-  grid-column: 1;
-  grid-row: 3;
+#profileBox .profile-meta-copy > .ph,
+#profileBox .profile-meta-copy > .profile-role {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 #profileBox .profile-name-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px;
-  grid-template-rows: 44px auto;
+  grid-template-rows: 44px;
   align-items: center;
-  gap: 2px 8px;
+  gap: 8px;
   width: 100%;
   min-width: 0;
 }
@@ -117,8 +138,6 @@
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
-#profileBox .profile-identity-copy > .ph { margin-top: 3px; }
-#profileBox .profile-identity-copy > .profile-role { margin-top: 2px; }
 #profileBox .profile-name-row > #nameEditBtn.profile-name-edit-icon svg {
   display: block;
   width: 22px;
@@ -148,11 +167,10 @@
 }
 
 @media (max-width: 380px) {
-  #profileBox .phead {
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
-    gap: 8px;
-  }
-  #profileBox .phead .ava {
+  #profileBox .phead { gap: 8px; }
+  #profileBox .profile-meta-row { gap: 10px; }
+  #profileBox .profile-meta-row .ava {
+    flex-basis: 44px;
     width: 44px;
     height: 44px;
     min-width: 44px;
@@ -958,3 +976,20 @@ body:has(#settingsModal.show) #overlay {
   height: 22px;
   margin: 0;
 }
+
+/* Name editing reuses the identity row's existing action slots. */
+#profileBox #profileSettingsBtn {
+  color: var(--profile-btn-secondary-color, var(--ink));
+}
+#profileBox #profileSettingsBtn > svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+#profileBox .profile-name-edit-icon[hidden] { display: none; }
+
