@@ -343,10 +343,11 @@ test.describe('Модуль заказов профиля', () => {
     await page.setViewportSize({ width: 320, height: 740 });
     const name = page.locator('#nameInput');
     const cancel = page.getByRole('button', { name: 'Изменить имя' });
-    const save = page.getByRole('button', { name: 'Настройки профиля' });
+    const settings = page.getByRole('button', { name: 'Настройки профиля' });
     await expect(name).toHaveAttribute('readonly', '');
     await expect(cancel.locator('svg')).toBeVisible();
 
+    const initialSettings = await page.locator('#profileSettingsBtn').evaluate(button => button.innerHTML);
     await cancel.click();
     await expect(name).not.toHaveAttribute('readonly', '');
     await expect(page.getByRole('button', { name: 'Отменить изменение имени' })).toBeVisible();
@@ -385,14 +386,18 @@ test.describe('Модуль заказов профиля', () => {
     await page.getByRole('button', { name: 'Отменить изменение имени' }).click();
     await expect(name).toHaveAttribute('readonly', '');
     await expect(name).toHaveValue('Тестовый гость');
-    await expect(page.getByRole('button', { name: 'Настройки профиля' })).toBeVisible();
+    await expect(settings).toBeVisible();
+    await expect(page.locator('#profileSettingsBtn')).toHaveJSProperty('disabled', false);
+    await expect(page.locator('#profileSettingsBtn')).toHaveAttribute('aria-controls', 'settingsModal');
+    await expect(page.locator('#profileSettingsBtn')).toHaveAttribute('aria-label', 'Настройки профиля');
+    await expect(page.locator('#profileSettingsBtn')).toHaveJSProperty('innerHTML', initialSettings);
 
     await page.getByRole('button', { name: 'Изменить имя' }).click();
     await name.fill('Новое имя');
     await page.getByRole('button', { name: 'Сохранить имя' }).click();
     await expect(name).toHaveAttribute('readonly', '');
     await expect(name).toHaveValue('Новое имя');
-    await expect(page.getByRole('button', { name: 'Настройки профиля' })).toBeVisible();
+    await expect(settings).toBeVisible();
   });
 
   test('смена аккаунта очищает старый заказ и игнорирует поздний ответ прежней сессии', async ({ page }) => {
