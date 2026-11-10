@@ -141,3 +141,39 @@ Refresh this register before creating implementation branches.
 - [ ] Findings mapped to exact selectors and DOM owners.
 
 The baseline is sufficient to compare the current CI-rendered UI across the requested guest viewport matrix. It is not yet a production baseline and does not approve any UI change for merge.
+
+## Staff mobile control hit-test regression
+
+Source: `tests/staff-topbar-layout.spec.js`.
+
+The mobile staff header now has a dedicated regression test for the existing compact role switcher and edit control:
+
+- Brands: coffee and delivery.
+- Viewports: 320 × 740 and 390 × 844.
+- Controls: four `#modeSeg > button` items plus `#editToggle`.
+- Visible geometry: each control is checked for a 32 px visual height and non-zero width.
+- Hit-test geometry: `document.elementFromPoint()` is sampled at the midpoint of the top, right, bottom and left edges, inset 2 px from the DOMRect boundary. Each sample must resolve to the control or one of its descendants.
+- Overlap: the five visual control rectangles are checked pairwise; any positive-area intersection fails the test.
+- Playwright actionability: each role button and edit button receives a center-point `click({ trial: true })` check. Trial mode verifies actionability without dispatching a click, so the test does not change staff mode or activate menu editing.
+
+This is a **hit-test regression guard for the current 32 px visible controls**. It does not implement or assert an expanded 44 × 44 px hit area. That separate tap-target implementation remains unstarted until its geometry can be designed without overlap or clipping at the mobile header edges.
+
+### Successful verification run
+
+- Workflow: [CI Quality Gates #42828826629](https://github.com/h0wller/zerno-app/actions/runs/42828826629)
+- Commit: `a6ab37f5da44bc28c54c998e383b27a5b18a6968`
+- Result: all 13 jobs passed.
+- Relevant job: **E2E / Responsive UI** — passed.
+- Playwright report for Responsive UI: 102 passed, 4 skipped, 0 failed, 0 flaky.
+- New test: `mobile staff controls receive taps across the usable visual button edges` — passed on first attempt, retry 0, 2.394 s.
+- Diagnostic artifact: `playwright-Responsive UI-42828826629`, artifact ID `13770104827`.
+- The screenshots below are test-server captures from this successful CI run, not production captures.
+
+Staff header screenshots attached to the responsive diagnostics artifact and extracted for review:
+
+- `coffee-staff-two-row-320px.png`
+- `coffee-staff-two-row-390px.png`
+- `delivery-staff-two-row-320px.png`
+- `delivery-staff-two-row-390px.png`
+
+The four images show the existing two-row staff menu header in both brand themes and both mobile sizes. No CSS was changed in this PR; the work here is a regression guard and an evidence update.
