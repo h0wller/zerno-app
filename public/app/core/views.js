@@ -104,8 +104,8 @@ var rules = [
  'html[data-brand="delivery"] body{background-color:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.1) 1px,transparent 1.5px);background-size:12px 12px}',
  '[data-brand="delivery"] h1,[data-brand="delivery"] h2,[data-brand="delivery"] h3,[data-brand="delivery"] .cbody h3{font-family:Unbounded, "Golos Text", sans-serif;color:var(--fr-choc)}',
  '[data-brand="delivery"] #deliveryRail button.on{background:#8B2B20;border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff;font:700 13px Unbounded, "Golos Text", sans-serif}',
- '[data-brand="delivery"] #brandSeg{background:var(--esp)}[data-brand="delivery"] #modeSeg{background:transparent}',
- '[data-brand="delivery"] #brandSeg button.on{background:#8B2B20;color:#fff}[data-brand="delivery"] #modeSeg button.on{background:transparent;color:var(--staff-mode-active-color);box-shadow:none}',
+ '[data-brand="delivery"] #brandSeg,[data-brand="delivery"] #modeSeg{background:var(--esp)}',
+ '[data-brand="delivery"] #brandSeg button.on,[data-brand="delivery"] #modeSeg button.on{background:#8B2B20;color:#fff}',
  '[data-brand="delivery"] #cartFab,[data-brand="delivery"] .chat-fab{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc)}',
  '[data-brand="delivery"] #cartPanel,[data-brand="delivery"] .cartPanel{background:var(--fr-rice);border:3px solid var(--fr-choc);border-bottom:none}',
  '[data-brand="delivery"] .cartPanel .cartItem{color:#3A2A1C;font-weight:600}',
@@ -117,11 +117,10 @@ var rules = [
  '[data-brand="delivery"] .mo-new,[data-brand="delivery"] .mo-accept,[data-brand="delivery"] .mo-way{background:var(--fr-rice);color:var(--flame)}',
 
  '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
-  '[data-brand="coffee"] #modeSeg button.on{background:transparent;color:var(--staff-mode-active-color);box-shadow:none}',
+  '[data-brand="coffee"] #modeSeg button.on{background:#BBD7F2;color:#123A6B;box-shadow:0 2px 7px rgba(18,58,107,.16)}',
   '[data-brand="delivery"] body #deliveryView .menu-head{padding:8px 16px}',
   '@media(min-width:820px){[data-brand="delivery"] body #deliveryView #deliverySubFilter>.subchip.on,[data-brand="delivery"] body #deliveryView .subfilter-bar>.subchip.on{background:#C03B2A;border-color:#3A2A1C;color:#fff}}',
  '[data-brand="delivery"] #qrModal.show,[data-brand="delivery"] #qrModal.show .modal-card,[data-brand="delivery"] #setPinModal.show .modal-card{background-image:none}',
-
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
