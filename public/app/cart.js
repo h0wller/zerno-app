@@ -543,23 +543,16 @@ async function refreshPromoLine(sum) {
         '<div class="ac-media">' + imgHtml + "</div>" +
         '<div class="ac-info">' +
           '<div class="ac-name" title="' + esc(p.name) + '">' + esc(p.name) + "</div>" +
-          '<div class="ac-meta">' +
-            '<div class="ac-price">' + priceStr + "</div>" +
-            (qty > 0 ? '<span class="ac-in-cart-label" aria-live="polite">В корзине</span>' : '') +
-          "</div>" +
+          '<div class="ac-price">' + priceStr + "</div>" +
         "</div>" +
         '<div class="ac-act">' + actHtml + "</div>" +
       "</div>";
     }).join("");
 
     host.innerHTML =
-      '<section class="cart-addons-wrap" aria-label="Дополнения к заказу">' +
+      '<section class="cart-addons-wrap" aria-label="Рекомендуем к заказу">' +
         '<div class="cart-addons-head">' +
-          '<div class="ca-heading-copy">' +
-            '<span class="ca-kicker">К ПИЦЦЕ И РОЛЛАМ</span>' +
-            '<span class="ca-title">Добавим к заказу?</span>' +
-            '<span class="ca-subtitle">Напитки и соусы — в один тап</span>' +
-          '</div>' +
+          '<span class="ca-title">Рекомендуем к заказу</span>' +
           '<div class="ca-tabs-scroll" role="group" aria-label="Категории рекомендаций">' + tabsHtml + "</div>" +
         "</div>" +
         '<div class="ca-cards-scroll">' +
@@ -812,13 +805,7 @@ function clearPromo() {
     var unitTotal = baseUnitPrice + modSum;
     var lineTotal = unitTotal * (Number(c.qty) || 1);
     var priceUpdateNote = Number(c.priceUpdateFrom) > 0
-      ? '<small class="ci-price-update" role="note">' +
-          '<span class="ci-price-update-mark" aria-hidden="true">↗</span>' +
-          '<span class="ci-price-update-copy">' +
-            '<span class="ci-price-update-label">Цена в меню изменилась</span>' +
-            '<span class="ci-price-update-values"><s>' + fmt(c.priceUpdateFrom) + '</s><span aria-hidden="true">→</span><strong>' + fmt(baseUnitPrice) + '</strong></span>' +
-          '</span>' +
-        '</small>'
+      ? '<small class="ci-price-update" role="note">Цена обновлена по актуальному меню: ' + fmt(c.priceUpdateFrom) + ' → ' + fmt(baseUnitPrice) + '</small>'
       : '';
 
     var modsHtml = renderAttachedModifiers(c.modifiers, itemIndex);
