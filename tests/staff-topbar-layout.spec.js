@@ -272,7 +272,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
         const itemCenter = item.y + item.height / 2;
         expect(Math.abs(itemCenter - rowOneCenter), JSON.stringify(layout)).toBeLessThanOrEqual(1);
       }
-      expect(layout.title.width).toBeLessThanOrEqual(brand === 'coffee' ? 50 : 56);
+      expect(layout.title.width).toBe(50);
       expect(layout.slot.width).toBe(176);
       expect(layout.edit.x).toBeGreaterThanOrEqual(layout.slot.right);
       expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);

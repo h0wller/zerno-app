@@ -1009,7 +1009,7 @@ html body #modeSeg button:not(.on) {
 
   html[data-staff-role] body .menu-head .menu-controls-row {
     display: grid;
-    grid-template-columns: minmax(0,auto) minmax(176px,1fr) 44px;
+    grid-template-columns: 50px minmax(176px,1fr) 44px;
     grid-template-rows: 44px;
     align-items: center;
     column-gap: 4px;
@@ -1028,10 +1028,10 @@ html body #modeSeg button:not(.on) {
     grid-row: 1;
     display: inline-flex;
     align-items: center;
-    flex: 0 1 auto;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
+    flex: 0 0 50px;
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
     margin: 0;
     white-space: nowrap;
     overflow: hidden;
