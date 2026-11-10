@@ -268,13 +268,10 @@
   place-items: center;
 }
 
-.addon-pill-card.in-cart .ac-act {
-  flex-basis: 104px;
-  width: 104px;
-}
-
 .ac-add-btn {
+  position: relative;
   box-sizing: border-box;
+  flex: 0 0 44px;
   display: grid;
   place-items: center;
   width: 44px;
@@ -282,65 +279,53 @@
   height: 44px;
   min-height: 44px;
   padding: 0;
-  border: 1px solid var(--fr-tan, var(--line, #D8DFE4));
-  border-radius: 8px;
-  background: var(--fr-paper, var(--panel, #F3F8FC));
-  color: var(--fr-choc, var(--ink, #101418));
-  font-size: 15px;
-  font-weight: 800;
+  border: 2px solid var(--fr-choc, #101418);
+  border-radius: 10px;
+  background: var(--flame, #c03b2a);
+  color: #FFFFFF;
+  box-shadow: 2px 2px 0 var(--fr-choc, #101418);
+  font-size: 20px;
+  font-weight: 900;
   line-height: 1;
   cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
 }
 
 .ac-add-btn:hover {
-  background: var(--flame, #444444);
-  border-color: var(--fr-choc, var(--flame, #101418));
+  background: var(--fr-choc, #101418);
   color: #FFFFFF;
 }
 
-.ac-stepper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 104px;
-  height: 44px;
-  padding: 0;
-  gap: 0;
-  border: 0;
-  border-radius: 8px;
-  background: var(--flame, #444444);
-  box-shadow: inset 0 0 0 1px var(--fr-choc, #101418);
-  color: #FFFFFF;
+.ac-add-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--fr-choc, #101418);
 }
 
-.ac-step {
-  flex: 0 0 44px;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #FFFFFF;
-  font-size: 14px;
-  font-weight: 800;
+.ac-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 3px;
+  border: 1.5px solid var(--fr-choc, #101418);
+  border-radius: 999px;
+  background: var(--fr-paper, #FFFFFF);
+  color: var(--fr-choc, #101418);
+  box-shadow: 1px 1px 0 var(--fr-choc, #101418);
+  font-size: 10px;
+  font-weight: 900;
   line-height: 1;
-  cursor: pointer;
-}
-
-.ac-qty {
-  flex: 1 1 14px;
-  min-width: 14px;
-  color: #FFFFFF;
-  font-size: 11px;
-  font-weight: 800;
-  text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
+.ac-count:empty {
+  display: none;
+}
+
 .ac-add-btn:focus-visible,
-.ac-step:focus-visible,
 .addon-tab-btn:focus-visible {
   outline: 2px solid var(--fr-choc, #101418);
   outline-offset: 2px;
@@ -367,8 +352,7 @@
 @media (prefers-reduced-motion: reduce) {
   .addon-pill-card,
   .addon-tab-btn,
-  .ac-add-btn,
-  .ac-step {
+  .ac-add-btn {
     transition: none;
   }
 }
