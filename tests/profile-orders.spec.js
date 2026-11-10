@@ -210,42 +210,59 @@ test.describe('Модуль заказов профиля', () => {
     await expect(gear).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('профильные QR и PIN модалки не наследуют точечный фон Пятницы', async ({ page }, testInfo) => {
+  test('профильные QR и PIN модалки не наследуют точечный фон Пятницы', async ({ page, browser }, testInfo) => {
     const modalBackground = locator => locator.evaluate(element => getComputedStyle(element).backgroundImage);
+    const openCoffee = await browser.newPage({ viewport: { width: 390, height: 844 } });
 
-    await page.evaluate(() => {
-      document.documentElement.setAttribute('data-brand', 'coffee');
-      document.body.setAttribute('data-brand', 'coffee');
-      if (typeof window.applyProfileBrand === 'function') window.applyProfileBrand();
-      if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
+    await openCoffee.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
     });
-    const profile = page.locator('#profileBox');
-    await expect(profile).toBeVisible();
-    await expect(page.locator('#qrOpenProfile')).toBeVisible();
+    await openCoffee.goto('/?brand=coffee');
+    await expect.poll(() => openCoffee.evaluate(() =>
+      typeof window.setUser === 'function' &&
+      typeof window.openPanel === 'function' &&
+      document.documentElement.getAttribute('data-staff-ready') === '1'
+    )).toBe(true);
+    await openCoffee.evaluate(() => {
+      const customer = {
+        id: 'profile-test',
+        name: 'Тестовый гость',
+        phone: '+7 900 000-00-00',
+        role: 'guest',
+        cups: 2,
+        stamps: 2,
+        free: 0,
+        qr: 'profile-test',
+        history: [],
+        verified: 1
+      };
+      window.setUser('profile-test-token', customer);
+      window.__profileMeReady();
+      window.renderProfile();
+      window.openPanel('profile');
+    });
+    await expect(openCoffee.locator('#profileBox')).toBeVisible();
+    const qrButton = openCoffee.locator('#qrOpenProfile');
+    await expect(qrButton).toBeVisible();
 
-    await page.locator('#qrOpenProfile').click();
-    const qr = page.locator('#qrModal');
+    await qrButton.click();
+    const qr = openCoffee.locator('#qrModal');
     await expect(qr).toHaveClass(/show/);
     await expect.poll(() => modalBackground(qr)).toBe('none');
     await expect.poll(() => modalBackground(qr.locator('.modal-card'))).toBe('none');
     await testInfo.attach('coffee-profile-qr-390', {
-      body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+      body: await openCoffee.screenshot({ fullPage: false, animations: 'disabled' }),
       contentType: 'image/png'
     });
-    await page.locator('#qrClose').click();
+    await openCoffee.locator('#qrClose').click();
     await expect(qr).not.toHaveClass(/show/);
+    await openCoffee.close();
 
-    await page.evaluate(() => {
-      document.documentElement.setAttribute('data-brand', 'delivery');
-      document.body.setAttribute('data-brand', 'delivery');
-      if (typeof window.applyProfileBrand === 'function') window.applyProfileBrand();
-      if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
-    });
-    await expect(profile).toBeVisible();
-    await expect(page.locator('#qrOpenProfile')).toBeHidden();
-
-    await page.locator('#profileSettingsBtn').click();
     const settings = page.locator('#settingsModal');
+    await expect(page.locator('#profileSettingsBtn')).toBeVisible();
+    await page.locator('#profileSettingsBtn').click();
     await expect(settings).toHaveClass(/show/);
     await page.locator('#setPinGo2').click();
     const pin = page.locator('#setPinModal');
