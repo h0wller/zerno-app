@@ -128,6 +128,13 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           rowOne: rect(rowOne),
           rowTwo: rect(rowTwo),
           title: rect(titleElement),
+          titleDescriptor: (() => {
+            const descriptor = titleElement.querySelector('em');
+            return descriptor ? {
+              display:getComputedStyle(descriptor).display,
+              ...rect(descriptor)
+            } : null;
+          })(),
           slot: rect(slot),
           edit: rect(editElement),
           search: rect(searchElement),
@@ -273,6 +280,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
         expect(Math.abs(itemCenter - rowOneCenter), JSON.stringify(layout)).toBeLessThanOrEqual(1);
       }
       expect(layout.title.width).toBe(50);
+      expect(layout.titleDescriptor?.display || 'none').toBe('none');
       expect(layout.slot.width).toBe(176);
       expect(layout.edit.x).toBeGreaterThanOrEqual(layout.slot.right);
       expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
