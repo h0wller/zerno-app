@@ -304,7 +304,7 @@ test('baseline: админ', async ({ page }) => {
   await expect(page.locator('#menuView .menu-head .mh-right .search')).toBeVisible();
 
   const activeMode = page.locator('#modeSeg [data-mode="admin"]');
-  await expect.poll(() => activeMode.evaluate(element => getComputedStyle(element, '::before').backgroundColor)).toBe('rgb(187, 215, 242)');
+  await expect(activeMode).toHaveCSS('background-color', 'rgb(187, 215, 242)');
   await expect(activeMode).toHaveCSS('color', 'rgb(18, 58, 107)');
 
   await expect.poll(() => page.evaluate(() => {

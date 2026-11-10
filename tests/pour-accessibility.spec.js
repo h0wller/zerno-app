@@ -176,9 +176,9 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(menuMetrics.headerHeight).toBeLessThanOrEqual(64);
     expect(menuMetrics.modeInMenuRow).toBe(true);
     expect(menuMetrics.editInMenuRow).toBe(true);
-    expect(menuMetrics.rowHeight).toBe(44);
+    expect(menuMetrics.rowHeight).toBe(36);
     expect(menuMetrics.buttonHeights).toHaveLength(4);
-    expect(menuMetrics.buttonHeights.every(height => height === 44)).toBe(true);
+    expect(menuMetrics.buttonHeights.every(height => height === 32)).toBe(true);
 
     await page.evaluate(() => window.setMode('admin'));
     const adminMetrics = await page.evaluate(() => {
@@ -196,8 +196,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(adminMetrics.menuVisible).toBe(true);
     expect(adminMetrics.modeInMenuRow).toBe(true);
     expect(adminMetrics.headerHeight).toBeLessThanOrEqual(64);
-    expect(adminMetrics.rowHeight).toBe(44);
-    expect(adminMetrics.buttonHeights.every(height => height === 44)).toBe(true);
+    expect(adminMetrics.rowHeight).toBe(36);
+    expect(adminMetrics.buttonHeights.every(height => height === 32)).toBe(true);
   });
 
   test('floating controls and confetti canvas have accessible landmark treatment', async ({ page }) => {
