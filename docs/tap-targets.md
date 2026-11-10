@@ -9,6 +9,15 @@ This change applies only to the compact staff controls moved into the mobile men
 
 It does not change the desktop/work-mode role switcher, profile controls, filter chips, or other compact controls. Those require separate inventory and acceptance.
 
+## Target register
+
+| Selector / count | Visible face | Hit area | DOM / behavior owner | Geometry / brand owner | Scope and exclusions |
+| --- | --- | --- | --- | --- | --- |
+| `#modeSeg > button` (4 role buttons) | 32 × 32 px face, 6 px inset | 44 × 44 px per button | `core/catalog.js` renders the modes; `core/views.js` owns role gating and DOM placement | Layer 1: `160-12-admin-bar-tail.css`; Layer 2a: `brand-tokens.css`; Layer 2b: `core/views.js`; Layer 4: staff critical CSS in `index.html` | Mobile staff menu header only; desktop/work-mode placement is unchanged |
+| `#editToggle` (1 edit action) | 32 × 32 px inset face/icon treatment | 44 × 44 px | `menu-editor.js` owns edit behavior; `core/views.js` owns placement | Same Layer 1 / 2a / 2b / 4 ownership as above | Mobile staff menu header only; editor behavior and ID are unchanged |
+
+The registry is intentionally limited to this PR's first staff-header slice. It does **not** claim migration of profile controls, filter chips, cart controls, general support controls, or all other 32 px surfaces.
+
 ## Geometry contract
 
 - Each interactive control occupies a **44 × 44 CSS px** hit cell.
