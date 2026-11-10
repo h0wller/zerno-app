@@ -356,7 +356,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#nameEditActions')).toHaveCount(0);
 
     const editingGeometry = await page.evaluate(() => {
-      const selectors = ['#nameInput', '#nameEditBtn', '#profileSettingsBtn', '#phoneLbl', '#roleLbl'];
+      const selectors = ['#nameInput', '#nameEditBtn', '#profileSettingsBtn', '#phoneLbl', '#roleLbl', '#avInit'];
       const rect = selector => {
         const r = document.querySelector(selector).getBoundingClientRect();
         return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
@@ -368,7 +368,11 @@ test.describe('Модуль заказов профиля', () => {
           const r = document.querySelector(selector).getBoundingClientRect();
           return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
         }),
-        rowsSeparated: nodes[3].top >= nodes[0].bottom && nodes[4].top >= nodes[3].bottom
+        rowsSeparated: nodes[3].top >= nodes[0].bottom && nodes[4].top >= nodes[3].bottom,
+        avatarBelowName: nodes[5].top >= nodes[0].bottom,
+        phoneBesideAvatar: nodes[3].left >= nodes[5].right,
+        avatarCenterY: nodes[5].top + nodes[5].height / 2,
+        identityCenterY: (nodes[3].top + nodes[4].bottom) / 2
       };
     });
     expect(editingGeometry.nodes[1].width).toBeGreaterThanOrEqual(44);
@@ -380,6 +384,9 @@ test.describe('Модуль заказов профиля', () => {
     expect(Math.abs(editingGeometry.nodes[1].bottom - editingGeometry.nodes[0].bottom)).toBeLessThanOrEqual(1);
     expect(Math.abs(editingGeometry.nodes[2].bottom - editingGeometry.nodes[0].bottom)).toBeLessThanOrEqual(1);
     expect(editingGeometry.rowsSeparated).toBe(true);
+    expect(editingGeometry.avatarBelowName).toBe(true);
+    expect(editingGeometry.phoneBesideAvatar).toBe(true);
+    expect(Math.abs(editingGeometry.avatarCenterY - editingGeometry.identityCenterY)).toBeLessThanOrEqual(14);
     expect(editingGeometry.nodes[1].left).toBeGreaterThanOrEqual(editingGeometry.nodes[0].right);
     expect(editingGeometry.nodes[2].left).toBeGreaterThanOrEqual(editingGeometry.nodes[1].right);
 
