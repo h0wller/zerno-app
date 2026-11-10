@@ -912,12 +912,6 @@
   box-shadow: var(--profile-btn-secondary-shadow, none);
   cursor: pointer;
 }
-/* All profile-originated dialogs use a clean surface, including fullscreen QR and PIN. */
-body[data-brand="delivery"] #qrModal.show,
-body[data-brand="delivery"] #qrModal.show .modal-card,
-body[data-brand="delivery"] #setPinModal.show .modal-card {
-  background-image: none;
-}
 
 @media (max-width: 380px) {
   #profileBox .phead { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; }
