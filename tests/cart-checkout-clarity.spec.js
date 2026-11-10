@@ -40,12 +40,8 @@ test('cart keeps the current selected price and explains every amount without gu
       qty: 1
     }]));
     localStorage.setItem('zt_cartpromo', 'SAVE100');
-    const savedAddresses = [
-      { id: 'saved-1', place: 'Янтарный', street: 'Советская', house: '70Г' },
-      { id: 'saved-2', place: 'Янтарный', street: 'Балтийская', house: '1' }
-    ];
-    localStorage.setItem('zt_saved_addresses', JSON.stringify(savedAddresses));
-    localStorage.setItem('zt_saved_address', JSON.stringify(savedAddresses[0]));
+    localStorage.removeItem('zt_saved_address');
+    localStorage.removeItem('zt_saved_addresses');
     sessionStorage.setItem('splashDone', '1');
   });
 
@@ -253,6 +249,14 @@ test('cart keeps the current selected price and explains every amount without gu
   await page.locator('#checkoutPlace').scrollIntoViewIfNeeded();
   const addressBookButton = page.locator('#addrBookBtn');
   await expect(addressBookButton).toBeVisible();
+  await page.evaluate(() => {
+    const savedAddresses = [
+      { id: 'saved-1', place: 'Янтарный', street: 'Советская', house: '70Г' },
+      { id: 'saved-2', place: 'Янтарный', street: 'Балтийская', house: '1' }
+    ];
+    localStorage.setItem('zt_saved_addresses', JSON.stringify(savedAddresses));
+    localStorage.setItem('zt_saved_address', JSON.stringify(savedAddresses[0]));
+  });
   await addressBookButton.click();
   const addressSheet = page.locator('#addrBookSheet');
   await expect(addressSheet).toBeVisible();
