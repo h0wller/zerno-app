@@ -308,7 +308,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.menuHead.height).toBe(108);
       expect(layout.rowOne.height).toBe(44);
       expect(layout.rowTwo.height).toBe(44);
-      expect(layout.top.height).toBe(92);
+      expect(layout.top.height).toBe(96);
       const topGrid = await page.locator(view + ' .menu-head .mh-top').evaluate(element => {
         const style = getComputedStyle(element);
         return {
@@ -317,7 +317,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
         };
       });
       expect(topGrid.rows).toEqual([44,44]);
-      expect(topGrid.rowGap).toBe(4);
+      expect(topGrid.rowGap).toBe(8);
 
       const roleButtons = page.locator('#modeSeg > button');
       await roleButtons.nth(0).focus();

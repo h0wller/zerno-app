@@ -980,14 +980,14 @@ html body #modeSeg button:not(.on) {
     display: grid;
     grid-template-columns: minmax(0,1fr);
     grid-template-rows: 44px 44px;
-    row-gap: 4px;
+    row-gap: 8px;
     column-gap: 0;
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    height: 92px;
-    min-height: 92px;
-    max-height: 92px;
+    height: 96px;
+    min-height: 96px;
+    max-height: 96px;
     overflow: visible;
     box-sizing: border-box;
   }
