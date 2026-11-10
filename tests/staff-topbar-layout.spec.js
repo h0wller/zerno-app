@@ -133,12 +133,93 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           search: rect(searchElement),
           support: rect(host),
           fab: rect(fab),
-          modeButtons: Array.from(seg.querySelectorAll(':scope > button')).map(button => ({
-            text: button.textContent.trim(),
-            ...rect(button),
-            textFits: button.scrollWidth <= button.clientWidth + 1,
-            fontSize: Number.parseFloat(getComputedStyle(button).fontSize),
-          })),
+          modeButtons: Array.from(seg.querySelectorAll(':scope > button')).map(button => {
+            const box = button.getBoundingClientRect();
+            const face = getComputedStyle(button, '::before');
+            const inset = {
+              top: Number.parseFloat(face.top) || 0,
+              right: Number.parseFloat(face.right) || 0,
+              bottom: Number.parseFloat(face.bottom) || 0,
+              left: Number.parseFloat(face.left) || 0
+            };
+            const hitEdges = [
+              { edge:'top', x:box.left + box.width / 2, y:box.top + 2 },
+              { edge:'right', x:box.right - 2, y:box.top + box.height / 2 },
+              { edge:'bottom', x:box.left + box.width / 2, y:box.bottom - 2 },
+              { edge:'left', x:box.left + 2, y:box.top + box.height / 2 }
+            ].map(point => {
+              const target = document.elementFromPoint(point.x, point.y);
+              return {
+                edge:point.edge,
+                receives:!!target && (target === button || button.contains(target))
+              };
+            });
+            return {
+              text:button.textContent.trim(),
+              ...rect(button),
+              textFits:button.scrollWidth <= button.clientWidth + 1,
+              fontSize:Number.parseFloat(getComputedStyle(button).fontSize),
+              face:{
+                width:box.width - inset.left - inset.right,
+                height:box.height - inset.top - inset.bottom,
+                inset,
+                background:face.backgroundColor
+              },
+              hitEdges
+            };
+          }),
+          editControl: (() => {
+            const box = editElement.getBoundingClientRect();
+            const face = getComputedStyle(editElement, '::after');
+            const inset = {
+              top:Number.parseFloat(face.top) || 0,
+              right:Number.parseFloat(face.right) || 0,
+              bottom:Number.parseFloat(face.bottom) || 0,
+              left:Number.parseFloat(face.left) || 0
+            };
+            const hitEdges = [
+              { edge:'top', x:box.left + box.width / 2, y:box.top + 2 },
+              { edge:'right', x:box.right - 2, y:box.top + box.height / 2 },
+              { edge:'bottom', x:box.left + box.width / 2, y:box.bottom - 2 },
+              { edge:'left', x:box.left + 2, y:box.top + box.height / 2 }
+            ].map(point => {
+              const target = document.elementFromPoint(point.x, point.y);
+              return {
+                edge:point.edge,
+                receives:!!target && (target === editElement || editElement.contains(target))
+              };
+            });
+            return {
+              ...rect(editElement),
+              face:{
+                width:box.width - inset.left - inset.right,
+                height:box.height - inset.top - inset.bottom,
+                inset,
+                background:face.backgroundColor
+              },
+              hitEdges
+            };
+          })(),
+          modeTrack: (() => {
+            const box = seg.getBoundingClientRect();
+            const face = getComputedStyle(seg, '::before');
+            return {
+              height:box.height - (Number.parseFloat(face.top) || 0) - (Number.parseFloat(face.bottom) || 0),
+              background:face.backgroundColor
+            };
+          })(),
+          controlOverlaps: (() => {
+            const boxes = [...seg.querySelectorAll(':scope > button'), editElement].map(element => element.getBoundingClientRect());
+            const overlaps = [];
+            for (let i=0;i<boxes.length;i+=1) {
+              for (let j=i+1;j<boxes.length;j+=1) {
+                const width = Math.min(boxes[i].right,boxes[j].right)-Math.max(boxes[i].left,boxes[j].left);
+                const height = Math.min(boxes[i].bottom,boxes[j].bottom)-Math.max(boxes[i].top,boxes[j].top);
+                if (width > 0 && height > 0) overlaps.push({ a:i,b:j,width,height });
+              }
+            }
+            return overlaps;
+          })(),
           rowOrder: Array.from(rowOne.children).map(element =>
             element.id === 'editToggle' ? 'edit' :
               element.classList.contains('mode-seg-slot') ? 'roles' :
@@ -200,12 +281,26 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.fab.width).toBe(44);
       expect(layout.fab.height).toBe(44);
       expect(layout.modeButtons).toHaveLength(4);
-      expect(layout.modeButtons.every(button => button.width > 0 && button.height === 32 && button.textFits)).toBe(true);
+      expect(layout.modeButtons.every(button =>
+        button.width === 44 && button.height === 44 &&
+        button.face.width === 32 && button.face.height === 32 &&
+        button.face.inset.top === 6 && button.face.inset.right === 6 &&
+        button.face.inset.bottom === 6 && button.face.inset.left === 6 &&
+        button.textFits && button.hitEdges.every(point => point.receives)
+      )).toBe(true);
+      expect(layout.editControl.width).toBe(44);
+      expect(layout.editControl.height).toBe(44);
+      expect(layout.editControl.face.width).toBe(32);
+      expect(layout.editControl.face.height).toBe(32);
+      expect(layout.editControl.hitEdges.every(point => point.receives)).toBe(true);
+      expect(layout.modeTrack.height).toBe(32);
+      expect(layout.controlOverlaps).toEqual([]);
+      expect(layout.rowTwo.y - layout.edit.bottom).toBeGreaterThanOrEqual(4);
       expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
-      expect(layout.menuHead.height).toBeLessThanOrEqual(100);
-      expect(layout.rowOne.height).toBe(36);
+      expect(layout.menuHead.height).toBe(108);
+      expect(layout.rowOne.height).toBe(44);
       expect(layout.rowTwo.height).toBe(44);
-      expect(layout.top.height).toBe(84);
+      expect(layout.top.height).toBe(92);
 
       await page.evaluate(() => window.scrollTo(0, 0));
       await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 4000 });
