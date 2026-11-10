@@ -5,7 +5,7 @@
   gap: 4px;
   padding-left: 10px;
   margin-top: 2px;
-  border-left: 2px solid var(--fr-tan, #C99E6E);
+  border-left: 2px solid var(--fr-tan, #8A8A8A);
   width: 100%;
   box-sizing: border-box;
 }
@@ -48,7 +48,7 @@
   padding: 2px 0;
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--flame, #C03B2A);
+  color: var(--flame, #444444);
   cursor: pointer;
   display: inline-block;
   text-align: left;
@@ -85,7 +85,7 @@
 .ci-mod-chip {
   flex: 0 0 auto;
   background: #FFFFFF;
-  border: 1.5px solid var(--fr-tan, #C99E6E);
+  border: 1.5px solid var(--fr-tan, #8A8A8A);
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 11.5px;
@@ -97,10 +97,10 @@
   box-sizing: border-box;
 }
 .ci-mod-chip:hover {
-  background: var(--fr-rice, #EFE6D8);
+  background: var(--fr-rice, #F0F0F0);
 }
 .ci-mod-chip.selected {
-  background: var(--flame, #C03B2A);
+  background: var(--flame, #444444);
   color: #FFFFFF;
   border-color: var(--fr-choc, var(--flame));
   font-weight: 700;
@@ -117,10 +117,10 @@
   margin: 12px 0 18px;
   padding: 15px;
   overflow: hidden;
-  border: 1.5px solid var(--fr-choc, #3A2A1C);
+  border: 1.5px solid var(--fr-choc, #101418);
   border-radius: 20px;
-  background: var(--fr-choc, #3A2A1C);
-  box-shadow: 3px 3px 0 rgba(58, 42, 28, 0.18);
+  background: var(--fr-choc, #101418);
+  box-shadow: 3px 3px 0 rgba(16, 20, 24, 0.18);
 }
 
 .cart-addons-wrap::after {
@@ -130,7 +130,7 @@
   right: -42px;
   width: 156px;
   height: 156px;
-  border: 1px solid rgba(246, 238, 225, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -152,7 +152,7 @@
 }
 
 .ca-kicker {
-  color: var(--fr-tan, #C99E6E);
+  color: var(--fr-tan, #8A8A8A);
   font-size: 9px;
   font-weight: 900;
   letter-spacing: 0.13em;
@@ -161,7 +161,7 @@
 
 .ca-title {
   display: block;
-  color: var(--fr-paper, #F6EEE1);
+  color: var(--fr-paper, #FFFFFF);
   font-size: 18px;
   font-weight: 900;
   letter-spacing: -0.035em;
@@ -171,7 +171,7 @@
 }
 
 .ca-subtitle {
-  color: rgba(246, 238, 225, 0.72);
+  color: rgba(255, 255, 255, 0.76);
   font-size: 11px;
   font-weight: 500;
   line-height: 1.35;
@@ -185,9 +185,9 @@
   max-width: 100%;
   padding: 3px;
   overflow-x: auto;
-  border: 1px solid rgba(246, 238, 225, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  background: rgba(246, 238, 225, 0.08);
+  background: rgba(255, 255, 255, 0.08);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -213,9 +213,9 @@
 }
 
 .addon-tab-btn.on {
-  border-color: var(--fr-tan, #C99E6E);
-  background: var(--fr-tan, #C99E6E);
-  color: var(--fr-choc, #3A2A1C);
+  border-color: var(--fr-tan, #8A8A8A);
+  background: var(--fr-tan, #8A8A8A);
+  color: var(--fr-choc, #101418);
   box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.22);
 }
 
@@ -243,18 +243,18 @@
   align-items: center;
   gap: 8px;
   padding: 9px;
-  border: 1.5px solid rgba(58, 42, 28, 0.22);
+  border: 1.5px solid rgba(16, 20, 24, 0.14);
   border-radius: 16px;
-  background: var(--fr-paper, #F6EEE1);
+  background: var(--fr-paper, #FFFFFF);
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
   scroll-snap-align: start;
   transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .addon-pill-card.in-cart {
-  border: 2px solid var(--fr-tan, #C99E6E);
-  background: var(--fr-rice, #EFE6D8);
-  box-shadow: 2px 2px 0 rgba(201, 158, 110, 0.45);
+  border: 2px solid var(--fr-tan, #8A8A8A);
+  background: var(--fr-rice, #F0F0F0);
+  box-shadow: 2px 2px 0 rgba(16, 20, 24, 0.12);
 }
 
 .ac-media {
@@ -264,9 +264,9 @@
   overflow: hidden;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(58, 42, 28, 0.1);
+  border: 1px solid rgba(16, 20, 24, 0.08);
   border-radius: 13px;
-  background: var(--fr-rice, #EFE6D8);
+  background: var(--fr-rice, #F0F0F0);
 }
 
 .ac-img {
@@ -293,7 +293,7 @@
 .ac-name {
   display: -webkit-box;
   overflow: hidden;
-  color: var(--fr-choc, #3A2A1C);
+  color: var(--fr-choc, #101418);
   font-size: 12.5px;
   font-weight: 900;
   line-height: 1.2;
@@ -311,7 +311,7 @@
 }
 
 .ac-price {
-  color: var(--flame, #C03B2A);
+  color: var(--flame, #444444);
   font-size: 13px;
   font-weight: 900;
   line-height: 1.1;
@@ -319,7 +319,7 @@
 }
 
 .ac-in-cart-label {
-  color: var(--fr-choc, #3A2A1C);
+  color: var(--fr-choc, #101418);
   font-size: 8.5px;
   font-weight: 900;
   letter-spacing: 0.07em;
@@ -348,11 +348,11 @@
   height: 44px;
   min-height: 44px;
   padding: 0;
-  border: 1.5px solid var(--fr-choc, #3A2A1C);
+  border: 1.5px solid var(--fr-choc, #101418);
   border-radius: 13px;
-  background: var(--flame, #C03B2A);
+  background: var(--flame, #444444);
   color: #FFFFFF;
-  box-shadow: 2.5px 2.5px 0 var(--fr-choc, #3A2A1C);
+  box-shadow: 2.5px 2.5px 0 var(--fr-choc, #101418);
   font-size: 23px;
   font-weight: 900;
   line-height: 1;
@@ -361,17 +361,17 @@
 }
 
 .ac-add-btn:hover {
-  background: var(--flame-d, #8E3716);
+  background: var(--flame-d, #303030);
 }
 
 .ac-add-btn:active {
   transform: translate(2.5px, 2.5px);
-  box-shadow: 0 0 0 var(--fr-choc, #3A2A1C);
+  box-shadow: 0 0 0 var(--fr-choc, #101418);
 }
 
 .ac-add-btn:focus-visible,
 .ac-step:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--fr-tan, #C99E6E) 65%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--fr-tan, #8A8A8A) 65%, transparent);
   outline-offset: 2px;
 }
 
@@ -383,10 +383,10 @@
   height: 44px;
   padding: 0;
   gap: 0;
-  border: 1.5px solid var(--fr-choc, #3A2A1C);
+  border: 1.5px solid var(--fr-choc, #101418);
   border-radius: 13px;
-  background: var(--flame, #C03B2A);
-  box-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  background: var(--flame, #444444);
+  box-shadow: 2px 2px 0 var(--fr-choc, #101418);
   color: #FFFFFF;
 }
 
@@ -409,7 +409,7 @@
 
 .ac-step:hover,
 .ac-step:active {
-  background: var(--flame-d, #8E3716);
+  background: var(--flame-d, #303030);
 }
 
 .ac-qty {
@@ -424,7 +424,7 @@
 
 .ca-empty {
   padding: 12px 4px;
-  color: var(--fr-paper, #F6EEE1);
+  color: var(--fr-paper, #FFFFFF);
   font-size: 12px;
   font-weight: 600;
 }
