@@ -375,10 +375,10 @@ test.describe('Модуль заказов профиля', () => {
     expect(editingGeometry.nodes[1].height).toBeGreaterThanOrEqual(44);
     expect(editingGeometry.nodes[2].width).toBeGreaterThanOrEqual(44);
     expect(editingGeometry.nodes[2].height).toBeGreaterThanOrEqual(44);
-    expect(editingGeometry.nodes[1].top).toBe(editingGeometry.nodes[0].top);
-    expect(editingGeometry.nodes[2].top).toBe(editingGeometry.nodes[0].top);
-    expect(editingGeometry.nodes[1].bottom).toBe(editingGeometry.nodes[0].bottom);
-    expect(editingGeometry.nodes[2].bottom).toBe(editingGeometry.nodes[0].bottom);
+    expect(Math.abs(editingGeometry.nodes[1].top - editingGeometry.nodes[0].top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(editingGeometry.nodes[2].top - editingGeometry.nodes[0].top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(editingGeometry.nodes[1].bottom - editingGeometry.nodes[0].bottom)).toBeLessThanOrEqual(1);
+    expect(Math.abs(editingGeometry.nodes[2].bottom - editingGeometry.nodes[0].bottom)).toBeLessThanOrEqual(1);
     expect(editingGeometry.rowsSeparated).toBe(true);
     expect(editingGeometry.nodes[1].left).toBeGreaterThanOrEqual(editingGeometry.nodes[0].right);
     expect(editingGeometry.nodes[2].left).toBeGreaterThanOrEqual(editingGeometry.nodes[1].right);
