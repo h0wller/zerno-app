@@ -140,6 +140,7 @@ test('корзина: 1 клик = +1, подарок 2×35, пустая = 0 �
   else await expect(page.locator('#cartGifts')).toHaveText('', { timeout: 5000 });
 
   /* Ф5.23: снятие количества карточным «−» за один тап */
+  await expect(page.locator('#cartClose')).toBeVisible();
   await page.locator('#cartClose').click();
   await page.locator('#deliveryGrid .step[data-step="-1"]').first().click();
   await page.locator('#cartFab').click();
@@ -913,7 +914,7 @@ test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
       });
       expect(initialGeometry.card.width).toBe(240);
       expect(initialGeometry.card.height).toBe(54);
-      expect(initialGeometry.action.width).toBe(56);
+      expect(initialGeometry.action.width).toBe(88);
       expect(initialGeometry.action.height).toBe(44);
       expect(initialGeometry.info.width).toBeGreaterThanOrEqual(110);
       expect(initialGeometry.button.width).toBeGreaterThanOrEqual(44);
@@ -921,6 +922,8 @@ test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
 
       const addButton = addonCard.locator('.ac-add-btn');
       await expect(addButton).toHaveAccessibleName('Добавить Лимонад в корзину');
+      await expect(addButton.locator('.ac-add-label')).toHaveText('Добавить');
+      await expect(addButton).toHaveCSS('width', '88px');
       await expect(addButton).toHaveCSS('background-color', 'rgb(192, 59, 42)');
       await expect(addButton).toHaveCSS('color', 'rgb(255, 255, 255)');
       await expect(addButton).toHaveCSS('border-style', 'solid');

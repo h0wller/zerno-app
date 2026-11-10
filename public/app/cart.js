@@ -537,7 +537,7 @@ async function refreshPromoLine(sum) {
             '<span class="ac-qty">' + qty + "</span>" +
             '<button type="button" class="ac-step" aria-label="Увеличить количество ' + addonLabel + '" data-ac-act="plus" data-addon-id="' + p.id + '">+</button>' +
           "</div>"
-        : '<button type="button" class="ac-add-btn" aria-label="Добавить ' + addonLabel + ' в корзину" data-addon-id="' + p.id + '">＋</button>';
+        : '<button type="button" class="ac-add-btn" aria-label="Добавить ' + addonLabel + ' в корзину" data-addon-id="' + p.id + '"><span aria-hidden="true">＋</span><span class="ac-add-label">Добавить</span></button>';
 
       return '<div class="addon-pill-card' + (qty > 0 ? " in-cart" : "") + '">' +
         '<div class="ac-media">' + imgHtml + "</div>" +
