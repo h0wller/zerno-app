@@ -531,13 +531,14 @@ async function refreshPromoLine(sum) {
         : '<div class="ac-emoji">' + (p.e || (p.cat === "drinks" ? "🥤" : "🥫")) + "</div>";
 
       var addonLabel = esc(p.name);
-      var actHtml = qty > 0
-        ? '<div class="ac-stepper">' +
-            '<button type="button" class="ac-step" aria-label="Уменьшить количество ' + addonLabel + '" data-ac-act="minus" data-addon-id="' + p.id + '">−</button>' +
-            '<span class="ac-qty">' + qty + "</span>" +
-            '<button type="button" class="ac-step" aria-label="Увеличить количество ' + addonLabel + '" data-ac-act="plus" data-addon-id="' + p.id + '">+</button>' +
-          "</div>"
-        : '<button type="button" class="ac-add-btn" aria-label="Добавить ' + addonLabel + ' в корзину" data-addon-id="' + p.id + '"><span aria-hidden="true">＋</span></button>';
+      var actionLabel = qty > 0
+        ? "Добавить ещё " + addonLabel + " в корзину. Сейчас в корзине: " + qty
+        : "Добавить " + addonLabel + " в корзину";
+      var actHtml =
+        '<button type="button" class="ac-add-btn' + (qty > 0 ? " in-cart" : "") + '" aria-label="' + actionLabel + '" data-addon-id="' + p.id + '">' +
+          '<span class="ac-count" aria-hidden="true">' + (qty > 0 ? qty : "") + "</span>" +
+          '<span class="ac-add-icon" aria-hidden="true">＋</span>' +
+        "</button>";
 
       return '<div class="addon-pill-card' + (qty > 0 ? " in-cart" : "") + '">' +
         '<div class="ac-media">' + imgHtml + "</div>" +
