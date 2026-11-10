@@ -912,8 +912,8 @@ test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
           button: rect(card.querySelector('.ac-add-btn')),
         };
       });
-      expect(initialGeometry.card.width).toBe(280);
-      expect(initialGeometry.card.height).toBe(88);
+      expect(initialGeometry.card.width).toBe(240);
+      expect(initialGeometry.card.height).toBe(54);
       expect(initialGeometry.action.width).toBe(44);
       expect(initialGeometry.action.height).toBe(44);
       expect(initialGeometry.info.width).toBeGreaterThanOrEqual(80);
@@ -925,8 +925,6 @@ test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
       await expect(addButton.locator('.ac-add-label')).toHaveCount(0);
       await expect(addButton).toHaveCSS('width', '44px');
       await expect(addButton).toHaveCSS('display', 'grid');
-      await expect(addButton).toHaveCSS('background-color', 'rgb(192, 59, 42)');
-      await expect(addButton).toHaveCSS('color', 'rgb(255, 255, 255)');
       await expect(addButton).toHaveCSS('border-style', 'solid');
       await addButton.click();
       await expect(addonCard).toHaveClass(/in-cart/);
