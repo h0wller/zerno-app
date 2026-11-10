@@ -211,22 +211,42 @@ test.describe('Модуль заказов профиля', () => {
   });
 
   test('профильные QR и PIN модалки не наследуют точечный фон Пятницы', async ({ page }, testInfo) => {
-    const modalBackground = async locator => locator.evaluate(element => getComputedStyle(element).backgroundImage);
+    const modalBackground = locator => locator.evaluate(element => getComputedStyle(element).backgroundImage);
+
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-brand', 'coffee');
+      document.body.setAttribute('data-brand', 'coffee');
+      if (typeof window.applyProfileBrand === 'function') window.applyProfileBrand();
+      if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
+    });
+    const profile = page.locator('#profileBox');
+    await expect(profile).toBeVisible();
+    await expect(page.locator('#qrOpenProfile')).toBeVisible();
 
     await page.locator('#qrOpenProfile').click();
     const qr = page.locator('#qrModal');
     await expect(qr).toHaveClass(/show/);
     await expect.poll(() => modalBackground(qr)).toBe('none');
     await expect.poll(() => modalBackground(qr.locator('.modal-card'))).toBe('none');
-    await testInfo.attach('delivery-profile-qr-390', {
+    await testInfo.attach('coffee-profile-qr-390', {
       body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
       contentType: 'image/png'
     });
     await page.locator('#qrClose').click();
     await expect(qr).not.toHaveClass(/show/);
 
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-brand', 'delivery');
+      document.body.setAttribute('data-brand', 'delivery');
+      if (typeof window.applyProfileBrand === 'function') window.applyProfileBrand();
+      if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
+    });
+    await expect(profile).toBeVisible();
+    await expect(page.locator('#qrOpenProfile')).toBeHidden();
+
     await page.locator('#profileSettingsBtn').click();
-    await expect(page.locator('#settingsModal')).toHaveClass(/show/);
+    const settings = page.locator('#settingsModal');
+    await expect(settings).toHaveClass(/show/);
     await page.locator('#setPinGo2').click();
     const pin = page.locator('#setPinModal');
     await expect(pin).toHaveClass(/show/);
