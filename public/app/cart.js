@@ -611,36 +611,27 @@ function clearPromo() {
   }
 
   function syncCheckoutGuestAutofill() {
-    var cPanelEl = document.getElementById("cartPanel");
-    if (!cPanelEl) return;
-    var gBar = document.getElementById("checkoutGuestBar");
-    var user = typeof window.me !== "undefined" ? window.me : null;
-    if (!user || (!user.name && !user.phone)) {
-      if (gBar) gBar.hidden = true;
-      return;
+    var recipientCard = document.getElementById("checkoutGuestBar");
+    if (!recipientCard) return;
+
+    var user = window.me || null;
+    var hasRecipient = !!(user && (user.name || user.phone));
+    recipientCard.hidden = !hasRecipient;
+    if (!hasRecipient) return;
+
+    var nameEl = recipientCard.querySelector("#checkoutGuestName");
+    var phoneEl = recipientCard.querySelector("#checkoutGuestPhone");
+    if (nameEl) nameEl.textContent = user.name || "Гость";
+    if (phoneEl) {
+      phoneEl.textContent = user.phone || "";
+      phoneEl.hidden = !user.phone;
     }
-    var methodEl = document.getElementById("checkoutMethod");
-    if (!gBar && methodEl) {
-      var wrapLabel = methodEl.closest("label") || methodEl.parentElement;
-      if (wrapLabel && wrapLabel.parentNode) {
-        gBar = document.createElement("div");
-        gBar.id = "checkoutGuestBar";
-        gBar.className = "checkout-guest-bar";
-        wrapLabel.parentNode.insertBefore(gBar, wrapLabel);
-      }
-    }
-    if (gBar) {
-      gBar.hidden = false;
-      gBar.innerHTML =
-        '<span class="cgb-label">👤 Получатель:</span>' +
-        '<b class="cgb-val" id="checkoutGuestName">' + esc(user.name || "Гость") + "</b>" +
-        (user.phone ? '<span class="cgb-phone" id="checkoutGuestPhone">' + esc(user.phone) + "</span>" : "");
-    }
-    var nameInp = document.getElementById("checkoutName");
-    if (nameInp && !nameInp.value && user.name) nameInp.value = user.name;
-    var phoneInp = document.getElementById("checkoutPhone");
-    if (phoneInp && !phoneInp.value && user.phone) phoneInp.value = user.phone;
   }
+
+  if (window.ztBus && typeof window.ztBus.on === "function") {
+    window.ztBus.on("auth:user-changed", syncCheckoutGuestAutofill);
+  }
+  syncCheckoutGuestAutofill();
 
   function ensurePlaceOptions() {
     var placeEl = document.getElementById("checkoutPlace");
