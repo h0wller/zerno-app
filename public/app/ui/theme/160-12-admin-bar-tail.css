@@ -980,7 +980,8 @@ html body #modeSeg button:not(.on) {
     display: grid;
     grid-template-columns: minmax(0,1fr);
     grid-template-rows: 44px 44px;
-    gap: 4px 0;
+    row-gap: 4px;
+    column-gap: 0;
     width: 100%;
     min-width: 0;
     max-width: 100%;

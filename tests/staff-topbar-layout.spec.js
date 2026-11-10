@@ -151,7 +151,8 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
               const target = document.elementFromPoint(point.x, point.y);
               return {
                 edge:point.edge,
-                receives:!!target && (target === button || button.contains(target))
+                receives:!!target && (target === button || button.contains(target)),
+                target:target?.id || target?.className?.baseVal || target?.className || target?.tagName || null
               };
             });
             return {
@@ -274,7 +275,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.slot.x).toBeGreaterThan(layout.title.right);
       expect(layout.edit.x).toBeGreaterThan(layout.slot.right);
       expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
-      expect(layout.rowTwo.y).toBeGreaterThanOrEqual(layout.rowOne.bottom);
+      expect(layout.rowTwo.y - layout.rowOne.bottom).toBe(4);
       expect(layout.search.y).toBeGreaterThanOrEqual(layout.rowTwo.y);
       expect(layout.support.y).toBeGreaterThanOrEqual(layout.rowTwo.y);
       expect(layout.support.width).toBe(44);
@@ -307,6 +308,15 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.rowOne.height).toBe(44);
       expect(layout.rowTwo.height).toBe(44);
       expect(layout.top.height).toBe(92);
+      const topGrid = await page.locator(view + ' .menu-head .mh-top').evaluate(element => {
+        const style = getComputedStyle(element);
+        return {
+          rows:style.gridTemplateRows.split(' ').map(value => Number.parseFloat(value)),
+          rowGap:Number.parseFloat(style.rowGap)
+        };
+      });
+      expect(topGrid.rows).toEqual([44,44]);
+      expect(topGrid.rowGap).toBe(4);
 
       const roleButtons = page.locator('#modeSeg > button');
       await roleButtons.nth(0).focus();
