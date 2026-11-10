@@ -384,18 +384,22 @@ test('mobile staff controls keep 32px visuals inside 44px hit cells', async ({ p
           return { x:box.x, y:box.y, width:box.width, height:box.height, right:box.right, bottom:box.bottom };
         };
         const visualRect = element => {
-          const pseudo = getComputedStyle(element, '::before');
-          const after = getComputedStyle(element, '::after');
-          const hasBefore = pseudo.content !== 'none' && pseudo.content !== 'normal' && pseudo.content !== '""';
-          const hasAfter = after.content !== 'none' && after.content !== 'normal' && after.content !== '""';
+          const pseudoName = element.id === 'editToggle' ? '::after' : '::before';
+          const pseudo = getComputedStyle(element, pseudoName);
           const own = element.getBoundingClientRect();
-          const inset = Number.parseFloat(getComputedStyle(element).paddingTop) || 0;
+          const top = Number.parseFloat(pseudo.top) || 0;
+          const right = Number.parseFloat(pseudo.right) || 0;
+          const bottom = Number.parseFloat(pseudo.bottom) || 0;
+          const left = Number.parseFloat(pseudo.left) || 0;
           return {
-            width: hasBefore || hasAfter ? own.width : own.width,
-            height: hasBefore || hasAfter ? own.height - inset * 2 : own.height,
-            pseudoBefore: pseudo.content,
-            pseudoAfter: after.content,
-            padding: getComputedStyle(element).padding
+            width: own.width - left - right,
+            height: own.height - top - bottom,
+            inset: { top, right, bottom, left },
+            pseudo: pseudoName,
+            content: pseudo.content,
+            background: pseudo.backgroundColor,
+            border: pseudo.border,
+            shadow: pseudo.boxShadow
           };
         };
         const hitPoints = element => {
@@ -425,6 +429,15 @@ test('mobile staff controls keep 32px visuals inside 44px hit cells', async ({ p
           shadow:getComputedStyle(element).boxShadow,
           hitPoints:hitPoints(element)
         }));
+        const trackStyle = getComputedStyle(mode, '::before');
+        const trackRect = {
+          width: mode.getBoundingClientRect().width -
+            (Number.parseFloat(trackStyle.left) || 0) -
+            (Number.parseFloat(trackStyle.right) || 0),
+          height: mode.getBoundingClientRect().height -
+            (Number.parseFloat(trackStyle.top) || 0) -
+            (Number.parseFloat(trackStyle.bottom) || 0)
+        };
         const menuRect = rect(row);
         const styleInfo = {
           documentCss: {
@@ -496,39 +509,45 @@ test('mobile staff controls keep 32px visuals inside 44px hit cells', async ({ p
             if (overlapX>0 && overlapY>0) overlaps.push({a:i,b:j,overlapX,overlapY});
           }
         }
-        return { cells, overlaps, menuRect, styleInfo };
+        return { cells, overlaps, menuRect, trackRect, styleInfo };
       }, view);
 
       expect(metrics.cells, JSON.stringify(metrics.styleInfo, null, 2)).toHaveLength(5);
       for (const cell of metrics.cells) {
-        expect(cell.hitRect.width, cell.id + ' hit width; ' + JSON.stringify(metrics.styleInfo)).toBeGreaterThanOrEqual(44);
-        expect(cell.hitRect.height, cell.id + ' hit height').toBeGreaterThanOrEqual(44);
-        expect(cell.visual.width, cell.id + ' visual width').toBeGreaterThan(0);
+        expect(cell.hitRect.width, cell.id + ' hit width; ' + JSON.stringify(metrics.styleInfo)).toBe(44);
+        expect(cell.hitRect.height, cell.id + ' hit height').toBe(44);
+        expect(cell.visual.width, cell.id + ' visual width').toBe(32);
         expect(cell.visual.height, cell.id + ' visual height').toBe(32);
+        expect(cell.visual.inset).toEqual({ top:6, right:6, bottom:6, left:6 });
         expect(cell.hitPoints.every(point => point.receives),
           cell.id + ' must receive taps at all four hit-cell edges: ' + JSON.stringify(cell.hitPoints)
         ).toBe(true);
       }
+      expect(metrics.trackRect.height, 'the role track must remain a 32px visual surface').toBe(32);
       expect(metrics.overlaps, '44px cells must not intersect neighboring controls').toEqual([]);
+      expect(metrics.menuRect.x).toBeGreaterThanOrEqual(0);
+      expect(metrics.menuRect.right).toBeLessThanOrEqual(width + 1);
 
       // Trial checks browser actionability without activating role or edit actions.
       for (let i=0;i<4;i++) await roleButtons.nth(i).click({ trial:true });
       await edit.click({ trial:true });
 
+      await roleButtons.nth(0).focus();
       await page.keyboard.press('Tab');
       const focus = await page.evaluate(() => {
         const active = document.activeElement;
-        const box = active?.getBoundingClientRect();
+        const face = active && getComputedStyle(active, '::before');
         return {
-          id:active?.id || null,
-          outlineStyle:getComputedStyle(active).outlineStyle,
-          outlineWidth:getComputedStyle(active).outlineWidth,
-          rect:box ? {x:box.x,y:box.y,width:box.width,height:box.height} : null
+          text:active?.textContent?.trim() || null,
+          visible:!!active && active.matches(':focus-visible'),
+          outlineStyle:face?.outlineStyle || 'none',
+          outlineWidth:face?.outlineWidth || '0px'
         };
       });
-      expect(focus.id, 'keyboard focus must remain on the first role control').toBe('modeSeg');
+      expect(focus.text, 'keyboard focus must advance to the next role control').toBe('Кассир');
+      expect(focus.visible, 'the focused hit cell must expose keyboard focus').toBe(true);
       expect(focus.outlineStyle).not.toBe('none');
-      expect(Number.parseFloat(focus.outlineWidth)).toBeGreaterThan(0);
+      expect(Number.parseFloat(focus.outlineWidth)).toBe(2);
     }
   }
 });
