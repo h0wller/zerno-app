@@ -90,7 +90,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `core/auth-session.js` | Установка клиентской сессии: токен, `me`, onboarding, аватары, QR и регистрация FCM-токена | `window.setUser` |
+| `core/auth-session.js` | Установка клиентской сессии: токен, `me`, onboarding, аватары, QR и регистрация FCM-токена; публикует изменение профиля | `window.setUser`; `ztBus` event `auth:user-changed` |
 | `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
 | `core/registration.js` | Регистрация, согласие, OTP Telegram и поллинг подтверждения | `window.resetRegistrationState` |

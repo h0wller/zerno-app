@@ -19,7 +19,13 @@ const MENU_ITEM = {
   ]
 };
 
-test('cart keeps the current selected price and explains every amount without guessing the address', async ({ page }) => {
+const RECOMMENDED_ITEMS = [
+  { id: 'test-drink', cat: 'drinks', name: 'Лимонад к заказу', price: 180, on: 1, e: '🥤' },
+  { id: 'test-sauce', cat: 'sauces', name: 'Соус сырный', price: 70, on: 1, e: '🥫' },
+  { id: 'test-topping', cat: 'sauces', name: 'Шампиньоны', price: 90, on: 1, e: '🍄' }
+];
+
+test('cart keeps the current selected price and explains every amount without guessing the address', async ({ page }, testInfo) => {
   await page.clock.install({ time: new Date('2026-11-02T15:00:00.000Z') });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -45,7 +51,7 @@ test('cart keeps the current selected price and explains every amount without gu
     let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
 
     if (url.pathname === '/api/dmenu') {
-      body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
+      body = { items: [MENU_ITEM, ...RECOMMENDED_ITEMS], updatedAt: '2026-11-03T10:00:00.000Z' };
     } else if (url.pathname === '/api/delivery/info') {
       const isPreorderFixture = new Date().getTime() >= Date.parse('2026-11-02T20:30:00.000Z');
       body = {
@@ -84,12 +90,181 @@ test('cart keeps the current selected price and explains every amount without gu
     document.getElementById('cartPanel').classList.add('open');
     window.renderCart();
   });
+  await expect(page.locator('#checkoutGuestBar')).toBeAttached();
+  await expect(page.locator('#checkoutGuestBar')).toBeHidden();
+  await page.evaluate(() => window.setUser('checkout-clarity-token', {
+    id: 'checkout-clarity-guest',
+    name: 'Тестовый гость',
+    phone: '+7 999 123-45-67',
+    role: 'guest',
+    verified: 1,
+    stamps: 0,
+    free: 0
+  }));
+  await expect(page.locator('#checkoutGuestBar')).toBeVisible();
+  await expect(page.locator('#checkoutGuestName')).toHaveText('Тестовый гость');
+  await expect(page.locator('#checkoutGuestPhone')).toHaveText('+7 999 123-45-67');
+
+  await page.evaluate(() => document.getElementById('toasts')?.remove());
+  const desktopViewport = page.viewportSize();
+  await testInfo.attach('cart-overview-' + desktopViewport.width + 'px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#cartClose')).toBeVisible();
+  await expect(page.locator('#cartClose .cart-continue-short')).toBeVisible();
+  await expect(page.locator('#cartClose .cart-continue-full')).toBeHidden();
+  const headerActionsOverflow = await page.locator('.cart-header-actions').evaluate((el) =>
+    el.getBoundingClientRect().right > el.parentElement.getBoundingClientRect().right + 1
+  );
+  expect(headerActionsOverflow).toBe(false);
+  await testInfo.attach('cart-overview-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  await page.setViewportSize({ width: 320, height: 740 });
+  await testInfo.attach('cart-overview-320px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  await page.setViewportSize(desktopViewport);
+
+  const recommendations = page.locator('#cartAddons');
+  const recommendationsOrder = await page.locator('#cartItems').evaluate((items) => items.nextElementSibling?.id);
+  expect(recommendationsOrder).toBe('cartAddons');
+  await expect(recommendations.locator('.ca-title')).toHaveText('Рекомендуем к заказу');
+  await expect(recommendations.locator('.ca-tabs-scroll')).toHaveAttribute('role', 'group');
+  const allRecommendations = recommendations.locator('[data-atab="all"]');
+  const sauceRecommendations = recommendations.locator('[data-atab="sauces"]');
+  await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
+  await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'false');
+  await sauceRecommendations.click();
+  await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'true');
+  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(1);
+  await expect(recommendations.locator('.ac-name')).toHaveText(['Соус сырный']);
+  await allRecommendations.click();
+  await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
+  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(2);
+  await expect(recommendations.locator('.ac-name')).toHaveText(['Лимонад к заказу', 'Соус сырный']);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#cartClose')).toBeVisible();
+  await expect(page.locator('#cartClose .cart-continue-short')).toBeVisible();
+  await expect(page.locator('#cartClose .cart-continue-full')).toBeHidden();
+  const recommendationsHeaderOverflow = await page.locator('.cart-header-actions').evaluate((el) =>
+    el.getBoundingClientRect().right > el.parentElement.getBoundingClientRect().right + 1
+  );
+  expect(recommendationsHeaderOverflow).toBe(false);
+  await recommendations.scrollIntoViewIfNeeded();
+  const addButton = recommendations.locator('.ac-add-btn').first();
+  await expect(addButton).toHaveAccessibleName('Добавить Лимонад к заказу в корзину');
+  await expect(addButton.locator('.ac-add-label')).toHaveCount(0);
+  const addActionGeometry = await addButton.evaluate((button) => {
+    const action = button.parentElement;
+    const buttonRect = button.getBoundingClientRect();
+    const actionRect = action.getBoundingClientRect();
+    return {
+      buttonWidth: Math.round(buttonRect.width), buttonHeight: Math.round(buttonRect.height),
+      actionWidth: Math.round(actionRect.width), actionLeft: Math.round(actionRect.left),
+      buttonLeft: Math.round(buttonRect.left)
+    };
+  });
+  expect(addActionGeometry.buttonWidth).toBe(44);
+  expect(addActionGeometry.buttonHeight).toBe(44);
+  expect(addActionGeometry.actionWidth).toBe(44);
+  expect(Math.abs(addActionGeometry.actionLeft - addActionGeometry.buttonLeft)).toBeLessThan(1);
+  const recommendationTabsFit = await recommendations.locator('.cart-addons-wrap').evaluate((wrap) => {
+    const head = wrap.querySelector('.cart-addons-head');
+    const rail = wrap.querySelector('.ca-tabs-scroll');
+    return wrap.scrollWidth <= wrap.clientWidth
+      && head.scrollWidth <= head.clientWidth
+      && rail.clientWidth > 0
+      && rail.getBoundingClientRect().right <= head.getBoundingClientRect().right + 1;
+  });
+  expect(recommendationTabsFit).toBe(true);
+  await expect(recommendations.locator('[data-atab="drinks"]')).toBeVisible();
+  await testInfo.attach('cart-recommendations-before-add-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  await expect(recommendations.locator('.addon-pill-card').first()).not.toHaveClass(/in-cart/);
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+
+  // A recommendation button has fixed geometry before and after adding; qty never widens the menu cell.
+  await addButton.click();
+  const drinkCartRow = page.locator('#cartItems .cartItem').nth(1);
+  await expect(drinkCartRow.locator('.ci-name')).toHaveText('Лимонад к заказу');
+  await expect(drinkCartRow.locator('.ci-unit-price')).toHaveText('180 ₽ / шт.');
+  await expect(drinkCartRow.locator('.qty span')).toHaveText('1');
+  await expect(page.locator('#cartHeadCount')).toContainText('2 шт.');
+  await expect(page.locator('#cartSubtotal')).toContainText('915 ₽');
+  await expect(recommendations.locator('.addon-pill-card').first()).toHaveClass(/in-cart/);
+  const lemonRecommendation = recommendations.locator('.addon-pill-card').first();
+  await expect(lemonRecommendation.locator('.ac-count')).toHaveText('1');
+  await recommendations.locator('.addon-pill-card').first().scrollIntoViewIfNeeded();
+  const addedCardGeometry = await recommendations.locator('.addon-pill-card').first().evaluate((card) => ({
+    cardWidth: Math.round(card.getBoundingClientRect().width),
+    actionWidth: Math.round(card.querySelector('.ac-act').getBoundingClientRect().width),
+    buttonWidth: Math.round(card.querySelector('.ac-add-btn').getBoundingClientRect().width)
+  }));
+  expect(addedCardGeometry).toEqual({ cardWidth: 240, actionWidth: 44, buttonWidth: 44 });
+  await testInfo.attach('cart-recommendations-after-add-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+
+  // The same fixed-width add action adds another unit; quantity is reduced from the actual cart row.
+  await addButton.click();
+  await expect(lemonRecommendation.locator('.ac-count')).toHaveText('2');
+  await expect(drinkCartRow.locator('.qty span')).toHaveText('2');
+  await expect(page.locator('#cartSubtotal')).toContainText('1 095 ₽');
+  await drinkCartRow.locator('[data-act="-"]').click();
+  await expect(lemonRecommendation.locator('.ac-count')).toHaveText('1');
+  await expect(drinkCartRow.locator('.qty span')).toHaveText('1');
+  await expect(page.locator('#cartSubtotal')).toContainText('915 ₽');
+  await drinkCartRow.locator('[data-act="-"]').click();
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+  await expect(recommendations.locator('.addon-pill-card').first()).not.toHaveClass(/in-cart/);
+  await expect(page.locator('#cartSubtotal')).toContainText('735 ₽');
+
+  // A pizza topping is an embedded modifier of Margarita, never a second cart item/card.
+  const margaritaRow = page.locator('#cartItems .cartItem[data-cart-idx="0"]');
+  await margaritaRow.locator('.ci-toggle-mods-btn').click();
+  const mushroomChip = margaritaRow.locator('.ci-mod-chip[data-mod-id="test-topping"]');
+  await expect(mushroomChip).toBeVisible();
+  await mushroomChip.click();
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+  await expect(margaritaRow.locator('.ci-mod-badge')).toContainText('Шампиньоны');
+  await expect(margaritaRow.locator('.ci-unit-price')).toHaveText('825 ₽ / шт.');
+  await expect(margaritaRow.locator('.ci-line-total')).toHaveText('825 ₽');
+  await expect(margaritaRow.locator('.ci-mod-del')).toHaveCount(1);
+  const modifierLivesInsidePizzaCard = await margaritaRow.locator('.ci-mods-list').evaluate((list) =>
+    list.parentElement === list.closest('.cartItem')
+  );
+  expect(modifierLivesInsidePizzaCard).toBe(true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#cartScrollBody').evaluate((el) => { el.scrollTop = 0; });
+  await testInfo.attach('cart-margarita-with-topping-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  await margaritaRow.locator('.ci-mod-del').click();
+  await expect(margaritaRow.locator('.ci-mod-badge')).toHaveCount(0);
+  await expect(margaritaRow.locator('.ci-unit-price')).toHaveText('735 ₽ / шт.');
+
+  await page.evaluate(() => { document.getElementById('cartScrollBody').scrollTop = 0; });
+  await page.setViewportSize(desktopViewport);
 
   const row = page.locator('#cartItems .cartItem[data-cart-idx="0"]');
+  await expect.poll(() => row.evaluate((el) => getComputedStyle(el).borderBottomStyle)).toBe('solid');
   await expect(row.locator('.ci-unit-price')).toHaveText('735 ₽ / шт.');
   await expect(row.locator('.ci-line-total')).toHaveText('735 ₽');
   await expect(row.locator('.ci-name')).toHaveText('Маргарита');
   await expect(row.locator('.ci-opt')).toHaveText('35 см, пышное');
+  await expect(row.locator('.ci-price-update')).toHaveText('Цена обновлена по актуальному меню: 690 ₽ → 735 ₽');
+  await expect(row.locator('.ci-price-update')).toHaveCSS('font-size', '10.5px');
+  await expect(row.locator('[data-act="-"]')).toHaveAccessibleName('Уменьшить количество Маргарита');
+  await expect(row.locator('[data-act="+"]')).toHaveAccessibleName('Увеличить количество Маргарита');
 
   await expect(page.locator('#checkoutPlace')).toHaveValue('');
   await expect(page.locator('#checkoutStreet')).toHaveValue('');
@@ -117,10 +292,79 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartFee')).toContainText('200 ₽');
   await expect(page.locator('#cartTotalLabel')).toHaveText('Итого к оплате');
   await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
+  const summaryFontSize = await page.locator('#cartFooterBar .csl-row').first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect(summaryFontSize).toBeLessThanOrEqual(12);
+
+  await page.locator('.checkoutForm').scrollIntoViewIfNeeded();
+  await page.evaluate(() => document.getElementById('toasts')?.remove());
+  await testInfo.attach('cart-checkout-' + desktopViewport.width + 'px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 740 }]) {
+    await page.setViewportSize(viewport);
+    await page.locator('.checkoutForm').scrollIntoViewIfNeeded();
+    if (viewport.width === 390) {
+      const footerHeight = await page.locator('#cartFooterBar').evaluate((el) => el.getBoundingClientRect().height);
+      expect(footerHeight).toBeLessThan(200);
+    }
+    const overflow = await page.evaluate(() =>
+      document.documentElement.scrollWidth > window.innerWidth ||
+      document.getElementById('cartScrollBody').scrollWidth > document.getElementById('cartScrollBody').clientWidth
+    );
+    expect(overflow).toBe(false);
+    await testInfo.attach('cart-checkout-' + viewport.width + 'px', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#checkoutPlace').scrollIntoViewIfNeeded();
+  const addressBookButton = page.locator('#addrBookBtn');
+  await expect(addressBookButton).toBeVisible();
+  await page.evaluate(() => {
+    const savedAddresses = [
+      { id: 'saved-1', place: 'Янтарный', street: 'Советская', house: '70Г' },
+      { id: 'saved-2', place: 'Янтарный', street: 'Балтийская', house: '1' }
+    ];
+    localStorage.setItem('zt_saved_addresses', JSON.stringify(savedAddresses));
+    localStorage.setItem('zt_saved_address', JSON.stringify(savedAddresses[0]));
+  });
+  await addressBookButton.click();
+  const addressSheet = page.locator('#addrBookSheet');
+  await expect(addressSheet).toBeVisible();
+  await expect(addressSheet).toHaveClass(/open/);
+  await expect(addressSheet.locator('.abs-row')).toHaveCount(2);
+  const addressSheetGeometry = await addressSheet.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const close = el.querySelector('.abs-close').getBoundingClientRect();
+    const action = el.querySelector('.abs-ico').getBoundingClientRect();
+    return {
+      left: Math.round(rect.left), right: Math.round(rect.right), bottom: Math.round(rect.bottom),
+      closeWidth: Math.round(close.width), actionWidth: Math.round(action.width), actionHeight: Math.round(action.height)
+    };
+  });
+  expect(addressSheetGeometry.left).toBeGreaterThanOrEqual(0);
+  expect(addressSheetGeometry.right).toBeLessThanOrEqual(390);
+  expect(addressSheetGeometry.bottom).toBeLessThanOrEqual(844);
+  expect(addressSheetGeometry.closeWidth).toBe(44);
+  expect(addressSheetGeometry.actionWidth).toBe(44);
+  expect(addressSheetGeometry.actionHeight).toBe(44);
+  await testInfo.attach('cart-address-book-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+  await addressSheet.locator('.abs-close').click();
+  await expect(addressSheet).toBeHidden();
+  await expect(page.locator('#checkoutPlace')).toHaveValue('Янтарный');
+  await page.setViewportSize(desktopViewport);
 
   const checkoutSections = page.locator('.checkoutForm > .checkout-section');
   await expect(checkoutSections).toHaveCount(3);
-  await expect(checkoutSections.nth(0).locator('h4')).toHaveText('Получение');
+  await expect(checkoutSections.nth(0).locator('h4')).toHaveText('Получение заказа');
+  await expect(checkoutSections.nth(0).locator('.checkout-recipient-card')).toContainText('Данные получателя');
+  await expect(checkoutSections.nth(0).locator('.checkout-recipient-card')).toContainText('Тестовый гость');
+  await expect(checkoutSections.nth(0).locator('.checkout-recipient-card')).toContainText('+7 999 123-45-67');
   await expect(checkoutSections.nth(1).locator('h4')).toHaveText('Когда и как оплатить');
   await expect(checkoutSections.nth(2).locator('h4')).toHaveText('Проверка заказа');
   await expect(checkoutSections.nth(0).locator('#checkoutMethod')).toHaveCount(1);

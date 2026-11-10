@@ -518,7 +518,7 @@ async function refreshPromoLine(sum) {
 
     var tabsHtml = tabs.map(function (t) {
       var isOn = activeAddonTab === t.id;
-      return '<button type="button" class="addon-tab-btn' + (isOn ? " on" : "") + '" data-atab="' + t.id + '">' + t.l + "</button>";
+      return '<button type="button" class="addon-tab-btn' + (isOn ? " on" : "") + '" data-atab="' + t.id + '" aria-pressed="' + (isOn ? "true" : "false") + '">' + t.l + "</button>";
     }).join("");
 
     var cardsHtml = filtered.map(function (p) {
@@ -531,13 +531,14 @@ async function refreshPromoLine(sum) {
         : '<div class="ac-emoji">' + (p.e || (p.cat === "drinks" ? "🥤" : "🥫")) + "</div>";
 
       var addonLabel = esc(p.name);
-      var actHtml = qty > 0
-        ? '<div class="ac-stepper">' +
-            '<button type="button" class="ac-step" aria-label="Уменьшить количество ' + addonLabel + '" data-ac-act="minus" data-addon-id="' + p.id + '">−</button>' +
-            '<span class="ac-qty">' + qty + "</span>" +
-            '<button type="button" class="ac-step" aria-label="Увеличить количество ' + addonLabel + '" data-ac-act="plus" data-addon-id="' + p.id + '">+</button>' +
-          "</div>"
-        : '<button type="button" class="ac-add-btn" aria-label="Добавить ' + addonLabel + ' в корзину" data-addon-id="' + p.id + '">＋</button>';
+      var actionLabel = qty > 0
+        ? "Добавить ещё " + addonLabel + " в корзину. Сейчас в корзине: " + qty
+        : "Добавить " + addonLabel + " в корзину";
+      var actHtml =
+        '<button type="button" class="ac-add-btn' + (qty > 0 ? " in-cart" : "") + '" aria-label="' + actionLabel + '" data-addon-id="' + p.id + '">' +
+          '<span class="ac-count" aria-hidden="true">' + (qty > 0 ? qty : "") + "</span>" +
+          '<span class="ac-add-icon" aria-hidden="true">＋</span>' +
+        "</button>";
 
       return '<div class="addon-pill-card' + (qty > 0 ? " in-cart" : "") + '">' +
         '<div class="ac-media">' + imgHtml + "</div>" +
@@ -550,15 +551,15 @@ async function refreshPromoLine(sum) {
     }).join("");
 
     host.innerHTML =
-      '<div class="cart-addons-wrap">' +
+      '<section class="cart-addons-wrap" aria-label="Рекомендуем к заказу">' +
         '<div class="cart-addons-head">' +
           '<span class="ca-title">Рекомендуем к заказу</span>' +
-          '<div class="ca-tabs-scroll">' + tabsHtml + "</div>" +
+          '<div class="ca-tabs-scroll" role="group" aria-label="Категории рекомендаций">' + tabsHtml + "</div>" +
         "</div>" +
         '<div class="ca-cards-scroll">' +
           (cardsHtml || '<div class="ca-empty">Нет позиций</div>') +
         "</div>" +
-      "</div>";
+      "</section>";
   }
 
   /* #deliveryPromoBar отключён по продуктовому решению 2026-10-27: плашка «до подарка» больше не рисуется.
@@ -611,36 +612,27 @@ function clearPromo() {
   }
 
   function syncCheckoutGuestAutofill() {
-    var cPanelEl = document.getElementById("cartPanel");
-    if (!cPanelEl) return;
-    var gBar = document.getElementById("checkoutGuestBar");
-    var user = typeof window.me !== "undefined" ? window.me : null;
-    if (!user || (!user.name && !user.phone)) {
-      if (gBar) gBar.hidden = true;
-      return;
+    var recipientCard = document.getElementById("checkoutGuestBar");
+    if (!recipientCard) return;
+
+    var user = window.me || null;
+    var hasRecipient = !!(user && (user.name || user.phone));
+    recipientCard.hidden = !hasRecipient;
+    if (!hasRecipient) return;
+
+    var nameEl = recipientCard.querySelector("#checkoutGuestName");
+    var phoneEl = recipientCard.querySelector("#checkoutGuestPhone");
+    if (nameEl) nameEl.textContent = user.name || "Гость";
+    if (phoneEl) {
+      phoneEl.textContent = user.phone || "";
+      phoneEl.hidden = !user.phone;
     }
-    var methodEl = document.getElementById("checkoutMethod");
-    if (!gBar && methodEl) {
-      var wrapLabel = methodEl.closest("label") || methodEl.parentElement;
-      if (wrapLabel && wrapLabel.parentNode) {
-        gBar = document.createElement("div");
-        gBar.id = "checkoutGuestBar";
-        gBar.className = "checkout-guest-bar";
-        wrapLabel.parentNode.insertBefore(gBar, wrapLabel);
-      }
-    }
-    if (gBar) {
-      gBar.hidden = false;
-      gBar.innerHTML =
-        '<span class="cgb-label">👤 Получатель:</span>' +
-        '<b class="cgb-val" id="checkoutGuestName">' + esc(user.name || "Гость") + "</b>" +
-        (user.phone ? '<span class="cgb-phone" id="checkoutGuestPhone">' + esc(user.phone) + "</span>" : "");
-    }
-    var nameInp = document.getElementById("checkoutName");
-    if (nameInp && !nameInp.value && user.name) nameInp.value = user.name;
-    var phoneInp = document.getElementById("checkoutPhone");
-    if (phoneInp && !phoneInp.value && user.phone) phoneInp.value = user.phone;
   }
+
+  if (window.ztBus && typeof window.ztBus.on === "function") {
+    window.ztBus.on("auth:user-changed", syncCheckoutGuestAutofill);
+  }
+  syncCheckoutGuestAutofill();
 
   function ensurePlaceOptions() {
     var placeEl = document.getElementById("checkoutPlace");
@@ -814,7 +806,7 @@ function clearPromo() {
     var unitTotal = baseUnitPrice + modSum;
     var lineTotal = unitTotal * (Number(c.qty) || 1);
     var priceUpdateNote = Number(c.priceUpdateFrom) > 0
-      ? '<small class="ci-price-update">Цена обновлена по актуальному меню: ' + fmt(c.priceUpdateFrom) + ' → ' + fmt(baseUnitPrice) + '</small>'
+      ? '<small class="ci-price-update" role="note">Цена обновлена по актуальному меню: ' + fmt(c.priceUpdateFrom) + ' → ' + fmt(baseUnitPrice) + '</small>'
       : '';
 
     var modsHtml = renderAttachedModifiers(c.modifiers, itemIndex);
@@ -832,9 +824,9 @@ function clearPromo() {
           priceUpdateNote +
         '</div>' +
         '<div class="qty">' +
-          '<button type="button" data-ci="' + itemIndex + '" data-act="-">−</button>' +
+          '<button type="button" data-ci="' + itemIndex + '" data-act="-" aria-label="Уменьшить количество ' + esc(c.name) + '">−</button>' +
           '<span>' + c.qty + '</span>' +
-          '<button type="button" data-ci="' + itemIndex + '" data-act="+">+</button>' +
+          '<button type="button" data-ci="' + itemIndex + '" data-act="+" aria-label="Увеличить количество ' + esc(c.name) + '">+</button>' +
         '</div>' +
       '</div>' +
       modsHtml +

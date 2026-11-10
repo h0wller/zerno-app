@@ -5,7 +5,7 @@
   gap: 4px;
   padding-left: 10px;
   margin-top: 2px;
-  border-left: 2px solid var(--fr-tan, #C99E6E);
+  border-left: 2px solid var(--fr-tan, #8A8A8A);
   width: 100%;
   box-sizing: border-box;
 }
@@ -48,7 +48,7 @@
   padding: 2px 0;
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--flame, #C03B2A);
+  color: var(--flame, #444444);
   cursor: pointer;
   display: inline-block;
   text-align: left;
@@ -85,7 +85,7 @@
 .ci-mod-chip {
   flex: 0 0 auto;
   background: #FFFFFF;
-  border: 1.5px solid var(--fr-tan, #C99E6E);
+  border: 1.5px solid var(--fr-tan, #8A8A8A);
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 11.5px;
@@ -97,198 +97,262 @@
   box-sizing: border-box;
 }
 .ci-mod-chip:hover {
-  background: var(--fr-rice, #EFE6D8);
+  background: var(--fr-rice, #F0F0F0);
 }
 .ci-mod-chip.selected {
-  background: var(--flame, #C03B2A);
+  background: var(--flame, #444444);
   color: #FFFFFF;
   border-color: var(--fr-choc, var(--flame));
   font-weight: 700;
   box-shadow: 1.5px 1.5px 0 var(--fr-choc, rgba(0, 0, 0, 0.2));
 }
 
-/* Верхняя карусель «Рекомендуем к заказу» */
+/* Карусель рекомендаций: компактная геометрия 240×54 px. */
 .cart-addons-wrap {
   margin: 8px 0 14px;
   padding: 10px;
-  background: rgba(201, 158, 110, 0.12);
+  background: var(--fr-rice, var(--panel, #F3F8FC));
+  border: 1px solid var(--fr-tan, var(--line, #D8DFE4));
   border-radius: 14px;
-  border: 1.5px solid rgba(201, 158, 110, 0.25);
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
 }
+
 .cart-addons-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
   margin-bottom: 8px;
 }
+
 .ca-title {
+  flex: 0 0 auto;
+  color: var(--fr-choc, var(--ink, #101418));
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: .05em;
+  line-height: 1.2;
   text-transform: uppercase;
-  color: var(--fr-choc, var(--ink));
   white-space: nowrap;
 }
+
 .ca-tabs-scroll {
   display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
   gap: 4px;
+  max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  cursor: grab;
 }
-.ca-tabs-scroll::-webkit-scrollbar {
-  display: none;
-}
-.addon-tab-btn {
-  border: 1px solid var(--line, #D8DFE4);
-  background: #FFFFFF;
-  color: var(--ink, #101418);
-  border-radius: 999px;
-  padding: 3px 9px;
-  font-size: 10.5px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.addon-tab-btn.on {
-  background: var(--flame, #C03B2A);
-  border-color: var(--fr-choc, var(--flame));
-  color: #FFFFFF;
-}
-.ca-cards-scroll {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 2px 2px 4px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  cursor: grab;
-}
+
+.ca-tabs-scroll::-webkit-scrollbar,
 .ca-cards-scroll::-webkit-scrollbar {
   display: none;
 }
+
+.addon-tab-btn {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border: 1px solid var(--fr-tan, var(--line, #D8DFE4));
+  border-radius: 999px;
+  background: var(--fr-paper, #FFFFFF);
+  color: var(--fr-choc, var(--ink, #101418));
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.addon-tab-btn.on {
+  background: var(--flame, #444444);
+  border-color: var(--fr-choc, var(--flame, #101418));
+  color: #FFFFFF;
+}
+
+.ca-cards-scroll {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+
 .addon-pill-card {
   flex: 0 0 240px;
   width: 240px;
   height: 54px;
-  background: #FFFFFF;
-  border: 1.5px solid var(--line, #D8DFE4);
-  border-radius: 12px;
-  padding: 5px 8px;
+  min-width: 0;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 7px;
+  padding: 5px 8px;
+  border: 1px solid var(--fr-tan, var(--line, #D8DFE4));
+  border-radius: 12px;
+  background: var(--fr-paper, #FFFFFF);
+  scroll-snap-align: start;
 }
+
 .addon-pill-card.in-cart {
-  border-color: var(--flame, #C03B2A);
-  background: rgba(192, 59, 42, 0.03);
+  border-color: var(--flame, #444444);
+  background: var(--fr-rice, var(--panel, #F3F8FC));
 }
+
 .ac-media {
+  flex: 0 0 32px;
   width: 32px;
   height: 32px;
-  flex: 0 0 32px;
-  border-radius: 8px;
   overflow: hidden;
-  background: #F9F6F0;
   display: grid;
   place-items: center;
+  border-radius: 8px;
+  background: var(--fr-rice, var(--panel, #F3F8FC));
 }
+
 .ac-img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
+
 .ac-emoji {
   font-size: 20px;
   line-height: 1;
 }
+
 .ac-info {
-  flex: 1;
-  min-width: 0;
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   justify-content: center;
   gap: 2px;
+  min-width: 0;
 }
+
 .ac-name {
+  overflow: hidden;
+  color: var(--fr-choc, var(--ink, #101418));
   font-size: 11px;
   font-weight: 700;
-  color: var(--ink, #101418);
   line-height: 1.2;
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .ac-price {
+  color: var(--flame, #444444);
   font-size: 12px;
   font-weight: 800;
-  color: var(--flame, #C03B2A);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
+
 .ac-act {
-  flex: 0 0 auto;
-  width: 104px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-}
-.ac-add-btn {
+  flex: 0 0 44px;
   width: 44px;
   height: 44px;
-  border-radius: 8px;
-  background: var(--panel, #F3F8FC);
-  border: 1px solid var(--line, #D8DFE4);
-  color: var(--ink, #101418);
-  font-size: 15px;
-  font-weight: 800;
   display: grid;
   place-items: center;
-  cursor: pointer;
 }
-.ac-add-btn:hover {
-  background: var(--flame, #C03B2A);
-  border-color: var(--fr-choc, var(--flame));
-  color: #FFFFFF;
-}
-.ac-stepper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 104px;
-  height: 44px;
-  border-radius: 8px;
-  background: var(--flame, #C03B2A);
-  border: 0;
-  box-shadow: inset 0 0 0 1px var(--fr-choc, var(--flame));
-  color: #FFFFFF;
-  padding: 0;
-  gap: 0;
-}
-.ac-step {
+
+.ac-add-btn {
+  position: relative;
+  box-sizing: border-box;
   flex: 0 0 44px;
+  display: grid;
+  place-items: center;
   width: 44px;
   min-width: 44px;
   height: 44px;
-  border: none;
-  background: none;
-  color: #FFFFFF;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
+  min-height: 44px;
   padding: 0;
+  border: 2px solid var(--fr-choc, #101418);
+  border-radius: 10px;
+  background: var(--flame, #c03b2a);
+  color: #FFFFFF;
+  box-shadow: 2px 2px 0 var(--fr-choc, #101418);
+  font-size: 20px;
+  font-weight: 900;
   line-height: 1;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
 }
-.ac-qty {
-  flex: 1 1 14px;
+
+.ac-add-btn:hover {
+  background: var(--fr-choc, #101418);
+  color: #FFFFFF;
+}
+
+.ac-add-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--fr-choc, #101418);
+}
+
+.ac-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 3px;
+  border: 1.5px solid var(--fr-choc, #101418);
+  border-radius: 999px;
+  background: var(--fr-paper, #FFFFFF);
+  color: var(--fr-choc, #101418);
+  box-shadow: 1px 1px 0 var(--fr-choc, #101418);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ac-count:empty {
+  display: none;
+}
+
+.ac-add-btn:focus-visible,
+.addon-tab-btn:focus-visible {
+  outline: 2px solid var(--fr-choc, #101418);
+  outline-offset: 2px;
+}
+
+.ca-empty {
+  padding: 10px 4px;
+  color: var(--soft, #586470);
   font-size: 11px;
-  font-weight: 800;
-  min-width: 14px;
-  text-align: center;
+}
+
+@media (max-width: 380px) {
+  .cart-addons-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .ca-tabs-scroll {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .addon-pill-card,
+  .addon-tab-btn,
+  .ac-add-btn {
+    transition: none;
+  }
 }
