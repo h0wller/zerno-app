@@ -230,21 +230,27 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
     (function bindProfileControls() {
         var input = document.getElementById('nameInput');
         var edit = document.getElementById('nameEditBtn');
-        var save = document.getElementById('nameSaveBtn');
-        var cancel = document.getElementById('nameCancelBtn');
+        var save = document.getElementById('profileSettingsBtn');
         var historyToggle = document.getElementById('historyToggleBtn');
         if (edit) edit.addEventListener('click', function () {
             if (!me || !input) return;
+            if (nameEditing) {
+                input.value = me.name || '';
+                setNameEditing(false);
+                edit.focus();
+                return;
+            }
             input.value = me.name || '';
             setNameEditing(true);
             input.focus();
             input.select();
         });
-        if (save) save.addEventListener('click', saveProfileName);
-        if (cancel) cancel.addEventListener('click', function () {
-            if (input && me) input.value = me.name || '';
-            setNameEditing(false);
-            if (edit) edit.focus();
+        if (save) save.addEventListener('click', function () {
+            if (nameEditing) {
+                saveProfileName();
+                return;
+            }
+            if (typeof window.openProfileSettings === 'function') window.openProfileSettings();
         });
         if (input) input.addEventListener('keydown', function (event) {
             if (event.key === 'Enter' && nameEditing) {
@@ -252,7 +258,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                 saveProfileName();
             } else if (event.key === 'Escape' && nameEditing) {
                 event.preventDefault();
-                if (cancel) cancel.click();
+                if (edit) edit.click();
             }
         });
         if (historyToggle) historyToggle.addEventListener('click', function () {
@@ -261,7 +267,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         });
     })();
 
-    function renderProfile() {
+        function renderProfile() {
         if (_rpRunning) return;
         _rpRunning = true;
         try {
