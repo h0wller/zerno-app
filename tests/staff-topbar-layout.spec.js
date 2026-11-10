@@ -352,3 +352,95 @@ test('work modes keep the role switcher in the topbar and preserve the support l
   await expect(page.locator('#adminBar')).toBeVisible();
   await expect(page.locator('#chatsToggle2')).toBeHidden();
 });
+
+
+test('mobile staff controls receive taps across the full visual button surface', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: width === 320 ? 740 : 844 });
+      await mockStaffSession(page);
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(() =>
+        window.me && window.me.role === 'admin' &&
+        document.documentElement.hasAttribute('data-staff-ready') &&
+        typeof window.syncBrandViews === 'function'
+      );
+      await page.evaluate(() => window.setMode('admin'));
+
+      const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
+      const row = page.locator(view + ' .menu-controls-row');
+      const edit = row.locator('#editToggle');
+      const roleButtons = row.locator('#modeSeg > button');
+      await expect(edit).toBeVisible();
+      await expect(roleButtons).toHaveCount(4);
+
+      const metrics = await page.evaluate((viewSelector) => {
+        const root = document.querySelector(viewSelector);
+        const row = root.querySelector('.menu-controls-row');
+        const controls = [
+          ...row.querySelectorAll('#modeSeg > button'),
+          row.querySelector('#editToggle')
+        ];
+        const rect = element => {
+          const value = element.getBoundingClientRect();
+          return { x:value.x, y:value.y, width:value.width, height:value.height, right:value.right, bottom:value.bottom };
+        };
+        const points = element => {
+          const box = element.getBoundingClientRect();
+          const inset = Math.min(2, box.width / 4, box.height / 4);
+          return [
+            { x:box.left + inset, y:box.top + inset, point:'top-left' },
+            { x:box.right - inset, y:box.top + inset, point:'top-right' },
+            { x:box.left + inset, y:box.bottom - inset, point:'bottom-left' },
+            { x:box.right - inset, y:box.bottom - inset, point:'bottom-right' }
+          ];
+        };
+        return controls.map(element => ({
+          id: element.id || element.textContent.trim(),
+          rect: rect(element),
+          hitPoints: points(element).map(point => ({
+            ...point,
+            hit: (() => {
+              const target = document.elementFromPoint(point.x, point.y);
+              return !!target && (target === element || element.contains(target));
+            })()
+          }))
+        }));
+      }, view);
+
+      expect(metrics).toHaveLength(5);
+      for (const control of metrics) {
+        expect(control.rect.width, control.id + ' visual width').toBeGreaterThan(0);
+        expect(control.rect.height, control.id + ' visual height').toBe(32);
+        expect(control.hitPoints.every(point => point.hit),
+          control.id + ' must receive input at all four visual corners: ' + JSON.stringify(control.hitPoints)
+        ).toBe(true);
+      }
+
+      // Playwright's trial actionability checks the browser's actual hit target without
+      // dispatching a click, so this test cannot enter a staff mode or enable edit mode.
+      for (let index = 0; index < 4; index += 1) {
+        await roleButtons.nth(index).click({ trial: true, position: { x: 2, y: 2 } });
+        await roleButtons.nth(index).click({ trial: true, position: { x: -2, y: -2 } });
+      }
+      await edit.click({ trial: true, position: { x: 2, y: 2 } });
+      await edit.click({ trial: true, position: { x: -2, y: -2 } });
+
+      const distances = await page.evaluate((viewSelector) => {
+        const root = document.querySelector(viewSelector);
+        const controls = [...root.querySelectorAll('.menu-controls-row #modeSeg > button, .menu-controls-row #editToggle')];
+        const boxes = controls.map(element => element.getBoundingClientRect());
+        const pairDistances = [];
+        for (let i = 0; i < boxes.length; i += 1) {
+          for (let j = i + 1; j < boxes.length; j += 1) {
+            const horizontal = Math.max(boxes[i].left - boxes[j].right, boxes[j].left - boxes[i].right, 0);
+            const vertical = Math.max(boxes[i].top - boxes[j].bottom, boxes[j].top - boxes[i].bottom, 0);
+            pairDistances.push({ a:i, b:j, distance:Math.hypot(horizontal, vertical) });
+          }
+        }
+        return pairDistances;
+      }, view);
+      expect(distances.every(item => item.distance >= 0)).toBe(true);
+    }
+  }
+});
