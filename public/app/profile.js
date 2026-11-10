@@ -168,6 +168,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                 : '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></svg>';
         }
         if (gear) {
+            gear.disabled = false;
             gear.setAttribute('aria-label', editing ? 'Сохранить имя' : 'Настройки профиля');
             gear.title = editing ? 'Сохранить имя' : 'Настройки профиля';
             gear.setAttribute('aria-controls', editing ? 'nameInput' : 'settingsModal');
@@ -242,13 +243,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             setNameEditing(true);
             input.focus();
             input.select();
-        });
-        if (gear) gear.addEventListener('click', function () {
-            if (nameEditing) {
-                saveProfileName();
-                return;
-            }
-            if (typeof window.openProfileSettings === 'function') window.openProfileSettings();
         });
         if (input) input.addEventListener('keydown', function (event) {
             if (event.key === 'Enter' && nameEditing) {
@@ -326,7 +320,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         }
     }
 
-    Object.assign(window, { renderBonus, renderProfile });
+    Object.assign(window, { renderBonus, renderProfile, saveProfileName });
 
 })();
 
