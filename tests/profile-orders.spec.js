@@ -390,6 +390,16 @@ test.describe('Модуль заказов профиля', () => {
     expect(editingGeometry.nodes[1].left).toBeGreaterThanOrEqual(editingGeometry.nodes[0].right);
     expect(editingGeometry.nodes[2].left).toBeGreaterThanOrEqual(editingGeometry.nodes[1].right);
 
+    await testInfo.attach('profile-name-editing-320px', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await testInfo.attach('profile-name-editing-390px', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
+
     await name.fill('Черновик');
     await page.getByRole('button', { name: 'Отменить изменение имени' }).click();
     await expect(name).toHaveAttribute('readonly', '');
