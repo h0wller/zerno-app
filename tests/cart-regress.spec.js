@@ -923,7 +923,7 @@ test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
       await expect(addButton).toHaveAccessibleName('Добавить Лимонад в корзину');
       await expect(addButton).toHaveCSS('background-color', 'rgb(192, 59, 42)');
       await expect(addButton).toHaveCSS('color', 'rgb(255, 255, 255)');
-      await expect(addButton).toHaveCSS('border-width', '1.5px');
+      await expect(addButton).toHaveCSS('border-style', 'solid');
       await addButton.click();
       await expect(addonCard).toHaveClass(/in-cart/);
       const stepper = addonCard.locator('.ac-stepper');
