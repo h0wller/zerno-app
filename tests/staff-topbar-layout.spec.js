@@ -150,10 +150,14 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
               left: Number.parseFloat(face.left) || 0
             };
             const hitEdges = [
-              { edge:'top', x:box.left + box.width / 2, y:box.top + 2 },
-              { edge:'right', x:box.right - 2, y:box.top + box.height / 2 },
-              { edge:'bottom', x:box.left + box.width / 2, y:box.bottom - 2 },
-              { edge:'left', x:box.left + 2, y:box.top + box.height / 2 }
+              { edge:'top-left', x:box.left + 2, y:box.top + 2 },
+              { edge:'top-right', x:box.right - 2, y:box.top + 2 },
+              { edge:'bottom-right', x:box.right - 2, y:box.bottom - 2 },
+              { edge:'bottom-left', x:box.left + 2, y:box.bottom - 2 },
+              { edge:'top-center', x:box.left + box.width / 2, y:box.top + 2 },
+              { edge:'right-center', x:box.right - 2, y:box.top + box.height / 2 },
+              { edge:'bottom-center', x:box.left + box.width / 2, y:box.bottom - 2 },
+              { edge:'left-center', x:box.left + 2, y:box.top + box.height / 2 }
             ].map(point => {
               const target = document.elementFromPoint(point.x, point.y);
               return {
@@ -187,10 +191,14 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
               left:Number.parseFloat(face.left) || 0
             };
             const hitEdges = [
-              { edge:'top', x:box.left + box.width / 2, y:box.top + 2 },
-              { edge:'right', x:box.right - 2, y:box.top + box.height / 2 },
-              { edge:'bottom', x:box.left + box.width / 2, y:box.bottom - 2 },
-              { edge:'left', x:box.left + 2, y:box.top + box.height / 2 }
+              { edge:'top-left', x:box.left + 2, y:box.top + 2 },
+              { edge:'top-right', x:box.right - 2, y:box.top + 2 },
+              { edge:'bottom-right', x:box.right - 2, y:box.bottom - 2 },
+              { edge:'bottom-left', x:box.left + 2, y:box.bottom - 2 },
+              { edge:'top-center', x:box.left + box.width / 2, y:box.top + 2 },
+              { edge:'right-center', x:box.right - 2, y:box.top + box.height / 2 },
+              { edge:'bottom-center', x:box.left + box.width / 2, y:box.bottom - 2 },
+              { edge:'left-center', x:box.left + 2, y:box.top + box.height / 2 }
             ].map(point => {
               const target = document.elementFromPoint(point.x, point.y);
               return {
