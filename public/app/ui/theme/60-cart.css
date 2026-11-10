@@ -229,10 +229,10 @@
   box-sizing: border-box;
   margin-top: 9px;
   padding: 8px 10px;
-  border: 1px solid rgba(201, 158, 110, 0.48);
+  border: 1px solid var(--fr-tan, var(--line, #D8DFE4));
   border-left: 3px solid var(--flame, #C03B2A);
   border-radius: 11px;
-  background: #FFF9EF;
+  background: var(--fr-paper, var(--card, #FFFFFF));
   color: var(--fr-choc, var(--ink, #101418));
   line-height: 1.25;
 }
@@ -405,10 +405,10 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
 .cartPanel .cartItem {
   margin: 0;
   padding: 14px;
-  border: 1.5px solid rgba(58, 42, 28, 0.56);
+  border: 1.5px solid rgba(16, 20, 24, 0.42);
   border-radius: 17px;
   background: var(--card, #fff);
-  box-shadow: 2px 2px 0 rgba(58, 42, 28, 0.14);
+  box-shadow: 2px 2px 0 rgba(16, 20, 24, 0.12);
 }
 
 .cartPanel .ci-main-row {
@@ -510,10 +510,10 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
   min-width: 0;
   margin: 0;
   padding: 15px;
-  border: 1.25px solid rgba(58, 42, 28, 0.38);
+  border: 1.25px solid rgba(16, 20, 24, 0.28);
   border-radius: 18px;
   background: var(--card, #fff);
-  box-shadow: 2px 2px 0 rgba(58, 42, 28, 0.1);
+  box-shadow: 2px 2px 0 rgba(16, 20, 24, 0.08);
   counter-increment: checkout-step;
 }
 
@@ -715,18 +715,18 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
 .cart-footer-bar #checkoutBtn {
   min-height: 52px;
   padding: 12px 16px;
-  border: 2px solid var(--fr-choc, #3a2a1c);
+  border: 2px solid var(--fr-choc, #101418);
   border-radius: 14px;
   background: var(--flame, #c03b2a);
   color: #fff;
-  box-shadow: 3px 3px 0 var(--fr-choc, #3a2a1c);
+  box-shadow: 3px 3px 0 var(--fr-choc, #101418);
   font-size: 15px;
   font-weight: 900;
 }
 
 .cart-footer-bar #checkoutBtn:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--fr-choc, #3a2a1c);
+  box-shadow: 1px 1px 0 var(--fr-choc, #101418);
 }
 
 .cart-continue-btn {
@@ -853,11 +853,11 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
   min-height: 44px;
   margin: 0;
   padding: 0 10px;
-  border: 1.5px solid var(--fr-choc, #3a2a1c);
+  border: 1.5px solid var(--fr-choc, #101418);
   border-radius: 12px;
   background: var(--fr-rice, #efe6d8);
   color: var(--fr-choc, var(--ink, #101418));
-  box-shadow: 2px 2px 0 var(--fr-choc, #3a2a1c);
+  box-shadow: 2px 2px 0 var(--fr-choc, #101418);
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
@@ -865,7 +865,7 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
 
 .cart-header-actions .cart-continue-btn:active {
   transform: translate(2px, 2px);
-  box-shadow: 0 0 0 var(--fr-choc, #3a2a1c);
+  box-shadow: 0 0 0 var(--fr-choc, #101418);
 }
 
 .cart-continue-short {
