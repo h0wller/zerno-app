@@ -142,21 +142,32 @@
   }
   /* Reserve the complete staff hit-cell rows before and after hydration. */
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
     grid-template-rows:44px 44px !important;
     row-gap:8px !important;
+    column-gap:0 !important;
     height:96px !important;
     min-height:96px !important;
     max-height:96px !important;
     overflow:visible !important;
   }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    grid-column:1 !important;
+    grid-row:1 !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+  }
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    grid-column:1 !important;
+    grid-row:2 !important;
     height:44px !important;
     min-height:44px !important;
     max-height:44px !important;
     overflow:visible !important;
   }
 }
-
 .modal:not(.show):not(.open),
 .sheet:not(.show):not(.open),
 .dialog:not(.show):not(.open),

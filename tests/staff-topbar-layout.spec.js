@@ -276,7 +276,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.slot.width).toBe(176);
       expect(layout.edit.x).toBeGreaterThanOrEqual(layout.slot.right);
       expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
-      expect(layout.rowTwo.y - layout.rowOne.bottom).toBe(4);
+      expect(layout.rowTwo.y - layout.rowOne.bottom).toBe(8);
       expect(layout.search.y).toBeGreaterThanOrEqual(layout.rowTwo.y);
       expect(layout.support.y).toBeGreaterThanOrEqual(layout.rowTwo.y);
       expect(layout.support.width).toBe(44);
@@ -312,12 +312,16 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       const topGrid = await page.locator(view + ' .menu-head .mh-top').evaluate(element => {
         const style = getComputedStyle(element);
         return {
+          display:style.display,
           rows:style.gridTemplateRows.split(' ').map(value => Number.parseFloat(value)),
-          rowGap:Number.parseFloat(style.rowGap)
+          rowGap:Number.parseFloat(style.rowGap),
+          height:Number.parseFloat(style.height)
         };
       });
+      expect(topGrid.display).toBe('grid');
       expect(topGrid.rows).toEqual([44,44]);
       expect(topGrid.rowGap).toBe(8);
+      expect(topGrid.height).toBe(96);
 
       const roleButtons = page.locator('#modeSeg > button');
       await roleButtons.nth(0).focus();

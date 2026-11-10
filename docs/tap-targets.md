@@ -15,11 +15,11 @@ It does not change the desktop/work-mode role switcher, profile controls, filter
 - The visible face remains **32 × 32 CSS px**, centered with a 6 px inset on all sides.
 - The four role cells form a 176 × 44 px row; the edit cell is 44 × 44 px.
 - The role track remains 32 px high.
-- A minimum 4 px vertical gap separates the bottom edge of the role/edit hit cells from the search row.
+- An 8 px grid gap separates the bottom edge of the role/edit hit cells from the search row.
 - The five hit cells may touch edge-to-edge, but must not overlap.
 - All four edge-midpoints of each hit cell must resolve to the intended control through `elementFromPoint()`.
 - Keyboard focus is drawn around the 32 px visible face, not around the full 44 px hit cell.
-- The staff header reserves its final geometry before hydration: 108 px menu head, 48 px first row reservation (44 px controls plus 4 px clearance), 44 px search/support row.
+- The staff header reserves its final geometry before hydration: 108 px menu head, 52 px first-row reservation (44 px controls plus 8 px clearance), 44 px search/support row.
 - Guest header geometry remains unchanged at 100 px. The expanded geometry is scoped to `html[data-staff-role]`.
 
 ## Brand treatment
