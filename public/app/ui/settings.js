@@ -115,7 +115,13 @@
         closeButton.focus();
     }
 
-    if (gear) gear.addEventListener('click', openSettings);
+    if (gear) gear.addEventListener('click', function () {
+        if (gear.getAttribute('aria-label') === 'Сохранить имя' && typeof window.saveProfileName === 'function') {
+            window.saveProfileName();
+            return;
+        }
+        openSettings();
+    });
     if (closeButton) closeButton.addEventListener('click', closeSettings);
     var staffAccessButton = document.getElementById('activateBtn');
     if (staffAccessButton) staffAccessButton.addEventListener('click', closeSettings);
