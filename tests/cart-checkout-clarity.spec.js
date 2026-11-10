@@ -130,7 +130,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await page.setViewportSize(desktopViewport);
 
   const recommendations = page.locator('#cartAddons');
-  await expect(recommendations.locator('.ca-title')).toHaveText('Рекомендуем к заказу');
+  await expect(recommendations.locator('.ca-title')).toHaveText('Добавим к заказу?');
   await expect(recommendations.locator('.ca-tabs-scroll')).toHaveAttribute('role', 'group');
   const allRecommendations = recommendations.locator('[data-atab="all"]');
   const sauceRecommendations = recommendations.locator('[data-atab="sauces"]');
