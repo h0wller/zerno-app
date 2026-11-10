@@ -197,6 +197,48 @@ test.describe('Модуль заказов профиля', () => {
     await expect(page.locator('#setPinModal')).toHaveClass(/show/);
   });
 
+
+
+  test('настройки возвращают фокус на шестерёнку при закрытии', async ({ page }) => {
+    const gear = page.locator('#profileSettingsBtn');
+    await gear.click();
+    const closeButton = page.locator('#settingsModal #setClose');
+    await expect(closeButton).toBeFocused();
+    await closeButton.click();
+    await expect(page.locator('#settingsModal')).not.toHaveClass(/show/);
+    await expect(gear).toBeFocused();
+    await expect(gear).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('профильные QR и PIN модалки не наследуют точечный фон Пятницы', async ({ page }, testInfo) => {
+    const modalBackground = async locator => locator.evaluate(element => getComputedStyle(element).backgroundImage);
+
+    await page.locator('#qrOpenProfile').click();
+    const qr = page.locator('#qrModal');
+    await expect(qr).toHaveClass(/show/);
+    await expect.poll(() => modalBackground(qr)).toBe('none');
+    await expect.poll(() => modalBackground(qr.locator('.modal-card'))).toBe('none');
+    await testInfo.attach('delivery-profile-qr-390', {
+      body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+      contentType: 'image/png'
+    });
+    await page.locator('#qrClose').click();
+    await expect(qr).not.toHaveClass(/show/);
+
+    await page.locator('#profileSettingsBtn').click();
+    await expect(page.locator('#settingsModal')).toHaveClass(/show/);
+    await page.locator('#setPinGo2').click();
+    const pin = page.locator('#setPinModal');
+    await expect(pin).toHaveClass(/show/);
+    await expect.poll(() => modalBackground(pin.locator('.modal-card'))).toBe('none');
+    await testInfo.attach('delivery-profile-pin-390', {
+      body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+      contentType: 'image/png'
+    });
+    await page.locator('#setPinClose').click();
+    await expect(pin).not.toHaveClass(/show/);
+  });
+
   test('клик по затемнению закрывает настройки, но оставляет профиль открытым', async ({ page }) => {
     const panel = page.locator('#panel');
     const panelWasOpen = await panel.evaluate(element => element.classList.contains('open'));
@@ -221,6 +263,21 @@ test.describe('Модуль заказов профиля', () => {
     await page.keyboard.press('Escape');
     await expect(settings).not.toHaveClass(/show/);
     await expect.poll(() => panel.evaluate(element => element.classList.contains('open'))).toBe(panelWasOpen);
+  });
+
+
+  test('focus-visible is visible for profile actions in both brand themes', async ({ page }) => {
+    const edit = page.locator('#nameEditBtn');
+    await edit.focus();
+    await expect(edit).toBeFocused();
+    await expect(edit).toHaveCSS('outline-style', 'solid');
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-brand', 'coffee');
+      document.body.setAttribute('data-brand', 'coffee');
+      if (typeof window.applyProfileBrand === 'function') window.applyProfileBrand();
+    });
+    await edit.focus();
+    await expect(edit).toHaveCSS('outline-style', 'solid');
   });
 
   test('имя редактируется явно и сохраняется отдельным действием', async ({ page }) => {
