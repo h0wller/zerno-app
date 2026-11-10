@@ -166,19 +166,21 @@ test('baseline: профиль и бонусы (зарегистрирован)'
     const avatar = document.querySelector('#profileBox .phead .ava').getBoundingClientRect();
     const name = document.querySelector('#profileBox #nameInput').getBoundingClientRect();
     const settings = document.querySelector('#profileBox #profileSettingsBtn').getBoundingClientRect();
+    const phone = document.querySelector('#profileBox #phoneLbl').getBoundingClientRect();
     return {
       avatarTop: avatar.top,
-      avatarLeft: avatar.left,
-      nameLeft: name.left,
+      avatarRight: avatar.right,
       nameTop: name.top,
       nameBottom: name.bottom,
-      settingsLeft: settings.left,
+      nameLeft: name.left,
       settingsTop: settings.top,
       settingsBottom: settings.bottom,
+      settingsLeft: settings.left,
+      phoneLeft: phone.left,
     };
   });
   expect(identity.avatarTop).toBeGreaterThanOrEqual(identity.nameBottom);
-  expect(identity.avatarLeft).toBeLessThan(identity.nameLeft);
+  expect(identity.phoneLeft).toBeGreaterThanOrEqual(identity.avatarRight);
   expect(Math.abs(identity.nameTop - identity.settingsTop)).toBeLessThanOrEqual(2);
   expect(Math.abs(identity.nameBottom - identity.settingsBottom)).toBeLessThanOrEqual(2);
   expect(identity.settingsLeft).toBeGreaterThan(identity.nameLeft);
