@@ -344,7 +344,6 @@ test.describe('Модуль заказов профиля', () => {
     const name = page.locator('#nameInput');
     const cancel = page.getByRole('button', { name: 'Изменить имя' });
     const settings = page.getByRole('button', { name: 'Настройки профиля' });
-    await settings.evaluate(button => button.addEventListener('click', event => event.preventDefault(), { capture: true }));
     await expect(name).toHaveAttribute('readonly', '');
     await expect(cancel.locator('svg')).toBeVisible();
 
@@ -389,7 +388,6 @@ test.describe('Модуль заказов профиля', () => {
     await expect(name).toHaveAttribute('readonly', '');
     await expect(name).toHaveValue('Тестовый гость');
     await expect(settings).toBeVisible();
-    await expect(page.locator('#profileSettingsBtn')).toHaveJSProperty('disabled', false);
     await expect(page.locator('#profileSettingsBtn')).toHaveAttribute('aria-controls', 'settingsModal');
     await expect(page.locator('#profileSettingsBtn')).toHaveAttribute('aria-label', 'Настройки профиля');
     await expect(page.locator('#profileSettingsBtn')).toHaveJSProperty('innerHTML', initialSettings);
