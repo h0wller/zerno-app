@@ -99,10 +99,23 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#checkoutGuestName')).toHaveText('Тестовый гость');
   await expect(page.locator('#checkoutGuestPhone')).toHaveText('+7 999 123-45-67');
 
-  await testInfo.attach('cart-overview-' + page.viewportSize().width + 'px', {
+  await page.evaluate(() => document.getElementById('toasts')?.remove());
+  const desktopViewport = page.viewportSize();
+  await testInfo.attach('cart-overview-' + desktopViewport.width + 'px', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png',
   });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await testInfo.attach('cart-overview-390px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  await page.setViewportSize({ width: 320, height: 740 });
+  await testInfo.attach('cart-overview-320px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  await page.setViewportSize(desktopViewport);
 
   const row = page.locator('#cartItems .cartItem[data-cart-idx="0"]');
   await expect(row.locator('.ci-unit-price')).toHaveText('735 ₽ / шт.');
@@ -138,10 +151,24 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
 
   await page.locator('.checkoutForm').scrollIntoViewIfNeeded();
-  await testInfo.attach('cart-checkout-' + page.viewportSize().width + 'px', {
+  await testInfo.attach('cart-checkout-' + desktopViewport.width + 'px', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png',
   });
+  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 740 }]) {
+    await page.setViewportSize(viewport);
+    await page.locator('.checkoutForm').scrollIntoViewIfNeeded();
+    const overflow = await page.evaluate(() =>
+      document.documentElement.scrollWidth > window.innerWidth ||
+      document.getElementById('cartScrollBody').scrollWidth > document.getElementById('cartScrollBody').clientWidth
+    );
+    expect(overflow).toBe(false);
+    await testInfo.attach('cart-checkout-' + viewport.width + 'px', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+  }
+  await page.setViewportSize(desktopViewport);
 
   const checkoutSections = page.locator('.checkoutForm > .checkout-section');
   await expect(checkoutSections).toHaveCount(3);
