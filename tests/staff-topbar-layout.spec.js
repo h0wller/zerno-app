@@ -426,6 +426,50 @@ test('mobile staff controls keep 32px visuals inside 44px hit cells', async ({ p
           hitPoints:hitPoints(element)
         }));
         const menuRect = rect(row);
+        const styleInfo = {
+          row: {
+            rect: rect(row),
+            gridTemplateColumns: getComputedStyle(row).gridTemplateColumns,
+            columnGap: getComputedStyle(row).columnGap,
+            minWidth: getComputedStyle(row).minWidth,
+            width: getComputedStyle(row).width
+          },
+          slot: (() => {
+            const element = row.querySelector('.mode-seg-slot');
+            const style = getComputedStyle(element);
+            return {
+              rect: rect(element),
+              display:style.display,
+              flex:style.flex,
+              minWidth:style.minWidth,
+              width:style.width,
+              overflow:style.overflow,
+              contain:style.contain
+            };
+          })(),
+          mode: (() => {
+            const element = row.querySelector('#modeSeg');
+            const style = getComputedStyle(element);
+            return {
+              rect:rect(element),
+              display:style.display,
+              gridTemplateColumns:style.gridTemplateColumns,
+              width:style.width,
+              minWidth:style.minWidth,
+              flex:style.flex,
+              gap:style.gap
+            };
+          })(),
+          title: (() => {
+            const element = row.querySelector('h1');
+            const style = getComputedStyle(element);
+            return { rect:rect(element), width:style.width, flex:style.flex, minWidth:style.minWidth, text:element.textContent };
+          })(),
+          controls: controls.map(element => {
+            const style = getComputedStyle(element);
+            return { id:element.id || element.textContent.trim(), rect:rect(element), width:style.width, minWidth:style.minWidth, maxWidth:style.maxWidth, flex:style.flex };
+          })
+        };
         const hitRects = controls.map(element => element.getBoundingClientRect());
         const overlaps = [];
         for (let i=0;i<hitRects.length;i++) {
@@ -435,12 +479,12 @@ test('mobile staff controls keep 32px visuals inside 44px hit cells', async ({ p
             if (overlapX>0 && overlapY>0) overlaps.push({a:i,b:j,overlapX,overlapY});
           }
         }
-        return { cells, overlaps, menuRect };
+        return { cells, overlaps, menuRect, styleInfo };
       }, view);
 
-      expect(metrics.cells).toHaveLength(5);
+      expect(metrics.cells, JSON.stringify(metrics.styleInfo, null, 2)).toHaveLength(5);
       for (const cell of metrics.cells) {
-        expect(cell.hitRect.width, cell.id + ' hit width').toBeGreaterThanOrEqual(44);
+        expect(cell.hitRect.width, cell.id + ' hit width; ' + JSON.stringify(metrics.styleInfo)).toBeGreaterThanOrEqual(44);
         expect(cell.hitRect.height, cell.id + ' hit height').toBeGreaterThanOrEqual(44);
         expect(cell.visual.width, cell.id + ' visual width').toBeGreaterThan(0);
         expect(cell.visual.height, cell.id + ' visual height').toBe(32);
