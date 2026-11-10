@@ -354,7 +354,7 @@ test('work modes keep the role switcher in the topbar and preserve the support l
 });
 
 
-test('mobile staff controls receive taps across the usable visual button edges', async ({ page }) => {
+test('mobile staff controls keep 32px visuals inside 44px hit cells', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
     for (const width of [320, 390]) {
       await page.setViewportSize({ width, height: width === 320 ? 740 : 844 });
@@ -377,79 +377,97 @@ test('mobile staff controls receive taps across the usable visual button edges',
       const metrics = await page.evaluate((viewSelector) => {
         const root = document.querySelector(viewSelector);
         const row = root.querySelector('.menu-controls-row');
-        const controls = [
-          ...row.querySelectorAll('#modeSeg > button'),
-          row.querySelector('#editToggle')
-        ];
-        const box = element => {
-          const value = element.getBoundingClientRect();
-          return { x:value.x, y:value.y, width:value.width, height:value.height, right:value.right, bottom:value.bottom };
+        const mode = row.querySelector('#modeSeg');
+        const controls = [...mode.querySelectorAll(':scope > button'), row.querySelector('#editToggle')];
+        const rect = element => {
+          const box = element.getBoundingClientRect();
+          return { x:box.x, y:box.y, width:box.width, height:box.height, right:box.right, bottom:box.bottom };
         };
-        const samplePoints = element => {
-          const rect = element.getBoundingClientRect();
-          const midX = rect.left + rect.width / 2;
-          const midY = rect.top + rect.height / 2;
-          const inset = 2;
-          // Midpoints of each edge stay inside rounded/pill corners while testing the
-          // real outer hit boundary, rather than rectangular points outside the shape.
-          return [
-            { x:midX, y:rect.top + inset, point:'top-edge' },
-            { x:rect.right - inset, y:midY, point:'right-edge' },
-            { x:midX, y:rect.bottom - inset, point:'bottom-edge' },
-            { x:rect.left + inset, y:midY, point:'left-edge' }
+        const visualRect = element => {
+          const pseudo = getComputedStyle(element, '::before');
+          const after = getComputedStyle(element, '::after');
+          const hasBefore = pseudo.content !== 'none' && pseudo.content !== 'normal' && pseudo.content !== '""';
+          const hasAfter = after.content !== 'none' && after.content !== 'normal' && after.content !== '""';
+          const own = element.getBoundingClientRect();
+          const inset = Number.parseFloat(getComputedStyle(element).paddingTop) || 0;
+          return {
+            width: hasBefore || hasAfter ? own.width : own.width,
+            height: hasBefore || hasAfter ? own.height - inset * 2 : own.height,
+            pseudoBefore: pseudo.content,
+            pseudoAfter: after.content,
+            padding: getComputedStyle(element).padding
+          };
+        };
+        const hitPoints = element => {
+          const box = element.getBoundingClientRect();
+          const samples = [
+            { x:box.left + box.width / 2, y:box.top + 2, edge:'top' },
+            { x:box.right - 2, y:box.top + box.height / 2, edge:'right' },
+            { x:box.left + box.width / 2, y:box.bottom - 2, edge:'bottom' },
+            { x:box.left + 2, y:box.top + box.height / 2, edge:'left' }
           ];
-        };
-        return controls.map(element => ({
-          id: element.id || element.textContent.trim(),
-          rect: box(element),
-          borderRadius: getComputedStyle(element).borderRadius,
-          hitPoints: samplePoints(element).map(point => {
-            const target = document.elementFromPoint(point.x, point.y);
+          return samples.map(point => {
+            const hit = document.elementFromPoint(point.x, point.y);
             return {
               ...point,
-              target: target ? {
-                tag: target.tagName.toLowerCase(),
-                id: target.id || null,
-                className: typeof target.className === 'string' ? target.className : null
-              } : null,
-              hit: !!target && (target === element || element.contains(target))
+              targetId: hit?.id || null,
+              targetClass: typeof hit?.className === 'string' ? hit.className : null,
+              receives: !!hit && (hit === element || element.contains(hit))
             };
-          })
+          });
+        };
+        const cells = controls.map(element => ({
+          id:element.id || element.textContent.trim(),
+          hitRect:rect(element),
+          visual:visualRect(element),
+          background:getComputedStyle(element).backgroundColor,
+          border:getComputedStyle(element).border,
+          shadow:getComputedStyle(element).boxShadow,
+          hitPoints:hitPoints(element)
         }));
-      }, view);
-
-      expect(metrics).toHaveLength(5);
-      for (const control of metrics) {
-        expect(control.rect.width, control.id + ' visual width').toBeGreaterThan(0);
-        expect(control.rect.height, control.id + ' visual height').toBe(32);
-        expect(control.hitPoints.every(point => point.hit),
-          control.id + ' must receive input along all four usable visual edges: ' + JSON.stringify(control)
-        ).toBe(true);
-      }
-
-      // Playwright trial checks center-point actionability without dispatching clicks.
-      // The four edge hit-points above are checked independently with elementFromPoint,
-      // which keeps samples tied to the measured DOMRect and rounded visual geometry.
-      for (let index = 0; index < 4; index += 1) {
-        await roleButtons.nth(index).click({ trial: true });
-      }
-      await edit.click({ trial: true });
-
-      const overlaps = await page.evaluate((viewSelector) => {
-        const root = document.querySelector(viewSelector);
-        const controls = [...root.querySelectorAll('.menu-controls-row #modeSeg > button, .menu-controls-row #editToggle')];
-        const boxes = controls.map(element => element.getBoundingClientRect());
-        const collisions = [];
-        for (let i = 0; i < boxes.length; i += 1) {
-          for (let j = i + 1; j < boxes.length; j += 1) {
-            const overlapX = Math.min(boxes[i].right, boxes[j].right) - Math.max(boxes[i].left, boxes[j].left);
-            const overlapY = Math.min(boxes[i].bottom, boxes[j].bottom) - Math.max(boxes[i].top, boxes[j].top);
-            if (overlapX > 0 && overlapY > 0) collisions.push({ a:i, b:j, overlapX, overlapY });
+        const menuRect = rect(row);
+        const hitRects = controls.map(element => element.getBoundingClientRect());
+        const overlaps = [];
+        for (let i=0;i<hitRects.length;i++) {
+          for (let j=i+1;j<hitRects.length;j++) {
+            const overlapX = Math.min(hitRects[i].right,hitRects[j].right)-Math.max(hitRects[i].left,hitRects[j].left);
+            const overlapY = Math.min(hitRects[i].bottom,hitRects[j].bottom)-Math.max(hitRects[i].top,hitRects[j].top);
+            if (overlapX>0 && overlapY>0) overlaps.push({a:i,b:j,overlapX,overlapY});
           }
         }
-        return collisions;
+        return { cells, overlaps, menuRect };
       }, view);
-      expect(overlaps, 'visible staff controls must not occupy the same pixels').toEqual([]);
+
+      expect(metrics.cells).toHaveLength(5);
+      for (const cell of metrics.cells) {
+        expect(cell.hitRect.width, cell.id + ' hit width').toBeGreaterThanOrEqual(44);
+        expect(cell.hitRect.height, cell.id + ' hit height').toBeGreaterThanOrEqual(44);
+        expect(cell.visual.width, cell.id + ' visual width').toBeGreaterThan(0);
+        expect(cell.visual.height, cell.id + ' visual height').toBe(32);
+        expect(cell.hitPoints.every(point => point.receives),
+          cell.id + ' must receive taps at all four hit-cell edges: ' + JSON.stringify(cell.hitPoints)
+        ).toBe(true);
+      }
+      expect(metrics.overlaps, '44px cells must not intersect neighboring controls').toEqual([]);
+
+      // Trial checks browser actionability without activating role or edit actions.
+      for (let i=0;i<4;i++) await roleButtons.nth(i).click({ trial:true });
+      await edit.click({ trial:true });
+
+      await page.keyboard.press('Tab');
+      const focus = await page.evaluate(() => {
+        const active = document.activeElement;
+        const box = active?.getBoundingClientRect();
+        return {
+          id:active?.id || null,
+          outlineStyle:getComputedStyle(active).outlineStyle,
+          outlineWidth:getComputedStyle(active).outlineWidth,
+          rect:box ? {x:box.x,y:box.y,width:box.width,height:box.height} : null
+        };
+      });
+      expect(focus.id, 'keyboard focus must remain on the first role control').toBe('modeSeg');
+      expect(focus.outlineStyle).not.toBe('none');
+      expect(Number.parseFloat(focus.outlineWidth)).toBeGreaterThan(0);
     }
   }
 });
