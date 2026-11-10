@@ -850,13 +850,13 @@ test('cart keeps expanded modifiers attached to the same row after removing an e
 });
 
 
-test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
+test.describe('Cart add-on recommendations: fixed action geometry', () => {
   for (const viewport of [
     { name: 'iPhone SE', width: 375, height: 667 },
     { name: 'iPhone 14/15', width: 390, height: 844 },
     { name: 'Desktop', width: 1280, height: 800 },
   ]) {
-    test(viewport.name + ' (' + viewport.width + 'px): add, minus and plus buttons have 44px hit areas', async ({ page }, testInfo) => {
+    test(viewport.name + ' (' + viewport.width + 'px): recommendation CTA stays 44px after add; quantity is managed in cart', async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => {
         localStorage.setItem('zt_onb', '1');
@@ -900,10 +900,11 @@ test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
       const addonCard = page.locator('#cartAddons .addon-pill-card').filter({ hasText: 'Лимонад' });
       await expect(addonCard).toBeVisible({ timeout: 5000 });
 
-      const initialGeometry = await addonCard.evaluate((card) => {
+      const addButton = addonCard.locator('.ac-add-btn');
+      const measureCard = () => addonCard.evaluate((card) => {
         const rect = (element) => {
           const box = element.getBoundingClientRect();
-          return { width: box.width, height: box.height };
+          return { width: Math.round(box.width), height: Math.round(box.height) };
         };
         return {
           card: rect(card),
@@ -912,53 +913,40 @@ test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
           button: rect(card.querySelector('.ac-add-btn')),
         };
       });
-      expect(initialGeometry.card.width).toBe(240);
-      expect(initialGeometry.card.height).toBe(54);
-      expect(initialGeometry.action.width).toBe(44);
-      expect(initialGeometry.action.height).toBe(44);
-      expect(initialGeometry.info.width).toBeGreaterThanOrEqual(80);
-      expect(initialGeometry.button.width).toBe(44);
-      expect(initialGeometry.button.height).toBe(44);
 
-      const addButton = addonCard.locator('.ac-add-btn');
+      const initialGeometry = await measureCard();
+      expect(initialGeometry.card).toEqual({ width: 240, height: 54 });
+      expect(initialGeometry.action).toEqual({ width: 44, height: 44 });
+      expect(initialGeometry.info.width).toBeGreaterThanOrEqual(80);
+      expect(initialGeometry.button).toEqual({ width: 44, height: 44 });
       await expect(addButton).toHaveAccessibleName('Добавить Лимонад в корзину');
-      await expect(addButton.locator('.ac-add-label')).toHaveCount(0);
       await expect(addButton).toHaveCSS('width', '44px');
       await expect(addButton).toHaveCSS('display', 'grid');
       await expect(addButton).toHaveCSS('border-style', 'solid');
+
+      // Adding does not turn the compact plus button into a wide minus/count/plus stepper.
       await addButton.click();
       await expect(addonCard).toHaveClass(/in-cart/);
-      const stepper = addonCard.locator('.ac-stepper');
-      await expect(stepper).toBeVisible();
+      await expect(addonCard.locator('.ac-count')).toHaveText('1');
+      await expect(addButton).toHaveAccessibleName('Добавить ещё Лимонад в корзину. Сейчас в корзине: 1');
+      const addedGeometry = await measureCard();
+      expect(addedGeometry).toEqual(initialGeometry);
 
-      const stepGeometry = await stepper.evaluate((stepperElement) => {
-        const rect = (element) => {
-          const box = element.getBoundingClientRect();
-          return { width: box.width, height: box.height };
-        };
-        return {
-          stepper: rect(stepperElement),
-          buttons: [...stepperElement.querySelectorAll('.ac-step')].map(rect),
-        };
-      });
-      expect(stepGeometry.stepper.width).toBe(104);
-      expect(stepGeometry.stepper.height).toBe(44);
-      expect(stepGeometry.buttons).toHaveLength(2);
-      for (const button of stepGeometry.buttons) {
-        expect(button.width).toBeGreaterThanOrEqual(44);
-        expect(button.height).toBeGreaterThanOrEqual(44);
-      }
+      // The same compact CTA increments. Decrement/removal stays with the actual cart row.
+      await addButton.click();
+      await expect(addonCard.locator('.ac-count')).toHaveText('2');
+      const drinkCartRow = page.locator('#cartItems .cartItem').filter({ has: page.locator('.ci-name', { hasText: 'Лимонад' }) });
+      await expect(drinkCartRow.locator('.qty span')).toHaveText('2');
+      await expect(drinkCartRow.locator('.qty button')).toHaveCount(2);
+      await drinkCartRow.locator('[data-act="-"]').click();
+      await expect(addonCard.locator('.ac-count')).toHaveText('1');
+      await drinkCartRow.locator('[data-act="-"]').click();
+      await expect(drinkCartRow).toHaveCount(0);
+      await expect(addonCard).not.toHaveClass(/in-cart/);
+      const removedGeometry = await measureCard();
+      expect(removedGeometry).toEqual(initialGeometry);
 
-      const minus = addonCard.locator('[data-ac-act="minus"]');
-      const plus = addonCard.locator('[data-ac-act="plus"]');
-      await expect(minus).toHaveAccessibleName('Уменьшить количество Лимонад');
-      await expect(plus).toHaveAccessibleName('Увеличить количество Лимонад');
-      await plus.click();
-      await expect(addonCard.locator('.ac-qty')).toHaveText('2');
-      await minus.click();
-      await expect(addonCard.locator('.ac-qty')).toHaveText('1');
-
-      await testInfo.attach('cart-addons-' + viewport.width + 'px', {
+      await testInfo.attach('cart-addons-fixed-action-' + viewport.width + 'px', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png',
       });
