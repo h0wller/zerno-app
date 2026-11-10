@@ -574,24 +574,8 @@ html body div.wrap > section {
 }
 
 
-/* Keep the mobile menu row compact; earlier generic controls must not set a 44px minimum. */
+/* Search fields retain their compact internal input height; staff hit cells are defined below. */
 @media (max-width:820px) {
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg,
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg button,
-  html body .menu-head .menu-controls-row > #editToggle {
-    box-sizing:border-box;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
-  }
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg button {
-    flex:0 0 auto;
-    width:auto;
-    min-width:0;
-    max-width:none;
-    padding:0 5px;
-    white-space:nowrap;
-  }
   html body #deliveryView #dSearch,
   html body #menuView #searchInput {
     box-sizing:border-box;
@@ -608,36 +592,19 @@ html body div.wrap > section {
 html body #adminBar.adminBar[hidden] { display:none; }
 
 
-/* Keep the menu-heading role row compact at mobile widths. */
-@media (max-width:820px) {
-  html body .menu-head .menu-controls-row,
-  html body .menu-head .menu-controls-row > .mode-seg-slot {
-    box-sizing:border-box; height:32px; min-height:32px; max-height:32px;
-  }
-  html body .menu-head .menu-controls-row > .mode-seg-slot {
-    display:flex; flex:1 1 auto; align-items:center; min-width:0; overflow:hidden;
-  }
-  html body .menu-head .menu-controls-row #modeSeg,
-  html body .menu-head .menu-controls-row #modeSeg button {
-    box-sizing:border-box; height:32px; min-height:32px; max-height:32px;
-  }
-  html body .menu-head .menu-controls-row #modeSeg button {
-    flex:0 0 auto; width:auto; min-width:0; max-width:none;
-    padding:0 5px; white-space:nowrap;
-  }
-}
+/* Mobile staff menu-row dimensions are owned by the shared toolbar block below. */
 
-/* Keep the role toggle and edit shortcut compact in both the real toolbar and isolated fixtures. */
+/* Topbar role controls keep their compact 32px size when not moved into the menu. */
 @media (max-width:820px) {
-  html body #modeSeg,
-  html body #modeSeg button,
-  html body #editToggle {
+  html[data-staff-role] body header.topbar #modeSeg,
+  html[data-staff-role] body header.topbar #modeSeg button,
+  html[data-staff-role] body #adminBar > #editToggle {
     box-sizing:border-box;
     height:32px;
     min-height:32px;
     max-height:32px;
   }
-  html body #modeSeg button {
+  html[data-staff-role] body header.topbar #modeSeg button {
     flex:0 0 auto;
     width:auto;
     min-width:0;
@@ -647,11 +614,8 @@ html body #adminBar.adminBar[hidden] { display:none; }
   }
 }
 
-/* Compact role controls in the menu fixture and in the real mobile menu/header. */
+/* Role switcher that remains in the topbar retains compact 32px geometry. */
 @media (max-width:820px) {
-  html body .menu-head #modeSeg,
-  html body .menu-head #modeSeg > button,
-  html body .menu-head #editToggle,
   html[data-staff-role] body header.topbar #modeSeg,
   html[data-staff-role] body header.topbar #modeSeg > button {
     box-sizing:border-box;
@@ -659,7 +623,6 @@ html body #adminBar.adminBar[hidden] { display:none; }
     min-height:32px;
     max-height:32px;
   }
-  html body .menu-head #modeSeg > button,
   html[data-staff-role] body header.topbar #modeSeg > button {
     flex:0 0 auto;
     width:auto;
