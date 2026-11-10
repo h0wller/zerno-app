@@ -1203,8 +1203,7 @@ html body #modeSeg button:not(.on) {
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
     display: grid;
     grid-template-columns: minmax(0,1fr);
-    grid-template-rows: 44px 48px;
-    row-gap: 4px;
+    grid-template-rows: 44px 44px;
     gap: 0;
     width: 100%;
     min-width: 0;
