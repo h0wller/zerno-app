@@ -111,7 +111,9 @@ test('cart keeps the current selected price and explains every amount without gu
     contentType: 'image/png',
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('#cartClose')).toHaveText('В меню');
+  await expect(page.locator('#cartClose')).toBeVisible();
+  await expect(page.locator('#cartClose .cart-continue-short')).toBeVisible();
+  await expect(page.locator('#cartClose .cart-continue-full')).toBeHidden();
   const headerActionsOverflow = await page.locator('.cart-header-actions').evaluate((el) =>
     el.getBoundingClientRect().right > el.parentElement.getBoundingClientRect().right + 1
   );
