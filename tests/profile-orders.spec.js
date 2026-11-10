@@ -350,6 +350,7 @@ test.describe('Модуль заказов профиля', () => {
 
     const initialSettings = await page.locator('#profileSettingsBtn').evaluate(button => button.innerHTML);
     await cancel.click();
+    await expect(page.getByRole('button', { name: 'Отменить изменение имени' })).toBeVisible();
     await expect(name).not.toHaveAttribute('readonly', '');
     await expect(page.getByRole('button', { name: 'Отменить изменение имени' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Сохранить имя' })).toBeVisible();
