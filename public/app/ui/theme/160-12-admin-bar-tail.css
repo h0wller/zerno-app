@@ -1041,6 +1041,11 @@ html body #modeSeg button:not(.on) {
     line-height: 1;
   }
 
+  /* Keep the venue descriptor out of the compact staff title row at every mobile width. */
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > h1 em {
+    display: none;
+  }
+
   html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
     grid-column: 2;
     grid-row: 1;
