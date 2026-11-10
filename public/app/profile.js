@@ -154,7 +154,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         nameEditing = editing;
         var input = document.getElementById('nameInput');
         var edit = document.getElementById('nameEditBtn');
-        var save = document.getElementById('nameSaveBtn');
         var gear = document.getElementById('profileSettingsBtn');
         if (input) {
             input.readOnly = !editing;
@@ -177,7 +176,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
                 ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6" /></svg>'
                 : '⚙️';
         }
-        if (save) save.disabled = false;
     }
 
     async function saveProfileName() {
@@ -231,6 +229,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         var input = document.getElementById('nameInput');
         var edit = document.getElementById('nameEditBtn');
         var save = document.getElementById('profileSettingsBtn');
+        var gear = document.getElementById('profileSettingsBtn');
         var historyToggle = document.getElementById('historyToggleBtn');
         if (edit) edit.addEventListener('click', function () {
             if (!me || !input) return;
