@@ -122,6 +122,8 @@ test('корзина: 1 клик = +1, подарок 2×35, пустая = 0 �
   await card.locator('.opts label.opt-btn', { hasText: '35 см' }).first().click({ timeout: 10000 });
   await card.locator('button', { hasText: 'Добавить' }).first().click();
   await page.locator('#cartFab').click();
+  await expect(page.locator('#cartClose')).toBeVisible();
+  await expect(page.locator('#cartClose')).toHaveAccessibleName('Продолжить покупки');
 
   const total = page.locator('#cartTotal');
   const fee = num(await page.locator('#cartFee').textContent());
@@ -905,18 +907,23 @@ test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
         return {
           card: rect(card),
           action: rect(card.querySelector('.ac-act')),
+          info: rect(card.querySelector('.ac-info')),
           button: rect(card.querySelector('.ac-add-btn')),
         };
       });
       expect(initialGeometry.card.width).toBe(240);
       expect(initialGeometry.card.height).toBe(54);
-      expect(initialGeometry.action.width).toBe(104);
+      expect(initialGeometry.action.width).toBe(56);
       expect(initialGeometry.action.height).toBe(44);
+      expect(initialGeometry.info.width).toBeGreaterThanOrEqual(110);
       expect(initialGeometry.button.width).toBeGreaterThanOrEqual(44);
       expect(initialGeometry.button.height).toBeGreaterThanOrEqual(44);
 
       const addButton = addonCard.locator('.ac-add-btn');
       await expect(addButton).toHaveAccessibleName('Добавить Лимонад в корзину');
+      await expect(addButton).toHaveCSS('background-color', 'rgb(192, 59, 42)');
+      await expect(addButton).toHaveCSS('color', 'rgb(255, 255, 255)');
+      await expect(addButton).toHaveCSS('border-width', '1.5px');
       await addButton.click();
       await expect(addonCard).toHaveClass(/in-cart/);
       const stepper = addonCard.locator('.ac-stepper');

@@ -124,6 +124,17 @@ test('cart keeps the current selected price and explains every amount without gu
 
   const recommendations = page.locator('#cartAddons');
   await expect(recommendations.locator('.ca-title')).toHaveText('Рекомендуем к заказу');
+  await expect(recommendations.locator('.ca-tabs-scroll')).toHaveAttribute('role', 'group');
+  const allRecommendations = recommendations.locator('[data-atab="all"]');
+  const sauceRecommendations = recommendations.locator('[data-atab="sauces"]');
+  await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
+  await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'false');
+  await sauceRecommendations.click();
+  await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'true');
+  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(1);
+  await expect(recommendations.locator('.ac-name')).toHaveText(['Соус сырный']);
+  await allRecommendations.click();
+  await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
   await expect(recommendations.locator('.addon-pill-card')).toHaveCount(2);
   await expect(recommendations.locator('.ac-name')).toHaveText(['Лимонад к заказу', 'Соус сырный']);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -140,6 +151,10 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(row.locator('.ci-line-total')).toHaveText('735 ₽');
   await expect(row.locator('.ci-name')).toHaveText('Маргарита');
   await expect(row.locator('.ci-opt')).toHaveText('35 см, пышное');
+  await expect(row.locator('.ci-price-update-label')).toHaveText('Цена обновлена по меню');
+  await expect(row.locator('.ci-price-update-values')).toHaveText('690 ₽ → 735 ₽');
+  await expect(row.locator('[data-act="-"]')).toHaveAccessibleName('Уменьшить количество Маргарита');
+  await expect(row.locator('[data-act="+"]')).toHaveAccessibleName('Увеличить количество Маргарита');
 
   await expect(page.locator('#checkoutPlace')).toHaveValue('');
   await expect(page.locator('#checkoutStreet')).toHaveValue('');
