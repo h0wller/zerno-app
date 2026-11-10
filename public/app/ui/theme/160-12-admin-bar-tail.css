@@ -1189,23 +1189,35 @@ html body #modeSeg button:not(.on) {
   html body #deliveryView .menu-head h1 > em { display:none; }
 }
 
-/* Staff menu controls: distribute 44px hit cells while retaining the 32px brand face. */
+/* Staff menu controls: 44px flex cells, 32px brand faces. */
 @media (max-width: 820px) {
   html body .menu-head .menu-controls-row {
-    grid-template-columns: max-content minmax(176px, 1fr) 44px;
-    column-gap: 6px;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
   }
 
-  html body .menu-head .menu-controls-row > .mode-seg-slot,
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
-    height: 44px;
-    min-height: 44px;
-    max-height: 44px;
-    overflow: visible;
+  html body .menu-head .menu-controls-row > h1 {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: none;
+    white-space: nowrap;
   }
 
   html body .menu-head .menu-controls-row > .mode-seg-slot {
+    display: flex;
+    flex: 1 1 0%;
+    width: auto;
     min-width: 176px;
+    max-width: none;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    align-items: center;
+    overflow: visible;
     contain: none;
   }
 
@@ -1213,18 +1225,24 @@ html body #modeSeg button:not(.on) {
     display: grid;
     grid-template-columns: repeat(4, minmax(44px, 1fr));
     grid-template-rows: 44px;
-    gap: 0;
+    flex: 1 1 auto;
     width: 100%;
     min-width: 176px;
     max-width: none;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
     padding: 0;
+    margin: 0;
+    gap: 0;
+    overflow: visible;
     box-sizing: border-box;
   }
 
   html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
     display: flex;
     position: relative;
-    flex: 1 1 0;
+    flex: 1 1 0%;
     width: 100%;
     min-width: 44px;
     max-width: none;
@@ -1251,8 +1269,8 @@ html body #modeSeg button:not(.on) {
   }
 
   html body .menu-head .menu-controls-row > #editToggle {
-    display: inline-flex;
     position: relative;
+    display: inline-flex;
     flex: 0 0 44px;
     width: 44px;
     min-width: 44px;
@@ -1270,8 +1288,8 @@ html body #modeSeg button:not(.on) {
   html body .menu-head .menu-controls-row > #editToggle::after {
     content: "";
     position: absolute;
-    inset: 6px;
     z-index: -1;
+    inset: 6px;
     border-radius: 9px;
     background: inherit;
     border: inherit;
