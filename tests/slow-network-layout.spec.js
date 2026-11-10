@@ -191,7 +191,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.brandContext.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.brandContext.right).toBeLessThanOrEqual(before.menuHead.right - 8);
-    expect(before.menuHeadStyle.maxHeight).toBe('100px');
+    expect(before.menuHeadStyle.maxHeight).toBe('108px');
     expect(before.menuHeadStyle.overflow).toBe('visible');
     expect(before.search.height).toBe(40);
     expect(before.subchipHeight).toBe(40);
@@ -244,7 +244,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.brandContext).not.toBeNull();
     expect(after.brandContext.width).toBeGreaterThan(0);
     expect(after.menuHead).toEqual(before.menuHead);
-    expect(after.menuHead.height).toBe(100);
+    expect(after.menuHead.height).toBe(108);
     expect(after.menuHeadStyle.overflow).not.toBe('hidden');
     expect(after.search.height).toBe(40);
     expect(after.subchipHeight).toBe(40);
@@ -990,17 +990,17 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
-    // Reserve the final role row geometry while the cached role is still being confirmed.
+    // Reserve the final 44px role row geometry while the cached role is still being confirmed.
     // Revealing the switcher must not resize its slot or the two-row title toolbar.
-    expect(after.modeSeg.height).toBe(32);
+    expect(after.modeSeg.height).toBe(44);
     expect(after.modeSeg.parentClass).toBe('mode-seg-slot');
-    expect(after.modeSlot.height).toBe(32);
-    expect(after.menuRow.height).toBe(36);
-    expect(after.menuHead.height).toBe(100);
-    expect(before.modeSlot.height).toBe(32);
-    expect(after.modeSlot.height).toBe(32);
-    expect(before.menuRow.height).toBe(36);
-    expect(after.menuRow.height).toBe(36);
+    expect(after.modeSlot.height).toBe(44);
+    expect(after.menuRow.height).toBe(44);
+    expect(after.menuHead.height).toBe(108);
+    expect(before.modeSlot.height).toBe(44);
+    expect(after.modeSlot.height).toBe(44);
+    expect(before.menuRow.height).toBe(44);
+    expect(after.menuRow.height).toBe(44);
     expect(after.modeSeg.top).toBeGreaterThanOrEqual(after.menuRow.top - 1);
     expect(after.modeSeg.top + after.modeSeg.height).toBeLessThanOrEqual(after.menuRow.top + after.menuRow.height + 1);
     expect(after.adminBar.height).toBe(before.adminBar.height);
