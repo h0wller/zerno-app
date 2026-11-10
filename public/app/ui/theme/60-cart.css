@@ -404,9 +404,9 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
 .cartPanel .qty button {
   display: grid;
   place-items: center;
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
   padding: 0;
   border: 1.5px solid var(--fr-choc, var(--line, #d8dfe4));
   border-radius: 12px;
@@ -541,7 +541,16 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
 }
 
 .cartPanel .checkout-recipient-heading {
+  display: flex;
+  align-items: center;
   gap: 9px;
+  min-width: 0;
+}
+
+.cartPanel .checkout-recipient-heading > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 
 .cartPanel .checkout-recipient-icon {
@@ -681,9 +690,9 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
     gap: 5px;
   }
   .cartPanel .qty button {
-    width: 36px;
-    min-width: 36px;
-    height: 40px;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
   }
   .cartPanel .checkout-section {
     padding: 13px;
