@@ -543,22 +543,29 @@ async function refreshPromoLine(sum) {
         '<div class="ac-media">' + imgHtml + "</div>" +
         '<div class="ac-info">' +
           '<div class="ac-name" title="' + esc(p.name) + '">' + esc(p.name) + "</div>" +
-          '<div class="ac-price">' + priceStr + "</div>" +
+          '<div class="ac-meta">' +
+            '<div class="ac-price">' + priceStr + "</div>" +
+            (qty > 0 ? '<span class="ac-in-cart-label" aria-live="polite">В корзине</span>' : '') +
+          "</div>" +
         "</div>" +
         '<div class="ac-act">' + actHtml + "</div>" +
       "</div>";
     }).join("");
 
     host.innerHTML =
-      '<div class="cart-addons-wrap">' +
+      '<section class="cart-addons-wrap" aria-label="Дополнения к заказу">' +
         '<div class="cart-addons-head">' +
-          '<span class="ca-title">Рекомендуем к заказу</span>' +
+          '<div class="ca-heading-copy">' +
+            '<span class="ca-kicker">К ПИЦЦЕ И РОЛЛАМ</span>' +
+            '<span class="ca-title">Добавим к заказу?</span>' +
+            '<span class="ca-subtitle">Напитки и соусы — в один тап</span>' +
+          '</div>' +
           '<div class="ca-tabs-scroll" role="group" aria-label="Категории рекомендаций">' + tabsHtml + "</div>" +
         "</div>" +
         '<div class="ca-cards-scroll">' +
           (cardsHtml || '<div class="ca-empty">Нет позиций</div>') +
         "</div>" +
-      "</div>";
+      "</section>";
   }
 
   /* #deliveryPromoBar отключён по продуктовому решению 2026-10-27: плашка «до подарка» больше не рисуется.
@@ -805,7 +812,13 @@ function clearPromo() {
     var unitTotal = baseUnitPrice + modSum;
     var lineTotal = unitTotal * (Number(c.qty) || 1);
     var priceUpdateNote = Number(c.priceUpdateFrom) > 0
-      ? '<small class="ci-price-update"><span class="ci-price-update-label">Цена обновлена по меню</span><strong class="ci-price-update-values">' + fmt(c.priceUpdateFrom) + ' → ' + fmt(baseUnitPrice) + '</strong></small>'
+      ? '<small class="ci-price-update" role="note">' +
+          '<span class="ci-price-update-mark" aria-hidden="true">↗</span>' +
+          '<span class="ci-price-update-copy">' +
+            '<span class="ci-price-update-label">Цена изменилась после добавления в корзину</span>' +
+            '<span class="ci-price-update-values"><span>Было ' + fmt(c.priceUpdateFrom) + '</span><span class="ci-price-update-separator" aria-hidden="true">·</span><strong>по меню сейчас ' + fmt(baseUnitPrice) + '</strong></span>' +
+          '</span>' +
+        '</small>'
       : '';
 
     var modsHtml = renderAttachedModifiers(c.modifiers, itemIndex);
