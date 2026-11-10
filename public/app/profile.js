@@ -154,20 +154,35 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         nameEditing = editing;
         var input = document.getElementById('nameInput');
         var edit = document.getElementById('nameEditBtn');
-        var actions = document.getElementById('nameEditActions');
         var save = document.getElementById('nameSaveBtn');
+        var gear = document.getElementById('profileSettingsBtn');
         if (input) {
             input.readOnly = !editing;
             input.setAttribute('aria-readonly', String(!editing));
         }
-        if (edit) edit.hidden = editing;
-        if (actions) actions.hidden = !editing;
+        if (edit) {
+            edit.hidden = false;
+            edit.setAttribute('aria-label', editing ? 'Отменить изменение имени' : 'Изменить имя');
+            edit.title = editing ? 'Отменить изменение имени' : 'Изменить имя';
+            edit.innerHTML = editing
+                ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>'
+                : '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></svg>';
+        }
+        if (gear) {
+            gear.setAttribute('aria-label', editing ? 'Сохранить имя' : 'Настройки профиля');
+            gear.title = editing ? 'Сохранить имя' : 'Настройки профиля';
+            gear.setAttribute('aria-controls', editing ? 'nameInput' : 'settingsModal');
+            gear.setAttribute('aria-expanded', editing ? 'false' : gear.getAttribute('aria-expanded') || 'false');
+            gear.innerHTML = editing
+                ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6" /></svg>'
+                : '⚙️';
+        }
         if (save) save.disabled = false;
     }
 
     async function saveProfileName() {
         var input = document.getElementById('nameInput');
-        var save = document.getElementById('nameSaveBtn');
+        var save = document.getElementById('profileSettingsBtn');
         if (!input || !me || !nameEditing) return;
         var name = input.value.trim() || me.name || 'Гость';
         if (name === me.name) {
@@ -187,7 +202,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         }
     }
 
-    function renderHistory() {
+        function renderHistory() {
         var list = document.getElementById('histList');
         var count = document.getElementById('historyCount');
         var toggle = document.getElementById('historyToggleBtn');
