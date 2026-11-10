@@ -193,6 +193,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.edit.x).toBeGreaterThan(layout.slot.right);
       expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
       expect(layout.rowTwo.y).toBeGreaterThanOrEqual(layout.rowOne.bottom);
+      expect(layout.rowTwo.y - layout.edit.bottom).toBeGreaterThanOrEqual(4);
       expect(layout.search.y).toBeGreaterThanOrEqual(layout.rowTwo.y);
       expect(layout.support.y).toBeGreaterThanOrEqual(layout.rowTwo.y);
       expect(layout.support.width).toBe(44);
