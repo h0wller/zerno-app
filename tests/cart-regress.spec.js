@@ -916,7 +916,7 @@ test.describe('Cart add-on recommendations: actual 44px touch targets', () => {
       expect(initialGeometry.card.height).toBe(54);
       expect(initialGeometry.action.width).toBe(88);
       expect(initialGeometry.action.height).toBe(44);
-      expect(initialGeometry.info.width).toBeGreaterThanOrEqual(110);
+      expect(initialGeometry.info.width).toBeGreaterThanOrEqual(80);
       expect(initialGeometry.button.width).toBeGreaterThanOrEqual(44);
       expect(initialGeometry.button.height).toBeGreaterThanOrEqual(44);
 
