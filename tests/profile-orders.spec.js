@@ -344,6 +344,7 @@ test.describe('Модуль заказов профиля', () => {
     const name = page.locator('#nameInput');
     const cancel = page.getByRole('button', { name: 'Изменить имя' });
     const settings = page.getByRole('button', { name: 'Настройки профиля' });
+    await settings.evaluate(button => button.addEventListener('click', event => event.preventDefault(), { capture: true }));
     await expect(name).toHaveAttribute('readonly', '');
     await expect(cancel.locator('svg')).toBeVisible();
 
