@@ -575,7 +575,7 @@ html body #authModal.tg-mode .mhint{
   border-radius: 20px;
   background: var(--fr-paper, var(--card, #FFFFFF));
   color: var(--fr-choc, var(--ink, #101418));
-  box-shadow: 5px 5px 0 var(--fr-choc, #3A2A1C), 0 22px 52px rgba(16, 20, 24, .24);
+  box-shadow: 5px 5px 0 var(--fr-choc, #101418), 0 22px 52px rgba(16, 20, 24, .24);
   z-index: 1600;
   opacity: 0;
   pointer-events: none;
@@ -610,7 +610,7 @@ html body #authModal.tg-mode .mhint{
   border-radius: 12px;
   background: var(--fr-rice, var(--panel, #F3F8FC));
   color: var(--fr-choc, var(--ink, #101418));
-  box-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  box-shadow: 2px 2px 0 var(--fr-choc, #101418);
   font-size: 16px;
 }
 .abs-close:hover { background: var(--fr-tan, var(--panel, #F3F8FC)); }
@@ -724,7 +724,7 @@ html body #authModal.tg-mode .mhint{
   border-radius: 11px;
   font-size: 12px;
   font-weight: 800;
-  box-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  box-shadow: 2px 2px 0 var(--fr-choc, #101418);
 }
 .abs-save {
   flex: 1;
@@ -746,7 +746,7 @@ html body #authModal.tg-mode .mhint{
   border-radius: 12px;
   background: var(--fr-rice, var(--tint-alert, #FFF6E5));
   color: var(--fr-choc, var(--ink, #101418));
-  box-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  box-shadow: 2px 2px 0 var(--fr-choc, #101418);
   font-size: 12px;
   font-weight: 800;
 }
@@ -766,7 +766,7 @@ html body #authModal.tg-mode .mhint{
     border-bottom: 0;
     border-left: 0;
     border-radius: 22px 22px 0 0;
-    box-shadow: 0 -5px 0 var(--fr-choc, #3A2A1C), 0 -18px 42px rgba(16, 20, 24, .2);
+    box-shadow: 0 -5px 0 var(--fr-choc, #101418), 0 -18px 42px rgba(16, 20, 24, .2);
   }
   .addr-book-sheet::before {
     content: "";
