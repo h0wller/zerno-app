@@ -317,7 +317,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(edit).toHaveCSS('outline-style', 'solid');
   });
 
-  test('редактирование имени переиспользует карандаш и шестерёнку как отмену и сохранение', async ({ page }) => {
+  test('редактирование имени переиспользует карандаш и шестерёнку как отмену и сохранение', async ({ page }, testInfo) => {
     await page.route('**/api/me', async route => {
       if (route.request().method() !== 'PUT') return route.continue();
       const payload = route.request().postDataJSON();
