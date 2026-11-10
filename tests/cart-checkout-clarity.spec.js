@@ -111,6 +111,11 @@ test('cart keeps the current selected price and explains every amount without gu
     contentType: 'image/png',
   });
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#cartClose')).toHaveText('В меню');
+  const headerActionsOverflow = await page.locator('.cart-header-actions').evaluate((el) =>
+    el.getBoundingClientRect().right > el.parentElement.getBoundingClientRect().right + 1
+  );
+  expect(headerActionsOverflow).toBe(false);
   await testInfo.attach('cart-overview-390px', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png',
@@ -138,7 +143,17 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(recommendations.locator('.addon-pill-card')).toHaveCount(2);
   await expect(recommendations.locator('.ac-name')).toHaveText(['Лимонад к заказу', 'Соус сырный']);
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#cartClose')).toHaveText('В меню');
+  const headerActionsOverflow = await page.locator('.cart-header-actions').evaluate((el) =>
+    el.getBoundingClientRect().right > el.parentElement.getBoundingClientRect().right + 1
+  );
+  expect(headerActionsOverflow).toBe(false);
   await recommendations.scrollIntoViewIfNeeded();
+  const recommendationTabsFit = await recommendations.locator('.ca-tabs-scroll').evaluate((el) =>
+    el.scrollWidth <= el.clientWidth
+  );
+  expect(recommendationTabsFit).toBe(true);
+  await expect(recommendations.locator('[data-atab="drinks"]')).toBeVisible();
   await testInfo.attach('cart-recommendations-390px', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png',

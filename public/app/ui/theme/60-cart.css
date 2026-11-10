@@ -853,6 +853,18 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
     padding: 0 10px;
     font-size: 12px;
   }
+
+  .cart-continue-full {
+    display: none;
+  }
+
+  .cart-continue-short {
+    display: inline;
+  }
+
+  html.tg-native-main body #cartPanel .cart-header-actions {
+    display: none;
+  }
 }
 
 @media (max-width: 380px) {
@@ -868,14 +880,6 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
   .cart-header-actions .cart-continue-btn {
     padding: 0 8px;
     font-size: 11.5px;
-  }
-
-  .cart-continue-full {
-    display: none;
-  }
-
-  .cart-continue-short {
-    display: inline;
   }
 
   .cph-title-wrap {
