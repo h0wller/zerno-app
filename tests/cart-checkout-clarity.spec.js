@@ -19,7 +19,7 @@ const MENU_ITEM = {
   ]
 };
 
-test('cart keeps the current selected price and explains every amount without guessing the address', async ({ page }) => {
+test('cart keeps the current selected price and explains every amount without guessing the address', async ({ page }, testInfo) => {
   await page.clock.install({ time: new Date('2026-11-02T15:00:00.000Z') });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -84,6 +84,25 @@ test('cart keeps the current selected price and explains every amount without gu
     document.getElementById('cartPanel').classList.add('open');
     window.renderCart();
   });
+  await expect(page.locator('#checkoutGuestBar')).toBeAttached();
+  await expect(page.locator('#checkoutGuestBar')).toBeHidden();
+  await page.evaluate(() => window.setUser('checkout-clarity-token', {
+    id: 'checkout-clarity-guest',
+    name: 'Тестовый гость',
+    phone: '+7 999 123-45-67',
+    role: 'guest',
+    verified: 1,
+    stamps: 0,
+    free: 0
+  }));
+  await expect(page.locator('#checkoutGuestBar')).toBeVisible();
+  await expect(page.locator('#checkoutGuestName')).toHaveText('Тестовый гость');
+  await expect(page.locator('#checkoutGuestPhone')).toHaveText('+7 999 123-45-67');
+
+  await testInfo.attach('cart-overview-' + page.viewportSize().width + 'px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
 
   const row = page.locator('#cartItems .cartItem[data-cart-idx="0"]');
   await expect(row.locator('.ci-unit-price')).toHaveText('735 ₽ / шт.');
@@ -118,9 +137,18 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartTotalLabel')).toHaveText('Итого к оплате');
   await expect.poll(() => page.evaluate(() => window.totalsNow().total)).toBe(1570);
 
+  await page.locator('.checkoutForm').scrollIntoViewIfNeeded();
+  await testInfo.attach('cart-checkout-' + page.viewportSize().width + 'px', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+
   const checkoutSections = page.locator('.checkoutForm > .checkout-section');
   await expect(checkoutSections).toHaveCount(3);
-  await expect(checkoutSections.nth(0).locator('h4')).toHaveText('Получение');
+  await expect(checkoutSections.nth(0).locator('h4')).toHaveText('Получение заказа');
+  await expect(checkoutSections.nth(0).locator('.checkout-recipient-card')).toContainText('Данные получателя');
+  await expect(checkoutSections.nth(0).locator('.checkout-recipient-card')).toContainText('Тестовый гость');
+  await expect(checkoutSections.nth(0).locator('.checkout-recipient-card')).toContainText('+7 999 123-45-67');
   await expect(checkoutSections.nth(1).locator('h4')).toHaveText('Когда и как оплатить');
   await expect(checkoutSections.nth(2).locator('h4')).toHaveText('Проверка заказа');
   await expect(checkoutSections.nth(0).locator('#checkoutMethod')).toHaveCount(1);
