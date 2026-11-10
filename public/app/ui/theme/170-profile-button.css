@@ -24,38 +24,52 @@
   #profileTopBtn { width: 48px; height: 48px; min-width: 48px; font-size: 18px; }
 }
 
-/* Profile identity: name/actions on row one; avatar, phone and role on row two. */
+/* Profile identity: name/actions on row one; avatar, phone and role share row two. */
 #profileBox .phead {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 44px;
-  grid-template-rows: 44px auto auto;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-rows: 44px auto;
   align-items: start;
-  gap: 3px 10px;
+  gap: 8px 10px;
 }
-#profileBox .phead .ava {
+#profileBox .phead > .profile-name-row {
   grid-column: 1;
-  grid-row: 2 / 4;
+  grid-row: 1;
   align-self: center;
 }
-#profileBox .profile-identity-copy {
-  display: contents;
-}
-#profileBox .profile-identity-copy > .profile-name-row {
+#profileBox .phead > #profileSettingsBtn {
   grid-column: 2;
   grid-row: 1;
   align-self: center;
 }
-#profileBox .profile-identity-copy > .ph {
-  grid-column: 2;
+#profileBox .profile-meta-row {
+  grid-column: 1 / -1;
   grid-row: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
-#profileBox .profile-identity-copy > .profile-role {
-  grid-column: 2;
-  grid-row: 3;
+#profileBox .profile-meta-row .ava {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  align-self: center;
 }
-#profileBox #profileSettingsBtn {
-  grid-column: 3;
-  grid-row: 1;
+#profileBox .profile-meta-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+#profileBox .profile-meta-copy > .ph,
+#profileBox .profile-meta-copy > .profile-role {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 #profileBox .profile-name-row {
   display: grid;
@@ -115,8 +129,6 @@
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
-#profileBox .profile-identity-copy > .ph { margin-top: 3px; }
-#profileBox .profile-identity-copy > .profile-role { margin-top: 2px; }
 #profileBox .profile-name-row > #nameEditBtn.profile-name-edit-icon svg {
   display: block;
   width: 22px;
@@ -146,11 +158,10 @@
 }
 
 @media (max-width: 380px) {
-  #profileBox .phead {
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
-    gap: 8px;
-  }
-  #profileBox .phead .ava {
+  #profileBox .phead { gap: 8px; }
+  #profileBox .profile-meta-row { gap: 10px; }
+  #profileBox .profile-meta-row .ava {
+    flex-basis: 44px;
     width: 44px;
     height: 44px;
     min-width: 44px;
