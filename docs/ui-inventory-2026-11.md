@@ -131,7 +131,7 @@ Refresh this register before creating implementation branches.
 ## Remaining evidence and acceptance
 
 - [x] Both brands captured at 320 × 740, 390 × 844, 768 × 1024 and 1440 × 900 in CI.
-- [x] Cold guest, hydrated viewport and hydrated full-page screenshots stored as workflow artifacts.
+- [x] Cold guest, hydrated viewport and hydrated full-page screenshots stored as workflow artifacts; refreshed in successful run #42828826629.
 - [x] Staff role absent in guest matrix; CI test asserts viewport width is not exceeded by document scroll width.
 - [x] One live production spot check completed for coffee at 1065 × 991.
 - [ ] Production screenshot matrix with PNG artifacts and version/deployment identity.
