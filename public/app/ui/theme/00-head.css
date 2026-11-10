@@ -30,8 +30,8 @@
   --sh: 0 10px 30px -12px rgba(16, 20, 24, 0.18);
 
   /* Статусы (используются в СЛОЕ 2 для переопределений) */
-  --status-success: #2F7D4F;
-  --status-alert: #8A6D3B;
+  --status-success: #2A7448;
+  --status-alert: #7E6333;
   --status-danger: #B3372B;
   --tint-success: #E5F5E9;
   --tint-alert: #FFF3D6;

@@ -66,8 +66,8 @@
 #menuView .mh-top .mh-right {   flex: 1 1 100%;   width: 100%;   max-width: none;   margin: 0; }
 #menuView .coffee-menu-search {   min-height: 44px;   padding: 0 12px;   gap: 9px;   border: 1px solid rgba(18, 58, 107, 0.14);   border-radius: 12px;   background: #fff;   box-shadow: none; }
 #menuView .coffee-menu-search .search-icon {   width: 17px;   height: 17px;   flex: 0 0 17px;   fill: none;   stroke: #586470;   stroke-width: 1.8;   stroke-linecap: round; }
-#menuView .coffee-menu-search input {   font-size: 15px;   font-weight: 500; }
-#menuView .coffee-menu-search input::placeholder {   color: #7b8792;   opacity: 1; }
+#menuView .coffee-menu-search input {   font-size: 16px;   font-weight: 500; }
+#menuView .coffee-menu-search input::placeholder {   color: #6B7783;   opacity: 1; }
 #menuView .coffee-menu-search:focus-within {   border-color: rgba(18, 58, 107, 0.5);   box-shadow: 0 0 0 2px rgba(18, 58, 107, 0.08); }
 #menuView .search-shortcut {   display: none; }
 @media (max-width: 420px) { #menuView .menu-head { padding-bottom: 8px; } #menuView h1 { font-size: clamp(18px, 5vw, 21px); line-height: 1.2; } }
