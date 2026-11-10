@@ -159,6 +159,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
               ...rect(button),
               textFits:button.scrollWidth <= button.clientWidth + 1,
               fontSize:Number.parseFloat(getComputedStyle(button).fontSize),
+              color:getComputedStyle(button).color,
               face:{
                 width:box.width - inset.left - inset.right,
                 height:box.height - inset.top - inset.bottom,
@@ -294,6 +295,11 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.editControl.face.height).toBe(32);
       expect(layout.editControl.hitEdges.every(point => point.receives)).toBe(true);
       expect(layout.modeTrack.height).toBe(32);
+      expect(layout.modeTrack.background).toBe(brand === 'coffee' ? 'rgb(18, 58, 107)' : 'rgb(58, 42, 28)');
+      const activeMode = layout.modeButtons.find(button => button.text === 'Админ');
+      expect(activeMode.face.background).toBe(brand === 'coffee' ? 'rgb(187, 215, 242)' : 'rgb(139, 43, 32)');
+      expect(activeMode.color).toBe(brand === 'coffee' ? 'rgb(18, 58, 107)' : 'rgb(255, 255, 255)');
+      expect(layout.editControl.face.background).toBe(brand === 'coffee' ? 'rgb(255, 255, 255)' : 'rgb(246, 238, 225)');
       expect(layout.controlOverlaps).toEqual([]);
       expect(layout.rowTwo.y - layout.edit.bottom).toBeGreaterThanOrEqual(4);
       expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
@@ -301,6 +307,25 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.rowOne.height).toBe(44);
       expect(layout.rowTwo.height).toBe(44);
       expect(layout.top.height).toBe(92);
+
+      const roleButtons = page.locator('#modeSeg > button');
+      await roleButtons.nth(0).focus();
+      await page.keyboard.press('Tab');
+      const focus = await page.evaluate(() => {
+        const active = document.activeElement;
+        const face = active && getComputedStyle(active, '::before');
+        return {
+          text:active?.textContent?.trim() || null,
+          visible:!!active && active.matches(':focus-visible'),
+          outlineStyle:face?.outlineStyle || 'none',
+          outlineWidth:face?.outlineWidth || '0px'
+        };
+      });
+      expect(focus.text).toBe('Кассир');
+      expect(focus.visible).toBe(true);
+      expect(focus.outlineStyle).toBe('solid');
+      expect(Number.parseFloat(focus.outlineWidth)).toBe(2);
+      await page.evaluate(() => document.activeElement?.blur?.());
 
       await page.evaluate(() => window.scrollTo(0, 0));
       await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 4000 });
