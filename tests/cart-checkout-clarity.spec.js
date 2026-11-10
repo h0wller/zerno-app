@@ -199,7 +199,8 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartHeadCount')).toContainText('2 шт.');
   await expect(page.locator('#cartSubtotal')).toContainText('915 ₽');
   await expect(recommendations.locator('.addon-pill-card').first()).toHaveClass(/in-cart/);
-  await expect(recommendations.locator('.ac-count')).toHaveText('1');
+  const lemonRecommendation = recommendations.locator('.addon-pill-card').first();
+  await expect(lemonRecommendation.locator('.ac-count')).toHaveText('1');
   await recommendations.locator('.addon-pill-card').first().scrollIntoViewIfNeeded();
   const addedCardGeometry = await recommendations.locator('.addon-pill-card').first().evaluate((card) => ({
     cardWidth: Math.round(card.getBoundingClientRect().width),
@@ -214,11 +215,11 @@ test('cart keeps the current selected price and explains every amount without gu
 
   // The same fixed-width add action adds another unit; quantity is reduced from the actual cart row.
   await addButton.click();
-  await expect(recommendations.locator('.ac-count')).toHaveText('2');
+  await expect(lemonRecommendation.locator('.ac-count')).toHaveText('2');
   await expect(drinkCartRow.locator('.qty span')).toHaveText('2');
   await expect(page.locator('#cartSubtotal')).toContainText('1 095 ₽');
   await drinkCartRow.locator('[data-act="-"]').click();
-  await expect(recommendations.locator('.ac-count')).toHaveText('1');
+  await expect(lemonRecommendation.locator('.ac-count')).toHaveText('1');
   await expect(drinkCartRow.locator('.qty span')).toHaveText('1');
   await expect(page.locator('#cartSubtotal')).toContainText('915 ₽');
   await drinkCartRow.locator('[data-act="-"]').click();
