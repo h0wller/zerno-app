@@ -815,8 +815,8 @@ function clearPromo() {
       ? '<small class="ci-price-update" role="note">' +
           '<span class="ci-price-update-mark" aria-hidden="true">↗</span>' +
           '<span class="ci-price-update-copy">' +
-            '<span class="ci-price-update-label">Цена изменилась после добавления в корзину</span>' +
-            '<span class="ci-price-update-values"><span>Было ' + fmt(c.priceUpdateFrom) + ' · по меню сейчас </span><strong>' + fmt(baseUnitPrice) + '</strong></span>' +
+            '<span class="ci-price-update-label">Цена в меню изменилась</span>' +
+            '<span class="ci-price-update-values"><s>' + fmt(c.priceUpdateFrom) + '</s><span aria-hidden="true">→</span><strong>' + fmt(baseUnitPrice) + '</strong></span>' +
           '</span>' +
         '</small>'
       : '';
