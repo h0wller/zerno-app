@@ -244,7 +244,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             input.focus();
             input.select();
         });
-        if (save) save.addEventListener('click', function () {
+        if (gear) gear.addEventListener('click', function () {
             if (nameEditing) {
                 saveProfileName();
                 return;
