@@ -191,7 +191,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.brandContext.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.brandContext.right).toBeLessThanOrEqual(before.menuHead.right - 8);
-    expect(before.menuHeadStyle.maxHeight).toBe('108px');
+    expect(before.menuHeadStyle.maxHeight).toBe('100px');
     expect(before.menuHeadStyle.overflow).toBe('visible');
     expect(before.search.height).toBe(40);
     expect(before.subchipHeight).toBe(40);
