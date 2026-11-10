@@ -24,45 +24,43 @@
   #profileTopBtn { width: 48px; height: 48px; min-width: 48px; font-size: 18px; }
 }
 
-/* Profile identity: avatar, two-row copy and settings button never share a cell. */
+/* Profile identity: name/actions on row one; avatar, phone and role on row two. */
 #profileBox .phead {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr) 44px;
-  grid-template-rows: auto;
-  align-items: center;
-  gap: 10px;
+  grid-template-rows: 44px auto auto;
+  align-items: start;
+  gap: 3px 10px;
 }
 #profileBox .phead .ava {
   grid-column: 1;
-  grid-row: 1;
+  grid-row: 2 / 4;
   align-self: center;
 }
 #profileBox .profile-identity-copy {
-  grid-column: 2;
-  grid-row: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 44px auto;
-  align-content: start;
-  align-self: start;
-  min-width: 0;
+  display: contents;
 }
 #profileBox .profile-identity-copy > .profile-name-row {
-  grid-column: 1;
+  grid-column: 2;
   grid-row: 1;
+  align-self: center;
 }
 #profileBox .profile-identity-copy > .ph {
-  grid-column: 1;
+  grid-column: 2;
   grid-row: 2;
 }
 #profileBox .profile-identity-copy > .profile-role {
-  grid-column: 1;
+  grid-column: 2;
   grid-row: 3;
+}
+#profileBox #profileSettingsBtn {
+  grid-column: 3;
+  grid-row: 1;
 }
 #profileBox .profile-name-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px;
-  grid-template-rows: 44px auto;
+  grid-template-rows: 44px;
   align-items: center;
   gap: 2px 8px;
   width: 100%;
