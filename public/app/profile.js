@@ -201,7 +201,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         }
     }
 
-        function renderHistory() {
+    function renderHistory() {
         var list = document.getElementById('histList');
         var count = document.getElementById('historyCount');
         var toggle = document.getElementById('historyToggleBtn');
@@ -259,7 +259,7 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         });
     })();
 
-        function renderProfile() {
+    function renderProfile() {
         if (_rpRunning) return;
         _rpRunning = true;
         try {
