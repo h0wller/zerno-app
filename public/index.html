@@ -4140,12 +4140,22 @@ html body #tickerTrack .tickerGroup > span {
 
     <!-- 2. Скроллируемая область -->
     <div class="cart-scroll-body" id="cartScrollBody">
-      <div id="cartAddons"></div>
       <div id="cartItems"></div>
+      <div id="cartAddons"></div>
 
       <div class="checkoutForm">
         <section class="checkout-section" aria-labelledby="checkoutReceiveHeading">
-          <h4 id="checkoutReceiveHeading">Получение</h4>
+          <h4 id="checkoutReceiveHeading">Получение заказа</h4>
+          <div id="checkoutGuestBar" class="checkout-recipient-card" hidden>
+            <div class="checkout-recipient-heading">
+              <span class="checkout-recipient-icon" aria-hidden="true">👤</span>
+              <div><b>Данные получателя</b><small>Подставлены из вашего профиля</small></div>
+            </div>
+            <div class="checkout-recipient-values">
+              <span class="checkout-recipient-name" id="checkoutGuestName"></span>
+              <span class="checkout-recipient-phone" id="checkoutGuestPhone" hidden></span>
+            </div>
+          </div>
           <label for="checkoutMethod">Способ получения
             <select id="checkoutMethod" name="checkoutMethod">
               <option value="delivery">Доставка</option>
