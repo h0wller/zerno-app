@@ -731,6 +731,10 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
     padding: 8px 16px max(8px, env(safe-area-inset-bottom, 0px));
   }
 
+  .cartPanel .cart-footer-bar .csl-explain {
+    display: none;
+  }
+
   .cartPanel .cart-summary-lines {
     gap: 3px;
     margin-bottom: 6px;

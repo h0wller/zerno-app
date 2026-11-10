@@ -179,7 +179,7 @@ test('cart keeps the current selected price and explains every amount without gu
     await page.locator('.checkoutForm').scrollIntoViewIfNeeded();
     if (viewport.width === 390) {
       const footerHeight = await page.locator('#cartFooterBar').evaluate((el) => el.getBoundingClientRect().height);
-      expect(footerHeight).toBeLessThan(270);
+      expect(footerHeight).toBeLessThan(200);
     }
     const overflow = await page.evaluate(() =>
       document.documentElement.scrollWidth > window.innerWidth ||
