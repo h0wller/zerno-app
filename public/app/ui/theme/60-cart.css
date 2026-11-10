@@ -554,12 +554,15 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
 }
 
 .cartPanel .checkout-recipient-icon {
+  display: grid;
+  place-items: center;
   width: 32px;
   height: 32px;
-  flex-basis: 32px;
+  flex: 0 0 32px;
   border-radius: 10px;
   background: var(--fr-paper, #fff);
   color: var(--fr-choc, var(--ink, #101418));
+  filter: grayscale(1);
 }
 
 .cartPanel .checkout-recipient-heading b {
@@ -573,10 +576,17 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
 }
 
 .cartPanel .checkout-recipient-values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 5px 12px;
   padding-left: 41px;
   color: var(--fr-choc, var(--ink, #101418));
   font-size: 13px;
+}
+
+.cartPanel .checkout-recipient-name {
+  font-weight: 800;
 }
 
 .cartPanel .checkout-recipient-phone {
