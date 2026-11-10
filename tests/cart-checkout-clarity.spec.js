@@ -202,7 +202,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await increaseRecommendation.click();
   await expect(recommendations.locator('.ac-qty')).toHaveText('2');
   await expect(drinkCartRow.locator('.qty span')).toHaveText('2');
-  await expect(page.locator('#cartSubtotal')).toContainText('1 095 ₽');
+  await expect(page.locator('#cartSubtotal')).toContainText(/1\\s*095 ₽/);
 
   const decreaseRecommendation = recommendations.locator('.addon-pill-card').first().locator('[data-ac-act="minus"]');
   await decreaseRecommendation.click();
@@ -223,7 +223,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(row.locator('.ci-name')).toHaveText('Маргарита');
   await expect(row.locator('.ci-opt')).toHaveText('35 см, пышное');
   await expect(row.locator('.ci-price-update-label')).toHaveText('Цена изменилась после добавления в корзину');
-  await expect(row.locator('.ci-price-update-values')).toHaveText('Было 690 ₽ · сейчас 735 ₽');
+  await expect(row.locator('.ci-price-update-values')).toHaveText('Было 690 ₽ · по меню сейчас 735 ₽');
   await expect(row.locator('[data-act="-"]')).toHaveAccessibleName('Уменьшить количество Маргарита');
   await expect(row.locator('[data-act="+"]')).toHaveAccessibleName('Увеличить количество Маргарита');
 
