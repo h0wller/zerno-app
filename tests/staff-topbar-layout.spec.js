@@ -436,7 +436,8 @@ test('mobile staff controls keep 32px visuals inside 44px hit cells', async ({ p
             (Number.parseFloat(trackStyle.right) || 0),
           height: mode.getBoundingClientRect().height -
             (Number.parseFloat(trackStyle.top) || 0) -
-            (Number.parseFloat(trackStyle.bottom) || 0)
+            (Number.parseFloat(trackStyle.bottom) || 0),
+          background: trackStyle.backgroundColor
         };
         const menuRect = rect(row);
         const styleInfo = {
@@ -524,6 +525,11 @@ test('mobile staff controls keep 32px visuals inside 44px hit cells', async ({ p
         ).toBe(true);
       }
       expect(metrics.trackRect.height, 'the role track must remain a 32px visual surface').toBe(32);
+      expect(metrics.trackRect.background).toBe(brand === 'coffee' ? 'rgb(18, 58, 107)' : 'rgb(58, 42, 28)');
+      const activeMode = metrics.cells.find(cell => cell.id === 'Админ');
+      expect(activeMode.visual.background).toBe(brand === 'coffee' ? 'rgb(187, 215, 242)' : 'rgb(139, 43, 32)');
+      const editCell = metrics.cells.find(cell => cell.id === 'editToggle');
+      expect(editCell.visual.background).toBe(brand === 'coffee' ? 'rgb(255, 255, 255)' : 'rgb(246, 238, 225)');
       expect(metrics.overlaps, '44px cells must not intersect neighboring controls').toEqual([]);
       expect(metrics.menuRect.x).toBeGreaterThanOrEqual(0);
       expect(metrics.menuRect.right).toBeLessThanOrEqual(width + 1);
