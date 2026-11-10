@@ -958,3 +958,20 @@ body:has(#settingsModal.show) #overlay {
   height: 22px;
   margin: 0;
 }
+
+/* Name editing reuses the identity row's existing action slots. */
+#profileBox #profileSettingsBtn {
+  color: var(--profile-btn-secondary-color, var(--ink));
+}
+#profileBox #profileSettingsBtn > svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+#profileBox .profile-name-edit-icon[hidden] { display: none; }
+
