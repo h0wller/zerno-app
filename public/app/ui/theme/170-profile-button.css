@@ -24,30 +24,39 @@
   #profileTopBtn { width: 48px; height: 48px; min-width: 48px; font-size: 18px; }
 }
 
-/* Profile identity: name/actions on row one; avatar, phone and role share row two. */
+/* Profile identity: first row contains name and actions; second row contains avatar and account details. */
 #profileBox .phead {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
-  grid-template-rows: 44px auto;
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px 10px;
 }
 #profileBox .phead > .profile-name-row {
-  grid-column: 1;
-  grid-row: 1;
-  align-self: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-rows: 44px;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 calc(100% - 54px);
+  width: calc(100% - 54px);
+  min-width: 0;
+  grid-column: auto;
+  grid-row: auto;
 }
 #profileBox .phead > #profileSettingsBtn {
-  grid-column: 2;
-  grid-row: 1;
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  grid-column: auto;
+  grid-row: auto;
   align-self: center;
 }
 #profileBox .profile-meta-row {
-  grid-column: 1 / -1;
-  grid-row: 2;
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 0 0 100%;
+  width: 100%;
   min-width: 0;
 }
 #profileBox .profile-meta-row .ava {
@@ -76,7 +85,7 @@
   grid-template-columns: minmax(0, 1fr) 44px;
   grid-template-rows: 44px;
   align-items: center;
-  gap: 2px 8px;
+  gap: 8px;
   width: 100%;
   min-width: 0;
 }
