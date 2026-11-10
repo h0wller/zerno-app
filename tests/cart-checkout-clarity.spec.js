@@ -224,7 +224,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(row.locator('.ci-name')).toHaveText('Маргарита');
   await expect(row.locator('.ci-opt')).toHaveText('35 см, пышное');
   await expect(row.locator('.ci-price-update-label')).toHaveText('Цена в меню изменилась');
-  await expect(row.locator('.ci-price-update-values')).toHaveText('690 ₽ → 735 ₽');
+  await expect(row.locator('.ci-price-update-values')).toHaveText('690 ₽→735 ₽');
   await expect(row.locator('[data-act="-"]')).toHaveAccessibleName('Уменьшить количество Маргарита');
   await expect(row.locator('[data-act="+"]')).toHaveAccessibleName('Увеличить количество Маргарита');
 
