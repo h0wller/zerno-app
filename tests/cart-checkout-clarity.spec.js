@@ -170,9 +170,14 @@ test('cart keeps the current selected price and explains every amount without gu
   expect(addActionGeometry.buttonHeight).toBe(44);
   expect(addActionGeometry.actionWidth).toBe(44);
   expect(Math.abs(addActionGeometry.actionLeft - addActionGeometry.buttonLeft)).toBeLessThan(1);
-  const recommendationTabsFit = await recommendations.locator('.ca-tabs-scroll').evaluate((el) =>
-    el.scrollWidth <= el.clientWidth
-  );
+  const recommendationTabsFit = await recommendations.locator('.cart-addons-wrap').evaluate((wrap) => {
+    const head = wrap.querySelector('.cart-addons-head');
+    const rail = wrap.querySelector('.ca-tabs-scroll');
+    return wrap.scrollWidth <= wrap.clientWidth
+      && head.scrollWidth <= head.clientWidth
+      && rail.clientWidth > 0
+      && rail.getBoundingClientRect().right <= head.getBoundingClientRect().right + 1;
+  });
   expect(recommendationTabsFit).toBe(true);
   await expect(recommendations.locator('[data-atab="drinks"]')).toBeVisible();
   await testInfo.attach('cart-recommendations-before-add-390px', {
