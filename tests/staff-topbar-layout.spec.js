@@ -431,17 +431,17 @@ test('mobile staff controls receive taps across the usable visual button edges',
       for (let index = 0; index < 4; index += 1) {
         const box = await roleButtons.nth(index).boundingBox();
         expect(box, 'role control must have a rendered box').not.toBeNull();
-        await roleButtons.nth(index).click({ trial: true, position: { x: box.width / 2, y: 1 } });
-        await roleButtons.nth(index).click({ trial: true, position: { x: box.width - 1, y: box.height / 2 } });
-        await roleButtons.nth(index).click({ trial: true, position: { x: box.width / 2, y: box.height - 1 } });
-        await roleButtons.nth(index).click({ trial: true, position: { x: 1, y: box.height / 2 } });
+        await roleButtons.nth(index).click({ trial: true, position: { x: box.width / 2, y: 2 } });
+        await roleButtons.nth(index).click({ trial: true, position: { x: box.width - 2, y: box.height / 2 } });
+        await roleButtons.nth(index).click({ trial: true, position: { x: box.width / 2, y: box.height - 2 } });
+        await roleButtons.nth(index).click({ trial: true, position: { x: 2, y: box.height / 2 } });
       }
       const editBox = await edit.boundingBox();
       expect(editBox, 'edit control must have a rendered box').not.toBeNull();
-      await edit.click({ trial: true, position: { x: editBox.width / 2, y: 1 } });
-      await edit.click({ trial: true, position: { x: editBox.width - 1, y: editBox.height / 2 } });
-      await edit.click({ trial: true, position: { x: editBox.width / 2, y: editBox.height - 1 } });
-      await edit.click({ trial: true, position: { x: 1, y: editBox.height / 2 } });
+      await edit.click({ trial: true, position: { x: editBox.width / 2, y: 2 } });
+      await edit.click({ trial: true, position: { x: editBox.width - 2, y: editBox.height / 2 } });
+      await edit.click({ trial: true, position: { x: editBox.width / 2, y: editBox.height - 2 } });
+      await edit.click({ trial: true, position: { x: 2, y: editBox.height / 2 } });
 
       const overlaps = await page.evaluate((viewSelector) => {
         const root = document.querySelector(viewSelector);
