@@ -1010,6 +1010,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.modeSeg.top).toBeGreaterThanOrEqual(after.menuRow.top - 1);
     expect(after.modeSeg.top + after.modeSeg.height).toBeLessThanOrEqual(after.menuRow.top + after.menuRow.height + 1);
     expect(after.adminBar.height).toBe(before.adminBar.height);
+    expect(after.cls).toBeLessThan(0.01);
     expect(after.staffHeaderCls).toBeLessThan(0.01);
   });
   test('desktop cached staff role keeps the menu role row stable during auth hydration', async ({ page }) => {
