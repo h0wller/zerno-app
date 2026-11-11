@@ -59,7 +59,7 @@ async function expectCompact44pxHitTarget(locator) {
 
 for (const brand of BRANDS) {
   for (const viewport of VIEWPORTS) {
-    test(`${brand.id}: support action belongs to the menu toolbar at ${viewport.name}`, async ({ page }) => {
+    test(`${brand.id}: support action belongs to the menu toolbar at ${viewport.name}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => {
         localStorage.clear();
@@ -138,6 +138,12 @@ for (const brand of BRANDS) {
         await expect(sendChat).toBeVisible();
         await expectCompact44pxHitTarget(closeChat);
         await expectCompact44pxHitTarget(sendChat);
+        if (viewport.width === 320 || viewport.width === 390) {
+          await testInfo.attach(`support-chat-${brand.id}-${viewport.width}px`, {
+            body: await page.screenshot({ fullPage: false }),
+            contentType: 'image/png'
+          });
+        }
         await closeChat.click();
         await expect(page.locator('#chatPanel')).not.toHaveClass(/open/);
       } else {
