@@ -1199,7 +1199,7 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
     align-items: flex-start;
   }
 
-  html[data-staff-role] body .menu-head .menu-title-group > .upd {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
     display: inline-flex;
     flex: 0 0 auto;
     align-self: flex-start;
@@ -1207,6 +1207,7 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
     max-width: 100%;
     min-width: 0;
     margin: 0;
+    margin-left: 0;
     padding: 0;
     white-space: nowrap;
     overflow: hidden;
