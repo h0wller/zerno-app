@@ -54,7 +54,23 @@ test.describe('Pour accessibility audit — delivery brand', () => {
               history: []
             }
           }
-        : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+        : pathname === '/api/dmenu'
+          ? {
+              items: [{
+                id: 'pour-accessibility-pizza',
+                cat: 'pizza',
+                section: 'delivery',
+                name: 'Тестовая пицца',
+                desc: '',
+                comp: ['сыр'],
+                opts: [],
+                price: 400,
+                e: '🍕',
+                on: 1,
+                img: ''
+              }]
+            }
+          : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
