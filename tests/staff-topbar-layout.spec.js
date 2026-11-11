@@ -399,6 +399,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       const slot = row.querySelector(':scope > .mode-seg-slot');
       const seg = slot.querySelector('#modeSeg');
       const edit = row.querySelector('#editToggle');
+      const updated = row.querySelector('.upd');
       const searchRow = top.querySelector(':scope > .mh-right');
       const search = searchRow.querySelector('.search');
       const rect = node => {
@@ -420,7 +421,9 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
         seg:rect(seg),
         segStyle:style(seg),
         edit:rect(edit),
+        updated:rect(updated),
         editParent:edit.parentElement?.className || '',
+        updatedParent:updated?.parentElement?.className || '',
         segParent:seg.parentElement?.className || '',
         searchRow:rect(searchRow),
         search:rect(search),
@@ -434,6 +437,10 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
     expect(layout.topDisplay).toBe('flex');
     expect(layout.segParent).toBe('mode-seg-slot');
     expect(layout.editParent).toBe('menu-controls-row');
+    expect(layout.updatedParent).toBe('menu-controls-row');
+    expect(layout.updated.y).toBeGreaterThanOrEqual(layout.row.y - 1);
+    expect(layout.updated.y + layout.updated.height).toBeLessThanOrEqual(layout.row.bottom + 1);
+    expect(layout.updated.x).toBeGreaterThan(layout.edit.right);
     expect(layout.headerHasRoleClass).toBe(true);
     expect(layout.topbarHasModeClass).toBe(false);
     expect(layout.title.width).toBeGreaterThan(100);
