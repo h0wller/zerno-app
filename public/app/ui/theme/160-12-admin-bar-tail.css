@@ -987,10 +987,10 @@ html body #modeSeg button:not(.on) {
 /* Shared staff title and update group: stable left alignment at every width. */
 html[data-staff-role] body .menu-head .menu-title-group {
   display:flex;
-  flex:1 1 auto;
+  flex:0 1 auto;
   align-items:center;
   justify-content:flex-start;
-  gap:10px;
+  gap:4px;
   min-width:0;
 }
 html[data-staff-role] body .menu-head .menu-title-group > h1 {
@@ -1004,6 +1004,7 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
   align-items:center;
   min-width:0;
   margin:0;
+  margin-left:0;
   padding:0;
   white-space:nowrap;
 }
@@ -1062,6 +1063,7 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
     justify-content: center;
     gap: 4px;
     min-width: 0;
+    margin: 0;
     overflow: hidden;
   }
 
@@ -1136,6 +1138,7 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
     width: auto;
     min-width: 0;
     margin: 0;
+    margin-left: 0;
     padding: 0;
     white-space: nowrap;
     overflow: hidden;
