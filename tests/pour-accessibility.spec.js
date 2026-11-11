@@ -54,7 +54,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
               history: []
             }
           }
-        : pathname === '/api/dmenu'
+        : (pathname === '/api/menu/all' || pathname === '/api/menu')
           ? {
               items: [{
                 id: 'pour-accessibility-pizza',
