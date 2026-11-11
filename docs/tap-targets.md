@@ -12,7 +12,7 @@
 
 | Selector / count | Visible face | Hit area | DOM / behavior owner | Geometry / brand owner | Scope |
 | --- | --- | --- | --- | --- | --- |
-| `#modeSeg > button` (4 role buttons) | Desktop: compact native button face. Mobile: 32 × 32 px face with 6 px inset. | Desktop: native compact target. Mobile: 44 × 44 CSS px. | `core/catalog.js` renders modes; `core/views.js` owns gating and placement. | Layer 1: `160-12-admin-bar-tail.css`; Layer 2a: `brand-tokens.css`; Layer 2b: `core/views.js`; Layer 4: critical CSS in `index.html`. | In menu header while menu is visible; topbar only in work modes. |
+| `#modeSeg > button` (4 role buttons) | Desktop: one 176 × 36 px segmented track with four contiguous 44 px role cells. Mobile: 32 × 32 px face with 6 px inset. | Desktop: native compact target. Mobile: 44 × 44 CSS px. | `core/catalog.js` renders modes; `core/views.js` owns gating and placement. | Layer 1: `160-12-admin-bar-tail.css`; Layer 2a: `brand-tokens.css`; Layer 2b: `core/views.js`; Layer 4: critical CSS in `index.html`. | In menu header while menu is visible; topbar only in work modes. |
 | `#editToggle` (1 edit action) | Desktop: compact labeled action. Mobile: 32 px icon face. | Desktop: native compact target. Mobile: 44 × 44 CSS px. | `menu-editor.js` owns edit behavior; `core/views.js` owns placement. | Same layers as above. | Next to role switcher in menu header when allowed; `#adminBar` in work modes. |
 
 ## Mobile geometry contract
@@ -29,7 +29,7 @@
 
 ## Desktop geometry contract
 
-- Desktop uses a three-column row: flexible title/timestamp, fixed 176 px role switcher, fixed 150 × 36 px labeled edit action. The role and edit controls never shrink or overlap the title group.
+- Desktop uses a three-column row: flexible title/timestamp, fixed 176 × 36 px role switcher (four contiguous 44 px cells), fixed 150 × 36 px labeled edit action. The role and edit controls never shrink or overlap the title group.
 - At 821 px and wider the timestamp sits below the title in the left column. The title group may truncate, but it never pushes the role or edit columns.
 - The mobile 44 px hit-cell expansion is not applied to desktop.
 - Search/support remain in a full-width second row.
