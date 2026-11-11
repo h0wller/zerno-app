@@ -368,6 +368,122 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
   }
 });
 
+test('desktop storefront header and delivery branding stay intact after staff controls migration', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const brand of ['coffee', 'delivery']) {
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('zt_onb', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=' + brand);
+    const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
+    const head = page.locator(view + ' .menu-head');
+    await expect(head).toBeVisible();
+    const styles = await page.evaluate((selector) => {
+      const element = document.querySelector(selector);
+      const title = element.querySelector('h1');
+      const titleStyle = getComputedStyle(title);
+      const headStyle = getComputedStyle(element);
+      const top = element.querySelector('.mh-top');
+      const controlsRow = top.querySelector('.menu-controls-row');
+      const roleSwitch = document.getElementById('modeSeg');
+      const edit = document.getElementById('editToggle');
+      const rect = (node) => {
+        const box = node.getBoundingClientRect();
+        return { x:box.x,y:box.y,width:box.width,height:box.height,right:box.right,bottom:box.bottom };
+      };
+      return {
+        head:{...rect(element),background:headStyle.backgroundColor,border:headStyle.borderColor},
+        title:{...rect(title),color:titleStyle.color,fontSize:titleStyle.fontSize,descriptorDisplay:getComputedStyle(title.querySelector('em')).display},
+        top:{...rect(top),display:getComputedStyle(top).display},
+        controlsRow:controlsRow ? rect(controlsRow) : null,
+        roleParent:roleSwitch?.parentElement?.className || '',
+        roleVisible:!!roleSwitch && !roleSwitch.hidden && getComputedStyle(roleSwitch).display !== 'none',
+        editParent:edit?.parentElement?.id || ''
+      };
+    }, view + ' .menu-head');
+    expect(styles.head.width).toBeGreaterThan(1000);
+    expect(styles.head.height).toBeLessThan(180);
+    expect(styles.title.width).toBeGreaterThan(100);
+    expect(styles.title.height).toBeGreaterThan(25);
+    expect(styles.top.display).toBe('flex');
+    expect(styles.controlsRow).toBeNull();
+    expect(styles.roleVisible).toBe(false);
+    if (brand === 'delivery') {
+      expect(styles.head.background).toBe('rgb(250, 245, 238)');
+      expect(styles.title.color).toBe('rgb(58, 42, 28)');
+      expect(styles.title.fontSize).toBe('28px');
+      expect(styles.title.descriptorDisplay).not.toBe('none');
+      expect(styles.editParent).toBe('adminBar');
+    } else {
+      expect(styles.title.color).toBe('rgb(18, 58, 107)');
+    }
+    await testInfo.attach('desktop-' + brand + '-guest-menu-header', {
+      body: await page.screenshot({ fullPage:false }),
+      contentType: 'image/png'
+    });
+  }
+});
+
+test('delivery staff mode switcher keeps the delivery brand track and active-face colors on desktop', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await mockStaffSession(page);
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.me && window.me.role === 'admin' &&
+    document.documentElement.hasAttribute('data-staff-ready')
+  );
+  const view = page.locator('#deliveryView .menu-head');
+  const seg = page.locator('#modeSeg');
+  await expect(view).toBeVisible();
+  await expect(seg).toBeVisible();
+  for (const mode of ['guest', 'admin', 'cashier', 'orders']) {
+    await page.evaluate((nextMode) => window.setMode(nextMode), mode);
+    const styles = await seg.evaluate((element) => {
+      const active = element.querySelector('button.on');
+      const activeStyle = active && getComputedStyle(active);
+      const rect = node => {
+        const box = node.getBoundingClientRect();
+        return {x:box.x,y:box.y,width:box.width,height:box.height,right:box.right,bottom:box.bottom};
+      };
+      const head = document.querySelector('#deliveryView .menu-head');
+      const title = head.querySelector('h1');
+      const headStyle = getComputedStyle(head);
+      const titleStyle = getComputedStyle(title);
+      return {
+        parent:element.parentElement?.tagName || '',
+        parentClass:element.parentElement?.className || '',
+        display:getComputedStyle(element).display,
+        background:getComputedStyle(element).backgroundColor,
+        border:getComputedStyle(element).borderColor,
+        activeColor:activeStyle?.color || null,
+        activeBackground:activeStyle?.backgroundColor || null,
+        headBackground:headStyle.backgroundColor,
+        titleColor:titleStyle.color,
+        head:rect(head),
+        title:rect(title),
+        seg:rect(element)
+      };
+    });
+    expect(styles.background).toBe('rgb(58, 42, 28)');
+    expect(styles.headBackground).toBe('rgb(250, 245, 238)');
+    expect(styles.titleColor).toBe('rgb(58, 42, 28)');
+    if (mode === 'admin' || mode === 'guest') {
+      expect(styles.activeBackground).toBe('rgb(139, 43, 32)');
+      expect(styles.activeColor).toBe('rgb(255, 255, 255)');
+    }
+    expect(styles.head.width).toBeGreaterThan(1000);
+    expect(styles.title.width).toBeGreaterThan(100);
+    await page.setViewportSize({ width:1440, height:1000 });
+    await testInfo.attach('desktop-delivery-' + mode + '-switcher', {
+      body:await page.screenshot({fullPage:false}),
+      contentType:'image/png'
+    });
+  }
+});
+
 async function readStandaloneHeaderLayout(page) {
   return page.locator('header.topbar').evaluate(header => {
     const visibleContent = Array.from(header.querySelectorAll('#venueToggle, #headerBrand, #topbar-actions'))
