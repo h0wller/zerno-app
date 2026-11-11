@@ -472,6 +472,9 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
           titleGroupParent:titleGroup.parentElement.className,
           segParent:seg.parentElement.className,
           editParent:edit.parentElement.className,
+          titleGroupDisplay:getComputedStyle(titleGroup).display,
+          titleGroupDirection:getComputedStyle(titleGroup).flexDirection,
+          titleGroupRowGap:parseFloat(getComputedStyle(titleGroup).rowGap),
           topDisplay:getComputedStyle(top).display,
           headerHasRoleClass:document.querySelector('header.topbar').classList.contains('has-menu-role-switcher'),
           topbarHasModeClass:document.querySelector('header.topbar').classList.contains('has-mode-switcher'),
@@ -490,8 +493,13 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       expect(layout.updatedParent).toBe('menu-title-group');
       expect(layout.segParent).toBe('mode-seg-slot');
       expect(layout.editParent).toBe('menu-controls-row');
+      expect(layout.titleGroupDisplay).toBe('flex');
+      expect(layout.titleGroupDirection).toBe('column');
+      expect(layout.titleGroupRowGap).toBe(4);
       expect(layout.updatedStyle.display).not.toBe('none');
       expect(layout.updatedText).toContain('Обновлено:');
+      expect(layout.updated.y).toBeGreaterThan(layout.title.bottom - 1);
+      expect(layout.updated.bottom).toBeLessThanOrEqual(layout.row.bottom + 1);
       expect(layout.descriptor).toBe('missing');
       expect(layout.title.x).toBeLessThanOrEqual(layout.titleGroup.x + 1);
       expect(layout.titleGroup.x).toBeCloseTo(layout.row.x, 0);

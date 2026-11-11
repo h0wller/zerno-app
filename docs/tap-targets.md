@@ -30,7 +30,7 @@
 ## Desktop geometry contract
 
 - Desktop uses a three-column row: flexible title/timestamp, fixed 176 px role switcher, fixed 150 × 36 px labeled edit action. The role and edit controls never shrink or overlap the title group.
-- At 821–1099 px the timestamp is hidden to preserve the title and both actions; from 1100 px it sits beside the title. The title truncates rather than pushing into the controls.
+- At 821 px and wider the timestamp sits below the title in the left column. The title group may truncate, but it never pushes the role or edit columns.
 - The mobile 44 px hit-cell expansion is not applied to desktop.
 - Search/support remain in a full-width second row.
 - The role switcher must not return to the topbar while the menu remains visible, even above 820 px.
