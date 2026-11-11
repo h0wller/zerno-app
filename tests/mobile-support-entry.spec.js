@@ -15,6 +15,36 @@ const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
 ];
 
+async function expectCompact44pxHitTarget(locator) {
+  const metrics = await locator.evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    const points = [
+      [rect.left + 2, rect.top + 2],
+      [rect.right - 2, rect.top + 2],
+      [rect.left + 2, rect.bottom - 2],
+      [rect.right - 2, rect.bottom - 2],
+      [rect.left + rect.width / 2, rect.top + 2],
+      [rect.left + rect.width / 2, rect.bottom - 2],
+      [rect.left + 2, rect.top + rect.height / 2],
+      [rect.right - 2, rect.top + rect.height / 2]
+    ];
+    const face = window.getComputedStyle(button, '::before');
+    return {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      faceWidth: Number.parseFloat(face.width),
+      faceHeight: Number.parseFloat(face.height),
+      edgeHits: points.map(([x, y]) => document.elementFromPoint(x, y)?.closest('button') === button)
+    };
+  });
+
+  expect(metrics.width).toBeGreaterThanOrEqual(44);
+  expect(metrics.height).toBeGreaterThanOrEqual(44);
+  expect(metrics.faceWidth).toBe(32);
+  expect(metrics.faceHeight).toBe(32);
+  expect(metrics.edgeHits.every(Boolean)).toBe(true);
+}
+
 for (const brand of BRANDS) {
   for (const viewport of VIEWPORTS) {
     test(`${brand.id}: support action belongs to the menu toolbar at ${viewport.name}`, async ({ page }) => {
@@ -91,7 +121,11 @@ for (const brand of BRANDS) {
         await support.click();
         await expect(page.locator('#chatPanel')).toHaveClass(/open/);
         const closeChat = page.locator('#chatClose');
+        const sendChat = page.locator('#chatSend');
         await expect(closeChat).toBeVisible();
+        await expect(sendChat).toBeVisible();
+        await expectCompact44pxHitTarget(closeChat);
+        await expectCompact44pxHitTarget(sendChat);
         await closeChat.click();
         await expect(page.locator('#chatPanel')).not.toHaveClass(/open/);
       } else {
