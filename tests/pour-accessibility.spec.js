@@ -56,19 +56,19 @@ test.describe('Pour accessibility audit — delivery brand', () => {
           }
         : (pathname === '/api/menu/all' || pathname === '/api/menu')
           ? {
-              items: [{
-                id: 'pour-accessibility-pizza',
+              items: Array.from({ length: 6 }, (_, index) => ({
+                id: 'pour-accessibility-pizza-' + (index + 1),
                 cat: 'pizza',
                 section: 'delivery',
-                name: 'Тестовая пицца',
-                desc: '',
-                comp: ['сыр'],
+                name: index === 0 ? 'Тестовая пицца' : 'Тестовая пицца ' + (index + 1),
+                desc: 'Моцарелла',
+                comp: ['моцарелла'],
                 opts: [],
                 price: 400,
                 e: '🍕',
                 on: 1,
                 img: ''
-              }]
+              }))
             }
           : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
       await route.fulfill({
@@ -141,8 +141,11 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         })(),
         activeChip: (() => {
           const element = document.querySelector('#deliverySubFilter .subchip.on');
+          if (!element) {
+            throw new Error('Expected an active ingredient filter chip; the delivery fixture must contain more than five pizza items');
+          }
           const style = getComputedStyle(element);
-          return { bg: style.backgroundColor, color: style.color };
+          return { bg: style.backgroundColor, color: style.color, text: element.textContent.trim() };
         })(),
       };
     });
