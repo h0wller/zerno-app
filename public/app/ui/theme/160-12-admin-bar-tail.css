@@ -968,6 +968,11 @@ html body #modeSeg button:not(.on) {
 
 /* Desktop menu staff row: title, role switcher and edit share the menu heading above search. */
 @media (min-width: 821px) {
+  html[data-staff-role] body > div.wrap {
+    width: 100%;
+    min-width: 0;
+  }
+
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
     width: 100%;
     min-width: 0;
