@@ -999,6 +999,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.modeSeg.top).toBeGreaterThanOrEqual(after.menuRow.top - 1);
     expect(after.modeSeg.top + after.modeSeg.height).toBeLessThanOrEqual(after.menuRow.top + after.menuRow.height + 1);
     expect(after.adminBar.height).toBe(before.adminBar.height);
+    console.log('[desktop staff hydration] layout shift sources', JSON.stringify(after.shifts));
     expect(after.cls).toBeLessThan(0.01);
   });
   test('desktop cached staff role keeps the menu role row stable during auth hydration', async ({ page }) => {
@@ -1013,7 +1014,30 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       try {
         window.__layoutShiftObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (!entry.hadRecentInput) window.__layoutShifts.push({ value: entry.value });
+            if (!entry.hadRecentInput) window.__layoutShifts.push({
+              value: entry.value,
+              startTime: entry.startTime,
+              sources: Array.from(entry.sources || []).map(source => {
+                const describe = element => {
+                  if (!element) return null;
+                  const chain = [];
+                  let current = element;
+                  for (let depth = 0; current && depth < 5; depth++, current = current.parentElement) {
+                    chain.push({
+                      tag:current.tagName || '',
+                      id:current.id || '',
+                      className:typeof current.className === 'string' ? current.className : ''
+                    });
+                  }
+                  return chain;
+                };
+                return {
+                  node:describe(source.node),
+                  previousRect:source.previousRect,
+                  currentRect:source.currentRect
+                };
+              })
+            });
           }
         });
         window.__layoutShiftObserver.observe({ type: 'layout-shift', buffered: true });
@@ -1122,6 +1146,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         segParent:document.querySelector('#modeSeg')?.parentElement?.className || '',
         editParent:document.querySelector('#editToggle')?.parentElement?.className || '',
         topbarHasMode:document.querySelector('header.topbar').classList.contains('has-mode-switcher'),
+        shifts:window.__layoutShifts,
         cls:window.__layoutShifts.reduce((sum,item)=>sum+item.value,0)
       };
     });
