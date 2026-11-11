@@ -197,7 +197,12 @@
   }
   /* The role menu is present but inert until /api/me confirms the cached role. */
   html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg[hidden] {
-    display:flex !important;
+    display:grid !important;
+    grid-template-columns:repeat(4,44px) !important;
+    flex:0 0 176px !important;
+    width:176px !important;
+    min-width:176px !important;
+    max-width:176px !important;
     visibility:hidden !important;
     pointer-events:none !important;
   }
