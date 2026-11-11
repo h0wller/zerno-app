@@ -1154,14 +1154,14 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
   html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on {
     position: relative;
     isolation: isolate;
-    background: transparent;
+    background: var(--staff-mode-active-bg);
     color: var(--staff-mode-active-color);
-    box-shadow: none;
+    box-shadow: var(--staff-mode-active-shadow);
   }
 
   html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on::before {
-    background: var(--staff-mode-active-bg);
-    box-shadow: var(--staff-mode-active-shadow);
+    background: transparent;
+    box-shadow: none;
   }
 
   html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
