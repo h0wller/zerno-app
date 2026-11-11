@@ -34,7 +34,19 @@ async function expectCompact44pxHitTarget(locator) {
       height: Math.round(rect.height),
       faceWidth: Number.parseFloat(face.width),
       faceHeight: Number.parseFloat(face.height),
-      edgeHits: points.map(([x, y]) => document.elementFromPoint(x, y)?.closest('button') === button)
+      edgeHits: points.map(([x, y]) => document.elementFromPoint(x, y)?.closest('button') === button),
+      edgeTargets: points.map(([x, y]) => {
+        const hit = document.elementFromPoint(x, y);
+        const targetButton = hit?.closest('button');
+        const className = typeof hit?.className === 'string' ? hit.className : hit?.className?.baseVal || '';
+        return {
+          point: [Math.round(x), Math.round(y)],
+          tag: hit?.tagName?.toLowerCase() || null,
+          id: hit?.id || '',
+          className: String(className).slice(0, 80),
+          buttonId: targetButton?.id || ''
+        };
+      })
     };
   });
 
@@ -42,7 +54,7 @@ async function expectCompact44pxHitTarget(locator) {
   expect(metrics.height).toBeGreaterThanOrEqual(44);
   expect(metrics.faceWidth).toBe(32);
   expect(metrics.faceHeight).toBe(32);
-  expect(metrics.edgeHits.every(Boolean)).toBe(true);
+  expect(metrics.edgeHits.every(Boolean), JSON.stringify(metrics.edgeTargets)).toBe(true);
 }
 
 for (const brand of BRANDS) {
