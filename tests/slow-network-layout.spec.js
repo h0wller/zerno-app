@@ -973,7 +973,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           const affectsStaffHeader = (shift.sources || []).some(source =>
             (source.node || []).some(node =>
               node.id === 'modeSeg' || node.id === 'editToggle' ||
-              (node.className || '').split(/\\s+/).some(name =>
+              (node.className || '').split(/\s+/).some(name =>
                 name === 'menu-head' || name === 'menu-controls-row' || name === 'mode-seg-slot'
               )
             )
@@ -1184,7 +1184,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           const affectsStaffHeader=(shift.sources||[]).some(source=>
             (source.node||[]).some(node=>
               node.id==='modeSeg' || node.id==='editToggle' ||
-              (node.className||'').split(/\\s+/).some(name=>
+              (node.className||'').split(/\s+/).some(name=>
                 name==='menu-head' || name==='menu-controls-row' || name==='mode-seg-slot'
               )
             )
