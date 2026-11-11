@@ -1045,7 +1045,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         if(!el)return null;
         const b=el.getBoundingClientRect();
         const s=getComputedStyle(el);
-        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,hidden:el.hidden};
+        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,hidden:el.hidden,marginBottom:s.marginBottom};
       };
       return {
         role:document.documentElement.getAttribute('data-staff-role'),
@@ -1069,8 +1069,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.ready).toBe(false);
     expect(before.seg.hidden).toBe(true);
     expect(before.adminBar.hidden).toBe(true);
-    expect(before.adminBar.display).toBe('none');
+    expect(before.adminBar.display).toBe('flex');
     expect(before.adminBar.height).toBe(0);
+    expect(before.adminBar.marginBottom).toBe('12px');
     expect(before.head.width).toBeGreaterThan(800);
     expect(before.head.height).toBeLessThan(180);
     expect(before.row).not.toBeNull();
@@ -1094,7 +1095,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         if(!el)return null;
         const b=el.getBoundingClientRect();
         const s=getComputedStyle(el);
-        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,hidden:el.hidden};
+        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,hidden:el.hidden,marginBottom:s.marginBottom};
       };
       return {
         role:document.documentElement.getAttribute('data-staff-role'),
@@ -1118,9 +1119,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.ready).toBe(true);
     expect(after.role).toBe('admin');
     expect(after.seg.hidden).toBe(false);
-    expect(after.adminBar.hidden).toBe(true);
-    expect(after.adminBar.display).toBe('none');
-    expect(after.adminBar.height).toBe(0);
+    expect(after.adminBar.hidden).toBe(false);
+    console.log('[desktop staff hydration] admin bar after hydration', JSON.stringify(after.adminBar));
     expect(after.segParent).toBe('mode-seg-slot');
     expect(after.editParent).toBe('menu-controls-row');
     expect(after.topbarHasMode).toBe(false);

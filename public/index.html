@@ -117,6 +117,22 @@
   display: none !important;
 }
 
+/* Reserve only the empty admin bar's final margin; the staff menu row is reserved below. */
+@media (min-width:821px) {
+  html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
+    display:flex !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+    box-sizing:border-box !important;
+    height:0 !important;
+    min-height:0 !important;
+    max-height:0 !important;
+    margin:0 0 12px !important;
+    padding:0 !important;
+    overflow:hidden !important;
+  }
+}
+
 /* Desktop staff first paint keeps the role controls in the menu heading before hydration. */
 @media (min-width:821px) {
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
@@ -721,8 +737,9 @@ html body div.wrap > #deliveryRail button.on {
 html[data-brand="coffee"] .menu-head h1,
 html[data-brand="delivery"] .menu-head h1 {
   font: 900 clamp(22px, 3.2vw, 36px)/1.15 "Unbounded", "Golos Text", sans-serif;
-  color: #3a2a1c;
 }
+html[data-brand="coffee"] .menu-head h1 { color: #123A6B; }
+html[data-brand="delivery"] .menu-head h1 { color: #3a2a1c; }
 /* ═══ 6. Токены первого кадра (дубль из brand-tokens.css) ═══ */
 html[data-brand="delivery"] {
   --paper: #F3EDE6;
