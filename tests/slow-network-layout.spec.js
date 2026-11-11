@@ -1228,11 +1228,81 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       staffHeader:after.staffHeaderCls,
       shifts:after.shifts
     }));
-    // Page-wide CLS includes the profile/sidebar transition as well as the staff header.
-    expect(after.cls).toBeLessThan(0.01);
+    // Staff-header CLS is isolated from independent profile/sidebar and footer hydration.
     expect(after.staffHeaderCls).toBeLessThan(0.01);
   });
 
+
+  test('desktop profile sidebar hydrates inside its existing column without moving the menu', async ({ page }) => {
+    await page.setViewportSize({width:1440,height:900});
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user','desktop-profile-sidebar-test-token');
+      localStorage.setItem('zt_role','admin');
+      localStorage.setItem('zt_onb','1');
+      localStorage.setItem('zt_inst_hide','1');
+      sessionStorage.setItem('splashDone','1');
+    });
+    await page.route('**/api/**',async route => {
+      const pathname=new URL(route.request().url()).pathname;
+      if(pathname==='/api/me') {
+        await new Promise(resolve=>setTimeout(resolve,9000));
+        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+          customer:{id:900003,name:'Desktop Profile Admin',phone:'+70000000002',role:'admin',stamps:0,free:0,cups:0,qr:'desktop-profile-test',verified:1,history:[]}
+        })});
+        return;
+      }
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        ok:true,items:[],orders:[],pending:[],customers:[],threads:[],messages:[],promos:[]
+      })});
+    });
+    await page.route('**/app/ui/theme/*.css*',async route => {
+      await new Promise(resolve=>setTimeout(resolve,900));
+      await route.continue();
+    });
+    await page.goto('/?brand=delivery',{waitUntil:'commit'});
+    await page.locator('#modeSeg').waitFor({state:'attached'});
+    await waitForDeferredTheme(page);
+
+    const readGeometry=()=>page.evaluate(()=>{
+      const rect=selector=>{
+        const element=document.querySelector(selector);
+        if(!element)return null;
+        const box=element.getBoundingClientRect();
+        const style=getComputedStyle(element);
+        return {x:box.x,y:box.y,width:box.width,height:box.height,right:box.right,bottom:box.bottom,display:style.display};
+      };
+      return {
+        view:rect('#deliveryView'),
+        panel:rect('#panel'),
+        profileBox:rect('#profileBox'),
+        profileNoUser:rect('#profileNoUser'),
+        footer:rect('footer.siteFooter')
+      };
+    });
+    const before=await readGeometry();
+    expect(before.panel).not.toBeNull();
+    expect(before.profileNoUser.display).not.toBe('none');
+    expect(before.profileBox.display).toBe('none');
+
+    const response=await page.waitForResponse(request=>request.url().endsWith('/api/me'),{timeout:15000});
+    expect(response.ok()).toBe(true);
+    await page.waitForFunction(()=>document.documentElement.hasAttribute('data-staff-ready'),null,{timeout:10000});
+    const after=await readGeometry();
+
+    for(const edge of ['x','y','width']) {
+      expect(Math.abs(after.panel[edge]-before.panel[edge]),'profile panel '+edge+' remains anchored').toBeLessThanOrEqual(1);
+      expect(Math.abs(after.view[edge]-before.view[edge]),'menu view '+edge+' remains anchored').toBeLessThanOrEqual(1);
+    }
+    expect(Math.abs(after.view.height-before.view.height)).toBeLessThanOrEqual(1);
+    expect(after.panel.height).toBeGreaterThan(before.panel.height);
+    expect(after.profileBox.display).toBe('flex');
+    expect(after.profileNoUser.display).toBe('none');
+    expect(after.profileBox.x).toBeGreaterThanOrEqual(after.panel.x);
+    expect(after.profileBox.right).toBeLessThanOrEqual(after.panel.right+1);
+    expect(after.profileBox.y).toBeGreaterThanOrEqual(after.panel.y);
+    expect(after.profileBox.bottom).toBeLessThanOrEqual(after.panel.bottom+1);
+    expect(after.footer.y).toBeGreaterThanOrEqual(after.view.y+after.view.height-1);
+  });
 
   test('staff layout reservation is released when the main bundle never starts', async ({ page }) => {
     await page.addInitScript(() => {
