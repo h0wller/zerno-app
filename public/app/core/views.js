@@ -282,7 +282,14 @@ function syncStaffAndGuestControls(bName2) {
       titleHost.insertBefore(menuRow, title);
     }
     if (menuRow.parentElement !== titleHost) titleHost.insertBefore(menuRow, title);
-    if (title && title.parentElement !== menuRow) menuRow.appendChild(title);
+    var leftGroup = menuRow.querySelector('.menu-title-group');
+    if (!leftGroup) {
+      leftGroup = document.createElement('div');
+      leftGroup.className = 'menu-title-group';
+      menuRow.insertBefore(leftGroup, menuRow.firstChild);
+    }
+    if (title && title.parentElement !== leftGroup) leftGroup.appendChild(title);
+    if (updated && updated.parentElement !== leftGroup) leftGroup.appendChild(updated);
     var modeSlot = menuRow.querySelector('.mode-seg-slot');
     if (!modeSlot) {
       modeSlot = document.createElement('div');
@@ -291,10 +298,9 @@ function syncStaffAndGuestControls(bName2) {
     }
     if (modeSeg && modeSeg.parentElement !== modeSlot) modeSlot.appendChild(modeSeg);
     if (editToggle && editToggle.parentElement !== menuRow) menuRow.appendChild(editToggle);
-    if (updated) menuRow.appendChild(updated);
   } else {
-    if (title && menuRow && menuRow.parentElement && title.parentElement !== menuRow) {
-      menuRow.parentElement.insertBefore(title, menuRow);
+    if (title && menuRow && menuRow.parentElement && title.parentElement !== titleHost) {
+      titleHost.insertBefore(title, menuRow);
     }
     if (updated && menuRow && menuRow.parentElement && updated.parentElement !== titleHost) {
       titleHost.appendChild(updated);

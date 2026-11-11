@@ -240,10 +240,12 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           rowOrder: Array.from(rowOne.children).map(element =>
             element.id === 'editToggle' ? 'edit' :
               element.classList.contains('mode-seg-slot') ? 'roles' :
-                element.classList.contains('upd') ? 'updated' :
+                element.classList.contains('menu-title-group') ? 'title-updated' :
                   element.tagName.toLowerCase()
           ),
-          updatedHidden: getComputedStyle(rowOne.querySelector('.upd')).display === 'none',
+          titleGroup: rect(rowOne.querySelector('.menu-title-group')),
+          updated: rect(rowOne.querySelector('.menu-title-group .upd')),
+          updatedHidden: getComputedStyle(rowOne.querySelector('.menu-title-group .upd')).display === 'none',
           headerChildren: [
             top.querySelector(':scope > div:first-child > .menu-controls-row') ? 'title-roles-edit' : 'unexpected',
             top.querySelector(':scope > .mh-right') ? 'search-support' : 'unexpected',
@@ -276,8 +278,8 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
         };
       }, view);
 
-      expect(layout.rowOrder).toEqual(['h1', 'roles', 'edit', 'updated']);
-      expect(layout.updatedHidden).toBe(true);
+      expect(layout.rowOrder).toEqual(['title-updated', 'roles', 'edit']);
+      expect(layout.updatedHidden).toBe(false);
       expect(layout.headerChildren).toEqual(['title-roles-edit', 'search-support']);
       expect(layout.extraRows).toBe(0);
       expect(layout.adminBarVisible).toBe(true);
@@ -290,7 +292,12 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
         const itemCenter = item.y + item.height / 2;
         expect(Math.abs(itemCenter - rowOneCenter), JSON.stringify(layout)).toBeLessThanOrEqual(1);
       }
-      expect(layout.title.width).toBe(50);
+      expect(layout.title.width).toBeGreaterThanOrEqual(45);
+      expect(layout.titleGroup.x).toBeLessThanOrEqual(layout.rowOne.x + 1);
+      expect(layout.titleGroup.right).toBeLessThanOrEqual(layout.slot.x + 1);
+      expect(layout.updated.x).toBeGreaterThanOrEqual(layout.title.right - 1);
+      expect(layout.slot.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
+      expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
       expect(layout.titleDescriptor?.display || 'none').toBe('none');
       expect(layout.slot.width).toBe(176);
       expect(layout.edit.x).toBeGreaterThanOrEqual(layout.slot.right);
@@ -402,7 +409,8 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       const slot = row.querySelector(':scope > .mode-seg-slot');
       const seg = slot.querySelector('#modeSeg');
       const edit = row.querySelector('#editToggle');
-      const updated = row.querySelector('.upd');
+      const titleGroup = row.querySelector('.menu-title-group');
+      const updated = titleGroup?.querySelector('.upd');
       const searchRow = top.querySelector(':scope > .mh-right');
       const search = searchRow.querySelector('.search');
       const rect = node => {
@@ -424,11 +432,13 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
         seg:rect(seg),
         segStyle:style(seg),
         edit:rect(edit),
+        titleGroup:rect(titleGroup),
         updated:rect(updated),
         updatedStyle:style(updated),
         updatedText:updated.textContent.trim(),
         editParent:edit.parentElement?.className || '',
         updatedParent:updated?.parentElement?.className || '',
+        titleGroupParent:titleGroup?.parentElement?.className || '',
         segParent:seg.parentElement?.className || '',
         searchRow:rect(searchRow),
         search:rect(search),
@@ -442,12 +452,16 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
     expect(layout.topDisplay).toBe('flex');
     expect(layout.segParent).toBe('mode-seg-slot');
     expect(layout.editParent).toBe('menu-controls-row');
-    expect(layout.updatedParent).toBe('menu-controls-row');
+    expect(layout.updatedParent).toBe('menu-title-group');
+    expect(layout.titleGroupParent).toBe('menu-controls-row');
     expect(layout.updatedStyle.display).toBe('inline-flex');
     expect(layout.updatedText).toContain('Обновлено:');
     expect(layout.updated.y).toBeGreaterThanOrEqual(layout.row.y - 1);
     expect(layout.updated.y + layout.updated.height).toBeLessThanOrEqual(layout.row.bottom + 1);
-    expect(layout.updated.x).toBeGreaterThan(layout.edit.right);
+    expect(layout.title.x).toBeLessThanOrEqual(layout.titleGroup.x + 1);
+    expect(layout.updated.x).toBeGreaterThan(layout.title.right - 1);
+    expect(layout.titleGroup.right).toBeLessThan(layout.seg.x);
+    expect(layout.edit.x).toBeGreaterThan(layout.seg.right);
     expect(layout.headerHasRoleClass).toBe(true);
     expect(layout.topbarHasModeClass).toBe(false);
     expect(layout.title.width).toBeGreaterThan(100);

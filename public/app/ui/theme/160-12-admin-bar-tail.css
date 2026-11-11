@@ -46,10 +46,16 @@ html body #chatsToggle2 {
   box-sizing: border-box;
 }
 
-/* On narrow screens the timestamp yields space; the actual brand context remains visible. */
+/* Staff timestamp stays beside the menu title at every width. */
 @media (max-width:820px) {
-  #menuView .menu-head .upd,
-  #deliveryView .menu-head .upd { display:none; }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display:inline-flex;
+    flex:0 1 auto;
+    min-width:0;
+    margin:0;
+    padding:0;
+    white-space:nowrap;
+  }
 }
 
 /* The edit action is a 32px icon in the mobile menu row; 44px text controls remain on desktop. */
@@ -525,7 +531,7 @@ html body div.wrap > section {
     width: 16px;
     height: 16px;
   }
-  html body .menu-head .upd { display:none; }
+  html[data-staff-role] body .menu-head .menu-title-group > .upd { display:inline-flex; }
   /* Guest coffee header keeps the approved 100px first-paint clearance below search. */
   html body #menuView .menu-head {
     height:100px;
@@ -1004,15 +1010,25 @@ html body #modeSeg button:not(.on) {
   html[data-staff-role] body .menu-head .menu-controls-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     flex-wrap: nowrap;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
     min-width: 0;
     min-height: 36px;
     margin: 0;
   }
 
-  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > h1 {
+  html[data-staff-role] body .menu-head .menu-title-group {
+    display:flex;
+    flex:1 1 auto;
+    align-items:center;
+    justify-content:flex-start;
+    gap:10px;
+    min-width:0;
+  }
+
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > h1 {
     flex: 0 0 auto;
     min-width: 0;
     margin: 0;
@@ -1066,13 +1082,13 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html[data-staff-role] body .menu-head .menu-controls-row > .upd {
+  html[data-staff-role] body .menu-head .menu-title-group > .upd {
     display: inline-flex;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     align-items: center;
     width: auto;
     min-width: 0;
-    margin: 0 0 0 auto;
+    margin: 0;
     padding: 0;
     white-space: nowrap;
     font-size: 11px;
@@ -1160,8 +1176,8 @@ html body #modeSeg button:not(.on) {
   }
 
   html[data-staff-role] body .menu-head .menu-controls-row {
-    display: grid;
-    grid-template-columns: 50px 176px 44px;
+    display: flex;
+    justify-content: space-between;
     grid-template-rows: 44px;
     align-items: center;
     column-gap: 4px;
@@ -1175,15 +1191,13 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > h1 {
-    grid-column: 1;
-    grid-row: 1;
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > h1 {
     display: inline-flex;
     align-items: center;
-    flex: 0 0 50px;
-    width: 50px;
-    min-width: 50px;
-    max-width: 50px;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
     margin: 0;
     white-space: nowrap;
     overflow: hidden;
@@ -1198,15 +1212,13 @@ html body #modeSeg button:not(.on) {
   }
 
   html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
-    grid-column: 2;
-    grid-row: 1;
     display: flex;
-    flex: 0 0 176px;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: stretch;
-    width: 176px;
-    min-width: 176px;
-    max-width: 176px;
+    width: auto;
+    min-width: 0;
+    max-width: none;
     height: 44px;
     min-height: 44px;
     max-height: 44px;
@@ -1300,8 +1312,6 @@ html body #modeSeg button:not(.on) {
   }
 
   html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
-    grid-column: 3;
-    grid-row: 1;
     position: relative;
     isolation: isolate;
     display: inline-flex;
@@ -1415,19 +1425,13 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
-  html body .menu-head .upd { display:none; }
-}
-
-
-/* Desktop staff menu timestamp is visible in the same row after edit. */
-@media (min-width: 821px) {
-  html[data-staff-role] body .menu-head .menu-controls-row > .upd {
+  html[data-staff-role] body .menu-head .menu-title-group > .upd {
     display: inline-flex;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     align-items: center;
-    width: auto;
     min-width: 0;
-    margin: 0 0 0 auto;
+    margin: 0;
+    padding: 0;
     white-space: nowrap;
   }
 }

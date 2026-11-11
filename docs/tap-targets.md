@@ -2,8 +2,9 @@
 
 ## Placement contract
 
-- In guest/admin menu states, title, role switcher (`#modeSeg`) and permitted edit control (`#editToggle`) are children of the visible `.menu-head` on **desktop and mobile**.
-- The role row is above the search row; the search remains full-width underneath.
+- In guest/admin menu states, the `.menu-controls-row` spans the menu header: the left group contains `h1` and `.upd` (menu update timestamp); the right group contains role switcher (`#modeSeg`) and permitted edit control (`#editToggle`).
+- The role row is above the search row; search/support remain full-width underneath.
+- Mobile edit action shows its icon face; desktop shows the labeled «Редактировать» action.
 - In cashier/orders (work modes), the menu view is hidden, so `#modeSeg` returns to `header.topbar` and `#editToggle` returns to `#adminBar`.
 - Placement is owned by `core/views.js`; it is based on whether the menu view is visible, not on a viewport breakpoint.
 
@@ -29,7 +30,7 @@
 ## Desktop geometry contract
 
 - Uses compact native control sizing; the mobile 44 px hit-cell expansion is not applied to desktop.
-- Title, role switcher and edit control share one horizontal row.
+- The left group is title + update timestamp, both aligned to the left; the right group is role switcher + edit, aligned to the right.
 - Search/support remain in a full-width second row.
 - The role switcher must not return to the topbar while the menu remains visible, even above 820 px.
 - Desktop first-paint critical CSS reserves the same hierarchy before authentication hydration to avoid a DOM/layout jump.
