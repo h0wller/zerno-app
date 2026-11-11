@@ -56,7 +56,7 @@ The registration suite verifies that local-storage quota errors do not break sta
 
 ## Visual review artifacts
 
-The responsive test attaches full-page Chromium screenshots at 320, 390, 520, 690, 820, 821, 1024, 1181, and 1600 px after deferred CSS and fonts have loaded.
+The responsive test attaches full-page Chromium screenshots at 320, 390, 520, 690, 820, 821, 1024, 1181, and 1600 px after deferred CSS and fonts have loaded. The staff header spec separately attaches coffee and delivery screenshots at 320, 390, 821, 1024, and 1440 px.
 
 Every CI run uploads the Playwright HTML report as the `playwright-diagnostics` artifact, including successful runs; the raw `test-results/` directory is intentionally excluded to keep artifacts small. CI builds and validates the production bundle but does not commit generated `index.html` or `sw.js` changes back to the PR branch: the build script increments the service-worker cache version on every build, and a workflow-authored PR update would create another approval-required `pull_request` run. After merge to `pizza`, `deploy.yml` rebuilds the client from the successful commit before deploying it. The external `main.bundle.js.map` is not part of the deployment build and must be regenerated separately; the tracked map may therefore lag behind the bundle. Open the report and inspect the attached screenshots when changing:
 
