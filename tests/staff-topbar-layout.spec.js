@@ -466,6 +466,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
           search:rect(search),
           titleStyle:style(title),
           updatedStyle:style(updated),
+          updatedMarginLeft:parseFloat(getComputedStyle(updated).marginLeft),
           descriptor:title.querySelector('em') ? 'present' : 'missing',
           updatedText:updated.textContent.trim(),
           updatedParent:updated.parentElement.className,
