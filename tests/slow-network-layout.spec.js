@@ -1077,10 +1077,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.adminBar.display).toBe('none');
     expect(before.adminBar.height).toBe(0);
     expect(before.edit.hidden).toBe(true);
-    expect(before.edit.display).toBe('flex');
+    expect(before.edit.display).toBe('inline-flex');
     expect(before.edit.visibility).toBe('hidden');
-    expect(before.edit.width).toBe(44);
-    expect(before.edit.height).toBe(44);
+    expect(before.edit.width).toBe(150);
+    expect(before.edit.height).toBe(36);
     expect(before.head.width).toBeGreaterThan(800);
     expect(before.head.height).toBeLessThan(180);
     expect(before.row).not.toBeNull();
@@ -1131,6 +1131,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.adminBar.hidden).toBe(false);
     expect(after.adminBar.display).toBe('flex');
     expect(after.adminBar.height).toBe(0);
+    expect(after.edit.hidden).toBe(false);
+    expect(after.edit.display).toBe('inline-flex');
+    expect(after.edit.visibility).toBe('visible');
+    expect(after.edit.width).toBe(150);
+    expect(after.edit.height).toBe(36);
     console.log('[desktop staff hydration] admin bar after hydration', JSON.stringify(after.adminBar));
     expect(after.segParent).toBe('mode-seg-slot');
     expect(after.editParent).toBe('menu-controls-row');

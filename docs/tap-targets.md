@@ -29,7 +29,7 @@
 
 ## Desktop geometry contract
 
-- Uses compact native control sizing; the mobile 44 px hit-cell expansion is not applied to desktop.
+- The desktop labeled edit action uses a fixed 150 × 36 CSS px box so the first frame and authenticated state share identical geometry. The mobile 44 px hit-cell expansion is not applied to desktop.
 - The left group is title + update timestamp, both aligned to the left; the right group is role switcher + edit, aligned to the right.
 - Search/support remain in a full-width second row.
 - The role switcher must not return to the topbar while the menu remains visible, even above 820 px.

@@ -1143,10 +1143,10 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
   html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
     position: static;
     display: inline-flex;
-    flex: 0 0 auto;
-    width: auto;
-    min-width: 0;
-    max-width: none;
+    flex: 0 0 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
     height: 36px;
     min-height: 36px;
     max-height: 36px;

@@ -192,18 +192,20 @@
     visibility:hidden !important;
     pointer-events:none !important;
   }
-  /* Reserve the final 44x44 edit hit cell before auth; theme CSS owns its visible face. */
+  /* Reserve the desktop labeled edit control's final 150x36 footprint before auth. */
   html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > #editToggle[hidden] {
-    display:flex !important;
-    flex:0 0 44px !important;
-    width:44px !important;
-    min-width:44px !important;
-    max-width:44px !important;
-    height:44px !important;
-    min-height:44px !important;
-    max-height:44px !important;
-    padding:6px !important;
-    font-size:0 !important;
+    display:inline-flex !important;
+    flex:0 0 150px !important;
+    width:150px !important;
+    min-width:150px !important;
+    max-width:150px !important;
+    height:36px !important;
+    min-height:36px !important;
+    max-height:36px !important;
+    margin:0 !important;
+    padding:0 12px !important;
+    font-size:12px !important;
+    white-space:nowrap !important;
     visibility:hidden !important;
     pointer-events:none !important;
   }
