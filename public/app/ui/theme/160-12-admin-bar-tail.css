@@ -1093,6 +1093,9 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
     width: 176px;
     min-width: 176px;
     max-width: 176px;
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
     align-items: center;
   }
 
