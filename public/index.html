@@ -126,14 +126,14 @@
 
 /* Desktop staff first paint keeps the role controls in the menu heading before hydration. */
 @media (min-width:821px) {
-  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head {
     height:auto !important;
     min-height:0 !important;
     max-height:none !important;
     padding:10px 14px !important;
     overflow:visible !important;
   }
-  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .mh-top {
     display:flex !important;
     flex-direction:column !important;
     align-items:stretch !important;
@@ -142,12 +142,12 @@
     min-height:0 !important;
     max-height:none !important;
   }
-  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
     display:block !important;
     width:100% !important;
     min-width:0 !important;
   }
-  html[data-staff-role] body .menu-head .menu-controls-row {
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row {
     display:grid !important;
     grid-template-columns:minmax(0,1fr) 176px 150px !important;
     align-items:center !important;
@@ -157,7 +157,7 @@
     min-height:48px !important;
     margin:0 !important;
   }
-  html[data-staff-role] body .menu-head .menu-controls-row > .menu-title-group {
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row > .menu-title-group {
     grid-column:1 !important;
     display:flex !important;
     flex-direction:column !important;
@@ -167,7 +167,7 @@
     min-width:0 !important;
     overflow:hidden !important;
   }
-  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row > .mode-seg-slot {
     grid-column:2 !important;
     display:flex !important;
     flex:0 0 176px !important;
@@ -177,28 +177,13 @@
     width:176px !important;
     height:48px !important;
   }
-  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row > #editToggle {
     grid-column:3 !important;
     justify-self:end !important;
     flex:0 0 150px !important;
     width:150px !important;
     min-width:150px !important;
     max-width:150px !important;
-  }
-  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
-    display:flex !important;
-    flex:0 0 auto !important;
-    align-items:center !important;
-    gap:4px !important;
-    width:auto !important;
-    min-width:0 !important;
-    max-width:100% !important;
-    height:36px !important;
-    min-height:36px !important;
-    max-height:36px !important;
-    margin:0 !important;
-    padding:0 6px !important;
-    overflow:visible !important;
   }
   /* The role menu is present but inert until /api/me confirms the cached role. */
   html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg[hidden] {
