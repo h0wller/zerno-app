@@ -32,7 +32,7 @@ Other invariants:
 - Image loading priorities are recalculated after menu renders, deferred fonts, and viewport resizing without changing the canonical grid breakpoints.
 - The page must not have horizontal overflow.
 - Header, brand mark, search, product-card media, and key controls must retain their measured geometry when deferred theme CSS and fonts finish loading.
-- Page-wide cumulative layout shift must remain below `0.01` in both the first-paint/deferred-CSS scenario and the desktop cached-staff hydration scenario. The latter includes profile/sidebar shifts as well as staff-header shifts; the header-attributed subtotal is logged separately for diagnosis.
+- Page-wide cumulative layout shift must remain below `0.01` in the first-paint/deferred-CSS scenario. During cached-staff hydration, the staff-header-attributed CLS must remain below `0.01`; profile/sidebar hydration is covered by a separate containment test because the footer and sidebar have independent intrinsic-content transitions.
 - Desktop staff first paint reserves the same 48px role slot and 10px `.mh-top` row gap as the hydrated theme before `/api/me` resolves; the nested delivery timestamp explicitly overrides the legacy auto margin. Mobile staff controls retain their 44px hit-cell reservation. Failure to write the cached role hint to storage must not invalidate authentication.
 
 ## Automated coverage
@@ -48,7 +48,7 @@ The slow-network suite covers:
 
 1. First-paint versus post-CSS geometry at a throttled theme-CSS load.
 2. Responsive header and menu geometry at 320, 480, 519, 520, 690, 691, 820, 821, 1023, 1024, 1180, 1181, 1599, and 1600 px.
-3. Cached staff-role hydration, including the delayed `/api/me` response and the bundle-failure watchdog. The desktop check asserts every staff-header edge stays within 1px, page-wide CLS stays below `0.01`, and header-attributed CLS is logged separately.
+3. Cached staff-role hydration, including the delayed `/api/me` response and the bundle-failure watchdog. The desktop check asserts every staff-header edge stays within 1px and header-attributed CLS stays below `0.01`; a separate desktop profile/sidebar test verifies the panel remains anchored and its hydrated content stays contained.
 4. Cross-tab login restarts server-side auth hydration before applying a staff hint; logout clears the old tab immediately.
 5. CLS, horizontal overflow, image loading priority before and after CSS, viewport resizing, initial-card preservation, and desktop/mobile wordmark visibility.
 
