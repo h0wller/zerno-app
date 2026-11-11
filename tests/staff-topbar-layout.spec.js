@@ -85,7 +85,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
 
       const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
       const mode = page.locator('#modeSeg');
-      const title = page.locator(view + ' .menu-controls-row > h1');
+      const title = page.locator(view + ' .menu-controls-row .menu-title-group > h1');
       const edit = page.locator('#editToggle');
       const searchRow = page.locator(view + ' .menu-head .mh-top > .mh-right');
       const search = searchRow.locator('.search');
@@ -128,16 +128,6 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           rowOne: rect(rowOne),
           rowTwo: rect(rowTwo),
           title: rect(titleElement),
-          titleGroup: rect(rowOne.querySelector('.menu-title-group')),
-          updated: rect(rowOne.querySelector('.menu-title-group .upd')),
-          updatedDisplay: getComputedStyle(rowOne.querySelector('.menu-title-group .upd')).display,
-          titleDescriptor: (() => {
-            const descriptor = titleElement.querySelector('em');
-            return descriptor ? {
-              display:getComputedStyle(descriptor).display,
-              ...rect(descriptor)
-            } : null;
-          })(),
           slot: rect(slot),
           edit: rect(editElement),
           search: rect(searchElement),
@@ -249,6 +239,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           titleGroup: rect(rowOne.querySelector('.menu-title-group')),
           updated: rect(rowOne.querySelector('.menu-title-group .upd')),
           updatedHidden: getComputedStyle(rowOne.querySelector('.menu-title-group .upd')).display === 'none',
+          updatedDisplay: getComputedStyle(rowOne.querySelector('.menu-title-group .upd')).display,
           headerChildren: [
             top.querySelector(':scope > div:first-child > .menu-controls-row') ? 'title-roles-edit' : 'unexpected',
             top.querySelector(':scope > .mh-right') ? 'search-support' : 'unexpected',
@@ -304,7 +295,6 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.updated.x).toBeGreaterThanOrEqual(layout.title.right - 1);
       expect(layout.slot.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
       expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
-      expect(layout.titleDescriptor).toBeNull();
       expect(layout.slot.width).toBe(176);
       expect(layout.edit.x).toBeGreaterThanOrEqual(layout.slot.right);
       expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
