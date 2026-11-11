@@ -1110,7 +1110,7 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
   }
 
   @media (min-width: 821px) and (max-width: 1099px) {
-    html[data-staff-role] body .menu-head .menu-title-group > .upd {
+    html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
       display: none;
     }
   }
