@@ -56,6 +56,10 @@ for (const width of [1024, 1440]) {
     expect(Math.abs(aligned.filterRight-aligned.gridRight), 'delivery filters end with last card').toBeLessThanOrEqual(2);
     const chips = bar.locator('.subchip');
     await expect(chips).toHaveCount(9);
+    await page.evaluate(async () => { await document.fonts.ready; });
+    await expect.poll(() => bar.evaluate(element =>
+      element.classList.contains('has-overflow')
+    )).toBe(true);
 
     const geometry = await bar.evaluate((element) => {
       const rect = element.getBoundingClientRect();

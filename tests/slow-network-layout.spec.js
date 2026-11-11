@@ -1059,6 +1059,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         seg:rect('#modeSeg'),
         edit:rect('#editToggle'),
         search:rect('#deliveryView .menu-head .mh-right .search'),
+        adminBar:rect('#adminBar'),
         segParent:document.querySelector('#modeSeg')?.parentElement?.className || '',
         editParent:document.querySelector('#editToggle')?.parentElement?.className || '',
         topbarHasMode:document.querySelector('header.topbar').classList.contains('has-mode-switcher')
@@ -1067,6 +1068,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.role).toBe('admin');
     expect(before.ready).toBe(false);
     expect(before.seg.hidden).toBe(true);
+    expect(before.adminBar.hidden).toBe(true);
+    expect(before.adminBar.display).toBe('none');
+    expect(before.adminBar.height).toBe(0);
     expect(before.head.width).toBeGreaterThan(800);
     expect(before.head.height).toBeLessThan(180);
     expect(before.row).not.toBeNull();
@@ -1104,6 +1108,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         seg:rect('#modeSeg'),
         edit:rect('#editToggle'),
         search:rect('#deliveryView .menu-head .mh-right .search'),
+        adminBar:rect('#adminBar'),
         segParent:document.querySelector('#modeSeg')?.parentElement?.className || '',
         editParent:document.querySelector('#editToggle')?.parentElement?.className || '',
         topbarHasMode:document.querySelector('header.topbar').classList.contains('has-mode-switcher'),
@@ -1113,6 +1118,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.ready).toBe(true);
     expect(after.role).toBe('admin');
     expect(after.seg.hidden).toBe(false);
+    expect(after.adminBar.hidden).toBe(true);
+    expect(after.adminBar.display).toBe('none');
+    expect(after.adminBar.height).toBe(0);
     expect(after.segParent).toBe('mode-seg-slot');
     expect(after.editParent).toBe('menu-controls-row');
     expect(after.topbarHasMode).toBe(false);

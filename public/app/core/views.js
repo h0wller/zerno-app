@@ -102,7 +102,7 @@ var rules = [
  '[data-brand="delivery"] #rail button,[data-brand="delivery"] #deliveryRail button{background:var(--fr-paper);border:2px solid var(--fr-tan);color:var(--fr-choc)}',
  '[data-brand="delivery"] .panel .btn.fire,[data-brand="delivery"] #profileBox .btn.fire,[data-brand="delivery"] .authBtn{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc);color:#fff}',
  'html[data-brand="delivery"] body{background-color:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.1) 1px,transparent 1.5px);background-size:12px 12px}',
- '[data-brand="delivery"] h1,[data-brand="delivery"] h2,[data-brand="delivery"] h3,[data-brand="delivery"] .cbody h3{font-family:Unbounded, "Golos Text", sans-serif;color:var(--fr-choc)}',
+ 'html[data-brand="delivery"] h1,html[data-brand="delivery"] h2,html[data-brand="delivery"] h3,html[data-brand="delivery"] .cbody h3{font-family:Unbounded, "Golos Text", sans-serif;color:var(--fr-choc)}',
  '[data-brand="delivery"] #deliveryRail button.on{background:#8B2B20;border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff;font:700 13px Unbounded, "Golos Text", sans-serif}',
  '[data-brand="delivery"] #brandSeg{background:var(--esp)}',
  '[data-brand="delivery"] #brandSeg button.on{background:#8B2B20;color:#fff}',
