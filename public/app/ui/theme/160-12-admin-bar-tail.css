@@ -1114,7 +1114,7 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
     height: 36px;
     min-height: 36px;
     max-height: 36px;
-    padding: 3px;
+    padding: 0;
     gap: 0;
     align-items: stretch;
     justify-content: stretch;
@@ -1132,11 +1132,11 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
     width: auto;
     min-width: 0;
     max-width: none;
-    height: 30px;
-    min-height: 30px;
-    max-height: 30px;
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
     margin: 0;
-    padding: 0 2px;
+    padding: 0;
     align-items: center;
     justify-content: center;
     border: 0;
@@ -1149,9 +1149,26 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
     box-sizing: border-box;
   }
 
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none;
+  }
+
   html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on {
-    background: var(--staff-mode-active-bg);
+    position: relative;
+    isolation: isolate;
+    background: transparent;
     color: var(--staff-mode-active-color);
+    box-shadow: none;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on::before {
+    background: var(--staff-mode-active-bg);
     box-shadow: var(--staff-mode-active-shadow);
   }
 
