@@ -1008,6 +1008,113 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.adminBar.height).toBe(before.adminBar.height);
     expect(after.cls).toBeLessThan(0.01);
   });
+  test('desktop cached staff role keeps the menu role row stable during auth hydration', async ({ page }) => {
+    await page.setViewportSize({width:1440,height:900});
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user','desktop-staff-layout-test-token');
+      localStorage.setItem('zt_role','admin');
+      localStorage.setItem('zt_onb','1');
+      localStorage.setItem('zt_inst_hide','1');
+      sessionStorage.setItem('splashDone','1');
+    });
+    await page.route('**/api/**',async route => {
+      const pathname=new URL(route.request().url()).pathname;
+      if(pathname==='/api/me') {
+        await new Promise(resolve=>setTimeout(resolve,9000));
+        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+          customer:{id:900002,name:'Desktop Layout Admin',phone:'+70000000001',role:'admin',stamps:0,free:0,cups:0,qr:'desktop-test',verified:1,history:[]}
+        })});
+        return;
+      }
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        ok:true,items:[],orders:[],pending:[],customers:[],threads:[],messages:[],promos:[]
+      })});
+    });
+    await page.route('**/app/ui/theme/*.css*',async route=> {
+      await new Promise(resolve=>setTimeout(resolve,900));
+      await route.continue();
+    });
+    await page.goto('/?brand=delivery',{waitUntil:'commit'});
+    await page.locator('#modeSeg').waitFor({state:'attached'});
+    await waitForDeferredTheme(page);
+    const before=await page.evaluate(()=>{
+      const rect=selector=>{
+        const el=document.querySelector(selector);
+        if(!el)return null;
+        const b=el.getBoundingClientRect();
+        const s=getComputedStyle(el);
+        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,hidden:el.hidden};
+      };
+      return {
+        role:document.documentElement.getAttribute('data-staff-role'),
+        ready:document.documentElement.hasAttribute('data-staff-ready'),
+        head:rect('#deliveryView .menu-head'),
+        row:rect('#deliveryView .menu-controls-row'),
+        title:rect('#deliveryView .menu-controls-row > h1'),
+        slot:rect('#deliveryView .menu-controls-row > .mode-seg-slot'),
+        seg:rect('#modeSeg'),
+        edit:rect('#editToggle'),
+        search:rect('#deliveryView .menu-head .mh-right .search'),
+        segParent:document.querySelector('#modeSeg')?.parentElement?.className || '',
+        editParent:document.querySelector('#editToggle')?.parentElement?.className || '',
+        topbarHasMode:document.querySelector('header.topbar').classList.contains('has-mode-switcher')
+      };
+    });
+    expect(before.role).toBe('admin');
+    expect(before.ready).toBe(false);
+    expect(before.seg.hidden).toBe(true);
+    expect(before.head.width).toBeGreaterThan(850);
+    expect(before.head.height).toBeLessThan(180);
+    expect(before.row).not.toBeNull();
+    expect(before.segParent).toBe('mode-seg-slot');
+    expect(before.editParent).toBe('menu-controls-row');
+    expect(before.topbarHasMode).toBe(false);
+    await page.evaluate(()=>{
+      if(window.__layoutShiftObserver)window.__layoutShiftObserver.takeRecords();
+      window.__layoutShifts.length=0;
+    });
+    const meResponse=await page.waitForResponse(response=>response.url().endsWith('/api/me'),{timeout:15000});
+    expect(meResponse.ok()).toBe(true);
+    await page.waitForFunction(()=>document.documentElement.hasAttribute('data-staff-ready'),null,{timeout:10000});
+    const after=await page.evaluate(()=>{
+      const rect=selector=>{
+        const el=document.querySelector(selector);
+        if(!el)return null;
+        const b=el.getBoundingClientRect();
+        const s=getComputedStyle(el);
+        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,hidden:el.hidden};
+      };
+      return {
+        role:document.documentElement.getAttribute('data-staff-role'),
+        ready:document.documentElement.hasAttribute('data-staff-ready'),
+        head:rect('#deliveryView .menu-head'),
+        row:rect('#deliveryView .menu-controls-row'),
+        title:rect('#deliveryView .menu-controls-row > h1'),
+        slot:rect('#deliveryView .menu-controls-row > .mode-seg-slot'),
+        seg:rect('#modeSeg'),
+        edit:rect('#editToggle'),
+        search:rect('#deliveryView .menu-head .mh-right .search'),
+        segParent:document.querySelector('#modeSeg')?.parentElement?.className || '',
+        editParent:document.querySelector('#editToggle')?.parentElement?.className || '',
+        topbarHasMode:document.querySelector('header.topbar').classList.contains('has-mode-switcher'),
+        cls:window.__layoutShifts.reduce((sum,item)=>sum+item.value,0)
+      };
+    });
+    expect(after.ready).toBe(true);
+    expect(after.role).toBe('admin');
+    expect(after.seg.hidden).toBe(false);
+    expect(after.segParent).toBe('mode-seg-slot');
+    expect(after.editParent).toBe('menu-controls-row');
+    expect(after.topbarHasMode).toBe(false);
+    expect(after.head.height).toBeLessThan(180);
+    for(const part of ['head','row','title','slot','seg','edit','search']) {
+      for(const edge of ['x','y','width','height']) {
+        expect(Math.abs(after[part][edge]-before[part][edge]),part+' '+edge+' remains stable during hydration').toBeLessThanOrEqual(1);
+      }
+    }
+    expect(after.cls).toBeLessThan(0.01);
+  });
+
 
   test('staff layout reservation is released when the main bundle never starts', async ({ page }) => {
     await page.addInitScript(() => {
