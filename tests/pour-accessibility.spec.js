@@ -91,7 +91,9 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         .every(id => document.getElementById(id))
     );
     await page.evaluate(() => window.setMode('admin'));
-    await expect(page.locator('#deliveryGrid .cta[data-add]')).toBeVisible();
+    const addButtons = page.locator('#deliveryGrid .cta[data-add]');
+    await expect(addButtons).toHaveCount(6);
+    await expect(addButtons.first()).toBeVisible();
 
     const metrics = await page.evaluate(() => {
       const modeSeg = document.getElementById('modeSeg');
