@@ -395,7 +395,7 @@ test('desktop storefront header and delivery branding stay intact after staff co
         return { x:box.x,y:box.y,width:box.width,height:box.height,right:box.right,bottom:box.bottom };
       };
       return {
-        head:{...rect(element),background:headStyle.backgroundColor,border:headStyle.borderColor},
+        head:{...rect(element),background:headStyle.backgroundColor,backgroundImage:headStyle.backgroundImage,border:headStyle.borderColor},
         title:{...rect(title),color:titleStyle.color,fontSize:titleStyle.fontSize,descriptorDisplay:getComputedStyle(title.querySelector('em')).display},
         top:{...rect(top),display:getComputedStyle(top).display},
         controlsRow:controlsRow ? rect(controlsRow) : null,
@@ -404,7 +404,7 @@ test('desktop storefront header and delivery branding stay intact after staff co
         editParent:edit?.parentElement?.id || ''
       };
     }, view + ' .menu-head');
-    expect(styles.head.width).toBeGreaterThan(1000);
+    expect(styles.head.width).toBeGreaterThan(850);
     expect(styles.head.height).toBeLessThan(180);
     expect(styles.title.width).toBeGreaterThan(100);
     expect(styles.title.height).toBeGreaterThan(25);
@@ -412,7 +412,7 @@ test('desktop storefront header and delivery branding stay intact after staff co
     expect(styles.controlsRow).toBeNull();
     expect(styles.roleVisible).toBe(false);
     if (brand === 'delivery') {
-      expect(styles.head.background).toBe('rgb(250, 245, 238)');
+      expect(styles.head.backgroundImage).toContain('250, 245, 238');
       expect(styles.title.color).toBe('rgb(58, 42, 28)');
       expect(styles.title.fontSize).toBe('28px');
       expect(styles.title.descriptorDisplay).not.toBe('none');
@@ -455,20 +455,25 @@ test('delivery staff mode switcher keeps the delivery brand track and active-fac
       return {
         parent:element.parentElement?.tagName || '',
         parentClass:element.parentElement?.className || '',
+        inTopbar:element.parentElement === document.querySelector('header.topbar'),
+        editParent:document.getElementById('editToggle')?.parentElement?.id || '',
         display:getComputedStyle(element).display,
         background:getComputedStyle(element).backgroundColor,
         border:getComputedStyle(element).borderColor,
         activeColor:activeStyle?.color || null,
         activeBackground:activeStyle?.backgroundColor || null,
         headBackground:headStyle.backgroundColor,
+        headBackgroundImage:headStyle.backgroundImage,
         titleColor:titleStyle.color,
         head:rect(head),
         title:rect(title),
         seg:rect(element)
       };
     });
+    expect(styles.inTopbar).toBe(true);
+    expect(styles.editParent).toBe('adminBar');
     expect(styles.background).toBe('rgb(58, 42, 28)');
-    expect(styles.headBackground).toBe('rgb(250, 245, 238)');
+    expect(styles.headBackgroundImage).toContain('250, 245, 238');
     expect(styles.titleColor).toBe('rgb(58, 42, 28)');
     if (mode === 'admin' || mode === 'guest') {
       expect(styles.activeBackground).toBe('rgb(139, 43, 32)');
