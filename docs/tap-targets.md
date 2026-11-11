@@ -55,6 +55,8 @@ The mobile hit cell itself remains transparent. The visible background, border a
 - **First paint (Layer 4):** critical CSS in `public/index.html`, mirroring desktop and mobile staff menu placement before hydration.
 - No API, business rule, server behavior or `public/app/main.js` changes.
 
+Changes to staff-control placement or hit-area dimensions must update this register and the matching Playwright assertions in the same PR.
+
 ## Verification
 
 `tests/staff-topbar-layout.spec.js` covers:
