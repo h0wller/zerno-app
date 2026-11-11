@@ -36,92 +36,117 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(contrastRatio(metrics.borderColor, metrics.backgroundColor)).toBeGreaterThanOrEqual(3);
   });
 
-  test('role controls stay compact while search, filters and header taps remain comfortable', async ({ page }) => {
+  test('staff role controls expose 44px hit cells and compact 32px faces', async ({ page }) => {
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      const body = pathname === '/api/me'
+        ? {
+            customer: {
+              id: 'pour-accessibility-staff',
+              name: 'Pour Accessibility Staff',
+              phone: '+70000000002',
+              role: 'admin',
+              verified: 1,
+              qr: 'pour-accessibility-staff',
+              cups: 0,
+              stamps: 0,
+              free: 0,
+              history: []
+            }
+          }
+        : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
+      });
+    });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'playwright-pour-accessibility-admin-token');
+      localStorage.setItem('zt_role', 'admin');
+    });
+    await page.reload();
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'admin' &&
+      document.documentElement.hasAttribute('data-staff-ready')
+    );
+    await page.evaluate(() => window.setMode('admin'));
+
     const metrics = await page.evaluate(() => {
-      const probe = document.createElement('button');
-      probe.textContent = 'Тест';
       const modeSeg = document.getElementById('modeSeg');
       const edit = document.getElementById('editToggle');
-      const modeParent = modeSeg.parentNode;
-      const modeNext = modeSeg.nextSibling;
-      const editParent = edit.parentNode;
-      const editNext = edit.nextSibling;
-      const wasModeHidden = modeSeg.hidden;
-      const wasEditHidden = edit.hidden;
-      const fixture = document.createElement('div');
-      fixture.className = 'menu-head';
-      const row = document.createElement('div');
-      row.className = 'menu-controls-row';
-      const slot = document.createElement('div');
-      slot.className = 'mode-seg-slot';
-      fixture.appendChild(row);
-      row.appendChild(slot);
-      slot.appendChild(modeSeg);
-      row.appendChild(edit);
-      document.body.appendChild(fixture);
-      modeSeg.hidden = false;
-      edit.hidden = false;
-      modeSeg.appendChild(probe);
-      const modeHeight = probe.getBoundingClientRect().height;
-      const roleButtonRect = modeSeg.querySelector('button')?.getBoundingClientRect();
-      const roleButton = {
-        width: roleButtonRect?.width ?? 0,
-        height: roleButtonRect?.height ?? 0
+      const rect = (element) => {
+        const box = element.getBoundingClientRect();
+        return { width: box.width, height: box.height };
       };
-      const modeButtonHeight = roleButton.height;
-      probe.remove();
-      const editMinHeight = parseFloat(getComputedStyle(edit).minHeight);
-      if (modeNext && modeNext.parentNode === modeParent) modeParent.insertBefore(modeSeg, modeNext);
-      else modeParent.appendChild(modeSeg);
-      if (editNext && editNext.parentNode === editParent) editParent.insertBefore(edit, editNext);
-      else editParent.appendChild(edit);
-      modeSeg.hidden = wasModeHidden;
-      edit.hidden = wasEditHidden;
-      fixture.remove();
-
+      const roleButtons = Array.from(modeSeg.querySelectorAll(':scope > button'));
+      const faceSize = (element, pseudo) => {
+        const style = getComputedStyle(element, pseudo);
+        const inset = ['top', 'right', 'bottom', 'left']
+          .reduce((result, side) => {
+            result[side] = Number.parseFloat(style[side]) || 0;
+            return result;
+          }, {});
+        const box = element.getBoundingClientRect();
+        return {
+          width: box.width - inset.left - inset.right,
+          height: box.height - inset.top - inset.bottom
+        };
+      };
       return {
-        modeHeight,
-        modeButtonHeight,
-        editMinHeight,
+        mode: rect(modeSeg),
+        roleCells: roleButtons.map(button => rect(button)),
+        roleFaces: roleButtons.map(button => faceSize(button, '::before')),
+        edit: rect(edit),
+        editFace: faceSize(edit, '::after'),
         subchips: Array.from(document.querySelectorAll('#deliverySubFilter .subchip'))
-          .map((element) => ({ height: element.getBoundingClientRect().height, width: element.getBoundingClientRect().width })),
-        profile: document.getElementById('profileTopBtn').getBoundingClientRect().toJSON(),
-        scrollTop: document.getElementById('scrollTopBtn').getBoundingClientRect().toJSON(),
-        menuHead: (() => { const element = document.querySelector('#deliveryView .menu-head'); const style = getComputedStyle(element); return { height: element.getBoundingClientRect().height, maxHeight: style.maxHeight, overflow: style.overflow }; })(),
+          .map(element => ({ height: element.getBoundingClientRect().height, width: element.getBoundingClientRect().width })),
+        profile: rect(document.getElementById('profileTopBtn')),
+        scrollTop: rect(document.getElementById('scrollTopBtn')),
+        venue: rect(document.getElementById('venueToggle')),
+        supportHost: rect(document.getElementById('supportLauncherHost')),
+        support: rect(document.getElementById('chatFab')),
+        menuHead: (() => {
+          const element = document.querySelector('#deliveryView .menu-head');
+          const style = getComputedStyle(element);
+          return { height: element.getBoundingClientRect().height, maxHeight: style.maxHeight, overflow: style.overflow };
+        })(),
         search: document.querySelector('#deliveryView .mh-right .search').getBoundingClientRect().height,
-        venue: document.getElementById('venueToggle').getBoundingClientRect().toJSON(),
-        supportHost: document.getElementById('supportLauncherHost').getBoundingClientRect().toJSON(),
-        support: document.getElementById('chatFab').getBoundingClientRect().toJSON(),
-        addButton: (() => { const el = document.querySelector('#deliveryGrid .cta[data-add]'); const r = el.getBoundingClientRect(); const row = el.closest('.steprow').getBoundingClientRect(); return { width:r.width, rowWidth:row.width, height:r.height }; })(),
-        activeChip: (() => { const el = document.querySelector('#deliverySubFilter .subchip.on'); const s=getComputedStyle(el); return { bg:s.backgroundColor, color:s.color }; })(),
-        roleButton,
+        addButton: (() => {
+          const element = document.querySelector('#deliveryGrid .cta[data-add]');
+          const box = element.getBoundingClientRect();
+          const row = element.closest('.steprow').getBoundingClientRect();
+          return { width: box.width, rowWidth: row.width, height: box.height };
+        })(),
+        activeChip: (() => {
+          const element = document.querySelector('#deliverySubFilter .subchip.on');
+          const style = getComputedStyle(element);
+          return { bg: style.backgroundColor, color: style.color };
+        })(),
       };
     });
 
-    expect(metrics.modeHeight).toBe(44);
-    expect(metrics.modeButtonHeight).toBe(44);
-    expect(metrics.editMinHeight).toBe(44);
+    expect(metrics.mode).toEqual({ width: 176, height: 44 });
+    expect(metrics.roleCells).toHaveLength(4);
+    expect(metrics.roleCells.every(cell => cell.width === 44 && cell.height === 44)).toBe(true);
+    expect(metrics.roleFaces.every(face => face.width === 32 && face.height === 32)).toBe(true);
+    expect(metrics.edit).toEqual({ width: 44, height: 44 });
+    expect(metrics.editFace).toEqual({ width: 32, height: 32 });
     expect(metrics.subchips.length).toBeGreaterThan(0);
-    expect(metrics.subchips.every((chip) => chip.height === 40 && chip.width >= 58),
+    expect(metrics.subchips.every(chip => chip.height === 40 && chip.width >= 58),
       `subchip geometry must remain at least 58×40px: ${JSON.stringify(metrics.subchips)}`).toBe(true);
-    expect(metrics.profile.width).toBe(44);
-    expect(metrics.profile.height).toBe(44);
+    expect(metrics.profile).toEqual({ width: 44, height: 44 });
     expect(metrics.venue.width).toBeGreaterThanOrEqual(44);
     expect(metrics.venue.height).toBeGreaterThanOrEqual(44);
-    expect(metrics.supportHost.width).toBe(44);
-    expect(metrics.supportHost.height).toBe(44);
-    expect(metrics.support.width).toBe(44);
-    expect(metrics.support.height).toBe(44);
-    expect(metrics.scrollTop.width).toBe(44);
-    expect(metrics.scrollTop.height).toBe(44);
-    expect(metrics.menuHead.maxHeight).toBe('100px');
+    expect(metrics.supportHost).toEqual({ width: 44, height: 44 });
+    expect(metrics.support).toEqual({ width: 44, height: 44 });
+    expect(metrics.scrollTop).toEqual({ width: 44, height: 44 });
+    expect(metrics.menuHead.height).toBe(108);
     expect(metrics.menuHead.overflow).not.toBe('hidden');
     expect(metrics.search).toBe(40);
     expect(metrics.addButton.width).toBeGreaterThanOrEqual(metrics.addButton.rowWidth - 1);
     expect(metrics.activeChip.bg).toBe('rgb(192, 59, 42)');
     expect(metrics.activeChip.color).toBe('rgb(255, 255, 255)');
-    expect(metrics.roleButton.height).toBe(32);
-    expect(metrics.roleButton.width).toBeGreaterThan(metrics.roleButton.height);
   });
 
   test('menu row stays compact and admin keeps the switcher with the visible menu', async ({ page }) => {
