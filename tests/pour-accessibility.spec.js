@@ -71,7 +71,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       document.documentElement.hasAttribute('data-staff-ready')
     );
     await page.waitForFunction(() =>
-      ['profileTopBtn', 'scrollTopBtn', 'venueToggle', 'supportLauncherHost', 'chatFab']
+      ['modeSeg', 'editToggle', 'profileTopBtn', 'scrollTopBtn', 'venueToggle', 'supportLauncherHost', 'chatFab']
         .every(id => document.getElementById(id))
     );
     await page.evaluate(() => window.setMode('admin'));
