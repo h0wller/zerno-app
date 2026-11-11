@@ -499,6 +499,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       expect(layout.topDisplay).toBe('flex');
       expect(layout.titleGroupParent).toBe('menu-controls-row');
       expect(layout.updatedParent).toBe('menu-title-group');
+      expect(layout.updated.x).toBeCloseTo(layout.title.x, 0);
       expect(layout.segParent).toBe('mode-seg-slot');
       expect(layout.editParent).toBe('menu-controls-row');
       expect(layout.titleGroupDisplay).toBe('flex');
