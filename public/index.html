@@ -204,6 +204,17 @@
     padding:0 12px !important;
     font-size:12px !important;
   }
+  /* The role menu is present but inert until /api/me confirms the cached role. */
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg[hidden] {
+    display:flex !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  html[data-staff-role="cashier"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="admin"],
+  html[data-staff-role="dispatch"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="cashier"],
+  html[data-staff-role="dispatch"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="admin"] {
+    display:none !important;
+  }
 }
 /* Mobile staff menu reserves its two-row toolbar only; no legacy shortcut strip. */
 @media (max-width:820px) {
@@ -3730,7 +3741,12 @@ html body #tickerTrack .tickerGroup > span {
       <span class="mb-free" id="mbonusFree" hidden>🎁 0</span>
     </button>
     <button class="ava" id="profileTopBtn" title="Профиль" aria-label="Профиль пользователя">?</button>
-    <div class="modeSeg" id="modeSeg" hidden></div>
+    <div class="modeSeg" id="modeSeg" hidden aria-hidden="true">
+      <button type="button" data-mode="guest" class="on" tabindex="-1">Гость</button>
+      <button type="button" data-mode="cashier" tabindex="-1">Кассир</button>
+      <button type="button" data-mode="orders" tabindex="-1">Заказы</button>
+      <button type="button" data-mode="admin" tabindex="-1">Админ</button>
+    </div>
   </header>
   <div class="ticker" role="region" aria-label="Объявления">
     <div class="tickerViewport">

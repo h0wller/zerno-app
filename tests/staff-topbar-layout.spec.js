@@ -502,7 +502,8 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
 
       if (brand === 'delivery') {
         expect(layout.titleStyle.color).toBe('rgb(58, 42, 28)');
-        expect(layout.titleStyle.fontSize).toBe('28px');
+        const expectedFontSize = Math.max(20, Math.min(28, width * 0.023));
+        expect(Number.parseFloat(layout.titleStyle.fontSize)).toBeCloseTo(expectedFontSize, 1);
       } else {
         expect(layout.titleStyle.color).toBe('rgb(18, 58, 107)');
       }

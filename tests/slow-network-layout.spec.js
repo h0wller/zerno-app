@@ -1045,7 +1045,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         if(!el)return null;
         const b=el.getBoundingClientRect();
         const s=getComputedStyle(el);
-        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,hidden:el.hidden,marginBottom:s.marginBottom};
+        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,visibility:s.visibility,hidden:el.hidden,marginBottom:s.marginBottom};
       };
       return {
         role:document.documentElement.getAttribute('data-staff-role'),
@@ -1068,6 +1068,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.role).toBe('admin');
     expect(before.ready).toBe(false);
     expect(before.seg.hidden).toBe(true);
+    expect(before.seg.display).toBe('flex');
+    expect(before.seg.visibility).toBe('hidden');
+    expect(before.seg.width).toBeGreaterThan(100);
     expect(before.adminBar.hidden).toBe(true);
     expect(before.adminBar.display).toBe('flex');
     expect(before.adminBar.height).toBe(0);
@@ -1095,7 +1098,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         if(!el)return null;
         const b=el.getBoundingClientRect();
         const s=getComputedStyle(el);
-        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,hidden:el.hidden,marginBottom:s.marginBottom};
+        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,visibility:s.visibility,hidden:el.hidden,marginBottom:s.marginBottom};
       };
       return {
         role:document.documentElement.getAttribute('data-staff-role'),
