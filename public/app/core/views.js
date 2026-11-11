@@ -258,6 +258,7 @@ function syncStaffAndGuestControls(bName2) {
   var menuRow = menuHead && menuHead.querySelector('.menu-controls-row');
   var titleHost = menuHead && menuHead.querySelector('.mh-top > div:first-child');
   var title = titleHost && titleHost.querySelector('h1');
+  var updated = titleHost && titleHost.querySelector('.upd');
   var topbar = document.querySelector('header.topbar');
   var adminBar = document.getElementById('adminBar');
   var editToggle = document.getElementById('editToggle');
@@ -282,6 +283,7 @@ function syncStaffAndGuestControls(bName2) {
     }
     if (menuRow.parentElement !== titleHost) titleHost.insertBefore(menuRow, title);
     if (title && title.parentElement !== menuRow) menuRow.appendChild(title);
+    if (updated && updated.parentElement !== menuRow) menuRow.appendChild(updated);
     var modeSlot = menuRow.querySelector('.mode-seg-slot');
     if (!modeSlot) {
       modeSlot = document.createElement('div');
@@ -293,6 +295,9 @@ function syncStaffAndGuestControls(bName2) {
   } else {
     if (title && menuRow && menuRow.parentElement && title.parentElement !== menuRow) {
       menuRow.parentElement.insertBefore(title, menuRow);
+    }
+    if (updated && menuRow && menuRow.parentElement && updated.parentElement !== titleHost) {
+      titleHost.appendChild(updated);
     }
     if (menuRow && menuRow.parentElement) menuRow.remove();
     if (modeSeg && topbar && modeSeg.parentElement !== topbar) topbar.appendChild(modeSeg);
