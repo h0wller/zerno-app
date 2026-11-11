@@ -182,16 +182,15 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.section.width).toBeGreaterThan(250);
     expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
     expect(before.heading.width).toBeGreaterThan(60);
-    expect(before.brandContext).not.toBeNull();
-    expect(before.brandContext.width).toBeGreaterThan(0);
+    expect(before.brandContext).toBeNull();
     expect(before.menuHead).not.toBeNull();
     expect(before.menuHead.x).toBeLessThanOrEqual(before.rail.x + 1);
     expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
-    expect(before.brandContext.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
-    expect(before.brandContext.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.menuHeadStyle.maxHeight).toBe('100px');
+    expect(before.staffModeReservedHeight).toBeUndefined();
+    expect(before.staffMenuRowReservedHeight).toBeUndefined();
     expect(before.menuHeadStyle.overflow).toBe('visible');
     expect(before.search.height).toBe(40);
     expect(before.subchipHeight).toBe(40);
@@ -241,8 +240,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.subchip.width).toBe(before.subchip.width);
     expect(after.option.height).toBe(before.option.height);
     expect(after.heading.width).toBeGreaterThan(60);
-    expect(after.brandContext).not.toBeNull();
-    expect(after.brandContext.width).toBeGreaterThan(0);
     expect(after.menuHead).toEqual(before.menuHead);
     expect(after.menuHead.height).toBe(100);
     expect(after.menuHeadStyle.overflow).not.toBe('hidden');
@@ -256,8 +253,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.menuHead.right).toBeGreaterThanOrEqual(after.section.right - 1);
     expect(after.heading.x).toBeGreaterThanOrEqual(after.menuHead.x + 8);
     expect(after.heading.right).toBeLessThanOrEqual(after.menuHead.right - 8);
-    expect(after.brandContext.x).toBeGreaterThanOrEqual(after.menuHead.x + 8);
-    expect(after.brandContext.right).toBeLessThanOrEqual(after.menuHead.right - 8);
     expect(after.section.width).toBe(before.section.width);
 
     const shiftReport = await page.evaluate(() => ({
@@ -974,6 +969,17 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         wrap: rect('body > .wrap'),
         adminBar: rect('#adminBar'),
         cls: window.__layoutShifts.reduce((sum, entry) => sum + entry.value, 0),
+        staffHeaderCls: window.__layoutShifts.reduce((sum, shift) => {
+          const affectsStaffHeader = (shift.sources || []).some(source =>
+            (source.node || []).some(node =>
+              node.id === 'modeSeg' || node.id === 'editToggle' ||
+              (node.className || '').split(/\s+/).some(name =>
+                name === 'menu-head' || name === 'menu-controls-row' || name === 'mode-seg-slot'
+              )
+            )
+          );
+          return sum + (affectsStaffHeader ? shift.value : 0);
+        }, 0),
         shiftCount: window.__layoutShifts.length,
         layoutShifts: window.__layoutShifts.slice(-20)
       };
@@ -990,21 +996,312 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.headerStyle.gridTemplateRows).toBe(before.headerStyle.gridTemplateRows);
     expect(Math.abs(after.header.height - before.header.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.wrap.top - before.wrap.top)).toBeLessThanOrEqual(1);
-    // Reserve the final role row geometry while the cached role is still being confirmed.
+    // Reserve the final 44px role row geometry while the cached role is still being confirmed.
     // Revealing the switcher must not resize its slot or the two-row title toolbar.
-    expect(after.modeSeg.height).toBe(32);
+    expect(after.modeSeg.height).toBe(44);
     expect(after.modeSeg.parentClass).toBe('mode-seg-slot');
-    expect(after.modeSlot.height).toBe(32);
-    expect(after.menuRow.height).toBe(36);
-    expect(after.menuHead.height).toBe(100);
-    expect(before.modeSlot.height).toBe(32);
-    expect(after.modeSlot.height).toBe(32);
-    expect(before.menuRow.height).toBe(36);
-    expect(after.menuRow.height).toBe(36);
+    expect(after.modeSlot.height).toBe(44);
+    expect(after.menuRow.height).toBe(44);
+    expect(after.menuHead.height).toBe(108);
+    expect(before.modeSlot.height).toBe(44);
+    expect(after.modeSlot.height).toBe(44);
+    expect(before.menuRow.height).toBe(44);
+    expect(after.menuRow.height).toBe(44);
     expect(after.modeSeg.top).toBeGreaterThanOrEqual(after.menuRow.top - 1);
     expect(after.modeSeg.top + after.modeSeg.height).toBeLessThanOrEqual(after.menuRow.top + after.menuRow.height + 1);
     expect(after.adminBar.height).toBe(before.adminBar.height);
-    expect(after.cls).toBeLessThan(0.01);
+    expect(after.staffHeaderCls).toBeLessThan(0.01);
+  });
+  test('desktop cached staff role keeps the menu role row stable during auth hydration', async ({ page }) => {
+    await page.setViewportSize({width:1440,height:900});
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user','desktop-staff-layout-test-token');
+      localStorage.setItem('zt_role','admin');
+      localStorage.setItem('zt_onb','1');
+      localStorage.setItem('zt_inst_hide','1');
+      sessionStorage.setItem('splashDone','1');
+      window.__layoutShifts = [];
+      try {
+        window.__layoutShiftObserver = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (!entry.hadRecentInput) window.__layoutShifts.push({
+              value: entry.value,
+              startTime: entry.startTime,
+              sources: Array.from(entry.sources || []).map(source => {
+                const describe = element => {
+                  if (!element) return null;
+                  const chain = [];
+                  let current = element;
+                  for (let depth = 0; current && depth < 5; depth++, current = current.parentElement) {
+                    chain.push({
+                      tag:current.tagName || '',
+                      id:current.id || '',
+                      className:typeof current.className === 'string' ? current.className : ''
+                    });
+                  }
+                  return chain;
+                };
+                const node = source.node;
+                const rect = node && node.getBoundingClientRect ? node.getBoundingClientRect() : null;
+                const style = node && node.nodeType === 1 ? getComputedStyle(node) : null;
+                return {
+                  node:describe(node),
+                  isConnected:!!(node && node.isConnected),
+                  hidden:!!(node && node.hidden),
+                  rect:rect ? {x:rect.x,y:rect.y,width:rect.width,height:rect.height} : null,
+                  style:style ? {
+                    display:style.display,
+                    visibility:style.visibility,
+                    position:style.position,
+                    opacity:style.opacity
+                  } : null,
+                  previousRect:source.previousRect,
+                  currentRect:source.currentRect
+                };
+              })
+            });
+          }
+        });
+        window.__layoutShiftObserver.observe({ type: 'layout-shift', buffered: true });
+      } catch (_) {}
+    });
+    await page.route('**/api/**',async route => {
+      const pathname=new URL(route.request().url()).pathname;
+      if(pathname==='/api/me') {
+        await new Promise(resolve=>setTimeout(resolve,9000));
+        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+          customer:{id:900002,name:'Desktop Layout Admin',phone:'+70000000001',role:'admin',stamps:0,free:0,cups:0,qr:'desktop-test',verified:1,history:[]}
+        })});
+        return;
+      }
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        ok:true,items:[],orders:[],pending:[],customers:[],threads:[],messages:[],promos:[]
+      })});
+    });
+    await page.route('**/app/ui/theme/*.css*',async route=> {
+      await new Promise(resolve=>setTimeout(resolve,900));
+      await route.continue();
+    });
+    await page.goto('/?brand=delivery',{waitUntil:'commit'});
+    await page.locator('#modeSeg').waitFor({state:'attached'});
+    await waitForDeferredTheme(page);
+    const before=await page.evaluate(()=>{
+      const rect=selector=>{
+        const el=document.querySelector(selector);
+        if(!el)return null;
+        const b=el.getBoundingClientRect();
+        const s=getComputedStyle(el);
+        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,visibility:s.visibility,hidden:el.hidden,marginBottom:s.marginBottom};
+      };
+      return {
+        role:document.documentElement.getAttribute('data-staff-role'),
+        ready:document.documentElement.hasAttribute('data-staff-ready'),
+        head:rect('#deliveryView .menu-head'),
+        view:rect('#deliveryView'),
+        wrap:rect('body > div.wrap'),
+        row:rect('#deliveryView .menu-controls-row'),
+        title:rect('#deliveryView .menu-controls-row .menu-title-group > h1'),
+        slot:rect('#deliveryView .menu-controls-row > .mode-seg-slot'),
+        seg:rect('#modeSeg'),
+        edit:rect('#editToggle'),
+        search:rect('#deliveryView .menu-head .mh-right .search'),
+        adminBar:rect('#adminBar'),
+        footer:rect('footer.siteFooter'),
+        profilePanel:rect('#panel'),
+        profileBox:rect('#profileBox'),
+        profileNoUser:rect('#profileNoUser'),
+        segParent:document.querySelector('#modeSeg')?.parentElement?.className || '',
+        editParent:document.querySelector('#editToggle')?.parentElement?.className || '',
+        topbarHasMode:document.querySelector('header.topbar').classList.contains('has-mode-switcher')
+      };
+    });
+    expect(before.role).toBe('admin');
+    expect(before.ready).toBe(false);
+    expect(before.seg.hidden).toBe(true);
+    expect(before.seg.display).toBe('grid');
+    expect(before.seg.visibility).toBe('hidden');
+    expect(before.slot.width).toBe(176);
+    expect(before.seg.width).toBe(176);
+    expect(before.segParent).toBe('mode-seg-slot');
+    expect(before.adminBar.hidden).toBe(true);
+    expect(before.adminBar.display).toBe('none');
+    expect(before.adminBar.height).toBe(0);
+    expect(before.edit.hidden).toBe(true);
+    expect(before.edit.display).toBe('flex');
+    expect(before.edit.visibility).toBe('hidden');
+    expect(before.edit.width).toBe(150);
+    expect(before.edit.height).toBe(36);
+    expect(before.head.width).toBeGreaterThan(800);
+    expect(before.head.height).toBeLessThan(180);
+    expect(before.row).not.toBeNull();
+    expect(before.segParent).toBe('mode-seg-slot');
+    expect(before.editParent).toBe('menu-controls-row');
+    expect(before.topbarHasMode).toBe(false);
+    console.log('[desktop staff hydration] before geometry', JSON.stringify({
+      wrap:before.wrap, view:before.view, head:before.head, row:before.row,
+      title:before.title, slot:before.slot, edit:before.edit, search:before.search,
+      footer:before.footer, profilePanel:before.profilePanel, profileBox:before.profileBox, profileNoUser:before.profileNoUser
+    }));
+    await page.evaluate(()=>{
+      if(window.__layoutShiftObserver)window.__layoutShiftObserver.takeRecords();
+      window.__layoutShifts.length=0;
+    });
+    const meResponse=await page.waitForResponse(response=>response.url().endsWith('/api/me'),{timeout:15000});
+    expect(meResponse.ok()).toBe(true);
+    await page.waitForFunction(()=>document.documentElement.hasAttribute('data-staff-ready'),null,{timeout:10000});
+    const after=await page.evaluate(()=>{
+      const rect=selector=>{
+        const el=document.querySelector(selector);
+        if(!el)return null;
+        const b=el.getBoundingClientRect();
+        const s=getComputedStyle(el);
+        return {x:b.x,y:b.y,width:b.width,height:b.height,display:s.display,visibility:s.visibility,hidden:el.hidden,marginBottom:s.marginBottom};
+      };
+      return {
+        role:document.documentElement.getAttribute('data-staff-role'),
+        ready:document.documentElement.hasAttribute('data-staff-ready'),
+        head:rect('#deliveryView .menu-head'),
+        view:rect('#deliveryView'),
+        wrap:rect('body > div.wrap'),
+        row:rect('#deliveryView .menu-controls-row'),
+        title:rect('#deliveryView .menu-controls-row .menu-title-group > h1'),
+        slot:rect('#deliveryView .menu-controls-row > .mode-seg-slot'),
+        seg:rect('#modeSeg'),
+        edit:rect('#editToggle'),
+        search:rect('#deliveryView .menu-head .mh-right .search'),
+        adminBar:rect('#adminBar'),
+        footer:rect('footer.siteFooter'),
+        profilePanel:rect('#panel'),
+        profileBox:rect('#profileBox'),
+        profileNoUser:rect('#profileNoUser'),
+        segParent:document.querySelector('#modeSeg')?.parentElement?.className || '',
+        editParent:document.querySelector('#editToggle')?.parentElement?.className || '',
+        topbarHasMode:document.querySelector('header.topbar').classList.contains('has-mode-switcher'),
+        shifts:window.__layoutShifts,
+        cls:window.__layoutShifts.reduce((sum,item)=>sum+item.value,0),
+        staffHeaderCls:window.__layoutShifts.reduce((sum,shift)=>{
+          const affectsStaffHeader=(shift.sources||[]).some(source=>
+            (source.node||[]).some(node=>
+              node.id==='modeSeg' || node.id==='editToggle' ||
+              (node.className||'').split(/\s+/).some(name=>
+                name==='menu-head' || name==='menu-controls-row' || name==='mode-seg-slot'
+              )
+            )
+          );
+          return sum+(affectsStaffHeader?shift.value:0);
+        },0)
+      };
+    });
+    expect(after.ready).toBe(true);
+    expect(after.role).toBe('admin');
+    expect(after.seg.hidden).toBe(false);
+    expect(after.adminBar.hidden).toBe(false);
+    expect(after.adminBar.display).toBe('flex');
+    expect(after.adminBar.height).toBe(0);
+    expect(after.edit.hidden).toBe(false);
+    expect(after.edit.display).toBe('flex');
+    expect(after.edit.visibility).toBe('visible');
+    expect(after.edit.width).toBe(150);
+    expect(after.edit.height).toBe(36);
+    console.log('[desktop staff hydration] admin bar after hydration', JSON.stringify(after.adminBar));
+    expect(after.segParent).toBe('mode-seg-slot');
+    expect(after.editParent).toBe('menu-controls-row');
+    expect(after.topbarHasMode).toBe(false);
+    expect(after.head.height).toBeLessThan(180);
+    console.log('[desktop staff hydration] after geometry', JSON.stringify({
+      wrap:after.wrap, view:after.view, head:after.head, row:after.row,
+      title:after.title, slot:after.slot, edit:after.edit, search:after.search,
+      footer:after.footer, profilePanel:after.profilePanel, profileBox:after.profileBox, profileNoUser:after.profileNoUser
+    }));
+    // The wrapper is content-sized; its total height may change as non-header content hydrates.
+    // Keep its position/width stable, and keep every header/control edge stable.
+    for(const edge of ['x','y','width']) {
+      expect(Math.abs(after.wrap[edge]-before.wrap[edge]),'wrap '+edge+' remains stable during hydration').toBeLessThanOrEqual(1);
+    }
+    for(const part of ['view','head','row','title','slot','seg','edit','search']) {
+      for(const edge of ['x','y','width','height']) {
+        expect(Math.abs(after[part][edge]-before[part][edge]),part+' '+edge+' remains stable during hydration').toBeLessThanOrEqual(1);
+      }
+    }
+    console.log('[desktop staff hydration] layout shift sources', JSON.stringify({
+      document:after.cls,
+      staffHeader:after.staffHeaderCls,
+      shifts:after.shifts
+    }));
+    // Staff-header CLS is isolated from independent profile/sidebar and footer hydration.
+    expect(after.staffHeaderCls).toBeLessThan(0.01);
+  });
+
+
+  test('desktop profile sidebar hydrates inside its existing column without moving the menu', async ({ page }) => {
+    await page.setViewportSize({width:1440,height:900});
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user','desktop-profile-sidebar-test-token');
+      localStorage.setItem('zt_role','admin');
+      localStorage.setItem('zt_onb','1');
+      localStorage.setItem('zt_inst_hide','1');
+      sessionStorage.setItem('splashDone','1');
+    });
+    await page.route('**/api/**',async route => {
+      const pathname=new URL(route.request().url()).pathname;
+      if(pathname==='/api/me') {
+        await new Promise(resolve=>setTimeout(resolve,9000));
+        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+          customer:{id:900003,name:'Desktop Profile Admin',phone:'+70000000002',role:'admin',stamps:0,free:0,cups:0,qr:'desktop-profile-test',verified:1,history:[]}
+        })});
+        return;
+      }
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        ok:true,items:[],orders:[],pending:[],customers:[],threads:[],messages:[],promos:[]
+      })});
+    });
+    await page.route('**/app/ui/theme/*.css*',async route => {
+      await new Promise(resolve=>setTimeout(resolve,900));
+      await route.continue();
+    });
+    await page.goto('/?brand=delivery',{waitUntil:'commit'});
+    await page.locator('#modeSeg').waitFor({state:'attached'});
+    await waitForDeferredTheme(page);
+
+    const readGeometry=()=>page.evaluate(()=>{
+      const rect=selector=>{
+        const element=document.querySelector(selector);
+        if(!element)return null;
+        const box=element.getBoundingClientRect();
+        const style=getComputedStyle(element);
+        return {x:box.x,y:box.y,width:box.width,height:box.height,right:box.right,bottom:box.bottom,display:style.display};
+      };
+      return {
+        view:rect('#deliveryView'),
+        panel:rect('#panel'),
+        profileBox:rect('#profileBox'),
+        profileNoUser:rect('#profileNoUser'),
+        footer:rect('footer.siteFooter')
+      };
+    });
+    const before=await readGeometry();
+    expect(before.panel).not.toBeNull();
+    expect(before.profileNoUser.display).not.toBe('none');
+    expect(before.profileBox.display).toBe('none');
+
+    const response=await page.waitForResponse(request=>request.url().endsWith('/api/me'),{timeout:15000});
+    expect(response.ok()).toBe(true);
+    await page.waitForFunction(()=>document.documentElement.hasAttribute('data-staff-ready'),null,{timeout:10000});
+    const after=await readGeometry();
+
+    for(const edge of ['x','y','width']) {
+      expect(Math.abs(after.panel[edge]-before.panel[edge]),'profile panel '+edge+' remains anchored').toBeLessThanOrEqual(1);
+      expect(Math.abs(after.view[edge]-before.view[edge]),'menu view '+edge+' remains anchored').toBeLessThanOrEqual(1);
+    }
+    expect(Math.abs(after.view.height-before.view.height)).toBeLessThanOrEqual(1);
+    expect(after.panel.height).toBeGreaterThan(before.panel.height);
+    expect(after.profileBox.display).toBe('flex');
+    expect(after.profileNoUser.display).toBe('none');
+    expect(after.profileBox.x).toBeGreaterThanOrEqual(after.panel.x);
+    expect(after.profileBox.right).toBeLessThanOrEqual(after.panel.right+1);
+    expect(after.profileBox.y).toBeGreaterThanOrEqual(after.panel.y);
+    expect(after.profileBox.bottom).toBeLessThanOrEqual(after.panel.bottom+1);
+    expect(after.footer.y).toBeGreaterThanOrEqual(after.view.y+after.view.height-1);
   });
 
   test('staff layout reservation is released when the main bundle never starts', async ({ page }) => {
