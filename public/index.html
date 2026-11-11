@@ -3580,6 +3580,18 @@ html body #tickerTrack .tickerGroup > span {
 }
 
 @media (min-width:821px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
   html[data-staff-role] body .menu-head .menu-controls-row > .upd {
     display:inline-flex;
     flex:0 0 auto;
