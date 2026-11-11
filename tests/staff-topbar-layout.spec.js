@@ -505,7 +505,7 @@ test('desktop delivery role switcher stays in menu header with delivery colors i
   }
 });
 
-test('desktop work modes return role switcher to topbar while menu is hidden', async ({ page }) => {
+test('desktop work modes return role switcher to topbar only while menu is hidden', async ({ page }) => {
   await page.setViewportSize({width:1440,height:1000});
   await mockStaffSession(page);
   await page.goto('/?brand=delivery');
