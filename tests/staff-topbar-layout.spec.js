@@ -412,7 +412,6 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       const slot = row.querySelector(':scope > .mode-seg-slot');
       const seg = slot.querySelector('#modeSeg');
       const edit = row.querySelector('#editToggle');
-      const titleGroup = row.querySelector('.menu-title-group');
       const updated = titleGroup?.querySelector('.upd');
       const searchRow = top.querySelector(':scope > .mh-right');
       const search = searchRow.querySelector('.search');
@@ -486,7 +485,6 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       body:await page.screenshot({fullPage:false}),
       contentType:'image/png'
     });
-    }
     }
   }
 });

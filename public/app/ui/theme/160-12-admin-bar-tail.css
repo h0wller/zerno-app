@@ -1028,6 +1028,22 @@ html body #modeSeg button:not(.on) {
     min-width:0;
   }
 
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
+    flex:0 0 auto;
+    min-width:0;
+    max-width:100%;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    flex:0 1 auto;
+    min-width:0;
+    max-width:100%;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
+    flex:0 0 auto;
+  }
+
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > h1 {
     flex: 0 0 auto;
     min-width: 0;
@@ -1040,7 +1056,7 @@ html body #modeSeg button:not(.on) {
     display: flex;
     flex: 0 0 auto;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: flex-end;
     min-width: 0;
     width: auto;
     height: 36px;
@@ -1051,7 +1067,7 @@ html body #modeSeg button:not(.on) {
     display: flex;
     flex: 0 1 auto;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     gap: 4px;
     width: auto;
     min-width: 0;
@@ -1091,6 +1107,8 @@ html body #modeSeg button:not(.on) {
     margin: 0;
     padding: 0;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: 11px;
     line-height: 1.2;
   }
@@ -1178,7 +1196,6 @@ html body #modeSeg button:not(.on) {
   html[data-staff-role] body .menu-head .menu-controls-row {
     display: flex;
     justify-content: space-between;
-    grid-template-rows: 44px;
     align-items: center;
     column-gap: 4px;
     width: 100%;
