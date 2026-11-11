@@ -1123,8 +1123,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.ready).toBe(true);
     expect(after.role).toBe('admin');
     expect(after.seg.hidden).toBe(false);
-    expect(after.adminBar.hidden).toBe(true);
-    expect(after.adminBar.display).toBe('none');
+    expect(after.adminBar.hidden).toBe(false);
+    expect(after.adminBar.display).toBe('flex');
     expect(after.adminBar.height).toBe(0);
     console.log('[desktop staff hydration] admin bar after hydration', JSON.stringify(after.adminBar));
     expect(after.segParent).toBe('mode-seg-slot');
