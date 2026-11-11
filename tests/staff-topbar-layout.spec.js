@@ -368,124 +368,168 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
   }
 });
 
-test('desktop storefront header and delivery branding stay intact after staff controls migration', async ({ page }) => {
+test('desktop staff menu keeps title, role switcher and edit inside the menu header', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await mockStaffSession(page);
   for (const brand of ['coffee', 'delivery']) {
-    await page.addInitScript(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-      localStorage.setItem('zt_onb', '1');
-      sessionStorage.setItem('splashDone', '1');
-    });
     await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'admin' &&
+      document.documentElement.hasAttribute('data-staff-ready')
+    );
     const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
-    const head = page.locator(view + ' .menu-head');
-    await expect(head).toBeVisible();
-    const styles = await page.evaluate((selector) => {
-      const element = document.querySelector(selector);
-      const title = element.querySelector('h1');
-      const titleStyle = getComputedStyle(title);
-      const headStyle = getComputedStyle(element);
-      const top = element.querySelector('.mh-top');
-      const controlsRow = top.querySelector('.menu-controls-row');
-      const roleSwitch = document.getElementById('modeSeg');
-      const edit = document.getElementById('editToggle');
-      const rect = (node) => {
+    await page.evaluate(() => window.setMode('admin'));
+    const header = page.locator(view + ' .menu-head');
+    const row = header.locator('.menu-controls-row');
+    const seg = page.locator('#modeSeg');
+    const edit = page.locator('#editToggle');
+    const search = header.locator('.mh-right .search');
+    await expect(row).toBeVisible();
+    await expect(seg).toBeVisible();
+    await expect(edit).toBeVisible();
+    await expect(search).toBeVisible();
+
+    const layout = await page.evaluate((viewSelector) => {
+      const root = document.querySelector(viewSelector);
+      const head = root.querySelector('.menu-head');
+      const top = head.querySelector('.mh-top');
+      const first = top.querySelector(':scope > div:first-child');
+      const row = first.querySelector('.menu-controls-row');
+      const title = row.querySelector(':scope > h1');
+      const slot = row.querySelector(':scope > .mode-seg-slot');
+      const seg = slot.querySelector('#modeSeg');
+      const edit = row.querySelector('#editToggle');
+      const searchRow = top.querySelector(':scope > .mh-right');
+      const search = searchRow.querySelector('.search');
+      const rect = node => {
         const box = node.getBoundingClientRect();
-        return { x:box.x,y:box.y,width:box.width,height:box.height,right:box.right,bottom:box.bottom };
+        return {x:box.x,y:box.y,width:box.width,height:box.height,right:box.right,bottom:box.bottom};
+      };
+      const style = node => {
+        const s = getComputedStyle(node);
+        return {display:s.display,color:s.color,background:s.backgroundColor,backgroundImage:s.backgroundImage,fontSize:s.fontSize};
       };
       return {
-        head:{...rect(element),background:headStyle.backgroundColor,backgroundImage:headStyle.backgroundImage,border:headStyle.borderColor},
-        title:{...rect(title),color:titleStyle.color,fontSize:titleStyle.fontSize,descriptorDisplay:getComputedStyle(title.querySelector('em')).display},
-        top:{...rect(top),display:getComputedStyle(top).display},
-        controlsRow:controlsRow ? rect(controlsRow) : null,
-        roleParent:roleSwitch?.parentElement?.className || '',
-        roleVisible:!!roleSwitch && !roleSwitch.hidden && getComputedStyle(roleSwitch).display !== 'none',
-        editParent:edit?.parentElement?.id || ''
+        head:rect(head),
+        top:rect(top),
+        title:rect(title),
+        titleStyle:style(title),
+        descriptor: title.querySelector('em') ? getComputedStyle(title.querySelector('em')).display : 'missing',
+        row:rect(row),
+        slot:rect(slot),
+        seg:rect(seg),
+        segStyle:style(seg),
+        edit:rect(edit),
+        editParent:edit.parentElement?.className || '',
+        segParent:seg.parentElement?.className || '',
+        searchRow:rect(searchRow),
+        search:rect(search),
+        topDisplay:getComputedStyle(top).display,
+        headerHasRoleClass:document.querySelector('header.topbar').classList.contains('has-menu-role-switcher'),
+        topbarHasModeClass:document.querySelector('header.topbar').classList.contains('has-mode-switcher')
       };
-    }, view + ' .menu-head');
-    expect(styles.head.width).toBeGreaterThan(850);
-    expect(styles.head.height).toBeLessThan(180);
-    expect(styles.title.width).toBeGreaterThan(100);
-    expect(styles.title.height).toBeGreaterThan(25);
-    expect(styles.top.display).toBe('flex');
-    expect(styles.controlsRow).toBeNull();
-    expect(styles.roleVisible).toBe(false);
+    }, view);
+    expect(layout.head.width).toBeGreaterThan(850);
+    expect(layout.head.height).toBeLessThan(180);
+    expect(layout.topDisplay).toBe('flex');
+    expect(layout.segParent).toBe('mode-seg-slot');
+    expect(layout.editParent).toBe('menu-controls-row');
+    expect(layout.headerHasRoleClass).toBe(true);
+    expect(layout.topbarHasModeClass).toBe(false);
+    expect(layout.title.width).toBeGreaterThan(100);
+    expect(layout.slot.width).toBeGreaterThan(160);
+    expect(layout.seg.width).toBeGreaterThan(160);
+    expect(layout.title.y).toBeLessThan(layout.search.y);
+    expect(layout.seg.y).toBeLessThan(layout.search.y);
+    expect(layout.edit.y).toBeLessThan(layout.search.y);
+    expect(layout.searchRow.y).toBeGreaterThanOrEqual(layout.row.bottom - 1);
+    expect(layout.search.width).toBeGreaterThan(400);
     if (brand === 'delivery') {
-      expect(styles.head.backgroundImage).toContain('250, 245, 238');
-      expect(styles.title.color).toBe('rgb(58, 42, 28)');
-      expect(styles.title.fontSize).toBe('28px');
-      expect(styles.title.descriptorDisplay).not.toBe('none');
-      expect(styles.editParent).toBe('adminBar');
+      expect(layout.titleStyle.color).toBe('rgb(58, 42, 28)');
+      expect(layout.titleStyle.fontSize).toBe('28px');
+      expect(layout.descriptor).not.toBe('none');
     } else {
-      expect(styles.title.color).toBe('rgb(18, 58, 107)');
+      expect(layout.titleStyle.color).toBe('rgb(18, 58, 107)');
     }
-    await testInfo.attach('desktop-' + brand + '-guest-menu-header', {
-      body: await page.screenshot({ fullPage:false }),
-      contentType: 'image/png'
+    await testInfo.attach('desktop-staff-' + brand + '-menu-header-1440px', {
+      body:await page.screenshot({fullPage:false}),
+      contentType:'image/png'
     });
   }
 });
 
-test('delivery staff mode switcher keeps the delivery brand track and active-face colors on desktop', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
+test('desktop delivery role switcher stays in menu header with delivery colors in every menu mode', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width:1440, height:1000 });
   await mockStaffSession(page);
   await page.goto('/?brand=delivery');
   await page.waitForFunction(() =>
     window.me && window.me.role === 'admin' &&
     document.documentElement.hasAttribute('data-staff-ready')
   );
-  const view = page.locator('#deliveryView .menu-head');
   const seg = page.locator('#modeSeg');
-  await expect(view).toBeVisible();
-  await expect(seg).toBeVisible();
-  for (const mode of ['guest', 'admin', 'cashier', 'orders']) {
-    await page.evaluate((nextMode) => window.setMode(nextMode), mode);
-    const styles = await seg.evaluate((element) => {
+  const head = page.locator('#deliveryView .menu-head');
+  for (const mode of ['guest', 'admin']) {
+    await page.evaluate(nextMode => window.setMode(nextMode), mode);
+    await expect(seg).toBeVisible();
+    const styles = await seg.evaluate(element => {
       const active = element.querySelector('button.on');
-      const activeStyle = active && getComputedStyle(active);
+      const head = document.querySelector('#deliveryView .menu-head');
+      const title = head.querySelector('h1');
       const rect = node => {
         const box = node.getBoundingClientRect();
         return {x:box.x,y:box.y,width:box.width,height:box.height,right:box.right,bottom:box.bottom};
       };
-      const head = document.querySelector('#deliveryView .menu-head');
-      const title = head.querySelector('h1');
-      const headStyle = getComputedStyle(head);
-      const titleStyle = getComputedStyle(title);
       return {
-        parent:element.parentElement?.tagName || '',
-        parentClass:element.parentElement?.className || '',
-        inTopbar:element.parentElement === document.querySelector('header.topbar'),
-        editParent:document.getElementById('editToggle')?.parentElement?.id || '',
-        display:getComputedStyle(element).display,
+        parent:element.parentElement?.className || '',
         background:getComputedStyle(element).backgroundColor,
-        border:getComputedStyle(element).borderColor,
-        activeColor:activeStyle?.color || null,
-        activeBackground:activeStyle?.backgroundColor || null,
-        headBackground:headStyle.backgroundColor,
-        headBackgroundImage:headStyle.backgroundImage,
-        titleColor:titleStyle.color,
-        head:rect(head),
+        activeBackground:active ? getComputedStyle(active).backgroundColor : null,
+        activeColor:active ? getComputedStyle(active).color : null,
+        titleColor:getComputedStyle(title).color,
+        headBackgroundImage:getComputedStyle(head).backgroundImage,
+        seg:rect(element),
         title:rect(title),
-        seg:rect(element)
+        search:rect(head.querySelector('.mh-right .search'))
       };
     });
-    expect(styles.inTopbar).toBe(true);
-    expect(styles.editParent).toBe('adminBar');
+    expect(styles.parent).toBe('mode-seg-slot');
     expect(styles.background).toBe('rgb(58, 42, 28)');
-    expect(styles.headBackgroundImage).toContain('250, 245, 238');
     expect(styles.titleColor).toBe('rgb(58, 42, 28)');
-    if (mode === 'admin' || mode === 'guest') {
-      expect(styles.activeBackground).toBe('rgb(139, 43, 32)');
-      expect(styles.activeColor).toBe('rgb(255, 255, 255)');
-    }
-    expect(styles.head.width).toBeGreaterThan(1000);
-    expect(styles.title.width).toBeGreaterThan(100);
-    await page.setViewportSize({ width:1440, height:1000 });
-    await testInfo.attach('desktop-delivery-' + mode + '-switcher', {
+    expect(styles.headBackgroundImage).toContain('250, 245, 238');
+    expect(styles.activeBackground).toBe('rgb(139, 43, 32)');
+    expect(styles.activeColor).toBe('rgb(255, 255, 255)');
+    expect(styles.seg.y).toBeLessThan(styles.search.y);
+    await testInfo.attach('desktop-delivery-staff-' + mode + '-1440px', {
       body:await page.screenshot({fullPage:false}),
       contentType:'image/png'
     });
+  }
+});
+
+test('desktop work modes return role switcher to topbar while menu is hidden', async ({ page }) => {
+  await page.setViewportSize({width:1440,height:1000});
+  await mockStaffSession(page);
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.me && window.me.role === 'admin' &&
+    document.documentElement.hasAttribute('data-staff-ready')
+  );
+  const seg = page.locator('#modeSeg');
+  for (const mode of ['cashier', 'orders']) {
+    await page.evaluate(nextMode => window.setMode(nextMode), mode);
+    await expect(seg).toBeVisible();
+    await expect(page.locator(mode === 'cashier' ? '#cashierView' : '#ordersView')).toBeVisible();
+    const state = await seg.evaluate(element => ({
+      inTopbar:element.parentElement === document.querySelector('header.topbar'),
+      topbarHasModeClass:document.querySelector('header.topbar').classList.contains('has-mode-switcher'),
+      menuRoleClass:document.querySelector('header.topbar').classList.contains('has-menu-role-switcher'),
+      editParent:document.getElementById('editToggle')?.parentElement?.id || '',
+      menuVisible:getComputedStyle(document.querySelector('#deliveryView')).display !== 'none'
+    }));
+    expect(state.inTopbar).toBe(true);
+    expect(state.topbarHasModeClass).toBe(true);
+    expect(state.menuRoleClass).toBe(false);
+    expect(state.editParent).toBe('adminBar');
+    expect(state.menuVisible).toBe(false);
   }
 });
 
