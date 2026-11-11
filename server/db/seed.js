@@ -1,5 +1,4 @@
 import { db } from './connection.js';
-import webpush from 'web-push';
 
 export function initSeed() {
   const MENU_V = '4';
