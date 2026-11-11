@@ -117,6 +117,84 @@
   display: none !important;
 }
 
+/* Desktop staff first paint keeps the role controls in the menu heading before hydration. */
+@media (min-width:821px) {
+  html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
+    display:none !important;
+    height:0;
+    min-height:0;
+    margin:0;
+    padding:0;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    padding:10px 14px !important;
+    overflow:visible !important;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:8px !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row {
+    display:flex !important;
+    align-items:center !important;
+    flex-wrap:nowrap !important;
+    gap:10px !important;
+    width:100% !important;
+    min-width:0 !important;
+    min-height:36px !important;
+    margin:0 !important;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
+    display:flex !important;
+    flex:0 1 auto !important;
+    align-items:center !important;
+    min-width:0 !important;
+    width:auto !important;
+    height:36px !important;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display:flex !important;
+    flex:0 1 auto !important;
+    align-items:center !important;
+    gap:4px !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    height:36px !important;
+    min-height:36px !important;
+    max-height:36px !important;
+    margin:0 !important;
+    padding:0 6px !important;
+    overflow:visible !important;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
+    position:static !important;
+    display:inline-flex !important;
+    flex:0 0 auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+    height:36px !important;
+    min-height:36px !important;
+    max-height:36px !important;
+    margin:0 !important;
+    padding:0 12px !important;
+    font-size:12px !important;
+  }
+}
 /* Mobile staff menu reserves its two-row toolbar only; no legacy shortcut strip. */
 @media (max-width:820px) {
   html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
