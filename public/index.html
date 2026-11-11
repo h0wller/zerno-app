@@ -206,6 +206,19 @@
     visibility:hidden !important;
     pointer-events:none !important;
   }
+  /* Reserve the final edit-control footprint before auth; runtime unhides it after /api/me. */
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > #editToggle[hidden] {
+    display:inline-flex !important;
+    flex:0 0 44px !important;
+    width:44px !important;
+    min-width:44px !important;
+    max-width:44px !important;
+    height:36px !important;
+    min-height:36px !important;
+    max-height:36px !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
   html[data-staff-role="cashier"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="admin"],
   html[data-staff-role="dispatch"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="cashier"],
   html[data-staff-role="dispatch"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="admin"] {

@@ -1076,6 +1076,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.adminBar.hidden).toBe(true);
     expect(before.adminBar.display).toBe('none');
     expect(before.adminBar.height).toBe(0);
+    expect(before.edit.hidden).toBe(true);
+    expect(before.edit.display).toBe('inline-flex');
+    expect(before.edit.visibility).toBe('hidden');
+    expect(before.edit.width).toBe(44);
+    expect(before.edit.height).toBe(36);
     expect(before.head.width).toBeGreaterThan(800);
     expect(before.head.height).toBeLessThan(180);
     expect(before.row).not.toBeNull();
@@ -1084,7 +1089,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.topbarHasMode).toBe(false);
     console.log('[desktop staff hydration] before geometry', JSON.stringify({
       wrap:before.wrap, view:before.view, head:before.head, row:before.row,
-      title:before.title, slot:before.slot, search:before.search
+      title:before.title, slot:before.slot, edit:before.edit, search:before.search
     }));
     await page.evaluate(()=>{
       if(window.__layoutShiftObserver)window.__layoutShiftObserver.takeRecords();
@@ -1133,7 +1138,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.head.height).toBeLessThan(180);
     console.log('[desktop staff hydration] after geometry', JSON.stringify({
       wrap:after.wrap, view:after.view, head:after.head, row:after.row,
-      title:after.title, slot:after.slot, search:after.search
+      title:after.title, slot:after.slot, edit:after.edit, search:after.search
     }));
     // The wrapper is content-sized; its total height may change as non-header content hydrates.
     // Keep its position/width stable, and keep every header/control edge stable.
