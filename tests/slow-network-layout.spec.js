@@ -1016,6 +1016,15 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       localStorage.setItem('zt_onb','1');
       localStorage.setItem('zt_inst_hide','1');
       sessionStorage.setItem('splashDone','1');
+      window.__layoutShifts = [];
+      try {
+        window.__layoutShiftObserver = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (!entry.hadRecentInput) window.__layoutShifts.push({ value: entry.value });
+          }
+        });
+        window.__layoutShiftObserver.observe({ type: 'layout-shift', buffered: true });
+      } catch (_) {}
     });
     await page.route('**/api/**',async route => {
       const pathname=new URL(route.request().url()).pathname;
