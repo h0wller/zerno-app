@@ -137,14 +137,40 @@
   flex-shrink: 0;
 }
 .chat-h button{
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
   margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--chat-head-color, #fff);
   opacity: 0.8;
   font-size: 20px;
-  padding: 4px;
-  flex-shrink: 0;
   line-height: 1;
+  cursor: pointer;
   transition: opacity .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.chat-h button::before{
+  content: "";
+  position: absolute;
+  inset: 6px;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.16);
+  pointer-events: none;
 }
 .chat-h button:hover{
   opacity: 1;
@@ -242,22 +268,54 @@
   border-color: var(--flame);
 }
 .chat-i button{
-  width: 42px;
-  height: 42px;
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: opacity .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.chat-i button::before{
+  content: "";
+  position: absolute;
+  inset: 6px;
+  z-index: -1;
   border-radius: 50%;
   background: var(--chat-send-bg, #123A6B);
   border: var(--chat-send-border, none);
-  display: grid;
-  place-items: center;
-  transition: .2s;
-  flex-shrink: 0;
+  box-shadow: 0 2px 0 rgba(16, 20, 24, 0.18);
+  pointer-events: none;
+  transition: transform .15s ease;
 }
 .chat-i button:hover{
   opacity: 0.9;
+}
+.chat-i button:hover::before{
   transform: scale(1.07);
+}
+.chat-i button:active::before{
+  transform: scale(0.92);
 }
 .chat-i svg{
   width: 18px;
   height: 18px;
-  fill: #fff;
+  fill: var(--chat-send-color, #fff);
+}
+@media (prefers-reduced-motion: reduce){
+  .chat-i button,
+  .chat-i button::before{
+    transition: none;
+  }
 }
