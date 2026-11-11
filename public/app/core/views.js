@@ -257,8 +257,10 @@ function syncStaffAndGuestControls(bName2) {
   var menuHead = activeView && activeView.querySelector('.menu-head');
   var menuRow = menuHead && menuHead.querySelector('.menu-controls-row');
   var titleHost = menuHead && menuHead.querySelector('.mh-top > div:first-child');
-  var title = titleHost && titleHost.querySelector('h1');
-  var updated = titleHost && titleHost.querySelector('.upd');
+  var title = menuRow && menuRow.querySelector('.menu-title-group > h1') ||
+    titleHost && titleHost.querySelector('h1');
+  var updated = menuRow && menuRow.querySelector('.menu-title-group > .upd') ||
+    titleHost && titleHost.querySelector('.upd');
   var topbar = document.querySelector('header.topbar');
   var adminBar = document.getElementById('adminBar');
   var editToggle = document.getElementById('editToggle');
