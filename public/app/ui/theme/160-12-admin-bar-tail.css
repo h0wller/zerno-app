@@ -969,11 +969,15 @@ html body #modeSeg button:not(.on) {
 /* Desktop menu staff row: title, role switcher and edit share the menu heading above search. */
 @media (min-width: 821px) {
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     height: auto;
     min-height: 0;
     max-height: none;
     padding: 10px 14px;
     overflow: visible;
+    box-sizing: border-box;
   }
 
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
