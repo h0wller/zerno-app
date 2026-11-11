@@ -487,6 +487,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       contentType:'image/png'
     });
     }
+    }
   }
 });
 
