@@ -273,10 +273,10 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       }, view);
 
       expect(layout.rowOrder).toEqual(['title-updated', 'roles', 'edit']);
-      expect(layout.updatedDisplay).toBe('inline-flex');
+      expect(layout.updatedDisplay).toBe('none');
       expect(layout.titleGroup.x).toBeLessThanOrEqual(layout.rowOne.x + 1);
       expect(layout.slot.x).toBeGreaterThan(layout.titleGroup.x);
-      expect(layout.updatedHidden).toBe(false);
+      expect(layout.updatedHidden).toBe(true);
       expect(layout.headerChildren).toEqual(['title-roles-edit', 'search-support']);
       expect(layout.extraRows).toBe(0);
       expect(layout.adminBarVisible).toBe(true);
@@ -292,7 +292,6 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.title.width).toBeGreaterThanOrEqual(45);
       expect(layout.titleGroup.x).toBeLessThanOrEqual(layout.rowOne.x + 1);
       expect(layout.titleGroup.right).toBeLessThanOrEqual(layout.slot.x + 1);
-      expect(layout.updated.x).toBeGreaterThanOrEqual(layout.title.right - 1);
       expect(layout.slot.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
       expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
       expect(layout.slot.width).toBe(176);
@@ -370,6 +369,24 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
       });
+    }
+  }
+});
+
+test('staff update timestamp is hidden below 520px and visible from 520px', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    for (const width of [480, 519, 520]) {
+      await page.setViewportSize({ width, height: 844 });
+      await mockStaffSession(page);
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(() =>
+        window.me && window.me.role === 'admin' &&
+        document.documentElement.hasAttribute('data-staff-ready')
+      );
+      const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
+      const updated = page.locator(view + ' .menu-title-group > .upd');
+      const display = await updated.evaluate(element => getComputedStyle(element).display);
+      expect(display, brand + ' timestamp at ' + width + 'px').toBe(width < 520 ? 'none' : 'inline-flex');
     }
   }
 });

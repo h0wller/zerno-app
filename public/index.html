@@ -120,11 +120,15 @@
 /* Desktop staff first paint keeps the role controls in the menu heading before hydration. */
 @media (min-width:821px) {
   html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
-    display:none !important;
-    height:0;
-    min-height:0;
-    margin:0;
-    padding:0;
+    display:flex !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    margin:0 0 12px !important;
+    padding:0 !important;
+    overflow:hidden !important;
   }
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
     height:auto !important;
@@ -1230,6 +1234,18 @@ html[data-brand="delivery"] {
     max-width:none;
     padding:0 3px;
     font-size:10px;
+  }
+}
+
+/* Staff update timestamp threshold must match the hydrated component styles. */
+@media (max-width:519px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display:none !important;
+  }
+}
+@media (min-width:520px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display:inline-flex !important;
   }
 }
 </style>

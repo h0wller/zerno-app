@@ -1458,3 +1458,16 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
   }
 
 }
+
+
+/* Staff menu update timestamp is intentionally omitted below the 520px breakpoint. */
+@media (max-width: 519px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display: none !important;
+  }
+}
+@media (min-width: 520px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display: inline-flex !important;
+  }
+}

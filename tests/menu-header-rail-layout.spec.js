@@ -146,7 +146,7 @@ for (const brand of CASES) {
 }
 
 
-test('menu headings stay compact while retaining their brand context', async ({ page }) => {
+test('menu headings stay compact without the removed descriptor badge', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
     for (const viewport of [
       { width: 320, height: 740 },
@@ -188,7 +188,7 @@ test('menu headings stay compact while retaining their brand context', async ({ 
       expect(geometry.left).toBeGreaterThanOrEqual(0);
       expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
       expect(geometry.title).toBe('Меню');
-      expect(geometry.taglineVisible, 'the descriptor badge is hidden only on 320px narrow screens').toBe(viewport.width > 320);
+      expect(geometry.taglineVisible, 'the removed descriptor badge stays absent at every width').toBe(false);
       expect(geometry.left).toBeGreaterThanOrEqual(geometry.menuHeadLeft + 8);
       expect(geometry.right).toBeLessThanOrEqual(geometry.menuHeadRight - 8);
     }

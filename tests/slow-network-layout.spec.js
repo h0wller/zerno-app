@@ -182,15 +182,12 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.section.width).toBeGreaterThan(250);
     expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
     expect(before.heading.width).toBeGreaterThan(60);
-    expect(before.brandContext).not.toBeNull();
-    expect(before.brandContext.width).toBeGreaterThan(0);
+    expect(before.brandContext).toBeNull();
     expect(before.menuHead).not.toBeNull();
     expect(before.menuHead.x).toBeLessThanOrEqual(before.rail.x + 1);
     expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
-    expect(before.brandContext.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
-    expect(before.brandContext.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.menuHeadStyle.maxHeight).toBe('100px');
     expect(before.staffModeReservedHeight).toBeUndefined();
     expect(before.staffMenuRowReservedHeight).toBeUndefined();
@@ -1061,7 +1058,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         view:rect('#deliveryView'),
         wrap:rect('body > div.wrap'),
         row:rect('#deliveryView .menu-controls-row'),
-        title:rect('#deliveryView .menu-controls-row > h1'),
+        title:rect('#deliveryView .menu-controls-row .menu-title-group > h1'),
         slot:rect('#deliveryView .menu-controls-row > .mode-seg-slot'),
         seg:rect('#modeSeg'),
         edit:rect('#editToggle'),
@@ -1106,7 +1103,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         view:rect('#deliveryView'),
         wrap:rect('body > div.wrap'),
         row:rect('#deliveryView .menu-controls-row'),
-        title:rect('#deliveryView .menu-controls-row > h1'),
+        title:rect('#deliveryView .menu-controls-row .menu-title-group > h1'),
         slot:rect('#deliveryView .menu-controls-row > .mode-seg-slot'),
         seg:rect('#modeSeg'),
         edit:rect('#editToggle'),
