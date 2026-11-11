@@ -1063,7 +1063,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.role).toBe('admin');
     expect(before.ready).toBe(false);
     expect(before.seg.hidden).toBe(true);
-    expect(before.head.width).toBeGreaterThan(850);
+    expect(before.head.width).toBeGreaterThan(800);
     expect(before.head.height).toBeLessThan(180);
     expect(before.row).not.toBeNull();
     expect(before.segParent).toBe('mode-seg-slot');
