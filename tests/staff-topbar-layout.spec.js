@@ -425,6 +425,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
         segStyle:style(seg),
         edit:rect(edit),
         updated:rect(updated),
+        updatedStyle:style(updated),
         editParent:edit.parentElement?.className || '',
         updatedParent:updated?.parentElement?.className || '',
         segParent:seg.parentElement?.className || '',
@@ -441,6 +442,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
     expect(layout.segParent).toBe('mode-seg-slot');
     expect(layout.editParent).toBe('menu-controls-row');
     expect(layout.updatedParent).toBe('menu-controls-row');
+    expect(layout.updatedStyle.display).toBe('inline-flex');
     expect(layout.updated.y).toBeGreaterThanOrEqual(layout.row.y - 1);
     expect(layout.updated.y + layout.updated.height).toBeLessThanOrEqual(layout.row.bottom + 1);
     expect(layout.updated.x).toBeGreaterThan(layout.edit.right);
