@@ -33,7 +33,7 @@ Other invariants:
 - The page must not have horizontal overflow.
 - Header, brand mark, search, product-card media, and key controls must retain their measured geometry when deferred theme CSS and fonts finish loading.
 - Page-wide cumulative layout shift must remain below `0.01` in the first-paint/deferred-CSS scenario. During cached-staff hydration, the staff-header-attributed CLS must remain below `0.01`; profile/sidebar hydration is covered by a separate containment test because the footer and sidebar have independent intrinsic-content transitions.
-- Desktop staff first paint reserves the same 48px role slot and 10px `.mh-top` row gap as the hydrated theme before `/api/me` resolves; the nested delivery timestamp explicitly overrides the legacy auto margin. Mobile staff controls retain their 44px hit-cell reservation. Failure to write the cached role hint to storage must not invalidate authentication.
+- Desktop staff first paint reserves the same 48px role slot and 10px `.mh-top` row gap as the hydrated theme before `/api/me` resolves; the nested delivery timestamp explicitly overrides the legacy auto margin, and the accessibility fixture serves its add-button card from `/api/menu/all`. Mobile staff controls retain their 44px hit-cell reservation. Failure to write the cached role hint to storage must not invalidate authentication.
 
 ## Automated coverage
 
