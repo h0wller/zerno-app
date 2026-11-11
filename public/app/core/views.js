@@ -118,7 +118,8 @@ var rules = [
 
  '[data-brand="coffee"] #panel,[data-brand="coffee"] .panel{background:var(--panel)}',
   '@media(max-width:820px){[data-brand="coffee"] #modeSeg button.on{background:#BBD7F2;color:#123A6B;box-shadow:0 2px 7px rgba(18,58,107,.16)}}',
-  '@media(min-width:821px){[data-brand="delivery"] #modeSeg{background:var(--esp)}[data-brand="delivery"] #modeSeg button.on{background:#8B2B20;color:#fff}[data-brand="coffee"] #modeSeg button.on{background:#BBD7F2;color:#123A6B;box-shadow:0 2px 7px rgba(18,58,107,.16)}}',
+  '[data-brand="delivery"] #modeSeg button.on{background:#8B2B20;color:#fff}',
+  '@media(min-width:821px){[data-brand="delivery"] #modeSeg{background:var(--esp)}[data-brand="coffee"] #modeSeg button.on{background:#BBD7F2;color:#123A6B;box-shadow:0 2px 7px rgba(18,58,107,.16)}}',
   '[data-brand="delivery"] body #deliveryView .menu-head{padding:8px 16px}',
   '@media(min-width:821px){html[data-staff-role] body #deliveryView .menu-head{padding:10px 14px}}',
   '@media(min-width:820px){[data-brand="delivery"] body #deliveryView #deliverySubFilter>.subchip.on,[data-brand="delivery"] body #deliveryView .subfilter-bar>.subchip.on{background:#C03B2A;border-color:#3A2A1C;color:#fff}}',
@@ -283,7 +284,6 @@ function syncStaffAndGuestControls(bName2) {
     }
     if (menuRow.parentElement !== titleHost) titleHost.insertBefore(menuRow, title);
     if (title && title.parentElement !== menuRow) menuRow.appendChild(title);
-    if (updated && updated.parentElement !== menuRow) menuRow.appendChild(updated);
     var modeSlot = menuRow.querySelector('.mode-seg-slot');
     if (!modeSlot) {
       modeSlot = document.createElement('div');
@@ -292,6 +292,7 @@ function syncStaffAndGuestControls(bName2) {
     }
     if (modeSeg && modeSeg.parentElement !== modeSlot) modeSlot.appendChild(modeSeg);
     if (editToggle && editToggle.parentElement !== menuRow) menuRow.appendChild(editToggle);
+    if (updated) menuRow.appendChild(updated);
   } else {
     if (title && menuRow && menuRow.parentElement && title.parentElement !== menuRow) {
       menuRow.parentElement.insertBefore(title, menuRow);
