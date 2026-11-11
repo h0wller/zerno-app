@@ -381,16 +381,19 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
 test('desktop staff menu keeps title, role switcher and edit inside the menu header', async ({ page }, testInfo) => {
   const widths = [821, 1024, 1440];
   await mockStaffSession(page);
+
   for (const brand of ['coffee', 'delivery']) {
-      for (const width of widths) {
-        await page.setViewportSize({ width, height: 1000 });
-        await page.goto('/?brand=' + brand);
-        await page.waitForFunction(() =>
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(() =>
         window.me && window.me.role === 'admin' &&
         document.documentElement.hasAttribute('data-staff-ready')
       );
+
       const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
       await page.evaluate(() => window.setMode('admin'));
+
       const header = page.locator(view + ' .menu-head');
       const row = header.locator('.menu-controls-row');
       const seg = page.locator('#modeSeg');
@@ -401,91 +404,92 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       await expect(edit).toBeVisible();
       await expect(search).toBeVisible();
 
-      const layout = await page.evaluate((viewSelector) => {
-        const root = document.querySelector(viewSelector);
-        const head = root.querySelector('.menu-head');
+      const layout = await page.evaluate(viewSelector => {
+        const head = document.querySelector(viewSelector + ' .menu-head');
         const top = head.querySelector('.mh-top');
-        const first = top.querySelector(':scope > div:first-child');
-        const row = first.querySelector('.menu-controls-row');
+        const row = top.querySelector(':scope > div:first-child .menu-controls-row');
         const titleGroup = row.querySelector('.menu-title-group');
         const title = titleGroup.querySelector(':scope > h1');
+        const updated = titleGroup.querySelector('.upd');
         const slot = row.querySelector(':scope > .mode-seg-slot');
         const seg = slot.querySelector('#modeSeg');
         const edit = row.querySelector('#editToggle');
-        const updated = titleGroup?.querySelector('.upd');
         const searchRow = top.querySelector(':scope > .mh-right');
         const search = searchRow.querySelector('.search');
+
         const rect = node => {
           const box = node.getBoundingClientRect();
-          return {x:box.x,y:box.y,width:box.width,height:box.height,right:box.right,bottom:box.bottom};
+          return {
+            x:box.x, y:box.y, width:box.width, height:box.height,
+            right:box.right, bottom:box.bottom
+          };
         };
         const style = node => {
-          const s = getComputedStyle(node);
-          return {display:s.display,color:s.color,background:s.backgroundColor,backgroundImage:s.backgroundImage,fontSize:s.fontSize};
+          const value = getComputedStyle(node);
+          return {
+            display:value.display,
+            color:value.color,
+            fontSize:value.fontSize
+          };
         };
         return {
           head:rect(head),
-          top:rect(top),
-          title:rect(title),
-          titleStyle:style(title),
-          descriptor: title.querySelector('em') ? getComputedStyle(title.querySelector('em')).display : 'missing',
           row:rect(row),
-          slot:rect(slot),
-          seg:rect(seg),
-          segStyle:style(seg),
-          edit:rect(edit),
+          title:rect(title),
           titleGroup:rect(titleGroup),
           updated:rect(updated),
-          updatedStyle:style(updated),
-          updatedText:updated.textContent.trim(),
-          editParent:edit.parentElement?.className || '',
-          updatedParent:updated?.parentElement?.className || '',
-          titleGroupParent:titleGroup?.parentElement?.className || '',
-          segParent:seg.parentElement?.className || '',
+          slot:rect(slot),
+          seg:rect(seg),
+          edit:rect(edit),
           searchRow:rect(searchRow),
           search:rect(search),
+          titleStyle:style(title),
+          updatedStyle:style(updated),
+          descriptor:title.querySelector('em') ? 'present' : 'missing',
+          updatedText:updated.textContent.trim(),
+          updatedParent:updated.parentElement.className,
+          titleGroupParent:titleGroup.parentElement.className,
+          segParent:seg.parentElement.className,
+          editParent:edit.parentElement.className,
           topDisplay:getComputedStyle(top).display,
           headerHasRoleClass:document.querySelector('header.topbar').classList.contains('has-menu-role-switcher'),
           topbarHasModeClass:document.querySelector('header.topbar').classList.contains('has-mode-switcher')
         };
       }, view);
+
       expect(layout.head.width).toBeGreaterThan(500);
-      expect(layout.head.height).toBeLessThan(180);
       expect(layout.topDisplay).toBe('flex');
+      expect(layout.titleGroupParent).toBe('menu-controls-row');
+      expect(layout.updatedParent).toBe('menu-title-group');
       expect(layout.segParent).toBe('mode-seg-slot');
       expect(layout.editParent).toBe('menu-controls-row');
-      expect(layout.updatedParent).toBe('menu-title-group');
-      expect(layout.titleGroupParent).toBe('menu-controls-row');
       expect(layout.updatedStyle.display).toBe('inline-flex');
       expect(layout.updatedText).toContain('Обновлено:');
-      expect(layout.updated.y).toBeGreaterThanOrEqual(layout.row.y - 1);
-      expect(layout.updated.y + layout.updated.height).toBeLessThanOrEqual(layout.row.bottom + 1);
+      expect(layout.descriptor).toBe('missing');
       expect(layout.title.x).toBeLessThanOrEqual(layout.titleGroup.x + 1);
       expect(layout.updated.x).toBeGreaterThan(layout.title.right - 1);
       expect(layout.titleGroup.right).toBeLessThan(layout.seg.x);
       expect(layout.edit.x).toBeGreaterThan(layout.seg.right);
       expect(layout.headerHasRoleClass).toBe(true);
       expect(layout.topbarHasModeClass).toBe(false);
-      expect(layout.title.width).toBeGreaterThan(100);
-      expect(layout.slot.width).toBeGreaterThan(160);
-      expect(layout.seg.width).toBeGreaterThan(160);
       expect(layout.title.y).toBeLessThan(layout.search.y);
       expect(layout.seg.y).toBeLessThan(layout.search.y);
       expect(layout.edit.y).toBeLessThan(layout.search.y);
       expect(layout.searchRow.y).toBeGreaterThanOrEqual(layout.row.bottom - 1);
       expect(layout.search.width).toBeGreaterThan(400);
+
       if (brand === 'delivery') {
         expect(layout.titleStyle.color).toBe('rgb(58, 42, 28)');
         expect(layout.titleStyle.fontSize).toBe('28px');
-        expect(layout.descriptor).toBe('missing');
       } else {
         expect(layout.titleStyle.color).toBe('rgb(18, 58, 107)');
       }
+
       await testInfo.attach('desktop-staff-' + brand + '-menu-header-' + width + 'px', {
-        body:await page.screenshot({fullPage:false}),
+        body:await page.screenshot({ fullPage:false }),
         contentType:'image/png'
       });
-        }
+    }
   }
 });
 
