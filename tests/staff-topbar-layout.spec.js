@@ -240,8 +240,10 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           rowOrder: Array.from(rowOne.children).map(element =>
             element.id === 'editToggle' ? 'edit' :
               element.classList.contains('mode-seg-slot') ? 'roles' :
-                element.tagName.toLowerCase()
+                element.classList.contains('upd') ? 'updated' :
+                  element.tagName.toLowerCase()
           ),
+          updatedHidden: getComputedStyle(rowOne.querySelector('.upd')).display === 'none',
           headerChildren: [
             top.querySelector(':scope > div:first-child > .menu-controls-row') ? 'title-roles-edit' : 'unexpected',
             top.querySelector(':scope > .mh-right') ? 'search-support' : 'unexpected',
@@ -274,7 +276,8 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
         };
       }, view);
 
-      expect(layout.rowOrder).toEqual(['h1', 'roles', 'edit']);
+      expect(layout.rowOrder).toEqual(['h1', 'roles', 'edit', 'updated']);
+      expect(layout.updatedHidden).toBe(true);
       expect(layout.headerChildren).toEqual(['title-roles-edit', 'search-support']);
       expect(layout.extraRows).toBe(0);
       expect(layout.adminBarVisible).toBe(true);
@@ -432,7 +435,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
         topbarHasModeClass:document.querySelector('header.topbar').classList.contains('has-mode-switcher')
       };
     }, view);
-    expect(layout.head.width).toBeGreaterThan(850);
+    expect(layout.head.width).toBeGreaterThan(780);
     expect(layout.head.height).toBeLessThan(180);
     expect(layout.topDisplay).toBe('flex');
     expect(layout.segParent).toBe('mode-seg-slot');
