@@ -128,6 +128,9 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           rowOne: rect(rowOne),
           rowTwo: rect(rowTwo),
           title: rect(titleElement),
+          titleGroup: rect(rowOne.querySelector('.menu-title-group')),
+          updated: rect(rowOne.querySelector('.menu-title-group .upd')),
+          updatedDisplay: getComputedStyle(rowOne.querySelector('.menu-title-group .upd')).display,
           titleDescriptor: (() => {
             const descriptor = titleElement.querySelector('em');
             return descriptor ? {
@@ -279,6 +282,9 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       }, view);
 
       expect(layout.rowOrder).toEqual(['title-updated', 'roles', 'edit']);
+      expect(layout.updatedDisplay).toBe('inline-flex');
+      expect(layout.titleGroup.x).toBeLessThanOrEqual(layout.rowOne.x + 1);
+      expect(layout.slot.x).toBeGreaterThan(layout.titleGroup.x);
       expect(layout.updatedHidden).toBe(false);
       expect(layout.headerChildren).toEqual(['title-roles-edit', 'search-support']);
       expect(layout.extraRows).toBe(0);
@@ -298,7 +304,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.updated.x).toBeGreaterThanOrEqual(layout.title.right - 1);
       expect(layout.slot.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
       expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
-      expect(layout.titleDescriptor?.display || 'none').toBe('none');
+      expect(layout.titleDescriptor).toBeNull();
       expect(layout.slot.width).toBe(176);
       expect(layout.edit.x).toBeGreaterThanOrEqual(layout.slot.right);
       expect(layout.edit.right).toBeLessThanOrEqual(layout.rowOne.right + 1);
