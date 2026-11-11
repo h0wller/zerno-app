@@ -971,11 +971,7 @@ html body #adminBar.adminBar[hidden] { display:none; }
   }
 }
 
-/* Brand context stays visible except on the narrowest 320px menu viewport. */
-@media (max-width:350px) {
-  html body #menuView .menu-head h1 > em,
-  html body #deliveryView .menu-head h1 > em { display:none; }
-}
+
 
 /* Inactive role labels keep AAA contrast on the dark switcher surface. */
 /* Inactive role labels keep AAA contrast on the dark switcher surface. */
@@ -983,11 +979,7 @@ html body #modeSeg button:not(.on) {
   color: #AFC0D0;
 }
 
-/* 320px: remove the clipped descriptor badge from the menu heading. */
-@media (max-width:350px) {
-  html body #menuView .menu-head h1 > em,
-  html body #deliveryView .menu-head h1 > em { display:none; }
-}
+
 
 /* Shared staff title and update group: stable left alignment at every width. */
 html[data-staff-role] body .menu-head .menu-title-group {
