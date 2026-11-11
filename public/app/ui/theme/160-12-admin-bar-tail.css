@@ -1406,6 +1406,12 @@ html body #modeSeg button:not(.on) {
     box-sizing: border-box;
   }
 
+  html body .menu-head .upd { display:none; }
+}
+
+
+/* Desktop staff menu timestamp is visible in the same row after edit. */
+@media (min-width: 821px) {
   html[data-staff-role] body .menu-head .menu-controls-row > .upd {
     display: inline-flex;
     flex: 0 0 auto;
