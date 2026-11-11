@@ -32,7 +32,7 @@ Other invariants:
 - Image loading priorities are recalculated after menu renders, deferred fonts, and viewport resizing without changing the canonical grid breakpoints.
 - The page must not have horizontal overflow.
 - Header, brand mark, search, product-card media, and key controls must retain their measured geometry when deferred theme CSS and fonts finish loading.
-- Page-wide cumulative layout shift in the first-paint/deferred-CSS scenario must remain below `0.01`. The cached-staff hydration scenario applies the same `0.01` threshold to shifts sourced by the staff menu header; profile/sidebar content is verified separately from that header contract.
+- Page-wide cumulative layout shift must remain below `0.01` in both the first-paint/deferred-CSS scenario and the desktop cached-staff hydration scenario. The latter includes profile/sidebar shifts as well as staff-header shifts; the header-attributed subtotal is logged separately for diagnosis.
 - Staff mode controls must be reserved before `/api/me` resolves when a cached role hint exists. Failure to write that hint to storage must not invalidate authentication.
 
 ## Automated coverage
@@ -48,7 +48,7 @@ The slow-network suite covers:
 
 1. First-paint versus post-CSS geometry at a throttled theme-CSS load.
 2. Responsive header and menu geometry at 320, 480, 519, 520, 690, 691, 820, 821, 1023, 1024, 1180, 1181, 1599, and 1600 px.
-3. Cached staff-role hydration, including the delayed `/api/me` response and the bundle-failure watchdog. The desktop check asserts every staff-header edge stays within 1px and header-attributed CLS stays below `0.01`; unrelated profile/sidebar content may change its own intrinsic height when auth resolves.
+3. Cached staff-role hydration, including the delayed `/api/me` response and the bundle-failure watchdog. The desktop check asserts every staff-header edge stays within 1px, page-wide CLS stays below `0.01`, and header-attributed CLS is logged separately.
 4. Cross-tab login restarts server-side auth hydration before applying a staff hint; logout clears the old tab immediately.
 5. CLS, horizontal overflow, image loading priority before and after CSS, viewport resizing, initial-card preservation, and desktop/mobile wordmark visibility.
 
