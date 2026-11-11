@@ -1407,7 +1407,7 @@ html body #modeSeg button:not(.on) {
   }
 
   html[data-staff-role] body .menu-head .menu-controls-row > .upd {
-    display: inline-flex !important;
+    display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
     width: auto;
