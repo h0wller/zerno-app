@@ -33,7 +33,7 @@
 - The left group is title + update timestamp, both aligned to the left; the right group is role switcher + edit, aligned to the right.
 - Search/support remain in a full-width second row.
 - The role switcher must not return to the topbar while the menu remains visible, even above 820 px.
-- Desktop first-paint critical CSS reserves the same hierarchy before authentication hydration to avoid a DOM/layout jump.
+- Desktop first-paint critical CSS reserves the same menu hierarchy and the admin action row (44px + 12px gap) before authentication hydration to avoid a DOM/layout jump.
 
 ## Brand treatment
 

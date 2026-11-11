@@ -398,8 +398,11 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
   for (const brand of ['coffee', 'delivery']) {
     for (const width of widths) {
       await page.setViewportSize({ width, height: 1000 });
-      await page.addInitScript(selectedBrand => localStorage.setItem('zt_brand', selectedBrand), brand);
       await page.goto('/?brand=' + brand);
+      await page.evaluate(selectedBrand => {
+        localStorage.setItem('zt_brand', selectedBrand);
+        window.syncBrandViews(selectedBrand);
+      }, brand);
       await page.waitForFunction(expectedBrand =>
         window.me && window.me.role === 'admin' &&
         document.documentElement.hasAttribute('data-staff-ready') &&

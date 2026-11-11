@@ -1073,7 +1073,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.seg.width).toBeGreaterThan(100);
     expect(before.adminBar.hidden).toBe(true);
     expect(before.adminBar.display).toBe('flex');
-    expect(before.adminBar.height).toBe(0);
+    expect(before.adminBar.height).toBe(44);
     expect(before.adminBar.marginBottom).toBe('12px');
     expect(before.head.width).toBeGreaterThan(800);
     expect(before.head.height).toBeLessThan(180);

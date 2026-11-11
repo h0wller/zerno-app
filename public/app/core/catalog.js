@@ -18,11 +18,6 @@
 
       let modeSegBound = false;
       function renderModes() {
-        const seg = $("#modeSeg");
-        const root = document.documentElement;
-        // Keep the matching inert first-paint controls until the cached staff role is confirmed.
-        if (root.hasAttribute("data-staff-role") && !root.hasAttribute("data-staff-ready")) return;
-        seg.removeAttribute("aria-hidden");
         const role = me ? me.role : "guest";
         const btns = [{ m: "guest", l: "Гость" }];
         if (role === "cashier" || role === "admin")
