@@ -498,6 +498,9 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       expect(layout.titleGroupRowGap).toBe(4);
       expect(layout.updatedStyle.display).not.toBe('none');
       expect(layout.updatedText).toContain('Обновлено:');
+      expect(layout.updatedMarginLeft).toBe(0);
+      expect(layout.updated.x - layout.title.right).toBeLessThanOrEqual(12);
+
       expect(layout.updated.y).toBeGreaterThan(layout.title.bottom - 1);
       expect(layout.updated.bottom).toBeLessThanOrEqual(layout.row.bottom + 1);
       expect(layout.descriptor).toBe('missing');
