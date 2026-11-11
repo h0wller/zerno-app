@@ -29,8 +29,9 @@
 
 ## Desktop geometry contract
 
-- The desktop labeled edit action uses a fixed 150 × 36 CSS px box so the first frame and authenticated state share identical geometry. The mobile 44 px hit-cell expansion is not applied to desktop.
-- The left group is title + update timestamp, both aligned to the left; the right group is role switcher + edit, aligned to the right.
+- Desktop uses a three-column row: flexible title/timestamp, fixed 176 px role switcher, fixed 150 × 36 px labeled edit action. The role and edit controls never shrink or overlap the title group.
+- At 821–1099 px the timestamp is hidden to preserve the title and both actions; from 1100 px it sits beside the title. The title truncates rather than pushing into the controls.
+- The mobile 44 px hit-cell expansion is not applied to desktop.
 - Search/support remain in a full-width second row.
 - The role switcher must not return to the topbar while the menu remains visible, even above 820 px.
 - Desktop first-paint critical CSS reserves the menu role row before authentication hydration. In menu mode, the role/edit actions stay in that row; the separate admin bar may remain visible for other admin actions but has zero layout footprint. In work modes, the role switcher/edit return to the topbar/admin bar.

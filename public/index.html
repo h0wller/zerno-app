@@ -148,23 +148,43 @@
     min-width:0 !important;
   }
   html[data-staff-role] body .menu-head .menu-controls-row {
-    display:flex !important;
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) 176px 150px !important;
     align-items:center !important;
-    justify-content:space-between !important;
-    flex-wrap:nowrap !important;
-    gap:10px !important;
+    column-gap:12px !important;
     width:100% !important;
     min-width:0 !important;
     min-height:36px !important;
     margin:0 !important;
   }
+  html[data-staff-role] body .menu-head .menu-controls-row > .menu-title-group {
+    grid-column:1 !important;
+    display:flex !important;
+    align-items:center !important;
+    gap:12px !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+  }
   html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2 !important;
     display:flex !important;
     flex:0 0 176px !important;
     align-items:center !important;
+    justify-content:flex-end !important;
     min-width:176px !important;
     width:176px !important;
     height:36px !important;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3 !important;
+    justify-self:end !important;
+    flex:0 0 150px !important;
+    width:150px !important;
+    min-width:150px !important;
+    max-width:150px !important;
+  }
+  @media (min-width:821px) and (max-width:1099px) {
+    html[data-staff-role] body .menu-head .menu-title-group > .upd { display:none !important; }
   }
   html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
     display:flex !important;

@@ -460,6 +460,8 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
           slot:rect(slot),
           seg:rect(seg),
           edit:rect(edit),
+          rowTemplate:getComputedStyle(row).gridTemplateColumns.split(' ').map(value => Number.parseFloat(value)),
+          updatedDisplay:getComputedStyle(updated).display,
           searchRow:rect(searchRow),
           search:rect(search),
           titleStyle:style(title),
@@ -492,9 +494,21 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       expect(layout.updatedText).toContain('Обновлено:');
       expect(layout.descriptor).toBe('missing');
       expect(layout.title.x).toBeLessThanOrEqual(layout.titleGroup.x + 1);
-      expect(layout.updated.x).toBeGreaterThan(layout.title.right - 1);
-      expect(layout.titleGroup.right).toBeLessThan(layout.seg.x);
-      expect(layout.edit.x).toBeGreaterThan(layout.seg.right);
+      expect(layout.titleGroup.x).toBeCloseTo(layout.row.x, 0);
+      expect(layout.titleGroup.right).toBeLessThanOrEqual(layout.slot.x - 12 + 1);
+      expect(layout.rowTemplate).toHaveLength(3);
+      expect(layout.rowTemplate[1]).toBe(176);
+      expect(layout.rowTemplate[2]).toBe(150);
+      expect(layout.slot.right).toBeLessThanOrEqual(layout.edit.x - 12 + 1);
+      expect(layout.edit.width).toBe(150);
+      expect(layout.edit.right).toBeCloseTo(layout.row.right, 0);
+      if (width < 1100) {
+        expect(layout.updatedDisplay).toBe('none');
+      } else {
+        expect(layout.updatedDisplay).not.toBe('none');
+        expect(layout.updated.x).toBeGreaterThan(layout.title.right);
+        expect(layout.updated.right).toBeLessThan(layout.titleGroup.right + 1);
+      }
       expect(layout.headerHasRoleClass).toBe(true);
       expect(layout.topbarHasModeClass).toBe(false);
       expect(layout.title.y).toBeLessThan(layout.search.y);
