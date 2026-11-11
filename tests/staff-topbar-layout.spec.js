@@ -500,8 +500,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       expect(layout.updatedStyle.display).not.toBe('none');
       expect(layout.updatedText).toContain('Обновлено:');
       expect(layout.updatedMarginLeft).toBe(0);
-      expect(layout.updated.x - layout.title.right).toBeLessThanOrEqual(12);
-
+      expect(Math.abs(layout.updated.x - layout.title.x)).toBeLessThanOrEqual(1);
       expect(layout.updated.y).toBeGreaterThan(layout.title.bottom - 1);
       expect(layout.updated.bottom).toBeLessThanOrEqual(layout.row.bottom + 1);
       expect(layout.descriptor).toBe('missing');
@@ -514,13 +513,6 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       expect(layout.slot.right).toBeLessThanOrEqual(layout.edit.x - 12 + 1);
       expect(layout.edit.width).toBe(150);
       expect(layout.edit.right).toBeCloseTo(layout.row.right, 0);
-      if (width < 1100) {
-        expect(layout.updatedDisplay).toBe('none');
-      } else {
-        expect(layout.updatedDisplay).not.toBe('none');
-        expect(layout.updated.x).toBeGreaterThan(layout.title.right);
-        expect(layout.updated.right).toBeLessThan(layout.titleGroup.right + 1);
-      }
       expect(layout.headerHasRoleClass).toBe(true);
       expect(layout.topbarHasModeClass).toBe(false);
       expect(layout.title.y).toBeLessThan(layout.search.y);
