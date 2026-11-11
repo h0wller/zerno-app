@@ -91,6 +91,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         .every(id => document.getElementById(id))
     );
     await page.evaluate(() => window.setMode('admin'));
+    await expect(page.locator('#deliveryGrid .cta[data-add]')).toBeVisible();
 
     const metrics = await page.evaluate(() => {
       const modeSeg = document.getElementById('modeSeg');
