@@ -398,10 +398,13 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
   for (const brand of ['coffee', 'delivery']) {
     for (const width of widths) {
       await page.setViewportSize({ width, height: 1000 });
+      await page.addInitScript(selectedBrand => localStorage.setItem('zt_brand', selectedBrand), brand);
       await page.goto('/?brand=' + brand);
-      await page.waitForFunction(() =>
+      await page.waitForFunction(expectedBrand =>
         window.me && window.me.role === 'admin' &&
-        document.documentElement.hasAttribute('data-staff-ready')
+        document.documentElement.hasAttribute('data-staff-ready') &&
+        document.documentElement.getAttribute('data-brand') === expectedBrand,
+        brand
       );
 
       const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
@@ -466,10 +469,16 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
           editParent:edit.parentElement.className,
           topDisplay:getComputedStyle(top).display,
           headerHasRoleClass:document.querySelector('header.topbar').classList.contains('has-menu-role-switcher'),
-          topbarHasModeClass:document.querySelector('header.topbar').classList.contains('has-mode-switcher')
+          topbarHasModeClass:document.querySelector('header.topbar').classList.contains('has-mode-switcher'),
+          htmlBrand:document.documentElement.getAttribute('data-brand'),
+          bodyBrand:document.body.getAttribute('data-brand'),
+          windowBrand:window.brand
         };
       }, view);
 
+      expect(layout.htmlBrand).toBe(brand);
+      expect(layout.bodyBrand).toBe(brand);
+      expect(layout.windowBrand).toBe(brand);
       expect(layout.head.width).toBeGreaterThan(500);
       expect(layout.topDisplay).toBe('flex');
       expect(layout.titleGroupParent).toBe('menu-controls-row');

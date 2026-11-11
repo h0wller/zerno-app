@@ -117,6 +117,22 @@
   display: none !important;
 }
 
+/* Desktop staff admin bar reserves its final row before auth hydration. */
+@media (min-width:821px) {
+  html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
+    display:flex !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+    box-sizing:border-box !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    margin:0 0 12px !important;
+    padding:0 !important;
+    overflow:hidden !important;
+  }
+}
+
 /* Desktop staff first paint keeps the role controls in the menu heading before hydration. */
 @media (min-width:821px) {
   html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
