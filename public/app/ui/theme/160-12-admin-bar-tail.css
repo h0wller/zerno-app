@@ -167,6 +167,11 @@ html body div.wrap > section {
   letter-spacing: 0.02em;
   text-transform: none;
 }
+/* A timestamp inside the title group belongs directly under the heading, never auto-pushed right. */
+.menu-head .menu-title-group > .upd {
+  margin: 0;
+  align-self: flex-start;
+}
 .menu-head .mh-top .mh-right,
 #menuView .menu-head .mh-top .mh-right,
 #deliveryView .menu-head .mh-top .mh-right,
@@ -1100,11 +1105,54 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
   }
 
   html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex: 0 0 176px;
+    width: 176px;
+    min-width: 176px;
+    max-width: 176px;
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    padding: 3px;
+    gap: 0;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow: hidden;
+    border: 0;
+    border-radius: 999px;
+    background: var(--staff-mode-track-bg, var(--esp));
+    box-shadow: none;
+    box-sizing: border-box;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
     display: flex;
-    flex: 0 0 auto;
+    flex: none;
+    width: auto;
     min-width: 0;
-    max-width: 100%;
-    justify-content: flex-end;
+    max-width: none;
+    height: 30px;
+    min-height: 30px;
+    max-height: 30px;
+    margin: 0;
+    padding: 0 2px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    color: #AFC0D0;
+    font: 700 10.5px/1 "Golos Text", system-ui, sans-serif;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on {
+    background: var(--staff-mode-active-bg);
+    color: var(--staff-mode-active-color);
+    box-shadow: var(--staff-mode-active-shadow);
   }
 
   html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
