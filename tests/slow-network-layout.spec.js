@@ -1078,6 +1078,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.segParent).toBe('mode-seg-slot');
     expect(before.editParent).toBe('menu-controls-row');
     expect(before.topbarHasMode).toBe(false);
+    console.log('[desktop staff hydration] before geometry', JSON.stringify({
+      head: before.head,
+      row: before.row,
+      title: before.title,
+      slot: before.slot,
+      search: before.search,
+      view: (() => { const r=document.querySelector('#deliveryView').getBoundingClientRect(); return {x:r.x,width:r.width}; })()
+    }));
     await page.evaluate(()=>{
       if(window.__layoutShiftObserver)window.__layoutShiftObserver.takeRecords();
       window.__layoutShifts.length=0;
@@ -1116,6 +1124,13 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.editParent).toBe('menu-controls-row');
     expect(after.topbarHasMode).toBe(false);
     expect(after.head.height).toBeLessThan(180);
+    console.log('[desktop staff hydration] after geometry', JSON.stringify({
+      head: after.head,
+      row: after.row,
+      title: after.title,
+      slot: after.slot,
+      search: after.search
+    }));
     for(const part of ['head','row','title','slot','seg','edit','search']) {
       for(const edge of ['x','y','width','height']) {
         expect(Math.abs(after[part][edge]-before[part][edge]),part+' '+edge+' remains stable during hydration').toBeLessThanOrEqual(1);
