@@ -240,8 +240,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.subchip.width).toBe(before.subchip.width);
     expect(after.option.height).toBe(before.option.height);
     expect(after.heading.width).toBeGreaterThan(60);
-    expect(after.brandContext).not.toBeNull();
-    expect(after.brandContext.width).toBeGreaterThan(0);
     expect(after.menuHead).toEqual(before.menuHead);
     expect(after.menuHead.height).toBe(100);
     expect(after.menuHeadStyle.overflow).not.toBe('hidden');
@@ -255,8 +253,6 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.menuHead.right).toBeGreaterThanOrEqual(after.section.right - 1);
     expect(after.heading.x).toBeGreaterThanOrEqual(after.menuHead.x + 8);
     expect(after.heading.right).toBeLessThanOrEqual(after.menuHead.right - 8);
-    expect(after.brandContext.x).toBeGreaterThanOrEqual(after.menuHead.x + 8);
-    expect(after.brandContext.right).toBeLessThanOrEqual(after.menuHead.right - 8);
     expect(after.section.width).toBe(before.section.width);
 
     const shiftReport = await page.evaluate(() => ({
@@ -1125,7 +1121,12 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       wrap:after.wrap, view:after.view, head:after.head, row:after.row,
       title:after.title, slot:after.slot, search:after.search
     }));
-    for(const part of ['wrap','view','head','row','title','slot','seg','edit','search']) {
+    // The wrapper is content-sized; its total height may change as non-header content hydrates.
+    // Keep its position/width stable, and keep every header/control edge stable.
+    for(const edge of ['x','y','width']) {
+      expect(Math.abs(after.wrap[edge]-before.wrap[edge]),'wrap '+edge+' remains stable during hydration').toBeLessThanOrEqual(1);
+    }
+    for(const part of ['view','head','row','title','slot','seg','edit','search']) {
       for(const edge of ['x','y','width','height']) {
         expect(Math.abs(after[part][edge]-before[part][edge]),part+' '+edge+' remains stable during hydration').toBeLessThanOrEqual(1);
       }

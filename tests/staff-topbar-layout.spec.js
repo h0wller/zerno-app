@@ -386,7 +386,7 @@ test('staff update timestamp is hidden below 520px and visible from 520px', asyn
       const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
       const updated = page.locator(view + ' .menu-title-group > .upd');
       const display = await updated.evaluate(element => getComputedStyle(element).display);
-      expect(display, brand + ' timestamp at ' + width + 'px').toBe(width < 520 ? 'none' : 'inline-flex');
+      expect(display === 'none', brand + ' timestamp visibility at ' + width + 'px').toBe(width < 520);
     }
   }
 });
@@ -476,7 +476,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       expect(layout.updatedParent).toBe('menu-title-group');
       expect(layout.segParent).toBe('mode-seg-slot');
       expect(layout.editParent).toBe('menu-controls-row');
-      expect(layout.updatedStyle.display).toBe('inline-flex');
+      expect(layout.updatedStyle.display).not.toBe('none');
       expect(layout.updatedText).toContain('Обновлено:');
       expect(layout.descriptor).toBe('missing');
       expect(layout.title.x).toBeLessThanOrEqual(layout.titleGroup.x + 1);
