@@ -61,7 +61,7 @@ The mobile hit cell itself remains transparent. The visible background, border a
 - 44 × 44 mobile hit cells and 32 × 32 visible faces;
 - all four corners and four edge-midpoints with `elementFromPoint()`;
 - brand-specific role/edit faces, no overlaps, search clearance and keyboard focus;
-- desktop 1440 px menu row order and placement for both brands;
+- desktop 821/1024/1440 px menu row alignment and placement for both brands;
 - desktop delivery role-switcher colors;
 - work modes returning the switcher to topbar only when menu is hidden.
 

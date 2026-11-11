@@ -1038,7 +1038,7 @@ html body #modeSeg button:not(.on) {
 
   html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
     display: flex;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: flex-start;
     min-width: 0;

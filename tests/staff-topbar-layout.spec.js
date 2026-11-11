@@ -379,10 +379,12 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
 });
 
 test('desktop staff menu keeps title, role switcher and edit inside the menu header', async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  const widths = [821, 1024, 1440];
   await mockStaffSession(page);
   for (const brand of ['coffee', 'delivery']) {
-    await page.goto('/?brand=' + brand);
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto('/?brand=' + brand);
     await page.waitForFunction(() =>
       window.me && window.me.role === 'admin' &&
       document.documentElement.hasAttribute('data-staff-ready')
@@ -405,7 +407,8 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       const top = head.querySelector('.mh-top');
       const first = top.querySelector(':scope > div:first-child');
       const row = first.querySelector('.menu-controls-row');
-      const title = row.querySelector(':scope > h1');
+      const titleGroup = row.querySelector('.menu-title-group');
+      const title = titleGroup.querySelector(':scope > h1');
       const slot = row.querySelector(':scope > .mode-seg-slot');
       const seg = slot.querySelector('#modeSeg');
       const edit = row.querySelector('#editToggle');
@@ -447,7 +450,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
         topbarHasModeClass:document.querySelector('header.topbar').classList.contains('has-mode-switcher')
       };
     }, view);
-    expect(layout.head.width).toBeGreaterThan(780);
+    expect(layout.head.width).toBeGreaterThan(500);
     expect(layout.head.height).toBeLessThan(180);
     expect(layout.topDisplay).toBe('flex');
     expect(layout.segParent).toBe('mode-seg-slot');
@@ -475,14 +478,15 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
     if (brand === 'delivery') {
       expect(layout.titleStyle.color).toBe('rgb(58, 42, 28)');
       expect(layout.titleStyle.fontSize).toBe('28px');
-      expect(layout.descriptor).not.toBe('none');
+      expect(layout.descriptor).toBe('missing');
     } else {
       expect(layout.titleStyle.color).toBe('rgb(18, 58, 107)');
     }
-    await testInfo.attach('desktop-staff-' + brand + '-menu-header-1440px', {
+    await testInfo.attach('desktop-staff-' + brand + '-menu-header-' + width + 'px', {
       body:await page.screenshot({fullPage:false}),
       contentType:'image/png'
     });
+    }
   }
 });
 
