@@ -1058,6 +1058,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         role:document.documentElement.getAttribute('data-staff-role'),
         ready:document.documentElement.hasAttribute('data-staff-ready'),
         head:rect('#deliveryView .menu-head'),
+        view:rect('#deliveryView'),
         row:rect('#deliveryView .menu-controls-row'),
         title:rect('#deliveryView .menu-controls-row > h1'),
         slot:rect('#deliveryView .menu-controls-row > .mode-seg-slot'),
@@ -1084,7 +1085,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       title: before.title,
       slot: before.slot,
       search: before.search,
-      view: (() => { const r=document.querySelector('#deliveryView').getBoundingClientRect(); return {x:r.x,width:r.width}; })()
+      view: before.view
     }));
     await page.evaluate(()=>{
       if(window.__layoutShiftObserver)window.__layoutShiftObserver.takeRecords();
@@ -1105,6 +1106,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         role:document.documentElement.getAttribute('data-staff-role'),
         ready:document.documentElement.hasAttribute('data-staff-ready'),
         head:rect('#deliveryView .menu-head'),
+        view:rect('#deliveryView'),
         row:rect('#deliveryView .menu-controls-row'),
         title:rect('#deliveryView .menu-controls-row > h1'),
         slot:rect('#deliveryView .menu-controls-row > .mode-seg-slot'),
@@ -1126,6 +1128,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.head.height).toBeLessThan(180);
     console.log('[desktop staff hydration] after geometry', JSON.stringify({
       head: after.head,
+      view: after.view,
       row: after.row,
       title: after.title,
       slot: after.slot,
