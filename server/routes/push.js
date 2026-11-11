@@ -1,6 +1,6 @@
 /* server/routes/push.js — module-09: push-подписки, VAPID, рассылки */
 import { Router } from 'express';
-import webpush from 'web-push';
+import { sendNotification } from 'web-push';
 import { db } from '../db/connection.js';
 import { userGuard, adminGuard } from '../middleware/auth.js';
 import { nowISO } from '../utils/id-time.js';
@@ -59,7 +59,7 @@ pushRouter.post('/api/push/send', adminGuard, async (req, res) => {
     if (c.notify_web !== 0) {
       const subs = db.prepare('SELECT sub FROM subs WHERE cid=?').all(c.cid);
       for (const s of subs) {
-        try { await webpush.sendNotification(JSON.parse(s.sub), JSON.stringify({ title: '…и кофе 🌊', body })); ok++; }
+        try { await sendNotification(JSON.parse(s.sub), JSON.stringify({ title: '…и кофе 🌊', body })); ok++; }
         catch (e) { fail++; errs.push(e.statusCode || e.message);
           if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(s.sub); }
       }
@@ -100,7 +100,7 @@ pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
     const subscriptions = db.prepare('SELECT sub FROM subs WHERE cid=?').all(customer.cid);
     for (const row of subscriptions) {
       try {
-        await webpush.sendNotification(JSON.parse(row.sub), JSON.stringify({ title, body }));
+        await sendNotification(JSON.parse(row.sub), JSON.stringify({ title, body }));
         pushSent++;
       } catch (error) {
         failed++;

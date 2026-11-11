@@ -2,7 +2,7 @@
 // Оркестратор уведомлений: TG + Web Push + FCM
 // Уважает notify_tg / notify_web флаги клиента
 
-import webpush from 'web-push';
+import { sendNotification } from 'web-push';
 import { db } from '../db/connection.js';
 import { tgSend } from './telegram.js';
 import { sendFcm } from './fcm.js';
@@ -58,7 +58,7 @@ export async function sendPush(cid, title, body, markup) {
       let failed = 0;
       for (const r of rows) {
         try {
-          await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body }));
+          await sendNotification(JSON.parse(r.sub), JSON.stringify({ title, body }));
           sent++;
         } catch (e) {
           failed++;
