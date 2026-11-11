@@ -459,6 +459,13 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
           updated:rect(updated),
           slot:rect(slot),
           seg:rect(seg),
+          roleTrackStyle: {
+            display:getComputedStyle(seg).display,
+            gridTemplateColumns:getComputedStyle(seg).gridTemplateColumns,
+            background:getComputedStyle(seg).backgroundColor,
+            overflowX:getComputedStyle(seg).overflowX
+          },
+          roleButtons:Array.from(seg.querySelectorAll(':scope > button'), rect),
           edit:rect(edit),
           rowTemplate:getComputedStyle(row).gridTemplateColumns.split(' ').map(value => Number.parseFloat(value)),
           updatedDisplay:getComputedStyle(updated).display,
@@ -509,6 +516,13 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
       expect(layout.titleGroup.right).toBeLessThanOrEqual(layout.slot.x - 12 + 1);
       expect(layout.rowTemplate).toHaveLength(3);
       expect(layout.rowTemplate[1]).toBe(176);
+      expect(layout.roleTrackStyle.display).toBe('grid');
+      expect(layout.roleButtons).toHaveLength(4);
+      expect(layout.roleButtons.map(button => button.width)).toEqual([44,44,44,44]);
+      for (let index = 1; index < layout.roleButtons.length; index += 1) {
+        expect(layout.roleButtons[index].x).toBeCloseTo(layout.roleButtons[index - 1].right, 0);
+      }
+      expect(layout.roleButtons[3].right).toBeCloseTo(layout.seg.right, 0);
       expect(layout.rowTemplate[2]).toBe(150);
       expect(layout.slot.right).toBeLessThanOrEqual(layout.edit.x - 12 + 1);
       expect(layout.edit.width).toBe(150);
