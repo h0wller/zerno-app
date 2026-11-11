@@ -1,4 +1,5 @@
 import { db } from './connection.js';
+import { generateVAPIDKeys, setVapidDetails } from 'web-push';
 
 export function initSeed() {
   const MENU_V = '4';
@@ -115,12 +116,12 @@ export function initSeed() {
 export function initVapid() {
   let vapidRow = db.prepare("SELECT value FROM meta WHERE key='vapid'").get();
   if (!vapidRow) {
-    const keys = webpush.generateVAPIDKeys();
+    const keys = generateVAPIDKeys();
     db.prepare("INSERT INTO meta(key,value) VALUES('vapid',?)").run(JSON.stringify(keys));
     vapidRow = { value: JSON.stringify(keys) };
   }
   const VAPID = JSON.parse(vapidRow.value);
-  webpush.setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
+  setVapidDetails('mailto:hello@andcoffee.online', VAPID.publicKey, VAPID.privateKey);
 }
 export function getVapidPublicKey() {
   const vapidRow = db.prepare("SELECT value FROM meta WHERE key='vapid'").get();
