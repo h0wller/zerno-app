@@ -98,9 +98,9 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       };
     });
 
-    expect(metrics.modeHeight).toBe(32);
-    expect(metrics.modeButtonHeight).toBe(32);
-    expect(metrics.editMinHeight).toBe(32);
+    expect(metrics.modeHeight).toBe(44);
+    expect(metrics.modeButtonHeight).toBe(44);
+    expect(metrics.editMinHeight).toBe(44);
     expect(metrics.subchips.length).toBeGreaterThan(0);
     expect(metrics.subchips.every((chip) => chip.height === 40 && chip.width >= 58),
       `subchip geometry must remain at least 58×40px: ${JSON.stringify(metrics.subchips)}`).toBe(true);
