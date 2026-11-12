@@ -11,7 +11,7 @@
   css.textContent =
     ".chat-fab{z-index:95!important}" +
     "@media(max-width:820px){body.panel-open .chat-fab{display:none}}" +
-    ".modal{z-index:340!important}#orderTrackModal{z-index:1010!important}";
+    ".modal{z-index:340!important}#orderTrackModal{z-index:1010!important}#qrModal{z-index:10005!important}";
   document.head.appendChild(css);
 
   /* ── 2. Пульс и активные состояния подсказок чата ── */
