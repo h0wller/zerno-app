@@ -144,6 +144,17 @@ for (const brand of BRANDS) {
             contentType: 'image/png'
           });
         }
+
+        const message = `tap-target regression: ${brand.id} ${viewport.width}px`;
+        const sendRequest = page.waitForRequest((request) =>
+          request.url().includes('/api/chat/send') && request.method() === 'POST'
+        );
+        await page.locator('#chatInput').fill(message);
+        await sendChat.click();
+        const request = await sendRequest;
+        expect(request.postDataJSON()).toMatchObject({ text: message });
+        await expect(page.locator('#chatMsgs .msg.me').filter({ hasText: message })).toHaveCount(1);
+
         await closeChat.click();
         await expect(page.locator('#chatPanel')).not.toHaveClass(/open/);
       } else {
