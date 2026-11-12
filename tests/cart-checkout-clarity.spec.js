@@ -208,6 +208,9 @@ test('cart keeps the current selected price and explains every amount without gu
   const addButton = recommendations.locator('.ac-add-btn').first();
   await expect(addButton).toHaveAccessibleName('Добавить Лимонад к заказу в корзину');
   await expect(addButton.locator('.ac-add-label')).toHaveCount(0);
+  await expect(addButton).not.toHaveClass(/in-cart/);
+  await expect(addButton).toHaveCSS('background-color', 'rgb(239, 230, 216)');
+  await expect(addButton).toHaveCSS('border-color', 'rgb(201, 158, 110)');
   const addActionGeometry = await addButton.evaluate((button) => {
     const action = button.parentElement;
     const buttonRect = button.getBoundingClientRect();
@@ -248,6 +251,8 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(page.locator('#cartHeadCount')).toContainText('2 шт.');
   await expect(page.locator('#cartSubtotal')).toContainText('915 ₽');
   await expect(recommendations.locator('.addon-pill-card').first()).toHaveClass(/in-cart/);
+  await expect(addButton).toHaveClass(/in-cart/);
+  await expect(addButton).toHaveCSS('background-color', 'rgb(192, 59, 42)');
   const lemonRecommendation = recommendations.locator('.addon-pill-card').first();
   await expect(lemonRecommendation.locator('.ac-count')).toHaveText('1');
   await recommendations.locator('.addon-pill-card').first().scrollIntoViewIfNeeded();
@@ -274,6 +279,8 @@ test('cart keeps the current selected price and explains every amount without gu
   await drinkCartRow.locator('[data-act="-"]').click();
   await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
   await expect(recommendations.locator('.addon-pill-card').first()).not.toHaveClass(/in-cart/);
+  await expect(recommendations.locator('.ac-add-btn').first()).not.toHaveClass(/in-cart/);
+  await expect(recommendations.locator('.ac-add-btn').first()).toHaveCSS('background-color', 'rgb(239, 230, 216)');
   await expect(page.locator('#cartSubtotal')).toContainText('735 ₽');
 
   // A pizza topping is an embedded modifier of Margarita, never a second cart item/card.
