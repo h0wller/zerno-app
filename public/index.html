@@ -2623,6 +2623,17 @@ html[data-brand="delivery"] #deliveryGrid .card .cbody .desc {
   overflow: hidden;
   min-height: 37px;
 }
+/* Desktop pizza composition is the full ingredient list, not a two-line teaser.
+   Keep the first-paint mirror aligned with 20-cards.css after fonts and hydration. */
+@media (min-width: 821px) {
+  html[data-brand="delivery"] #deliveryGrid .card .cbody .desc {
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+    min-height: 0;
+  }
+}
 html[data-brand="delivery"] #deliveryGrid .card .comp {
   display: flex;
   flex-wrap: nowrap;
