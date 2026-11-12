@@ -377,11 +377,19 @@ test.describe('PWA Responsive Layout Audit', () => {
       );
       expect(hintPosition, 'iOS install hint must stay in normal document flow').toBe('static');
 
+      const closeTarget = await page.locator('#iosHintClose').boundingBox();
+      expect(closeTarget?.width, 'iOS hint close target must be at least 44px wide').toBeGreaterThanOrEqual(44);
+      expect(closeTarget?.height, 'iOS hint close target must be at least 44px high').toBeGreaterThanOrEqual(44);
+
       await testInfo.attach(`ios-install-hint-${viewport.width}x${viewport.height}`, {
         body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
         contentType: 'image/png'
       });
     }
+
+    await page.locator('#iosHintClose').click();
+    await expect(page.locator('#iosHint')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_ios_hide'))).toBe('1');
   });
 
 });
