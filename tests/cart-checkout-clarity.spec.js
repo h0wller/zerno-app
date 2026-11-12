@@ -23,7 +23,42 @@ const RECOMMENDED_ITEMS = [
   { id: 'test-drink', cat: 'drinks', name: 'Лимонад к заказу', price: 180, on: 1, e: '🥤' },
   { id: 'test-sauce', cat: 'sauces', name: 'Соус сырный', price: 70, on: 1, e: '🥫' },
   { id: 'test-topping', cat: 'sauces', name: 'Шампиньоны', price: 90, on: 1, e: '🍄' }
+
 ];
+
+async function expectCompact44pxHitTarget(locator, visibleFace) {
+  const metrics = await locator.evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    const points = [
+      [rect.left + 2, rect.top + 2],
+      [rect.right - 2, rect.top + 2],
+      [rect.left + 2, rect.bottom - 2],
+      [rect.right - 2, rect.bottom - 2],
+      [rect.left + rect.width / 2, rect.top + 2],
+      [rect.left + rect.width / 2, rect.bottom - 2],
+      [rect.left + 2, rect.top + rect.height / 2],
+      [rect.right - 2, rect.top + rect.height / 2]
+    ];
+    const pseudo = window.getComputedStyle(button, '::before');
+    return {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      edgeHits: points.map(([x, y]) => document.elementFromPoint(x, y)?.closest('button') === button),
+      faceWidth: Number.parseFloat(pseudo.width),
+      faceHeight: Number.parseFloat(pseudo.height)
+    };
+  });
+
+  expect(metrics.width).toBeGreaterThanOrEqual(44);
+  expect(metrics.height).toBe(44);
+  expect(metrics.edgeHits.every(Boolean)).toBe(true);
+  if (visibleFace === 'square') {
+    expect(metrics.faceWidth).toBe(32);
+    expect(metrics.faceHeight).toBe(32);
+  } else if (visibleFace === 'pill') {
+    expect(metrics.faceHeight).toBe(32);
+  }
+}
 
 test('cart keeps the current selected price and explains every amount without guessing the address', async ({ page }, testInfo) => {
   await page.clock.install({ time: new Date('2026-11-02T15:00:00.000Z') });
@@ -136,6 +171,20 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(recommendations.locator('.ca-title')).toHaveText('Рекомендуем к заказу');
   await expect(recommendations.locator('.ca-tabs-scroll')).toHaveAttribute('role', 'group');
   const allRecommendations = recommendations.locator('[data-atab="all"]');
+  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const tabs = recommendations.locator('.addon-tab-btn');
+    for (let index = 0; index < await tabs.count(); index += 1) {
+      const tab = tabs.nth(index);
+      await tab.scrollIntoViewIfNeeded();
+      await expectCompact44pxHitTarget(tab, 'pill');
+    }
+    await recommendations.locator('.ca-tabs-scroll').evaluate((el) => { el.scrollLeft = 0; });
+    await testInfo.attach('cart-recommendation-tabs-' + viewport.width + 'px', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png'
+    });
+  }
   const sauceRecommendations = recommendations.locator('[data-atab="sauces"]');
   await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
   await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'false');
@@ -229,15 +278,32 @@ test('cart keeps the current selected price and explains every amount without gu
 
   // A pizza topping is an embedded modifier of Margarita, never a second cart item/card.
   const margaritaRow = page.locator('#cartItems .cartItem[data-cart-idx="0"]');
+  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const toggle = margaritaRow.locator('.ci-toggle-mods-btn');
+    await toggle.scrollIntoViewIfNeeded();
+    await expectCompact44pxHitTarget(toggle);
+  }
   await margaritaRow.locator('.ci-toggle-mods-btn').click();
   const mushroomChip = margaritaRow.locator('.ci-mod-chip[data-mod-id="test-topping"]');
   await expect(mushroomChip).toBeVisible();
+  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await mushroomChip.scrollIntoViewIfNeeded();
+    await expectCompact44pxHitTarget(mushroomChip, 'pill');
+  }
   await mushroomChip.click();
   await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
   await expect(margaritaRow.locator('.ci-mod-badge')).toContainText('Шампиньоны');
   await expect(margaritaRow.locator('.ci-unit-price')).toHaveText('825 ₽ / шт.');
   await expect(margaritaRow.locator('.ci-line-total')).toHaveText('825 ₽');
   await expect(margaritaRow.locator('.ci-mod-del')).toHaveCount(1);
+  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const deleteModifier = margaritaRow.locator('.ci-mod-del');
+    await deleteModifier.scrollIntoViewIfNeeded();
+    await expectCompact44pxHitTarget(deleteModifier, 'square');
+  }
   const modifierLivesInsidePizzaCard = await margaritaRow.locator('.ci-mods-list').evaluate((list) =>
     list.parentElement === list.closest('.cartItem')
   );
