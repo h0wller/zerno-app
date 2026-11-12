@@ -20,7 +20,7 @@ export async function sendTg(cid, title, body, markup) {
       console.log('[push] tg skip: cid=' + cid + ' (нет привязанного Telegram)');
       return { ok: false, reason: 'no_tg' };
     }
-    const text = title ? (title + '\\n' + body) : body;
+    const text = title ? (title + '\n' + body) : body;
     const result = await tgSend(c.tg, text, markup);
     if (!result?.ok) {
       console.error('[push] tg failed for customer:', result?.reason || 'unknown');
