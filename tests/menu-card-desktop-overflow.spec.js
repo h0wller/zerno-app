@@ -67,6 +67,51 @@ test.describe('Desktop delivery card layout', () => {
     }
   });
 
+  test('pizza size and crust labels stay inside option buttons at four columns', async ({ page }) => {
+    await page.evaluate(() => {
+      window.dcat = 'pizza';
+      window.renderDeliveryMenu();
+    });
+    const options = page.locator('#deliveryGrid .opts .opt-btn');
+    await expect(options.first()).toBeVisible();
+
+    const measurements = await options.evaluateAll((nodes) => nodes.map((button) => {
+      const row = button.querySelector('.opt-top');
+      const size = row?.querySelector('.opt-size');
+      const crust = row?.querySelector('.opt-crust');
+      if (!row || !size || !crust) return null;
+      const rowRect = row.getBoundingClientRect();
+      const sizeRect = size.getBoundingClientRect();
+      const crustRect = crust.getBoundingClientRect();
+      return {
+        rowWidth: rowRect.width,
+        rowScrollWidth: row.scrollWidth,
+        sizeRight: sizeRect.right,
+        crustRight: crustRect.right,
+        rowRight: rowRect.right,
+        sizeText: size.textContent.trim(),
+        crustText: crust.textContent.trim()
+      };
+    }));
+
+    expect(measurements.length).toBeGreaterThan(0);
+    for (const item of measurements) {
+      expect(item, 'each option must expose both size and crust labels').not.toBeNull();
+      expect(
+        item.sizeRight,
+        `Size label "${item.sizeText}" exceeds its option row`
+      ).toBeLessThanOrEqual(item.rowRight + 0.5);
+      expect(
+        item.crustRight,
+        `Crust label "${item.crustText}" exceeds its option row`
+      ).toBeLessThanOrEqual(item.rowRight + 0.5);
+      expect(
+        item.rowScrollWidth,
+        `Option top row overflows: ${JSON.stringify(item)}`
+      ).toBeLessThanOrEqual(item.rowWidth + 1);
+    }
+  });
+
   test('pizza option groups align after variable-length descriptions', async ({ page }, testInfo) => {
     await page.evaluate(() => {
       window.dcat = 'pizza';
