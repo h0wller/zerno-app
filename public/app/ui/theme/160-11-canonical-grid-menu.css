@@ -29,6 +29,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Desktop cards can be narrow beside the profile panel. Keep both option labels readable
+   without allowing the crust text to shrink into an ellipsis. */
+@media (min-width: 821px) {
+  #deliveryGrid .card .opts .opt-row { gap: 2px; }
+  #deliveryGrid .card .opts .opt-size {
+    flex: 0 0 auto;
+    font-size: 11px;
+  }
+  #deliveryGrid .card .opts .opt-crust {
+    flex: 0 0 auto;
+    font-size: 9px;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  /* Delivery pizza compositions can be longer on desktop; render all cards eagerly so
+     variable content cannot jump against the old fixed 502px lazy-card reservation. */
+  #deliveryGrid .card:nth-child(n+5) {
+    content-visibility: visible;
+    contain-intrinsic-block-size: auto;
+  }
+}
 #deliveryGrid .card .opts .opt-weight {
   font-size: 10.5px;
   opacity: 0.7;
