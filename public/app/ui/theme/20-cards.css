@@ -231,6 +231,23 @@ body.editing .card:hover{
   margin-top: 0;
   text-align: center;
 }
+
+/* The quantity stepper appears beside the CTA on first add. Keep its label on one
+   compact line so the cart state cannot increase the card's height on narrow screens. */
+.card .steprow .cta.incart {
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1;
+  font-size: 11px;
+  letter-spacing: -0.02em;
+}
 .card .steprow .step:not([hidden]),
 .card .steprow [data-step]:not([hidden]) {
   /* 44×44px — минимум тач-таргета (было 40×40: формально проходило тест с порогом 40,
