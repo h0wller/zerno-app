@@ -119,6 +119,7 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            artifacts/visual-audit/
           if-no-files-found: ignore
           retention-days: 7
 
