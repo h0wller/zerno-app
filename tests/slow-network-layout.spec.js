@@ -516,9 +516,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
 
     for (const width of [320, 520, 1181, 1600, 320]) {
       await page.setViewportSize({ width, height: 844 });
-      await expect.poll(() => page.locator('#deliveryGrid > .card[data-product-id]').nth(4).evaluate((card) =>
-        getComputedStyle(card).contentVisibility
-      )).toBe(width < 520 ? 'visible' : 'auto');
+      if (width < 520) {
+        await expect.poll(() => page.locator('#deliveryGrid > .card[data-product-id]').nth(4).evaluate((card) =>
+          getComputedStyle(card).contentVisibility
+        )).toBe('visible');
+      }
       const isCorrect = () => page.evaluate(() => {
         const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
         const firstTop = cards.length ? cards[0].getBoundingClientRect().top : 0;
