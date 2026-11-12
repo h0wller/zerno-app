@@ -149,6 +149,7 @@ npm run audit
 
 * **Ветка для релиза:** `pizza`.
 
-* **Пайплайн:** workflow запускается после завершения `CI Quality Gates` для ветки `pizza` и деплоит только при успешном CI (либо вручную через `workflow_dispatch`). На VPS выполняются `git fetch origin`, `git reset --hard` на выбранный commit, `npm install --package-lock-only`, `npm ci`, `BUILD_NUM=$(git rev-list --count HEAD) npm run build:client`, `npm prune --omit=dev`, `pm2 reload zerno-app` и проверка `pm2 status zerno-app`.
+* **Триггер:** текущий `.github/workflows/deploy.yml` запускается **только вручную** через `workflow_dispatch`; push/merge в `pizza` и завершение `CI Quality Gates` сами по себе деплой не запускают. Для запуска требуется явно передать `confirm_production: true`; без этого job пропускается.
+* **Пайплайн:** после подтверждённого ручного запуска на VPS выполняются `git fetch origin`, `git reset --hard origin/pizza`, `npm install --package-lock-only --ignore-scripts --no-audit --no-fund`, `npm ci`, `BUILD_NUM=$(git rev-list --count HEAD) npm run build:client`, `npm prune --omit=dev`, `pm2 reload zerno-app` и проверка `pm2 status zerno-app`.
 
 * **Сборка клиента:** `build:client` запускается на сервере в deploy workflow и локально/в CI по необходимости. Скрипт сначала выполняет `bump:sw`, затем собирает `public/dist/main.bundle.js`. Локальная сборка перед каждым коммитом не является обязательным шагом deploy workflow.
