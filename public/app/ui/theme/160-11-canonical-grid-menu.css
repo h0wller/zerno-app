@@ -60,6 +60,32 @@
   font-weight: 800;
   white-space: nowrap;
 }
+
+/* Desktop delivery cards: align semantic content rows, not only the outer card boxes.
+   Pizza option groups follow a full three-line description reserve. Roll meta rows follow
+   a two-line title and a three-row composition reserve. Content remains fully visible. */
+@media (min-width: 821px) {
+  #deliveryGrid .card .cbody:has(.opts) > h3 {
+    min-height: 1.3em;
+  }
+  #deliveryGrid .card .cbody:has(.opts) > .desc {
+    min-height: 4.35em;
+  }
+
+  #deliveryGrid .card .cbody:has(.single-meta) > h3 {
+    min-height: 2.6em;
+  }
+  #deliveryGrid .card .cbody:has(.single-meta) > .comp {
+    min-height: 73px;
+    box-sizing: border-box;
+    align-content: flex-start;
+  }
+  #deliveryGrid .card .cbody:has(.single-meta) > .single-meta {
+    min-height: 30px;
+    box-sizing: border-box;
+    align-self: stretch;
+  }
+}
 /* ── F5.81: ЕДИНЫЙ КАНОНИЧЕСКИЙ КАСКАД СЕТКИ, РЕЙЛА, ШАПКИ И МЕНЮ (БЕЗ ДУБЛЕЙ) ── */
 
 /* 1. Отключаем лишний 56px отступ в Telegram Mini App (WebView уже ниже нативной шапки TG) */
