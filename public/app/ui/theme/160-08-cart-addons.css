@@ -378,10 +378,10 @@
   height: 44px;
   min-height: 44px;
   padding: 0;
-  border: 2px solid var(--fr-choc, #101418);
+  border: 2px solid var(--fr-tan, #C99E6E);
   border-radius: 10px;
-  background: var(--flame, #c03b2a);
-  color: #FFFFFF;
+  background: var(--fr-rice, #EFE6D8);
+  color: var(--fr-choc, #3A2A1C);
   box-shadow: 2px 2px 0 var(--fr-choc, #101418);
   font-size: 20px;
   font-weight: 900;
@@ -390,8 +390,20 @@
   transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
 }
 
+.ac-add-btn.in-cart {
+  border-color: var(--fr-choc, #3A2A1C);
+  background: var(--flame, #C03B2A);
+  color: #FFFFFF;
+}
+
 .ac-add-btn:hover {
-  background: var(--fr-choc, #101418);
+  border-color: var(--fr-choc, #3A2A1C);
+  background: var(--fr-paper, #F6EEE1);
+  color: var(--fr-choc, #3A2A1C);
+}
+
+.ac-add-btn.in-cart:hover {
+  background: var(--flame, #C03B2A);
   color: #FFFFFF;
 }
 
