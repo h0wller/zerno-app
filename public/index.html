@@ -2451,6 +2451,10 @@ html[data-brand="delivery"] #deliveryGrid .card .comp {
   margin-top: 2px;
   overflow: hidden;
 }
+/* Mirror of 20-cards.css: desktop wraps the composition chips instead of clipping them. */
+@media (min-width: 821px) {
+  html[data-brand="delivery"] #deliveryGrid .card .comp { flex-wrap: wrap; }
+}
 html[data-brand="delivery"] #deliveryGrid .card .comp i {
   font-style: normal;
   flex: 0 0 auto;
