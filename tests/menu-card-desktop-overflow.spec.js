@@ -88,6 +88,8 @@ test.describe('Desktop delivery card layout', () => {
         rowScrollWidth: row.scrollWidth,
         crustScrollWidth: crust.scrollWidth,
         crustClientWidth: crust.clientWidth,
+        sizeFontSize: Number.parseFloat(getComputedStyle(size).fontSize),
+        crustFontSize: Number.parseFloat(getComputedStyle(crust).fontSize),
         sizeRight: sizeRect.right,
         crustRight: crustRect.right,
         rowRight: rowRect.right,
@@ -115,6 +117,8 @@ test.describe('Desktop delivery card layout', () => {
         item.crustScrollWidth,
         `Crust label "${item.crustText}" is clipped inside its option button`
       ).toBeLessThanOrEqual(item.crustClientWidth + 1);
+      expect(item.sizeFontSize, 'pizza size label must remain readable').toBeGreaterThanOrEqual(11);
+      expect(item.crustFontSize, 'crust label must remain readable').toBeGreaterThanOrEqual(9.5);
     }
   });
 
