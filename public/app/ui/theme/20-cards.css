@@ -157,6 +157,19 @@ body.editing .card:hover{
   overflow: hidden;
   min-height: 37px;
 }
+/* In delivery pizza cards, .desc is the canonical full composition (not a short teaser).
+   Desktop gets the full wrapped text; grid rows stretch neighboring cards to the same height.
+   Coffee descriptions keep the shared two-line clamp. */
+@media (min-width: 821px) {
+  html[data-brand="delivery"] #deliveryGrid .cbody .desc {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+    min-height: 0;
+  }
+}
 .comp{
   display: flex;
   flex-wrap: nowrap;
