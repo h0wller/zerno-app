@@ -59,8 +59,7 @@
   color: var(--status-danger, #B3372B);
 }
 .ci-mod-del:focus-visible {
-  outline: 2px solid var(--focus, #1A6DDF);
-  outline-offset: 2px;
+  outline: none;
 }
 .ci-mod-del:focus-visible::before {
   outline: 2px solid var(--focus, #1A6DDF);
@@ -425,8 +424,7 @@
   display: none;
 }
 
-.ac-add-btn:focus-visible,
-.addon-tab-btn:focus-visible {
+.ac-add-btn:focus-visible {
   outline: 2px solid var(--fr-choc, #101418);
   outline-offset: 2px;
 }
