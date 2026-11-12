@@ -407,6 +407,7 @@ test('desktop admin actions remain visible alongside the menu toolbar above the 
       );
 
       await page.evaluate(() => window.setMode('admin'));
+      await expect(page.locator('#adminBar')).toHaveClass(/has-admin-actions/);
       const adminBar = page.locator('#adminBar');
       await expect(adminBar).toBeVisible();
 
