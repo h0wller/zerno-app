@@ -391,6 +391,69 @@ test('staff update timestamp is hidden below 520px and visible from 520px', asyn
   }
 });
 
+test('desktop admin actions remain visible alongside the menu toolbar above the mobile breakpoint', async ({ page }, testInfo) => {
+  const widths = [821, 825, 1024, 1440];
+  await mockStaffSession(page);
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(expectedBrand =>
+        window.me && window.me.role === 'admin' &&
+        document.documentElement.hasAttribute('data-staff-ready') &&
+        document.documentElement.getAttribute('data-brand') === expectedBrand,
+        brand
+      );
+
+      await page.evaluate(() => window.setMode('admin'));
+      await expect(page.locator('#adminBar')).toHaveClass(/has-admin-actions/);
+      const adminBar = page.locator('#adminBar');
+      await expect(adminBar).toBeVisible();
+
+      for (const action of ['#promoToggle', '#dashToggle', '#chatsToggle2']) {
+        await expect(page.locator(action)).toBeVisible();
+      }
+
+      const layout = await adminBar.evaluate(element => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          height: rect.height,
+          width: rect.width,
+          display: style.display,
+          visibility: style.visibility,
+          buttons: Array.from(element.querySelectorAll(':scope > button:not([hidden])')).map(button => {
+            const box = button.getBoundingClientRect();
+            return {
+              id: button.id,
+              width: box.width,
+              height: box.height,
+              display: getComputedStyle(button).display,
+              visibility: getComputedStyle(button).visibility
+            };
+          })
+        };
+      });
+
+      expect(layout.height).toBeGreaterThan(0);
+      expect(layout.width).toBeGreaterThan(0);
+      expect(layout.buttons).toHaveLength(3);
+      for (const button of layout.buttons) {
+        expect(button.width).toBeGreaterThan(0);
+        expect(button.height).toBeGreaterThan(0);
+        expect(button.display).not.toBe('none');
+        expect(button.visibility).toBe('visible');
+      }
+
+      await testInfo.attach('desktop-admin-actions-' + brand + '-' + width + 'px', {
+        body:await page.screenshot({ fullPage:false }),
+        contentType:'image/png'
+      });
+    }
+  }
+});
+
 test('desktop staff menu keeps title, role switcher and edit inside the menu header', async ({ page }, testInfo) => {
   const widths = [821, 1024, 1440];
   await mockStaffSession(page);

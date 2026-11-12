@@ -334,6 +334,7 @@ function syncStaffAndGuestControls(bName2) {
       adminBar.querySelectorAll(':scope > button:not(#editToggle)'),
       function (button) { return !button.hidden; }
     );
+    adminBar.classList.toggle('has-admin-actions', hasAdminActions);
     var mobileGuestMenu = menuPlacement &&
       currentMode === 'guest' &&
       window.matchMedia('(max-width: 820px)').matches;
