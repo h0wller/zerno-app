@@ -77,15 +77,22 @@ test.describe('Desktop delivery card layout', () => {
         const rect = card.getBoundingClientRect();
         const key = Math.round(rect.top + window.scrollY);
         const legend = card.querySelector('.opts legend');
-        if (!legend) continue;
+        const action = card.querySelector('.steprow');
+        if (!legend || !action) continue;
         if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(Math.round(legend.getBoundingClientRect().top + window.scrollY));
+        groups.get(key).push({
+          optionsTop: Math.round(legend.getBoundingClientRect().top + window.scrollY),
+          actionTop: Math.round(action.getBoundingClientRect().top + window.scrollY)
+        });
       }
       return [...groups.values()].filter((row) => row.length > 1);
     });
     expect(rows.length).toBeGreaterThan(0);
-    for (const tops of rows) {
-      expect(Math.max(...tops) - Math.min(...tops), `Pizza option headings are not aligned: ${tops}`).toBeLessThanOrEqual(1);
+    for (const row of rows) {
+      for (const field of ['optionsTop', 'actionTop']) {
+        const positions = row.map((item) => item[field]);
+        expect(Math.max(...positions) - Math.min(...positions), `Pizza ${field} is not aligned: ${positions}`).toBeLessThanOrEqual(1);
+      }
     }
   });
 
@@ -106,15 +113,22 @@ test.describe('Desktop delivery card layout', () => {
         const rect = card.getBoundingClientRect();
         const key = Math.round(rect.top + window.scrollY);
         const meta = card.querySelector('.single-meta');
-        if (!meta) continue;
+        const action = card.querySelector('.steprow');
+        if (!meta || !action) continue;
         if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(Math.round(meta.getBoundingClientRect().top + window.scrollY));
+        groups.get(key).push({
+          metaTop: Math.round(meta.getBoundingClientRect().top + window.scrollY),
+          actionTop: Math.round(action.getBoundingClientRect().top + window.scrollY)
+        });
       }
       return [...groups.values()].filter((row) => row.length > 1);
     });
     expect(rows.length).toBeGreaterThan(0);
-    for (const tops of rows) {
-      expect(Math.max(...tops) - Math.min(...tops), `Roll weight/price rows are not aligned: ${tops}`).toBeLessThanOrEqual(1);
+    for (const row of rows) {
+      for (const field of ['metaTop', 'actionTop']) {
+        const positions = row.map((item) => item[field]);
+        expect(Math.max(...positions) - Math.min(...positions), `Roll ${field} is not aligned: ${positions}`).toBeLessThanOrEqual(1);
+      }
     }
   });
 
