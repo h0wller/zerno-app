@@ -565,15 +565,15 @@ test('desktop staff toast never covers role or edit controls on both brands', as
         brand
       );
 
-      await page.evaluate(() => {
-        window.setMode('admin');
-        window.toast('Режим администратора активен', '🛡️');
-      });
+      // setMode emits the real admin-mode notification; don't add a duplicate toast.
+      await page.evaluate(() => window.setMode('admin'));
 
-      const toast = page.locator('#toasts .toast').filter({ hasText: 'Режим администратора активен' });
+      const toast = page.locator('#toasts .toast').filter({ hasText: 'Режим администратора активен' }).first();
+      await expect(page.locator('#toasts .toast').filter({ hasText: 'Режим администратора активен' })).toHaveCount(1);
       await expect(toast).toBeVisible();
       const overlap = await page.evaluate(() => {
-        const toast = document.querySelector('#toasts .toast');
+        const toast = [...document.querySelectorAll('#toasts .toast')]
+          .find(element => element.textContent.includes('Режим администратора активен'));
         const controls = [
           document.querySelector('#modeSeg'),
           document.querySelector('#editToggle')
