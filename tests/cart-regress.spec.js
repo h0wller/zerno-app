@@ -989,12 +989,22 @@ test('delivery catalog quantity stepper keeps a 44px hit cell at narrow mobile w
       return {
         width: rect.width,
         height: rect.height,
-        edgeHits: points.map(([x, y]) => document.elementFromPoint(x, y)?.closest('button') === button)
+        points: points.map(([x, y]) => {
+          const hit = document.elementFromPoint(x, y);
+          const owner = hit?.closest('button');
+          return {
+            x: Math.round(x * 10) / 10,
+            y: Math.round(y * 10) / 10,
+            hit: hit ? hit.tagName.toLowerCase() + (hit.id ? '#' + hit.id : '') + (hit.className && typeof hit.className === 'string' ? '.' + hit.className.trim().replace(/\\s+/g, '.') : '') : null,
+            owner: owner ? owner.id || owner.className : null,
+            intended: owner === button
+          };
+        })
       };
     });
 
     expect(geometry.width).toBeGreaterThanOrEqual(44);
     expect(geometry.height).toBeGreaterThanOrEqual(44);
-    expect(geometry.edgeHits.every(Boolean)).toBe(true);
+    expect(geometry.points.every((point) => point.intended), JSON.stringify({ viewport, geometry })).toBe(true);
   }
 });
