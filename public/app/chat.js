@@ -303,9 +303,6 @@ async function updateStaffBadge() {
   $('#chatFab').onclick = async () => {
     const p = $('#chatPanel'); p.classList.toggle('open');
     $('#chatFab').classList.toggle('open', p.classList.contains('open'));
-    $('#chatFab').setAttribute('aria-label', p.classList.contains('open')
-      ? 'Закрыть чат поддержки'
-      : 'Открыть чат поддержки');
     if (typeof window.sv === 'function') window.sv(); /* <── ДОБАВЛЕНО */
     if (p.classList.contains('open')) {
       if (!lastChatId) { try { const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(activeChatKey()) + '&after=0')).json(); for (const m of r.msgs) lastChatId = Math.max(lastChatId, m.id); } catch (e) {} }
@@ -328,7 +325,6 @@ async function updateStaffBadge() {
   $('#chatClose').onclick = () => {
     $('#chatPanel').classList.remove('open');
     $('#chatFab').classList.remove('open');
-    $('#chatFab').setAttribute('aria-label', 'Открыть чат поддержки');
     if (typeof window.sv === 'function') window.sv(); /* <── ДОБАВЛЕНО */
   };
 
