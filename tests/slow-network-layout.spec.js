@@ -508,12 +508,17 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(items[0].id).toBe('responsive-image-0');
     await expect(page.locator('#deliveryGrid > .card[data-product-id] img[src]').first()).toBeAttached({ timeout: 10000 });
     await expect.poll(() => page.locator('#deliveryGrid > .card[data-product-id]').count()).toBe(6);
+    // One-column phone cards render immediately because their full composition has natural height.
+    // Multi-column layouts retain content-visibility's intrinsic-size optimization.
     expect(await page.locator('#deliveryGrid > .card[data-product-id]').nth(4).evaluate((card) =>
       getComputedStyle(card).contentVisibility
-    )).toBe('auto');
+    )).toBe('visible');
 
     for (const width of [320, 520, 1181, 1600, 320]) {
       await page.setViewportSize({ width, height: 844 });
+      await expect.poll(() => page.locator('#deliveryGrid > .card[data-product-id]').nth(4).evaluate((card) =>
+        getComputedStyle(card).contentVisibility
+      )).toBe(width < 520 ? 'visible' : 'auto');
       const isCorrect = () => page.evaluate(() => {
         const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
         const firstTop = cards.length ? cards[0].getBoundingClientRect().top : 0;
