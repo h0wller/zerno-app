@@ -632,16 +632,7 @@ html body div.wrap > section {
 /* The hidden attribute is authoritative during staff-role hydration. */
 html body #adminBar.adminBar[hidden] { display:none; }
 
-/* On desktop the menu owns role/edit controls; the separate admin bar must not reserve a blank row. */
-@media (min-width:821px) {
-  html[data-staff-role] body #adminBar.adminBar:not([hidden]) {
-    height:0;
-    min-height:0;
-    max-height:0;
-    margin:0;
-    padding:0;
-    overflow:hidden;
-  }
+/* Desktop staff actions remain visible as a separate row; only the edit shortcut moves into the menu header. */
 }
 
 
