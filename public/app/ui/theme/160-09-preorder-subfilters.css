@@ -245,6 +245,18 @@
   text-overflow: ellipsis;
 }
 
+/* Desktop cards have enough width for the complete crust label. Do not ellipsize
+   semantic choices such as «тонкое» / «пышное»; keep the compact clipping only
+   on narrow mobile cards where horizontal space is genuinely constrained. */
+@media (min-width: 821px) {
+  #deliveryGrid .opts .opt-size,
+  #deliveryGrid .opts .opt-crust {
+    flex: 0 0 auto;
+    overflow: visible;
+    text-overflow: clip;
+  }
+}
+
 #deliveryGrid .opts .opt-weight {
   font-size: 11px;
   font-weight: 600;
