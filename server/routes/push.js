@@ -1,6 +1,9 @@
 /* server/routes/push.js — module-09: push-подписки, VAPID, рассылки */
+import { createRequire } from 'node:module';
 import { Router } from 'express';
-import { sendNotification } from 'web-push';
+
+const require = createRequire(import.meta.url);
+const { sendNotification } = require('web-push');
 import { db } from '../db/connection.js';
 import { userGuard, adminGuard } from '../middleware/auth.js';
 import { nowISO } from '../utils/id-time.js';
