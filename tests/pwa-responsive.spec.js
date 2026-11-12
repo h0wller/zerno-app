@@ -318,7 +318,7 @@ test.describe('PWA Responsive Layout Audit', () => {
   });
 
 
-  test('iOS install hint does not cover delivery options or add action', async ({ page }) => {
+  test('iOS install hint does not cover delivery options or add action', async ({ page }, testInfo) => {
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
     await cdp.send('Network.setUserAgentOverride', {
@@ -371,6 +371,16 @@ test.describe('PWA Responsive Layout Audit', () => {
       expect(intersections,
         `iOS install hint must not cover pizza options or Add at ${viewport.width}×${viewport.height}`
       ).toEqual([]);
+
+      const hintPosition = await page.locator('#iosHint').evaluate((element) =>
+        getComputedStyle(element).position
+      );
+      expect(hintPosition, 'iOS install hint must stay in normal document flow').toBe('static');
+
+      await testInfo.attach(`ios-install-hint-${viewport.width}x${viewport.height}`, {
+        body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+        contentType: 'image/png'
+      });
     }
   });
 
