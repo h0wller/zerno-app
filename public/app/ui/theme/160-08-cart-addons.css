@@ -381,7 +381,7 @@
   border: 2px solid var(--fr-tan, #C99E6E);
   border-radius: 10px;
   background: var(--fr-rice, #EFE6D8);
-  color: var(--fr-choc, #3A2A1C);
+  color: var(--fr-choc, #101418);
   box-shadow: 2px 2px 0 var(--fr-choc, #101418);
   font-size: 20px;
   font-weight: 900;
@@ -391,15 +391,15 @@
 }
 
 .ac-add-btn.in-cart {
-  border-color: var(--fr-choc, #3A2A1C);
+  border-color: var(--fr-choc, #101418);
   background: var(--flame, #C03B2A);
   color: #FFFFFF;
 }
 
 .ac-add-btn:hover {
-  border-color: var(--fr-choc, #3A2A1C);
+  border-color: var(--fr-choc, #101418);
   background: var(--fr-paper, #F6EEE1);
-  color: var(--fr-choc, #3A2A1C);
+  color: var(--fr-choc, #101418);
 }
 
 .ac-add-btn.in-cart:hover {
