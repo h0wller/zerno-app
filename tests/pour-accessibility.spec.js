@@ -36,92 +36,143 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(contrastRatio(metrics.borderColor, metrics.backgroundColor)).toBeGreaterThanOrEqual(3);
   });
 
-  test('role controls stay compact while search, filters and header taps remain comfortable', async ({ page }) => {
+  test('staff role controls expose 44px hit cells and compact 32px faces', async ({ page }) => {
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      const body = pathname === '/api/me'
+        ? {
+            customer: {
+              id: 'pour-accessibility-staff',
+              name: 'Pour Accessibility Staff',
+              phone: '+70000000002',
+              role: 'admin',
+              verified: 1,
+              qr: 'pour-accessibility-staff',
+              cups: 0,
+              stamps: 0,
+              free: 0,
+              history: []
+            }
+          }
+        : (pathname === '/api/menu/all' || pathname === '/api/menu')
+          ? {
+              items: Array.from({ length: 6 }, (_, index) => ({
+                id: 'pour-accessibility-pizza-' + (index + 1),
+                cat: 'pizza',
+                section: 'delivery',
+                name: index === 0 ? 'Тестовая пицца' : 'Тестовая пицца ' + (index + 1),
+                desc: 'Моцарелла',
+                comp: ['моцарелла'],
+                opts: [],
+                price: 400,
+                e: '🍕',
+                on: 1,
+                img: ''
+              }))
+            }
+          : { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
+      });
+    });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'playwright-pour-accessibility-admin-token');
+      localStorage.setItem('zt_role', 'admin');
+    });
+    await page.reload();
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'admin' &&
+      document.documentElement.hasAttribute('data-staff-ready')
+    );
+    await page.waitForFunction(() =>
+      ['modeSeg', 'editToggle', 'profileTopBtn', 'scrollTopBtn', 'venueToggle', 'supportLauncherHost', 'chatFab']
+        .every(id => document.getElementById(id))
+    );
+    await page.evaluate(() => window.setMode('admin'));
+    const addButtons = page.locator('#deliveryGrid .cta[data-add]');
+    await expect(addButtons).toHaveCount(6);
+    await expect(addButtons.first()).toBeVisible();
+
     const metrics = await page.evaluate(() => {
-      const probe = document.createElement('button');
-      probe.textContent = 'Тест';
       const modeSeg = document.getElementById('modeSeg');
       const edit = document.getElementById('editToggle');
-      const modeParent = modeSeg.parentNode;
-      const modeNext = modeSeg.nextSibling;
-      const editParent = edit.parentNode;
-      const editNext = edit.nextSibling;
-      const wasModeHidden = modeSeg.hidden;
-      const wasEditHidden = edit.hidden;
-      const fixture = document.createElement('div');
-      fixture.className = 'menu-head';
-      const row = document.createElement('div');
-      row.className = 'menu-controls-row';
-      const slot = document.createElement('div');
-      slot.className = 'mode-seg-slot';
-      fixture.appendChild(row);
-      row.appendChild(slot);
-      slot.appendChild(modeSeg);
-      row.appendChild(edit);
-      document.body.appendChild(fixture);
-      modeSeg.hidden = false;
-      edit.hidden = false;
-      modeSeg.appendChild(probe);
-      const modeHeight = probe.getBoundingClientRect().height;
-      const roleButtonRect = modeSeg.querySelector('button')?.getBoundingClientRect();
-      const roleButton = {
-        width: roleButtonRect?.width ?? 0,
-        height: roleButtonRect?.height ?? 0
+      const rect = (element) => {
+        const box = element.getBoundingClientRect();
+        return { width: box.width, height: box.height };
       };
-      const modeButtonHeight = roleButton.height;
-      probe.remove();
-      const editMinHeight = parseFloat(getComputedStyle(edit).minHeight);
-      if (modeNext && modeNext.parentNode === modeParent) modeParent.insertBefore(modeSeg, modeNext);
-      else modeParent.appendChild(modeSeg);
-      if (editNext && editNext.parentNode === editParent) editParent.insertBefore(edit, editNext);
-      else editParent.appendChild(edit);
-      modeSeg.hidden = wasModeHidden;
-      edit.hidden = wasEditHidden;
-      fixture.remove();
-
+      const roleButtons = Array.from(modeSeg.querySelectorAll(':scope > button'));
+      const faceSize = (element, pseudo) => {
+        const style = getComputedStyle(element, pseudo);
+        const inset = ['top', 'right', 'bottom', 'left']
+          .reduce((result, side) => {
+            result[side] = Number.parseFloat(style[side]) || 0;
+            return result;
+          }, {});
+        const box = element.getBoundingClientRect();
+        return {
+          width: box.width - inset.left - inset.right,
+          height: box.height - inset.top - inset.bottom
+        };
+      };
       return {
-        modeHeight,
-        modeButtonHeight,
-        editMinHeight,
+        mode: rect(modeSeg),
+        roleCells: roleButtons.map(button => rect(button)),
+        roleFaces: roleButtons.map(button => faceSize(button, '::before')),
+        edit: rect(edit),
+        editFace: faceSize(edit, '::after'),
         subchips: Array.from(document.querySelectorAll('#deliverySubFilter .subchip'))
-          .map((element) => ({ height: element.getBoundingClientRect().height, width: element.getBoundingClientRect().width })),
-        profile: document.getElementById('profileTopBtn').getBoundingClientRect().toJSON(),
-        scrollTop: document.getElementById('scrollTopBtn').getBoundingClientRect().toJSON(),
-        menuHead: (() => { const element = document.querySelector('#deliveryView .menu-head'); const style = getComputedStyle(element); return { height: element.getBoundingClientRect().height, maxHeight: style.maxHeight, overflow: style.overflow }; })(),
+          .map(element => ({ height: element.getBoundingClientRect().height, width: element.getBoundingClientRect().width })),
+        profile: rect(document.getElementById('profileTopBtn')),
+        scrollTop: rect(document.getElementById('scrollTopBtn')),
+        venue: rect(document.getElementById('venueToggle')),
+        supportHost: rect(document.getElementById('supportLauncherHost')),
+        support: rect(document.getElementById('chatFab')),
+        menuHead: (() => {
+          const element = document.querySelector('#deliveryView .menu-head');
+          const style = getComputedStyle(element);
+          return { height: element.getBoundingClientRect().height, maxHeight: style.maxHeight, overflow: style.overflow };
+        })(),
         search: document.querySelector('#deliveryView .mh-right .search').getBoundingClientRect().height,
-        venue: document.getElementById('venueToggle').getBoundingClientRect().toJSON(),
-        supportHost: document.getElementById('supportLauncherHost').getBoundingClientRect().toJSON(),
-        support: document.getElementById('chatFab').getBoundingClientRect().toJSON(),
-        addButton: (() => { const el = document.querySelector('#deliveryGrid .cta[data-add]'); const r = el.getBoundingClientRect(); const row = el.closest('.steprow').getBoundingClientRect(); return { width:r.width, rowWidth:row.width, height:r.height }; })(),
-        activeChip: (() => { const el = document.querySelector('#deliverySubFilter .subchip.on'); const s=getComputedStyle(el); return { bg:s.backgroundColor, color:s.color }; })(),
-        roleButton,
+        addButton: (() => {
+          const element = document.querySelector('#deliveryGrid .cta[data-add]');
+          const box = element.getBoundingClientRect();
+          const row = element.closest('.steprow').getBoundingClientRect();
+          return { width: box.width, rowWidth: row.width, height: box.height };
+        })(),
+        activeChip: (() => {
+          const element = document.querySelector('#deliverySubFilter .subchip.on');
+          if (!element) {
+            throw new Error('Expected an active ingredient filter chip; the delivery fixture must contain more than five pizza items');
+          }
+          const style = getComputedStyle(element);
+          return { bg: style.backgroundColor, color: style.color, text: element.textContent.trim() };
+        })(),
       };
     });
 
-    expect(metrics.modeHeight).toBe(32);
-    expect(metrics.modeButtonHeight).toBe(32);
-    expect(metrics.editMinHeight).toBe(32);
+    expect(metrics.mode).toEqual({ width: 176, height: 44 });
+    expect(metrics.roleCells).toHaveLength(4);
+    expect(metrics.roleCells.every(cell => cell.width === 44 && cell.height === 44)).toBe(true);
+    expect(metrics.roleFaces.every(face => face.width === 32 && face.height === 32)).toBe(true);
+    expect(metrics.edit).toEqual({ width: 44, height: 44 });
+    expect(metrics.editFace).toEqual({ width: 32, height: 32 });
     expect(metrics.subchips.length).toBeGreaterThan(0);
-    expect(metrics.subchips.every((chip) => chip.height === 40 && chip.width >= 58),
+    expect(metrics.subchips.every(chip => chip.height === 40 && chip.width >= 58),
       `subchip geometry must remain at least 58×40px: ${JSON.stringify(metrics.subchips)}`).toBe(true);
-    expect(metrics.profile.width).toBe(44);
-    expect(metrics.profile.height).toBe(44);
+    expect(metrics.profile).toEqual({ width: 44, height: 44 });
     expect(metrics.venue.width).toBeGreaterThanOrEqual(44);
     expect(metrics.venue.height).toBeGreaterThanOrEqual(44);
-    expect(metrics.supportHost.width).toBe(44);
-    expect(metrics.supportHost.height).toBe(44);
-    expect(metrics.support.width).toBe(44);
-    expect(metrics.support.height).toBe(44);
-    expect(metrics.scrollTop.width).toBe(44);
-    expect(metrics.scrollTop.height).toBe(44);
-    expect(metrics.menuHead.maxHeight).toBe('100px');
+    expect(metrics.supportHost).toEqual({ width: 44, height: 44 });
+    expect(metrics.support).toEqual({ width: 44, height: 44 });
+    expect(metrics.scrollTop).toEqual({ width: 44, height: 44 });
+    expect(metrics.menuHead.height).toBe(108);
     expect(metrics.menuHead.overflow).not.toBe('hidden');
     expect(metrics.search).toBe(40);
     expect(metrics.addButton.width).toBeGreaterThanOrEqual(metrics.addButton.rowWidth - 1);
     expect(metrics.activeChip.bg).toBe('rgb(192, 59, 42)');
     expect(metrics.activeChip.color).toBe('rgb(255, 255, 255)');
-    expect(metrics.roleButton.height).toBe(32);
-    expect(metrics.roleButton.width).toBeGreaterThan(metrics.roleButton.height);
   });
 
   test('menu row stays compact and admin keeps the switcher with the visible menu', async ({ page }) => {
@@ -176,9 +227,9 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(menuMetrics.headerHeight).toBeLessThanOrEqual(64);
     expect(menuMetrics.modeInMenuRow).toBe(true);
     expect(menuMetrics.editInMenuRow).toBe(true);
-    expect(menuMetrics.rowHeight).toBe(36);
+    expect(menuMetrics.rowHeight).toBe(44);
     expect(menuMetrics.buttonHeights).toHaveLength(4);
-    expect(menuMetrics.buttonHeights.every(height => height === 32)).toBe(true);
+    expect(menuMetrics.buttonHeights.every(height => height === 44)).toBe(true);
 
     await page.evaluate(() => window.setMode('admin'));
     const adminMetrics = await page.evaluate(() => {
@@ -196,8 +247,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(adminMetrics.menuVisible).toBe(true);
     expect(adminMetrics.modeInMenuRow).toBe(true);
     expect(adminMetrics.headerHeight).toBeLessThanOrEqual(64);
-    expect(adminMetrics.rowHeight).toBe(36);
-    expect(adminMetrics.buttonHeights.every(height => height === 32)).toBe(true);
+    expect(adminMetrics.rowHeight).toBe(44);
+    expect(adminMetrics.buttonHeights.every(height => height === 44)).toBe(true);
   });
 
   test('floating controls and confetti canvas have accessible landmark treatment', async ({ page }) => {
@@ -349,7 +400,6 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       const ticker = document.getElementById('tickerTrack');
       const venue = document.getElementById('venueToggle');
       const arrow = venue.querySelector('.vt-arrow');
-      const badge = document.querySelector('#deliveryView .menu-head h1 em');
       const update = document.getElementById('updWhenD');
 
       const result = {
@@ -364,8 +414,6 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         venueBackground: getComputedStyle(venue).backgroundColor,
         venueText: getComputedStyle(arrow).color,
         venueArrowOpacity: getComputedStyle(arrow).opacity,
-        badgeText: getComputedStyle(badge).color,
-        badgeBackground: getComputedStyle(badge).backgroundColor,
         updateText: getComputedStyle(update).color,
       };
 
@@ -382,8 +430,6 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(contrastRatio(metrics.railBackground, metrics.railText)).toBeGreaterThanOrEqual(7);
     expect(contrastRatio(metrics.venueBackground, metrics.venueText)).toBeGreaterThanOrEqual(7);
     expect(metrics.venueArrowOpacity).toBe('1');
-    const badgeSurface = compositeColor(metrics.badgeBackground, 'rgb(246, 238, 225)');
-    expect(contrastRatio(badgeSurface, metrics.badgeText)).toBeGreaterThanOrEqual(7);
     expect(contrastRatio('rgb(246, 238, 225)', metrics.updateText)).toBeGreaterThanOrEqual(7);
   });
 

@@ -46,10 +46,16 @@ html body #chatsToggle2 {
   box-sizing: border-box;
 }
 
-/* On narrow screens the timestamp yields space; the actual brand context remains visible. */
+/* Staff timestamp stays beside the menu title at every width. */
 @media (max-width:820px) {
-  #menuView .menu-head .upd,
-  #deliveryView .menu-head .upd { display:none; }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display:inline-flex;
+    flex:0 1 auto;
+    min-width:0;
+    margin:0;
+    padding:0;
+    white-space:nowrap;
+  }
 }
 
 /* The edit action is a 32px icon in the mobile menu row; 44px text controls remain on desktop. */
@@ -160,6 +166,11 @@ html body div.wrap > section {
   color: var(--soft);
   letter-spacing: 0.02em;
   text-transform: none;
+}
+/* A timestamp inside the title group belongs directly under the heading, never auto-pushed right. */
+.menu-head .menu-title-group > .upd {
+  margin: 0;
+  align-self: flex-start;
 }
 .menu-head .mh-top .mh-right,
 #menuView .menu-head .mh-top .mh-right,
@@ -525,8 +536,22 @@ html body div.wrap > section {
     width: 16px;
     height: 16px;
   }
-  html body .menu-head .upd { display:none; }
-  html body .menu-head { height:80px; min-height:80px; max-height:80px; overflow:hidden; padding:6px 10px; }
+  html[data-staff-role] body .menu-head .menu-title-group > .upd { display:inline-flex; }
+  /* Guest coffee header keeps the approved 100px first-paint clearance below search. */
+  html body #menuView .menu-head {
+    height:100px;
+    min-height:100px;
+    max-height:100px;
+    overflow:visible;
+    padding:6px 10px;
+  }
+  html body #deliveryView .menu-head {
+    height:100px;
+    min-height:100px;
+    max-height:100px;
+    overflow:visible;
+    padding:6px 10px;
+  }
   html body header.topbar #profileTopBtn { width:32px; min-width:32px; max-width:32px; height:32px; min-height:32px; max-height:32px; padding:0; flex:0 0 32px; }
   html body nav[aria-label="Навигация по странице"] #scrollTopBtn,
   html body #scrollTopBtn { box-sizing:border-box; width:44px; min-width:44px; max-width:44px; height:44px; min-height:44px; max-height:44px; padding:0; font-size:22px; }
@@ -606,6 +631,18 @@ html body div.wrap > section {
 
 /* The hidden attribute is authoritative during staff-role hydration. */
 html body #adminBar.adminBar[hidden] { display:none; }
+
+/* On desktop the menu owns role/edit controls; the separate admin bar must not reserve a blank row. */
+@media (min-width:821px) {
+  html[data-staff-role] body #adminBar.adminBar:not([hidden]) {
+    height:0;
+    min-height:0;
+    max-height:0;
+    margin:0;
+    padding:0;
+    overflow:hidden;
+  }
+}
 
 
 /* Keep the menu-heading role row compact at mobile widths. */
@@ -908,191 +945,524 @@ html body #adminBar.adminBar[hidden] { display:none; }
   }
 }
 
-/* The 44px support target must not be clipped by its 40px search-row parent. */
+/* Search and support remain in the second row; staff hit cells are owned by the scoped block below. */
 @media (max-width:820px) {
   html body :is(#menuView,#deliveryView) .menu-head .mh-top {
-    grid-template-rows:32px 44px;
-    height:80px;
-    overflow:visible;
+    grid-template-rows: 36px 44px;
+    height: 84px;
+    overflow: visible;
   }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
-    height:44px;
-    min-height:44px;
-    max-height:44px;
-    overflow:visible;
-    align-items:center;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    overflow: visible;
+    align-items: center;
   }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost,
   html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
-    flex:0 0 44px;
-    width:44px;
-    min-width:44px;
-    max-width:44px;
-    height:44px;
-    min-height:44px;
-    max-height:44px;
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
   }
 }
 
 
-/* Exact approved mobile staff menu toolbar: two rows, shared by coffee and delivery. */
-@media (max-width: 820px) {
-  html body :is(#menuView,#deliveryView) .menu-head {
-    box-sizing: border-box;
-    height: 100px;
-    min-height: 100px;
-    max-height: 100px;
-    overflow: visible;
-    padding: 6px 10px;
+
+/* Inactive role labels keep AAA contrast on the dark switcher surface. */
+/* Inactive role labels keep AAA contrast on the dark switcher surface. */
+html body #modeSeg button:not(.on) {
+  color: #AFC0D0;
+}
+
+
+
+/* Shared staff title and update group: stable left alignment at every width. */
+html[data-staff-role] body .menu-head .menu-title-group {
+  display:flex;
+  flex:0 1 auto;
+  align-items:center;
+  justify-content:flex-start;
+  gap:4px;
+  min-width:0;
+}
+html[data-staff-role] body .menu-head .menu-title-group > h1 {
+  flex:0 1 auto;
+  min-width:0;
+  margin:0;
+}
+html[data-staff-role] body .menu-head .menu-title-group > .upd {
+  display:inline-flex;
+  flex:0 1 auto;
+  align-items:center;
+  min-width:0;
+  margin:0;
+  margin-left:0;
+  padding:0;
+  white-space:nowrap;
+}
+
+/* Desktop menu staff row: title, role switcher and edit share the menu heading above search. */
+@media (min-width: 821px) {
+  html[data-staff-role] body > div.wrap {
+    width: 100%;
+    min-width: 0;
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 36px 44px;
-    gap: 4px;
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    height: 84px;
-    min-height: 84px;
-    max-height: 84px;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    padding: 10px 14px;
     overflow: visible;
     box-sizing: border-box;
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
-    grid-column: 1;
-    grid-row: 1;
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
     display: block;
     width: 100%;
     min-width: 0;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 176px 150px;
+    align-items: center;
+    column-gap: 16px;
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    margin: 0;
+  }
+
+  html[data-staff-role] body .menu-head .menu-title-group {
+    display: flex;
+    grid-column: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > h1 {
+    flex: 0 1 auto;
+    min-width: 0;
     max-width: 100%;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(20px, 2.3vw, 28px);
+  }
+
+  html[data-staff-role] body .menu-head .menu-title-group > .upd {
+    display: inline-flex;
+    flex: 0 0 auto;
+    max-width: 100%;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column: 2;
+    display: flex;
+    justify-content: flex-end;
+    flex: 0 0 176px;
+    width: 176px;
+    min-width: 176px;
+    max-width: 176px;
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    align-items: center;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex: 0 0 176px;
+    width: 176px;
+    min-width: 176px;
+    max-width: 176px;
     height: 36px;
     min-height: 36px;
     max-height: 36px;
     padding: 0;
-    overflow: visible;
+    gap: 0;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow: hidden;
+    border: 0;
+    border-radius: 999px;
+    background: var(--staff-mode-track-bg, var(--esp));
+    box-shadow: none;
     box-sizing: border-box;
   }
 
-  html body .menu-head .menu-controls-row {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) 32px;
-    grid-template-rows: 36px;
-    align-items: center;
-    column-gap: 6px;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    height: 36px;
-    min-height: 36px;
-    max-height: 36px;
-    margin: 0;
-    box-sizing: border-box;
-  }
-
-  html body .menu-head .menu-controls-row > h1 {
-    grid-column: 1;
-    grid-row: 1;
-    display: inline-flex;
-    align-items: center;
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+    display: flex;
+    flex: none;
     width: auto;
     min-width: 0;
     max-width: none;
-    margin: 0;
-    white-space: nowrap;
-    overflow: visible;
-    font-size: clamp(15px, 4vw, 18px);
-    line-height: 1;
-  }
-
-  html body .menu-head .menu-controls-row > .mode-seg-slot {
-    grid-column: 2;
-    grid-row: 1;
-    display: flex;
-    flex: 1 1 auto;
-    align-items: center;
-    align-self: center;
-    justify-content: stretch;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    height: 32px;
-    min-height: 32px;
-    max-height: 32px;
-    overflow: visible;
-    contain: size;
-  }
-
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    flex: 1 1 auto;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    height: 32px;
-    min-height: 32px;
-    max-height: 32px;
-    margin: 0;
-    padding: 0;
-    gap: 2px;
-    overflow: visible;
-    box-sizing: border-box;
-  }
-
-  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
-    display: flex;
-    flex: 1 1 0;
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-    height: 32px;
-    min-height: 32px;
-    max-height: 32px;
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
     margin: 0;
     padding: 0;
     align-items: center;
     justify-content: center;
-    font: 700 clamp(9px, 2.6vw, 10px)/1 "Golos Text", system-ui, sans-serif;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    color: #AFC0D0;
+    font: 700 10.5px/1 "Golos Text", system-ui, sans-serif;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on {
+    position: relative;
+    isolation: isolate;
+    background: var(--staff-mode-active-bg);
+    color: var(--staff-mode-active-color);
+    box-shadow: var(--staff-mode-active-shadow);
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on::before {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
+    grid-column: 3;
+    justify-self: end;
+    flex: 0 0 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+  }
+
+  /* Keep all four role cells inside the 176px track; no content-sized overflow. */
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+    position: relative;
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    margin: 0;
+    padding: 0 1px;
+    border-radius: 999px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: clip;
     box-sizing: border-box;
   }
 
-  html body .menu-head .menu-controls-row > #editToggle {
-    grid-column: 3;
-    grid-row: 1;
+  html[data-staff-role] body .menu-head .menu-title-group {
+    align-items: flex-start;
+  }
+
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
     display: inline-flex;
+    flex: 0 0 auto;
+    align-self: flex-start;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    margin-left: 0;
+    padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
     position: static;
-    flex: 0 0 32px;
-    width: 32px;
-    min-width: 32px;
-    max-width: 32px;
-    height: 32px;
-    min-height: 32px;
-    max-height: 32px;
+    display: inline-flex;
+    flex: 0 0 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    margin: 0;
+    padding: 0 12px;
+    font-size: 12px;
+    white-space: nowrap;
+    border-radius: 10px;
+  }
+
+  html[data-staff-role] body .menu-head .mh-top > .mh-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 40px;
+    margin: 0;
+    overflow: visible;
+  }
+
+  html[data-staff-role] body .menu-head .mh-top > .mh-right > .search {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+  }
+}
+
+/* Shared mobile staff toolbar: 44px hit cells with centered 32px brand faces. */
+@media (max-width: 820px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
+    box-sizing: border-box;
+    height: 108px;
+    min-height: 108px;
+    max-height: 108px;
+    overflow: visible;
+    padding: 6px 10px;
+  }
+
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: 44px 44px;
+    row-gap: 8px;
+    column-gap: 0;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: 96px;
+    min-height: 96px;
+    max-height: 96px;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    grid-column: 1;
+    grid-row: 1;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 0;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: stretch;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    overflow: visible;
+    contain: none;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: repeat(4,44px);
+    grid-template-rows: 44px;
+    flex: 0 0 176px;
+    width: 176px;
+    min-width: 176px;
+    max-width: 176px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
     margin: 0;
     padding: 0;
+    gap: 0;
+    overflow: visible;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    box-sizing: border-box;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 6px 0;
+    border-radius: 999px;
+    background: var(--staff-mode-track-bg,var(--esp));
+    pointer-events: none;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex: 1 1 0;
+    width: 100%;
+    min-width: 44px;
+    max-width: none;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    margin: 0;
+    padding: 6px 0;
     align-items: center;
     justify-content: center;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    box-sizing: border-box;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 6px;
+    border-radius: 9px;
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on {
+    color: var(--staff-mode-active-color);
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button.on::before {
+    background: var(--staff-mode-active-bg);
+    box-shadow: var(--staff-mode-active-shadow);
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button:focus-visible {
+    outline: none;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button:focus-visible::before {
+    outline: 2px solid var(--staff-focus-ring,var(--esp));
+    outline-offset: 2px;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    margin: 0;
+    padding: 6px;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--staff-edit-color,var(--ink));
     font-size: 0;
     box-sizing: border-box;
   }
 
-  html body .menu-head .menu-controls-row > #editToggle::before {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle::before {
     content: "✏️";
+    position: relative;
+    z-index: 1;
     font-size: 15px;
     line-height: 1;
   }
 
-  html body .menu-head .menu-controls-row > #editToggle.on::before {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle.on::before {
     content: "✓";
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 6px;
+    border: var(--staff-edit-border);
+    border-radius: 9px;
+    background: var(--staff-edit-bg);
+    box-shadow: var(--staff-edit-shadow);
+    pointer-events: none;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle.on {
+    color: var(--staff-edit-active-color);
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle.on::after {
+    background: var(--staff-edit-active-bg);
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle:focus-visible {
+    outline: none;
+  }
+
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle:focus-visible::after {
+    outline: 2px solid var(--staff-focus-ring,var(--esp));
+    outline-offset: 2px;
+  }
+
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
     grid-column: 1;
     grid-row: 2;
     display: flex;
@@ -1110,7 +1480,7 @@ html body #adminBar.adminBar[hidden] { display:none; }
     box-sizing: border-box;
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
     display: flex;
     flex: 1 1 auto;
     width: auto;
@@ -1124,9 +1494,9 @@ html body #adminBar.adminBar[hidden] { display:none; }
     box-sizing: border-box;
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input,
-  html body #deliveryView #dSearch,
-  html body #menuView #searchInput {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input,
+  html[data-staff-role] body #deliveryView #dSearch,
+  html[data-staff-role] body #menuView #searchInput {
     flex: 1 1 auto;
     width: auto;
     min-width: 0;
@@ -1140,51 +1510,17 @@ html body #adminBar.adminBar[hidden] { display:none; }
     box-sizing: border-box;
   }
 
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost,
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
-    display: flex;
-    position: relative;
-    inset: auto;
-    flex: 0 0 44px;
-    width: 44px;
-    min-width: 44px;
-    max-width: 44px;
-    height: 44px;
-    min-height: 44px;
-    max-height: 44px;
-    margin: 0;
-    padding: 0;
-    align-items: center;
-    justify-content: center;
-    overflow: visible;
-    box-sizing: border-box;
-  }
-
-  html body .menu-head .upd { display: none; }
 }
 
 
-/* A hidden admin action bar must never reserve a third row in the mobile menu. */
-@media (max-width: 820px) {
-  html[data-staff-role] body #adminBar.adminBar[hidden] {
-    display: none !important;
-  }
-}
-
-/* Staff menu title row has only the requested title, role tabs and edit action. */
-@media (max-width: 820px) {
-  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > h1 em {
+/* Staff menu update timestamp is intentionally omitted below the 520px breakpoint. */
+@media (max-width: 519px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
     display: none;
   }
 }
-
-/* Inactive role labels keep AAA contrast on the dark switcher surface. */
-html body #modeSeg button:not(.on) {
-  color: #AFC0D0;
-}
-
-/* 320px: remove the clipped descriptor badge from the menu heading. */
-@media (max-width:350px) {
-  html body #menuView .menu-head h1 > em,
-  html body #deliveryView .menu-head h1 > em { display:none; }
+@media (min-width: 520px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display: inline-flex;
+  }
 }
