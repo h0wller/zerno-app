@@ -2709,6 +2709,10 @@ html[data-brand="delivery"] #deliveryGrid .card .opts .opt-crust {
 
 /* First-frame mirror of the compact desktop pizza option label layout. */
 @media (min-width: 821px) {
+  html[data-brand="delivery"] #deliveryGrid .card .opts label.opt-btn,
+  html[data-brand="delivery"] #deliveryGrid .card .opts .opt-btn {
+    padding-inline: 6px;
+  }
   html[data-brand="delivery"] #deliveryGrid .card .opts .opt-row.opt-top {
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
@@ -2718,12 +2722,14 @@ html[data-brand="delivery"] #deliveryGrid .card .opts .opt-crust {
   }
   html[data-brand="delivery"] #deliveryGrid .card .opts .opt-size {
     min-width: 0;
-    font-size: 10px;
+    font-size: 11px;
+    line-height: 1.15;
   }
   html[data-brand="delivery"] #deliveryGrid .card .opts .opt-crust {
     min-width: 0;
     justify-self: end;
-    font-size: 8px;
+    font-size: 9.5px;
+    line-height: 1.15;
     overflow: hidden;
     text-overflow: clip;
     text-align: right;
