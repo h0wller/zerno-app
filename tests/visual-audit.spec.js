@@ -322,10 +322,16 @@ test('visual audit: delivery pizza and rolls card grids at desktop width', async
 
     await expect(cards.first()).toBeVisible();
     await expect.poll(() => cards.count()).toBeGreaterThan(1);
+    // Full-page element captures must not leave content-visibility placeholders in lower rows.
+    await page.addStyleTag({
+      content: '#deliveryGrid > .card { content-visibility: visible !important; contain-intrinsic-block-size: auto !important; }'
+    });
+    for (const card of await cards.all()) await card.scrollIntoViewIfNeeded();
     await page.evaluate(async () => {
       if (document.fonts?.ready) await document.fonts.ready;
       const images = [...document.querySelectorAll('#deliveryGrid .card img')];
       await Promise.all(images.map((image) => image.decode().catch(() => {})));
+      window.scrollTo(0, 0);
     });
 
     await grid.screenshot({
