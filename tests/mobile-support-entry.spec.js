@@ -15,9 +15,51 @@ const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
 ];
 
+async function expectCompact44pxHitTarget(locator) {
+  const metrics = await locator.evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    const points = [
+      [rect.left + 2, rect.top + 2],
+      [rect.right - 2, rect.top + 2],
+      [rect.left + 2, rect.bottom - 2],
+      [rect.right - 2, rect.bottom - 2],
+      [rect.left + rect.width / 2, rect.top + 2],
+      [rect.left + rect.width / 2, rect.bottom - 2],
+      [rect.left + 2, rect.top + rect.height / 2],
+      [rect.right - 2, rect.top + rect.height / 2]
+    ];
+    const face = window.getComputedStyle(button, '::before');
+    return {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      faceWidth: Number.parseFloat(face.width),
+      faceHeight: Number.parseFloat(face.height),
+      edgeHits: points.map(([x, y]) => document.elementFromPoint(x, y)?.closest('button') === button),
+      edgeTargets: points.map(([x, y]) => {
+        const hit = document.elementFromPoint(x, y);
+        const targetButton = hit?.closest('button');
+        const className = typeof hit?.className === 'string' ? hit.className : hit?.className?.baseVal || '';
+        return {
+          point: [Math.round(x), Math.round(y)],
+          tag: hit?.tagName?.toLowerCase() || null,
+          id: hit?.id || '',
+          className: String(className).slice(0, 80),
+          buttonId: targetButton?.id || ''
+        };
+      })
+    };
+  });
+
+  expect(metrics.width).toBeGreaterThanOrEqual(44);
+  expect(metrics.height).toBeGreaterThanOrEqual(44);
+  expect(metrics.faceWidth).toBe(32);
+  expect(metrics.faceHeight).toBe(32);
+  expect(metrics.edgeHits.every(Boolean), JSON.stringify(metrics.edgeTargets)).toBe(true);
+}
+
 for (const brand of BRANDS) {
   for (const viewport of VIEWPORTS) {
-    test(`${brand.id}: support action belongs to the menu toolbar at ${viewport.name}`, async ({ page }) => {
+    test(`${brand.id}: support action belongs to the menu toolbar at ${viewport.name}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => {
         localStorage.clear();
@@ -91,7 +133,28 @@ for (const brand of BRANDS) {
         await support.click();
         await expect(page.locator('#chatPanel')).toHaveClass(/open/);
         const closeChat = page.locator('#chatClose');
+        const sendChat = page.locator('#chatSend');
         await expect(closeChat).toBeVisible();
+        await expect(sendChat).toBeVisible();
+        await expectCompact44pxHitTarget(closeChat);
+        await expectCompact44pxHitTarget(sendChat);
+        if (viewport.width === 320 || viewport.width === 390) {
+          await testInfo.attach(`support-chat-${brand.id}-${viewport.width}px`, {
+            body: await page.screenshot({ fullPage: false }),
+            contentType: 'image/png'
+          });
+        }
+
+        const message = `tap-target regression: ${brand.id} ${viewport.width}px`;
+        const sendRequest = page.waitForRequest((request) =>
+          request.url().includes('/api/chat/send') && request.method() === 'POST'
+        );
+        await page.locator('#chatInput').fill(message);
+        await sendChat.click();
+        const request = await sendRequest;
+        expect(request.postDataJSON()).toMatchObject({ text: message });
+        await expect(page.locator('#chatMsgs .msg.me').filter({ hasText: message })).toHaveCount(1);
+
         await closeChat.click();
         await expect(page.locator('#chatPanel')).not.toHaveClass(/open/);
       } else {
@@ -122,6 +185,67 @@ for (const brand of BRANDS) {
       } else {
         await expect(support).toHaveCSS('position', 'fixed');
         await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
+      }
+    });
+  }
+}
+
+const STACK_BRANDS = ['coffee', 'delivery'];
+const STACK_VIEWPORTS = [
+  { name: 'mobile', width: 390, height: 844 },
+  { name: 'desktop', width: 1440, height: 900 },
+];
+
+for (const brand of STACK_BRANDS) {
+  for (const viewport of STACK_VIEWPORTS) {
+    test(`${brand}: support launcher stays below modal overlays at ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem('zt_onb', '1');
+      });
+      await page.goto(`/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
+
+      const launcher = page.locator('#chatFab');
+      await expect(launcher).toBeVisible({ timeout: 15000 });
+      await expect(page.locator('#runtimeStyles')).toHaveCount(1);
+
+      const layers = await page.evaluate(() => {
+        const z = (selector) => Number.parseInt(
+          window.getComputedStyle(document.querySelector(selector)).zIndex,
+          10
+        );
+        return {
+          launcher: z('#chatFab'),
+          chatPanel: z('#chatPanel'),
+          standardModal: z('#pinModal'),
+          qrModal: z('#qrModal'),
+        };
+      });
+
+      expect(layers.chatPanel).toBeGreaterThan(layers.launcher);
+      expect(layers.standardModal).toBeGreaterThan(layers.chatPanel);
+      expect(layers.qrModal).toBeGreaterThan(layers.standardModal);
+
+      for (const selector of ['#pinModal', '#qrModal']) {
+        const overlay = page.locator(selector);
+        await overlay.evaluate((element) => element.classList.add('show'));
+        await expect(overlay).toBeVisible();
+
+        const hit = await page.evaluate(() => {
+          const launcherElement = document.getElementById('chatFab');
+          const rect = launcherElement.getBoundingClientRect();
+          const top = document.elementFromPoint(
+            rect.left + rect.width / 2,
+            rect.top + rect.height / 2
+          );
+          return top?.closest('.modal')?.id || null;
+        });
+        expect(hit, `${selector} must cover the support launcher`).toBe(selector.slice(1));
+
+        await overlay.evaluate((element) => element.classList.remove('show'));
+        await expect(overlay).toBeHidden();
       }
     });
   }
