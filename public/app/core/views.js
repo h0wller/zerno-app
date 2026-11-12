@@ -379,6 +379,7 @@ function syncChatFab(staff, bName2) {
   }
   var cp = document.getElementById('chatPanel');
   var isOpen = !!(cp && cp.classList.contains('open'));
+  cfab.setAttribute('aria-label', isOpen ? 'Закрыть чат поддержки' : 'Открыть чат поддержки');
   var curState = (isOpen ? 'open' : (bName2 === 'delivery' ? 'deliv' : 'coffee'));
   if (_lastCfabState === curState) return;
   _lastCfabState = curState;
