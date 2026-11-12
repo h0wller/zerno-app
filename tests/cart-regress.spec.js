@@ -953,3 +953,62 @@ test.describe('Cart add-on recommendations: fixed action geometry', () => {
     });
   }
 });
+
+test('delivery catalog quantity stepper keeps a 44px hit cell at narrow mobile widths', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_ios_hide', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  await page.goto('/?brand=delivery');
+  const firstCard = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
+  await expect(firstCard).toBeVisible({ timeout: 15000 });
+  const option = firstCard.locator('.opts label.opt-btn').first();
+  if (await option.count()) await option.click();
+  await firstCard.locator('.steprow .cta, .steprow [data-add]').first().click();
+
+  const stepPlus = firstCard.locator('.steprow .step:not([hidden]), .steprow [data-step]:not([hidden])').last();
+  await expect(stepPlus).toBeVisible();
+
+  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const geometry = await stepPlus.evaluate((button) => {
+      const rect = button.getBoundingClientRect();
+      const style = window.getComputedStyle(button);
+      // Probe just inside the rounded corner, not in the transparent corner outside the hit surface.
+      const cornerInset = Math.ceil(parseFloat(style.borderTopLeftRadius) || 0) + 2;
+      const points = [
+        [rect.left + cornerInset, rect.top + cornerInset],
+        [rect.right - cornerInset, rect.top + cornerInset],
+        [rect.left + cornerInset, rect.bottom - cornerInset],
+        [rect.right - cornerInset, rect.bottom - cornerInset],
+        [rect.left + rect.width / 2, rect.top + 2],
+        [rect.left + rect.width / 2, rect.bottom - 2],
+        [rect.left + 2, rect.top + rect.height / 2],
+        [rect.right - 2, rect.top + rect.height / 2]
+      ];
+      return {
+        width: rect.width,
+        height: rect.height,
+        cornerInset,
+        points: points.map(([x, y]) => {
+          const hit = document.elementFromPoint(x, y);
+          const owner = hit?.closest('button');
+          return {
+            x: Math.round(x * 10) / 10,
+            y: Math.round(y * 10) / 10,
+            hit: hit ? hit.tagName.toLowerCase() + (hit.id ? '#' + hit.id : '') + (hit.className && typeof hit.className === 'string' ? '.' + hit.className.trim().replace(/\\s+/g, '.') : '') : null,
+            owner: owner ? owner.id || owner.className : null,
+            intended: owner === button
+          };
+        })
+      };
+    });
+
+    expect(geometry.width).toBeGreaterThanOrEqual(44);
+    expect(geometry.height).toBeGreaterThanOrEqual(44);
+    expect(geometry.points.every((point) => point.intended), JSON.stringify({ viewport, geometry })).toBe(true);
+  }
+});
