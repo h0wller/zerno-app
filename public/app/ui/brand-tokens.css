@@ -17,6 +17,16 @@ body[data-brand="coffee"] {
 
   /* ── Геометрия марки в шапке ─────────────────────────────── */
   --c-text-on-accent: #FFFFFF;
+  --staff-mode-track-bg: #123A6B;
+  --staff-mode-active-bg: #BBD7F2;
+  --staff-mode-active-color: #123A6B;
+  --staff-mode-active-shadow: 0 2px 7px rgba(18, 58, 107, 0.16);
+  --staff-edit-bg: #FFFFFF;
+  --staff-edit-border: 1.5px solid rgba(18, 58, 107, 0.24);
+  --staff-edit-active-bg: #123A6B;
+  --staff-edit-active-color: #FFFFFF;
+  --staff-edit-shadow: none;
+  --staff-focus-ring: #123A6B;
   --mark-w: 54px;
   --mark-h: 54px;
 
@@ -191,6 +201,16 @@ body[data-brand="delivery"] {
 
   /* ── Геометрия марки в шапке ─────────────────────────────── */
   --c-text-on-accent: #3A2A1C;
+  --staff-mode-track-bg: #3A2A1C;
+  --staff-mode-active-bg: #8B2B20;
+  --staff-mode-active-color: #FFFFFF;
+  --staff-mode-active-shadow: none;
+  --staff-edit-bg: #F6EEE1;
+  --staff-edit-border: 2px solid #3A2A1C;
+  --staff-edit-active-bg: #3A2A1C;
+  --staff-edit-active-color: #FFFFFF;
+  --staff-edit-shadow: 2px 2px 0 #3A2A1C;
+  --staff-focus-ring: #3A2A1C;
   --mark-w: 200px;
   --mark-h: 48px;
 

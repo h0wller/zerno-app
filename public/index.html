@@ -117,6 +117,108 @@
   display: none !important;
 }
 
+/* Reserve only the empty admin bar's final margin; the staff menu row is reserved below. */
+@media (min-width:821px) {
+  html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
+    display:none !important;
+  }
+}
+
+/* Desktop staff first paint keeps the role controls in the menu heading before hydration. */
+@media (min-width:821px) {
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head {
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    padding:10px 14px !important;
+    overflow:visible !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:10px !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) 176px 150px !important;
+    align-items:center !important;
+    column-gap:16px !important;
+    width:100% !important;
+    min-width:0 !important;
+    min-height:48px !important;
+    margin:0 !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row > .menu-title-group {
+    grid-column:1 !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    justify-content:center !important;
+    gap:4px !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2 !important;
+    display:flex !important;
+    flex:0 0 176px !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    min-width:176px !important;
+    width:176px !important;
+    height:48px !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3 !important;
+    justify-self:end !important;
+    flex:0 0 150px !important;
+    width:150px !important;
+    min-width:150px !important;
+    max-width:150px !important;
+  }
+  /* The role menu is present but inert until /api/me confirms the cached role. */
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg[hidden] {
+    display:grid !important;
+    grid-template-columns:repeat(4,44px) !important;
+    flex:0 0 176px !important;
+    width:176px !important;
+    min-width:176px !important;
+    max-width:176px !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  /* Reserve the desktop labeled edit control's final 150x36 footprint before auth. */
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > #editToggle[hidden] {
+    display:inline-flex !important;
+    flex:0 0 150px !important;
+    width:150px !important;
+    min-width:150px !important;
+    max-width:150px !important;
+    height:36px !important;
+    min-height:36px !important;
+    max-height:36px !important;
+    margin:0 !important;
+    padding:0 12px !important;
+    font-size:12px !important;
+    white-space:nowrap !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  html[data-staff-role="cashier"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="admin"],
+  html[data-staff-role="dispatch"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="cashier"],
+  html[data-staff-role="dispatch"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="admin"] {
+    display:none !important;
+  }
+}
 /* Mobile staff menu reserves its two-row toolbar only; no legacy shortcut strip. */
 @media (max-width:820px) {
   html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
@@ -126,21 +228,85 @@
     margin:0;
     padding:0;
   }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
+  /* Guest first-paint reservation; staff layout is owned by the staff-scoped rules below. */
+  html:not([data-staff-role]) body :is(#menuView,#deliveryView) .menu-head .mh-top {
     grid-template-rows:36px 44px !important;
     height:84px !important;
     min-height:84px !important;
     max-height:84px !important;
     overflow:visible !important;
   }
-  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+  html:not([data-staff-role]) body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    overflow:visible !important;
+  }
+  /* Reserve the complete staff hit-cell rows before and after hydration. */
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    grid-template-rows:44px 44px !important;
+    row-gap:8px !important;
+    column-gap:0 !important;
+    height:96px !important;
+    min-height:96px !important;
+    max-height:96px !important;
+    overflow:visible !important;
+  }
+html[data-staff-role] body .menu-head .menu-controls-row {
+    display:flex !important;
+    justify-content:space-between !important;
+  }
+  html[data-staff-role] body .menu-head .menu-title-group {
+    display:flex !important;
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    align-items:center !important;
+    gap:8px !important;
+  }
+  html[data-staff-role] body .menu-head .menu-title-group > h1 {
+    flex:0 0 auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+  }
+  html[data-staff-role] body .menu-head .menu-title-group > .upd {
+    display:inline-flex !important;
+    flex:0 1 auto !important;
+    min-width:0 !important;
+    margin:0 !important;
+    white-space:nowrap !important;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
+    flex:0 0 auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    grid-template-columns:repeat(4,44px) !important;
+    flex:0 0 176px !important;
+    width:176px !important;
+    min-width:176px !important;
+    max-width:176px !important;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    grid-column:1 !important;
+    grid-row:1 !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    grid-column:1 !important;
+    grid-row:2 !important;
     height:44px !important;
     min-height:44px !important;
     max-height:44px !important;
     overflow:visible !important;
   }
 }
-
 .modal:not(.show):not(.open),
 .sheet:not(.show):not(.open),
 .dialog:not(.show):not(.open),
@@ -585,8 +751,9 @@ html body div.wrap > #deliveryRail button.on {
 html[data-brand="coffee"] .menu-head h1,
 html[data-brand="delivery"] .menu-head h1 {
   font: 900 clamp(22px, 3.2vw, 36px)/1.15 "Unbounded", "Golos Text", sans-serif;
-  color: #3a2a1c;
 }
+html[data-brand="coffee"] .menu-head h1 { color: #123A6B; }
+html[data-brand="delivery"] .menu-head h1 { color: #3a2a1c; }
 /* ═══ 6. Токены первого кадра (дубль из brand-tokens.css) ═══ */
 html[data-brand="delivery"] {
   --paper: #F3EDE6;
@@ -1087,6 +1254,18 @@ html[data-brand="delivery"] {
     max-width:none;
     padding:0 3px;
     font-size:10px;
+  }
+}
+
+/* Staff update timestamp threshold must match the hydrated component styles. */
+@media (max-width:519px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display:none !important;
+  }
+}
+@media (min-width:520px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display:inline-flex !important;
   }
 }
 </style>
@@ -1803,16 +1982,16 @@ html[data-brand="delivery"] {
     align-content:center;
   }
   html[data-staff-role]:not([data-staff-ready]) body .menu-controls-row .mode-seg-slot {
-    height:32px;
-    min-height:32px;
-    max-height:32px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
   }
   html[data-staff-role]:not([data-staff-ready]) body .menu-controls-row #modeSeg[hidden] {
     display:flex;
     visibility:hidden;
-    height:32px;
-    min-height:32px;
-    max-height:32px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
   }
   html[data-staff-role]:not([data-staff-ready]) body #adminBar[hidden] {
     display:flex;
@@ -3231,6 +3410,257 @@ html body #tickerTrack .tickerGroup > span {
     html[data-brand="delivery"] #deliveryGrid .opts label.opt-btn { padding: 7px 4px; }
     html[data-brand="delivery"] #deliveryGrid .card .opts .opt-row { gap: 1px; }
   }
+
+
+/* Guest first-paint geometry mirrors the existing brand-specific menu header sizing. */
+@media (max-width:820px) {
+  html body #menuView .menu-head {
+    box-sizing: border-box;
+    min-height: 100px;
+    max-height: 100px;
+    height: 100px;
+    overflow: visible;
+    padding: 6px 10px;
+  }
+  html body #menuView .menu-head .mh-top {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: 36px 44px;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: 84px;
+    min-height: 84px;
+    max-height: 84px;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+  html body #deliveryView .menu-head {
+    box-sizing: border-box;
+    min-height: 100px;
+    max-height: 100px;
+    height: 100px;
+    overflow: visible;
+    padding: 6px 10px;
+  }
+  html body #deliveryView .menu-head .mh-top {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: 36px 44px;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: 84px;
+    min-height: 84px;
+    max-height: 84px;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+}
+
+
+</style>
+<style id="critical-staff-tap-targets">
+@media (max-width:820px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
+    box-sizing:border-box;
+    height:108px;
+    min-height:108px;
+    max-height:108px;
+    overflow:visible;
+    padding:6px 10px;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:44px 44px;
+    gap:8px 0;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:96px;
+    min-height:96px;
+    max-height:96px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    grid-column:1;
+    grid-row:1;
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row {
+    display:grid;
+    grid-template-columns:minmax(0,auto) minmax(176px,1fr) 44px;
+    grid-template-rows:44px;
+    align-items:center;
+    column-gap:4px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > h1 {
+    grid-column:1;
+    grid-row:1;
+    display:inline-flex;
+    align-items:center;
+    flex:0 0 50px;
+    width:50px;
+    min-width:50px;
+    max-width:50px;
+    margin:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font-size:clamp(13px,3.7vw,16px);
+    line-height:1;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2;
+    grid-row:1;
+    display:flex;
+    flex:1 1 auto;
+    align-items:center;
+    justify-content:stretch;
+    width:100%;
+    min-width:176px;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    overflow:visible;
+    contain:none;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(44px,1fr));
+    grid-template-rows:44px;
+    flex:1 1 auto;
+    width:100%;
+    min-width:176px;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    padding:0;
+    gap:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+    width:100%;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:6px 0;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3;
+    grid-row:1;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:6px;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    grid-column:1;
+    grid-row:2;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
+    display:flex;
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+    margin:0;
+    padding:0 10px;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input,
+  html[data-staff-role] body #deliveryView #dSearch,
+  html[data-staff-role] body #menuView #searchInput {
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    margin:0;
+    padding:0;
+    line-height:36px;
+    box-sizing:border-box;
+  }
+  html body .menu-head .upd { display:none; }
+}
+
+@media (min-width:821px) {
+  html[data-staff-role] body > div.wrap {
+    width:100%;
+    min-width:0;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .upd {
+    display:inline-flex;
+    flex:0 0 auto;
+    align-items:center;
+    width:auto;
+    min-width:0;
+    margin:0 0 0 auto;
+    white-space:nowrap;
+  }
+}
 </style>
 </head>
 
@@ -3311,7 +3741,12 @@ html body #tickerTrack .tickerGroup > span {
       <span class="mb-free" id="mbonusFree" hidden>🎁 0</span>
     </button>
     <button class="ava" id="profileTopBtn" title="Профиль" aria-label="Профиль пользователя">?</button>
-    <div class="modeSeg" id="modeSeg" hidden></div>
+    <div class="modeSeg" id="modeSeg" hidden aria-hidden="true">
+      <button type="button" data-mode="guest" class="on" tabindex="-1">Гость</button>
+      <button type="button" data-mode="cashier" tabindex="-1">Кассир</button>
+      <button type="button" data-mode="orders" tabindex="-1">Заказы</button>
+      <button type="button" data-mode="admin" tabindex="-1">Админ</button>
+    </div>
   </header>
   <div class="ticker" role="region" aria-label="Объявления">
     <div class="tickerViewport">
@@ -3337,7 +3772,7 @@ html body #tickerTrack .tickerGroup > span {
         <div class="menu-head">
           <div class="mh-top">
             <div>
-              <h1>Меню <em>доставка пиццы и роллов</em></h1>
+              <h1>Меню</h1>
               <h2 class="vh">Разделы меню</h2>
               <div class="upd">
                 Обновлено: <b id="updWhenD">-</b>
@@ -3411,10 +3846,10 @@ html body #tickerTrack .tickerGroup > span {
         <div class="menu-head">
           <div class="mh-top">
             <div>
-              <h1>Меню <em style="color:#1e6ea7">кофейня на берегу моря</em></h1>
+              <h1>Меню</h1>
               <h2 class="vh">Разделы меню</h2>
               <div class="upd coffee-menu-updated" aria-live="off">
-                <span class="sr-only">Меню обновлено: </span><b id="updWhen">-</b><span class="adminBadge" id="adminBadge" hidden>режим администратора</span>
+                <span>Обновлено: </span><b id="updWhen">-</b><span class="adminBadge" id="adminBadge" hidden>режим администратора</span>
               </div>
               </div>
             <div class="mh-right">

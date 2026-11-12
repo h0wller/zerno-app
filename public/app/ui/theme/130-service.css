@@ -9,6 +9,16 @@
   flex-direction: column;
   gap: 8px;
 }
+
+/* Keep short-lived feedback clear of the staff menu controls on desktop. */
+@media (min-width: 821px) {
+  html[data-staff-role] body :is(#menuView, #deliveryView) .menu-head ~ #toasts,
+  html[data-staff-role] body #toasts {
+    top: auto;
+    right: 24px;
+    bottom: 24px;
+  }
+}
 .toast{
   background: var(--esp);
   color: var(--cream);
