@@ -56,7 +56,7 @@ jobs:
             workers: 2
           - group: Menu and search
             project: chromium
-            specs: tests/menu-cards.spec.js tests/menu-composition.spec.js tests/menu-nutrition.spec.js tests/delivery-search.spec.js tests/delivery-update-timestamp.spec.js tests/pizza-variant-selection.spec.js
+            specs: tests/menu-cards.spec.js tests/menu-card-desktop-overflow.spec.js tests/menu-composition.spec.js tests/menu-nutrition.spec.js tests/delivery-search.spec.js tests/delivery-update-timestamp.spec.js tests/pizza-variant-selection.spec.js
             workers: 3
           - group: Profile
             project: chromium
