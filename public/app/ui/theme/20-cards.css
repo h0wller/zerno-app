@@ -182,6 +182,13 @@ body.editing .card:hover{
     min-height: 0;
   }
 }
+/* Full descriptions have natural, variable heights; don't reserve the old fixed
+   card size for skipped off-screen items or they jump when content becomes visible. */
+@media (max-width: 519px) {
+  #deliveryGrid .card:nth-child(n+5) {
+    content-visibility: visible;
+  }
+}
 .comp{
   display: flex;
   flex-wrap: nowrap;
