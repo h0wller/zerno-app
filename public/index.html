@@ -2634,6 +2634,16 @@ html[data-brand="delivery"] #deliveryGrid .card .cbody .desc {
     min-height: 0;
   }
 }
+/* First-paint mirror: the one-column mobile delivery grid shows full pizza composition. */
+@media (max-width: 519px) {
+  html[data-brand="delivery"] #deliveryGrid .card .cbody .desc {
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+    min-height: 0;
+  }
+}
 html[data-brand="delivery"] #deliveryGrid .card .comp {
   display: flex;
   flex-wrap: nowrap;
