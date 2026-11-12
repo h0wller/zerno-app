@@ -317,4 +317,79 @@ test.describe('PWA Responsive Layout Audit', () => {
 
   });
 
+
+  test('iOS install hint does not cover delivery options or add action', async ({ page }, testInfo) => {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+    await cdp.send('Network.setUserAgentOverride', {
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.7 Mobile/15E148 Safari/604.1',
+      platform: 'iPhone',
+      acceptLanguage: 'ru-RU,ru;q=0.9,en;q=0.8'
+    });
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('zt_onb', '1');
+    });
+
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 390, height: 844 }
+    ]) {
+      await page.setViewportSize(viewport);
+      await cdp.send('Emulation.setDeviceMetricsOverride', {
+        width: viewport.width,
+        height: viewport.height,
+        deviceScaleFactor: 3,
+        mobile: true
+      });
+      await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible();
+      await expect(page.locator('#iosHint')).toBeVisible({ timeout: 5000 });
+
+      const intersections = await page.evaluate(() => {
+        const hint = document.querySelector('#iosHint');
+        const hintRect = hint.getBoundingClientRect();
+        const overlaps = (a, b) =>
+          a.left < b.right && a.right > b.left &&
+          a.top < b.bottom && a.bottom > b.top;
+        return [...document.querySelectorAll('#deliveryGrid .opts, #deliveryGrid [data-add]')]
+          .map((element) => ({
+            selector: element.matches('.opts') ? '#deliveryGrid .opts' : '#deliveryGrid [data-add]',
+            text: element.innerText?.trim().slice(0, 40) || '',
+            rect: element.getBoundingClientRect().toJSON()
+          }))
+          .filter((target) =>
+            target.rect.width > 0 &&
+            target.rect.height > 0 &&
+            target.rect.bottom > 0 &&
+            target.rect.top < innerHeight &&
+            overlaps(hintRect, target.rect)
+          );
+      });
+
+      expect(intersections,
+        `iOS install hint must not cover pizza options or Add at ${viewport.width}×${viewport.height}`
+      ).toEqual([]);
+
+      const hintPosition = await page.locator('#iosHint').evaluate((element) =>
+        getComputedStyle(element).position
+      );
+      expect(hintPosition, 'iOS install hint must stay in normal document flow').toBe('static');
+
+      const closeTarget = await page.locator('#iosHintClose').boundingBox();
+      expect(closeTarget?.width, 'iOS hint close target must be at least 44px wide').toBeGreaterThanOrEqual(44);
+      expect(closeTarget?.height, 'iOS hint close target must be at least 44px high').toBeGreaterThanOrEqual(44);
+
+      await testInfo.attach(`ios-install-hint-${viewport.width}x${viewport.height}`, {
+        body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+        contentType: 'image/png'
+      });
+    }
+
+    await page.locator('#iosHintClose').click();
+    await expect(page.locator('#iosHint')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_ios_hide'))).toBe('1');
+  });
+
 });
