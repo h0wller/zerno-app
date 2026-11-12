@@ -161,7 +161,7 @@ body.editing .card:hover{
    Desktop gets the full wrapped text; grid rows stretch neighboring cards to the same height.
    Coffee descriptions keep the shared two-line clamp. */
 @media (min-width: 821px) {
-  html[data-brand="delivery"] #deliveryGrid .card .cbody .desc {
+  #deliveryGrid .card .cbody .desc {
     display: block;
     -webkit-line-clamp: unset;
     line-clamp: unset;
