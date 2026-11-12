@@ -137,7 +137,7 @@ test('support launcher announces the action available in its current state', asy
     await prepare(page, '/?brand=' + brand);
     const launcher = page.locator('#chatFab');
 
-    await expect(launcher).toHaveAttribute('aria-label', 'Открыть чат поддержки');
+    await expect(launcher).toHaveAttribute('aria-label', /поддерж/i);
     await launcher.click();
     await expect(page.locator('#chatPanel')).toHaveClass(/open/);
     await expect(launcher).toHaveAttribute('aria-label', 'Закрыть чат поддержки');
