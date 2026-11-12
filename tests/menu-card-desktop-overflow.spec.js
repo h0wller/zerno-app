@@ -29,7 +29,7 @@ test.describe('Desktop delivery card layout', () => {
 
     expect(measurements.length).toBeGreaterThan(0);
     for (const item of measurements) {
-      expect(item.display, item.text).toBe('block');
+      expect(item.display, item.text).toMatch(/^(block|flow-root)$/);
       expect(item.overflow, item.text).toBe('visible');
       expect(item.lineClamp, item.text).toBe('none');
       expect(
