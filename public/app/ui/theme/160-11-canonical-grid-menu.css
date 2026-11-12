@@ -61,27 +61,38 @@
   white-space: nowrap;
 }
 
-/* Desktop delivery cards: align semantic content rows, not only the outer card boxes.
-   Pizza option groups follow a full three-line description reserve. Roll meta rows follow
-   a two-line title and a three-row composition reserve. Content remains fully visible. */
+/* Desktop delivery cards: fixed content slots keep semantic rows aligned across a grid row.
+   Pizza uses title (2 lines) + full description (4 lines) before its options.
+   Rolls use title (2 lines) + up to 3 ingredient-chip rows before weight/price.
+   Fixed flex-basis is intentional: min-height alone lets short content pull later rows upward. */
 @media (min-width: 821px) {
-  #deliveryGrid .card .cbody:has(.opts) > h3 {
-    min-height: 1.3em;
-  }
-  #deliveryGrid .card .cbody:has(.opts) > .desc {
-    min-height: 4.35em;
+  #deliveryGrid .card .cbody:has(> .opts) > h3,
+  #deliveryGrid .card .cbody:has(> .single-meta) > h3 {
+    block-size: 2.6em;
+    min-block-size: 2.6em;
+    flex: 0 0 2.6em;
+    box-sizing: border-box;
   }
 
-  #deliveryGrid .card .cbody:has(.single-meta) > h3 {
-    min-height: 2.6em;
+  #deliveryGrid .card .cbody:has(> .opts) > .desc {
+    block-size: 5.8em;
+    min-block-size: 5.8em;
+    flex: 0 0 5.8em;
+    box-sizing: border-box;
+    overflow: visible;
   }
-  #deliveryGrid .card .cbody:has(.single-meta) > .comp {
-    min-height: 73px;
+
+  #deliveryGrid .card .cbody:has(> .single-meta) > .comp {
+    block-size: 75px;
+    min-block-size: 75px;
+    flex: 0 0 75px;
     box-sizing: border-box;
     align-content: flex-start;
+    overflow: visible;
   }
-  #deliveryGrid .card .cbody:has(.single-meta) > .single-meta {
-    min-height: 30px;
+
+  #deliveryGrid .card .cbody:has(> .single-meta) > .single-meta {
+    min-block-size: 30px;
     box-sizing: border-box;
     align-self: stretch;
   }
