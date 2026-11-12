@@ -976,11 +976,14 @@ test('delivery catalog quantity stepper keeps a 44px hit cell at narrow mobile w
     await page.setViewportSize(viewport);
     const geometry = await stepPlus.evaluate((button) => {
       const rect = button.getBoundingClientRect();
+      const style = window.getComputedStyle(button);
+      // Probe just inside the rounded corner, not in the transparent corner outside the hit surface.
+      const cornerInset = Math.ceil(parseFloat(style.borderTopLeftRadius) || 0) + 2;
       const points = [
-        [rect.left + 2, rect.top + 2],
-        [rect.right - 2, rect.top + 2],
-        [rect.left + 2, rect.bottom - 2],
-        [rect.right - 2, rect.bottom - 2],
+        [rect.left + cornerInset, rect.top + cornerInset],
+        [rect.right - cornerInset, rect.top + cornerInset],
+        [rect.left + cornerInset, rect.bottom - cornerInset],
+        [rect.right - cornerInset, rect.bottom - cornerInset],
         [rect.left + rect.width / 2, rect.top + 2],
         [rect.left + rect.width / 2, rect.bottom - 2],
         [rect.left + 2, rect.top + rect.height / 2],
@@ -989,6 +992,7 @@ test('delivery catalog quantity stepper keeps a 44px hit cell at narrow mobile w
       return {
         width: rect.width,
         height: rect.height,
+        cornerInset,
         points: points.map(([x, y]) => {
           const hit = document.elementFromPoint(x, y);
           const owner = hit?.closest('button');
