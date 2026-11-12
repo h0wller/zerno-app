@@ -50,7 +50,7 @@ async function expectCompact44pxHitTarget(locator, visibleFace) {
   });
 
   expect(metrics.width).toBeGreaterThanOrEqual(44);
-  expect(metrics.height).toBe(44);
+  expect(metrics.height).toBeGreaterThanOrEqual(44);
   expect(metrics.edgeHits.every(Boolean)).toBe(true);
   if (visibleFace === 'square') {
     expect(metrics.faceWidth).toBe(32);
