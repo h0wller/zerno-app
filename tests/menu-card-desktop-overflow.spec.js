@@ -86,6 +86,8 @@ test.describe('Desktop delivery card layout', () => {
       return {
         rowWidth: rowRect.width,
         rowScrollWidth: row.scrollWidth,
+        crustScrollWidth: crust.scrollWidth,
+        crustClientWidth: crust.clientWidth,
         sizeRight: sizeRect.right,
         crustRight: crustRect.right,
         rowRight: rowRect.right,
@@ -109,6 +111,10 @@ test.describe('Desktop delivery card layout', () => {
         item.rowScrollWidth,
         `Option top row overflows: ${JSON.stringify(item)}`
       ).toBeLessThanOrEqual(item.rowWidth + 1);
+      expect(
+        item.crustScrollWidth,
+        `Crust label "${item.crustText}" is clipped inside its option button`
+      ).toBeLessThanOrEqual(item.crustClientWidth + 1);
     }
   });
 
