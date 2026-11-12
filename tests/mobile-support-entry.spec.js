@@ -126,3 +126,65 @@ for (const brand of BRANDS) {
     });
   }
 }
+
+
+const STACK_BRANDS = ['coffee', 'delivery'];
+const STACK_VIEWPORTS = [
+  { name: 'mobile', width: 390, height: 844 },
+  { name: 'desktop', width: 1440, height: 900 },
+];
+
+for (const brand of STACK_BRANDS) {
+  for (const viewport of STACK_VIEWPORTS) {
+    test(`${brand}: support launcher stays below modal overlays at ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem('zt_onb', '1');
+      });
+      await page.goto(`/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
+
+      const launcher = page.locator('#chatFab');
+      await expect(launcher).toBeVisible({ timeout: 15000 });
+      await expect(page.locator('#runtimeStyles')).toHaveCount(1);
+
+      const layers = await page.evaluate(() => {
+        const z = (selector) => Number.parseInt(
+          window.getComputedStyle(document.querySelector(selector)).zIndex,
+          10
+        );
+        return {
+          launcher: z('#chatFab'),
+          chatPanel: z('#chatPanel'),
+          standardModal: z('#pinModal'),
+          qrModal: z('#qrModal'),
+        };
+      });
+
+      expect(layers.chatPanel).toBeGreaterThan(layers.launcher);
+      expect(layers.standardModal).toBeGreaterThan(layers.chatPanel);
+      expect(layers.qrModal).toBeGreaterThan(layers.standardModal);
+
+      for (const selector of ['#pinModal', '#qrModal']) {
+        const overlay = page.locator(selector);
+        await overlay.evaluate((element) => element.classList.add('show'));
+        await expect(overlay).toBeVisible();
+
+        const hit = await page.evaluate(() => {
+          const launcherElement = document.getElementById('chatFab');
+          const rect = launcherElement.getBoundingClientRect();
+          const top = document.elementFromPoint(
+            rect.left + rect.width / 2,
+            rect.top + rect.height / 2
+          );
+          return top?.closest('.modal')?.id || null;
+        });
+        expect(hit, `${selector} must cover the support launcher`).toBe(selector.slice(1));
+
+        await overlay.evaluate((element) => element.classList.remove('show'));
+        await expect(overlay).toBeHidden();
+      }
+    });
+  }
+}
