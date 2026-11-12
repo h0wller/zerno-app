@@ -633,7 +633,6 @@ html body div.wrap > section {
 html body #adminBar.adminBar[hidden] { display:none; }
 
 /* Desktop staff actions remain visible as a separate row; only the edit shortcut moves into the menu header. */
-}
 
 
 /* Keep the menu-heading role row compact at mobile widths. */
