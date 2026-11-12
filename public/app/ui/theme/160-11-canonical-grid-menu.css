@@ -29,6 +29,41 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* The option button is split into two columns inside each pizza card.
+   Keep the size label intrinsic and give the crust label the remaining measured width. */
+@media (min-width: 821px) {
+  #deliveryGrid .card .opts label.opt-btn,
+  #deliveryGrid .card .opts .opt-btn {
+    padding-inline: 6px;
+  }
+  #deliveryGrid .card .opts .opt-row.opt-top {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: baseline;
+    column-gap: 2px;
+    min-width: 0;
+  }
+  #deliveryGrid .card .opts .opt-size {
+    min-width: 0;
+    font-size: 11px;
+    line-height: 1.15;
+  }
+  #deliveryGrid .card .opts .opt-crust {
+    min-width: 0;
+    justify-self: end;
+    font-size: 9.5px;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: clip;
+    text-align: right;
+  }
+  /* Delivery pizza compositions can be longer on desktop; render all cards eagerly so
+     variable content cannot jump against the old fixed 502px lazy-card reservation. */
+  #deliveryGrid .card:nth-child(n+5) {
+    content-visibility: visible;
+    contain-intrinsic-block-size: auto;
+  }
+}
 #deliveryGrid .card .opts .opt-weight {
   font-size: 10.5px;
   opacity: 0.7;
@@ -38,6 +73,43 @@
   font-size: 13px;
   font-weight: 800;
   white-space: nowrap;
+}
+
+/* Desktop delivery cards: fixed content slots keep semantic rows aligned across a grid row.
+   Pizza uses title (2 lines) + full description (4 lines) before its options.
+   Rolls use title (2 lines) + up to 3 ingredient-chip rows before weight/price.
+   Fixed flex-basis is intentional: min-height alone lets short content pull later rows upward. */
+@media (min-width: 821px) {
+  #deliveryGrid .card .cbody:has(> .opts) > h3,
+  #deliveryGrid .card .cbody:has(> .single-meta) > h3 {
+    block-size: 2.6em;
+    min-block-size: 2.6em;
+    flex: 0 0 2.6em;
+    box-sizing: border-box;
+  }
+
+  #deliveryGrid .card .cbody:has(> .opts) > .desc {
+    block-size: 5.8em;
+    min-block-size: 5.8em;
+    flex: 0 0 5.8em;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+
+  #deliveryGrid .card .cbody:has(> .single-meta) > .comp {
+    block-size: 100px;
+    min-block-size: 100px;
+    flex: 0 0 100px;
+    box-sizing: border-box;
+    align-content: flex-start;
+    overflow: visible;
+  }
+
+  #deliveryGrid .card .cbody:has(> .single-meta) > .single-meta {
+    min-block-size: 30px;
+    box-sizing: border-box;
+    align-self: stretch;
+  }
 }
 /* ── F5.81: ЕДИНЫЙ КАНОНИЧЕСКИЙ КАСКАД СЕТКИ, РЕЙЛА, ШАПКИ И МЕНЮ (БЕЗ ДУБЛЕЙ) ── */
 

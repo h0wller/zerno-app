@@ -1,5 +1,8 @@
 import { db } from './connection.js';
-import { generateVAPIDKeys, setVapidDetails } from 'web-push';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { generateVAPIDKeys, setVapidDetails } = require('web-push');
 
 export function initSeed() {
   const MENU_V = '4';

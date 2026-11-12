@@ -303,3 +303,80 @@ test('visual audit: coffee profile loyalty without duplicate progress UI at 390p
   );
 });
 
+
+
+test('visual audit: delivery pizza and rolls card grids at desktop width', async ({ page }) => {
+  const viewport = { id: 'desktop', width: 1440, height: 1000 };
+  await prepareColdGuest(page, 'delivery', viewport);
+  await waitForHydratedStorefront(page, 'delivery');
+
+  const grid = page.locator('#deliveryGrid');
+  const cards = grid.locator(':scope > .card:not(.skeleton-card)');
+  await expect(cards.first()).toBeVisible();
+
+  const captureCategory = async (category, filename) => {
+    await page.evaluate((selectedCategory) => {
+      window.dcat = selectedCategory;
+      window.renderDeliveryMenu();
+    }, category);
+
+    await expect(cards.first()).toBeVisible();
+    await expect.poll(() => cards.count()).toBeGreaterThan(1);
+    // Full-page element captures must not leave content-visibility placeholders in lower rows.
+    await page.addStyleTag({
+      content: '#deliveryGrid > .card { content-visibility: visible !important; contain-intrinsic-block-size: auto !important; }'
+    });
+    for (const card of await cards.all()) await card.scrollIntoViewIfNeeded();
+    await page.evaluate(async () => {
+      if (document.fonts?.ready) await document.fonts.ready;
+      const images = [...document.querySelectorAll('#deliveryGrid .card img')];
+      await Promise.all(images.map((image) => image.decode().catch(() => {})));
+      window.scrollTo(0, 0);
+    });
+
+    await grid.screenshot({
+      path: path.join(OUT, filename),
+      animations: 'disabled'
+    });
+
+    const rows = await cards.evaluateAll((nodes) => {
+      const grouped = new Map();
+      for (const card of nodes) {
+        const rect = card.getBoundingClientRect();
+        const key = Math.round(rect.top);
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push({
+          height: rect.height,
+          right: rect.right,
+          left: rect.left,
+          width: rect.width
+        });
+      }
+      return [...grouped.values()].map((row) => ({
+        count: row.length,
+        heightSpread: Math.max(...row.map((item) => item.height)) - Math.min(...row.map((item) => item.height)),
+        rightEdge: Math.max(...row.map((item) => item.right)),
+        leftEdge: Math.min(...row.map((item) => item.left))
+      }));
+    });
+
+    expect(rows.length, category + ' should render card rows').toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.heightSpread, category + ' cards in a row must align').toBeLessThanOrEqual(1);
+    }
+    return { category, filename, cardCount: await cards.count(), rows };
+  };
+
+  const pizza = await captureCategory('pizza', 'DELIVERY-PIZZA-CARDS-DESKTOP-1440.png');
+  const rolls = await captureCategory('rolls', 'DELIVERY-ROLLS-CARDS-DESKTOP-1440.png');
+
+  fs.writeFileSync(
+    path.join(OUT, 'delivery-card-grid-desktop.json'),
+    JSON.stringify({
+      commit: process.env.GITHUB_SHA || null,
+      viewport,
+      pizza,
+      rolls
+    }, null, 2)
+  );
+});
