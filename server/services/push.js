@@ -2,10 +2,13 @@
 // Оркестратор уведомлений: TG + Web Push + FCM
 // Уважает notify_tg / notify_web флаги клиента
 
-import { sendNotification } from 'web-push';
+import { createRequire } from 'node:module';
 import { db } from '../db/connection.js';
 import { tgSend } from './telegram.js';
 import { sendFcm } from './fcm.js';
+
+const require = createRequire(import.meta.url);
+const { sendNotification } = require('web-push');
 // sendSms импортируем для доступности, но в sendPush не используется
 // (может быть использован другими доменами)
 
@@ -17,7 +20,7 @@ export async function sendTg(cid, title, body, markup) {
       console.log('[push] tg skip: cid=' + cid + ' (нет привязанного Telegram)');
       return { ok: false, reason: 'no_tg' };
     }
-    const text = title ? (title + '\n' + body) : body;
+    const text = title ? (title + '\\n' + body) : body;
     const result = await tgSend(c.tg, text, markup);
     if (!result?.ok) {
       console.error('[push] tg failed for customer:', result?.reason || 'unknown');
