@@ -170,6 +170,18 @@ body.editing .card:hover{
     min-height: 0;
   }
 }
+/* Single-column mobile delivery cards have no row-height alignment constraint.
+   Show the canonical pizza composition in full instead of reserving only two teaser lines. */
+@media (max-width: 519px) {
+  #deliveryGrid .cbody .desc {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+    min-height: 0;
+  }
+}
 .comp{
   display: flex;
   flex-wrap: nowrap;
