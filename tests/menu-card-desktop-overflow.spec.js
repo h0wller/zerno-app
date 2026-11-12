@@ -60,6 +60,64 @@ test.describe('Desktop delivery card layout', () => {
     }
   });
 
+  test('pizza option groups align after variable-length descriptions', async ({ page }) => {
+    await page.evaluate(() => {
+      window.dcat = 'pizza';
+      window.renderDeliveryMenu();
+    });
+    const cards = page.locator('#deliveryGrid .card:not(.skeleton-card)');
+    await expect(cards.first()).toBeVisible();
+    await expect.poll(() => cards.count()).toBeGreaterThan(1);
+    await page.addStyleTag({ content: '#deliveryGrid > .card { content-visibility: visible !important; contain-intrinsic-block-size: auto !important; }' });
+    for (const card of await cards.all()) await card.scrollIntoViewIfNeeded();
+
+    const rows = await page.evaluate(() => {
+      const groups = new Map();
+      for (const card of document.querySelectorAll('#deliveryGrid .card:not(.skeleton-card)')) {
+        const rect = card.getBoundingClientRect();
+        const key = Math.round(rect.top + window.scrollY);
+        const legend = card.querySelector('.opts legend');
+        if (!legend) continue;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(Math.round(legend.getBoundingClientRect().top + window.scrollY));
+      }
+      return [...groups.values()].filter((row) => row.length > 1);
+    });
+    expect(rows.length).toBeGreaterThan(0);
+    for (const tops of rows) {
+      expect(Math.max(...tops) - Math.min(...tops), `Pizza option headings are not aligned: ${tops}`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test('roll metadata aligns after variable-length composition chips', async ({ page }) => {
+    await page.evaluate(() => {
+      window.dcat = 'rolls';
+      window.renderDeliveryMenu();
+    });
+    const cards = page.locator('#deliveryGrid .card:not(.skeleton-card)');
+    await expect(cards.first()).toBeVisible();
+    await expect.poll(() => cards.count()).toBeGreaterThan(1);
+    await page.addStyleTag({ content: '#deliveryGrid > .card { content-visibility: visible !important; contain-intrinsic-block-size: auto !important; }' });
+    for (const card of await cards.all()) await card.scrollIntoViewIfNeeded();
+
+    const rows = await page.evaluate(() => {
+      const groups = new Map();
+      for (const card of document.querySelectorAll('#deliveryGrid .card:not(.skeleton-card)')) {
+        const rect = card.getBoundingClientRect();
+        const key = Math.round(rect.top + window.scrollY);
+        const meta = card.querySelector('.single-meta');
+        if (!meta) continue;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(Math.round(meta.getBoundingClientRect().top + window.scrollY));
+      }
+      return [...groups.values()].filter((row) => row.length > 1);
+    });
+    expect(rows.length).toBeGreaterThan(0);
+    for (const tops of rows) {
+      expect(Math.max(...tops) - Math.min(...tops), `Roll weight/price rows are not aligned: ${tops}`).toBeLessThanOrEqual(1);
+    }
+  });
+
   test('roll cards keep equal height within each desktop grid row', async ({ page }) => {
     await page.evaluate(() => {
       window.dcat = 'rolls';
