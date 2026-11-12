@@ -32,6 +32,10 @@
 /* The option button is split into two columns inside each pizza card.
    Keep the size label intrinsic and give the crust label the remaining measured width. */
 @media (min-width: 821px) {
+  #deliveryGrid .card .opts label.opt-btn,
+  #deliveryGrid .card .opts .opt-btn {
+    padding-inline: 6px;
+  }
   #deliveryGrid .card .opts .opt-row.opt-top {
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
@@ -41,12 +45,14 @@
   }
   #deliveryGrid .card .opts .opt-size {
     min-width: 0;
-    font-size: 10px;
+    font-size: 11px;
+    line-height: 1.15;
   }
   #deliveryGrid .card .opts .opt-crust {
     min-width: 0;
     justify-self: end;
-    font-size: 8px;
+    font-size: 9.5px;
+    line-height: 1.15;
     overflow: hidden;
     text-overflow: clip;
     text-align: right;
