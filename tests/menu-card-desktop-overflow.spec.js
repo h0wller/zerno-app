@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Desktop delivery card layout', () => {
   test.beforeEach(async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
       sessionStorage.setItem('splashDone', '1');
@@ -10,6 +10,13 @@ test.describe('Desktop delivery card layout', () => {
     await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#deliveryGrid .card').first()).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
+  });
+
+  test('uses the production four-column desktop grid', async ({ page }) => {
+    const columns = await page.locator('#deliveryGrid').evaluate((grid) =>
+      getComputedStyle(grid).gridTemplateColumns.split(' ').length
+    );
+    expect(columns, 'desktop delivery catalog must render four columns').toBe(4);
   });
 
   test('pizza composition descriptions are fully visible on desktop', async ({ page }) => {
@@ -116,7 +123,9 @@ test.describe('Desktop delivery card layout', () => {
         const action = card.querySelector('.steprow');
         if (!meta || !action) continue;
         if (!groups.has(key)) groups.set(key, []);
+        const composition = card.querySelector('.comp');
         groups.get(key).push({
+          compositionBottom: composition ? Math.round(composition.getBoundingClientRect().bottom + window.scrollY) : null,
           metaTop: Math.round(meta.getBoundingClientRect().top + window.scrollY),
           actionTop: Math.round(action.getBoundingClientRect().top + window.scrollY)
         });
@@ -125,6 +134,10 @@ test.describe('Desktop delivery card layout', () => {
     });
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
+      for (const item of row) {
+        expect(item.compositionBottom, 'roll composition chips must not overlap weight/price')
+          .toBeLessThanOrEqual(item.metaTop);
+      }
       for (const field of ['metaTop', 'actionTop']) {
         const positions = row.map((item) => item[field]);
         expect(Math.max(...positions) - Math.min(...positions), `Roll ${field} is not aligned: ${positions}`).toBeLessThanOrEqual(1);
