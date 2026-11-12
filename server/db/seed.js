@@ -1,5 +1,7 @@
 import { db } from './connection.js';
-import { generateVAPIDKeys, setVapidDetails } from 'web-push';
+import webPush from 'web-push';
+
+const { generateVAPIDKeys, setVapidDetails } = webPush;
 
 export function initSeed() {
   const MENU_V = '4';
