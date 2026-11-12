@@ -295,7 +295,38 @@ test.describe('Карточки меню: высота, выравнивание
           expect(Math.max(...gaps), 'футер не прижат к низу карточки').toBeLessThanOrEqual(20);
         });
 
-        test('описание занимает одинаковый резерв высоты (нет «прыгающих» строк)', async ({ page }) => {
+        test('описание не обрезается и сохраняет контракт высоты', async ({ page }) => {
+          // Delivery desktop intentionally shows the complete ingredient description.
+          // Its height is content-driven; equal card-row heights are asserted separately.
+          if (brand.name === 'Доставка' && vp.width >= 821) {
+            const descriptions = await page.locator(`${brand.grid} .card:not(.skeleton-card) .desc`).evaluateAll((nodes) =>
+              nodes.map((node) => {
+                const style = getComputedStyle(node);
+                return {
+                  text: node.textContent.trim(),
+                  display: style.display,
+                  overflow: style.overflow,
+                  lineClamp: style.webkitLineClamp,
+                  clientHeight: node.clientHeight,
+                  scrollHeight: node.scrollHeight
+                };
+              })
+            );
+
+            expect(descriptions.length, 'у delivery-позиций должны быть описания состава').toBeGreaterThan(0);
+            for (const item of descriptions) {
+              expect(item.display, item.text).toBe('block');
+              expect(item.overflow, item.text).toBe('visible');
+              expect(item.lineClamp, item.text).toBe('none');
+              expect(
+                item.scrollHeight,
+                `Описание «${item.text}» обрезано: ${item.scrollHeight}px внутри ${item.clientHeight}px`
+              ).toBeLessThanOrEqual(item.clientHeight + 1);
+            }
+            return;
+          }
+
+          // Coffee and mobile delivery keep a fixed two-line reserve to stabilize cards.
           const heights = await page.evaluate((grid) => {
             const out = [];
             for (const c of document.querySelectorAll(`${grid} .card:not(.skeleton-card)`)) {
