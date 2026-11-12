@@ -551,6 +551,55 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
   }
 });
 
+test('desktop staff toast never covers role or edit controls on both brands', async ({ page }, testInfo) => {
+  await mockStaffSession(page);
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const width of [821, 1024]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(expectedBrand =>
+        window.me && window.me.role === 'admin' &&
+        document.documentElement.hasAttribute('data-staff-ready') &&
+        document.documentElement.getAttribute('data-brand') === expectedBrand,
+        brand
+      );
+
+      await page.evaluate(() => {
+        window.setMode('admin');
+        window.toast('Режим администратора активен', '🛡️');
+      });
+
+      const toast = page.locator('#toasts .toast').filter({ hasText: 'Режим администратора активен' });
+      await expect(toast).toBeVisible();
+      const overlap = await page.evaluate(() => {
+        const toast = document.querySelector('#toasts .toast');
+        const controls = [
+          document.querySelector('#modeSeg'),
+          document.querySelector('#editToggle')
+        ];
+        const rect = element => {
+          const box = element.getBoundingClientRect();
+          return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+        };
+        const a = rect(toast);
+        return controls.map(element => {
+          const b = rect(element);
+          return Math.min(a.right, b.right) > Math.max(a.left, b.left) &&
+            Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
+        });
+      });
+      expect(overlap).toEqual([false, false]);
+
+      await testInfo.attach('staff-toast-' + brand + '-' + width + 'px', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+      await expect(toast).toHaveCount(0, { timeout: 4000 });
+    }
+  }
+});
+
 test('desktop delivery role switcher stays in menu header with delivery colors in every menu mode', async ({ page }, testInfo) => {
   await page.setViewportSize({ width:1440, height:1000 });
   await mockStaffSession(page);
