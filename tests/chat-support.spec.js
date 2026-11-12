@@ -130,3 +130,20 @@ test('mobile support uses an icon and delivery search keeps an inset from the me
     }
   }
 });
+
+
+test('support launcher announces the action available in its current state', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await prepare(page, '/?brand=' + brand);
+    const launcher = page.locator('#chatFab');
+
+    await expect(launcher).toHaveAttribute('aria-label', /поддерж/i);
+    await launcher.click();
+    await expect(page.locator('#chatPanel')).toHaveClass(/open/);
+    await expect(launcher).toHaveAttribute('aria-label', 'Закрыть чат поддержки');
+
+    await page.locator('#chatClose').click();
+    await expect(page.locator('#chatPanel')).not.toHaveClass(/open/);
+    await expect(launcher).toHaveAttribute('aria-label', 'Открыть чат поддержки');
+  }
+});
