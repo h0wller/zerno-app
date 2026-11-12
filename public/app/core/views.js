@@ -97,7 +97,7 @@ var rules = [
  '#iosHint { position:static; display:flex; align-items:flex-start; gap:8px; box-sizing:border-box; width:auto; margin:10px 12px 0; padding:10px 12px; border-radius:14px; background:#12303e; color:#fff; box-shadow:0 6px 20px rgba(0,0,0,.3); font-size:13px; line-height:1.4; }',
  '#iosHint[hidden] { display:none !important; }',
  '#iosHintText { flex:1; min-width:0; }',
- '#iosHintClose { appearance:none; flex:0 0 32px; display:grid; place-items:center; width:32px; height:32px; margin:-4px -4px 0 0; padding:0; border:0; border-radius:8px; background:none; color:#9fb2c6; font-size:16px; line-height:1; cursor:pointer; }',
+ '#iosHintClose { appearance:none; flex:0 0 44px; display:grid; place-items:center; width:44px; height:44px; margin:-7px -7px 0 0; padding:0; border:0; border-radius:8px; background:none; color:#9fb2c6; font-size:16px; line-height:1; cursor:pointer; }',
  '#deliveryRail button{transition:transform .15s,box-shadow .15s,background .15s}',
  '#deliveryRail button:hover{transform:translateY(-1px)}',
  '#deliveryRail button.on:hover{transform:none}',
