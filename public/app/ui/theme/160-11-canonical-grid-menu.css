@@ -83,9 +83,9 @@
   }
 
   #deliveryGrid .card .cbody:has(> .single-meta) > .comp {
-    block-size: 75px;
-    min-block-size: 75px;
-    flex: 0 0 75px;
+    block-size: 100px;
+    min-block-size: 100px;
+    flex: 0 0 100px;
     box-sizing: border-box;
     align-content: flex-start;
     overflow: visible;
