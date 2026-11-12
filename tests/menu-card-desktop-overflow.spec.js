@@ -67,7 +67,7 @@ test.describe('Desktop delivery card layout', () => {
     }
   });
 
-  test('pizza option groups align after variable-length descriptions', async ({ page }) => {
+  test('pizza option groups align after variable-length descriptions', async ({ page }, testInfo) => {
     await page.evaluate(() => {
       window.dcat = 'pizza';
       window.renderDeliveryMenu();
@@ -77,6 +77,10 @@ test.describe('Desktop delivery card layout', () => {
     await expect.poll(() => cards.count()).toBeGreaterThan(1);
     await page.addStyleTag({ content: '#deliveryGrid > .card { content-visibility: visible !important; contain-intrinsic-block-size: auto !important; }' });
     for (const card of await cards.all()) await card.scrollIntoViewIfNeeded();
+    await testInfo.attach('delivery-pizza-four-columns', {
+      body: await page.locator('#deliveryGrid').screenshot({ animations: 'disabled' }),
+      contentType: 'image/png'
+    });
 
     const rows = await page.evaluate(() => {
       const groups = new Map();
@@ -103,7 +107,7 @@ test.describe('Desktop delivery card layout', () => {
     }
   });
 
-  test('roll metadata aligns after variable-length composition chips', async ({ page }) => {
+  test('roll metadata aligns after variable-length composition chips', async ({ page }, testInfo) => {
     await page.evaluate(() => {
       window.dcat = 'rolls';
       window.renderDeliveryMenu();
@@ -113,6 +117,10 @@ test.describe('Desktop delivery card layout', () => {
     await expect.poll(() => cards.count()).toBeGreaterThan(1);
     await page.addStyleTag({ content: '#deliveryGrid > .card { content-visibility: visible !important; contain-intrinsic-block-size: auto !important; }' });
     for (const card of await cards.all()) await card.scrollIntoViewIfNeeded();
+    await testInfo.attach('delivery-rolls-four-columns', {
+      body: await page.locator('#deliveryGrid').screenshot({ animations: 'disabled' }),
+      contentType: 'image/png'
+    });
 
     const rows = await page.evaluate(() => {
       const groups = new Map();
