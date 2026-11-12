@@ -29,19 +29,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Desktop cards can be narrow beside the profile panel. Keep both option labels readable
-   without allowing the crust text to shrink into an ellipsis. */
+/* The option button is split into two columns inside each pizza card.
+   Keep the size label intrinsic and give the crust label the remaining measured width. */
 @media (min-width: 821px) {
-  #deliveryGrid .card .opts .opt-row { gap: 2px; }
+  #deliveryGrid .card .opts .opt-row.opt-top {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: baseline;
+    column-gap: 2px;
+    min-width: 0;
+  }
   #deliveryGrid .card .opts .opt-size {
-    flex: 0 0 auto;
-    font-size: 11px;
+    min-width: 0;
+    font-size: 10px;
   }
   #deliveryGrid .card .opts .opt-crust {
-    flex: 0 0 auto;
-    font-size: 9px;
-    overflow: visible;
+    min-width: 0;
+    justify-self: end;
+    font-size: 8px;
+    overflow: hidden;
     text-overflow: clip;
+    text-align: right;
   }
   /* Delivery pizza compositions can be longer on desktop; render all cards eagerly so
      variable content cannot jump against the old fixed 502px lazy-card reservation. */
