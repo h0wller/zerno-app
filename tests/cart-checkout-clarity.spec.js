@@ -976,3 +976,41 @@ test('scheduled mode stays active until a slot is selected during service hours'
   await expect(slot).toHaveValue('asap');
   await expect(slotLabel).toBeHidden();
 });
+
+
+test('cart continue-shopping action keeps a 44px minimum hit target on narrow mobile screens', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_cart', JSON.stringify([{
+      key: 'pz-marg_1', id: 'pz-marg', oi: 1, name: 'Маргарита',
+      opt: '35 см, пышное', price: 735, sz: 35, qty: 1
+    }]));
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.route('**/api/**', async (route) => {
+    const url = new URL(route.request().url());
+    let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], messages: [], promos: [] };
+    if (url.pathname === '/api/dmenu') body = { items: [MENU_ITEM], updatedAt: '2026-11-03T10:00:00.000Z' };
+    else if (url.pathname === '/api/delivery/info') body = {
+      zones: [{ fee: 200, min: 0, places: ['Янтарный'] }],
+      today: { isOpen: true, canAcceptAsap: true, open: 11, close: 22 },
+      schedule: { open: 11, close: 22 },
+      days: [{ offset: 0, date: '2026-11-04', isOpen: true, open: 11, close: 22 }],
+      busySlots: [], weekPromo: null, pizzaMonth: null
+    };
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+
+  await page.goto('/?brand=delivery');
+  await expect.poll(() => page.evaluate(() => Array.isArray(window.DMENU) && window.DMENU.some((item) => item.id === 'pz-marg'))).toBe(true);
+  await page.locator('#cartFab').click();
+  const continueButton = page.locator('#cartClose');
+  await expect(continueButton).toBeVisible();
+  const rect = await continueButton.evaluate((button) => {
+    const box = button.getBoundingClientRect();
+    return { width: Math.round(box.width), height: Math.round(box.height) };
+  });
+  expect(rect.height).toBeGreaterThanOrEqual(44);
+});
