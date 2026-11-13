@@ -175,6 +175,10 @@
 .chat-h button:hover{
   opacity: 1;
 }
+.chat-h button:focus-visible {
+  outline: 2px solid var(--chat-head-color, #fff);
+  outline-offset: -3px;
+}
 .chat-m{
   flex: 1;
   overflow-y: auto;
@@ -308,6 +312,10 @@
 }
 .chat-i button:hover::before{
   transform: scale(1.07);
+}
+.chat-i button:focus-visible {
+  outline: 2px solid var(--focus, #1A6DDF);
+  outline-offset: -3px;
 }
 .chat-i button:active::before{
   transform: scale(0.92);
