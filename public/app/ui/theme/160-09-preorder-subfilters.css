@@ -331,3 +331,64 @@
   #deliveryGrid .opts .opt-price,
   #deliveryGrid .opts button .op { font-size:10.5px; }
 }
+
+/* Delivery filter chips: 44px hit cell, 40px visible pill. */
+@media (max-width: 820px) {
+  html body #deliveryView #deliverySubFilter .subchip {
+    position: relative;
+    isolation: isolate;
+    box-sizing: border-box;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    margin-top: -2px;
+    margin-bottom: -2px;
+    padding: 0 14px;
+    border: 2px solid transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 2px 0;
+    border: 1.5px solid var(--fr-tan, var(--line, #C99E6E));
+    border-radius: inherit;
+    background: var(--fr-paper, var(--card, #F6EEE1));
+    pointer-events: none;
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip:hover {
+    background: transparent;
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip:hover::before {
+    background: var(--fr-rice, #EFE6D8);
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip.on {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    color: #fff;
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip.on::before,
+  html body #deliveryView #deliverySubFilter .subchip.on:hover::before {
+    border-color: var(--fr-choc, var(--ink, #101418));
+    background: var(--flame, #C03B2A);
+    box-shadow: 2px 2px 0 var(--fr-choc, var(--ink, #101418));
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip:focus-visible {
+    outline: none;
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip:focus-visible::before {
+    outline: 2px solid var(--flame, #C03B2A);
+    outline-offset: 2px;
+  }
+}

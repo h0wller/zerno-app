@@ -45,9 +45,20 @@ test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степп
     const subchip = page.locator('.subchip').first();
     if ((await subchip.count()) > 0) {
       await expect(subchip).toBeVisible();
-      const chipBox = await subchip.boundingBox();
-      expect(Math.round(chipBox.height)).toBe(40);
-      expect(chipBox.width).toBeGreaterThanOrEqual(58);
+      const chipGeometry = await subchip.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const face = getComputedStyle(element, '::before');
+        const top = Number.parseFloat(face.top) || 0;
+        const bottom = Number.parseFloat(face.bottom) || 0;
+        return {
+          hitHeight: box.height,
+          faceHeight: box.height - top - bottom,
+          width: box.width,
+        };
+      });
+      expect(chipGeometry.hitHeight).toBe(44);
+      expect(chipGeometry.faceHeight).toBe(40);
+      expect(chipGeometry.width).toBeGreaterThanOrEqual(58);
     }
 
     // ── Проверка Задачи 3: Степпер +/− скрыт при qty=0 и 40x40px при qty>0 ──

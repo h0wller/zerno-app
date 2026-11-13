@@ -1,3 +1,11 @@
+/* Shared, brand-neutral touch geometry. Keep hit cells separate from visible faces. */
+:root {
+  --tap-visual: 32px;
+  --tap-hit: 44px;
+  --tap-extend-x: calc((var(--tap-hit) - var(--tap-visual)) / 2);
+  --tap-extend-y: calc((var(--tap-hit) - var(--tap-visual)) / 2);
+}
+
 /* ═══ Базовые компоненты (перенесены из styles.js — P3 F5.4/F6.1) ═══ */
 .siteFooter {
   padding: 30px 16px calc(40px + env(safe-area-inset-bottom));

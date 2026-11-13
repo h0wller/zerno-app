@@ -18,7 +18,7 @@ after(() => {
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
-test('VAPID initialization loads web-push CommonJS exports and persists generated keys', () => {
+test('VAPID initialization loads web-push ESM exports and persists generated keys', () => {
   initSchema();
 
   initVapid();

@@ -2,13 +2,10 @@
 // Оркестратор уведомлений: TG + Web Push + FCM
 // Уважает notify_tg / notify_web флаги клиента
 
-import { createRequire } from 'node:module';
 import { db } from '../db/connection.js';
 import { tgSend } from './telegram.js';
 import { sendFcm } from './fcm.js';
-
-const require = createRequire(import.meta.url);
-const { sendNotification } = require('web-push');
+import { sendNotification } from 'web-push';
 // sendSms импортируем для доступности, но в sendPush не используется
 // (может быть использован другими доменами)
 

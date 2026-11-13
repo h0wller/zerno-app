@@ -30,6 +30,29 @@ jobs:
       - name: Run Contract Smoke Tests
         run: npm run smoke
 
+  web-push-node-compat:
+    name: Web Push ESM compatibility / Node 22.11
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Setup Node.js 22.11
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.11.0
+      - name: Normalize dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify web-push v4 native ESM exports on the Node 22 floor
+        run: >-
+          node --input-type=module -e
+          "import { generateVAPIDKeys, setVapidDetails, sendNotification } from 'web-push';
+          const api = { generateVAPIDKeys, setVapidDetails, sendNotification };
+          for (const [name, fn] of Object.entries(api)) {
+            if (typeof fn !== 'function') throw new TypeError(name + ' is not a function');
+          }"
+
   e2e:
     name: E2E / ${{ matrix.group }}
     needs: quality-gates
@@ -64,7 +87,7 @@ jobs:
             workers: 2
           - group: Responsive UI
             project: chromium
-            specs: tests/pour-accessibility.spec.js tests/pwa-responsive.spec.js tests/staff-topbar-layout.spec.js tests/coffee-header-layout.spec.js tests/friday-info-responsive.spec.js tests/poster-hours.spec.js tests/menu-header-rail-layout.spec.js tests/coffee-profile-visual.spec.js tests/chat-support.spec.js tests/menu-image-fallback.spec.js tests/delivery-filter-scroll.spec.js tests/delivery-desktop-filter-layout.spec.js tests/mobile-support-entry.spec.js
+            specs: tests/pour-accessibility.spec.js tests/tap-targets.spec.js tests/pwa-responsive.spec.js tests/staff-topbar-layout.spec.js tests/coffee-header-layout.spec.js tests/friday-info-responsive.spec.js tests/poster-hours.spec.js tests/menu-header-rail-layout.spec.js tests/coffee-profile-visual.spec.js tests/chat-support.spec.js tests/menu-image-fallback.spec.js tests/delivery-filter-scroll.spec.js tests/delivery-desktop-filter-layout.spec.js tests/mobile-support-entry.spec.js
             workers: 2
           - group: Visual stability
             project: chromium
@@ -153,6 +176,38 @@ jobs:
         with:
           name: visual-ux-baseline-test-${{ github.run_id }}
           path: artifacts/visual-audit/
+          retention-days: 30
+
+  production-guest-baseline:
+    name: E2E / Production guest screenshot archive
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 203 }}
+    needs: quality-gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Normalize dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+      - name: Capture read-only production guest viewports
+        run: npx playwright test tests/production-guest-baseline.spec.js --project=chromium --workers=1
+        env:
+          TEST_URL: https://friday.andcoffee.online
+      - name: Upload production guest PNGs and manifest
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-guest-baseline-${{ github.run_id }}
+          path: artifacts/production-guest-baseline/
+          if-no-files-found: error
           retention-days: 30
 
   e2e-mobile:
