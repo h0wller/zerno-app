@@ -126,3 +126,5 @@ The earlier browser automation attempt that reported a 1007×1007 actual viewpor
 - [ ] Cold-first-paint vs hydrated production comparison, customer cart/checkout/profile/bonus/order states, staff roles, native iOS and Telegram Mini App remain open.
 
 The observations in section 6 are historical scrape observations, not current defects. The isolated guest verification and exact-viewport production archive in sections 8–11 supersede the old uncertainty about guest auth state, active brand selection and first-viewport responsive overflow. The ticker/discount/hidden-DOM observations remain open only where explicitly listed in the newer sections.
+
+- [x] Refreshed production archive #3078 was individually opened and inspected at native resolution (all eight PNGs). The coffee desktop auxiliary card is a populated guest profile/login prompt; the earlier “empty panel” interpretation is superseded. Small square ticker separators and 320px coffee search-placeholder truncation remain observations, not yet classified as defects.
