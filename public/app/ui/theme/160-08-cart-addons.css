@@ -390,6 +390,22 @@
   transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
 }
 
+.ac-add-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.ac-add-icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+}
+
 .ac-add-btn.in-cart {
   border-color: var(--fr-choc, #101418);
   background: var(--flame, #C03B2A);
