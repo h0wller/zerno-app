@@ -186,19 +186,22 @@ var deliverySubFilterCueResizeObserver = null;
 function syncDeliverySubFilterCue(bar) {
   if (!bar) return;
 
-  var hasOverflow = !bar.hidden && bar.scrollWidth > bar.clientWidth + 1;
-  var maxScroll = Math.max(0, bar.scrollWidth - bar.clientWidth);
-  var atEnd = hasOverflow && bar.scrollLeft >= maxScroll - 2;
   var viewport = bar.parentElement &&
     bar.parentElement.classList.contains('subfilter-viewport')
     ? bar.parentElement
     : null;
 
+  // Reveal the viewport before measuring: a hidden parent reports zero scroll width.
+  if (viewport) viewport.hidden = bar.hidden;
+
+  var hasOverflow = !bar.hidden && bar.scrollWidth > bar.clientWidth + 1;
+  var maxScroll = Math.max(0, bar.scrollWidth - bar.clientWidth);
+  var atEnd = hasOverflow && bar.scrollLeft >= maxScroll - 2;
+
   bar.classList.toggle('has-overflow', hasOverflow);
   bar.classList.toggle('at-end', atEnd);
 
   if (viewport) {
-    viewport.hidden = bar.hidden;
     viewport.classList.toggle('has-overflow', hasOverflow);
     viewport.classList.toggle('at-end', atEnd);
   }
