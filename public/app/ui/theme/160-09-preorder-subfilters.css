@@ -150,6 +150,7 @@
 
 .subchip {
   position: relative;
+  isolation: isolate;
   flex: 0 0 auto;
   height: 44px;
   min-height: 44px;
@@ -173,7 +174,7 @@
   content: "";
   position: absolute;
   inset: 2px 0;
-  z-index: 0;
+  z-index: -1;
   border-radius: 999px;
   background: var(--fr-paper, var(--card));
   border: 1.5px solid var(--fr-tan, var(--line));

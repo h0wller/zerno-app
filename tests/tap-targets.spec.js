@@ -161,6 +161,8 @@ for (const width of [320, 375, 390]) {
           width: rect.width,
           height: rect.height,
           radius: face.borderRadius,
+          faceZIndex: face.zIndex,
+          isolation: getComputedStyle(element).isolation,
           faceHeight: rect.height - faceTop - faceBottom,
           faceTop,
           faceBottom,
@@ -182,6 +184,8 @@ for (const width of [320, 375, 390]) {
       expect(metrics.faceTop, JSON.stringify(metrics)).toBe(2);
       expect(metrics.faceBottom, JSON.stringify(metrics)).toBe(2);
       expect(metrics.radius).toBe('999px');
+      expect(metrics.faceZIndex).toBe('-1');
+      expect(metrics.isolation).toBe('isolate');
       expect(metrics.targetWithinRail, JSON.stringify(metrics)).toBe(true);
       expect(metrics.railClientHeight).toBeGreaterThanOrEqual(44);
       expect(metrics.railScrollHeight).toBeLessThanOrEqual(metrics.railClientHeight);

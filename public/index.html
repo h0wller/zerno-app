@@ -1079,6 +1079,7 @@ html[data-brand="delivery"] {
   html body #deliveryView #deliverySubFilter .subchip,
   html body #deliveryView .subfilter-bar .subchip {
     position:relative;
+    isolation:isolate;
     box-sizing:border-box;
     height:44px;
     min-height:44px;
@@ -1095,7 +1096,7 @@ html[data-brand="delivery"] {
     content:"";
     position:absolute;
     inset:2px 0;
-    z-index:0;
+    z-index:-1;
     border-radius:999px;
     background:var(--fr-paper,#F6EEE1);
     border:1.5px solid var(--fr-tan,#C99E6E);
@@ -3225,6 +3226,7 @@ html body #tickerTrack .tickerGroup > span {
   html body #deliveryView #deliverySubFilter .subchip,
   html body #deliveryView .subfilter-bar .subchip {
     position:relative;
+    isolation:isolate;
     box-sizing:border-box;
     height:44px;
     min-height:44px;
@@ -3241,7 +3243,7 @@ html body #tickerTrack .tickerGroup > span {
     content:"";
     position:absolute;
     inset:2px 0;
-    z-index:0;
+    z-index:-1;
     border-radius:999px;
     background:var(--fr-paper,#F6EEE1);
     border:1.5px solid var(--fr-tan,#C99E6E);
