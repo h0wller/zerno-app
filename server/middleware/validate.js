@@ -45,5 +45,5 @@ export const SetupPinSchema = z.object({
 }).passthrough();
 
 export const ActivateCodeSchema = z.object({
-  code: z.string().trim().regex(/^\d{16,64}$/, 'Код доступа должен содержать от 16 до 64 цифр')
+  code: z.string().trim().regex(/^[A-Za-z0-9_-]{16,64}$/, 'Код доступа должен содержать от 16 до 64 символов')
 }).passthrough();
