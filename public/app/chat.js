@@ -12,6 +12,25 @@ var scKey = null, scClosedView = false;
 
   /* ── гость ↔ бот ── */
   const now = () => new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+  function chatFetch(url, options) {
+    const init = options || {};
+    const headers = Object.assign({}, init.headers || {});
+    let token = window.USER_TOKEN;
+    try { token = token || localStorage.getItem('zt_user'); } catch (_) {}
+    if (token) headers.Authorization = 'Bearer ' + token;
+    return fetch(url, Object.assign({}, init, { headers }));
+  }
+
+  function createAnonymousChatKey() {
+    if (!window.crypto || typeof window.crypto.getRandomValues !== 'function') {
+      throw new Error('Secure random generation is required for anonymous chat');
+    }
+    const bytes = new Uint8Array(32);
+    window.crypto.getRandomValues(bytes);
+    return 'anon-' + Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+  }
+
   const unreadKey = () => 'zt_unread_' + activeChatKey();
 
   function addMsg(who, text) {
@@ -63,7 +82,10 @@ var scKey = null, scClosedView = false;
   function chatKey() {
     if (me) return me.id;
     let k = localStorage.getItem('zt_chatkey');
-    if (!k) { k = 'anon-' + Math.random().toString(36).slice(2, 10); localStorage.setItem('zt_chatkey', k); }
+    if (!/^anon-[a-f0-9]{64}$/.test(k || '')) {
+      k = createAnonymousChatKey();
+      localStorage.setItem('zt_chatkey', k);
+    }
     return k;
   }
 
@@ -83,7 +105,7 @@ function sendChat(text) {
   $('#chatInput').value = '';
   const key = activeChatKey();
   if (staffIn) {
-    fetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human: 0 }) }).catch(() => {});
+    chatFetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human: 0 }) }).catch(() => {});
     return;
   }
   const reply = botReply(text);
@@ -101,12 +123,11 @@ function sendChat(text) {
   } else {
     out = reply;
   }
-  fetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human }) }).catch(() => {});
+  chatFetch(API_BASE + '/api/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text, human }) }).catch(() => {});
   showTyping();
   setTimeout(() => {
     hideTyping();
     addMsg('bot', out);
-    fetch(API_BASE + '/api/chat/botlog', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, text: out }) }).catch(() => {});
     if (!$('#chatPanel').classList.contains('open')) {
       unread++;
       const b = $('#chatBadge');
@@ -125,7 +146,7 @@ function showBadge() {
   async function initChatPointer() {
     try {
       const r = await (
-        await fetch(
+        await chatFetch(
           API_BASE +
             "/api/chat/thread?key=" +
             encodeURIComponent(activeChatKey()) +
@@ -150,7 +171,7 @@ function showBadge() {
   async function loadHistory() {
     try {
       const r = await (
-        await fetch(
+        await chatFetch(
           API_BASE +
             "/api/chat/thread?key=" +
             encodeURIComponent(activeChatKey()) +
@@ -284,7 +305,7 @@ async function updateStaffBadge() {
   setInterval(async () => {
     if (document.visibilityState !== 'visible') return;
     try {
-      const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(activeChatKey()) + '&after=' + lastChatId)).json();
+      const r = await (await chatFetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(activeChatKey()) + '&after=' + lastChatId)).json();
       for (const m of r.msgs) {
         lastChatId = Math.max(lastChatId, m.id);
         if (m.who === 'staff') {
@@ -305,7 +326,7 @@ async function updateStaffBadge() {
     $('#chatFab').classList.toggle('open', p.classList.contains('open'));
     if (typeof window.sv === 'function') window.sv(); /* <── ДОБАВЛЕНО */
     if (p.classList.contains('open')) {
-      if (!lastChatId) { try { const r = await (await fetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(activeChatKey()) + '&after=0')).json(); for (const m of r.msgs) lastChatId = Math.max(lastChatId, m.id); } catch (e) {} }
+      if (!lastChatId) { try { const r = await (await chatFetch(API_BASE + '/api/chat/thread?key=' + encodeURIComponent(activeChatKey()) + '&after=0')).json(); for (const m of r.msgs) lastChatId = Math.max(lastChatId, m.id); } catch (e) {} }
       localStorage.setItem(unreadKey(), '0'); showBadge(); localStorage.setItem('zt_read_' + activeChatKey(), lastChatId);
       if (!historyLoaded) await loadHistory();
       if (!chatOpened) {
