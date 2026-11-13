@@ -30,6 +30,23 @@ jobs:
       - name: Run Contract Smoke Tests
         run: npm run smoke
 
+  web-push-node-compat:
+    name: Web Push ESM compatibility / Node 22.11
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Setup Node.js 22.11
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.11.0
+      - name: Normalize dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify Web Push ESM integration on the supported Node 22 floor
+        run: node --test tests/unit/seed-vapid.test.mjs tests/unit/push-web-push-import.test.mjs tests/unit/push-route-web-push-import.test.mjs
+
   e2e:
     name: E2E / ${{ matrix.group }}
     needs: quality-gates
