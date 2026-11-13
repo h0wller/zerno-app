@@ -197,7 +197,10 @@ for (const width of [320, 375, 390]) {
         await chip.click({
           trial: true,
           scroll: 'none',
-          position: { x: metrics.width / 2, y: metrics.height - 1 },
+          // Playwright click offsets are rounded from the padding box. The last pixel
+          // is verified by elementFromPoint above; use the first lower expansion
+          // pixel for actionability so the test does not round outside the button.
+          position: { x: metrics.width / 2, y: metrics.height - 2 },
         });
       }
     }
