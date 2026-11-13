@@ -11,6 +11,14 @@ export const TG_WEBHOOK_SECRET = process.env.TG_WEBHOOK_SECRET || '';
 export const PUBLIC_URL = String(process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : '')).replace(/\/+$/, '');
 export const APP_URL = PUBLIC_URL || 'https://friday.andcoffee.online';
 
+export function escapeTelegramHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
   const token = TG_TOKEN;
   if (!token) return { ok: false, reason: 'no_token' };
