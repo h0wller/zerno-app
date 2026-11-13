@@ -4396,14 +4396,14 @@ html body #tickerTrack .tickerGroup > span {
       <button class="mclose" id="pinClose" aria-label="Закрыть">✕</button>
       <h3>Код доступа</h3>
       <div class="msub">
-        Введите код, который выдал владелец кофейни.<br />Вкладки «Кассир» и
-        «Админ» открываются только сотрудникам.
+        Введите секретный код сотрудника (16–64 символа), который выдал владелец кофейни.<br />
+        Вкладки «Кассир» и «Админ» открываются только сотрудникам.
       </div>
       <form id="pinForm">
         <input type="text" autocomplete="username" hidden />
         <label for="pinInput" class="sr-only">Код доступа</label>
         <input class="pin" id="pinInput" name="pinInput" type="text" inputmode="text" maxlength="64"
-          placeholder="••••" autocomplete="off" />
+          placeholder="Код сотрудника" autocomplete="off" />
         <button type="button" class="cta" id="pinGo">Активировать</button>
       </form>
       <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
