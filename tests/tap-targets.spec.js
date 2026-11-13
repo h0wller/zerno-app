@@ -215,7 +215,7 @@ for (const width of [320, 390]) {
       expect(metrics.pseudoContent, JSON.stringify(metrics)).not.toBe('none');
       expect(metrics.pseudoTop, JSON.stringify(metrics)).toBe(2);
       expect(metrics.pseudoBottom, JSON.stringify(metrics)).toBe(2);
-      expect(metrics.pseudoPointerEvents, JSON.stringify(metrics)).toBe('auto');
+      expect(metrics.pseudoPointerEvents, JSON.stringify(metrics)).toBe('none');
       expect(metrics.expandedAreaWithinRail, JSON.stringify(metrics)).toBe(true);
       expect(metrics.edgeHits.every(Boolean), JSON.stringify(metrics)).toBe(true);
       await chip.click({ trial: true });
