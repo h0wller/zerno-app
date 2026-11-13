@@ -344,9 +344,9 @@ authRouter.post('/api/auth/activate', userGuard, validate(ActivateCodeSchema), (
   if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
   const code = String(req.body.code || '').trim();
   let role = null;
-  if (ADMIN_CODE.length >= 12 && code.length >= 12 && safeEqual(code, ADMIN_CODE)) role = 'admin';
-  else if (CASHIER_CODE.length >= 12 && code.length >= 12 && safeEqual(code, CASHIER_CODE)) role = 'cashier';
-  else if (DISPATCH_CODE.length >= 12 && code.length >= 12 && safeEqual(code, DISPATCH_CODE)) role = 'dispatch';
+  if (ADMIN_CODE.length >= 16 && code.length >= 16 && safeEqual(code, ADMIN_CODE)) role = 'admin';
+  else if (CASHIER_CODE.length >= 16 && code.length >= 16 && safeEqual(code, CASHIER_CODE)) role = 'cashier';
+  else if (DISPATCH_CODE.length >= 16 && code.length >= 16 && safeEqual(code, DISPATCH_CODE)) role = 'dispatch';
   if (!role) {
     registerFail(req);
     return res.status(403).json({ error: 'Неверный код доступа' });
