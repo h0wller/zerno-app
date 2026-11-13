@@ -118,9 +118,9 @@ app.get('/api/tg/diag', adminGuard, async (req, res) => {
     },
     // F3.60: наличие кодов сотрудников в окружении (значения не наружу).
     codes_present: {
-      admin: String(process.env.ADMIN_CODE || '').trim().length >= 16,
-      cashier: String(process.env.CASHIER_CODE || '').trim().length >= 16,
-      dispatch: String(process.env.DISPATCH_CODE || '').trim().length >= 16,
+      admin: /^[A-Za-z0-9_-]{16,64}$/.test(String(process.env.ADMIN_CODE || '').trim()),
+      cashier: /^[A-Za-z0-9_-]{16,64}$/.test(String(process.env.CASHIER_CODE || '').trim()),
+      dispatch: /^[A-Za-z0-9_-]{16,64}$/.test(String(process.env.DISPATCH_CODE || '').trim()),
     },
   });
 });
