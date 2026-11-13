@@ -39,10 +39,13 @@ async function waitForServer() {
   throw new Error(`Timed out waiting for test server:\n${output}`);
 }
 
-async function api(route, body) {
+async function api(route, body, token) {
   const response = await fetch(base + route, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      ...(token ? { authorization: 'Bearer ' + token } : {})
+    },
     body: JSON.stringify(body)
   });
   let json = {};
@@ -55,6 +58,20 @@ async function seedOtp(key, code, expiresInMs = 300000) {
   assert.equal(result.status, 200, JSON.stringify(result.json));
 }
 
+async function webhook(payload) {
+  const response = await fetch(base + '/api/tg/webhook', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-telegram-bot-api-secret-token': 'integration-test-secret'
+    },
+    body: JSON.stringify(payload)
+  });
+  let json = {};
+  try { json = await response.json(); } catch {}
+  return { status: response.status, json };
+}
+
 before(async () => {
   server = spawn(process.execPath, ['server.js'], {
     cwd: root,
@@ -65,7 +82,8 @@ before(async () => {
       DB_PATH: dbPath,
       TELEGRAM_BOT_TOKEN: '',
       PUBLIC_URL: '',
-      TG_WEBHOOK_SECRET: ''
+      TG_WEBHOOK_SECRET: 'integration-test-secret',
+      ADMIN_CODE: 'integration-test-admin'
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -102,6 +120,94 @@ test('registration without consent neither creates a usable profile nor consumes
   assert.equal(accepted.status, 200, JSON.stringify(accepted.json));
   assert.ok(accepted.json.token);
   assert.ok(accepted.json.customer?.id);
+});
+
+
+test('cashier-created profile requires phone proof before first PIN is set', async () => {
+  const adminPhone = '+7 900 000-01-10';
+  await seedOtp('reg:' + adminPhone, '2468');
+  const admin = await api('/api/auth/register', {
+    name: 'Auth Test Admin', phone: adminPhone, pin: '1357', code: '2468', consent: true
+  });
+  assert.equal(admin.status, 200, JSON.stringify(admin.json));
+
+  const promoted = await api('/api/auth/activate', { code: 'integration-test-admin' }, admin.json.token);
+  assert.equal(promoted.status, 200, JSON.stringify(promoted.json));
+  assert.equal(promoted.json.customer?.role, 'admin');
+
+  const phone = '+7 900 000-01-11';
+  const created = await api('/api/staff/customers', {
+    name: 'Cashier Created Guest', phone
+  }, admin.json.token);
+  assert.equal(created.status, 200, JSON.stringify(created.json));
+  assert.equal(created.json.customer?.verified, 1);
+
+  const anonymousSetup = await api('/api/auth/setup-pin', { phone, pin: '4321' });
+  assert.equal(anonymousSetup.status, 401);
+  assert.equal(anonymousSetup.json.token, undefined);
+
+  const anonymousLogin = await api('/api/auth/login', { phone, pin: '4321' });
+  assert.equal(anonymousLogin.status, 409);
+  assert.equal(anonymousLogin.json.token, undefined);
+
+  const otpRequest = await api('/api/auth/request-otp', { phone });
+  assert.equal(otpRequest.status, 200, JSON.stringify(otpRequest.json));
+  assert.equal(otpRequest.json.via, 'sms');
+
+  await seedOtp(phone, '5731');
+  const verifiedLogin = await api('/api/auth/login', { phone, otp: '5731' });
+  assert.equal(verifiedLogin.status, 200, JSON.stringify(verifiedLogin.json));
+  assert.equal(verifiedLogin.json.needPin, true);
+
+  const pinSetup = await api('/api/auth/setup-pin', { pin: '4321' }, verifiedLogin.json.token);
+  assert.equal(pinSetup.status, 200, JSON.stringify(pinSetup.json));
+  assert.equal(pinSetup.json.customer?.id, created.json.customer.id);
+
+  const pinLogin = await api('/api/auth/login', { phone, pin: '4321' });
+  assert.equal(pinLogin.status, 200, JSON.stringify(pinLogin.json));
+  assert.ok(pinLogin.json.token);
+});
+
+test('Telegram registration polling is scoped to a random one-attempt secret, not the phone number', async () => {
+  const phone = '+7 900 000-01-12';
+  const requested = await api('/api/auth/request-reg-otp', {
+    name: 'Telegram Poll Guest', phone, via: 'tg'
+  });
+  assert.equal(requested.status, 200, JSON.stringify(requested.json));
+  assert.match(requested.json.pollToken || '', /^[a-f0-9]{64}$/);
+
+  const botToken = new URL(requested.json.tgUrl).searchParams.get('start')?.replace(/^reg_/, '');
+  assert.ok(botToken);
+
+  const chatId = 900000112;
+  const started = await webhook({
+    message: { chat: { id: chatId }, from: { id: chatId }, text: '/start reg_' + botToken }
+  });
+  assert.equal(started.status, 200, JSON.stringify(started.json));
+
+  const confirmed = await webhook({
+    message: {
+      chat: { id: chatId },
+      from: { id: chatId, first_name: 'Telegram Poll Guest' },
+      contact: { phone_number: phone, user_id: chatId }
+    }
+  });
+  assert.equal(confirmed.status, 200, JSON.stringify(confirmed.json));
+
+  const phoneLookup = await api('/api/auth/check-reg', { phone });
+  assert.equal(phoneLookup.status, 400);
+  assert.equal(phoneLookup.json.token, undefined);
+
+  const wrongPoll = await api('/api/auth/check-reg', { pollToken: 'b'.repeat(64) });
+  assert.equal(wrongPoll.status, 200);
+  assert.equal(wrongPoll.json.confirmed, false);
+  assert.equal(wrongPoll.json.token, undefined);
+
+  const validPoll = await api('/api/auth/check-reg', { pollToken: requested.json.pollToken });
+  assert.equal(validPoll.status, 200, JSON.stringify(validPoll.json));
+  assert.equal(validPoll.json.confirmed, true);
+  assert.ok(validPoll.json.token);
+  assert.equal(validPoll.json.customer?.phone, phone);
 });
 
 test('OTP login rejects wrong and expired codes, then consumes a valid code once', async () => {
