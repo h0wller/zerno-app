@@ -1540,3 +1540,36 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
     display: inline-flex;
   }
 }
+
+
+/* Mobile avatar: retain the 44px hit cell while drawing only a 32px brand face. */
+@media (max-width: 820px) {
+  html body header.topbar #profileTopBtn {
+    position: relative;
+    isolation: isolate;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  html body header.topbar #profileTopBtn::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: var(--tap-extend-y) var(--tap-extend-x);
+    border-radius: 50%;
+    background: var(--ava-bg, linear-gradient(135deg, #3e8fd0, #123a6b));
+    border: var(--ava-border, 1.5px solid #fff);
+    box-shadow: var(--ava-shadow, none);
+    pointer-events: none;
+  }
+
+  html body header.topbar #profileTopBtn:focus-visible {
+    outline: none;
+  }
+
+  html body header.topbar #profileTopBtn:focus-visible::before {
+    outline: 2px solid var(--profile-focus-ring, currentColor);
+    outline-offset: 2px;
+  }
+}
