@@ -76,6 +76,7 @@ test('archive both production guest menus at four viewport sizes without changin
           const headStyle = head ? getComputedStyle(head) : null;
           const cardStyle = card ? getComputedStyle(card) : null;
           const railStyle = railButton ? getComputedStyle(railButton) : null;
+          const railRect = railButton?.getBoundingClientRect();
           return {
             stylesheetCount: stylesheets.length,
             pendingStylesheets,
@@ -84,9 +85,14 @@ test('archive both production guest menus at four viewport sizes without changin
               backgroundImage: headStyle.backgroundImage,
             } : null,
             firstCardRadius: cardStyle?.borderRadius || null,
-            railButton: railStyle ? {
+            railButton: railStyle && railRect ? {
               borderRadius: railStyle.borderRadius,
-              display: railStyle.display,
+              width: railRect.width,
+              height: railRect.height,
+              borderTopWidth: railStyle.borderTopWidth,
+              borderTopStyle: railStyle.borderTopStyle,
+              backgroundColor: railStyle.backgroundColor,
+              backgroundImage: railStyle.backgroundImage,
             } : null,
           };
         }, brand);
@@ -95,7 +101,14 @@ test('archive both production guest menus at four viewport sizes without changin
         expect(themeStyleState.menuHead?.backgroundImage).not.toBe('none');
         expect(themeStyleState.firstCardRadius).toBe('18px');
         expect(themeStyleState.railButton?.borderRadius).toBe('14px');
-        expect(themeStyleState.railButton?.display).toBe('flex');
+        expect(themeStyleState.railButton?.width).toBeGreaterThan(0);
+        expect(themeStyleState.railButton?.height).toBeGreaterThanOrEqual(44);
+        expect(themeStyleState.railButton?.borderTopStyle).toBe('solid');
+        expect(Number.parseFloat(themeStyleState.railButton?.borderTopWidth || '0')).toBeGreaterThanOrEqual(1);
+        expect(
+          themeStyleState.railButton?.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          || themeStyleState.railButton?.backgroundImage !== 'none'
+        ).toBe(true);
 
         // profile.js intentionally keeps both profile branches hidden until its
         // /api/me readiness gate resolves; wait for the actual guest branch, not a timer.
