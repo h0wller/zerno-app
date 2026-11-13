@@ -29,7 +29,7 @@ test('missing staff role secrets have no built-in fallback values', () => {
   const script = [
     "import { ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from './server/config.js';",
     "process.stdout.write(JSON.stringify([ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE]));"
-  ].join('\\n');
+  ].join(String.fromCharCode(10));
   const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
     cwd: process.cwd(),
     env: { ...process.env, ADMIN_CODE: '', CASHIER_CODE: '', DISPATCH_CODE: '' },
