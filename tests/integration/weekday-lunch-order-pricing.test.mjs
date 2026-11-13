@@ -88,9 +88,9 @@ before(async () => {
       ZERNO_TEST_NOW: '2026-11-02T08:00:00.000Z',
       DB_PATH: dbPath,
       PORT: String(port),
-      ADMIN_CODE: '3364',
-      CASHIER_CODE: '2468',
-      DISPATCH_CODE: '5719',
+      ADMIN_CODE: 'ci-admin-role-code-2026',
+      CASHIER_CODE: 'ci-cashier-role-code-2026',
+      DISPATCH_CODE: 'ci-dispatch-role-code-2026',
       TELEGRAM_BOT_TOKEN: '',
       TG_WEBHOOK_SECRET: '',
     },
@@ -158,7 +158,7 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
   const activate = await request('/auth/activate', {
     method: 'POST',
     token: staffToken,
-    body: { code: '2468' },
+    body: { code: 'ci-cashier-role-code-2026' },
   });
   assert.equal(activate.status, 200, JSON.stringify(activate.json));
 
