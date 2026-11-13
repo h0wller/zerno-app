@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Verify Web Push ESM integration on the supported Node 22 floor
-        run: node --test tests/unit/seed-vapid.test.mjs tests/unit/push-web-push-import.test.mjs tests/unit/push-route-web-push-import.test.mjs
+        run: node --test tests/unit/seed-vapid.test.mjs tests/unit/push-web-push-import.test.mjs tests/unit/push-route-web-push-import.test.mjs tests/unit/web-push-esm-contract.test.mjs
 
   e2e:
     name: E2E / ${{ matrix.group }}
