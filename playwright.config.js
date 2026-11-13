@@ -35,9 +35,9 @@ export default defineConfig({
       NODE_ENV: 'test',
       SMS_AUTH_ENABLED: 'true',
       SMSRU_API_ID: '',
-      ADMIN_CODE: process.env.ADMIN_CODE || '3364',
-      CASHIER_CODE: process.env.CASHIER_CODE || '2468',
-      DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
+      ADMIN_CODE: String(process.env.ADMIN_CODE || '').length >= 16 ? process.env.ADMIN_CODE : 'ci-admin-role-code-2026',
+      CASHIER_CODE: String(process.env.CASHIER_CODE || '').length >= 16 ? process.env.CASHIER_CODE : 'ci-cashier-role-code-2026',
+      DISPATCH_CODE: String(process.env.DISPATCH_CODE || '').length >= 16 ? process.env.DISPATCH_CODE : 'ci-dispatch-role-code-2026',
     },
   },
 
