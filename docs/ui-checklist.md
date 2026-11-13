@@ -92,3 +92,12 @@
 - [ ] Customer cart, checkout, profile, bonuses, order confirmation/tracking, and staff roles remain outside this guest-menu baseline.
 
 A browser automation attempt that reported a 1007×1007 actual viewport is classified as incomplete and is not used as evidence for the requested viewport matrix. Do not mark the screenshot protocol complete until the eight production PNGs are archived and inspected.
+
+## 10. Production guest runtime follow-up — 2026-11-13
+
+- [x] Isolated guest sessions verified the expected active brand root for both URLs: `data-brand=coffee` / `brand-coffee` and `data-brand=delivery` / `brand-delivery`.
+- [x] Staff-only controls were not visible in either isolated guest session.
+- [x] Production DOM showed no horizontal overflow at 320×740, 390×844, 768×1024 and 1440×900 for both brands; vertical scrollbar width is excluded by comparing `scrollWidth` with `clientWidth`.
+- [ ] Persistent production PNG archive/manual inspection remains incomplete: the two 390×844 screens were visually inspected in a prior session but not retained; the later browser automation could not change viewport or export PNGs.
+- [ ] Ticker duplicate/loop semantics, exact hidden dual-brand DOM inventory, discount eligibility wording, native iOS Safari and customer/staff overlay states remain unverified.
+- Production identity is tied to commit `c005b1c6832a5b722c97c43dd7cd525f638c209b` by [successful Timeweb deploy run #43383317619](https://github.com/h0wller/zerno-app/actions/runs/43383317619); this is the current production baseline and not PR #203.
