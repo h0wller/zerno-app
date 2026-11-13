@@ -39,10 +39,13 @@ async function waitForServer() {
   throw new Error(`Timed out waiting for test server:\n${output}`);
 }
 
-async function api(route, body) {
+async function api(route, body, token) {
   const response = await fetch(base + route, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      ...(token ? { authorization: 'Bearer ' + token } : {})
+    },
     body: JSON.stringify(body)
   });
   let json = {};
@@ -63,6 +66,9 @@ before(async () => {
       NODE_ENV: 'test',
       PORT: String(port),
       DB_PATH: dbPath,
+      ADMIN_CODE: '',
+      CASHIER_CODE: '',
+      DISPATCH_CODE: '',
       TELEGRAM_BOT_TOKEN: '',
       PUBLIC_URL: '',
       TG_WEBHOOK_SECRET: ''
@@ -102,6 +108,23 @@ test('registration without consent neither creates a usable profile nor consumes
   assert.equal(accepted.status, 200, JSON.stringify(accepted.json));
   assert.ok(accepted.json.token);
   assert.ok(accepted.json.customer?.id);
+});
+
+test('staff role activation fails closed when role secrets are missing or weak', async () => {
+  const registered = await api('/api/auth/register', {
+    name: 'No Role Secret Test', phone: '+7 900 000-01-09', pin: '1234', consent: true
+  });
+  assert.equal(registered.status, 200, JSON.stringify(registered.json));
+  assert.ok(registered.json.token);
+
+  const short = await api('/api/auth/activate', { code: '1234' }, registered.json.token);
+  assert.equal(short.status, 400);
+
+  const plausible = await api('/api/auth/activate', {
+    code: 'ci-admin-role-code-2026'
+  }, registered.json.token);
+  assert.equal(plausible.status, 403);
+  assert.equal(plausible.json.customer, undefined);
 });
 
 test('OTP login rejects wrong and expired codes, then consumes a valid code once', async () => {
