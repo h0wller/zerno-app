@@ -1,13 +1,5 @@
 import crypto from 'node:crypto';
 
-export {
-  clearLock,
-  lockKey,
-  lockedSeconds,
-  pinLocks,
-  registerFail
-} from './auth-rate-limits.js';
-
 /**
  * Хеширует PIN-код с использованием SHA-256 и соли 'pin:'.
  * @param {string|number} p - PIN-код.
