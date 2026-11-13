@@ -54,7 +54,7 @@ async function api(method, route, { body, token, chatToken } = {}) {
   });
   let json = {};
   try { json = await response.json(); } catch {}
-  return { status: response.status, json };
+  return { status: response.status, json, headers: Object.fromEntries(response.headers.entries()) };
 }
 
 async function register(label, suffix) {
@@ -186,6 +186,52 @@ test('anonymous conversation requires a high-entropy capability and does not per
     chatToken
   });
   assert.equal(legacyWeakKey.status, 400);
+});
+
+test('anonymous capability claims are exclusive under concurrent first use', async () => {
+  const key = 'anon-' + randomBytes(32).toString('hex') + ':c';
+  const firstToken = randomBytes(32).toString('hex');
+  const secondToken = randomBytes(32).toString('hex');
+
+  const results = await Promise.all([
+    api('POST', '/api/chat/send', {
+      chatToken: firstToken,
+      body: { key, text: 'First claimant', human: 0, ctx: 'coffee' }
+    }),
+    api('POST', '/api/chat/send', {
+      chatToken: secondToken,
+      body: { key, text: 'Second claimant', human: 0, ctx: 'coffee' }
+    })
+  ]);
+
+  assert.deepEqual(results.map(result => result.status).sort(), [200, 403]);
+  const winner = results[0].status === 200 ? firstToken : secondToken;
+  const loser = winner === firstToken ? secondToken : firstToken;
+  const history = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(key), { chatToken: winner });
+  assert.equal(history.status, 200);
+  const rejected = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(key), { chatToken: loser });
+  assert.equal(rejected.status, 403);
+});
+
+test('chat polling enforces per-thread limits and returns Retry-After', async () => {
+  const key = 'anon-' + randomBytes(32).toString('hex') + ':c';
+  const chatToken = randomBytes(32).toString('hex');
+  const seeded = await api('POST', '/api/chat/send', {
+    chatToken,
+    body: { key, text: 'Seed rate-limit thread', human: 0, ctx: 'coffee' }
+  });
+  assert.equal(seeded.status, 200);
+
+  let limited = null;
+  for (let i = 0; i < 61; i++) {
+    const response = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(key), { chatToken });
+    if (response.status === 429) {
+      limited = response;
+      break;
+    }
+  }
+  assert.ok(limited, 'polling beyond the per-thread limit must be rate limited');
+  assert.ok(Number(limited.headers['retry-after']) > 0);
 });
 
 test('chat request validation rejects oversized messages and invalid poll cursors', async () => {
