@@ -1078,6 +1078,7 @@ html[data-brand="delivery"] {
   }
   html body #deliveryView #deliverySubFilter .subchip,
   html body #deliveryView .subfilter-bar .subchip {
+    position:relative;
     box-sizing:border-box;
     height:44px;
     min-height:44px;
@@ -1088,6 +1089,17 @@ html[data-brand="delivery"] {
     box-shadow:none;
     color:var(--fr-choc,#3A2A1C);
     padding:0 14px;
+  }
+  html body #deliveryView #deliverySubFilter .subchip::before,
+  html body #deliveryView .subfilter-bar .subchip::before {
+    content:"";
+    position:absolute;
+    inset:2px 0;
+    z-index:0;
+    border-radius:999px;
+    background:var(--fr-paper,#F6EEE1);
+    border:1.5px solid var(--fr-tan,#C99E6E);
+    pointer-events:none;
   }
   html body #deliveryView #deliverySubFilter .subchip:hover::before,
   html body #deliveryView .subfilter-bar .subchip:hover::before {
@@ -3212,6 +3224,7 @@ html body #tickerTrack .tickerGroup > span {
   }
   html body #deliveryView #deliverySubFilter .subchip,
   html body #deliveryView .subfilter-bar .subchip {
+    position:relative;
     box-sizing:border-box;
     height:44px;
     min-height:44px;
@@ -3222,6 +3235,17 @@ html body #tickerTrack .tickerGroup > span {
     box-shadow:none;
     color:var(--fr-choc,#3A2A1C);
     padding:0 14px;
+  }
+  html body #deliveryView #deliverySubFilter .subchip::before,
+  html body #deliveryView .subfilter-bar .subchip::before {
+    content:"";
+    position:absolute;
+    inset:2px 0;
+    z-index:0;
+    border-radius:999px;
+    background:var(--fr-paper,#F6EEE1);
+    border:1.5px solid var(--fr-tan,#C99E6E);
+    pointer-events:none;
   }
   html body #deliveryView #deliverySubFilter .subchip:hover::before,
   html body #deliveryView .subfilter-bar .subchip:hover::before {
