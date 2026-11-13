@@ -1,5 +1,8 @@
 import crypto from 'node:crypto';
 import { db } from '../db/connection.js';
+import { ensureAuthSecuritySchema } from '../db/schema.js';
+
+ensureAuthSecuritySchema();
 
 const FAILURE_WINDOW_MS = 15 * 60 * 1000;
 const LOCK_BASE_MS = 60 * 1000;
@@ -97,6 +100,7 @@ export function registerFail(req, tag = 'staff', subject = '') {
 
       getStatements().upsertRateLimit.run(key, fails, streak, lockedUntil, now);
     }
+    db.prepare('DELETE FROM auth_rate_limits WHERE updated_at < ?').run(now - 7 * DAY_MS);
   });
   update();
 }
@@ -129,5 +133,11 @@ export function recordOtpSend(flow, phone, now = Date.now()) {
     ? current.windowEnds
     : now + DAY_MS;
   getStatements().upsertOtpSendLimit.run(String(flow), phoneHash(phone), sent, now, windowEnds);
+  db.prepare('DELETE FROM auth_otp_send_limits WHERE window_ends < ?').run(now - 7 * DAY_MS);
   return { sent, lastSent: now, windowEnds };
+}
+
+export function clearAuthRateLimits() {
+  db.prepare('DELETE FROM auth_rate_limits').run();
+  db.prepare('DELETE FROM auth_otp_send_limits').run();
 }
