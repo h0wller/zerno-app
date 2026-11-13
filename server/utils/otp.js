@@ -74,8 +74,10 @@ export function isOtpLive(entry, now = Date.now()) {
  * и удовлетворяет условию проверки.
  */
 export function consumeOtp(key, predicate, now = Date.now()) {
-  const entry = otpStore.get(key);
+  // Read the raw Map entry so an explicit test/verification timestamp controls
+  // expiry instead of ExpiringOtpStore.get() silently substituting Date.now().
+  const entry = Map.prototype.get.call(otpStore, key);
   if (!isOtpLive(entry, now) || !predicate(entry)) return null;
-  otpStore.delete(key);
+  Map.prototype.delete.call(otpStore, key);
   return entry;
 }
