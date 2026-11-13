@@ -175,7 +175,11 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     }));
 
     await page.route('**/api/auth/request-reg-otp', (route) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ pollToken: 'a'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_test' })
+      })
     );
     await page.route('**/api/auth/check-reg*', (route) => {
       markCheckStarted();
