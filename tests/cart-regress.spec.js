@@ -41,13 +41,24 @@ test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степп
     // Цвет текста не должен совпадать с цветом фона
     expect(avaStyles.color).not.toBe(avaStyles.bg);
 
-    // ── Mobile subfilters: compact 32px height with natural width preserved ──
+    // ── Mobile subfilters: 44px hit cell with a 40px visual face ──
     const subchip = page.locator('.subchip').first();
     if ((await subchip.count()) > 0) {
       await expect(subchip).toBeVisible();
-      const chipBox = await subchip.boundingBox();
-      expect(Math.round(chipBox.height)).toBe(40);
-      expect(chipBox.width).toBeGreaterThanOrEqual(58);
+      const chipMetrics = await subchip.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const face = getComputedStyle(element, '::before');
+        const top = Number.parseFloat(face.top) || 0;
+        const bottom = Number.parseFloat(face.bottom) || 0;
+        return {
+          width: box.width,
+          height: box.height,
+          faceHeight: box.height - top - bottom
+        };
+      });
+      expect(Math.round(chipMetrics.height)).toBe(44);
+      expect(chipMetrics.width).toBeGreaterThanOrEqual(58);
+      expect(Math.round(chipMetrics.faceHeight)).toBe(40);
     }
 
     // ── Проверка Задачи 3: Степпер +/− скрыт при qty=0 и 40x40px при qty>0 ──
