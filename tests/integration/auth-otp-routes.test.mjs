@@ -83,7 +83,8 @@ before(async () => {
       TELEGRAM_BOT_TOKEN: '',
       PUBLIC_URL: '',
       TG_WEBHOOK_SECRET: 'integration-test-secret',
-      ADMIN_CODE: 'integration-test-admin'
+      ADMIN_CODE: 'integration-test-admin',
+      SMS_AUTH_ENABLED: 'true'
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
