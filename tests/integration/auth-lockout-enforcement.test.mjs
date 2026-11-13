@@ -117,16 +117,18 @@ test('registration rejects an explicitly supplied incorrect OTP instead of issui
   const phone = '+7 900 000-31-01';
   await seedOtp(phone);
 
-  const rejected = await api('/api/auth/register', {
-    name: 'Wrong OTP Registration',
-    phone,
-    pin: '1234',
-    code: '9999',
-    consent: true
-  });
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const rejected = await api('/api/auth/register', {
+      name: 'Wrong OTP Registration',
+      phone,
+      pin: '1234',
+      code: '9999',
+      consent: true
+    });
 
-  assert.equal(rejected.status, 403, JSON.stringify(rejected.json));
-  assert.equal(rejected.json.token, undefined);
+    assert.equal(rejected.status, 403, JSON.stringify(rejected.json));
+    assert.equal(rejected.json.token, undefined);
+  }
 
   const correctButLocked = await api('/api/auth/register', {
     name: 'Wrong OTP Registration',
