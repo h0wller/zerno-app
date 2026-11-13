@@ -5,6 +5,14 @@
 
   var CS = window.chatState;
 
+  function chatAuthHeaders() {
+    var token = window.USER_TOKEN;
+    try { token = token || localStorage.getItem("zt_user"); } catch (_) {}
+    return token
+      ? { "Content-Type": "application/json", Authorization: "Bearer " + token }
+      : { "Content-Type": "application/json" };
+  }
+
   function activeCtxNow() {
     // Если тема выбрана явно через диплинк ?support=choose — используем её
     var chosen = CS.getChosenSupportCtx && CS.getChosenSupportCtx();
@@ -241,7 +249,7 @@
     try {
       await fetch(API_BASE + "/api/chat/send", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: chatAuthHeaders(),
         body: JSON.stringify({
           key: window.chatKey(),
           text: textVal,
