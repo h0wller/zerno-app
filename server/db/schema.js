@@ -1,6 +1,29 @@
 import { db } from './connection.js';
 
+export function ensureAuthSecuritySchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS auth_locks(
+      scope_key TEXT PRIMARY KEY,
+      fails INTEGER NOT NULL DEFAULT 0,
+      streak INTEGER NOT NULL DEFAULT 0,
+      locked_until INTEGER NOT NULL DEFAULT 0,
+      updated_at INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_auth_locks_updated ON auth_locks(updated_at);
+
+    CREATE TABLE IF NOT EXISTS auth_otp_send_limits(
+      scope_key TEXT PRIMARY KEY,
+      sent_count INTEGER NOT NULL DEFAULT 0,
+      window_ends INTEGER NOT NULL DEFAULT 0,
+      last_sent INTEGER NOT NULL DEFAULT 0,
+      updated_at INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_auth_otp_send_limits_updated ON auth_otp_send_limits(updated_at);
+  `);
+}
+
 export function initSchema() {
+  ensureAuthSecuritySchema();
   db.exec(`
 CREATE TABLE IF NOT EXISTS customers(
   id TEXT PRIMARY KEY, name TEXT, phone TEXT UNIQUE,
