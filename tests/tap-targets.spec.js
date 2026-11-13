@@ -195,6 +195,18 @@ for (const width of [320, 390]) {
             const target = document.elementFromPoint(x, y);
             return target === button || button.contains(target);
           }),
+          edgeTargets: points.map(([x, y]) => {
+            const target = document.elementFromPoint(x, y);
+            const className = typeof target?.className === 'string'
+              ? target.className
+              : target?.className?.baseVal || '';
+            return {
+              tag: target?.tagName?.toLowerCase() || null,
+              id: target?.id || '',
+              className: String(className).slice(0, 80),
+              button: target?.closest('button')?.className || '',
+            };
+          }),
         };
       });
 
