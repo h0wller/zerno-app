@@ -106,3 +106,12 @@ Changes to tap-target geometry must update this register and the matching Playwr
 - [x] Current documentation head `cf9077a54583135fcd686b91282f9e4c7e1b1b86`: [CI #3079](https://github.com/h0wller/zerno-app/actions/runs/43434830992), **15/15 jobs passed**.
 - [x] .ac-add-btn recommendation action remains documented as a 44×44 px target; tests/cart-checkout-clarity.spec.js verifies four side-midpoint hits at 320×740 and 390×844 before and after the in-cart state change.
 - [x] Profile, delivery filter and recommendation-target checks are part of the successful CI matrix. Production guest screenshot archive is separate visual evidence and does not substitute for hit-target tests.
+
+
+## Final verification — CI #3081 — 2026-11-13
+
+- [x] Current PR head at verification start: `7ad60aea08badb261083db1353e9cf9d55e93f65`; CI [#3081](https://github.com/h0wller/zerno-app/actions/runs/43440569609) passed **15/15**.
+- [x] Cart/checkout: **25 passed**; Responsive UI: **139 passed, 4 skipped**; Mobile Chrome: **102 passed, 4 skipped**.
+- [x] Production guest screenshot job passed **1/1**; artifact [#14045198271](https://github.com/h0wller/zerno-app/actions/runs/43440569609/artifacts/14045198271) contains the eight exact-viewport production captures and manifest. The screenshot archive is visual evidence only; it does not replace the `.ac-add-btn` edge-hit assertions.
+- [x] `.ac-add-btn` remains a component-owned 44×44 px target in `160-08-cart-addons.css`; `cart.js` owns rendering, state and action. Four side-midpoint points are checked before and after the in-cart state at 320×740 and 390×844.
+- [ ] The broad 49-file PR diff still requires independent review/scope reconciliation before merge.
