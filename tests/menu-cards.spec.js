@@ -88,7 +88,7 @@ const DELIVERY_ITEMS = [
   },
   {
     id: 'pz-bacon', section: 'delivery', cat: 'pizza', e: '🍕', name: 'С беконом',
-    desc: 'Белый соус, моцарелла, шампиньоны, бекон, маринованный огурец, красный лук',
+    desc: 'Белый соус, моцарелла, шампиньоны, бекон, маринованный огурец, красный лук и свежая зелень',
     comp: ['белый соус', 'моцарелла', 'шампиньоны', 'бекон', 'огурец', 'лук'],
     vol: '25/35 см', price: '0', on: 1, opts: [
       { l: '25 см, пышное', w: '510 г', p: 740, sz: 25 },
@@ -295,7 +295,7 @@ test.describe('Карточки меню: высота, выравнивание
           expect(Math.max(...gaps), 'футер не прижат к низу карточки').toBeLessThanOrEqual(20);
         });
 
-        test('описание не обрезается и сохраняет контракт высоты', async ({ page }) => {
+        test('описание не обрезается и сохраняет контракт высоты', async ({ page }, testInfo) => {
           // Delivery desktop intentionally shows the complete ingredient description.
           // Its height is content-driven; equal card-row heights are asserted separately.
           if (brand.name === 'Доставка' && vp.width >= 821) {
@@ -326,7 +326,42 @@ test.describe('Карточки меню: высота, выравнивание
             return;
           }
 
-          // Coffee and mobile delivery keep a fixed two-line reserve to stabilize cards.
+          // On a one-column mobile delivery grid the canonical pizza composition must be complete.
+          if (brand.name === 'Доставка' && vp.width < 520) {
+            const descriptions = await page.locator(`${brand.grid} .card:not(.skeleton-card) .desc`).evaluateAll((nodes) =>
+              nodes.map((node) => {
+                const style = getComputedStyle(node);
+                return {
+                  text: node.textContent.trim(),
+                  display: style.display,
+                  overflow: style.overflow,
+                  lineClamp: style.webkitLineClamp,
+                  clientHeight: node.clientHeight,
+                  scrollHeight: node.scrollHeight
+                };
+              })
+            );
+
+            expect(descriptions.length, 'у mobile delivery-позиций должны быть описания состава').toBeGreaterThan(0);
+            await testInfo.attach(`delivery-composition-${vp.width}x${vp.height}`, {
+              body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+              contentType: 'image/png'
+            });
+            expect(descriptions.some((item) => item.clientHeight > 37),
+              'длинный состав должен занимать больше двух строк, а не оставаться зажатым в резерве').toBe(true);
+            for (const item of descriptions) {
+              expect(item.display, item.text).toBe('block');
+              expect(item.overflow, item.text).toBe('visible');
+              expect(item.lineClamp, item.text).toBe('none');
+              expect(
+                item.scrollHeight,
+                `Описание «${item.text}» обрезано: ${item.scrollHeight}px внутри ${item.clientHeight}px`
+              ).toBeLessThanOrEqual(item.clientHeight + 1);
+            }
+            return;
+          }
+
+          // Coffee and tablet delivery keep a fixed two-line reserve to stabilize multi-column rows.
           const heights = await page.evaluate((grid) => {
             const out = [];
             for (const c of document.querySelectorAll(`${grid} .card:not(.skeleton-card)`)) {

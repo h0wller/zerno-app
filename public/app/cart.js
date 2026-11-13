@@ -537,7 +537,7 @@ async function refreshPromoLine(sum) {
       var actHtml =
         '<button type="button" class="ac-add-btn' + (qty > 0 ? " in-cart" : "") + '" aria-label="' + actionLabel + '" data-addon-id="' + p.id + '">' +
           '<span class="ac-count" aria-hidden="true">' + (qty > 0 ? qty : "") + "</span>" +
-          '<span class="ac-add-icon" aria-hidden="true">＋</span>' +
+          '<span class="ac-add-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span>' +
         "</button>";
 
       return '<div class="addon-pill-card' + (qty > 0 ? " in-cart" : "") + '">' +

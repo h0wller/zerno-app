@@ -161,6 +161,18 @@ body.editing .card:hover{
    Desktop gets the full wrapped text; grid rows stretch neighboring cards to the same height.
    Coffee descriptions keep the shared two-line clamp. */
 @media (min-width: 821px) {
+  #deliveryGrid .card .cbody .desc {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+    min-height: 0;
+  }
+}
+/* Single-column mobile delivery cards have no row-height alignment constraint.
+   Show the canonical pizza composition in full instead of reserving only two teaser lines. */
+@media (max-width: 519px) {
   #deliveryGrid .cbody .desc {
     display: block;
     -webkit-line-clamp: unset;
@@ -168,6 +180,13 @@ body.editing .card:hover{
     -webkit-box-orient: initial;
     overflow: visible;
     min-height: 0;
+  }
+}
+/* Full descriptions have natural, variable heights; don't reserve the old fixed
+   card size for skipped off-screen items or they jump when content becomes visible. */
+@media (max-width: 519px) {
+  #deliveryGrid .card:nth-child(n+5) {
+    content-visibility: visible;
   }
 }
 .comp{
