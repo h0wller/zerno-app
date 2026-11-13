@@ -129,7 +129,9 @@ test('регистрационная бесплатная доставка со�
 test('контакт из заказа открывает доставочный чат с историей и номером заказа', async ({ page }) => {
   const threadKeys = [];
   await page.route('**/api/chat/thread**', async route => {
-    threadKeys.push(new URL(route.request().url()).searchParams.get('key') || '');
+    const request = route.request();
+    const queryKey = new URL(request.url()).searchParams.get('key') || '';
+    threadKeys.push(queryKey || request.headers()['x-chat-capability'] || '');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
