@@ -152,6 +152,39 @@ test('PIN lockout is scoped to the phone and does not block another customer beh
   }
 });
 
+test('registration OTP send cooldown survives an application restart', async () => {
+  const fixture = await createFixture();
+  try {
+    await startServer(fixture);
+    const phone = '+7 900 200-10-04';
+    const first = await api(fixture, '/api/auth/request-reg-otp', {
+      name: 'OTP Cooldown Guest',
+      phone,
+      via: 'tg'
+    });
+    assert.equal(first.status, 200, JSON.stringify(first.json));
+
+    const immediateRetry = await api(fixture, '/api/auth/request-reg-otp', {
+      name: 'OTP Cooldown Guest',
+      phone,
+      via: 'tg'
+    });
+    assert.equal(immediateRetry.status, 429);
+
+    await stopServer(fixture);
+    await startServer(fixture);
+
+    const retryAfterRestart = await api(fixture, '/api/auth/request-reg-otp', {
+      name: 'OTP Cooldown Guest',
+      phone,
+      via: 'tg'
+    });
+    assert.equal(retryAfterRestart.status, 429, JSON.stringify(retryAfterRestart.json));
+  } finally {
+    await cleanupFixture(fixture);
+  }
+});
+
 test('PIN lockout survives an application restart against the same SQLite database', async () => {
   const fixture = await createFixture();
   try {
