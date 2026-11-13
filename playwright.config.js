@@ -33,6 +33,8 @@ export default defineConfig({
       PORT: String(testPort),
       DB_PATH: process.env.PW_DB_PATH || './.playwright-test.db',
       NODE_ENV: 'test',
+      SMS_AUTH_ENABLED: 'true',
+      SMSRU_API_ID: '',
       ADMIN_CODE: process.env.ADMIN_CODE || '3364',
       CASHIER_CODE: process.env.CASHIER_CODE || '2468',
       DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
