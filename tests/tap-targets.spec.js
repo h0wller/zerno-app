@@ -112,6 +112,62 @@ const deliveryFilterItems = deliveryFilterIngredients.map((ingredient, index) =>
   img: '',
 }));
 
+for (const viewport of [
+  { name: 'mobile', width: 390, height: 844 },
+  { name: 'desktop', width: 1280, height: 800 },
+]) {
+  test(`delivery has exactly one subfilter owner at ${viewport.name} width`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('zt_onb', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.route('**/api/dmenu*', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: deliveryFilterItems }),
+    }));
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+    const filters = page.locator('#deliveryView #deliverySubFilter');
+    await expect(filters).toHaveCount(1);
+    await expect(filters.locator('.subchip')).toHaveCount(deliveryFilterIngredients.length + 1);
+  });
+}
+
+
+test('delivery reserves one empty filter slot before hydration and fills one bar after data arrives', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.addInitScript(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  let releaseMenu;
+  const menuGate = new Promise((resolve) => { releaseMenu = resolve; });
+  await page.route('**/api/dmenu*', async (route) => {
+    await menuGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: deliveryFilterItems }),
+    });
+  });
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+  const slot = page.locator('#deliverySubFilterViewport');
+  const bar = page.locator('#deliverySubFilter');
+  await expect(slot).toHaveCount(1);
+  await expect(bar).toHaveCount(1);
+  await expect(bar).toBeEmpty();
+  await expect(bar).toBeHidden();
+  releaseMenu();
+  await expect(bar).toBeVisible();
+  await expect(bar.locator('.subchip')).toHaveCount(deliveryFilterIngredients.length + 1);
+  await expect(page.locator('#deliveryView #deliverySubFilter')).toHaveCount(1);
+});
+
 for (const width of [320, 375, 390]) {
   test(`delivery subfilters keep their 40px visual pill inside a 44px hit target at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 844 });

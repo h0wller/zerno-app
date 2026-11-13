@@ -92,6 +92,11 @@
     box-sizing:border-box;
   }
 }
+/* Reserve the delivery subfilter viewport's final 56px content + 12px gap before deferred CSS. */
+html[data-brand="delivery"] body #deliveryView #deliverySubFilterViewport {
+  box-sizing: border-box;
+  min-height: 68px;
+}
 /* Reserve the delivery subfilter's 44px hit cell before deferred styles. */
 @media (max-width:820px) {
   html[data-brand="delivery"] body #deliveryView .subfilter-bar .subchip {
@@ -3874,10 +3879,8 @@ html body #tickerTrack .tickerGroup > span {
           </div>
         </div>
         <div id="deliveryBanner"></div>
-        <div id="deliverySubFilter" class="subfilter-bar">
-          <button type="button" class="subchip on" data-sub="all">Все</button>
-          <button type="button" class="subchip" data-sub="chicken">🍗 Курица</button>
-          <button type="button" class="subchip" data-sub="pepperoni">🍕 Пепперони</button>
+        <div class="subfilter-viewport" id="deliverySubFilterViewport">
+          <div id="deliverySubFilter" class="subfilter-bar" hidden></div>
         </div>
         <div class="grid" id="deliveryGrid">
           <article class="card" data-product-id="1">

@@ -49,7 +49,7 @@
 | `menu.js` | `#rail` (категории), `#searchInput`, рендер `#grid`; зум фото (`openZoom`); модалка модификаторов; LCP-картинка eager | `window.renderMenu`, `window.renderRail`, `window.openZoom` |
 | `menu-editor.js` | `openEditor`/`exitEdit`, сохранение emModal, editToggle | `window.openEditor`, `window.exitEdit` |
 | `core/editor.js` | Делегирование кликов `#grid`; фотозона редактора (`renderZone`/`loadImg`/`closeEditor`); имя гостя | `window.renderZone`, `window.closeEditor`, `window.loadImg` |
-| `delivery.js` | `window.DMENU`, cart (инициализация из LS); `#deliveryRail`; рендер `#deliveryGrid` + скелетоны; `.subfilter-viewport` + `#deliverySubFilter` (ингредиентные/дополнительные фильтры, горизонтальный scroll и cue overflow/end); стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
+| `delivery.js` | `window.DMENU`, cart (инициализация из LS); `#deliveryRail`; единственный рендер содержимого `#deliverySubFilter` внутри статически зарезервированного `#deliverySubFilterViewport.subfilter-viewport` (в HTML-shell — пустой слот без чипсов); рендер `#deliveryGrid` + скелетоны (ингредиентные/дополнительные фильтры, горизонтальный scroll и cue overflow/end); стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
 | `ui/delivery-search.js` | Поиск в Пятнице (`#dSearch` внутри `.mh-right`) и фильтрация грида | — |
 
 ## 4. Корзина и чекаут
@@ -110,7 +110,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `chat.js` | Гостевой чат с ботом (`#chatPanel`), стафф-чат (`#staffChatModal`), бейджи, поллинг треда | `window.addMsg`, `window.sendChat`, `window.openStaffChat` |
-| `chat-core.js` | Контекстные суффиксы chatKey, база знаний (kbAnswer), бар подсказок `#chatHintsBar`, `#supportChooseOverlay`, fetch-контракт чата: Bearer владельца или `X-Chat-Access-Token` анонимного треда | `window.setBotName`, `window.reloadChatThread`, `window.showSupportOverlay` |
+| `chat-core.js` | Контекстные суффиксы chatKey, база знаний (kbAnswer), бар подсказок `#chatHintsBar`, `#supportChooseOverlay`, fetch-контракт чата: Bearer владельца или `X-Chat-Access-Token` анонимного треда; вызов сотрудника предлагается только при активной пользовательской сессии | `window.setBotName`, `window.reloadChatThread`, `window.showSupportOverlay` |
 | `core/chat-head.js` | Стабильные классы шапки чата (`.chatHead`/`.chName`) | — |
 | `core/chat-state.js` | Мост контекста чата (`window.chatState`); views.js держит дубль `__fvChatState` для легаси | `window.chatState` |
 

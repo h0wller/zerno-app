@@ -152,6 +152,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         brandContext: box(document.querySelector('#deliveryView .menu-head h1 em')),
         menuHead: box(document.querySelector('#deliveryView .menu-head')),
         menuHeadStyle: (() => { const style = getComputedStyle(document.querySelector('#deliveryView .menu-head')); return { maxHeight: style.maxHeight, overflow: style.overflow }; })(),
+        subfilterSlot: box(document.querySelector('#deliverySubFilterViewport')),
         subchipHeight: document.querySelector('#deliverySubFilter .subchip')?.getBoundingClientRect().height,
         card: box(card),
         media: box(media),
@@ -189,6 +190,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.menuHeadStyle.maxHeight).toBe('100px');
+    expect(before.subfilterSlot).not.toBeNull();
+    expect(before.subfilterSlot.height).toBeGreaterThanOrEqual(56);
     expect(before.staffModeReservedHeight).toBeUndefined();
     expect(before.staffMenuRowReservedHeight).toBeUndefined();
     expect(before.menuHeadStyle.overflow).toBe('visible');
@@ -246,6 +249,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.search.height).toBe(40);
     expect(after.subchipHeight).toBe(44);
     expect(after.subchipHeight).toBe(before.subchipHeight);
+    expect(after.subfilterSlot).toEqual(before.subfilterSlot);
     expect(after.addButton).toEqual(before.addButton);
     expect(after.addRow).toEqual(before.addRow);
     expect(after.activeSubchipColor).toBe('rgb(192, 59, 42)');
