@@ -782,11 +782,17 @@ test('registration hides the paid SMS control while SMS auth is disabled', async
   await expect(page.locator('#logOtp')).toHaveAttribute('aria-describedby', 'logOtpHint');
 });
 
-test('registration exposes the SMS control only after the server opts in', async ({ page }) => {
+test('registration exposes the SMS control only after the server opts in', async ({ page }, testInfo) => {
   await page.route('**/api/config', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ tgUsername: 'test_bot', smsAuthEnabled: true }),
+  }));
+  // Capture the UI state only: do not call the SMS provider from this test.
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true, via: 'sms' }),
   }));
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -797,4 +803,16 @@ test('registration exposes the SMS control only after the server opts in', async
   await page.evaluate(() => window.openAuth(false));
   await expect(page.locator('#regOtpBtn')).toBeVisible();
   await expect(page.locator('#regOtpRow')).toBeHidden();
+
+  await page.locator('#regName').fill('Тест');
+  await page.locator('#regPhone').fill('+7 900 000-00-01');
+  await page.locator('#regOtpBtn').click();
+  await expect(page.locator('#regOtpRow')).toBeVisible();
+  await expect(page.locator('#regOtp')).toBeVisible();
+  await expect(page.locator('#regOtpBtn')).toContainText('Отправить код по SMS повторно');
+
+  await testInfo.attach('registration-sms-opt-in.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
 });
