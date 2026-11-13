@@ -1,6 +1,8 @@
 import { test, beforeEach } from 'node:test';
+import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { hashPin, safeEqual } from '../../server/utils/security.js';
+import { ActivateCodeSchema } from '../../server/middleware/validate.js';
 import {
   clearAuthRateLimits,
   clearLock,
@@ -14,6 +16,27 @@ test('hashPin детерминирован и различает PIN', () => {
   assert.equal(hashPin('1234'), hashPin('1234'));
   assert.notEqual(hashPin('1234'), hashPin('1235'));
   assert.match(hashPin('1234'), /^[0-9a-f]{64}$/);
+});
+
+test('staff role code validation requires 16–64 allowed characters', () => {
+  assert.equal(ActivateCodeSchema.safeParse({ code: 'ci-admin-role-code-2026' }).success, true);
+  assert.equal(ActivateCodeSchema.safeParse({ code: '1234' }).success, false);
+  assert.equal(ActivateCodeSchema.safeParse({ code: 'has spaces and is long enough' }).success, false);
+  assert.equal(ActivateCodeSchema.safeParse({ code: 'x'.repeat(65) }).success, false);
+});
+
+test('missing staff role secrets have no built-in fallback values', () => {
+  const script = [
+    "import { ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from './server/config.js';",
+    "process.stdout.write(JSON.stringify([ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE]));"
+  ].join('\\n');
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+    cwd: process.cwd(),
+    env: { ...process.env, ADMIN_CODE: '', CASHIER_CODE: '', DISPATCH_CODE: '' },
+    encoding: 'utf8'
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), ['', '', '']);
 });
 
 test('safeEqual сравнивает строки и числа', () => {
