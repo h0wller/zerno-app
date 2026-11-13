@@ -148,11 +148,12 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
             };
             const cx = box.left + box.width / 2;
             const cy = box.top + box.height / 2;
+            // The profile hit shape remains circular; sample its four 44px diameter edges.
             const points = [
-              [cx - 21, cy - 21],
-              [cx + 21, cy - 21],
-              [cx - 21, cy + 21],
-              [cx + 21, cy + 21]
+              [cx - 21, cy],
+              [cx + 21, cy],
+              [cx, cy - 21],
+              [cx, cy + 21]
             ];
             return {
               width: box.width,
