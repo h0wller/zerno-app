@@ -502,7 +502,11 @@ test('Telegram registration request continues after closing the auth modal', asy
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ ok: true }),
+      body: JSON.stringify({
+        ok: true,
+        pollToken: 'a'.repeat(64),
+        tgUrl: 'https://t.me/test_bot?start=reg_test'
+      }),
     });
   });
 
