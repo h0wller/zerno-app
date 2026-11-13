@@ -32,13 +32,13 @@ SMS.ru сохранён как будущий платный канал авто
 |---|---|---|
 | `POST /api/auth/request-reg-otp` | Запрос подтверждения регистрации через Telegram; SMS — только при явном включении платной функции | `phone`, `name?`, `via?: tg\|sms`; по умолчанию Telegram; `via=sms` разрешён только при `SMS_AUTH_ENABLED=true` |
 | `POST /api/auth/check-reg` | Проверка Telegram-регистрации конкретной попытки | Body `pollToken`; одноразовый ключ выдаётся вместе с `tgUrl`, по номеру телефона токен не возвращается; SMS и Telegram ограничены по номеру и IP |
-| `POST /api/auth/register` | Создать профиль и завершить регистрацию | Имя, телефон, согласие и подтверждение; возвращает `token` и `customer` |
+| `POST /api/auth/register` | Создать профиль и завершить регистрацию | Имя, телефон, согласие, `code?`; явно переданный SMS OTP проверяется строго при `SMS_AUTH_ENABLED=true`, неверный/просроченный код отклоняется; без кода сохраняется путь ожидания активации сотрудником; лимит ошибок по телефону и IP |
 | `POST /api/auth/tg-link` | Вход или привязка по подписанному Telegram initData | Может вернуть `needPhone` или `needBotConfirm` |
 | `POST /api/auth/login` | Вход по телефону и PIN либо одноразовому коду | PIN или OTP; SMS-OTP принимается только при `SMS_AUTH_ENABLED=true`; первый PIN нельзя задать до подтверждения номера |
 | `POST /api/auth/request-otp` | Запросить входной OTP | `phone`; Telegram — основной канал, SMS fallback только при `SMS_AUTH_ENABLED=true`; иначе при недоступном Telegram возвращается `503`; лимиты по IP и номеру |
 | `POST /api/auth/setup-pin` | Первичная установка PIN в уже подтверждённой сессии | `pin`; требует `userGuard`, не выдаёт токен и не принимает телефон как доказательство владения |
 | `POST /api/auth/set-pin` | Сменить PIN текущего профиля | `pin`; userGuard |
-| `POST /api/auth/activate-guest` | Активировать профиль кодом кассира | `code`; userGuard |
+| `POST /api/auth/activate-guest` | Активировать профиль кодом кассира | `code`; userGuard; пять неверных попыток блокируют новые проверки на период backoff, ответ `429` |
 | `POST /api/auth/activate` | Войти в режим сотрудника по секрету роли | `code` длиной 16–64 символа; userGuard; секрет берётся только из `ADMIN_CODE`/`CASHIER_CODE`/`DISPATCH_CODE` окружения |
 | `POST /api/staff/activate-guest` | Активация ожидающего гостя сотрудником | pendingGuard |
 | `GET /api/staff/pending` | Гости, ожидающие активации | pendingGuard |
