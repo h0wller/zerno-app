@@ -3,9 +3,6 @@ import { db } from '../db/connection.js';
 import { ensureAuthSecuritySchema } from '../db/schema.js';
 
 ensureAuthSecuritySchema();
-import { ensureAuthSecuritySchema } from '../db/schema.js';
-
-ensureAuthSecuritySchema();
 
 const FAILURE_WINDOW_MS = 15 * 60 * 1000;
 const LOCK_BASE_MS = 60 * 1000;
