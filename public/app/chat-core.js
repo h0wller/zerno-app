@@ -226,6 +226,11 @@
      После подтверждённого нажатия кнопка пропадает до следующего такого вызова. */
   var callAllowed = false;
 
+  /* An anonymous capability can send messages but cannot request staff escalation. */
+  function canCallStaff() {
+    return !!(window.USER_TOKEN && window.me);
+  }
+
   /* ── showHints ── */
   function showHints() {
     if (CS.getSupportPending()) return;
@@ -244,7 +249,7 @@
     }
     bar.innerHTML = "";
     var list = (CS.getChatCtx() === "delivery" ? CS.DHINTS : CS.CHINTS).slice();
-    if (callAllowed && !(typeof staffIn !== "undefined" && staffIn)) {
+    if (callAllowed && canCallStaff() && !(typeof staffIn !== "undefined" && staffIn)) {
       list.unshift(CS.CALL_HINT);
     }
     list.forEach(function (h) {
@@ -305,6 +310,13 @@
     var curCtx = activeCtxNow();
     CS.setChatCtx(curCtx);
 
+    if (confirmedHumanCall && !canCallStaff()) {
+      callAllowed = false;
+      window.addMsg("bot", "Чтобы подключить сотрудника, войдите в профиль. Анонимный чат доступен только для переписки с ботом.");
+      showHints();
+      return;
+    }
+
     if (confirmedHumanCall) {
       callAllowed = false;
       window.addMsg("me", q);
@@ -328,7 +340,12 @@
       q
     );
     if (isExplicitRequest) {
-      callAllowed = true;
+      callAllowed = canCallStaff();
+      if (!callAllowed) {
+        window.addMsg("bot", "Чтобы подключить сотрудника, войдите в профиль. Пока можно продолжить переписку со мной.");
+        showHints();
+        return;
+      }
       window.addMsg(
         "bot",
         "Хотите подключить к чату сотрудника? Нажмите кнопку «" +
@@ -353,7 +370,12 @@
     // Случай 2: Гость написал белиберду (ответа в базе знаний нет)
     var isFallback = !a || /передаю человеку|Приняла!/i.test(a);
     if (isFallback) {
-      callAllowed = true;
+      callAllowed = canCallStaff();
+      if (!callAllowed) {
+        window.addMsg("bot", "Не удалось подобрать ответ. Чтобы подключить сотрудника, войдите в профиль. Пока можно продолжить переписку со мной.");
+        showHints();
+        return;
+      }
       window.addMsg(
         "bot",
         "Хм, не уверена, что поняла 🤔 Хотите, позову сотрудника? Тапните «" +
@@ -499,6 +521,13 @@
         (h.dataset.hint || "").indexOf("Позвать") > -1 ||
         h.dataset.hint === CS.CALL_HINT;
       if (isCall || h.dataset.arm === "1") {
+        if (!canCallStaff()) {
+          callAllowed = false;
+          h.remove();
+          window.addMsg("bot", "Вызов сотрудника доступен после входа в профиль.");
+          showHints();
+          return;
+        }
         if (h.dataset.arm === "1") {
           // 2-е нажатие (подтверждение): отправляем вызов и скрываем кнопку до следующего раза!
           h.dataset.arm = "";
