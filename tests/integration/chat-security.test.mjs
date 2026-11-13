@@ -168,7 +168,7 @@ test('customer chat reads and writes require the matching customer session', asy
   assert.equal(otherWrite.status, 403);
 });
 
-test('anonymous chat requires a high-entropy capability and cannot trigger staff push', async () => {
+test('anonymous chat requires a high-entropy capability and throttles staff push', async () => {
   const key = 'anon-' + randomBytes(32).toString('hex') + ':d';
   const write = await request('/api/chat/send', {
     method: 'POST',
@@ -190,7 +190,13 @@ test('anonymous chat requires a high-entropy capability and cannot trigger staff
     method: 'POST',
     body: { key, text: 'notify staff', human: 1 }
   });
-  assert.equal(anonymousEscalation.status, 403);
+  assert.equal(anonymousEscalation.status, 200, JSON.stringify(anonymousEscalation.json));
+
+  const repeatedAnonymousEscalation = await request('/api/chat/send', {
+    method: 'POST',
+    body: { key, text: 'notify staff again', human: 1 }
+  });
+  assert.equal(repeatedAnonymousEscalation.status, 429);
 });
 
 test('human escalation is rate-limited per account, even across brand threads', async () => {
