@@ -9,7 +9,7 @@ test('SMS adapter refuses delivery without an explicit opt-in and never calls fe
     "const { sendSms } = await import('./server/services/sms.js');",
     "const result = await sendSms('+7 900 000-00-00', 'test OTP');",
     "process.stdout.write(JSON.stringify({ result, fetchCalls }));"
-  ].join('\\n');
+  ].join('\n');
   const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
     cwd: process.cwd(),
     env: {
