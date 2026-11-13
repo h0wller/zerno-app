@@ -276,6 +276,25 @@ These items are tracked separately from the numeric score register. A checked it
 The sequence in the superseded #178 draft is no longer current: #177 and #167 are complete; #179, #182 and the safe-area investigation remain.
 
 
+## Supporting CI screenshot review — run #3029 (2026-11-13)
+
+**Source:** [visual-ux-baseline-test artifact #14033826340](https://github.com/h0wller/zerno-app/actions/runs/43420027518), head `1dc15e7b018e4eb8f1df24b82ed8c06d5f14d3dd`. Capture source is the isolated Playwright test server (`http://localhost:3000`), not production. Device scale factor 1; each brand has cold, hydrated viewport and supplemental full-page files. This review covers the eight first-viewport hydrated menu screenshots only.
+
+**Visually inspected:** coffee and delivery × 320×740, 390×844, 768×1024, 1440×900.
+
+| Brand | Viewport | Screenshot file | Visual review |
+|---|---:|---|---|
+| Coffee | 320×740 | `COFFEE-GUEST-HYDRATED-MENU-VIEWPORT-XS.png` | Header, search, category rail, first card and support entry visible; no apparent overlap in first viewport |
+| Coffee | 390×844 | `COFFEE-GUEST-HYDRATED-MENU-VIEWPORT-M.png` | One-column hierarchy; card content and following card remain separated |
+| Coffee | 768×1024 | `COFFEE-GUEST-HYDRATED-MENU-VIEWPORT-T.png` | Two-column catalog; card text, composition chips and prices readable |
+| Coffee | 1440×900 | `COFFEE-GUEST-HYDRATED-MENU-VIEWPORT-D.png` | Three-column catalog, category rail and guest profile prompt fit |
+| Delivery | 320×740 | `DELIVERY-GUEST-HYDRATED-MENU-VIEWPORT-XS.png` | One-column pizza card; variant choices remain inside card; page scroll continues below fold |
+| Delivery | 390×844 | `DELIVERY-GUEST-HYDRATED-MENU-VIEWPORT-M.png` | One-column card; size/crust choices and Add action are visible without overlap |
+| Delivery | 768×1024 | `DELIVERY-GUEST-HYDRATED-MENU-VIEWPORT-T.png` | Two-column cards; ingredient filters remain a horizontal rail; options and Add rows fit |
+| Delivery | 1440×900 | `DELIVERY-GUEST-HYDRATED-MENU-VIEWPORT-D.png` | Three-column cards, left category rail and guest profile prompt fit; descriptions and options remain legible |
+
+**Fixture limitations:** CI uses placeholder/fixture imagery and test data. This review does not assess production photography, current live menu content, production guest prompt copy, or the deployed production page. The images are supporting visual-regression evidence only; no numeric production score was changed.
+
 ## Production guest runtime inspection — 2026-11-13
 
 **Scope:** first-viewport guest menu only. Source: live production at `https://friday.andcoffee.online/?brand=coffee` and `?brand=delivery`, isolated unauthenticated browser session. The session made no account changes, staff actions, cart submissions, orders or payments.
