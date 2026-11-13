@@ -213,15 +213,19 @@ function ensureSubFilterBar() {
     var grid = document.getElementById('deliveryGrid');
     if (!grid || !grid.parentNode) return null;
 
-    var viewport = document.createElement('div');
-    viewport.className = 'subfilter-viewport';
-    viewport.hidden = true;
+    // Keep the statically reserved slot so hydration does not move the product grid.
+    var viewport = document.getElementById('deliverySubFilterViewport');
+    if (!viewport) {
+      viewport = document.createElement('div');
+      viewport.id = 'deliverySubFilterViewport';
+      viewport.className = 'subfilter-viewport';
+      grid.parentNode.insertBefore(viewport, grid);
+    }
     bar = document.createElement('div');
     bar.id = 'deliverySubFilter';
     bar.className = 'subfilter-bar';
     bar.hidden = true;
     viewport.appendChild(bar);
-    grid.parentNode.insertBefore(viewport, grid);
   }
 
   if (bar && !(bar.parentElement &&
