@@ -17,7 +17,7 @@ import { sendPush } from '../services/push.js';
 import { userGuard, pendingGuard, adminGuard } from '../middleware/auth.js';
 import { grantBonus, getBonusConfig, setBonusConfig, QR_SOURCE } from '../domain/bonuses.js';
 import { validate, RegisterSchema, LoginSchema, SetupPinSchema, ActivateCodeSchema } from '../middleware/validate.js';
-import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from '../config.js';
+import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, SMS_AUTH_ENABLED } from '../config.js';
 
 export const authRouter = express.Router();
 
@@ -141,8 +141,11 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
 
 authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   const p = fmtPhone(req.body.phone || '');
-  const via = req.body.via === 'tg' ? 'tg' : 'sms';
+  const via = req.body.via === 'sms' ? 'sms' : 'tg';
   if (ph10(p).length < 10) return res.status(400).json({ error: 'Введите номер полностью' });
+  if (via === 'sms' && !SMS_AUTH_ENABLED) {
+    return res.status(503).json({ error: 'Подтверждение по SMS пока отключено. Используйте Telegram или получите код активации у кассира.' });
+  }
   if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) {
     return res.status(409).json({ error: 'Номер уже зарегистрирован — войдите' });
   }
@@ -180,7 +183,7 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   if (!delivery?.ok) {
     return res.status(503).json({ error: 'Не удалось отправить SMS. Попробуйте позже.' });
   }
-  otpStore.set('reg:' + p, { code, expires: now + 5 * 60 * 1000 });
+  otpStore.set('reg:' + p, { code, via: 'sms', expires: now + 5 * 60 * 1000 });
   recordOtpSend('register', p, now);
   registerFail(req, 'reg-otp-send', p);
   res.json({ ok: true, via: 'sms' });
@@ -209,7 +212,7 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   const p = fmtPhone(req.body.phone || '');
   const code = String(req.body.code || '').trim();
   const st = otpStore.get('reg:' + p);
-  const okSms = isOtpLive(st) && !!st.code && !!code && st.code === code;
+  const okSms = SMS_AUTH_ENABLED && isOtpLive(st) && !!st.code && !!code && st.code === code;
   if (okSms) {
     clearLock(req, 'reg', p);
     clearLock(req, 'reg-otp-send', p);
@@ -281,6 +284,9 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
   if (otp) {
     const st = otpStore.get(p);
     if (!isOtpLive(st)) return res.status(403).json({ error: 'Код просрочен — запросите новый' });
+    if (st.via === 'sms' && !SMS_AUTH_ENABLED) {
+      return res.status(503).json({ error: 'Вход по SMS отключён. Запросите новый код в Telegram.' });
+    }
     if (st.code !== otp) {
       registerFail(req, 'login', p);
       return res.status(403).json({ error: 'Неверный код' });
@@ -288,7 +294,7 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
     consumeOtp(p, entry => entry.code === otp);
     clearLock(req, 'login', p);
     clearLock(req, 'otp-send', p);
-    addHist(c.id, 'Вход по коду из Telegram', 'Приложение');
+    addHist(c.id, `Вход по коду из ${st.via === 'sms' ? 'SMS' : 'Telegram'}`, 'Приложение');
     return res.json({ token: issueToken(c.id), customer: cust(c), needPin: !c.pin });
   }
 
@@ -346,20 +352,23 @@ authRouter.post('/api/auth/request-otp', async (req, res) => {
   }
 
   const code = String(crypto.randomInt(1000, 10000));
-  let via = c.tg ? 'telegram' : 'sms';
+  let via = 'telegram';
   let delivery = c.tg
     ? await tgSend(c.tg, `🔑 Код для входа в приложение: ${code}\nДействует 5 минут. Никому не сообщайте!`)
-    : await sendSms(p, `Код для входа в приложение: ${code}. Действует 5 минут.`);
+    : { ok: false, reason: 'telegram_not_linked' };
 
-  if (!delivery?.ok && c.tg) {
+  if (!delivery?.ok && SMS_AUTH_ENABLED) {
     via = 'sms';
     delivery = await sendSms(p, `Код для входа в приложение: ${code}. Действует 5 минут.`);
   }
   if (!delivery?.ok) {
-    return res.status(503).json({ error: 'Не удалось отправить код. Попробуйте позже.' });
+    const error = SMS_AUTH_ENABLED
+      ? 'Не удалось отправить код. Проверьте Telegram или попробуйте позже.'
+      : 'Вход по коду сейчас доступен через Telegram. Привяжите Telegram к профилю или войдите по PIN.';
+    return res.status(503).json({ error });
   }
 
-  otpStore.set(p, { code, expires: now + 5 * 60 * 1000 });
+  otpStore.set(p, { code, via, expires: now + 5 * 60 * 1000 });
   recordOtpSend('login', p, now);
   registerFail(req, 'otp-send', p);
   res.json({ ok: true, via });
