@@ -758,7 +758,9 @@ test('registration completes and creates a session when the modal is closed mid-
 });
 
 
-test('registration hides the paid SMS control while SMS auth is disabled', async ({ page }) => {
+test('registration hides the paid SMS control while SMS auth is disabled', async ({ page }, testInfo) => {
+  // iPhone 16e reference viewport. smsAuthEnabled=false is returned by the public config bootstrap.
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.route('**/api/config', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -774,8 +776,18 @@ test('registration hides the paid SMS control while SMS auth is disabled', async
   await page.waitForFunction(() => window.SMS_AUTH_ENABLED === false);
   await page.evaluate(() => window.openAuth(false));
 
-  await expect(page.locator('#regOtpBtn')).toBeHidden();
-  await expect(page.locator('#regOtpRow')).toBeHidden();
+  const smsButton = page.locator('#regOtpBtn');
+  const smsCodeRow = page.locator('#regOtpRow');
+  await expect(smsButton).toBeHidden();
+  await expect(smsCodeRow).toBeHidden();
+  expect(await smsButton.boundingBox()).toBeNull();
+  expect(await smsCodeRow.boundingBox()).toBeNull();
+
+  await testInfo.attach('registration-sms-disabled-390x844.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+
   await page.locator('#toLogin').click();
   await expect(page.locator('#otpBtn')).toContainText('получить код');
   await expect(page.locator('#otpBtn')).not.toContainText('SMS');
