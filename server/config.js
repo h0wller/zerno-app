@@ -7,6 +7,7 @@ const configDir = import.meta.dirname;
 const rootDir = path.resolve(configDir, '..');
 
 export const PORT = process.env.PORT || 3000;
+export const SMS_AUTH_ENABLED = String(process.env.SMS_AUTH_ENABLED || '').toLowerCase() === 'true';
 export const ADMIN_CODE = process.env.ADMIN_CODE || '3364';
 export const CASHIER_CODE = process.env.CASHIER_CODE || '2468';
 export const DISPATCH_CODE = process.env.DISPATCH_CODE || '5719';
