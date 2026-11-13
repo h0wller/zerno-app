@@ -95,7 +95,7 @@ The following remain outside the scope of this reconciliation and must not be re
 - ADRs and `perf-report.md` source calculations;
 - complete OpenAPI schemas and Postman import/client generation.
 
-Operational infrastructure facts such as public server IP, current DNS/proxy configuration and production secret values were not independently checked. Never copy CI test PINs into production configuration; verify production `.env` out of band. `server/config.js` falls back to `3364/2468/5719` whenever the corresponding environment variable is unset; this fallback has no `NODE_ENV` guard. CI supplies the same values explicitly for tests. Production must set explicit unique secrets; the actual production `.env` values were not inspected.
+Operational infrastructure facts such as public server IP, current DNS/proxy configuration and production secret values were not independently checked. At the time of this 2026-11-07 snapshot, `server/config.js` still supplied built-in employee role-code fallbacks when environment variables were absent. This historical fallback has since been removed in the employee-role-secret remediation PR; runtime now fails closed unless each role code is explicitly configured with a sufficiently long value. CI/test passphrases remain test-only. The actual production `.env` values were not inspected.
 
 ## 8. Verification performed
 
