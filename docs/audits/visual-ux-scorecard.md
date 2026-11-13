@@ -284,7 +284,7 @@ The sequence in the superseded #178 draft is no longer current: #177 and #167 ar
 - Staff-only controls were not visible in either guest storefront.
 - Browser runtime measurements were taken at 320×740, 390×844, 768×1024 and 1440×900 for both brands. At all eight brand/viewport combinations, `documentElement.scrollWidth === clientWidth`; no horizontal overflow was measured.
 - The browser reserves a 15px vertical scrollbar (`clientWidth = innerWidth - 15`), which is not horizontal overflow.
-- Production first-viewport screenshots at 390×844 were visually inspected for both brands. Temporary screenshot URLs from the isolated capture session are available in the current review conversation; they were not committed as local screenshot files. This is therefore supporting evidence, not a completed archived screenshot register. The other six viewport measurements were collected but their screenshots were not individually reviewed.
+- Production first-viewport screenshots at 390×844 were visually inspected for both brands in the earlier isolated browser session. The captured PNGs were not committed as persistent files, so this is supporting visual evidence rather than a completed screenshot archive. The other six viewport combinations have runtime measurements but no individually reviewed production PNGs. A later TinyFish automation attempt (`30fb335e-677a-4ca7-b430-06688a1cd604`) could not set the requested viewport or export PNG; its actual browser viewport was 1007×1007 and its result is explicitly classified incomplete, not baseline evidence.
 - Guest install prompt was visible over the lower part of both 390×844 captures. It is recorded as a capture-state observation, not filed as a defect in this tap-target change.
 
 ### Runtime-computed typography
@@ -315,8 +315,20 @@ Values are computed from visible production DOM elements after `document.fonts.r
 | `--fr-tan` / `--fr-choc` / `--fr-rice` | unset | `#C99E6E` / `#3A2A1C` / `#EFE6D8` |
 | `--card-radius` | `18px` | `18px` |
 
-### Production build identity
+### Production build identity — verified
 
-Production `/sw.js` reports `STATIC_CACHE = zerno-static-v3553`. The checked-in `pizza` base reports `v646`; this PR reports `v647`. These numbers are not directly comparable: `scripts/bump-sw.mjs` computes the new version as `oldVer + BUILD_NUM` when deployment sets `BUILD_NUM=$(git rev-list --count HEAD)`. The observed production marker is therefore consistent with the deployment's additive build-number scheme, but it does not expose the exact Git SHA or prove which branch/commit was deployed. Production deployment identity remains **unverified**; do not claim it serves this draft PR.
+Production is now tied to an exact Git revision from the deployment record; the earlier cache-version-only conclusion is superseded.
 
-**Remaining baseline work:** archive the full guest first-viewport screenshots as repository files, inspect the six remaining 320/768/1440 screenshots before scoring them, and capture customer cart/checkout/profile/bonus states plus the later staff-role matrix. The runtime typography/token inspection is complete for the visible first-viewport elements above; no uninspected screen scores were filled.
+- **Deployment:** [Deploy to Timeweb run #43383317619](https://github.com/h0wller/zerno-app/actions/runs/43383317619), workflow `.github/workflows/deploy.yml`, `workflow_dispatch`, branch `pizza`.
+- **Deployed commit:** `c005b1c6832a5b722c97c43dd7cd525f638c209b` — merge of PR #223, “delivery composition and recommendation state”.
+- **Run timestamps:** deploy job started `2026-11-13T07:06:14Z` and completed successfully at `2026-11-13T07:06:40Z`.
+- **Server-side confirmation:** job log shows `git reset --hard origin/pizza`, then `HEAD is now at c005b1c6`; `npm ci`, `npm run build:client`, `pm2 reload zerno-app`, and `pm2 status zerno-app` completed. PM2 reported `zerno-app` online.
+- **Cache bump:** the same log shows `STATIC_CACHE` and the asset query versions moving from `v646` to `v3553` at `2026-11-13T07:06:35Z`. This is the deployment script's documented `BUILD_NUM=$(git rev-list --count HEAD)` increment, not a standalone Git identifier.
+- **Origin cross-check:** the live `/dist/main.bundle.js.map` reports `Last-Modified: Fri, 13 Nov 2026 07:06:35 GMT` and ETag `W/"fc241-1a1d3bac64c"`; the timestamp falls inside the successful deploy. The live `/api/health` endpoint returns `{"ok":true}`.
+- **PR relationship:** the deployed SHA is the common ancestor of the current draft head; GitHub compare reports the PR branch `docs/brand-system-baseline-2026-11` is 92 commits ahead of `c005b1c...` and 0 behind. The deployed service therefore serves the pre-PR revision, not draft PR #203.
+- **Tap-token cross-check:** the deployed `160-05-base-components.css` at `c005b1c...` does not declare `--tap-visual` / `--tap-hit`; the draft head does. This matches the production runtime inspection, where those properties were unset.
+
+Deployment identity is **verified** as `c005b1c6832a5b722c97c43dd7cd525f638c209b`. This does not imply PR #203 has been deployed or accepted.
+
+**Remaining production evidence:** eight first-viewport PNGs (two brands × four viewports) still need to be saved to persistent files and individually reviewed. The automation service available in this pass returned the wrong actual viewport (1007×1007) and could not export images; do not use those results to close the screenshot protocol. The two 390×844 screens were visually reviewed earlier, but their temporary capture images are not an archived artifact.
+
