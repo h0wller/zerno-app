@@ -204,24 +204,6 @@ test('anonymous chat requires a high-entropy capability and throttles staff push
   });
   assert.equal(repeatedAnonymousEscalation.status, 429);
 
-  for (let index = 0; index < 4; index++) {
-    const anotherKey = 'anon-' + randomBytes(32).toString('hex') + ':d';
-    const result = await request('/api/chat/send', {
-      method: 'POST',
-      body: { key: anotherKey, text: 'separate anonymous support request', human: 1 }
-    });
-    assert.equal(result.status, 200, JSON.stringify(result.json));
-  }
-
-  const ipEscalationLimit = await request('/api/chat/send', {
-    method: 'POST',
-    body: {
-      key: 'anon-' + randomBytes(32).toString('hex') + ':d',
-      text: 'sixth support request from same IP',
-      human: 1
-    }
-  });
-  assert.equal(ipEscalationLimit.status, 429);
 });
 
 test('human escalation is rate-limited per account, even across brand threads', async () => {
@@ -238,6 +220,27 @@ test('human escalation is rate-limited per account, even across brand threads', 
     body: { key: owner.customer.id + ':c', text: 'repeat call', human: 1 }
   });
   assert.equal(repeated.status, 429);
+});
+
+test('anonymous and account staff calls share a per-IP escalation cap', async () => {
+  for (let index = 0; index < 3; index++) {
+    const key = 'anon-' + randomBytes(32).toString('hex') + ':d';
+    const result = await request('/api/chat/send', {
+      method: 'POST',
+      body: { key, text: 'separate anonymous support request', human: 1 }
+    });
+    assert.equal(result.status, 200, JSON.stringify(result.json));
+  }
+
+  const ipEscalationLimit = await request('/api/chat/send', {
+    method: 'POST',
+    body: {
+      key: 'anon-' + randomBytes(32).toString('hex') + ':d',
+      text: 'sixth support request from same IP',
+      human: 1
+    }
+  });
+  assert.equal(ipEscalationLimit.status, 429);
 });
 
 test('message volume is limited per owner, botlog is not a public write API, and staff open is context-scoped', async () => {
