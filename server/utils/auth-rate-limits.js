@@ -3,6 +3,9 @@ import { db } from '../db/connection.js';
 import { ensureAuthSecuritySchema } from '../db/schema.js';
 
 ensureAuthSecuritySchema();
+import { ensureAuthSecuritySchema } from '../db/schema.js';
+
+ensureAuthSecuritySchema();
 
 const FAILURE_WINDOW_MS = 15 * 60 * 1000;
 const LOCK_BASE_MS = 60 * 1000;
@@ -113,6 +116,32 @@ export function clearLock(req, tag = 'staff', subject = '') {
   });
   clear();
 }
+
+/** Returns the hashed IP/subject pair key for backwards-compatible callers. */
+export const lockKey = (req, tag = 'staff', subject = '') => rateLimitKeys(req, tag, subject)[0];
+
+/** Test and migration compatibility facade; persistent records remain in SQLite. */
+export const pinLocks = {
+  clear() {
+    db.prepare('DELETE FROM auth_rate_limits').run();
+  },
+  get(key) {
+    return getStatements().getRateLimit.get(String(key));
+  },
+  set(key, value) {
+    getStatements().upsertRateLimit.run(
+      String(key),
+      Number(value?.fails) || 0,
+      Number(value?.streak) || 0,
+      Number(value?.lockedUntil) || 0,
+      Date.now()
+    );
+    return this;
+  },
+  delete(key) {
+    return getStatements().deleteRateLimit.run(String(key)).changes > 0;
+  }
+};
 
 /** Returns the persisted OTP-send state for a flow/phone pair. */
 export function getOtpSendState(flow, phone) {
