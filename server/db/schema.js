@@ -144,6 +144,22 @@ CREATE TABLE IF NOT EXISTS fcm(
     CREATE INDEX IF NOT EXISTS idx_history_cid ON history(cid);
     CREATE INDEX IF NOT EXISTS idx_chat_key ON chat(key);
     CREATE TABLE IF NOT EXISTS bonus_grants(cid TEXT, kind TEXT, ts TEXT, PRIMARY KEY(cid, kind));
+    CREATE TABLE IF NOT EXISTS auth_rate_limits(
+      key TEXT PRIMARY KEY,
+      fails INTEGER NOT NULL DEFAULT 0,
+      streak INTEGER NOT NULL DEFAULT 0,
+      locked_until INTEGER NOT NULL DEFAULT 0,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_auth_rate_limits_updated ON auth_rate_limits(updated_at);
+    CREATE TABLE IF NOT EXISTS auth_otp_send_limits(
+      flow TEXT NOT NULL,
+      phone_hash TEXT NOT NULL,
+      sent INTEGER NOT NULL DEFAULT 0,
+      last_sent INTEGER NOT NULL,
+      window_ends INTEGER NOT NULL,
+      PRIMARY KEY(flow, phone_hash)
+    );
   `);
 
   /* ── Бэкфилл bonus_grants только для профилей с признаками уже использованного бонуса ──
