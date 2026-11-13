@@ -26,14 +26,16 @@
 
 ## Авторизация и профиль
 
+SMS.ru сохранён как будущий платный канал авторизации, но по умолчанию выключен. Отправка возможна только при явном `SMS_AUTH_ENABLED=true` и настроенном `SMSRU_API_ID`. При отсутствующем/ложном флаге сервер не обращается к SMS.ru, а клиент скрывает SMS-регистрацию. Публичный `GET /api/config` раскрывает только boolean `smsAuthEnabled`, не ключ провайдера.
+
 | Метод и путь | Назначение | Примечание |
 |---|---|---|
-| `POST /api/auth/request-reg-otp` | Запрос подтверждения регистрации по SMS или Telegram | `phone`, `name?`, `via?: tg\|sms`; Telegram-flow возвращает `tgUrl` и случайный `pollToken`, SMS-flow сообщает `via` |
+| `POST /api/auth/request-reg-otp` | Запрос подтверждения регистрации через Telegram; SMS — только при явном включении платной функции | `phone`, `name?`, `via?: tg\|sms`; по умолчанию Telegram; `via=sms` разрешён только при `SMS_AUTH_ENABLED=true` |
 | `POST /api/auth/check-reg` | Проверка Telegram-регистрации конкретной попытки | Body `pollToken`; одноразовый ключ выдаётся вместе с `tgUrl`, по номеру телефона токен не возвращается; SMS и Telegram ограничены по номеру и IP |
 | `POST /api/auth/register` | Создать профиль и завершить регистрацию | Имя, телефон, согласие и подтверждение; возвращает `token` и `customer` |
 | `POST /api/auth/tg-link` | Вход или привязка по подписанному Telegram initData | Может вернуть `needPhone` или `needBotConfirm` |
-| `POST /api/auth/login` | Вход по телефону и PIN либо одноразовому коду | PIN или OTP из Telegram/SMS; первый PIN нельзя задать до подтверждения номера |
-| `POST /api/auth/request-otp` | Запросить входной OTP | `phone`; код отправляется в привязанный Telegram, при отсутствии/ошибке Telegram — по SMS; лимиты по IP и номеру, ответ включает `via` |
+| `POST /api/auth/login` | Вход по телефону и PIN либо одноразовому коду | PIN или OTP; SMS-OTP принимается только при `SMS_AUTH_ENABLED=true`; первый PIN нельзя задать до подтверждения номера |
+| `POST /api/auth/request-otp` | Запросить входной OTP | `phone`; Telegram — основной канал, SMS fallback только при `SMS_AUTH_ENABLED=true`; иначе при недоступном Telegram возвращается `503`; лимиты по IP и номеру |
 | `POST /api/auth/setup-pin` | Первичная установка PIN в уже подтверждённой сессии | `pin`; требует `userGuard`, не выдаёт токен и не принимает телефон как доказательство владения |
 | `POST /api/auth/set-pin` | Сменить PIN текущего профиля | `pin`; userGuard |
 | `POST /api/auth/activate-guest` | Активировать профиль кодом кассира | `code`; userGuard |
