@@ -94,7 +94,7 @@ for (const width of [1024, 1440]) {
       const rect = element.getBoundingClientRect();
       const barRect = element.querySelector('#deliverySubFilter').getBoundingClientRect();
       const style = getComputedStyle(element);
-      const fade = getComputedStyle(element.parentElement, '::after');
+      const fade = getComputedStyle(element, '::after');
       const arrow = getComputedStyle(element, '::before');
       return {
         position: style.position,
