@@ -84,6 +84,8 @@ before(async () => {
       PUBLIC_URL: '',
       TG_WEBHOOK_SECRET: 'integration-test-secret',
       ADMIN_CODE: 'integration-test-admin',
+      CASHIER_CODE: '',
+      DISPATCH_CODE: '',
       SMS_AUTH_ENABLED: 'true'
     },
     stdio: ['ignore', 'pipe', 'pipe']
@@ -219,6 +221,23 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   assert.equal(replayedPoll.status, 200);
   assert.equal(replayedPoll.json.confirmed, false);
   assert.equal(replayedPoll.json.token, undefined);
+});
+
+test('staff role activation fails closed when role secrets are missing or weak', async () => {
+  const registered = await api('/api/auth/register', {
+    name: 'No Role Secret Test', phone: '+7 900 000-01-09', pin: '1234', consent: true
+  });
+  assert.equal(registered.status, 200, JSON.stringify(registered.json));
+  assert.ok(registered.json.token);
+
+  const short = await api('/api/auth/activate', { code: '1234' }, registered.json.token);
+  assert.equal(short.status, 400);
+
+  const plausible = await api('/api/auth/activate', {
+    code: 'ci-cashier-role-code-2026'
+  }, registered.json.token);
+  assert.equal(plausible.status, 403);
+  assert.equal(plausible.json.customer, undefined);
 });
 
 test('OTP login rejects wrong and expired codes, then consumes a valid code once', async () => {
