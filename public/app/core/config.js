@@ -3,11 +3,15 @@
    window.TG_USERNAME — все публикуются выше в window. */
 (function () {
   'use strict';
+  window.SMS_AUTH_ENABLED = false;
+
   function loadConfig() {
     fetch(API_BASE + '/api/config')
       .then(function (r) { return r.json(); })
       .then(function (cfg) {
         window.TG_USERNAME = cfg.tgUsername || 'and_coffee_bot';
+        window.SMS_AUTH_ENABLED = cfg.smsAuthEnabled === true;
+        window.dispatchEvent(new Event('app:config-loaded'));
         if (typeof window.relink === 'function') window.relink();
         if (typeof window.renderVerifyNote === 'function') window.renderVerifyNote();
       })
