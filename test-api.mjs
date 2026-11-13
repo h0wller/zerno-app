@@ -15,9 +15,9 @@ async function api(path,{method='GET',token,body}={}){
 const register=(name,phone)=>api('/auth/register',{method:'POST',body:{name,phone,pin:'3364'}});
 const run=async()=>{
   const g=(await register('Гость','+7 900 000-00-01')).j.token;
-  const c=(await register('Кассир','+7 900 000-00-02')).j.token; await api('/auth/activate',{method:'POST',token:c,body:{code:'2468'}});
-  const d=(await register('Диспетчер','+7 900 000-00-03')).j.token; await api('/auth/activate',{method:'POST',token:d,body:{code:'5719'}});
-  const a=(await register('Админ','+7 900 000-00-04')).j.token; await api('/auth/activate',{method:'POST',token:a,body:{code:'3364'}});
+  const c=(await register('Кассир','+7 900 000-00-02')).j.token; await api('/auth/activate',{method:'POST',token:c,body:{code:'5820471963582047'}});
+  const d=(await register('Диспетчер','+7 900 000-00-03')).j.token; await api('/auth/activate',{method:'POST',token:d,body:{code:'9137562048913756'}});
+  const a=(await register('Админ','+7 900 000-00-04')).j.token; await api('/auth/activate',{method:'POST',token:a,body:{code:'7391846205739184'}});
   const gid=(await api('/me',{token:g})).j.customer.id;
   check('роли выдались',(await api('/me',{token:c})).j.customer?.role==='cashier'&&(await api('/me',{token:d})).j.customer?.role==='dispatch');
   await api('/chat/send',{method:'POST',token:g,body:{key:gid+':d',text:'Позвать сотрудника',human:1,ctx:'delivery'}});
