@@ -99,12 +99,12 @@ The mobile profile button keeps its existing 44px layout cell. Its visible backg
 
 ### Remaining acceptance work
 
-- Add hit-point checks for every applicable row where an existing spec checks only bounding-box edges.
-- Re-run the subfilter hit-area regression at 320/375/390px and inspect screenshots after CSS changes.
-- Run the full two-brand / role / viewport matrix, including cashier and dispatch where the controls are present.
-- Inspect before/after screenshots at 320, 375 and 390px, plus the staff menu screenshots. Check focus-visible and iOS standalone / Telegram Mini App swipe behavior.
+- [ ] Complete consolidated edge/keyboard evidence for chat and cart controls — tracked in [issue #232](https://github.com/h0wller/zerno-app/issues/232).
+- [x] Resolve the delivery subfilter vertical hit-area clipping with a 40px face / 44px hit region contained by rail padding; browser regression added for 320/375/390px.
+- [ ] Complete native iOS standalone and Telegram Mini App touch/gesture acceptance — tracked separately in [issue #231](https://github.com/h0wller/zerno-app/issues/231).
+- [ ] Inspect the updated 320/375/390px screenshots and staff menu captures after CI. Do not treat Chromium as native WebKit/Telegram evidence.
 
 
 ### Delivery subfilter hit-area implementation
 
-The subfilter button keeps a 40px visible face and content-sized width. Its own transparent `::after` layer receives pointer events in a 44px-high vertical target (`inset: -2px 0`); the rail's existing 4px/8px vertical padding contains that extension while preserving horizontal scrolling. The `delivery.js` DOM and click owner are unchanged. Playwright checks the four cardinal edge points, pseudo-layer geometry, rail containment, no vertical scroll expansion and no page-level horizontal overflow at 320/375/390px.
+The subfilter button keeps a 40px visible face and content-sized width. Its own transparent `::after` layer receives pointer events in a 44px-high vertical target (`inset: -2px 0`); the rail's existing 4px/8px vertical padding contains that extension while preserving horizontal scrolling. The `delivery.js` DOM and click owner are unchanged. Playwright checks the four cardinal edge points, pseudo-layer geometry, rail containment, no vertical scroll expansion and no page-level horizontal overflow at 320/375/390px. The automated test is browser evidence only; native iOS and Telegram behavior remain explicitly open under issue #231.
