@@ -134,7 +134,7 @@ function expect(name, r, status, fields = []) {
     expect('POST /api/push/test', await call('POST', '/api/push/test', { token }), 200, ['ok']);
     expect('POST /api/push/unsubscribe', await call('POST', '/api/push/unsubscribe', { token }), 200, ['ok']);
     expect('POST /api/auth/login (неверный PIN) → 403', await call('POST', '/api/auth/login', { body: { phone: '+7' + digits, pin: '0000' } }), 403, ['error']);
-    expect('POST /api/auth/request-otp (нет TG) → 400', await call('POST', '/api/auth/request-otp', { body: { phone: '+7' + digits } }), 400, ['error']);
+    expect('POST /api/auth/request-otp (некорректный телефон) → 400', await call('POST', '/api/auth/request-otp', { body: { phone: 'bad' } }), 400, ['error']);
     expect('POST /api/auth/activate-guest (неверный код) → 403', await call('POST', '/api/auth/activate-guest', { token, body: { code: '0000' } }), 403, ['error']);
     expect('POST /api/chat/send', await call('POST', '/api/chat/send', { body: { key: 'smoke-' + digits, text: 'contract smoke', ctx: 'coffee' } }), 200, ['ok']);
     expect('GET /api/chat/thread (после send)', await call('GET', '/api/chat/thread?key=smoke-' + digits), 200, ['msgs']);
