@@ -57,13 +57,12 @@
         if (setPinCtx && setPinCtx.mode === 'claim') {
           var r = await api('/auth/setup-pin', {
             method: 'POST',
-            body: { phone: setPinCtx.phone, pin: pin }
+            body: { pin: pin }
           });
-          window.setUser(r.token, r.customer);
+          window.me = r.customer;
           closeSetPin();
-          window.closeAuth();
-          if (typeof window.renderAll === 'function') window.renderAll();
-          toast('PIN задан — добро пожаловать!', '🔐');
+          if (typeof window.renderProfile === 'function') window.renderProfile();
+          toast('PIN задан', '🔐');
         } else {
           var rSet = await api('/auth/set-pin', {
             method: 'POST',
