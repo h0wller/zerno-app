@@ -413,3 +413,12 @@ The earlier 1007×1007 browser automation run is superseded for the first-viewpo
 - Responsive UI: **139 passed, 4 skipped**; Mobile Chrome responsive: **102 passed, 4 skipped**; Cart and checkout: **25 passed**.
 - All eight PNGs in the refreshed #3078 archive were individually opened and inspected at native resolution. The manifest confirms the production SHA, brand, guest role, exact viewport, resolved guest profile state, empty staff-control list and no horizontal overflow.
 - Remaining scope is unchanged: cold-first-paint vs hydrated comparison, customer cart/checkout/profile/bonus/order states, staff roles, native iOS/Telegram, and independent review/reconciliation of the broad PR diff.
+
+
+## Documentation-head verification — 2026-11-13
+
+- [CI Quality Gates #3079](https://github.com/h0wller/zerno-app/actions/runs/43434830992) completed successfully on PR head `cf9077a54583135fcd686b91282f9e4c7e1b1b86`: **15/15 jobs passed**.
+- Production guest screenshot job passed **1/1** and refreshed the eight-PNG archive plus manifest: [artifact #14043551195](https://github.com/h0wller/zerno-app/actions/runs/43434830992/artifacts/14043551195). All eight images are present in the archive; the manifest records isolated guest contexts, exact viewports, production SHA `c005b1c6832a5b722c97c43dd7cd525f638c209b`, brand identity, resolved guest profile state, no visible staff controls and no horizontal overflow.
+- Cart and checkout: **25 passed**; Responsive UI: **139 passed**; Mobile Chrome responsive: **102 passed**.
+- The new archive was downloaded and checked: eight PNGs plus `manifest.json`; coffee and delivery 390 px captures and coffee 320 px capture were opened at native resolution. Earlier #3078 archive already had a full eight-image visual review; #3079 refresh confirms the capture is reproducible.
+- Evidence remains limited to hydrated guest first viewport. Cold-first-paint comparison, customer cart/checkout/profile/bonus/order states, staff roles, native iOS/Telegram, and full PR scope review remain open.
