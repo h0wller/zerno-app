@@ -77,7 +77,7 @@ test('customer order receipt Telegram text escapes item, modifier, address and c
   assert.ok(text.includes('&lt;b&gt;Пицца&lt;/b&gt;'));
   assert.ok(text.includes('&lt;svg onload=alert(1)&gt;'));
   assert.ok(text.includes('&lt;i&gt;Дополнительный сыр&lt;/i&gt;'));
-  assert.ok(text.includes('&lt;script&gt;notify()&lt;/script&gt;'));
+  assert.ok(!text.includes('notify()'), 'customer receipt must not contain the internal order comment');
   assert.ok(text.includes('&lt;img src=x onerror=alert(1)&gt;'));
   assert.ok(text.includes('&amp; &quot;quoted&quot;'));
   assert.ok(!text.includes('<script>'));
@@ -89,7 +89,7 @@ test('default order text remains plain/raw for non-Telegram push channels', () =
   const customerText = buildOrderCustomerText(hostileOrder);
 
   assert.ok(staffText.includes('<script>alert(1)</script>'));
-  assert.ok(customerText.includes('<script>notify()</script>'));
+  assert.ok(!customerText.includes('notify()'), 'customer receipt must not contain the internal order comment');
 });
 
 test('sendPush uses the escaped Telegram body while accepting a separate plain push body', async () => {
