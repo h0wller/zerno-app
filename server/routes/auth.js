@@ -208,14 +208,12 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   const p = fmtPhone(req.body.phone || '');
   const code = String(req.body.code || '').trim();
   const st = otpStore.get('reg:' + p);
-  const okTg = isOtpLive(st) && !!st.confirmed;
   const okSms = isOtpLive(st) && !!st.code && !!code && st.code === code;
-  if (okSms || okTg) {
+  if (okSms) {
     pinLocks.delete(lockKey(req, 'reg'));
     pinLocks.delete(lockKey(req, 'reg-otp-send'));
+    consumeOtp('reg:' + p, entry => !!entry.code && entry.code === code);
   }
-  const tgChat = okTg ? (st.tgChat || null) : null;
-  if (okTg || okSms) consumeOtp('reg:' + p, entry => okTg ? !!entry.confirmed : !!entry.code && !!code && entry.code === code);
 
   const ex = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (ex) {
@@ -223,16 +221,6 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     if (!ex.verified && age > 7 * 86400000) {
       db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
       db.prepare('DELETE FROM customers WHERE id=?').run(ex.id);
-    } else if (okTg && !ex.verified) {
-      const linked = linkTelegram(db, ex.id, String(tgChat));
-      if (!linked.ok) return res.status(409).json({ error: 'Этот Telegram уже привязан к другому профилю.' });
-      db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
-      db.prepare('UPDATE customers SET name=?, verified=1 WHERE id=?')
-        .run(String(req.body.name || '').trim() || ex.name, ex.id);
-      addHist(ex.id, 'Профиль подтверждён через Telegram', 'Система');
-      grantWelcome(ex.id, 'Telegram');
-      grantBonus(ex.id, ex.src === QR_SOURCE ? 'qr' : 'signup');
-      return res.json({ token: issueToken(ex.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(ex.id)) });
     } else {
       return res.status(409).json({ error: 'exists' });
     }
@@ -243,18 +231,9 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   // Откуда пришёл гость (сейчас только QR с постера). Бонус начисляется позже, при подтверждении.
   if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
 
-  if (okTg || okSms) {
-    if (tgChat) {
-      const linked = linkTelegram(db, r.customer.id, String(tgChat));
-      if (!linked.ok) {
-        db.prepare('DELETE FROM tokens WHERE ref=?').run(r.customer.id);
-        db.prepare('DELETE FROM customers WHERE id=?').run(r.customer.id);
-        return res.status(409).json({ error: 'Этот Telegram уже привязан к другому профилю.' });
-      }
-    }
+  if (okSms) {
     db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
-    if (okTg) grantWelcome(r.customer.id, 'Telegram');
-    addHist(r.customer.id, okTg ? 'Telegram привязан при регистрации' : 'Подтверждение по SMS', 'Система');
+    addHist(r.customer.id, 'Подтверждение по SMS', 'Система');
     db.prepare('UPDATE customers SET consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id);
   } else {
     let ac;
@@ -269,10 +248,9 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     logEv(r.customer.name, 'регистрация без TG, ждёт код кассира');
   }
 
-  if (okTg || okSms) grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
+  if (okSms) grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
   res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
 });
-
 authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
   const code = String(req.body.code || '').trim();
   if (!/^\d{4}$/.test(code)) return res.status(400).json({ error: 'Код — 4 цифры' });
