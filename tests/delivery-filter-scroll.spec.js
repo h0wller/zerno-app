@@ -63,14 +63,45 @@ for (const width of [320, 390]) {
     )).toBe(true);
 
     await expect(bar).toHaveClass(/has-overflow/);
+    const viewport = page.locator('#deliveryView .subfilter-viewport');
+    await expect(viewport).toBeVisible();
+    const cueMetrics = await viewport.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const barRect = element.querySelector('#deliverySubFilter').getBoundingClientRect();
+      const style = getComputedStyle(element);
+      const fade = getComputedStyle(element.parentElement, '::after');
+      const arrow = getComputedStyle(element, '::before');
+      return {
+        position: style.position,
+        left: rect.left,
+        right: rect.right,
+        barLeft: barRect.left,
+        barRight: barRect.right,
+        fadePosition: fade.position,
+        fadeInsetEnd: fade.insetInlineEnd,
+        fadeWidth: Number.parseFloat(fade.width),
+        fadePointerEvents: fade.pointerEvents,
+        arrowContent: arrow.content,
+        arrowPointerEvents: arrow.pointerEvents,
+      };
+    });
+    expect(cueMetrics.position).toBe('relative');
+    expect(cueMetrics.fadePosition).toBe('absolute');
+    expect(cueMetrics.fadeInsetEnd).toBe('0px');
+    expect(cueMetrics.fadeWidth).toBeGreaterThanOrEqual(48);
+    expect(cueMetrics.fadePointerEvents).toBe('none');
+    expect(cueMetrics.arrowContent).not.toBe('none');
+    expect(cueMetrics.arrowPointerEvents).toBe('none');
+    expect(Math.abs(cueMetrics.left - cueMetrics.barLeft)).toBeLessThanOrEqual(1);
+    expect(Math.abs(cueMetrics.right - cueMetrics.barRight)).toBeLessThanOrEqual(1);
     await expect.poll(() => bar.evaluate((element) =>
-      getComputedStyle(element, '::after').content
+      getComputedStyle(element.parentElement, '::after').content
     )).not.toBe('none');
     await expect.poll(() => bar.evaluate((element) =>
-      getComputedStyle(element, '::after').opacity
+      getComputedStyle(element.parentElement, '::after').opacity
     )).toBe('1');
     await expect.poll(() => bar.evaluate((element) =>
-      getComputedStyle(element, '::after').backgroundImage
+      getComputedStyle(element.parentElement, '::after').backgroundImage
     )).toContain('linear-gradient');
     await expect.poll(() => page.evaluate(() =>
       document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1
@@ -87,7 +118,7 @@ for (const width of [320, 390]) {
       element.classList.contains('at-end')
     )).toBe(true);
     await expect.poll(() => bar.evaluate((element) =>
-      getComputedStyle(element, '::after').opacity
+      getComputedStyle(element.parentElement, '::after').opacity
     )).toBe('0');
     await testInfo.attach(`delivery-filter-cue-${width}px-end`, {
       body: await page.screenshot({ animations: 'disabled' }),
