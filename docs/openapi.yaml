@@ -34,6 +34,11 @@ components:
       type: http
       scheme: bearer
       description: 'Authorization: Bearer <token из localStorage zt_user>'
+    ChatAccessToken:
+      type: apiKey
+      in: header
+      name: X-Chat-Access-Token
+      description: '256-bit anonymous chat capability; use only with anon-{64 hex}:c|d thread keys'
 
   schemas:
     BonusKind:
@@ -666,46 +671,81 @@ paths:
   /api/chat/send:
     post:
       tags: [Chat]
-      summary: Отправить сообщение в чат
+      summary: Отправить сообщение владельца в свой тред
+      description: >-
+        Для ключа u{10 hex}:c|d требуется BearerAuth владельца.
+        Для анонимного ключа anon-{64 hex}:c|d требуется ChatAccessToken.
+        Контекст coffee/delivery определяется суффиксом ключа. Анонимный чат не может вызывать сотрудника.
+      security:
+        - BearerAuth: []
+        - ChatAccessToken: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [text]
+              required: [key, text]
               properties:
-                text: { type: string, maxLength: 2000 }
-                ctx:  { type: string }
-              additionalProperties: true
-      responses: { '200': { description: OK } }
+                key: { type: string, maxLength: 80, pattern: '^(u[a-f0-9]{10}|anon-[a-f0-9]{64}):[cd]$' }
+                text: { type: string, minLength: 1, maxLength: 2000 }
+                human: { oneOf: [{ type: boolean }, { type: integer, enum: [0, 1] }] }
+                ctx: { type: string, enum: [coffee, delivery] }
+      responses:
+        '200': { description: Сообщение сохранено }
+        '400': { description: Некорректный ключ, контекст или текст }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { description: Превышен лимит запросов }
 
   /api/chat/thread:
     get:
       tags: [Chat]
-      summary: Получить новые сообщения треда
+      summary: Получить новые сообщения своего треда
+      description: До 100 сообщений после курсора. Доступ только владельцу Bearer-сессии или держателю анонимной capability.
+      security:
+        - BearerAuth: []
+        - ChatAccessToken: []
       parameters:
         - in: query
           name: key
           required: true
-          schema: { type: string, maxLength: 64 }
+          schema: { type: string, maxLength: 80, pattern: '^(u[a-f0-9]{10}|anon-[a-f0-9]{64}):[cd]$' }
         - in: query
           name: after
-          schema: { type: integer, minimum: 0 }
-      responses: { '200': { description: OK } }
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: Массив msgs }
+        '400': { description: Некорректный ключ или курсор }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { description: Превышен лимит запросов }
 
   /api/chat/botlog:
     post:
       tags: [Chat]
-      summary: Сохранить сообщение бота
+      summary: Сохранить ответ бота в своём треде
+      description: Требует BearerAuth владельца или ChatAccessToken анонимного треда; тред должен быть создан первым сообщением гостя.
+      security:
+        - BearerAuth: []
+        - ChatAccessToken: []
       requestBody:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [key, text], properties: { key: { type: string, maxLength: 64 }, text: { type: string, maxLength: 2000 } } }
+            schema:
+              type: object
+              required: [key, text]
+              properties:
+                key: { type: string, maxLength: 80, pattern: '^(u[a-f0-9]{10}|anon-[a-f0-9]{64}):[cd]$' }
+                text: { type: string, minLength: 1, maxLength: 2000 }
       responses:
-        '200': { description: 'Операция выполнена успешно (ok: true)' }
-        '400': { description: Некорректное сообщение }
+        '200': { description: Сообщение бота сохранено }
+        '400': { description: Некорректный ключ или текст }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Сначала требуется создать тред }
+        '429': { description: Превышен лимит запросов }
 
   /api/chat/list:
     get:
