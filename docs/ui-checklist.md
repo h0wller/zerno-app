@@ -128,3 +128,12 @@ The earlier browser automation attempt that reported a 1007×1007 actual viewpor
 The observations in section 6 are historical scrape observations, not current defects. The isolated guest verification and exact-viewport production archive in sections 8–11 supersede the old uncertainty about guest auth state, active brand selection and first-viewport responsive overflow. The ticker/discount/hidden-DOM observations remain open only where explicitly listed in the newer sections.
 
 - [x] Refreshed production archive #3078 was individually opened and inspected at native resolution (all eight PNGs). The coffee desktop auxiliary card is a populated guest profile/login prompt; the earlier “empty panel” interpretation is superseded. Small square ticker separators and 320px coffee search-placeholder truncation remain observations, not yet classified as defects.
+
+
+## 13. Documentation-head CI refresh — 2026-11-13
+
+- [x] PR head `cf9077a54583135fcd686b91282f9e4c7e1b1b86`: [CI #3079](https://github.com/h0wller/zerno-app/actions/runs/43434830992), **15/15 jobs passed**.
+- [x] Production guest screenshot job passed **1/1**; refreshed [artifact #14043551195](https://github.com/h0wller/zerno-app/actions/runs/43434830992/artifacts/14043551195) contains eight exact-viewport PNGs and manifest.
+- [x] Cart and checkout **25 passed**, Responsive UI **139 passed**, Mobile Chrome responsive **102 passed**.
+- [ ] Cold-first-paint comparison, customer cart/checkout/profile/bonus/order states, staff roles, native iOS and Telegram Mini App remain open.
+- [ ] Independent review/reconciliation of PR #203's broad 49-file diff remains a merge blocker.
