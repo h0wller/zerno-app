@@ -13,7 +13,7 @@ import express from 'express';
 import compression from 'compression';
 
 // ── Конфигурация и БД ──
-import { PORT, PUBLIC_DIR } from './server/config.js';
+import { PORT, PUBLIC_DIR, SMS_AUTH_ENABLED } from './server/config.js';
 import { db } from './server/db/connection.js';
 // ── Утилиты ──
 import { uid } from './server/utils/id-time.js';
@@ -85,7 +85,10 @@ app.post('/api/clientlog', (req, res) => {
   console.log('[client]', kind, msg);
   res.json({ ok: true });
 });
-app.get('/api/config', (req, res) => res.json({ tgUsername: TG_BOT_USERNAME }));
+app.get('/api/config', (req, res) => res.json({
+  tgUsername: TG_BOT_USERNAME,
+  smsAuthEnabled: SMS_AUTH_ENABLED
+}));
 
 // [tg-diag v1] — диагностика Telegram-бота
 app.get('/api/tg/diag', adminGuard, async (req, res) => {
