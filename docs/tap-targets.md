@@ -15,6 +15,7 @@
 | `#modeSeg > button` (4 role buttons) | Desktop: one 176 × 36 px segmented track with four contiguous 44 px role cells. Mobile: 32 × 32 px face with 6 px inset. | Desktop: native compact target. Mobile: 44 × 44 CSS px. | `core/catalog.js` renders modes; `core/views.js` owns gating and placement. | Layer 1: `160-12-admin-bar-tail.css`; Layer 2a: `brand-tokens.css`; Layer 2b: `core/views.js`; Layer 4: critical CSS in `index.html`. | In menu header while menu is visible; topbar only in work modes. |
 | `#editToggle` (1 edit action) | Desktop: compact labeled action. Mobile: 32 px icon face. | Desktop: native compact target. Mobile: 44 × 44 CSS px. | `menu-editor.js` owns edit behavior; `core/views.js` owns placement. | Same layers as above. | Next to role switcher in menu header when allowed; `#adminBar` in work modes. |
 | `header.topbar #profileTopBtn` | Mobile: 32 × 32 px circular avatar face. | Mobile: 44 × 44 CSS px. | `profile.js` writes the initial only; the existing button node remains owned by the static app shell. | Layer 1: `170-profile-button.css` plus mobile geometry in `160-12-admin-bar-tail.css`; neutral dimensions use `--tap-*`. Brand face uses `--ava-*` from Layer 2a. | Guest and authenticated sessions in both brands; desktop sizing unchanged. |
+| `#deliverySubFilter .subchip` | Mobile: 40 px visible pill, natural width (minimum 58 px). | Mobile: 44 px high, natural width; event box remains inside the existing scroll rail. | `delivery.js` creates/renders the chips and owns delegated filter/tab actions. | Layer 1 component owner: `160-09-preorder-subfilters.css`; Layer 4 in `index.html` reserves only first-paint geometry/face. Brand appearance uses Layer 2a tokens. | Delivery ingredient filters at 320/390 px; desktop sizing/scrollbar unchanged. |
 
 ## Mobile geometry contract
 
@@ -56,9 +57,9 @@ The mobile hit cell itself remains transparent. The visible background, border a
 - **First paint (Layer 4):** critical CSS in `public/index.html`, mirroring desktop and mobile staff menu placement before hydration.
 - No API, business rule, server behavior or `public/app/main.js` changes.
 
-The mobile profile avatar now uses a 44 × 44 px button box with a 32 × 32 px inset brand face. Its keyboard focus ring uses the active brand's `--flame` token.
+The mobile profile avatar uses a 44 × 44 px button box with a 32 × 32 px inset brand face. Its keyboard focus ring uses the active brand's `--flame` token.
 
-Delivery ingredient `.subchip` controls keep their 40 px visible pill and current variable width (minimum 58 px). On mobile, the button box is 44 px high and the pill is painted by an inset `::before` face (2 px top/bottom). Negative vertical margins keep the flex contribution and rail height unchanged; the hit box stays inside the rail's existing overflow clip. The first-paint mirror is in `public/index.html`; the deferred owner is `160-12-admin-bar-tail.css`. `tests/tap-targets.spec.js` checks the full 44 px button box and all four edge points with `elementFromPoint()`.
+Delivery filter `.subchip` controls keep their 40 px visible pill and current variable width (minimum 58 px). On mobile, the button box is 44 px high and the visible `::before` face is inset 2 px vertically; it is not expanded outside the scrollport. Negative vertical margins keep the flex contribution and rail height unchanged. The component CSS owner is `160-09-preorder-subfilters.css`; `index.html` carries only the minimal first-paint mirror. `tests/tap-targets.spec.js` checks the full button box, unchanged visible width and four edge points with `elementFromPoint()`.
 
 The support launcher, chat close/send, cart modifier controls and recommendation tabs have local 44 px implementations or existing focused tests. They keep their component-owned pseudo-elements and should not receive a second generic pseudo-element.
 
@@ -66,7 +67,7 @@ Changes to tap-target geometry must update this register and the matching Playwr
 
 ## Verification
 
-`tests/tap-targets.spec.js` covers the profile avatar across both brands, guest/cashier/dispatch/admin sessions and 320/375/390 px viewports. It verifies a 44 × 44 px event box, 32 × 32 px visible face, eight points on the circular target perimeter with `elementFromPoint()`, center actionability and horizontal overflow. It also covers delivery ingredient chips at 320/390 px: the 40 px visible pill remains unchanged inside a 44 px button box; `elementFromPoint()` verifies hits at the top/bottom and left/right edges, without clipping or horizontal overflow.
+`tests/tap-targets.spec.js` covers the profile avatar across both brands, guest/cashier/dispatch/admin sessions and 320/375/390 px viewports. It verifies a 44 × 44 px event box, 32 × 32 px visible face, eight points on the circular target perimeter with `elementFromPoint()`, center actionability and horizontal overflow. It also covers delivery ingredient chips at 320/390 px: the 40 px visible pill remains unchanged in both height and width inside a 44 px button box; `elementFromPoint()` verifies hits at top/bottom and left/right edges, without clipping or horizontal overflow.
 
 `tests/staff-topbar-layout.spec.js` covers:
 - coffee and delivery at 320 × 740 and 390 × 844;
