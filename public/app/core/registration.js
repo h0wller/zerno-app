@@ -235,6 +235,10 @@
             body: { phone: ph, name: nm, via: 'tg' }
           });
           if (pollGeneration !== window.__regTgPollGeneration) return;
+          var pollToken = String(r && r.pollToken || '');
+          if (!/^[a-f0-9]{64}$/.test(pollToken)) {
+            throw new Error('Не удалось создать ключ подтверждения. Повторите попытку.');
+          }
           requestAccepted = true;
 
           if (r && r.tgUrl) {
@@ -280,7 +284,10 @@
             }
             pollBusy = true;
             try {
-              var c = await api('/auth/check-reg?phone=' + encodeURIComponent(ph));
+              var c = await api('/auth/check-reg', {
+                method: 'POST',
+                body: { pollToken: pollToken }
+              });
               if (pollGeneration !== window.__regTgPollGeneration) return;
               if (c && c.confirmed) {
                 if (c.token && c.customer) {
