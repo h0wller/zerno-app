@@ -2,6 +2,7 @@ import { test, beforeEach } from 'node:test';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { hashPin, safeEqual, pinLocks, lockedSeconds, registerFail } from '../../server/utils/security.js';
+import { ActivateCodeSchema } from '../../server/middleware/validate.js';
 
 beforeEach(() => pinLocks.clear());
 
@@ -16,6 +17,13 @@ test('safeEqual сравнивает строки и числа', () => {
   assert.equal(safeEqual('abc', 'abd'), false);
   assert.equal(safeEqual(1234, '1234'), true);
   assert.equal(safeEqual('', 'x'), false);
+});
+
+test('staff role code validation requires 16–64 allowed characters', () => {
+  assert.equal(ActivateCodeSchema.safeParse({ code: 'ci-admin-role-code-2026' }).success, true);
+  assert.equal(ActivateCodeSchema.safeParse({ code: '1234' }).success, false);
+  assert.equal(ActivateCodeSchema.safeParse({ code: 'has spaces and is long enough' }).success, false);
+  assert.equal(ActivateCodeSchema.safeParse({ code: 'x'.repeat(65) }).success, false);
 });
 
 test('missing staff role secrets have no built-in fallback values', () => {
