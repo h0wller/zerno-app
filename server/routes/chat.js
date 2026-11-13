@@ -225,13 +225,13 @@ chatRouter.post('/api/chat/botlog', (req, res) => {
 chatRouter.get('/api/chat/thread', (req, res) => {
   const key = typeof req.query.key === 'string' ? req.query.key : '';
   if (!parseGuestKey(key)) return res.status(400).json({ error: 'Некорректный ключ чата' });
-  if (!db.prepare('SELECT 1 FROM chat_meta WHERE key=?').get(key)) {
-    return res.status(404).json({ error: 'Чат не найден' });
-  }
   if (!applyGuestRateLimits(req, res, 'thread', key, 120, 60)) return;
 
   const authorized = authorizeGuestThread(req, res, key);
   if (!authorized) return;
+  if (!db.prepare('SELECT 1 FROM chat_meta WHERE key=?').get(key)) {
+    return res.status(404).json({ error: 'Чат не найден' });
+  }
 
   const after = req.query.after === undefined ? 0 : Number(req.query.after);
   if (!Number.isSafeInteger(after) || after < 0) {
