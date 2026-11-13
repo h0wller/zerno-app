@@ -49,7 +49,7 @@
 | `menu.js` | `#rail` (категории), `#searchInput`, рендер `#grid`; зум фото (`openZoom`); модалка модификаторов; LCP-картинка eager | `window.renderMenu`, `window.renderRail`, `window.openZoom` |
 | `menu-editor.js` | `openEditor`/`exitEdit`, сохранение emModal, editToggle | `window.openEditor`, `window.exitEdit` |
 | `core/editor.js` | Делегирование кликов `#grid`; фотозона редактора (`renderZone`/`loadImg`/`closeEditor`); имя гостя | `window.renderZone`, `window.closeEditor`, `window.loadImg` |
-| `delivery.js` | `window.DMENU`, cart (инициализация из LS); `#deliveryRail`; единственный динамический рендер `#deliverySubFilter` внутри `.subfilter-viewport` (статического дубля в HTML-shell нет); рендер `#deliveryGrid` + скелетоны (ингредиентные/дополнительные фильтры, горизонтальный scroll и cue overflow/end); стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
+| `delivery.js` | `window.DMENU`, cart (инициализация из LS); `#deliveryRail`; единственный рендер содержимого `#deliverySubFilter` внутри статически зарезервированного `#deliverySubFilterViewport.subfilter-viewport` (в HTML-shell — пустой слот без чипсов); рендер `#deliveryGrid` + скелетоны (ингредиентные/дополнительные фильтры, горизонтальный scroll и cue overflow/end); стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
 | `ui/delivery-search.js` | Поиск в Пятнице (`#dSearch` внутри `.mh-right`) и фильтрация грида | — |
 
 ## 4. Корзина и чекаут
