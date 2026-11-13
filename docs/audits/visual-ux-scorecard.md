@@ -344,10 +344,24 @@ Production is now tied to an exact Git revision from the deployment record; the 
 - **Server-side confirmation:** job log shows `git reset --hard origin/pizza`, then `HEAD is now at c005b1c6`; `npm ci`, `npm run build:client`, `pm2 reload zerno-app`, and `pm2 status zerno-app` completed. PM2 reported `zerno-app` online.
 - **Cache bump:** the same log shows `STATIC_CACHE` and the asset query versions moving from `v646` to `v3553` at `2026-11-13T07:06:35Z`. This is the deployment script's documented `BUILD_NUM=$(git rev-list --count HEAD)` increment, not a standalone Git identifier.
 - **Origin cross-check:** the live `/dist/main.bundle.js.map` reports `Last-Modified: Fri, 13 Nov 2026 07:06:35 GMT` and ETag `W/"fc241-1a1d3bac64c"`; the timestamp falls inside the successful deploy. The live `/api/health` endpoint returns `{"ok":true}`.
-- **PR relationship:** the deployed SHA is the common ancestor of the current draft head; GitHub compare reports the PR branch `docs/brand-system-baseline-2026-11` is 92 commits ahead of `c005b1c...` and 0 behind. The deployed service therefore serves the pre-PR revision, not draft PR #203.
+- **PR relationship:** the deployed SHA is the common ancestor of the current draft head; GitHub compare at PR head `b230f9bc75a9cd30fd2c73071a75aa80174bfe9e` reports the PR branch `docs/brand-system-baseline-2026-11` is 99 commits ahead of `c005b1c...` and 0 behind. The deployed service therefore serves the pre-PR revision, not draft PR #203.
 - **Tap-token cross-check:** the deployed `160-05-base-components.css` at `c005b1c...` does not declare `--tap-visual` / `--tap-hit`; the draft head does. This matches the production runtime inspection, where those properties were unset.
 
 Deployment identity is **verified** as `c005b1c6832a5b722c97c43dd7cd525f638c209b`. This does not imply PR #203 has been deployed or accepted.
 
 **Remaining production evidence:** eight first-viewport PNGs (two brands × four viewports) still need to be saved to persistent files and individually reviewed. The automation service available in this pass returned the wrong actual viewport (1007×1007) and could not export images; do not use those results to close the screenshot protocol. The two 390×844 screens were visually reviewed earlier, but their temporary capture images are not an archived artifact.
 
+
+
+## Latest PR verification and CI screenshot review — 2026-11-13
+
+- Current draft PR head at review time: `b230f9bc75a9cd30fd2c73071a75aa80174bfe9e`.
+- [CI Quality Gates #3033](https://github.com/h0wller/zerno-app/actions/runs/43421869883): **13/13 jobs passed**.
+  - Cart and checkout: **25 passed**.
+  - Responsive UI: **139 passed, 4 skipped**.
+  - Mobile Chrome responsive: **102 passed, 4 skipped**.
+- Downloaded and inspected the eight hydrated first-viewport PNGs in [CI artifact #14034162976](https://github.com/h0wller/zerno-app/actions/runs/43421869883): coffee and delivery at 320×740, 390×844, 768×1024 and 1440×900. The 320/390 mobile screenshots and 1440 desktop delivery layout were also opened individually at full resolution; no obvious clipping or horizontal spill is visible in this fixture set.
+- This artifact is explicitly a localhost Playwright test-server capture. Product photos are fixture/placeholder art and the test profile prompt is fixture content. It is valid for responsive structure review only, not for production visual scoring.
+- The production first-viewport screenshot archive remains open: the Firecrawl browser task could not set viewport/export PNG and the connected Firecrawl account reached its daily credit limit. The prior 390×844 production screenshots were visible in-session but were not retained as files.
+
+**Current merge blockers remain:** production PNG archive/manual inspection, customer cart/checkout/profile/bonus and staff-role visual states, plus independent review/reconciliation of the PR's broad 47-file diff. No merge or deployment is implied by this documentation update.
