@@ -194,6 +194,12 @@ test('chat request validation rejects oversized messages and invalid poll cursor
   });
   assert.equal(oversized.status, 400);
 
+  const created = await api('POST', '/api/chat/send', {
+    token: owner.token,
+    body: { key, text: 'Valid thread seed', human: 0, ctx: 'coffee' }
+  });
+  assert.equal(created.status, 200, JSON.stringify(created.json));
+
   const invalidCursor = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(key) + '&after=-1', {
     token: owner.token
   });
