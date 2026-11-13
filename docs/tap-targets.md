@@ -16,6 +16,7 @@
 | `#editToggle` (1 edit action) | Desktop: compact labeled action. Mobile: 32 px icon face. | Desktop: native compact target. Mobile: 44 × 44 CSS px. | `menu-editor.js` owns edit behavior; `core/views.js` owns placement. | Same layers as above. | Next to role switcher in menu header when allowed; `#adminBar` in work modes. |
 | `header.topbar #profileTopBtn` | Mobile: 32 × 32 px circular avatar face. | Mobile: 44 × 44 CSS px. | `profile.js` writes the initial only; the existing button node remains owned by the static app shell. | Layer 1: `170-profile-button.css` plus mobile geometry in `160-12-admin-bar-tail.css`; neutral dimensions use `--tap-*`. Brand face uses `--ava-*` from Layer 2a. | Guest and authenticated sessions in both brands; desktop sizing unchanged. |
 | `#deliverySubFilter .subchip` | Mobile: 40 px visible pill, natural width (minimum 58 px). | Mobile: 44 px high, natural width; event box remains inside the existing scroll rail. | `delivery.js` creates/renders the chips and owns delegated filter/tab actions. | Layer 1 component owner: `160-09-preorder-subfilters.css`; Layer 4 in `index.html` reserves only first-paint geometry/face. Brand appearance uses Layer 2a tokens. | Delivery ingredient filters at 320/390 px; desktop sizing/scrollbar unchanged. |
+| `.ac-add-btn` (recommendation add actions) | 44 × 44 px button with 10 px corner radius; plus/count remains inside the button. | 44 × 44 CSS px. Four side-midpoint hit checks pass before and after adding at 320/390 px. | `cart.js` renders the recommendation DOM and owns add-to-cart state/action. | Layer 1 component rules in `160-08-cart-addons.css`; no brand-specific geometry override. | Recommendation cards inside the open cart; primary cart CTA and business behavior unchanged. |
 
 ## Mobile geometry contract
 
@@ -68,6 +69,8 @@ Changes to tap-target geometry must update this register and the matching Playwr
 ## Verification
 
 `tests/tap-targets.spec.js` covers the profile avatar across both brands, guest/cashier/dispatch/admin sessions and 320/375/390 px viewports. It verifies a 44 × 44 px event box, 32 × 32 px visible face, eight points on the circular target perimeter with `elementFromPoint()`, center actionability and horizontal overflow. It also covers delivery ingredient chips at 320/390 px: the 40 px visible pill remains unchanged in both height and width inside a 44 px button box; `elementFromPoint()` verifies hits at top/bottom and left/right edges, without clipping or horizontal overflow.
+
+`tests/cart-checkout-clarity.spec.js` now covers `.ac-add-btn` at 320×740 and 390×844, before and after the in-cart state change. It asserts a 44 × 44 px button/action box and uses the four side midpoints with `elementFromPoint()`; corner points are deliberately excluded because the 10 px rounded corners are not part of the rectangular edge-hit contract. Existing component-owned checks remain in place for recommendation tabs and modifier controls.
 
 `tests/staff-topbar-layout.spec.js` covers:
 - coffee and delivery at 320 × 740 and 390 × 844;
