@@ -203,9 +203,6 @@ chatRouter.post('/api/chat/send', (req, res) => {
 chatRouter.post('/api/chat/botlog', (req, res) => {
   const key = typeof req.body?.key === 'string' ? req.body.key : '';
   if (!parseGuestKey(key)) return res.status(400).json({ error: 'Некорректный ключ чата' });
-  if (!db.prepare('SELECT 1 FROM chat_meta WHERE key=?').get(key)) {
-    return res.status(404).json({ error: 'Чат не найден' });
-  }
   if (!applyGuestRateLimits(req, res, 'botlog', key, 60, 20)) return;
 
   const authorized = authorizeGuestThread(req, res, key);
@@ -213,6 +210,12 @@ chatRouter.post('/api/chat/botlog', (req, res) => {
   const text = parseMessage(req.body);
   if (!text) return res.status(400).json({ error: 'Сообщение должно содержать от 1 до 2000 символов' });
 
+  // The bot response can beat the guest send response on a slow connection.
+  // The capability check above makes it safe to seed the same owned thread here.
+  db.prepare(`
+    INSERT INTO chat_meta(key,closed,ctx) VALUES(?,0,?)
+    ON CONFLICT(key) DO UPDATE SET ctx=excluded.ctx
+  `).run(key, authorized.ctx);
   db.prepare('INSERT INTO chat(key,who,text,ts,read_s) VALUES(?,?,?,?,0)')
     .run(key, 'bot', text, nowISO());
   pruneThread(key);
