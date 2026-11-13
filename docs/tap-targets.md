@@ -86,7 +86,7 @@ Changes to tap-target geometry must update this register and the matching Playwr
 
 ## Latest CI verification — 2026-11-13
 
-- Current PR head: `d6a4688af26c60a691a2c41de52a5ddcce5784b1`.
+- Code/test head for this tap-target verification: `d6a4688af26c60a691a2c41de52a5ddcce5784b1`; subsequent commits through `e989e515f70be246bc88b8636d7a8a3e068e588d` update documentation only. CI #3072 is validating that latest documentation head.
 - [CI Quality Gates #3064](https://github.com/h0wller/zerno-app/actions/runs/43427135621): all **15/15 jobs passed**.
 - Cart and checkout: **25 passed**; Responsive UI: **139 passed, 4 skipped**; Mobile Chrome: **102 passed, 4 skipped**.
 - `.ac-add-btn` checks are included in `tests/cart-checkout-clarity.spec.js`: four side-midpoint points at 320×740 and 390×844, before and after the in-cart state change.
