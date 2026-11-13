@@ -78,11 +78,12 @@ The original register above covers the mobile staff menu row. This section adds 
 | Selector / control | Visible face | Hit area | DOM / behavior owner | CSS owner | State |
 | --- | --- | --- | --- | --- | --- |
 | `header.topbar #profileTopBtn` | 32 × 32 px inset circle | 44 × 44 px existing header cell | `profile.js` updates only the initial text; node and click behavior remain unchanged | `170-profile-button.css` base; `160-06-delivery-header.css` reserves hit cell; `160-12-admin-bar-tail.css` paints mobile face | Added shared token usage and 32px pseudo-face; new test covers guest in both brands at 320/375/390px and staff in both brands at 320/390px |
-| `.chat-h button` (`#chatClose`, `#chatSend`) | 32 × 32 px inset square | 44 × 44 px | `chat.js` | `100-chat.css` | Existing eight-point boundary checks in `mobile-support-entry.spec.js`; include in consolidated audit |
-| `.addon-tab-btn` | 32 px-high inset pill | At least 44 px high and 44 px wide | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test in `cart-checkout-clarity.spec.js` |
-| `.ci-toggle-mods-btn` | Compact text action | At least 44 px high; width is content-sized | `cart.js` | `160-08-cart-addons.css` | Existing cell-edge hit-test; wide control, do not extend horizontally |
-| `.ci-mod-chip` | 32 px-high pill; width depends on label | At least 44 px high and 44 px wide | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test; own `::before` paints the pill and focus ring |
-| `.ci-mod-del` | 32 × 32 px inset square | 44 × 44 px | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test; own `::before` paints the control and focus ring |
+| `.chat-h button` (`#chatClose`) | 32 × 32 px inset square | 44 × 44 px | `chat.js` | `100-chat.css` | Eight boundary points + keyboard focus ring; both brands at 320/390/768/1440 px in `mobile-support-entry.spec.js` |
+| `.chat-i button` (`#chatSend`) | 32 × 32 px inset circle | 44 × 44 px | `chat.js` | `100-chat.css` | Eight boundary points + keyboard focus ring; both brands at 320/390/768/1440 px in `mobile-support-entry.spec.js` |
+| `.addon-tab-btn` | 32 px-high inset pill | At least 44 px high and 44 px wide | `cart.js` | `160-08-cart-addons.css` | Eight boundary points + keyboard focus ring; delivery 320/375/390 px and desktop in `cart-checkout-clarity.spec.js` |
+| `.ci-toggle-mods-btn` | Compact text action | At least 44 px high; width is content-sized | `cart.js` | `160-08-cart-addons.css` | Eight boundary points + inset keyboard focus ring; 320/375/390 px and desktop; no horizontal extension |
+| `.ci-mod-chip` | 32 px-high pill; width depends on label | At least 44 px high and 44 px wide | `cart.js` | `160-08-cart-addons.css` | Eight boundary points + inset keyboard focus ring; 320/375/390 px and desktop; ring stays inside scroll viewport |
+| `.ci-mod-del` | 32 × 32 px inset square | 44 × 44 px | `cart.js` | `160-08-cart-addons.css` | Eight boundary points + inset keyboard focus ring; 320/375/390 px and desktop |
 | `#deliverySubFilter .subchip` | 40px visible pill | 44px button box; content-sized width | `delivery.js` | `160-09-preorder-subfilters.css` + mobile cascade in `160-12-admin-bar-tail.css` | Button itself owns the 44px target; `::before` paints the 40px face with a 2px vertical inset. Regression checks four cardinal hit points and bottom-edge actionability at 320/375/390px |
 | `#chatFab` / `#supportLauncherHost` | Existing branded support icon | 44 × 44 px | `core/views.js` relocates host; `chat.js` owns chat action | `160-15-mobile-support-toolbar.css` | Existing 44px slot, no extra extension; separately verify Telegram swipe interaction |
 | `#scrollTopBtn`, `#venueToggle` | Current visual size is already larger than 32px | Existing 44px+ control | `scrolltop.js` / header controls | `160-06-delivery-header.css`, `160-12-admin-bar-tail.css` | Explicit exception: do not shrink these controls as part of this pass |
@@ -99,10 +100,10 @@ The mobile profile button keeps its existing 44px layout cell. Its visible backg
 
 ### Remaining acceptance work
 
-- [ ] Complete consolidated edge/keyboard evidence for chat and cart controls — tracked in [issue #232](https://github.com/h0wller/zerno-app/issues/232).
+- [ ] Complete consolidated edge/keyboard evidence for chat and cart controls — [issue #232](https://github.com/h0wller/zerno-app/issues/232); automated Playwright coverage implemented. Browser evidence only; native iOS/Telegram acceptance remains separate.
 - [x] Resolve the delivery subfilter vertical hit-area clipping with a 40px face / 44px hit region contained by rail padding; browser regression added for 320/375/390px.
 - [ ] Complete native iOS standalone and Telegram Mini App touch/gesture acceptance — tracked separately in [issue #231](https://github.com/h0wller/zerno-app/issues/231).
-- [ ] Inspect the updated 320/375/390px screenshots and staff menu captures after CI. Do not treat Chromium as native WebKit/Telegram evidence.
+- [ ] Review updated mobile screenshots and staff menu captures as a separate visual acceptance item. Do not treat Chromium as native WebKit/Telegram evidence.
 
 
 ### Delivery subfilter hit-area implementation
