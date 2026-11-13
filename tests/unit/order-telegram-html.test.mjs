@@ -65,13 +65,13 @@ test('staff order Telegram text escapes every user-controlled HTML field', () =>
   assert.ok(text.includes('&lt;img src=x onerror=alert(1)&gt;'));
   assert.ok(text.includes('&lt;svg onload=alert(1)&gt;'));
   assert.ok(text.includes('&lt;i&gt;Дополнительный сыр&lt;/i&gt;'));
-  assert.ok(text.includes('&amp; &quot;quoted&quot;'));
+  assert.ok(text.includes('&amp; &quot;дом&quot;'));
   assert.ok(!text.includes('<script>'));
   assert.ok(!text.includes('<img src=x'));
   assert.ok(!text.includes('<svg onload='));
 });
 
-test('customer order receipt Telegram text escapes item, modifier, address and comment fields', () => {
+test('customer order receipt Telegram text escapes item, modifier, gift and address fields', () => {
   const text = buildOrderCustomerText(hostileOrder, escapeTelegramHtml);
 
   assert.ok(text.includes('&lt;b&gt;Пицца&lt;/b&gt;'));
