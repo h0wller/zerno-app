@@ -85,28 +85,41 @@ test('обычное открытие чата — без оверлея', async
   await expect(page.locator('.chatHint').first()).toBeVisible({ timeout: 5000 });
 });
 
-test('вызов сотрудника появляется по запросу/непонятному тексту, требует подтверждения (два тапа) и исчезает после отправки', async ({ page }) => {
+test('анонимный чат не предлагает вызвать сотрудника при просьбе и fallback', async ({ page }) => {
   await prepare(page);
   await page.locator('#chatFab').click();
 
-  // При обычном открытии чата кнопки «Позвать сотрудника» нет
   const call = page.locator('.chatHint', { hasText: 'Позвать сотрудника' });
   await expect(call).toHaveCount(0);
 
-  // Пишем непонятный боту запрос — бот предлагает позвать сотрудника и показывает кнопку
+  await page.locator('#chatInput').fill('позови сотрудника');
+  await page.locator('#chatInput').press('Enter');
+  await expect(call).toHaveCount(0);
+  await expect(page.locator('#chatMsgs')).toContainText('войдите в профиль');
+
   await page.locator('#chatInput').fill('абырвалг');
   await page.locator('#chatInput').press('Enter');
+  await expect(call).toHaveCount(0);
+  await expect(page.locator('#chatMsgs')).toContainText('войдите в профиль');
+});
+
+test('авторизованный гость может подтвердить вызов сотрудника', async ({ page }) => {
+  await prepare(page);
+  await page.evaluate(() => {
+    window.setUser('test-customer-token', {
+      id: 'ua1b2c3d4e5f', name: 'Тестовый гость', role: 'guest', verified: 1
+    });
+  });
+  await page.locator('#chatFab').click();
+  await page.locator('#chatInput').fill('абырвалг');
+  await page.locator('#chatInput').press('Enter');
+  const call = page.locator('.chatHint', { hasText: 'Позвать сотрудника' });
   await expect(call).toBeVisible({ timeout: 5000 });
-
-  // 1-й тап — появляется предупреждение (.armed)
   await call.click();
-  const armedBtn = page.locator('.chatHint.armed', { hasText: 'Точно позвать' });
-  await expect(armedBtn).toBeVisible();
-
-  // 2-й тап — подтверждаем вызов, кнопка исчезает до следующего раза
-  await armedBtn.click();
+  const armed = page.locator('.chatHint.armed', { hasText: 'Точно позвать' });
+  await expect(armed).toBeVisible();
+  await armed.click();
   await expect(page.locator('.chatHint', { hasText: 'Позвать сотрудника' })).toHaveCount(0);
-  await expect(page.locator('.chatHint.armed')).toHaveCount(0);
 });
 
 
