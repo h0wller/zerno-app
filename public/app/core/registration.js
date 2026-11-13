@@ -19,6 +19,53 @@
     if (typeof window.markAuthResetOnIdle === 'function') window.markAuthResetOnIdle();
   }
 
+  function reserveTelegramRegistrationTarget() {
+    var webApp = window.Telegram && window.Telegram.WebApp;
+    if (webApp && typeof webApp.openTelegramLink === 'function') {
+      return { openTelegramLink: webApp.openTelegramLink.bind(webApp), popup: null };
+    }
+
+    // Reserve a separate tab synchronously during the click gesture. Navigating
+    // the current PWA tab would terminate the background registration poll.
+    var popup = null;
+    try {
+      popup = window.open('about:blank', '_blank');
+      if (popup) popup.opener = null;
+    } catch (_) {}
+    return { openTelegramLink: null, popup: popup };
+  }
+
+  function openTelegramRegistrationTarget(target, url) {
+    if (target && target.openTelegramLink) {
+      target.openTelegramLink(url);
+      return true;
+    }
+    if (target && target.popup && !target.popup.closed) {
+      try {
+        target.popup.location.href = url;
+        return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  function closeTelegramRegistrationTarget(target) {
+    if (target && target.popup && !target.popup.closed) {
+      try { target.popup.close(); } catch (_) {}
+    }
+  }
+
+  function appendTelegramFallbackLink(row, url) {
+    if (!row || !url) return;
+    var link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Открыть Telegram';
+    row.appendChild(document.createTextNode(' '));
+    row.appendChild(link);
+  }
+
   // Сброс Telegram-подтверждения при закрытии auth-модалки.
   window.resetRegistrationState = function () {
     window.__regTgPollGeneration = (window.__regTgPollGeneration || 0) + 1;
@@ -224,6 +271,7 @@
 
         var buttonLabel = regTgBtn.querySelector('span');
         var requestAccepted = false;
+        var telegramTarget = reserveTelegramRegistrationTarget();
         beginAuthOperation();
         regTgBtn.disabled = true;
         regTgBtn.setAttribute('aria-busy', 'true');
@@ -241,9 +289,10 @@
           }
           requestAccepted = true;
 
+          var telegramOpened = false;
           if (r && r.tgUrl) {
-            toast('Открываем Telegram...', '🤖');
-            setTimeout(function() { window.location.href = r.tgUrl; }, 250);
+            telegramOpened = openTelegramRegistrationTarget(telegramTarget, r.tgUrl);
+            if (telegramOpened) toast('Открываем Telegram в отдельной вкладке…', '🤖');
           }
           toast('Подтвердите номер в Telegram', '🤖');
 
@@ -251,6 +300,10 @@
             statusRow.hidden = false;
             statusRow.className = 'auth-tg-pending';
             statusRow.textContent = 'Ожидаем подтверждение в Telegram…';
+            if (r && r.tgUrl && !telegramOpened) {
+              appendTelegramFallbackLink(statusRow, r.tgUrl);
+              toast('Откройте Telegram по ссылке в окне подтверждения', '🤖');
+            }
           }
 
           // Поллинг остаётся активным после закрытия модалки и завершает вход в фоне.
@@ -315,6 +368,7 @@
           window.__registrationTgPoll = pollTimer;
           window.__registrationTgPollFinish = finishPoll;
         } catch (e) {
+          if (!requestAccepted) closeTelegramRegistrationTarget(telegramTarget);
           if (pollGeneration === window.__regTgPollGeneration) toast(e.message, '⚠️');
         } finally {
           if (pollGeneration === window.__regTgPollGeneration) {
