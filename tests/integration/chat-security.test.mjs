@@ -197,6 +197,25 @@ test('anonymous chat requires a high-entropy capability and throttles staff push
     body: { key, text: 'notify staff again', human: 1 }
   });
   assert.equal(repeatedAnonymousEscalation.status, 429);
+
+  for (let index = 0; index < 4; index++) {
+    const anotherKey = 'anon-' + randomBytes(32).toString('hex') + ':d';
+    const result = await request('/api/chat/send', {
+      method: 'POST',
+      body: { key: anotherKey, text: 'separate anonymous support request', human: 1 }
+    });
+    assert.equal(result.status, 200, JSON.stringify(result.json));
+  }
+
+  const ipEscalationLimit = await request('/api/chat/send', {
+    method: 'POST',
+    body: {
+      key: 'anon-' + randomBytes(32).toString('hex') + ':d',
+      text: 'sixth support request from same IP',
+      human: 1
+    }
+  });
+  assert.equal(ipEscalationLimit.status, 429);
 });
 
 test('human escalation is rate-limited per account, even across brand threads', async () => {
