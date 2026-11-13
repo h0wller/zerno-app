@@ -102,3 +102,11 @@ Still active / under review:
 - [ ] Re-capture affected screens at 320/375/390 px and desktop staff states after each PR; inspect actual PNGs and record commit, viewport and role.
 
 The former #178 proposal to schedule #177 and #167 is obsolete because both are merged. Do not score CI capture alone as visual acceptance.
+
+
+## Latest verification refresh — 2026-11-13
+
+- Current PR head `c63f170513e94d2b8cd6bf4167561492adb99c2f` passed [CI run #3078](https://github.com/h0wller/zerno-app/actions/runs/43431777234), **15/15 jobs**.
+- Production guest screenshot archive was refreshed by the dedicated Playwright job (1/1 passed): [artifact #14038748509](https://github.com/h0wller/zerno-app/actions/runs/43431777234/artifacts/14038748509), eight PNGs plus manifest. It captures the deployed production revision `c005b1c6832a5b722c97c43dd7cd525f638c209b`, not the PR head.
+- Test totals on this head: Responsive UI **139 passed / 4 skipped**, Mobile Chrome **102 passed / 4 skipped**, Cart and checkout **25 passed**.
+- This refresh does not close the remaining customer/staff states, cold-first-paint comparison, native iOS/Telegram review or the broad-scope review blocker.
