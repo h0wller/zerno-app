@@ -127,7 +127,7 @@ for (const viewport of [
     await page.route('**/api/dmenu*', (route) => route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ items: deliveryFilterItems }),
+      body: JSON.stringify(deliveryFilterItems),
     }));
     await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
     const filters = page.locator('#deliveryView #deliverySubFilter');
