@@ -15,9 +15,9 @@ test('OTP is live only before its expiry timestamp', () => {
 test('consumeOtp does not consume an expired entry or a failed match', () => {
   otpStore.set('reg:+7-test', { code: '1234', expires: 5000 });
   assert.equal(consumeOtp('reg:+7-test', entry => entry.code === '9999', 4000), null);
-  assert.equal(otpStore.has('reg:+7-test'), true);
+  assert.equal(Map.prototype.has.call(otpStore, 'reg:+7-test'), true);
   assert.equal(consumeOtp('reg:+7-test', entry => entry.code === '1234', 5000), null);
-  assert.equal(otpStore.has('reg:+7-test'), true);
+  assert.equal(Map.prototype.has.call(otpStore, 'reg:+7-test'), true);
 });
 
 test('consumeOtp returns and deletes a valid matching OTP exactly once', () => {
@@ -25,7 +25,7 @@ test('consumeOtp returns and deletes a valid matching OTP exactly once', () => {
   assert.deepEqual(consumeOtp('login:+7-test', entry => entry.code === '4321', 4999), {
     code: '4321', expires: 5000
   });
-  assert.equal(otpStore.has('login:+7-test'), false);
+  assert.equal(Map.prototype.has.call(otpStore, 'login:+7-test'), false);
   assert.equal(consumeOtp('login:+7-test', entry => entry.code === '4321', 4999), null);
 });
 
@@ -33,5 +33,5 @@ test('consumeOtp supports confirmed Telegram contact sessions', () => {
   otpStore.set('reg:+7-test', { confirmed: true, tgChat: '123', expires: 5000 });
   const result = consumeOtp('reg:+7-test', entry => entry.confirmed && entry.tgChat === '123', 4999);
   assert.equal(result.confirmed, true);
-  assert.equal(otpStore.has('reg:+7-test'), false);
+  assert.equal(Map.prototype.has.call(otpStore, 'reg:+7-test'), false);
 });
