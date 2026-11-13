@@ -58,7 +58,7 @@ The mobile hit cell itself remains transparent. The visible background, border a
 
 The mobile profile avatar now uses a 44 × 44 px button box with a 32 × 32 px inset brand face. Its keyboard focus ring uses the active brand's `--flame` token.
 
-The delivery ingredient `.subchip` currently renders as a compact 40 px high control in the accessibility fixture. Its vertical 44 px target is not yet accepted: the horizontal rail has `overflow-y: hidden`, so a pseudo-element expansion could be clipped. Keep this as an open item until a targeted point-hit test proves a non-clipped 44 px target without changing the visible face or rail scroll behavior.
+Delivery ingredient `.subchip` controls keep their 40 px visible height and current variable width (minimum 58 px). On mobile, `160-12-admin-bar-tail.css` adds a transparent `::after` with a 2 px vertical extension above and below the button; the existing 4 px top and 8 px bottom rail padding keep that hit area inside the scroll container. The extension is vertical-only, so adjacent chips do not overlap and horizontal swipe geometry is unchanged. `tests/tap-targets.spec.js` checks points 1 px outside the visible top/bottom edges with `elementFromPoint()` and verifies the extended box stays within the rail.
 
 The support launcher, chat close/send, cart modifier controls and recommendation tabs have local 44 px implementations or existing focused tests. They keep their component-owned pseudo-elements and should not receive a second generic pseudo-element.
 
@@ -66,7 +66,7 @@ Changes to tap-target geometry must update this register and the matching Playwr
 
 ## Verification
 
-`tests/tap-targets.spec.js` covers the profile avatar across both brands, guest/cashier/dispatch/admin sessions and 320/375/390 px viewports. It verifies a 44 × 44 px event box, 32 × 32 px visible face, eight boundary points with `elementFromPoint()`, center actionability and horizontal overflow.
+`tests/tap-targets.spec.js` covers the profile avatar across both brands, guest/cashier/dispatch/admin sessions and 320/375/390 px viewports. It verifies a 44 × 44 px event box, 32 × 32 px visible face, eight points on the circular target perimeter with `elementFromPoint()`, center actionability and horizontal overflow. It also covers delivery ingredient chips at 320/390 px: the 40 px visible pill remains unchanged while its effective vertical hit area grows to 44 px without clipping or horizontal overflow.
 
 `tests/staff-topbar-layout.spec.js` covers:
 - coffee and delivery at 320 × 740 and 390 × 844;
