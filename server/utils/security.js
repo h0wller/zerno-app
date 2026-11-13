@@ -32,18 +32,6 @@ const deleteLock = db.prepare('DELETE FROM auth_locks WHERE scope_key=?');
 export const hashPin = (p) => crypto.createHash('sha256').update('pin:' + String(p)).digest('hex');
 
 /**
- * Ключ lockout привязан одновременно к IP, типу операции и аккаунту/телефону.
- * В БД хранится только хеш scope, без телефона или IP в открытом виде.
- */
-export const lockKey = (req, tag = 'staff', subject = '') => {
-  const ip = String(req?.ip || req?.socket?.remoteAddress || 'local');
-  const account = String(subject || 'unscoped');
-  return crypto.createHash('sha256')
-    .update(['auth-lock-v1', ip, String(tag), account].join('\0'))
-    .digest('hex');
-};
-
-/**
  * Сколько секунд осталось до снятия блокировки.
  * @param {import('express').Request} req
  * @param {string} [tag='staff']
