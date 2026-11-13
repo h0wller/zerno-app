@@ -26,7 +26,7 @@
 | `core/utils.js` | Чистые утилиты форматирования/DOM | `$`, `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `fmtMulti` |
 | `core/api.js` | Определяет базовый URL API для app-origin и локальных frontend-серверов | `window.API_BASE` |
 | `core/ui.js` | `api()` с обработкой 401; тосты; дата обновления меню; PERF-дедуп одинаковых GET | `window.api`, `window.toast`, `window.renderUpd` |
-| `core/config.js` | Bootstrap /api/config (имя TG-бота), триггеры relink/verifyNote | `window.TG_USERNAME` |
+| `core/config.js` | Bootstrap /api/config (имя TG-бота и состояние opt-in-функций), триггеры relink/verifyNote | `window.TG_USERNAME`, `window.SMS_AUTH_ENABLED`; событие `app:config-loaded` |
 
 ## 2. Бренд, виды, шапка
 
@@ -93,7 +93,7 @@
 | `core/auth-session.js` | Установка клиентской сессии: токен, `me`, onboarding, аватары, QR и регистрация FCM-токена; публикует изменение профиля | `window.setUser`; `ztBus` event `auth:user-changed` |
 | `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
-| `core/registration.js` | Регистрация, согласие, OTP Telegram и поллинг подтверждения | `window.resetRegistrationState` |
+| `core/registration.js` | Регистрация, согласие, OTP Telegram и поллинг подтверждения; единственный владелец динамической видимости `#regOtpBtn`/`#regOtpRow` по `window.SMS_AUTH_ENABLED` | `window.resetRegistrationState` |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
 
 ## 8. Персонал: кассир и сканер
