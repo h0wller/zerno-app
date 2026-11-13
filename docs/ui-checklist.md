@@ -116,3 +116,13 @@ The earlier browser automation attempt that reported a 1007×1007 actual viewpor
 - [ ] Customer cart, checkout, profile, bonuses, order confirmation/tracking and staff roles remain outside this guest-menu baseline.
 
 **Visual observations for follow-up, not yet classified as defects:** the coffee search placeholder is shortened at 320px; the desktop coffee first viewport shows an empty outlined auxiliary panel; ticker separators render as small square marks. Their intended states/source characters must be checked before scoring or changing CSS.
+
+
+## 12. Latest verification refresh — 2026-11-13
+
+- [x] Current PR head `c63f170513e94d2b8cd6bf4167561492adb99c2f` passes [CI run #3078](https://github.com/h0wller/zerno-app/actions/runs/43431777234), 15/15 jobs.
+- [x] Dedicated production guest screenshot job passes 1/1 and retains eight PNGs plus manifest in [artifact #14038748509](https://github.com/h0wller/zerno-app/actions/runs/43431777234/artifacts/14038748509).
+- [x] Production deployment identity is verified as `c005b1c6832a5b722c97c43dd7cd525f638c209b` by Timeweb deploy run #43383317619.
+- [ ] Cold-first-paint vs hydrated production comparison, customer cart/checkout/profile/bonus/order states, staff roles, native iOS and Telegram Mini App remain open.
+
+The observations in section 6 are historical scrape observations, not current defects. The isolated guest verification and exact-viewport production archive in sections 8–11 supersede the old uncertainty about guest auth state, active brand selection and first-viewport responsive overflow. The ticker/discount/hidden-DOM observations remain open only where explicitly listed in the newer sections.
