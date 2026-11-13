@@ -713,7 +713,7 @@ paths:
     get:
       tags: [Chat]
       summary: Получить новые сообщения своего треда
-      description: До 100 сообщений после курсора. Доступ только владельцу Bearer-сессии или держателю анонимной capability.
+      description: До 100 сообщений после курсора. Доступ только владельцу Bearer-сессии или держателю анонимной capability. Тред создаётся первым сообщением гостя; до этого авторизованный владелец получает пустой массив msgs, а не 404.
       security:
         - BearerAuth: []
         - ChatAccessToken: []
@@ -726,7 +726,7 @@ paths:
           name: after
           schema: { type: integer, minimum: 0, default: 0 }
       responses:
-        '200': { description: Массив msgs }
+        '200': { description: Массив msgs (пустой, пока тред не создан) }
         '400': { description: Некорректный ключ или курсор }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
