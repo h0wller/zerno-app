@@ -1,7 +1,7 @@
 # Frontend roadmap & UX audit — Zerno
 
 **Base branch:** `pizza`
-**Last documentation reconciliation:** 2026-11-13 (CI #3079)
+**Last documentation reconciliation:** 2026-11-13 (CI #3081)
 
 ## Current source-of-truth and status
 
@@ -26,6 +26,7 @@ This is an audit queue, not a declaration that each item is defective.
 - [x] Production guest menu runtime inspection for both brands at 320×740, 390×844, 768×1024 and 1440×900: selected brand class/data-brand, visible first card, staff-only visibility and horizontal overflow were measured in isolated guest sessions. Runtime typography and brand tokens are recorded in `docs/audits/visual-ux-scorecard.md`.
 - [x] Production deployment identity verified from deploy run [#43383317619](https://github.com/h0wller/zerno-app/actions/runs/43383317619): `pizza` at `c005b1c6832a5b722c97c43dd7cd525f638c209b`; the server log confirms checkout, build and PM2 reload.
 - [x] Archive and individually inspect all eight production guest PNGs: coffee/delivery at 320×740, 390×844, 768×1024 and 1440×900. The dedicated production job in [CI run #3064](https://github.com/h0wller/zerno-app/actions/runs/43427135621) saved eight exact-viewport PNGs plus a manifest in [artifact #14037897354](https://github.com/h0wller/zerno-app/actions/runs/43427135621/artifacts/14037897354); all eight were opened individually and visually reviewed. The screenshots identify production commit `c005b1c6832a5b722c97c43dd7cd525f638c209b`.
+- [x] Latest exact-viewport production archive verified in [CI #3081](https://github.com/h0wller/zerno-app/actions/runs/43440569609), artifact [#14045198271](https://github.com/h0wller/zerno-app/actions/runs/43440569609/artifacts/14045198271): eight PNGs plus manifest, downloaded and individually inspected. Manifest confirms production SHA `c005b1c6832a5b722c97c43dd7cd525f638c209b`, isolated guest sessions, exact viewports, resolved guest profile, correct brand, no staff controls and no horizontal overflow.
 - [ ] Customer cart/checkout/profile/bonus states; production guest-menu inspection does not cover these.
 - [ ] Staff sessions: cashier, dispatcher, admin after customer-state baseline.
 - [x] First-viewport header, ticker, logo, search, category rail and catalog hierarchy reviewed against the archived production screenshot matrix. Non-blocking observations (320px coffee placeholder truncation, desktop coffee empty auxiliary panel and ticker separator glyphs) are recorded in `docs/audits/visual-ux-scorecard.md` for targeted triage.
@@ -119,3 +120,9 @@ The former #178 proposal to schedule #177 and #167 is obsolete because both are 
 - Production archive refreshed in [artifact #14043551195](https://github.com/h0wller/zerno-app/actions/runs/43434830992/artifacts/14043551195): eight PNGs and manifest for both brands at 320×740, 390×844, 768×1024 and 1440×900; deployed revision remains `c005b1c6832a5b722c97c43dd7cd525f638c209b`.
 - Cart and checkout **25 passed**; Responsive UI **139 passed**; Mobile Chrome responsive **102 passed**.
 - No production deployment was performed for PR #203. The remaining client-state, staff-role, cold-first-paint and native iOS/Telegram checks remain open; broad PR diff review remains a merge blocker.
+
+
+### Latest production evidence — CI #3081 (2026-11-13)
+
+- All eight production guest first-viewport screenshots were re-captured, downloaded and individually inspected. See the scorecard's production screenshot register and artifact [#14045198271](https://github.com/h0wller/zerno-app/actions/runs/43440569609/artifacts/14045198271).
+- The archive is hydrated-first-viewport only. Cold-first-paint, customer transaction/profile states, staff roles, native iOS/Telegram, and full PR scope review remain open.
