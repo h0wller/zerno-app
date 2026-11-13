@@ -756,3 +756,43 @@ test('registration completes and creates a session when the modal is closed mid-
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   expect(requestCount).toBe(1);
 });
+
+
+test('registration hides the paid SMS control while SMS auth is disabled', async ({ page }) => {
+  await page.route('**/api/config', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ tgUsername: 'test_bot', smsAuthEnabled: false }),
+  }));
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => window.SMS_AUTH_ENABLED === false);
+  await page.evaluate(() => window.openAuth(false));
+
+  await expect(page.locator('#regOtpBtn')).toBeHidden();
+  await expect(page.locator('#regOtpRow')).toBeHidden();
+  await page.locator('#toLogin').click();
+  await expect(page.locator('#otpBtn')).toContainText('получить код');
+  await expect(page.locator('#otpBtn')).not.toContainText('SMS');
+  await expect(page.locator('#logOtp')).toHaveAttribute('aria-describedby', 'logOtpHint');
+});
+
+test('registration exposes the SMS control only after the server opts in', async ({ page }) => {
+  await page.route('**/api/config', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ tgUsername: 'test_bot', smsAuthEnabled: true }),
+  }));
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => window.SMS_AUTH_ENABLED === true);
+  await page.evaluate(() => window.openAuth(false));
+  await expect(page.locator('#regOtpBtn')).toBeVisible();
+  await expect(page.locator('#regOtpRow')).toBeHidden();
+});
