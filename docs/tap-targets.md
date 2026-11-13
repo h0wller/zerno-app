@@ -14,6 +14,7 @@
 | --- | --- | --- | --- | --- | --- |
 | `#modeSeg > button` (4 role buttons) | Desktop: one 176 × 36 px segmented track with four contiguous 44 px role cells. Mobile: 32 × 32 px face with 6 px inset. | Desktop: native compact target. Mobile: 44 × 44 CSS px. | `core/catalog.js` renders modes; `core/views.js` owns gating and placement. | Layer 1: `160-12-admin-bar-tail.css`; Layer 2a: `brand-tokens.css`; Layer 2b: `core/views.js`; Layer 4: critical CSS in `index.html`. | In menu header while menu is visible; topbar only in work modes. |
 | `#editToggle` (1 edit action) | Desktop: compact labeled action. Mobile: 32 px icon face. | Desktop: native compact target. Mobile: 44 × 44 CSS px. | `menu-editor.js` owns edit behavior; `core/views.js` owns placement. | Same layers as above. | Next to role switcher in menu header when allowed; `#adminBar` in work modes. |
+| `header.topbar #profileTopBtn` | Mobile: 32 × 32 px circular avatar face. | Mobile: 44 × 44 CSS px. | `profile.js` writes the initial only; the existing button node remains owned by the static app shell. | Layer 1: `170-profile-button.css` plus mobile geometry in `160-12-admin-bar-tail.css`; neutral dimensions use `--tap-*`. Brand face uses `--ava-*` from Layer 2a. | Guest and authenticated sessions in both brands; desktop sizing unchanged. |
 
 ## Mobile geometry contract
 
@@ -55,9 +56,17 @@ The mobile hit cell itself remains transparent. The visible background, border a
 - **First paint (Layer 4):** critical CSS in `public/index.html`, mirroring desktop and mobile staff menu placement before hydration.
 - No API, business rule, server behavior or `public/app/main.js` changes.
 
-Changes to staff-control placement or hit-area dimensions must update this register and the matching Playwright assertions in the same PR.
+The mobile profile avatar now uses a 44 × 44 px button box with a 32 × 32 px inset brand face. Its keyboard focus ring uses the active brand's `--flame` token.
+
+The delivery ingredient `.subchip` currently renders as a compact 40 px high control in the accessibility fixture. Its vertical 44 px target is not yet accepted: the horizontal rail has `overflow-y: hidden`, so a pseudo-element expansion could be clipped. Keep this as an open item until a targeted point-hit test proves a non-clipped 44 px target without changing the visible face or rail scroll behavior.
+
+The support launcher, chat close/send, cart modifier controls and recommendation tabs have local 44 px implementations or existing focused tests. They keep their component-owned pseudo-elements and should not receive a second generic pseudo-element.
+
+Changes to tap-target geometry must update this register and the matching Playwright assertions in the same PR.
 
 ## Verification
+
+`tests/tap-targets.spec.js` covers the profile avatar across both brands, guest/cashier/dispatch/admin sessions and 320/375/390 px viewports. It verifies a 44 × 44 px event box, 32 × 32 px visible face, eight boundary points with `elementFromPoint()`, center actionability and horizontal overflow.
 
 `tests/staff-topbar-layout.spec.js` covers:
 - coffee and delivery at 320 × 740 and 390 × 844;
