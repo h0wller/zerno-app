@@ -7,7 +7,8 @@ import { createCustomer } from '../domain/customers.js';
 import { linkTelegram } from '../domain/telegram-link.js';
 import { grantWelcome, redeem } from '../domain/loyalty.js';
 import { fmtPhone, ph10 } from '../utils/phone.js';
-import { lockedSeconds, registerFail, hashPin, safeEqual, pinLocks, lockKey } from '../utils/security.js';
+import { hashPin, safeEqual } from '../utils/security.js';
+import { lockedSeconds, registerFail, clearLock, getOtpSendState, recordOtpSend } from '../utils/auth-rate-limits.js';
 import { otpStore, isOtpLive, consumeOtp } from '../utils/otp.js';
 import { nowISO } from '../utils/id-time.js';
 import { sendSms } from '../services/sms.js';
@@ -91,12 +92,12 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
     const botToken = crypto.randomBytes(6).toString('hex');
     otpStore.set('regtg:' + botToken, { phone: p, name: String(req.body.name || '').trim(), expires: Date.now() + 10 * 60 * 1000 });
     otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
-    registerFail(req, 'reg-otp-send');
+    registerFail(req, 'reg-otp-send', p);
     return res.json({ needBotConfirm: true, tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${botToken}` });
   }
   otpStore.delete('reg:' + p);
-  pinLocks.delete(lockKey(req, 'reg'));
-  pinLocks.delete(lockKey(req, 'reg-otp-send'));
+  clearLock(req, 'reg', p);
+  clearLock(req, 'reg-otp-send', p);
 
   // 3. Ищем существующего клиента по номеру телефона
   c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
@@ -145,12 +146,11 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) {
     return res.status(409).json({ error: 'Номер уже зарегистрирован — войдите' });
   }
-  const wait = Math.max(lockedSeconds(req, 'reg'), lockedSeconds(req, 'reg-otp-send'));
+  const wait = Math.max(lockedSeconds(req, 'reg', p), lockedSeconds(req, 'reg-otp-send', p));
   if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
 
   const now = Date.now();
-  const sendKey = 'reg-otp-send:' + p;
-  const sendState = otpStore.get(sendKey);
+  const sendState = getOtpSendState('register', p);
   if (sendState && now - sendState.lastSent < 60000) {
     return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
   }
@@ -166,12 +166,8 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
       phone: p, name: reqName, pollToken, expires: Date.now() + 10 * 60 * 1000
     });
     otpStore.set('reg:' + p, { code: null, confirmed: false, expires: now + 10 * 60 * 1000 });
-    otpStore.set(sendKey, {
-      sent: (sendState && now < sendState.windowEnds ? sendState.sent : 0) + 1,
-      lastSent: now,
-      windowEnds: sendState && now < sendState.windowEnds ? sendState.windowEnds : now + 24 * 60 * 60 * 1000
-    });
-    registerFail(req, 'reg-otp-send');
+    recordOtpSend('register', p, now);
+    registerFail(req, 'reg-otp-send', p);
     return res.json({
       ok: true,
       pollToken,
@@ -185,12 +181,8 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
     return res.status(503).json({ error: 'Не удалось отправить SMS. Попробуйте позже.' });
   }
   otpStore.set('reg:' + p, { code, expires: now + 5 * 60 * 1000 });
-  otpStore.set(sendKey, {
-    sent: (sendState && now < sendState.windowEnds ? sendState.sent : 0) + 1,
-    lastSent: now,
-    windowEnds: sendState && now < sendState.windowEnds ? sendState.windowEnds : now + 24 * 60 * 60 * 1000
-  });
-  registerFail(req, 'reg-otp-send');
+  recordOtpSend('register', p, now);
+  registerFail(req, 'reg-otp-send', p);
   res.json({ ok: true, via: 'sms' });
 });
 
@@ -219,8 +211,8 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   const st = otpStore.get('reg:' + p);
   const okSms = isOtpLive(st) && !!st.code && !!code && st.code === code;
   if (okSms) {
-    pinLocks.delete(lockKey(req, 'reg'));
-    pinLocks.delete(lockKey(req, 'reg-otp-send'));
+    clearLock(req, 'reg', p);
+    clearLock(req, 'reg-otp-send', p);
     consumeOtp('reg:' + p, entry => !!entry.code && entry.code === code);
   }
 
@@ -266,7 +258,7 @@ authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id);
   if (c.verified) return res.status(409).json({ error: 'Профиль уже активирован' });
   if (!c.actcode || c.actcode !== code) {
-    registerFail(req, 'act');
+    registerFail(req, 'act', req.user.id);
     return res.status(403).json({ error: 'Неверный код активации' });
   }
   db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
@@ -283,19 +275,19 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
   const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (!c) return res.status(404).json({ error: 'Профиль не найден — создайте новый' });
 
-  const wait = lockedSeconds(req, 'login');
+  const wait = lockedSeconds(req, 'login', p);
   if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
 
   if (otp) {
     const st = otpStore.get(p);
     if (!isOtpLive(st)) return res.status(403).json({ error: 'Код просрочен — запросите новый' });
     if (st.code !== otp) {
-      registerFail(req, 'login');
+      registerFail(req, 'login', p);
       return res.status(403).json({ error: 'Неверный код' });
     }
     consumeOtp(p, entry => entry.code === otp);
-    pinLocks.delete(lockKey(req, 'login'));
-    pinLocks.delete(lockKey(req, 'otp-send'));
+    clearLock(req, 'login', p);
+    clearLock(req, 'otp-send', p);
     addHist(c.id, 'Вход по коду из Telegram', 'Приложение');
     return res.json({ token: issueToken(c.id), customer: cust(c), needPin: !c.pin });
   }
@@ -309,11 +301,11 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
 
   if (!pin) return res.status(400).json({ error: 'Введите PIN' });
   if (hashPin(pin) !== c.pin) {
-    registerFail(req, 'login');
+    registerFail(req, 'login', p);
     return res.status(403).json({ error: 'Неверный PIN' });
   }
 
-  pinLocks.delete(lockKey(req, 'login'));
+  clearLock(req, 'login', p);
   addHist(c.id, 'Вход по PIN', 'Приложение');
   res.json({ token: issueToken(c.id), customer: cust(c) });
 });
@@ -341,12 +333,11 @@ authRouter.post('/api/auth/request-otp', async (req, res) => {
   const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (!c) return res.status(404).json({ error: 'Профиль не найден' });
 
-  const ipWait = Math.max(lockedSeconds(req, 'otp-send'), lockedSeconds(req, 'login'));
+  const ipWait = Math.max(lockedSeconds(req, 'otp-send', p), lockedSeconds(req, 'login', p));
   if (ipWait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${ipWait} сек.` });
 
   const now = Date.now();
-  const sendKey = 'login-otp-send:' + p;
-  const sendState = otpStore.get(sendKey);
+  const sendState = getOtpSendState('login', p);
   if (sendState && now - sendState.lastSent < 60000) {
     return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
   }
@@ -369,12 +360,8 @@ authRouter.post('/api/auth/request-otp', async (req, res) => {
   }
 
   otpStore.set(p, { code, expires: now + 5 * 60 * 1000 });
-  otpStore.set(sendKey, {
-    sent: (sendState && now < sendState.windowEnds ? sendState.sent : 0) + 1,
-    lastSent: now,
-    windowEnds: sendState && now < sendState.windowEnds ? sendState.windowEnds : now + 24 * 60 * 60 * 1000
-  });
-  registerFail(req, 'otp-send');
+  recordOtpSend('login', p, now);
+  registerFail(req, 'otp-send', p);
   res.json({ ok: true, via });
 });
 
@@ -394,7 +381,7 @@ authRouter.post('/api/auth/activate', userGuard, validate(ActivateCodeSchema), (
   if (req.user.role === 'admin' && role !== 'admin') {
     return res.status(409).json({ error: 'Администратор не может понизить себя кодом активации' });
   }
-  pinLocks.delete(lockKey(req));
+  clearLock(req);
   db.prepare('UPDATE customers SET role=? WHERE id=?').run(role, req.user.id);
   addHist(req.user.id, role === 'admin' ? '🔓 Выдан доступ администратора' : '🧾 Выдан доступ кассира', 'Система');
   logEv(req.user.name, role === 'admin' ? 'активирован админ' : 'активирован кассир');
