@@ -127,7 +127,15 @@ paths:
       tags: [System]
       summary: Публичный bootstrap-конфиг
       responses:
-        '200': { description: OK }
+        '200':
+          description: Telegram bot username and enabled optional features; no provider credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tgUsername: { type: string }
+                  smsAuthEnabled: { type: boolean, description: 'False unless the paid SMS option was explicitly approved and enabled with SMS_AUTH_ENABLED=true' }
 
   /api/clientlog:
     post:
@@ -176,7 +184,7 @@ paths:
   /api/auth/request-reg-otp:
     post:
       tags: [Auth]
-      summary: Запрос OTP для регистрации (SMS или Telegram)
+      summary: Запрос подтверждения регистрации (Telegram; SMS is opt-in)
       requestBody:
         required: true
         content:
@@ -187,7 +195,7 @@ paths:
               properties:
                 phone: { type: string }
                 name:  { type: string }
-                via:   { type: string, enum: [tg, sms] }
+                via:   { type: string, enum: [tg, sms], default: tg, description: 'sms is available only when SMS_AUTH_ENABLED=true' }
       responses:
         '200':
           description: OK
@@ -233,7 +241,7 @@ paths:
   /api/auth/login:
     post:
       tags: [Auth]
-      summary: Вход по телефону и PIN либо одноразовому коду из Telegram/SMS
+      summary: Вход по телефону и PIN либо OTP из Telegram (SMS only when explicitly enabled)
       requestBody:
         required: true
         content:
@@ -244,7 +252,7 @@ paths:
               properties:
                 phone: { type: string }
                 pin: { type: string, pattern: '^\\d{4}$' }
-                otp: { type: string, description: Одноразовый код, отправленный в Telegram или SMS }
+                otp: { type: string, description: Одноразовый код; SMS-сессии действительны только при SMS_AUTH_ENABLED=true }
       responses:
         '200': { description: Возвращает token, customer и возможный needPin }
         '400': { description: Некорректный PIN или PIN отсутствует }
@@ -887,7 +895,7 @@ paths:
     post:
       tags: [Auth]
       summary: Запросить одноразовый код для входа
-      description: Отправляет код в привязанный Telegram, а если Telegram отсутствует или недоступен — на телефон по SMS. Есть лимит на отправку.
+      description: Отправляет код в привязанный Telegram. SMS fallback разрешён только при явном SMS_AUTH_ENABLED=true; при выключенной функции и недоступном Telegram возвращает 503. Есть лимит на отправку.
       requestBody:
         required: true
         content:
