@@ -55,6 +55,48 @@ test('archive both production guest menus at four viewport sizes without changin
           await Promise.all(visibleImages.map((image) => image.decode().catch(() => {})));
         });
 
+        // Assert the stylesheet-owned geometry before accepting a production screenshot.
+        // The theme stylesheets use media="print" until their load handlers switch to "all".
+        const themeStyleState = await page.evaluate((brand) => {
+          const stylesheets = [...document.querySelectorAll('link[rel~="stylesheet"]')];
+          const pendingStylesheets = stylesheets
+            .filter((link) => !link.sheet || link.media === 'print')
+            .map((link) => link.href);
+          const head = document.querySelector(
+            brand === 'delivery' ? '#deliveryView .menu-head' : '#menuView .menu-head'
+          );
+          const card = document.querySelector(
+            brand === 'delivery'
+              ? '#deliveryGrid .card:not(.skeleton-card)'
+              : '#grid .card:not(.skeleton-card)'
+          );
+          const railButton = document.querySelector(
+            brand === 'delivery' ? '#deliveryRail button' : '#rail button'
+          );
+          const headStyle = head ? getComputedStyle(head) : null;
+          const cardStyle = card ? getComputedStyle(card) : null;
+          const railStyle = railButton ? getComputedStyle(railButton) : null;
+          return {
+            stylesheetCount: stylesheets.length,
+            pendingStylesheets,
+            menuHead: headStyle ? {
+              borderRadius: headStyle.borderRadius,
+              backgroundImage: headStyle.backgroundImage,
+            } : null,
+            firstCardRadius: cardStyle?.borderRadius || null,
+            railButton: railStyle ? {
+              borderRadius: railStyle.borderRadius,
+              display: railStyle.display,
+            } : null,
+          };
+        }, brand);
+        expect(themeStyleState.pendingStylesheets, 'all deferred theme stylesheets must be applied').toEqual([]);
+        expect(themeStyleState.menuHead?.borderRadius).toBe('18px');
+        expect(themeStyleState.menuHead?.backgroundImage).not.toBe('none');
+        expect(themeStyleState.firstCardRadius).toBe('18px');
+        expect(themeStyleState.railButton?.borderRadius).toBe('14px');
+        expect(themeStyleState.railButton?.display).toBe('flex');
+
         // profile.js intentionally keeps both profile branches hidden until its
         // /api/me readiness gate resolves; wait for the actual guest branch, not a timer.
         await page.waitForFunction(() => {
