@@ -1,10 +1,13 @@
 // server/services/sms.js
 // SMS.ru delivery adapter. Never log OTP values or destination phone numbers.
 import { ph10 } from '../utils/phone.js';
+import { SMS_AUTH_ENABLED } from '../config.js';
 
 const SMS_API = process.env.SMSRU_API_ID || '';
 
 export async function sendSms(phone, text) {
+  if (!SMS_AUTH_ENABLED) return { ok: false, reason: 'disabled' };
+
   const digits = ph10(phone);
   if (digits.length !== 10) return { ok: false, reason: 'invalid_phone' };
 
