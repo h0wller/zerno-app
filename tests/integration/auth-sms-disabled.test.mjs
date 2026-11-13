@@ -106,7 +106,6 @@ test('SMS auth stays off by default, reports its state, and never becomes an imp
   const profile = await post('/api/auth/register', {
     name: 'Cashier Created Guest',
     phone: '+7 900 000-02-03',
-    pin: '',
     consent: true
   });
   assert.equal(profile.status, 200, JSON.stringify(profile.json));
