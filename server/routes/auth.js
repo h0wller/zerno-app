@@ -463,8 +463,11 @@ authRouter.delete('/api/me', userGuard, (req, res) => {
     db.prepare('DELETE FROM fcm WHERE cid=?').run(cid);
     db.prepare('DELETE FROM promo_use WHERE cid=?').run(cid);
     db.prepare('DELETE FROM history WHERE cid=?').run(cid);
-    db.prepare('DELETE FROM chat WHERE key=?').run(cid);
-    db.prepare('DELETE FROM chat_meta WHERE key=?').run(cid);
+    const chatKeys = [cid, cid + ':c', cid + ':d'];
+    const chatPlaceholders = chatKeys.map(() => '?').join(',');
+    db.prepare(`DELETE FROM chat WHERE key IN (${chatPlaceholders})`).run(...chatKeys);
+    db.prepare(`DELETE FROM chat_meta WHERE key IN (${chatPlaceholders})`).run(...chatKeys);
+    db.prepare(`DELETE FROM chat_access WHERE key IN (${chatPlaceholders})`).run(...chatKeys);
     db.prepare("UPDATE orders SET cid='', name='', phone='', addr='', comment='' WHERE cid=?").run(cid);
     db.prepare('DELETE FROM customers WHERE id=?').run(cid);
   })();
