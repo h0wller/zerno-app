@@ -133,6 +133,40 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           search: rect(searchElement),
           support: rect(host),
           fab: rect(fab),
+          profile: (() => {
+            const element = document.getElementById('profileTopBtn');
+            if (!element) return null;
+            const box = element.getBoundingClientRect();
+            const face = getComputedStyle(element, '::before');
+            const inset = {
+              top: Number.parseFloat(face.top) || 0,
+              right: Number.parseFloat(face.right) || 0,
+              bottom: Number.parseFloat(face.bottom) || 0,
+              left: Number.parseFloat(face.left) || 0
+            };
+            const cx = box.left + box.width / 2;
+            const cy = box.top + box.height / 2;
+            const points = [
+              [cx - 21, cy - 21],
+              [cx + 21, cy - 21],
+              [cx - 21, cy + 21],
+              [cx + 21, cy + 21]
+            ];
+            return {
+              width: box.width,
+              height: box.height,
+              face: {
+                width: box.width - inset.left - inset.right,
+                height: box.height - inset.top - inset.bottom,
+                inset,
+                content: face.content
+              },
+              hitPoints: points.map(([x, y]) => {
+                const target = document.elementFromPoint(x, y);
+                return target === element || element.contains(target);
+              })
+            };
+          })(),
           modeButtons: Array.from(seg.querySelectorAll(':scope > button')).map(button => {
             const box = button.getBoundingClientRect();
             const face = getComputedStyle(button, '::before');
@@ -283,6 +317,14 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.adminActionsVisible).toBe(true);
       expect(layout.supportInsideRow).toBe(true);
       expect(layout.modeButtons.map(button => button.text)).toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
+      expect(layout.profile).not.toBeNull();
+      expect(layout.profile.width).toBe(44);
+      expect(layout.profile.height).toBe(44);
+      expect(layout.profile.face.width).toBe(32);
+      expect(layout.profile.face.height).toBe(32);
+      expect(layout.profile.face.inset).toEqual({ top: 6, right: 6, bottom: 6, left: 6 });
+      expect(layout.profile.face.content).not.toBe('none');
+      expect(layout.profile.hitPoints.every(Boolean), JSON.stringify(layout.profile)).toBe(true);
 
       const rowOneCenter = layout.rowOne.y + layout.rowOne.height / 2;
       for (const item of [layout.title, layout.slot, layout.edit]) {
