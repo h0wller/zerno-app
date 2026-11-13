@@ -152,7 +152,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         brandContext: box(document.querySelector('#deliveryView .menu-head h1 em')),
         menuHead: box(document.querySelector('#deliveryView .menu-head')),
         menuHeadStyle: (() => { const style = getComputedStyle(document.querySelector('#deliveryView .menu-head')); return { maxHeight: style.maxHeight, overflow: style.overflow }; })(),
-        subchipHeight: document.querySelector('#deliverySubFilter .subchip')?.getBoundingClientRect().height,
+        subchipHeight: (() => {
+          const chip = document.querySelector('#deliverySubFilter .subchip');
+          if (!chip) return undefined;
+          const box = chip.getBoundingClientRect();
+          const face = getComputedStyle(chip, '::before');
+          return box.height - (Number.parseFloat(face.top) || 0) - (Number.parseFloat(face.bottom) || 0);
+        })(),
+        subchipTargetHeight: document.querySelector('#deliverySubFilter .subchip')?.getBoundingClientRect().height,
         card: box(card),
         media: box(media),
         brandMark: box(document.querySelector('#brandMark')),
@@ -161,7 +168,10 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         search: box(document.querySelector('#deliveryView .mh-right .search')),
         addButton: box(document.querySelector('#deliveryGrid .cta[data-add]')),
         addRow: box(document.querySelector('#deliveryGrid .cta[data-add]')?.closest('.steprow')),
-        activeSubchipColor: document.querySelector('#deliverySubFilter .subchip.on') && getComputedStyle(document.querySelector('#deliverySubFilter .subchip.on')).backgroundColor,
+        activeSubchipColor: (() => {
+          const chip = document.querySelector('#deliverySubFilter .subchip.on');
+          return chip && getComputedStyle(chip, '::before').backgroundColor;
+        })(),
         searchLabel: box(document.querySelector('#deliveryView label[for="dSearch"]')),
         searchInput: box(document.querySelector('#dSearch')),
         updated: box(document.querySelector('#deliveryView .menu-head .upd')),
@@ -194,6 +204,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.menuHeadStyle.overflow).toBe('visible');
     expect(before.search.height).toBe(40);
     expect(before.subchipHeight).toBe(40);
+    expect(before.subchipTargetHeight).toBe(44);
     expect(before.addButton.width).toBeGreaterThanOrEqual(before.addRow.width - 1);
     expect(before.activeSubchipColor).toBe('rgb(192, 59, 42)');
     expect(before.card.width).toBeGreaterThan(200);
@@ -245,6 +256,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.menuHeadStyle.overflow).not.toBe('hidden');
     expect(after.search.height).toBe(40);
     expect(after.subchipHeight).toBe(40);
+    expect(after.subchipTargetHeight).toBe(44);
+    expect(after.subchipTargetHeight).toBe(before.subchipTargetHeight);
     expect(after.subchipHeight).toBe(before.subchipHeight);
     expect(after.addButton).toEqual(before.addButton);
     expect(after.addRow).toEqual(before.addRow);
