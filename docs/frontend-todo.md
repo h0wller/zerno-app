@@ -1,7 +1,7 @@
 # Frontend roadmap & UX audit — Zerno
 
 **Base branch:** `pizza`
-**Last documentation reconciliation:** 2026-11-13
+**Last documentation reconciliation:** 2026-11-13 (CI #3079)
 
 ## Current source-of-truth and status
 
@@ -112,3 +112,10 @@ The former #178 proposal to schedule #177 and #167 is obsolete because both are 
 - This refresh does not close the remaining customer/staff states, cold-first-paint comparison, native iOS/Telegram review or the broad-scope review blocker.
 
 - [x] Refreshed production archive #3078 was also individually inspected at native resolution: all eight PNGs (both brands × four viewports). The coffee desktop auxiliary card is a populated guest profile/login prompt, not an empty panel; small square ticker separators and the 320px coffee placeholder truncation remain visual observations for targeted review.
+
+
+### Latest documentation-head verification — 2026-11-13
+- [CI Quality Gates #3079](https://github.com/h0wller/zerno-app/actions/runs/43434830992) completed successfully on PR head `cf9077a54583135fcd686b91282f9e4c7e1b1b86`: **15/15 jobs passed**.
+- Production archive refreshed in [artifact #14043551195](https://github.com/h0wller/zerno-app/actions/runs/43434830992/artifacts/14043551195): eight PNGs and manifest for both brands at 320×740, 390×844, 768×1024 and 1440×900; deployed revision remains `c005b1c6832a5b722c97c43dd7cd525f638c209b`.
+- Cart and checkout **25 passed**; Responsive UI **139 passed**; Mobile Chrome responsive **102 passed**.
+- No production deployment was performed for PR #203. The remaining client-state, staff-role, cold-first-paint and native iOS/Telegram checks remain open; broad PR diff review remains a merge blocker.
