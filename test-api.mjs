@@ -33,7 +33,7 @@ const run=async()=>{
   const ld2=await api('/chat/list',{token:d});
   check('после закрытия новый вызов открывает тред',ld2.j.threads?.some(t=>t.key===key));
   await api('/chat/reply',{method:'POST',token:d,body:{key,text:'Диспетчер на связи'}});
-  const th=await api('/chat/thread?key='+encodeURIComponent(key));
+  const th=await api('/chat/thread?key='+encodeURIComponent(key),{token:g});
   check('гость видит ответ сотрудника',th.j.msgs?.some(m=>m.who==='staff'));
   check('кассир не читает чужой тред',(await api('/chat/dialog?key='+encodeURIComponent(key),{token:c})).status===403);
   await api('/admin/weekpromo',{method:'PUT',token:a,body:{text:'Тест пиво',threshold:2000,gift:'Пиво',until:new Date(Date.now()+86400000).toISOString()}});
