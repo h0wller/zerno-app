@@ -91,6 +91,7 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
     const botToken = crypto.randomBytes(6).toString('hex');
     otpStore.set('regtg:' + botToken, { phone: p, name: String(req.body.name || '').trim(), expires: Date.now() + 10 * 60 * 1000 });
     otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
+    registerFail(req, 'reg-otp-send');
     return res.json({ needBotConfirm: true, tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${botToken}` });
   }
   otpStore.delete('reg:' + p);
@@ -142,7 +143,7 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) {
     return res.status(409).json({ error: 'Номер уже зарегистрирован — войдите' });
   }
-  const wait = lockedSeconds(req, 'reg');
+  const wait = Math.max(lockedSeconds(req, 'reg'), lockedSeconds(req, 'reg-otp-send'));
   if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
 
   if (via === 'tg') {
@@ -181,6 +182,7 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
     lastSent: now,
     windowEnds: st && now < (st.windowEnds || 0) ? st.windowEnds : now + 24 * 60 * 60 * 1000
   });
+  registerFail(req, 'reg-otp-send');
   res.json({ ok: true, via: 'sms' });
 });
 
@@ -208,7 +210,10 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   const st = otpStore.get('reg:' + p);
   const okTg = isOtpLive(st) && !!st.confirmed;
   const okSms = isOtpLive(st) && !!st.code && !!code && st.code === code;
-  if (okSms) pinLocks.delete(lockKey(req, 'reg'));
+  if (okSms || okTg) {
+    pinLocks.delete(lockKey(req, 'reg'));
+    pinLocks.delete(lockKey(req, 'reg-otp-send'));
+  }
   const tgChat = okTg ? (st.tgChat || null) : null;
   if (okTg || okSms) consumeOtp('reg:' + p, entry => okTg ? !!entry.confirmed : !!entry.code && !!code && entry.code === code);
 
@@ -303,6 +308,7 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
     }
     consumeOtp(p, entry => entry.code === otp);
     pinLocks.delete(lockKey(req, 'login'));
+    pinLocks.delete(lockKey(req, 'otp-send'));
     addHist(c.id, 'Вход по коду из Telegram', 'Приложение');
     return res.json({ token: issueToken(c.id), customer: cust(c), needPin: !c.pin });
   }
@@ -348,7 +354,7 @@ authRouter.post('/api/auth/request-otp', async (req, res) => {
   const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (!c) return res.status(404).json({ error: 'Профиль не найден' });
 
-  const ipWait = lockedSeconds(req, 'otp-send');
+  const ipWait = Math.max(lockedSeconds(req, 'otp-send'), lockedSeconds(req, 'login'));
   if (ipWait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${ipWait} сек.` });
 
   const now = Date.now();
