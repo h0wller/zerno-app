@@ -1225,7 +1225,7 @@ html body #modeSeg button:not(.on) {
   }
 
   html body header.topbar #profileTopBtn:focus-visible::before {
-    outline: 2px solid var(--profile-focus-ring, currentColor);
+    outline: 2px solid var(--flame, currentColor);
     outline-offset: 2px;
   }
 }
