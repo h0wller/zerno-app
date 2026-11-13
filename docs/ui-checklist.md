@@ -74,7 +74,7 @@
 
 ## 9. Supporting CI screenshot review — 2026-11-13
 
-- [x] Eight hydrated guest first-viewport screenshots in CI run #3029 were individually inspected: coffee and delivery at 320×740, 390×844, 768×1024 and 1440×900. [Artifact #14033826340](https://github.com/h0wller/zerno-app/actions/runs/43420027518).
+- [x] Eight hydrated guest first-viewport screenshots in CI run [#3033](https://github.com/h0wller/zerno-app/actions/runs/43421869883) were individually inspected: coffee and delivery at 320×740, 390×844, 768×1024 and 1440×900. [Artifact #14034162976](https://github.com/h0wller/zerno-app/actions/runs/43421869883).
 - [x] Test-server captures show the expected one-/two-/three-column catalog transitions, visible menu controls and no apparent text/variant/action overlap in the inspected first viewport.
 - [ ] Do not mark production screenshot acceptance complete from this artifact: it uses localhost fixture catalog data and placeholder media. The eight live-production PNGs still need persistent archiving and review.
 
