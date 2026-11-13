@@ -51,7 +51,8 @@
         parsedUrl = new URL(String(urlArg), window.location.origin);
       } catch (_) {}
 
-      if (parsedUrl && /\\/api\\/chat\\/(send|botlog|thread)$/.test(parsedUrl.pathname)) {
+      var chatPath = parsedUrl && parsedUrl.pathname;
+      if (chatPath === "/api/chat/send" || chatPath === "/api/chat/botlog" || chatPath === "/api/chat/thread") {
         var payload = null;
         if (typeof nextOpts.body === "string") {
           try {
