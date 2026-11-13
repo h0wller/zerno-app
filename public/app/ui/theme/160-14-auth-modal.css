@@ -2,6 +2,7 @@
    Layer 1 component styles; brand colours come only from existing design tokens. */
 
 #authModal .authcard {
+  box-sizing: border-box;
   width: min(440px, 100%);
   max-height: min(88vh, 780px);
   max-height: min(88dvh, 780px);
