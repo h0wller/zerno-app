@@ -91,3 +91,103 @@ for (const brand of BRANDS) {
     });
   }
 }
+
+
+const deliveryFilterIngredients = [
+  'Курица', 'Пепперони', 'Ветчина', 'Мясная',
+  'Лосось', 'Тунец', 'Креветки', 'Овощная',
+];
+
+const deliveryFilterItems = deliveryFilterIngredients.map((ingredient, index) => ({
+  id: 'tap-filter-' + index,
+  cat: 'pizza',
+  section: 'delivery',
+  name: 'Пицца ' + ingredient,
+  desc: '',
+  comp: [ingredient],
+  opts: [],
+  price: 400 + index,
+  e: '🍕',
+  on: 1,
+  img: '',
+}));
+
+for (const width of [320, 375, 390]) {
+  test(`delivery subfilters keep their 40px visual pill inside a 44px hit target at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('zt_onb', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.route('**/api/dmenu*', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: deliveryFilterItems }),
+    }));
+
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+    const bar = page.locator('#deliveryView #deliverySubFilter');
+    await expect(bar).toBeVisible();
+    const chips = bar.locator('.subchip');
+    await expect(chips).toHaveCount(deliveryFilterIngredients.length + 1);
+
+    for (let index = 0; index < await chips.count(); index += 1) {
+      const chip = chips.nth(index);
+      await chip.evaluate((element) => element.scrollIntoView({
+        block: 'nearest',
+        inline: 'center',
+        behavior: 'instant',
+      }));
+
+      const metrics = await chip.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const face = getComputedStyle(element);
+        const hitFace = getComputedStyle(element, '::after');
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const points = [
+          [cx - 21, cy],
+          [cx + 21, cy],
+          [cx, cy - 21],
+          [cx, cy + 21],
+        ];
+        return {
+          width: rect.width,
+          height: rect.height,
+          radius: face.borderRadius,
+          hitContent: hitFace.content,
+          hitTop: hitFace.top,
+          hitBottom: hitFace.bottom,
+          hitPoints: points.map(([x, y]) => {
+            const target = document.elementFromPoint(x, y);
+            return target === element || element.contains(target);
+          }),
+          railRect: (() => {
+            const rail = element.parentElement.getBoundingClientRect();
+            return { top: rail.top, bottom: rail.bottom };
+          })(),
+          scrollWidth: document.documentElement.scrollWidth,
+          clientWidth: document.documentElement.clientWidth,
+        };
+      });
+
+      expect(metrics.height, JSON.stringify(metrics)).toBe(40);
+      expect(metrics.width, JSON.stringify(metrics)).toBeGreaterThanOrEqual(44);
+      expect(metrics.hitContent).not.toBe('none');
+      expect(metrics.hitTop, JSON.stringify(metrics)).toBe('-2px');
+      expect(metrics.hitBottom, JSON.stringify(metrics)).toBe('-2px');
+      expect(metrics.hitPoints.every(Boolean), JSON.stringify(metrics)).toBe(true);
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
+    }
+
+    if (width === 390) {
+      await testInfo.attach('tap-target-delivery-subfilters-390px', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png',
+      });
+    }
+  });
+}
