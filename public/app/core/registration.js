@@ -249,6 +249,50 @@
       };
     }
 
+    function syncSmsRegistrationUi() {
+      var smsButton = document.getElementById('regOtpBtn');
+      var smsRow = document.getElementById('regOtpRow');
+      var enabled = window.SMS_AUTH_ENABLED === true;
+      if (smsButton) smsButton.hidden = !enabled;
+      if (!enabled && smsRow) smsRow.hidden = true;
+    }
+
+    window.addEventListener('app:config-loaded', syncSmsRegistrationUi);
+    syncSmsRegistrationUi();
+
+    var regOtpBtn = document.getElementById('regOtpBtn');
+    if (regOtpBtn) {
+      regOtpBtn.onclick = async function () {
+        if (regOtpBtn.disabled || window.SMS_AUTH_ENABLED !== true) return;
+        var phone = (document.getElementById('regPhone') || {}).value || '';
+        var name = ((document.getElementById('regName') || {}).value || '').trim();
+        if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
+
+        beginAuthOperation();
+        regOtpBtn.disabled = true;
+        regOtpBtn.setAttribute('aria-busy', 'true');
+        regOtpBtn.textContent = 'Отправляем SMS…';
+        try {
+          await api('/auth/request-reg-otp', {
+            method: 'POST',
+            body: { phone: phone, name: name, via: 'sms' }
+          });
+          var row = document.getElementById('regOtpRow');
+          var input = document.getElementById('regOtp');
+          if (row) row.hidden = false;
+          if (input) input.focus();
+          toast('Код отправлен по SMS', '🔑');
+        } catch (error) {
+          toast(error.message || 'Не удалось отправить SMS', '⚠️');
+        } finally {
+          regOtpBtn.disabled = false;
+          regOtpBtn.removeAttribute('aria-busy');
+          regOtpBtn.textContent = 'Отправить код по SMS повторно';
+          endAuthOperation();
+        }
+      };
+    }
+
     var regTgBtn = document.getElementById('regTgBtn');
     if (regTgBtn) {
       regTgBtn.onclick = async function () {
