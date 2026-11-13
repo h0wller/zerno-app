@@ -77,16 +77,16 @@ for (const brand of BRANDS) {
           }, {});
           const cx = rect.left + rect.width / 2;
           const cy = rect.top + rect.height / 2;
-          const points = [
-            [rect.left + 2, rect.top + 2],
-            [cx, rect.top + 2],
-            [rect.right - 2, rect.top + 2],
-            [rect.right - 2, cy],
-            [rect.right - 2, rect.bottom - 2],
-            [cx, rect.bottom - 2],
-            [rect.left + 2, rect.bottom - 2],
-            [rect.left + 2, cy],
-          ];
+          // The avatar is circular, so its effective 44px target is tested
+          // on the circle's perimeter rather than at the square box corners.
+          const targetRadius = 20;
+          const points = Array.from({ length: 8 }, (_, index) => {
+            const angle = index * Math.PI / 4;
+            return [
+              cx + Math.cos(angle) * targetRadius,
+              cy + Math.sin(angle) * targetRadius,
+            ];
+          });
           return {
             width: rect.width,
             height: rect.height,
