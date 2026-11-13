@@ -110,7 +110,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `chat.js` | Гостевой чат с ботом (`#chatPanel`), стафф-чат (`#staffChatModal`), бейджи, поллинг треда | `window.addMsg`, `window.sendChat`, `window.openStaffChat` |
-| `chat-core.js` | Контекстные суффиксы chatKey, база знаний (kbAnswer), бар подсказок `#chatHintsBar`, `#supportChooseOverlay`, fetch-патч ctx | `window.setBotName`, `window.reloadChatThread`, `window.showSupportOverlay` |
+| `chat-core.js` | Контекстные суффиксы chatKey, база знаний (kbAnswer), бар подсказок `#chatHintsBar`, `#supportChooseOverlay`, fetch-контракт чата: Bearer владельца или `X-Chat-Access-Token` анонимного треда | `window.setBotName`, `window.reloadChatThread`, `window.showSupportOverlay` |
 | `core/chat-head.js` | Стабильные классы шапки чата (`.chatHead`/`.chName`) | — |
 | `core/chat-state.js` | Мост контекста чата (`window.chatState`); views.js держит дубль `__fvChatState` для легаси | `window.chatState` |
 
