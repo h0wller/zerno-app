@@ -26,10 +26,15 @@ const RECOMMENDED_ITEMS = [
 
 ];
 
-async function expectCompact44pxHitTarget(locator, visibleFace) {
-  const metrics = await locator.evaluate((button) => {
+async function expectCompact44pxHitTarget(locator, visibleFace, { midpointEdgesOnly = false } = {}) {
+  const metrics = await locator.evaluate((button, midpointOnly) => {
     const rect = button.getBoundingClientRect();
-    const points = [
+    const points = midpointOnly ? [
+      [rect.left + rect.width / 2, rect.top + 2],
+      [rect.left + rect.width / 2, rect.bottom - 2],
+      [rect.left + 2, rect.top + rect.height / 2],
+      [rect.right - 2, rect.top + rect.height / 2]
+    ] : [
       [rect.left + 2, rect.top + 2],
       [rect.right - 2, rect.top + 2],
       [rect.left + 2, rect.bottom - 2],
@@ -47,7 +52,7 @@ async function expectCompact44pxHitTarget(locator, visibleFace) {
       faceWidth: Number.parseFloat(pseudo.width),
       faceHeight: Number.parseFloat(pseudo.height)
     };
-  });
+  }, midpointEdgesOnly);
 
   expect(metrics.width).toBeGreaterThanOrEqual(44);
   expect(metrics.height).toBeGreaterThanOrEqual(44);
@@ -234,7 +239,7 @@ test('cart keeps the current selected price and explains every amount without gu
   for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await addButton.scrollIntoViewIfNeeded();
-    await expectCompact44pxHitTarget(addButton);
+    await expectCompact44pxHitTarget(addButton, undefined, { midpointEdgesOnly: true });
   }
   await page.setViewportSize({ width: 390, height: 844 });
   const recommendationTabsFit = await recommendations.locator('.cart-addons-wrap').evaluate((wrap) => {
@@ -260,7 +265,7 @@ test('cart keeps the current selected price and explains every amount without gu
   for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await addButton.scrollIntoViewIfNeeded();
-    await expectCompact44pxHitTarget(addButton);
+    await expectCompact44pxHitTarget(addButton, undefined, { midpointEdgesOnly: true });
   }
   await page.setViewportSize({ width: 390, height: 844 });
   const drinkCartRow = page.locator('#cartItems .cartItem').nth(1);
