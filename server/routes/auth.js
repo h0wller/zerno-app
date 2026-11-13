@@ -218,7 +218,7 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
 
   const st = otpStore.get('reg:' + p);
   const okSms = SMS_AUTH_ENABLED && isOtpLive(st) && !!st.code && !!code && st.code === code;
-  if (code && !okSms) {
+  if (SMS_AUTH_ENABLED && code && !okSms) {
     registerFail(req, 'reg', p);
     return res.status(403).json({ error: 'Неверный или просроченный код подтверждения' });
   }
