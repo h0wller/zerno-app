@@ -228,6 +228,15 @@ test('cart keeps the current selected price and explains every amount without gu
   expect(addActionGeometry.buttonHeight).toBe(44);
   expect(addActionGeometry.actionWidth).toBe(44);
   expect(Math.abs(addActionGeometry.actionLeft - addActionGeometry.buttonLeft)).toBeLessThan(1);
+
+  // The recommendation CTA keeps a real 44×44 hit cell at both mobile widths.
+  // Check the outer perimeter, not only the visible plus glyph or center click.
+  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await addButton.scrollIntoViewIfNeeded();
+    await expectCompact44pxHitTarget(addButton);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   const recommendationTabsFit = await recommendations.locator('.cart-addons-wrap').evaluate((wrap) => {
     const head = wrap.querySelector('.cart-addons-head');
     const rail = wrap.querySelector('.ca-tabs-scroll');
@@ -247,6 +256,13 @@ test('cart keeps the current selected price and explains every amount without gu
 
   // A recommendation button has fixed geometry before and after adding; qty never widens the menu cell.
   await addButton.click();
+  await expect(addButton).toHaveClass(/in-cart/);
+  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await addButton.scrollIntoViewIfNeeded();
+    await expectCompact44pxHitTarget(addButton);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   const drinkCartRow = page.locator('#cartItems .cartItem').nth(1);
   await expect(drinkCartRow.locator('.ci-name')).toHaveText('Лимонад к заказу');
   await expect(drinkCartRow.locator('.ci-unit-price')).toHaveText('180 ₽ / шт.');
