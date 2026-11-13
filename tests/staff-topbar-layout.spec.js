@@ -82,6 +82,8 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
         document.documentElement.style.setProperty('--sat', '47px');
         window.setMode('admin');
       });
+      // The admin-mode toast temporarily covers the profile hit cell; measure only after it leaves.
+      await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 4000 });
 
       const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
       const mode = page.locator('#modeSeg');
