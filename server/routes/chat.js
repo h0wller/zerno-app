@@ -9,7 +9,9 @@ const chatRouter = Router();
 const MAX_CHAT_KEY_LENGTH = 80;
 const MESSAGE_WINDOW_MS = 60 * 1000;
 const MAX_MESSAGES_PER_OWNER = 15;
+const MAX_MESSAGES_PER_IP = 120;
 const HUMAN_CALL_COOLDOWN_MS = 2 * 60 * 1000;
+const ipBuckets = new Map();
 const messageBuckets = new Map();
 const humanCallBuckets = new Map();
 
@@ -120,6 +122,16 @@ chatRouter.post('/api/chat/send', (req, res) => {
   const human = humanValue === 1 || humanValue === true;
   if (human && !access.user) {
     return res.status(403).json({ error: 'Для вызова сотрудника войдите в профиль' });
+  }
+
+  const ipWait = consumeLimit(
+    ipBuckets,
+    req.ip || req.socket?.remoteAddress || 'local',
+    MAX_MESSAGES_PER_IP,
+    MESSAGE_WINDOW_MS
+  );
+  if (ipWait > 0) {
+    return sendRateLimit(res, ipWait, 'Слишком много запросов с этого адреса. Попробуйте позже.');
   }
 
   const messageWait = consumeLimit(
