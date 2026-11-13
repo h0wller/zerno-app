@@ -76,7 +76,7 @@
 
 - [x] Eight hydrated guest first-viewport screenshots in CI run [#3033](https://github.com/h0wller/zerno-app/actions/runs/43421869883) were individually inspected: coffee and delivery at 320×740, 390×844, 768×1024 and 1440×900. [Artifact #14034162976](https://github.com/h0wller/zerno-app/actions/runs/43421869883).
 - [x] Test-server captures show the expected one-/two-/three-column catalog transitions, visible menu controls and no apparent text/variant/action overlap in the inspected first viewport.
-- [ ] Do not mark production screenshot acceptance complete from this artifact: it uses localhost fixture catalog data and placeholder media. The eight live-production PNGs still need persistent archiving and review.
+- [x] Keep this artifact classified as localhost fixture evidence. The separate live-production eight-PNG archive is available in CI run [#3064](https://github.com/h0wller/zerno-app/actions/runs/43427135621), artifact [#14037897354](https://github.com/h0wller/zerno-app/actions/runs/43427135621/artifacts/14037897354).
 
 ## 8. Production guest verification — 2026-11-13
 
@@ -87,17 +87,32 @@
 - [x] Runtime measurements at 320×740, 390×844, 768×1024 and 1440×900 for both brands found no horizontal overflow (`scrollWidth === clientWidth`).
 - [x] Runtime-computed typography and brand tokens are recorded in `docs/audits/visual-ux-scorecard.md`.
 - [x] Production revision is linked to the successful deployment SHA above; the live `STATIC_CACHE=v3553` was generated from `v646` by that build's `BUILD_NUM` bump.
-- [ ] Persistent archive and individual visual review of all eight production first-viewport PNGs. The two 390×844 brand captures were visually inspected previously but were not saved into the repository; the later browser automation could not set exact viewport sizes or export image files.
+- [x] Persistent CI artifact and individual visual review of all eight production first-viewport PNGs completed in run [#3064](https://github.com/h0wller/zerno-app/actions/runs/43427135621), artifact [#14037897354](https://github.com/h0wller/zerno-app/actions/runs/43427135621/artifacts/14037897354).
 - [ ] Cold-first-paint vs hydrated comparison on production.
 - [ ] Customer cart, checkout, profile, bonuses, order confirmation/tracking, and staff roles remain outside this guest-menu baseline.
 
-A browser automation attempt that reported a 1007×1007 actual viewport is classified as incomplete and is not used as evidence for the requested viewport matrix. Do not mark the screenshot protocol complete until the eight production PNGs are archived and inspected.
+The earlier browser automation attempt that reported a 1007×1007 actual viewport remains classified as incomplete. It was superseded by the exact-viewport Playwright archive in CI run #3064; that run, not the earlier automation, closes the eight-image production first-viewport archive requirement.
 
 ## 10. Production guest runtime follow-up — 2026-11-13
 
 - [x] Isolated guest sessions verified the expected active brand root for both URLs: `data-brand=coffee` / `brand-coffee` and `data-brand=delivery` / `brand-delivery`.
 - [x] Staff-only controls were not visible in either isolated guest session.
 - [x] Production DOM showed no horizontal overflow at 320×740, 390×844, 768×1024 and 1440×900 for both brands; vertical scrollbar width is excluded by comparing `scrollWidth` with `clientWidth`.
-- [ ] Persistent production PNG archive/manual inspection remains incomplete: the two 390×844 screens were visually inspected in a prior session but not retained; the later browser automation could not change viewport or export PNGs.
+- [x] Persistent production PNG archive/manual inspection is complete: eight exact-viewport screenshots were archived and individually reviewed in CI run #3064, artifact #14037897354.
 - [ ] Ticker duplicate/loop semantics, exact hidden dual-brand DOM inventory, discount eligibility wording, native iOS Safari and customer/staff overlay states remain unverified.
 - Production identity is tied to commit `c005b1c6832a5b722c97c43dd7cd525f638c209b` by [successful Timeweb deploy run #43383317619](https://github.com/h0wller/zerno-app/actions/runs/43383317619); this is the current production baseline and not PR #203.
+
+
+## 11. Production guest screenshot archive and visual review — 2026-11-13
+
+**Source:** live production `https://friday.andcoffee.online/`, deployed commit `c005b1c6832a5b722c97c43dd7cd525f638c209b`, independently linked to Timeweb deploy run [#43383317619](https://github.com/h0wller/zerno-app/actions/runs/43383317619).  
+**Capture:** dedicated Playwright job in CI run [#3064](https://github.com/h0wller/zerno-app/actions/runs/43427135621). The test passed 1/1 and uploaded [artifact #14037897354](https://github.com/h0wller/zerno-app/actions/runs/43427135621/artifacts/14037897354), containing eight PNGs and a JSON manifest.
+
+- [x] Coffee and delivery were captured at 320×740, 390×844, 768×1024 and 1440×900, device scale factor 1.
+- [x] All eight images were individually opened and reviewed at native resolution.
+- [x] The manifest confirms the requested viewport for every image, correct active `data-brand`, expected first product (Эспрессо / Маргарита), empty staff-control visibility list and no horizontal overflow.
+- [x] Capture sessions were isolated and unauthenticated; service workers were blocked; no clicks, sign-in, cart actions, orders, payments or data writes were performed.
+- [ ] Cold-first-paint vs hydrated comparison on production remains pending; this archive covers the hydrated first viewport.
+- [ ] Customer cart, checkout, profile, bonuses, order confirmation/tracking and staff roles remain outside this guest-menu baseline.
+
+**Visual observations for follow-up, not yet classified as defects:** the coffee search placeholder is shortened at 320px; the desktop coffee first viewport shows an empty outlined auxiliary panel; ticker separators render as small square marks. Their intended states/source characters must be checked before scoring or changing CSS.
