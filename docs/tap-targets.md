@@ -82,3 +82,12 @@ Changes to tap-target geometry must update this register and the matching Playwr
 - work modes returning the switcher to topbar only when menu is hidden.
 
 `tests/slow-network-layout.spec.js` covers guest/mobile and cached staff/desktop first-paint geometry before and after auth hydration.
+
+
+## Latest CI verification — 2026-11-13
+
+- Current PR head: `d6a4688af26c60a691a2c41de52a5ddcce5784b1`.
+- [CI Quality Gates #3064](https://github.com/h0wller/zerno-app/actions/runs/43427135621): all **15/15 jobs passed**.
+- Cart and checkout: **25 passed**; Responsive UI: **139 passed, 4 skipped**; Mobile Chrome: **102 passed, 4 skipped**.
+- `.ac-add-btn` checks are included in `tests/cart-checkout-clarity.spec.js`: four side-midpoint points at 320×740 and 390×844, before and after the in-cart state change.
+- Production guest menu capture was archived separately in artifact [#14037897354](https://github.com/h0wller/zerno-app/actions/runs/43427135621/artifacts/14037897354); it is visual baseline evidence, not a tap-target test on production controls.
