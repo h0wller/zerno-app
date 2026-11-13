@@ -420,9 +420,9 @@
     align-items: flex-end;
     padding: 0;
   }
-  #staffChatModal .modal-card {
-    width: 100% !important;
-    max-width: none !important;
+  #staffChatModal.modal .modal-card {
+    width: 100%;
+    max-width: none;
     max-height: calc(100dvh - env(safe-area-inset-top, 0px));
     padding: 18px 14px calc(14px + env(safe-area-inset-bottom, 0px));
     border-radius: 22px 22px 0 0;
