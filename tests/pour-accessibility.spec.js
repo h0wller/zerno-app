@@ -160,7 +160,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
             throw new Error('Expected an active ingredient filter chip; the delivery fixture must contain more than five pizza items');
           }
           const style = getComputedStyle(element);
-          return { bg: style.backgroundColor, color: style.color, text: element.textContent.trim() };
+          const face = getComputedStyle(element, '::before');
+          return { bg: face.backgroundColor, color: style.color, text: element.textContent.trim() };
         })(),
       };
     });
