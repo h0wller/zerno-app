@@ -33,9 +33,9 @@ export default defineConfig({
       PORT: String(testPort),
       DB_PATH: process.env.PW_DB_PATH || './.playwright-test.db',
       NODE_ENV: 'test',
-      ADMIN_CODE: /^\\d{16,64}$/.test(process.env.ADMIN_CODE || '') ? process.env.ADMIN_CODE : '7391846205739184',
-      CASHIER_CODE: /^\\d{16,64}$/.test(process.env.CASHIER_CODE || '') ? process.env.CASHIER_CODE : '5820471963582047',
-      DISPATCH_CODE: /^\\d{16,64}$/.test(process.env.DISPATCH_CODE || '') ? process.env.DISPATCH_CODE : '9137562048913756',
+      ADMIN_CODE: String(process.env.ADMIN_CODE || '').length >= 16 ? process.env.ADMIN_CODE : '7391846205739184',
+      CASHIER_CODE: String(process.env.CASHIER_CODE || '').length >= 16 ? process.env.CASHIER_CODE : '5820471963582047',
+      DISPATCH_CODE: String(process.env.DISPATCH_CODE || '').length >= 16 ? process.env.DISPATCH_CODE : '9137562048913756',
     },
   },
 
