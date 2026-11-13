@@ -198,8 +198,13 @@ chatRouter.post('/api/chat/send', (req, res) => {
 });
 
 chatRouter.get('/api/chat/thread', (req, res) => {
-  const access = requireGuestThread(req, res, String(req.query.key ?? ''));
+  const capability = String(req.header('X-Chat-Capability') || '');
+  const queryKey = String(req.query.key ?? '');
+  const access = requireGuestThread(req, res, capability || queryKey);
   if (!access) return;
+  if (access.anonymous && !capability) {
+    return res.status(401).json({ error: 'Для гостевого чата передайте capability в заголовке' });
+  }
 
   const afterRaw = req.query.after === undefined ? '0' : req.query.after;
   const after = Number(afterRaw);
