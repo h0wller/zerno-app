@@ -28,12 +28,12 @@
 
 | Метод и путь | Назначение | Примечание |
 |---|---|---|
-| `POST /api/auth/request-reg-otp` | Запрос подтверждения регистрации по SMS или Telegram | `phone`, `name?`, `via?: tg\|sms`; Telegram-flow может вернуть `tgUrl` |
+| `POST /api/auth/request-reg-otp` | Запрос подтверждения регистрации по SMS или Telegram | `phone`, `name?`, `via?: tg\|sms`; Telegram-flow возвращает `tgUrl` и случайный `pollToken`, SMS-flow сообщает `via` |
 | `POST /api/auth/check-reg` | Проверка Telegram-регистрации конкретной попытки | Body `pollToken`; ключ выдаётся вместе с `tgUrl`, по номеру телефона токен не возвращается |
 | `POST /api/auth/register` | Создать профиль и завершить регистрацию | Имя, телефон, согласие и подтверждение; возвращает `token` и `customer` |
 | `POST /api/auth/tg-link` | Вход или привязка по подписанному Telegram initData | Может вернуть `needPhone` или `needBotConfirm` |
 | `POST /api/auth/login` | Вход по телефону и PIN либо одноразовому коду | PIN или OTP из Telegram/SMS; первый PIN нельзя задать до подтверждения номера |
-| `POST /api/auth/request-otp` | Запросить входной OTP | `phone`; код отправляется в привязанный Telegram, при отсутствии/ошибке Telegram — по SMS; ответ включает `via` |
+| `POST /api/auth/request-otp` | Запросить входной OTP | `phone`; код отправляется в привязанный Telegram, при отсутствии/ошибке Telegram — по SMS; лимиты по IP и номеру, ответ включает `via` |
 | `POST /api/auth/setup-pin` | Первичная установка PIN в уже подтверждённой сессии | `pin`; требует `userGuard`, не выдаёт токен и не принимает телефон как доказательство владения |
 | `POST /api/auth/set-pin` | Сменить PIN текущего профиля | `pin`; userGuard |
 | `POST /api/auth/activate-guest` | Активировать профиль кодом кассира | `code`; userGuard |
