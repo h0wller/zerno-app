@@ -338,11 +338,11 @@ export function createTgRouter({ appKb }) {
           const sessionToken = finalCust ? issueToken(finalCust.id) : null;
           const custObj = finalCust ? cust(finalCust) : null;
 
+          // Phone-keyed state is used only by signed Telegram initData linking.
+          // Browser registration receives the session through its per-attempt pollToken.
           otpStore.set('reg:' + contactPhone, {
             code: null,
             confirmed: true,
-            token: sessionToken,
-            customer: custObj,
             tgChat: chatId,
             expires: Date.now() + 10 * 60 * 1000
           });
