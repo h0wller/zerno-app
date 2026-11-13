@@ -393,7 +393,7 @@
         } finally {
           otpBtn.disabled = false;
           otpBtn.removeAttribute('aria-busy');
-          otpBtn.textContent = '🔑 Не помню PIN — код в Telegram или SMS';
+          otpBtn.textContent = '🔑 Не помню PIN — получить код';
           endAuthOperation();
         }
       };
