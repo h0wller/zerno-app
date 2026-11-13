@@ -102,7 +102,7 @@ function expect(name, r, status, fields = []) {
   expect('GET /api/delivery/info', await call('GET', '/api/delivery/info'), 200, ['hours', 'eta', 'zones', 'pickupAddr', 'pickupDiscount', 'weekPromo', 'pizzaMonth']);
   expect('GET /api/vapid', await call('GET', '/api/vapid'), 200, ['publicKey']);
   expect('GET /api/promo/info (нет кода)', await call('GET', '/api/promo/info?code=SMOKE_NOPE'), 200, ['ok']);
-  expect('GET /api/chat/thread (пусто)', await call('GET', '/api/chat/thread?key=smoke-empty'), 200, ['msgs']);
+  expect('GET /api/chat/thread (legacy key rejected)', await call('GET', '/api/chat/thread?key=smoke-empty'), 400, ['error']);
   expect('POST /api/clientlog', await call('POST', '/api/clientlog', { body: { kind: 'smoke', msg: 'contract' } }), 200, ['ok']);
   expect('GET /api/definitely-not → 404', await call('GET', '/api/definitely-not'), 404);
 
@@ -136,8 +136,9 @@ function expect(name, r, status, fields = []) {
     expect('POST /api/auth/login (неверный PIN) → 403', await call('POST', '/api/auth/login', { body: { phone: '+7' + digits, pin: '0000' } }), 403, ['error']);
     expect('POST /api/auth/request-otp (некорректный телефон) → 400', await call('POST', '/api/auth/request-otp', { body: { phone: 'bad' } }), 400, ['error']);
     expect('POST /api/auth/activate-guest (неверный код) → 403', await call('POST', '/api/auth/activate-guest', { token, body: { code: '0000' } }), 403, ['error']);
-    expect('POST /api/chat/send', await call('POST', '/api/chat/send', { body: { key: 'smoke-' + digits, text: 'contract smoke', ctx: 'coffee' } }), 200, ['ok']);
-    expect('GET /api/chat/thread (после send)', await call('GET', '/api/chat/thread?key=smoke-' + digits), 200, ['msgs']);
+    const chatKey = reg.json.customer.id + ':c';
+    expect('POST /api/chat/send (владелец)', await call('POST', '/api/chat/send', { token, body: { key: chatKey, text: 'contract smoke', ctx: 'coffee' } }), 200, ['ok']);
+    expect('GET /api/chat/thread (владелец)', await call('GET', '/api/chat/thread?key=' + encodeURIComponent(chatKey), { token }), 200, ['msgs']);
     expect('GET /api/staff/pending (гость) → 403', await call('GET', '/api/staff/pending', { token }), 403, ['error']);
     expect('GET /api/chat/list (гость) → 403', await call('GET', '/api/chat/list', { token }), 403, ['error']);
     expect('GET /api/orders (гость) → 403', await call('GET', '/api/orders', { token }), 403, ['error']);

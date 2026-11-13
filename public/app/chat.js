@@ -63,7 +63,13 @@ var scKey = null, scClosedView = false;
   function chatKey() {
     if (me) return me.id;
     let k = localStorage.getItem('zt_chatkey');
-    if (!k) { k = 'anon-' + Math.random().toString(36).slice(2, 10); localStorage.setItem('zt_chatkey', k); }
+    if (!/^anon-[a-f0-9]{64}$/.test(k || '')) {
+      const bytes = new Uint8Array(32);
+      window.crypto.getRandomValues(bytes);
+      const randomKey = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+      k = 'anon-' + randomKey;
+      localStorage.setItem('zt_chatkey', k);
+    }
     return k;
   }
 
