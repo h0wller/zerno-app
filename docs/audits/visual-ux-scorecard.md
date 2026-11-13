@@ -274,3 +274,49 @@ These items are tracked separately from the numeric score register. A checked it
 - [ ] Re-capture 320/375/390 px and desktop staff states after the remaining bounded PRs; inspect PNG artifacts before changing scores.
 
 The sequence in the superseded #178 draft is no longer current: #177 and #167 are complete; #179, #182 and the safe-area investigation remain.
+
+
+## Production guest runtime inspection — 2026-11-13
+
+**Scope:** first-viewport guest menu only. Source: live production at `https://friday.andcoffee.online/?brand=coffee` and `?brand=delivery`, isolated unauthenticated browser session. The session made no account changes, staff actions, cart submissions, orders or payments.
+
+- Both routes expose the expected root `data-brand` (`coffee` / `delivery`) and `brand-coffee` / `brand-delivery` classes.
+- Staff-only controls were not visible in either guest storefront.
+- Browser runtime measurements were taken at 320×740, 390×844, 768×1024 and 1440×900 for both brands. At all eight brand/viewport combinations, `documentElement.scrollWidth === clientWidth`; no horizontal overflow was measured.
+- The browser reserves a 15px vertical scrollbar (`clientWidth = innerWidth - 15`), which is not horizontal overflow.
+- Production first-viewport screenshots at 390×844 were visually inspected for both brands. Temporary screenshot URLs from the isolated capture session are available in the current review conversation; they were not committed as local screenshot files. This is therefore supporting evidence, not a completed archived screenshot register. The other six viewport measurements were collected but their screenshots were not individually reviewed.
+- Guest install prompt was visible over the lower part of both 390×844 captures. It is recorded as a capture-state observation, not filed as a defect in this tap-target change.
+
+### Runtime-computed typography
+
+Values are computed from visible production DOM elements after `document.fonts.ready`, not inferred from CSS declarations.
+
+| Element | Coffee | Delivery |
+|---|---|---|
+| Body | Golos Text, 15px / 22.5px, weight 400 | Golos Text, 15px / 22.5px, weight 400 |
+| Menu heading | Unbounded, 18px at 320; 19.5px at 390; 24.576px at 768; 36px at 1440, weight 900 | Unbounded, 20px at 320/390; 21.504px at 768; 28px at 1440, weight 800 |
+| First card title | Golos Text, 15.5px / 20.15px, weight 700 | Unbounded, 15.5px / 20.15px, weight 700 |
+| Description | Golos Text, 12.5px / 18.125px | Golos Text, 12.5px / 18.125px |
+| Composition chip | Golos Text, 10.5px, weight 600 | Not present on the first pizza card |
+| First visible price | Golos Text, 16px, weight 700 | Option price: 10.5px at 320; 13px at 390/768/1440, weight 800 |
+| Search input | Golos Text, 15px; 36px high on mobile | Golos Text, 16px; 36px high on mobile, 44px at 1440 |
+| Ticker | system-ui, 12px / 18px, weight 650 | system-ui, 12px / 18px, weight 650 |
+| Category control | Golos Text, 9.5px / 10.925px, weight 700 | Unbounded + Golos Text, 9.5px / 10.925px, weight 700 |
+| Card radius | 18px | 18px |
+
+### Runtime-computed brand tokens
+
+| Property | Coffee | Delivery |
+|---|---|---|
+| `--ink` | `#101418` | `#101418` |
+| `--line` | `#D8DFE4` | `#E5DACB` |
+| `--flame` | `#123A6B` | `#C03B2A` |
+| `--panel` | `#F3F8FC` | `#FAF5EE` |
+| `--fr-tan` / `--fr-choc` / `--fr-rice` | unset | `#C99E6E` / `#3A2A1C` / `#EFE6D8` |
+| `--card-radius` | `18px` | `18px` |
+
+### Production build identity
+
+Production `/sw.js` reports `STATIC_CACHE = zerno-static-v3553`. The checked-in `pizza` base reports `v646`; this PR reports `v647`. These numbers are not directly comparable: `scripts/bump-sw.mjs` computes the new version as `oldVer + BUILD_NUM` when deployment sets `BUILD_NUM=$(git rev-list --count HEAD)`. The observed production marker is therefore consistent with the deployment's additive build-number scheme, but it does not expose the exact Git SHA or prove which branch/commit was deployed. Production deployment identity remains **unverified**; do not claim it serves this draft PR.
+
+**Remaining baseline work:** archive the full guest first-viewport screenshots as repository files, inspect the six remaining 320/768/1440 screenshots before scoring them, and capture customer cart/checkout/profile/bonus states plus the later staff-role matrix. The runtime typography/token inspection is complete for the visible first-viewport elements above; no uninspected screen scores were filled.
