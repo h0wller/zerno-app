@@ -123,7 +123,20 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         edit: rect(edit),
         editFace: faceSize(edit, '::after'),
         subchips: Array.from(document.querySelectorAll('#deliverySubFilter .subchip'))
-          .map(element => ({ height: element.getBoundingClientRect().height, width: element.getBoundingClientRect().width })),
+          .map(element => {
+            const box = element.getBoundingClientRect();
+            const face = getComputedStyle(element, '::before');
+            const inset = ['top', 'right', 'bottom', 'left']
+              .reduce((result, side) => {
+                result[side] = Number.parseFloat(face[side]) || 0;
+                return result;
+              }, {});
+            return {
+              hitHeight: box.height,
+              faceHeight: box.height - inset.top - inset.bottom,
+              width: box.width
+            };
+          }),
         profile: rect(document.getElementById('profileTopBtn')),
         scrollTop: rect(document.getElementById('scrollTopBtn')),
         venue: rect(document.getElementById('venueToggle')),
@@ -159,8 +172,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.edit).toEqual({ width: 44, height: 44 });
     expect(metrics.editFace).toEqual({ width: 32, height: 32 });
     expect(metrics.subchips.length).toBeGreaterThan(0);
-    expect(metrics.subchips.every(chip => chip.height === 40 && chip.width >= 58),
-      `subchip geometry must remain at least 58×40px: ${JSON.stringify(metrics.subchips)}`).toBe(true);
+    expect(metrics.subchips.every(chip => chip.hitHeight === 44 && chip.faceHeight === 40 && chip.width >= 58),
+      `subchip hit cells must be at least 58×44px with a 40px visible face: ${JSON.stringify(metrics.subchips)}`).toBe(true);
     expect(metrics.profile).toEqual({ width: 44, height: 44 });
     expect(metrics.venue.width).toBeGreaterThanOrEqual(44);
     expect(metrics.venue.height).toBeGreaterThanOrEqual(44);
