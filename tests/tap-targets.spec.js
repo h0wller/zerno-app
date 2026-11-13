@@ -127,7 +127,7 @@ for (const viewport of [
     await page.route('**/api/dmenu*', (route) => route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(deliveryFilterItems),
+      body: JSON.stringify({ items: deliveryFilterItems }),
     }));
     await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
     const filters = page.locator('#deliveryView #deliverySubFilter');
@@ -137,34 +137,35 @@ for (const viewport of [
 }
 
 
-test('delivery reserves the filter slot before hydration without rendering duplicate chips', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('delivery reserves one empty filter slot before hydration and fills one bar after data arrives', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.addInitScript(() => {
     localStorage.clear();
     sessionStorage.clear();
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   });
-  await page.route('**/api/dmenu*', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify(deliveryFilterItems),
-  }));
-  await page.route('**/app/ui/theme/*.css*', async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    await route.continue();
+  let releaseMenu;
+  const menuGate = new Promise((resolve) => { releaseMenu = resolve; });
+  await page.route('**/api/dmenu*', async (route) => {
+    await menuGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: deliveryFilterItems }),
+    });
   });
-  const response = page.waitForResponse((res) =>
-    new URL(res.url()).pathname.replace(/\/+$/, '').endsWith('/dmenu')
-  );
-  await page.goto('/?brand=delivery', { waitUntil: 'commit' });
-  await response;
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
   const slot = page.locator('#deliverySubFilterViewport');
   const bar = page.locator('#deliverySubFilter');
   await expect(slot).toHaveCount(1);
   await expect(bar).toHaveCount(1);
-  await expect(slot).toContainText('');
+  await expect(bar).toBeEmpty();
+  await expect(bar).toBeHidden();
+  releaseMenu();
+  await expect(bar).toBeVisible();
   await expect(bar.locator('.subchip')).toHaveCount(deliveryFilterIngredients.length + 1);
+  await expect(page.locator('#deliveryView #deliverySubFilter')).toHaveCount(1);
 });
 
 for (const width of [320, 375, 390]) {
