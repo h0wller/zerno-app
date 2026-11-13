@@ -175,22 +175,22 @@ for (const width of [320, 390]) {
       const metrics = await chip.evaluate((button) => {
         const rect = button.getBoundingClientRect();
         const barRect = button.parentElement.getBoundingClientRect();
-        const hit = getComputedStyle(button, '::after');
+        const face = getComputedStyle(button, '::before');
         const points = [
-          [rect.left + rect.width / 2, rect.top - 1],
-          [rect.left + rect.width / 2, rect.bottom + 1],
+          [rect.left + rect.width / 2, rect.top + 1],
+          [rect.left + rect.width / 2, rect.bottom - 1],
           [rect.left + 2, rect.top + rect.height / 2],
           [rect.right - 2, rect.top + rect.height / 2],
         ];
         return {
           width: rect.width,
           height: rect.height,
-          pseudoContent: hit.content,
-          pseudoTop: Number.parseFloat(hit.top),
-          pseudoBottom: Number.parseFloat(hit.bottom),
-          pseudoPointerEvents: hit.pointerEvents,
-          expandedAreaWithinRail: rect.top - 2 >= barRect.top &&
-            rect.bottom + 2 <= barRect.bottom,
+          pseudoContent: face.content,
+          pseudoTop: Number.parseFloat(face.top),
+          pseudoBottom: Number.parseFloat(face.bottom),
+          pseudoPointerEvents: face.pointerEvents,
+          expandedAreaWithinRail: rect.top >= barRect.top &&
+            rect.bottom <= barRect.bottom,
           edgeHits: points.map(([x, y]) => {
             const target = document.elementFromPoint(x, y);
             return target === button || button.contains(target);
@@ -211,10 +211,10 @@ for (const width of [320, 390]) {
       });
 
       expect(metrics.width, JSON.stringify(metrics)).toBeGreaterThanOrEqual(58);
-      expect(metrics.height, JSON.stringify(metrics)).toBe(40);
+      expect(metrics.height, JSON.stringify(metrics)).toBe(44);
       expect(metrics.pseudoContent, JSON.stringify(metrics)).not.toBe('none');
-      expect(metrics.pseudoTop, JSON.stringify(metrics)).toBe(-2);
-      expect(metrics.pseudoBottom, JSON.stringify(metrics)).toBe(-2);
+      expect(metrics.pseudoTop, JSON.stringify(metrics)).toBe(2);
+      expect(metrics.pseudoBottom, JSON.stringify(metrics)).toBe(2);
       expect(metrics.pseudoPointerEvents, JSON.stringify(metrics)).toBe('auto');
       expect(metrics.expandedAreaWithinRail, JSON.stringify(metrics)).toBe(true);
       expect(metrics.edgeHits.every(Boolean), JSON.stringify(metrics)).toBe(true);
