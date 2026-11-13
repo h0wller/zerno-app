@@ -29,12 +29,12 @@
 | Метод и путь | Назначение | Примечание |
 |---|---|---|
 | `POST /api/auth/request-reg-otp` | Запрос подтверждения регистрации по SMS или Telegram | `phone`, `name?`, `via?: tg\|sms`; Telegram-flow может вернуть `tgUrl` |
-| `GET /api/auth/check-reg` | Проверка статуса Telegram-регистрации | Query `phone`; при подтверждении возвращает `token` и `customer` |
+| `POST /api/auth/check-reg` | Проверка Telegram-регистрации конкретной попытки | Body `pollToken`; ключ выдаётся вместе с `tgUrl`, по номеру телефона токен не возвращается |
 | `POST /api/auth/register` | Создать профиль и завершить регистрацию | Имя, телефон, согласие и подтверждение; возвращает `token` и `customer` |
 | `POST /api/auth/tg-link` | Вход или привязка по подписанному Telegram initData | Может вернуть `needPhone` или `needBotConfirm` |
-| `POST /api/auth/login` | Вход по телефону и PIN либо OTP | `phone` + `pin` или `otp`; возможен `needPin` |
-| `POST /api/auth/request-otp` | Запросить входной OTP в привязанный Telegram | `phone`; код отправляется в Telegram |
-| `POST /api/auth/setup-pin` | Первичная установка PIN | `phone`, `pin`; проверяется состояние профиля |
+| `POST /api/auth/login` | Вход по телефону и PIN либо одноразовому коду | PIN или OTP из Telegram/SMS; первый PIN нельзя задать до подтверждения номера |
+| `POST /api/auth/request-otp` | Запросить входной OTP | `phone`; код отправляется в привязанный Telegram, при отсутствии/ошибке Telegram — по SMS; ответ включает `via` |
+| `POST /api/auth/setup-pin` | Первичная установка PIN в уже подтверждённой сессии | `pin`; требует `userGuard`, не выдаёт токен и не принимает телефон как доказательство владения |
 | `POST /api/auth/set-pin` | Сменить PIN текущего профиля | `pin`; userGuard |
 | `POST /api/auth/activate-guest` | Активировать профиль кодом кассира | `code`; userGuard |
 | `POST /api/auth/activate` | Войти в режим сотрудника по коду роли | `code`; userGuard |
@@ -140,7 +140,7 @@
 
 ## Сверка и ограничения
 
-- Старые пути `POST /api/auth/otp-send` и `POST /api/auth/otp-verify` отсутствуют в актуальных роутерах. Для регистрации используются `request-reg-otp` и `check-reg`; для входного OTP — `request-otp` и `otp` в `POST /api/auth/login`.
+- Старые пути `POST /api/auth/otp-send` и `POST /api/auth/otp-verify` отсутствуют. Для Telegram-регистрации используются `request-reg-otp` и `POST check-reg` с отдельным случайным `pollToken`; входной OTP отправляется через `request-otp` и проверяется в `POST /api/auth/login`.
 - `GET /api/me/free-delivery` существует в `server/routes/promos.js`; он не является устаревшим маршрутом.
 - `POST /__test/otp` существует только при `NODE_ENV=test` и не должен считаться публичным API.
 - Краткая таблица не перечисляет все поля и коды ошибок. Для request/response схем используйте `docs/openapi.yaml`; при расхождении проверяйте `server.js` и `server/routes/*.js`.
