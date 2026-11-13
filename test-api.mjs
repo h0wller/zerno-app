@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 const PORT = 3999, BASE = `http://localhost:${PORT}`, DB = 'test-tmp.db';
 if (fs.existsSync(DB)) fs.unlinkSync(DB);
-const srv = spawn('node', ['server.js'], { env: { ...process.env, DB_PATH: DB, PORT: String(PORT), TG_WEBHOOK_SECRET: '' }, stdio: 'ignore' });
+const srv = spawn('node', ['server.js'], { env: { ...process.env, DB_PATH: DB, PORT: String(PORT), ADMIN_CODE: 'ci-admin-role-code-2026', CASHIER_CODE: 'ci-cashier-role-code-2026', DISPATCH_CODE: 'ci-dispatch-role-code-2026', TG_WEBHOOK_SECRET: '' }, stdio: 'ignore' });
 const wait = ms => new Promise(r => setTimeout(r, ms));
 async function up(){ for(let i=0;i<60;i++){ try{ const r=await fetch(BASE+'/api/health'); if(r.ok) return true; }catch(e){} await wait(200);} return false; }
 let pass=0, fail=0;
@@ -15,9 +15,9 @@ async function api(path,{method='GET',token,body}={}){
 const register=(name,phone)=>api('/auth/register',{method:'POST',body:{name,phone,pin:'3364'}});
 const run=async()=>{
   const g=(await register('Гость','+7 900 000-00-01')).j.token;
-  const c=(await register('Кассир','+7 900 000-00-02')).j.token; await api('/auth/activate',{method:'POST',token:c,body:{code:'5820471963582047'}});
-  const d=(await register('Диспетчер','+7 900 000-00-03')).j.token; await api('/auth/activate',{method:'POST',token:d,body:{code:'9137562048913756'}});
-  const a=(await register('Админ','+7 900 000-00-04')).j.token; await api('/auth/activate',{method:'POST',token:a,body:{code:'7391846205739184'}});
+  const c=(await register('Кассир','+7 900 000-00-02')).j.token; await api('/auth/activate',{method:'POST',token:c,body:{code:'ci-cashier-role-code-2026'}});
+  const d=(await register('Диспетчер','+7 900 000-00-03')).j.token; await api('/auth/activate',{method:'POST',token:d,body:{code:'ci-dispatch-role-code-2026'}});
+  const a=(await register('Админ','+7 900 000-00-04')).j.token; await api('/auth/activate',{method:'POST',token:a,body:{code:'ci-admin-role-code-2026'}});
   const gid=(await api('/me',{token:g})).j.customer.id;
   check('роли выдались',(await api('/me',{token:c})).j.customer?.role==='cashier'&&(await api('/me',{token:d})).j.customer?.role==='dispatch');
   await api('/chat/send',{method:'POST',token:g,body:{key:gid+':d',text:'Позвать сотрудника',human:1,ctx:'delivery'}});
