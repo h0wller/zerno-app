@@ -8,9 +8,13 @@ import { randomUUID } from 'node:crypto';
 const dbPath = path.join(os.tmpdir(), `zerno-order-telegram-html-${randomUUID()}.db`);
 process.env.DB_PATH = dbPath;
 process.env.NODE_ENV = 'test';
+process.env.TELEGRAM_BOT_TOKEN = 'integration-order-html-token';
 
+const { initDatabase } = await import('../../server/db/index.js');
+initDatabase();
 const { escapeTelegramHtml } = await import('../../server/services/telegram.js');
 const { buildOrderStaffText, buildOrderCustomerText } = await import('../../server/routes/orders.js');
+const { sendPush } = await import('../../server/services/push.js');
 const { db } = await import('../../server/db/connection.js');
 
 const hostileOrder = {
@@ -87,3 +91,39 @@ test('default order text remains plain/raw for non-Telegram push channels', () =
   assert.ok(staffText.includes('<script>alert(1)</script>'));
   assert.ok(customerText.includes('<script>notify()</script>'));
 });
+
+test('sendPush uses the escaped Telegram body while accepting a separate plain push body', async () => {
+  const customerId = 'telegram-html-customer';
+  db.prepare(`INSERT INTO customers(id,name,phone,created_at,role,tg,notify_tg,notify_web)
+    VALUES(?,?,?,?,?,?,1,1)`).run(
+    customerId, 'Telegram HTML Test', '+7 900 000-00-02', new Date().toISOString(), 'guest', '777000222'
+  );
+
+  const originalFetch = globalThis.fetch;
+  let telegramPayload = null;
+  globalThis.fetch = async (input, options = {}) => {
+    if (String(input).includes('api.telegram.org/bot')) {
+      telegramPayload = JSON.parse(options.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, result: { message_id: 42 } })
+      };
+    }
+    return originalFetch(input, options);
+  };
+
+  try {
+    const rawPushBody = '<b>Заказ</b> & details';
+    const safeTelegramBody = escapeTelegramHtml(rawPushBody);
+    const result = await sendPush(customerId, '', rawPushBody, undefined, safeTelegramBody);
+
+    assert.equal(result.telegram?.ok, true);
+    assert.equal(telegramPayload?.text, safeTelegramBody);
+    assert.equal(telegramPayload?.parse_mode, 'HTML');
+  } finally {
+    globalThis.fetch = originalFetch;
+    db.prepare('DELETE FROM customers WHERE id=?').run(customerId);
+  }
+});
+
