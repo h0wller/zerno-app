@@ -34,7 +34,7 @@ export async function sendTg(cid, title, body, markup) {
   }
 }
 
-export async function sendPush(cid, title, body, markup) {
+export async function sendPush(cid, title, body, markup, telegramBody = body) {
   const result = { ok: true, telegram: null, web: null, fcm: null };
   try {
     const c = db.prepare('SELECT tg, notify_tg, notify_web FROM customers WHERE id=?').get(cid);
@@ -42,7 +42,7 @@ export async function sendPush(cid, title, body, markup) {
     const wantWeb = !c || c.notify_web !== 0;
 
     if (wantTg) {
-      result.telegram = await sendTg(cid, title, body, markup);
+      result.telegram = await sendTg(cid, title, telegramBody, markup);
     } else {
       result.telegram = { ok: false, reason: 'disabled' };
       console.log('[push] tg skip: notify_tg выключен у cid=' + cid);
