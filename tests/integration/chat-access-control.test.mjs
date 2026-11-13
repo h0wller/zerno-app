@@ -157,6 +157,10 @@ test('anonymous conversation requires a high-entropy capability and does not per
   const noTokenRead = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(key));
   assert.equal(noTokenRead.status, 401);
 
+  const unknownKey = 'anon-' + randomBytes(32).toString('hex') + ':d';
+  const unknownThreadRead = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(unknownKey));
+  assert.equal(unknownThreadRead.status, 401, 'Unauthenticated callers must not be able to distinguish existing and unknown thread keys');
+
   const wrongCapability = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(key), {
     chatToken: randomBytes(32).toString('hex')
   });
