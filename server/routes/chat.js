@@ -11,9 +11,11 @@ const MESSAGE_WINDOW_MS = 60 * 1000;
 const MAX_MESSAGES_PER_OWNER = 15;
 const MAX_MESSAGES_PER_IP = 120;
 const HUMAN_CALL_COOLDOWN_MS = 2 * 60 * 1000;
+const MAX_HUMAN_CALLS_PER_IP = 5;
 const ipBuckets = new Map();
 const messageBuckets = new Map();
 const humanCallBuckets = new Map();
+const humanIpBuckets = new Map();
 
 function pruneBuckets(map, now) {
   if (map.size <= 10000) return;
@@ -120,10 +122,6 @@ chatRouter.post('/api/chat/send', (req, res) => {
     return res.status(400).json({ error: 'Некорректный флаг вызова сотрудника' });
   }
   const human = humanValue === 1 || humanValue === true;
-  if (human && !access.user) {
-    return res.status(403).json({ error: 'Для вызова сотрудника войдите в профиль' });
-  }
-
   const ipWait = consumeLimit(
     ipBuckets,
     req.ip || req.socket?.remoteAddress || 'local',
@@ -147,12 +145,22 @@ chatRouter.post('/api/chat/send', (req, res) => {
   if (human) {
     const callWait = consumeLimit(
       humanCallBuckets,
-      String(access.user.id),
+      access.actorKey,
       1,
       HUMAN_CALL_COOLDOWN_MS
     );
     if (callWait > 0) {
       return sendRateLimit(res, callWait, 'Вы уже вызвали сотрудника. Повторите позже.');
+    }
+
+    const ipCallWait = consumeLimit(
+      humanIpBuckets,
+      req.ip || req.socket?.remoteAddress || 'local',
+      MAX_HUMAN_CALLS_PER_IP,
+      MESSAGE_WINDOW_MS
+    );
+    if (ipCallWait > 0) {
+      return sendRateLimit(res, ipCallWait, 'С этого адреса слишком часто вызывают сотрудников. Попробуйте позже.');
     }
 
     const last = db.prepare(
