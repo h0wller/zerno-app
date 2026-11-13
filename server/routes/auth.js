@@ -210,6 +210,17 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
   }
   const p = fmtPhone(req.body.phone || '');
+  const ex = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
+  if (ex) {
+    const age = Date.now() - new Date(ex.created_at).getTime();
+    if (!ex.verified && age > 7 * 86400000) {
+      db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
+      db.prepare('DELETE FROM customers WHERE id=?').run(ex.id);
+    } else {
+      return res.status(409).json({ error: 'exists' });
+    }
+  }
+
   const code = String(req.body.code || '').trim();
   const registrationWait = lockedSeconds(req, 'reg', p);
   if (registrationWait > 0) {
@@ -226,17 +237,6 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     clearLock(req, 'reg', p);
     clearLock(req, 'reg-otp-send', p);
     consumeOtp('reg:' + p, entry => !!entry.code && entry.code === code);
-  }
-
-  const ex = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
-  if (ex) {
-    const age = Date.now() - new Date(ex.created_at).getTime();
-    if (!ex.verified && age > 7 * 86400000) {
-      db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
-      db.prepare('DELETE FROM customers WHERE id=?').run(ex.id);
-    } else {
-      return res.status(409).json({ error: 'exists' });
-    }
   }
 
   const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
