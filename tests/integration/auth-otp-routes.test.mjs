@@ -176,6 +176,11 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   assert.equal(requested.status, 200, JSON.stringify(requested.json));
   assert.match(requested.json.pollToken || '', /^[a-f0-9]{64}$/);
 
+  const throttled = await api('/api/auth/request-reg-otp', {
+    name: 'Telegram Poll Guest', phone, via: 'tg'
+  });
+  assert.equal(throttled.status, 429);
+
   const botToken = new URL(requested.json.tgUrl).searchParams.get('start')?.replace(/^reg_/, '');
   assert.ok(botToken);
 
@@ -208,6 +213,11 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   assert.equal(validPoll.json.confirmed, true);
   assert.ok(validPoll.json.token);
   assert.equal(validPoll.json.customer?.phone, phone);
+
+  const replayedPoll = await api('/api/auth/check-reg', { pollToken: requested.json.pollToken });
+  assert.equal(replayedPoll.status, 200);
+  assert.equal(replayedPoll.json.confirmed, false);
+  assert.equal(replayedPoll.json.token, undefined);
 });
 
 test('OTP login rejects wrong and expired codes, then consumes a valid code once', async () => {
