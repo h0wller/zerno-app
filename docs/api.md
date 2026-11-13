@@ -29,7 +29,7 @@
 | Метод и путь | Назначение | Примечание |
 |---|---|---|
 | `POST /api/auth/request-reg-otp` | Запрос подтверждения регистрации по SMS или Telegram | `phone`, `name?`, `via?: tg\|sms`; Telegram-flow возвращает `tgUrl` и случайный `pollToken`, SMS-flow сообщает `via` |
-| `POST /api/auth/check-reg` | Проверка Telegram-регистрации конкретной попытки | Body `pollToken`; ключ выдаётся вместе с `tgUrl`, по номеру телефона токен не возвращается |
+| `POST /api/auth/check-reg` | Проверка Telegram-регистрации конкретной попытки | Body `pollToken`; одноразовый ключ выдаётся вместе с `tgUrl`, по номеру телефона токен не возвращается; SMS и Telegram ограничены по номеру и IP |
 | `POST /api/auth/register` | Создать профиль и завершить регистрацию | Имя, телефон, согласие и подтверждение; возвращает `token` и `customer` |
 | `POST /api/auth/tg-link` | Вход или привязка по подписанному Telegram initData | Может вернуть `needPhone` или `needBotConfirm` |
 | `POST /api/auth/login` | Вход по телефону и PIN либо одноразовому коду | PIN или OTP из Telegram/SMS; первый PIN нельзя задать до подтверждения номера |
