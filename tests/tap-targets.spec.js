@@ -169,7 +169,8 @@ for (const width of [320, 375, 390]) {
           targetWithinRail: rect.top >= railRect.top && rect.bottom <= railRect.bottom,
           railClientHeight: rail.clientHeight,
           railScrollHeight: rail.scrollHeight,
-          railCuePointerEvents: getComputedStyle(rail, '::after').pointerEvents,
+          railCuePointerEvents: getComputedStyle(rail.parentElement, '::after').pointerEvents,
+          railCueArrowPointerEvents: getComputedStyle(rail.parentElement, '::before').pointerEvents,
           hitPoints: points.map(([x, y]) => {
             const target = document.elementFromPoint(x, y);
             return target === element || element.contains(target);
@@ -189,6 +190,7 @@ for (const width of [320, 375, 390]) {
       expect(metrics.isolation).toBe('isolate');
       expect(metrics.targetWithinRail, JSON.stringify(metrics)).toBe(true);
       expect(metrics.railCuePointerEvents).toBe('none');
+      expect(metrics.railCueArrowPointerEvents).toBe('none');
       expect(metrics.railClientHeight).toBeGreaterThanOrEqual(44);
       expect(metrics.railScrollHeight).toBeLessThanOrEqual(metrics.railClientHeight);
       expect(metrics.hitPoints.every(Boolean), JSON.stringify(metrics)).toBe(true);
