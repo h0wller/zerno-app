@@ -271,3 +271,56 @@ for (const width of [320, 375, 390]) {
     }
   });
 }
+
+for (const viewport of [
+  { name: '821px', width: 821, height: 900 },
+  { name: '900px', width: 900, height: 900 },
+  { name: '1024px', width: 1024, height: 900 },
+  { name: '1280px', width: 1280, height: 900 },
+]) {
+  test('delivery subfilters render as one row with one owner at ' + viewport.name, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('zt_onb', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.route('**/api/dmenu*', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: deliveryFilterItems }),
+    }));
+
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+    const slot = page.locator('#deliveryView #deliverySubFilterViewport');
+    const bars = page.locator('#deliveryView .subfilter-bar');
+    const bar = page.locator('#deliveryView #deliverySubFilter');
+    await expect(slot).toHaveCount(1);
+    await expect(bars).toHaveCount(1);
+    await expect(bar).toBeVisible();
+
+    const metrics = await bar.evaluate((element) => {
+      const chips = Array.from(element.querySelectorAll('.subchip'))
+        .filter((chip) => getComputedStyle(chip).display !== 'none');
+      const tops = chips.map((chip) => Math.round(chip.getBoundingClientRect().top));
+      return {
+        chipCount: chips.length,
+        distinctRows: new Set(tops).size,
+        rows: tops,
+        barHeight: Math.round(element.getBoundingClientRect().height),
+        viewportHeight: Math.round(element.parentElement.getBoundingClientRect().height),
+        visibleBars: Array.from(document.querySelectorAll('#deliveryView .subfilter-bar'))
+          .filter((node) => getComputedStyle(node).display !== 'none').length,
+      };
+    });
+
+    expect(metrics.chipCount, JSON.stringify(metrics)).toBe(deliveryFilterIngredients.length + 1);
+    expect(metrics.distinctRows, JSON.stringify(metrics)).toBe(1);
+    expect(metrics.visibleBars, JSON.stringify(metrics)).toBe(1);
+    await testInfo.attach('delivery-subfilters-' + viewport.name, {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+  });
+}
