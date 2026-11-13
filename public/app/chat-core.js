@@ -27,18 +27,58 @@
     };
   })(window.chatKey);
 
-  /* ── fetch-патчи: /api/chat/send и /api/push/send ── */
+  /* ── fetch-патчи: чат credentials + push feedback ── */
   (function () {
     var origFetch = window.fetch;
-    window.fetch = function (urlArg, optsArg) {
-      var nextOpts = optsArg;
-      if (nextOpts && typeof nextOpts.body === "string" && String(urlArg).includes("/api/chat/send")) {
-        try {
-          var payload = JSON.parse(nextOpts.body);
-          payload.ctx = activeCtxNow();
-          nextOpts = { ...nextOpts, body: JSON.stringify(payload) };
-        } catch (_) {}
+
+    function anonymousChatAccessToken() {
+      var token = localStorage.getItem("zt_chat_access");
+      if (!/^[a-f0-9]{64}$/.test(token || "")) {
+        var bytes = new Uint8Array(32);
+        window.crypto.getRandomValues(bytes);
+        token = Array.from(bytes, function (byte) {
+          return byte.toString(16).padStart(2, "0");
+        }).join("");
+        localStorage.setItem("zt_chat_access", token);
       }
+      return token;
+    }
+
+    window.fetch = function (urlArg, optsArg) {
+      var nextOpts = optsArg || {};
+      var parsedUrl = null;
+      try {
+        parsedUrl = new URL(String(urlArg), window.location.origin);
+      } catch (_) {}
+
+      var chatPath = parsedUrl && parsedUrl.pathname;
+      if (chatPath === "/api/chat/send" || chatPath === "/api/chat/botlog" || chatPath === "/api/chat/thread") {
+        var payload = null;
+        if (typeof nextOpts.body === "string") {
+          try {
+            payload = JSON.parse(nextOpts.body);
+            if (parsedUrl.pathname.endsWith("/send")) {
+              payload.ctx = activeCtxNow();
+              nextOpts = { ...nextOpts, body: JSON.stringify(payload) };
+            }
+          } catch (_) {
+            payload = null;
+          }
+        }
+
+        var key = parsedUrl.searchParams.get("key") || (payload && payload.key) || "";
+        var headers = new Headers(nextOpts.headers || {});
+        if (/^anon-[a-f0-9]{64}:[cd]$/.test(key)) {
+          headers.set("X-Chat-Access-Token", anonymousChatAccessToken());
+          headers.delete("Authorization");
+        } else if (/^u[a-f0-9]{10}:[cd]$/.test(key)) {
+          var bearer = window.USER_TOKEN || localStorage.getItem("zt_user");
+          headers.delete("X-Chat-Access-Token");
+          if (bearer) headers.set("Authorization", "Bearer " + bearer);
+        }
+        nextOpts = { ...nextOpts, headers: headers };
+      }
+
       var pr = origFetch.call(this, urlArg, nextOpts);
       try {
         if (

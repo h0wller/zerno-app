@@ -52,6 +52,11 @@ CREATE TABLE IF NOT EXISTS chat(
   human INTEGER DEFAULT 0, read_g INTEGER DEFAULT 0, read_s INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS chat_meta(
   key TEXT PRIMARY KEY, closed INTEGER DEFAULT 0, staff_in INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS chat_access(
+  key TEXT PRIMARY KEY, token_hash TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS chat_rate_limits(
+  key TEXT PRIMARY KEY, requests INTEGER NOT NULL DEFAULT 0, window_started_at INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_chat_rate_limits_window ON chat_rate_limits(window_started_at);
 CREATE TABLE IF NOT EXISTS fcm(
   id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, token TEXT UNIQUE, created TEXT);
   `);

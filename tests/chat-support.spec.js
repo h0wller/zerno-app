@@ -132,6 +132,50 @@ test('mobile support uses an icon and delivery search keeps an inset from the me
 });
 
 
+
+test('mobile chat panel and composer remain within the viewport for both brands', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  for (const brand of ['coffee', 'delivery']) {
+    await prepare(page, '/?brand=' + brand);
+    const launcher = page.locator('#chatFab');
+    await launcher.click();
+    const panel = page.locator('#chatPanel');
+    await expect(panel).toHaveClass(/open/);
+    await expect(page.locator('#chatInput')).toBeVisible();
+    await expect(page.locator('#chatSend')).toBeVisible();
+
+    const geometry = await panel.evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      const transcript = document.getElementById('chatMsgs');
+      const composerRect = element.querySelector('.chat-i').getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        height: rect.height,
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+        transcriptScrollWidth: transcript.scrollWidth,
+        transcriptClientWidth: transcript.clientWidth,
+        composerBottom: composerRect.bottom
+      };
+    });
+
+    expect(geometry.left).toBeGreaterThanOrEqual(-1);
+    expect(geometry.right).toBeLessThanOrEqual(391);
+    expect(geometry.top).toBeGreaterThanOrEqual(-1);
+    expect(geometry.bottom).toBeGreaterThanOrEqual(843);
+    expect(geometry.height).toBeGreaterThanOrEqual(800);
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 1);
+    expect(geometry.transcriptScrollWidth).toBeLessThanOrEqual(geometry.transcriptClientWidth + 1);
+    expect(geometry.composerBottom).toBeLessThanOrEqual(845);
+
+    await page.locator('#chatClose').click();
+  }
+});
+
 test('support launcher announces the action available in its current state', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
     await prepare(page, '/?brand=' + brand);
