@@ -191,8 +191,11 @@ function syncDeliverySubFilterCue(bar) {
     ? bar.parentElement
     : null;
 
-  // Reveal the viewport before measuring: a hidden parent reports zero scroll width.
-  if (viewport) viewport.hidden = bar.hidden;
+  // Until the first menu render, keep the reserved HTML slot in place.
+  // After renderSubFilter decides visibility, the bar's explicit hidden state owns the slot.
+  if (viewport && bar.dataset.rendered === '1') {
+    viewport.hidden = bar.hidden;
+  }
 
   var hasOverflow = !bar.hidden && bar.scrollWidth > bar.clientWidth + 1;
   var maxScroll = Math.max(0, bar.scrollWidth - bar.clientWidth);
@@ -261,6 +264,7 @@ function ensureSubFilterBar() {
 function renderSubFilter(categoryItems) {
   var bar = ensureSubFilterBar();
   if (!bar) return;
+  bar.dataset.rendered = '1';
 
   var isAddons = (dcat === 'sauces');
 
