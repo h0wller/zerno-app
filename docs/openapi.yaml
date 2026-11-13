@@ -916,10 +916,11 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [code], properties: { code: { type: string } } }
+            schema: { type: object, required: [code], properties: { code: { type: string, minLength: 16, maxLength: 64, pattern: '^[A-Za-z0-9_-]{16,64}$', description: 'Секрет роли из соответствующей переменной окружения' } } }
       responses:
         '200': { description: Возвращает customer }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '400': { description: Код не соответствует требованиям длины и формата }
         '409': { description: Администратор не может понизить свою роль этим маршрутом }
 
   /api/auth/deactivate:
