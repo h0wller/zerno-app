@@ -7,7 +7,7 @@ import { userGuard, adminGuard, dispatchGuard } from '../middleware/auth.js';
 import { logEv } from '../domain/helpers.js';
 import { nowISO, uid } from '../utils/id-time.js';
 import { sendPush } from '../services/push.js';
-import { tgSend, TG_CHANNEL, APP_URL } from '../services/telegram.js';
+import { escapeTelegramHtml, tgSend, TG_CHANNEL, APP_URL } from '../services/telegram.js';
 import { getStreetSuggestions, validateDeliveryAddress } from '../domain/address.js';
 import { canTransitionOrderStatus } from '../domain/order-status.js';
 import {
@@ -106,27 +106,63 @@ function orderActionKb(no) {
   };
 }
 
-// [tg-chat-url-dedup-v1] Оповещение персонала (кухня/диспетчер)
-function orderNotifyStaff(o) {
+export function buildOrderStaffText(o, encode = value => String(value ?? '')) {
+  const html = value => encode(value);
   const itemsList = Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]');
   const lines = itemsList.map(i => {
-    const modsSum = (i.modifiers || []).reduce((mA, m) => mA + (Number(m.price) || 0), 0);
+    const modsSum = (i.modifiers || []).reduce((sum, m) => sum + (Number(m.price) || 0), 0);
     const itemTotal = ((Number(i.price) || 0) + modsSum) * (Number(i.qty) || 1);
-    let line = `${i.qty}× ${i.name}${i.opt ? ' (' + i.opt + ')' : ''} — ${itemTotal} ₽`;
+    let line = `${html(i.qty)}× ${html(i.name)}${i.opt ? ' (' + html(i.opt) + ')' : ''} — ${html(itemTotal)} ₽`;
     if (i.modifiers && i.modifiers.length) {
-      const modsLines = i.modifiers.map(m => `   └ ＋ <i>${m.name}</i> (+${m.price} ₽)`).join('\n');
+      const modsLines = i.modifiers.map(m => `   └ ＋ <i>${html(m.name)}</i> (+${html(m.price)} ₽)`).join('\n');
       line += '\n' + modsLines;
     }
     return line;
   });
 
   const giftsList = Array.isArray(o.gifts) ? o.gifts : JSON.parse(o.gifts || '[]');
-  const gifts = giftsList.map(g => `🎁 ${g.name} ×${g.qty}`);
-  const discountLine = o.discount > 0 ? `\n💸 ${o.discount_label || 'Скидка'}: −${o.discount} ₽` : '';
-  const timeLabel = o.is_preorder ? `⏰ ПРЕДЗАКАЗ: ${o.slot}` : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : o.slot}`;
+  const gifts = giftsList.map(g => `🎁 ${html(g.name)} ×${html(g.qty)}`);
+  const discountLine = o.discount > 0 ? `\n💸 ${html(o.discount_label || 'Скидка')}: −${html(o.discount)} ₽` : '';
+  const timeLabel = o.is_preorder
+    ? `⏰ ПРЕДЗАКАЗ: ${html(o.slot)}`
+    : `⏰ ${o.slot === 'asap' ? 'как можно скорее' : html(o.slot)}`;
   const own = o.by_staff ? ' · 🏠 <b>свои</b>' : '';
-  const txt = `👨‍🍳 <b>[Кухня] Заказ #${o.no}</b>${own}\n\n👤 ${o.name} (${o.phone})\n${o.method === 'pickup' ? '🛍 Самовывоз: Советская 38А' : '🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr}\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n\n${lines.concat(gifts).join('\n')}\n\nИтого: <b>${o.total} ₽</b>${discountLine}${o.comment ? '\n💬 ' + o.comment : ''}`;
+  return `👨‍🍳 <b>[Кухня] Заказ #${html(o.no)}</b>${own}\n\n👤 ${html(o.name)} (${html(o.phone)})\n${o.method === 'pickup' ? '🛍 Самовывоз: Советская 38А' : '🚗 Доставка: ' + (o.place ? html(o.place) + ', ' : '') + html(o.addr)}\n${timeLabel} · 💳 ${o.pay === 'cash' ? 'наличные' : 'карта при получении'}\n\n${lines.concat(gifts).join('\n')}\n\nИтого: <b>${html(o.total)} ₽</b>${discountLine}${o.comment ? '\n💬 ' + html(o.comment) : ''}`;
+}
 
+export function buildOrderCustomerText(o, encode = value => String(value ?? '')) {
+  const html = value => encode(value);
+  const isPickup = o.method === 'pickup';
+  const timeLabel = o.is_preorder ? (`⏰ Предзаказ на: <b>${html(o.slot)}</b>`) : '⏰ Доставка: ~45 мин';
+  const dest = isPickup
+    ? '🛍 Самовывоз: ул. Советская, 38А'
+    : ('🚗 Доставка: ' + (o.place ? html(o.place) + ', ' : '') + html(o.addr));
+  const itemsList = Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]');
+
+  const lines = itemsList.map(i => {
+    let line = '• ' + html(i.name) + (i.opt ? ' (' + html(i.opt) + ')' : '') + ' × ' + html(i.qty);
+    if (i.modifiers && i.modifiers.length) {
+      line += '\n' + i.modifiers.map(m => '   └ ＋ ' + html(m.name) + ' (+' + html(m.price) + ' ₽)').join('\n');
+    }
+    return line;
+  }).join('\n');
+
+  const giftsList = Array.isArray(o.gifts) ? o.gifts : JSON.parse(o.gifts || '[]');
+  const gifts = giftsList.map(g => '🎁 ' + html(g.name) + ' × ' + html(g.qty)).join('\n');
+  const itemsText = gifts ? (lines + '\n' + gifts) : lines;
+  const payText = o.pay === 'cash' ? 'наличные' : 'картой при получении';
+  const discountLine = o.discount > 0 ? '\n💸 ' + html(o.discount_label || 'Скидка') + ': −' + html(o.discount) + ' ₽' : '';
+
+  return '🍕 <b>Заказ #' + html(o.no) + ' принят!</b>\n\n' +
+    itemsText + '\n\n' +
+    'Итого: <b>' + html(o.total) + ' ₽</b> · 💳 ' + payText + discountLine + '\n' +
+    dest + '\n' + timeLabel + '\n\n' +
+    'Мы уже передали заказ на кухню. Статус обновится здесь автоматически 👇';
+}
+
+function orderNotifyStaff(o) {
+  const txt = buildOrderStaffText(o);
+  const telegramText = buildOrderStaffText(o, escapeTelegramHtml);
   const staff = db.prepare("SELECT id, tg FROM customers WHERE role IN ('cashier','admin','dispatch')").all();
   const sentTg = new Set();
 
@@ -143,42 +179,17 @@ function orderNotifyStaff(o) {
   for (const s of staff) {
     if (!s.tg || sentTg.has(String(s.tg))) continue;
     sentTg.add(String(s.tg));
-    sendPush(s.id, '', txt, staffKb);
+    sendPush(s.id, '', txt, staffKb, telegramText);
   }
   logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);
 }
 
-// [tg-order-receipt-v1] Чек для покупателя
 function orderNotifyCustomer(o) {
   try {
-    const isPickup = o.method === 'pickup';
-    const timeLabel = o.is_preorder ? ('⏰ Предзаказ на: <b>' + o.slot + '</b>') : '⏰ Доставка: ~45 мин';
-    const dest = isPickup ? '🛍 Самовывоз: ул. Советская, 38А' : ('🚗 Доставка: ' + (o.place ? o.place + ', ' : '') + o.addr);
-    const itemsList = Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]');
-    
-    const lines = itemsList.map(i => {
-      let line = '• ' + i.name + (i.opt ? ' (' + i.opt + ')' : '') + ' × ' + i.qty;
-      if (i.modifiers && i.modifiers.length) {
-        line += '\n' + i.modifiers.map(m => '   └ ＋ ' + m.name + ' (+' + m.price + ' ₽)').join('\n');
-      }
-      return line;
-    }).join('\n');
-
-    const giftsList = Array.isArray(o.gifts) ? o.gifts : JSON.parse(o.gifts || '[]');
-    const gifts = giftsList.map(g => '🎁 ' + g.name + ' × ' + g.qty).join('\n');
-    const itemsText = gifts ? (lines + '\n' + gifts) : lines;
-    const payText = o.pay === 'cash' ? 'наличные' : 'картой при получении';
-    const discountLine = o.discount > 0 ? '\n💸 ' + (o.discount_label || 'Скидка') + ': −' + o.discount + ' ₽' : '';
-
-    const text =
-      '🍕 <b>Заказ #' + o.no + ' принят!</b>\n\n' +
-      itemsText + '\n\n' +
-      'Итого: <b>' + o.total + ' ₽</b> · 💳 ' + payText + discountLine + '\n' +
-      dest + '\n' + timeLabel + '\n\n' +
-      'Мы уже передали заказ на кухню. Статус обновится здесь автоматически 👇';
-
+    const text = buildOrderCustomerText(o);
+    const telegramText = buildOrderCustomerText(o, escapeTelegramHtml);
     const kb = typeof orderActionKb === 'function' ? orderActionKb(o.no) : undefined;
-    sendPush(o.cid, '', text, kb);
+    sendPush(o.cid, '', text, kb, telegramText);
   } catch (err) {
     console.error('[orders] orderNotifyCustomer error:', err.message);
   }
