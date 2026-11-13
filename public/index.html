@@ -4352,9 +4352,9 @@ html body #tickerTrack .tickerGroup > span {
         </div>
         <small class="auth-help">Нет Telegram? Создайте профиль и получите код активации у кассира.</small>
         <button type="button" class="btn ghost" id="regOtpBtn" style="width: 100%; margin-top: 8px" hidden>
-          📨 Код по SMS (платная опция)
+          📨 Получить код по SMS
         </button>
-        <label for="regOtp" id="regOtpRow" hidden>Код из SMS<input id="regOtp" name="regOtp" inputmode="numeric"
+        <label for="regOtp" id="regOtpRow" hidden>Код подтверждения по SMS<input id="regOtp" name="regOtp" inputmode="numeric"
             maxlength="4" placeholder="4 цифры" autocomplete="one-time-code" /></label>
         <label for="regPin" id="regPinRow">PIN-код (4 цифры)<input id="regPin" name="regPin" type="text"
             inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password" enterkeyhint="done" /></label>
@@ -4367,7 +4367,7 @@ html body #tickerTrack .tickerGroup > span {
         <label for="logPin" id="logPinRow">PIN-код<input id="logPin" name="logPin" type="text" inputmode="numeric"
             maxlength="4" placeholder="••••" autocomplete="current-password" enterkeyhint="done" /></label>
         <div id="logOtpWrap" style="display: none">
-          <label for="logOtp">Код из Telegram или SMS<input id="logOtp" name="logOtp" type="text" inputmode="numeric"
+          <label for="logOtp">Код подтверждения<input id="logOtp" name="logOtp" type="text" inputmode="numeric"
               maxlength="4" placeholder="4 цифры" autocomplete="one-time-code" enterkeyhint="done" aria-describedby="logOtpHint" /></label>
           <small class="auth-help" id="logOtpHint" role="status" aria-live="polite" hidden></small>
         </div>
@@ -4379,7 +4379,7 @@ html body #tickerTrack .tickerGroup > span {
         </div>
         <div class="alt">
           <button type="button" id="otpBtn">
-            🔑 Не помню PIN — код в Telegram или SMS
+            🔑 Не помню PIN — получить код
           </button>
         </div>
       </form>
