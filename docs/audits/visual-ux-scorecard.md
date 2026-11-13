@@ -248,7 +248,7 @@ Do not label a code smell or DOM scrape oddity as a UX defect without user-visib
 
 ## Current baseline verdict
 
-**No numeric baseline score is assigned yet.** The current evidence collection includes successful CI runs and preliminary production scrapes, but not a fully isolated, pixel-inspected production screenshot set covering the agreed viewports and states. Numeric scores will be entered only after that screenshot set is available and inspected.
+**No numeric baseline score is assigned yet.** The first-viewport production subset for COF-HOME and DEL-HOME is now archived and visually reviewed in CI #3064, but the wider inventory (item detail, profile, bonuses, cart, checkout, order states and staff roles) and cold-first-paint comparisons remain pending. Score each row only when its exact state has been captured and reviewed.
 
 ## Guardrails
 
@@ -362,7 +362,7 @@ Deployment identity is **verified** as `c005b1c6832a5b722c97c43dd7cd525f638c209b
   - Mobile Chrome responsive: **102 passed, 4 skipped**.
 - Downloaded and inspected the eight hydrated first-viewport PNGs in [CI artifact #14034162976](https://github.com/h0wller/zerno-app/actions/runs/43421869883): coffee and delivery at 320×740, 390×844, 768×1024 and 1440×900. The 320/390 mobile screenshots and 1440 desktop delivery layout were also opened individually at full resolution; no obvious clipping or horizontal spill is visible in this fixture set.
 - This artifact is explicitly a localhost Playwright test-server capture. Product photos are fixture/placeholder art and the test profile prompt is fixture content. It is valid for responsive structure review only, not for production visual scoring.
-- The production first-viewport screenshot archive remains open: the Firecrawl browser task could not set viewport/export PNG and the connected Firecrawl account reached its daily credit limit. The prior 390×844 production screenshots were visible in-session but were not retained as files.
+- Historical checkpoint before CI #3064: the Firecrawl browser task could not set viewport/export PNG and the connected Firecrawl account reached its daily credit limit. This was superseded by the exact-viewport Playwright archive in CI #3064 and is no longer an open first-viewport archive blocker.
 
 **Current merge blockers remain:** customer cart/checkout/profile/bonus and staff-role visual states, plus independent review/reconciliation of the PR's broad 49-file diff. The first-viewport production screenshot archive is now complete in run #3064. No merge or deployment is implied by this documentation update.
 
@@ -374,7 +374,7 @@ This follow-up supplements the historical unverified observations in section 6; 
 - **Confirmed in both brands:** staff-only admin/cashier/dispatch controls are not visible in the guest session.
 - **Responsive overflow:** at 320×740, 390×844, 768×1024 and 1440×900, the production DOM reported no horizontal overflow in either brand. The browser's 15px vertical scrollbar reduces `clientWidth` relative to `innerWidth`; compare `scrollWidth` to `clientWidth`, not to `innerWidth`.
 - **Still unverified:** ticker loop/duplicate semantics, native iOS Safari behavior, the exact dual-brand hidden DOM inventory, delivery-discount eligibility wording, and any customer/staff modal states. Keep those checklist items open until the relevant DOM or screenshots are inspected.
-- **Evidence limitation:** the two production 390×844 screenshots were visually checked in the earlier browser session but were not saved as permanent PNGs. The later screenshot-automation attempt could not set the requested viewport or export files; do not close the persistent production screenshot requirement using the CI artifact.
+- **Historical evidence limitation (superseded):** the earlier 390×844 captures were not retained and the browser automation attempt could not export images. The successful production Playwright archive in CI #3064 now provides eight retained PNGs plus the manifest; see the following section.
 
 
 ## Production guest screenshot archive and visual review — 2026-11-13
