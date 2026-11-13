@@ -422,3 +422,14 @@ The earlier 1007×1007 browser automation run is superseded for the first-viewpo
 - Cart and checkout: **25 passed**; Responsive UI: **139 passed**; Mobile Chrome responsive: **102 passed**.
 - The new archive was downloaded and checked: eight PNGs plus `manifest.json`; coffee and delivery 390 px captures and coffee 320 px capture were opened at native resolution. Earlier #3078 archive already had a full eight-image visual review; #3079 refresh confirms the capture is reproducible.
 - Evidence remains limited to hydrated guest first viewport. Cold-first-paint comparison, customer cart/checkout/profile/bonus/order states, staff roles, native iOS/Telegram, and full PR scope review remain open.
+
+
+## Production screenshot verification — CI #3081 — 2026-11-13
+
+- PR documentation head under test: `7ad60aea08badb261083db1353e9cf9d55e93f65`.
+- [CI Quality Gates #3081](https://github.com/h0wller/zerno-app/actions/runs/43440569609): **15/15 jobs passed**. Dedicated production screenshot job passed **1/1**.
+- Artifact [#14045198271](https://github.com/h0wller/zerno-app/actions/runs/43440569609/artifacts/14045198271) was downloaded and verified to contain eight PNGs and `manifest.json`. Captures: coffee and delivery at 320×740, 390×844, 768×1024 and 1440×900; each at deviceScaleFactor 1.
+- Manifest records production revision `c005b1c6832a5b722c97c43dd7cd525f638c209b`, isolated empty browser contexts, guest role, resolved guest profile branch, correct `data-brand`, first card title, no visible staff controls and `scrollWidth === clientWidth` in all eight cases.
+- All eight images were opened and inspected individually at native resolution in this review. No horizontal spill or clipped first-card content was observed. Coffee first card: «Эспрессо»; delivery first card: «Маргарита».
+- Non-blocking observations remain: the ticker separator renders as a small square glyph in both themes; coffee search placeholder is shortened at 320 px. The desktop coffee auxiliary card is a populated «Профиль по номеру телефона» guest prompt, not an empty placeholder. No defect is declared from these observations alone.
+- Evidence is the hydrated first viewport, not a cold-first-paint comparison and not coverage for customer cart/checkout/profile/bonus/order states, staff roles, native iOS Safari or Telegram Mini App.
