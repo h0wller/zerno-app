@@ -72,6 +72,12 @@
 6. Обновлять этот документ вместе с изменением acceptance state.
 
 
+## 9. Supporting CI screenshot review — 2026-11-13
+
+- [x] Eight hydrated guest first-viewport screenshots in CI run #3029 were individually inspected: coffee and delivery at 320×740, 390×844, 768×1024 and 1440×900. [Artifact #14033826340](https://github.com/h0wller/zerno-app/actions/runs/43420027518).
+- [x] Test-server captures show the expected one-/two-/three-column catalog transitions, visible menu controls and no apparent text/variant/action overlap in the inspected first viewport.
+- [ ] Do not mark production screenshot acceptance complete from this artifact: it uses localhost fixture catalog data and placeholder media. The eight live-production PNGs still need persistent archiving and review.
+
 ## 8. Production guest verification — 2026-11-13
 
 **Verified source:** production deployment [run #43383317619](https://github.com/h0wller/zerno-app/actions/runs/43383317619), deployed SHA `c005b1c6832a5b722c97c43dd7cd525f638c209b` (branch `pizza`). The deploy job log confirms `git reset --hard origin/pizza`, successful client build, service-worker bump and PM2 online status.
