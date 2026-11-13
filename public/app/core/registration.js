@@ -21,10 +21,17 @@
 
   function reserveTelegramRegistrationTarget() {
     var webApp = window.Telegram && window.Telegram.WebApp;
-    if (webApp && typeof webApp.openTelegramLink === 'function') {
+    var hasTelegramInitData = !!(
+      window.__isTgMiniApp ||
+      window.__tgInitData ||
+      (webApp && typeof webApp.initData === 'string' && webApp.initData.length > 0)
+    );
+    if (hasTelegramInitData && webApp && typeof webApp.openTelegramLink === 'function') {
       return { openTelegramLink: webApp.openTelegramLink.bind(webApp), popup: null };
     }
 
+    // index.html installs a no-op Telegram.WebApp stub in ordinary browsers.
+    // Only use openTelegramLink when real Mini App initData is present.
     // Reserve a separate tab synchronously during the click gesture. Navigating
     // the current PWA tab would terminate the background registration poll.
     var popup = null;
