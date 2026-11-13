@@ -54,6 +54,31 @@ async function expectCompact44pxHitTarget(locator, visibleFace) {
   expect(metrics.width).toBeGreaterThanOrEqual(44);
   expect(metrics.height).toBeGreaterThanOrEqual(44);
   expect(metrics.edgeHits.every(Boolean)).toBe(true);
+
+  await locator.focus();
+  await locator.press('Shift');
+  const focus = await locator.evaluate((button) => {
+    const style = getComputedStyle(button);
+    const face = getComputedStyle(button, '::before');
+    return {
+      active: document.activeElement === button,
+      visible: button.matches(':focus-visible'),
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+      outlineOffset: Number.parseFloat(style.outlineOffset),
+      faceOutlineStyle: face.outlineStyle,
+      faceOutlineWidth: Number.parseFloat(face.outlineWidth),
+      faceOutlineOffset: Number.parseFloat(face.outlineOffset),
+    };
+  });
+  expect(focus.active).toBe(true);
+  expect(focus.visible).toBe(true);
+  const ring = focus.outlineWidth >= 2 && focus.outlineStyle === 'solid'
+    ? { style: focus.outlineStyle, width: focus.outlineWidth, offset: focus.outlineOffset }
+    : { style: focus.faceOutlineStyle, width: focus.faceOutlineWidth, offset: focus.faceOutlineOffset };
+  expect(ring.style).toBe('solid');
+  expect(ring.width).toBeGreaterThanOrEqual(2);
+  expect(ring.offset).toBeLessThanOrEqual(0);
   if (visibleFace === 'square') {
     expect(metrics.faceWidth).toBe(32);
     expect(metrics.faceHeight).toBe(32);
@@ -173,7 +198,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(recommendations.locator('.ca-title')).toHaveText('Рекомендуем к заказу');
   await expect(recommendations.locator('.ca-tabs-scroll')).toHaveAttribute('role', 'group');
   const allRecommendations = recommendations.locator('[data-atab="all"]');
-  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+  for (const viewport of [{ width: 320, height: 740 }, { width: 375, height: 812 }, { width: 390, height: 844 }, desktopViewport]) {
     await page.setViewportSize(viewport);
     const tabs = recommendations.locator('.addon-tab-btn');
     for (let index = 0; index < await tabs.count(); index += 1) {
@@ -290,7 +315,7 @@ test('cart keeps the current selected price and explains every amount without gu
 
   // A pizza topping is an embedded modifier of Margarita, never a second cart item/card.
   const margaritaRow = page.locator('#cartItems .cartItem[data-cart-idx="0"]');
-  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+  for (const viewport of [{ width: 320, height: 740 }, { width: 375, height: 812 }, { width: 390, height: 844 }, desktopViewport]) {
     await page.setViewportSize(viewport);
     const toggle = margaritaRow.locator('.ci-toggle-mods-btn');
     await toggle.scrollIntoViewIfNeeded();
@@ -299,7 +324,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await margaritaRow.locator('.ci-toggle-mods-btn').click();
   const mushroomChip = margaritaRow.locator('.ci-mod-chip[data-mod-id="test-topping"]');
   await expect(mushroomChip).toBeVisible();
-  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+  for (const viewport of [{ width: 320, height: 740 }, { width: 375, height: 812 }, { width: 390, height: 844 }, desktopViewport]) {
     await page.setViewportSize(viewport);
     await mushroomChip.scrollIntoViewIfNeeded();
     await expectCompact44pxHitTarget(mushroomChip, 'pill');
@@ -310,7 +335,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(margaritaRow.locator('.ci-unit-price')).toHaveText('825 ₽ / шт.');
   await expect(margaritaRow.locator('.ci-line-total')).toHaveText('825 ₽');
   await expect(margaritaRow.locator('.ci-mod-del')).toHaveCount(1);
-  for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
+  for (const viewport of [{ width: 320, height: 740 }, { width: 375, height: 812 }, { width: 390, height: 844 }, desktopViewport]) {
     await page.setViewportSize(viewport);
     const deleteModifier = margaritaRow.locator('.ci-mod-del');
     await deleteModifier.scrollIntoViewIfNeeded();
