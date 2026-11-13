@@ -242,6 +242,30 @@ test('message volume is limited per owner, botlog is not a public write API, and
     assert.equal(result.status, 200, JSON.stringify(result.json));
   }
 
+  const cashierDialogCrossContext = await request('/api/chat/dialog?key=' + encodeURIComponent(deliveryKey), {
+    token: cashier.token
+  });
+  assert.equal(cashierDialogCrossContext.status, 403);
+
+  const dispatcherDialogCrossContext = await request('/api/chat/dialog?key=' + encodeURIComponent(coffeeKey), {
+    token: dispatcher.token
+  });
+  assert.equal(dispatcherDialogCrossContext.status, 403);
+
+  const cashierReplyCrossContext = await request('/api/chat/reply', {
+    method: 'POST',
+    token: cashier.token,
+    body: { key: deliveryKey, text: 'wrong brand' }
+  });
+  assert.equal(cashierReplyCrossContext.status, 403);
+
+  const dispatcherCloseCrossContext = await request('/api/chat/close', {
+    method: 'POST',
+    token: dispatcher.token,
+    body: { key: coffeeKey }
+  });
+  assert.equal(dispatcherCloseCrossContext.status, 403);
+
   const cashierCrossContext = await request('/api/chat/open', {
     method: 'POST',
     token: cashier.token,
@@ -255,6 +279,13 @@ test('message volume is limited per owner, botlog is not a public write API, and
     body: { key: coffeeKey }
   });
   assert.equal(dispatcherCrossContext.status, 403);
+
+  const cashierOwnContext = await request('/api/chat/open', {
+    method: 'POST',
+    token: cashier.token,
+    body: { key: coffeeKey }
+  });
+  assert.equal(cashierOwnContext.status, 200);
 
   const dispatcherOwnContext = await request('/api/chat/open', {
     method: 'POST',
