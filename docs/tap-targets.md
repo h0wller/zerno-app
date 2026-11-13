@@ -69,3 +69,37 @@ Changes to staff-control placement or hit-area dimensions must update this regis
 - work modes returning the switcher to topbar only when menu is hidden.
 
 `tests/slow-network-layout.spec.js` covers guest/mobile and cached staff/desktop first-paint geometry before and after auth hydration.
+
+
+## Extended control inventory — Stage 1
+
+The original register above covers the mobile staff menu row. This section adds shared header, support and cart controls without changing their DOM owners.
+
+| Selector / control | Visible face | Hit area | DOM / behavior owner | CSS owner | State |
+| --- | --- | --- | --- | --- | --- |
+| `header.topbar #profileTopBtn` | 32 × 32 px inset circle | 44 × 44 px existing header cell | `profile.js` updates only the initial text; node and click behavior remain unchanged | `170-profile-button.css` base; `160-06-delivery-header.css` reserves hit cell; `160-12-admin-bar-tail.css` paints mobile face | Added shared token usage and 32px pseudo-face; new test covers guest in both brands at 320/375/390px and staff in both brands at 320/390px |
+| `.chat-h button` (`#chatClose`, `#chatSend`) | 32 × 32 px inset square | 44 × 44 px | `chat.js` | `100-chat.css` | Existing eight-point boundary checks in `mobile-support-entry.spec.js`; include in consolidated audit |
+| `.addon-tab-btn` | 32 px-high inset pill | At least 44 px high and 44 px wide | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test in `cart-checkout-clarity.spec.js` |
+| `.ci-toggle-mods-btn` | Compact text action | At least 44 px high; width is content-sized | `cart.js` | `160-08-cart-addons.css` | Existing cell-edge hit-test; wide control, do not extend horizontally |
+| `.ci-mod-chip` | 32 px-high pill; width depends on label | At least 44 px high and 44 px wide | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test; own `::before` paints the pill and focus ring |
+| `.ci-mod-del` | 32 × 32 px inset square | 44 × 44 px | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test; own `::before` paints the control and focus ring |
+| `#deliverySubFilter .subchip` | Existing compact text pill | Not yet proven at all four 44px target corners | `delivery.js` | `160-09-preorder-subfilters.css`, `160-12-admin-bar-tail.css` | Open: parent rail clips vertical overflow; keep as a tracked exception until hit-test and screenshots prove a safe solution |
+| `#chatFab` / `#supportLauncherHost` | Existing branded support icon | 44 × 44 px | `core/views.js` relocates host; `chat.js` owns chat action | `160-15-mobile-support-toolbar.css` | Existing 44px slot, no extra extension; separately verify Telegram swipe interaction |
+| `#scrollTopBtn`, `#venueToggle` | Current visual size is already larger than 32px | Existing 44px+ control | `scrolltop.js` / header controls | `160-06-delivery-header.css`, `160-12-admin-bar-tail.css` | Explicit exception: do not shrink these controls as part of this pass |
+
+### Shared tokens and profile implementation
+
+Neutral Layer 1 tokens are defined in `public/app/ui/theme/160-05-base-components.css`:
+
+- `--tap-visual: 32px`
+- `--tap-hit: 44px`
+- `--tap-extend-x` / `--tap-extend-y: 6px`
+
+The mobile profile button keeps its existing 44px layout cell. Its visible background, border and shadow are rendered on an inset pseudo-element; the button text remains the profile initial. Focus is drawn on the inset face. No DOM or profile-state ownership changed.
+
+### Remaining acceptance work
+
+- Add hit-point checks for every applicable row where an existing spec checks only bounding-box edges.
+- Resolve the subfilter rail clipping exception or explicitly document a measured alternative target without overlap.
+- Run the full two-brand / role / viewport matrix, including cashier and dispatch where the controls are present.
+- Inspect before/after screenshots at 320, 375 and 390px, plus the staff menu screenshots. Check focus-visible and iOS standalone / Telegram Mini App swipe behavior.
