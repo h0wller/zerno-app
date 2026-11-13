@@ -110,3 +110,5 @@ The former #178 proposal to schedule #177 and #167 is obsolete because both are 
 - Production guest screenshot archive was refreshed by the dedicated Playwright job (1/1 passed): [artifact #14038748509](https://github.com/h0wller/zerno-app/actions/runs/43431777234/artifacts/14038748509), eight PNGs plus manifest. It captures the deployed production revision `c005b1c6832a5b722c97c43dd7cd525f638c209b`, not the PR head.
 - Test totals on this head: Responsive UI **139 passed / 4 skipped**, Mobile Chrome **102 passed / 4 skipped**, Cart and checkout **25 passed**.
 - This refresh does not close the remaining customer/staff states, cold-first-paint comparison, native iOS/Telegram review or the broad-scope review blocker.
+
+- [x] Refreshed production archive #3078 was also individually inspected at native resolution: all eight PNGs (both brands × four viewports). The coffee desktop auxiliary card is a populated guest profile/login prompt, not an empty panel; small square ticker separators and the 320px coffee placeholder truncation remain visual observations for targeted review.
