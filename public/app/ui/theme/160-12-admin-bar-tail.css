@@ -1594,6 +1594,7 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
     position: absolute;
     inset: -2px 0;
     border-radius: inherit;
+    z-index: 1;
     background: transparent;
     pointer-events: auto;
   }
