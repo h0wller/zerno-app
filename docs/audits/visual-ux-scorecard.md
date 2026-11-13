@@ -397,7 +397,7 @@ The Playwright test uses fresh, isolated browser contexts, device scale factor 1
 
 **Non-blocking observations for later targeted triage (not scored as defects):**
 - Coffee at 320px displays a shortened search placeholder because of the narrow input width; verify that the intended ellipsis/truncation is acceptable.
-- The desktop coffee capture has an empty outlined auxiliary panel to the right of the menu header; inspect the owning component/state before assigning severity.
+- The desktop coffee capture shows the expected populated guest profile/login prompt card to the right of the menu; no empty placeholder defect was confirmed.
 - Ticker separator glyphs appear as small square marks in the raster captures; verify the source character/font rendering before treating them as a defect.
 
 **Limits of this evidence:** the captures are post-hydration first-viewport menu states, not cold-first-paint snapshots. They do not cover cart, checkout, customer profile/bonuses, order tracking, staff roles, native iOS Safari or Telegram Mini App. Those rows remain pending.
@@ -411,5 +411,5 @@ The earlier 1007×1007 browser automation run is superseded for the first-viewpo
 - [CI Quality Gates #3078](https://github.com/h0wller/zerno-app/actions/runs/43431777234): **15/15 jobs passed** on this exact head.
 - The dedicated production guest screenshot job passed **1/1** and refreshed the eight-PNG archive plus manifest: [artifact #14038748509](https://github.com/h0wller/zerno-app/actions/runs/43431777234/artifacts/14038748509). Production identity remains `c005b1c6832a5b722c97c43dd7cd525f638c209b`; the PR head is test/documentation work and is not deployed.
 - Responsive UI: **139 passed, 4 skipped**; Mobile Chrome responsive: **102 passed, 4 skipped**; Cart and checkout: **25 passed**.
-- The eight production first-viewport screenshots from the previous archive #3064 were individually inspected at native resolution. The refreshed #3078 archive is a fresh retained capture of the same production revision; its successful job is confirmed, but this refresh is not claimed as a second manual visual review.
+- All eight PNGs in the refreshed #3078 archive were individually opened and inspected at native resolution. The manifest confirms the production SHA, brand, guest role, exact viewport, resolved guest profile state, empty staff-control list and no horizontal overflow.
 - Remaining scope is unchanged: cold-first-paint vs hydrated comparison, customer cart/checkout/profile/bonus/order states, staff roles, native iOS/Telegram, and independent review/reconciliation of the broad PR diff.
