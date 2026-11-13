@@ -186,24 +186,51 @@ var deliverySubFilterCueResizeObserver = null;
 function syncDeliverySubFilterCue(bar) {
   if (!bar) return;
 
-  var hasOverflow = !bar.hidden && bar.scrollWidth > bar.clientWidth + 1;
-  bar.classList.toggle('has-overflow', hasOverflow);
+  var viewport = bar.parentElement &&
+    bar.parentElement.classList.contains('subfilter-viewport')
+    ? bar.parentElement
+    : null;
 
+  // Reveal the viewport before measuring: a hidden parent reports zero scroll width.
+  if (viewport) viewport.hidden = bar.hidden;
+
+  var hasOverflow = !bar.hidden && bar.scrollWidth > bar.clientWidth + 1;
   var maxScroll = Math.max(0, bar.scrollWidth - bar.clientWidth);
-  bar.classList.toggle('at-end', hasOverflow && bar.scrollLeft >= maxScroll - 2);
+  var atEnd = hasOverflow && bar.scrollLeft >= maxScroll - 2;
+
+  bar.classList.toggle('has-overflow', hasOverflow);
+  bar.classList.toggle('at-end', atEnd);
+
+  if (viewport) {
+    viewport.classList.toggle('has-overflow', hasOverflow);
+    viewport.classList.toggle('at-end', atEnd);
+  }
 }
 
 function ensureSubFilterBar() {
   var bar = document.getElementById('deliverySubFilter');
   if (!bar) {
     var grid = document.getElementById('deliveryGrid');
-    if (grid && grid.parentNode) {
-      bar = document.createElement('div');
-      bar.id = 'deliverySubFilter';
-      bar.className = 'subfilter-bar';
-      bar.hidden = true;
-      grid.parentNode.insertBefore(bar, grid);
-    }
+    if (!grid || !grid.parentNode) return null;
+
+    var viewport = document.createElement('div');
+    viewport.className = 'subfilter-viewport';
+    viewport.hidden = true;
+    bar = document.createElement('div');
+    bar.id = 'deliverySubFilter';
+    bar.className = 'subfilter-bar';
+    bar.hidden = true;
+    viewport.appendChild(bar);
+    grid.parentNode.insertBefore(viewport, grid);
+  }
+
+  if (bar && !(bar.parentElement &&
+      bar.parentElement.classList.contains('subfilter-viewport'))) {
+    var viewport = document.createElement('div');
+    viewport.className = 'subfilter-viewport';
+    viewport.hidden = !!bar.hidden;
+    bar.parentNode.insertBefore(viewport, bar);
+    viewport.appendChild(bar);
   }
 
   if (bar && bar.dataset.scrollCueBound !== '1') {
@@ -223,6 +250,7 @@ function ensureSubFilterBar() {
     }
   }
 
+  syncDeliverySubFilterCue(bar);
   return bar;
 }
 
