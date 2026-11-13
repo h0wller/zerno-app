@@ -16,10 +16,25 @@ var scKey = null, scClosedView = false;
   function chatFetch(url, options) {
     const init = options || {};
     const headers = Object.assign({}, init.headers || {});
+    let target = url;
     let token = window.USER_TOKEN;
     try { token = token || localStorage.getItem('zt_user'); } catch (_) {}
     if (token) headers.Authorization = 'Bearer ' + token;
-    return fetch(url, Object.assign({}, init, { headers }));
+
+    try {
+      const parsed = new URL(String(url), window.location.href);
+      const key = parsed.searchParams.get('key') || '';
+      if (
+        parsed.pathname.endsWith('/api/chat/thread') &&
+        /^anon-[a-f0-9]{64}:[cd]$/.test(key)
+      ) {
+        headers['X-Chat-Capability'] = key;
+        parsed.searchParams.delete('key');
+        target = parsed.toString();
+      }
+    } catch (_) {}
+
+    return fetch(target, Object.assign({}, init, { headers }));
   }
 
   function createAnonymousChatKey() {
