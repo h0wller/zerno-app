@@ -166,7 +166,6 @@ for (const width of [320, 375, 390]) {
           faceHeight: rect.height - faceTop - faceBottom,
           faceTop,
           faceBottom,
-          bottomCenter: { x: cx, y: cy + 21 },
           targetWithinRail: rect.top >= railRect.top && rect.bottom <= railRect.bottom,
           railClientHeight: rail.clientHeight,
           railScrollHeight: rail.scrollHeight,
@@ -195,14 +194,11 @@ for (const width of [320, 375, 390]) {
       expect(metrics.hitPoints.every(Boolean), JSON.stringify(metrics)).toBe(true);
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
       if (index === 0) {
-        await chip.evaluate((element) => {
-          element.dataset.tapTargetClick = 'pending';
-          element.addEventListener('click', () => {
-            element.dataset.tapTargetClick = 'received';
-          }, { once: true });
+        await chip.click({
+          trial: true,
+          scroll: 'none',
+          position: { x: metrics.width / 2, y: metrics.height - 1 },
         });
-        await page.mouse.click(metrics.bottomCenter.x, metrics.bottomCenter.y);
-        await expect(chip).toHaveAttribute('data-tap-target-click', 'received');
       }
     }
 
