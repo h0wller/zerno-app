@@ -123,3 +123,98 @@ for (const brand of BRANDS) {
     }
   }
 }
+
+const DELIVERY_FILTER_ITEMS = [
+  'Курица',
+  'Пепперони',
+  'Ветчина',
+  'Мясная',
+  'Лосось',
+  'Тунец',
+  'Креветки',
+  'Овощная',
+].map((ingredient, index) => ({
+  id: 'tap-target-filter-' + index,
+  cat: 'pizza',
+  section: 'delivery',
+  name: 'Пицца ' + ingredient,
+  desc: '',
+  comp: [ingredient],
+  opts: [],
+  price: 400 + index,
+  e: '🍕',
+  on: 1,
+  img: '',
+}));
+
+for (const width of [320, 390]) {
+  test(`delivery ingredient chips keep a 40px face inside a non-clipped 44px vertical tap area at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('zt_onb', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.route('**/api/dmenu*', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: DELIVERY_FILTER_ITEMS }),
+    }));
+
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+    const bar = page.locator('#deliveryView #deliverySubFilter');
+    const chips = bar.locator('.subchip');
+    await expect(bar).toBeVisible();
+    await expect(chips).toHaveCount(DELIVERY_FILTER_ITEMS.length + 1);
+
+    for (let index = 0; index < await chips.count(); index += 1) {
+      const chip = chips.nth(index);
+      await chip.scrollIntoViewIfNeeded();
+      const metrics = await chip.evaluate((button) => {
+        const rect = button.getBoundingClientRect();
+        const barRect = button.parentElement.getBoundingClientRect();
+        const hit = getComputedStyle(button, '::after');
+        const points = [
+          [rect.left + rect.width / 2, rect.top - 1],
+          [rect.left + rect.width / 2, rect.bottom + 1],
+          [rect.left + 2, rect.top + rect.height / 2],
+          [rect.right - 2, rect.top + rect.height / 2],
+        ];
+        return {
+          width: rect.width,
+          height: rect.height,
+          pseudoContent: hit.content,
+          pseudoTop: Number.parseFloat(hit.top),
+          pseudoBottom: Number.parseFloat(hit.bottom),
+          pseudoPointerEvents: hit.pointerEvents,
+          expandedAreaWithinRail: rect.top - 2 >= barRect.top &&
+            rect.bottom + 2 <= barRect.bottom,
+          edgeHits: points.map(([x, y]) => {
+            const target = document.elementFromPoint(x, y);
+            return target === button || button.contains(target);
+          }),
+        };
+      });
+
+      expect(metrics.width, JSON.stringify(metrics)).toBeGreaterThanOrEqual(58);
+      expect(metrics.height, JSON.stringify(metrics)).toBe(40);
+      expect(metrics.pseudoContent, JSON.stringify(metrics)).not.toBe('none');
+      expect(metrics.pseudoTop, JSON.stringify(metrics)).toBe(-2);
+      expect(metrics.pseudoBottom, JSON.stringify(metrics)).toBe(-2);
+      expect(metrics.pseudoPointerEvents, JSON.stringify(metrics)).toBe('auto');
+      expect(metrics.expandedAreaWithinRail, JSON.stringify(metrics)).toBe(true);
+      expect(metrics.edgeHits.every(Boolean), JSON.stringify(metrics)).toBe(true);
+      await chip.click({ trial: true });
+    }
+
+    await bar.evaluate((element) => { element.scrollLeft = 0; });
+    if (width === 390) {
+      await testInfo.attach('tap-target-delivery-chips-390px', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  });
+}
