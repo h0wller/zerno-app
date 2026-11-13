@@ -1629,9 +1629,9 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
 
   html body #deliveryView #deliverySubFilter .subchip.on::before,
   html body #deliveryView #deliverySubFilter .subchip.on:hover::before {
-    border-color: var(--fr-choc, #3A2A1C);
+    border-color: var(--fr-choc, var(--ink, #101418));
     background: var(--flame, #C03B2A);
-    box-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+    box-shadow: 2px 2px 0 var(--fr-choc, var(--ink, #101418));
   }
 
   html body #deliveryView #deliverySubFilter .subchip:focus-visible {
