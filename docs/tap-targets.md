@@ -83,7 +83,7 @@ The original register above covers the mobile staff menu row. This section adds 
 | `.ci-toggle-mods-btn` | Compact text action | At least 44 px high; width is content-sized | `cart.js` | `160-08-cart-addons.css` | Existing cell-edge hit-test; wide control, do not extend horizontally |
 | `.ci-mod-chip` | 32 px-high pill; width depends on label | At least 44 px high and 44 px wide | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test; own `::before` paints the pill and focus ring |
 | `.ci-mod-del` | 32 × 32 px inset square | 44 × 44 px | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test; own `::before` paints the control and focus ring |
-| `#deliverySubFilter .subchip` | Existing compact text pill | Not yet proven at all four 44px target corners | `delivery.js` | `160-09-preorder-subfilters.css`, `160-12-admin-bar-tail.css` | Open: parent rail clips vertical overflow; keep as a tracked exception until hit-test and screenshots prove a safe solution |
+| `#deliverySubFilter .subchip` | 40px visible pill | 44px vertical hit target; content-sized width | `delivery.js` | `160-09-preorder-subfilters.css` | Button owns 40px row; transparent `::after` hit layer extends 2px vertically into rail padding. Regression checks all four cardinal hit points, rail clipping and horizontal overflow at 320/375/390px |
 | `#chatFab` / `#supportLauncherHost` | Existing branded support icon | 44 × 44 px | `core/views.js` relocates host; `chat.js` owns chat action | `160-15-mobile-support-toolbar.css` | Existing 44px slot, no extra extension; separately verify Telegram swipe interaction |
 | `#scrollTopBtn`, `#venueToggle` | Current visual size is already larger than 32px | Existing 44px+ control | `scrolltop.js` / header controls | `160-06-delivery-header.css`, `160-12-admin-bar-tail.css` | Explicit exception: do not shrink these controls as part of this pass |
 
@@ -100,6 +100,11 @@ The mobile profile button keeps its existing 44px layout cell. Its visible backg
 ### Remaining acceptance work
 
 - Add hit-point checks for every applicable row where an existing spec checks only bounding-box edges.
-- Resolve the subfilter rail clipping exception or explicitly document a measured alternative target without overlap.
+- Re-run the subfilter hit-area regression at 320/375/390px and inspect screenshots after CSS changes.
 - Run the full two-brand / role / viewport matrix, including cashier and dispatch where the controls are present.
 - Inspect before/after screenshots at 320, 375 and 390px, plus the staff menu screenshots. Check focus-visible and iOS standalone / Telegram Mini App swipe behavior.
+
+
+### Delivery subfilter hit-area implementation
+
+The subfilter button keeps a 40px visible face and content-sized width. Its own transparent `::after` layer receives pointer events in a 44px-high vertical target (`inset: -2px 0`); the rail's existing 4px/8px vertical padding contains that extension while preserving horizontal scrolling. The `delivery.js` DOM and click owner are unchanged. Playwright checks the four cardinal edge points, pseudo-layer geometry, rail containment, no vertical scroll expansion and no page-level horizontal overflow at 320/375/390px.

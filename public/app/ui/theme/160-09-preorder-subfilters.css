@@ -149,35 +149,67 @@
 }
 
 .subchip {
+  position: relative;
   flex: 0 0 auto;
-  height: 44px;
-  min-height: 44px;
+  height: 40px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   padding: 0 14px;
-  border-radius: 999px;
-  background: var(--fr-paper, var(--card));
-  border: 1.5px solid var(--fr-tan, var(--line));
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--fr-choc, var(--ink));
   font: 600 13px / 1 "Golos Text", system-ui, sans-serif;
   white-space: nowrap;
   cursor: pointer;
-    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease;
   user-select: none;
 }
 
-.subchip:hover {
+/* The button owns the 44px target; its transparent pseudo-layer extends 2px
+   vertically into the rail padding without changing the horizontal scroll width. */
+.subchip::after {
+  content: "";
+  position: absolute;
+  inset: -2px 0;
+  z-index: 1;
+  border-radius: 999px;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.subchip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 999px;
+  background: var(--fr-paper, var(--card));
+  border: 1.5px solid var(--fr-tan, var(--line));
+  pointer-events: none;
+}
+
+.subchip:hover::before {
   background: var(--fr-rice);
 }
 
 .subchip.on {
-  background: var(--flame);
-  border-color: var(--fr-choc);
   color: #fff;
   font-weight: 700;
+}
+
+.subchip.on::before {
+  background: var(--flame);
+  border-color: var(--fr-choc);
   box-shadow: 2px 2px 0 var(--fr-choc);
+}
+
+.subchip:focus-visible {
+  outline: 2px solid var(--focus, #1A6DDF);
+  outline-offset: 2px;
 }
 
 /* Плашки выбора опций пиццы (Segmented Control Grid)
