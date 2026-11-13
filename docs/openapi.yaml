@@ -157,6 +157,7 @@ paths:
     post:
       tags: [Auth]
       summary: Регистрация нового гостя
+      description: Без code создаёт профиль, ожидающий активации сотрудником. Переданный OTP строго проверяется при SMS_AUTH_ENABLED=true; неверный код отклоняется. Пять ошибок блокируют повторные попытки на период backoff.
       requestBody:
         required: true
         content:
@@ -168,6 +169,7 @@ paths:
                 name:    { type: string, maxLength: 24 }
                 phone:   { type: string }
                 pin:     { type: string, pattern: '^\\d{4}$' }
+                code:    { type: string, description: Одноразовый SMS OTP при включённом SMS_AUTH_ENABLED }
                 consent: { type: integer, enum: [0, 1] }
       responses:
         '200':
@@ -179,7 +181,9 @@ paths:
                 properties:
                   token:    { type: string }
                   customer: { $ref: '#/components/schemas/Customer' }
+        '403': { description: Неверный или просроченный переданный OTP }
         '409': { description: Профиль уже существует }
+        '429': { description: Превышен лимит ошибок подтверждения OTP }
 
   /api/auth/request-reg-otp:
     post:
@@ -286,6 +290,7 @@ paths:
     post:
       tags: [Auth]
       summary: Активация гостя по коду от кассира
+      description: После пяти неверных кодов попытки блокируются на период backoff.
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
@@ -295,7 +300,13 @@ paths:
               type: object
               required: [code]
               properties: { code: { type: string } }
-      responses: { '200': { description: OK } }
+      responses:
+        '200': { description: Профиль активирован }
+        '400': { description: Некорректный формат кода }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: Неверный код активации }
+        '409': { description: Профиль уже активирован }
+        '429': { description: Превышен лимит неверных кодов; Retry-After содержит время ожидания }
 
   /api/auth/tg-link:
     post:
