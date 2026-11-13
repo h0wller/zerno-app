@@ -651,46 +651,54 @@ paths:
   /api/chat/send:
     post:
       tags: [Chat]
-      summary: Отправить сообщение в чат
+      summary: Отправить сообщение в собственный чат
+      description: Для клиентского треда требуется Bearer-токен владельца. Анонимный тред доступен только по capability-key формата anon- и 64 hex-символа с суффиксом :c или :d. Анонимный тред не может вызвать сотрудника. Лимит — 15 сообщений за минуту на владельца; вызов сотрудника ограничен одним разом за 2 минуты.
+      security:
+        - {}
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [text]
+              required: [key, text]
               properties:
+                key:
+                  type: string
+                  maxLength: 80
+                  description: customerId:c|d для профиля или anon- плюс 64 hex-символа и :c|:d для гостя
                 text: { type: string, maxLength: 2000 }
-                ctx:  { type: string }
-              additionalProperties: true
-      responses: { '200': { description: OK } }
+                human: { type: boolean, description: Запросить сотрудника; доступно только владельцу профиля }
+                ctx: { type: string, enum: [coffee, delivery], description: Контекст берётся из суффикса ключа }
+      responses:
+        '200': { description: Сообщение сохранено }
+        '400': { description: Некорректное сообщение или ID }
+        '401': { description: Нет сессии владельца или валидного анонимного ключа }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { description: Превышен лимит отправки или cooldown вызова сотрудника }
 
   /api/chat/thread:
     get:
       tags: [Chat]
-      summary: Получить новые сообщения треда
+      summary: Получить сообщения собственного треда
+      description: Для клиентского треда требуется Bearer-токен владельца. Анонимный тред читается только по capability-key формата anon- и 64 hex-символа с суффиксом :c или :d.
+      security:
+        - {}
+        - BearerAuth: []
       parameters:
         - in: query
           name: key
           required: true
-          schema: { type: string, maxLength: 64 }
+          schema: { type: string, maxLength: 80 }
         - in: query
           name: after
           schema: { type: integer, minimum: 0 }
-      responses: { '200': { description: OK } }
-
-  /api/chat/botlog:
-    post:
-      tags: [Chat]
-      summary: Сохранить сообщение бота
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, required: [key, text], properties: { key: { type: string, maxLength: 64 }, text: { type: string, maxLength: 2000 } } }
       responses:
-        '200': { description: 'Операция выполнена успешно (ok: true)' }
-        '400': { description: Некорректное сообщение }
+        '200': { description: Новые сообщения собственного треда }
+        '400': { description: Некорректный ID последнего сообщения }
+        '401': { description: Нет сессии владельца или валидного анонимного ключа }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/chat/list:
     get:
