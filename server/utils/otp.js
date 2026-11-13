@@ -1,9 +1,47 @@
+const MAX_OTP_ENTRIES = 5000;
+
 /**
- * Хранилище OTP-кодов и сессий регистрации (в памяти).
- * Ключ: строка (например, телефон или токен), значение — данные сессии.
- * @type {Map<string, {code?: string, expires: number, confirmed?: boolean, phone?: string}>}
+ * Хранилище краткоживущих OTP/poll-сессий.
+ * Коды и pollToken остаются только в памяти; записи очищаются по expires и ограничены по размеру.
  */
-export const otpStore = new Map();
+class ExpiringOtpStore extends Map {
+  prune(now = Date.now()) {
+    for (const [key, entry] of super.entries()) {
+      if (Number.isFinite(entry?.expires) && now >= entry.expires) {
+        super.delete(key);
+      }
+    }
+    while (this.size > MAX_OTP_ENTRIES) {
+      const oldest = this.keys().next();
+      if (oldest.done) break;
+      super.delete(oldest.value);
+    }
+  }
+
+  get(key) {
+    this.prune();
+    return super.get(key);
+  }
+
+  has(key) {
+    this.prune();
+    return super.has(key);
+  }
+
+  set(key, value) {
+    this.prune();
+    if (super.has(key)) super.delete(key);
+    while (this.size >= MAX_OTP_ENTRIES) {
+      const oldest = this.keys().next();
+      if (oldest.done) break;
+      super.delete(oldest.value);
+    }
+    super.set(key, value);
+    return this;
+  }
+}
+
+export const otpStore = new ExpiringOtpStore();
 
 /** Проверяет, что OTP-состояние существует и ещё не истекло. */
 export function isOtpLive(entry, now = Date.now()) {
