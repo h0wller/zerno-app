@@ -79,7 +79,7 @@ test('customer order receipt Telegram text escapes item, modifier, gift and addr
   assert.ok(text.includes('&lt;i&gt;Дополнительный сыр&lt;/i&gt;'));
   assert.ok(!text.includes('notify()'), 'customer receipt must not contain the internal order comment');
   assert.ok(text.includes('&lt;img src=x onerror=alert(1)&gt;'));
-  assert.ok(text.includes('&amp; &quot;quoted&quot;'));
+  assert.ok(text.includes('&amp; &quot;дом&quot;'));
   assert.ok(!text.includes('<script>'));
   assert.ok(!text.includes('<img src=x'));
 });
