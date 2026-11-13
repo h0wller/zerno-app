@@ -229,9 +229,8 @@ chatRouter.get('/api/chat/thread', (req, res) => {
 
   const authorized = authorizeGuestThread(req, res, key);
   if (!authorized) return;
-  if (!db.prepare('SELECT 1 FROM chat_meta WHERE key=?').get(key)) {
-    return res.status(404).json({ error: 'Чат не найден' });
-  }
+  // A thread exists only after the guest's first message. For an authorized owner an empty
+  // history is a normal 200: a 404 here makes the browser log an error on every poll.
 
   const after = req.query.after === undefined ? 0 : Number(req.query.after);
   if (!Number.isSafeInteger(after) || after < 0) {

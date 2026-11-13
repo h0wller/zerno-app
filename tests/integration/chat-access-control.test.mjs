@@ -188,6 +188,29 @@ test('anonymous conversation requires a high-entropy capability and does not per
   assert.equal(legacyWeakKey.status, 400);
 });
 
+test('authorized owner polling a not-yet-created thread gets an empty history, not 404', async () => {
+  const anonKey = 'anon-' + randomBytes(32).toString('hex') + ':d';
+  const chatToken = randomBytes(32).toString('hex');
+  const route = '/api/chat/thread?key=' + encodeURIComponent(anonKey) + '&after=0';
+
+  const empty = await api('GET', route, { chatToken });
+  assert.equal(empty.status, 200, JSON.stringify(empty.json));
+  assert.deepEqual(empty.json, { msgs: [] });
+
+  // The capability check still runs first: no token, another token and a bad cursor are all rejected.
+  assert.equal((await api('GET', route)).status, 401);
+  assert.equal((await api('GET', route, { chatToken: randomBytes(32).toString('hex') })).status, 403);
+  const badCursor = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(anonKey) + '&after=-1', { chatToken });
+  assert.equal(badCursor.status, 400);
+
+  const owner = await register('Chat Empty Thread', 35);
+  const customerKey = owner.customer.id + ':c';
+  const ownEmpty = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(customerKey), { token: owner.token });
+  assert.equal(ownEmpty.status, 200, JSON.stringify(ownEmpty.json));
+  assert.deepEqual(ownEmpty.json, { msgs: [] });
+  assert.equal((await api('GET', '/api/chat/thread?key=' + encodeURIComponent(customerKey))).status, 401);
+});
+
 test('chat request validation rejects oversized messages and invalid poll cursors', async () => {
   const owner = await register('Chat Validation', 33);
   const key = owner.customer.id + ':c';

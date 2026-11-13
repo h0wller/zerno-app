@@ -170,6 +170,52 @@ for (const width of [1024, 1440]) {
   });
 }
 
+// 820 is included on purpose: a min-width:820px rule overlaps the max-width:820px mobile block there.
+for (const width of [820, 821, 922, 1280]) {
+  test(`delivery sub-filter chips draw a single border via ::before at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('zt_onb', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.route('**/api/dmenu*', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items }),
+    }));
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+    const chips = page.locator('#deliverySubFilter .subchip');
+    await expect(chips).toHaveCount(9);
+
+    const styles = await chips.evaluateAll((elements) => elements.map((element) => {
+      const self = getComputedStyle(element);
+      const face = getComputedStyle(element, '::before');
+      return {
+        on: element.classList.contains('on'),
+        selfBorder: self.borderTopWidth,
+        selfBackground: self.backgroundColor,
+        selfRadius: self.borderTopLeftRadius,
+        faceBorder: Number.parseFloat(face.borderTopWidth),
+        faceInset: (Number.parseFloat(face.top) || 0) + (Number.parseFloat(face.bottom) || 0),
+        height: element.getBoundingClientRect().height,
+      };
+    }));
+
+    expect(styles.filter((chip) => chip.on)).toHaveLength(1);
+    for (const chip of styles) {
+      const label = JSON.stringify(chip);
+      expect(chip.selfBorder, `button must not draw its own border: ${label}`).toBe('0px');
+      expect(chip.selfBackground, `button must not paint its own fill: ${label}`).toBe('rgba(0, 0, 0, 0)');
+      expect(chip.selfRadius, `button must not carry the pill radius: ${label}`).toBe('0px');
+      expect(chip.faceBorder, `::before owns the visible border: ${label}`).toBeGreaterThan(0);
+      expect(chip.height, `44px hit cell: ${label}`).toBe(44);
+      expect(chip.height - chip.faceInset, `40px visual face: ${label}`).toBe(40);
+    }
+  });
+}
 
 test('delivery header uses brand typography on desktop and logo-only on mobile', async ({page}) => {
   for (const width of [320, 390, 820, 821, 1024, 1440]) {
