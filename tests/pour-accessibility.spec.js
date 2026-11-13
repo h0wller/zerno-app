@@ -123,7 +123,12 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         edit: rect(edit),
         editFace: faceSize(edit, '::after'),
         subchips: Array.from(document.querySelectorAll('#deliverySubFilter .subchip'))
-          .map(element => ({ height: element.getBoundingClientRect().height, width: element.getBoundingClientRect().width })),
+          .map(element => {
+            const box = element.getBoundingClientRect();
+            const face = getComputedStyle(element, '::before');
+            const inset = Number.parseFloat(face.top) || 0;
+            return { height: box.height, width: box.width, faceHeight: box.height - inset - (Number.parseFloat(face.bottom) || 0) };
+          }),
         profile: rect(document.getElementById('profileTopBtn')),
         scrollTop: rect(document.getElementById('scrollTopBtn')),
         venue: rect(document.getElementById('venueToggle')),
@@ -147,7 +152,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
             throw new Error('Expected an active ingredient filter chip; the delivery fixture must contain more than five pizza items');
           }
           const style = getComputedStyle(element);
-          return { bg: style.backgroundColor, color: style.color, text: element.textContent.trim() };
+          const face = getComputedStyle(element, '::before');
+          return { bg: face.backgroundColor, color: style.color, text: element.textContent.trim() };
         })(),
       };
     });
@@ -159,8 +165,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.edit).toEqual({ width: 44, height: 44 });
     expect(metrics.editFace).toEqual({ width: 32, height: 32 });
     expect(metrics.subchips.length).toBeGreaterThan(0);
-    expect(metrics.subchips.every(chip => chip.height === 40 && chip.width >= 58),
-      `subchip geometry must remain at least 58×40px: ${JSON.stringify(metrics.subchips)}`).toBe(true);
+    expect(metrics.subchips.every(chip => chip.height === 44 && chip.width >= 58 && chip.faceHeight === 40),
+      `subchips must keep a 44px hit cell and 40px visual face: ${JSON.stringify(metrics.subchips)}`).toBe(true);
     expect(metrics.profile).toEqual({ width: 44, height: 44 });
     expect(metrics.venue.width).toBeGreaterThanOrEqual(44);
     expect(metrics.venue.height).toBeGreaterThanOrEqual(44);

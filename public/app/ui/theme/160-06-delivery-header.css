@@ -419,13 +419,13 @@
 
   html body header.topbar > #topbar-actions > #profileTopBtn {
     display:grid;
-    flex:0 0 44px;
-    width:44px;
-    min-width:44px;
-    max-width:44px;
-    height:44px;
-    min-height:44px;
-    max-height:44px;
+    flex:0 0 var(--tap-hit);
+    width:var(--tap-hit);
+    min-width:var(--tap-hit);
+    max-width:var(--tap-hit);
+    height:var(--tap-hit);
+    min-height:var(--tap-hit);
+    max-height:var(--tap-hit);
     margin:0;
     padding:0;
     place-items:center;

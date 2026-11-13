@@ -69,3 +69,42 @@ Changes to staff-control placement or hit-area dimensions must update this regis
 - work modes returning the switcher to topbar only when menu is hidden.
 
 `tests/slow-network-layout.spec.js` covers guest/mobile and cached staff/desktop first-paint geometry before and after auth hydration.
+
+
+## Extended control inventory — Stage 1
+
+The original register above covers the mobile staff menu row. This section adds shared header, support and cart controls without changing their DOM owners.
+
+| Selector / control | Visible face | Hit area | DOM / behavior owner | CSS owner | State |
+| --- | --- | --- | --- | --- | --- |
+| `header.topbar #profileTopBtn` | 32 × 32 px inset circle | 44 × 44 px existing header cell | `profile.js` updates only the initial text; node and click behavior remain unchanged | `170-profile-button.css` base; `160-06-delivery-header.css` reserves hit cell; `160-12-admin-bar-tail.css` paints mobile face | Added shared token usage and 32px pseudo-face; new test covers guest in both brands at 320/375/390px and staff in both brands at 320/390px |
+| `.chat-h button` (`#chatClose`, `#chatSend`) | 32 × 32 px inset square | 44 × 44 px | `chat.js` | `100-chat.css` | Existing eight-point boundary checks in `mobile-support-entry.spec.js`; include in consolidated audit |
+| `.addon-tab-btn` | 32 px-high inset pill | At least 44 px high and 44 px wide | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test in `cart-checkout-clarity.spec.js` |
+| `.ci-toggle-mods-btn` | Compact text action | At least 44 px high; width is content-sized | `cart.js` | `160-08-cart-addons.css` | Existing cell-edge hit-test; wide control, do not extend horizontally |
+| `.ci-mod-chip` | 32 px-high pill; width depends on label | At least 44 px high and 44 px wide | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test; own `::before` paints the pill and focus ring |
+| `.ci-mod-del` | 32 × 32 px inset square | 44 × 44 px | `cart.js` | `160-08-cart-addons.css` | Existing boundary hit-test; own `::before` paints the control and focus ring |
+| `#deliverySubFilter .subchip` | 40px visible pill | 44px button box; content-sized width | `delivery.js` | `160-09-preorder-subfilters.css` + mobile cascade in `160-12-admin-bar-tail.css` | Button itself owns the 44px target; `::before` paints the 40px face with a 2px vertical inset. Regression checks four cardinal hit points and bottom-edge actionability at 320/375/390px |
+| `#chatFab` / `#supportLauncherHost` | Existing branded support icon | 44 × 44 px | `core/views.js` relocates host; `chat.js` owns chat action | `160-15-mobile-support-toolbar.css` | Existing 44px slot, no extra extension; separately verify Telegram swipe interaction |
+| `#scrollTopBtn`, `#venueToggle` | Current visual size is already larger than 32px | Existing 44px+ control | `scrolltop.js` / header controls | `160-06-delivery-header.css`, `160-12-admin-bar-tail.css` | Explicit exception: do not shrink these controls as part of this pass |
+
+### Shared tokens and profile implementation
+
+Neutral Layer 1 tokens are defined in `public/app/ui/theme/160-05-base-components.css`:
+
+- `--tap-visual: 32px`
+- `--tap-hit: 44px`
+- `--tap-extend-x` / `--tap-extend-y: 6px`
+
+The mobile profile button keeps its existing 44px layout cell. Its visible background, border and shadow are rendered on an inset pseudo-element; the button text remains the profile initial. Focus is drawn on the inset face. No DOM or profile-state ownership changed.
+
+### Remaining acceptance work
+
+- [ ] Complete consolidated edge/keyboard evidence for chat and cart controls — tracked in [issue #232](https://github.com/h0wller/zerno-app/issues/232).
+- [x] Resolve the delivery subfilter vertical hit-area clipping with a 40px face / 44px hit region contained by rail padding; browser regression added for 320/375/390px.
+- [ ] Complete native iOS standalone and Telegram Mini App touch/gesture acceptance — tracked separately in [issue #231](https://github.com/h0wller/zerno-app/issues/231).
+- [ ] Inspect the updated 320/375/390px screenshots and staff menu captures after CI. Do not treat Chromium as native WebKit/Telegram evidence.
+
+
+### Delivery subfilter hit-area implementation
+
+The subfilter button itself is 44px high and owns the hit region. Its `::before` paints the 40px visible pill with a 2px inset on each vertical edge; no synthetic pointer-active pseudo-layer is used. The rail's existing vertical padding contains the button without changing horizontal scroll width. The `delivery.js` DOM and click owner are unchanged. Playwright checks the four cardinal edge points, bottom-edge actionability, rail containment, no vertical scroll expansion and no page-level horizontal overflow at 320/375/390px. The automated test is browser evidence only; native iOS and Telegram behavior remain explicitly open under issue #231.

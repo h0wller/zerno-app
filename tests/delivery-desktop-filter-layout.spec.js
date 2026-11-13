@@ -180,7 +180,7 @@ test('delivery header uses brand typography on desktop and logo-only on mobile',
       'cart pill must be visually centered in the viewport').toBeLessThanOrEqual(1);
     const active = page.locator('#deliverySubFilter .subchip.on');
     await expect(active).toBeVisible();
-    const activeStyles = await active.evaluate(el => ({ bg:getComputedStyle(el).backgroundColor, color:getComputedStyle(el).color }));
+    const activeStyles = await active.evaluate(el => ({ bg:getComputedStyle(el, '::before').backgroundColor, color:getComputedStyle(el).color }));
     expect(activeStyles.bg).toBe('rgb(192, 59, 42)');
     expect(activeStyles.color).toBe('rgb(255, 255, 255)');
   }

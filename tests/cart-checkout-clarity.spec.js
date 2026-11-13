@@ -29,15 +29,17 @@ const RECOMMENDED_ITEMS = [
 async function expectCompact44pxHitTarget(locator, visibleFace) {
   const metrics = await locator.evaluate((button) => {
     const rect = button.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
     const points = [
-      [rect.left + 2, rect.top + 2],
-      [rect.right - 2, rect.top + 2],
-      [rect.left + 2, rect.bottom - 2],
-      [rect.right - 2, rect.bottom - 2],
-      [rect.left + rect.width / 2, rect.top + 2],
-      [rect.left + rect.width / 2, rect.bottom - 2],
-      [rect.left + 2, rect.top + rect.height / 2],
-      [rect.right - 2, rect.top + rect.height / 2]
+      [cx - 21, cy - 21],
+      [cx + 21, cy - 21],
+      [cx - 21, cy + 21],
+      [cx + 21, cy + 21],
+      [cx, cy - 21],
+      [cx + 21, cy],
+      [cx, cy + 21],
+      [cx - 21, cy]
     ];
     const pseudo = window.getComputedStyle(button, '::before');
     return {

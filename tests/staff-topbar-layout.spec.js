@@ -82,6 +82,8 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
         document.documentElement.style.setProperty('--sat', '47px');
         window.setMode('admin');
       });
+      // The admin-mode toast temporarily covers the profile hit cell; measure only after it leaves.
+      await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 4000 });
 
       const view = brand === 'coffee' ? '#menuView' : '#deliveryView';
       const mode = page.locator('#modeSeg');
@@ -133,6 +135,41 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           search: rect(searchElement),
           support: rect(host),
           fab: rect(fab),
+          profile: (() => {
+            const element = document.getElementById('profileTopBtn');
+            if (!element) return null;
+            const box = element.getBoundingClientRect();
+            const face = getComputedStyle(element, '::before');
+            const inset = {
+              top: Number.parseFloat(face.top) || 0,
+              right: Number.parseFloat(face.right) || 0,
+              bottom: Number.parseFloat(face.bottom) || 0,
+              left: Number.parseFloat(face.left) || 0
+            };
+            const cx = box.left + box.width / 2;
+            const cy = box.top + box.height / 2;
+            // The profile hit shape remains circular; sample its four 44px diameter edges.
+            const points = [
+              [cx - 21, cy],
+              [cx + 21, cy],
+              [cx, cy - 21],
+              [cx, cy + 21]
+            ];
+            return {
+              width: box.width,
+              height: box.height,
+              face: {
+                width: box.width - inset.left - inset.right,
+                height: box.height - inset.top - inset.bottom,
+                inset,
+                content: face.content
+              },
+              hitPoints: points.map(([x, y]) => {
+                const target = document.elementFromPoint(x, y);
+                return target === element || element.contains(target);
+              })
+            };
+          })(),
           modeButtons: Array.from(seg.querySelectorAll(':scope > button')).map(button => {
             const box = button.getBoundingClientRect();
             const face = getComputedStyle(button, '::before');
@@ -142,15 +179,17 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
               bottom: Number.parseFloat(face.bottom) || 0,
               left: Number.parseFloat(face.left) || 0
             };
+            const cx = box.left + box.width / 2;
+            const cy = box.top + box.height / 2;
             const hitEdges = [
-              { edge:'top-left', x:box.left + 2, y:box.top + 2 },
-              { edge:'top-right', x:box.right - 2, y:box.top + 2 },
-              { edge:'bottom-right', x:box.right - 2, y:box.bottom - 2 },
-              { edge:'bottom-left', x:box.left + 2, y:box.bottom - 2 },
-              { edge:'top-center', x:box.left + box.width / 2, y:box.top + 2 },
-              { edge:'right-center', x:box.right - 2, y:box.top + box.height / 2 },
-              { edge:'bottom-center', x:box.left + box.width / 2, y:box.bottom - 2 },
-              { edge:'left-center', x:box.left + 2, y:box.top + box.height / 2 }
+              { edge:'top-left', x:cx - 21, y:cy - 21 },
+              { edge:'top-right', x:cx + 21, y:cy - 21 },
+              { edge:'bottom-right', x:cx + 21, y:cy + 21 },
+              { edge:'bottom-left', x:cx - 21, y:cy + 21 },
+              { edge:'top-center', x:cx, y:cy - 21 },
+              { edge:'right-center', x:cx + 21, y:cy },
+              { edge:'bottom-center', x:cx, y:cy + 21 },
+              { edge:'left-center', x:cx - 21, y:cy }
             ].map(point => {
               const target = document.elementFromPoint(point.x, point.y);
               return {
@@ -183,15 +222,17 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
               bottom:Number.parseFloat(face.bottom) || 0,
               left:Number.parseFloat(face.left) || 0
             };
+            const cx = box.left + box.width / 2;
+            const cy = box.top + box.height / 2;
             const hitEdges = [
-              { edge:'top-left', x:box.left + 2, y:box.top + 2 },
-              { edge:'top-right', x:box.right - 2, y:box.top + 2 },
-              { edge:'bottom-right', x:box.right - 2, y:box.bottom - 2 },
-              { edge:'bottom-left', x:box.left + 2, y:box.bottom - 2 },
-              { edge:'top-center', x:box.left + box.width / 2, y:box.top + 2 },
-              { edge:'right-center', x:box.right - 2, y:box.top + box.height / 2 },
-              { edge:'bottom-center', x:box.left + box.width / 2, y:box.bottom - 2 },
-              { edge:'left-center', x:box.left + 2, y:box.top + box.height / 2 }
+              { edge:'top-left', x:cx - 21, y:cy - 21 },
+              { edge:'top-right', x:cx + 21, y:cy - 21 },
+              { edge:'bottom-right', x:cx + 21, y:cy + 21 },
+              { edge:'bottom-left', x:cx - 21, y:cy + 21 },
+              { edge:'top-center', x:cx, y:cy - 21 },
+              { edge:'right-center', x:cx + 21, y:cy },
+              { edge:'bottom-center', x:cx, y:cy + 21 },
+              { edge:'left-center', x:cx - 21, y:cy }
             ].map(point => {
               const target = document.elementFromPoint(point.x, point.y);
               return {
@@ -283,6 +324,14 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
       expect(layout.adminActionsVisible).toBe(true);
       expect(layout.supportInsideRow).toBe(true);
       expect(layout.modeButtons.map(button => button.text)).toEqual(['Гость', 'Кассир', 'Заказы', 'Админ']);
+      expect(layout.profile).not.toBeNull();
+      expect(layout.profile.width).toBe(44);
+      expect(layout.profile.height).toBe(44);
+      expect(layout.profile.face.width).toBe(32);
+      expect(layout.profile.face.height).toBe(32);
+      expect(layout.profile.face.inset).toEqual({ top: 6, right: 6, bottom: 6, left: 6 });
+      expect(layout.profile.face.content).not.toBe('none');
+      expect(layout.profile.hitPoints.every(Boolean), JSON.stringify(layout.profile)).toBe(true);
 
       const rowOneCenter = layout.rowOne.y + layout.rowOne.height / 2;
       for (const item of [layout.title, layout.slot, layout.edit]) {
