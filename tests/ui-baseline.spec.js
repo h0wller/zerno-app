@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const OUT = path.join('artifacts', 'ui-baseline');
-const ADMIN = process.env.UI_ADMIN_CODE || '7391846205739184';
-const CASHIER = process.env.UI_CASHIER_CODE || '5820471963582047';
+const ADMIN = String(process.env.UI_ADMIN_CODE || '').length >= 16 ? process.env.UI_ADMIN_CODE : 'ci-admin-role-code-2026';
+const CASHIER = String(process.env.UI_CASHIER_CODE || '').length >= 16 ? process.env.UI_CASHIER_CODE : 'ci-cashier-role-code-2026';
 
 /* SW кеширует /api/* и ломает авторизацию между тестами — блокируем целиком */
 test.use({ serviceWorkers: 'block' });
