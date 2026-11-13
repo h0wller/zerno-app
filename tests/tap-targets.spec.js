@@ -39,17 +39,35 @@ for (const brand of BRANDS) {
           [cx - 21, cy + 21],
           [cx + 21, cy + 21],
         ];
+        const describe = (node) => {
+          if (!node) return null;
+          return {
+            tag: node.tagName?.toLowerCase() || null,
+            id: node.id || null,
+            className: typeof node.className === 'string' ? node.className : null,
+            pointerEvents: getComputedStyle(node).pointerEvents,
+          };
+        };
+        const centerHit = document.elementFromPoint(cx, cy);
         return {
+          rect: { x: rect.x, y: rect.y, top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left },
           width: rect.width,
           height: rect.height,
           pseudoContent: face.content,
           faceWidth: rect.width - inset.left - inset.right,
           faceHeight: rect.height - inset.top - inset.bottom,
           inset,
-          hitPoints: points.map(([x, y]) => {
-            const hit = document.elementFromPoint(x, y);
-            return hit === button || button.contains(hit);
-          }),
+          buttonPointerEvents: getComputedStyle(button).pointerEvents,
+          centerHit: describe(centerHit),
+          hitPoints: points.map(([x, y]) => ({
+            x,
+            y,
+            receives: (() => {
+              const hit = document.elementFromPoint(x, y);
+              return hit === button || button.contains(hit);
+            })(),
+            stack: document.elementsFromPoint(x, y).slice(0, 4).map(describe),
+          })),
           scrollWidth: document.documentElement.scrollWidth,
           clientWidth: document.documentElement.clientWidth,
         };
