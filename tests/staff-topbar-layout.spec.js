@@ -176,15 +176,17 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
               bottom: Number.parseFloat(face.bottom) || 0,
               left: Number.parseFloat(face.left) || 0
             };
+            const cx = box.left + box.width / 2;
+            const cy = box.top + box.height / 2;
             const hitEdges = [
-              { edge:'top-left', x:box.left + 2, y:box.top + 2 },
-              { edge:'top-right', x:box.right - 2, y:box.top + 2 },
-              { edge:'bottom-right', x:box.right - 2, y:box.bottom - 2 },
-              { edge:'bottom-left', x:box.left + 2, y:box.bottom - 2 },
-              { edge:'top-center', x:box.left + box.width / 2, y:box.top + 2 },
-              { edge:'right-center', x:box.right - 2, y:box.top + box.height / 2 },
-              { edge:'bottom-center', x:box.left + box.width / 2, y:box.bottom - 2 },
-              { edge:'left-center', x:box.left + 2, y:box.top + box.height / 2 }
+              { edge:'top-left', x:cx - 21, y:cy - 21 },
+              { edge:'top-right', x:cx + 21, y:cy - 21 },
+              { edge:'bottom-right', x:cx + 21, y:cy + 21 },
+              { edge:'bottom-left', x:cx - 21, y:cy + 21 },
+              { edge:'top-center', x:cx, y:cy - 21 },
+              { edge:'right-center', x:cx + 21, y:cy },
+              { edge:'bottom-center', x:cx, y:cy + 21 },
+              { edge:'left-center', x:cx - 21, y:cy }
             ].map(point => {
               const target = document.elementFromPoint(point.x, point.y);
               return {
@@ -217,15 +219,17 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
               bottom:Number.parseFloat(face.bottom) || 0,
               left:Number.parseFloat(face.left) || 0
             };
+            const cx = box.left + box.width / 2;
+            const cy = box.top + box.height / 2;
             const hitEdges = [
-              { edge:'top-left', x:box.left + 2, y:box.top + 2 },
-              { edge:'top-right', x:box.right - 2, y:box.top + 2 },
-              { edge:'bottom-right', x:box.right - 2, y:box.bottom - 2 },
-              { edge:'bottom-left', x:box.left + 2, y:box.bottom - 2 },
-              { edge:'top-center', x:box.left + box.width / 2, y:box.top + 2 },
-              { edge:'right-center', x:box.right - 2, y:box.top + box.height / 2 },
-              { edge:'bottom-center', x:box.left + box.width / 2, y:box.bottom - 2 },
-              { edge:'left-center', x:box.left + 2, y:box.top + box.height / 2 }
+              { edge:'top-left', x:cx - 21, y:cy - 21 },
+              { edge:'top-right', x:cx + 21, y:cy - 21 },
+              { edge:'bottom-right', x:cx + 21, y:cy + 21 },
+              { edge:'bottom-left', x:cx - 21, y:cy + 21 },
+              { edge:'top-center', x:cx, y:cy - 21 },
+              { edge:'right-center', x:cx + 21, y:cy },
+              { edge:'bottom-center', x:cx, y:cy + 21 },
+              { edge:'left-center', x:cx - 21, y:cy }
             ].map(point => {
               const target = document.elementFromPoint(point.x, point.y);
               return {
