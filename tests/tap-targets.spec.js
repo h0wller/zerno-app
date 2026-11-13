@@ -187,6 +187,7 @@ for (const width of [320, 375, 390]) {
       expect(metrics.hitBottom, JSON.stringify(metrics)).toBe('-2px');
       expect(metrics.hitPoints.every(Boolean), JSON.stringify(metrics)).toBe(true);
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
+      await chip.click({ trial: true });
     }
 
     if (width === 390) {
