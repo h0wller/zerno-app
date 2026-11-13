@@ -768,7 +768,9 @@ test('registration hides the paid SMS control while SMS auth is disabled', async
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   });
+  const configLoaded = page.waitForResponse('**/api/config');
   await page.goto('/?brand=coffee');
+  await configLoaded;
   await page.waitForFunction(() => window.SMS_AUTH_ENABLED === false);
   await page.evaluate(() => window.openAuth(false));
 
