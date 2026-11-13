@@ -496,6 +496,11 @@ test('Telegram registration request continues after closing the auth modal', asy
   let releaseRequest;
   const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
   const responseGate = new Promise((resolve) => { releaseRequest = resolve; });
+  await page.context().route('https://t.me/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'text/html',
+    body: '<!doctype html><title>Telegram test stub</title>'
+  }));
   await page.route('**/api/auth/request-reg-otp', async (route) => {
     markRequestStarted();
     await responseGate;
