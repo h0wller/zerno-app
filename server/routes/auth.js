@@ -146,36 +146,56 @@ authRouter.post('/api/auth/request-reg-otp', (req, res) => {
   if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
 
   if (via === 'tg') {
-    const token = crypto.randomBytes(6).toString('hex');
+    const token = crypto.randomBytes(16).toString('hex');
+    const pollToken = crypto.randomBytes(32).toString('hex');
     const reqName = String(req.body.name || '').trim();
-    otpStore.set('regtg:' + token, { phone: p, name: reqName, expires: Date.now() + 10 * 60 * 1000 });
+    otpStore.set('regtg:' + token, {
+      phone: p, name: reqName, pollToken, expires: Date.now() + 10 * 60 * 1000
+    });
     otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
-    return res.json({ ok: true, tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}` });
+    return res.json({
+      ok: true,
+      pollToken,
+      tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}`
+    });
   }
 
   const st = otpStore.get('reg:' + p);
-  if (st && Date.now() - (st.lastSent || 0) < 60000) {
+  const now = Date.now();
+  if (st && now - (st.lastSent || 0) < 60000) {
     return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
   }
-  if (st && st.sent >= 5) {
+  if (st && st.sent >= 5 && now < (st.windowEnds || 0)) {
     return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
   }
 
-  const code = String(Math.floor(1000 + Math.random() * 9000));
-  otpStore.set('reg:' + p, { code, expires: Date.now() + 5 * 60 * 1000, sent: (st ? st.sent : 0) + 1, lastSent: Date.now() });
-  sendSms(p, `…и кофе 🌊 Код регистрации: ${code}`);
-  res.json({ ok: true });
+  const code = String(crypto.randomInt(1000, 10000));
+  const delivery = await sendSms(p, `…и кофе 🌊 Код регистрации: ${code}`);
+  if (!delivery?.ok) {
+    return res.status(503).json({ error: 'Не удалось отправить SMS. Попробуйте позже.' });
+  }
+  otpStore.set('reg:' + p, {
+    code,
+    expires: now + 5 * 60 * 1000,
+    sent: (st && now < (st.windowEnds || 0) ? st.sent : 0) + 1,
+    lastSent: now,
+    windowEnds: st && now < (st.windowEnds || 0) ? st.windowEnds : now + 24 * 60 * 60 * 1000
+  });
+  res.json({ ok: true, via: 'sms' });
 });
 
 // [tg-web-seamless-auth-v1]
-authRouter.get('/api/auth/check-reg', (req, res) => {
-  const p = fmtPhone(req.query.phone || '');
-  const st = otpStore.get('reg:' + p);
-  const isOk = isOtpLive(st) && !!st.confirmed;
-  if (isOk && st.token && st.customer) {
-    return res.json({ confirmed: true, token: st.token, customer: st.customer });
+authRouter.post('/api/auth/check-reg', (req, res) => {
+  const pollToken = String(req.body?.pollToken || '');
+  if (!/^[a-f0-9]{64}$/.test(pollToken)) {
+    return res.status(400).json({ error: 'Неверный ключ подтверждения регистрации' });
   }
-  res.json({ confirmed: isOk });
+  const st = otpStore.get('regpoll:' + pollToken);
+  if (!isOtpLive(st)) {
+    otpStore.delete('regpoll:' + pollToken);
+    return res.json({ confirmed: false });
+  }
+  return res.json({ confirmed: true, token: st.token, customer: st.customer });
 });
 
 authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
@@ -288,11 +308,10 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
   }
 
   if (!c.pin) {
-    if (!pin) return res.status(409).json({ error: 'PIN ещё не задан — придумайте его', setup: true });
-    if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
-    db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), c.id);
-    addHist(c.id, 'Задан PIN (первый вход)', 'Приложение');
-    return res.json({ token: issueToken(c.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
+    return res.status(409).json({
+      error: 'PIN не задан. Сначала подтвердите номер кодом из Telegram или SMS.',
+      setup: true
+    });
   }
 
   if (!pin) return res.status(400).json({ error: 'Введите PIN' });
@@ -306,16 +325,13 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
   res.json({ token: issueToken(c.id), customer: cust(c) });
 });
 
-authRouter.post('/api/auth/setup-pin', validate(SetupPinSchema), (req, res) => {
-  const p = fmtPhone(req.body.phone || '');
+authRouter.post('/api/auth/setup-pin', userGuard, validate(SetupPinSchema), (req, res) => {
   const pin = String(req.body.pin || '').trim();
   if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
-  const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
-  if (!c) return res.status(404).json({ error: 'Профиль не найден' });
-  if (c.pin) return res.status(403).json({ error: 'PIN уже задан — входите с ним' });
-  db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), c.id);
-  addHist(c.id, 'Задан PIN (первый вход)', 'Приложение');
-  res.json({ token: issueToken(c.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
+  if (req.user.pin) return res.status(403).json({ error: 'PIN уже задан — используйте смену PIN' });
+  db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), req.user.id);
+  addHist(req.user.id, 'Задан PIN (первый вход)', 'Приложение');
+  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
 
 authRouter.post('/api/auth/set-pin', userGuard, (req, res) => {
@@ -326,17 +342,47 @@ authRouter.post('/api/auth/set-pin', userGuard, (req, res) => {
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
 
-authRouter.post('/api/auth/request-otp', (req, res) => {
+authRouter.post('/api/auth/request-otp', async (req, res) => {
   const p = fmtPhone(req.body.phone || '');
+  if (ph10(p).length !== 10) return res.status(400).json({ error: 'Введите номер полностью' });
   const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (!c) return res.status(404).json({ error: 'Профиль не найден' });
-  if (!c.tg) return res.status(400).json({ error: 'Telegram непривязан — войдите по PIN' });
-  const wait = lockedSeconds(req, 'login');
-  if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
-  const code = String(Math.floor(1000 + Math.random() * 9000));
-  otpStore.set(p, { code, expires: Date.now() + 5 * 60 * 1000 });
-  tgSend(c.tg, `🔑 Код для входа в приложение: ${code}\nДействует 5 минут. Никому не сообщайте!`);
-  res.json({ ok: true });
+
+  const ipWait = lockedSeconds(req, 'otp-send');
+  if (ipWait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${ipWait} сек.` });
+
+  const now = Date.now();
+  const sendKey = 'login-otp-send:' + p;
+  const sendState = otpStore.get(sendKey);
+  if (sendState && now - sendState.lastSent < 60000) {
+    return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
+  }
+  if (sendState && now < sendState.windowEnds && sendState.sent >= 5) {
+    return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
+  }
+
+  const code = String(crypto.randomInt(1000, 10000));
+  let via = c.tg ? 'telegram' : 'sms';
+  let delivery = c.tg
+    ? await tgSend(c.tg, `🔑 Код для входа в приложение: ${code}\nДействует 5 минут. Никому не сообщайте!`)
+    : await sendSms(p, `Код для входа в приложение: ${code}. Действует 5 минут.`);
+
+  if (!delivery?.ok && c.tg) {
+    via = 'sms';
+    delivery = await sendSms(p, `Код для входа в приложение: ${code}. Действует 5 минут.`);
+  }
+  if (!delivery?.ok) {
+    return res.status(503).json({ error: 'Не удалось отправить код. Попробуйте позже.' });
+  }
+
+  otpStore.set(p, { code, expires: now + 5 * 60 * 1000 });
+  otpStore.set(sendKey, {
+    sent: (sendState && now < sendState.windowEnds ? sendState.sent : 0) + 1,
+    lastSent: now,
+    windowEnds: sendState && now < sendState.windowEnds ? sendState.windowEnds : now + 24 * 60 * 60 * 1000
+  });
+  registerFail(req, 'otp-send');
+  res.json({ ok: true, via });
 });
 
 authRouter.post('/api/auth/activate', userGuard, validate(ActivateCodeSchema), (req, res) => {
