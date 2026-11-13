@@ -70,7 +70,7 @@ This is an audit queue, not a declaration that each item is defective.
 - PR #133: native pizza variant radio selection and related regression work.
 - PR #148: static CSS audit cleanup, merged 2026-11-05. Not a visual redesign PR.
 
-The list above does not imply that current production screenshots have been visually approved.
+The historical completed-work list above does not imply that every current production screen is approved; the separate first-viewport guest menu subset is now archived and reviewed in `docs/audits/visual-ux-scorecard.md`.
 
 ## Known separate concerns
 
