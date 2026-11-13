@@ -56,6 +56,7 @@ for (const viewport of viewports) {
         card: rect(cardEl),
         input: rect(input),
         overflowY: getComputedStyle(cardEl).overflowY,
+        boxSizing: getComputedStyle(cardEl).boxSizing,
         contentWidth: cardEl.clientWidth,
         contentScrollWidth: cardEl.scrollWidth,
       };
@@ -68,6 +69,7 @@ for (const viewport of viewports) {
     expect(layout.card.bottom).toBeLessThanOrEqual(layout.viewport.height + 1);
     expect(layout.input.height).toBeGreaterThanOrEqual(44);
     expect(layout.overflowY).toBe('auto');
+    expect(layout.boxSizing).toBe('border-box');
     expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentWidth + 1);
 
     const submit = card.locator('#regBtn');
