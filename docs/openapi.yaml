@@ -196,37 +196,44 @@ paths:
               schema:
                 type: object
                 properties:
-                  ok:    { type: boolean }
-                  tgUrl: { type: string }
+                  ok:        { type: boolean }
+                  tgUrl:     { type: string }
+                  pollToken: { type: string, description: "Случайный секрет этой попытки; передавать только в POST /api/auth/check-reg" }
         '400': { description: Неверный номер }
         '409': { description: Номер уже зарегистрирован }
         '429': { description: Слишком частые запросы }
 
   /api/auth/check-reg:
-    get:
+    post:
       tags: [Auth]
-      summary: Проверка статуса регистрации через Telegram
-      parameters:
-        - in: query
-          name: phone
-          required: true
-          schema: { type: string }
+      summary: Проверка конкретной попытки Telegram-регистрации
+      description: Использует случайный pollToken, выданный тому же браузеру при запросе Telegram-ссылки. По номеру телефона токен или статус получить нельзя.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pollToken]
+              properties:
+                pollToken: { type: string, pattern: '^[a-f0-9]{64}$' }
       responses:
         '200':
-          description: OK
+          description: Подтверждение ещё ожидается либо профиль готов; при успехе возвращаются token и customer
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   confirmed: { type: boolean }
-                  token:     { type: string }
-                  customer:  { $ref: '#/components/schemas/Customer' }
+                  token: { type: string }
+                  customer: { $ref: '#/components/schemas/Customer' }
+        '400': { description: Неверный pollToken }
 
   /api/auth/login:
     post:
       tags: [Auth]
-      summary: Вход по телефону и PIN либо одноразовому Telegram OTP
+      summary: Вход по телефону и PIN либо одноразовому коду из Telegram/SMS
       requestBody:
         required: true
         content:
@@ -237,7 +244,7 @@ paths:
               properties:
                 phone: { type: string }
                 pin: { type: string, pattern: '^\\d{4}$' }
-                otp: { type: string, description: Одноразовый код, отправленный в привязанный Telegram }
+                otp: { type: string, description: Одноразовый код, отправленный в Telegram или SMS }
       responses:
         '200': { description: Возвращает token, customer и возможный needPin }
         '400': { description: Некорректный PIN или PIN отсутствует }
@@ -249,23 +256,23 @@ paths:
   /api/auth/setup-pin:
     post:
       tags: [Auth]
-      summary: Первичная установка PIN для существующего профиля
-      description: Публичный маршрут; устанавливает PIN только если у профиля он ещё не задан.
+      summary: Первичная установка PIN в подтверждённой сессии
+      description: Требует BearerAuth, полученный после проверки PIN/OTP. Номер телефона не является доказательством владения аккаунтом.
+      security: [{ BearerAuth: [] }]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [phone, pin]
+              required: [pin]
               properties:
-                phone: { type: string }
                 pin: { type: string, pattern: '^\\d{4}$' }
       responses:
-        '200': { description: Возвращает token и customer }
+        '200': { description: Возвращает обновлённый customer; токен не выдаётся повторно }
         '400': { description: Некорректный PIN }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: PIN уже задан }
-        '404': { description: Профиль не найден }
 
   /api/auth/activate-guest:
     post:
@@ -879,18 +886,27 @@ paths:
   /api/auth/request-otp:
     post:
       tags: [Auth]
-      summary: Запросить OTP в привязанный Telegram
-      description: Публичный маршрут; номер должен принадлежать профилю с привязанным Telegram.
+      summary: Запросить одноразовый код для входа
+      description: Отправляет код в привязанный Telegram, а если Telegram отсутствует или недоступен — на телефон по SMS. Есть лимит на отправку.
       requestBody:
         required: true
         content:
           application/json:
             schema: { type: object, required: [phone], properties: { phone: { type: string } } }
       responses:
-        '200': { description: 'Операция выполнена успешно (ok: true)' }
-        '400': { description: Telegram не привязан }
+        '200':
+          description: Код принят каналом доставки
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  via: { type: string, enum: [telegram, sms] }
+        '400': { description: Некорректный телефон }
         '404': { description: Профиль не найден }
         '429': { description: Слишком частый запрос }
+        '503': { description: Ни один канал доставки не принял код }
 
   /api/auth/set-pin:
     post:
