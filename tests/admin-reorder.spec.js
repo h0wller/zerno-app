@@ -12,7 +12,7 @@ test.describe('Admin Reorder Suite (F3.70)', () => {
     const digits = '9' + String(Date.now()).slice(-9);
     const reg = await page.request.post('/api/auth/register', { data: { name: 'F370 Admin', phone: '+7' + digits, pin: '1234', consent: 1 } });
     const { token } = await reg.json();
-    const act = await page.request.post('/api/auth/activate', { data: { code: process.env.ADMIN_CODE || '3364' }, headers: { Authorization: 'Bearer ' + token } });
+    const act = await page.request.post('/api/auth/activate', { data: { code: process.env.ADMIN_CODE || '7391846205739184' }, headers: { Authorization: 'Bearer ' + token } });
     expect(act.ok()).toBeTruthy();
     await page.addInitScript((t) => {
       localStorage.setItem('zt_user', t); window.USER_TOKEN = t;
