@@ -99,3 +99,10 @@ Changes to tap-target geometry must update this register and the matching Playwr
 - Cart and checkout: **25 passed**; Responsive UI: **139 passed, 4 skipped**; Mobile Chrome: **102 passed, 4 skipped**.
 - The `.ac-add-btn` edge-hit assertions remain in `tests/cart-checkout-clarity.spec.js`: four side midpoints at 320×740 and 390×844, before and after the in-cart state change. The production screenshot artifact is not used as a substitute for these interaction tests.
 - This verification does not clear the PR's broader diff review blocker.
+
+
+## Latest verification — 2026-11-13
+
+- [x] Current documentation head `cf9077a54583135fcd686b91282f9e4c7e1b1b86`: [CI #3079](https://github.com/h0wller/zerno-app/actions/runs/43434830992), **15/15 jobs passed**.
+- [x] .ac-add-btn recommendation action remains documented as a 44×44 px target; tests/cart-checkout-clarity.spec.js verifies four side-midpoint hits at 320×740 and 390×844 before and after the in-cart state change.
+- [x] Profile, delivery filter and recommendation-target checks are part of the successful CI matrix. Production guest screenshot archive is separate visual evidence and does not substitute for hit-target tests.
