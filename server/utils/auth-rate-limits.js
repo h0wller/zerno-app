@@ -5,30 +5,39 @@ const FAILURE_WINDOW_MS = 15 * 60 * 1000;
 const LOCK_BASE_MS = 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const getRateLimit = db.prepare(
-  'SELECT fails, streak, locked_until, updated_at FROM auth_rate_limits WHERE key=?'
-);
-const upsertRateLimit = db.prepare(`
-  INSERT INTO auth_rate_limits(key, fails, streak, locked_until, updated_at)
-  VALUES(?, ?, ?, ?, ?)
-  ON CONFLICT(key) DO UPDATE SET
-    fails=excluded.fails,
-    streak=excluded.streak,
-    locked_until=excluded.locked_until,
-    updated_at=excluded.updated_at
-`);
-const deleteRateLimit = db.prepare('DELETE FROM auth_rate_limits WHERE key=?');
-const getOtpSendLimit = db.prepare(
-  'SELECT sent, last_sent, window_ends FROM auth_otp_send_limits WHERE flow=? AND phone_hash=?'
-);
-const upsertOtpSendLimit = db.prepare(`
-  INSERT INTO auth_otp_send_limits(flow, phone_hash, sent, last_sent, window_ends)
-  VALUES(?, ?, ?, ?, ?)
-  ON CONFLICT(flow, phone_hash) DO UPDATE SET
-    sent=excluded.sent,
-    last_sent=excluded.last_sent,
-    window_ends=excluded.window_ends
-`);
+let statements;
+
+function getStatements() {
+  if (!statements) {
+    statements = {
+      getRateLimit: db.prepare(
+        'SELECT fails, streak, locked_until, updated_at FROM auth_rate_limits WHERE key=?'
+      ),
+      upsertRateLimit: db.prepare(`
+        INSERT INTO auth_rate_limits(key, fails, streak, locked_until, updated_at)
+        VALUES(?, ?, ?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET
+          fails=excluded.fails,
+          streak=excluded.streak,
+          locked_until=excluded.locked_until,
+          updated_at=excluded.updated_at
+      `),
+      deleteRateLimit: db.prepare('DELETE FROM auth_rate_limits WHERE key=?'),
+      getOtpSendLimit: db.prepare(
+        'SELECT sent, last_sent, window_ends FROM auth_otp_send_limits WHERE flow=? AND phone_hash=?'
+      ),
+      upsertOtpSendLimit: db.prepare(`
+        INSERT INTO auth_otp_send_limits(flow, phone_hash, sent, last_sent, window_ends)
+        VALUES(?, ?, ?, ?, ?)
+        ON CONFLICT(flow, phone_hash) DO UPDATE SET
+          sent=excluded.sent,
+          last_sent=excluded.last_sent,
+          window_ends=excluded.window_ends
+      `)
+    };
+  }
+  return statements;
+}
 
 function digest(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex');
@@ -53,7 +62,7 @@ export function lockedSeconds(req, tag = 'staff', subject = '') {
   const now = Date.now();
   let remaining = 0;
   for (const key of rateLimitKeys(req, tag, subject)) {
-    const row = getRateLimit.get(key);
+    const row = getStatements().getRateLimit.get(key);
     if (row?.locked_until > now) {
       remaining = Math.max(remaining, Math.ceil((row.locked_until - now) / 1000));
     }
@@ -71,7 +80,7 @@ export function registerFail(req, tag = 'staff', subject = '') {
   const keys = rateLimitKeys(req, tag, subject);
   const update = db.transaction(() => {
     for (const key of keys) {
-      const previous = getRateLimit.get(key);
+      const previous = getStatements().getRateLimit.get(key);
       if (previous?.locked_until > now) continue;
 
       const withinWindow = previous && now - previous.updated_at <= FAILURE_WINDOW_MS;
@@ -86,7 +95,7 @@ export function registerFail(req, tag = 'staff', subject = '') {
         fails = 0;
       }
 
-      upsertRateLimit.run(key, fails, streak, lockedUntil, now);
+      getStatements().upsertRateLimit.run(key, fails, streak, lockedUntil, now);
     }
   });
   update();
@@ -96,14 +105,14 @@ export function registerFail(req, tag = 'staff', subject = '') {
 export function clearLock(req, tag = 'staff', subject = '') {
   const keys = rateLimitKeys(req, tag, subject);
   const clear = db.transaction(() => {
-    for (const key of keys) deleteRateLimit.run(key);
+    for (const key of keys) getStatements().deleteRateLimit.run(key);
   });
   clear();
 }
 
 /** Returns the persisted OTP-send state for a flow/phone pair. */
 export function getOtpSendState(flow, phone) {
-  const row = getOtpSendLimit.get(String(flow), phoneHash(phone));
+  const row = getStatements().getOtpSendLimit.get(String(flow), phoneHash(phone));
   if (!row) return null;
   return {
     sent: row.sent,
@@ -119,6 +128,6 @@ export function recordOtpSend(flow, phone, now = Date.now()) {
   const windowEnds = current && now < current.windowEnds
     ? current.windowEnds
     : now + DAY_MS;
-  upsertOtpSendLimit.run(String(flow), phoneHash(phone), sent, now, windowEnds);
+  getStatements().upsertOtpSendLimit.run(String(flow), phoneHash(phone), sent, now, windowEnds);
   return { sent, lastSent: now, windowEnds };
 }
