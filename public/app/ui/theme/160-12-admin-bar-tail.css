@@ -1583,19 +1583,63 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
 
 
 
-/* Delivery chips keep their 40px visible face and extend only the vertical hit area. */
+/* Delivery chips use a 44px event box with the original 40px visible pill. */
 @media (max-width: 820px) {
   html body #deliveryView #deliverySubFilter .subchip {
     position: relative;
+    isolation: isolate;
+    box-sizing: border-box;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    margin-top: -2px;
+    margin-bottom: -2px;
+    padding: 0 14px;
+    border: 2px solid transparent;
+    background: transparent;
+    box-shadow: none;
   }
 
-  html body #deliveryView #deliverySubFilter .subchip::after {
+  html body #deliveryView #deliverySubFilter .subchip::before {
     content: "";
     position: absolute;
-    inset: -2px 0;
+    z-index: -1;
+    inset: 2px -2px;
+    border: 1.5px solid var(--fr-tan, var(--line, #C99E6E));
     border-radius: inherit;
-    z-index: 1;
+    background: var(--fr-paper, var(--card, #F6EEE1));
+    pointer-events: none;
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip:hover {
     background: transparent;
-    pointer-events: auto;
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip:hover::before {
+    background: var(--fr-rice, #EFE6D8);
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip.on {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    color: #fff;
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip.on::before,
+  html body #deliveryView #deliverySubFilter .subchip.on:hover::before {
+    border-color: var(--fr-choc, #3A2A1C);
+    background: var(--flame, #C03B2A);
+    box-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip:focus-visible {
+    outline: none;
+  }
+
+  html body #deliveryView #deliverySubFilter .subchip:focus-visible::before {
+    outline: 2px solid var(--flame, #C03B2A);
+    outline-offset: 2px;
   }
 }
