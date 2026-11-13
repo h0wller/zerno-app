@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 
+const staffCode = (value, fallback) => String(value || '').length >= 16 ? value : fallback;
+const TEST_ADMIN_CODE = staffCode(process.env.ADMIN_CODE, 'ci-admin-role-code-2026');
+const TEST_CASHIER_CODE = staffCode(process.env.CASHIER_CODE, 'ci-cashier-role-code-2026');
+const TEST_DISPATCH_CODE = staffCode(process.env.DISPATCH_CODE, 'ci-dispatch-role-code-2026');
+
 test.describe('Staff Stops & Guards Suite (F3.68)', () => {
   test('cashier cannot perform full menu put update', async ({ request }) => {
     const res = await request.put('/api/menu/pz-marg', {
@@ -19,9 +24,9 @@ test.describe('Staff Codes Suite (F3.60)', () => {
     expect(reg.ok()).toBeTruthy();
     const { token } = await reg.json();
     const auth = { Authorization: 'Bearer ' + token };
-    const up = await request.post('/api/auth/activate', { data: { code: process.env.ADMIN_CODE }, headers: auth });
+    const up = await request.post('/api/auth/activate', { data: { code: TEST_ADMIN_CODE }, headers: auth });
     expect(up.status()).toBe(200);
-    const down = await request.post('/api/auth/activate', { data: { code: process.env.CASHIER_CODE }, headers: auth });
+    const down = await request.post('/api/auth/activate', { data: { code: TEST_CASHIER_CODE }, headers: auth });
     expect(down.status()).toBe(409);
     const diag = await request.get('/api/tg/diag', { headers: auth });
     expect(diag.status()).toBe(200);
@@ -45,7 +50,7 @@ async function staffToken(request, code, name) {
 
 test.describe('Stop-list Guards (F3.68)', () => {
   test('cashier toggles coffee stop-list but cannot edit/create', async ({ request }) => {
-    const auth = { Authorization: 'Bearer ' + await staffToken(request, process.env.CASHIER_CODE, 'F368 Cashier') };
+    const auth = { Authorization: 'Bearer ' + await staffToken(request, TEST_CASHIER_CODE, 'F368 Cashier') };
     // Cashier may change availability of coffee items, but cannot update other menu fields.
     expect((await request.put('/api/menu/cap', { data: { on: 0 }, headers: auth })).status()).toBe(200);
     expect((await request.put('/api/menu/cap', { data: { on: 1 }, headers: auth })).status()).toBe(200);
@@ -53,7 +58,7 @@ test.describe('Stop-list Guards (F3.68)', () => {
     expect((await request.post('/api/menu', { data: { name: 'X' }, headers: auth })).status()).toBe(403);
   });
   test('dispatch cannot delete menu items', async ({ request }) => {
-    const tok = await staffToken(request, process.env.DISPATCH_CODE, 'F368 Dispatch');
+    const tok = await staffToken(request, TEST_DISPATCH_CODE, 'F368 Dispatch');
     expect((await request.delete('/api/menu/pz-marg', { headers: { Authorization: 'Bearer ' + tok } })).status()).toBe(403);
   });
 });
@@ -61,13 +66,13 @@ test.describe('Stop-list Guards (F3.68)', () => {
 
 test('cashier and dispatcher can toggle only their own menu section', async ({ request }) => {
   const cashierAuth = {
-    Authorization: 'Bearer ' + await staffToken(request, process.env.CASHIER_CODE, 'Section Cashier')
+    Authorization: 'Bearer ' + await staffToken(request, TEST_CASHIER_CODE, 'Section Cashier')
   };
   const dispatchAuth = {
-    Authorization: 'Bearer ' + await staffToken(request, process.env.DISPATCH_CODE, 'Section Dispatch')
+    Authorization: 'Bearer ' + await staffToken(request, TEST_DISPATCH_CODE, 'Section Dispatch')
   };
   const adminAuth = {
-    Authorization: 'Bearer ' + await staffToken(request, process.env.ADMIN_CODE, 'Section Admin')
+    Authorization: 'Bearer ' + await staffToken(request, TEST_ADMIN_CODE, 'Section Admin')
   };
 
   const menuResponse = await request.get('/api/menu/all', { headers: adminAuth });
