@@ -159,7 +159,7 @@ test('anonymous conversation requires a high-entropy capability and does not per
 
   const unknownKey = 'anon-' + randomBytes(32).toString('hex') + ':d';
   const unknownThreadRead = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(unknownKey));
-  assert.equal(unknownThreadRead.status, 401, 'Unauthenticated callers must not be able to distinguish existing and unknown thread keys');
+  assert.equal(unknownThreadRead.status, 401, 'Unauthenticated callers must not distinguish existing and unknown thread keys');
 
   const wrongCapability = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(key), {
     chatToken: randomBytes(32).toString('hex')
@@ -186,6 +186,55 @@ test('anonymous conversation requires a high-entropy capability and does not per
     chatToken
   });
   assert.equal(legacyWeakKey.status, 400);
+});
+
+test('chat request validation rejects oversized messages and invalid poll cursors', async () => {
+  const owner = await register('Chat Validation', 33);
+  const key = owner.customer.id + ':c';
+
+  const oversized = await api('POST', '/api/chat/send', {
+    token: owner.token,
+    body: { key, text: 'x'.repeat(2001), human: 0, ctx: 'coffee' }
+  });
+  assert.equal(oversized.status, 400);
+
+  const created = await api('POST', '/api/chat/send', {
+    token: owner.token,
+    body: { key, text: 'Valid thread seed', human: 0, ctx: 'coffee' }
+  });
+  assert.equal(created.status, 200, JSON.stringify(created.json));
+
+  const invalidCursor = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(key) + '&after=-1', {
+    token: owner.token
+  });
+  assert.equal(invalidCursor.status, 400);
+});
+
+test('deleting a customer removes both brand-specific chat histories', async () => {
+  const owner = await register('Chat Delete', 34);
+  const coffeeKey = owner.customer.id + ':c';
+  const deliveryKey = owner.customer.id + ':d';
+
+  for (const [key, ctx] of [[coffeeKey, 'coffee'], [deliveryKey, 'delivery']]) {
+    const sent = await api('POST', '/api/chat/send', {
+      token: owner.token,
+      body: { key, text: 'Conversation to erase', human: 0, ctx }
+    });
+    assert.equal(sent.status, 200, JSON.stringify(sent.json));
+  }
+
+  const deleted = await api('DELETE', '/api/me', { token: owner.token });
+  assert.equal(deleted.status, 200, JSON.stringify(deleted.json));
+
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const messages = db.prepare('SELECT COUNT(*) AS count FROM chat WHERE key IN (?, ?)').get(coffeeKey, deliveryKey);
+    const metadata = db.prepare('SELECT COUNT(*) AS count FROM chat_meta WHERE key IN (?, ?)').get(coffeeKey, deliveryKey);
+    assert.equal(messages.count, 0);
+    assert.equal(metadata.count, 0);
+  } finally {
+    db.close();
+  }
 });
 
 test('anonymous capability claims are exclusive under concurrent first use', async () => {
