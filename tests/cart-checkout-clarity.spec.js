@@ -208,6 +208,9 @@ test('cart keeps the current selected price and explains every amount without gu
   const addButton = recommendations.locator('.ac-add-btn').first();
   await expect(addButton).toHaveAccessibleName('Добавить Лимонад к заказу в корзину');
   await expect(addButton.locator('.ac-add-label')).toHaveCount(0);
+  const addIcon = addButton.locator('.ac-add-icon svg');
+  await expect(addIcon).toBeVisible();
+  await expect(addIcon.locator('path')).toHaveAttribute('stroke', 'currentColor');
   await expect(addButton).not.toHaveClass(/in-cart/);
   await expect(addButton).toHaveCSS('background-color', 'rgb(239, 230, 216)');
   await expect(addButton).toHaveCSS('border-color', 'rgb(201, 158, 110)');
