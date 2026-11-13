@@ -23,9 +23,9 @@ async function _ensureServerUp() {
       ...process.env,
       PORT: '3000',
       DB_PATH: process.env.DB_PATH || './zerno.db',
-      ADMIN_CODE: process.env.ADMIN_CODE || '3364',
-      CASHIER_CODE: process.env.CASHIER_CODE || '2468',
-      DISPATCH_CODE: process.env.DISPATCH_CODE || '5719',
+      ADMIN_CODE: process.env.ADMIN_CODE || '7391846205739184',
+      CASHIER_CODE: process.env.CASHIER_CODE || '5820471963582047',
+      DISPATCH_CODE: process.env.DISPATCH_CODE || '9137562048913756',
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
