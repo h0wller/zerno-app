@@ -1569,7 +1569,7 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
   }
 
   html body header.topbar #profileTopBtn:focus-visible::before {
-    outline: 2px solid var(--profile-focus-ring, currentColor);
+    outline: 2px solid var(--staff-focus-ring, currentColor);
     outline-offset: 2px;
   }
 }
