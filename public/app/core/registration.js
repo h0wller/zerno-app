@@ -19,6 +19,60 @@
     if (typeof window.markAuthResetOnIdle === 'function') window.markAuthResetOnIdle();
   }
 
+  function reserveTelegramRegistrationTarget() {
+    var webApp = window.Telegram && window.Telegram.WebApp;
+    var hasTelegramInitData = !!(
+      window.__isTgMiniApp ||
+      window.__tgInitData ||
+      (webApp && typeof webApp.initData === 'string' && webApp.initData.length > 0)
+    );
+    if (hasTelegramInitData && webApp && typeof webApp.openTelegramLink === 'function') {
+      return { openTelegramLink: webApp.openTelegramLink.bind(webApp), popup: null };
+    }
+
+    // index.html installs a no-op Telegram.WebApp stub in ordinary browsers.
+    // Only use openTelegramLink when real Mini App initData is present.
+    // Reserve a separate tab synchronously during the click gesture. Navigating
+    // the current PWA tab would terminate the background registration poll.
+    var popup = null;
+    try {
+      popup = window.open('about:blank', '_blank');
+      if (popup) popup.opener = null;
+    } catch (_) {}
+    return { openTelegramLink: null, popup: popup };
+  }
+
+  function openTelegramRegistrationTarget(target, url) {
+    if (target && target.openTelegramLink) {
+      target.openTelegramLink(url);
+      return true;
+    }
+    if (target && target.popup && !target.popup.closed) {
+      try {
+        target.popup.location.href = url;
+        return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  function closeTelegramRegistrationTarget(target) {
+    if (target && target.popup && !target.popup.closed) {
+      try { target.popup.close(); } catch (_) {}
+    }
+  }
+
+  function appendTelegramFallbackLink(row, url) {
+    if (!row || !url) return;
+    var link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Открыть Telegram';
+    row.appendChild(document.createTextNode(' '));
+    row.appendChild(link);
+  }
+
   // Сброс Telegram-подтверждения при закрытии auth-модалки.
   window.resetRegistrationState = function () {
     window.__regTgPollGeneration = (window.__regTgPollGeneration || 0) + 1;
@@ -195,6 +249,50 @@
       };
     }
 
+    function syncSmsRegistrationUi() {
+      var smsButton = document.getElementById('regOtpBtn');
+      var smsRow = document.getElementById('regOtpRow');
+      var enabled = window.SMS_AUTH_ENABLED === true;
+      if (smsButton) smsButton.hidden = !enabled;
+      if (!enabled && smsRow) smsRow.hidden = true;
+    }
+
+    window.addEventListener('app:config-loaded', syncSmsRegistrationUi);
+    syncSmsRegistrationUi();
+
+    var regOtpBtn = document.getElementById('regOtpBtn');
+    if (regOtpBtn) {
+      regOtpBtn.onclick = async function () {
+        if (regOtpBtn.disabled || window.SMS_AUTH_ENABLED !== true) return;
+        var phone = (document.getElementById('regPhone') || {}).value || '';
+        var name = ((document.getElementById('regName') || {}).value || '').trim();
+        if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
+
+        beginAuthOperation();
+        regOtpBtn.disabled = true;
+        regOtpBtn.setAttribute('aria-busy', 'true');
+        regOtpBtn.textContent = 'Отправляем SMS…';
+        try {
+          await api('/auth/request-reg-otp', {
+            method: 'POST',
+            body: { phone: phone, name: name, via: 'sms' }
+          });
+          var row = document.getElementById('regOtpRow');
+          var input = document.getElementById('regOtp');
+          if (row) row.hidden = false;
+          if (input) input.focus();
+          toast('Код отправлен по SMS', '🔑');
+        } catch (error) {
+          toast(error.message || 'Не удалось отправить SMS', '⚠️');
+        } finally {
+          regOtpBtn.disabled = false;
+          regOtpBtn.removeAttribute('aria-busy');
+          regOtpBtn.textContent = 'Отправить код по SMS повторно';
+          endAuthOperation();
+        }
+      };
+    }
+
     var regTgBtn = document.getElementById('regTgBtn');
     if (regTgBtn) {
       regTgBtn.onclick = async function () {
@@ -224,6 +322,7 @@
 
         var buttonLabel = regTgBtn.querySelector('span');
         var requestAccepted = false;
+        var telegramTarget = reserveTelegramRegistrationTarget();
         beginAuthOperation();
         regTgBtn.disabled = true;
         regTgBtn.setAttribute('aria-busy', 'true');
@@ -235,11 +334,16 @@
             body: { phone: ph, name: nm, via: 'tg' }
           });
           if (pollGeneration !== window.__regTgPollGeneration) return;
+          var pollToken = String(r && r.pollToken || '');
+          if (!/^[a-f0-9]{64}$/.test(pollToken)) {
+            throw new Error('Не удалось создать ключ подтверждения. Повторите попытку.');
+          }
           requestAccepted = true;
 
+          var telegramOpened = false;
           if (r && r.tgUrl) {
-            toast('Открываем Telegram...', '🤖');
-            setTimeout(function() { window.location.href = r.tgUrl; }, 250);
+            telegramOpened = openTelegramRegistrationTarget(telegramTarget, r.tgUrl);
+            if (telegramOpened) toast('Открываем Telegram в отдельной вкладке…', '🤖');
           }
           toast('Подтвердите номер в Telegram', '🤖');
 
@@ -247,6 +351,10 @@
             statusRow.hidden = false;
             statusRow.className = 'auth-tg-pending';
             statusRow.textContent = 'Ожидаем подтверждение в Telegram…';
+            if (r && r.tgUrl && !telegramOpened) {
+              appendTelegramFallbackLink(statusRow, r.tgUrl);
+              toast('Откройте Telegram по ссылке в окне подтверждения', '🤖');
+            }
           }
 
           // Поллинг остаётся активным после закрытия модалки и завершает вход в фоне.
@@ -280,7 +388,10 @@
             }
             pollBusy = true;
             try {
-              var c = await api('/auth/check-reg?phone=' + encodeURIComponent(ph));
+              var c = await api('/auth/check-reg', {
+                method: 'POST',
+                body: { pollToken: pollToken }
+              });
               if (pollGeneration !== window.__regTgPollGeneration) return;
               if (c && c.confirmed) {
                 if (c.token && c.customer) {
@@ -308,6 +419,7 @@
           window.__registrationTgPoll = pollTimer;
           window.__registrationTgPollFinish = finishPoll;
         } catch (e) {
+          if (!requestAccepted) closeTelegramRegistrationTarget(telegramTarget);
           if (pollGeneration === window.__regTgPollGeneration) toast(e.message, '⚠️');
         } finally {
           if (pollGeneration === window.__regTgPollGeneration) {

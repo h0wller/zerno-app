@@ -243,7 +243,10 @@ export function createTgRouter({ appKb }) {
         tgSend(chatId, 'Ссылка для подтверждения устарела ⏳\nНажми «Подтвердить в Telegram» в приложении ещё раз.');
         return;
       }
-      otpStore.set('regchat:' + chatId, { token, phone: st.phone, name: st.name || '', expires: Date.now() + 10 * 60 * 1000 });
+      otpStore.set('regchat:' + chatId, {
+        token, pollToken: st.pollToken || null, phone: st.phone,
+        name: st.name || '', expires: Date.now() + 10 * 60 * 1000
+      });
       await tgSend(chatId, `Подтверждаю номер ${fmtPhone(st.phone)} — нажмите кнопку ниже 👇`, appKb());
       return;
     }
@@ -335,14 +338,22 @@ export function createTgRouter({ appKb }) {
           const sessionToken = finalCust ? issueToken(finalCust.id) : null;
           const custObj = finalCust ? cust(finalCust) : null;
 
+          // Phone-keyed state is used only by signed Telegram initData linking.
+          // Browser registration receives the session through its per-attempt pollToken.
           otpStore.set('reg:' + contactPhone, {
             code: null,
             confirmed: true,
-            token: sessionToken,
-            customer: custObj,
             tgChat: chatId,
             expires: Date.now() + 10 * 60 * 1000
           });
+          if (pend.pollToken && sessionToken && custObj) {
+            otpStore.set('regpoll:' + pend.pollToken, {
+              confirmed: true,
+              token: sessionToken,
+              customer: custObj,
+              expires: Date.now() + 10 * 60 * 1000
+            });
+          }
           otpStore.delete('regchat:' + chatId);
           otpStore.delete('regtg:' + pend.token);
 

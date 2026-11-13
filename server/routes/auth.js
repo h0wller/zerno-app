@@ -7,7 +7,8 @@ import { createCustomer } from '../domain/customers.js';
 import { linkTelegram } from '../domain/telegram-link.js';
 import { grantWelcome, redeem } from '../domain/loyalty.js';
 import { fmtPhone, ph10 } from '../utils/phone.js';
-import { lockedSeconds, registerFail, hashPin, safeEqual, pinLocks, lockKey } from '../utils/security.js';
+import { hashPin, safeEqual } from '../utils/security.js';
+import { lockedSeconds, registerFail, clearLock, getOtpSendState, recordOtpSend } from '../utils/auth-rate-limits.js';
 import { otpStore, isOtpLive, consumeOtp } from '../utils/otp.js';
 import { nowISO } from '../utils/id-time.js';
 import { sendSms } from '../services/sms.js';
@@ -16,7 +17,7 @@ import { sendPush } from '../services/push.js';
 import { userGuard, pendingGuard, adminGuard } from '../middleware/auth.js';
 import { grantBonus, getBonusConfig, setBonusConfig, QR_SOURCE } from '../domain/bonuses.js';
 import { validate, RegisterSchema, LoginSchema, SetupPinSchema, ActivateCodeSchema } from '../middleware/validate.js';
-import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE } from '../config.js';
+import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, SMS_AUTH_ENABLED } from '../config.js';
 
 export const authRouter = express.Router();
 
@@ -91,9 +92,12 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
     const botToken = crypto.randomBytes(6).toString('hex');
     otpStore.set('regtg:' + botToken, { phone: p, name: String(req.body.name || '').trim(), expires: Date.now() + 10 * 60 * 1000 });
     otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
+    registerFail(req, 'reg-otp-send', p);
     return res.json({ needBotConfirm: true, tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${botToken}` });
   }
   otpStore.delete('reg:' + p);
+  clearLock(req, 'reg', p);
+  clearLock(req, 'reg-otp-send', p);
 
   // 3. Ищем существующего клиента по номеру телефона
   c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
@@ -135,47 +139,69 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   return res.json({ token: issueToken(r.customer.id), customer: cust(newCust), isNew: true });
 });
 
-authRouter.post('/api/auth/request-reg-otp', (req, res) => {
+authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   const p = fmtPhone(req.body.phone || '');
-  const via = req.body.via === 'tg' ? 'tg' : 'sms';
+  const via = req.body.via === 'sms' ? 'sms' : 'tg';
   if (ph10(p).length < 10) return res.status(400).json({ error: 'Введите номер полностью' });
+  if (via === 'sms' && !SMS_AUTH_ENABLED) {
+    return res.status(503).json({ error: 'Подтверждение по SMS пока отключено. Используйте Telegram или получите код активации у кассира.' });
+  }
   if (db.prepare('SELECT 1 FROM customers WHERE phone=?').get(p)) {
     return res.status(409).json({ error: 'Номер уже зарегистрирован — войдите' });
   }
-  const wait = lockedSeconds(req, 'reg');
+  const wait = Math.max(lockedSeconds(req, 'reg', p), lockedSeconds(req, 'reg-otp-send', p));
   if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
 
-  if (via === 'tg') {
-    const token = crypto.randomBytes(6).toString('hex');
-    const reqName = String(req.body.name || '').trim();
-    otpStore.set('regtg:' + token, { phone: p, name: reqName, expires: Date.now() + 10 * 60 * 1000 });
-    otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
-    return res.json({ ok: true, tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}` });
-  }
-
-  const st = otpStore.get('reg:' + p);
-  if (st && Date.now() - (st.lastSent || 0) < 60000) {
+  const now = Date.now();
+  const sendState = getOtpSendState('register', p);
+  if (sendState && now - sendState.lastSent < 60000) {
     return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
   }
-  if (st && st.sent >= 5) {
+  if (sendState && now < sendState.windowEnds && sendState.sent >= 5) {
     return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
   }
 
-  const code = String(Math.floor(1000 + Math.random() * 9000));
-  otpStore.set('reg:' + p, { code, expires: Date.now() + 5 * 60 * 1000, sent: (st ? st.sent : 0) + 1, lastSent: Date.now() });
-  sendSms(p, `…и кофе 🌊 Код регистрации: ${code}`);
-  res.json({ ok: true });
+  if (via === 'tg') {
+    const token = crypto.randomBytes(16).toString('hex');
+    const pollToken = crypto.randomBytes(32).toString('hex');
+    const reqName = String(req.body.name || '').trim();
+    otpStore.set('regtg:' + token, {
+      phone: p, name: reqName, pollToken, expires: Date.now() + 10 * 60 * 1000
+    });
+    otpStore.set('reg:' + p, { code: null, confirmed: false, expires: now + 10 * 60 * 1000 });
+    recordOtpSend('register', p, now);
+    registerFail(req, 'reg-otp-send', p);
+    return res.json({
+      ok: true,
+      pollToken,
+      tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}`
+    });
+  }
+
+  const code = String(crypto.randomInt(1000, 10000));
+  const delivery = await sendSms(p, `…и кофе 🌊 Код регистрации: ${code}`);
+  if (!delivery?.ok) {
+    return res.status(503).json({ error: 'Не удалось отправить SMS. Попробуйте позже.' });
+  }
+  otpStore.set('reg:' + p, { code, via: 'sms', expires: now + 5 * 60 * 1000 });
+  recordOtpSend('register', p, now);
+  registerFail(req, 'reg-otp-send', p);
+  res.json({ ok: true, via: 'sms' });
 });
 
 // [tg-web-seamless-auth-v1]
-authRouter.get('/api/auth/check-reg', (req, res) => {
-  const p = fmtPhone(req.query.phone || '');
-  const st = otpStore.get('reg:' + p);
-  const isOk = isOtpLive(st) && !!st.confirmed;
-  if (isOk && st.token && st.customer) {
-    return res.json({ confirmed: true, token: st.token, customer: st.customer });
+authRouter.post('/api/auth/check-reg', (req, res) => {
+  const pollToken = String(req.body?.pollToken || '');
+  if (!/^[a-f0-9]{64}$/.test(pollToken)) {
+    return res.status(400).json({ error: 'Неверный ключ подтверждения регистрации' });
   }
-  res.json({ confirmed: isOk });
+  const st = otpStore.get('regpoll:' + pollToken);
+  if (!isOtpLive(st)) {
+    otpStore.delete('regpoll:' + pollToken);
+    return res.json({ confirmed: false });
+  }
+  otpStore.delete('regpoll:' + pollToken);
+  return res.json({ confirmed: true, token: st.token, customer: st.customer });
 });
 
 authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
@@ -186,11 +212,12 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   const p = fmtPhone(req.body.phone || '');
   const code = String(req.body.code || '').trim();
   const st = otpStore.get('reg:' + p);
-  const okTg = isOtpLive(st) && !!st.confirmed;
-  const okSms = isOtpLive(st) && !!st.code && !!code && st.code === code;
-  if (okSms) pinLocks.delete(lockKey(req, 'reg'));
-  const tgChat = okTg ? (st.tgChat || null) : null;
-  if (okTg || okSms) consumeOtp('reg:' + p, entry => okTg ? !!entry.confirmed : !!entry.code && !!code && entry.code === code);
+  const okSms = SMS_AUTH_ENABLED && isOtpLive(st) && !!st.code && !!code && st.code === code;
+  if (okSms) {
+    clearLock(req, 'reg', p);
+    clearLock(req, 'reg-otp-send', p);
+    consumeOtp('reg:' + p, entry => !!entry.code && entry.code === code);
+  }
 
   const ex = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (ex) {
@@ -198,16 +225,6 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     if (!ex.verified && age > 7 * 86400000) {
       db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
       db.prepare('DELETE FROM customers WHERE id=?').run(ex.id);
-    } else if (okTg && !ex.verified) {
-      const linked = linkTelegram(db, ex.id, String(tgChat));
-      if (!linked.ok) return res.status(409).json({ error: 'Этот Telegram уже привязан к другому профилю.' });
-      db.prepare('DELETE FROM tokens WHERE ref=?').run(ex.id);
-      db.prepare('UPDATE customers SET name=?, verified=1 WHERE id=?')
-        .run(String(req.body.name || '').trim() || ex.name, ex.id);
-      addHist(ex.id, 'Профиль подтверждён через Telegram', 'Система');
-      grantWelcome(ex.id, 'Telegram');
-      grantBonus(ex.id, ex.src === QR_SOURCE ? 'qr' : 'signup');
-      return res.json({ token: issueToken(ex.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(ex.id)) });
     } else {
       return res.status(409).json({ error: 'exists' });
     }
@@ -218,18 +235,9 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   // Откуда пришёл гость (сейчас только QR с постера). Бонус начисляется позже, при подтверждении.
   if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
 
-  if (okTg || okSms) {
-    if (tgChat) {
-      const linked = linkTelegram(db, r.customer.id, String(tgChat));
-      if (!linked.ok) {
-        db.prepare('DELETE FROM tokens WHERE ref=?').run(r.customer.id);
-        db.prepare('DELETE FROM customers WHERE id=?').run(r.customer.id);
-        return res.status(409).json({ error: 'Этот Telegram уже привязан к другому профилю.' });
-      }
-    }
+  if (okSms) {
     db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
-    if (okTg) grantWelcome(r.customer.id, 'Telegram');
-    addHist(r.customer.id, okTg ? 'Telegram привязан при регистрации' : 'Подтверждение по SMS', 'Система');
+    addHist(r.customer.id, 'Подтверждение по SMS', 'Система');
     db.prepare('UPDATE customers SET consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id);
   } else {
     let ac;
@@ -244,17 +252,16 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     logEv(r.customer.name, 'регистрация без TG, ждёт код кассира');
   }
 
-  if (okTg || okSms) grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
+  if (okSms) grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
   res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
 });
-
 authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
   const code = String(req.body.code || '').trim();
   if (!/^\d{4}$/.test(code)) return res.status(400).json({ error: 'Код — 4 цифры' });
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id);
   if (c.verified) return res.status(409).json({ error: 'Профиль уже активирован' });
   if (!c.actcode || c.actcode !== code) {
-    registerFail(req, 'act');
+    registerFail(req, 'act', req.user.id);
     return res.status(403).json({ error: 'Неверный код активации' });
   }
   db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
@@ -271,51 +278,51 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
   const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (!c) return res.status(404).json({ error: 'Профиль не найден — создайте новый' });
 
-  const wait = lockedSeconds(req, 'login');
+  const wait = lockedSeconds(req, 'login', p);
   if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
 
   if (otp) {
     const st = otpStore.get(p);
     if (!isOtpLive(st)) return res.status(403).json({ error: 'Код просрочен — запросите новый' });
+    if (st.via === 'sms' && !SMS_AUTH_ENABLED) {
+      return res.status(503).json({ error: 'Вход по SMS отключён. Запросите новый код в Telegram.' });
+    }
     if (st.code !== otp) {
-      registerFail(req, 'login');
+      registerFail(req, 'login', p);
       return res.status(403).json({ error: 'Неверный код' });
     }
     consumeOtp(p, entry => entry.code === otp);
-    pinLocks.delete(lockKey(req, 'login'));
-    addHist(c.id, 'Вход по коду из Telegram', 'Приложение');
+    clearLock(req, 'login', p);
+    clearLock(req, 'otp-send', p);
+    addHist(c.id, `Вход по коду из ${st.via === 'sms' ? 'SMS' : 'Telegram'}`, 'Приложение');
     return res.json({ token: issueToken(c.id), customer: cust(c), needPin: !c.pin });
   }
 
   if (!c.pin) {
-    if (!pin) return res.status(409).json({ error: 'PIN ещё не задан — придумайте его', setup: true });
-    if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
-    db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), c.id);
-    addHist(c.id, 'Задан PIN (первый вход)', 'Приложение');
-    return res.json({ token: issueToken(c.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
+    return res.status(409).json({
+      error: 'PIN не задан. Сначала подтвердите номер кодом из Telegram или SMS.',
+      setup: true
+    });
   }
 
   if (!pin) return res.status(400).json({ error: 'Введите PIN' });
   if (hashPin(pin) !== c.pin) {
-    registerFail(req, 'login');
+    registerFail(req, 'login', p);
     return res.status(403).json({ error: 'Неверный PIN' });
   }
 
-  pinLocks.delete(lockKey(req, 'login'));
+  clearLock(req, 'login', p);
   addHist(c.id, 'Вход по PIN', 'Приложение');
   res.json({ token: issueToken(c.id), customer: cust(c) });
 });
 
-authRouter.post('/api/auth/setup-pin', validate(SetupPinSchema), (req, res) => {
-  const p = fmtPhone(req.body.phone || '');
+authRouter.post('/api/auth/setup-pin', userGuard, validate(SetupPinSchema), (req, res) => {
   const pin = String(req.body.pin || '').trim();
   if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
-  const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
-  if (!c) return res.status(404).json({ error: 'Профиль не найден' });
-  if (c.pin) return res.status(403).json({ error: 'PIN уже задан — входите с ним' });
-  db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), c.id);
-  addHist(c.id, 'Задан PIN (первый вход)', 'Приложение');
-  res.json({ token: issueToken(c.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(c.id)) });
+  if (req.user.pin) return res.status(403).json({ error: 'PIN уже задан — используйте смену PIN' });
+  db.prepare('UPDATE customers SET pin=? WHERE id=?').run(hashPin(pin), req.user.id);
+  addHist(req.user.id, 'Задан PIN (первый вход)', 'Приложение');
+  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
 
 authRouter.post('/api/auth/set-pin', userGuard, (req, res) => {
@@ -326,17 +333,45 @@ authRouter.post('/api/auth/set-pin', userGuard, (req, res) => {
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
 });
 
-authRouter.post('/api/auth/request-otp', (req, res) => {
+authRouter.post('/api/auth/request-otp', async (req, res) => {
   const p = fmtPhone(req.body.phone || '');
+  if (ph10(p).length !== 10) return res.status(400).json({ error: 'Введите номер полностью' });
   const c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (!c) return res.status(404).json({ error: 'Профиль не найден' });
-  if (!c.tg) return res.status(400).json({ error: 'Telegram непривязан — войдите по PIN' });
-  const wait = lockedSeconds(req, 'login');
-  if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
-  const code = String(Math.floor(1000 + Math.random() * 9000));
-  otpStore.set(p, { code, expires: Date.now() + 5 * 60 * 1000 });
-  tgSend(c.tg, `🔑 Код для входа в приложение: ${code}\nДействует 5 минут. Никому не сообщайте!`);
-  res.json({ ok: true });
+
+  const ipWait = Math.max(lockedSeconds(req, 'otp-send', p), lockedSeconds(req, 'login', p));
+  if (ipWait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${ipWait} сек.` });
+
+  const now = Date.now();
+  const sendState = getOtpSendState('login', p);
+  if (sendState && now - sendState.lastSent < 60000) {
+    return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
+  }
+  if (sendState && now < sendState.windowEnds && sendState.sent >= 5) {
+    return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
+  }
+
+  const code = String(crypto.randomInt(1000, 10000));
+  let via = 'telegram';
+  let delivery = c.tg
+    ? await tgSend(c.tg, `🔑 Код для входа в приложение: ${code}\nДействует 5 минут. Никому не сообщайте!`)
+    : { ok: false, reason: 'telegram_not_linked' };
+
+  if (!delivery?.ok && SMS_AUTH_ENABLED) {
+    via = 'sms';
+    delivery = await sendSms(p, `Код для входа в приложение: ${code}. Действует 5 минут.`);
+  }
+  if (!delivery?.ok) {
+    const error = SMS_AUTH_ENABLED
+      ? 'Не удалось отправить код. Проверьте Telegram или попробуйте позже.'
+      : 'Вход по коду сейчас доступен через Telegram. Привяжите Telegram к профилю или войдите по PIN.';
+    return res.status(503).json({ error });
+  }
+
+  otpStore.set(p, { code, via, expires: now + 5 * 60 * 1000 });
+  recordOtpSend('login', p, now);
+  registerFail(req, 'otp-send', p);
+  res.json({ ok: true, via });
 });
 
 authRouter.post('/api/auth/activate', userGuard, validate(ActivateCodeSchema), (req, res) => {
@@ -344,9 +379,9 @@ authRouter.post('/api/auth/activate', userGuard, validate(ActivateCodeSchema), (
   if (wait > 0) return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
   const code = String(req.body.code || '').trim();
   let role = null;
-  if (safeEqual(code, ADMIN_CODE)) role = 'admin';
-  else if (safeEqual(code, CASHIER_CODE)) role = 'cashier';
-  else if (safeEqual(code, DISPATCH_CODE)) role = 'dispatch';
+  if (ADMIN_CODE.length >= 16 && code.length >= 16 && safeEqual(code, ADMIN_CODE)) role = 'admin';
+  else if (CASHIER_CODE.length >= 16 && code.length >= 16 && safeEqual(code, CASHIER_CODE)) role = 'cashier';
+  else if (DISPATCH_CODE.length >= 16 && code.length >= 16 && safeEqual(code, DISPATCH_CODE)) role = 'dispatch';
   if (!role) {
     registerFail(req);
     return res.status(403).json({ error: 'Неверный код доступа' });
@@ -355,7 +390,7 @@ authRouter.post('/api/auth/activate', userGuard, validate(ActivateCodeSchema), (
   if (req.user.role === 'admin' && role !== 'admin') {
     return res.status(409).json({ error: 'Администратор не может понизить себя кодом активации' });
   }
-  pinLocks.delete(lockKey(req));
+  clearLock(req);
   db.prepare('UPDATE customers SET role=? WHERE id=?').run(role, req.user.id);
   addHist(req.user.id, role === 'admin' ? '🔓 Выдан доступ администратора' : '🧾 Выдан доступ кассира', 'Система');
   logEv(req.user.name, role === 'admin' ? 'активирован админ' : 'активирован кассир');

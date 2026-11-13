@@ -348,7 +348,7 @@
           }
         } catch (e) {
           if (e.code === 409) {
-            window.openSetPin('claim', phone);
+            toast(e.message || 'Сначала подтвердите номер кодом из Telegram или SMS.', '🔑');
           } else {
             toast(e.message, '⚠️');
           }
@@ -372,27 +372,28 @@
         otpBtn.setAttribute('aria-busy', 'true');
         otpBtn.textContent = 'Отправляем код…';
         try {
-          await api('/auth/request-otp', { method: 'POST', body: { phone: phone } });
+          var otpResult = await api('/auth/request-otp', { method: 'POST', body: { phone: phone } });
+          var otpChannel = otpResult.via === 'sms' ? 'SMS' : 'Telegram';
           loginMode = 'otp';
           var pr = document.getElementById('logPinRow'); if (pr) pr.style.display = 'none';
           var ow = document.getElementById('logOtpWrap'); if (ow) ow.style.display = '';
           var bk = document.getElementById('otpBackRow'); if (bk) bk.style.display = '';
           var lb = document.getElementById('logBtn'); if (lb) lb.textContent = 'Войти по коду';
           var hint = document.getElementById('logOtpHint');
-          if (hint) { hint.textContent = 'Код отправлен в Telegram. Введите его в поле выше.'; hint.hidden = false; }
+          if (hint) { hint.textContent = 'Код отправлен в ' + otpChannel + '. Введите его в поле выше.'; hint.hidden = false; }
           var otpInput = document.getElementById('logOtp');
           var authModal = document.getElementById('authModal');
           if (otpInput) {
             otpInput.value = '';
             if (authModal && authModal.classList.contains('show')) otpInput.focus();
           }
-          toast('Код отправлен в Telegram', '🔑');
+          toast('Код отправлен в ' + otpChannel, '🔑');
         } catch (e) {
           toast(e.message, '⚠️');
         } finally {
           otpBtn.disabled = false;
           otpBtn.removeAttribute('aria-busy');
-          otpBtn.textContent = '🔑 Не помню PIN — код в Telegram';
+          otpBtn.textContent = '🔑 Не помню PIN — получить код';
           endAuthOperation();
         }
       };

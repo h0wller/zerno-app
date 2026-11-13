@@ -68,7 +68,8 @@ staffRouter.post('/api/staff/customers', staffGuard, (req, res) => {
   addHist(r.customer.id, 'Профиль создан', 'Кассир');
   logEv(r.customer.name, 'Создан профиль');
   grantBonus(r.customer.id, r.customer.src === QR_SOURCE ? 'qr' : 'signup');
-  res.json(r);
+  const updated = db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id);
+  res.json({ customer: cust(updated) });
 });
 
 staffRouter.post('/api/staff/stamp', staffGuard, (req, res) => {

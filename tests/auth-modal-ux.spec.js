@@ -496,13 +496,22 @@ test('Telegram registration request continues after closing the auth modal', asy
   let releaseRequest;
   const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
   const responseGate = new Promise((resolve) => { releaseRequest = resolve; });
+  await page.context().route('https://t.me/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'text/html',
+    body: '<!doctype html><title>Telegram test stub</title>'
+  }));
   await page.route('**/api/auth/request-reg-otp', async (route) => {
     markRequestStarted();
     await responseGate;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ ok: true }),
+      body: JSON.stringify({
+        ok: true,
+        pollToken: 'a'.repeat(64),
+        tgUrl: 'https://t.me/test_bot?start=reg_test'
+      }),
     });
   });
 
@@ -746,4 +755,76 @@ test('registration completes and creates a session when the modal is closed mid-
   await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('Auth Modal Test');
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   expect(requestCount).toBe(1);
+});
+
+
+test('registration hides the paid SMS control while SMS auth is disabled', async ({ page }, testInfo) => {
+  // iPhone 16e reference viewport. smsAuthEnabled=false is returned by the public config bootstrap.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route('**/api/config', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ tgUsername: 'test_bot', smsAuthEnabled: false }),
+  }));
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  const configLoaded = page.waitForResponse('**/api/config');
+  await page.goto('/?brand=coffee');
+  await configLoaded;
+  await page.waitForFunction(() => window.SMS_AUTH_ENABLED === false);
+  await page.evaluate(() => window.openAuth(false));
+
+  const smsButton = page.locator('#regOtpBtn');
+  const smsCodeRow = page.locator('#regOtpRow');
+  await expect(smsButton).toBeHidden();
+  await expect(smsCodeRow).toBeHidden();
+  expect(await smsButton.boundingBox()).toBeNull();
+  expect(await smsCodeRow.boundingBox()).toBeNull();
+
+  await testInfo.attach('registration-sms-disabled-390x844.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+
+  await page.locator('#toLogin').click();
+  await expect(page.locator('#otpBtn')).toContainText('получить код');
+  await expect(page.locator('#otpBtn')).not.toContainText('SMS');
+  await expect(page.locator('#logOtp')).toHaveAttribute('aria-describedby', 'logOtpHint');
+});
+
+test('registration exposes the SMS control only after the server opts in', async ({ page }, testInfo) => {
+  await page.route('**/api/config', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ tgUsername: 'test_bot', smsAuthEnabled: true }),
+  }));
+  // Capture the UI state only: do not call the SMS provider from this test.
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true, via: 'sms' }),
+  }));
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => window.SMS_AUTH_ENABLED === true);
+  await page.evaluate(() => window.openAuth(false));
+  await expect(page.locator('#regOtpBtn')).toBeVisible();
+  await expect(page.locator('#regOtpRow')).toBeHidden();
+
+  await page.locator('#regName').fill('Тест');
+  await page.locator('#regPhone').fill('+7 900 000-00-01');
+  await page.locator('#regOtpBtn').click();
+  await expect(page.locator('#regOtpRow')).toBeVisible();
+  await expect(page.locator('#regOtp')).toBeVisible();
+  await expect(page.locator('#regOtpBtn')).toContainText('Отправить код по SMS повторно');
+
+  await testInfo.attach('registration-sms-opt-in.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
 });
