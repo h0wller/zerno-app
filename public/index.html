@@ -2599,7 +2599,7 @@ html[data-brand="delivery"] #deliveryView .subfilter-bar .subchip {
   padding: 0 14px;
   border: 2px solid var(--fr-tan, #D9C7AD);
   background: var(--fr-paper, #F6EEE1);
-  color: var(--fr-choc, var(--ink, #101418));
+  color: var(--fr-choc, #3A2A1C);
   border-radius: 999px;
   font: 600 13px/1 "Golos Text", system-ui, sans-serif;
   white-space: nowrap;
@@ -3516,7 +3516,7 @@ html body #tickerTrack .tickerGroup > span {
 
 
 
-/* Delivery chips use a 44px event box with the original 40px visible pill. */
+/* Reserve the delivery filter's 44px hit cell and its 40px first-paint face. */
 @media (max-width: 820px) {
   html body #deliveryView #deliverySubFilter .subchip {
     position: relative;
@@ -3537,20 +3537,11 @@ html body #tickerTrack .tickerGroup > span {
     content: "";
     position: absolute;
     z-index: -1;
-    inset: 2px -2px;
-    border: 1.5px solid var(--fr-tan, var(--line, #C99E6E));
+    inset: 2px 0;
+    border: 1.5px solid var(--fr-tan, #D9C7AD);
     border-radius: inherit;
-    background: var(--fr-paper, var(--card, #F6EEE1));
+    background: var(--fr-paper, #F6EEE1);
     pointer-events: none;
-    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
-  }
-
-  html body #deliveryView #deliverySubFilter .subchip:hover {
-    background: transparent;
-  }
-
-  html body #deliveryView #deliverySubFilter .subchip:hover::before {
-    background: var(--fr-rice, #EFE6D8);
   }
 
   html body #deliveryView #deliverySubFilter .subchip.on {
@@ -3560,20 +3551,10 @@ html body #tickerTrack .tickerGroup > span {
     color: #fff;
   }
 
-  html body #deliveryView #deliverySubFilter .subchip.on::before,
-  html body #deliveryView #deliverySubFilter .subchip.on:hover::before {
-    border-color: var(--fr-choc, var(--ink, #101418));
+  html body #deliveryView #deliverySubFilter .subchip.on::before {
+    border-color: var(--fr-choc, #3A2A1C);
     background: var(--flame, #C03B2A);
-    box-shadow: 2px 2px 0 var(--fr-choc, var(--ink, #101418));
-  }
-
-  html body #deliveryView #deliverySubFilter .subchip:focus-visible {
-    outline: none;
-  }
-
-  html body #deliveryView #deliverySubFilter .subchip:focus-visible::before {
-    outline: 2px solid var(--flame, #C03B2A);
-    outline-offset: 2px;
+    box-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
   }
 }
 
