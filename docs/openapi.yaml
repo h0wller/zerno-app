@@ -135,7 +135,7 @@ paths:
                 type: object
                 properties:
                   tgUsername: { type: string }
-                  smsAuthEnabled: { type: boolean, description: 'False unless the paid SMS option was explicitly approved and enabled with SMS_AUTH_ENABLED=true' }
+                  smsAuthEnabled: { type: boolean, description: 'false, пока платная SMS-функция отдельно не одобрена и не включена через SMS_AUTH_ENABLED=true' }
 
   /api/clientlog:
     post:
@@ -184,7 +184,7 @@ paths:
   /api/auth/request-reg-otp:
     post:
       tags: [Auth]
-      summary: Запрос подтверждения регистрации (Telegram; SMS is opt-in)
+      summary: Подтверждение регистрации через Telegram (SMS — отдельная опция)
       requestBody:
         required: true
         content:
@@ -195,7 +195,7 @@ paths:
               properties:
                 phone: { type: string }
                 name:  { type: string }
-                via:   { type: string, enum: [tg, sms], default: tg, description: 'sms is available only when SMS_AUTH_ENABLED=true' }
+                via:   { type: string, enum: [tg, sms], default: tg, description: 'SMS доступна только при SMS_AUTH_ENABLED=true' }
       responses:
         '200':
           description: OK
@@ -241,7 +241,7 @@ paths:
   /api/auth/login:
     post:
       tags: [Auth]
-      summary: Вход по телефону и PIN либо OTP из Telegram (SMS only when explicitly enabled)
+      summary: Вход по телефону и PIN либо OTP из Telegram (SMS — только при явном включении)
       requestBody:
         required: true
         content:
