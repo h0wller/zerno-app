@@ -55,6 +55,14 @@ test('archive both production guest menus at four viewport sizes without changin
           await Promise.all(visibleImages.map((image) => image.decode().catch(() => {})));
         });
 
+        // profile.js intentionally keeps both profile branches hidden until its
+        // /api/me readiness gate resolves; wait for the actual guest branch, not a timer.
+        await page.waitForFunction(() => {
+          const guestPrompt = document.getElementById('profileNoUser');
+          const profileBox = document.getElementById('profileBox');
+          return !!guestPrompt && !guestPrompt.hidden && !!profileBox && profileBox.hidden;
+        }, null, { timeout: 15_000 });
+
         const runtime = await page.evaluate((selectors) => {
           const root = document.documentElement;
           const isVisible = (element) => {
