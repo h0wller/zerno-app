@@ -712,7 +712,7 @@ test.describe('Спринт 5 — Сетка Админа/Заказов, умн
 test('1. Чат Ника без ложного вызова сотрудника на «выпьем?», нет нулевых цен в кофейном меню, сетка Админа и Заказов', async ({ page }) => {  // ── РЕАЛЬНАЯ авторизация админа через API ──
   // Фейковый 'admin-token' → /api/menu/all отвечал 401 → api() звал setUser(null, null)
   // → me=null → следующий setMode('orders') резался гардом в views.js и #ordersView оставался hidden.
-  const adminCode = process.env.ADMIN_CODE || '7391846205739184';
+  const adminCode = (String(process.env.ADMIN_CODE || '').length >= 16 ? process.env.ADMIN_CODE : 'ci-admin-role-code-2026');
   const digits = '9' + String(Date.now()).slice(-9);
   const reg = await page.request.post('/api/auth/register', {
     data: { name: 'Regress Admin', phone: '+7' + digits, pin: '1234', consent: 1 },
