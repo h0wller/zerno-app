@@ -95,6 +95,8 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
     return res.json({ needBotConfirm: true, tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${botToken}` });
   }
   otpStore.delete('reg:' + p);
+  pinLocks.delete(lockKey(req, 'reg'));
+  pinLocks.delete(lockKey(req, 'reg-otp-send'));
 
   // 3. Ищем существующего клиента по номеру телефона
   c = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
@@ -146,6 +148,16 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   const wait = Math.max(lockedSeconds(req, 'reg'), lockedSeconds(req, 'reg-otp-send'));
   if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
 
+  const now = Date.now();
+  const sendKey = 'reg-otp-send:' + p;
+  const sendState = otpStore.get(sendKey);
+  if (sendState && now - sendState.lastSent < 60000) {
+    return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
+  }
+  if (sendState && now < sendState.windowEnds && sendState.sent >= 5) {
+    return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
+  }
+
   if (via === 'tg') {
     const token = crypto.randomBytes(16).toString('hex');
     const pollToken = crypto.randomBytes(32).toString('hex');
@@ -153,7 +165,13 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
     otpStore.set('regtg:' + token, {
       phone: p, name: reqName, pollToken, expires: Date.now() + 10 * 60 * 1000
     });
-    otpStore.set('reg:' + p, { code: null, confirmed: false, expires: Date.now() + 10 * 60 * 1000 });
+    otpStore.set('reg:' + p, { code: null, confirmed: false, expires: now + 10 * 60 * 1000 });
+    otpStore.set(sendKey, {
+      sent: (sendState && now < sendState.windowEnds ? sendState.sent : 0) + 1,
+      lastSent: now,
+      windowEnds: sendState && now < sendState.windowEnds ? sendState.windowEnds : now + 24 * 60 * 60 * 1000
+    });
+    registerFail(req, 'reg-otp-send');
     return res.json({
       ok: true,
       pollToken,
@@ -161,26 +179,16 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
     });
   }
 
-  const st = otpStore.get('reg:' + p);
-  const now = Date.now();
-  if (st && now - (st.lastSent || 0) < 60000) {
-    return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
-  }
-  if (st && st.sent >= 5 && now < (st.windowEnds || 0)) {
-    return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
-  }
-
   const code = String(crypto.randomInt(1000, 10000));
   const delivery = await sendSms(p, `…и кофе 🌊 Код регистрации: ${code}`);
   if (!delivery?.ok) {
     return res.status(503).json({ error: 'Не удалось отправить SMS. Попробуйте позже.' });
   }
-  otpStore.set('reg:' + p, {
-    code,
-    expires: now + 5 * 60 * 1000,
-    sent: (st && now < (st.windowEnds || 0) ? st.sent : 0) + 1,
+  otpStore.set('reg:' + p, { code, expires: now + 5 * 60 * 1000 });
+  otpStore.set(sendKey, {
+    sent: (sendState && now < sendState.windowEnds ? sendState.sent : 0) + 1,
     lastSent: now,
-    windowEnds: st && now < (st.windowEnds || 0) ? st.windowEnds : now + 24 * 60 * 60 * 1000
+    windowEnds: sendState && now < sendState.windowEnds ? sendState.windowEnds : now + 24 * 60 * 60 * 1000
   });
   registerFail(req, 'reg-otp-send');
   res.json({ ok: true, via: 'sms' });
@@ -197,6 +205,7 @@ authRouter.post('/api/auth/check-reg', (req, res) => {
     otpStore.delete('regpoll:' + pollToken);
     return res.json({ confirmed: false });
   }
+  otpStore.delete('regpoll:' + pollToken);
   return res.json({ confirmed: true, token: st.token, customer: st.customer });
 });
 
