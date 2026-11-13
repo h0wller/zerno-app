@@ -33,11 +33,12 @@ for (const brand of BRANDS) {
         }, {});
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
+        // A circular target is 44px in diameter; test its four cardinal edges, not square corners outside the circle.
         const points = [
-          [cx - 21, cy - 21],
-          [cx + 21, cy - 21],
-          [cx - 21, cy + 21],
-          [cx + 21, cy + 21],
+          [cx - 21, cy],
+          [cx + 21, cy],
+          [cx, cy - 21],
+          [cx, cy + 21],
         ];
         const describe = (node) => {
           if (!node) return null;
@@ -78,7 +79,7 @@ for (const brand of BRANDS) {
       expect(metrics.pseudoContent).not.toBe('none');
       expect(metrics.faceWidth, JSON.stringify(metrics)).toBe(32);
       expect(metrics.faceHeight, JSON.stringify(metrics)).toBe(32);
-      expect(metrics.hitPoints.every(Boolean), JSON.stringify(metrics)).toBe(true);
+      expect(metrics.hitPoints.every(point => point.receives), JSON.stringify(metrics)).toBe(true);
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
 
       if (viewport.width === 390) {
