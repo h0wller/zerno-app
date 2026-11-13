@@ -716,50 +716,57 @@ paths:
   /api/chat/dialog:
     get:
       tags: [Chat]
-      summary: Получить сообщения диалога сотрудником
+      summary: Получить сообщения существующего треда сотрудником
+      description: Кассир имеет доступ только к coffee-тредам, диспетчер — только к delivery-тредам; администратор может открыть оба контекста.
       security: [{ BearerAuth: [] }]
       parameters:
         - in: query
           name: key
           required: true
-          schema: { type: string, maxLength: 64 }
+          schema: { type: string, maxLength: 80 }
       responses:
         '200': { description: Массив msgs }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Тред не найден }
 
   /api/chat/reply:
     post:
       tags: [Chat]
       summary: Ответить гостю сотрудником
+      description: Доступ ограничен существующим тредом и контекстом роли сотрудника.
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [key, text], properties: { key: { type: string, maxLength: 64 }, text: { type: string, maxLength: 2000 } } }
+            schema: { type: object, required: [key, text], properties: { key: { type: string, maxLength: 80 }, text: { type: string, maxLength: 2000 } } }
       responses:
         '200': { description: 'Операция выполнена успешно (ok: true)' }
         '400': { description: Некорректное сообщение }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Тред не найден }
 
   /api/chat/close:
     post:
       tags: [Chat]
       summary: Закрыть диалог сотрудником
+      description: Доступ ограничен существующим тредом и контекстом роли сотрудника.
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [key], properties: { key: { type: string, maxLength: 64 } } }
+            schema: { type: object, required: [key], properties: { key: { type: string, maxLength: 80 } } }
       responses:
         '200': { description: 'Операция выполнена успешно (ok: true)' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Тред не найден }
 
   /api/chat/open:
     post:
       tags: [Chat]
-      summary: Переоткрытие закрытого диалога (персонал)
+      summary: Переоткрыть существующий тред (персонал)
+      description: Доступ ограничен существующим тредом и контекстом роли сотрудника.
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
@@ -769,10 +776,12 @@ paths:
               type: object
               required: [key]
               properties:
-                key: { type: string }
+                key: { type: string, maxLength: 80 }
       responses:
         '200': { description: OK }
+        '400': { description: Некорректный ключ чата }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Тред не найден }
 
   /api/vapid:
     get:
