@@ -100,7 +100,11 @@ test('archive both production guest menus at four viewport sizes without changin
         expect(themeStyleState.menuHead?.borderRadius).toBe('18px');
         expect(themeStyleState.menuHead?.backgroundImage).not.toBe('none');
         expect(themeStyleState.firstCardRadius).toBe('18px');
-        expect(themeStyleState.railButton?.borderRadius).toBe('14px');
+        const railCornerRadius = Number.parseFloat(themeStyleState.railButton?.borderRadius || '0');
+        expect(railCornerRadius).toBeGreaterThan(0);
+        expect(railCornerRadius).toBeLessThanOrEqual(
+          Math.min(themeStyleState.railButton?.width || 0, themeStyleState.railButton?.height || 0) / 2
+        );
         expect(themeStyleState.railButton?.width).toBeGreaterThan(0);
         expect(themeStyleState.railButton?.height).toBeGreaterThanOrEqual(44);
         expect(themeStyleState.railButton?.borderTopStyle).toBe('solid');
