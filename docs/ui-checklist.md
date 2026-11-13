@@ -2,7 +2,7 @@
 
 **Статус:** текущий рабочий чек-лист, не исторический pre-refactor baseline.
 **Проверяемая база:** ветка `pizza`; production URL: `https://friday.andcoffee.online/`.
-**Последнее обновление:** 2026-11-05.
+**Последнее обновление:** 2026-11-13.
 
 Этот список описывает требуемое покрытие. Галочки ставятся только по реально выполненному browser test/manual review с указанием commit, viewport и состояния роли. Отсутствие отметки не означает, что функция сломана.
 
@@ -70,3 +70,19 @@
 4. Сформировать отдельные минимальные PR; не смешивать visual changes с backend/business logic.
 5. В каждом PR: targeted Playwright, all CI gates, screenshots before/after, responsive review.
 6. Обновлять этот документ вместе с изменением acceptance state.
+
+
+## 8. Production guest verification — 2026-11-13
+
+**Verified source:** production deployment [run #43383317619](https://github.com/h0wller/zerno-app/actions/runs/43383317619), deployed SHA `c005b1c6832a5b722c97c43dd7cd525f638c209b` (branch `pizza`). The deploy job log confirms `git reset --hard origin/pizza`, successful client build, service-worker bump and PM2 online status.
+
+- [x] Isolated unauthenticated guest sessions resolve `?brand=coffee` to `brand-coffee` / `data-brand=coffee`, and `?brand=delivery` to `brand-delivery` / `data-brand=delivery`.
+- [x] First visible cards resolve to Эспрессо (coffee) and Маргарита (delivery); no staff-only controls were visible in the isolated guest sessions.
+- [x] Runtime measurements at 320×740, 390×844, 768×1024 and 1440×900 for both brands found no horizontal overflow (`scrollWidth === clientWidth`).
+- [x] Runtime-computed typography and brand tokens are recorded in `docs/audits/visual-ux-scorecard.md`.
+- [x] Production revision is linked to the successful deployment SHA above; the live `STATIC_CACHE=v3553` was generated from `v646` by that build's `BUILD_NUM` bump.
+- [ ] Persistent archive and individual visual review of all eight production first-viewport PNGs. The two 390×844 brand captures were visually inspected previously but were not saved into the repository; the later browser automation could not set exact viewport sizes or export image files.
+- [ ] Cold-first-paint vs hydrated comparison on production.
+- [ ] Customer cart, checkout, profile, bonuses, order confirmation/tracking, and staff roles remain outside this guest-menu baseline.
+
+A browser automation attempt that reported a 1007×1007 actual viewport is classified as incomplete and is not used as evidence for the requested viewport matrix. Do not mark the screenshot protocol complete until the eight production PNGs are archived and inspected.
