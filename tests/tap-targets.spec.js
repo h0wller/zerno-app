@@ -166,9 +166,11 @@ for (const width of [320, 375, 390]) {
           faceHeight: rect.height - faceTop - faceBottom,
           faceTop,
           faceBottom,
+          bottomCenter: { x: cx, y: cy + 21 },
           targetWithinRail: rect.top >= railRect.top && rect.bottom <= railRect.bottom,
           railClientHeight: rail.clientHeight,
           railScrollHeight: rail.scrollHeight,
+          railCuePointerEvents: getComputedStyle(rail, '::after').pointerEvents,
           hitPoints: points.map(([x, y]) => {
             const target = document.elementFromPoint(x, y);
             return target === element || element.contains(target);
@@ -187,11 +189,21 @@ for (const width of [320, 375, 390]) {
       expect(metrics.faceZIndex).toBe('-1');
       expect(metrics.isolation).toBe('isolate');
       expect(metrics.targetWithinRail, JSON.stringify(metrics)).toBe(true);
+      expect(metrics.railCuePointerEvents).toBe('none');
       expect(metrics.railClientHeight).toBeGreaterThanOrEqual(44);
       expect(metrics.railScrollHeight).toBeLessThanOrEqual(metrics.railClientHeight);
       expect(metrics.hitPoints.every(Boolean), JSON.stringify(metrics)).toBe(true);
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
-      await chip.click({ trial: true, position: { x: metrics.width / 2, y: metrics.height - 1 } });
+      if (index === 0) {
+        await chip.evaluate((element) => {
+          element.dataset.tapTargetClick = 'pending';
+          element.addEventListener('click', () => {
+            element.dataset.tapTargetClick = 'received';
+          }, { once: true });
+        });
+        await page.mouse.click(metrics.bottomCenter.x, metrics.bottomCenter.y);
+        await expect(chip).toHaveAttribute('data-tap-target-click', 'received');
+      }
     }
 
     if (width === 390) {
