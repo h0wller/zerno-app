@@ -63,7 +63,7 @@
 }
 .ci-mod-del:focus-visible::before {
   outline: 2px solid var(--focus, #1A6DDF);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 /* Кнопка открытия/закрытия списка добавок под блюдом */
@@ -94,6 +94,11 @@
 }
 .ci-toggle-mods-btn:hover {
   text-decoration: underline;
+}
+.ci-toggle-mods-btn:focus-visible {
+  outline: 2px solid var(--focus, #1A6DDF);
+  outline-offset: -2px;
+  border-radius: 3px;
 }
 
 /* Лента чипсов добавок */
@@ -174,7 +179,7 @@
 }
 .ci-mod-chip:focus-visible::before {
   outline: 2px solid var(--focus, #1A6DDF);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 /* Карусель рекомендаций: компактная геометрия 240×54 px. */
@@ -272,7 +277,7 @@
 }
 .addon-tab-btn:focus-visible::before {
   outline: 2px solid var(--focus, #1A6DDF);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .ca-cards-scroll {
