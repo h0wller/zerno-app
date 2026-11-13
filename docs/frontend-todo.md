@@ -1,7 +1,7 @@
 # Frontend roadmap & UX audit — Zerno
 
 **Base branch:** `pizza`
-**Last documentation reconciliation:** 2026-11-07
+**Last documentation reconciliation:** 2026-11-13
 
 ## Current source-of-truth and status
 
@@ -21,12 +21,15 @@ This is an audit queue, not a declaration that each item is defective.
 
 ### A. Evidence collection and screenshot baseline
 - [x] Deterministic isolated guest sessions for coffee and delivery.
-- [x] Cold and hydrated first-viewport guest menu screenshots at 320×740, 390×844, 768×1024 and 1440×900; CI run 42185234269 (test server).
+- [x] Cold and hydrated first-viewport guest menu screenshots at 320×740, 390×844, 768×1024 and 1440×900; CI run 42185234269 (test server). These remain supporting evidence, not production acceptance.
 - [x] Supplemental full-page hydrated catalog captures; `content-visibility` is temporarily disabled only for these long screenshots and is flagged in JSON metadata. Do not use them for first-viewport scoring.
-- [ ] Production guest baseline, and customer cart/checkout/profile states; test-server screenshots are not production acceptance evidence.
-- [ ] Staff sessions: cashier, dispatcher, admin after guest baseline.
-- [ ] Verify ticker placement, header dimensions, logo rendering, menu/card hierarchy, text wrapping and controls against production screenshots.
-- [x] Attach screenshots to findings/PRs; record commit, role, brand and viewport.
+- [x] Production guest menu runtime inspection for both brands at 320×740, 390×844, 768×1024 and 1440×900: selected brand class/data-brand, visible first card, staff-only visibility and horizontal overflow were measured in isolated guest sessions. Runtime typography and brand tokens are recorded in `docs/audits/visual-ux-scorecard.md`.
+- [x] Production deployment identity verified from deploy run [#43383317619](https://github.com/h0wller/zerno-app/actions/runs/43383317619): `pizza` at `c005b1c6832a5b722c97c43dd7cd525f638c209b`; the server log confirms checkout, build and PM2 reload.
+- [ ] Archive and individually inspect all eight production guest PNGs. The two primary 390×844 screens were inspected in a previous browser session but are not committed as persistent files; the latest automation could not set viewport or export PNG.
+- [ ] Customer cart/checkout/profile/bonus states; production guest-menu inspection does not cover these.
+- [ ] Staff sessions: cashier, dispatcher, admin after customer-state baseline.
+- [ ] Verify ticker placement, header dimensions, logo rendering, menu/card hierarchy, text wrapping and controls against an archived production screenshot matrix.
+- [x] Attach screenshots to findings/PRs where persistent artifacts exist; record commit, role, brand and viewport.
 
 ### B. Header, ticker, search and rail
 - [ ] Header width/height and compactness.
