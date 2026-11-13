@@ -349,7 +349,7 @@ Production is now tied to an exact Git revision from the deployment record; the 
 
 Deployment identity is **verified** as `c005b1c6832a5b722c97c43dd7cd525f638c209b`. This does not imply PR #203 has been deployed or accepted.
 
-**Remaining production evidence:** eight first-viewport PNGs (two brands × four viewports) still need to be saved to persistent files and individually reviewed. The automation service available in this pass returned the wrong actual viewport (1007×1007) and could not export images; do not use those results to close the screenshot protocol. The two 390×844 screens were visually reviewed earlier, but their temporary capture images are not an archived artifact.
+**Production screenshot evidence:** the earlier browser automation failed to set the requested viewport and export PNGs. This limitation was superseded by the successful Playwright production archive in CI run #3064 below; the exact 1007×1007 attempt remains invalid evidence.
 
 
 
@@ -364,7 +364,7 @@ Deployment identity is **verified** as `c005b1c6832a5b722c97c43dd7cd525f638c209b
 - This artifact is explicitly a localhost Playwright test-server capture. Product photos are fixture/placeholder art and the test profile prompt is fixture content. It is valid for responsive structure review only, not for production visual scoring.
 - The production first-viewport screenshot archive remains open: the Firecrawl browser task could not set viewport/export PNG and the connected Firecrawl account reached its daily credit limit. The prior 390×844 production screenshots were visible in-session but were not retained as files.
 
-**Current merge blockers remain:** production PNG archive/manual inspection, customer cart/checkout/profile/bonus and staff-role visual states, plus independent review/reconciliation of the PR's broad 47-file diff. No merge or deployment is implied by this documentation update.
+**Current merge blockers remain:** customer cart/checkout/profile/bonus and staff-role visual states, plus independent review/reconciliation of the PR's broad 49-file diff. The first-viewport production screenshot archive is now complete in run #3064. No merge or deployment is implied by this documentation update.
 
 ## Production guest runtime follow-up — 2026-11-13
 
@@ -375,3 +375,31 @@ This follow-up supplements the historical unverified observations in section 6; 
 - **Responsive overflow:** at 320×740, 390×844, 768×1024 and 1440×900, the production DOM reported no horizontal overflow in either brand. The browser's 15px vertical scrollbar reduces `clientWidth` relative to `innerWidth`; compare `scrollWidth` to `clientWidth`, not to `innerWidth`.
 - **Still unverified:** ticker loop/duplicate semantics, native iOS Safari behavior, the exact dual-brand hidden DOM inventory, delivery-discount eligibility wording, and any customer/staff modal states. Keep those checklist items open until the relevant DOM or screenshots are inspected.
 - **Evidence limitation:** the two production 390×844 screenshots were visually checked in the earlier browser session but were not saved as permanent PNGs. The later screenshot-automation attempt could not set the requested viewport or export files; do not close the persistent production screenshot requirement using the CI artifact.
+
+
+## Production guest screenshot archive and visual review — 2026-11-13
+
+**Production revision:** `c005b1c6832a5b722c97c43dd7cd525f638c209b` (Timeweb deploy run [#43383317619](https://github.com/h0wller/zerno-app/actions/runs/43383317619)).  
+**Capture run:** [CI Quality Gates #3064](https://github.com/h0wller/zerno-app/actions/runs/43427135621), current PR head `d6a4688af26c60a691a2c41de52a5ddcce5784b1`.  
+**Dedicated job:** `E2E / Production guest screenshot archive`, passed (**1 test passed**).  
+**Archive:** [production-guest-baseline-43427135621.zip](https://github.com/h0wller/zerno-app/actions/runs/43427135621/artifacts/14037897354), artifact ID `14037897354`. It contains eight PNGs and `manifest.json`.
+
+The Playwright test uses fresh, isolated browser contexts, device scale factor 1, blocks service workers, waits for the correct `data-brand`, hydrated non-skeleton cards, `document.fonts.ready` and visible image decoding, then captures the first viewport. Its manifest records that only GET navigation and screenshot capture occurred; no sign-in, clicks, cart actions, orders, payments or data writes were performed.
+
+| Brand | 320×740 | 390×844 | 768×1024 | 1440×900 |
+|---|---|---|---|---|
+| Coffee | `production-coffee-guest-menu-320x740-c005b1c.png` | `production-coffee-guest-menu-390x844-c005b1c.png` | `production-coffee-guest-menu-768x1024-c005b1c.png` | `production-coffee-guest-menu-1440x900-c005b1c.png` |
+| Delivery | `production-delivery-guest-menu-320x740-c005b1c.png` | `production-delivery-guest-menu-390x844-c005b1c.png` | `production-delivery-guest-menu-768x1024-c005b1c.png` | `production-delivery-guest-menu-1440x900-c005b1c.png` |
+
+**Manifest cross-check:** all eight images report the requested exact viewport and `deviceScaleFactor=1`; the coffee route reports `data-brand=coffee` / `brand-coffee`, the delivery route reports `data-brand=delivery` / `brand-delivery`; first cards are Эспрессо and Маргарита respectively; staff-control visibility lists are empty; `scrollWidth === clientWidth` and horizontal overflow is false in every capture.
+
+**Visual review completed:** all eight PNGs were opened individually at native resolution. The expected brand headers, ticker, menu search, category rails and first catalog cards are present. Both storefronts keep their first-card title, description, options/prices (delivery) and first-viewport actions within the viewport layout; the catalog continues vertically as expected. No horizontal spill or obvious clipped card content was observed in the eight images.
+
+**Non-blocking observations for later targeted triage (not scored as defects):**
+- Coffee at 320px displays a shortened search placeholder because of the narrow input width; verify that the intended ellipsis/truncation is acceptable.
+- The desktop coffee capture has an empty outlined auxiliary panel to the right of the menu header; inspect the owning component/state before assigning severity.
+- Ticker separator glyphs appear as small square marks in the raster captures; verify the source character/font rendering before treating them as a defect.
+
+**Limits of this evidence:** the captures are post-hydration first-viewport menu states, not cold-first-paint snapshots. They do not cover cart, checkout, customer profile/bonuses, order tracking, staff roles, native iOS Safari or Telegram Mini App. Those rows remain pending.
+
+The earlier 1007×1007 browser automation run is superseded for the first-viewport archive by this exact-viewport Playwright capture; it remains explicitly classified as incomplete and is not used as evidence.
