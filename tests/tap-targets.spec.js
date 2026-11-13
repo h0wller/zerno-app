@@ -188,6 +188,9 @@ for (const width of [320, 390]) {
           pseudoContent: face.content,
           pseudoTop: Number.parseFloat(face.top),
           pseudoBottom: Number.parseFloat(face.bottom),
+          pseudoLeft: Number.parseFloat(face.left),
+          pseudoRight: Number.parseFloat(face.right),
+          pseudoWidth: rect.width - (Number.parseFloat(face.left) || 0) - (Number.parseFloat(face.right) || 0),
           pseudoPointerEvents: face.pointerEvents,
           expandedAreaWithinRail: rect.top >= barRect.top &&
             rect.bottom <= barRect.bottom,
@@ -215,6 +218,9 @@ for (const width of [320, 390]) {
       expect(metrics.pseudoContent, JSON.stringify(metrics)).not.toBe('none');
       expect(metrics.pseudoTop, JSON.stringify(metrics)).toBe(2);
       expect(metrics.pseudoBottom, JSON.stringify(metrics)).toBe(2);
+      expect(metrics.pseudoLeft, JSON.stringify(metrics)).toBe(0);
+      expect(metrics.pseudoRight, JSON.stringify(metrics)).toBe(0);
+      expect(metrics.pseudoWidth, JSON.stringify(metrics)).toBe(metrics.width);
       expect(metrics.pseudoPointerEvents, JSON.stringify(metrics)).toBe('none');
       expect(metrics.expandedAreaWithinRail, JSON.stringify(metrics)).toBe(true);
       expect(metrics.edgeHits.every(Boolean), JSON.stringify(metrics)).toBe(true);
