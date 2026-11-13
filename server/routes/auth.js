@@ -210,15 +210,6 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
   }
   const p = fmtPhone(req.body.phone || '');
-  const code = String(req.body.code || '').trim();
-  const st = otpStore.get('reg:' + p);
-  const okSms = SMS_AUTH_ENABLED && isOtpLive(st) && !!st.code && !!code && st.code === code;
-  if (okSms) {
-    clearLock(req, 'reg', p);
-    clearLock(req, 'reg-otp-send', p);
-    consumeOtp('reg:' + p, entry => !!entry.code && entry.code === code);
-  }
-
   const ex = db.prepare('SELECT * FROM customers WHERE phone=?').get(p);
   if (ex) {
     const age = Date.now() - new Date(ex.created_at).getTime();
@@ -228,6 +219,24 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     } else {
       return res.status(409).json({ error: 'exists' });
     }
+  }
+
+  const code = String(req.body.code || '').trim();
+  const registrationWait = lockedSeconds(req, 'reg', p);
+  if (registrationWait > 0) {
+    return res.status(429).json({ error: `Слишком много попыток подтверждения. Пауза ${registrationWait} сек.` });
+  }
+
+  const st = otpStore.get('reg:' + p);
+  const okSms = SMS_AUTH_ENABLED && isOtpLive(st) && !!st.code && !!code && st.code === code;
+  if (SMS_AUTH_ENABLED && code && !okSms) {
+    registerFail(req, 'reg', p);
+    return res.status(403).json({ error: 'Неверный или просроченный код подтверждения' });
+  }
+  if (okSms) {
+    clearLock(req, 'reg', p);
+    clearLock(req, 'reg-otp-send', p);
+    consumeOtp('reg:' + p, entry => !!entry.code && entry.code === code);
   }
 
   const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
@@ -256,6 +265,10 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
 });
 authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
+  const wait = lockedSeconds(req, 'act', req.user.id);
+  if (wait > 0) {
+    return res.status(429).json({ error: `Слишком много попыток. Пауза ${wait} сек.` });
+  }
   const code = String(req.body.code || '').trim();
   if (!/^\d{4}$/.test(code)) return res.status(400).json({ error: 'Код — 4 цифры' });
   const c = db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id);
@@ -264,6 +277,7 @@ authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
     registerFail(req, 'act', req.user.id);
     return res.status(403).json({ error: 'Неверный код активации' });
   }
+  clearLock(req, 'act', req.user.id);
   db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
   addHist(c.id, '✅ Профиль активирован на кассе', 'Кассир');
   // Приветственный бонус — как и при активации сотрудником (/api/staff/activate-guest).
