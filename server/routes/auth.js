@@ -135,7 +135,7 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   return res.json({ token: issueToken(r.customer.id), customer: cust(newCust), isNew: true });
 });
 
-authRouter.post('/api/auth/request-reg-otp', (req, res) => {
+authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   const p = fmtPhone(req.body.phone || '');
   const via = req.body.via === 'tg' ? 'tg' : 'sms';
   if (ph10(p).length < 10) return res.status(400).json({ error: 'Введите номер полностью' });
