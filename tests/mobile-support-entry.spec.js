@@ -57,6 +57,23 @@ async function expectCompact44pxHitTarget(locator) {
   expect(metrics.faceWidth).toBe(32);
   expect(metrics.faceHeight).toBe(32);
   expect(metrics.edgeHits.every(Boolean), JSON.stringify(metrics.edgeTargets)).toBe(true);
+
+  await locator.focus();
+  await locator.press('Shift');
+  const focus = await locator.evaluate((button) => {
+    const style = getComputedStyle(button);
+    return {
+      active: document.activeElement === button,
+      visible: button.matches(':focus-visible'),
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+      outlineOffset: Number.parseFloat(style.outlineOffset),
+    };
+  });
+  expect(focus.active).toBe(true);
+  expect(focus.visible).toBe(true);
+  expect(focus.outlineStyle).toBe('solid');
+  expect(focus.outlineWidth).toBeGreaterThanOrEqual(2);
 }
 
 for (const brand of BRANDS) {
@@ -162,6 +179,17 @@ for (const brand of BRANDS) {
       } else {
         await expect(support).toHaveCSS('position', 'fixed');
         await expect.poll(() => supportHost.evaluate((el) => el.parentElement === document.body)).toBe(true);
+
+        await support.click();
+        await expect(page.locator('#chatPanel')).toHaveClass(/open/);
+        const closeChat = page.locator('#chatClose');
+        const sendChat = page.locator('#chatSend');
+        await expect(closeChat).toBeVisible();
+        await expect(sendChat).toBeVisible();
+        await expectCompact44pxHitTarget(closeChat);
+        await expectCompact44pxHitTarget(sendChat);
+        await closeChat.click();
+        await expect(page.locator('#chatPanel')).not.toHaveClass(/open/);
       }
 
       const cartPanel = page.locator('#cartPanel');
