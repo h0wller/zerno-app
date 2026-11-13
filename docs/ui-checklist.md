@@ -137,3 +137,15 @@ The observations in section 6 are historical scrape observations, not current de
 - [x] Cart and checkout **25 passed**, Responsive UI **139 passed**, Mobile Chrome responsive **102 passed**.
 - [ ] Cold-first-paint comparison, customer cart/checkout/profile/bonus/order states, staff roles, native iOS and Telegram Mini App remain open.
 - [ ] Independent review/reconciliation of PR #203's broad 49-file diff remains a merge blocker.
+
+
+## 14. Latest production guest baseline — 2026-11-13
+
+- [x] CI #3081 passed 15/15; the dedicated production screenshot job passed 1/1.
+- [x] Artifact [#14045198271](https://github.com/h0wller/zerno-app/actions/runs/43440569609/artifacts/14045198271) contains eight exact-viewport PNGs plus manifest for both guest brands at 320×740, 390×844, 768×1024 and 1440×900.
+- [x] All eight PNGs were inspected at native resolution. Manifest confirms production commit `c005b1c6832a5b722c97c43dd7cd525f638c209b`, isolated guest profile state, no staff controls and no horizontal overflow.
+- [ ] Cold-first-paint comparison and customer cart/checkout/profile/bonus/order states remain open.
+- [ ] Staff cashier/dispatcher/admin states, native iOS Safari and Telegram Mini App remain open.
+- [ ] Independent review of PR #203's broad 49-file diff remains a merge blocker.
+
+Observations only, not confirmed defects: ticker separator squares in both brands; shortened coffee search placeholder at 320 px. The desktop coffee auxiliary panel is a populated guest sign-in/profile prompt.
