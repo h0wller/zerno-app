@@ -181,6 +181,12 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
         body: JSON.stringify({ pollToken: 'a'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_test' })
       })
     );
+    await page.context().route('https://t.me/**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><title>Telegram test stub</title>'
+    }));
+    const telegramPopupPromise = page.waitForEvent('popup');
     await page.route('**/api/auth/check-reg*', (route) => {
       markCheckStarted();
       return new Promise((resolve) => {
@@ -205,8 +211,11 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await page.fill('#regPhone', '+7 999 123-45-67');
     await page.check('#consentBox');
     await page.click('#regTgBtn');
+    const telegramPopup = await telegramPopupPromise;
+    await telegramPopup.waitForLoadState('domcontentloaded');
 
     await checkStarted;
+    await expect(page).toHaveURL(/brand=delivery/);
     await page.evaluate(() => window.closeAuth());
     resolveCheck();
 
