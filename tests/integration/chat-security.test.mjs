@@ -54,7 +54,8 @@ async function request(route, options = {}) {
     method: options.method || 'GET',
     headers: {
       'content-type': 'application/json',
-      ...(options.token ? { authorization: 'Bearer ' + options.token } : {})
+      ...(options.token ? { authorization: 'Bearer ' + options.token } : {}),
+      ...(options.headers || {})
     },
     body: options.body === undefined ? undefined : JSON.stringify(options.body)
   });
@@ -176,7 +177,12 @@ test('anonymous chat requires a high-entropy capability and throttles staff push
   });
   assert.equal(write.status, 200, JSON.stringify(write.json));
 
-  const read = await request('/api/chat/thread?key=' + encodeURIComponent(key));
+  const leakedUrlRead = await request('/api/chat/thread?key=' + encodeURIComponent(key));
+  assert.equal(leakedUrlRead.status, 401);
+
+  const read = await request('/api/chat/thread?after=0', {
+    headers: { 'x-chat-capability': key }
+  });
   assert.equal(read.status, 200);
   assert.ok(read.json.msgs?.some(message => message.text === 'anonymous guest message'));
 
