@@ -1,5 +1,13 @@
 import crypto from 'node:crypto';
 
+export {
+  clearLock,
+  lockKey,
+  lockedSeconds,
+  pinLocks,
+  registerFail
+} from './auth-rate-limits.js';
+
 /**
  * Хеширует PIN-код с использованием SHA-256 и соли 'pin:'.
  * @param {string|number} p - PIN-код.
@@ -8,7 +16,7 @@ import crypto from 'node:crypto';
 export const hashPin = (p) => crypto.createHash('sha256').update('pin:' + String(p)).digest('hex');
 
 /**
- * Безопасное сравнение строк одинаковой длины через timingSafeEqual.
+ * Безопасное сравнение строк с постоянным временем для значений одинаковой длины.
  */
 export const safeEqual = (a, b) => {
   const ha = crypto.createHash('sha256').update(String(a)).digest();
