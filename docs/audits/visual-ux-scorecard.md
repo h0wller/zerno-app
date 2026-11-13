@@ -344,7 +344,7 @@ Production is now tied to an exact Git revision from the deployment record; the 
 - **Server-side confirmation:** job log shows `git reset --hard origin/pizza`, then `HEAD is now at c005b1c6`; `npm ci`, `npm run build:client`, `pm2 reload zerno-app`, and `pm2 status zerno-app` completed. PM2 reported `zerno-app` online.
 - **Cache bump:** the same log shows `STATIC_CACHE` and the asset query versions moving from `v646` to `v3553` at `2026-11-13T07:06:35Z`. This is the deployment script's documented `BUILD_NUM=$(git rev-list --count HEAD)` increment, not a standalone Git identifier.
 - **Origin cross-check:** the live `/dist/main.bundle.js.map` reports `Last-Modified: Fri, 13 Nov 2026 07:06:35 GMT` and ETag `W/"fc241-1a1d3bac64c"`; the timestamp falls inside the successful deploy. The live `/api/health` endpoint returns `{"ok":true}`.
-- **PR relationship:** the deployed SHA is the common ancestor of the current draft head; GitHub compare at PR head `b230f9bc75a9cd30fd2c73071a75aa80174bfe9e` reports the PR branch `docs/brand-system-baseline-2026-11` is 99 commits ahead of `c005b1c...` and 0 behind. The deployed service therefore serves the pre-PR revision, not draft PR #203.
+- **PR relationship:** the deployed SHA is the common ancestor of the current draft head; GitHub compare at PR head `b230f9bc75a9cd30fd2c73071a75aa80174bfe9e` reports the PR branch `docs/brand-system-baseline-2026-11` is 103 commits ahead of `c005b1c...` and 0 behind (comparison at PR head `0e20f2578bc00541d94bd4ce98124fc2c194959f`). The deployed service therefore serves the pre-PR revision, not draft PR #203.
 - **Tap-token cross-check:** the deployed `160-05-base-components.css` at `c005b1c...` does not declare `--tap-visual` / `--tap-hit`; the draft head does. This matches the production runtime inspection, where those properties were unset.
 
 Deployment identity is **verified** as `c005b1c6832a5b722c97c43dd7cd525f638c209b`. This does not imply PR #203 has been deployed or accepted.
@@ -365,3 +365,13 @@ Deployment identity is **verified** as `c005b1c6832a5b722c97c43dd7cd525f638c209b
 - The production first-viewport screenshot archive remains open: the Firecrawl browser task could not set viewport/export PNG and the connected Firecrawl account reached its daily credit limit. The prior 390×844 production screenshots were visible in-session but were not retained as files.
 
 **Current merge blockers remain:** production PNG archive/manual inspection, customer cart/checkout/profile/bonus and staff-role visual states, plus independent review/reconciliation of the PR's broad 47-file diff. No merge or deployment is implied by this documentation update.
+
+## Production guest runtime follow-up — 2026-11-13
+
+This follow-up supplements the historical unverified observations in section 6; it does not erase the original text extraction record.
+
+- **Confirmed in isolated guest browser:** `?brand=coffee` exposes `data-brand=coffee` and `brand-coffee`; `?brand=delivery` exposes `data-brand=delivery` and `brand-delivery`. The first visible cards match the active brand (coffee: Espresso; delivery: Margherita).
+- **Confirmed in both brands:** staff-only admin/cashier/dispatch controls are not visible in the guest session.
+- **Responsive overflow:** at 320×740, 390×844, 768×1024 and 1440×900, the production DOM reported no horizontal overflow in either brand. The browser's 15px vertical scrollbar reduces `clientWidth` relative to `innerWidth`; compare `scrollWidth` to `clientWidth`, not to `innerWidth`.
+- **Still unverified:** ticker loop/duplicate semantics, native iOS Safari behavior, the exact dual-brand hidden DOM inventory, delivery-discount eligibility wording, and any customer/staff modal states. Keep those checklist items open until the relevant DOM or screenshots are inspected.
+- **Evidence limitation:** the two production 390×844 screenshots were visually checked in the earlier browser session but were not saved as permanent PNGs. The later screenshot-automation attempt could not set the requested viewport or export files; do not close the persistent production screenshot requirement using the CI artifact.
