@@ -137,6 +137,36 @@ for (const viewport of [
 }
 
 
+test('delivery reserves the filter slot before hydration without rendering duplicate chips', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.route('**/api/dmenu*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(deliveryFilterItems),
+  }));
+  await page.route('**/app/ui/theme/*.css*', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    await route.continue();
+  });
+  const response = page.waitForResponse((res) =>
+    new URL(res.url()).pathname.replace(/\/+$/, '').endsWith('/dmenu')
+  );
+  await page.goto('/?brand=delivery', { waitUntil: 'commit' });
+  await response;
+  const slot = page.locator('#deliverySubFilterViewport');
+  const bar = page.locator('#deliverySubFilter');
+  await expect(slot).toHaveCount(1);
+  await expect(bar).toHaveCount(1);
+  await expect(slot).toContainText('');
+  await expect(bar.locator('.subchip')).toHaveCount(deliveryFilterIngredients.length + 1);
+});
+
 for (const width of [320, 375, 390]) {
   test(`delivery subfilters keep their 40px visual pill inside a 44px hit target at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 844 });
