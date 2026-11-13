@@ -67,6 +67,10 @@ test('archive both production guest menus at four viewport sizes without changin
               && rect.height > 0;
           };
           const staffVisible = selectors.filter((selector) => isVisible(document.querySelector(selector)));
+          const guestPrompt = document.querySelector('#profileNoUser');
+          const profileBox = document.querySelector('#profileBox');
+          const guestPromptContent = document.querySelector('#profileNoUser .authPrompt');
+          const guestPromptRect = guestPromptContent?.getBoundingClientRect();
           const firstCard = document.querySelector(
             root.dataset.brand === 'delivery'
               ? '#deliveryGrid .card:not(.skeleton-card)'
@@ -84,6 +88,10 @@ test('archive both production guest menus at four viewport sizes without changin
               horizontalOverflow: root.scrollWidth > root.clientWidth,
             },
             firstCardTitle: firstCard?.querySelector('h3')?.innerText?.trim() || null,
+            guestProfileState: {
+              resolved: !!guestPrompt && !guestPrompt.hidden && !!profileBox && profileBox.hidden,
+              promptHeight: guestPromptRect ? Math.round(guestPromptRect.height) : 0,
+            },
             staffControlsVisible: staffVisible,
           };
         }, ['#adminBar', '#cashierPanel', '#dispatchPanel', '#adminDashboard']);
@@ -97,6 +105,10 @@ test('archive both production guest menus at four viewport sizes without changin
         expect(runtime.document.horizontalOverflow).toBe(false);
         expect(runtime.staffControlsVisible).toEqual([]);
         expect(runtime.firstCardTitle).toBeTruthy();
+        expect(runtime.guestProfileState.resolved).toBe(true);
+        if (viewport.width >= 1181 && brand === 'coffee') {
+          expect(runtime.guestProfileState.promptHeight).toBeGreaterThan(100);
+        }
 
         const filename = `production-${brand}-guest-menu-${viewport.width}x${viewport.height}-c005b1c.png`;
         const screenshotPath = path.join(OUT, filename);
