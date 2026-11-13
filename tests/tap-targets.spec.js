@@ -145,9 +145,10 @@ for (const width of [320, 375, 390]) {
       const metrics = await chip.evaluate((element) => {
         const rect = element.getBoundingClientRect();
         const face = getComputedStyle(element, '::before');
-        const hitFace = getComputedStyle(element, '::after');
         const rail = element.parentElement;
         const railRect = rail.getBoundingClientRect();
+        const faceTop = Number.parseFloat(face.top) || 0;
+        const faceBottom = Number.parseFloat(face.bottom) || 0;
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
         const points = [
@@ -160,11 +161,10 @@ for (const width of [320, 375, 390]) {
           width: rect.width,
           height: rect.height,
           radius: face.borderRadius,
-          hitContent: hitFace.content,
-          hitTop: hitFace.top,
-          hitBottom: hitFace.bottom,
-          hitPointerEvents: hitFace.pointerEvents,
-          expandedAreaWithinRail: rect.top - 2 >= railRect.top && rect.bottom + 2 <= railRect.bottom,
+          faceHeight: rect.height - faceTop - faceBottom,
+          faceTop,
+          faceBottom,
+          targetWithinRail: rect.top >= railRect.top && rect.bottom <= railRect.bottom,
           railClientHeight: rail.clientHeight,
           railScrollHeight: rail.scrollHeight,
           hitPoints: points.map(([x, y]) => {
@@ -176,18 +176,18 @@ for (const width of [320, 375, 390]) {
         };
       });
 
-      expect(metrics.height, JSON.stringify(metrics)).toBe(40);
-      expect(metrics.width, JSON.stringify(metrics)).toBeGreaterThanOrEqual(44);
-      expect(metrics.hitContent).not.toBe('none');
-      expect(metrics.hitTop, JSON.stringify(metrics)).toBe('-2px');
-      expect(metrics.hitPointerEvents).toBe('auto');
-      expect(metrics.expandedAreaWithinRail, JSON.stringify(metrics)).toBe(true);
+      expect(metrics.height, JSON.stringify(metrics)).toBe(44);
+      expect(metrics.width, JSON.stringify(metrics)).toBeGreaterThanOrEqual(58);
+      expect(metrics.faceHeight, JSON.stringify(metrics)).toBe(40);
+      expect(metrics.faceTop, JSON.stringify(metrics)).toBe(2);
+      expect(metrics.faceBottom, JSON.stringify(metrics)).toBe(2);
+      expect(metrics.radius).toBe('999px');
+      expect(metrics.targetWithinRail, JSON.stringify(metrics)).toBe(true);
       expect(metrics.railClientHeight).toBeGreaterThanOrEqual(44);
       expect(metrics.railScrollHeight).toBeLessThanOrEqual(metrics.railClientHeight);
-      expect(metrics.hitBottom, JSON.stringify(metrics)).toBe('-2px');
       expect(metrics.hitPoints.every(Boolean), JSON.stringify(metrics)).toBe(true);
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
-      await chip.click({ trial: true });
+      await chip.click({ trial: true, position: { x: metrics.width / 2, y: metrics.height - 1 } });
     }
 
     if (width === 390) {
