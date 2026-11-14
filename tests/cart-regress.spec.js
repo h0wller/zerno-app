@@ -538,7 +538,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     const placeSelect = page.locator('#checkoutPlace');
     await placeSelect.selectOption('Синявино');
     await expect(page.locator('#zoneFeeHint')).toContainText('Синявино');
-    await expect(page.locator('#zoneFeeHint')).toContainText('250 ₽');
+    await expect(page.locator('#zoneFeeHint')).toContainText('200 ₽');
 
     await placeSelect.selectOption('Янтарный');
     await expect(page.locator('#zoneFeeHint')).toContainText('Янтарный');
