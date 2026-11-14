@@ -35,6 +35,7 @@ export const NUTRITION_INGREDIENTS = {
 
   // Meat, fish and seafood
   ham: { label: 'Ветчина, усреднённая', kcal: 240, p: 14.5, f: 19.5, c: 1.5 },
+  salami: { label: 'Салями, усреднённая', kcal: 336, p: 22.0, f: 26.0, c: 1.5 },
   'chicken-marinated': { label: 'Курица маринованная, оценка', kcal: 180, p: 22.0, f: 9.0, c: 1.5 },
   'chicken-smoked': { label: 'Курица копчёная, оценка', kcal: 170, p: 27.0, f: 6.0, c: 1.0 },
   bacon: { label: 'Бекон', kcal: 458, p: 13.0, f: 45.0, c: 0.8 },
@@ -56,6 +57,7 @@ export const NUTRITION_INGREDIENTS = {
   oregano: { label: 'Орегано сухой', kcal: 265, p: 9.0, f: 4.3, c: 68.9 },
   pepper: { label: 'Перец сладкий', kcal: 27, p: 1.3, f: 0.1, c: 5.3 },
   spinach: { label: 'Шпинат', kcal: 23, p: 2.9, f: 0.4, c: 3.6 },
+  arugula: { label: 'Руккола', kcal: 25, p: 2.6, f: 0.7, c: 3.7 },
   'cherry-tomato': { label: 'Помидоры черри', kcal: 22, p: 1.0, f: 0.2, c: 4.0 },
   broccoli: { label: 'Брокколи', kcal: 34, p: 2.8, f: 0.4, c: 6.6 },
   cucumber: { label: 'Огурец', kcal: 15, p: 0.8, f: 0.1, c: 2.8 },
@@ -265,6 +267,14 @@ export const NUTRITION_DISHES = {
     sizes: {
       M: { yieldWeight: 610, ingredients: { 'white-sauce': 50, mozzarella: 60, 'chicken-marinated': 90, pineapple: 40, dill: 10 } },
       B: { yieldWeight: 920, ingredients: { 'white-sauce': 100, mozzarella: 100, 'chicken-marinated': 100, pineapple: 70, dill: 10 } }
+    }
+  },
+  'pz-hamsal': {
+    label: 'Пицца Ветчина-салями',
+    kind: 'pizza',
+    sizes: {
+      M: { ingredients: { 'red-sauce': 50, mozzarella: 60, salami: 40, ham: 40, pepper: 20, arugula: 10 } },
+      B: { ingredients: { 'red-sauce': 100, mozzarella: 100, salami: 60, ham: 60, pepper: 40, arugula: 10 } }
     }
   },
   'pz-farsh': {

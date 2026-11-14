@@ -83,8 +83,35 @@ test('the baked chicken roll also receives a complete estimated result', () => {
   assert.ok(result.per100.kcal > 0);
 });
 
+test('ham-salami pizza uses the supplied TTK and estimated generic salami values', () => {
+  const pizza = {
+    id: 'pz-hamsal',
+    name: 'Ветчина-салями',
+    opts: [
+      { l: '25 см, пышное', sz: 25 },
+      { l: '35 см, пышное', sz: 35 }
+    ]
+  };
+
+  const small = calculateDishKbju(pizza, '', { option: pizza.opts[0] });
+  const large = calculateDishKbju(pizza, '', { option: pizza.opts[1] });
+
+  assert.equal(small.status, 'ready');
+  assert.equal(small.complete, true);
+  assert.equal(small.estimated, true);
+  assert.equal(small.selectedOption, '25 см, пышное');
+  assert.equal(small.totalWeight, 500);
+  assert.ok(small.per100.kcal > 0);
+  assert.ok(small.perPortion.p > 0);
+  assert.ok(small.perPortion.f > 0);
+  assert.ok(small.perPortion.c > 0);
+
+  assert.equal(large.status, 'ready');
+  assert.equal(large.totalWeight, 850);
+  assert.ok(large.perPortion.kcal > small.perPortion.kcal);
+});
+
 test('menu positions without supplied TTK data do not receive invented values', () => {
-  assert.equal(calculateDishKbju({ id: 'pz-hamsal', name: 'Ветчина-салями' }), null);
   assert.equal(calculateDishKbju({ id: 'set-phil', name: 'Сет Филадельфия' }), null);
 });
 
