@@ -250,8 +250,8 @@ test('cart keeps the current selected price and explains every amount without gu
     railBoundsBeforeWheel.y + railBoundsBeforeWheel.height / 2
   );
   await page.mouse.wheel(0, 160);
-  await expect.poll(() => recommendationCardsRail.evaluate((rail) =>
-    Math.abs(rail.scrollLeft - railScrollBeforeWheel)
+  await expect.poll(async () => Math.abs(
+    await recommendationCardsRail.evaluate((rail) => rail.scrollLeft) - railScrollBeforeWheel
   )).toBeLessThanOrEqual(2);
   await expect.poll(() => cartScrollBody.evaluate((body) => body.scrollTop)).toBeGreaterThan(0);
   await testInfo.attach('cart-recommendations-after-vertical-wheel', {
