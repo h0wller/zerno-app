@@ -220,7 +220,9 @@ test('повтор заказа из карточки сохраняет выб�
   await openDeliveryApp(page);
   await page.waitForFunction(() => typeof window.openOrderTrackModal === 'function');
 
-  await page.evaluate(() => window.openOrderTrackModal({
+  await page.evaluate(() => {
+    window.__cartBeforeRepeat = window.cart;
+    window.openOrderTrackModal({
     id: 'order-reorder-1',
     no: 77,
     status: 'done',
@@ -235,11 +237,17 @@ test('повтор заказа из карточки сохраняет выб�
       qty: 2,
       modifiers: [{ id: 'cheese-test', name: 'Доп. сыр', price: 50 }]
     }]
-  }));
+    });
+  });
 
   await page.locator('#orderTrackModal [data-ot-repeat]').click();
 
-  const restored = await page.evaluate(() => window.cart[0]);
+  const cartState = await page.evaluate(() => ({
+    sameArray: window.cart === window.__cartBeforeRepeat,
+    item: window.cart[0]
+  }));
+  expect(cartState.sameArray).toBe(true);
+  const restored = cartState.item;
   expect(restored).toMatchObject({
     key: 'pz-test_2',
     id: 'pz-test',
