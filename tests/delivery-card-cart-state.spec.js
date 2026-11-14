@@ -51,6 +51,8 @@ test.describe('Delivery card cart state', () => {
     expect(button.ariaLabel).toBe('В корзине · 1. Добавить ещё');
     const stepRow = await card.locator('.steprow').evaluate(node => ({ width: node.clientWidth, scrollWidth: node.scrollWidth }));
     expect(stepRow.scrollWidth, 'quantity controls must stay inside the product card').toBeLessThanOrEqual(stepRow.width + 1);
+    const cardOverflow = await card.evaluate(node => ({ width: node.clientWidth, scrollWidth: node.scrollWidth }));
+    expect(cardOverflow.scrollWidth, 'quantity row must stay within card border').toBeLessThanOrEqual(cardOverflow.width + 1);
     await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 3500 });
     await testInfo.attach('delivery-card-in-cart-cta-228px', {
       body: await add.screenshot(),
