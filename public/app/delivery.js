@@ -667,14 +667,21 @@ function patchDeliveryCards(list) {
 
 function syncAddButtons() {
   document.querySelectorAll('#deliveryGrid [data-add]').forEach(b => {
-    if (b.disabled) return;
     const n = cart.reduce((a, c) => a + (String(c.id) === String(b.dataset.add) ? c.qty : 0), 0);
+    const row = b.closest('.steprow');
+    const compact = n > 0 && window.innerWidth <= 260;
+    if (row) {
+      row.classList.toggle('compact-quantity-row', compact);
+      row.querySelectorAll('.step').forEach(s => {
+        s.hidden = !n || (compact && s.dataset.step === '1');
+      });
+    }
+    if (b.disabled) return;
     b.classList.toggle('incart', n > 0);
     const label = n > 0 ? ('В корзине · ' + n + '. Добавить ещё') : 'Добавить';
     b.setAttribute('aria-label', label);
     if (n > 0) b.title = label;
     else b.removeAttribute('title');
-    const row = b.closest('.steprow'); if (row) row.querySelectorAll('.step').forEach(s => { s.hidden = !n; });
     if (!b.classList.contains('added')) b.textContent = n > 0 ? '✓' : 'Добавить';
   });
 }
@@ -714,7 +721,13 @@ function handleDeliveryStepperClick(e) {
     else addButton.removeAttribute('title');
     addButton.classList.toggle('incart', count > 0);
   }
-  if (row) row.querySelectorAll('.step').forEach(button => { button.hidden = !count; });
+  const compact = count > 0 && window.innerWidth <= 260;
+  if (row) {
+    row.classList.toggle('compact-quantity-row', compact);
+    row.querySelectorAll('.step').forEach(button => {
+      button.hidden = !count || (compact && button.dataset.step === '1');
+    });
+  }
   return true;
 }
 
