@@ -56,7 +56,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `cart.js` | Единственный владелец состояния, инициализации, мутаций, сохранения и открытия корзины; `#cartItems`, аддоны, итоги, подарки, cartFab; синхронизация цен доставки; состояние раскрытых модификаторов синхронизируется с индексами строк при удалении; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo`, `window.addDeliveryCartItem`, `window.adjustDeliveryCartItem`, `window.syncDeliveryCartPrices` |
+| `cart.js` | Единственный владелец состояния, инициализации, мутаций, сохранения и открытия корзины; `#cartItems`, аддоны, итоги, подарки, cartFab; синхронизация цен доставки; состояние раскрытых модификаторов синхронизируется с индексами строк при удалении; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo`, `window.addDeliveryCartItem`, `window.adjustDeliveryCartItem`, `window.syncDeliveryCartPrices`, `window.replaceCartItems` |
 | `checkout-validation.js` | Проверка адреса и времени доставки перед оформлением; подсветка ошибочного поля и переключатель «сейчас / ко времени» | `window.CheckoutValidation` |
 | `address.js` | Единственный владелец `window.AddressModule` и datalist `#streetSuggestions`; сгенерированный справочник улиц, нормализация и валидация | `window.AddressModule` |
 | `core/address-autocomplete.js` | Дропдаун подсказок `#checkoutStreet` | — |
