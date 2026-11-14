@@ -78,33 +78,12 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     return (placeEl && placeEl.value) ? placeEl.value.trim() : "";
   }
 
-  function getDefaultDeliveryRates(normalizedPlace) {
-    var isFarZone = /синявино|покровское/i.test(normalizedPlace);
-    var isOuterZone = /куликово|яблоновка/i.test(normalizedPlace);
-    return { fee: isFarZone ? 250 : (isOuterZone ? 300 : 200) };
-  }
-
   function getDeliveryZoneRates(placeVal) {
-    var baseZoneFee = 0;
-    var normalizedPlace = String(placeVal || "").toLowerCase().trim();
-    if (!normalizedPlace) return { baseZoneFee: 0 };
-
-    if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
-      var zone = deliveryInfo.zones.find(function (entry) {
-        return entry.places && entry.places.includes(placeVal);
-      });
-      if (zone) baseZoneFee = Number(zone.fee) || 0;
-    }
-
-    if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
-      var addressFee = Number(window.AddressModule.getFee(placeVal));
-      if (addressFee > 0) baseZoneFee = addressFee;
-    }
-
-    var defaults = getDefaultDeliveryRates(normalizedPlace);
-    if (!baseZoneFee) baseZoneFee = defaults.fee;
-
-    return { baseZoneFee: baseZoneFee };
+    var zones = typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones;
+    var zone = Array.isArray(zones) && zones.find(function (entry) {
+      return Array.isArray(entry.places) && entry.places.includes(placeVal);
+    });
+    return { baseZoneFee: zone ? (Number(zone.fee) || 0) : 0 };
   }
 
   function getLunchPromoTimeParts() {
