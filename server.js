@@ -30,6 +30,7 @@ import { promosRouter } from './server/routes/promos.js';
 import ordersRouter from './server/routes/orders.js';
 import chatRouter from './server/routes/chat.js';
 import { createTgRouter } from './server/routes/tg.js';
+import { createStravaRouter } from './server/routes/fitness-strava.js';
 import pushRouter from './server/routes/push.js';
 import statsRouter from './server/routes/stats.js';
 import { item, getMeta, touch } from './server/domain/helpers.js';
@@ -74,6 +75,7 @@ app.use(promosRouter);
 app.use(ordersRouter);
 app.use(chatRouter);
 app.use(createTgRouter({ appKb }));
+app.use(createStravaRouter());
 app.use(pushRouter);
 app.use(statsRouter);
 
