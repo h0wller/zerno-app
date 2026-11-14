@@ -201,3 +201,35 @@ test('support launcher announces the action available in its current state', asy
     await expect(launcher).toHaveAttribute('aria-label', 'Открыть чат поддержки');
   }
 });
+
+
+test('mobile chat keeps system safe areas outside the header and composer', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  for (const brand of ['coffee', 'delivery']) {
+    await prepare(page, '/?brand=' + brand);
+    await page.locator('#chatFab').click();
+
+    const internalSafeAreaRules = await page.evaluate(async () => {
+      const css = await (await fetch('/app/ui/theme/100-chat.css')).text();
+      return css.split('}').filter(rule =>
+        (rule.includes('.chat-h') || rule.includes('.chat-i')) &&
+        rule.includes('env(safe-area-inset-')
+      );
+    });
+    expect(internalSafeAreaRules, 'chat header/composer must not consume device safe areas internally').toEqual([]);
+
+    const padding = await page.evaluate(() => ({
+      headerTop: getComputedStyle(document.querySelector('#chatPanel .chat-h')).paddingTop,
+      composerBottom: getComputedStyle(document.querySelector('#chatPanel .chat-i')).paddingBottom
+    }));
+    expect(padding.headerTop).toBe('12px');
+    expect(padding.composerBottom).toBe('9px');
+
+    await testInfo.attach('chat-inner-safe-area-' + brand, {
+      body: await page.screenshot(),
+      contentType: 'image/png'
+    });
+    await page.locator('#chatClose').click();
+  }
+});
