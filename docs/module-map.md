@@ -108,8 +108,8 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `chat.js` | Гостевой чат с ботом (`#chatPanel`), стафф-чат (`#staffChatModal`), бейджи, поллинг треда | `window.addMsg`, `window.sendChat`, `window.openStaffChat` |
-| `chat-core.js` | Контекстные суффиксы chatKey, база знаний (kbAnswer), бар подсказок `#chatHintsBar`, `#supportChooseOverlay`, fetch-контракт чата: Bearer владельца или `X-Chat-Access-Token` анонимного треда; вызов сотрудника предлагается только при активной пользовательской сессии | `window.setBotName`, `window.reloadChatThread`, `window.showSupportOverlay` |
+| `chat.js` | Гостевой чат с ботом (`#chatPanel`), стафф-чат (`#staffChatModal`), бейджи, поллинг треда | `window.addMsg`, `window.sendChat`, `window.openStaffChat`, `window.openStaffChatThread` |
+| `chat-core.js` | Контекстные суффиксы chatKey, база знаний (kbAnswer), бар подсказок `#chatHintsBar`, создание и выбор `#supportChooseOverlay` для `support=choose`, fetch-контракт чата: Bearer владельца или `X-Chat-Access-Token` анонимного треда; вызов сотрудника предлагается только при активной пользовательской сессии | `window.setBotName`, `window.reloadChatThread`, `window.showSupportOverlay` |
 | `core/chat-head.js` | Стабильные классы шапки чата (`.chatHead`/`.chName`) | — |
 | `core/chat-state.js` | Мост контекста чата (`window.chatState`); views.js держит дубль `__fvChatState` для легаси | `window.chatState` |
 
@@ -133,7 +133,7 @@
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |
-| `core/deeplink.js` | Диплинки: brand/tab/no/support/reorder/auth_token | — |
+| `core/deeplink.js` | Диплинки: brand/tab/no/reorder/auth_token; legacy `staff_chat` делегирует в `chat.js` | — |
 | `ui/styles.js` | Глобальные инжекции СЛОЯ 3: z-index, body.panel-open, пульсы чата, футер, cartPanel ≥900px, бар подсказок | — |
 
 ## 12. Промокоды и дашборд владельца
