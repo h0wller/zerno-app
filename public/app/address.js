@@ -192,13 +192,23 @@
       .trim();
   }
 
+  function getStreets(placeRaw) {
+    return LOCAL_STREETS[normPlace(placeRaw)] || [];
+  }
+
+  function isValidStreet(placeRaw, streetRaw) {
+    var streets = getStreets(placeRaw);
+    if (!streets.length || !streetRaw) return true;
+    var target = normStreet(streetRaw);
+    return streets.some(function (street) {
+      return street === '(без улицы)' || normStreet(street) === target;
+    });
+  }
+
   function populateStreets(place) {
     var dl = document.getElementById('streetSuggestions');
     if (!dl) return;
-    var key = normPlace(place);
-    var list = LOCAL_STREETS[key] || LOCAL_STREETS['янтарный'] || [];
-
-    dl.innerHTML = list.map(function (street) {
+    dl.innerHTML = getStreets(place).map(function (street) {
       return '<option value="' + esc(street) + '">';
     }).join('');
   }
@@ -231,6 +241,8 @@
   window.AddressModule = {
     normPlace: normPlace,
     normStreet: normStreet,
+    getStreets: getStreets,
+    isValidStreet: isValidStreet,
     populateStreets: populateStreets,
     formatDisplayAddress: formatDisplayAddress,
     LOCAL_STREETS: LOCAL_STREETS
