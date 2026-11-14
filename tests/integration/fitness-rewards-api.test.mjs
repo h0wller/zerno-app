@@ -180,6 +180,7 @@ test('Strava profile endpoints require a user session and require versioned expl
   seedReward();
   const consent = await request('/api/fitness/strava/consent', { token: customerToken });
   assert.equal(consent.status, 200);
+  assert.match(consent.headers.get('cache-control') || '', /no-store/);
   assert.equal(consent.json.notice.version, '2026-11-14-v1');
   assert.equal(consent.json.notice.data.length >= 2, true);
   assert.equal(consent.json.enabled, true);
@@ -196,6 +197,7 @@ test('Strava profile endpoints require a user session and require versioned expl
     body: { consent: true, consentVersion: '2026-11-14-v1' },
   });
   assert.equal(connect.status, 200, JSON.stringify(connect.json));
+  assert.match(connect.headers.get('cache-control') || '', /no-store/);
   assert.equal(connect.json.scope, 'activity:read');
   const state = new URL(connect.json.authorizationUrl).searchParams.get('state');
   const setCookie = connect.headers.get('set-cookie') || '';
@@ -210,6 +212,7 @@ test('Strava profile endpoints require a user session and require versioned expl
     { redirect: 'manual' },
   );
   assert.equal(forwarded.status, 400);
+  assert.match(forwarded.headers.get('cache-control') || '', /no-store/);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_oauth_states').get().n, 1);
 
   const cookiePair = setCookie.split(';', 1)[0];
