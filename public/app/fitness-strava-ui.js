@@ -285,7 +285,7 @@
         item.appendChild(el('small', '', kind + ' · ' + formatDate(activity.startedAt)));
         var details = formatDistance(activity.distanceMeters) + ' · движение ' + formatDuration(activity.movingTimeSeconds);
         item.appendChild(el('small', '', details));
-        if (/^\\d{1,24}$/.test(String(activity.id || ''))) {
+        if (/^\d{1,24}$/.test(String(activity.id || ''))) {
           var source = el('a', 'strava-link', 'View on Strava');
           source.href = 'https://www.strava.com/activities/' + String(activity.id);
           source.target = '_blank';
