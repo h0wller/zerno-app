@@ -19,7 +19,8 @@ test.describe('Delivery card cart state', () => {
     if (await firstOption.count()) await firstOption.check();
     await add.click();
     await expect(add).toHaveClass(/incart/);
-    await expect(card.locator('.steprow .step:not([hidden])')).toHaveCount(2);
+    await expect(card.locator('.steprow .step:not([hidden])')).toHaveCount(1);
+    await expect(card.locator('.steprow .step[data-step="1"]')).toBeHidden();
 
     const after = await card.boundingBox();
     const button = await add.evaluate((node) => {
@@ -47,7 +48,7 @@ test.describe('Delivery card cart state', () => {
     expect(button.scrollWidth, 'in-cart CTA label must fit inside the button')
       .toBeLessThanOrEqual(button.clientWidth + 1);
     expect(button.text).toBe('✓');
-    expect(button.ariaLabel).toBe('В корзине · 1');
+    expect(button.ariaLabel).toBe('В корзине · 1. Добавить ещё');
     const stepRow = await card.locator('.steprow').evaluate(node => ({ width: node.clientWidth, scrollWidth: node.scrollWidth }));
     expect(stepRow.scrollWidth, 'quantity controls must stay inside the product card').toBeLessThanOrEqual(stepRow.width + 1);
     await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 3500 });
@@ -60,7 +61,7 @@ test.describe('Delivery card cart state', () => {
       contentType: 'image/png'
     });
 
-    await card.locator('.steprow [data-step="1"]').click();
+    await add.click();
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart'))[0].qty)).toBe(2);
     await card.locator('.steprow [data-step="-1"]').click();
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart'))[0].qty)).toBe(1);
