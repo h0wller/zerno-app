@@ -76,7 +76,7 @@ test('requires an explicit enabled flag and complete server-side Strava configur
   const incomplete = fixture({ env: { STRAVA_TOKEN_ENCRYPTION_KEY: '' } });
 
   assert.deepEqual(disabled.service.getConfigurationStatus(), {
-    enabled: false, configured: false, ready: false,
+    enabled: false, configured: true, ready: false,
   });
   assert.equal(incomplete.service.getConfigurationStatus().ready, false);
   assert.equal(disabled.calls.length, 0);
@@ -99,9 +99,10 @@ test('creates a one-use OAuth state hash and requests only activity:read', () =>
   assert.notEqual(stored.state_hash, url.searchParams.get('state'));
   assert.equal(stored.cid, 'guest-1');
 
+  assert.equal(service.consumeOAuthState(url.searchParams.get('state')), 'guest-1');
   assert.throws(
     () => service.consumeOAuthState(url.searchParams.get('state')),
-    /invalid|already used/i,
+    /invalid/i,
   );
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_oauth_states').get().n, 0);
   db.close();
@@ -124,7 +125,7 @@ test('exchanges OAuth code, encrypts tokens at rest and rejects insufficient sco
   assert.match(row.access_token_enc, /^v1\./);
   assert.equal(calls.length, 1);
   assert.match(calls[0].url, /oauth\/token$/);
-  assert.match(calls[0].options.body, /authorization_code/);
+  assert.match(String(calls[0].options.body), /authorization_code/);
 
   const denied = await service.createAuthorizationUrl('guest-2');
   await assert.rejects(
@@ -151,7 +152,7 @@ test('does not allow one Strava athlete account to be linked to two Zerno profil
     service.completeAuthorization({
       state: second.searchParams.get('state'), code: 'code-2', grantedScope: 'activity:read',
     }),
-    /already linked/i,
+    error => error && error.code === 'strava_athlete_already_linked',
   );
   assert.equal(db.prepare('SELECT cid FROM strava_connections').get().cid, 'guest-1');
   db.close();
@@ -226,8 +227,8 @@ test('disconnect removes the local link and revokes the provider refresh token',
   assert.deepEqual(result, { disconnected: true, revoked: true });
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_connections').get().n, 0);
   assert.equal(calls.at(-1).url, 'https://www.strava.com/oauth/revoke');
-  assert.match(calls.at(-1).options.headers.Authorization, /^Basic /);
-  assert.match(calls.at(-1).options.body, /refresh-secret/);
+  assert.match(calls.at(-1).options.headers.authorization, /^Basic /);
+  assert.match(String(calls.at(-1).options.body), /refresh-secret/);
   db.close();
 });
 
