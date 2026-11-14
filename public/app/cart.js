@@ -4,6 +4,11 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 (function () {
   "use strict";
 
+  window.cart = JSON.parse(localStorage.getItem("zt_cart") || "[]").filter(function (item) {
+    return Number(item.price) > 0;
+  });
+  localStorage.setItem("zt_cart", JSON.stringify(window.cart));
+
   var activeAddonTab = "all";
   // Состояние раскрытых блоков модификаторов по индексам позиций в корзине
   var openModsMap = {};
@@ -902,6 +907,86 @@ function clearPromo() {
   if (typeof window.updateCartFab === 'function') window.updateCartFab();
   renderCartBase();
 }
+
+  function getDeliveryOptions(product) {
+    if (Array.isArray(product && product.opts)) return product.opts;
+    if (product && typeof product.opts === "string") {
+      try {
+        var parsed = JSON.parse(product.opts);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {}
+    }
+    return [];
+  }
+
+  window.syncDeliveryCartPrices = function (products) {
+    var byId = new Map((products || []).map(function (product) { return [String(product.id), product]; }));
+    var changed = false;
+    cart.forEach(function (item) {
+      var product = byId.get(String(item.id));
+      if (!product) return;
+      var optionIndex = item.oi === undefined || item.oi === null || item.oi === "" ? -1 : parseInt(item.oi, 10);
+      var options = getDeliveryOptions(product);
+      var option = Number.isInteger(optionIndex) && optionIndex >= 0 ? options[optionIndex] : null;
+      if (optionIndex >= 0 && !option) return;
+      var price = option ? Number(option.p) : (Number(product.price) || 0);
+      if (!Number.isFinite(price) || price <= 0) return;
+      var nextOpt = option ? (option.l || option.name || "") : null;
+      var nextSize = option ? (Number(option.sz) || 0) : 0;
+      var previousPrice = Number(item.price) || 0;
+      if (previousPrice > 0 && previousPrice !== price && !Number(item.priceUpdateFrom)) item.priceUpdateFrom = previousPrice;
+      if (previousPrice !== price || item.name !== product.name || item.opt !== nextOpt ||
+          Number(item.sz) !== nextSize || Number(item.oi) !== optionIndex) {
+        item.price = price;
+        item.name = product.name;
+        item.opt = nextOpt;
+        item.sz = nextSize;
+        item.oi = optionIndex;
+        changed = true;
+      }
+    });
+    if (changed) localStorage.setItem("zt_cart", JSON.stringify(cart));
+    return changed;
+  };
+
+  window.addDeliveryCartItem = function (product, selection) {
+    var id = product.id;
+    var key = id + (selection.optionIndex >= 0 ? "_" + selection.optionIndex : "");
+    var existing = cart.find(function (item) { return String(item.key) === String(key); });
+    if (existing) {
+      var previousPrice = Number(existing.price) || 0;
+      if (previousPrice > 0 && previousPrice !== selection.price && !Number(existing.priceUpdateFrom)) {
+        existing.priceUpdateFrom = previousPrice;
+      }
+      existing.name = product.name;
+      existing.oi = selection.optionIndex;
+      existing.opt = selection.option ? selection.option.l : null;
+      existing.price = selection.price;
+      existing.sz = selection.option ? (Number(selection.option.sz) || 0) : 0;
+      existing.qty++;
+    } else {
+      cart.push({
+        key: key, id: id, oi: selection.optionIndex, name: product.name,
+        opt: selection.option ? selection.option.l : null,
+        price: selection.price, sz: selection.option ? (Number(selection.option.sz) || 0) : 0, qty: 1
+      });
+    }
+    persistCartUpdate();
+  };
+
+  window.adjustDeliveryCartItem = function (id, delta) {
+    var item = cart.find(function (entry) { return String(entry.id) === String(id); });
+    if (!item && delta < 0) return 0;
+    if (item) {
+      if (delta > 0) item.qty++;
+      else if (item.qty > 1) item.qty--;
+      else removeCartItemAt(cart.indexOf(item));
+      persistCartUpdate();
+    }
+    return cart.reduce(function (total, entry) {
+      return String(entry.id) === String(id) ? total + entry.qty : total;
+    }, 0);
+  };
 
 function renderCartBase() {
     var cItems = document.getElementById("cartItems");
