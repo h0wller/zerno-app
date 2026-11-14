@@ -46,6 +46,11 @@ test.describe('Delivery card cart state', () => {
       .toBeLessThanOrEqual(button.clientWidth + 1);
     expect(button.text).toBe('✓');
     expect(button.ariaLabel).toBe('В корзине · 1');
+    await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 3500 });
+    await testInfo.attach('delivery-card-in-cart-cta-228px', {
+      body: await add.screenshot(),
+      contentType: 'image/png'
+    });
     await testInfo.attach('delivery-card-in-cart-228px', {
       body: await page.screenshot({ fullPage: false }),
       contentType: 'image/png'
