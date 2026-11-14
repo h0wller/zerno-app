@@ -148,6 +148,34 @@ test('exchanges OAuth code, encrypts tokens at rest and rejects insufficient sco
   db.close();
 });
 
+test('revokes a provider token when the OAuth response has an invalid athlete identity', async () => {
+  const { db, service, calls } = fixture({
+    fetchImpl: async (url) => {
+      if (String(url) === 'https://www.strava.com/oauth/token') {
+        return okJson({
+          access_token: 'unclaimed-access',
+          refresh_token: 'unclaimed-refresh',
+          expires_at: Math.floor(FIXED_NOW / 1000) + 7200,
+          scope: 'read,activity:read',
+          athlete: { id: -1 },
+        });
+      }
+      return new Response('', { status: 200 });
+    },
+  });
+  const state = new URL(service.createAuthorizationUrl('guest-1').url).searchParams.get('state');
+
+  await assert.rejects(
+    service.completeAuthorization({ state, code: 'malformed-athlete', grantedScope: 'activity:read' }),
+    error => error && error.code === 'strava_token_exchange_failed',
+  );
+
+  assert.equal(calls.at(-1).url, 'https://www.strava.com/oauth/revoke');
+  assert.match(String(calls.at(-1).options.body), /unclaimed-refresh/);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_connections').get().n, 0);
+  db.close();
+});
+
 test('does not allow one Strava athlete account to be linked to two Zerno profiles', async () => {
   const { db, service } = fixture({ fetchImpl: async () => tokenResponse({ athleteId: 777 }) });
   const first = new URL(service.createAuthorizationUrl('guest-1').url);
