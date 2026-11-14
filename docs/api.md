@@ -24,7 +24,23 @@
 | `GET /api/tg/diag` | Диагностика Telegram webhook/Bot API | adminGuard |
 | `POST /api/tg/webhook` | Входящий Telegram webhook | Проверка webhook маршрутом |
 
-Спортивные награды в Telegram — отдельный пилот, выключенный по умолчанию через `FITNESS_REWARDS_ENABLED`. Подробные правила, ограничения GPX, сроки и модель хранения: [docs/fitness-rewards.md](./fitness-rewards.md). Команды бота: `/fitness` — показать последний подарок; отправка GPX-документа — принять тренировку; `/fitness_redeem RUN-XXXXXXXXXX` — кассовое погашение привязанным кассиром/администратором. OAuth/вебхуки Strava и FIT пока не реализованы.
+Спортивные награды GPX в Telegram — отдельный пилот, выключенный по умолчанию через `FITNESS_REWARDS_ENABLED`. Правила и модель хранения: [docs/fitness-rewards.md](./fitness-rewards.md). Команды бота: `/fitness` — показать последний подарок; отправка GPX-документа — принять тренировку; `/fitness_redeem RUN-XXXXXXXXXX` — кассовое погашение. Strava реализована отдельно как read-only OAuth-интеграция; её данные пока не участвуют в наградах. Настройка и ограничения: [docs/strava-integration.md](./strava-integration.md).
+
+
+## Strava (read-only)
+ 
+| Метод и путь | Назначение | Доступ |
+|---|---|---|
+| \`GET /api/fitness/strava/consent\` | Получить версионированное уведомление о данных и способах отзыва/удаления | userGuard |
+| \`GET /api/fitness/strava/status\` | Статус подключения текущего профиля | userGuard |
+| \`POST /api/fitness/strava/connect\` | Начать OAuth; body: \`{ consent: true, consentVersion: "2026-11-14-v1" }\` | verified guest + userGuard |
+| \`GET /api/fitness/strava/callback\` | OAuth callback Strava; использует одноразовый state | Публичный callback, state-bound |
+| \`GET /api/fitness/strava/activities\` | Получить последние тренировки только текущего спортсмена; query: \`page=1..5\`, \`per_page=1..10\` | userGuard |
+| \`POST /api/fitness/strava/disconnect\` | Удалить локальные токены и запросить отзыв разрешения у Strava | userGuard |
+| \`GET /api/fitness/strava/webhook/{secret}\` | Верификация Strava webhook subscription | Секретный URL path + verify token |
+| \`POST /api/fitness/strava/webhook/{secret}\` | Обработка отзыва доступа спортсменом | Секретный URL path + subscription ID |
+
+Strava просит только \`activity:read\`. Тренировки отдаются только владельцу сессии и не сохраняются в SQLite/кэше. Данные Strava не начисляют бонусы и не объединяются с заказами, покупками или аналитикой. Подробная настройка, OAuth consent и ограничения — [docs/strava-integration.md](./strava-integration.md).
 
 ## Авторизация и профиль
 
