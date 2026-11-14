@@ -78,8 +78,8 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `profile.js` | Готовность `me`, единый рендер карточки лояльности внутри `#profileCoffeeSection`, `updateMbonusBadge`, `renderProfile`, редактирование имени и раскрытие истории | `window.renderBonus`, `window.renderProfile` |
-| `fitness-strava-ui.js` | Отдельная read-only секция `#stravaProfileSection` в профиле гостя: согласие, OAuth-переход, загрузка личных тренировок, отключение | Подписка на `auth:user-changed`; оборачивает `window.renderProfile` без смены владельца базовой разметки |
+| `profile.js` | Готовность `me`, единый рендер карточки лояльности внутри `#profileCoffeeSection`, `updateMbonusBadge`, `renderProfile`, редактирование имени и раскрытие истории | `window.renderBonus`, `window.renderProfile`; публикует `ztBus` event `profile:rendered` |
+| `fitness-strava-ui.js` | Отдельная read-only секция `#stravaProfileSection` в профиле подтверждённого гостя: согласие, OAuth-переход, загрузка личных тренировок, отключение | Статический импорт из `main.js`; подписка на `ztBus` event `profile:rendered`; единственный владелец `#stravaProfileSection` и его scoped CSS |
 | `profile-orders.js` | Последний заказ и полный список заказов; общий кэш/запрос для карточки и модалки; обработка «Отследить» | `window.loadMyOrders`, `window.renderOrdersModal`, `window.updateMyOrdersCache`, `window.invalidateMyOrders` |
 | `profile-brand.js` | Включение брендовых секций профиля, блок «Пятница», единый `renderVerifyNote` | `window.applyProfileBrand`, `window.renderVerifyNote` |
 | `core/qr.js` | `drawQR`, единственная полноэкранная QR-модалка `#qrModal`, открытие QR из профиля, wake lock | `window.drawQR`, `window.openQRFull`, `window.closeQRFull` |
