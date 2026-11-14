@@ -596,6 +596,19 @@ html body div.wrap > section {
   }
   html body #deliveryGrid .cta.incart,
   html body #grid .cta.incart { width:auto; flex:0 0 auto; padding:0 12px; }
+
+  @media (max-width:260px) {
+    html body #deliveryGrid .steprow,
+    html body #grid .steprow { gap:0; }
+    html body #deliveryGrid .steprow > .cta[data-add].incart,
+    html body #grid .steprow > .cta[data-add].incart {
+      width:44px;
+      min-width:44px;
+      max-width:44px;
+      flex:0 0 44px;
+      padding:0;
+    }
+  }
 }
 
 
