@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS fcm(
   `);
   
   // Strava OAuth tokens are encrypted at rest; activity responses are never persisted.
-  db.exec(\`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS strava_connections(
       cid TEXT PRIMARY KEY REFERENCES customers(id) ON DELETE CASCADE,
       athlete_id TEXT NOT NULL UNIQUE,
@@ -234,6 +234,6 @@ CREATE TABLE IF NOT EXISTS fcm(
     );
     CREATE INDEX IF NOT EXISTS idx_strava_oauth_states_expiry
       ON strava_oauth_states(expires_at);
-  \`);
+  `);
 
 }
