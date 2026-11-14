@@ -7,8 +7,11 @@ function fail(message) {
 }
 
 function attribute(source, name) {
-  const match = source.match(/(?:^|\s)(lat|lon)\s*=\s*(["'])(.*?)\2/i);
-  return match && match[1].toLowerCase() === name ? match[3] : null;
+  const pattern = name === 'lat'
+    ? /(?:^|\s)lat\s*=\s*(["'])(.*?)\1/i
+    : /(?:^|\s)lon\s*=\s*(["'])(.*?)\1/i;
+  const match = source.match(pattern);
+  return match ? match[2] : null;
 }
 
 function radians(value) {
