@@ -11,7 +11,8 @@ test('Service Worker bypasses every private fitness API endpoint before cache ro
   const guard = source.match(/if\s*\(\s*request\.method[\s\S]*?\)\s*\{\s*return;\s*\}/);
   assert.ok(guard, 'top-level Service Worker request bypass must exist');
   assert.match(guard[0], /url\.pathname\.startsWith\(['"]\/api\/fitness\/['"]\)/);
-  assert.ok(guard[0].indexOf('/api/fitness/') < guard[0].indexOf('request.mode ==='));
+  const firstCacheBranch = source.indexOf("if (url.pathname.startsWith('/api/menu')");
+  assert.ok(source.indexOf(guard[0]) < firstCacheBranch, 'private fitness API bypass must run before every cache branch');
 });
 
 test('Service Worker advances the static cache version when the private API bypass is introduced', () => {
