@@ -19,6 +19,36 @@ $('#rail').innerHTML = CATS.map(
   c => `<button data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`
 ).join('');
 
+var coffeeRailCueResizeObserver = null;
+
+function syncCoffeeRailCue() {
+  var rail = document.getElementById('rail');
+  if (!rail) return;
+
+  var hasOverflow = rail.scrollWidth > rail.clientWidth + 1;
+  var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+  var atEnd = hasOverflow && rail.scrollLeft >= maxScroll - 2;
+
+  rail.classList.toggle('has-overflow', hasOverflow);
+  rail.classList.toggle('at-end', atEnd);
+}
+
+(function bindCoffeeRailCue() {
+  var rail = document.getElementById('rail');
+  if (!rail || rail.dataset.scrollCueBound === '1') return;
+
+  rail.dataset.scrollCueBound = '1';
+  rail.addEventListener('scroll', syncCoffeeRailCue, { passive: true });
+  window.addEventListener('resize', syncCoffeeRailCue, { passive: true });
+
+  if (typeof ResizeObserver === 'function') {
+    coffeeRailCueResizeObserver = new ResizeObserver(syncCoffeeRailCue);
+    coffeeRailCueResizeObserver.observe(rail);
+  }
+
+  syncCoffeeRailCue();
+})();
+
 function renderRail() {
   document.querySelectorAll('#rail button').forEach(b =>
     b.classList.toggle('on', b.dataset.cat === cat)
