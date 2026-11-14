@@ -200,6 +200,8 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
 
 
   test('requires the ordinary browser for the browser-bound OAuth flow in Telegram Mini App', async ({ page }) => {
+    const section = page.locator('#stravaProfileSection');
+    await expect(section).toContainText('Аккаунт Strava не подключён.');
     await page.evaluate(() => {
       window.__isTgMiniApp = true;
       window.setUser('strava-profile-token', {
@@ -208,7 +210,6 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
       });
       window.renderProfile();
     });
-    const section = page.locator('#stravaProfileSection');
     await expect(section).toContainText('В Telegram Mini App это не гарантируется');
     await expect(section.getByRole('link', { name: 'Открыть Zerno App в браузере' }))
       .toHaveAttribute('href', /[?]brand=/);
@@ -217,6 +218,7 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
 
   test('shows only activity summary fields and supports account disconnection', async ({ page }, testInfo) => {
     const section = page.locator('#stravaProfileSection');
+    await expect(section).toContainText('Аккаунт Strava не подключён.');
 
     page.setStravaConnected(true);
     await page.evaluate(() => {
