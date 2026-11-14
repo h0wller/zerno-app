@@ -2405,23 +2405,69 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
     align-items: stretch;
     width: 100%;
     min-width: 0;
-    height: 72px;
-    min-height: 72px;
-    max-height: 72px;
-    margin: 12px 0 8px;
-    padding: 0 0 2px;
-    gap: 12px;
+    height: 88px;
+    min-height: 88px;
+    max-height: 88px;
+    margin: 12px 0 16px;
+    padding: 6px 10px 8px;
+    gap: 10px;
     border-bottom: 1px solid var(--line, #D8DFE4);
     background: transparent;
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--category-tab-active-color, #123A6B) transparent;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 10px;
+  }
+  html body #deliveryView #deliveryRail {
+    margin-bottom: 8px;
+  }
+  html body #menuView #rail button,
+  html body #deliveryView #deliveryRail button {
+    box-sizing: border-box;
+    display: flex;
+    flex: 0 0 76px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 76px;
+    min-width: 76px;
+    max-width: 76px;
+    height: 70px;
+    min-height: 70px;
+    max-height: 70px;
+    padding: 5px 4px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    scroll-snap-align: start;
+  }
+  html body #menuView #rail .re,
+  html body #deliveryView #deliveryRail .re {
+    display: grid;
+    flex: 0 0 30px;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin: 0;
   }
   html body #menuView #rail::-webkit-scrollbar,
   html body #deliveryView #deliveryRail::-webkit-scrollbar {
-    display: none;
+    display: block;
+    height: 4px;
+  }
+  html body #menuView #rail::-webkit-scrollbar-track,
+  html body #deliveryView #deliveryRail::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  html body #menuView #rail::-webkit-scrollbar-thumb,
+  html body #deliveryView #deliveryRail::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: var(--category-tab-active-color, #123A6B);
   }
 }
 html[data-brand="delivery"] .wrap > section,
