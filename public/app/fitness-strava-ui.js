@@ -7,6 +7,7 @@
   var inFlight = false;
   var status = null;
   var statusRequests = new Map();
+  var profileIsOpen = false;
 
   function injectStyles() {
     if (document.getElementById('stravaProfileStyles')) return;
@@ -17,6 +18,8 @@
       '#stravaProfileSection .strava-wordmark { color:var(--strava-orange,#FC4C02); font-size:10px; font-weight:700; white-space:nowrap; }',
       '#stravaProfileSection .strava-copy { margin:0; color:var(--soft); font-size:12px; line-height:1.5; }',
       '#stravaProfileSection .strava-state { color:var(--soft); font-size:12px; line-height:1.45; }',
+      '#stravaProfileSection .strava-connected { display:grid; gap:8px; min-width:0; }',
+      '#stravaProfileSection .strava-activity-results { min-width:0; }',
       '#stravaProfileSection .strava-actions { display:flex; flex-wrap:wrap; gap:8px; }',
       '#stravaProfileSection .strava-actions button { min-height:44px; padding:9px 13px; border:var(--profile-btn-border,1px solid var(--line)); border-radius:var(--profile-btn-radius,12px); background:var(--profile-btn-bg,var(--flame)); color:var(--profile-btn-color,#fff); font-size:12px; font-weight:800; cursor:pointer; }',
       '#stravaProfileSection .strava-actions button.secondary { border:var(--profile-btn-secondary-border,1px solid var(--line)); background:var(--profile-btn-secondary-bg,#fff); color:var(--profile-btn-secondary-color,var(--ink)); box-shadow:none; }',
@@ -104,6 +107,17 @@
     return section && section.querySelector('.strava-content');
   }
 
+  function activityResultsNode(section) {
+    var content = contentNode(section);
+    if (!content) return null;
+    var results = content.querySelector('.strava-activity-results');
+    if (!results) {
+      results = el('div', 'strava-activity-results');
+      content.appendChild(results);
+    }
+    return results;
+  }
+
   function setState(section, message) {
     var state = stateNode(section);
     if (state) state.textContent = message || '';
@@ -126,6 +140,7 @@
       function isCurrentCustomer() {
         return document.getElementById(SECTION_ID) === section &&
           section.dataset.customerId === customerId &&
+          profileIsOpen &&
           window.me && String(window.me.id || '') === customerId;
       }
 
@@ -292,7 +307,10 @@
         inFlight = false;
       }
     }));
-    setContent(section, actions);
+    var connected = el('div', 'strava-connected');
+    connected.appendChild(actions);
+    connected.appendChild(el('div', 'strava-activity-results'));
+    setContent(section, connected);
   }
 
   async function loadActivities(section) {
@@ -323,23 +341,22 @@
         }
         list.appendChild(item);
       });
-      setContent(section, list);
+      var results = activityResultsNode(section);
+      if (results) results.replaceChildren(list);
       setState(section, records.length
         ? 'Показаны последние ' + records.length + ' тренировок. Список не сохраняется в Zerno App.'
         : 'Список не сохраняется в Zerno App.');
     } catch (error) {
       setState(section, error.message || 'Не удалось загрузить тренировки.');
-      setContent(section, null);
+      var results = activityResultsNode(section);
+      if (results) results.replaceChildren(el('p', 'strava-copy', error.message || 'Не удалось загрузить тренировки.'));
     } finally {
       inFlight = false;
     }
   }
 
   function isProfileOpen() {
-    var panel = document.getElementById('panel');
-    var profile = document.getElementById('pvProfile');
-    if (!panel || !profile || profile.hidden) return false;
-    return window.innerWidth > 1180 || panel.classList.contains('open');
+    return profileIsOpen;
   }
 
   function render() {
@@ -371,7 +388,14 @@
       render();
     });
     window.ztBus.on('profile:rendered', function () { render(); });
-    window.ztBus.on('profile:opened', function () { render(); });
+    window.ztBus.on('profile:opened', function () {
+      profileIsOpen = true;
+      render();
+    });
+    window.ztBus.on('profile:closed', function () {
+      profileIsOpen = false;
+      status = null;
+    });
   }
 
   function refreshAfterExternalAuth() {

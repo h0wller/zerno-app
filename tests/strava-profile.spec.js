@@ -245,6 +245,7 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
       .toHaveAttribute('href', 'https://www.strava.com/activities/987654321');
     await expect(section.getByRole('link', { name: 'View on Strava' }))
       .toHaveCSS('color', 'rgb(252, 76, 2)');
+    await expect(section.getByRole('button', { name: 'Отключить Strava' })).toBeVisible();
     await expect(section.locator('.strava-wordmark')).toHaveCSS('color', 'rgb(252, 76, 2)');
     await expect(section).toContainText('Powered by Strava');
     await expect(section).not.toContainText('must-not-be-rendered');
