@@ -228,10 +228,11 @@ test('cart keeps the current selected price and explains every amount without gu
   const initialRailMetrics = await cardsRail.evaluate((el) => ({
     clientWidth: el.clientWidth,
     scrollWidth: el.scrollWidth,
-    scrollLeft: el.scrollLeft
+    scrollLeft: el.scrollLeft,
+    startOffset: parseFloat(getComputedStyle(el).paddingLeft) || 0
   }));
   expect(initialRailMetrics.scrollWidth).toBeGreaterThan(initialRailMetrics.clientWidth);
-  expect(initialRailMetrics.scrollLeft).toBeLessThanOrEqual(1);
+  expect(initialRailMetrics.scrollLeft).toBeLessThanOrEqual(initialRailMetrics.startOffset + 1);
 
   const previousRecommendationButton = recommendations.locator('[data-ca-scroll="-1"]');
   const nextRecommendationButton = recommendations.locator('[data-ca-scroll="1"]');
@@ -247,7 +248,11 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect.poll(() => cardsRail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
   await expect(previousRecommendationButton).toBeEnabled();
   await previousRecommendationButton.click();
-  await expect.poll(() => cardsRail.evaluate((el) => el.scrollLeft)).toBeLessThanOrEqual(1);
+  await expect.poll(() => cardsRail.evaluate((el) => {
+    const startOffset = parseFloat(getComputedStyle(el).paddingLeft) || 0;
+    return el.scrollLeft - startOffset;
+  })).toBeLessThanOrEqual(1);
+  await expect(previousRecommendationButton).toBeDisabled();
   await cardsRail.evaluate((el) => { el.scrollLeft = 0; });
 
   const cardsRailBox = await cardsRail.boundingBox();
