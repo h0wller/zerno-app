@@ -988,6 +988,12 @@ function clearPromo() {
     }, 0);
   };
 
+  window.replaceCartItems = function (items) {
+    var next = Array.isArray(items) ? items : [];
+    cart.splice.apply(cart, [0, cart.length].concat(next));
+    persistCartUpdate();
+  };
+
 function renderCartBase() {
     var cItems = document.getElementById("cartItems");
     if (!cItems) return;
