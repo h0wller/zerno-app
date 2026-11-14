@@ -71,6 +71,7 @@
   }
 
   function getSection() {
+    injectStyles();
     var profile = document.getElementById('profileBox');
     if (!profile) return null;
     var section = document.getElementById(SECTION_ID);
