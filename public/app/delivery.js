@@ -1092,7 +1092,6 @@ window.syncAddButtons = syncAddButtons;
 window.populatePlaces = populatePlaces;
 window.setupSlotDisplayToggle = setupSlotDisplayToggle;
 window.promoDisc = promoDisc;
-window.renderCart = renderCart;
 /* ── F3.70: DnD порядка доставки ── */
 attachGridDnD(document.getElementById('deliveryGrid'), {
   canDrag: canDragMenu,
