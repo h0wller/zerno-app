@@ -5,7 +5,6 @@
   var CONSENT_VERSION = '2026-11-14-v1';
   var SECTION_ID = 'stravaProfileSection';
   var inFlight = false;
-  var activitiesLoaded = false;
   var status = null;
 
   function injectStyles() {
@@ -250,8 +249,7 @@
       try {
         var result = await window.api('/fitness/strava/disconnect', { method: 'POST' });
         status = { enabled: true, connected: false };
-        activitiesLoaded = false;
-        setContent(section, null);
+          setContent(section, null);
         setState(section, result.revoked
           ? 'Strava отключена. Разрешение отозвано.'
           : 'Локальная связь удалена. Strava не подтвердила отзыв; при необходимости удалите Zerno App в настройках Strava.');
@@ -268,7 +266,6 @@
   async function loadActivities(section) {
     if (inFlight) return;
     inFlight = true;
-    activitiesLoaded = false;
     setState(section, 'Запрашиваем ваши последние тренировки из Strava…');
     try {
       var result = await window.api('/fitness/strava/activities?page=1&per_page=10');
@@ -298,7 +295,6 @@
       setState(section, records.length
         ? 'Показаны последние ' + records.length + ' тренировок. Список не сохраняется в Zerno App.'
         : 'Список не сохраняется в Zerno App.');
-      activitiesLoaded = true;
     } catch (error) {
       setState(section, error.message || 'Не удалось загрузить тренировки.');
       setContent(section, null);
@@ -321,7 +317,6 @@
     if (section.dataset.customerId !== String(customer.id)) {
       section.dataset.customerId = String(customer.id);
       status = null;
-      activitiesLoaded = false;
       refreshStatus(section);
       return;
     }
