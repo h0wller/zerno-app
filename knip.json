@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "public/sw.js",
-    "public/app/core/address-dict.js",
     "public/app/core/address-autocomplete.js",
     "public/app/core/address-book.js",
     "public/app/core/preorder-timer.js",
