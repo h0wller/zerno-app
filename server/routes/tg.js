@@ -122,6 +122,16 @@ export function createTgRouter({ appKb }) {
         return;
       }
 
+      if (result.reason === 'verification_required') {
+        await tgSend(
+          targetChatId,
+          result.duplicate
+            ? 'Этот GPX уже отправляли. Файл сохранён как неподтверждённая заявка: по нему нельзя доказать происхождение пробежки, поэтому код не выдан.'
+            : 'Файл принят: ' + (result.activity.distanceMeters / 1000).toFixed(2) + ' км. Но GPX можно отредактировать, поэтому он не подтверждает факт пробежки. Заявка сохранена без награды. Подтверждение через Apple Health и другие источники появится отдельно.',
+        );
+        return;
+      }
+
       const km = (result.activity.distanceMeters / 1000).toFixed(2);
       if (result.duplicate) {
         const reward = result.reward;
