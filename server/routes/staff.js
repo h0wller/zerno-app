@@ -93,7 +93,14 @@ staffRouter.post('/api/staff/fitness-rewards/:code/redeem', staffGuard, (req, re
     code: req.params.code,
     staffId: req.user.id,
   });
-  if (result.ok) return res.json(result);
+  if (result.ok) {
+    const owner = db.prepare('SELECT cid FROM fitness_rewards WHERE id=?').get(result.reward.id);
+    if (owner) {
+      addHist(owner.cid, 'Спортивный подарок ' + result.reward.code + ' погашен', req.user.name || 'Кассир');
+      logEv(req.user.name || 'Кассир', 'Погашен спортивный подарок ' + result.reward.code);
+    }
+    return res.json(result);
+  }
 
   const responses = {
     invalid_input: [400, 'Некорректный код спортивного подарка'],
