@@ -40,5 +40,10 @@ test.describe('Delivery card cart state', () => {
     expect(button.scrollWidth, 'in-cart CTA label must fit inside the button')
       .toBeLessThanOrEqual(button.clientWidth + 1);
     expect(button.text).toMatch(/^В корзине\s*·\s*1$/);
+
+    await card.locator('.steprow [data-step="1"]').click();
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart'))[0].qty)).toBe(2);
+    await card.locator('.steprow [data-step="-1"]').click();
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart'))[0].qty)).toBe(1);
   });
 });
