@@ -466,6 +466,10 @@ test('mobile primary category navigation is visually distinct from secondary fil
         sessionStorage.setItem('splashDone', '1');
       });
       await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+      await expect(page.locator(brand.rail + ' button').first()).toBeVisible({ timeout: 10000 });
+      if (brand.brand === 'delivery') {
+        await expect(page.locator('#deliverySubFilter .subchip').first()).toBeVisible({ timeout: 15000 });
+      }
 
       const metrics = await page.evaluate(({ railSelector, brandName }) => {
         const rail = document.querySelector(railSelector);

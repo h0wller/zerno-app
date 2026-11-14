@@ -128,6 +128,80 @@ var rules = [
  '[data-brand="delivery"] #qrModal.show,[data-brand="delivery"] #qrModal.show .modal-card,[data-brand="delivery"] #setPinModal.show .modal-card{background-image:none}',
 
 ];
+/* Mobile category navigation is a tab bar; delivery subfilters remain pill chips. */
+rules.push(`
+@media (max-width: 820px) {
+  html body :is(#menuView #rail, #deliveryView #deliveryRail) {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    height: 72px;
+    min-height: 72px;
+    max-height: 72px;
+    padding: 0 0 2px;
+    border-bottom: 1px solid var(--line, #D8DFE4);
+    background: transparent;
+  }
+
+  html body :is(#menuView #rail, #deliveryView #deliveryRail) button {
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex: 0 0 72px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 72px;
+    min-width: 72px;
+    max-width: 84px;
+    height: 68px;
+    min-height: 68px;
+    max-height: 68px;
+    margin: 0;
+    padding: 5px 4px 8px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--soft, var(--ink, #101418));
+    font: 600 10.5px/1.15 "Golos Text", system-ui, sans-serif;
+    text-align: center;
+    white-space: normal;
+    word-break: normal;
+    overflow: visible;
+    text-overflow: clip;
+    transform: none;
+    scroll-snap-align: start;
+  }
+
+  html body :is(#menuView #rail, #deliveryView #deliveryRail) button.on {
+    border: 0;
+    border-bottom: 3px solid var(--flame, var(--ink, #101418));
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--ink, #101418);
+    font-weight: 800;
+  }
+
+  html body :is(#menuView #rail, #deliveryView #deliveryRail) .re {
+    display: block;
+    flex: 0 0 auto;
+    width: auto;
+    height: auto;
+    margin: 0;
+    font-size: 22px;
+    line-height: 1;
+  }
+}
+`);
+
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
 
