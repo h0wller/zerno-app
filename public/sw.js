@@ -1,5 +1,5 @@
 // public/sw.js
-const STATIC_CACHE = 'zerno-static-v648';
+const STATIC_CACHE = 'zerno-static-v649';
 const MEDIA_CACHE = 'zerno-media-v20';
 const API_CACHE = 'zerno-api-v14';
 
@@ -98,7 +98,8 @@ self.addEventListener('fetch', (e) => {
     url.origin !== location.origin ||
     url.pathname.startsWith('/api/orders') ||
     url.pathname.startsWith('/api/chat') ||
-    url.pathname.startsWith('/api/auth')
+    url.pathname.startsWith('/api/auth') ||
+    url.pathname.startsWith('/api/fitness/')
   ) {
     return;
   }
