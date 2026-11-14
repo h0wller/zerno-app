@@ -222,6 +222,23 @@ CREATE TABLE IF NOT EXISTS fcm(
       CHECK(verification_state IN ('unverified','pending_review','verified','rejected','needs_review'))`);
   }
 
+  // One-time App Attest challenges bound to the authenticated Zerno customer and purpose.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS fitness_attest_challenges(
+      id TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      purpose TEXT NOT NULL CHECK(purpose IN ('attestation','assertion')),
+      challenge_hash TEXT NOT NULL UNIQUE,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL,
+      consumed_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_fitness_attest_challenges_owner
+      ON fitness_attest_challenges(cid, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_fitness_attest_challenges_expiry
+      ON fitness_attest_challenges(expires_at);
+  `);
+
   // Strava OAuth tokens are encrypted at rest; activity responses are never persisted.
   db.exec(`
     CREATE TABLE IF NOT EXISTS strava_connections(
