@@ -42,13 +42,16 @@ function toActivityView(activity) {
   const elapsedTime = Number(activity && activity.elapsed_time);
   const averageSpeed = Number(activity && activity.average_speed);
   const startedAt = String(activity && activity.start_date || '');
-  if ((!Number.isSafeInteger(Number(id)) && typeof id !== 'string') ||
+  const activityId = typeof id === 'number' && Number.isSafeInteger(id) && id > 0
+    ? String(id)
+    : typeof id === 'string' && /^\\d{1,24}$/.test(id) && Number(id) > 0 ? id : null;
+  if (!activityId ||
       !Number.isFinite(distance) || !Number.isFinite(movingTime) ||
       !Number.isFinite(elapsedTime) || !Number.isFinite(Date.parse(startedAt))) {
     return null;
   }
   return {
-    id: String(id),
+    id: activityId,
     name: String(activity.name || '').slice(0, 160),
     type: String(activity.type || ''),
     sportType: String(activity.sport_type || activity.type || ''),
