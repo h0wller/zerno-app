@@ -118,6 +118,9 @@ test.describe('Strava integration in guest profile', () => {
     await consent.check();
     await expect(continueButton).toBeEnabled();
 
+    await page.context().route('https://www.strava.com/oauth/authorize?**', route => route.fulfill({
+      status: 200, contentType: 'text/html', body: '<title>Strava OAuth test stub</title>'
+    }));
     const popupPromise = page.waitForEvent('popup');
     await continueButton.click();
     const popup = await popupPromise;
@@ -156,6 +159,9 @@ test.describe('Strava integration in guest profile', () => {
     await expect(section).toContainText('Утренняя пробежка');
     await expect(section).toContainText('5,23 км');
     await expect(section).toContainText('30 мин');
+    await expect(section.getByRole('link', { name: 'View on Strava' }))
+      .toHaveAttribute('href', 'https://www.strava.com/activities/987654321');
+    await expect(section).toContainText('Powered by Strava');
     await expect(section).not.toContainText('must-not-be-rendered');
     await expect(section.locator('a[href*="polyline"]')).toHaveCount(0);
 
