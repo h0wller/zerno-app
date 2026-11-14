@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { db as defaultDb } from '../db/connection.js';
 
 const AUTHORIZE_URL = 'https://www.strava.com/oauth/authorize';
-const TOKEN_URL = 'https://www.strava.com/api/v3/oauth/token';
+const TOKEN_URL = 'https://www.strava.com/oauth/token';
 const REVOKE_URL = 'https://www.strava.com/oauth/revoke';
 const ACTIVITIES_URL = 'https://www.strava.com/api/v3/athlete/activities';
 const STATE_TTL_MS = 10 * 60 * 1000;
@@ -274,7 +274,7 @@ export function createStravaService({
       .get(String(customerId || ''));
     if (!row) throw makeError('strava_not_connected');
     const nowSeconds = Math.floor(nowMs() / 1000);
-    if (row.expires_at > nowSeconds + 60) return decryptToken(row.access_token_enc);
+    if (row.expires_at > nowSeconds + 3_600) return decryptToken(row.access_token_enc);
 
     const refreshToken = decryptToken(row.refresh_token_enc);
     const body = new URLSearchParams({
