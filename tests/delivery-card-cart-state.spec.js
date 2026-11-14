@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Delivery card cart state', () => {
-  test('adding an item does not increase card height or wrap the in-cart CTA', async ({ page }) => {
+  test('adding an item does not increase card height or wrap the in-cart CTA', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 228, height: 571 });
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
@@ -32,7 +32,8 @@ test.describe('Delivery card cart state', () => {
         whiteSpace: style.whiteSpace,
         lineHeight: style.lineHeight,
         text: node.textContent.trim(),
-        ariaLabel: node.getAttribute('aria-label')
+        ariaLabel: node.getAttribute('aria-label'),
+        fontSize: style.fontSize
       };
     });
 
@@ -40,10 +41,15 @@ test.describe('Delivery card cart state', () => {
       .toBeLessThanOrEqual(1);
     expect(button.height, 'in-cart CTA must keep the standard control height').toBeLessThanOrEqual(48);
     expect(button.whiteSpace, 'in-cart CTA label must stay on one line').toBe('nowrap');
+    expect(parseFloat(button.fontSize), 'compact in-cart state remains legible').toBeGreaterThanOrEqual(14);
     expect(button.scrollWidth, 'in-cart CTA label must fit inside the button')
       .toBeLessThanOrEqual(button.clientWidth + 1);
     expect(button.text).toBe('✓');
     expect(button.ariaLabel).toBe('В корзине · 1');
+    await testInfo.attach('delivery-card-in-cart-228px', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png'
+    });
 
     await card.locator('.steprow [data-step="1"]').click();
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart'))[0].qty)).toBe(2);
