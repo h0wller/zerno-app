@@ -214,3 +214,41 @@ test('тариф доставки в корзине совпадает с сер
     await expect(page.locator('#cartFee')).toContainText(expectedFee.toLocaleString('ru-RU'));
   }
 });
+
+
+test('повтор заказа из карточки сохраняет выбранный вариант и платные модификаторы', async ({ page }) => {
+  await openDeliveryApp(page);
+  await page.waitForFunction(() => typeof window.openOrderTrackModal === 'function');
+
+  await page.evaluate(() => window.openOrderTrackModal({
+    id: 'order-reorder-1',
+    no: 77,
+    status: 'done',
+    total: 2040,
+    items: [{
+      id: 'pz-test',
+      oi: 2,
+      name: 'Тестовая пицца',
+      opt: '35 см, тонкое',
+      sz: 35,
+      price: 970,
+      qty: 2,
+      modifiers: [{ id: 'cheese-test', name: 'Доп. сыр', price: 50 }]
+    }]
+  }));
+
+  await page.locator('#orderTrackModal [data-ot-repeat]').click();
+
+  const restored = await page.evaluate(() => window.cart[0]);
+  expect(restored).toMatchObject({
+    key: 'pz-test_2',
+    id: 'pz-test',
+    oi: 2,
+    opt: '35 см, тонкое',
+    sz: 35,
+    price: 970,
+    qty: 2,
+    modifiers: [{ id: 'cheese-test', name: 'Доп. сыр', price: 50 }]
+  });
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+});
