@@ -38,7 +38,7 @@ Source: owner-provided screenshot dated 2026-11-14.
 - Delivery-card add/stepper actions delegate to the cart owner. Order tracking and deep links use the explicit `replaceCartItems` contract rather than mutating the shared array directly.
 - Updated `docs/module-map.md` with the ownership boundary.
 - Regression coverage checks card geometry, compact in-cart state, 44px CTA hit target, no row overflow, stepper persistence, expanded-modifier row identity and order repeat behavior.
-- Visual inspection of the first 228px screenshot exposed a 28px-wide in-cart CTA. The first CSS attempt lost to a later, more-specific mobile rule in `160-12-admin-bar-tail.css` (CI measured 28px). The winning override is now corrected at that cascade owner: at widths up to 260px the row gap is removed and the CTA reserves 44px while both step controls remain 44px. The test asserts hit-target width and no row overflow.
+- Visual inspection of the first 228px screenshot exposed a 28px-wide in-cart CTA. The first CSS attempt lost to a later, more-specific mobile rule in `160-12-admin-bar-tail.css` (CI measured 28px). The winning override is now corrected at that cascade owner: at widths up to 260px the row gap is removed, the row expands 2px into the card's inner padding, and the CTA reserves 44px. The separate plus button is hidden at this extreme width: the CTA itself is the increment control and the minus button remains available; both interactive controls are 44px. The accessible label states that the CTA adds another item. The test asserts the 44px hit target and no row overflow.
 
 ### P2 — Related leads — CLOSED / NO DEFECT
 
