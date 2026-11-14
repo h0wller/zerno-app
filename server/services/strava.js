@@ -41,7 +41,8 @@ function safeHttpsUrl(value) {
 }
 
 function toActivityView(activity) {
-  const id = activity && activity.id;
+  if (!activity || typeof activity !== 'object') return null;
+  const id = activity.id;
   const distance = Number(activity && activity.distance);
   const movingTime = Number(activity && activity.moving_time);
   const elapsedTime = Number(activity && activity.elapsed_time);
@@ -54,7 +55,8 @@ function toActivityView(activity) {
       !Number.isFinite(distance) || !Number.isFinite(movingTime) ||
       !Number.isFinite(elapsedTime) || !Number.isFinite(Date.parse(startedAt)) ||
       distance < 0 || movingTime < 0 || elapsedTime < 0 ||
-      !Number.isFinite(averageSpeed) && activity.average_speed !== undefined) {
+      (!Number.isFinite(averageSpeed) && activity.average_speed !== undefined) ||
+      (Number.isFinite(averageSpeed) && averageSpeed < 0)) {
     return null;
   }
   return {
@@ -281,13 +283,11 @@ export function createStravaService({
     return { connected: true };
   }
 
-  async function getAccessToken(customerId) {
-    const row = database.prepare('SELECT * FROM strava_connections WHERE cid = ?')
-      .get(String(customerId || ''));
-    if (!row) throw makeError('strava_not_connected');
-    const nowSeconds = Math.floor(nowMs() / 1000);
-    if (row.expires_at > nowSeconds + 3_600) return decryptToken(row.access_token_enc);
+  const refreshInFlight = new Map();
 
+  async function refreshAccessToken(customerId, row) {
+    const cid = String(customerId);
+    const nowSeconds = Math.floor(nowMs() / 1000);
     const refreshToken = decryptToken(row.refresh_token_enc);
     const body = new URLSearchParams({
       client_id: String(env.STRAVA_CLIENT_ID),
@@ -303,28 +303,63 @@ export function createStravaService({
     if (!response.ok || !payload || !payload.access_token || !payload.refresh_token ||
         !Number.isSafeInteger(Number(payload.expires_at))) {
       if (response.status === 400 || response.status === 401) {
-        database.prepare('DELETE FROM strava_connections WHERE cid = ?').run(String(customerId));
+        const removed = database.prepare(
+          'DELETE FROM strava_connections WHERE cid = ? AND refresh_token_enc = ?',
+        ).run(cid, row.refresh_token_enc).changes;
+        if (!removed) {
+          const latest = database.prepare(
+            'SELECT access_token_enc, expires_at FROM strava_connections WHERE cid = ?',
+          ).get(cid);
+          if (latest && latest.expires_at > nowSeconds + 60) return decryptToken(latest.access_token_enc);
+        }
         throw makeError('strava_reauthorization_required');
       }
       throw makeError('strava_token_refresh_failed');
     }
     const scopes = normalizeScopes(payload.scope || row.scopes);
     if (!hasApprovedScopes(scopes)) {
-      database.prepare('DELETE FROM strava_connections WHERE cid = ?').run(String(customerId));
+      database.prepare(
+        'DELETE FROM strava_connections WHERE cid = ? AND refresh_token_enc = ?',
+      ).run(cid, row.refresh_token_enc);
       throw makeError('strava_reauthorization_required');
     }
     const updatedAt = new Date(nowMs()).toISOString();
-    database.prepare(
-      'UPDATE strava_connections SET access_token_enc=?, refresh_token_enc=?, expires_at=?, scopes=?, updated_at=? WHERE cid=?',
+    const result = database.prepare(
+      'UPDATE strava_connections SET access_token_enc=?, refresh_token_enc=?, expires_at=?, scopes=?, updated_at=? WHERE cid=? AND refresh_token_enc=?',
     ).run(
       encryptToken(payload.access_token),
       encryptToken(payload.refresh_token),
       Number(payload.expires_at),
       [...scopes].sort().join(' '),
       updatedAt,
-      String(customerId),
+      cid,
+      row.refresh_token_enc,
     );
+    if (!result.changes) {
+      const latest = database.prepare(
+        'SELECT access_token_enc, expires_at FROM strava_connections WHERE cid = ?',
+      ).get(cid);
+      if (latest && latest.expires_at > nowSeconds + 60) return decryptToken(latest.access_token_enc);
+      throw makeError('strava_not_connected');
+    }
     return payload.access_token;
+  }
+
+  async function getAccessToken(customerId) {
+    const cid = String(customerId || '');
+    const row = database.prepare('SELECT * FROM strava_connections WHERE cid = ?').get(cid);
+    if (!row) throw makeError('strava_not_connected');
+    const nowSeconds = Math.floor(nowMs() / 1000);
+    if (row.expires_at > nowSeconds + 3_600) return decryptToken(row.access_token_enc);
+
+    if (refreshInFlight.has(cid)) return refreshInFlight.get(cid);
+    const pending = refreshAccessToken(cid, row);
+    refreshInFlight.set(cid, pending);
+    try {
+      return await pending;
+    } finally {
+      if (refreshInFlight.get(cid) === pending) refreshInFlight.delete(cid);
+    }
   }
 
   async function listActivities(customerId, { page = 1, perPage = 10 } = {}) {
@@ -352,6 +387,85 @@ export function createStravaService({
       perPage: pageSize,
       activities: payload.map(toActivityView).filter(Boolean),
     };
+  }
+
+  const refreshInFlight = new Map();
+
+  async function refreshAccessToken(customerId, row) {
+    const cid = String(customerId);
+    const nowSeconds = Math.floor(nowMs() / 1000);
+    const refreshToken = decryptToken(row.refresh_token_enc);
+    const body = new URLSearchParams({
+      client_id: String(env.STRAVA_CLIENT_ID),
+      client_secret: String(env.STRAVA_CLIENT_SECRET),
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    });
+    const { response, payload } = await requestJson(TOKEN_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    if (!response.ok || !payload || !payload.access_token || !payload.refresh_token ||
+        !Number.isSafeInteger(Number(payload.expires_at))) {
+      if (response.status === 400 || response.status === 401) {
+        const removed = database.prepare(
+          'DELETE FROM strava_connections WHERE cid = ? AND refresh_token_enc = ?',
+        ).run(cid, row.refresh_token_enc).changes;
+        if (!removed) {
+          const latest = database.prepare(
+            'SELECT access_token_enc, expires_at FROM strava_connections WHERE cid = ?',
+          ).get(cid);
+          if (latest && latest.expires_at > nowSeconds + 60) return decryptToken(latest.access_token_enc);
+        }
+        throw makeError('strava_reauthorization_required');
+      }
+      throw makeError('strava_token_refresh_failed');
+    }
+    const scopes = normalizeScopes(payload.scope || row.scopes);
+    if (!hasApprovedScopes(scopes)) {
+      database.prepare(
+        'DELETE FROM strava_connections WHERE cid = ? AND refresh_token_enc = ?',
+      ).run(cid, row.refresh_token_enc);
+      throw makeError('strava_reauthorization_required');
+    }
+    const updatedAt = new Date(nowMs()).toISOString();
+    const result = database.prepare(
+      'UPDATE strava_connections SET access_token_enc=?, refresh_token_enc=?, expires_at=?, scopes=?, updated_at=? WHERE cid=? AND refresh_token_enc=?',
+    ).run(
+      encryptToken(payload.access_token),
+      encryptToken(payload.refresh_token),
+      Number(payload.expires_at),
+      [...scopes].sort().join(' '),
+      updatedAt,
+      cid,
+      row.refresh_token_enc,
+    );
+    if (!result.changes) {
+      const latest = database.prepare(
+        'SELECT access_token_enc, expires_at FROM strava_connections WHERE cid = ?',
+      ).get(cid);
+      if (latest && latest.expires_at > nowSeconds + 60) return decryptToken(latest.access_token_enc);
+      throw makeError('strava_not_connected');
+    }
+    return payload.access_token;
+  }
+
+  async function getAccessToken(customerId) {
+    const cid = String(customerId || '');
+    const row = database.prepare('SELECT * FROM strava_connections WHERE cid = ?').get(cid);
+    if (!row) throw makeError('strava_not_connected');
+    const nowSeconds = Math.floor(nowMs() / 1000);
+    if (row.expires_at > nowSeconds + 3_600) return decryptToken(row.access_token_enc);
+
+    if (refreshInFlight.has(cid)) return refreshInFlight.get(cid);
+    const pending = refreshAccessToken(cid, row);
+    refreshInFlight.set(cid, pending);
+    try {
+      return await pending;
+    } finally {
+      if (refreshInFlight.get(cid) === pending) refreshInFlight.delete(cid);
+    }
   }
 
   function getStatus(customerId) {
