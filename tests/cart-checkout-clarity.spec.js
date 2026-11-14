@@ -245,7 +245,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(nextRecommendationButton).toBeEnabled();
 
   await nextRecommendationButton.click();
-  await expect.poll(() => cardsRail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+  await expect.poll(() => cardsRail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(initialRailMetrics.startOffset + 1);
   await expect(previousRecommendationButton).toBeEnabled();
   await previousRecommendationButton.click();
   await expect.poll(() => cardsRail.evaluate((el) => {
