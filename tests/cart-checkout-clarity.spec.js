@@ -22,7 +22,9 @@ const MENU_ITEM = {
 const RECOMMENDED_ITEMS = [
   { id: 'test-drink', cat: 'drinks', name: 'Лимонад к заказу', price: 180, on: 1, e: '🥤' },
   { id: 'test-sauce', cat: 'sauces', name: 'Соус сырный', price: 70, on: 1, e: '🥫' },
-  { id: 'test-topping', cat: 'sauces', name: 'Шампиньоны', price: 90, on: 1, e: '🍄' }
+  { id: 'test-topping', cat: 'sauces', name: 'Шампиньоны', price: 90, on: 1, e: '🍄' },
+  { id: 'test-drink-extra', cat: 'drinks', name: 'Морс ягодный', price: 150, on: 1, e: '🥤' },
+  { id: 'test-sauce-extra', cat: 'sauces', name: 'Соус барбекю', price: 80, on: 1, e: '🥫' }
 
 ];
 
@@ -217,12 +219,14 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'false');
   await sauceRecommendations.click();
   await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'true');
-  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(1);
-  await expect(recommendations.locator('.ac-name')).toHaveText(['Соус сырный']);
+  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(2);
+  await expect(recommendations.locator('.ac-name')).toHaveText(['Соус сырный', 'Соус барбекю']);
   await allRecommendations.click();
   await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
-  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(2);
-  await expect(recommendations.locator('.ac-name')).toHaveText(['Лимонад к заказу', 'Соус сырный']);
+  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(4);
+  await expect(recommendations.locator('.ac-name')).toHaveText([
+    'Лимонад к заказу', 'Соус сырный', 'Морс ягодный', 'Соус барбекю'
+  ]);
 
   // Desktop: vertical wheel over the horizontal recommendation rail must keep scrolling the cart body.
   const recommendationCardsRail = recommendations.locator('.ca-cards-scroll');
@@ -233,6 +237,10 @@ test('cart keeps the current selected price and explains every amount without gu
     scrollLeft: rail.scrollLeft
   }));
   expect(railOverflow.scrollWidth).toBeGreaterThan(railOverflow.clientWidth);
+  await testInfo.attach('cart-recommendations-desktop-before-drag', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
   await cartScrollBody.evaluate((body) => { body.scrollTop = 0; });
   const railBoundsBeforeWheel = await recommendationCardsRail.boundingBox();
   await page.mouse.move(
@@ -242,6 +250,13 @@ test('cart keeps the current selected price and explains every amount without gu
   await page.mouse.wheel(0, 160);
   await expect.poll(() => recommendationCardsRail.evaluate((rail) => rail.scrollLeft)).toBe(0);
   await expect.poll(() => cartScrollBody.evaluate((body) => body.scrollTop)).toBeGreaterThan(0);
+  await testInfo.attach('cart-recommendations-after-vertical-wheel', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+
+  await cartScrollBody.evaluate((body) => { body.scrollTop = 0; });
+  await recommendations.scrollIntoViewIfNeeded();
 
   // A deliberate left-button drag still moves recommendations horizontally.
   const railBoundsForDrag = await recommendationCardsRail.boundingBox();
@@ -252,6 +267,10 @@ test('cart keeps the current selected price and explains every amount without gu
   await page.mouse.move(dragStartX - 120, dragY, { steps: 6 });
   await page.mouse.up();
   await expect.poll(() => recommendationCardsRail.evaluate((rail) => rail.scrollLeft)).toBeGreaterThan(0);
+  await testInfo.attach('cart-recommendations-after-mouse-drag', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('#cartClose')).toBeVisible();
