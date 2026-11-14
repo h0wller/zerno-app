@@ -76,6 +76,8 @@
   position: relative;
   min-width: 0;
   margin-bottom: 12px;
+  /* The reserved 68px slot contains a 56px chip rail and a 12px trailing gap. */
+  --subfilter-reserved-gap: 12px;
 }
 
 .subfilter-viewport.has-overflow::after {
@@ -98,14 +100,15 @@
 .subfilter-viewport.has-overflow::before {
   content: "";
   position: absolute;
-  inset-block-start: 50%;
+  inset-block: 0 var(--subfilter-reserved-gap);
   inset-inline-end: 13px;
   z-index: 4;
   width: 7px;
   height: 7px;
+  margin-block: auto;
   border-block-start: 2px solid var(--fr-choc, var(--ink));
   border-inline-end: 2px solid var(--fr-choc, var(--ink));
-  transform: translateY(-50%) rotate(45deg);
+  transform: rotate(45deg);
   pointer-events: none;
   transition: opacity 0.18s ease;
 }
