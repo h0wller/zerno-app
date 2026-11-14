@@ -597,8 +597,8 @@ html body div.wrap > section {
   html body #deliveryGrid .cta.incart,
   html body #grid .cta.incart { width:auto; flex:0 0 auto; padding:0 12px; }
 
-  html body #deliveryGrid .steprow.compact-quantity-row,
-  html body #grid .steprow.compact-quantity-row {
+  html[data-brand="delivery"] #deliveryGrid .card .steprow.compact-quantity-row,
+  html[data-brand="coffee"] #grid .card .steprow.compact-quantity-row {
     box-sizing:border-box;
     gap:0;
     width:calc(100% + 10px);
