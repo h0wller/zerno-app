@@ -599,7 +599,13 @@ html body div.wrap > section {
 
   @media (max-width:260px) {
     html body #deliveryGrid .steprow,
-    html body #grid .steprow { gap:0; }
+    html body #grid .steprow {
+      gap:0;
+      width:calc(100% + 2px);
+      margin-inline:-1px;
+    }
+    html body #deliveryGrid .steprow > .step[data-step="1"],
+    html body #grid .steprow > .step[data-step="1"] { display:none; }
     html body #deliveryGrid .steprow > .cta[data-add].incart,
     html body #grid .steprow > .cta[data-add].incart {
       width:44px;
