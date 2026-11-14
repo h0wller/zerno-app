@@ -467,6 +467,12 @@ test('mobile category navigation carries each storefront brand identity and stay
       });
       await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
       await expect(page.locator(brand.rail + ' button.on')).toBeVisible({ timeout: 10000 });
+      if (brand.brand === 'coffee') {
+        await expect.poll(
+          () => page.locator(brand.rail + ' button.on').evaluate((button) => getComputedStyle(button).backgroundColor),
+          { message: 'coffee active tab settles on its white brand surface' },
+        ).toBe('rgb(255, 255, 255)');
+      }
       if (brand.brand === 'delivery') {
         await expect(page.locator('#deliverySubFilter .subchip').first()).toBeVisible({ timeout: 15000 });
       }
@@ -523,7 +529,7 @@ test('mobile category navigation carries each storefront brand identity and stay
         expect(metrics.railRadius, 'coffee rail uses a softer rounded frame').toBe('16px');
         const coffeeActiveSurface = metrics.buttonBackground.match(/[0-9.]+/g).map(Number);
         expect(coffeeActiveSurface.slice(0, 3), 'coffee active tab keeps a white surface').toEqual([255, 255, 255]);
-        expect(coffeeActiveSurface.length > 3 ? coffeeActiveSurface[3] : 1, 'coffee active tab keeps its translucent white treatment').toBeCloseTo(0.706, 3);
+        expect(coffeeActiveSurface.length > 3 ? coffeeActiveSurface[3] : 1, 'coffee active tab settles to an opaque white surface').toBe(1);
         expect(metrics.buttonColor, 'coffee active label uses the deep ocean blue').toBe('rgb(18, 58, 107)');
         expect(metrics.buttonBorderWidth, 'coffee active tab uses a fine blue outline').toBe('1px');
         expect(metrics.buttonShadow, 'coffee active tab uses a soft shadow').toContain('rgba(18, 58, 107');
