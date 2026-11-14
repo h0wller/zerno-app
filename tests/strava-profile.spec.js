@@ -27,6 +27,11 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
       sessionStorage.setItem('splashDone', '1');
     });
 
+    await page.route('**/api/orders/mine', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ orders: [] }),
+    }));
     await page.route('**/api/fitness/strava/status', async route => {
       await route.fulfill({
         status: 200,
