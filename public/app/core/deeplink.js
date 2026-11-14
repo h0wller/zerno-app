@@ -1,5 +1,5 @@
-/* public/app/core/deeplink.js — Ф3.15: диплинки (brand/tab/no/support) + Telegram Mini App.
-   Было fix-views.js: секция 13 + v69 + v10-support. */
+/* public/app/core/deeplink.js — Ф3.15: диплинки (brand/tab/no/support) + Telegram Mini App. */
+import { restoreOrderItems } from './order-reorder.js';
 (function(){
 'use strict';
 
@@ -277,21 +277,19 @@ if (typeof window.__initialSearch === 'undefined') {
       tries++;
       if (window.me && typeof api === 'function') {
         clearInterval(ivReorder);
-        api('/orders/mine').then(function (data) {
+        api('/orders/mine').then(async function (data) {
           var order = (data.orders || []).find(function (x) { return x.id === rid; });
           if (!order) return;
-          var restored = (order.items || []).map(function (i) {
-            return {
-              key: String(i.id) + '_' + (i.opt || '0'),
-              id: i.id,
-              oi: -1,
-              name: i.name,
-              opt: i.opt || null,
-              price: Number(i.price) || 0,
-              sz: Number(i.sz) || 0,
-              qty: Number(i.qty) || 1,
-            };
-          });
+          if ((!Array.isArray(window.DMENU) || !window.DMENU.length) &&
+              (order.items || []).some(function (item) { return item.opt && !Number.isInteger(item.oi); }) &&
+              typeof window.loadDelivery === 'function') {
+            await window.loadDelivery();
+          }
+          var restored = restoreOrderItems(order.items, window.DMENU);
+          if (restored.some(function (item) { return item.opt && item.oi < 0; })) {
+            if (typeof toast === 'function') toast('Не удалось восстановить вариант одной из позиций. Проверьте меню и повторите заказ.', '⚠️');
+            return;
+          }
           window.cart = restored;
           try { localStorage.setItem('zt_cart', JSON.stringify(restored)); } catch (e) {}
           if (typeof window.updateCartFab === 'function') window.updateCartFab();
