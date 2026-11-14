@@ -655,6 +655,10 @@ test('mobile category navigation exposes usable scrolling and spacing across por
         await rail.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
         await expect.poll(() => rail.evaluate((element) => element.classList.contains('at-end'))).toBe(true);
         await expect.poll(() => rail.evaluate((element) => getComputedStyle(element, '::after').opacity)).toBe('0');
+        await testInfo.attach(brand.brand + '-' + viewport.name.replaceAll(' ', '-') + '-navigation-end', {
+          body: await page.screenshot({ animations: 'disabled' }),
+          contentType: 'image/png',
+        });
         await rail.evaluate((element) => { element.scrollLeft = 0; });
         await expect.poll(() => rail.evaluate((element) => element.classList.contains('at-end'))).toBe(false);
         await rail.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
