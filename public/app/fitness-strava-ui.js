@@ -324,19 +324,8 @@
     if (!status) refreshStatus(section);
   }
 
-  var originalRender = window.renderProfile;
-  if (typeof originalRender === 'function' && !originalRender.__stravaWrapped) {
-    var wrappedRender = function () {
-      var result = originalRender.apply(this, arguments);
-      render();
-      return result;
-    };
-    wrappedRender.__stravaWrapped = true;
-    window.renderProfile = wrappedRender;
-  }
-
   if (window.ztBus && typeof window.ztBus.on === 'function') {
-    window.ztBus.on('auth:user-changed', function () { render(); });
+    window.ztBus.on('profile:rendered', function () { render(); });
   }
 
   function refreshAfterExternalAuth() {
