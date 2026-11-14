@@ -223,6 +223,36 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
   await expect(recommendations.locator('.addon-pill-card')).toHaveCount(2);
   await expect(recommendations.locator('.ac-name')).toHaveText(['Лимонад к заказу', 'Соус сырный']);
+
+  // Desktop: vertical wheel over the horizontal recommendation rail must keep scrolling the cart body.
+  const recommendationCardsRail = recommendations.locator('.ca-cards-scroll');
+  const cartScrollBody = page.locator('#cartScrollBody');
+  const railOverflow = await recommendationCardsRail.evaluate((rail) => ({
+    clientWidth: rail.clientWidth,
+    scrollWidth: rail.scrollWidth,
+    scrollLeft: rail.scrollLeft
+  }));
+  expect(railOverflow.scrollWidth).toBeGreaterThan(railOverflow.clientWidth);
+  await cartScrollBody.evaluate((body) => { body.scrollTop = 0; });
+  const railBoundsBeforeWheel = await recommendationCardsRail.boundingBox();
+  await page.mouse.move(
+    railBoundsBeforeWheel.x + railBoundsBeforeWheel.width / 2,
+    railBoundsBeforeWheel.y + railBoundsBeforeWheel.height / 2
+  );
+  await page.mouse.wheel(0, 160);
+  await expect.poll(() => recommendationCardsRail.evaluate((rail) => rail.scrollLeft)).toBe(0);
+  await expect.poll(() => cartScrollBody.evaluate((body) => body.scrollTop)).toBeGreaterThan(0);
+
+  // A deliberate left-button drag still moves recommendations horizontally.
+  const railBoundsForDrag = await recommendationCardsRail.boundingBox();
+  const dragStartX = railBoundsForDrag.x + railBoundsForDrag.width * 0.78;
+  const dragY = railBoundsForDrag.y + railBoundsForDrag.height / 2;
+  await page.mouse.move(dragStartX, dragY);
+  await page.mouse.down();
+  await page.mouse.move(dragStartX - 120, dragY, { steps: 6 });
+  await page.mouse.up();
+  await expect.poll(() => recommendationCardsRail.evaluate((rail) => rail.scrollLeft)).toBeGreaterThan(0);
+
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('#cartClose')).toBeVisible();
   await expect(page.locator('#cartClose .cart-continue-short')).toBeVisible();
