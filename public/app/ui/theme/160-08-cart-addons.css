@@ -226,8 +226,7 @@
   scrollbar-width: none;
 }
 
-.ca-tabs-scroll::-webkit-scrollbar,
-.ca-cards-scroll::-webkit-scrollbar {
+.ca-tabs-scroll::-webkit-scrollbar {
   display: none;
 }
 
@@ -280,6 +279,12 @@
   outline-offset: -2px;
 }
 
+.ca-cards-frame {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
 .ca-cards-scroll {
   display: flex;
   gap: 8px;
@@ -291,6 +296,16 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+}
+
+.ca-scroll-btn {
+  display: none;
+}
+
+.ca-cards-scroll:focus-visible {
+  outline: 2px solid var(--focus, #1A6DDF);
+  outline-offset: -2px;
 }
 
 .addon-pill-card {
@@ -466,6 +481,86 @@
   padding: 10px 4px;
   color: var(--soft, #586470);
   font-size: 11px;
+}
+
+/* Desktop: explicit controls, visible scrollbar and predictable wheel navigation. */
+@media (min-width: 821px) and (pointer: fine) {
+  .ca-cards-frame {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ca-cards-scroll {
+    flex: 1 1 auto;
+    width: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--flame, #C03B2A) var(--fr-tan, #D8DFE4);
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+  }
+
+  .ca-cards-scroll::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+
+  .ca-cards-scroll::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: var(--fr-tan, #D8DFE4);
+  }
+
+  .ca-cards-scroll::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: var(--flame, #C03B2A);
+  }
+
+  .ca-scroll-btn {
+    display: grid;
+    flex: 0 0 34px;
+    place-items: center;
+    width: 34px;
+    height: 54px;
+    padding: 0;
+    border: 1px solid var(--fr-tan, var(--line, #D8DFE4));
+    border-radius: 10px;
+    background: var(--fr-paper, #FFFFFF);
+    color: var(--fr-choc, var(--ink, #101418));
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, opacity .15s ease;
+  }
+
+  .ca-scroll-btn[hidden] {
+    display: none;
+  }
+
+  .ca-scroll-btn svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+
+  .ca-scroll-btn:hover:not(:disabled) {
+    border-color: var(--fr-choc, var(--ink, #101418));
+    background: var(--fr-rice, var(--panel, #F3F8FC));
+  }
+
+  .ca-scroll-btn:disabled {
+    opacity: .35;
+    cursor: default;
+  }
+
+  .ca-scroll-btn:focus-visible {
+    outline: 2px solid var(--focus, #1A6DDF);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 820px) {
+  .ca-scroll-btn,
+  .ca-cards-scroll::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @media (max-width: 380px) {
