@@ -106,6 +106,7 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
     await expect(page.locator('#stravaProfileSection')).toBeVisible();
     await expect(page.locator('#stravaProfileStyles')).toHaveCount(1);
     await expect(page.locator('#stravaProfileSection')).toHaveCSS('display', 'grid');
+    await expect(page.locator('#stravaProfileSection')).toContainText('Аккаунт Strava не подключён.');
     await page.screenshot({
       path: testInfo.outputPath('strava-profile-' + brand + '-portrait-390x844.png'),
       fullPage: true,
@@ -189,7 +190,7 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
     await expect(page).toHaveURL(/scope=activity%3Aread/);
   });
 
-  test('shows only activity summary fields and supports account disconnection', async ({ page }) => {
+  test('shows only activity summary fields and supports account disconnection', async ({ page }, testInfo) => {
     const section = page.locator('#stravaProfileSection');
 
     await page.route('**/api/fitness/strava/status', async route => {
@@ -211,6 +212,10 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
     await expect(section).toContainText('Powered by Strava');
     await expect(section).not.toContainText('must-not-be-rendered');
     await expect(section.locator('a[href*="polyline"]')).toHaveCount(0);
+    await page.screenshot({
+      path: testInfo.outputPath('strava-profile-' + brand + '-activities-390x844.png'),
+      fullPage: true,
+    });
 
     page.once('dialog', dialog => dialog.accept());
     await section.getByRole('button', { name: 'Отключить Strava' }).click();
