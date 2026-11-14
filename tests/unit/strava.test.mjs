@@ -222,6 +222,49 @@ test('refreshes expiring tokens and persists the rotated refresh token', async (
   db.close();
 });
 
+
+test('deduplicates simultaneous refreshes for one profile while serving both activity reads', async () => {
+  let refreshRequests = 0;
+  let activityRequests = 0;
+  const { db, service } = fixture({
+    fetchImpl: async (url, options = {}) => {
+      if (String(url) === 'https://www.strava.com/oauth/token') {
+        const grant = options.body.get('grant_type');
+        if (grant === 'authorization_code') return tokenResponse();
+        refreshRequests += 1;
+        await new Promise(resolve => setTimeout(resolve, 10));
+        return okJson({
+          access_token: 'concurrent-access',
+          refresh_token: 'concurrent-refresh',
+          expires_at: Math.floor(FIXED_NOW / 1000) + 7200,
+          scope: 'read,activity:read',
+        });
+      }
+      activityRequests += 1;
+      return okJson([]);
+    },
+  });
+  const state = new URL(service.createAuthorizationUrl('guest-1').url).searchParams.get('state');
+  await service.completeAuthorization({ state, code: 'initial', grantedScope: 'activity:read' });
+  db.prepare('UPDATE strava_connections SET expires_at=? WHERE cid=?')
+    .run(Math.floor(FIXED_NOW / 1000) + 120, 'guest-1');
+
+  const [first, second] = await Promise.all([
+    service.listActivities('guest-1'),
+    service.listActivities('guest-1'),
+  ]);
+
+  assert.deepEqual(first.activities, []);
+  assert.deepEqual(second.activities, []);
+  assert.equal(refreshRequests, 1);
+  assert.equal(activityRequests, 2);
+  assert.notEqual(
+    db.prepare('SELECT refresh_token_enc FROM strava_connections WHERE cid=?').get('guest-1').refresh_token_enc,
+    'concurrent-refresh',
+  );
+  db.close();
+});
+
 test('disconnect removes the local link and revokes the provider refresh token', async () => {
   const { db, service, calls } = fixture({
     fetchImpl: async (url) => String(url).includes('/oauth/token')
