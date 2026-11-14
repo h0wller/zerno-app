@@ -40,7 +40,7 @@
 | `GET /api/fitness/strava/webhook/{secret}` | Верификация Strava webhook subscription | Секретный URL path + verify token |
 | `POST /api/fitness/strava/webhook/{secret}` | Обработка отзыва доступа спортсменом | Секретный URL path + subscription ID |
 
-Strava просит только `activity:read`. Все ответы `/api/fitness/strava/*` получают `Cache-Control: no-store, private`; тренировки отдаются только владельцу сессии и не сохраняются в SQLite, Service Worker или browser cache. Данные Strava не начисляют бонусы и не объединяются с заказами, покупками или аналитикой. Подробная настройка, OAuth consent и ограничения — [docs/strava-integration.md](./strava-integration.md).
+Strava OAuth и read-only секция профиля реализованы в коде, но **интеграция не одобрена для production и должна оставаться выключенной (`STRAVA_ENABLED=false`)**. До письменного подтверждения Strava нельзя подключать реальные аккаунты: панель находится внутри существующего профиля Zerno, и требуется подтвердить, что это допустимо по §5.4 API Policy. Запрос `activity:read` минимален; ответы `/api/fitness/strava/*` получают `Cache-Control: no-store, private`, активности и маршруты не сохраняются. Strava-данные не поступают в заказы, лояльность, аналитику или staff API. Отдельный сценарий «тренировка → бесплатный кофе» не реализован и требует отдельного письменного согласования. Подробная настройка и policy gate — [docs/strava-integration.md](./strava-integration.md).
 
 ## Авторизация и профиль
 
