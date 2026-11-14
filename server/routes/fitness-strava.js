@@ -1,8 +1,46 @@
+import crypto from 'node:crypto';
 import { Router } from 'express';
 import { userGuard } from '../middleware/auth.js';
 import { stravaService } from '../services/strava.js';
 
 export const STRAVA_CONSENT_VERSION = '2026-11-14-v1';
+
+
+const STRAVA_STATE_COOKIE = '__Secure-zerno_strava_state';
+
+function readCookie(req, name) {
+  const header = String(req && req.headers && req.headers.cookie || '');
+  for (const entry of header.split(';')) {
+    const separator = entry.indexOf('=');
+    if (separator < 0) continue;
+    if (entry.slice(0, separator).trim() !== name) continue;
+    try { return decodeURIComponent(entry.slice(separator + 1).trim()); } catch { return null; }
+  }
+  return null;
+}
+
+export function matchesStravaBrowserState(req, state) {
+  const queryState = String(state || '');
+  const cookieState = readCookie(req, STRAVA_STATE_COOKIE);
+  if (!/^[A-Za-z0-9_-]{32,100}$/.test(queryState) ||
+      !cookieState || cookieState.length !== queryState.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(cookieState), Buffer.from(queryState));
+}
+
+function setStravaStateCookie(res, state) {
+  res.setHeader(
+    'Set-Cookie',
+    STRAVA_STATE_COOKIE + '=' + encodeURIComponent(state) +
+      '; Max-Age=600; Path=/api/fitness/strava/callback; HttpOnly; Secure; SameSite=Lax',
+  );
+}
+
+function clearStravaStateCookie(res) {
+  res.setHeader(
+    'Set-Cookie',
+    STRAVA_STATE_COOKIE + '=; Max-Age=0; Path=/api/fitness/strava/callback; HttpOnly; Secure; SameSite=Lax',
+  );
+}
 
 const CONSENT_NOTICE = {
   version: STRAVA_CONSENT_VERSION,
@@ -83,8 +121,13 @@ export function createStravaRouter({
       });
     }
     try {
+      const authorization = service.createAuthorizationUrl(req.user.id);
+      const state = new URL(authorization.url).searchParams.get('state');
+      if (!state) return res.status(502).json({ error: 'strava_authorization_state_missing' });
+      setStravaStateCookie(res, state);
+      res.setHeader('Cache-Control', 'no-store');
       return res.json({
-        authorizationUrl: service.createAuthorizationUrl(req.user.id).url,
+        authorizationUrl: authorization.url,
         scope: 'activity:read',
         expiresInSeconds: 600,
       });
@@ -94,16 +137,24 @@ export function createStravaRouter({
   });
 
   router.get('/api/fitness/strava/callback', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const state = String(req.query.state || '');
+    const browserBound = matchesStravaBrowserState(req, state);
+    clearStravaStateCookie(res);
+    if (!browserBound) {
+      return res.status(400).send('Не удалось подтвердить браузер, начавший подключение Strava. Начните подключение заново.');
+    }
+
     const denied = String(req.query.error || '') === 'access_denied';
     if (denied) {
-      try { service.consumeOAuthState(req.query.state); } catch {}
+      try { service.consumeOAuthState(state); } catch {}
       const target = redirectTarget(env, 'denied');
       return target ? res.redirect(303, target) : res.status(200).send('Доступ Strava не предоставлен. Окно можно закрыть.');
     }
 
     try {
       await service.completeAuthorization({
-        state: req.query.state,
+        state,
         code: req.query.code,
         grantedScope: req.query.scope,
       });
