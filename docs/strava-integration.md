@@ -56,10 +56,10 @@ The server refuses to initiate OAuth unless all required values are valid and `S
 Strava allows one webhook subscription per application. Check the developer app for an existing subscription before creating another one. The callback URL contains the random path secret:
 
 ```sh
-curl --request POST 'https://www.strava.com/api/v3/push_subscriptions' \\
-  --form "client_id=$STRAVA_CLIENT_ID" \\
-  --form "client_secret=$STRAVA_CLIENT_SECRET" \\
-  --form "callback_url=https://friday.andcoffee.online/api/fitness/strava/webhook/$STRAVA_WEBHOOK_PATH_SECRET" \\
+curl --request POST 'https://www.strava.com/api/v3/push_subscriptions' \
+  --form "client_id=$STRAVA_CLIENT_ID" \
+  --form "client_secret=$STRAVA_CLIENT_SECRET" \
+  --form "callback_url=https://friday.andcoffee.online/api/fitness/strava/webhook/$STRAVA_WEBHOOK_PATH_SECRET" \
   --form "verify_token=$STRAVA_WEBHOOK_VERIFY_TOKEN"
 ```
 
