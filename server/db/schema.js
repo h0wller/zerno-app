@@ -181,4 +181,35 @@ CREATE TABLE IF NOT EXISTS fcm(
     });
     backfill();
   }
+
+  // Спортивные активности и награды. Сырые GPX/координаты не хранятся:
+  // сохраняются только сводные метрики и fingerprint для защиты от повторной загрузки.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS fitness_activities(
+      id TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      source TEXT NOT NULL CHECK(source IN ('gpx')),
+      fingerprint TEXT NOT NULL UNIQUE,
+      distance_meters INTEGER NOT NULL CHECK(distance_meters > 0),
+      elapsed_seconds INTEGER NOT NULL CHECK(elapsed_seconds > 0),
+      started_at TEXT NOT NULL,
+      received_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_fitness_activities_cid_received
+      ON fitness_activities(cid, received_at DESC);
+
+    CREATE TABLE IF NOT EXISTS fitness_rewards(
+      id TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      activity_id TEXT NOT NULL UNIQUE REFERENCES fitness_activities(id) ON DELETE CASCADE,
+      code TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL CHECK(status IN ('active','redeemed','expired')),
+      issued_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      redeemed_at TEXT,
+      redeemed_by TEXT REFERENCES customers(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_fitness_rewards_cid_issued
+      ON fitness_rewards(cid, issued_at DESC);
+  `);
 }

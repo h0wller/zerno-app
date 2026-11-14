@@ -90,6 +90,7 @@ SMS.ru сохранён как будущий платный канал авто
 | `POST /api/staff/redeem` | Списать бесплатный кофе | staffGuard |
 | `POST /api/redeem` | Списать доступный бесплатный кофе текущего пользователя | userGuard |
 | `POST /api/staff/scan` | Проверить QR гостя | staffGuard |
+| `POST /api/staff/fitness-rewards/:code/redeem` | Одноразово погасить спортивный подарок | staffGuard (cashier, admin) |
 | `GET /api/staff/log` | Журнал операций кассы | staffGuard |
 
 ## Чат

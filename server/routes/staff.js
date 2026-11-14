@@ -4,6 +4,7 @@ import { cust, addHist, logEv } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { grant, redeem } from '../domain/loyalty.js';
 import { grantBonus, QR_SOURCE } from '../domain/bonuses.js';
+import { fitnessRewardService } from '../domain/fitness-rewards.js';
 
 import { staffGuard } from '../middleware/auth.js';
 
@@ -85,6 +86,32 @@ staffRouter.post('/api/staff/redeem', staffGuard, (req, res) => {
 staffRouter.post('/api/staff/scan', staffGuard, (req, res) => {
   const c = db.prepare('SELECT * FROM customers WHERE qr=?').get(String(req.body.code || '').trim());
   c ? res.json({ customer: cust(c) }) : res.status(404).json({ error: 'QR не найден' });
+});
+
+staffRouter.post('/api/staff/fitness-rewards/:code/redeem', staffGuard, (req, res) => {
+  const result = fitnessRewardService.redeemReward({
+    code: req.params.code,
+    staffId: req.user.id,
+  });
+  if (result.ok) {
+    const owner = db.prepare('SELECT cid FROM fitness_rewards WHERE id=?').get(result.reward.id);
+    if (owner) {
+      addHist(owner.cid, 'Спортивный подарок ' + result.reward.code + ' погашен', req.user.name || 'Кассир');
+      logEv(req.user.name || 'Кассир', 'Погашен спортивный подарок ' + result.reward.code);
+    }
+    return res.json(result);
+  }
+
+  const responses = {
+    invalid_input: [400, 'Некорректный код спортивного подарка'],
+    staff_required: [403, 'Недостаточно прав для погашения подарка'],
+    reward_not_found: [404, 'Спортивный подарок не найден'],
+    reward_expired: [410, 'Срок действия спортивного подарка истёк'],
+    already_redeemed: [409, 'Спортивный подарок уже использован'],
+    reward_not_redeemable: [409, 'Спортивный подарок нельзя использовать'],
+  };
+  const [status, message] = responses[result.reason] || [500, 'Не удалось погасить спортивный подарок'];
+  return res.status(status).json({ error: message, code: result.reason });
 });
 
 
