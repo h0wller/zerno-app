@@ -46,9 +46,10 @@ async function waitForServer() {
   throw new Error('Timed out waiting for fitness test server:\n' + serverOutput);
 }
 
-async function request(route, { method = 'GET', token, body, headers = {} } = {}) {
+async function request(route, { method = 'GET', token, body, headers = {}, redirect = 'follow' } = {}) {
   const response = await fetch(base + route, {
     method,
+    redirect,
     headers: {
       ...(token ? { authorization: 'Bearer ' + token } : {}),
       ...(body === undefined ? {} : { 'content-type': 'application/json' }),
@@ -58,7 +59,7 @@ async function request(route, { method = 'GET', token, body, headers = {} } = {}
   });
   let json = {};
   try { json = await response.json(); } catch {}
-  return { status: response.status, json };
+  return { status: response.status, json, headers: response.headers };
 }
 
 function seedReward(code = 'RUN-TEST123456') {
@@ -100,6 +101,15 @@ before(async () => {
       TEST_TOKEN: '',
       TG_WEBHOOK_SECRET: webhookSecret,
       FITNESS_REWARDS_ENABLED: 'false',
+      STRAVA_ENABLED: 'true',
+      STRAVA_CLIENT_ID: '12345',
+      STRAVA_CLIENT_SECRET: 'strava-integration-test-client-secret',
+      STRAVA_REDIRECT_URI: 'https://zerno.example/api/fitness/strava/callback',
+      STRAVA_TOKEN_ENCRYPTION_KEY: 'a'.repeat(64),
+      STRAVA_WEBHOOK_VERIFY_TOKEN: 'strava-integration-verify-token',
+      STRAVA_WEBHOOK_PATH_SECRET: 'p'.repeat(48),
+      STRAVA_WEBHOOK_SUBSCRIPTION_ID: '6789',
+      WEBAPP_URL: 'https://zerno.example',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -110,7 +120,7 @@ before(async () => {
 });
 
 beforeEach(() => {
-  db.exec('DELETE FROM fitness_rewards; DELETE FROM fitness_activities; DELETE FROM tokens; DELETE FROM history; DELETE FROM events; DELETE FROM customers;');
+  db.exec('DELETE FROM strava_oauth_states; DELETE FROM strava_connections; DELETE FROM fitness_rewards; DELETE FROM fitness_activities; DELETE FROM tokens; DELETE FROM history; DELETE FROM events; DELETE FROM customers;');
 });
 
 after(async () => {
@@ -172,7 +182,7 @@ test('Strava profile endpoints require a user session and require versioned expl
   assert.equal(consent.status, 200);
   assert.equal(consent.json.notice.version, '2026-11-14-v1');
   assert.equal(consent.json.notice.data.length >= 2, true);
-  assert.equal(consent.json.enabled, false);
+  assert.equal(consent.json.enabled, true);
 
   const missingConsent = await request('/api/fitness/strava/connect', {
     method: 'POST', token: customerToken, body: {},
@@ -180,13 +190,37 @@ test('Strava profile endpoints require a user session and require versioned expl
   assert.equal(missingConsent.status, 400);
   assert.equal(missingConsent.json.error, 'explicit_strava_consent_required');
 
-  const notConfigured = await request('/api/fitness/strava/connect', {
+  const connect = await request('/api/fitness/strava/connect', {
     method: 'POST',
     token: customerToken,
     body: { consent: true, consentVersion: '2026-11-14-v1' },
   });
-  assert.equal(notConfigured.status, 503);
-  assert.equal(notConfigured.json.error, 'strava_not_configured');
+  assert.equal(connect.status, 200, JSON.stringify(connect.json));
+  assert.equal(connect.json.scope, 'activity:read');
+  const state = new URL(connect.json.authorizationUrl).searchParams.get('state');
+  const setCookie = connect.headers.get('set-cookie') || '';
+  assert.match(setCookie, /__Secure-zerno_strava_state=/);
+  assert.match(setCookie, /HttpOnly/);
+  assert.match(setCookie, /Secure/);
+  assert.match(setCookie, /SameSite=Lax/);
+  assert.match(setCookie, /Path=\\/api\\/fitness\\/strava\\/callback/);
+
+  const forwarded = await request(
+    '/api/fitness/strava/callback?state=' + encodeURIComponent(state) + '&error=access_denied',
+    { redirect: 'manual' },
+  );
+  assert.equal(forwarded.status, 400);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_oauth_states').get().n, 1);
+
+  const cookiePair = setCookie.split(';', 1)[0];
+  const denied = await request(
+    '/api/fitness/strava/callback?state=' + encodeURIComponent(state) + '&error=access_denied',
+    { headers: { cookie: cookiePair }, redirect: 'manual' },
+  );
+  assert.equal(denied.status, 303);
+  assert.equal(denied.headers.get('location'), 'https://zerno.example/?strava=denied');
+  assert.match(denied.headers.get('set-cookie') || '', /Max-Age=0/);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_oauth_states').get().n, 0);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_connections').get().n, 0);
 });
 
