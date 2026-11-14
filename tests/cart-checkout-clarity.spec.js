@@ -22,8 +22,11 @@ const MENU_ITEM = {
 const RECOMMENDED_ITEMS = [
   { id: 'test-drink', cat: 'drinks', name: 'Лимонад к заказу', price: 180, on: 1, e: '🥤' },
   { id: 'test-sauce', cat: 'sauces', name: 'Соус сырный', price: 70, on: 1, e: '🥫' },
-  { id: 'test-topping', cat: 'sauces', name: 'Шампиньоны', price: 90, on: 1, e: '🍄' }
-
+  { id: 'test-topping', cat: 'sauces', name: 'Шампиньоны', price: 90, on: 1, e: '🍄' },
+  { id: 'test-drink-2', cat: 'drinks', name: 'Морс клюквенный', price: 160, on: 1, e: '🥤' },
+  { id: 'test-drink-3', cat: 'drinks', name: 'Вода без газа', price: 90, on: 1, e: '💧' },
+  { id: 'test-sauce-2', cat: 'sauces', name: 'Соус барбекю', price: 70, on: 1, e: '🥫' },
+  { id: 'test-sauce-3', cat: 'sauces', name: 'Кетчуп', price: 50, on: 1, e: '🥫' }
 ];
 
 async function expectCompact44pxHitTarget(locator, visibleFace) {
@@ -212,17 +215,40 @@ test('cart keeps the current selected price and explains every amount without gu
       contentType: 'image/png'
     });
   }
+  // Desktop regression: a vertical mouse wheel over the horizontal recommendations rail
+  // must move the rail itself, not only the cart's outer scroll container.
+  const cardsRail = recommendations.locator('.ca-cards-scroll');
+  const initialRailMetrics = await cardsRail.evaluate((el) => ({
+    clientWidth: el.clientWidth,
+    scrollWidth: el.scrollWidth,
+    scrollLeft: el.scrollLeft
+  }));
+  expect(initialRailMetrics.scrollWidth).toBeGreaterThan(initialRailMetrics.clientWidth);
+  expect(initialRailMetrics.scrollLeft).toBe(0);
+  const cardsRailBox = await cardsRail.boundingBox();
+  await page.mouse.move(cardsRailBox.x + cardsRailBox.width / 2, cardsRailBox.y + cardsRailBox.height / 2);
+  await page.mouse.wheel(0, 320);
+  await expect.poll(() => cardsRail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+  await testInfo.attach('cart-recommendations-desktop-wheel', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+  await cardsRail.evaluate((el) => { el.scrollLeft = 0; });
+
   const sauceRecommendations = recommendations.locator('[data-atab="sauces"]');
   await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
   await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'false');
   await sauceRecommendations.click();
   await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'true');
-  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(1);
-  await expect(recommendations.locator('.ac-name')).toHaveText(['Соус сырный']);
+  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(3);
+  await expect(recommendations.locator('.ac-name')).toHaveText(['Соус сырный', 'Соус барбекю', 'Кетчуп']);
   await allRecommendations.click();
   await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
-  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(2);
-  await expect(recommendations.locator('.ac-name')).toHaveText(['Лимонад к заказу', 'Соус сырный']);
+  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(6);
+  await expect(recommendations.locator('.ac-name')).toHaveText([
+    'Лимонад к заказу', 'Соус сырный', 'Морс клюквенный',
+    'Вода без газа', 'Соус барбекю', 'Кетчуп'
+  ]);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('#cartClose')).toBeVisible();
   await expect(page.locator('#cartClose .cart-continue-short')).toBeVisible();
