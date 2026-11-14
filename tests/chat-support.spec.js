@@ -212,9 +212,10 @@ test('mobile chat keeps system safe areas outside the header and composer', asyn
 
     const internalSafeAreaRules = await page.evaluate(async () => {
       const css = await (await fetch('/app/ui/theme/100-chat.css')).text();
-      return [...css.matchAll(/\\.chat-[hi]\\s*\\{([^}]*)\\}/g)]
-        .map(([, declarations]) => declarations)
-        .filter(declarations => /env\\(\\s*safe-area-inset-/i.test(declarations));
+      return css.split('}').filter(rule =>
+        (rule.includes('.chat-h') || rule.includes('.chat-i')) &&
+        rule.includes('env(safe-area-inset-')
+      );
     });
     expect(internalSafeAreaRules, 'chat header/composer must not consume device safe areas internally').toEqual([]);
 
