@@ -451,3 +451,76 @@ test('mobile category navigation is horizontal, full-width and follows search fo
     }
   }
 });
+
+
+test('mobile primary category navigation is visually distinct from secondary filter chips', async ({ page }, testInfo) => {
+  for (const brand of CASES) {
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        sessionStorage.setItem('splashDone', '1');
+      });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const metrics = await page.evaluate(({ railSelector, brandName }) => {
+        const rail = document.querySelector(railSelector);
+        const button = rail && (rail.querySelector('button.on') || rail.querySelector('button'));
+        const buttonStyle = button && getComputedStyle(button);
+        const railRect = rail && rail.getBoundingClientRect();
+        const buttonRect = button && button.getBoundingClientRect();
+        const icon = button && button.querySelector('.re');
+        const iconRect = icon && icon.getBoundingClientRect();
+        const subchip = brandName === 'delivery'
+          ? document.querySelector('#deliverySubFilter .subchip')
+          : null;
+        const subchipStyle = subchip && getComputedStyle(subchip);
+        const subchipRect = subchip && subchip.getBoundingClientRect();
+        const subchipPseudo = subchip && getComputedStyle(subchip, '::before');
+
+        return {
+          railHeight: railRect ? railRect.height : 0,
+          buttonHeight: buttonRect ? buttonRect.height : 0,
+          buttonDirection: buttonStyle ? buttonStyle.flexDirection : '',
+          buttonRadius: buttonStyle ? buttonStyle.borderRadius : '',
+          buttonBackground: buttonStyle ? buttonStyle.backgroundColor : '',
+          activeBottomBorderWidth: buttonStyle ? buttonStyle.borderBottomWidth : '',
+          activeBottomBorderColor: buttonStyle ? buttonStyle.borderBottomColor : '',
+          iconFontSize: icon ? Number.parseFloat(getComputedStyle(icon).fontSize) : 0,
+          iconTop: iconRect ? iconRect.top : 0,
+          buttonTop: buttonRect ? buttonRect.top : 0,
+          subchipHeight: subchipRect ? subchipRect.height : null,
+          subchipRadius: subchipPseudo ? subchipPseudo.borderRadius : null,
+          subchipBorderWidth: subchipPseudo ? subchipPseudo.borderTopWidth : null,
+        };
+      }, { railSelector: brand.rail, brandName: brand.brand });
+
+      expect(metrics.railHeight, brand.brand + ' category navigation reserves its own visual row').toBeGreaterThanOrEqual(68);
+      expect(metrics.buttonHeight, brand.brand + ' category tabs retain a generous 44px+ hit area').toBeGreaterThanOrEqual(60);
+      expect(metrics.buttonDirection, brand.brand + ' category icon sits above its label').toBe('column');
+      expect(metrics.buttonRadius, brand.brand + ' category tabs are not rounded filter chips').toBe('0px');
+      expect(metrics.buttonBackground, brand.brand + ' category tabs remain on the navigation surface').toBe('rgba(0, 0, 0, 0)');
+      expect(metrics.activeBottomBorderWidth, brand.brand + ' active category uses a navigation indicator').toBe('3px');
+      expect(metrics.activeBottomBorderColor, brand.brand + ' active category indicator is visible').not.toBe('rgba(0, 0, 0, 0)');
+      expect(metrics.iconFontSize, brand.brand + ' category icon remains visually prominent').toBeGreaterThanOrEqual(20);
+      expect(metrics.iconTop, brand.brand + ' icon is at the top of its tab').toBeLessThan(metrics.buttonTop + 8);
+
+      if (brand.brand === 'delivery') {
+        await expect(page.locator('#deliverySubFilter .subchip').first()).toBeVisible({ timeout: 15000 });
+        expect(metrics.subchipHeight, 'delivery secondary filters remain compact chips').toBe(44);
+        expect(metrics.subchipRadius, 'delivery secondary filters retain the pill shape').toContain('999');
+        expect(metrics.subchipBorderWidth, 'delivery secondary filters retain their own outline').toBe('1.5px');
+        expect(metrics.buttonHeight, 'primary category tabs are taller than the secondary filter controls').toBeGreaterThan(metrics.subchipHeight);
+      }
+
+      await testInfo.attach(brand.brand + '-category-vs-filter-hierarchy-' + viewport.width + 'px', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  }
+});
