@@ -7,7 +7,7 @@ Strava is connected as a separate, read-only OAuth provider. This is not a Strav
 - OAuth requests only the `activity:read` scope. No write, private-activity, or full-profile scope is requested.
 - The app can show up to 10 recent activities per page, and at most 5 pages, to the same authenticated Zerno profile that connected the Strava account.
 - Activity fields are requested from Strava on demand. Activity payloads, GPS, route polylines and derived activity aggregates are not written to SQLite and are not cached by Zerno App.
-- Only encrypted OAuth credentials, the minimum athlete identifier needed for the connection/webhook, and a short-lived hashed OAuth state are stored.
+- Only encrypted OAuth credentials, the minimum athlete identifier needed for the connection/webhook, and a short-lived hashed OAuth state are stored. The OAuth state is also bound to the initiating browser by a `Secure; HttpOnly; SameSite=Lax` cookie, so a forwarded authorization URL cannot link another person's Strava account to the attacker's Zerno profile.
 - The connection can be revoked from Zerno App; Strava deauthorization events remove the local connection.
 - The Strava connection is not passed into `fitness-rewards`. GPX remains the only reward source in the current pilot.
 
@@ -71,8 +71,9 @@ Before redirecting a guest to Strava, the client must:
 1. Call `GET /api/fitness/strava/consent` using the guest's Bearer token.
 2. Display the returned notice (types of data, collection method, purpose, storage, withdrawal and deletion).
 3. Require an affirmative choice, then call `POST /api/fitness/strava/connect` with `{ "consent": true, "consentVersion": "2026-11-14-v1" }`.
-4. Open the returned `authorizationUrl` in the system browser, not a constrained embedded webview.
-5. After callback, refresh `GET /api/fitness/strava/status` and fetch `GET /api/fitness/strava/activities` only when the user asks to view them.
+4. Open the returned `authorizationUrl` in the system browser, not a constrained embedded webview. The same-origin connect response sets a 10-minute `__Secure-zerno_strava_state` cookie scoped only to the callback path.
+5. The callback requires both the one-use OAuth state and the matching browser cookie. It clears the cookie on return; missing/mismatched cookies are rejected, preventing an authorization URL from being forwarded to another browser.
+6. After callback, refresh `GET /api/fitness/strava/status` and fetch `GET /api/fitness/strava/activities` only when the user asks to view them.
 
 Relevant endpoints:
 - `GET /api/fitness/strava/consent` — user-facing notice.
@@ -86,7 +87,7 @@ Relevant endpoints:
 ## Storage and deletion
 
 - Access and refresh tokens are encrypted using AES-256-GCM. The key is exactly 32 bytes, provided as 64 hex characters.
-- OAuth state is random, single-use, stored as SHA-256 only, and expires after 10 minutes.
+- OAuth state is random, single-use, stored as SHA-256 only, and expires after 10 minutes. Its raw value is also placed in a host-only `Secure; HttpOnly; SameSite=Lax` cookie, limited to `/api/fitness/strava/callback`; the callback compares it in constant time and clears it.
 - Activity responses are returned only to the authenticated profile that owns the connection and are not persisted.
 - Disconnect deletes the connection and outstanding OAuth states before attempting remote token revocation. The API response indicates whether Strava confirmed remote revocation.
 - Deleting a Zerno profile removes the Strava connection through the same disconnect service; foreign keys also cascade connection/state rows.
