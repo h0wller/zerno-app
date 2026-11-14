@@ -137,6 +137,14 @@ test('exchanges OAuth code, encrypts tokens at rest and rejects insufficient sco
     /scope/i,
   );
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_connections').get().n, 1);
+
+  const extraScope = new URL(service.createAuthorizationUrl('guest-2').url);
+  await assert.rejects(service.completeAuthorization({
+    state: extraScope.searchParams.get('state'),
+    code: 'too-broad',
+    grantedScope: 'read,activity:read,activity:write',
+  }), error => error && error.code === 'strava_required_scope_missing');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_connections').get().n, 1);
   db.close();
 });
 
