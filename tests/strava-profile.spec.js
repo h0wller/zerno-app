@@ -103,6 +103,8 @@ test.describe('Strava integration in guest profile', () => {
     });
 
     await expect(page.locator('#stravaProfileSection')).toBeVisible();
+    await expect(page.locator('#stravaProfileStyles')).toHaveCount(1);
+    await expect(page.locator('#stravaProfileSection')).toHaveCSS('display', 'grid');
   });
 
   test('asks for explicit consent before opening Strava OAuth', async ({ page }) => {
