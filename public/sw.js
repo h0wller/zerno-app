@@ -46,7 +46,6 @@ const STATIC_ASSETS = [
   '/app/ui/theme/170-profile-button.css',
   '/app/ui/brand-tokens.css',
   '/app/ui/fonts.css',
-  '/app/core/address-dict.js',
   '/app/core/address-autocomplete.js',
   '/app/core/address-book.js',
   '/app/core/preorder-timer.js',
