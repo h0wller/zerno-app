@@ -203,7 +203,7 @@ test('Strava profile endpoints require a user session and require versioned expl
   assert.match(setCookie, /HttpOnly/);
   assert.match(setCookie, /Secure/);
   assert.match(setCookie, /SameSite=Lax/);
-  assert.match(setCookie, /Path=\\/api\\/fitness\\/strava\\/callback/);
+  assert.match(setCookie, /Path=\/api\/fitness\/strava\/callback/);
 
   const forwarded = await request(
     '/api/fitness/strava/callback?state=' + encodeURIComponent(state) + '&error=access_denied',
