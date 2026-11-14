@@ -302,10 +302,43 @@ function renderSubFilter(categoryItems) {
   }
 }
 
+var deliveryRailCueResizeObserver = null;
+
+function syncDeliveryRailCue() {
+  var rail = document.getElementById('deliveryRail');
+  if (!rail) return;
+
+  var hasOverflow = rail.scrollWidth > rail.clientWidth + 1;
+  var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+  var atEnd = hasOverflow && rail.scrollLeft >= maxScroll - 2;
+
+  rail.classList.toggle('has-overflow', hasOverflow);
+  rail.classList.toggle('at-end', atEnd);
+}
+
+function bindDeliveryRailCue() {
+  var rail = document.getElementById('deliveryRail');
+  if (!rail) return;
+
+  if (rail.dataset.scrollCueBound !== '1') {
+    rail.dataset.scrollCueBound = '1';
+    rail.addEventListener('scroll', syncDeliveryRailCue, { passive: true });
+    window.addEventListener('resize', syncDeliveryRailCue, { passive: true });
+
+    if (typeof ResizeObserver === 'function') {
+      deliveryRailCueResizeObserver = new ResizeObserver(syncDeliveryRailCue);
+      deliveryRailCueResizeObserver.observe(rail);
+    }
+  }
+
+  syncDeliveryRailCue();
+}
+
 function renderDeliveryRail() {
   $('#deliveryRail').innerHTML = DCATS.map(c =>
     `<button data-dcat="${c.id}" class="${c.id === dcat ? 'on' : ''}"><span class="re">${c.e}</span>${c.l}</button>`
   ).join('');
+  bindDeliveryRailCue();
 }
 
 $('#deliveryRail').addEventListener('click', e => {
