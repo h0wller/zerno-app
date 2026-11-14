@@ -92,6 +92,22 @@ for (const width of [320, 390]) {
     expect(cueMetrics.fadePointerEvents).toBe('none');
     expect(cueMetrics.arrowContent).not.toBe('none');
     expect(cueMetrics.arrowPointerEvents).toBe('none');
+    const arrowAlignment = await viewport.evaluate((element) => {
+      const bar = element.querySelector('#deliverySubFilter');
+      const barRect = bar.getBoundingClientRect();
+      const arrow = getComputedStyle(element, '::before');
+      const transform = new DOMMatrixReadOnly(arrow.transform);
+      const arrowCenter = element.getBoundingClientRect().top
+        + Number.parseFloat(arrow.top)
+        + Number.parseFloat(arrow.height) / 2
+        + transform.m42;
+      return {
+        arrowCenter,
+        barCenter: barRect.top + barRect.height / 2,
+        delta: Math.abs(arrowCenter - (barRect.top + barRect.height / 2))
+      };
+    });
+    expect(arrowAlignment.delta, 'the overflow arrow must be vertically centered on the chip rail').toBeLessThanOrEqual(1);
     expect(Math.abs(cueMetrics.left - cueMetrics.barLeft)).toBeLessThanOrEqual(1);
     expect(Math.abs(cueMetrics.right - cueMetrics.barRight)).toBeLessThanOrEqual(1);
     await expect.poll(() => bar.evaluate((element) =>
