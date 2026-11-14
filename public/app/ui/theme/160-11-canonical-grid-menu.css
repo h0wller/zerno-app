@@ -277,3 +277,20 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
     line-height:1.15;
   }
 }
+
+/* Compact landscape has horizontal category navigation and a full-width catalog. */
+@media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body div.wrap,
+  .wrap {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 10px;
+    padding: 10px 12px 28px;
+  }
+  html body div.wrap > section {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
+    min-width: 0;
+  }
+}

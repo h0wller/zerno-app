@@ -5,12 +5,19 @@ const CASES = [
   { brand: 'delivery', head: '#deliveryView .menu-head', rail: '#deliveryRail', tickerBg: 'rgb(58, 42, 28)' },
 ];
 
+function usesHorizontalRail(viewport) {
+  return viewport.width <= 820 ||
+    (viewport.width >= 821 && viewport.width > viewport.height && viewport.height <= 480);
+}
+
 const VIEWPORTS = [
   { name: 'narrow mobile', width: 320, height: 740 },
   { name: 'mobile', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
+  { name: 'tablet edge 820', width: 820, height: 1024 },
   { name: 'breakpoint edge', width: 821, height: 900 },
-  { name: 'compact landscape desktop', width: 844, height: 390 },
+  { name: 'compact landscape 844', width: 844, height: 390 },
+  { name: 'wide compact landscape 1024', width: 1024, height: 390 },
   { name: 'small desktop', width: 1024, height: 768 },
   { name: 'laptop', width: 1181, height: 820 },
   { name: 'desktop', width: 1440, height: 900 },
@@ -20,6 +27,7 @@ const VIEWPORTS = [
 for (const brand of CASES) {
   for (const viewport of VIEWPORTS) {
     test(`${brand.brand}: menu header geometry and card-aligned rail at ${viewport.name}`, async ({ page }, testInfo) => {
+      const horizontalRail = usesHorizontalRail(viewport);
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
       await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
@@ -39,14 +47,14 @@ for (const brand of CASES) {
       if (viewport.width <= 820) {
         await expect(topbar).toHaveCSS('border-bottom-width', '0px');
       }
-      if (brand.brand === 'delivery' && viewport.width > 820) {
+      if (brand.brand === 'delivery' && viewport.width > 820 && !horizontalRail) {
         await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
         await expect.poll(() => page.evaluate(() => {
           const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
           const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
           return Math.abs(rail.top - grid.top);
         }), { timeout: 5000 }).toBeLessThanOrEqual(2);
-      } else if (viewport.width <= 820) {
+      } else if (horizontalRail) {
         const searchGap = await page.evaluate(({ headSelector, railSelector }) => {
           const head = document.querySelector(headSelector);
           const rail = document.querySelector(railSelector);
@@ -86,7 +94,7 @@ for (const brand of CASES) {
         };
       }, { headSelector: brand.head, railSelector: brand.rail });
 
-      if (viewport.width <= 820) {
+      if (horizontalRail) {
         expect(layout.railPosition, 'mobile rail stays in its catalog position before scrolling').toBe('relative');
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
         expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
@@ -114,13 +122,12 @@ for (const brand of CASES) {
       expect(tickerLayout.trackWidth).toBeGreaterThanOrEqual(tickerLayout.viewportWidth);
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
-      if (viewport.width > 820) {
-        await testInfo.attach(`${brand.brand}-desktop-${viewport.width}x${viewport.height}`, {
-          body: await page.screenshot({ animations: 'disabled' }),
-          contentType: 'image/png',
-        });
-      }
+      await testInfo.attach(`${brand.brand}-${horizontalRail ? 'horizontal-rail' : 'desktop-sidebar'}-${viewport.width}x${viewport.height}`, {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
 
+      const railTopBeforeScroll = await rail.evaluate(el => el.getBoundingClientRect().top);
       await page.evaluate(() => window.scrollTo(0, 500));
       if (viewport.width <= 820) {
         await expect.poll(() => page.evaluate(selector => {
@@ -147,6 +154,15 @@ for (const brand of CASES) {
           return Math.abs(rect.top - (topbarSticky ? topbar.getBoundingClientRect().height : 12));
         }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
         await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
+          body: await page.screenshot({ animations: 'disabled' }),
+          contentType: 'image/png',
+        });
+      } else if (horizontalRail) {
+        await expect.poll(() => rail.evaluate(el => el.getBoundingClientRect().top))
+          .toBeLessThan(railTopBeforeScroll - 20);
+        await expect.poll(() => rail.evaluate(el => getComputedStyle(el).position))
+          .not.toBe('sticky');
+        await testInfo.attach(`${brand.brand}-short-landscape-scrolled-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
         });
