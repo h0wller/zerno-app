@@ -7,9 +7,8 @@ function fail(message) {
 }
 
 function attribute(source, name) {
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = source.match(new RegExp('(?:^|\\s)' + escaped + '\\s*=\\s*(["\\'])(.*?)\\1', 'i'));
-  return match ? match[2] : null;
+  const match = source.match(/(?:^|\s)(lat|lon)\s*=\s*(["'])(.*?)\2/i);
+  return match && match[1].toLowerCase() === name ? match[3] : null;
 }
 
 function radians(value) {
@@ -42,14 +41,14 @@ export function parseGpxActivity(xml, {
   if (!Number.isSafeInteger(maxPoints) || maxPoints < 10) {
     fail('Invalid track point limit');
   }
-  if (/<!\\s*(?:DOCTYPE|ENTITY)\\b/i.test(xml)) {
+  if (/<!\s*(?:DOCTYPE|ENTITY)\b/i.test(xml)) {
     fail('Unsupported XML declaration');
   }
-  if (!/<gpx\\b[^>]*>/i.test(xml) || !/<\\/gpx\\s*>/i.test(xml)) {
+  if (!/<gpx\b[^>]*>/i.test(xml) || !/<\/gpx\s*>/i.test(xml)) {
     fail('Invalid GPX document');
   }
 
-  const segments = [...xml.matchAll(/<trkseg\\b[^>]*>([\\s\\S]*?)<\\/trkseg\\s*>/gi)];
+  const segments = [...xml.matchAll(/<trkseg\b[^>]*>([\s\S]*?)<\/trkseg\s*>/gi)];
   if (segments.length === 0) fail('No usable track points');
 
   let pointCount = 0;
@@ -59,8 +58,8 @@ export function parseGpxActivity(xml, {
 
   for (const segment of segments) {
     const body = segment[1];
-    const points = [...body.matchAll(/<trkpt\\b([^>]*)>([\\s\\S]*?)<\\/trkpt\\s*>/gi)];
-    const declaredPoints = (body.match(/<trkpt\\b/gi) || []).length;
+    const points = [...body.matchAll(/<trkpt\b([^>]*)>([\s\S]*?)<\/trkpt\s*>/gi)];
+    const declaredPoints = (body.match(/<trkpt\b/gi) || []).length;
     if (declaredPoints !== points.length) fail('Invalid track point');
 
     let previous = null;
@@ -78,7 +77,7 @@ export function parseGpxActivity(xml, {
         fail('Invalid track point');
       }
 
-      const timeMatch = match[2].match(/<time\\b[^>]*>([\\s\\S]*?)<\\/time\\s*>/i);
+      const timeMatch = match[2].match(/<time\b[^>]*>([\s\S]*?)<\/time\s*>/i);
       const timeText = timeMatch ? timeMatch[1].replace(/<[^>]*>/g, '').trim() : '';
       const timestamp = Date.parse(timeText);
       if (!timeText || !Number.isFinite(timestamp)) fail('Invalid track timestamps');
