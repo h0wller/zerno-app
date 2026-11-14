@@ -14,6 +14,7 @@
     style.id = 'stravaProfileStyles';
     style.textContent = [
       '#profileBox > #stravaProfileSection { display:grid; gap:10px; }',
+      '#stravaProfileSection .strava-wordmark { color:var(--soft); font-size:10px; font-weight:700; white-space:nowrap; }',
       '#stravaProfileSection .strava-copy { margin:0; color:var(--soft); font-size:12px; line-height:1.5; }',
       '#stravaProfileSection .strava-state { color:var(--soft); font-size:12px; line-height:1.45; }',
       '#stravaProfileSection .strava-actions { display:flex; flex-wrap:wrap; gap:8px; }',
@@ -81,7 +82,7 @@
       var heading = el('div', 'profile-section-heading');
       heading.appendChild(el('h4', '', 'Спортивные активности'));
       heading.firstElementChild.id = 'stravaHeading';
-      heading.appendChild(el('span', 'strava-wordmark', 'STRAVA'));
+      heading.appendChild(el('span', 'strava-wordmark', 'Powered by Strava'));
       section.appendChild(heading);
       section.appendChild(el('p', 'strava-copy',
         'Подключите аккаунт Strava, чтобы смотреть свои тренировки в профиле. Данные доступны только вам и не используются для начисления кофе или других наград.'));
@@ -284,6 +285,13 @@
         item.appendChild(el('small', '', kind + ' · ' + formatDate(activity.startedAt)));
         var details = formatDistance(activity.distanceMeters) + ' · движение ' + formatDuration(activity.movingTimeSeconds);
         item.appendChild(el('small', '', details));
+        if (/^\\d{1,24}$/.test(String(activity.id || ''))) {
+          var source = el('a', 'strava-link', 'View on Strava');
+          source.href = 'https://www.strava.com/activities/' + String(activity.id);
+          source.target = '_blank';
+          source.rel = 'noopener noreferrer';
+          item.appendChild(source);
+        }
         list.appendChild(item);
       });
       setContent(section, list);
