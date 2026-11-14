@@ -286,9 +286,13 @@ export function createStravaService({
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body,
     });
-    if (!response.ok || !payload || !payload.access_token || !payload.refresh_token ||
-        !payload.athlete || !Number.isSafeInteger(Number(payload.athlete.id)) ||
-        Number(payload.athlete.id) <= 0 || !Number.isSafeInteger(Number(payload.expires_at))) {
+    const validTokenResponse = response.ok && payload &&
+      payload.access_token && payload.refresh_token &&
+      payload.athlete && Number.isSafeInteger(Number(payload.athlete.id)) &&
+      Number(payload.athlete.id) > 0 &&
+      Number.isSafeInteger(Number(payload.expires_at));
+    if (!validTokenResponse) {
+      if (payload && payload.refresh_token) await revokeProviderToken(payload.refresh_token);
       throw makeError('strava_token_exchange_failed');
     }
     const tokenScopes = normalizeScopes(payload.scope || grantedScope);
