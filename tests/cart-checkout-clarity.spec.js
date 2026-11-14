@@ -221,9 +221,10 @@ test('cart keeps the current selected price and explains every amount without gu
       contentType: 'image/png'
     });
   }
-  // Desktop regression: a vertical mouse wheel over the horizontal recommendations rail
-  // must move the rail itself, not only the cart's outer scroll container.
+  // Desktop scroll contract: vertical wheel remains natural cart scrolling.
+  // Horizontal recommendation navigation uses explicit controls, visible native scrollbar and left-button drag.
   const cardsRail = recommendations.locator('.ca-cards-scroll');
+  const cartScrollBody = page.locator('#cartScrollBody');
   await cardsRail.evaluate((el) => { el.scrollLeft = 0; });
   const initialRailMetrics = await cardsRail.evaluate((el) => ({
     clientWidth: el.clientWidth,
@@ -245,7 +246,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(nextRecommendationButton).toBeEnabled();
 
   await nextRecommendationButton.click();
-  await expect.poll(() => cardsRail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(initialRailMetrics.startOffset + 1);
+  await expect.poll(() => cardsRail.evaluate((el) => cardsRail.scrollLeft)).toBeGreaterThan(initialRailMetrics.startOffset + 1);
   await expect(previousRecommendationButton).toBeEnabled();
   await previousRecommendationButton.click();
   await expect.poll(() => cardsRail.evaluate((el) => {
@@ -255,15 +256,41 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(previousRecommendationButton).toBeDisabled();
   await cardsRail.evaluate((el) => { el.scrollLeft = 0; });
 
-  const cardsRailBox = await cardsRail.boundingBox();
-  await page.mouse.move(cardsRailBox.x + cardsRailBox.width / 2, cardsRailBox.y + cardsRailBox.height / 2);
-  await page.mouse.wheel(0, 320);
-  await expect.poll(() => cardsRail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
-  await testInfo.attach('cart-recommendations-desktop-wheel', {
+  await testInfo.attach('cart-recommendations-desktop-before-drag', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png'
   });
-  await cardsRail.evaluate((el) => { el.scrollLeft = 0; });
+  await cartScrollBody.evaluate((body) => { body.scrollTop = 0; });
+  const railScrollBeforeWheel = await cardsRail.evaluate((rail) => rail.scrollLeft);
+  const railBoundsBeforeWheel = await cardsRail.boundingBox();
+  await page.mouse.move(
+    railBoundsBeforeWheel.x + railBoundsBeforeWheel.width / 2,
+    railBoundsBeforeWheel.y + railBoundsBeforeWheel.height / 2
+  );
+  await page.mouse.wheel(0, 160);
+  await expect.poll(async () => Math.abs(
+    await cardsRail.evaluate((rail) => rail.scrollLeft) - railScrollBeforeWheel
+  )).toBeLessThanOrEqual(2);
+  await expect.poll(() => cartScrollBody.evaluate((body) => body.scrollTop)).toBeGreaterThan(0);
+  await testInfo.attach('cart-recommendations-after-vertical-wheel', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+
+  await cartScrollBody.evaluate((body) => { body.scrollTop = 0; });
+  await recommendations.scrollIntoViewIfNeeded();
+  const railBoundsForDrag = await cardsRail.boundingBox();
+  const dragStartX = railBoundsForDrag.x + railBoundsForDrag.width * 0.78;
+  const dragY = railBoundsForDrag.y + railBoundsForDrag.height / 2;
+  await page.mouse.move(dragStartX, dragY);
+  await page.mouse.down();
+  await page.mouse.move(dragStartX - 220, dragY, { steps: 8 });
+  await page.mouse.up();
+  await expect.poll(() => cardsRail.evaluate((rail) => rail.scrollLeft)).toBeGreaterThan(100);
+  await testInfo.attach('cart-recommendations-after-mouse-drag', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
 
   const sauceRecommendations = recommendations.locator('[data-atab="sauces"]');
   await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
