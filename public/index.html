@@ -2389,12 +2389,35 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
   white-space: nowrap;
 }
 
-/* Reserve delivery layout before deferred theme CSS is available. */
+/* Mirror the final single-column mobile catalog grid before deferred theme CSS. */
 @media (max-width: 820px) {
   html body div.wrap {
-    grid-template-columns: 80px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
-    padding: 10px 12px 32px 8px;
+    padding: 10px 12px 28px;
+  }
+  html body #menuView #rail,
+  html body #deliveryView #deliveryRail {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    min-height: 54px;
+    margin: 12px 0 8px;
+    padding: 2px 0 8px;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  html body #menuView #rail::-webkit-scrollbar,
+  html body #deliveryView #deliveryRail::-webkit-scrollbar {
+    display: none;
   }
 }
 html[data-brand="delivery"] .wrap > section,
@@ -3872,9 +3895,6 @@ html body #tickerTrack .tickerGroup > span {
   
 
   <div class="wrap" role="main">
-    <nav class="rail" id="rail"></nav>
-    <div class="rail" id="deliveryRail" style="display: none"></div>
-
     <section>
       <div class="adminBar" id="adminBar" hidden>
         <button id="editToggle">✏️ Редактировать</button>
@@ -3902,6 +3922,7 @@ html body #tickerTrack .tickerGroup > span {
             </div>
           </div>
         </div>
+        <div class="rail" id="deliveryRail"></div>
         <div id="deliveryBanner"></div>
         <div class="subfilter-viewport" id="deliverySubFilterViewport">
           <div id="deliverySubFilter" class="subfilter-bar" hidden></div>
@@ -3975,6 +3996,7 @@ html body #tickerTrack .tickerGroup > span {
             </div>
           </div>
         </div>
+        <nav class="rail" id="rail"></nav>
         <div class="grid" id="grid">
           <!-- Статическая карточка первого экрана для мгновенного LCP -->
           <article class="card" data-item-id="esp">
