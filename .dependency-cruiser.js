@@ -59,10 +59,11 @@ export default {
       from: {
         orphan: true,
         pathNot: [
-          '(^|/)public/sw\\.js          '(^|/)public/debug\\.js$',
-          // Классические скрипты из index.html:
+          '(^|/)public/sw\\.js$',
+          '(^|/)public/debug\\.js$',
+          // HTML entry points and dynamically loaded browser scripts:
+          '(^|/)public/app/fitness-strava-ui\\.js$',
           '(^|/)public/app/core/(address-dict|address-autocomplete|address-book|preorder-timer)\\.js$',
-          // Динамически подгружаемые в рантайме (scanner.js → loadJsqr):
           '(^|/)public/jsqr\\.js$',
           '(^|/)public/qrcode\\.js$',
           '\\.d\\.ts$'
