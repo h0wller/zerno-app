@@ -34,7 +34,7 @@
 | `GET /api/fitness/strava/consent` | Получить версионированное уведомление о данных и способах отзыва/удаления | userGuard |
 | `GET /api/fitness/strava/status` | Статус подключения текущего профиля | userGuard |
 | `POST /api/fitness/strava/connect` | Начать OAuth; body: `{ consent: true, consentVersion: "2026-11-14-v1" }` | verified guest + userGuard |
-| `GET /api/fitness/strava/callback` | OAuth callback Strava; использует одноразовый state | Публичный callback, state-bound |
+| `GET /api/fitness/strava/callback` | OAuth callback Strava; одноразовый state + browser-bound HttpOnly cookie | Публичный callback с проверкой исходного браузера |
 | `GET /api/fitness/strava/activities` | Получить последние тренировки только текущего спортсмена; query: `page=1..5`, `per_page=1..10` | userGuard |
 | `POST /api/fitness/strava/disconnect` | Удалить локальные токены и запросить отзыв разрешения у Strava | userGuard |
 | `GET /api/fitness/strava/webhook/{secret}` | Верификация Strava webhook subscription | Секретный URL path + verify token |
