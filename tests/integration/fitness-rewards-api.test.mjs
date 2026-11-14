@@ -160,6 +160,36 @@ test('cashier can redeem a fitness reward once and the action is recorded in his
   );
 });
 
+
+test('Strava profile endpoints require a user session and require versioned explicit consent', async () => {
+  const anonymousStatus = await request('/api/fitness/strava/status');
+  const anonymousActivities = await request('/api/fitness/strava/activities');
+  assert.equal(anonymousStatus.status, 401);
+  assert.equal(anonymousActivities.status, 401);
+
+  seedReward();
+  const consent = await request('/api/fitness/strava/consent', { token: customerToken });
+  assert.equal(consent.status, 200);
+  assert.equal(consent.json.notice.version, '2026-11-14-v1');
+  assert.equal(consent.json.notice.data.length >= 2, true);
+  assert.equal(consent.json.enabled, false);
+
+  const missingConsent = await request('/api/fitness/strava/connect', {
+    method: 'POST', token: customerToken, body: {},
+  });
+  assert.equal(missingConsent.status, 400);
+  assert.equal(missingConsent.json.error, 'explicit_strava_consent_required');
+
+  const notConfigured = await request('/api/fitness/strava/connect', {
+    method: 'POST',
+    token: customerToken,
+    body: { consent: true, consentVersion: '2026-11-14-v1' },
+  });
+  assert.equal(notConfigured.status, 503);
+  assert.equal(notConfigured.json.error, 'strava_not_configured');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_connections').get().n, 0);
+});
+
 test('Telegram webhook cannot process uploads when the fitness feature flag is disabled', async () => {
   seedReward();
   const before = db.prepare('SELECT COUNT(*) AS n FROM fitness_activities').get().n;
