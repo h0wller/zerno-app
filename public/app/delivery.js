@@ -686,6 +686,8 @@ function syncAddButtons() {
   });
 }
 
+window.addEventListener('resize', syncAddButtons, { passive: true });
+
 function handleDeliveryZoomClick(e) {
   const zoomImg = e.target.closest('[data-zoom], .media img');
   if (!zoomImg) return false;
