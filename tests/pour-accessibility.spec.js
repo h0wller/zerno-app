@@ -415,7 +415,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         activeModeText: getComputedStyle(active).color,
         tickerBackground: getComputedStyle(ticker).backgroundColor,
         tickerText: getComputedStyle(ticker).color,
-        railBackground: getComputedStyle(railProbe).backgroundColor,
+        railBackground: getComputedStyle(rail).backgroundColor,
         railText: getComputedStyle(railProbe).color,
         venueBackground: getComputedStyle(venue).backgroundColor,
         venueText: getComputedStyle(arrow).color,
