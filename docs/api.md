@@ -24,7 +24,7 @@
 | `GET /api/tg/diag` | Диагностика Telegram webhook/Bot API | adminGuard |
 | `POST /api/tg/webhook` | Входящий Telegram webhook | Проверка webhook маршрутом |
 
-Спортивные награды GPX в Telegram — отдельный пилот, выключенный по умолчанию через `FITNESS_REWARDS_ENABLED`. Правила и модель хранения: [docs/fitness-rewards.md](./fitness-rewards.md). Команды бота: `/fitness` — показать последний подарок; отправка GPX-документа — принять тренировку; `/fitness_redeem RUN-XXXXXXXXXX` — кассовое погашение. Strava реализована отдельно как read-only OAuth-интеграция; её данные пока не участвуют в наградах. Настройка и ограничения: [docs/strava-integration.md](./strava-integration.md).
+GPX-приём спортивных заявок в Telegram — отдельный пилот, выключенный по умолчанию через `FITNESS_REWARDS_ENABLED`; GPX сохраняется как `unverified` и не выдаёт награду. Правила и модель хранения: [docs/fitness-rewards.md](./fitness-rewards.md). Команды бота: `/fitness` — показать последний подарок; отправка GPX-документа — сохранить неподтверждённую заявку; `/fitness_redeem RUN-XXXXXXXXXX` — кассовое погашение ранее выданного кода. Strava реализована отдельно как read-only OAuth-интеграция; её данные пока не участвуют в наградах. Настройка и ограничения: [docs/strava-integration.md](./strava-integration.md).
 
 
 ## Strava (read-only)
