@@ -6,6 +6,7 @@
   var SECTION_ID = 'stravaProfileSection';
   var inFlight = false;
   var status = null;
+  var statusRequests = new Map();
 
   function injectStyles() {
     if (document.getElementById('stravaProfileStyles')) return;
@@ -116,30 +117,47 @@
   }
 
   async function refreshStatus(section) {
-    if (inFlight) return;
-    inFlight = true;
+    var customerId = String(section && section.dataset.customerId || '');
+    if (!customerId) return;
+    if (statusRequests.has(customerId)) return statusRequests.get(customerId);
+
     setState(section, 'Проверяем подключение…');
-    try {
-      status = await window.api('/fitness/strava/status');
-      if (!document.getElementById(SECTION_ID)) return;
-      if (!status.enabled) {
-        setState(section, 'Подключение Strava пока выключено на сервере.');
+    var request = (async function () {
+      function isCurrentCustomer() {
+        return document.getElementById(SECTION_ID) === section &&
+          section.dataset.customerId === customerId &&
+          window.me && String(window.me.id || '') === customerId;
+      }
+
+      try {
+        var nextStatus = await window.api('/fitness/strava/status');
+        if (!isCurrentCustomer()) return;
+        status = nextStatus;
+        if (!status.enabled) {
+          setState(section, 'Подключение Strava пока выключено на сервере.');
+          setContent(section, null);
+          return;
+        }
+        if (!status.connected) {
+          setState(section, 'Аккаунт Strava не подключён.');
+          renderConnect(section);
+          return;
+        }
+        setState(section, 'Аккаунт Strava подключён. Тренировки загружаются только по вашему запросу.');
+        renderConnected(section);
+      } catch (error) {
+        if (!isCurrentCustomer()) return;
+        status = null;
+        setState(section, error.message || 'Не удалось проверить подключение Strava.');
         setContent(section, null);
-        return;
       }
-      if (!status.connected) {
-        setState(section, 'Аккаунт Strava не подключён.');
-        renderConnect(section);
-        return;
-      }
-      setState(section, 'Аккаунт Strava подключён. Тренировки загружаются только по вашему запросу.');
-      renderConnected(section);
-    } catch (error) {
-      status = null;
-      setState(section, error.message || 'Не удалось проверить подключение Strava.');
-      setContent(section, null);
+    })();
+
+    statusRequests.set(customerId, request);
+    try {
+      return await request;
     } finally {
-      inFlight = false;
+      if (statusRequests.get(customerId) === request) statusRequests.delete(customerId);
     }
   }
 
@@ -325,12 +343,16 @@
       (customer.verified === true || customer.verified === 1 || customer.verified > 0);
     section.hidden = !eligible;
     if (!eligible) {
+      section.dataset.customerId = '';
+      status = null;
       setContent(section, null);
+      setState(section, 'Подключите подтверждённый гостевой профиль, чтобы использовать Strava.');
       return;
     }
     if (section.dataset.customerId !== String(customer.id)) {
       section.dataset.customerId = String(customer.id);
       status = null;
+      setContent(section, null);
       refreshStatus(section);
       return;
     }
@@ -338,6 +360,10 @@
   }
 
   if (window.ztBus && typeof window.ztBus.on === 'function') {
+    window.ztBus.on('auth:user-changed', function () {
+      status = null;
+      render();
+    });
     window.ztBus.on('profile:rendered', function () { render(); });
   }
 
