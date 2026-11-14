@@ -142,6 +142,29 @@ export function createStravaService({
     }
   }
 
+  async function revokeProviderToken(token) {
+    if (!token || typeof fetchImpl !== 'function' ||
+        !String(env.STRAVA_CLIENT_ID || '') || !String(env.STRAVA_CLIENT_SECRET || '')) return false;
+    const authorization = 'Basic ' + Buffer.from(
+      String(env.STRAVA_CLIENT_ID) + ':' + String(env.STRAVA_CLIENT_SECRET),
+    ).toString('base64');
+    try {
+      const body = new URLSearchParams({ token, token_type_hint: 'refresh_token' });
+      const response = await fetchImpl(REVOKE_URL, {
+        method: 'POST',
+        headers: {
+          authorization,
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        body,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
   async function requestJson(url, options = {}) {
     if (typeof fetchImpl !== 'function') throw makeError('strava_fetch_unavailable');
     let response;
@@ -270,16 +293,22 @@ export function createStravaService({
     }
     const tokenScopes = normalizeScopes(payload.scope || grantedScope);
     if (!hasApprovedScopes(tokenScopes)) {
+      await revokeProviderToken(payload.refresh_token);
       throw makeError('strava_required_scope_missing');
     }
-    saveConnection({
-      customerId,
-      athleteId: payload.athlete.id,
-      accessToken: payload.access_token,
-      refreshToken: payload.refresh_token,
-      expiresAt: Number(payload.expires_at),
-      scopes: [...tokenScopes].sort().join(' '),
-    });
+    try {
+      saveConnection({
+        customerId,
+        athleteId: payload.athlete.id,
+        accessToken: payload.access_token,
+        refreshToken: payload.refresh_token,
+        expiresAt: Number(payload.expires_at),
+        scopes: [...tokenScopes].sort().join(' '),
+      });
+    } catch (error) {
+      await revokeProviderToken(payload.refresh_token);
+      throw error;
+    }
     return { connected: true };
   }
 
@@ -318,6 +347,7 @@ export function createStravaService({
     }
     const scopes = normalizeScopes(payload.scope || row.scopes);
     if (!hasApprovedScopes(scopes)) {
+      await revokeProviderToken(payload.refresh_token);
       database.prepare(
         'DELETE FROM strava_connections WHERE cid = ? AND refresh_token_enc = ?',
       ).run(cid, row.refresh_token_enc);
@@ -406,6 +436,10 @@ export function createStravaService({
   async function disconnect(customerId) {
     const cid = String(customerId || '').trim();
     if (!cid) throw makeError('strava_customer_required');
+    const pendingRefresh = refreshInFlight.get(cid);
+    if (pendingRefresh) {
+      try { await pendingRefresh; } catch {}
+    }
     const row = database.prepare(
       'SELECT refresh_token_enc FROM strava_connections WHERE cid = ?',
     ).get(cid);
@@ -417,27 +451,8 @@ export function createStravaService({
 
     let refreshToken = null;
     try { refreshToken = decryptToken(row.refresh_token_enc); } catch {}
-    if (!refreshToken || !String(env.STRAVA_CLIENT_ID || '') || !String(env.STRAVA_CLIENT_SECRET || '')) {
-      return { disconnected: true, revoked: false };
-    }
-    const authorization = 'Basic ' + Buffer.from(
-      String(env.STRAVA_CLIENT_ID) + ':' + String(env.STRAVA_CLIENT_SECRET),
-    ).toString('base64');
-    try {
-      const body = new URLSearchParams({ token: refreshToken, token_type_hint: 'refresh_token' });
-      const response = await fetchImpl(REVOKE_URL, {
-        method: 'POST',
-        headers: {
-          authorization,
-          'content-type': 'application/x-www-form-urlencoded',
-        },
-        body,
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
-      return { disconnected: true, revoked: response.ok };
-    } catch {
-      return { disconnected: true, revoked: false };
-    }
+    const revoked = await revokeProviderToken(refreshToken);
+    return { disconnected: true, revoked };
   }
 
   function handleWebhook(event) {
