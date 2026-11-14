@@ -31,7 +31,8 @@ test.describe('Delivery card cart state', () => {
         scrollWidth: node.scrollWidth,
         whiteSpace: style.whiteSpace,
         lineHeight: style.lineHeight,
-        text: node.textContent.trim()
+        text: node.textContent.trim(),
+        ariaLabel: node.getAttribute('aria-label')
       };
     });
 
@@ -41,7 +42,8 @@ test.describe('Delivery card cart state', () => {
     expect(button.whiteSpace, 'in-cart CTA label must stay on one line').toBe('nowrap');
     expect(button.scrollWidth, 'in-cart CTA label must fit inside the button')
       .toBeLessThanOrEqual(button.clientWidth + 1);
-    expect(button.text).toMatch(/^В корзине\s*·\s*1$/);
+    expect(button.text).toBe('✓');
+    expect(button.ariaLabel).toBe('В корзине · 1');
 
     await card.locator('.steprow [data-step="1"]').click();
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart'))[0].qty)).toBe(2);
