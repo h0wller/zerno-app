@@ -47,6 +47,45 @@ A source adapter may mark evidence `verified` only when all of the following are
 
 Each adapter has its own policy/security gate. Strava is not a required source and remains disabled; do not route Strava data or derived eligibility through Telegram, file uploads, or another service as a workaround.
 
+## Phone-first access model
+
+The Telegram bot is the user-facing entry point, not the device-data reader. Users interact with Zerno from their phone; the phone acts as the bridge to the health-data ecosystem already connected to it.
+
+### iOS — Apple Watch through Apple Health
+
+- Apple Watch records workouts and synchronizes them to Apple Health on the paired iPhone.
+- A native iOS companion component/app requests the user's explicit HealthKit read permissions and reads eligible workout records (and route data only when needed and separately authorized).
+- The companion sends a minimal, normalized evidence assertion to the Zerno backend over an authenticated, short-lived session.
+- Telegram can launch the companion/deep link or show connection status, but a Telegram Mini App or ordinary PWA cannot directly request HealthKit access. Do not design this as a JavaScript-only browser integration.
+- The user does not need to open the Watch app or upload a file manually after the initial permission/linking flow.
+
+### Android — Health Connect
+
+- Add a separate Android adapter using Health Connect permissions for workout/session data and the minimum supporting fields.
+- Keep the user journey phone-first; no direct watch-to-Telegram connection is required.
+- Device and vendor apps may write records into Health Connect. Preserve source metadata and apply source trust rules; do not treat every record as equally authoritative.
+
+### Other sources and fallback
+
+- Keep the backend contract provider-neutral so Garmin and other ecosystems can be added through their own authorized APIs/adapters when viable.
+- GPX/FIT/TCX upload remains a broad compatibility fallback, but uploaded files are unverified evidence and do not auto-issue rewards.
+- Do not make Apple Watch ownership a prerequisite for participating. Users on supported Android devices and other approved ecosystems should be able to use the same bot flow.
+
+### Trust boundary
+
+HealthKit/Health Connect access is stronger provenance than an arbitrary file upload, but it is not absolute proof that a person physically ran. Records may be written by third-party apps, imported, or manipulated. The verifier must inspect source/device metadata, activity type, timestamps, distance/duration, route availability and anomalies; classify the assurance level; and issue rewards only according to a documented policy. Do not describe this as tamper-proof or biometric proof.
+
+The existing project is documented primarily as a Vanilla JS PWA and Telegram Mini App. The inspected architecture docs do not establish an existing HealthKit-capable native iOS app or Health Connect client. Treat the phone companion/native bridge as a new deliverable; verify whether the existing Capacitor shell is build-capable before choosing between extending it and creating a minimal companion app.
+
+## Recommended rollout
+
+1. Define a stable server-side evidence contract and source trust levels independent of Apple/Android.
+2. Implement the iOS HealthKit bridge for Apple Watch workouts, with explicit permission UX and minimal data transfer.
+3. Keep Telegram as the onboarding, status, and reward-code interface.
+4. Implement Android Health Connect against the same backend contract.
+5. Add vendor-specific adapters as separate increments; retain file uploads as unverified fallback.
+6. Test permission denial/revocation, no paired watch, workouts written by third-party apps, duplicate workouts, missing route, offline sync, account switching, and reward replay.
+
 ## Pipeline and ownership
 
 1. Telegram transport receives a document and applies upload limits.
