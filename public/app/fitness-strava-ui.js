@@ -195,7 +195,9 @@
       var actions = el('div', 'strava-actions');
       var continueButton = button('Продолжить на Strava', '', async function () {
         if (!checkbox.checked || continueButton.disabled) return;
-        var popup = window.open('about:blank', '_blank');
+        var isStandalone = window.navigator.standalone === true ||
+          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        var popup = isStandalone ? null : window.open('about:blank', '_blank');
         continueButton.disabled = true;
         setState(section, 'Подготавливаем безопасное подключение…');
         try {
