@@ -128,7 +128,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       const box = (el) => {
         if (!el) return null;
         const r = el.getBoundingClientRect();
-        return { x: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width), height: Math.round(r.height) };
+        return {
+          x: Math.round(r.left),
+          right: Math.round(r.right),
+          y: Math.round(r.top),
+          bottom: Math.round(r.bottom),
+          width: Math.round(r.width),
+          height: Math.round(r.height)
+        };
       };
       const ticker = document.querySelector('.ticker');
       const header = document.querySelector('header.topbar');
@@ -169,7 +176,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         subchip: box(document.querySelector('#deliverySubFilter .subchip')),
         option: box(document.querySelector('#deliveryGrid .opts .opt-btn')),
         section: box(document.querySelector('.wrap > section')),
-        rail: box(document.querySelector('.wrap > .rail:not([style*="display: none"])')),
+        rail: box(document.querySelector('#deliveryRail')),
         viewportWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth
       };
@@ -180,13 +187,18 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.ticker).not.toBeNull();
     expect(before.ticker.height).toBe(34);
     expect(before.tickerOverflowX).toBe('hidden');
-    expect(before.section.width).toBeGreaterThan(250);
-    expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
+    expect(before.section.width).toBeGreaterThan(before.viewportWidth - 50);
+    expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 16);
     expect(before.heading.width).toBeGreaterThan(60);
     expect(before.brandContext).toBeNull();
     expect(before.menuHead).not.toBeNull();
-    expect(before.menuHead.x).toBeLessThanOrEqual(before.rail.x + 1);
-    expect(before.menuHead.right).toBeGreaterThanOrEqual(before.section.right - 1);
+    expect(before.rail).not.toBeNull();
+    expect(before.menuHead.x).toBeGreaterThanOrEqual(before.section.x - 1);
+    expect(before.menuHead.right).toBeLessThanOrEqual(before.section.right + 1);
+    expect(Math.abs(before.rail.x - before.section.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(before.rail.right - before.section.right)).toBeLessThanOrEqual(1);
+    expect(before.rail.y).toBeGreaterThan(before.menuHead.bottom);
+    expect(before.rail.height).toBeLessThanOrEqual(76);
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.menuHeadStyle.maxHeight).toBe('100px');
@@ -208,7 +220,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.searchLabel.width).toBeLessThanOrEqual(1);
     expect(before.searchLabel.height).toBeLessThanOrEqual(1);
     expect(before.searchInput).not.toBeNull();
-    expect(before.card.width).toBeLessThanOrEqual(before.viewportWidth - 80);
+    expect(before.card.width).toBeLessThanOrEqual(before.section.width + 1);
+    expect(before.card.width).toBeGreaterThan(before.viewportWidth - 50);
     expect(before.scrollWidth).toBeLessThanOrEqual(before.viewportWidth + 1);
 
     await waitForDeferredTheme(page);
@@ -253,8 +266,12 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.addButton).toEqual(before.addButton);
     expect(after.addRow).toEqual(before.addRow);
     expect(after.activeSubchipColor).toBe('rgb(192, 59, 42)');
-    expect(after.menuHead.x).toBeLessThanOrEqual(after.rail.x + 1);
-    expect(after.menuHead.right).toBeGreaterThanOrEqual(after.section.right - 1);
+    expect(after.menuHead.x).toBeGreaterThanOrEqual(after.section.x - 1);
+    expect(after.menuHead.right).toBeLessThanOrEqual(after.section.right + 1);
+    expect(Math.abs(after.rail.x - after.section.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.rail.right - after.section.right)).toBeLessThanOrEqual(1);
+    expect(after.rail.y).toBeGreaterThan(after.menuHead.bottom);
+    expect(after.rail.height).toBeLessThanOrEqual(76);
     expect(after.heading.x).toBeGreaterThanOrEqual(after.menuHead.x + 8);
     expect(after.heading.right).toBeLessThanOrEqual(after.menuHead.right - 8);
     expect(after.section.width).toBe(before.section.width);
