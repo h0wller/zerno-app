@@ -44,7 +44,7 @@ function toActivityView(activity) {
   const startedAt = String(activity && activity.start_date || '');
   const activityId = typeof id === 'number' && Number.isSafeInteger(id) && id > 0
     ? String(id)
-    : typeof id === 'string' && /^\\d{1,24}$/.test(id) && Number(id) > 0 ? id : null;
+    : typeof id === 'string' && /^\d{1,24}$/.test(id) && Number(id) > 0 ? id : null;
   if (!activityId ||
       !Number.isFinite(distance) || !Number.isFinite(movingTime) ||
       !Number.isFinite(elapsedTime) || !Number.isFinite(Date.parse(startedAt))) {
