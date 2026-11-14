@@ -430,7 +430,7 @@ test('mobile category navigation is horizontal, full-width and follows search fo
       expect(geometry.parentIsView, brand.brand + ' rail belongs to its active menu view on mobile').toBe(true);
       expect(geometry.display).toBe('flex');
       expect(geometry.direction, brand.brand + ' categories render in one horizontal row').toBe('row');
-      expect(geometry.height, brand.brand + ' category row stays compact').toBeLessThanOrEqual(92);
+      expect(geometry.height, brand.brand + ' category row stays compact on short screens').toBeLessThanOrEqual(76);
       expect(geometry.railTop, brand.brand + ' categories follow the search/header block').toBeGreaterThan(geometry.headBottom);
       expect(geometry.railLeft, brand.brand + ' category row begins at the menu content edge').toBeCloseTo(geometry.headLeft, 0);
       expect(geometry.railRight, brand.brand + ' category row spans the full menu width').toBeCloseTo(geometry.headRight, 0);
