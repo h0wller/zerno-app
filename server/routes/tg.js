@@ -16,6 +16,7 @@ import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
 import { botIntent } from '../utils/bot-nlu.js';
 import { parseGpxActivity } from '../utils/gpx-activity.js';
 import { fitnessRewardService } from '../domain/fitness-rewards.js';
+import { downloadTelegramDocument } from '../services/telegram-file.js';
 
 function getUniqueCustomerByTelegram(telegramId) {
   const result = findUniqueTelegramCustomer(db, telegramId);
@@ -60,6 +61,90 @@ function bonusKeyboard() {
 
 export function createTgRouter({ appKb }) {
   const tgRouter = Router();
+
+  async function handleFitnessDocument(message, targetChatId) {
+    const maxBytes = 1_048_576;
+    const document = message.document || {};
+    const fileName = String(document.file_name || '').trim();
+    if (!/\.gpx$/i.test(fileName)) {
+      await tgSend(targetChatId, 'Пока принимаю только файлы GPX (.gpx). FIT и прямые подключения трекеров добавим отдельным этапом.');
+      return;
+    }
+    if (document.file_size != null &&
+        (!Number.isSafeInteger(document.file_size) || document.file_size < 1 || document.file_size > maxBytes)) {
+      await tgSend(targetChatId, 'Файл должен быть не больше 1 МБ.');
+      return;
+    }
+
+    const customer = getUniqueCustomerByTelegram(targetChatId);
+    if (!customer || !customer.verified || (customer.role || 'guest') !== 'guest') {
+      await tgSend(targetChatId, 'Чтобы засчитать пробежку, сначала привяжите и подтвердите гостевой профиль через /start.');
+      return;
+    }
+
+    try {
+      const fileBytes = await downloadTelegramDocument(document.file_id, maxBytes);
+      let xml;
+      try {
+        xml = new TextDecoder('utf-8', { fatal: true }).decode(fileBytes);
+      } catch {
+        await tgSend(targetChatId, 'Не удалось прочитать GPX. Отправьте исходный файл в кодировке UTF-8.');
+        return;
+      }
+
+      let activity;
+      try {
+        activity = parseGpxActivity(xml, { maxBytes, maxPoints: 20_000 });
+      } catch {
+        await tgSend(targetChatId, 'Файл не похож на корректную GPX-пробежку с GPS-точками и временем записи.');
+        return;
+      }
+
+      const result = fitnessRewardService.submitActivity({
+        customerId: customer.id,
+        activity,
+        fingerprint: createHash('sha256').update(fileBytes).digest('hex'),
+      });
+
+      if (!result.ok) {
+        const messages = {
+          duplicate_activity: 'Этот файл уже отправляли. Повторно получить награду за него нельзя.',
+          distance_below_threshold: 'Для спортивного подарка нужна дистанция не меньше 5 км.',
+          implausible_activity: 'Параметры тренировки не прошли проверку. Проверьте экспорт исходной пробежки.',
+          customer_not_eligible: 'Для участия нужен подтверждённый гостевой профиль.',
+          invalid_input: 'Не удалось проверить файл. Отправьте экспорт GPX ещё раз.',
+        };
+        await tgSend(targetChatId, messages[result.reason] || 'Не удалось засчитать тренировку.');
+        return;
+      }
+
+      const km = (result.activity.distanceMeters / 1000).toFixed(2);
+      if (!result.reward) {
+        await tgSend(
+          targetChatId,
+          'Пробежка ' + km + ' км принята. Подарок за последние 7 дней уже выдавался; следующая награда будет доступна после окончания этого периода.',
+        );
+        return;
+      }
+
+      const expires = new Date(result.reward.expiresAt).toLocaleString('ru-RU', {
+        timeZone: 'Europe/Kaliningrad',
+        dateStyle: 'short',
+        timeStyle: 'short',
+      });
+      await tgSend(
+        targetChatId,
+        '🏃 <b>Пробежка ' + km + ' км засчитана!</b>\n\n' +
+        '🎁 Ваш подарок: <b>RUN-код ' + result.reward.code + '</b>\n' +
+        'Покажите код кассиру в кофейне.\n' +
+        'Действует до: <b>' + expires + '</b>\n\n' +
+        'Один спортивный подарок доступен раз в 7 дней.',
+      );
+    } catch (error) {
+      console.error('[tg] fitness GPX intake failed:', error?.message || 'unknown error');
+      await tgSend(targetChatId, 'Не получилось обработать GPX сейчас. Попробуйте отправить файл позже.');
+    }
+  }
 
   async function sendBonusInfo(targetChatId) {
     const c = getUniqueCustomerByTelegram(targetChatId);
@@ -212,6 +297,11 @@ export function createTgRouter({ appKb }) {
     if (!u.message) return;
     const chatId = String(u.message.chat.id);
     const text = String(u.message.text || '').trim();
+
+    if (u.message.document) {
+      await handleFitnessDocument(u.message, chatId);
+      return;
+    }
 
     if (text === 'link_phone' || text === 'bonus' || text === 'orders' ||
         text === 'support_choose' || text === 'support_delivery' || text === 'support_coffee') {
