@@ -13,7 +13,7 @@
     style.id = 'stravaProfileStyles';
     style.textContent = [
       '#profileBox > #stravaProfileSection { display:grid; gap:10px; }',
-      '#stravaProfileSection .strava-wordmark { color:var(--soft); font-size:10px; font-weight:700; white-space:nowrap; }',
+      '#stravaProfileSection .strava-wordmark { color:var(--strava-orange,#FC4C02); font-size:10px; font-weight:700; white-space:nowrap; }',
       '#stravaProfileSection .strava-copy { margin:0; color:var(--soft); font-size:12px; line-height:1.5; }',
       '#stravaProfileSection .strava-state { color:var(--soft); font-size:12px; line-height:1.45; }',
       '#stravaProfileSection .strava-actions { display:flex; flex-wrap:wrap; gap:8px; }',
@@ -28,7 +28,7 @@
       '#stravaProfileSection .strava-activity { display:grid; gap:4px; padding:10px 0; border-top:1px solid var(--line); min-width:0; }',
       '#stravaProfileSection .strava-activity b { font-size:12.5px; overflow-wrap:anywhere; }',
       '#stravaProfileSection .strava-activity small { color:var(--soft); font-size:11.5px; line-height:1.45; }',
-      '#stravaProfileSection .strava-link { color:var(--profile-link,var(--flame)); font-size:11.5px; text-decoration:underline; text-underline-offset:3px; }',
+      '#stravaProfileSection .strava-link { color:var(--strava-orange,#FC4C02); font-size:11.5px; font-weight:700; text-decoration:underline; text-underline-offset:3px; }',
       '#stravaProfileSection [hidden] { display:none !important; }',
       '@media (max-width:380px) { #stravaProfileSection .strava-actions { display:grid; grid-template-columns:1fr; } #stravaProfileSection .strava-actions button { width:100%; } }',
       '@media (prefers-reduced-motion:reduce) { #stravaProfileSection * { transition:none !important; } }'
