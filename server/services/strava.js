@@ -335,6 +335,13 @@ export function createStravaService({
     });
     if (!response.ok || !payload || !payload.access_token || !payload.refresh_token ||
         !Number.isSafeInteger(Number(payload.expires_at))) {
+      if (payload && payload.refresh_token) {
+        await revokeProviderToken(payload.refresh_token);
+        database.prepare(
+          'DELETE FROM strava_connections WHERE cid = ? AND refresh_token_enc = ?',
+        ).run(cid, row.refresh_token_enc);
+        throw makeError('strava_reauthorization_required');
+      }
       if (response.status === 400 || response.status === 401) {
         const removed = database.prepare(
           'DELETE FROM strava_connections WHERE cid = ? AND refresh_token_enc = ?',
