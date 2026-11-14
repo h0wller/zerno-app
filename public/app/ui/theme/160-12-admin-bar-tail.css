@@ -601,8 +601,8 @@ html body div.wrap > section {
     html body #deliveryGrid .steprow,
     html body #grid .steprow {
       gap:0;
-      width:calc(100% + 2px);
-      margin-inline:-1px;
+      width:calc(100% + 10px);
+      margin-inline:-5px;
     }
     html body #deliveryGrid .steprow > .step[data-step="1"],
     html body #grid .steprow > .step[data-step="1"] { display:none; }
