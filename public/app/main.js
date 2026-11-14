@@ -42,6 +42,7 @@ import './menu.js';
 import './profile.js';
 import './profile-orders.js';
 import './profile-brand.js';
+import './fitness-strava-ui.js';
 import './cashier.js';
 import './scanner.js';
 import './delivery.js';
