@@ -63,6 +63,10 @@ export function createTgRouter({ appKb }) {
   const tgRouter = Router();
 
   async function handleFitnessDocument(message, targetChatId) {
+    if (process.env.FITNESS_REWARDS_ENABLED !== 'true') {
+      await tgSend(targetChatId, 'Приём спортивных активностей пока выключен.');
+      return;
+    }
     const maxBytes = 1_048_576;
     const document = message.document || {};
     const fileName = String(document.file_name || '').trim();
@@ -298,6 +302,38 @@ export function createTgRouter({ appKb }) {
     const chatId = String(u.message.chat.id);
     const text = String(u.message.text || '').trim();
 
+    const fitnessRedeemMatch = text.match(/^\/fitness_redeem(?:@\w+)?\s+([A-Za-z0-9-]{8,24})$/i);
+    if (fitnessRedeemMatch) {
+      const operator = getUniqueCustomerByTelegram(chatId);
+      if (!operator || !['cashier', 'admin'].includes(operator.role)) {
+        await tgSend(chatId, 'Команда доступна только привязанному аккаунту кассира или администратора.');
+        return;
+      }
+      const result = fitnessRewardService.redeemReward({
+        code: fitnessRedeemMatch[1],
+        staffId: operator.id,
+      });
+      const errors = {
+        invalid_input: 'Некорректный код спортивного подарка.',
+        staff_required: 'Недостаточно прав для погашения подарка.',
+        reward_not_found: 'Спортивный подарок не найден.',
+        reward_expired: 'Срок действия спортивного подарка истёк.',
+        already_redeemed: 'Этот спортивный подарок уже использован.',
+        reward_not_redeemable: 'Этот спортивный подарок нельзя использовать.',
+      };
+      if (!result.ok) {
+        await tgSend(chatId, errors[result.reason] || 'Не удалось погасить спортивный подарок.');
+        return;
+      }
+      const owner = db.prepare('SELECT cid FROM fitness_rewards WHERE id=?').get(result.reward.id);
+      if (owner) {
+        addHist(owner.cid, 'Спортивный подарок ' + result.reward.code + ' погашен', operator.name || 'Кассир');
+        logEv(operator.name || 'Кассир', 'Погашен спортивный подарок ' + result.reward.code);
+      }
+      await tgSend(chatId, 'Подарок <b>' + result.reward.code + '</b> успешно погашен.');
+      return;
+    }
+
     if (u.message.document) {
       await handleFitnessDocument(u.message, chatId);
       return;
@@ -381,6 +417,7 @@ export function createTgRouter({ appKb }) {
         '/bonus — мои штампы и подарки\n' +
         '/orders — мои заказы и статус\n' +
         '/start — главное меню\n\n' +
+        '/fitness_redeem КОД — кассовое погашение спортивного подарка\\n' +
         '• <b>Или просто спросите меня словами:</b>\n' +
         '— «Сколько у меня штампов?»\n' +
         '— «Где мой заказ?»\n' +
