@@ -38,7 +38,7 @@ Source: owner-provided screenshot dated 2026-11-14.
 - Delivery-card add/stepper actions delegate to the cart owner. Order tracking and deep links use the explicit `replaceCartItems` contract rather than mutating the shared array directly.
 - Updated `docs/module-map.md` with the ownership boundary.
 - Regression coverage checks card geometry, compact in-cart state, 44px CTA hit target, no row overflow, stepper persistence, expanded-modifier row identity and order repeat behavior.
-- Visual inspection of the first 228px screenshot exposed a 28px-wide in-cart CTA. The ultra-narrow rule now removes the inter-control gap and reserves 44px for the CTA while preserving 44px step controls; the test asserts both hit-target width and no row overflow.
+- Visual inspection of the first 228px screenshot exposed a 28px-wide in-cart CTA. The first CSS attempt lost to a later, more-specific mobile rule in `160-12-admin-bar-tail.css` (CI measured 28px). The winning override is now corrected at that cascade owner: at widths up to 260px the row gap is removed and the CTA reserves 44px while both step controls remain 44px. The test asserts hit-target width and no row overflow.
 
 ### P2 — Related leads — CLOSED / NO DEFECT
 
@@ -52,7 +52,7 @@ Source: owner-provided screenshot dated 2026-11-14.
 
 - Latest full CI before the final screenshot-only test refinement: run `43635302132`, commit `22b462602e69401fd5f99202e36570c59491435e`; all 13 jobs passed, including Code Quality & Guardrails, Cart and checkout, Auth, PWA, Responsive UI, Mobile Chrome responsive and Visual stability.
 - CI Playwright artifacts were downloaded and inspected for Mobile Chrome responsive and Cart and checkout. The mobile artifact covers both brands and narrow/mobile/tablet viewports; the cart artifact covers 320/390/1280px and checkout/address/recommendation states.
-- The delivery-card CTA test waits for the transient toast to leave and attaches a separate screenshot of the CTA itself, so the evidence is not obscured by a notification. The final 44px hit-target fix and assertions are awaiting their own CI run.
+- The delivery-card CTA test waits for the transient toast to leave and attaches a separate screenshot of the CTA itself, so the evidence is not obscured by a notification. The cascade-owner correction and regression assertions are awaiting the latest CI run.
 - No screenshot baseline was regenerated.
 
 ## Remaining acceptance — not a code defect
