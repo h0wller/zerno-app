@@ -60,7 +60,7 @@ jobs:
             workers: 3
           - group: Profile
             project: chromium
-            specs: tests/profile-orders.spec.js tests/swipe-panel-close.spec.js tests/address-book.spec.js
+            specs: tests/profile-orders.spec.js tests/strava-profile.spec.js tests/swipe-panel-close.spec.js tests/address-book.spec.js
             workers: 2
           - group: Responsive UI
             project: chromium

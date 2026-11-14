@@ -27,6 +27,7 @@ tags:
   - name: Promos
   - name: Admin
   - name: System
+  - name: Fitness
 
 components:
   securitySchemes:
@@ -665,6 +666,45 @@ paths:
         '200': { description: Результат операции }
         '400': { description: Нет доступных подарков }
 
+  /api/staff/fitness-rewards/{code}/redeem:
+    post:
+      tags: [Staff]
+      summary: Одноразово погасить спортивный подарок
+      description: 'Только кассир или администратор через staffGuard. Активный код можно погасить один раз; просроченный код не принимается.'
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+            pattern: '^RUN-[A-Z0-9]{8,16}$'
+      responses:
+        '200':
+          description: Подарок погашен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  reward:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      code: { type: string }
+                      rewardType: { type: string, enum: [filter_coffee] }
+                      status: { type: string, enum: [redeemed] }
+                      issuedAt: { type: string, format: date-time }
+                      expiresAt: { type: string, format: date-time }
+                      redeemedAt: { type: string, format: date-time }
+        '400': { description: Некорректный код }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Спортивный подарок не найден }
+        '409': { description: Подарок уже погашен или недоступен }
+        '410': { description: Срок действия подарка истёк }
+
   /api/staff/scan:
     post:
       tags: [Staff]
@@ -674,7 +714,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [code], properties: { code: { type: string, minLength: 16, maxLength: 64, pattern: '^[A-Za-z0-9_-]{16,64}
+            schema: { type: object, required: [code], properties: { code: { type: string, minLength: 16, maxLength: 64, pattern: '^[A-Za-z0-9_-]{16,64}$' } } }
       responses:
         '200': { description: Возвращает customer }
         '404': { description: QR не найден }
@@ -1296,6 +1336,259 @@ paths:
                   granted: { type: boolean }
                   code: { type: string, nullable: true, description: "Промокод доставки, если выдан" }
         '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/fitness/attestation/challenges:
+    post:
+      tags: [Fitness]
+      summary: Выдать одноразовый challenge для App Attest
+      description: 'Только verified guest. Challenge связан с текущим профилем, живёт 5 минут, хранится в БД только в виде SHA-256 и ограничен 10 запросами в минуту. Этот endpoint не проверяет attestation/assertion и не подтверждает тренировку.'
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purpose]
+              properties:
+                purpose: { type: string, enum: [attestation, assertion] }
+      responses:
+        '201':
+          description: Одноразовый challenge
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [challengeId, challenge, purpose, expiresAt]
+                properties:
+                  challengeId: { type: string, format: uuid }
+                  challenge: { type: string }
+                  purpose: { type: string, enum: [attestation, assertion] }
+                  expiresAt: { type: string, format: date-time }
+        '400': { description: Некорректная цель challenge }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { description: Слишком много challenge }
+
+  /api/fitness/strava/consent:
+    get:
+      tags: [Fitness]
+      summary: Получить уведомление о подключении Strava и обработке данных
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Версионированное уведомление и доступность интеграции
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+                  notice:
+                    type: object
+                    additionalProperties: true
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/fitness/strava/status:
+    get:
+      tags: [Fitness]
+      summary: Статус Strava-подключения текущего профиля
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Статус подключения без токенов провайдера
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [enabled, connected]
+                properties:
+                  enabled: { type: boolean }
+                  connected: { type: boolean }
+                  connectedAt: { type: string, format: date-time, nullable: true }
+                  scopes:
+                    type: array
+                    items: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/fitness/strava/connect:
+    post:
+      tags: [Fitness]
+      summary: Начать OAuth после явного согласия пользователя
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [consent, consentVersion]
+              properties:
+                consent: { type: boolean, enum: [true] }
+                consentVersion: { type: string, example: '2026-11-14-v1' }
+      responses:
+        '200':
+          description: URL авторизации, ограниченный OAuth scope и короткоживущая browser-binding cookie
+          headers:
+            Set-Cookie:
+              description: HttpOnly Secure SameSite=Lax state cookie scoped to the OAuth callback path
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl, scope, expiresInSeconds]
+                properties:
+                  authorizationUrl: { type: string, format: uri }
+                  scope: { type: string, enum: [activity:read] }
+                  expiresInSeconds: { type: integer, example: 600 }
+        '400': { description: Нет явного согласия или не прошёл state/config validation }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { description: Strava OAuth не настроен на сервере }
+
+  /api/fitness/strava/callback:
+    get:
+      tags: [Fitness]
+      summary: Публичный callback Strava с одноразовым OAuth state
+      security: []
+      parameters:
+        - in: query
+          name: state
+          required: true
+          schema: { type: string }
+        - in: header
+          name: Cookie
+          required: true
+          description: Must include __Secure-zerno_strava_state set by the same browser during the connect request
+          schema: { type: string }
+        - in: query
+          name: code
+          required: false
+          schema: { type: string }
+        - in: query
+          name: scope
+          required: false
+          schema: { type: string, example: 'read,activity:read' }
+        - in: query
+          name: error
+          required: false
+          schema: { type: string, example: access_denied }
+      responses:
+        '200': { description: HTML confirmation when no application redirect URL is configured }
+        '303': { description: Redirect to the application with Strava connection result }
+        '400': { description: Invalid state, denied or failed OAuth exchange }
+
+  /api/fitness/strava/activities:
+    get:
+      tags: [Fitness]
+      summary: Получить последние тренировки текущего Strava-аккаунта по запросу пользователя
+      description: Активности возвращаются только владельцу Zerno-профиля; список, GPS и маршруты не записываются в SQLite или кэш.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, maximum: 5, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 10, default: 10 }
+      responses:
+        '200':
+          description: Список сводных полей своих тренировок
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [page, perPage, activities]
+                properties:
+                  page: { type: integer }
+                  perPage: { type: integer }
+                  activities:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, name, type, sportType, distanceMeters, movingTimeSeconds, elapsedTimeSeconds, startedAt]
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        type: { type: string }
+                        sportType: { type: string }
+                        distanceMeters: { type: number }
+                        movingTimeSeconds: { type: number }
+                        elapsedTimeSeconds: { type: number }
+                        startedAt: { type: string, format: date-time }
+                        averageSpeedMetersPerSecond: { type: number, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { description: Strava-аккаунт не подключён }
+        '502': { description: Strava API временно недоступен }
+
+  /api/fitness/strava/disconnect:
+    post:
+      tags: [Fitness]
+      summary: Удалить локальную связь Strava и отозвать токен у провайдера
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Локальные токены удалены; поле revoked сообщает результат отзыва у Strava
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  disconnected: { type: boolean }
+                  revoked: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/fitness/strava/webhook/{secret}:
+    get:
+      tags: [Fitness]
+      summary: Strava webhook challenge verification
+      security: []
+      parameters:
+        - in: path
+          name: secret
+          required: true
+          schema: { type: string }
+        - in: query
+          name: hub.mode
+          required: true
+          schema: { type: string }
+        - in: query
+          name: hub.challenge
+          required: true
+          schema: { type: string }
+        - in: query
+          name: hub.verify_token
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Strava challenge accepted }
+        '403': { description: Invalid webhook verification request }
+    post:
+      tags: [Fitness]
+      summary: Strava webhook deauthorization callback
+      description: Secret path and subscription ID are verified before deleting the athlete link. Activity payloads are not persisted.
+      security: []
+      parameters:
+        - in: path
+          name: secret
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200': { description: Webhook event acknowledged }
 
   /api/tg/webhook:
     post:

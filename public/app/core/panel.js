@@ -4,6 +4,12 @@
 
 var panelReturnFocus = null;
 
+function emitProfileEvent(name) {
+    if (window.ztBus && typeof window.ztBus.emit === 'function') {
+        window.ztBus.emit(name);
+    }
+}
+
 function setTab() {
     var profile = document.getElementById('pvProfile');
     if (profile) profile.hidden = false;
@@ -27,6 +33,7 @@ function openPanel() {
         if (typeof syncOverlay === 'function') syncOverlay();
         if (window.TgUx) window.TgUx.sync();
     }
+    emitProfileEvent('profile:opened');
 }
 
 function closePanel() {
@@ -38,6 +45,7 @@ function closePanel() {
         if (panelReturnFocus && panelReturnFocus.isConnected) panelReturnFocus.focus({ preventScroll: true });
         panelReturnFocus = null;
     }
+    emitProfileEvent('profile:closed');
 }
 
 document.addEventListener('DOMContentLoaded', function () {

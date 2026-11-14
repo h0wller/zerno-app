@@ -24,6 +24,32 @@
 | `GET /api/tg/diag` | Диагностика Telegram webhook/Bot API | adminGuard |
 | `POST /api/tg/webhook` | Входящий Telegram webhook | Проверка webhook маршрутом |
 
+GPX-приём спортивных заявок в Telegram — отдельный пилот, выключенный по умолчанию через `FITNESS_REWARDS_ENABLED`; GPX сохраняется как `unverified` и не выдаёт награду. Правила и модель хранения: [docs/fitness-rewards.md](./fitness-rewards.md). Команды бота: `/fitness` — показать последний подарок; отправка GPX-документа — сохранить неподтверждённую заявку; `/fitness_redeem RUN-XXXXXXXXXX` — кассовое погашение ранее выданного кода. Strava реализована отдельно как read-only OAuth-интеграция; её данные пока не участвуют в наградах. Настройка и ограничения: [docs/strava-integration.md](./strava-integration.md).
+
+
+## Fitness App Attest foundation
+
+| Method and path | Purpose | Access |
+|---|---|---|
+| `POST /api/fitness/attestation/challenges` | Issue a one-time 5-minute challenge; body: `{ purpose: "attestation" | "assertion" }` | verified guest + userGuard |
+
+The endpoint is a challenge primitive only. It does not register or verify App Attest keys/assertions and cannot change a workout to `verified` or issue rewards. Challenges are bound to the authenticated customer, hashed at rest, one-time, and limited to 10 per minute.
+
+## Strava (read-only)
+ 
+| Метод и путь | Назначение | Доступ |
+|---|---|---|
+| `GET /api/fitness/strava/consent` | Получить версионированное уведомление о данных и способах отзыва/удаления | userGuard |
+| `GET /api/fitness/strava/status` | Статус подключения текущего профиля | userGuard |
+| `POST /api/fitness/strava/connect` | Начать OAuth; body: `{ consent: true, consentVersion: "2026-11-14-v1" }` | verified guest + userGuard |
+| `GET /api/fitness/strava/callback` | OAuth callback Strava; одноразовый state + browser-bound HttpOnly cookie | Публичный callback с проверкой исходного браузера |
+| `GET /api/fitness/strava/activities` | Получить последние тренировки только текущего спортсмена; query: `page=1..5`, `per_page=1..10` | userGuard |
+| `POST /api/fitness/strava/disconnect` | Удалить локальные токены и запросить отзыв разрешения у Strava | userGuard |
+| `GET /api/fitness/strava/webhook/{secret}` | Верификация Strava webhook subscription | Секретный URL path + verify token |
+| `POST /api/fitness/strava/webhook/{secret}` | Обработка отзыва доступа спортсменом | Секретный URL path + subscription ID |
+
+Strava OAuth и read-only секция профиля реализованы в коде, но **интеграция не одобрена для production и должна оставаться выключенной (`STRAVA_ENABLED=false`)**. До письменного подтверждения Strava нельзя подключать реальные аккаунты: панель находится внутри существующего профиля Zerno, и требуется подтвердить, что это допустимо по §5.4 API Policy. Запрос `activity:read` минимален; ответы `/api/fitness/strava/*` получают `Cache-Control: no-store, private`, активности и маршруты не сохраняются. Strava-данные не поступают в заказы, лояльность, аналитику или staff API. Отдельный сценарий «тренировка → бесплатный кофе» не реализован и требует отдельного письменного согласования. Подробная настройка и policy gate — [docs/strava-integration.md](./strava-integration.md).
+
 ## Авторизация и профиль
 
 SMS.ru сохранён как будущий платный канал авторизации, но по умолчанию выключен. Отправка возможна только при явном `SMS_AUTH_ENABLED=true` и настроенном `SMSRU_API_ID`. При отсутствующем/ложном флаге сервер не обращается к SMS.ru, а клиент скрывает SMS-регистрацию. Публичный `GET /api/config` раскрывает только boolean `smsAuthEnabled`, не ключ провайдера.
@@ -90,6 +116,7 @@ SMS.ru сохранён как будущий платный канал авто
 | `POST /api/staff/redeem` | Списать бесплатный кофе | staffGuard |
 | `POST /api/redeem` | Списать доступный бесплатный кофе текущего пользователя | userGuard |
 | `POST /api/staff/scan` | Проверить QR гостя | staffGuard |
+| `POST /api/staff/fitness-rewards/:code/redeem` | Одноразово погасить спортивный подарок | staffGuard (cashier, admin) |
 | `GET /api/staff/log` | Журнал операций кассы | staffGuard |
 
 ## Чат

@@ -181,4 +181,84 @@ CREATE TABLE IF NOT EXISTS fcm(
     });
     backfill();
   }
+
+  // Спортивные активности и награды. Сырые GPX/координаты не хранятся:
+  // сохраняются только сводные метрики и fingerprint для защиты от повторной загрузки.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS fitness_activities(
+      id TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      source TEXT NOT NULL CHECK(source IN ('gpx')),
+      fingerprint TEXT NOT NULL UNIQUE,
+      distance_meters INTEGER NOT NULL CHECK(distance_meters > 0),
+      elapsed_seconds INTEGER NOT NULL CHECK(elapsed_seconds > 0),
+      started_at TEXT NOT NULL,
+      received_at TEXT NOT NULL,
+      verification_state TEXT NOT NULL DEFAULT 'unverified'
+        CHECK(verification_state IN ('unverified','pending_review','verified','rejected','needs_review'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_fitness_activities_cid_received
+      ON fitness_activities(cid, received_at DESC);
+
+    CREATE TABLE IF NOT EXISTS fitness_rewards(
+      id TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      activity_id TEXT NOT NULL UNIQUE REFERENCES fitness_activities(id) ON DELETE CASCADE,
+      code TEXT NOT NULL UNIQUE,
+      reward_type TEXT NOT NULL DEFAULT 'filter_coffee' CHECK(reward_type='filter_coffee'),
+      status TEXT NOT NULL CHECK(status IN ('active','redeemed','expired')),
+      issued_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      redeemed_at TEXT,
+      redeemed_by TEXT REFERENCES customers(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_fitness_rewards_cid_issued
+      ON fitness_rewards(cid, issued_at DESC);
+  `);
+  
+  const fitnessActivityColumns = db.prepare('PRAGMA table_info(fitness_activities)').all().map(column => column.name);
+  if (fitnessActivityColumns.length && !fitnessActivityColumns.includes('verification_state')) {
+    db.exec(`ALTER TABLE fitness_activities ADD COLUMN verification_state TEXT NOT NULL DEFAULT 'unverified'
+      CHECK(verification_state IN ('unverified','pending_review','verified','rejected','needs_review'))`);
+  }
+
+  // One-time App Attest challenges bound to the authenticated Zerno customer and purpose.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS fitness_attest_challenges(
+      id TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      purpose TEXT NOT NULL CHECK(purpose IN ('attestation','assertion')),
+      challenge_hash TEXT NOT NULL UNIQUE,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL,
+      consumed_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_fitness_attest_challenges_owner
+      ON fitness_attest_challenges(cid, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_fitness_attest_challenges_expiry
+      ON fitness_attest_challenges(expires_at);
+  `);
+
+  // Strava OAuth tokens are encrypted at rest; activity responses are never persisted.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS strava_connections(
+      cid TEXT PRIMARY KEY REFERENCES customers(id) ON DELETE CASCADE,
+      athlete_id TEXT NOT NULL UNIQUE,
+      access_token_enc TEXT NOT NULL,
+      refresh_token_enc TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      scopes TEXT NOT NULL,
+      connected_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS strava_oauth_states(
+      state_hash TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_strava_oauth_states_expiry
+      ON strava_oauth_states(expires_at);
+  `);
+
 }

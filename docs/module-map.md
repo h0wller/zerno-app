@@ -78,7 +78,8 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `profile.js` | Готовность `me`, единый рендер карточки лояльности внутри `#profileCoffeeSection`, `updateMbonusBadge`, `renderProfile`, редактирование имени и раскрытие истории | `window.renderBonus`, `window.renderProfile` |
+| `profile.js` | Готовность `me`, единый рендер карточки лояльности внутри `#profileCoffeeSection`, `updateMbonusBadge`, `renderProfile`, редактирование имени и раскрытие истории | `window.renderBonus`, `window.renderProfile`; публикует `ztBus` event `profile:rendered` |
+| `fitness-strava-ui.js` | Отдельная read-only секция `#stravaProfileSection` в профиле подтверждённого гостя: согласие, OAuth-переход, загрузка личных тренировок, отключение | Статический импорт из `main.js`; подписка на `ztBus` event `profile:rendered`; единственный владелец `#stravaProfileSection` и его scoped CSS |
 | `profile-orders.js` | Последний заказ и полный список заказов; общий кэш/запрос для карточки и модалки; обработка «Отследить» | `window.loadMyOrders`, `window.renderOrdersModal`, `window.updateMyOrdersCache`, `window.invalidateMyOrders` |
 | `profile-brand.js` | Включение брендовых секций профиля, блок «Пятница», единый `renderVerifyNote` | `window.applyProfileBrand`, `window.renderVerifyNote` |
 | `core/qr.js` | `drawQR`, единственная полноэкранная QR-модалка `#qrModal`, открытие QR из профиля, wake lock | `window.drawQR`, `window.openQRFull`, `window.closeQRFull` |
@@ -128,7 +129,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/overlay-core.js` | `syncOverlay` (модалки/шторки/корзина), popstate/Escape/клик по оверлею; TgUx (MainButton, BackButton, haptics) | `window.syncOverlay`, `window.TgUx` |
-| `core/panel.js` | Единая шторка профиля `#panel`, фокус возврата и действия «Назад»; старый вызов `openPanel('bonus')` открывает тот же профиль | `window.openPanel`, `window.closePanel`, `window.setTab` |
+| `core/panel.js` | Единая шторка профиля `#panel`, фокус возврата и действия «Назад»; старый вызов `openPanel('bonus')` открывает тот же профиль; публикует события жизненного цикла профиля | `window.openPanel`, `window.closePanel`, `window.setTab`; `ztBus`: `profile:opened`, `profile:closed` |
 | `core/swipe.js` | iOS-свайп закрытия `#panel` | — |
 | `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`); обёртка `.topbar-right` на ≥821px | `window.alignRailWithCard` |
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
@@ -158,10 +159,11 @@
 | Модуль | Зона ответственности |
 | --- | --- |
 | `server.js` | Сборка Express, статика с Cache-Control (sw.js — no-store), роуты меню |
-| `server/routes/*` | auth, staff, promos, orders, chat, tg (webhook-бот), push, stats |
-| `server/domain/*` | customers, loyalty (штампы/подарки), helpers, валидация адреса |
-| `server/services/*` | Оркестратор пушей (TG+web+FCM), telegram, fcm, sms |
+| `server/routes/*` | auth, staff (в т.ч. погашение спортивных подарков), fitness-strava (OAuth, приватный список тренировок и webhook), promos, orders, chat, tg (webhook-бот + приём GPX как unverified заявки), push, stats |
+| `server/domain/*` | customers, loyalty (покупочные штампы/подарки), fitness-rewards (приём GPX как unverified; выдача не подключена до server-side verifier; погашение ранее выданных наград), helpers, валидация адреса |
+| `server/services/*` | Оркестратор пушей (TG+web+FCM), telegram, telegram-file (ограниченная загрузка файлов Telegram), strava (OAuth, encrypted tokens, on-demand activities), fcm, sms |
 | `server/middleware/*` | Гарды ролей, security-заголовки, CORS, zod-валидация |
+| `server/utils/gpx-activity.js` | Ограниченный GPX-парсер: вычисляет агрегаты, не возвращает и не хранит GPS-координаты |
 | `server/db/*` | SQLite-коннект, схема+миграции, сид (меню/dmenu, VAPID) |
 
 ## Регламент изменений
@@ -169,3 +171,11 @@
 1. Новый модуль или смена владельца → правка этой карты в том же PR.
 2. Запрещено создавать второго писателя в DOM-узел «намеренно»: вспомнить Ф5.21c (дубль мутаций корзины), Ф3.25 (марка), Ф5.60/F5.62 (рейл и mbonus в CSS).
 3. Контракты window.* перечислены в колонке «Контракты»; удалять только вместе с потребителями (помогает knip).
+
+
+## Native fitness adapters
+
+| Module | Owns | Contract |
+| --- | --- | --- |
+| `ios/App/App/HealthKitPlugin.swift` + `ZernoBridgeViewController.swift` | Native HealthKit read permission and read-only query for recent running workouts in the Capacitor iOS app | Capacitor plugin `ZernoHealthKit` |
+| `public/app/fitness-healthkit.js` | Browser/native capability detection and validation of normalized HealthKit workout summaries; no DOM ownership | `window.ZernoHealthKit` |

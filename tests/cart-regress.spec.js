@@ -2,6 +2,14 @@
 /* eslint-disable playwright/no-conditional-in-test */
 import { test, expect } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/fitness/strava/status', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ enabled: false, connected: false, scopes: [] })
+  }));
+});
+
 test.describe('Спринт 1 — Задачи 2, 3, 4: Аватар, Степпер карточек, Сабфильтры', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 

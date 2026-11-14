@@ -104,6 +104,10 @@ test('анонимный чат не предлагает вызвать сот�
 });
 
 test('авторизованный гость может подтвердить вызов сотрудника', async ({ page }) => {
+  let stravaStatusRequests = 0;
+  page.on('request', request => {
+    if (request.url().includes('/api/fitness/strava/status')) stravaStatusRequests += 1;
+  });
   await prepare(page);
   await page.evaluate(() => {
     window.setUser('test-customer-token', {
@@ -111,6 +115,7 @@ test('авторизованный гость может подтвердить 
     });
   });
   await page.locator('#chatFab').click();
+  expect(stravaStatusRequests).toBe(0);
   await page.locator('#chatInput').fill('абырвалг');
   await page.locator('#chatInput').press('Enter');
   const call = page.locator('.chatHint', { hasText: 'Позвать сотрудника' });

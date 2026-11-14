@@ -61,9 +61,8 @@ export default {
         pathNot: [
           '(^|/)public/sw\\.js$',
           '(^|/)public/debug\\.js$',
-          // Классические скрипты из index.html:
+          // Dynamically loaded browser scripts:
           '(^|/)public/app/core/(address-dict|address-autocomplete|address-book|preorder-timer)\\.js$',
-          // Динамически подгружаемые в рантайме (scanner.js → loadJsqr):
           '(^|/)public/jsqr\\.js$',
           '(^|/)public/qrcode\\.js$',
           '\\.d\\.ts$'

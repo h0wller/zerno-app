@@ -33,6 +33,8 @@
 
 * **Медиа-обработка:** `sharp` (автоматическая нарезка загруженных блюд в Retina WebP).
 
+* **Нативный контейнер:** Capacitor 8 для iOS/Android; iOS native extensions живут в `ios/App/App` и подключаются через собственный `CAPBridgeViewController`. HealthKit доступен только в нативном iOS контейнере, не в PWA или Telegram Mini App.
+
 * **Уведомления:** Web Push (`web-push` через VAPID), Firebase Admin (`firebase-admin` для нативных пушей Capacitor), бот Telegram через вебхуки. Сервер использует встроенный глобальный `fetch` Node.js 22; `node-fetch` не является зависимостью проекта.
 
 * **КРИТИЧЕСКИЙ ФАКТ:** В проекте **НЕТ WebSockets**! Все обновления заказов, журналов и чата работают через HTTP REST API с контролируемым поллингом (`/api/orders`, `/api/chat/thread`).

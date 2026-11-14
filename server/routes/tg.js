@@ -1,18 +1,22 @@
 /* server/routes/tg.js — module-08: Telegram bot webhook. */
 
 import { Router } from 'express';
+import { createHash } from 'node:crypto';
 import { db } from '../db/connection.js';
 import { tgSend, TG_TOKEN, TG_WEBHOOK_SECRET, APP_URL } from '../services/telegram.js';
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { otpStore } from '../utils/otp.js';
 import { grantWelcome } from '../domain/loyalty.js';
 import { grantBonus, QR_SOURCE } from '../domain/bonuses.js';
-import { cust, addHist, issueToken } from '../domain/helpers.js';
+import { cust, addHist, issueToken, logEv } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { linkTelegram, findUniqueTelegramCustomer } from '../domain/telegram-link.js';
 import { nowISO } from '../utils/id-time.js';
 import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
 import { botIntent } from '../utils/bot-nlu.js';
+import { parseGpxActivity } from '../utils/gpx-activity.js';
+import { fitnessRewardService } from '../domain/fitness-rewards.js';
+import { downloadTelegramDocument } from '../services/telegram-file.js';
 
 function getUniqueCustomerByTelegram(telegramId) {
   const result = findUniqueTelegramCustomer(db, telegramId);
@@ -57,6 +61,123 @@ function bonusKeyboard() {
 
 export function createTgRouter({ appKb }) {
   const tgRouter = Router();
+
+  async function handleFitnessDocument(message, targetChatId) {
+    if (process.env.FITNESS_REWARDS_ENABLED !== 'true') {
+      await tgSend(targetChatId, 'Приём спортивных активностей пока выключен.');
+      return;
+    }
+    const maxBytes = 1_048_576;
+    const document = message.document || {};
+    const fileName = String(document.file_name || '').trim();
+    if (!/\.gpx$/i.test(fileName)) {
+      await tgSend(targetChatId, 'Пока принимаю только файлы GPX (.gpx). FIT и прямые подключения трекеров добавим отдельным этапом.');
+      return;
+    }
+    if (document.file_size != null &&
+        (!Number.isSafeInteger(document.file_size) || document.file_size < 1 || document.file_size > maxBytes)) {
+      await tgSend(targetChatId, 'Файл должен быть не больше 1 МБ.');
+      return;
+    }
+
+    const customer = getUniqueCustomerByTelegram(targetChatId);
+    if (!customer || !customer.verified || (customer.role || 'guest') !== 'guest') {
+      await tgSend(targetChatId, 'Чтобы засчитать пробежку, сначала привяжите и подтвердите гостевой профиль через /start.');
+      return;
+    }
+
+    try {
+      const fileBytes = await downloadTelegramDocument(document.file_id, maxBytes);
+      let xml;
+      try {
+        xml = new TextDecoder('utf-8', { fatal: true }).decode(fileBytes);
+      } catch {
+        await tgSend(targetChatId, 'Не удалось прочитать GPX. Отправьте исходный файл в кодировке UTF-8.');
+        return;
+      }
+
+      let activity;
+      try {
+        activity = parseGpxActivity(xml, { maxBytes, maxPoints: 20_000 });
+      } catch {
+        await tgSend(targetChatId, 'Файл не похож на корректную GPX-пробежку с GPS-точками и временем записи.');
+        return;
+      }
+
+      const result = fitnessRewardService.submitActivity({
+        customerId: customer.id,
+        activity,
+        fingerprint: createHash('sha256').update(fileBytes).digest('hex'),
+      });
+
+      if (!result.ok) {
+        const messages = {
+          duplicate_activity: 'Этот файл уже отправляли. Повторно получить награду за него нельзя.',
+          distance_below_threshold: 'Для спортивного подарка нужна дистанция не меньше 5 км.',
+          implausible_activity: 'Параметры тренировки не прошли проверку. Проверьте экспорт исходной пробежки.',
+          customer_not_eligible: 'Для участия нужен подтверждённый гостевой профиль.',
+          invalid_input: 'Не удалось проверить файл. Отправьте экспорт GPX ещё раз.',
+        };
+        await tgSend(targetChatId, messages[result.reason] || 'Не удалось засчитать тренировку.');
+        return;
+      }
+
+      if (result.reason === 'verification_required') {
+        await tgSend(
+          targetChatId,
+          result.duplicate
+            ? 'Этот GPX уже отправляли. Файл сохранён как неподтверждённая заявка: по нему нельзя доказать происхождение пробежки, поэтому код не выдан.'
+            : 'Файл принят: ' + (result.activity.distanceMeters / 1000).toFixed(2) + ' км. Но GPX можно отредактировать, поэтому он не подтверждает факт пробежки. Заявка сохранена без награды. Подтверждение через Apple Health и другие источники появится отдельно.',
+        );
+        return;
+      }
+
+      const km = (result.activity.distanceMeters / 1000).toFixed(2);
+      if (result.duplicate) {
+        const reward = result.reward;
+        if (reward?.status === 'active') {
+          await tgSend(
+            targetChatId,
+            'Эта тренировка уже была принята ранее. Ваш подарок — <b>фильтр-кофе</b>, код: <b>' + reward.code +
+            '</b>. Покажите его кассиру до ' + new Date(reward.expiresAt).toLocaleString('ru-RU', {
+              timeZone: 'Europe/Kaliningrad', dateStyle: 'short', timeStyle: 'short',
+            }) + '.',
+          );
+        } else if (reward?.status === 'redeemed') {
+          await tgSend(targetChatId, 'Эта тренировка уже была учтена, а подарок ' + reward.code + ' уже погашен.');
+        } else if (reward?.status === 'expired') {
+          await tgSend(targetChatId, 'Эта тренировка уже была учтена, но подарок ' + reward.code + ' истёк.');
+        } else {
+          await tgSend(targetChatId, 'Эта тренировка уже была учтена. Повторно награда за неё не начисляется.');
+        }
+        return;
+      }
+      if (!result.reward) {
+        await tgSend(
+          targetChatId,
+          'Пробежка ' + km + ' км принята. Подарок за последние 7 дней уже выдавался; следующая награда будет доступна после окончания этого периода.',
+        );
+        return;
+      }
+
+      const expires = new Date(result.reward.expiresAt).toLocaleString('ru-RU', {
+        timeZone: 'Europe/Kaliningrad',
+        dateStyle: 'short',
+        timeStyle: 'short',
+      });
+      await tgSend(
+        targetChatId,
+        '🏃 <b>Пробежка ' + km + ' км засчитана!</b>\n\n' +
+        '🎁 Ваш подарок: <b>RUN-код ' + result.reward.code + '</b>\n' +
+        'Покажите код кассиру в кофейне.\n' +
+        'Действует до: <b>' + expires + '</b>\n\n' +
+        'Один спортивный подарок доступен раз в 7 дней.',
+      );
+    } catch (error) {
+      console.error('[tg] fitness GPX intake failed:', error?.message || 'unknown error');
+      await tgSend(targetChatId, 'Не получилось обработать GPX сейчас. Попробуйте отправить файл позже.');
+    }
+  }
 
   async function sendBonusInfo(targetChatId) {
     const c = getUniqueCustomerByTelegram(targetChatId);
@@ -210,6 +331,67 @@ export function createTgRouter({ appKb }) {
     const chatId = String(u.message.chat.id);
     const text = String(u.message.text || '').trim();
 
+    if (/^\/fitness(?:@\w+)?$/i.test(text)) {
+      const customer = getUniqueCustomerByTelegram(chatId);
+      if (!customer || !customer.verified || (customer.role || 'guest') !== 'guest') {
+        await tgSend(chatId, 'Сначала привяжите и подтвердите гостевой профиль через /start.');
+        return;
+      }
+      const reward = fitnessRewardService.getLatestReward(customer.id);
+      if (!reward) {
+        await tgSend(chatId, process.env.FITNESS_REWARDS_ENABLED === 'true'
+          ? 'Пока нет спортивных подарков. Для участия отправьте GPX-файл пробежки от 5 км.'
+          : 'Приём спортивных активностей пока выключен.');
+      } else if (reward.status === 'active') {
+        const expires = new Date(reward.expiresAt).toLocaleString('ru-RU', {
+          timeZone: 'Europe/Kaliningrad', dateStyle: 'short', timeStyle: 'short',
+        });
+        await tgSend(chatId, 'Ваш подарок — <b>фильтр-кофе</b>. Код: <b>' + reward.code + '</b>\nПокажите его кассиру до ' + expires + '.');
+      } else if (reward.status === 'redeemed') {
+        await tgSend(chatId, 'Подарок «фильтр-кофе» (' + reward.code + ') уже использован.');
+      } else {
+        await tgSend(chatId, 'Срок действия подарка «фильтр-кофе» (' + reward.code + ') истёк.');
+      }
+      return;
+    }
+
+    const fitnessRedeemMatch = text.match(/^\/fitness_redeem(?:@\w+)?\s+([A-Za-z0-9-]{8,24})$/i);
+    if (fitnessRedeemMatch) {
+      const operator = getUniqueCustomerByTelegram(chatId);
+      if (!operator || !['cashier', 'admin'].includes(operator.role)) {
+        await tgSend(chatId, 'Команда доступна только привязанному аккаунту кассира или администратора.');
+        return;
+      }
+      const result = fitnessRewardService.redeemReward({
+        code: fitnessRedeemMatch[1],
+        staffId: operator.id,
+      });
+      const errors = {
+        invalid_input: 'Некорректный код спортивного подарка.',
+        staff_required: 'Недостаточно прав для погашения подарка.',
+        reward_not_found: 'Спортивный подарок не найден.',
+        reward_expired: 'Срок действия спортивного подарка истёк.',
+        already_redeemed: 'Этот спортивный подарок уже использован.',
+        reward_not_redeemable: 'Этот спортивный подарок нельзя использовать.',
+      };
+      if (!result.ok) {
+        await tgSend(chatId, errors[result.reason] || 'Не удалось погасить спортивный подарок.');
+        return;
+      }
+      const owner = db.prepare('SELECT cid FROM fitness_rewards WHERE id=?').get(result.reward.id);
+      if (owner) {
+        addHist(owner.cid, 'Спортивный подарок «фильтр-кофе» ' + result.reward.code + ' погашен', operator.name || 'Кассир');
+        logEv(operator.name || 'Кассир', 'Погашен спортивный подарок «фильтр-кофе» ' + result.reward.code);
+      }
+      await tgSend(chatId, 'Подарок <b>фильтр-кофе</b> с кодом <b>' + result.reward.code + '</b> успешно погашен.');
+      return;
+    }
+
+    if (u.message.document) {
+      await handleFitnessDocument(u.message, chatId);
+      return;
+    }
+
     if (text === 'link_phone' || text === 'bonus' || text === 'orders' ||
         text === 'support_choose' || text === 'support_delivery' || text === 'support_coffee') {
       const cbChatId = String(u.message.chat.id);
@@ -288,6 +470,8 @@ export function createTgRouter({ appKb }) {
         '/bonus — мои штампы и подарки\n' +
         '/orders — мои заказы и статус\n' +
         '/start — главное меню\n\n' +
+        '/fitness — мой спортивный подарок\\n' +
+        '/fitness_redeem КОД — кассовое погашение спортивного подарка\\n' +
         '• <b>Или просто спросите меня словами:</b>\n' +
         '— «Сколько у меня штампов?»\n' +
         '— «Где мой заказ?»\n' +
