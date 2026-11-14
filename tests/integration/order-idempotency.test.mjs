@@ -162,6 +162,7 @@ test('same client_order_id replays one order and consumes a promo only once', as
   assert.equal(retry.status, 200, JSON.stringify(retry.json));
   assert.equal(retry.json.order.id, first.json.order.id);
   assert.equal(retry.json.order.no, first.json.order.no);
+  assert.equal(first.json.order.items[0].oi, 1, 'persist the selected option index for reorder');
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 1);
   assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, '41');
   assert.equal(db.prepare("SELECT uses FROM promos WHERE code='RETRY10'").get().uses, 1);
