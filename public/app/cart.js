@@ -972,6 +972,7 @@ function renderCartBase() {
         if (cartScrollBody) cartScrollBody.scrollTop = 0;
       });
       var checkoutButton = document.getElementById("checkoutBtn");
+      var checkoutWasDisabled = checkoutButton ? checkoutButton.disabled : false;
       if (checkoutButton) checkoutButton.disabled = true;
       try {
         if (typeof window.refreshDeliveryInfo === "function") await window.refreshDeliveryInfo();
@@ -981,7 +982,7 @@ function renderCartBase() {
           window.toast("Не удалось обновить график работы. Проверьте соединение перед оформлением.", "⚠️");
         }
       } finally {
-        if (checkoutButton) checkoutButton.disabled = false;
+        if (checkoutButton) checkoutButton.disabled = checkoutWasDisabled;
         if (typeof window.syncOverlay === "function") window.syncOverlay();
       }
     });
