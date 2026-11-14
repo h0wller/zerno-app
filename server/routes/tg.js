@@ -1,6 +1,7 @@
 /* server/routes/tg.js — module-08: Telegram bot webhook. */
 
 import { Router } from 'express';
+import { createHash } from 'node:crypto';
 import { db } from '../db/connection.js';
 import { tgSend, TG_TOKEN, TG_WEBHOOK_SECRET, APP_URL } from '../services/telegram.js';
 import { fmtPhone, ph10 } from '../utils/phone.js';
@@ -13,6 +14,8 @@ import { linkTelegram, findUniqueTelegramCustomer } from '../domain/telegram-lin
 import { nowISO } from '../utils/id-time.js';
 import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
 import { botIntent } from '../utils/bot-nlu.js';
+import { parseGpxActivity } from '../utils/gpx-activity.js';
+import { fitnessRewardService } from '../domain/fitness-rewards.js';
 
 function getUniqueCustomerByTelegram(telegramId) {
   const result = findUniqueTelegramCustomer(db, telegramId);
