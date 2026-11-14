@@ -158,10 +158,11 @@
 | Модуль | Зона ответственности |
 | --- | --- |
 | `server.js` | Сборка Express, статика с Cache-Control (sw.js — no-store), роуты меню |
-| `server/routes/*` | auth, staff, promos, orders, chat, tg (webhook-бот), push, stats |
-| `server/domain/*` | customers, loyalty (штампы/подарки), helpers, валидация адреса |
-| `server/services/*` | Оркестратор пушей (TG+web+FCM), telegram, fcm, sms |
+| `server/routes/*` | auth, staff (в т.ч. погашение спортивных подарков), promos, orders, chat, tg (webhook-бот + приём GPX), push, stats |
+| `server/domain/*` | customers, loyalty (покупочные штампы/подарки), fitness-rewards (отдельные спортивные награды), helpers, валидация адреса |
+| `server/services/*` | Оркестратор пушей (TG+web+FCM), telegram, telegram-file (ограниченная загрузка файлов Telegram), fcm, sms |
 | `server/middleware/*` | Гарды ролей, security-заголовки, CORS, zod-валидация |
+| `server/utils/gpx-activity.js` | Ограниченный GPX-парсер: вычисляет агрегаты, не возвращает и не хранит GPS-координаты |
 | `server/db/*` | SQLite-коннект, схема+миграции, сид (меню/dmenu, VAPID) |
 
 ## Регламент изменений

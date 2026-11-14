@@ -665,6 +665,45 @@ paths:
         '200': { description: Результат операции }
         '400': { description: Нет доступных подарков }
 
+  /api/staff/fitness-rewards/{code}/redeem:
+    post:
+      tags: [Staff]
+      summary: Одноразово погасить спортивный подарок
+      description: 'Только кассир или администратор через staffGuard. Активный код можно погасить один раз; просроченный код не принимается.'
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+            pattern: '^RUN-[A-Z0-9]{8,16}$'
+      responses:
+        '200':
+          description: Подарок погашен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  reward:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      code: { type: string }
+                      rewardType: { type: string, enum: [filter_coffee] }
+                      status: { type: string, enum: [redeemed] }
+                      issuedAt: { type: string, format: date-time }
+                      expiresAt: { type: string, format: date-time }
+                      redeemedAt: { type: string, format: date-time }
+        '400': { description: Некорректный код }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Спортивный подарок не найден }
+        '409': { description: Подарок уже погашен или недоступен }
+        '410': { description: Срок действия подарка истёк }
+
   /api/staff/scan:
     post:
       tags: [Staff]
@@ -674,7 +713,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [code], properties: { code: { type: string, minLength: 16, maxLength: 64, pattern: '^[A-Za-z0-9_-]{16,64}
+            schema: { type: object, required: [code], properties: { code: { type: string, minLength: 16, maxLength: 64, pattern: '^[A-Za-z0-9_-]{16,64}$' } } }
       responses:
         '200': { description: Возвращает customer }
         '404': { description: QR не найден }

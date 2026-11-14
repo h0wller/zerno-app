@@ -24,6 +24,8 @@
 | `GET /api/tg/diag` | Диагностика Telegram webhook/Bot API | adminGuard |
 | `POST /api/tg/webhook` | Входящий Telegram webhook | Проверка webhook маршрутом |
 
+Спортивные награды в Telegram — отдельный пилот, выключенный по умолчанию через `FITNESS_REWARDS_ENABLED`. Подробные правила, ограничения GPX, сроки и модель хранения: [docs/fitness-rewards.md](./fitness-rewards.md). Команды бота: `/fitness` — показать последний подарок; отправка GPX-документа — принять тренировку; `/fitness_redeem RUN-XXXXXXXXXX` — кассовое погашение привязанным кассиром/администратором. OAuth/вебхуки Strava и FIT пока не реализованы.
+
 ## Авторизация и профиль
 
 SMS.ru сохранён как будущий платный канал авторизации, но по умолчанию выключен. Отправка возможна только при явном `SMS_AUTH_ENABLED=true` и настроенном `SMSRU_API_ID`. При отсутствующем/ложном флаге сервер не обращается к SMS.ru, а клиент скрывает SMS-регистрацию. Публичный `GET /api/config` раскрывает только boolean `smsAuthEnabled`, не ключ провайдера.
@@ -90,6 +92,7 @@ SMS.ru сохранён как будущий платный канал авто
 | `POST /api/staff/redeem` | Списать бесплатный кофе | staffGuard |
 | `POST /api/redeem` | Списать доступный бесплатный кофе текущего пользователя | userGuard |
 | `POST /api/staff/scan` | Проверить QR гостя | staffGuard |
+| `POST /api/staff/fitness-rewards/:code/redeem` | Одноразово погасить спортивный подарок | staffGuard (cashier, admin) |
 | `GET /api/staff/log` | Журнал операций кассы | staffGuard |
 
 ## Чат
