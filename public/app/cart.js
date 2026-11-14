@@ -1138,14 +1138,6 @@ function renderCartBase() {
       }
     }, true);
 
-    // Дополнительно: прокрутка колесиком мыши
-    document.addEventListener("wheel", function (e) {
-      var strip = e.target.closest(".ca-cards-scroll, .ca-tabs-scroll, .ci-mod-chips-scroll, .subfilter-bar");
-      if (strip && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        strip.scrollLeft += e.deltaY;
-        e.preventDefault();
-      }
-    }, { passive: false });
   })();
 
   var promoInput = document.getElementById("cartPromo");
