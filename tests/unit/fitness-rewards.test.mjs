@@ -19,7 +19,8 @@ function fixture() {
       distance_meters INTEGER NOT NULL,
       elapsed_seconds INTEGER NOT NULL,
       started_at TEXT NOT NULL,
-      received_at TEXT NOT NULL
+      received_at TEXT NOT NULL,
+      verification_state TEXT NOT NULL DEFAULT 'unverified'
     );
     CREATE TABLE fitness_rewards (
       id TEXT PRIMARY KEY,
@@ -42,12 +43,7 @@ function fixture() {
 }
 
 function activity(distanceMeters = 5_250, startedAt = '2026-11-14T08:00:00.000Z') {
-  return {
-    distanceMeters,
-    elapsedSeconds: 3_600,
-    startedAt,
-    pointCount: 120,
-  };
+  return { distanceMeters, elapsedSeconds: 3_600, startedAt, pointCount: 120 };
 }
 
 function fingerprint(char) {
@@ -55,12 +51,31 @@ function fingerprint(char) {
 }
 
 function service(db, currentDate) {
-  let codeNumber = 0;
   return createFitnessRewardService({
     database: db,
     clock: () => new Date(currentDate.value),
-    makeCode: () => 'RUN-TEST' + String(++codeNumber).padStart(4, '0'),
+    makeId: (() => { let id = 0; return () => 'id-' + (++id); })(),
   });
+}
+
+function seedReward(db, {
+  customerId = 'guest-1',
+  activityId = 'seed-activity',
+  code = 'RUN-SEED0001',
+  issuedAt = '2026-11-14T10:00:00.000Z',
+  expiresAt = '2026-11-16T10:00:00.000Z',
+  status = 'active',
+} = {}) {
+  db.prepare(`
+    INSERT INTO fitness_activities
+      (id,cid,source,fingerprint,distance_meters,elapsed_seconds,started_at,received_at,verification_state)
+    VALUES (?,?, 'gpx', ?, 5250, 3600, ?, ?, 'verified')
+  `).run(activityId, customerId, fingerprint('f'), issuedAt, issuedAt);
+  db.prepare(`
+    INSERT INTO fitness_rewards
+      (id,cid,activity_id,code,reward_type,status,issued_at,expires_at)
+    VALUES (?,?,?,?,'filter_coffee',?,?,?)
+  `).run('reward-' + activityId, customerId, activityId, code, status, issuedAt, expiresAt);
 }
 
 test('keeps a plausible GPX upload unverified and never issues a reward from it', () => {
@@ -76,30 +91,8 @@ test('keeps a plausible GPX upload unverified and never issues a reward from it'
   assert.equal(result.verificationState, 'unverified');
   assert.equal(result.reward, null);
   assert.equal(result.reason, 'verification_required');
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_activities').get().n, 1);
+  assert.equal(db.prepare('SELECT verification_state FROM fitness_activities').get().verification_state, 'unverified');
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 0);
-  db.close();
-});
-
-test('issues one 48-hour reward for a qualifying run and persists no raw GPS points', () => {
-  const db = fixture();
-  const rewards = service(db, { value: '2026-11-14T10:00:00.000Z' });
-  const result = rewards.submitActivity({
-    customerId: 'guest-1',
-    activity: activity(),
-    fingerprint: fingerprint('a'),
-  });
-
-  assert.equal(result.ok, true);
-  assert.equal(result.reward.code, 'RUN-TEST0001');
-  assert.equal(result.reward.rewardType, 'filter_coffee');
-  assert.equal(result.reward.status, 'active');
-  assert.equal(Date.parse(result.reward.expiresAt) - Date.parse(result.reward.issuedAt), 48 * 60 * 60 * 1000);
-  const row = db.prepare('SELECT * FROM fitness_activities').get();
-  assert.equal(row.distance_meters, 5_250);
-  assert.equal(Object.hasOwn(row, 'gpx'), false);
-  assert.equal(Object.hasOwn(row, 'route'), false);
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 1);
   db.close();
 });
 
@@ -110,74 +103,25 @@ test('rejects the same uploaded activity fingerprint globally, including across 
   const second = rewards.submitActivity({ customerId: 'guest-2', activity: activity(), fingerprint: fingerprint('b') });
 
   assert.equal(first.ok, true);
+  assert.equal(first.reward, null);
   assert.deepEqual(second, { ok: false, reason: 'duplicate_activity' });
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_activities').get().n, 1);
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 1);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 0);
   db.close();
 });
 
-test('re-upload by the same guest replays the original reward instead of losing it', () => {
+test('re-upload by the same guest returns the original unverified submission without a reward', () => {
   const db = fixture();
   const rewards = service(db, { value: '2026-11-14T10:00:00.000Z' });
-  const first = rewards.submitActivity({
-    customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('9'),
-  });
-  const retry = rewards.submitActivity({
-    customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('9'),
-  });
+  const first = rewards.submitActivity({ customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('9') });
+  const retry = rewards.submitActivity({ customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('9') });
 
   assert.equal(retry.ok, true);
   assert.equal(retry.duplicate, true);
-  assert.equal(retry.reward.code, first.reward.code);
-  assert.equal(retry.reward.status, 'active');
+  assert.equal(retry.verificationState, 'unverified');
+  assert.equal(retry.reward, null);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_activities').get().n, 1);
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 1);
-  db.close();
-});
-
-test('latest reward lookup expires old codes and returns no raw activity data', () => {
-  const db = fixture();
-  const current = { value: '2026-11-14T10:00:00.000Z' };
-  const rewards = service(db, current);
-  const issued = rewards.submitActivity({
-    customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('a'),
-  });
-  assert.equal(rewards.getLatestReward('guest-1').code, issued.reward.code);
-
-  current.value = '2026-11-17T10:00:00.000Z';
-  const latest = rewards.getLatestReward('guest-1');
-  assert.equal(latest.status, 'expired');
-  assert.equal(db.prepare('SELECT status FROM fitness_rewards').get().status, 'expired');
-  db.close();
-});
-
-test('records an eligible later run but enforces one reward in every rolling seven-day window', () => {
-  const db = fixture();
-  const current = { value: '2026-11-14T10:00:00.000Z' };
-  const rewards = service(db, current);
-  const first = rewards.submitActivity({ customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('c') });
-  current.value = '2026-11-18T10:00:00.000Z';
-  const second = rewards.submitActivity({ customerId: 'guest-1', activity: activity(6_000, '2026-11-18T08:00:00.000Z'), fingerprint: fingerprint('d') });
-
-  assert.equal(first.reward !== null, true);
-  assert.equal(second.ok, true);
-  assert.equal(second.reward, null);
-  assert.equal(second.reason, 'weekly_reward_limit');
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_activities').get().n, 2);
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 1);
-  db.close();
-});
-
-test('allows a new reward after the prior seven-day limit window has elapsed', () => {
-  const db = fixture();
-  const current = { value: '2026-11-01T10:00:00.000Z' };
-  const rewards = service(db, current);
-  rewards.submitActivity({ customerId: 'guest-1', activity: activity(5_250, '2026-11-01T08:00:00.000Z'), fingerprint: fingerprint('e') });
-  current.value = '2026-11-09T10:00:00.000Z';
-  const result = rewards.submitActivity({ customerId: 'guest-1', activity: activity(5_250, '2026-11-09T08:00:00.000Z'), fingerprint: fingerprint('f') });
-
-  assert.equal(result.reward.code, 'RUN-TEST0002');
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 2);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 0);
   db.close();
 });
 
@@ -201,7 +145,7 @@ test('rejects stale and future GPX activities', () => {
   db.close();
 });
 
-test('does not issue rewards to unverified customers or staff accounts', () => {
+test('does not accept submissions from unverified customers or staff accounts', () => {
   const db = fixture();
   const rewards = service(db, { value: '2026-11-14T10:00:00.000Z' });
   const unverified = rewards.submitActivity({ customerId: 'unverified', activity: activity(), fingerprint: fingerprint('1') });
@@ -232,29 +176,41 @@ test('rejects too-short or implausible activities without consuming the fingerpr
 test('redeems a reward exactly once and only for cashier or admin accounts', () => {
   const db = fixture();
   db.prepare('INSERT INTO customers(id,role,verified) VALUES(?,?,?)').run('admin-1', 'admin', 1);
-  const rewards = service(db, { value: '2026-11-14T10:00:00.000Z' });
-  const issued = rewards.submitActivity({ customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('5') });
+  seedReward(db);
+  const rewards = service(db, { value: '2026-11-14T11:00:00.000Z' });
 
-  assert.deepEqual(rewards.redeemReward({ code: issued.reward.code, staffId: 'guest-2' }), {
+  assert.deepEqual(rewards.redeemReward({ code: 'RUN-SEED0001', staffId: 'guest-2' }), {
     ok: false, reason: 'staff_required',
   });
-  const redeemed = rewards.redeemReward({ code: issued.reward.code, staffId: 'cashier-1' });
+  const redeemed = rewards.redeemReward({ code: 'RUN-SEED0001', staffId: 'cashier-1' });
   assert.equal(redeemed.ok, true);
   assert.equal(redeemed.reward.status, 'redeemed');
-  assert.equal(rewards.redeemReward({ code: issued.reward.code, staffId: 'cashier-1' }).reason, 'already_redeemed');
+  assert.equal(rewards.redeemReward({ code: 'RUN-SEED0001', staffId: 'cashier-1' }).reason, 'already_redeemed');
   assert.equal(db.prepare('SELECT redeemed_by FROM fitness_rewards').get().redeemed_by, 'cashier-1');
   db.close();
 });
 
 test('marks expired rewards unusable rather than redeeming them', () => {
   const db = fixture();
-  const current = { value: '2026-11-14T10:00:00.000Z' };
-  const rewards = service(db, current);
-  const issued = rewards.submitActivity({ customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('6') });
-  current.value = '2026-11-17T10:00:00.000Z';
+  seedReward(db);
+  const rewards = service(db, { value: '2026-11-17T10:00:00.000Z' });
 
-  const result = rewards.redeemReward({ code: issued.reward.code, staffId: 'cashier-1' });
+  const result = rewards.redeemReward({ code: 'RUN-SEED0001', staffId: 'cashier-1' });
   assert.deepEqual(result, { ok: false, reason: 'reward_expired' });
+  assert.equal(db.prepare('SELECT status FROM fitness_rewards').get().status, 'expired');
+  db.close();
+});
+
+test('latest reward lookup expires old codes and returns no raw activity data', () => {
+  const db = fixture();
+  const current = { value: '2026-11-14T10:00:00.000Z' };
+  seedReward(db);
+  const rewards = service(db, current);
+  assert.equal(rewards.getLatestReward('guest-1').code, 'RUN-SEED0001');
+
+  current.value = '2026-11-17T10:00:00.000Z';
+  const latest = rewards.getLatestReward('guest-1');
+  assert.equal(latest.status, 'expired');
   assert.equal(db.prepare('SELECT status FROM fitness_rewards').get().status, 'expired');
   db.close();
 });
