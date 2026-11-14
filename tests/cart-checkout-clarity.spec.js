@@ -22,8 +22,11 @@ const MENU_ITEM = {
 const RECOMMENDED_ITEMS = [
   { id: 'test-drink', cat: 'drinks', name: 'Лимонад к заказу', price: 180, on: 1, e: '🥤' },
   { id: 'test-sauce', cat: 'sauces', name: 'Соус сырный', price: 70, on: 1, e: '🥫' },
-  { id: 'test-topping', cat: 'sauces', name: 'Шампиньоны', price: 90, on: 1, e: '🍄' }
-
+  { id: 'test-topping', cat: 'sauces', name: 'Шампиньоны', price: 90, on: 1, e: '🍄' },
+  { id: 'test-drink-2', cat: 'drinks', name: 'Морс клюквенный', price: 160, on: 1, e: '🥤' },
+  { id: 'test-drink-3', cat: 'drinks', name: 'Вода без газа', price: 90, on: 1, e: '💧' },
+  { id: 'test-sauce-2', cat: 'sauces', name: 'Соус барбекю', price: 70, on: 1, e: '🥫' },
+  { id: 'test-sauce-3', cat: 'sauces', name: 'Кетчуп', price: 50, on: 1, e: '🥫' }
 ];
 
 async function expectCompact44pxHitTarget(locator, visibleFace) {
@@ -200,6 +203,12 @@ test('cart keeps the current selected price and explains every amount without gu
   const allRecommendations = recommendations.locator('[data-atab="all"]');
   for (const viewport of [{ width: 320, height: 740 }, { width: 375, height: 812 }, { width: 390, height: 844 }, desktopViewport]) {
     await page.setViewportSize(viewport);
+    if (viewport.width < 821) {
+      const desktopScrollButtons = recommendations.locator('.ca-scroll-btn');
+      await expect(desktopScrollButtons).toHaveCount(2);
+      await expect(desktopScrollButtons.first()).toBeHidden();
+      await expect(desktopScrollButtons.last()).toBeHidden();
+    }
     const tabs = recommendations.locator('.addon-tab-btn');
     for (let index = 0; index < await tabs.count(); index += 1) {
       const tab = tabs.nth(index);
@@ -212,17 +221,91 @@ test('cart keeps the current selected price and explains every amount without gu
       contentType: 'image/png'
     });
   }
+  // Desktop scroll contract: vertical wheel remains natural cart scrolling.
+  // Horizontal recommendation navigation uses explicit controls, visible native scrollbar and left-button drag.
+  const cardsRail = recommendations.locator('.ca-cards-scroll');
+  const cartScrollBody = page.locator('#cartScrollBody');
+  await cardsRail.evaluate((el) => { el.scrollLeft = 0; });
+  const initialRailMetrics = await cardsRail.evaluate((el) => ({
+    clientWidth: el.clientWidth,
+    scrollWidth: el.scrollWidth,
+    scrollLeft: el.scrollLeft,
+    startOffset: parseFloat(getComputedStyle(el).paddingLeft) || 0
+  }));
+  expect(initialRailMetrics.scrollWidth).toBeGreaterThan(initialRailMetrics.clientWidth);
+  expect(initialRailMetrics.scrollLeft).toBeLessThanOrEqual(initialRailMetrics.startOffset + 1);
+
+  const previousRecommendationButton = recommendations.locator('[data-ca-scroll="-1"]');
+  const nextRecommendationButton = recommendations.locator('[data-ca-scroll="1"]');
+  await expect(cardsRail).toHaveAttribute('tabindex', '0');
+  await expect(cardsRail).toHaveAttribute('role', 'region');
+  await expect(cardsRail).toHaveCSS('scrollbar-width', 'thin');
+  await expect(previousRecommendationButton).toBeVisible();
+  await expect(previousRecommendationButton).toBeDisabled();
+  await expect(nextRecommendationButton).toBeVisible();
+  await expect(nextRecommendationButton).toBeEnabled();
+
+  await nextRecommendationButton.click();
+  await expect.poll(() => cardsRail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(initialRailMetrics.startOffset + 1);
+  await expect(previousRecommendationButton).toBeEnabled();
+  await previousRecommendationButton.click();
+  await expect.poll(() => cardsRail.evaluate((el) => {
+    const startOffset = parseFloat(getComputedStyle(el).paddingLeft) || 0;
+    return el.scrollLeft - startOffset;
+  })).toBeLessThanOrEqual(1);
+  await expect(previousRecommendationButton).toBeDisabled();
+  await cardsRail.evaluate((el) => { el.scrollLeft = 0; });
+
+  await testInfo.attach('cart-recommendations-desktop-before-drag', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+  await cartScrollBody.evaluate((body) => { body.scrollTop = 0; });
+  const railScrollBeforeWheel = await cardsRail.evaluate((rail) => rail.scrollLeft);
+  const railBoundsBeforeWheel = await cardsRail.boundingBox();
+  await page.mouse.move(
+    railBoundsBeforeWheel.x + railBoundsBeforeWheel.width / 2,
+    railBoundsBeforeWheel.y + railBoundsBeforeWheel.height / 2
+  );
+  await page.mouse.wheel(0, 160);
+  await expect.poll(async () => Math.abs(
+    await cardsRail.evaluate((rail) => rail.scrollLeft) - railScrollBeforeWheel
+  )).toBeLessThanOrEqual(2);
+  await expect.poll(() => cartScrollBody.evaluate((body) => body.scrollTop)).toBeGreaterThan(0);
+  await testInfo.attach('cart-recommendations-after-vertical-wheel', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+
+  await cartScrollBody.evaluate((body) => { body.scrollTop = 0; });
+  await recommendations.scrollIntoViewIfNeeded();
+  const railBoundsForDrag = await cardsRail.boundingBox();
+  const dragStartX = railBoundsForDrag.x + Math.min(120, railBoundsForDrag.width - 12);
+  const dragY = railBoundsForDrag.y + railBoundsForDrag.height / 2;
+  await page.mouse.move(dragStartX, dragY);
+  await page.mouse.down();
+  await page.mouse.move(dragStartX - 220, dragY, { steps: 8 });
+  await page.mouse.up();
+  await expect.poll(() => cardsRail.evaluate((rail) => rail.scrollLeft)).toBeGreaterThan(100);
+  await testInfo.attach('cart-recommendations-after-mouse-drag', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+
   const sauceRecommendations = recommendations.locator('[data-atab="sauces"]');
   await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
   await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'false');
   await sauceRecommendations.click();
   await expect(sauceRecommendations).toHaveAttribute('aria-pressed', 'true');
-  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(1);
-  await expect(recommendations.locator('.ac-name')).toHaveText(['Соус сырный']);
+  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(3);
+  await expect(recommendations.locator('.ac-name')).toHaveText(['Соус сырный', 'Соус барбекю', 'Кетчуп']);
   await allRecommendations.click();
   await expect(allRecommendations).toHaveAttribute('aria-pressed', 'true');
-  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(2);
-  await expect(recommendations.locator('.ac-name')).toHaveText(['Лимонад к заказу', 'Соус сырный']);
+  await expect(recommendations.locator('.addon-pill-card')).toHaveCount(6);
+  await expect(recommendations.locator('.ac-name')).toHaveText([
+    'Лимонад к заказу', 'Соус сырный', 'Морс клюквенный',
+    'Вода без газа', 'Соус барбекю', 'Кетчуп'
+  ]);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('#cartClose')).toBeVisible();
   await expect(page.locator('#cartClose .cart-continue-short')).toBeVisible();

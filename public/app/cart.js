@@ -556,10 +556,72 @@ async function refreshPromoLine(sum) {
           '<span class="ca-title">Рекомендуем к заказу</span>' +
           '<div class="ca-tabs-scroll" role="group" aria-label="Категории рекомендаций">' + tabsHtml + "</div>" +
         "</div>" +
-        '<div class="ca-cards-scroll">' +
-          (cardsHtml || '<div class="ca-empty">Нет позиций</div>') +
+        '<div class="ca-cards-frame">' +
+          '<button type="button" class="ca-scroll-btn" data-ca-scroll="-1" aria-label="Прокрутить рекомендации влево" hidden>' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+          "</button>" +
+          '<div class="ca-cards-scroll" tabindex="0" role="region" aria-label="Дополнительные позиции к заказу">' +
+            (cardsHtml || '<div class="ca-empty">Нет позиций</div>') +
+          "</div>" +
+          '<button type="button" class="ca-scroll-btn" data-ca-scroll="1" aria-label="Прокрутить рекомендации вправо" hidden>' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+          "</button>" +
         "</div>" +
       "</section>";
+
+    bindAddonScrollControls(host);
+  }
+
+  function syncAddonScrollControls(frame) {
+    if (!frame) return;
+    var rail = frame.querySelector(".ca-cards-scroll");
+    var prev = frame.querySelector('[data-ca-scroll="-1"]');
+    var next = frame.querySelector('[data-ca-scroll="1"]');
+    if (!rail || !prev || !next) return;
+
+    var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    var startOffset = parseFloat(window.getComputedStyle(rail).paddingLeft) || 0;
+    var atStart = rail.scrollLeft <= startOffset + 1;
+    var hasOverflow = maxScroll > 1;
+    prev.hidden = !hasOverflow;
+    next.hidden = !hasOverflow;
+    prev.disabled = !hasOverflow || atStart;
+    next.disabled = !hasOverflow || rail.scrollLeft >= maxScroll - 1;
+    frame.classList.toggle("has-overflow", hasOverflow);
+  }
+
+  function bindAddonScrollControls(host) {
+    var frame = host.querySelector(".ca-cards-frame");
+    if (!frame) return;
+    var rail = frame.querySelector(".ca-cards-scroll");
+    if (!rail) return;
+
+    if (host.dataset.caScrollControlsBound !== "1") {
+      host.dataset.caScrollControlsBound = "1";
+      host.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-ca-scroll]");
+        if (!button || button.disabled) return;
+        var currentFrame = host.querySelector(".ca-cards-frame");
+        var currentRail = currentFrame && currentFrame.querySelector(".ca-cards-scroll");
+        if (!currentRail) return;
+
+        var card = currentRail.querySelector(".addon-pill-card");
+        var gap = parseFloat(window.getComputedStyle(currentRail).columnGap) || 8;
+        var step = card ? card.getBoundingClientRect().width + gap : currentRail.clientWidth * 0.85;
+        var direction = Number(button.dataset.caScroll) < 0 ? -1 : 1;
+        var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        currentRail.scrollBy({ left: direction * step, behavior: reduceMotion ? "auto" : "smooth" });
+      });
+    }
+
+    rail.addEventListener("scroll", function () {
+      syncAddonScrollControls(frame);
+    }, { passive: true });
+
+    syncAddonScrollControls(frame);
+    window.requestAnimationFrame(function () {
+      syncAddonScrollControls(frame);
+    });
   }
 
   /* #deliveryPromoBar отключён по продуктовому решению 2026-10-27: плашка «до подарка» больше не рисуется.
@@ -1093,9 +1155,20 @@ function renderCartBase() {
     var hasDragged = false;
 
     document.addEventListener("mousedown", function (e) {
-      if (e.button !== 0) return; // только левая кнопка
+      if (e.button !== 0) return;
       var el = e.target.closest(".ca-cards-scroll, .ca-tabs-scroll, .ci-mod-chips-scroll, .subfilter-bar, .rail");
       if (!el) return;
+
+      if (el.matches(".ca-cards-scroll")) {
+        // Keep the add action clickable and leave the native scrollbar thumb/track to the browser.
+        if (e.target.closest("button, a, input, select, textarea, [contenteditable='true']")) return;
+        var rect = el.getBoundingClientRect();
+        var style = window.getComputedStyle(el);
+        var borders = (parseFloat(style.borderTopWidth) || 0) + (parseFloat(style.borderBottomWidth) || 0);
+        var scrollbarHeight = Math.max(8, el.offsetHeight - el.clientHeight - borders);
+        if (e.clientY >= rect.bottom - scrollbarHeight) return;
+      }
+
       isDown = true;
       hasDragged = false;
       activeEl = el;
@@ -1106,11 +1179,13 @@ function renderCartBase() {
     document.addEventListener("mousemove", function (e) {
       if (!isDown || !activeEl) return;
       var dx = e.pageX - startX;
-      if (Math.abs(dx) > 4) {
+      if (!hasDragged && Math.abs(dx) > 4) {
         hasDragged = true;
         activeEl.style.cursor = "grabbing";
         activeEl.style.userSelect = "none";
       }
+      if (!hasDragged) return;
+      e.preventDefault();
       activeEl.scrollLeft = scrollStart - dx;
     });
 
@@ -1129,6 +1204,10 @@ function renderCartBase() {
         setTimeout(function () { hasDragged = false; }, 60);
       }
     });
+    window.addEventListener("blur", function () {
+      endDrag();
+      hasDragged = false;
+    });
 
     // Если был свайп мышью — подавляем случайный клик по кнопке/чипсу
     document.addEventListener("click", function (e) {
@@ -1138,14 +1217,6 @@ function renderCartBase() {
       }
     }, true);
 
-    // Дополнительно: прокрутка колесиком мыши
-    document.addEventListener("wheel", function (e) {
-      var strip = e.target.closest(".ca-cards-scroll, .ca-tabs-scroll, .ci-mod-chips-scroll, .subfilter-bar");
-      if (strip && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        strip.scrollLeft += e.deltaY;
-        e.preventDefault();
-      }
-    }, { passive: false });
   })();
 
   var promoInput = document.getElementById("cartPromo");
