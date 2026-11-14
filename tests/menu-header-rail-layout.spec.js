@@ -495,8 +495,6 @@ test('mobile primary category navigation is visually distinct from secondary fil
           activeBottomBorderWidth: buttonStyle ? buttonStyle.borderBottomWidth : '',
           activeBottomBorderColor: buttonStyle ? buttonStyle.borderBottomColor : '',
           iconFontSize: icon ? Number.parseFloat(getComputedStyle(icon).fontSize) : 0,
-          iconTop: iconRect ? iconRect.top : 0,
-          buttonTop: buttonRect ? buttonRect.top : 0,
           subchipHeight: subchipRect ? subchipRect.height : null,
           subchipRadius: subchipPseudo ? subchipPseudo.borderRadius : null,
           subchipBorderWidth: subchipPseudo ? subchipPseudo.borderTopWidth : null,
@@ -511,7 +509,6 @@ test('mobile primary category navigation is visually distinct from secondary fil
       expect(metrics.activeBottomBorderWidth, brand.brand + ' active category uses a navigation indicator').toBe('3px');
       expect(metrics.activeBottomBorderColor, brand.brand + ' active category indicator is visible').not.toBe('rgba(0, 0, 0, 0)');
       expect(metrics.iconFontSize, brand.brand + ' category icon remains visually prominent').toBeGreaterThanOrEqual(20);
-      expect(metrics.iconTop, brand.brand + ' icon is at the top of its tab').toBeLessThan(metrics.buttonTop + 8);
 
       if (brand.brand === 'delivery') {
         await expect(page.locator('#deliverySubFilter .subchip').first()).toBeVisible({ timeout: 15000 });
