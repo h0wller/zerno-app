@@ -280,7 +280,7 @@ test('cart keeps the current selected price and explains every amount without gu
   await cartScrollBody.evaluate((body) => { body.scrollTop = 0; });
   await recommendations.scrollIntoViewIfNeeded();
   const railBoundsForDrag = await cardsRail.boundingBox();
-  const dragStartX = railBoundsForDrag.x + railBoundsForDrag.width * 0.78;
+  const dragStartX = railBoundsForDrag.x + Math.min(120, railBoundsForDrag.width - 12);
   const dragY = railBoundsForDrag.y + railBoundsForDrag.height / 2;
   await page.mouse.move(dragStartX, dragY);
   await page.mouse.down();
