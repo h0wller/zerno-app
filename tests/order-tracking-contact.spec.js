@@ -190,6 +190,8 @@ test('тариф доставки в корзине совпадает с сер
   }));
 
   await openDeliveryApp(page);
+  await page.waitForFunction(() => typeof window.refreshDeliveryInfo === 'function');
+  await page.evaluate(() => window.refreshDeliveryInfo());
   await page.waitForFunction(() => window.deliveryInfo && window.deliveryInfo.zones.length === 3);
   await page.evaluate(() => {
     document.getElementById('cartPanel').classList.add('open');
@@ -202,6 +204,9 @@ test('тариф доставки в корзине совпадает с сер
     ['Морозовка', 500], ['Янтаровка', 500], ['Красноторовка', 500], ['Ягодное', 500],
     ['Донское', 1100], ['Прислово', 1100]
   ];
+
+  await expect.poll(() => page.evaluate(() => window.AddressModule.getStreets('Донское').length)).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => window.AddressModule.getStreets('Неизвестное'))).toEqual([]);
 
   for (const [place, expectedFee] of tariffs) {
     await page.locator('#checkoutPlace').selectOption(place);
