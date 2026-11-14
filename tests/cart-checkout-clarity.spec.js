@@ -268,9 +268,10 @@ test('cart keeps the current selected price and explains every amount without gu
   const dragY = railBoundsForDrag.y + railBoundsForDrag.height / 2;
   await page.mouse.move(dragStartX, dragY);
   await page.mouse.down();
-  await page.mouse.move(dragStartX - 120, dragY, { steps: 6 });
+  await page.mouse.move(dragStartX - 220, dragY, { steps: 8 });
   await page.mouse.up();
-  await expect.poll(() => recommendationCardsRail.evaluate((rail) => rail.scrollLeft)).toBeGreaterThan(0);
+  // The rail uses card snapping; require a stable move to the next recommendation, not a transient 1–2px offset.
+  await expect.poll(() => recommendationCardsRail.evaluate((rail) => rail.scrollLeft)).toBeGreaterThan(100);
   await testInfo.attach('cart-recommendations-after-mouse-drag', {
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png'
