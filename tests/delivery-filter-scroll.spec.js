@@ -38,9 +38,16 @@ const items = ingredientNames.map((ingredient, index) => ({
   img: '',
 }));
 
-for (const width of [320, 390]) {
-  test(`delivery ingredient filters reveal horizontal overflow at ${width}px`, async ({ page }, testInfo) => {
-    await page.setViewportSize({ width, height: 844 });
+const filterViewports = [
+  { width: 320, height: 844 },
+  { width: 390, height: 844 },
+  { width: 844, height: 390 },
+];
+
+for (const viewportSize of filterViewports) {
+  const { width, height } = viewportSize;
+  test(`delivery ingredient filters reveal horizontal overflow at ${width}x${height}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewportSize);
     await page.addInitScript(() => {
       localStorage.clear();
       sessionStorage.clear();
@@ -92,6 +99,23 @@ for (const width of [320, 390]) {
     expect(cueMetrics.fadePointerEvents).toBe('none');
     expect(cueMetrics.arrowContent).not.toBe('none');
     expect(cueMetrics.arrowPointerEvents).toBe('none');
+    const arrowAlignment = await viewport.evaluate((element) => {
+      const bar = element.querySelector('#deliverySubFilter');
+      const barRect = bar.getBoundingClientRect();
+      const arrow = getComputedStyle(element, '::before');
+      const transform = new DOMMatrixReadOnly(arrow.transform);
+      const arrowCenter = element.getBoundingClientRect().top
+        + Number.parseFloat(arrow.top)
+        + (Number.parseFloat(arrow.marginTop) || 0)
+        + Number.parseFloat(arrow.height) / 2
+        + transform.m42;
+      return {
+        arrowCenter,
+        barCenter: barRect.top + barRect.height / 2,
+        delta: Math.abs(arrowCenter - (barRect.top + barRect.height / 2))
+      };
+    });
+    expect(arrowAlignment.delta, 'the overflow arrow must be vertically centered on the chip rail').toBeLessThanOrEqual(1);
     expect(Math.abs(cueMetrics.left - cueMetrics.barLeft)).toBeLessThanOrEqual(1);
     expect(Math.abs(cueMetrics.right - cueMetrics.barRight)).toBeLessThanOrEqual(1);
     await expect.poll(() => bar.evaluate((element) =>
@@ -106,7 +130,7 @@ for (const width of [320, 390]) {
     await expect.poll(() => page.evaluate(() =>
       document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1
     )).toBe(true);
-    await testInfo.attach(`delivery-filter-cue-${width}px-start`, {
+    await testInfo.attach(`delivery-filter-cue-${width}x${height}-start`, {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png',
     });
@@ -120,7 +144,7 @@ for (const width of [320, 390]) {
     await expect.poll(() => bar.evaluate((element) =>
       getComputedStyle(element.parentElement, '::after').opacity
     )).toBe('0');
-    await testInfo.attach(`delivery-filter-cue-${width}px-end`, {
+    await testInfo.attach(`delivery-filter-cue-${width}x${height}-end`, {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png',
     });

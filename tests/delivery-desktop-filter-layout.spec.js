@@ -117,6 +117,18 @@ for (const width of [1024, 1440]) {
     expect(cueMetrics.fadePointerEvents).toBe('none');
     expect(cueMetrics.arrowContent).not.toBe('none');
     expect(cueMetrics.arrowPointerEvents).toBe('none');
+    const arrowCenterDelta = await viewport.evaluate((element) => {
+      const barRect = element.querySelector('#deliverySubFilter').getBoundingClientRect();
+      const arrow = getComputedStyle(element, '::before');
+      const transform = new DOMMatrixReadOnly(arrow.transform);
+      const center = element.getBoundingClientRect().top
+        + Number.parseFloat(arrow.top)
+        + (Number.parseFloat(arrow.marginTop) || 0)
+        + Number.parseFloat(arrow.height) / 2
+        + transform.m42;
+      return Math.abs(center - (barRect.top + barRect.height / 2));
+    });
+    expect(arrowCenterDelta, 'the desktop overflow arrow must be vertically centered on the chip rail').toBeLessThanOrEqual(1);
     expect(Math.abs(cueMetrics.left - cueMetrics.barLeft)).toBeLessThanOrEqual(1);
     expect(Math.abs(cueMetrics.right - cueMetrics.barRight)).toBeLessThanOrEqual(1);
     await expect.poll(() => bar.evaluate((element) =>
