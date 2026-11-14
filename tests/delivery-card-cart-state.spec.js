@@ -15,6 +15,8 @@ test.describe('Delivery card cart state', () => {
 
     const before = await card.boundingBox();
     const add = card.locator('[data-add]');
+    const firstOption = card.locator('.opts input[type="radio"]').first();
+    if (await firstOption.count()) await firstOption.check();
     await add.click();
     await expect(add).toHaveClass(/incart/);
     await expect(card.locator('.steprow .step:not([hidden])')).toHaveCount(2);
