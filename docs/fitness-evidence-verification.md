@@ -128,3 +128,8 @@ The reward domain must own the invariant "unverified evidence cannot issue a rew
 ## App Attest implementation constraint
 
 Apple App Attest must be verified on the server, not trusted from a client flag. Apple's validation requires certificate-chain validation, nonce binding, RP ID/bundle identity checks, credential key extraction, assertion signature verification, and strictly increasing counters. The newest `node-app-attest` release requires Node.js 24, while Zerno is pinned to Node.js 22. The older 1.0.1 implementation was inspected but is not accepted without a security review because it predates current validation guidance. Do not add an unreviewed verifier or enable rewards as a workaround. Resolve the runtime/library choice and configure the Apple Team ID, App Attest environment, and entitlement before implementing the verifier.
+
+
+## App Attest challenge foundation
+
+The server now issues one-time challenges bound to the authenticated verified guest and to a purpose (`attestation` or `assertion`). Challenges expire after five minutes, are SHA-256 hashed at rest, are single-use through an atomic SQLite transaction, and are rate-limited to ten per guest per minute. This is only the replay-resistant challenge primitive. It does not validate Apple's attestation certificate chain or assertion signatures, does not register public keys, and must not change any activity verification state or enable reward issuance. App Attest verifies the app instance/request integrity; it does not cryptographically prove that the user physically performed a run.
