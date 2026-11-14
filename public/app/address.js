@@ -201,7 +201,7 @@
     if (!streets.length || !streetRaw) return true;
     var target = normStreet(streetRaw);
     return streets.some(function (street) {
-      return street === '(без улицы)' || normStreet(street) === target;
+      return normStreet(street) === target;
     });
   }
 
