@@ -251,6 +251,35 @@ test('refreshes expiring tokens and persists the rotated refresh token', async (
 });
 
 
+test('revokes a rotated token and clears the stale connection when refresh metadata is invalid', async () => {
+  const { db, service, calls } = fixture({
+    fetchImpl: async (url, options = {}) => {
+      if (String(url) === 'https://www.strava.com/oauth/token') {
+        if (options.body.get('grant_type') === 'authorization_code') return tokenResponse();
+        return okJson({
+          access_token: 'orphan-access',
+          refresh_token: 'orphan-refresh',
+          expires_at: 'invalid',
+          scope: 'read,activity:read',
+        });
+      }
+      return new Response('', { status: 200 });
+    },
+  });
+  const state = new URL(service.createAuthorizationUrl('guest-1').url).searchParams.get('state');
+  await service.completeAuthorization({ state, code: 'initial', grantedScope: 'activity:read' });
+  db.prepare('UPDATE strava_connections SET expires_at=? WHERE cid=?')
+    .run(Math.floor(FIXED_NOW / 1000) + 120, 'guest-1');
+
+  await assert.rejects(service.listActivities('guest-1'), error =>
+    error && error.code === 'strava_reauthorization_required');
+
+  assert.equal(calls.at(-1).url, 'https://www.strava.com/oauth/revoke');
+  assert.match(String(calls.at(-1).options.body), /orphan-refresh/);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM strava_connections').get().n, 0);
+  db.close();
+});
+
 test('deduplicates simultaneous refreshes for one profile while serving both activity reads', async () => {
   let refreshRequests = 0;
   let activityRequests = 0;
