@@ -164,6 +164,11 @@
       var notice = response.notice || {};
       var panel = el('div', 'strava-consent');
       panel.appendChild(el('p', '', 'Будет запрошен только доступ activity:read: ваши активности с видимостью «Все» и «Подписчики». Закрытые активности «Только вы» не запрашиваются.'));
+      if (Array.isArray(notice.data) && notice.data.length) {
+        var dataList = el('ul');
+        notice.data.forEach(function (field) { dataList.appendChild(el('li', '', field)); });
+        panel.appendChild(dataList);
+      }
       panel.appendChild(el('p', '', notice.collection || 'Тренировки запрашиваются из Strava по вашему действию.'));
       panel.appendChild(el('p', '', notice.purpose || 'Данные показываются только в вашем профиле.'));
       panel.appendChild(el('p', '', notice.storage || 'Список тренировок и маршруты не сохраняются.'));
