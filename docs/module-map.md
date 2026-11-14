@@ -171,3 +171,11 @@
 1. Новый модуль или смена владельца → правка этой карты в том же PR.
 2. Запрещено создавать второго писателя в DOM-узел «намеренно»: вспомнить Ф5.21c (дубль мутаций корзины), Ф3.25 (марка), Ф5.60/F5.62 (рейл и mbonus в CSS).
 3. Контракты window.* перечислены в колонке «Контракты»; удалять только вместе с потребителями (помогает knip).
+
+
+## Native fitness adapters
+
+| Module | Owns | Contract |
+| --- | --- | --- |
+| `ios/App/App/HealthKitPlugin.swift` + `ZernoBridgeViewController.swift` | Native HealthKit read permission and read-only query for recent running workouts in the Capacitor iOS app | Capacitor plugin `ZernoHealthKit` |
+| `public/app/fitness-healthkit.js` | Browser/native capability detection and validation of normalized HealthKit workout summaries; no DOM ownership | `window.ZernoHealthKit` |
