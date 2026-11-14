@@ -51,8 +51,14 @@ test.describe('Delivery card cart state', () => {
     expect(button.ariaLabel).toBe('В корзине · 1. Добавить ещё');
     const stepRow = await card.locator('.steprow').evaluate(node => ({ width: node.clientWidth, scrollWidth: node.scrollWidth }));
     expect(stepRow.scrollWidth, 'quantity controls must stay inside the product card').toBeLessThanOrEqual(stepRow.width + 1);
-    const cardOverflow = await card.evaluate(node => ({ width: node.clientWidth, scrollWidth: node.scrollWidth }));
-    expect(cardOverflow.scrollWidth, 'quantity row must stay within card border').toBeLessThanOrEqual(cardOverflow.width + 1);
+    const rowBounds = await card.evaluate(node => {
+      const row = node.querySelector('.steprow');
+      const cardRect = node.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      return { cardLeft: cardRect.left, cardRight: cardRect.right, rowLeft: rowRect.left, rowRight: rowRect.right };
+    });
+    expect(rowBounds.rowLeft, 'quantity row must stay inside card left border').toBeGreaterThanOrEqual(rowBounds.cardLeft - 1);
+    expect(rowBounds.rowRight, 'quantity row must stay inside card right border').toBeLessThanOrEqual(rowBounds.cardRight + 1);
     await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 3500 });
     await testInfo.attach('delivery-card-in-cart-cta-228px', {
       body: await add.screenshot(),
