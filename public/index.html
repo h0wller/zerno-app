@@ -92,10 +92,11 @@
     box-sizing:border-box;
   }
 }
-/* Reserve the delivery subfilter viewport's final 56px content + 12px gap before deferred CSS. */
+/* Reserve the delivery subfilter row and its trailing 12px gap before deferred CSS. */
 html[data-brand="delivery"] body #deliveryView #deliverySubFilterViewport {
   box-sizing: border-box;
   min-height: 68px;
+  margin-bottom: 12px;
 }
 /* Reserve the delivery subfilter's 44px hit cell before deferred styles. */
 @media (max-width:820px) {
