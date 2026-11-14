@@ -6,7 +6,7 @@ Strava is connected as a separate, read-only OAuth provider. This is not a Strav
 
 - OAuth requests only the `activity:read` scope. No write, private-activity, or full-profile scope is requested.
 - The app can show up to 10 recent activities per page, and at most 5 pages, to the same authenticated Zerno profile that connected the Strava account.
-- Activity fields are requested from Strava on demand. Activity payloads, GPS, route polylines and derived activity aggregates are not written to SQLite and are not cached by Zerno App.
+- Activity fields are requested from Strava on demand. Activity payloads, GPS, route polylines and derived activity aggregates are not written to SQLite and are not cached by Zerno App. All `/api/fitness/strava/*` responses use `Cache-Control: no-store, private`, and the Service Worker bypasses these routes.
 - Only encrypted OAuth credentials, the minimum athlete identifier needed for the connection/webhook, and a short-lived hashed OAuth state are stored. The OAuth state is also bound to the initiating browser by a `Secure; HttpOnly; SameSite=Lax` cookie, so a forwarded authorization URL cannot link another person's Strava account to the attacker's Zerno profile.
 - The connection can be revoked from Zerno App; Strava deauthorization events remove the local connection.
 - The Strava connection is not passed into `fitness-rewards`. GPX remains the only reward source in the current pilot.
@@ -22,6 +22,8 @@ Official references:
 - [API Policy](https://www.strava.com/legal/api_policy)
 - [OAuth authentication](https://developers.strava.com/docs/authentication/)
 - [Webhook Events API](https://developers.strava.com/docs/webhooks/)
+
+OAuth code exchange and token refresh use Strava's documented `POST https://www.strava.com/oauth/token` endpoint. Access tokens are proactively refreshed when one hour or less remains; concurrent requests for one profile share a single refresh operation so a rotated refresh token is not raced.
 
 ## Required environment
 
