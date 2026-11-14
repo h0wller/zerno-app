@@ -60,6 +60,14 @@ test.describe('Delivery card cart state', () => {
     expect(rowBounds.rowLeft, 'quantity row must stay inside card left border').toBeGreaterThanOrEqual(rowBounds.cardLeft - 1);
     expect(rowBounds.rowRight, 'quantity row must stay inside card right border').toBeLessThanOrEqual(rowBounds.cardRight + 1);
     await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 3500 });
+    await add.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, -90));
+    const unobscured = await page.evaluate(() => {
+      const cta = document.querySelector('#deliveryGrid [data-add].incart').getBoundingClientRect();
+      const fab = document.querySelector('#cartFab').getBoundingClientRect();
+      return !(cta.left < fab.right && cta.right > fab.left && cta.top < fab.bottom && cta.bottom > fab.top);
+    });
+    expect(unobscured, 'in-cart CTA must be scrollable clear of the fixed cart FAB').toBe(true);
     await testInfo.attach('delivery-card-in-cart-cta-228px', {
       body: await add.screenshot(),
       contentType: 'image/png'
