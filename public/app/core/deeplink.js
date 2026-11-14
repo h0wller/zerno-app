@@ -290,10 +290,8 @@ if (typeof window.__initialSearch === 'undefined') {
             if (typeof toast === 'function') toast('Не удалось восстановить вариант одной из позиций. Проверьте меню и повторите заказ.', '⚠️');
             return;
           }
-          window.cart = restored;
-          try { localStorage.setItem('zt_cart', JSON.stringify(restored)); } catch (e) {}
-          if (typeof window.updateCartFab === 'function') window.updateCartFab();
-          if (typeof window.renderCart === 'function') window.renderCart();
+          if (typeof window.replaceCartItems !== 'function') return;
+          window.replaceCartItems(restored);
           if (typeof window.syncAddButtons === 'function') window.syncAddButtons();
           var cp = document.getElementById('cartPanel');
           if (cp) cp.classList.add('open');
