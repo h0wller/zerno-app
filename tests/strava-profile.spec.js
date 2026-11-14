@@ -120,7 +120,7 @@ test.describe('Strava integration in guest profile', () => {
     await consent.check();
     await expect(continueButton).toBeEnabled();
 
-    await page.context().route('https://www.strava.com/oauth/authorize?**', route => route.fulfill({
+    await page.context().route(/^https:\/\/www\.strava\.com\/oauth\/authorize/, route => route.fulfill({
       status: 200, contentType: 'text/html', body: '<title>Strava OAuth test stub</title>'
     }));
     const popupPromise = page.waitForEvent('popup');
