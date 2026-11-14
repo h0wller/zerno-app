@@ -177,6 +177,7 @@ test('cart keeps the current selected price and explains every amount without gu
     contentType: 'image/png',
   });
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(recommendations.locator('.ca-scroll-btn')).toBeHidden();
   await expect(page.locator('#cartClose')).toBeVisible();
   await expect(page.locator('#cartClose .cart-continue-short')).toBeVisible();
   await expect(page.locator('#cartClose .cart-continue-full')).toBeHidden();
@@ -225,7 +226,25 @@ test('cart keeps the current selected price and explains every amount without gu
     scrollLeft: el.scrollLeft
   }));
   expect(initialRailMetrics.scrollWidth).toBeGreaterThan(initialRailMetrics.clientWidth);
-  expect(initialRailMetrics.scrollLeft).toBe(0);
+  expect(initialRailMetrics.scrollLeft).toBeLessThanOrEqual(1);
+
+  const previousRecommendationButton = recommendations.locator('[data-ca-scroll="-1"]');
+  const nextRecommendationButton = recommendations.locator('[data-ca-scroll="1"]');
+  await expect(cardsRail).toHaveAttribute('tabindex', '0');
+  await expect(cardsRail).toHaveAttribute('role', 'region');
+  await expect(cardsRail).toHaveCSS('scrollbar-width', 'thin');
+  await expect(previousRecommendationButton).toBeVisible();
+  await expect(previousRecommendationButton).toBeDisabled();
+  await expect(nextRecommendationButton).toBeVisible();
+  await expect(nextRecommendationButton).toBeEnabled();
+
+  await nextRecommendationButton.click();
+  await expect.poll(() => cardsRail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+  await expect(previousRecommendationButton).toBeEnabled();
+  await previousRecommendationButton.click();
+  await expect.poll(() => cardsRail.evaluate((el) => el.scrollLeft)).toBeLessThanOrEqual(1);
+  await cardsRail.evaluate((el) => { el.scrollLeft = 0; });
+
   const cardsRailBox = await cardsRail.boundingBox();
   await page.mouse.move(cardsRailBox.x + cardsRailBox.width / 2, cardsRailBox.y + cardsRailBox.height / 2);
   await page.mouse.wheel(0, 320);
