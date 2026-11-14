@@ -96,6 +96,25 @@ test('keeps a plausible GPX upload unverified and never issues a reward from it'
   db.close();
 });
 
+test('ignores client-supplied verified flags and keeps GPX unverified', () => {
+  const db = fixture();
+  const rewards = service(db, { value: '2026-11-14T10:00:00.000Z' });
+  const result = rewards.submitActivity({
+    customerId: 'guest-1',
+    activity: { ...activity(), verified: true, verificationState: 'verified' },
+    fingerprint: fingerprint('c'),
+    verified: true,
+    verification: { status: 'verified', source: 'apple_healthkit' },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.verificationState, 'unverified');
+  assert.equal(result.reward, null);
+  assert.equal(db.prepare('SELECT verification_state FROM fitness_activities').get().verification_state, 'unverified');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 0);
+  db.close();
+});
+
 test('rejects the same uploaded activity fingerprint globally, including across customers', () => {
   const db = fixture();
   const rewards = service(db, { value: '2026-11-14T10:00:00.000Z' });
