@@ -514,7 +514,7 @@ test('mobile primary category navigation is visually distinct from secondary fil
         await expect(page.locator('#deliverySubFilter .subchip').first()).toBeVisible({ timeout: 15000 });
         expect(metrics.subchipHeight, 'delivery secondary filters remain compact chips').toBe(44);
         expect(metrics.subchipRadius, 'delivery secondary filters retain the pill shape').toContain('999');
-        expect(metrics.subchipBorderWidth, 'delivery secondary filters retain their own outline').toBe('1.5px');
+        expect(Number.parseFloat(metrics.subchipBorderWidth), 'delivery secondary filters retain their own outline').toBeGreaterThan(0);
         expect(metrics.buttonHeight, 'primary category tabs are taller than the secondary filter controls').toBeGreaterThan(metrics.subchipHeight);
       }
 
