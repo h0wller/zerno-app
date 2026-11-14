@@ -144,6 +144,17 @@
   }
 
   function renderConnect(section) {
+    if (window.__isTgMiniApp === true) {
+      setState(section, 'Безопасное подключение Strava требует вернуться в тот же браузер после авторизации. В Telegram Mini App это не гарантируется. Откройте обычную web-версию Zerno App в Safari или Chrome и войдите в свой профиль.');
+      var fallback = el('p', 'strava-copy');
+      var link = el('a', 'strava-link', 'Открыть Zerno App в браузере');
+      link.href = window.location.origin + '/?brand=' + encodeURIComponent(window.brand || 'coffee');
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      fallback.appendChild(link);
+      setContent(section, fallback);
+      return;
+    }
     var actions = el('div', 'strava-actions');
     actions.appendChild(button('Подключить Strava', '', function () {
       showConsent(section);
