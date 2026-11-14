@@ -670,7 +670,7 @@ function syncAddButtons() {
     if (b.disabled) return;
     const n = cart.reduce((a, c) => a + (String(c.id) === String(b.dataset.add) ? c.qty : 0), 0);
     b.classList.toggle('incart', n > 0);
-    const label = n > 0 ? ('В корзине · ' + n) : 'Добавить';
+    const label = n > 0 ? ('В корзине · ' + n + '. Добавить ещё') : 'Добавить';
     b.setAttribute('aria-label', label);
     if (n > 0) b.title = label;
     else b.removeAttribute('title');
@@ -707,7 +707,7 @@ function handleDeliveryStepperClick(e) {
   const row = step.closest('.steprow');
   const addButton = row && row.querySelector('[data-add]');
   if (addButton) {
-    const label = count ? ('В корзине · ' + count) : 'Добавить';
+    const label = count ? ('В корзине · ' + count + '. Добавить ещё') : 'Добавить';
     addButton.textContent = count ? '✓' : 'Добавить';
     addButton.setAttribute('aria-label', label);
     if (count) addButton.title = label;
