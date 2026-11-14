@@ -687,3 +687,126 @@ test('mobile category navigation exposes usable scrolling and spacing across por
     }
   }
 });
+
+
+for (const brand of CASES) {
+  for (const viewport of [
+    { name: 'short landscape 844', width: 844, height: 390 },
+    { name: 'short landscape 1024', width: 1024, height: 390 },
+  ]) {
+    test(`${brand.brand}: category rail stays horizontal on ${viewport.name}px`, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        sessionStorage.setItem('splashDone', '1');
+      });
+      await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+      const rail = page.locator(brand.rail);
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect(page.locator(brand.brand === 'coffee' ? '#grid .card' : '#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
+
+      const geometry = await page.evaluate(({ railSelector, viewSelector, brandName }) => {
+        const railEl = document.querySelector(railSelector);
+        const view = document.querySelector(viewSelector);
+        const head = view.querySelector('.menu-head');
+        const wrap = document.querySelector('.wrap');
+        const section = wrap.querySelector(':scope > section');
+        const firstCard = document.querySelector(brandName === 'coffee' ? '#grid .card' : '#deliveryGrid .card');
+        const filter = brandName === 'delivery' ? document.querySelector('#deliverySubFilterViewport') : null;
+        const railRect = railEl.getBoundingClientRect();
+        const headRect = head.getBoundingClientRect();
+        const cardRect = firstCard.getBoundingClientRect();
+        const filterRect = filter && !filter.hidden ? filter.getBoundingClientRect() : null;
+        const buttons = [...railEl.querySelectorAll('button')];
+        const firstTarget = buttons[0]?.getBoundingClientRect();
+        const wrapStyle = getComputedStyle(wrap);
+        return {
+          parentIsView: railEl.parentElement === view,
+          nextAfterHead: head.nextElementSibling === railEl,
+          direction: getComputedStyle(railEl).flexDirection,
+          railTop: railRect.top,
+          headBottom: headRect.bottom,
+          railBottom: railRect.bottom,
+          cardTop: cardRect.top,
+          filterTop: filterRect?.top ?? null,
+          filterBottom: filterRect?.bottom ?? null,
+          firstTargetHeight: firstTarget?.height ?? 0,
+          wrapColumns: wrapStyle.gridTemplateColumns,
+          sectionColumn: getComputedStyle(section).gridColumnStart,
+          documentWidth: document.documentElement.clientWidth,
+          documentScrollWidth: document.documentElement.scrollWidth,
+        };
+      }, {
+        railSelector: brand.rail,
+        viewSelector: brand.brand === 'coffee' ? '#menuView' : '#deliveryView',
+        brandName: brand.brand
+      });
+
+      await testInfo.attach(`${brand.brand}-${viewport.width}x${viewport.height}-short-landscape-before-fix`, {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+
+      expect(geometry.parentIsView, 'short-landscape rail belongs below the search in its menu view').toBe(true);
+      expect(geometry.nextAfterHead, 'short-landscape rail follows the menu search').toBe(true);
+      expect(geometry.direction, 'short-landscape categories use the horizontal tab rail').toBe('row');
+      expect(geometry.firstTargetHeight, 'short-landscape category targets remain tappable').toBeGreaterThanOrEqual(60);
+      expect(geometry.sectionColumn, 'short-landscape catalog uses the full wrap width').toBe('1');
+      expect(geometry.documentScrollWidth, 'short-landscape page has no horizontal document overflow').toBeLessThanOrEqual(geometry.documentWidth + 1);
+      expect(geometry.railTop - geometry.headBottom, 'short-landscape search-to-rail gap is visible').toBeGreaterThanOrEqual(8);
+      if (brand.brand === 'coffee') {
+        expect(geometry.cardTop - geometry.railBottom, 'coffee short-landscape rail has breathing room before cards').toBeGreaterThanOrEqual(12);
+      } else {
+        expect(geometry.filterTop - geometry.railBottom, 'delivery short-landscape secondary filters follow primary categories').toBeGreaterThanOrEqual(6);
+        expect(geometry.cardTop - geometry.filterBottom, 'delivery short-landscape filters have breathing room before cards').toBeGreaterThanOrEqual(12);
+      }
+    });
+  }
+}
+
+for (const brand of CASES) {
+  test(`${brand.brand}: category rail relocates when rotating between portrait, compact landscape and desktop`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand.rail);
+    const viewSelector = brand.brand === 'coffee' ? '#menuView' : '#deliveryView';
+    const gridSelector = brand.brand === 'coffee' ? '#grid' : '#deliveryGrid';
+    await expect(rail).toBeVisible({ timeout: 10000 });
+    await expect.poll(() => rail.evaluate(el => el.parentElement.id)).toBe(viewSelector.slice(1));
+    await testInfo.attach(`${brand.brand}-390x844-portrait-before-rotation`, {
+      body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png'
+    });
+
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect.poll(() => rail.evaluate(el => el.parentElement.id), {
+      message: 'short landscape keeps the rail in the menu view'
+    }).toBe(viewSelector.slice(1));
+    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).flexDirection)).toBe('row');
+    await testInfo.attach(`${brand.brand}-844x390-short-landscape-after-rotation`, {
+      body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png'
+    });
+
+    await page.setViewportSize({ width: 821, height: 900 });
+    await expect.poll(() => rail.evaluate(el => el.parentElement.classList.contains('wrap')), {
+      message: 'standard desktop restores the sidebar DOM placement'
+    }).toBe(true);
+    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).flexDirection)).toBe('column');
+    await expect.poll(() => page.locator(gridSelector + ' .card').first().isVisible()).toBe(true);
+    await testInfo.attach(`${brand.brand}-821x900-desktop-after-rotation`, {
+      body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png'
+    });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(() => rail.evaluate(el => el.parentElement.id)).toBe(viewSelector.slice(1));
+    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).flexDirection)).toBe('row');
+    await testInfo.attach(`${brand.brand}-390x844-portrait-after-rotation`, {
+      body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png'
+    });
+  });
+}
