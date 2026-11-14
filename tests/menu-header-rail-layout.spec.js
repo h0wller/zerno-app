@@ -534,7 +534,7 @@ test('mobile category navigation carries each storefront brand identity and stay
         expect(metrics.railBackground, 'Friday rail uses kraft paper').toBe('rgb(239, 230, 216)');
         expect(metrics.railBorderWidth, 'Friday rail uses its dark craft outline').toBe('2px');
         expect(metrics.railShadow, 'Friday rail uses the offset craft shadow').toContain('2px 2px 0px rgb(58, 42, 28)');
-        expect(metrics.buttonBackground, 'Friday active tab uses terracotta').toBe('rgb(192, 59, 42)');
+        expect(metrics.buttonBackground, 'Friday active tab uses high-contrast dark terracotta').toBe('rgb(142, 55, 22)');
         expect(metrics.buttonColor, 'Friday active label remains white on terracotta').toBe('rgb(255, 255, 255)');
         expect(metrics.buttonBorderWidth, 'Friday active tab uses the dark outline').toBe('2px');
         expect(metrics.iconBackground, 'Friday active icon badge uses paper').toBe('rgb(246, 238, 225)');

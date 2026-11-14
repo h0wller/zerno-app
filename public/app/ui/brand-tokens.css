@@ -269,7 +269,7 @@ body[data-brand="delivery"] {
   --category-tab-border: 1.5px solid var(--fr-tan, #C99E6E);
   --category-tab-radius: 9px;
   --category-tab-shadow: none;
-  --category-tab-active-bg: var(--flame, #C03B2A);
+  --category-tab-active-bg: var(--flame-d, #8E3716);
   --category-tab-active-color: #FFFFFF;
   --category-tab-active-border: 2px solid var(--fr-choc, #3A2A1C);
   --category-tab-active-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
