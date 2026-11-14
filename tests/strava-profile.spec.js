@@ -207,7 +207,7 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
     const section = page.locator('#stravaProfileSection');
     await expect(section).toContainText('В Telegram Mini App это не гарантируется');
     await expect(section.getByRole('link', { name: 'Открыть Zerno App в браузере' }))
-      .toHaveAttribute('href', /\\?brand=/);
+      .toHaveAttribute('href', /[?]brand=/);
     await expect(section.getByRole('button', { name: 'Подключить Strava' })).toHaveCount(0);
   });
 
