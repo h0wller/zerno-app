@@ -63,7 +63,13 @@
   }
   function say(t, i) { if (typeof window.toast === 'function') window.toast(t, i || '📍'); }
   function streetsFor(p) { return (window.AddressModule && window.AddressModule.getStreets) ? window.AddressModule.getStreets(p) : []; }
-  function feeFor(p) { return (window.AddressModule && window.AddressModule.getFee) ? (Number(window.AddressModule.getFee(p)) || 0) : 0; }
+  function feeFor(p) {
+    var zones = window.deliveryInfo && window.deliveryInfo.zones;
+    var zone = Array.isArray(zones) && zones.find(function (entry) {
+      return Array.isArray(entry.places) && entry.places.includes(p);
+    });
+    return zone ? (Number(zone.fee) || 0) : 0;
+  }
   /* v4: улица допустима, если справочника для места нет или она в нём есть (как в чекауте и saveEdit) */
   function streetOk(place, street) {
     var AM = window.AddressModule;
