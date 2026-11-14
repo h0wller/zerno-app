@@ -61,8 +61,7 @@ export default {
         pathNot: [
           '(^|/)public/sw\\.js$',
           '(^|/)public/debug\\.js$',
-          // HTML entry points and dynamically loaded browser scripts:
-          '(^|/)public/app/fitness-strava-ui\\.js$',
+          // Dynamically loaded browser scripts:
           '(^|/)public/app/core/(address-dict|address-autocomplete|address-book|preorder-timer)\\.js$',
           '(^|/)public/jsqr\\.js$',
           '(^|/)public/qrcode\\.js$',
