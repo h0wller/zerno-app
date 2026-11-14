@@ -99,6 +99,7 @@ for (const width of [320, 390]) {
       const transform = new DOMMatrixReadOnly(arrow.transform);
       const arrowCenter = element.getBoundingClientRect().top
         + Number.parseFloat(arrow.top)
+        + (Number.parseFloat(arrow.marginTop) || 0)
         + Number.parseFloat(arrow.height) / 2
         + transform.m42;
       return {
