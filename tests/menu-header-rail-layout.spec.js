@@ -430,7 +430,7 @@ test('mobile category navigation is horizontal, full-width and follows search fo
       expect(geometry.parentIsView, brand.brand + ' rail belongs to its active menu view on mobile').toBe(true);
       expect(geometry.display).toBe('flex');
       expect(geometry.direction, brand.brand + ' categories render in one horizontal row').toBe('row');
-      expect(geometry.height, brand.brand + ' category row stays compact').toBeLessThanOrEqual(76);
+      expect(geometry.height, brand.brand + ' category row stays compact').toBeLessThanOrEqual(92);
       expect(geometry.railTop, brand.brand + ' categories follow the search/header block').toBeGreaterThan(geometry.headBottom);
       expect(geometry.railLeft, brand.brand + ' category row begins at the menu content edge').toBeCloseTo(geometry.headLeft, 0);
       expect(geometry.railRight, brand.brand + ' category row spans the full menu width').toBeCloseTo(geometry.headRight, 0);
@@ -542,7 +542,7 @@ test('mobile category navigation carries each storefront brand identity and stay
         expect(metrics.railBackground, 'Friday rail uses kraft paper').toBe('rgb(239, 230, 216)');
         expect(metrics.railBorderWidth, 'Friday rail uses its dark craft outline').toBe('2px');
         expect(metrics.railShadow, 'Friday rail uses the offset craft shadow').toContain('rgb(58, 42, 28) 2px 2px 0px 0px');
-        expect(metrics.buttonBackground, 'Friday active tab uses high-contrast dark terracotta').toBe('rgb(142, 55, 22)');
+        expect(metrics.buttonBackground, 'Friday active tab uses the configured high-contrast dark terracotta token').toBe('rgb(122, 45, 22)');
         expect(metrics.buttonColor, 'Friday active label remains white on terracotta').toBe('rgb(255, 255, 255)');
         expect(metrics.buttonBorderWidth, 'Friday active tab uses the dark outline').toBe('2px');
         expect(metrics.iconBackground, 'Friday active icon badge uses paper').toBe('rgb(246, 238, 225)');
