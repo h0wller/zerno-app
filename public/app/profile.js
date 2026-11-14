@@ -317,6 +317,12 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
             if (typeof window.syncBrandViews === "function") window.syncBrandViews();
         } finally {
             _rpRunning = false;
+            if (window.ztBus && typeof window.ztBus.emit === 'function') {
+                window.ztBus.emit('profile:rendered', {
+                    customerId: window.me && window.me.id ? String(window.me.id) : null,
+                    role: window.me && window.me.role ? window.me.role : 'guest',
+                });
+            }
         }
     }
 
