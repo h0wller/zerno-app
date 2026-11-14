@@ -16,5 +16,5 @@ test('Service Worker bypasses every private fitness API endpoint before cache ro
 });
 
 test('Service Worker advances the static cache version when the private API bypass is introduced', () => {
-  assert.match(source, /zerno-static-v649/);
+  assert.match(source, /zerno-static-v650/);
 });
