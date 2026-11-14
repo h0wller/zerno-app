@@ -335,6 +335,13 @@
     }
   }
 
+  function isProfileOpen() {
+    var panel = document.getElementById('panel');
+    var profile = document.getElementById('pvProfile');
+    if (!panel || !profile || profile.hidden) return false;
+    return window.innerWidth > 1180 || panel.classList.contains('open');
+  }
+
   function render() {
     var customer = window.me;
     var section = getSection();
@@ -353,10 +360,9 @@
       section.dataset.customerId = String(customer.id);
       status = null;
       setContent(section, null);
-      refreshStatus(section);
-      return;
     }
-    if (!status) refreshStatus(section);
+    // This optional integration must not make background auth requests while the profile is closed.
+    if (isProfileOpen() && !status) refreshStatus(section);
   }
 
   if (window.ztBus && typeof window.ztBus.on === 'function') {
@@ -365,11 +371,12 @@
       render();
     });
     window.ztBus.on('profile:rendered', function () { render(); });
+    window.ztBus.on('profile:opened', function () { render(); });
   }
 
   function refreshAfterExternalAuth() {
     var section = document.getElementById(SECTION_ID);
-    if (!section || section.hidden || !section.dataset.customerId) return;
+    if (!section || section.hidden || !section.dataset.customerId || !isProfileOpen()) return;
     status = null;
     refreshStatus(section);
   }

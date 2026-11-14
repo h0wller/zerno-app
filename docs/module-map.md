@@ -129,7 +129,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/overlay-core.js` | `syncOverlay` (модалки/шторки/корзина), popstate/Escape/клик по оверлею; TgUx (MainButton, BackButton, haptics) | `window.syncOverlay`, `window.TgUx` |
-| `core/panel.js` | Единая шторка профиля `#panel`, фокус возврата и действия «Назад»; старый вызов `openPanel('bonus')` открывает тот же профиль | `window.openPanel`, `window.closePanel`, `window.setTab` |
+| `core/panel.js` | Единая шторка профиля `#panel`, фокус возврата и действия «Назад»; старый вызов `openPanel('bonus')` открывает тот же профиль; публикует события жизненного цикла профиля | `window.openPanel`, `window.closePanel`, `window.setTab`; `ztBus`: `profile:opened`, `profile:closed` |
 | `core/swipe.js` | iOS-свайп закрытия `#panel` | — |
 | `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`); обёртка `.topbar-right` на ≥821px | `window.alignRailWithCard` |
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |

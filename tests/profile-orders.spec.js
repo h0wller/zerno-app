@@ -27,6 +27,11 @@ test.describe('Модуль заказов профиля', () => {
       sessionStorage.setItem('splashDone', '1');
     });
     mineRequestCount = 0;
+    await page.route('**/api/fitness/strava/status', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ enabled: false, connected: false, scopes: [] })
+    }));
     await page.route('**/api/orders/mine', async route => {
       mineRequestCount += 1;
       const orders = mineRequestCount === 2
@@ -214,6 +219,11 @@ test.describe('Модуль заказов профиля', () => {
     const modalBackground = locator => locator.evaluate(element => getComputedStyle(element).backgroundImage);
     const openCoffee = await browser.newPage({ viewport: { width: 390, height: 844 } });
 
+    await openCoffee.route('**/api/fitness/strava/status', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ enabled: false, connected: false, scopes: [] })
+    }));
     await openCoffee.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');

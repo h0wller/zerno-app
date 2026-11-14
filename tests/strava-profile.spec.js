@@ -19,7 +19,9 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     let stravaConnected = false;
+    let stravaStatusRequests = 0;
     page.setStravaConnected = value => { stravaConnected = Boolean(value); };
+    page.getStravaStatusRequestCount = () => stravaStatusRequests;
     await page.addInitScript(() => {
       window.__stravaStatusForTest = { connected: false };
       localStorage.setItem('zt_onb', '1');
@@ -33,6 +35,7 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
       body: JSON.stringify({ orders: [] }),
     }));
     await page.route('**/api/fitness/strava/status', async route => {
+      stravaStatusRequests += 1;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -108,8 +111,10 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
       window.setUser('strava-profile-token', customer);
       window.__profileMeReady();
       window.renderProfile();
-      window.openPanel('profile');
     });
+    expect(page.getStravaStatusRequestCount()).toBe(0);
+    await page.evaluate(() => window.openPanel('profile'));
+    await expect.poll(() => page.getStravaStatusRequestCount()).toBe(1);
 
     await expect(page.locator('#stravaProfileSection')).toBeVisible();
     await expect(page.locator('#stravaProfileStyles')).toHaveCount(1);

@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/fitness/strava/status', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ enabled: false, connected: false, scopes: [] })
+  }));
+});
+
 const VIEWPORTS = [
   { width: 320, height: 740, name: '320px narrow mobile' },
   { width: 375, height: 812, name: '375px mobile' },
