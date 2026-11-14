@@ -27,6 +27,14 @@
 GPX-приём спортивных заявок в Telegram — отдельный пилот, выключенный по умолчанию через `FITNESS_REWARDS_ENABLED`; GPX сохраняется как `unverified` и не выдаёт награду. Правила и модель хранения: [docs/fitness-rewards.md](./fitness-rewards.md). Команды бота: `/fitness` — показать последний подарок; отправка GPX-документа — сохранить неподтверждённую заявку; `/fitness_redeem RUN-XXXXXXXXXX` — кассовое погашение ранее выданного кода. Strava реализована отдельно как read-only OAuth-интеграция; её данные пока не участвуют в наградах. Настройка и ограничения: [docs/strava-integration.md](./strava-integration.md).
 
 
+## Fitness App Attest foundation
+
+| Method and path | Purpose | Access |
+|---|---|---|
+| `POST /api/fitness/attestation/challenges` | Issue a one-time 5-minute challenge; body: `{ purpose: "attestation" | "assertion" }` | verified guest + userGuard |
+
+The endpoint is a challenge primitive only. It does not register or verify App Attest keys/assertions and cannot change a workout to `verified` or issue rewards. Challenges are bound to the authenticated customer, hashed at rest, one-time, and limited to 10 per minute.
+
 ## Strava (read-only)
  
 | Метод и путь | Назначение | Доступ |
