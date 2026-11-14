@@ -221,6 +221,8 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
     await expect(section).toContainText('Аккаунт Strava не подключён.');
 
     page.setStravaConnected(true);
+    // Simulate returning to Zerno after the provider authorization flow.
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await page.evaluate(() => {
       window.setUser('strava-profile-token', {
         id: 'strava-profile-test', name: 'Тестовый гость', phone: '+7 900 000-00-00',
