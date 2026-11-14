@@ -483,7 +483,7 @@
   font-size: 11px;
 }
 
-/* Desktop: explicit controls, visible scrollbar and predictable wheel navigation. */
+/* Desktop: explicit controls and visible scrollbar; vertical wheel remains cart scrolling. */
 @media (min-width: 821px) and (pointer: fine) {
   .ca-cards-frame {
     display: flex;
@@ -498,6 +498,15 @@
     scrollbar-color: var(--flame, #C03B2A) var(--fr-tan, #D8DFE4);
     scroll-snap-type: x proximity;
     overscroll-behavior-x: contain;
+    cursor: grab;
+  }
+
+  .ca-cards-scroll:active {
+    cursor: grabbing;
+  }
+
+  .ca-cards-scroll .ac-add-btn {
+    cursor: pointer;
   }
 
   .ca-cards-scroll::-webkit-scrollbar {
