@@ -151,10 +151,7 @@ test.describe('Strava integration in guest profile', () => {
         body: JSON.stringify({ enabled: true, connected: true, scopes: ['activity:read'] })
       });
     });
-    await page.evaluate(() => {
-      window.setUser('strava-connected-token', { ...window.me, id: 'strava-connected-profile' });
-      window.renderProfile();
-    });
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
 
     await expect(section).toContainText('Аккаунт Strava подключён.');
     await section.getByRole('button', { name: 'Показать тренировки' }).click();
