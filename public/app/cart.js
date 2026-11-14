@@ -618,21 +618,6 @@ async function refreshPromoLine(sum) {
       syncAddonScrollControls(frame);
     }, { passive: true });
 
-    rail.addEventListener("wheel", function (event) {
-      if (window.innerWidth < 821 || !window.matchMedia("(pointer: fine)").matches) return;
-      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-
-      var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
-      var delta = event.deltaMode === 1 ? event.deltaY * 40
-        : (event.deltaMode === 2 ? event.deltaY * rail.clientWidth : event.deltaY);
-      var startOffset = parseFloat(window.getComputedStyle(rail).paddingLeft) || 0;
-      var canMove = delta > 0 ? rail.scrollLeft < maxScroll - 1 : rail.scrollLeft > startOffset + 1;
-      if (!canMove) return;
-
-      event.preventDefault();
-      rail.scrollLeft = Math.max(0, Math.min(maxScroll, rail.scrollLeft + delta));
-    }, { passive: false });
-
     syncAddonScrollControls(frame);
     window.requestAnimationFrame(function () {
       syncAddonScrollControls(frame);
@@ -1170,7 +1155,7 @@ function renderCartBase() {
     var hasDragged = false;
 
     document.addEventListener("mousedown", function (e) {
-      if (e.button !== 0) return; // только левая кнопка
+      if (e.button !== 0 || e.target.closest("button, a, input, select, textarea, [contenteditable='true']")) return;
       var el = e.target.closest(".ca-cards-scroll, .ca-tabs-scroll, .ci-mod-chips-scroll, .subfilter-bar, .rail");
       if (!el) return;
       isDown = true;
@@ -1183,11 +1168,13 @@ function renderCartBase() {
     document.addEventListener("mousemove", function (e) {
       if (!isDown || !activeEl) return;
       var dx = e.pageX - startX;
-      if (Math.abs(dx) > 4) {
+      if (!hasDragged && Math.abs(dx) > 4) {
         hasDragged = true;
         activeEl.style.cursor = "grabbing";
         activeEl.style.userSelect = "none";
       }
+      if (!hasDragged) return;
+      e.preventDefault();
       activeEl.scrollLeft = scrollStart - dx;
     });
 
@@ -1206,6 +1193,10 @@ function renderCartBase() {
         setTimeout(function () { hasDragged = false; }, 60);
       }
     });
+    window.addEventListener("blur", function () {
+      endDrag();
+      hasDragged = false;
+    });
 
     // Если был свайп мышью — подавляем случайный клик по кнопке/чипсу
     document.addEventListener("click", function (e) {
@@ -1215,14 +1206,6 @@ function renderCartBase() {
       }
     }, true);
 
-    // Дополнительно: прокрутка колесиком мыши
-    document.addEventListener("wheel", function (e) {
-      var strip = e.target.closest(".ca-cards-scroll, .ca-tabs-scroll, .ci-mod-chips-scroll, .subfilter-bar");
-      if (strip && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        strip.scrollLeft += e.deltaY;
-        e.preventDefault();
-      }
-    }, { passive: false });
   })();
 
   var promoInput = document.getElementById("cartPromo");
