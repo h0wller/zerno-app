@@ -556,10 +556,84 @@ async function refreshPromoLine(sum) {
           '<span class="ca-title">Рекомендуем к заказу</span>' +
           '<div class="ca-tabs-scroll" role="group" aria-label="Категории рекомендаций">' + tabsHtml + "</div>" +
         "</div>" +
-        '<div class="ca-cards-scroll">' +
-          (cardsHtml || '<div class="ca-empty">Нет позиций</div>') +
+        '<div class="ca-cards-frame">' +
+          '<button type="button" class="ca-scroll-btn" data-ca-scroll="-1" aria-label="Прокрутить рекомендации влево" hidden>' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+          "</button>" +
+          '<div class="ca-cards-scroll" tabindex="0" role="region" aria-label="Дополнительные позиции к заказу">' +
+            (cardsHtml || '<div class="ca-empty">Нет позиций</div>') +
+          "</div>" +
+          '<button type="button" class="ca-scroll-btn" data-ca-scroll="1" aria-label="Прокрутить рекомендации вправо" hidden>' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+          "</button>" +
         "</div>" +
       "</section>";
+
+    bindAddonScrollControls(host);
+  }
+
+  function syncAddonScrollControls(frame) {
+    if (!frame) return;
+    var rail = frame.querySelector(".ca-cards-scroll");
+    var prev = frame.querySelector('[data-ca-scroll="-1"]');
+    var next = frame.querySelector('[data-ca-scroll="1"]');
+    if (!rail || !prev || !next) return;
+
+    var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    var hasOverflow = maxScroll > 1;
+    prev.hidden = !hasOverflow;
+    next.hidden = !hasOverflow;
+    prev.disabled = !hasOverflow || rail.scrollLeft <= 1;
+    next.disabled = !hasOverflow || rail.scrollLeft >= maxScroll - 1;
+    frame.classList.toggle("has-overflow", hasOverflow);
+  }
+
+  function bindAddonScrollControls(host) {
+    var frame = host.querySelector(".ca-cards-frame");
+    if (!frame) return;
+    var rail = frame.querySelector(".ca-cards-scroll");
+    if (!rail) return;
+
+    if (host.dataset.caScrollControlsBound !== "1") {
+      host.dataset.caScrollControlsBound = "1";
+      host.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-ca-scroll]");
+        if (!button || button.disabled) return;
+        var currentFrame = host.querySelector(".ca-cards-frame");
+        var currentRail = currentFrame && currentFrame.querySelector(".ca-cards-scroll");
+        if (!currentRail) return;
+
+        var card = currentRail.querySelector(".addon-pill-card");
+        var gap = parseFloat(window.getComputedStyle(currentRail).columnGap) || 8;
+        var step = card ? card.getBoundingClientRect().width + gap : currentRail.clientWidth * 0.85;
+        var direction = Number(button.dataset.caScroll) < 0 ? -1 : 1;
+        var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        currentRail.scrollBy({ left: direction * step, behavior: reduceMotion ? "auto" : "smooth" });
+      });
+    }
+
+    rail.addEventListener("scroll", function () {
+      syncAddonScrollControls(frame);
+    }, { passive: true });
+
+    rail.addEventListener("wheel", function (event) {
+      if (window.innerWidth < 821 || !window.matchMedia("(pointer: fine)").matches) return;
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+
+      var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+      var delta = event.deltaMode === 1 ? event.deltaY * 40
+        : (event.deltaMode === 2 ? event.deltaY * rail.clientWidth : event.deltaY);
+      var canMove = delta > 0 ? rail.scrollLeft < maxScroll - 1 : rail.scrollLeft > 1;
+      if (!canMove) return;
+
+      event.preventDefault();
+      rail.scrollLeft = Math.max(0, Math.min(maxScroll, rail.scrollLeft + delta));
+    }, { passive: false });
+
+    syncAddonScrollControls(frame);
+    window.requestAnimationFrame(function () {
+      syncAddonScrollControls(frame);
+    });
   }
 
   /* #deliveryPromoBar отключён по продуктовому решению 2026-10-27: плашка «до подарка» больше не рисуется.
