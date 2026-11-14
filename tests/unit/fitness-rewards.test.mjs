@@ -40,11 +40,11 @@ function fixture() {
   return db;
 }
 
-function activity(distanceMeters = 5_250) {
+function activity(distanceMeters = 5_250, startedAt = '2026-11-14T08:00:00.000Z') {
   return {
     distanceMeters,
     elapsedSeconds: 3_600,
-    startedAt: '2026-11-14T08:00:00.000Z',
+    startedAt,
     pointCount: 120,
   };
 }
@@ -102,7 +102,7 @@ test('records an eligible later run but enforces one reward in every rolling sev
   const rewards = service(db, current);
   const first = rewards.submitActivity({ customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('c') });
   current.value = '2026-11-18T10:00:00.000Z';
-  const second = rewards.submitActivity({ customerId: 'guest-1', activity: activity(6_000), fingerprint: fingerprint('d') });
+  const second = rewards.submitActivity({ customerId: 'guest-1', activity: activity(6_000, '2026-11-18T08:00:00.000Z'), fingerprint: fingerprint('d') });
 
   assert.equal(first.reward !== null, true);
   assert.equal(second.ok, true);
@@ -117,12 +117,32 @@ test('allows a new reward after the prior seven-day limit window has elapsed', (
   const db = fixture();
   const current = { value: '2026-11-01T10:00:00.000Z' };
   const rewards = service(db, current);
-  rewards.submitActivity({ customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('e') });
+  rewards.submitActivity({ customerId: 'guest-1', activity: activity(5_250, '2026-11-01T08:00:00.000Z'), fingerprint: fingerprint('e') });
   current.value = '2026-11-09T10:00:00.000Z';
-  const result = rewards.submitActivity({ customerId: 'guest-1', activity: activity(), fingerprint: fingerprint('f') });
+  const result = rewards.submitActivity({ customerId: 'guest-1', activity: activity(5_250, '2026-11-09T08:00:00.000Z'), fingerprint: fingerprint('f') });
 
   assert.equal(result.reward.code, 'RUN-TEST0002');
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 2);
+  db.close();
+});
+
+test('rejects stale and future GPX activities', () => {
+  const db = fixture();
+  const rewards = service(db, { value: '2026-11-14T10:00:00.000Z' });
+  const stale = rewards.submitActivity({
+    customerId: 'guest-1',
+    activity: activity(5_250, '2026-11-06T08:00:00.000Z'),
+    fingerprint: fingerprint('7'),
+  });
+  const future = rewards.submitActivity({
+    customerId: 'guest-1',
+    activity: activity(5_250, '2026-11-15T08:00:00.000Z'),
+    fingerprint: fingerprint('8'),
+  });
+
+  assert.deepEqual(stale, { ok: false, reason: 'implausible_activity' });
+  assert.deepEqual(future, { ok: false, reason: 'implausible_activity' });
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_activities').get().n, 0);
   db.close();
 });
 
