@@ -193,7 +193,9 @@ CREATE TABLE IF NOT EXISTS fcm(
       distance_meters INTEGER NOT NULL CHECK(distance_meters > 0),
       elapsed_seconds INTEGER NOT NULL CHECK(elapsed_seconds > 0),
       started_at TEXT NOT NULL,
-      received_at TEXT NOT NULL
+      received_at TEXT NOT NULL,
+      verification_state TEXT NOT NULL DEFAULT 'unverified'
+        CHECK(verification_state IN ('unverified','pending_review','verified','rejected','needs_review'))
     );
     CREATE INDEX IF NOT EXISTS idx_fitness_activities_cid_received
       ON fitness_activities(cid, received_at DESC);
@@ -214,6 +216,12 @@ CREATE TABLE IF NOT EXISTS fcm(
       ON fitness_rewards(cid, issued_at DESC);
   `);
   
+  const fitnessActivityColumns = db.prepare('PRAGMA table_info(fitness_activities)').all().map(column => column.name);
+  if (fitnessActivityColumns.length && !fitnessActivityColumns.includes('verification_state')) {
+    db.exec(`ALTER TABLE fitness_activities ADD COLUMN verification_state TEXT NOT NULL DEFAULT 'unverified'
+      CHECK(verification_state IN ('unverified','pending_review','verified','rejected','needs_review'))`);
+  }
+
   // Strava OAuth tokens are encrypted at rest; activity responses are never persisted.
   db.exec(`
     CREATE TABLE IF NOT EXISTS strava_connections(
