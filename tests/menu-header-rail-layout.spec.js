@@ -114,6 +114,13 @@ for (const brand of CASES) {
       expect(tickerLayout.trackWidth).toBeGreaterThanOrEqual(tickerLayout.viewportWidth);
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
+      if (viewport.width > 820) {
+        await testInfo.attach(`${brand.brand}-desktop-${viewport.width}x${viewport.height}`, {
+          body: await page.screenshot({ animations: 'disabled' }),
+          contentType: 'image/png',
+        });
+      }
+
       await page.evaluate(() => window.scrollTo(0, 500));
       if (viewport.width <= 820) {
         await expect.poll(() => page.evaluate(selector => {
