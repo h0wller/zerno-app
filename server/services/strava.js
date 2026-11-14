@@ -8,6 +8,7 @@ const ACTIVITIES_URL = 'https://www.strava.com/api/v3/athlete/activities';
 const STATE_TTL_MS = 10 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8_000;
 const REQUIRED_SCOPE = 'activity:read';
+const ALLOWED_SCOPES = new Set(['read', REQUIRED_SCOPE]);
 
 function makeError(code) {
   const error = new Error(code);
@@ -17,6 +18,10 @@ function makeError(code) {
 
 function normalizeScopes(value) {
   return new Set(String(value || '').replace(/,/g, ' ').split(/\s+/).filter(Boolean));
+}
+
+function hasApprovedScopes(scopes) {
+  return scopes.has(REQUIRED_SCOPE) && [...scopes].every(scope => ALLOWED_SCOPES.has(scope));
 }
 
 function parseNow(clock) {
@@ -229,7 +234,7 @@ export function createStravaService({
     const authCode = String(code || '').trim();
     if (!authCode || authCode.length > 2048) throw makeError('strava_missing_authorization_code');
     const callbackScopes = normalizeScopes(grantedScope);
-    if (!callbackScopes.has(REQUIRED_SCOPE) || callbackScopes.has('activity:read_all')) {
+    if (!hasApprovedScopes(callbackScopes)) {
       throw makeError('strava_required_scope_missing');
     }
 
@@ -250,7 +255,7 @@ export function createStravaService({
       throw makeError('strava_token_exchange_failed');
     }
     const tokenScopes = normalizeScopes(payload.scope || grantedScope);
-    if (!tokenScopes.has(REQUIRED_SCOPE) || tokenScopes.has('activity:read_all')) {
+    if (!hasApprovedScopes(tokenScopes)) {
       throw makeError('strava_required_scope_missing');
     }
     saveConnection({
@@ -292,7 +297,7 @@ export function createStravaService({
       throw makeError('strava_token_refresh_failed');
     }
     const scopes = normalizeScopes(payload.scope || row.scopes);
-    if (!scopes.has(REQUIRED_SCOPE) || scopes.has('activity:read_all')) {
+    if (!hasApprovedScopes(scopes)) {
       database.prepare('DELETE FROM strava_connections WHERE cid = ?').run(String(customerId));
       throw makeError('strava_reauthorization_required');
     }
