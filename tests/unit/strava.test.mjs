@@ -322,6 +322,41 @@ test('deduplicates simultaneous refreshes for one profile while serving both act
   db.close();
 });
 
+test('revokes a rotated provider token if the profile is deleted during token refresh', async () => {
+  let database;
+  const fixtureState = fixture({
+    fetchImpl: async (url, options = {}) => {
+      if (String(url) === 'https://www.strava.com/oauth/token') {
+        if (options.body.get('grant_type') === 'authorization_code') return tokenResponse();
+        database.prepare('DELETE FROM strava_connections WHERE cid=?').run('guest-1');
+        return okJson({
+          access_token: 'orphan-after-disconnect',
+          refresh_token: 'orphan-refresh-after-disconnect',
+          expires_at: Math.floor(FIXED_NOW / 1000) + 7200,
+          scope: 'read,activity:read',
+        });
+      }
+      return new Response('', { status: 200 });
+    },
+  });
+  database = fixtureState.db;
+  const { service, calls } = fixtureState;
+  const state = new URL(service.createAuthorizationUrl('guest-1').url).searchParams.get('state');
+  await service.completeAuthorization({ state, code: 'initial', grantedScope: 'activity:read' });
+  database.prepare('UPDATE strava_connections SET expires_at=? WHERE cid=?')
+    .run(Math.floor(FIXED_NOW / 1000) + 120, 'guest-1');
+
+  await assert.rejects(
+    service.listActivities('guest-1'),
+    error => error && error.code === 'strava_not_connected',
+  );
+
+  assert.equal(calls.at(-1).url, 'https://www.strava.com/oauth/revoke');
+  assert.match(String(calls.at(-1).options.body), /orphan-refresh-after-disconnect/);
+  assert.equal(database.prepare('SELECT COUNT(*) AS n FROM strava_connections').get().n, 0);
+  database.close();
+});
+
 test('disconnect removes the local link and revokes the provider refresh token', async () => {
   const { db, service, calls } = fixture({
     fetchImpl: async (url) => String(url).includes('/oauth/token')
