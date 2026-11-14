@@ -58,10 +58,9 @@
 | --- | --- | --- |
 | `cart.js` | Единственный владелец мутаций корзины и сохранения; `#cartItems`, аддоны, итоги, подарки, cartFab; состояние раскрытых модификаторов синхронизируется с индексами строк при удалении; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo` |
 | `checkout-validation.js` | Проверка адреса и времени доставки перед оформлением; подсветка ошибочного поля и переключатель «сейчас / ко времени» | `window.CheckoutValidation` |
-| `core/address-dict.js` | Справочник улиц и тарифов | `window.AddressModule` |
+| `address.js` | Единственный владелец `window.AddressModule` и datalist `#streetSuggestions`; сгенерированный справочник улиц, нормализация и валидация | `window.AddressModule` |
 | `core/address-autocomplete.js` | Дропдаун подсказок `#checkoutStreet` | — |
-| `core/address-book.js` | Шторка «Мои адреса» (`#addrBookSheet`), кнопка в чекауте | `window.AddressBook` |
-| `address.js` | datalist `#streetSuggestions` на витрине корзины (генерируется fetch-streets) | клиентская часть `window.AddressModule` |
+| `core/address-book.js` | Шторка «Мои адреса» (`#addrBookSheet`), кнопка в чекауте; тариф адреса читает из `window.deliveryInfo.zones` | `window.AddressBook` |
 
 Примечание: `delivery.js` исторически экспортировал `renderCart` — перезаписывается `cart.js`
 при инициализации (порядок в main.js). Мутации qty — только cart.js (инцидент Ф5.21c).
