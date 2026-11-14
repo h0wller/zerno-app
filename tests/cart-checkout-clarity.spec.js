@@ -204,7 +204,10 @@ test('cart keeps the current selected price and explains every amount without gu
   for (const viewport of [{ width: 320, height: 740 }, { width: 375, height: 812 }, { width: 390, height: 844 }, desktopViewport]) {
     await page.setViewportSize(viewport);
     if (viewport.width < 821) {
-      await expect(recommendations.locator('.ca-scroll-btn')).toBeHidden();
+      const desktopScrollButtons = recommendations.locator('.ca-scroll-btn');
+      await expect(desktopScrollButtons).toHaveCount(2);
+      await expect(desktopScrollButtons.first()).toBeHidden();
+      await expect(desktopScrollButtons.last()).toBeHidden();
     }
     const tabs = recommendations.locator('.addon-tab-btn');
     for (let index = 0; index < await tabs.count(); index += 1) {
