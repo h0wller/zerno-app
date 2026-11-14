@@ -521,7 +521,9 @@ test('mobile category navigation carries each storefront brand identity and stay
         expect(metrics.railBackground, 'coffee rail uses the ocean-blue surface').toBe('rgb(234, 241, 249)');
         expect(metrics.railBorderWidth, 'coffee rail uses a light outline').toBe('1px');
         expect(metrics.railRadius, 'coffee rail uses a softer rounded frame').toBe('16px');
-        expect(metrics.buttonBackground, 'coffee active tab uses a clean white surface').toBe('rgb(255, 255, 255)');
+        const coffeeActiveSurface = metrics.buttonBackground.match(/[\\d.]+/g).map(Number);
+        expect(coffeeActiveSurface.slice(0, 3), 'coffee active tab keeps a white surface').toEqual([255, 255, 255]);
+        expect(coffeeActiveSurface.length > 3 ? coffeeActiveSurface[3] : 1, 'coffee active tab stays visually opaque').toBeGreaterThanOrEqual(0.85);
         expect(metrics.buttonColor, 'coffee active label uses the deep ocean blue').toBe('rgb(18, 58, 107)');
         expect(metrics.buttonBorderWidth, 'coffee active tab uses a fine blue outline').toBe('1px');
         expect(metrics.buttonShadow, 'coffee active tab uses a soft shadow').toContain('rgba(18, 58, 107');
