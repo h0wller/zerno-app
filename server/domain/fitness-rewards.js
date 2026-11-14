@@ -20,7 +20,7 @@ function rewardView(row) {
   };
 }
 
-function validActivity(activity) {
+function validActivity(activity, now) {
   if (!activity || typeof activity !== 'object') return false;
   const distance = Number(activity.distanceMeters);
   const elapsed = Number(activity.elapsedSeconds);
@@ -28,6 +28,8 @@ function validActivity(activity) {
   const startedAt = Date.parse(activity.startedAt);
   if (!Number.isFinite(distance) || !Number.isFinite(elapsed) ||
       !Number.isFinite(points) || !Number.isFinite(startedAt)) return false;
+  if (startedAt > now.getTime() + 5 * 60 * 1000 ||
+      startedAt < now.getTime() - REWARD_COOLDOWN_MS) return false;
   if (distance <= 0 || !Number.isInteger(elapsed) || elapsed < 300 ||
       elapsed > 14_400 || !Number.isInteger(points) || points < 10 || points > 20_000) return false;
   const averageSpeed = distance / elapsed;
@@ -46,16 +48,15 @@ export function createFitnessRewardService({
     if (!cid || !/^[a-f0-9]{64}$/.test(digest)) {
       return { ok: false, reason: 'invalid_input' };
     }
-    if (!validActivity(activity)) {
+    const now = clock();
+    if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
+      throw new TypeError('Fitness reward clock must return a valid Date');
+    }
+    if (!validActivity(activity, now)) {
       return { ok: false, reason: 'implausible_activity' };
     }
     if (Number(activity.distanceMeters) < REWARD_DISTANCE_METERS) {
       return { ok: false, reason: 'distance_below_threshold' };
-    }
-
-    const now = clock();
-    if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
-      throw new TypeError('Fitness reward clock must return a valid Date');
     }
     const receivedAt = iso(now);
     const startedAt = iso(new Date(Date.parse(activity.startedAt)));
