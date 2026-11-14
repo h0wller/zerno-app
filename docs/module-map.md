@@ -49,21 +49,20 @@
 | `menu.js` | `#rail` (категории), `#searchInput`, рендер `#grid`; зум фото (`openZoom`); модалка модификаторов; LCP-картинка eager | `window.renderMenu`, `window.renderRail`, `window.openZoom` |
 | `menu-editor.js` | `openEditor`/`exitEdit`, сохранение emModal, editToggle | `window.openEditor`, `window.exitEdit` |
 | `core/editor.js` | Делегирование кликов `#grid`; фотозона редактора (`renderZone`/`loadImg`/`closeEditor`); имя гостя | `window.renderZone`, `window.closeEditor`, `window.loadImg` |
-| `delivery.js` | `window.DMENU`, cart (инициализация из LS); `#deliveryRail`; единственный рендер содержимого `#deliverySubFilter` внутри статически зарезервированного `#deliverySubFilterViewport.subfilter-viewport` (в HTML-shell — пустой слот без чипсов); рендер `#deliveryGrid` + скелетоны (ингредиентные/дополнительные фильтры, горизонтальный scroll и cue overflow/end); стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
+| `delivery.js` | `window.DMENU`; `#deliveryRail`; единственный рендер содержимого `#deliverySubFilter` внутри статически зарезервированного `#deliverySubFilterViewport.subfilter-viewport` (в HTML-shell — пустой слот без чипсов); рендер `#deliveryGrid` + скелетоны (ингредиентные/дополнительные фильтры, горизонтальный scroll и cue overflow/end); стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow. Изменение корзины делегирует в `cart.js` | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
 | `ui/delivery-search.js` | Поиск в Пятнице (`#dSearch` внутри `.mh-right`) и фильтрация грида | — |
 
 ## 4. Корзина и чекаут
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `cart.js` | Единственный владелец мутаций корзины и сохранения; `#cartItems`, аддоны, итоги, подарки, cartFab; состояние раскрытых модификаторов синхронизируется с индексами строк при удалении; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo` |
+| `cart.js` | Единственный владелец состояния, инициализации, мутаций, сохранения и открытия корзины; `#cartItems`, аддоны, итоги, подарки, cartFab; синхронизация цен доставки; состояние раскрытых модификаторов синхронизируется с индексами строк при удалении; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo`, `window.addDeliveryCartItem`, `window.adjustDeliveryCartItem`, `window.syncDeliveryCartPrices` |
 | `checkout-validation.js` | Проверка адреса и времени доставки перед оформлением; подсветка ошибочного поля и переключатель «сейчас / ко времени» | `window.CheckoutValidation` |
 | `address.js` | Единственный владелец `window.AddressModule` и datalist `#streetSuggestions`; сгенерированный справочник улиц, нормализация и валидация | `window.AddressModule` |
 | `core/address-autocomplete.js` | Дропдаун подсказок `#checkoutStreet` | — |
 | `core/address-book.js` | Шторка «Мои адреса» (`#addrBookSheet`), кнопка в чекауте; тариф адреса читает из `window.deliveryInfo.zones` | `window.AddressBook` |
 
-Примечание: `delivery.js` исторически экспортировал `renderCart` — перезаписывается `cart.js`
-при инициализации (порядок в main.js). Мутации qty — только cart.js (инцидент Ф5.21c).
+Примечание: `delivery.js` исторически содержал второй рендерер и писатели корзины; они удалены. Все изменения состояния корзины проходят через контракты `cart.js`.
 
 ## 5. Заказы, диспетчер, живые обновления
 
