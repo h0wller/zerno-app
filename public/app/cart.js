@@ -964,10 +964,26 @@ function renderCartBase() {
   /* ── Слушатели событий корзины ── */
   var cFabBtn = document.getElementById("cartFab");
   if (cFabBtn) {
-    cFabBtn.addEventListener("click", function () {
-      setTimeout(function () {
+    cFabBtn.addEventListener("click", async function () {
+      renderCartBase();
+      var cartScrollBody = document.getElementById("cartScrollBody");
+      if (cPanel) cPanel.classList.add("open");
+      window.requestAnimationFrame(function () {
+        if (cartScrollBody) cartScrollBody.scrollTop = 0;
+      });
+      var checkoutButton = document.getElementById("checkoutBtn");
+      if (checkoutButton) checkoutButton.disabled = true;
+      try {
+        if (typeof window.refreshDeliveryInfo === "function") await window.refreshDeliveryInfo();
+        renderCartBase();
+      } catch (error) {
+        if (typeof window.toast === "function") {
+          window.toast("Не удалось обновить график работы. Проверьте соединение перед оформлением.", "⚠️");
+        }
+      } finally {
+        if (checkoutButton) checkoutButton.disabled = false;
         if (typeof window.syncOverlay === "function") window.syncOverlay();
-      }, 0);
+      }
     });
   }
   var cPanel = document.getElementById("cartPanel");
