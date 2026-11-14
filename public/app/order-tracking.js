@@ -55,15 +55,11 @@ import { restoreOrderItems } from './core/order-reorder.js';
       window.toast("Не удалось восстановить вариант одной из позиций. Проверьте меню и повторите заказ.", "⚠️");
       return;
     }
-    // Preserve the shared cart array identity used by delivery.js/cart.js.
-    if (Array.isArray(window.cart)) {
-      window.cart.splice.apply(window.cart, [0, window.cart.length].concat(repeatedItems));
-    } else {
-      window.cart = repeatedItems;
+    if (typeof window.replaceCartItems !== "function") {
+      window.toast("Корзина ещё загружается. Повторите попытку.", "⚠️");
+      return;
     }
-    localStorage.setItem("zt_cart", JSON.stringify(window.cart));
-    if (typeof window.updateCartFab === "function") window.updateCartFab();
-    if (typeof window.renderCart === "function") window.renderCart();
+    window.replaceCartItems(repeatedItems);
     if (typeof window.cartFabShow === "function") window.cartFabShow();
     var cartPanel = document.getElementById("cartPanel");
     if (cartPanel) cartPanel.classList.add("open");
