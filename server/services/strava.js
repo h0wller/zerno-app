@@ -52,14 +52,16 @@ function toActivityView(activity) {
     : typeof id === 'string' && /^\d{1,24}$/.test(id) && Number(id) > 0 ? id : null;
   if (!activityId ||
       !Number.isFinite(distance) || !Number.isFinite(movingTime) ||
-      !Number.isFinite(elapsedTime) || !Number.isFinite(Date.parse(startedAt))) {
+      !Number.isFinite(elapsedTime) || !Number.isFinite(Date.parse(startedAt)) ||
+      distance < 0 || movingTime < 0 || elapsedTime < 0 ||
+      !Number.isFinite(averageSpeed) && activity.average_speed !== undefined) {
     return null;
   }
   return {
     id: activityId,
     name: String(activity.name || '').slice(0, 160),
-    type: String(activity.type || ''),
-    sportType: String(activity.sport_type || activity.type || ''),
+    type: String(activity.type || '').slice(0, 48),
+    sportType: String(activity.sport_type || activity.type || '').slice(0, 48),
     distanceMeters: distance,
     movingTimeSeconds: movingTime,
     elapsedTimeSeconds: elapsedTime,
