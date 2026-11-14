@@ -597,21 +597,19 @@ html body div.wrap > section {
   html body #deliveryGrid .cta.incart,
   html body #grid .cta.incart { width:auto; flex:0 0 auto; padding:0 12px; }
 
-  @media (max-width:260px) {
-    html body #deliveryGrid .steprow.compact-quantity-row,
-    html body #grid .steprow.compact-quantity-row {
-      gap:0;
-      width:calc(100% + 10px);
-      margin-inline:-5px;
-    }
-    html body #deliveryGrid .steprow.compact-quantity-row > .cta[data-add].incart,
-    html body #grid .steprow.compact-quantity-row > .cta[data-add].incart {
-      width:44px;
-      min-width:44px;
-      max-width:44px;
-      flex:0 0 44px;
-      padding:0;
-    }
+  html body #deliveryGrid .steprow.compact-quantity-row,
+  html body #grid .steprow.compact-quantity-row {
+    gap:0;
+    width:calc(100% + 10px);
+    margin-inline:-5px;
+  }
+  html body #deliveryGrid .steprow.compact-quantity-row > .cta[data-add].incart,
+  html body #grid .steprow.compact-quantity-row > .cta[data-add].incart {
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    flex:0 0 44px;
+    padding:0;
   }
 }
 
