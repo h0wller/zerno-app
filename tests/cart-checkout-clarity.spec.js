@@ -177,7 +177,6 @@ test('cart keeps the current selected price and explains every amount without gu
     contentType: 'image/png',
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(recommendations.locator('.ca-scroll-btn')).toBeHidden();
   await expect(page.locator('#cartClose')).toBeVisible();
   await expect(page.locator('#cartClose .cart-continue-short')).toBeVisible();
   await expect(page.locator('#cartClose .cart-continue-full')).toBeHidden();
@@ -204,6 +203,9 @@ test('cart keeps the current selected price and explains every amount without gu
   const allRecommendations = recommendations.locator('[data-atab="all"]');
   for (const viewport of [{ width: 320, height: 740 }, { width: 375, height: 812 }, { width: 390, height: 844 }, desktopViewport]) {
     await page.setViewportSize(viewport);
+    if (viewport.width < 821) {
+      await expect(recommendations.locator('.ca-scroll-btn')).toBeHidden();
+    }
     const tabs = recommendations.locator('.addon-tab-btn');
     for (let index = 0; index < await tabs.count(); index += 1) {
       const tab = tabs.nth(index);
