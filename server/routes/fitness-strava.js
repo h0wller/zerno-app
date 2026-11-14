@@ -98,6 +98,11 @@ export function createStravaRouter({
   env = process.env,
 } = {}) {
   const router = Router();
+  router.use('/api/fitness/strava', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.setHeader('Pragma', 'no-cache');
+    next();
+  });
 
   router.get('/api/fitness/strava/consent', userGuard, (req, res) => {
     res.json({
