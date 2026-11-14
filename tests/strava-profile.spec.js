@@ -13,10 +13,11 @@ const athleteActivities = [{
   map: { summary_polyline: 'must-not-be-rendered' }
 }];
 
-test.describe('Strava integration in guest profile', () => {
+for (const brand of ['coffee', 'delivery']) {
+test.describe('Strava integration in guest profile — ' + brand, () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
@@ -76,7 +77,7 @@ test.describe('Strava integration in guest profile', () => {
       });
     });
 
-    await page.goto('/?brand=coffee');
+    await page.goto('/?brand=' + brand);
     await expect.poll(() => page.evaluate(() =>
       typeof window.setUser === 'function' &&
       typeof window.renderProfile === 'function' &&
@@ -105,9 +106,13 @@ test.describe('Strava integration in guest profile', () => {
     await expect(page.locator('#stravaProfileSection')).toBeVisible();
     await expect(page.locator('#stravaProfileStyles')).toHaveCount(1);
     await expect(page.locator('#stravaProfileSection')).toHaveCSS('display', 'grid');
+    await page.screenshot({
+      path: testInfo.outputPath('strava-profile-' + brand + '-portrait-390x844.png'),
+      fullPage: true,
+    });
   });
 
-  test('asks for explicit consent before opening Strava OAuth', async ({ page }) => {
+  test('asks for explicit consent before opening Strava OAuth', async ({ page }, testInfo) => {
     const section = page.locator('#stravaProfileSection');
     await expect(section).toContainText('Аккаунт Strava не подключён.');
     await section.getByRole('button', { name: 'Подключить Strava' }).click();
@@ -139,6 +144,49 @@ test.describe('Strava integration in guest profile', () => {
     expect(bounds.left).toBeGreaterThanOrEqual(0);
     expect(bounds.right).toBeLessThanOrEqual(320);
     expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.clientWidth + 1);
+    await page.screenshot({
+      path: testInfo.outputPath('strava-profile-' + brand + '-narrow-320x740.png'),
+      fullPage: true,
+    });
+
+    await page.setViewportSize({ width: 844, height: 390 });
+    const landscape = await section.evaluate(node => {
+      const rect = node.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, scrollWidth: node.scrollWidth, clientWidth: node.clientWidth };
+    });
+    expect(landscape.left).toBeGreaterThanOrEqual(0);
+    expect(landscape.right).toBeLessThanOrEqual(844);
+    expect(landscape.scrollWidth).toBeLessThanOrEqual(landscape.clientWidth + 1);
+    await page.screenshot({
+      path: testInfo.outputPath('strava-profile-' + brand + '-landscape-844x390.png'),
+      fullPage: true,
+    });
+  });
+
+
+  test('keeps the initiating browser context in an installed PWA', async ({ page }) => {
+    const section = page.locator('#stravaProfileSection');
+    await section.getByRole('button', { name: 'Подключить Strava' }).click();
+    await section.getByRole('checkbox').check();
+    await page.evaluate(() => {
+      Object.defineProperty(window.navigator, 'standalone', {
+        configurable: true,
+        value: true,
+      });
+    });
+    await page.context().route(/^https:\/\/www\.strava\.com\/oauth\/authorize/, route => route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<title>Strava OAuth PWA test stub</title>',
+    }));
+
+    const popupPromise = page.waitForEvent('popup', { timeout: 1000 }).catch(() => null);
+    await section.getByRole('button', { name: 'Продолжить на Strava' }).click();
+    const popup = await popupPromise;
+
+    expect(popup).toBeNull();
+    await expect(page).toHaveURL(/^https:\/\/www\.strava\.com\/oauth\/authorize\?/);
+    await expect(page).toHaveURL(/scope=activity%3Aread/);
   });
 
   test('shows only activity summary fields and supports account disconnection', async ({ page }) => {
@@ -184,3 +232,4 @@ test.describe('Strava integration in guest profile', () => {
     await expect(page.locator('#stravaProfileSection')).toBeHidden();
   });
 });
+}
