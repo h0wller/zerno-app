@@ -207,6 +207,8 @@ test('тариф доставки в корзине совпадает с сер
 
   await expect.poll(() => page.evaluate(() => window.AddressModule.getStreets('Донское').length)).toBeGreaterThan(0);
   await expect.poll(() => page.evaluate(() => window.AddressModule.getStreets('Неизвестное'))).toEqual([]);
+  expect(await page.evaluate(() => window.AddressModule.isValidStreet('Янтарный', 'Советская'))).toBe(true);
+  expect(await page.evaluate(() => window.AddressModule.isValidStreet('Янтарный', 'Несуществующая'))).toBe(false);
 
   for (const [place, expectedFee] of tariffs) {
     await page.locator('#checkoutPlace').selectOption(place);
