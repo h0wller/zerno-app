@@ -140,7 +140,6 @@ export default [
   {
     files: [
       'public/app/address.js',
-      'public/app/core/address-dict.js',
       'server/domain/address.js'
     ],
     rules: {
