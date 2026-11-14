@@ -381,6 +381,7 @@ export function createStravaService({
         'SELECT access_token_enc, expires_at FROM strava_connections WHERE cid = ?',
       ).get(cid);
       if (latest && latest.expires_at > nowSeconds + 60) return decryptToken(latest.access_token_enc);
+      if (!latest) await revokeProviderToken(payload.refresh_token);
       throw makeError('strava_not_connected');
     }
     return payload.access_token;
