@@ -151,12 +151,10 @@ if (typeof window.__initialSearch === 'undefined') {
       if (tab === 'staff_chat') {
         const targetKey = QS.get('key');
         setTimeout(() => {
-          if (typeof window.openStaffChat === 'function') {
+          if (targetKey && typeof window.openStaffChatThread === 'function') {
+            window.openStaffChatThread(targetKey);
+          } else if (typeof window.openStaffChat === 'function') {
             window.openStaffChat();
-            if (targetKey && typeof window.openScDialog === 'function') {
-              window.scKey = targetKey;
-              setTimeout(window.openScDialog, 200);
-            }
           }
         }, 300);
       }
