@@ -12,6 +12,7 @@ export function restoreOrderItems(orderItems, menu) {
     }
 
     var oi = Number.isInteger(item.oi) ? item.oi : -1;
+    if (oi >= 0 && options.length && !options[oi]) oi = -1;
     if (oi < 0 && item.opt && options.length) {
       oi = options.findIndex(function (option) {
         if (String(option.l || option.name || '') === String(item.opt)) return true;
