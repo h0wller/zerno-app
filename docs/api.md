@@ -40,7 +40,7 @@
 | `GET /api/fitness/strava/webhook/{secret}` | Верификация Strava webhook subscription | Секретный URL path + verify token |
 | `POST /api/fitness/strava/webhook/{secret}` | Обработка отзыва доступа спортсменом | Секретный URL path + subscription ID |
 
-Strava просит только `activity:read`. Тренировки отдаются только владельцу сессии и не сохраняются в SQLite/кэше. Данные Strava не начисляют бонусы и не объединяются с заказами, покупками или аналитикой. Подробная настройка, OAuth consent и ограничения — [docs/strava-integration.md](./strava-integration.md).
+Strava просит только `activity:read`. Все ответы `/api/fitness/strava/*` получают `Cache-Control: no-store, private`; тренировки отдаются только владельцу сессии и не сохраняются в SQLite, Service Worker или browser cache. Данные Strava не начисляют бонусы и не объединяются с заказами, покупками или аналитикой. Подробная настройка, OAuth consent и ограничения — [docs/strava-integration.md](./strava-integration.md).
 
 ## Авторизация и профиль
 
