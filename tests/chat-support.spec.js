@@ -146,49 +146,46 @@ test('mobile support uses an icon and delivery search keeps an inset from the me
 
 
 
-test('mobile chat panel and composer remain within the viewport for both brands', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('chat panel keeps compact responsive geometry in portrait and landscape for both brands', async ({ page }, testInfo) => {
+  const viewports = [
+    { name: 'portrait', width: 390, height: 844, maxHeightRatio: 0.82, minSideInset: 8 },
+    { name: 'landscape', width: 844, height: 390, maxHeightRatio: 0.9, minSideInset: 12 },
+    { name: 'short-landscape', width: 667, height: 375, maxHeightRatio: 0.9, minSideInset: 8 }
+  ];
 
   for (const brand of ['coffee', 'delivery']) {
-    await prepare(page, '/?brand=' + brand);
-    const launcher = page.locator('#chatFab');
-    await launcher.click();
-    const panel = page.locator('#chatPanel');
-    await expect(panel).toHaveClass(/open/);
-    await expect(page.locator('#chatInput')).toBeVisible();
-    await expect(page.locator('#chatSend')).toBeVisible();
-
-    const geometry = await panel.evaluate(element => {
-      const rect = element.getBoundingClientRect();
-      const transcript = document.getElementById('chatMsgs');
-      const composerRect = element.querySelector('.chat-i').getBoundingClientRect();
-      return {
-        left: rect.left,
-        right: rect.right,
-        top: rect.top,
-        bottom: rect.bottom,
-        height: rect.height,
-        scrollWidth: element.scrollWidth,
-        clientWidth: element.clientWidth,
-        transcriptScrollWidth: transcript.scrollWidth,
-        transcriptClientWidth: transcript.clientWidth,
-        composerBottom: composerRect.bottom
-      };
-    });
-
-    expect(geometry.left).toBeGreaterThanOrEqual(-1);
-    expect(geometry.right).toBeLessThanOrEqual(391);
-    expect(geometry.top).toBeGreaterThanOrEqual(-1);
-    expect(geometry.bottom).toBeGreaterThanOrEqual(843);
-    expect(geometry.height).toBeGreaterThanOrEqual(800);
-    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 1);
-    expect(geometry.transcriptScrollWidth).toBeLessThanOrEqual(geometry.transcriptClientWidth + 1);
-    expect(geometry.composerBottom).toBeLessThanOrEqual(845);
-
-    await page.locator('#chatClose').click();
+    for (const viewport of viewports) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await prepare(page, '/?brand=' + brand);
+      await page.locator('#chatFab').click();
+      const panel = page.locator('#chatPanel');
+      await expect(panel).toHaveClass(/open/);
+      await expect(page.locator('#chatInput')).toBeVisible();
+      await expect(page.locator('#chatSend')).toBeVisible();
+      const geometry = await panel.evaluate(element => {
+        const rect = element.getBoundingClientRect();
+        const transcript = document.getElementById('chatMsgs');
+        const composer = element.querySelector('.chat-i').getBoundingClientRect();
+        const close = element.querySelector('#chatClose').getBoundingClientRect();
+        return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height, transcriptScrollWidth: transcript.scrollWidth, transcriptClientWidth: transcript.clientWidth, composerBottom: composer.bottom, closeRight: close.right, closeTop: close.top, closeSize: close.width };
+      });
+      expect(geometry.left).toBeGreaterThanOrEqual(-1);
+      expect(geometry.right).toBeLessThanOrEqual(viewport.width + 1);
+      expect(geometry.top).toBeGreaterThanOrEqual(-1);
+      expect(geometry.bottom).toBeLessThanOrEqual(viewport.height + 1);
+      expect(geometry.height).toBeLessThanOrEqual(viewport.height * viewport.maxHeightRatio);
+      expect(geometry.height).toBeGreaterThanOrEqual(Math.min(240, viewport.height * 0.62));
+      expect(geometry.width).toBeLessThanOrEqual(viewport.width - viewport.minSideInset * 2 + 1);
+      expect(geometry.transcriptScrollWidth).toBeLessThanOrEqual(geometry.transcriptClientWidth + 1);
+      expect(geometry.composerBottom).toBeLessThanOrEqual(viewport.height + 1);
+      expect(geometry.closeRight).toBeGreaterThan(geometry.left + geometry.width * 0.72);
+      expect(geometry.closeTop).toBeLessThan(geometry.top + 80);
+      expect(geometry.closeSize).toBeGreaterThanOrEqual(44);
+      await testInfo.attach('chat-' + brand + '-' + viewport.name, { body: await page.screenshot(), contentType: 'image/png' });
+      await page.locator('#chatClose').click();
+    }
   }
 });
-
 test('support launcher announces the action available in its current state', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
     await prepare(page, '/?brand=' + brand);
