@@ -168,3 +168,44 @@ test('контакт из заказа открывает доставочный
   await expect.poll(() => threadKeys.some(key => key.endsWith(':d'))).toBe(true);
   await expect(page.locator('#orderTrackModal')).not.toHaveClass(/show/);
 });
+
+
+test('тариф доставки в корзине совпадает с серверной сеткой для всех населённых пунктов', async ({ page }) => {
+  await page.route('**/api/delivery/info', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      zones: [
+        { fee: 200, places: ['Янтарный', 'Покровское', 'Синявино'] },
+        { fee: 500, places: ['Кленовое', 'Охотное', 'Русское', 'Поваровка', 'Морозовка', 'Янтаровка', 'Красноторовка', 'Ягодное'] },
+        { fee: 1100, places: ['Донское', 'Прислово'] }
+      ],
+      today: { isOpen: true, canAcceptAsap: true, open: 11, close: 22 },
+      schedule: { open: 11, close: 22 },
+      days: [],
+      busySlots: [],
+      weekPromo: null,
+      pizzaMonth: null
+    })
+  }));
+
+  await openDeliveryApp(page);
+  await page.waitForFunction(() => window.deliveryInfo && window.deliveryInfo.zones.length === 3);
+  await page.evaluate(() => {
+    document.getElementById('cartPanel').classList.add('open');
+    window.renderCart();
+  });
+
+  const tariffs = [
+    ['Янтарный', 200], ['Покровское', 200], ['Синявино', 200],
+    ['Кленовое', 500], ['Охотное', 500], ['Русское', 500], ['Поваровка', 500],
+    ['Морозовка', 500], ['Янтаровка', 500], ['Красноторовка', 500], ['Ягодное', 500],
+    ['Донское', 1100], ['Прислово', 1100]
+  ];
+
+  for (const [place, expectedFee] of tariffs) {
+    await page.locator('#checkoutPlace').selectOption(place);
+    await expect.poll(() => page.evaluate(() => window.totalsNow().fee)).toBe(expectedFee);
+    await expect(page.locator('#cartFee')).toContainText(expectedFee.toLocaleString('ru-RU'));
+  }
+});
