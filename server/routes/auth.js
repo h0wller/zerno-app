@@ -18,6 +18,7 @@ import { userGuard, pendingGuard, adminGuard } from '../middleware/auth.js';
 import { grantBonus, getBonusConfig, setBonusConfig, QR_SOURCE } from '../domain/bonuses.js';
 import { validate, RegisterSchema, LoginSchema, SetupPinSchema, ActivateCodeSchema } from '../middleware/validate.js';
 import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, SMS_AUTH_ENABLED } from '../config.js';
+import { stravaService } from '../services/strava.js';
 
 export const authRouter = express.Router();
 
@@ -466,10 +467,15 @@ authRouter.put('/api/me', userGuard, (req, res) => {
 
 // Удаление профиля клиента. Персональные данные стираются, заказы остаются без привязки
 // к человеку (для учёта). Сотрудники не могут удалить себя через приложение.
-authRouter.delete('/api/me', userGuard, (req, res) => {
+authRouter.delete('/api/me', userGuard, async (req, res) => {
   const cid = req.user.id;
   if (['admin', 'cashier', 'dispatch'].includes(req.user.role)) {
     return res.status(403).json({ error: 'Сотрудник не может удалить профиль. Сначала снимите права.' });
+  }
+  // Remove local Strava credentials first; remote revocation is attempted by the service.
+  try { await stravaService.disconnect(cid); } catch {
+    db.prepare('DELETE FROM strava_connections WHERE cid=?').run(cid);
+    db.prepare('DELETE FROM strava_oauth_states WHERE cid=?').run(cid);
   }
   db.transaction(() => {
     db.prepare("DELETE FROM tokens WHERE kind='user' AND ref=?").run(cid);
