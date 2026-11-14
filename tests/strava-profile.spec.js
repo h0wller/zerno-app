@@ -19,16 +19,20 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     await page.addInitScript(() => {
+      window.__stravaStatusForTest = { connected: false };
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
 
     await page.route('**/api/fitness/strava/status', async route => {
+      const connected = await route.request().frame().evaluate(() =>
+        Boolean(window.__stravaStatusForTest && window.__stravaStatusForTest.connected)
+      );
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ enabled: true, connected: false })
+        body: JSON.stringify({ enabled: true, connected, scopes: connected ? ['activity:read'] : [] })
       });
     });
     await page.route('**/api/fitness/strava/consent', async route => {
@@ -117,7 +121,7 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
     const section = page.locator('#stravaProfileSection');
     await expect(section).toContainText('Аккаунт Strava не подключён.');
     await section.getByRole('button', { name: 'Подключить Strava' }).click();
-    await expect(section).toContainText('Данные показываются только в вашем профиле');
+    await expect(section).toContainText('Просмотр только в вашем профиле');
     await expect(section).toContainText('не сохраняются');
     const consent = section.getByRole('checkbox');
     await expect(consent).not.toBeChecked();
@@ -193,14 +197,10 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
   test('shows only activity summary fields and supports account disconnection', async ({ page }, testInfo) => {
     const section = page.locator('#stravaProfileSection');
 
-    await page.route('**/api/fitness/strava/status', async route => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ enabled: true, connected: true, scopes: ['activity:read'] })
-      });
+    await page.evaluate(() => {
+      window.__stravaStatusForTest.connected = true;
+      window.dispatchEvent(new Event('focus'));
     });
-    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
 
     await expect(section).toContainText('Аккаунт Strava подключён.');
     await section.getByRole('button', { name: 'Показать тренировки' }).click();
