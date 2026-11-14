@@ -1,4 +1,5 @@
 /* public/app/order-tracking.js — подтверждение и live tracking гостевого заказа */
+import { restoreOrderItems } from './core/order-reorder.js';
 (function () {
   "use strict";
 
@@ -42,21 +43,18 @@
     }
   }
 
-  function repeatTrackedOrder() {
+  async function repeatTrackedOrder() {
     if (!activeTrackOrder || !Array.isArray(activeTrackOrder.items)) return;
-    var repeatedItems = activeTrackOrder.items.map(function (item) {
-      return {
-        key: String(item.id) + "_" + (item.opt || "0"),
-        id: item.id,
-        oi: typeof item.oi === "number" ? item.oi : -1,
-        name: item.name || "Блюдо",
-        opt: item.opt || null,
-        price: Number(item.price) || 0,
-        sz: Number(item.sz) || 0,
-        qty: Number(item.qty) || 1,
-        modifiers: item.modifiers || []
-      };
-    });
+    if ((!Array.isArray(window.DMENU) || !window.DMENU.length) &&
+        activeTrackOrder.items.some(function (item) { return item.opt && !Number.isInteger(item.oi); }) &&
+        typeof window.loadDelivery === "function") {
+      await window.loadDelivery();
+    }
+    var repeatedItems = restoreOrderItems(activeTrackOrder.items, window.DMENU);
+    if (repeatedItems.some(function (item) { return item.opt && item.oi < 0; })) {
+      window.toast("Не удалось восстановить вариант одной из позиций. Проверьте меню и повторите заказ.", "⚠️");
+      return;
+    }
     // Preserve the shared cart array identity used by delivery.js/cart.js.
     if (Array.isArray(window.cart)) {
       window.cart.splice.apply(window.cart, [0, window.cart.length].concat(repeatedItems));
@@ -80,7 +78,7 @@
     } else if (target.closest("[data-ot-chat]")) {
       openDeliveryChat();
     } else if (target.closest("[data-ot-repeat]")) {
-      repeatTrackedOrder();
+      repeatTrackedOrder().catch(function () { window.toast('Не удалось повторить заказ. Попробуйте ещё раз.', '⚠️'); });
     }
   }
 
