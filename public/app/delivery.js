@@ -325,7 +325,7 @@ function bindDeliveryRailCue() {
     rail.addEventListener('scroll', syncDeliveryRailCue, { passive: true });
     window.addEventListener('resize', syncDeliveryRailCue, { passive: true });
 
-    if (typeof ResizeObserver === 'function') {
+    if (typeof ResizeObserver === 'function' && !deliveryRailCueResizeObserver) {
       deliveryRailCueResizeObserver = new ResizeObserver(syncDeliveryRailCue);
       deliveryRailCueResizeObserver.observe(rail);
     }
