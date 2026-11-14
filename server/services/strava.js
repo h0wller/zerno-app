@@ -311,8 +311,8 @@ export function createStravaService({
     requireReady();
     const pageNum = Number(page);
     const pageSize = Number(perPage);
-    if (!Number.isSafeInteger(pageNum) || pageNum < 1 || pageNum > 100 ||
-        !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 30) {
+    if (!Number.isSafeInteger(pageNum) || pageNum < 1 || pageNum > 5 ||
+        !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 10) {
       throw makeError('strava_invalid_pagination');
     }
     const accessToken = await getAccessToken(customerId);
