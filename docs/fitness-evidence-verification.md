@@ -75,12 +75,12 @@ The Telegram bot is the user-facing entry point, not the device-data reader. Use
 
 HealthKit/Health Connect access is stronger provenance than an arbitrary file upload, but it is not absolute proof that a person physically ran. Records may be written by third-party apps, imported, or manipulated. The verifier must inspect source/device metadata, activity type, timestamps, distance/duration, route availability and anomalies; classify the assurance level; and issue rewards only according to a documented policy. Do not describe this as tamper-proof or biometric proof.
 
-The existing project is documented primarily as a Vanilla JS PWA and Telegram Mini App. The inspected architecture docs do not establish an existing HealthKit-capable native iOS app or Health Connect client. Treat the phone companion/native bridge as a new deliverable; verify whether the existing Capacitor shell is build-capable before choosing between extending it and creating a minimal companion app.
+The repository contains Capacitor 8 iOS and Android shells. The iOS shell is the native host for the HealthKit bridge; Telegram Mini App and PWA remain browser-only entry points and cannot access HealthKit directly. The first native increment reads running workouts and returns a normalized, device-reported summary to JavaScript. This is provenance evidence, not server-verifiable attestation: it must not be marked `verified` or issue rewards until a server-verifiable device/app attestation flow is implemented.
 
 ## Recommended rollout
 
 1. Define a stable server-side evidence contract and source trust levels independent of Apple/Android.
-2. Implement the iOS HealthKit bridge for Apple Watch workouts, with explicit permission UX and minimal data transfer.
+2. Implement the iOS HealthKit bridge for Apple Watch workouts, with explicit permission UX and minimal data transfer. The initial bridge is read-only and device-reported; do not auto-award from its payload.
 3. Keep Telegram as the onboarding, status, and reward-code interface.
 4. Implement Android Health Connect against the same backend contract.
 5. Add vendor-specific adapters as separate increments; retain file uploads as unverified fallback.
