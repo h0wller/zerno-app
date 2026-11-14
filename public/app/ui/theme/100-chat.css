@@ -360,7 +360,7 @@
 }
 .chat-i {
   flex: 0 0 auto;
-  padding-bottom: calc(11px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 11px;
 }
 .chat-h button:focus-visible,
 .chat-i button:focus-visible,
@@ -415,9 +415,9 @@
     border-radius: 22px;
     transform-origin: bottom center;
   }
-  .chat-h { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+  .chat-h { padding-top: 12px; }
   .chat-m { padding: 12px; }
-  .chat-i { padding: 9px 12px calc(9px + env(safe-area-inset-bottom, 0px)); }
+  .chat-i { padding: 9px 12px; }
 }
 
 /* Short landscape uses a compact, right-anchored panel instead of a portrait sheet. */
@@ -436,7 +436,7 @@
   .chat-h { padding: 8px 10px; gap: 8px; }
   .chat-h .op { width: 32px; height: 32px; }
   .chat-m { padding: 8px 10px; gap: 6px; }
-  .chat-i { padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
+  .chat-i { padding: 6px 8px; gap: 6px; }
   #chatHintsBar .chatHint { min-height: 32px; padding: 5px 9px; }
 }
 @media (prefers-reduced-motion: reduce) {
