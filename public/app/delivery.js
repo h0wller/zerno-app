@@ -670,8 +670,12 @@ function syncAddButtons() {
     if (b.disabled) return;
     const n = cart.reduce((a, c) => a + (String(c.id) === String(b.dataset.add) ? c.qty : 0), 0);
     b.classList.toggle('incart', n > 0);
+    const label = n > 0 ? ('В корзине · ' + n) : 'Добавить';
+    b.setAttribute('aria-label', label);
+    if (n > 0) b.title = label;
+    else b.removeAttribute('title');
     const row = b.closest('.steprow'); if (row) row.querySelectorAll('.step').forEach(s => { s.hidden = !n; });
-    if (!b.classList.contains('added')) b.textContent = n > 0 ? ('В корзине · ' + n) : 'Добавить';
+    if (!b.classList.contains('added')) b.textContent = n > 0 ? '✓' : 'Добавить';
   });
 }
 
@@ -703,7 +707,11 @@ function handleDeliveryStepperClick(e) {
   const row = step.closest('.steprow');
   const addButton = row && row.querySelector('[data-add]');
   if (addButton) {
-    addButton.textContent = count ? ('В корзине · ' + count) : 'Добавить';
+    const label = count ? ('В корзине · ' + count) : 'Добавить';
+    addButton.textContent = count ? '✓' : 'Добавить';
+    addButton.setAttribute('aria-label', label);
+    if (count) addButton.title = label;
+    else addButton.removeAttribute('title');
     addButton.classList.toggle('incart', count > 0);
   }
   if (row) row.querySelectorAll('.step').forEach(button => { button.hidden = !count; });
