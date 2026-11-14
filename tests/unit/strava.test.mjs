@@ -36,6 +36,7 @@ function fixture({ fetchImpl, env = {} } = {}) {
     STRAVA_REDIRECT_URI: 'https://zerno.example/api/fitness/strava/callback',
     STRAVA_TOKEN_ENCRYPTION_KEY: KEY,
     STRAVA_WEBHOOK_VERIFY_TOKEN: 'verify-token-for-tests',
+    STRAVA_WEBHOOK_PATH_SECRET: 'p'.repeat(48),
     STRAVA_WEBHOOK_SUBSCRIPTION_ID: '6789',
     WEBAPP_URL: 'https://zerno.example',
     ...env,
