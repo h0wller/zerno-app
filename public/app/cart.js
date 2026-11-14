@@ -1059,6 +1059,7 @@ function renderCartBase() {
       renderCartBase();
       var cartScrollBody = document.getElementById("cartScrollBody");
       if (cPanel) cPanel.classList.add("open");
+      if (typeof window.syncOverlay === "function") window.syncOverlay();
       window.requestAnimationFrame(function () {
         if (cartScrollBody) cartScrollBody.scrollTop = 0;
       });
