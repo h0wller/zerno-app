@@ -62,7 +62,7 @@ function redirectTarget(env, result) {
   if (!base) return null;
   try {
     const url = new URL(base);
-    if (!['https:', 'http:'].includes(url.protocol)) return null;
+    if (url.protocol !== 'https:') return null;
     url.searchParams.set('strava', result);
     return url.toString();
   } catch {
