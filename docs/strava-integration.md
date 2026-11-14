@@ -2,7 +2,7 @@
 
 ## Current status
 
-Strava is connected as a separate, read-only OAuth provider. This is not a Strava-backed reward provider yet.
+Strava OAuth and its separate read-only profile panel are implemented in code, but the integration is **not approved for production use and must remain disabled** (`STRAVA_ENABLED=false`). Automated tests use only fake provider responses; no live Strava account has been connected. This is not a Strava-backed reward provider.
 
 - OAuth requests only the `activity:read` scope. No write, private-activity, or full-profile scope is requested.
 - The app can show up to 10 recent activities per page, and at most 5 pages, to the same authenticated Zerno profile that connected the Strava account.
@@ -13,9 +13,11 @@ Strava is connected as a separate, read-only OAuth provider. This is not a Strav
 
 ## Strava API policy boundary
 
-The current [Strava API Policy](https://www.strava.com/legal/api_policy), effective June 1, 2026, requires explicit user consent, access limited to the authenticated athlete, deletion on revocation/request, and strict retention controls. Sections 5.4 and 5.10 contain broad restrictions on combining Strava Data with other customer data and on transferring or disclosing Strava Data to third parties. Section 6.2 limits caching to seven days; this implementation avoids caching activity responses entirely.
+The current [Strava API Policy](https://www.strava.com/legal/api_policy), effective June 1, 2026, requires explicit user consent and limits display to the authenticated athlete. Section 5.4 prohibits combining Strava Data with other customer data for any purpose; Section 5.10 restricts making Strava Data available to third parties in exchange for monetary or other valuable consideration. Section 6.2 limits caching to seven days; Zerno avoids caching activity responses entirely. See the official policy sections 2.1–2.5, 5.4, 5.10, 6.2 and 7.4.
 
-Because Zerno App's proposed use-case is a coffee reward issued by a business based on a Strava activity, do not derive eligibility, issue a reward, persist a reward decision from Strava activity, or expose a Strava-derived result to cashiers until Strava confirms in writing that this specific model is permitted. Send the described use-case to `developers@strava.com` and retain their written answer with the product/legal decision. The present API does not create Strava-based rewards.
+**Important approval gate:** even though the UI has a separate Strava section, it currently lives inside the Zerno customer profile alongside the customer's loyalty and order information. The code has not established that this satisfies Section 5.4's separation requirement. Keep `STRAVA_ENABLED=false` until Strava confirms in writing that this specific presentation—an individually authenticated, isolated panel within the existing Zerno profile—is permitted for the registered Developer Application. Do not connect real accounts, enable OAuth in production, combine Strava data with Zerno orders/loyalty/analytics, or expose results to staff before that confirmation.
+
+A separate proposed use-case, “qualifying Strava activity → free coffee”, is **not implemented** and needs its own written approval. Do not derive eligibility, issue a reward, persist a reward decision from Strava activity, or make Strava-derived results available to cashiers. Send both questions to `developers@strava.com` and retain the written answer with the product/legal decision.
 
 Official references:
 - [API Agreement](https://www.strava.com/legal/api)
@@ -51,7 +53,7 @@ openssl rand -hex 32   # STRAVA_WEBHOOK_PATH_SECRET
 
 Use the callback domain `friday.andcoffee.online` in the Strava Developer Application settings. The full redirect URI must exactly match `STRAVA_REDIRECT_URI`.
 
-The server refuses to initiate OAuth unless all required values are valid and `STRAVA_ENABLED=true`. The flag remains false until the callback and webhook subscription have been configured and verified.
+The server refuses to initiate OAuth unless all required values are valid and `STRAVA_ENABLED=true`. **Keep the flag false in every real environment until written Strava approval for the Zerno profile presentation, privacy-policy review, and Developer Application access-tier eligibility are confirmed.** Configuring credentials and a webhook does not constitute policy approval.
 
 ## Webhook subscription
 
@@ -73,8 +75,9 @@ Before redirecting a guest to Strava, the client must:
 1. Call `GET /api/fitness/strava/consent` using the guest's Bearer token.
 2. Display the returned notice (types of data, collection method, purpose, storage, withdrawal and deletion).
 3. Require an affirmative choice, then call `POST /api/fitness/strava/connect` with `{ "consent": true, "consentVersion": "2026-11-14-v1" }`.
-4. Open the returned `authorizationUrl` in the system browser, not a constrained embedded webview. The same-origin connect response sets a 10-minute `__Secure-zerno_strava_state` cookie scoped only to the callback path.
-5. The callback requires both the one-use OAuth state and the matching browser cookie. It clears the cookie on return; missing/mismatched cookies are rejected, preventing an authorization URL from being forwarded to another browser.
+4. Open the returned `authorizationUrl` in the same ordinary Safari/Chrome browser context that made the connect request. The same-origin response sets a 10-minute `__Secure-zerno_strava_state` cookie scoped only to the callback path.
+5. The callback requires both the one-use OAuth state and the matching browser cookie. It clears the cookie on return; missing/mismatched cookies are rejected, preventing a forwarded authorization URL from linking someone else's Strava account to the initiating Zerno profile.
+6. Do not initiate OAuth from Telegram Mini App: its system-browser handoff may not retain the originating cookie. The profile UI directs users to open the ordinary web/PWA version instead.
 6. After callback, refresh `GET /api/fitness/strava/status` and fetch `GET /api/fitness/strava/activities` only when the user asks to view them.
 
 Relevant endpoints:
