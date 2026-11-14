@@ -1155,9 +1155,20 @@ function renderCartBase() {
     var hasDragged = false;
 
     document.addEventListener("mousedown", function (e) {
-      if (e.button !== 0 || e.target.closest("button, a, input, select, textarea, [contenteditable='true']")) return;
+      if (e.button !== 0) return;
       var el = e.target.closest(".ca-cards-scroll, .ca-tabs-scroll, .ci-mod-chips-scroll, .subfilter-bar, .rail");
       if (!el) return;
+
+      if (el.matches(".ca-cards-scroll")) {
+        // Keep the add action clickable and leave the native scrollbar thumb/track to the browser.
+        if (e.target.closest("button, a, input, select, textarea, [contenteditable='true']")) return;
+        var rect = el.getBoundingClientRect();
+        var style = window.getComputedStyle(el);
+        var borders = (parseFloat(style.borderTopWidth) || 0) + (parseFloat(style.borderBottomWidth) || 0);
+        var scrollbarHeight = Math.max(8, el.offsetHeight - el.clientHeight - borders);
+        if (e.clientY >= rect.bottom - scrollbarHeight) return;
+      }
+
       isDown = true;
       hasDragged = false;
       activeEl = el;
