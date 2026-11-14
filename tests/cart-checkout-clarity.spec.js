@@ -218,6 +218,7 @@ test('cart keeps the current selected price and explains every amount without gu
   // Desktop regression: a vertical mouse wheel over the horizontal recommendations rail
   // must move the rail itself, not only the cart's outer scroll container.
   const cardsRail = recommendations.locator('.ca-cards-scroll');
+  await cardsRail.evaluate((el) => { el.scrollLeft = 0; });
   const initialRailMetrics = await cardsRail.evaluate((el) => ({
     clientWidth: el.clientWidth,
     scrollWidth: el.scrollWidth,
