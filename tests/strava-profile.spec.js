@@ -202,7 +202,11 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
   test('requires the ordinary browser for the browser-bound OAuth flow in Telegram Mini App', async ({ page }) => {
     await page.evaluate(() => {
       window.__isTgMiniApp = true;
-      window.dispatchEvent(new Event('focus'));
+      window.setUser('strava-profile-token', {
+        id: 'strava-profile-test', name: 'Тестовый гость', phone: '+7 900 000-00-00',
+        role: 'guest', cups: 0, stamps: 0, free: 0, qr: 'strava-test', history: [], verified: 1
+      });
+      window.renderProfile();
     });
     const section = page.locator('#stravaProfileSection');
     await expect(section).toContainText('В Telegram Mini App это не гарантируется');
@@ -215,7 +219,13 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
     const section = page.locator('#stravaProfileSection');
 
     page.setStravaConnected(true);
-    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.evaluate(() => {
+      window.setUser('strava-profile-token', {
+        id: 'strava-profile-test', name: 'Тестовый гость', phone: '+7 900 000-00-00',
+        role: 'guest', cups: 0, stamps: 0, free: 0, qr: 'strava-test', history: [], verified: 1
+      });
+      window.renderProfile();
+    });
 
     await expect(section).toContainText('Аккаунт Strava подключён.');
     await section.getByRole('button', { name: 'Показать тренировки' }).click();
