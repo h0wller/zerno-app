@@ -505,7 +505,7 @@ test('mobile primary category navigation is visually distinct from secondary fil
       expect(metrics.buttonHeight, brand.brand + ' category tabs retain a generous 44px+ hit area').toBeGreaterThanOrEqual(60);
       expect(metrics.buttonDirection, brand.brand + ' category icon sits above its label').toBe('column');
       expect(metrics.buttonRadius, brand.brand + ' category tabs are not rounded filter chips').toBe('0px');
-      expect(metrics.buttonBackground, brand.brand + ' category tabs remain on the navigation surface').toBe('rgba(0, 0, 0, 0)');
+      expect(metrics.buttonBackground, brand.brand + ' category tabs use an opaque surface for readable labels').not.toBe('rgba(0, 0, 0, 0)');
       expect(metrics.activeBottomBorderWidth, brand.brand + ' active category uses a navigation indicator').toBe('3px');
       expect(metrics.activeBottomBorderColor, brand.brand + ' active category indicator is visible').not.toBe('rgba(0, 0, 0, 0)');
       expect(metrics.iconFontSize, brand.brand + ' category icon remains visually prominent').toBeGreaterThanOrEqual(20);
