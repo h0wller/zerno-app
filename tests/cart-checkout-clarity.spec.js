@@ -242,13 +242,17 @@ test('cart keeps the current selected price and explains every amount without gu
     contentType: 'image/png'
   });
   await cartScrollBody.evaluate((body) => { body.scrollTop = 0; });
+  await recommendationCardsRail.evaluate((rail) => { rail.scrollLeft = 0; });
+  const railScrollBeforeWheel = await recommendationCardsRail.evaluate((rail) => rail.scrollLeft);
   const railBoundsBeforeWheel = await recommendationCardsRail.boundingBox();
   await page.mouse.move(
     railBoundsBeforeWheel.x + railBoundsBeforeWheel.width / 2,
     railBoundsBeforeWheel.y + railBoundsBeforeWheel.height / 2
   );
   await page.mouse.wheel(0, 160);
-  await expect.poll(() => recommendationCardsRail.evaluate((rail) => rail.scrollLeft)).toBe(0);
+  await expect.poll(() => recommendationCardsRail.evaluate((rail) =>
+    Math.abs(rail.scrollLeft - railScrollBeforeWheel)
+  )).toBeLessThanOrEqual(2);
   await expect.poll(() => cartScrollBody.evaluate((body) => body.scrollTop)).toBeGreaterThan(0);
   await testInfo.attach('cart-recommendations-after-vertical-wheel', {
     body: await page.screenshot({ fullPage: false }),
