@@ -213,4 +213,27 @@ CREATE TABLE IF NOT EXISTS fcm(
     CREATE INDEX IF NOT EXISTS idx_fitness_rewards_cid_issued
       ON fitness_rewards(cid, issued_at DESC);
   `);
+  
+  // Strava OAuth tokens are encrypted at rest; activity responses are never persisted.
+  db.exec(\`
+    CREATE TABLE IF NOT EXISTS strava_connections(
+      cid TEXT PRIMARY KEY REFERENCES customers(id) ON DELETE CASCADE,
+      athlete_id TEXT NOT NULL UNIQUE,
+      access_token_enc TEXT NOT NULL,
+      refresh_token_enc TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      scopes TEXT NOT NULL,
+      connected_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS strava_oauth_states(
+      state_hash TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_strava_oauth_states_expiry
+      ON strava_oauth_states(expires_at);
+  \`);
+
 }
