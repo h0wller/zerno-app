@@ -1,8 +1,6 @@
 import crypto from 'node:crypto';
 import { db as defaultDb } from '../db/connection.js';
 
-const REWARD_DISTANCE_METERS = 5_000;
-const REWARD_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 const REWARD_TTL_MS = 48 * 60 * 60 * 1000;
 
 function iso(value) {
@@ -30,7 +28,7 @@ function validActivity(activity, now) {
   if (!Number.isFinite(distance) || !Number.isFinite(elapsed) ||
       !Number.isFinite(points) || !Number.isFinite(startedAt)) return false;
   if (startedAt > now.getTime() + 5 * 60 * 1000 ||
-      startedAt < now.getTime() - REWARD_COOLDOWN_MS) return false;
+      startedAt < now.getTime() - 7 * 24 * 60 * 60 * 1000) return false;
   if (distance <= 0 || !Number.isInteger(elapsed) || elapsed < 300 ||
       elapsed > 14_400 || !Number.isInteger(points) || points < 10 || points > 20_000) return false;
   const averageSpeed = distance / elapsed;
@@ -41,7 +39,6 @@ export function createFitnessRewardService({
   database = defaultDb,
   clock = () => new Date(),
   makeId = () => crypto.randomUUID(),
-  makeCode = () => 'RUN-' + crypto.randomBytes(5).toString('hex').toUpperCase(),
 } = {}) {
   function submitActivity({ customerId, activity, fingerprint }) {
     const cid = String(customerId || '').trim();
@@ -56,12 +53,11 @@ export function createFitnessRewardService({
     if (!validActivity(activity, now)) {
       return { ok: false, reason: 'implausible_activity' };
     }
-    if (Number(activity.distanceMeters) < REWARD_DISTANCE_METERS) {
+    if (Number(activity.distanceMeters) < 5_000) {
       return { ok: false, reason: 'distance_below_threshold' };
     }
     const receivedAt = iso(now);
     const startedAt = iso(new Date(Date.parse(activity.startedAt)));
-    const cooldownStartsAt = iso(new Date(now.getTime() - REWARD_COOLDOWN_MS));
 
     return database.transaction(() => {
       const customer = database.prepare(
@@ -73,11 +69,13 @@ export function createFitnessRewardService({
 
       const existing = database.prepare(`
         SELECT a.id, a.cid, a.distance_meters, a.elapsed_seconds,
-          r.id AS reward_id, r.code, r.reward_type, r.status, r.issued_at, r.expires_at, r.redeemed_at
+          a.verification_state, r.id AS reward_id, r.code, r.reward_type,
+          r.status, r.issued_at, r.expires_at, r.redeemed_at
         FROM fitness_activities a
         LEFT JOIN fitness_rewards r ON r.activity_id=a.id
         WHERE a.fingerprint=?
       `).get(digest);
+
       if (existing) {
         if (existing.cid !== cid) return { ok: false, reason: 'duplicate_activity' };
         const reward = existing.reward_id ? {
@@ -92,7 +90,8 @@ export function createFitnessRewardService({
         return {
           ok: true,
           duplicate: true,
-          reason: reward ? 'duplicate_activity' : 'weekly_reward_limit',
+          reason: reward ? 'duplicate_activity' : 'verification_required',
+          verificationState: existing.verification_state,
           activity: {
             id: existing.id,
             distanceMeters: existing.distance_meters,
@@ -106,8 +105,8 @@ export function createFitnessRewardService({
       database.prepare(`
         INSERT INTO fitness_activities (
           id, cid, source, fingerprint, distance_meters,
-          elapsed_seconds, started_at, received_at
-        ) VALUES (?, ?, 'gpx', ?, ?, ?, ?, ?)
+          elapsed_seconds, started_at, received_at, verification_state
+        ) VALUES (?, ?, 'gpx', ?, ?, ?, ?, ?, 'unverified')
       `).run(
         activityId,
         cid,
@@ -118,62 +117,18 @@ export function createFitnessRewardService({
         receivedAt,
       );
 
-      const recentReward = database.prepare(`
-        SELECT id FROM fitness_rewards
-        WHERE cid=? AND issued_at > ?
-        ORDER BY issued_at DESC LIMIT 1
-      `).get(cid, cooldownStartsAt);
-
-      if (recentReward) {
-        return {
-          ok: true,
-          reward: null,
-          reason: 'weekly_reward_limit',
-          activity: {
-            id: activityId,
-            distanceMeters: Math.round(Number(activity.distanceMeters)),
-            elapsedSeconds: Math.round(Number(activity.elapsedSeconds)),
-          },
-        };
-      }
-
-      let code = '';
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        const candidate = String(makeCode()).trim().toUpperCase();
-        if (!/^RUN-[A-Z0-9]{8,16}$/.test(candidate)) {
-          throw new Error('Fitness reward code generator returned an invalid code');
-        }
-        if (!database.prepare('SELECT 1 FROM fitness_rewards WHERE code=?').get(candidate)) {
-          code = candidate;
-          break;
-        }
-      }
-      if (!code) throw new Error('Unable to generate a unique fitness reward code');
-
-      const rewardId = makeId();
-      const expiresAt = iso(new Date(now.getTime() + REWARD_TTL_MS));
-      database.prepare(`
-        INSERT INTO fitness_rewards (
-          id, cid, activity_id, code, reward_type, status, issued_at, expires_at
-        ) VALUES (?, ?, ?, ?, 'filter_coffee', 'active', ?, ?)
-      `).run(rewardId, cid, activityId, code, receivedAt, expiresAt);
-
+      // File plausibility and deduplication are not proof of origin.
+      // GPX submissions remain unverified and cannot enter reward issuance.
       return {
         ok: true,
-        reason: null,
+        reason: 'verification_required',
+        verificationState: 'unverified',
         activity: {
           id: activityId,
           distanceMeters: Math.round(Number(activity.distanceMeters)),
           elapsedSeconds: Math.round(Number(activity.elapsedSeconds)),
         },
-        reward: {
-          id: rewardId,
-          code,
-          rewardType: 'filter_coffee',
-          status: 'active',
-          issuedAt: receivedAt,
-          expiresAt,
-        },
+        reward: null,
       };
     }).immediate();
   }
