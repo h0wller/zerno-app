@@ -293,6 +293,16 @@
   scroll-snap-type: x mandatory;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .ca-cards-scroll {
+    cursor: grab;
+  }
+
+  .ca-cards-scroll .ac-add-btn {
+    cursor: pointer;
+  }
+}
+
 .addon-pill-card {
   flex: 0 0 240px;
   width: 240px;
