@@ -41,7 +41,7 @@ function syncCoffeeRailCue() {
   rail.addEventListener('scroll', syncCoffeeRailCue, { passive: true });
   window.addEventListener('resize', syncCoffeeRailCue, { passive: true });
 
-  if (typeof ResizeObserver === 'function') {
+  if (typeof ResizeObserver === 'function' && !coffeeRailCueResizeObserver) {
     coffeeRailCueResizeObserver = new ResizeObserver(syncCoffeeRailCue);
     coffeeRailCueResizeObserver.observe(rail);
   }
