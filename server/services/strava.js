@@ -194,10 +194,17 @@ export function createStravaService({
     }).immediate();
   }
 
-  function saveConnection(input) {
+  function saveConnection({
+    customerId,
+    athleteId,
+    accessToken,
+    refreshToken,
+    expiresAt,
+    scopes,
+  }) {
+    const cid = String(customerId);
+    const athlete = String(athleteId);
     const operation = database.transaction(() => {
-      const cid = String(customerId);
-      const athlete = String(athleteId);
       const existingAthlete = database.prepare(
         'SELECT cid FROM strava_connections WHERE athlete_id = ?',
       ).get(athlete);
@@ -227,8 +234,6 @@ export function createStravaService({
         now,
         now,
       );
-    }
-  
     });
     operation.immediate();
   }
