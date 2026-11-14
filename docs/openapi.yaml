@@ -1398,7 +1398,11 @@ paths:
                 consentVersion: { type: string, example: '2026-11-14-v1' }
       responses:
         '200':
-          description: URL авторизации Strava и ограниченный OAuth scope
+          description: URL авторизации, ограниченный OAuth scope и короткоживущая browser-binding cookie
+          headers:
+            Set-Cookie:
+              description: HttpOnly Secure SameSite=Lax state cookie scoped to the OAuth callback path
+              schema: { type: string }
           content:
             application/json:
               schema:
@@ -1422,6 +1426,11 @@ paths:
         - in: query
           name: state
           required: true
+          schema: { type: string }
+        - in: header
+          name: Cookie
+          required: true
+          description: Must include __Secure-zerno_strava_state set by the same browser during the connect request
           schema: { type: string }
         - in: query
           name: code
