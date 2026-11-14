@@ -1,8 +1,6 @@
 import crypto from 'node:crypto';
 import { db as defaultDb } from '../db/connection.js';
 
-const REWARD_TTL_MS = 48 * 60 * 60 * 1000;
-
 function iso(value) {
   return value.toISOString();
 }
