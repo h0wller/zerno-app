@@ -80,6 +80,7 @@ export function createStravaService({
       redirect !== null && redirect.pathname === callbackPath && !redirect.search && !redirect.hash &&
       /^[a-f0-9]{64}$/i.test(encryptionKey) &&
       String(env.STRAVA_WEBHOOK_VERIFY_TOKEN || '').length >= 16 &&
+      /^[A-Za-z0-9_-]{32,128}$/.test(String(env.STRAVA_WEBHOOK_PATH_SECRET || '')) &&
       /^\d+$/.test(String(env.STRAVA_WEBHOOK_SUBSCRIPTION_ID || '')) &&
       Number(env.STRAVA_WEBHOOK_SUBSCRIPTION_ID) > 0;
     const enabled = env.STRAVA_ENABLED === 'true';
