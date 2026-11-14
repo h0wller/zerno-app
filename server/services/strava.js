@@ -194,38 +194,43 @@ export function createStravaService({
     }).immediate();
   }
 
-  function saveConnection({ customerId, athleteId, accessToken, refreshToken, expiresAt, scopes }) {
-    const cid = String(customerId);
-    const athlete = String(athleteId);
-    const existingAthlete = database.prepare(
-      'SELECT cid FROM strava_connections WHERE athlete_id = ?',
-    ).get(athlete);
-    if (existingAthlete && existingAthlete.cid !== cid) {
-      throw makeError('strava_athlete_already_linked');
+  function saveConnection(input) {
+    const operation = database.transaction(() => {
+      const cid = String(customerId);
+      const athlete = String(athleteId);
+      const existingAthlete = database.prepare(
+        'SELECT cid FROM strava_connections WHERE athlete_id = ?',
+      ).get(athlete);
+      if (existingAthlete && existingAthlete.cid !== cid) {
+        throw makeError('strava_athlete_already_linked');
+      }
+      const existingCustomer = database.prepare(
+        'SELECT athlete_id FROM strava_connections WHERE cid = ?',
+      ).get(cid);
+      if (existingCustomer && existingCustomer.athlete_id !== athlete) {
+        throw makeError('strava_disconnect_previous_account_first');
+      }
+      const now = new Date(nowMs()).toISOString();
+      database.prepare(
+        'INSERT INTO strava_connections(cid, athlete_id, access_token_enc, refresh_token_enc, expires_at, scopes, connected_at, updated_at) ' +
+        'VALUES(?, ?, ?, ?, ?, ?, ?, ?) ' +
+        'ON CONFLICT(cid) DO UPDATE SET athlete_id=excluded.athlete_id, ' +
+        'access_token_enc=excluded.access_token_enc, refresh_token_enc=excluded.refresh_token_enc, ' +
+        'expires_at=excluded.expires_at, scopes=excluded.scopes, updated_at=excluded.updated_at',
+      ).run(
+        cid,
+        athlete,
+        encryptToken(accessToken),
+        encryptToken(refreshToken),
+        expiresAt,
+        scopes,
+        now,
+        now,
+      );
     }
-    const existingCustomer = database.prepare(
-      'SELECT athlete_id FROM strava_connections WHERE cid = ?',
-    ).get(cid);
-    if (existingCustomer && existingCustomer.athlete_id !== athlete) {
-      throw makeError('strava_disconnect_previous_account_first');
-    }
-    const now = new Date(nowMs()).toISOString();
-    database.prepare(
-      'INSERT INTO strava_connections(cid, athlete_id, access_token_enc, refresh_token_enc, expires_at, scopes, connected_at, updated_at) ' +
-      'VALUES(?, ?, ?, ?, ?, ?, ?, ?) ' +
-      'ON CONFLICT(cid) DO UPDATE SET athlete_id=excluded.athlete_id, ' +
-      'access_token_enc=excluded.access_token_enc, refresh_token_enc=excluded.refresh_token_enc, ' +
-      'expires_at=excluded.expires_at, scopes=excluded.scopes, updated_at=excluded.updated_at',
-    ).run(
-      cid,
-      athlete,
-      encryptToken(accessToken),
-      encryptToken(refreshToken),
-      expiresAt,
-      scopes,
-      now,
-      now,
-    );
+  
+    });
+    operation.immediate();
   }
 
   async function completeAuthorization({ state, code, grantedScope }) {
