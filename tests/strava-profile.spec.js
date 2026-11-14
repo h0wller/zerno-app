@@ -198,6 +198,19 @@ test.describe('Strava integration in guest profile — ' + brand, () => {
     await expect(page).toHaveURL(/scope=activity%3Aread/);
   });
 
+
+  test('requires the ordinary browser for the browser-bound OAuth flow in Telegram Mini App', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__isTgMiniApp = true;
+      window.dispatchEvent(new Event('focus'));
+    });
+    const section = page.locator('#stravaProfileSection');
+    await expect(section).toContainText('В Telegram Mini App это не гарантируется');
+    await expect(section.getByRole('link', { name: 'Открыть Zerno App в браузере' }))
+      .toHaveAttribute('href', /\\?brand=/);
+    await expect(section.getByRole('button', { name: 'Подключить Strava' })).toHaveCount(0);
+  });
+
   test('shows only activity summary fields and supports account disconnection', async ({ page }, testInfo) => {
     const section = page.locator('#stravaProfileSection');
 
