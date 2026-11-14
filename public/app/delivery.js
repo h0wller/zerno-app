@@ -900,64 +900,7 @@ $('#deliveryGrid').addEventListener('change', function (e) {
   optionsBox.querySelectorAll('input[type="radio"]').forEach(input => input.removeAttribute('aria-describedby'));
 });
 
-$('#cartFab').onclick = () => { $('#cartPanel').classList.add('open'); };
-$('#cartClose').onclick = () => { $('#cartPanel').classList.remove('open'); };
-
-function renderCart() {
-  $('#cartItems').innerHTML = cart.map((c, i) => `<div class="cartItem">
-    <div style="flex:1"><b>${esc(c.name)}</b>${c.opt ? `<div style="font-size:12px;color:var(--soft)">${esc(c.opt)}</div>` : ''}</div>
-    <div class="qty"><button data-ci="${i}" data-act="-">−</button><span>${c.qty}</span><button data-ci="${i}" data-act="+">+</button></div>
-    <div style="font-weight:700">${fmt(c.price * c.qty)}</div>
-  </div>`).join('') || '<div style="color:var(--soft);text-align:center;padding:20px">Корзина пуста</div>';
-  const sum = cart.reduce((a, c) => a + c.price * c.qty, 0);
-  const method = $('#checkoutMethod').value;
-  const discount = method === 'pickup' ? Math.round(sum * 0.10) : 0;
-  const fee = method === 'delivery' && deliveryInfo ? (deliveryInfo.zones.find(z => z.places.includes($('#checkoutPlace').value))?.fee || 0) : 0;
-  $('#cartTotal').textContent = fmt(sum - discount + fee);
-  $('#cartDiscount').textContent = discount ? `−10% самовывоз: −${fmt(discount)}` : '';
-  $('#cartFee').textContent = fee ? `Доставка: ${fmt(fee)}` : '';
-  const gifts = [];
-  const pm2 = deliveryInfo && deliveryInfo.pizzaMonth;
-  if (pm2) { const big = cart.reduce((a, c) => a + ((c.sz === 35) ? c.qty : 0), 0); if (big >= 2) gifts.push(`🎁 ${pm2.name} — подарок`); }
-  $('#cartGifts').innerHTML = gifts.join('<br>');
-}
-
-$('#cartItems').addEventListener('click', e => {
-  const b = e.target.closest('[data-ci]');
-  if (!b) return;
-  const _i = +b.dataset.ci;
-  localStorage.setItem('zt_cart', JSON.stringify(cart));
-  if (typeof updateCartFab === 'function') updateCartFab();
-  window.renderCart();
-});
-
-$('#checkoutMethod').onchange = () => {
-  const pickup = $('#checkoutMethod').value === 'pickup';
-  const deliveryGroup = $('#checkoutDeliveryGroup');
-  if (deliveryGroup) deliveryGroup.style.display = pickup ? 'none' : 'contents';
-  window.renderCart();
-};
-
-$('#cartFab').onclick = async () => {
-  window.renderCart();
-  const cartScrollBody = $('#cartScrollBody');
-  $('#cartPanel').classList.add('open');
-  // Reset after the sheet becomes visible; while closed, the browser may clamp
-  // scrollTop against the collapsed scroll viewport and restore the old offset.
-  requestAnimationFrame(() => {
-    if (cartScrollBody) cartScrollBody.scrollTop = 0;
-  });
-  const checkoutButton = $('#checkoutBtn');
-  if (checkoutButton) checkoutButton.disabled = true;
-  try {
-    await window.refreshDeliveryInfo();
-    window.renderCart();
-  } catch (error) {
-    if (typeof toast === 'function') {
-      toast('Не удалось обновить график работы. Проверьте соединение перед оформлением.', '⚠️');
-    }
-  }
-};
+/* Cart DOM, state and controls are owned by cart.js. */
 
 function populatePlaces() {
   if (!deliveryInfo) return;
