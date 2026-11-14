@@ -107,7 +107,7 @@ test('ham-salami pizza uses the supplied TTK and estimated generic salami values
   assert.ok(small.perPortion.c > 0);
 
   assert.equal(large.status, 'ready');
-  assert.equal(large.totalWeight, 790);
+  assert.equal(large.totalWeight, 850);
   assert.ok(large.perPortion.kcal > small.perPortion.kcal);
 });
 
