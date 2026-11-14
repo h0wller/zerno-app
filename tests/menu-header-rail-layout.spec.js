@@ -621,6 +621,7 @@ test('mobile category navigation exposes usable scrolling and spacing across por
           hasOverflowCue: rail.classList.contains('has-overflow'),
           atEndCue: rail.classList.contains('at-end'),
           cueContent: getComputedStyle(rail, '::after').content,
+          cueColor: getComputedStyle(rail, '::after').color,
         };
       }, { railSelector: brand.rail, brandName: brand.brand });
 
@@ -643,6 +644,9 @@ test('mobile category navigation exposes usable scrolling and spacing across por
         expect(before.hasOverflowCue, brand.brand + ' shows a directional cue when more categories are available at ' + viewport.name).toBe(true);
         expect(before.atEndCue, brand.brand + ' starts with the directional cue visible at ' + viewport.name).toBe(false);
         expect(before.cueContent, brand.brand + ' uses a visible next-category affordance at ' + viewport.name).toBe('"›"');
+        expect(before.cueColor, brand.brand + ' uses a legible brand-colored scroll cue at ' + viewport.name).toBe(
+          brand.brand === 'delivery' ? 'rgb(58, 42, 28)' : 'rgb(18, 58, 107)',
+        );
         await rail.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
         await expect.poll(() => rail.evaluate((element) => element.classList.contains('at-end'))).toBe(true);
         await expect.poll(() => rail.evaluate((element) => getComputedStyle(element, '::after').opacity)).toBe('0');
@@ -655,6 +659,9 @@ test('mobile category navigation exposes usable scrolling and spacing across por
           return bounds.right - last.right;
         })).toBeGreaterThanOrEqual(-1);
         await rail.evaluate((element) => { element.scrollLeft = 0; });
+      } else {
+        expect(before.hasOverflowCue, brand.brand + ' does not show a false scroll cue when all categories fit at ' + viewport.name).toBe(false);
+        expect(before.cueContent, brand.brand + ' omits the cue when the rail does not overflow at ' + viewport.name).toBe('none');
       }
 
       await testInfo.attach(brand.brand + '-' + viewport.name.replaceAll(' ', '-') + '-navigation', {
