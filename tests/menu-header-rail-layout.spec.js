@@ -34,7 +34,7 @@ for (const brand of CASES) {
       if (viewport.width <= 820) {
         await expect(topbar).toHaveCSS('border-bottom-width', '0px');
       }
-      if (brand.brand === 'delivery') {
+      if (brand.brand === 'delivery' && viewport.width > 820) {
         await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
         await expect.poll(() => page.evaluate(() => {
           const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
@@ -114,8 +114,10 @@ for (const brand of CASES) {
         await expect.poll(() => page.evaluate(selector => {
           const element = document.querySelector(selector);
           const rect = element.getBoundingClientRect();
-          const height = element.clientHeight;
-          const expectedTop = Math.max(12, (window.innerHeight - height) / 2);
+          const topbar = document.querySelector('header.topbar');
+          const style = topbar && getComputedStyle(topbar);
+          const topbarSticky = !!(style && (style.position === 'sticky' || style.position === 'fixed'));
+          const expectedTop = topbarSticky ? topbar.getBoundingClientRect().height : 12;
           return {
             topDelta: Math.abs(rect.top - expectedTop),
             position: getComputedStyle(element).position,
@@ -127,7 +129,10 @@ for (const brand of CASES) {
         await expect.poll(() => page.evaluate(selector => {
           const element = document.querySelector(selector);
           const rect = element.getBoundingClientRect();
-          return Math.abs(rect.top - Math.max(12, (window.innerHeight - element.clientHeight) / 2));
+          const topbar = document.querySelector('header.topbar');
+          const style = topbar && getComputedStyle(topbar);
+          const topbarSticky = !!(style && (style.position === 'sticky' || style.position === 'fixed'));
+          return Math.abs(rect.top - (topbarSticky ? topbar.getBoundingClientRect().height : 12));
         }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
         await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
@@ -244,31 +249,43 @@ test('coffee: category rail never covers menu title or search input on mobile', 
 });
 
 
-test('coffee rail aligns to its menu card and delivery rail aligns to product cards', async ({ page }) => {
+test('both mobile category rails sit below search and scroll horizontally', async ({ page }) => {
   for (const brand of CASES) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
-    if (brand.brand === 'delivery') {
-      await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
-      await expect.poll(() => page.evaluate(() => {
-        const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
-        const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
-        return Math.abs(rail.top - grid.top);
-      }), { timeout: 5000 }).toBeLessThanOrEqual(2);
-    } else {
-      const searchGap = await page.evaluate(() => {
-        const search = document.querySelector('#menuView .menu-head .mh-right').getBoundingClientRect();
-        const rail = document.querySelector('#rail').getBoundingClientRect();
-        return rail.top - search.bottom;
-      });
-      expect(searchGap, 'coffee rail starts below its menu controls').toBeGreaterThanOrEqual(10);
-    }
-    const gap = await page.locator(brand.rail + ' button').evaluateAll(buttons => {
-      const rects=buttons.map(button=>button.getBoundingClientRect());
-      return rects.slice(1).map((rect,i)=>rect.top-rects[i].bottom);
+    const metrics = await page.evaluate(({ viewSelector, headSelector, railSelector, filterSelector }) => {
+      const view = document.querySelector(viewSelector);
+      const head = document.querySelector(headSelector);
+      const rail = document.querySelector(railSelector);
+      const filter = filterSelector ? document.querySelector(filterSelector) : null;
+      const headRect = head.getBoundingClientRect();
+      const railRect = rail.getBoundingClientRect();
+      const filterRect = filter && !filter.hidden ? filter.getBoundingClientRect() : null;
+      const buttons = Array.from(rail.querySelectorAll('button')).map(button => button.getBoundingClientRect());
+      return {
+        parentIsView: rail.parentElement === view,
+        direction: getComputedStyle(rail).flexDirection,
+        topGap: railRect.top - headRect.bottom,
+        railBottom: railRect.bottom,
+        filterTop: filterRect ? filterRect.top : null,
+        horizontalGap: buttons.length > 1 ? buttons[1].left - buttons[0].right : -1,
+        firstTargetHeight: buttons[0] ? buttons[0].height : 0
+      };
+    }, {
+      viewSelector: brand.brand === 'coffee' ? '#menuView' : '#deliveryView',
+      headSelector: brand.head,
+      railSelector: brand.rail,
+      filterSelector: brand.brand === 'delivery' ? '#deliverySubFilterViewport' : null
     });
-    expect(gap.every(value => value >= 9), brand.brand + ' rail button gap should be at least 9px').toBe(true);
+    expect(metrics.parentIsView, brand.brand + ' rail belongs inside its menu view').toBe(true);
+    expect(metrics.direction, brand.brand + ' rail is horizontal').toBe('row');
+    expect(metrics.topGap, brand.brand + ' rail follows the search block').toBeGreaterThanOrEqual(8);
+    if (metrics.filterTop !== null) {
+      expect(metrics.railBottom, 'delivery main categories precede secondary filters').toBeLessThanOrEqual(metrics.filterTop + 1);
+    }
+    expect(metrics.horizontalGap, brand.brand + ' category buttons form a horizontal row').toBeGreaterThanOrEqual(6);
+    expect(metrics.firstTargetHeight, brand.brand + ' category target remains at least 44px').toBeGreaterThanOrEqual(44);
   }
 });
 

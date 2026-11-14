@@ -17,10 +17,12 @@ function updateRailStickyPosition(rail, head) {
 
   var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
   if (mobileViewport) {
-    var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-    var maxRailHeight = Math.max(0, viewportHeight - 24);
-    var visibleRailHeight = Math.min(rail.scrollHeight, maxRailHeight);
-    var stickyTop = Math.max(12, (viewportHeight - visibleRailHeight) / 2);
+    var topbar = document.querySelector('header.topbar');
+    var topbarStyle = topbar ? window.getComputedStyle(topbar) : null;
+    var topbarIsSticky = !!(topbarStyle && (topbarStyle.position === 'sticky' || topbarStyle.position === 'fixed'));
+    var stickyTop = topbarIsSticky && topbar
+      ? Math.ceil(topbar.getBoundingClientRect().height)
+      : 12;
     var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
 
     if (!railStickyLayout || railStickyLayout.rail !== rail) {
@@ -35,9 +37,9 @@ function updateRailStickyPosition(rail, head) {
     if (shouldStick) {
       rail.style.position = 'sticky';
       rail.style.top = stickyTop + 'px';
-      rail.style.maxHeight = maxRailHeight + 'px';
-      rail.style.overflowY = rail.scrollHeight > maxRailHeight ? 'auto' : 'visible';
-      rail.style.alignSelf = 'start';
+      rail.style.maxHeight = 'none';
+      rail.style.overflowY = 'hidden';
+      rail.style.alignSelf = 'stretch';
     } else {
       rail.style.position = 'relative';
       rail.style.top = 'auto';
@@ -73,28 +75,32 @@ function alignRailWithCard() {
   var wrap = rail.parentElement;
   if (!wrap) return;
 
-  // Keep the category rail below the full menu header in normal flow.
-  // The sticky positioning routine handles only the viewport lane.
+  // On mobile the rail is placed directly below the menu header.
+  // Desktop keeps the original catalog-row alignment in the outer grid.
+  var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
   var headRect = head && head.getBoundingClientRect();
   if (headRect && headRect.height) {
-    var wrapRect = wrap.getBoundingClientRect();
-    var wrapStyle = window.getComputedStyle(wrap);
-    var wrapContentTop = wrapRect.top
-      + (parseFloat(wrapStyle.paddingTop) || 0)
-      + (parseFloat(wrapStyle.borderTopWidth) || 0);
-    // Delivery rail is aligned to the menu card itself; it must not follow subfilter or search rows.
-    var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
-    var menuRow = head.querySelector('.menu-controls-row');
-    var modeSeg = document.getElementById('modeSeg');
-    var staffGuestMenu = !!(menuRow && modeSeg &&
-      modeSeg.closest('.menu-controls-row') === menuRow);
-    var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
-    var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
-    var catalogRect = catalog && catalog.getBoundingClientRect();
-    var desiredTop = catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
-    var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
-    if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
-    if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
+    if (mobileViewport) {
+      rail.style.removeProperty('margin-top');
+      rail.style.removeProperty('height');
+    } else {
+      var wrapRect = wrap.getBoundingClientRect();
+      var wrapStyle = window.getComputedStyle(wrap);
+      var wrapContentTop = wrapRect.top
+        + (parseFloat(wrapStyle.paddingTop) || 0)
+        + (parseFloat(wrapStyle.borderTopWidth) || 0);
+      var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
+      var menuRow = head.querySelector('.menu-controls-row');
+      var modeSeg = document.getElementById('modeSeg');
+      var staffGuestMenu = !!(menuRow && modeSeg &&
+        modeSeg.closest('.menu-controls-row') === menuRow);
+      var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
+      var catalogRect = catalog && catalog.getBoundingClientRect();
+      var desiredTop = catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
+      var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
+      if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
+      if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
+    }
   } else if (rail.style.marginTop !== '0px') {
     rail.style.marginTop = '0px';
   }
