@@ -52,7 +52,7 @@ jobs:
             workers: 1
           - group: Cart and checkout
             project: chromium
-            specs: tests/cart-regress.spec.js tests/cart-checkout-clarity.spec.js tests/tma-cart-native-checkout-ux.spec.js tests/order-tracking-contact.spec.js tests/dispatcher-cancel-action.spec.js
+            specs: tests/cart-regress.spec.js tests/cart-checkout-clarity.spec.js tests/tma-cart-native-checkout-ux.spec.js tests/order-tracking-contact.spec.js tests/delivery-card-cart-state.spec.js tests/dispatcher-cancel-action.spec.js
             workers: 2
           - group: Menu and search
             project: chromium

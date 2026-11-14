@@ -4,6 +4,11 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
 (function () {
   "use strict";
 
+  window.cart = JSON.parse(localStorage.getItem("zt_cart") || "[]").filter(function (item) {
+    return Number(item.price) > 0;
+  });
+  localStorage.setItem("zt_cart", JSON.stringify(window.cart));
+
   var activeAddonTab = "all";
   // Состояние раскрытых блоков модификаторов по индексам позиций в корзине
   var openModsMap = {};
@@ -78,33 +83,12 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     return (placeEl && placeEl.value) ? placeEl.value.trim() : "";
   }
 
-  function getDefaultDeliveryRates(normalizedPlace) {
-    var isFarZone = /синявино|покровское/i.test(normalizedPlace);
-    var isOuterZone = /куликово|яблоновка/i.test(normalizedPlace);
-    return { fee: isFarZone ? 250 : (isOuterZone ? 300 : 200) };
-  }
-
   function getDeliveryZoneRates(placeVal) {
-    var baseZoneFee = 0;
-    var normalizedPlace = String(placeVal || "").toLowerCase().trim();
-    if (!normalizedPlace) return { baseZoneFee: 0 };
-
-    if (typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones) {
-      var zone = deliveryInfo.zones.find(function (entry) {
-        return entry.places && entry.places.includes(placeVal);
-      });
-      if (zone) baseZoneFee = Number(zone.fee) || 0;
-    }
-
-    if (window.AddressModule && typeof window.AddressModule.getFee === "function") {
-      var addressFee = Number(window.AddressModule.getFee(placeVal));
-      if (addressFee > 0) baseZoneFee = addressFee;
-    }
-
-    var defaults = getDefaultDeliveryRates(normalizedPlace);
-    if (!baseZoneFee) baseZoneFee = defaults.fee;
-
-    return { baseZoneFee: baseZoneFee };
+    var zones = typeof deliveryInfo !== "undefined" && deliveryInfo && deliveryInfo.zones;
+    var zone = Array.isArray(zones) && zones.find(function (entry) {
+      return Array.isArray(entry.places) && entry.places.includes(placeVal);
+    });
+    return { baseZoneFee: zone ? (Number(zone.fee) || 0) : 0 };
   }
 
   function getLunchPromoTimeParts() {
@@ -924,6 +908,92 @@ function clearPromo() {
   renderCartBase();
 }
 
+  function getDeliveryOptions(product) {
+    if (Array.isArray(product && product.opts)) return product.opts;
+    if (product && typeof product.opts === "string") {
+      try {
+        var parsed = JSON.parse(product.opts);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {}
+    }
+    return [];
+  }
+
+  window.syncDeliveryCartPrices = function (products) {
+    var byId = new Map((products || []).map(function (product) { return [String(product.id), product]; }));
+    var changed = false;
+    cart.forEach(function (item) {
+      var product = byId.get(String(item.id));
+      if (!product) return;
+      var optionIndex = item.oi === undefined || item.oi === null || item.oi === "" ? -1 : parseInt(item.oi, 10);
+      var options = getDeliveryOptions(product);
+      var option = Number.isInteger(optionIndex) && optionIndex >= 0 ? options[optionIndex] : null;
+      if (optionIndex >= 0 && !option) return;
+      var price = option ? Number(option.p) : (Number(product.price) || 0);
+      if (!Number.isFinite(price) || price <= 0) return;
+      var nextOpt = option ? (option.l || option.name || "") : null;
+      var nextSize = option ? (Number(option.sz) || 0) : 0;
+      var previousPrice = Number(item.price) || 0;
+      if (previousPrice > 0 && previousPrice !== price && !Number(item.priceUpdateFrom)) item.priceUpdateFrom = previousPrice;
+      if (previousPrice !== price || item.name !== product.name || item.opt !== nextOpt ||
+          Number(item.sz) !== nextSize || Number(item.oi) !== optionIndex) {
+        item.price = price;
+        item.name = product.name;
+        item.opt = nextOpt;
+        item.sz = nextSize;
+        item.oi = optionIndex;
+        changed = true;
+      }
+    });
+    if (changed) localStorage.setItem("zt_cart", JSON.stringify(cart));
+    return changed;
+  };
+
+  window.addDeliveryCartItem = function (product, selection) {
+    var id = product.id;
+    var key = id + (selection.optionIndex >= 0 ? "_" + selection.optionIndex : "");
+    var existing = cart.find(function (item) { return String(item.key) === String(key); });
+    if (existing) {
+      var previousPrice = Number(existing.price) || 0;
+      if (previousPrice > 0 && previousPrice !== selection.price && !Number(existing.priceUpdateFrom)) {
+        existing.priceUpdateFrom = previousPrice;
+      }
+      existing.name = product.name;
+      existing.oi = selection.optionIndex;
+      existing.opt = selection.option ? selection.option.l : null;
+      existing.price = selection.price;
+      existing.sz = selection.option ? (Number(selection.option.sz) || 0) : 0;
+      existing.qty++;
+    } else {
+      cart.push({
+        key: key, id: id, oi: selection.optionIndex, name: product.name,
+        opt: selection.option ? selection.option.l : null,
+        price: selection.price, sz: selection.option ? (Number(selection.option.sz) || 0) : 0, qty: 1
+      });
+    }
+    persistCartUpdate();
+  };
+
+  window.adjustDeliveryCartItem = function (id, delta) {
+    var item = cart.find(function (entry) { return String(entry.id) === String(id); });
+    if (!item && delta < 0) return 0;
+    if (item) {
+      if (delta > 0) item.qty++;
+      else if (item.qty > 1) item.qty--;
+      else removeCartItemAt(cart.indexOf(item));
+      persistCartUpdate();
+    }
+    return cart.reduce(function (total, entry) {
+      return String(entry.id) === String(id) ? total + entry.qty : total;
+    }, 0);
+  };
+
+  window.replaceCartItems = function (items) {
+    var next = Array.isArray(items) ? items : [];
+    cart.splice.apply(cart, [0, cart.length].concat(next));
+    persistCartUpdate();
+  };
+
 function renderCartBase() {
     var cItems = document.getElementById("cartItems");
     if (!cItems) return;
@@ -985,10 +1055,28 @@ function renderCartBase() {
   /* ── Слушатели событий корзины ── */
   var cFabBtn = document.getElementById("cartFab");
   if (cFabBtn) {
-    cFabBtn.addEventListener("click", function () {
-      setTimeout(function () {
+    cFabBtn.addEventListener("click", async function () {
+      renderCartBase();
+      var cartScrollBody = document.getElementById("cartScrollBody");
+      if (cPanel) cPanel.classList.add("open");
+      if (typeof window.syncOverlay === "function") window.syncOverlay();
+      window.requestAnimationFrame(function () {
+        if (cartScrollBody) cartScrollBody.scrollTop = 0;
+      });
+      var checkoutButton = document.getElementById("checkoutBtn");
+      var checkoutWasDisabled = checkoutButton ? checkoutButton.disabled : false;
+      if (checkoutButton) checkoutButton.disabled = true;
+      try {
+        if (typeof window.refreshDeliveryInfo === "function") await window.refreshDeliveryInfo();
+        renderCartBase();
+      } catch (error) {
+        if (typeof window.toast === "function") {
+          window.toast("Не удалось обновить график работы. Проверьте соединение перед оформлением.", "⚠️");
+        }
+      } finally {
+        if (checkoutButton) checkoutButton.disabled = checkoutWasDisabled;
         if (typeof window.syncOverlay === "function") window.syncOverlay();
-      }, 0);
+      }
     });
   }
   var cPanel = document.getElementById("cartPanel");

@@ -1,5 +1,5 @@
-/* public/app/core/deeplink.js — Ф3.15: диплинки (brand/tab/no/support) + Telegram Mini App.
-   Было fix-views.js: секция 13 + v69 + v10-support. */
+/* public/app/core/deeplink.js — Ф3.15: диплинки (brand/tab/no/support) + Telegram Mini App. */
+import { restoreOrderItems } from './order-reorder.js';
 (function(){
 'use strict';
 
@@ -46,82 +46,7 @@ if (typeof window.__initialSearch === 'undefined') {
   })();
 
 /* ── v10-support: диплинк выбора темы поддержки (?support=choose) ── */
-(function initSupportChoose() {
-  if (QS.get('support') !== 'choose') return;
-
-  function showSupportOverlay() {
-    if (document.getElementById('supportChooseOverlay')) return;
-
-    var ov = document.createElement('div');
-    ov.id = 'supportChooseOverlay';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(16,20,24,0.65);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
-
-    ov.innerHTML = 
-      '<div style="background:#fff;border-radius:20px;padding:24px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.3);position:relative">' +
-        '<h3 style="margin:0 0 8px;font-size:18px;font-family:\'Prata\',serif;color:#123A6B">Служба заботы</h3>' +
-        '<p style="color:#586470;font-size:13px;margin:0 0 18px">Выберите тему обращения в поддержку</p>' +
-        '<div style="display:grid;gap:10px">' +
-          '<button type="button" class="btn fire" data-support-topic="delivery" style="width:100%;padding:14px;font-size:14px;border-radius:12px;background:#C03B2A;color:#fff;border:none;font-weight:700;cursor:pointer">' +
-            '🍕 Доставка («Пятница»)' +
-          '</button>' +
-          '<button type="button" class="btn ghost" data-support-topic="coffee" style="width:100%;padding:14px;font-size:14px;border-radius:12px;background:#F3F8FC;color:#123A6B;border:1.5px solid #D8DFE4;font-weight:700;cursor:pointer">' +
-            '🌊 Кофейня («…и кофе»)' +
-          '</button>' +
-        '</div>' +
-      '</div>';
-
-    document.body.appendChild(ov);
-
-    ov.addEventListener('click', function(e) {
-      var btn = e.target.closest('[data-support-topic]');
-      if (!btn) return;
-      var topic = btn.dataset.supportTopic;
-
-      ov.remove();
-
-      var chatHead = document.querySelector('#chatPanel .chat-h, #chatPanel .chatHead');
-      if (chatHead) {
-        chatHead.classList.add('chatHead');
-        var b = chatHead.querySelector('b');
-        if (b) {
-          b.textContent = topic === 'delivery' 
-            ? 'Ника · доставка («Пятница»)' 
-            : 'Ника · кофейня («…и кофе»)';
-        }
-      }
-
-      var cp = document.getElementById('chatPanel');
-      if (cp) cp.classList.add('open');
-      var fab = document.getElementById('chatFab');
-      if (fab) fab.classList.add('open');
-
-      var chipsEl = document.getElementById('chatChips');
-      if (chipsEl) {
-        var hints = topic === 'delivery'
-          ? ['🍕 Меню доставки', '🛵 Где курьер?', '⏰ Время доставки', '💳 Оплата']
-          : ['☕ Меню кофейни', '🎁 Мои бонусы', '📍 Где вы находитесь?', '⏰ Время работы'];
-        chipsEl.innerHTML = hints.map(function(h) {
-          return '<button type="button" class="chatHint">' + h + '</button>';
-        }).join('');
-      }
-
-      try {
-        if (typeof window.setChatContext === 'function') window.setChatContext(topic);
-        if (typeof window.switchChatTopic === 'function') window.switchChatTopic(topic);
-      } catch(_) {}
-
-      try {
-        history.replaceState(null, '', location.pathname);
-      } catch(_) {}
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', showSupportOverlay);
-  } else {
-    showSupportOverlay();
-  }
-})();
+/* Support topic selection and #supportChooseOverlay are owned by chat-core.js. */
 
 /* ── v69: диплинк заказов: «мой заказ» → фокус, «мои заказы» → история ── */
 (function(){
@@ -226,12 +151,10 @@ if (typeof window.__initialSearch === 'undefined') {
       if (tab === 'staff_chat') {
         const targetKey = QS.get('key');
         setTimeout(() => {
-          if (typeof window.openStaffChat === 'function') {
+          if (targetKey && typeof window.openStaffChatThread === 'function') {
+            window.openStaffChatThread(targetKey);
+          } else if (typeof window.openStaffChat === 'function') {
             window.openStaffChat();
-            if (targetKey && typeof window.openScDialog === 'function') {
-              window.scKey = targetKey;
-              setTimeout(window.openScDialog, 200);
-            }
           }
         }, 300);
       }
@@ -277,25 +200,21 @@ if (typeof window.__initialSearch === 'undefined') {
       tries++;
       if (window.me && typeof api === 'function') {
         clearInterval(ivReorder);
-        api('/orders/mine').then(function (data) {
+        api('/orders/mine').then(async function (data) {
           var order = (data.orders || []).find(function (x) { return x.id === rid; });
           if (!order) return;
-          var restored = (order.items || []).map(function (i) {
-            return {
-              key: String(i.id) + '_' + (i.opt || '0'),
-              id: i.id,
-              oi: -1,
-              name: i.name,
-              opt: i.opt || null,
-              price: Number(i.price) || 0,
-              sz: Number(i.sz) || 0,
-              qty: Number(i.qty) || 1,
-            };
-          });
-          window.cart = restored;
-          try { localStorage.setItem('zt_cart', JSON.stringify(restored)); } catch (e) {}
-          if (typeof window.updateCartFab === 'function') window.updateCartFab();
-          if (typeof window.renderCart === 'function') window.renderCart();
+          if ((!Array.isArray(window.DMENU) || !window.DMENU.length) &&
+              (order.items || []).some(function (item) { return item.opt && !Number.isInteger(item.oi); }) &&
+              typeof window.loadDelivery === 'function') {
+            await window.loadDelivery();
+          }
+          var restored = restoreOrderItems(order.items, window.DMENU);
+          if (restored.some(function (item) { return item.opt && item.oi < 0; })) {
+            if (typeof toast === 'function') toast('Не удалось восстановить вариант одной из позиций. Проверьте меню и повторите заказ.', '⚠️');
+            return;
+          }
+          if (typeof window.replaceCartItems !== 'function') return;
+          window.replaceCartItems(restored);
           if (typeof window.syncAddButtons === 'function') window.syncAddButtons();
           var cp = document.getElementById('cartPanel');
           if (cp) cp.classList.add('open');

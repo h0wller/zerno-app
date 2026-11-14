@@ -264,8 +264,8 @@ body.editing .card:hover{
   justify-content: center;
   white-space: nowrap;
   line-height: 1;
-  font-size: 11px;
-  letter-spacing: -0.02em;
+  font-size: 16px;
+  letter-spacing: 0;
 }
 .card .steprow .step:not([hidden]),
 .card .steprow [data-step]:not([hidden]) {
@@ -298,3 +298,4 @@ body.editing .card:hover{
 .card .steprow [data-step]:active {
   transform: scale(0.92);
 }
+

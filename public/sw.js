@@ -46,12 +46,12 @@ const STATIC_ASSETS = [
   '/app/ui/theme/170-profile-button.css',
   '/app/ui/brand-tokens.css',
   '/app/ui/fonts.css',
-  '/app/core/address-dict.js',
   '/app/core/address-autocomplete.js',
   '/app/core/address-book.js',
   '/app/core/preorder-timer.js',
   '/app/vendor/qrcode.min.js',
   '/app/ui/fonts/prata-400-cyrillic.woff2',
+  '/app/ui/fonts/golos-text-400.woff2',
   '/app/ui/fonts/unbounded-700-cyrillic.woff2'
 ];
 

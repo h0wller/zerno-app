@@ -140,7 +140,6 @@ export default [
   {
     files: [
       'public/app/address.js',
-      'public/app/core/address-dict.js',
       'server/domain/address.js'
     ],
     rules: {
@@ -151,7 +150,6 @@ export default [
   // 6. Классические defer-скрипты: не трогаем аргументы обработчиков событий
   {
     files: [
-      'public/app/core/address-dict.js',
       'public/app/core/address-autocomplete.js',
       'public/app/core/address-book.js',
       'public/app/core/preorder-timer.js'

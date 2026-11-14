@@ -140,6 +140,29 @@ after(async () => {
   }
 });
 
+test('delivery order totals use the published tariff for every supported settlement', async () => {
+  const token = await register('Delivery Tariff Guest', '+7 900 200-00-11');
+  const tariffs = [
+    ['Янтарный', 200], ['Покровское', 200], ['Синявино', 200],
+    ['Кленовое', 500], ['Охотное', 500], ['Русское', 500], ['Поваровка', 500],
+    ['Морозовка', 500], ['Янтаровка', 500], ['Красноторовка', 500], ['Ягодное', 500],
+    ['Донское', 1100], ['Прислово', 1100]
+  ];
+
+  const info = await request('/delivery/info');
+  assert.equal(info.status, 200, JSON.stringify(info.json));
+  for (let index = 0; index < tariffs.length; index++) {
+    const [place, fee] = tariffs[index];
+    const zone = info.json.zones.find(entry => entry.places.includes(place));
+    assert.equal(zone && zone.fee, fee, place + ' delivery zone');
+    const body = orderBody('tariff_' + String(index + 1).padStart(2, '0'), 1);
+    body.place = place;
+    const result = await request('/orders', { method: 'POST', token, body });
+    assert.equal(result.status, 200, place + ': ' + JSON.stringify(result.json));
+    assert.equal(result.json.order.total, 1000 + fee, place + ' persisted order total');
+  }
+});
+
 test('same client_order_id replays one order and consumes a promo only once', async () => {
   const token = await register('Idempotency Guest', '+7 900 200-00-01');
   const body = orderBody('ord_retry_same_001', 1, 'RETRY10');
@@ -162,6 +185,7 @@ test('same client_order_id replays one order and consumes a promo only once', as
   assert.equal(retry.status, 200, JSON.stringify(retry.json));
   assert.equal(retry.json.order.id, first.json.order.id);
   assert.equal(retry.json.order.no, first.json.order.no);
+  assert.equal(first.json.order.items[0].oi, 1, 'persist the selected option index for reorder');
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 1);
   assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, '41');
   assert.equal(db.prepare("SELECT uses FROM promos WHERE code='RETRY10'").get().uses, 1);
