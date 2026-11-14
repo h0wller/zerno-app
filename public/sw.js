@@ -51,6 +51,7 @@ const STATIC_ASSETS = [
   '/app/core/preorder-timer.js',
   '/app/vendor/qrcode.min.js',
   '/app/ui/fonts/prata-400-cyrillic.woff2',
+  '/app/ui/fonts/golos-text-400.woff2',
   '/app/ui/fonts/unbounded-700-cyrillic.woff2'
 ];
 
