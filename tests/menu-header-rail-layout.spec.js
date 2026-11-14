@@ -453,7 +453,7 @@ test('mobile category navigation is horizontal, full-width and follows search fo
 });
 
 
-test('mobile primary category navigation is visually distinct from secondary filter chips', async ({ page }, testInfo) => {
+test('mobile category navigation carries each storefront brand identity and stays distinct from secondary filters', async ({ page }, testInfo) => {
   for (const brand of CASES) {
     for (const viewport of [
       { width: 320, height: 740 },
@@ -466,59 +466,87 @@ test('mobile primary category navigation is visually distinct from secondary fil
         sessionStorage.setItem('splashDone', '1');
       });
       await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
-      await expect(page.locator(brand.rail + ' button').first()).toBeVisible({ timeout: 10000 });
+      await expect(page.locator(brand.rail + ' button.on')).toBeVisible({ timeout: 10000 });
       if (brand.brand === 'delivery') {
         await expect(page.locator('#deliverySubFilter .subchip').first()).toBeVisible({ timeout: 15000 });
       }
 
       const metrics = await page.evaluate(({ railSelector, brandName }) => {
         const rail = document.querySelector(railSelector);
-        const button = rail && (rail.querySelector('button.on') || rail.querySelector('button'));
-        const buttonStyle = button && getComputedStyle(button);
-        const railRect = rail && rail.getBoundingClientRect();
-        const buttonRect = button && button.getBoundingClientRect();
-        const icon = button && button.querySelector('.re');
-        const iconRect = icon && icon.getBoundingClientRect();
+        const button = rail.querySelector('button.on');
+        const buttonStyle = getComputedStyle(button);
+        const railStyle = getComputedStyle(rail);
+        const buttonRect = button.getBoundingClientRect();
+        const icon = button.querySelector('.re');
+        const iconStyle = getComputedStyle(icon);
         const subchip = brandName === 'delivery'
           ? document.querySelector('#deliverySubFilter .subchip')
           : null;
-        const subchipStyle = subchip && getComputedStyle(subchip);
         const subchipRect = subchip && subchip.getBoundingClientRect();
         const subchipPseudo = subchip && getComputedStyle(subchip, '::before');
 
         return {
-          railHeight: railRect ? railRect.height : 0,
-          buttonHeight: buttonRect ? buttonRect.height : 0,
-          buttonDirection: buttonStyle ? buttonStyle.flexDirection : '',
-          buttonRadius: buttonStyle ? buttonStyle.borderRadius : '',
-          buttonBackground: buttonStyle ? buttonStyle.backgroundColor : '',
-          activeBottomBorderWidth: buttonStyle ? buttonStyle.borderBottomWidth : '',
-          activeBottomBorderColor: buttonStyle ? buttonStyle.borderBottomColor : '',
-          iconFontSize: icon ? Number.parseFloat(getComputedStyle(icon).fontSize) : 0,
+          railHeight: rail.getBoundingClientRect().height,
+          railBackground: railStyle.backgroundColor,
+          railBorderWidth: railStyle.borderTopWidth,
+          railRadius: railStyle.borderTopLeftRadius,
+          railShadow: railStyle.boxShadow,
+          buttonHeight: buttonRect.height,
+          buttonDirection: buttonStyle.flexDirection,
+          buttonBackground: buttonStyle.backgroundColor,
+          buttonColor: buttonStyle.color,
+          buttonBorderWidth: buttonStyle.borderTopWidth,
+          buttonRadius: buttonStyle.borderTopLeftRadius,
+          buttonShadow: buttonStyle.boxShadow,
+          labelFont: buttonStyle.fontFamily,
+          iconSize: iconStyle.width,
+          iconBackground: iconStyle.backgroundColor,
+          iconColor: iconStyle.color,
+          iconBorderWidth: iconStyle.borderTopWidth,
+          iconRadius: iconStyle.borderTopLeftRadius,
           subchipHeight: subchipRect ? subchipRect.height : null,
           subchipRadius: subchipPseudo ? subchipPseudo.borderRadius : null,
           subchipBorderWidth: subchipPseudo ? subchipPseudo.borderTopWidth : null,
         };
       }, { railSelector: brand.rail, brandName: brand.brand });
 
-      expect(metrics.railHeight, brand.brand + ' category navigation reserves its own visual row').toBeGreaterThanOrEqual(68);
-      expect(metrics.buttonHeight, brand.brand + ' category tabs retain a generous 44px+ hit area').toBeGreaterThanOrEqual(60);
+      expect(metrics.railHeight, brand.brand + ' category rail reserves its own visual row').toBeGreaterThanOrEqual(68);
+      expect(metrics.buttonHeight, brand.brand + ' category tabs retain a 60px+ hit area').toBeGreaterThanOrEqual(60);
       expect(metrics.buttonDirection, brand.brand + ' category icon sits above its label').toBe('column');
-      expect(metrics.buttonRadius, brand.brand + ' category tabs are not rounded filter chips').toBe('0px');
-      expect(metrics.buttonBackground, brand.brand + ' category tabs use an opaque surface for readable labels').not.toBe('rgba(0, 0, 0, 0)');
-      expect(metrics.activeBottomBorderWidth, brand.brand + ' active category uses a navigation indicator').toBe('3px');
-      expect(metrics.activeBottomBorderColor, brand.brand + ' active category indicator is visible').not.toBe('rgba(0, 0, 0, 0)');
-      expect(metrics.iconFontSize, brand.brand + ' category icon remains visually prominent').toBeGreaterThanOrEqual(20);
+      expect(metrics.iconSize, brand.brand + ' icon badge remains a distinct 30px mark').toBe('30px');
+      expect(metrics.buttonRadius, brand.brand + ' tabs are visibly shaped, not plain text').not.toBe('0px');
+      expect(metrics.buttonBackground, brand.brand + ' active tab has a brand surface').not.toBe('rgba(0, 0, 0, 0)');
 
-      if (brand.brand === 'delivery') {
-        await expect(page.locator('#deliverySubFilter .subchip').first()).toBeVisible({ timeout: 15000 });
-        expect(metrics.subchipHeight, 'delivery secondary filters remain compact chips').toBe(44);
-        expect(metrics.subchipRadius, 'delivery secondary filters retain the pill shape').toContain('999');
-        expect(Number.parseFloat(metrics.subchipBorderWidth), 'delivery secondary filters retain their own outline').toBeGreaterThan(0);
-        expect(metrics.buttonHeight, 'primary category tabs are taller than the secondary filter controls').toBeGreaterThan(metrics.subchipHeight);
+      if (brand.brand === 'coffee') {
+        expect(metrics.railBackground, 'coffee rail uses the ocean-blue surface').toBe('rgb(234, 241, 249)');
+        expect(metrics.railBorderWidth, 'coffee rail uses a light outline').toBe('1px');
+        expect(metrics.railRadius, 'coffee rail uses a softer rounded frame').toBe('16px');
+        expect(metrics.buttonBackground, 'coffee active tab uses a clean white surface').toBe('rgb(255, 255, 255)');
+        expect(metrics.buttonColor, 'coffee active label uses the deep ocean blue').toBe('rgb(18, 58, 107)');
+        expect(metrics.buttonBorderWidth, 'coffee active tab uses a fine blue outline').toBe('1px');
+        expect(metrics.buttonShadow, 'coffee active tab uses a soft shadow').toContain('rgba(18, 58, 107');
+        expect(metrics.iconBackground, 'coffee icon uses a pale blue badge').toBe('rgb(18, 58, 107)');
+        expect(metrics.iconRadius, 'coffee icon is circular').toBe('50%');
+        expect(metrics.labelFont, 'coffee labels use the coffee typeface').toContain('Golos Text');
       }
 
-      await testInfo.attach(brand.brand + '-category-vs-filter-hierarchy-' + viewport.width + 'px', {
+      if (brand.brand === 'delivery') {
+        expect(metrics.railBackground, 'Friday rail uses kraft paper').toBe('rgb(239, 230, 216)');
+        expect(metrics.railBorderWidth, 'Friday rail uses its dark craft outline').toBe('2px');
+        expect(metrics.railShadow, 'Friday rail uses the offset craft shadow').toContain('2px 2px 0px rgb(58, 42, 28)');
+        expect(metrics.buttonBackground, 'Friday active tab uses terracotta').toBe('rgb(192, 59, 42)');
+        expect(metrics.buttonColor, 'Friday active label remains white on terracotta').toBe('rgb(255, 255, 255)');
+        expect(metrics.buttonBorderWidth, 'Friday active tab uses the dark outline').toBe('2px');
+        expect(metrics.iconBackground, 'Friday active icon badge uses paper').toBe('rgb(246, 238, 225)');
+        expect(metrics.iconRadius, 'Friday icon badge uses the squared craft shape').toBe('8px');
+        expect(metrics.labelFont, 'Friday labels use the display typeface').toContain('Unbounded');
+        expect(metrics.subchipHeight, 'secondary filters remain compact chips').toBe(44);
+        expect(metrics.subchipRadius, 'secondary filters retain the pill shape').toContain('999');
+        expect(Number.parseFloat(metrics.subchipBorderWidth), 'secondary filters retain their own outline').toBeGreaterThan(0);
+        expect(metrics.buttonHeight, 'primary category tabs stay taller than secondary filters').toBeGreaterThan(metrics.subchipHeight);
+      }
+
+      await testInfo.attach(brand.brand + '-category-brand-identity-' + viewport.width + 'px', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
