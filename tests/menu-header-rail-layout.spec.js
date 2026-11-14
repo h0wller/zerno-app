@@ -337,3 +337,100 @@ test('delivery: pizza option labels use compact typography only at 320px', async
     expect(fontSizes).toEqual({ ...viewport.expected, crustsFit: true });
   }
 });
+
+
+test('mobile category navigation is horizontal, full-width and follows search for both brands', async ({ page }, testInfo) => {
+  for (const brand of CASES) {
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        sessionStorage.setItem('splashDone', '1');
+      });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const view = brand.brand === 'coffee' ? '#menuView' : '#deliveryView';
+      const rail = page.locator(brand.rail);
+      const head = page.locator(brand.head);
+      const grid = page.locator(brand.brand === 'coffee' ? '#grid' : '#deliveryGrid');
+
+      await expect(head).toBeVisible({ timeout: 10000 });
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+
+      const geometry = await page.evaluate(({ viewSelector, railSelector, headSelector, gridSelector, brandName }) => {
+        const viewEl = document.querySelector(viewSelector);
+        const railEl = document.querySelector(railSelector);
+        const headEl = document.querySelector(headSelector);
+        const gridEl = document.querySelector(gridSelector);
+        const filterEl = brandName === 'delivery'
+          ? document.querySelector('#deliverySubFilterViewport')
+          : null;
+        const rr = railEl.getBoundingClientRect();
+        const hr = headEl.getBoundingClientRect();
+        const gr = gridEl.getBoundingClientRect();
+        const fr = filterEl && !filterEl.hidden ? filterEl.getBoundingClientRect() : null;
+        const buttons = Array.from(railEl.querySelectorAll('button')).map(button => {
+          const rect = button.getBoundingClientRect();
+          return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, height: rect.height };
+        });
+        return {
+          parent: railEl.parentElement,
+          parentIsView: railEl.parentElement === viewEl,
+          display: getComputedStyle(railEl).display,
+          direction: getComputedStyle(railEl).flexDirection,
+          width: rr.width,
+          height: rr.height,
+          clientWidth: railEl.clientWidth,
+          scrollWidth: railEl.scrollWidth,
+          headLeft: hr.left,
+          headRight: hr.right,
+          headBottom: hr.bottom,
+          railLeft: rr.left,
+          railRight: rr.right,
+          railTop: rr.top,
+          railBottom: rr.bottom,
+          filterTop: fr ? fr.top : null,
+          gridLeft: gr.left,
+          gridRight: gr.right,
+          buttonCount: buttons.length,
+          buttons,
+          viewportWidth: document.documentElement.clientWidth,
+          documentWidth: document.documentElement.scrollWidth,
+        };
+      }, {
+        viewSelector: view,
+        railSelector: brand.rail,
+        headSelector: brand.head,
+        gridSelector: brand.brand === 'coffee' ? '#grid' : '#deliveryGrid',
+        brandName: brand.brand,
+      });
+
+      expect(geometry.parentIsView, brand.brand + ' rail belongs to its active menu view on mobile').toBe(true);
+      expect(geometry.display).toBe('flex');
+      expect(geometry.direction, brand.brand + ' categories render in one horizontal row').toBe('row');
+      expect(geometry.height, brand.brand + ' category row stays compact').toBeLessThanOrEqual(76);
+      expect(geometry.railTop, brand.brand + ' categories follow the search/header block').toBeGreaterThan(geometry.headBottom);
+      expect(geometry.railLeft, brand.brand + ' category row begins at the menu content edge').toBeCloseTo(geometry.headLeft, 0);
+      expect(geometry.railRight, brand.brand + ' category row spans the full menu width').toBeCloseTo(geometry.headRight, 0);
+      expect(geometry.gridLeft, brand.brand + ' catalog uses the full content width').toBeCloseTo(geometry.headLeft, 0);
+      expect(geometry.gridRight, brand.brand + ' catalog reaches the content right edge').toBeCloseTo(geometry.headRight, 0);
+      expect(geometry.buttonCount).toBeGreaterThan(1);
+      expect(geometry.buttons[1].left, brand.brand + ' second category is next to the first').toBeGreaterThan(geometry.buttons[0].right);
+      expect(geometry.buttons[0].height, brand.brand + ' category tap targets remain at least 44px').toBeGreaterThanOrEqual(44);
+      if (geometry.filterTop !== null) {
+        expect(geometry.railBottom, 'delivery categories precede the secondary filters').toBeLessThanOrEqual(geometry.filterTop + 1);
+      }
+      expect(geometry.documentWidth, brand.brand + ' horizontal category rail does not create page overflow').toBeLessThanOrEqual(geometry.viewportWidth + 1);
+
+      await testInfo.attach(brand.brand + '-horizontal-categories-' + viewport.width + 'px', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  }
+});
