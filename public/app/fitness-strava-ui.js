@@ -339,6 +339,17 @@
     window.ztBus.on('auth:user-changed', function () { render(); });
   }
 
+  function refreshAfterExternalAuth() {
+    var section = document.getElementById(SECTION_ID);
+    if (!section || section.hidden || !section.dataset.customerId) return;
+    status = null;
+    refreshStatus(section);
+  }
+
+  window.addEventListener('focus', refreshAfterExternalAuth);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') refreshAfterExternalAuth();
+  });
   document.addEventListener('DOMContentLoaded', render, { once: true });
   if (document.readyState !== 'loading') render();
 
