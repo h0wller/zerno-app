@@ -151,10 +151,11 @@ test('delivery order totals use the published tariff for every supported settlem
 
   const info = await request('/delivery/info');
   assert.equal(info.status, 200, JSON.stringify(info.json));
-  for (const [place, fee] of tariffs) {
+  for (let index = 0; index < tariffs.length; index++) {
+    const [place, fee] = tariffs[index];
     const zone = info.json.zones.find(entry => entry.places.includes(place));
     assert.equal(zone && zone.fee, fee, place + ' delivery zone');
-    const body = orderBody('tariff_' + encodeURIComponent(place), 1);
+    const body = orderBody('tariff_' + String(index + 1).padStart(2, '0'), 1);
     body.place = place;
     const result = await request('/orders', { method: 'POST', token, body });
     assert.equal(result.status, 200, place + ': ' + JSON.stringify(result.json));
