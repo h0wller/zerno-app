@@ -9,7 +9,12 @@ const VIEWPORTS = [
   { name: 'narrow mobile', width: 320, height: 740 },
   { name: 'mobile', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
+  { name: 'breakpoint edge', width: 821, height: 900 },
+  { name: 'compact landscape desktop', width: 844, height: 390 },
+  { name: 'small desktop', width: 1024, height: 768 },
+  { name: 'laptop', width: 1181, height: 820 },
   { name: 'desktop', width: 1440, height: 900 },
+  { name: 'wide desktop', width: 1600, height: 1000 },
 ];
 
 for (const brand of CASES) {
