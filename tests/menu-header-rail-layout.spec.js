@@ -561,3 +561,95 @@ test('mobile category navigation carries each storefront brand identity and stay
     }
   }
 });
+
+
+test('mobile category navigation exposes usable scrolling and spacing across portrait and landscape viewports', async ({ page }, testInfo) => {
+  const viewports = [
+    { name: '320 portrait', width: 320, height: 740 },
+    { name: '360 portrait', width: 360, height: 800 },
+    { name: '375 portrait', width: 375, height: 812 },
+    { name: '390 portrait', width: 390, height: 844 },
+    { name: '414 portrait', width: 414, height: 896 },
+    { name: '520 portrait', width: 520, height: 900 },
+    { name: '690 portrait', width: 690, height: 960 },
+    { name: '820 portrait', width: 820, height: 1024 },
+    { name: '568 short landscape', width: 568, height: 320 },
+    { name: '667 landscape', width: 667, height: 375 },
+    { name: '820 landscape', width: 820, height: 390 },
+  ];
+
+  for (const brand of CASES) {
+    for (const viewport of viewports) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        sessionStorage.setItem('splashDone', '1');
+      });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const rail = page.locator(brand.rail);
+      const grid = page.locator(brand.brand === 'coffee' ? '#grid' : '#deliveryGrid');
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+
+      const before = await page.evaluate(({ railSelector, brandName }) => {
+        const rail = document.querySelector(railSelector);
+        const firstCard = document.querySelector(brandName === 'coffee' ? '#grid .card' : '#deliveryGrid .card');
+        const filter = brandName === 'delivery' ? document.querySelector('#deliverySubFilterViewport') : null;
+        const railRect = rail.getBoundingClientRect();
+        const cardRect = firstCard.getBoundingClientRect();
+        const filterRect = filter && !filter.hidden ? filter.getBoundingClientRect() : null;
+        const style = getComputedStyle(rail);
+        const buttons = [...rail.querySelectorAll('button')];
+        const first = buttons[0]?.getBoundingClientRect();
+        return {
+          width: rail.clientWidth,
+          scrollWidth: rail.scrollWidth,
+          overflowX: style.overflowX,
+          scrollbarWidth: style.scrollbarWidth,
+          gap: Number.parseFloat(style.columnGap || style.gap) || 0,
+          railBottom: railRect.bottom,
+          cardTop: cardRect.top,
+          filterTop: filterRect?.top ?? null,
+          filterBottom: filterRect?.bottom ?? null,
+          firstButtonHeight: first?.height ?? 0,
+          buttonDirection: buttons[0] ? getComputedStyle(buttons[0]).flexDirection : '',
+          viewportWidth: document.documentElement.clientWidth,
+          documentWidth: document.documentElement.scrollWidth,
+          pageCanScroll: document.documentElement.scrollHeight > document.documentElement.clientHeight,
+        };
+      }, { railSelector: brand.rail, brandName: brand.brand });
+
+      expect(before.overflowX, brand.brand + ' rail uses a real horizontal scroll container at ' + viewport.name).toBe('auto');
+      expect(before.scrollbarWidth, brand.brand + ' rail keeps a visible native scroll affordance at ' + viewport.name).toBe('thin');
+      expect(before.gap, brand.brand + ' rail keeps deliberate spacing between categories at ' + viewport.name).toBeGreaterThanOrEqual(8);
+      expect(before.firstButtonHeight, brand.brand + ' category targets remain comfortably tappable at ' + viewport.name).toBeGreaterThanOrEqual(60);
+      expect(before.buttonDirection, brand.brand + ' category icon and label remain vertically grouped at ' + viewport.name).toBe('column');
+      expect(before.documentWidth, brand.brand + ' rail never widens the page at ' + viewport.name).toBeLessThanOrEqual(before.viewportWidth + 1);
+      expect(before.pageCanScroll, brand.brand + ' catalog remains vertically scrollable at ' + viewport.name).toBe(true);
+
+      if (brand.brand === 'coffee') {
+        expect(before.cardTop - before.railBottom, 'coffee rail leaves a visible gap before the first card at ' + viewport.name).toBeGreaterThanOrEqual(12);
+      } else {
+        expect(before.filterTop - before.railBottom, 'delivery main categories and secondary filters remain distinct at ' + viewport.name).toBeGreaterThanOrEqual(6);
+        expect(before.cardTop - before.filterBottom, 'delivery filters leave breathing room before the catalog at ' + viewport.name).toBeGreaterThanOrEqual(12);
+      }
+
+      if (before.scrollWidth > before.width + 1) {
+        await rail.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+        await expect.poll(() => rail.evaluate((element) => {
+          const last = element.querySelector('button:last-child').getBoundingClientRect();
+          const bounds = element.getBoundingClientRect();
+          return bounds.right - last.right;
+        })).toBeGreaterThanOrEqual(-1);
+        await rail.evaluate((element) => { element.scrollLeft = 0; });
+      }
+
+      await testInfo.attach(brand.brand + '-' + viewport.name.replaceAll(' ', '-') + '-navigation', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  }
+});
