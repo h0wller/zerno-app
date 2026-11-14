@@ -580,10 +580,12 @@ async function refreshPromoLine(sum) {
     if (!rail || !prev || !next) return;
 
     var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    var startOffset = parseFloat(window.getComputedStyle(rail).paddingLeft) || 0;
+    var atStart = rail.scrollLeft <= startOffset + 1;
     var hasOverflow = maxScroll > 1;
     prev.hidden = !hasOverflow;
     next.hidden = !hasOverflow;
-    prev.disabled = !hasOverflow || rail.scrollLeft <= 1;
+    prev.disabled = !hasOverflow || atStart;
     next.disabled = !hasOverflow || rail.scrollLeft >= maxScroll - 1;
     frame.classList.toggle("has-overflow", hasOverflow);
   }
@@ -623,7 +625,8 @@ async function refreshPromoLine(sum) {
       var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
       var delta = event.deltaMode === 1 ? event.deltaY * 40
         : (event.deltaMode === 2 ? event.deltaY * rail.clientWidth : event.deltaY);
-      var canMove = delta > 0 ? rail.scrollLeft < maxScroll - 1 : rail.scrollLeft > 1;
+      var startOffset = parseFloat(window.getComputedStyle(rail).paddingLeft) || 0;
+      var canMove = delta > 0 ? rail.scrollLeft < maxScroll - 1 : rail.scrollLeft > startOffset + 1;
       if (!canMove) return;
 
       event.preventDefault();
