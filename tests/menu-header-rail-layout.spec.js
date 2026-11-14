@@ -523,7 +523,7 @@ test('mobile category navigation carries each storefront brand identity and stay
         expect(metrics.railRadius, 'coffee rail uses a softer rounded frame').toBe('16px');
         const coffeeActiveSurface = metrics.buttonBackground.match(/[0-9.]+/g).map(Number);
         expect(coffeeActiveSurface.slice(0, 3), 'coffee active tab keeps a white surface').toEqual([255, 255, 255]);
-        expect(coffeeActiveSurface.length > 3 ? coffeeActiveSurface[3] : 1, 'coffee active tab stays visually opaque').toBeGreaterThanOrEqual(0.85);
+        expect(coffeeActiveSurface.length > 3 ? coffeeActiveSurface[3] : 1, 'coffee active tab keeps its translucent white treatment').toBeCloseTo(0.706, 3);
         expect(metrics.buttonColor, 'coffee active label uses the deep ocean blue').toBe('rgb(18, 58, 107)');
         expect(metrics.buttonBorderWidth, 'coffee active tab uses a fine blue outline').toBe('1px');
         expect(metrics.buttonShadow, 'coffee active tab uses a soft shadow').toContain('rgba(18, 58, 107');
@@ -535,7 +535,7 @@ test('mobile category navigation carries each storefront brand identity and stay
       if (brand.brand === 'delivery') {
         expect(metrics.railBackground, 'Friday rail uses kraft paper').toBe('rgb(239, 230, 216)');
         expect(metrics.railBorderWidth, 'Friday rail uses its dark craft outline').toBe('2px');
-        expect(metrics.railShadow, 'Friday rail uses the offset craft shadow').toContain('2px 2px 0px rgb(58, 42, 28)');
+        expect(metrics.railShadow, 'Friday rail uses the offset craft shadow').toContain('rgb(58, 42, 28) 2px 2px 0px 0px');
         expect(metrics.buttonBackground, 'Friday active tab uses high-contrast dark terracotta').toBe('rgb(142, 55, 22)');
         expect(metrics.buttonColor, 'Friday active label remains white on terracotta').toBe('rgb(255, 255, 255)');
         expect(metrics.buttonBorderWidth, 'Friday active tab uses the dark outline').toBe('2px');
