@@ -618,6 +618,9 @@ test('mobile category navigation exposes usable scrolling and spacing across por
           viewportWidth: document.documentElement.clientWidth,
           documentWidth: document.documentElement.scrollWidth,
           pageCanScroll: document.documentElement.scrollHeight > document.documentElement.clientHeight,
+          hasOverflowCue: rail.classList.contains('has-overflow'),
+          atEndCue: rail.classList.contains('at-end'),
+          cueContent: getComputedStyle(rail, '::after').content,
         };
       }, { railSelector: brand.rail, brandName: brand.brand });
 
@@ -637,6 +640,14 @@ test('mobile category navigation exposes usable scrolling and spacing across por
       }
 
       if (before.scrollWidth > before.width + 1) {
+        expect(before.hasOverflowCue, brand.brand + ' shows a directional cue when more categories are available at ' + viewport.name).toBe(true);
+        expect(before.atEndCue, brand.brand + ' starts with the directional cue visible at ' + viewport.name).toBe(false);
+        expect(before.cueContent, brand.brand + ' uses a visible next-category affordance at ' + viewport.name).toBe('"›"');
+        await rail.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+        await expect.poll(() => rail.evaluate((element) => element.classList.contains('at-end'))).toBe(true);
+        await expect.poll(() => rail.evaluate((element) => getComputedStyle(element, '::after').opacity)).toBe('0');
+        await rail.evaluate((element) => { element.scrollLeft = 0; });
+        await expect.poll(() => rail.evaluate((element) => element.classList.contains('at-end'))).toBe(false);
         await rail.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
         await expect.poll(() => rail.evaluate((element) => {
           const last = element.querySelector('button:last-child').getBoundingClientRect();
