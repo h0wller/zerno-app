@@ -874,3 +874,73 @@ test('delivery desktop single-meta cards reserve the same composition slot when 
   expect(Math.abs(drinks.cardHeight - sets.cardHeight), 'switching between categories must not change the first card row height').toBeLessThanOrEqual(1);
   expect(Math.abs(drinks.secondRowTop - sets.secondRowTop), 'the next grid row must not jump when a category has no composition chips').toBeLessThanOrEqual(1);
 });
+
+test('delivery desktop single-meta cards keep equal description and composition slots across categories', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#deliveryRail')).toBeVisible({ timeout: 10000 });
+
+  const fixtures = [
+    ...Array.from({ length: 4 }, (_, index) => ({
+      id: 'fixture-drink-' + index,
+      cat: 'drinks',
+      name: 'Холодный чай ' + index,
+      desc: 'Чёрный чай, натуральный лимонный сок, тростниковый сахар, свежая мята и лёд. Освежающий напиток для жаркого дня.',
+      comp: [],
+      vol: '500 мл',
+      price: '250',
+      opts: [],
+      on: true,
+    })),
+    ...Array.from({ length: 4 }, (_, index) => ({
+      id: 'fixture-set-' + index,
+      cat: 'sets',
+      name: 'Сет роллов ' + index,
+      desc: '',
+      comp: ['Филадельфия', 'Калифорния', 'Угорь', 'Лосось'],
+      vol: '32 шт.',
+      price: '1290',
+      opts: [],
+      on: true,
+    })),
+  ];
+
+  await page.evaluate((items) => { window.DMENU = items; }, fixtures);
+
+  const measure = async (category) => {
+    await page.locator('#deliveryRail [data-dcat="' + category + '"]').click();
+    await expect(page.locator('#deliveryGrid .card').first()).toContainText(
+      category === 'drinks' ? 'Холодный чай' : 'Сет роллов',
+      { timeout: 10000 }
+    );
+    return page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card'));
+      const first = cards[0];
+      const firstTop = first.getBoundingClientRect().top;
+      const secondRow = cards.find(card => card.getBoundingClientRect().top > firstTop + 1);
+      const desc = first.querySelector('.cbody > .desc');
+      const comp = first.querySelector('.cbody > .comp');
+      return {
+        cardHeight: first.getBoundingClientRect().height,
+        secondRowTop: secondRow ? secondRow.getBoundingClientRect().top : null,
+        descHeight: desc ? desc.getBoundingClientRect().height : null,
+        compHeight: comp ? comp.getBoundingClientRect().height : null,
+        descText: desc ? desc.textContent.trim() : null,
+        compHasChips: !!(comp && comp.children.length),
+      };
+    });
+  };
+
+  const drinks = await measure('drinks');
+  const sets = await measure('sets');
+
+  expect(drinks.descHeight).toBe(37);
+  expect(sets.descHeight).toBe(37);
+  expect(drinks.compHeight).toBe(100);
+  expect(sets.compHeight).toBe(100);
+  expect(drinks.compHasChips).toBe(false);
+  expect(sets.compHasChips).toBe(true);
+  expect(Math.abs(drinks.cardHeight - sets.cardHeight), 'description length must not change the category row height').toBeLessThanOrEqual(1);
+  expect(Math.abs(drinks.secondRowTop - sets.secondRowTop), 'the second row must not jump between drinks and sets').toBeLessThanOrEqual(1);
+});
