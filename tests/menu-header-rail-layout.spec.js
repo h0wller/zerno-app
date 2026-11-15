@@ -97,8 +97,8 @@ for (const brand of CASES) {
       }, { headSelector: brand.head, railSelector: brand.rail });
 
       if (horizontalRail) {
-        expect(layout.railPosition, 'mobile rail uses native sticky positioning before any scroll event')
-          .toBe(viewport.width <= 820 ? 'sticky' : 'relative');
+        expect(layout.railPosition, 'mobile rail starts in normal document flow before reaching its pin threshold')
+          .toBe('relative');
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
         expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
       }
@@ -132,8 +132,8 @@ for (const brand of CASES) {
 
       const railTopBeforeScroll = await rail.evaluate(el => el.getBoundingClientRect().top);
       if (viewport.width <= 820) {
-        const initialStickyTop = await rail.evaluate(el => parseFloat(getComputedStyle(el).top));
-        expect(initialStickyTop).toBeGreaterThanOrEqual(0);
+        const initialPosition = await rail.evaluate(el => getComputedStyle(el).position);
+        expect(initialPosition).toBe('relative');
       }
       await page.evaluate(() => window.scrollTo(0, 500));
       if (viewport.width <= 820) {
@@ -155,9 +155,11 @@ for (const brand of CASES) {
         await expect.poll(() => rail.evaluate(el => el.classList.contains('rail-scroll-hidden')))
           .toBe(true);
         await expect(rail).toBeHidden();
+        await expect(rail).toHaveClass(/rail-is-pinned/);
+        await expect(rail).toHaveCSS('position', 'fixed');
 
-        // Hidden must not mean "left behind": native sticky must keep the rail
-        // at the same viewport coordinate across continued page movement.
+        // The pinned rail must remain at the same viewport coordinate over
+        // further scroll movement, then become visible there after scroll idle.
         const pinnedTopAt500 = await rail.evaluate(el => el.getBoundingClientRect().top);
         await page.evaluate(() => window.scrollTo(0, 700));
         await expect.poll(() => rail.evaluate(el => Math.abs(el.getBoundingClientRect().top - 12)),
@@ -178,6 +180,8 @@ for (const brand of CASES) {
         await expect.poll(() => rail.evaluate(el => el.classList.contains('rail-scroll-hidden')), { timeout: 5000 })
           .toBe(false);
         await expect(rail).toBeVisible();
+        await expect(rail).toHaveCSS('position', 'fixed');
+        await expect(rail).toHaveClass(/rail-is-pinned/);
         await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
