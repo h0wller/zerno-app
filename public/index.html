@@ -2423,9 +2423,9 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    height: 67px;
-    min-height: 67px;
-    max-height: 67px;
+    height: 64px;
+    min-height: 64px;
+    max-height: 64px;
     margin: 10px 0 12px;
     padding: 0;
     border: 0;
@@ -2448,16 +2448,16 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
     width: 0;
     min-width: 0;
     max-width: none;
-    height: auto;
+    height: 64px;
     min-height: 64px;
-    max-height: none;
+    max-height: 64px;
     margin: 0;
     padding: 6px 2px 8px;
     border: 0;
     border-bottom: 3px solid transparent;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
+    border-radius: var(--category-tab-radius, 12px);
+    background: var(--category-tab-bg, transparent);
+    box-shadow: var(--category-tab-shadow, none);
     color: var(--category-tab-color, var(--ink, #101418));
     font-family: var(--category-label-font, "Golos Text", system-ui, sans-serif);
     font-size: clamp(8.5px, 2.4vw, 10.5px);
@@ -2481,21 +2481,21 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
     min-width: 24px;
     height: 24px;
     margin: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    color: inherit;
+    border: var(--category-icon-border, 0);
+    border-radius: var(--category-icon-radius, 50%);
+    background: var(--category-icon-bg, transparent);
+    color: var(--category-icon-color, currentColor);
     font-size: 21px;
     line-height: 1;
   }
   html body #menuView #rail button.on,
   html body #deliveryView #deliveryRail button.on {
     border: 0;
-    border-bottom: 3px solid var(--category-tab-active-color, #123A6B);
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    color: var(--category-tab-color, var(--ink, #101418));
+    border-bottom: 3px solid var(--flame, currentColor);
+    border-radius: var(--category-tab-radius, 12px);
+    background: var(--category-tab-active-bg, transparent);
+    box-shadow: var(--category-tab-active-shadow, none);
+    color: var(--category-tab-active-color, var(--category-tab-color, currentColor));
     font-weight: 800;
     transform: none;
   }
