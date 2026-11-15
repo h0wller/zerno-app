@@ -6,7 +6,7 @@ var observedRailTopbar = null;
 
 var railStickyLayout = null;
 var railDesktopAnchor = null;
-var railAnchorReady = !(document.fonts && document.fonts.ready);
+var railAnchorReady = false;
 
 function usesHorizontalCategoryRailViewport() {
   if (window.matchMedia) {
@@ -158,15 +158,25 @@ function alignRailWithCard() {
 }
 window.alignRailWithCard = alignRailWithCard;
 
-if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function') {
-  document.fonts.ready.then(function () {
+function settleInitialRailAnchor() {
+  var fontsReady = document.fonts && document.fonts.ready;
+  function finalize() {
     railAnchorReady = true;
     railDesktopAnchor = null;
     alignRailWithCard();
-  }, function () {
-    railAnchorReady = true;
-    alignRailWithCard();
-  });
+  }
+  if (fontsReady && typeof fontsReady.then === 'function') {
+    fontsReady.then(finalize, finalize);
+  } else {
+    finalize();
+  }
+}
+if (document.readyState === 'complete') {
+  settleInitialRailAnchor();
+} else {
+  // Wait until stylesheets are loaded before taking the font-ready snapshot;
+  // otherwise an early empty FontFaceSet promise can resolve before theme CSS.
+  window.addEventListener('load', settleInitialRailAnchor, { once: true });
 }
 
 var railScrollTick = false;

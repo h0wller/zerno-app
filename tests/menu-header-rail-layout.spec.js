@@ -64,6 +64,7 @@ for (const brand of CASES) {
         expect(searchGap, 'coffee rail starts below search/support row').toBeGreaterThanOrEqual(10);
       } else {
         await expect(page.locator('#grid .card').first()).toBeVisible({timeout:15000});
+        await page.waitForLoadState('load');
         await page.evaluate(() => document.fonts && document.fonts.ready);
         const delta=await page.evaluate(selector=>{
           const rail=document.querySelector(selector).getBoundingClientRect();
