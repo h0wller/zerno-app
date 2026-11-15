@@ -387,6 +387,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
             iconBorder: iconStyle?.borderTopWidth ?? null,
             iconRadius: iconStyle?.borderTopLeftRadius ?? null,
             fontFamily: style.fontFamily,
+            active: button.getAttribute('aria-pressed') === 'true',
           };
         });
         const active = buttons.length
@@ -411,6 +412,8 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
           railTop: railRect.top,
           railBottom: railRect.bottom,
           railHeight: railRect.height,
+          railRadius: railStyle.borderTopLeftRadius,
+          railOverflow: railStyle.overflow,
           scrollWidth: rail.scrollWidth,
           clientWidth: rail.clientWidth,
           viewportWidth: window.innerWidth,
@@ -437,6 +440,8 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(Math.abs(geometry.railWidth - geometry.gridWidth), brand.brand + ' rail background matches the current card-grid width, not the viewport').toBeLessThanOrEqual(1);
       expect(geometry.railTop, brand.brand + ' categories follow the search block').toBeGreaterThan(geometry.headBottom);
       expect(geometry.railHeight, brand.brand + ' mobile rail uses the shared 64px height').toBe(64);
+      expect(geometry.railRadius, brand.brand + ' rail surface has rounded corners like its tabs').toBe('16px');
+      expect(geometry.railOverflow, brand.brand + ' rail background is clipped to its rounded surface').toBe('hidden');
       expect(geometry.background, brand.brand + ' uses its own category surface').not.toBe('rgba(0, 0, 0, 0)');
       expect(geometry.border, brand.brand + ' rail has no heavy enclosing frame').toBe('0px');
       expect(geometry.shadow, brand.brand + ' rail has no decorative shadow').toBe('none');
@@ -453,7 +458,9 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
         expect(button.direction, brand.brand + ' icon sits above its category label').toBe('column');
         expect(button.height, brand.brand + ' category is a usable tap target').toBeGreaterThanOrEqual(44);
         expect(button.radius, brand.brand + ' category cells share the same rounded geometry').toBe('12px');
-        expect(button.background, brand.brand + ' inactive category remains visually quiet').toBe('rgba(0, 0, 0, 0)');
+        if (!button.active) {
+          expect(button.background, brand.brand + ' inactive category remains visually quiet').toBe('rgba(0, 0, 0, 0)');
+        }
         expect(button.borderTop, brand.brand + ' category has no extra top border').toBe('0px');
         expect(button.iconBackground, brand.brand + ' icon keeps its brand surface').not.toBe('rgba(0, 0, 0, 0)');
         expect(button.iconBorder, brand.brand + ' icon uses a restrained one-pixel border').toBe('1px');
@@ -654,6 +661,55 @@ test('category rail relocates on rotation and restores the vertical desktop side
   }
 });
 
+
+
+test('desktop category rails use one visual layer and retain brand-specific icon identity', async ({ page }, testInfo) => {
+  for (const brand of CASES) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 10000 });
+    const style = await rail.evaluate((element) => {
+      const railStyle = getComputedStyle(element);
+      const buttons = [...element.querySelectorAll('button')];
+      const active = buttons.find(button => button.getAttribute('aria-pressed') === 'true');
+      const buttonStyle = getComputedStyle(active);
+      const iconStyle = getComputedStyle(active.querySelector('.re'));
+      return {
+        railBackground: railStyle.backgroundColor,
+        railBorder: railStyle.borderTopWidth,
+        railShadow: railStyle.boxShadow,
+        buttonBackground: buttonStyle.backgroundColor,
+        buttonBorder: buttonStyle.borderTopWidth,
+        buttonShadow: buttonStyle.boxShadow,
+        iconBackground: iconStyle.backgroundColor,
+        iconRadius: iconStyle.borderTopLeftRadius,
+        buttonHeight: active.getBoundingClientRect().height,
+      };
+    });
+
+    expect(style.railBackground, brand.brand + ' desktop rail has no enclosing panel').toBe('rgba(0, 0, 0, 0)');
+    expect(style.railBorder, brand.brand + ' desktop rail has no frame').toBe('0px');
+    expect(style.railShadow, brand.brand + ' desktop rail has no panel shadow').toBe('none');
+    expect(style.buttonBackground, brand.brand + ' active category is not a nested card').toBe('rgba(0, 0, 0, 0)');
+    expect(style.buttonBorder, brand.brand + ' active category has no card border').toBe('0px');
+    expect(style.buttonShadow, brand.brand + ' active category has no card shadow').toBe('none');
+    expect(style.iconBackground, brand.brand + ' active icon carries the selected state').not.toBe('rgba(0, 0, 0, 0)');
+    expect(style.iconRadius, brand.brand + ' icon retains its brand-specific silhouette')
+      .toBe(brand.brand === 'coffee' ? '50%' : '8px');
+    expect(style.buttonHeight).toBe(64);
+
+    await testInfo.attach(brand.brand + '-desktop-flat-rail', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
+  }
+});
 
 test('category tabs expose their selected state and remain keyboard reachable', async ({ page }) => {
   for (const brand of CASES) {
