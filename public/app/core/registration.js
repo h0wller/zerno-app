@@ -273,15 +273,18 @@
         regOtpBtn.setAttribute('aria-busy', 'true');
         regOtpBtn.textContent = 'Отправляем SMS…';
         try {
-          await api('/auth/request-reg-otp', {
+          var otpResponse = await api('/auth/request-reg-otp', {
             method: 'POST',
             body: { phone: phone, name: name, via: 'sms' }
           });
           var row = document.getElementById('regOtpRow');
           var input = document.getElementById('regOtp');
           if (row) row.hidden = false;
+          if (input && otpResponse && otpResponse.testCode) input.value = otpResponse.testCode;
           if (input) input.focus();
-          toast('Код отправлен по SMS', '🔑');
+          toast(otpResponse && otpResponse.testCode
+            ? 'Локальный тестовый код: ' + otpResponse.testCode
+            : 'Код отправлен по SMS', '🔑');
         } catch (error) {
           toast(error.message || 'Не удалось отправить SMS', '⚠️');
         } finally {

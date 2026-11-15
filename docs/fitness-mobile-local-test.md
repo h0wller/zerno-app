@@ -8,7 +8,7 @@ This guide runs the current branch against a phone on the same Wi-Fi network. It
 - The phone and development computer must be on the same trusted Wi-Fi network.
 - Android: Android Studio/SDK and a physical Android 9+ device with Health Connect installed.
 - iOS: macOS with Xcode and a physical iPhone. iOS native builds cannot be produced from Windows.
-- A verified guest session in the local database. The evidence endpoint intentionally rejects anonymous and unverified sessions.
+- No pre-existing account is required. The local test server provides a test-only registration OTP so you can create a verified guest from the phone without Telegram or a real SMS provider.
 
 ## 1. Start the local API
 
@@ -20,6 +20,10 @@ PowerShell:
 New-Item -ItemType Directory -Force .local | Out-Null
 $env:DB_PATH = "$PWD\.local\fitness-phone.db"
 $env:PORT = "3000"
+$env:NODE_ENV = "test"
+$env:SMS_AUTH_ENABLED = "true"
+$env:FITNESS_REWARDS_ENABLED = "false"
+$env:STRAVA_ENABLED = "false"
 node server.js
 ```
 
@@ -31,7 +35,18 @@ Invoke-RestMethod http://127.0.0.1:3000/api/health
 
 If Windows Firewall asks, allow Node.js on **Private networks** only. Do not expose port 3000 to public networks.
 
-## 2. Find the computer's Wi-Fi IPv4 address
+## 2. Create a local verified test account
+
+The local server runs with `NODE_ENV=test` and `SMS_AUTH_ENABLED=true`. When you request an SMS registration code from the app, the server does **not** contact an SMS provider: it returns the fixed local-only code `2468`, and the registration UI fills it into the code field.
+
+1. Open the app and choose **Создать профиль**.
+2. Enter a name, a phone number not already used in this local database, and a 4-digit PIN.
+3. Press **Получить код по SMS**. The UI should show `Локальный тестовый код: 2468`.
+4. Submit the registration form and accept the privacy consent. The local guest is created as verified and can use the phone evidence endpoint.
+
+This test-only behavior exists only when `NODE_ENV=test`. Never run this server mode against a production database or deploy it.
+
+## 3. Find the computer's Wi-Fi IPv4 address
 
 Run:
 
@@ -41,7 +56,7 @@ ipconfig
 
 Use the IPv4 address of the active Wi-Fi adapter, for example `192.168.1.42`. Do not use `127.0.0.1` or the address of a VPN adapter.
 
-## 3. Run the native app against the local server
+## 4. Run the native app against the local server
 
 Keep the API terminal running. In a second terminal:
 
@@ -63,7 +78,7 @@ On iPhone, allow the **Local Network** permission prompt when it appears. If it 
 
 Keep both devices on the same Wi-Fi. If the phone cannot load the app, first check the Windows firewall and whether the phone can open `http://192.168.1.42:3000/api/health` in its browser.
 
-## 4. Send a real phone summary
+## 5. Send a real phone summary
 
 1. Sign in to the local app as a verified guest.
 2. Open the profile.

@@ -162,6 +162,15 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
     return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
   }
 
+  if (process.env.NODE_ENV === 'test' && via === 'sms') {
+    // Local device-testing fixture: never sends a real SMS and never runs outside NODE_ENV=test.
+    const testCode = '2468';
+    otpStore.set('reg:' + p, { code: testCode, via: 'sms', expires: now + 5 * 60 * 1000 });
+    recordOtpSend('register', p, now);
+    registerFail(req, 'reg-otp-send', p);
+    return res.json({ ok: true, via: 'sms', testCode });
+  }
+
   if (via === 'tg') {
     const token = crypto.randomBytes(16).toString('hex');
     const pollToken = crypto.randomBytes(32).toString('hex');
