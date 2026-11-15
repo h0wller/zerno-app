@@ -31,11 +31,11 @@ GPX-приём спортивных заявок в Telegram — отдельн�
 
 | Method and path | Purpose | Access |
 |---|---|---|
-| `POST /api/fitness/attestation/challenges` | Issue a one-time 5-minute challenge; body: `{ purpose: "attestation" }` or `{ purpose: "assertion", keyId, requestHash }` | verified guest + userGuard |
+| `POST /api/fitness/attestation/challenges` | Issue a one-time 5-minute challenge; attestation body: `{ purpose: "attestation" }`; assertion requires a server-registered key and is not yet enabled | verified guest + userGuard |
 
 The endpoint is a challenge primitive only. It does not register or verify App Attest keys/assertions and cannot change a workout to `verified` or issue rewards. Challenges are bound to the authenticated customer, hashed at rest, one-time, and limited to 10 per rolling minute. Consumed rows remain counted until they age out of that window.
 
-Assertion challenges additionally require a `keyId` already registered to the authenticated guest and not revoked, plus a SHA-256 `requestHash`. The server stores both bindings with the challenge; callers must not reuse a signed assertion for another body. No public key is currently registered because the server-side App Attest attestation verifier is not yet implemented.
+Assertion challenge support is fail-closed and not yet operational: it requires a `keyId` already registered to the authenticated guest and not revoked, plus a SHA-256 `requestHash`. No key can currently be registered because the server-side App Attest attestation verifier and Apple native capability/signing setup are not implemented.
 
 No App Attest key can be registered yet: the server-side attestation verifier and Apple capability/signing configuration are not implemented. Consequently, assertion challenges remain unavailable until a server-verified key has been registered for the guest.
 

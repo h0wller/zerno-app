@@ -278,3 +278,35 @@ test('HTTP route passes assertion bindings to the service and rejects unregister
   assert.equal(stored.request_hash, 'c'.repeat(64));
   db.close();
 });
+
+test('adds key and request binding columns to a legacy challenge table without deleting rows', () => {
+  const db = new Database(':memory:');
+  db.exec(`
+    CREATE TABLE customers(id TEXT PRIMARY KEY, role TEXT NOT NULL, verified INTEGER NOT NULL);
+    CREATE TABLE fitness_attest_challenges(
+      id TEXT PRIMARY KEY,
+      cid TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      challenge_hash TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL,
+      consumed_at INTEGER
+    );
+    INSERT INTO fitness_attest_challenges
+      (id,cid,purpose,challenge_hash,created_at,expires_at)
+    VALUES('legacy-1','guest-1','attestation','${'a'.repeat(64)}',100,200);
+  `);
+  let columns = db.prepare('PRAGMA table_info(fitness_attest_challenges)').all().map(column => column.name);
+  assert.equal(columns.includes('key_id'), false);
+  assert.equal(columns.includes('request_hash'), false);
+
+  // Apply the same additive migration logic used by initSchema().
+  if (!columns.includes('key_id')) db.exec('ALTER TABLE fitness_attest_challenges ADD COLUMN key_id TEXT');
+  if (!columns.includes('request_hash')) db.exec('ALTER TABLE fitness_attest_challenges ADD COLUMN request_hash TEXT');
+
+  columns = db.prepare('PRAGMA table_info(fitness_attest_challenges)').all().map(column => column.name);
+  assert.equal(columns.includes('key_id'), true);
+  assert.equal(columns.includes('request_hash'), true);
+  assert.equal(db.prepare('SELECT id, key_id, request_hash FROM fitness_attest_challenges').get().id, 'legacy-1');
+  db.close();
+});

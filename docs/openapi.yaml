@@ -1383,7 +1383,7 @@ paths:
     post:
       tags: [Fitness]
       summary: Выдать одноразовый challenge для App Attest
-      description: 'Только verified guest. Challenge связан с текущим профилем, живёт 5 минут и ограничен 10 запросами в rolling minute. Для assertion требуется ранее зарегистрированный и неотозванный keyId владельца, а также SHA-256 requestHash. Endpoint не проверяет attestation/assertion и не подтверждает тренировку.'
+      description: 'Только verified guest. Challenge связан с текущим профилем, живёт 5 минут и ограничен 10 запросами в rolling minute. Assertion challenge временно недоступен: он требует ранее зарегистрированный сервером App Attest key. Endpoint не проверяет attestation/assertion и не подтверждает тренировку.'
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
