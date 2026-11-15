@@ -664,7 +664,8 @@ test('category navigation keeps secondary delivery filters separate from primary
   await expect(rail).toBeVisible({ timeout: 10000 });
   await expect(filters).toBeVisible({ timeout: 15000 });
   await expect(rail.locator('button')).toHaveCount(5);
-  await expect(filters).toHaveCSS('border-top-left-radius', /999/);
+  const filterPillRadius = await filters.evaluate((element) => getComputedStyle(element, '::before').borderTopLeftRadius);
+  expect(filterPillRadius).toContain('999');
   await expect(filters).toHaveCSS('min-height', '44px');
 
   const [railRect, filterRect] = await Promise.all([
