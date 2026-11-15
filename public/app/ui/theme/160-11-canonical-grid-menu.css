@@ -96,6 +96,18 @@
     overflow: visible;
   }
 
+  #deliveryGrid .card .cbody:has(> .single-meta) > .desc {
+    display: -webkit-box;
+    block-size: 37px;
+    min-block-size: 37px;
+    flex: 0 0 37px;
+    box-sizing: border-box;
+    line-height: 1.45;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
   #deliveryGrid .card .cbody:has(> .single-meta) > .comp {
     block-size: 100px;
     min-block-size: 100px;
