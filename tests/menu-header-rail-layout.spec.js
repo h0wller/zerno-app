@@ -1141,7 +1141,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ p
       const heldRequests = [];
       await page.route('**/*.css', async route => {
         const url = route.request().url();
-        if (/\\/app\\/ui\\/theme\\/.*\\.css(?:\\?.*)?$|\\/app\\/ui\\/brand-tokens\\.css(?:\\?.*)?$/.test(url)) {
+        if (url.includes('/app/ui/theme/') || url.includes('/app/ui/brand-tokens.css')) {
           heldRequests.push(url);
           await stylesGate;
         }
@@ -1202,7 +1202,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ p
       const firstFrame=await measure();
       releaseStyles();
       await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link =>
-        /\\/app\\/ui\\/theme\\/150-rail\\.css/.test(link.href) && link.media==='all'
+        link.href.includes('/app/ui/theme/150-rail.css') && link.media==='all'
       )), { timeout:15000 }).toBe(true);
       await page.evaluate(() => document.fonts && document.fonts.ready);
       await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
