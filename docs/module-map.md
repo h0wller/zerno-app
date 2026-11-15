@@ -159,6 +159,7 @@
 | `server.js` | Сборка Express, статика с Cache-Control (sw.js — no-store), роуты меню |
 | `server/routes/*` | auth, staff, promos, orders, chat, tg (webhook-бот), push, stats |
 | `server/domain/*` | customers, loyalty (штампы/подарки), helpers, валидация адреса |
+| `server/utils/session-policy.js` | Единая политика абсолютного TTL пользовательских bearer-сессий; используется выпуском токенов и миграцией SQLite | `USER_SESSION_TTL_MS` |
 | `server/services/*` | Оркестратор пушей (TG+web+FCM), telegram, fcm, sms |
 | `server/middleware/*` | Гарды ролей, security-заголовки, CORS, zod-валидация |
 | `server/db/*` | SQLite-коннект, схема+миграции, сид (меню/dmenu, VAPID) |
