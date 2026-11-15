@@ -130,7 +130,6 @@ var rules = [
  '[data-brand="delivery"] #qrModal.show,[data-brand="delivery"] #qrModal.show .modal-card,[data-brand="delivery"] #setPinModal.show .modal-card{background-image:none}',
 
  
-  '@media(min-width:821px) and (min-height:481px){html body div.wrap > #rail,html body div.wrap > #deliveryRail{box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;align-self:start;justify-self:stretch;width:84px;height:max-content;min-height:0;max-height:none;gap:8px;padding:8px 6px;border:0;border-radius:16px;background:var(--panel,#fff);box-shadow:none;overflow:visible}html body div.wrap > #rail button,html body div.wrap > #deliveryRail button{flex:0 0 auto;width:100%;min-width:0;max-width:none;height:64px;min-height:64px;max-height:64px;padding:7px 3px;border:1px solid transparent;border-radius:12px;background:transparent;box-shadow:none;font-size:10px}html body div.wrap > #rail button.on,html body div.wrap > #deliveryRail button.on{border-color:var(--line,#D8DFE4);background:var(--card,#fff);box-shadow:none;transform:none}html body div.wrap > #rail .re,html body div.wrap > #deliveryRail .re{border:0;background:transparent;font-size:21px}}',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
