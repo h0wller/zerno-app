@@ -21,7 +21,7 @@
     margin: 10px 0 12px;
     padding: 0;
     border: 0;
-    border-radius: 0;
+    border-radius: 16px;
     background: var(--category-rail-bg, var(--panel, transparent));
     box-shadow: none;
     overflow: hidden;
