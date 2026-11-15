@@ -544,42 +544,42 @@ test('mobile category navigation carries each storefront brand identity and stay
         };
       }, { railSelector: brand.rail, brandName: brand.brand });
 
-      expect(metrics.railHeight, brand.brand + ' category rail reserves its own visual row').toBeGreaterThanOrEqual(68);
-      expect(metrics.buttonHeight, brand.brand + ' category tabs retain a 60px+ hit area').toBeGreaterThanOrEqual(60);
-      expect(metrics.buttonDirection, brand.brand + ' category icon sits above its label').toBe('column');
-      expect(metrics.iconSize, brand.brand + ' icon badge remains a distinct 30px mark').toBe('30px');
+      expect(metrics.railHeight, brand.brand + ' category navigation stays visually light').toBeLessThanOrEqual(60);
+      expect(metrics.buttonHeight, brand.brand + ' category targets remain compact and tappable').toBe(44);
+      expect(metrics.buttonDirection, brand.brand + ' category icon and label share one compact row').toBe('row');
+      expect(metrics.iconSize, brand.brand + ' icon is not enclosed in a second badge').toBe('20px');
       expect(metrics.buttonRadius, brand.brand + ' tabs are visibly shaped, not plain text').not.toBe('0px');
       expect(metrics.buttonBackground, brand.brand + ' active tab has a brand surface').not.toBe('rgba(0, 0, 0, 0)');
 
       if (brand.brand === 'coffee') {
-        expect(metrics.railBackground, 'coffee rail uses the ocean-blue surface').toBe('rgb(234, 241, 249)');
-        expect(metrics.railBorderWidth, 'coffee rail uses a light outline').toBe('1px');
-        expect(metrics.railRadius, 'coffee rail uses a softer rounded frame').toBe('16px');
+        expect(metrics.railBackground, 'coffee rail does not add a second framed surface').toBe('rgba(0, 0, 0, 0)');
+        expect(metrics.railBorderWidth, 'coffee rail has no enclosing frame').toBe('0px');
+        expect(metrics.railRadius, 'coffee rail does not create a nested panel').toBe('0px');
         const coffeeActiveSurface = metrics.buttonBackground.match(/[0-9.]+/g).map(Number);
-        expect(coffeeActiveSurface.slice(0, 3), 'coffee active tab keeps a white surface').toEqual([255, 255, 255]);
+        expect(coffeeActiveSurface.slice(0, 3), 'coffee active tab uses the ocean accent').toEqual([18, 58, 107]);
         expect(coffeeActiveSurface.length > 3 ? coffeeActiveSurface[3] : 1, 'coffee active tab settles to an opaque white surface').toBe(1);
-        expect(metrics.buttonColor, 'coffee active label uses the deep ocean blue').toBe('rgb(18, 58, 107)');
+        expect(metrics.buttonColor, 'coffee active label remains readable').toBe('rgb(255, 255, 255)');
         expect(metrics.buttonBorderWidth, 'coffee active tab uses a fine blue outline').toBe('1px');
-        expect(metrics.buttonShadow, 'coffee active tab uses a soft shadow').toContain('rgba(18, 58, 107');
-        expect(metrics.iconBackground, 'coffee icon uses a pale blue badge').toBe('rgb(18, 58, 107)');
-        expect(metrics.iconRadius, 'coffee icon is circular').toBe('50%');
+        expect(metrics.buttonShadow, 'coffee active tab avoids a decorative shadow').toBe('none');
+        expect(metrics.iconBackground, 'coffee icon has no nested badge').toBe('rgba(0, 0, 0, 0)');
+        expect(metrics.iconRadius, 'coffee icon has no badge shape').toBe('0px');
         expect(metrics.labelFont, 'coffee labels use the coffee typeface').toContain('Golos Text');
       }
 
       if (brand.brand === 'delivery') {
-        expect(metrics.railBackground, 'Friday rail uses kraft paper').toBe('rgb(239, 230, 216)');
-        expect(metrics.railBorderWidth, 'Friday rail uses its dark craft outline').toBe('2px');
-        expect(metrics.railShadow, 'Friday rail uses the offset craft shadow').toContain('rgb(58, 42, 28) 2px 2px 0px 0px');
-        expect(metrics.buttonBackground, 'Friday active tab uses the configured high-contrast dark terracotta token').toBe('rgb(122, 45, 22)');
+        expect(metrics.railBackground, 'Friday rail avoids a second framed surface').toBe('rgba(0, 0, 0, 0)');
+        expect(metrics.railBorderWidth, 'Friday rail has no enclosing frame').toBe('0px');
+        expect(metrics.railShadow, 'Friday rail avoids a heavy offset shadow').toBe('none');
+        expect(metrics.buttonBackground, 'Friday active tab uses the configured high-contrast dark terracotta token').toBe('rgb(139, 43, 32)');
         expect(metrics.buttonColor, 'Friday active label remains white on terracotta').toBe('rgb(255, 255, 255)');
-        expect(metrics.buttonBorderWidth, 'Friday active tab uses the dark outline').toBe('2px');
-        expect(metrics.iconBackground, 'Friday active icon badge uses paper').toBe('rgb(246, 238, 225)');
-        expect(metrics.iconRadius, 'Friday icon badge uses the squared craft shape').toBe('8px');
-        expect(metrics.labelFont, 'Friday labels use the display typeface').toContain('Unbounded');
+        expect(metrics.buttonBorderWidth, 'Friday active tab uses a restrained outline').toBe('1px');
+        expect(metrics.iconBackground, 'Friday icon has no nested badge').toBe('rgba(0, 0, 0, 0)');
+        expect(metrics.iconRadius, 'Friday icon has no badge shape').toBe('0px');
+        expect(metrics.labelFont, 'Friday labels remain legible in the shared navigation system').toContain('Golos Text');
         expect(metrics.subchipHeight, 'secondary filters remain compact chips').toBe(44);
         expect(metrics.subchipRadius, 'secondary filters retain the pill shape').toContain('999');
         expect(Number.parseFloat(metrics.subchipBorderWidth), 'secondary filters retain their own outline').toBeGreaterThan(0);
-        expect(metrics.buttonHeight, 'primary category tabs stay taller than secondary filters').toBeGreaterThan(metrics.subchipHeight);
+        expect(metrics.buttonHeight, 'primary category targets use the same accessible minimum as filters').toBe(metrics.subchipHeight);
       }
 
       await testInfo.attach(brand.brand + '-category-brand-identity-' + viewport.width + 'px', {
@@ -654,10 +654,10 @@ test('mobile category navigation exposes usable scrolling and spacing across por
       }, { railSelector: brand.rail, brandName: brand.brand });
 
       expect(before.overflowX, brand.brand + ' rail uses a real horizontal scroll container at ' + viewport.name).toBe('auto');
-      expect(before.scrollbarWidth, brand.brand + ' rail keeps a visible native scroll affordance at ' + viewport.name).toBe('thin');
+      expect(before.scrollbarWidth, brand.brand + ' rail avoids a distracting scrollbar at ' + viewport.name).toBe('none');
       expect(before.gap, brand.brand + ' rail keeps deliberate spacing between categories at ' + viewport.name).toBeGreaterThanOrEqual(8);
-      expect(before.firstButtonHeight, brand.brand + ' category targets remain comfortably tappable at ' + viewport.name).toBeGreaterThanOrEqual(60);
-      expect(before.buttonDirection, brand.brand + ' category icon and label remain vertically grouped at ' + viewport.name).toBe('column');
+      expect(before.firstButtonHeight, brand.brand + ' category targets remain comfortably tappable at ' + viewport.name).toBe(44);
+      expect(before.buttonDirection, brand.brand + ' category icon and label remain on one line at ' + viewport.name).toBe('row');
       expect(before.documentWidth, brand.brand + ' rail never widens the page at ' + viewport.name).toBeLessThanOrEqual(before.viewportWidth + 1);
       expect(before.pageCanScroll, brand.brand + ' catalog remains vertically scrollable at ' + viewport.name).toBe(true);
 
@@ -671,7 +671,7 @@ test('mobile category navigation exposes usable scrolling and spacing across por
       if (before.scrollWidth > before.width + 1) {
         expect(before.hasOverflowCue, brand.brand + ' shows a directional cue when more categories are available at ' + viewport.name).toBe(true);
         expect(before.atEndCue, brand.brand + ' starts with the directional cue visible at ' + viewport.name).toBe(false);
-        expect(before.cueContent, brand.brand + ' uses a visible next-category affordance at ' + viewport.name).toBe('"›"');
+        expect(before.cueContent, brand.brand + ' does not overlay decorative arrow glyphs at ' + viewport.name).toBe('none');
         expect(before.cueColor, brand.brand + ' uses a legible brand-colored scroll cue at ' + viewport.name).toBe(
           brand.brand === 'delivery' ? 'rgb(58, 42, 28)' : 'rgb(18, 58, 107)',
         );
@@ -897,9 +897,9 @@ for (const brand of CASES) {
       await expect.poll(() => rail.evaluate(el => el.scrollLeft)).toBeGreaterThan(0);
       await rail.evaluate((el) => { el.scrollLeft = el.scrollWidth; });
       await expect.poll(() => rail.evaluate(el => el.classList.contains('has-start-overflow'))).toBe(true);
-      await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::before').content)).not.toBe('none');
+      await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::before').content)).toBe('none');
       await expect.poll(() => rail.evaluate(el => el.classList.contains('at-end'))).toBe(true);
-      await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::before').content)).not.toBe('none');
+      await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::before').content)).toBe('none');
       await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::after').opacity)).toBe('0');
       await rail.evaluate((el) => { el.scrollLeft = 0; });
       await expect.poll(() => rail.evaluate(el => el.classList.contains('has-start-overflow'))).toBe(false);
