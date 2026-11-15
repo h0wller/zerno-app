@@ -215,7 +215,7 @@ test('menu headings stay compact without the removed descriptor badge', async ({
           width: rect.width,
           menuHeadLeft: menuHeadRect?.left ?? 0,
           menuHeadRight: menuHeadRect?.right ?? document.documentElement.clientWidth,
-          viewportWidth: document.documentElement.clientWidth,
+          viewportWidth: window.innerWidth,
           title: element.childNodes[0]?.textContent?.trim(),
           taglineVisible: !!tagline && getComputedStyle(tagline).display !== 'none' && taglineRect.width > 0,
         };
