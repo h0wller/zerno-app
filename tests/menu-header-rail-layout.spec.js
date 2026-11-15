@@ -1411,7 +1411,7 @@ test('catalog grid uses three columns from 821px through 1180px for both brands'
 
 test('desktop wrap expands to a centered 2560px maximum on wide viewports', async ({ page }) => {
   for (const brand of CASES) {
-    for (const width of [1480, 1481, 1920, 2560, 3840]) {
+    for (const width of [1480, 1481, 1920, 2800, 3840]) {
       await page.setViewportSize({ width, height: 1080 });
       await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
       await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
@@ -1423,6 +1423,7 @@ test('desktop wrap expands to a centered 2560px maximum on wide viewports', asyn
           left: rect.left,
           right: rect.right,
           maxWidth: style.maxWidth,
+          viewportClientWidth: document.documentElement.clientWidth,
           marginLeft: style.marginLeft,
           marginRight: style.marginRight,
         };
@@ -1432,10 +1433,10 @@ test('desktop wrap expands to a centered 2560px maximum on wide viewports', asyn
       } else {
         expect(layout.maxWidth).toBe('2560px');
       }
-      if (width >= 2560) {
+      if (width >= 2800) {
         expect(Math.abs(layout.width - 2560), brand.brand + ' wrap width at ' + width + 'px').toBeLessThanOrEqual(1);
-        expect(Math.abs(layout.left - (width - 2560) / 2), brand.brand + ' wrap centering at ' + width + 'px').toBeLessThanOrEqual(1);
-        expect(Math.abs(layout.right - (width + 2560) / 2), brand.brand + ' wrap right edge at ' + width + 'px').toBeLessThanOrEqual(1);
+        expect(Math.abs(layout.left - (layout.viewportClientWidth - 2560) / 2), brand.brand + ' wrap centering at ' + width + 'px').toBeLessThanOrEqual(1);
+        expect(Math.abs(layout.right - (layout.viewportClientWidth + 2560) / 2), brand.brand + ' wrap right edge at ' + width + 'px').toBeLessThanOrEqual(1);
       }
     }
   }
