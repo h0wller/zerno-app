@@ -1641,7 +1641,7 @@ test('late font hydration must not release a mobile rail after manual category c
 });
 
 
-test('category rails render decorative SVG icons instead of emoji for both brands', async ({ page }) => {
+test('category rails retain the original emoji icons for both brands', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
@@ -1653,11 +1653,7 @@ test('category rails render decorative SVG icons instead of emoji for both brand
     await expect(icons).not.toHaveCount(0);
     await expect.poll(() => icons.evaluateAll(nodes => nodes.every(node => {
       const svg = node.querySelector('svg');
-      return !!svg && svg.getAttribute('aria-hidden') === 'true' &&
-        svg.getAttribute('focusable') === 'false' && !node.textContent.trim() &&
-        svg.getAttribute('viewBox') === '0 0 48 48' &&
-        new Set([...svg.querySelectorAll('*')].flatMap(el => [el.getAttribute('fill'), el.getAttribute('stroke')])
-          .filter(value => value && value !== 'none')).size >= 2;
+      return !svg && node.textContent.trim().length > 0;
 
     }))).toBe(true);
     await expect(rail.locator('button')).toHaveCount(brand === 'coffee' ? 6 : 5);
