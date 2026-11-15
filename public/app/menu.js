@@ -5,7 +5,6 @@ import { attachGridDnD, canDragMenu, dragAttr } from './core/dnd.js';
 import { getVisibleComposition } from './core/menu-content.js';
 import { getMenuBadgeClass, getMenuBadgeLabel } from './core/menu-badges.js';
 import { calculateDishKbju } from './core/nutrition.js';
-import { renderCategoryIcon } from './core/category-icons.js';
 window.cat = 'coffee'; /* Ф5.6-финал шаг 4-fix: menu-editor читает cat голым */
 window.query = ''; /* Ф5.6-финал шаг 4-fix2: menu-editor пишет query голым */
 
@@ -17,7 +16,7 @@ function coffeePool() {
 }
 
 $('#rail').innerHTML = CATS.map(
-  c => `<button type="button" data-cat="${c.id}"><span class="re">${renderCategoryIcon(c.id, 'coffee')}</span>${c.l}</button>`
+  c => `<button type="button" data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`
 ).join('');
 
 $('#rail').setAttribute('role', 'group');
