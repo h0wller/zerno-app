@@ -12,8 +12,14 @@ const VIEWPORTS = [
   { name: '320px', width: 320, height: 740 },
   { name: '390px', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
+  { name: 'short landscape', width: 844, height: 390 },
   { name: 'desktop', width: 1440, height: 900 },
 ];
+
+function isHorizontalRailViewport(viewport) {
+  return viewport.width <= 820 ||
+    (viewport.width >= 821 && viewport.width > viewport.height && viewport.height <= 480);
+}
 
 async function expectCompact44pxHitTarget(locator) {
   const metrics = await locator.evaluate((button) => {
@@ -103,7 +109,7 @@ for (const brand of BRANDS) {
       await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
       await expect(search).toBeVisible({ timeout: 15000 });
 
-      if (viewport.width <= 820) {
+      if (isHorizontalRailViewport(viewport)) {
         const targets = await page.evaluate(({ view }) => {
           const box = (element) => {
             const rect = element.getBoundingClientRect();
@@ -209,7 +215,7 @@ for (const brand of BRANDS) {
       }
 
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      if (viewport.width <= 820) {
+      if (isHorizontalRailViewport(viewport)) {
         await expect(support).toHaveCSS('position', 'relative');
         await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
       } else {

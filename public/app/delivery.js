@@ -186,10 +186,11 @@ function syncDeliverySubFilterCue(bar) {
     ? bar.parentElement
     : null;
 
-  // Until the first menu render, keep the reserved HTML slot in place.
-  // After renderSubFilter decides visibility, the bar's explicit hidden state owns the slot.
+  // The viewport is a permanent layout reservation. Hiding it when a category
+  // has no secondary filters moves the grid and desktop rail on every category switch.
+  // Hide only the inner bar; keep the reserved row in the document flow.
   if (viewport && bar.dataset.rendered === '1') {
-    viewport.hidden = bar.hidden;
+    viewport.hidden = false;
   }
 
   var hasOverflow = !bar.hidden && bar.scrollWidth > bar.clientWidth + 1;
@@ -298,9 +299,14 @@ function renderSubFilter(categoryItems) {
 }
 
 function renderDeliveryRail() {
-  $('#deliveryRail').innerHTML = DCATS.map(c =>
-    `<button data-dcat="${c.id}" class="${c.id === dcat ? 'on' : ''}"><span class="re">${c.e}</span>${c.l}</button>`
-  ).join('');
+  var rail = document.getElementById('deliveryRail');
+  if (!rail) return;
+  rail.setAttribute('role', 'group');
+  rail.setAttribute('aria-label', 'Категории меню');
+  rail.innerHTML = DCATS.map(c => {
+    var isSelected = c.id === dcat;
+    return '<button type="button" data-dcat="' + c.id + '" class="' + (isSelected ? 'on' : '') + '" aria-pressed="' + (isSelected ? 'true' : 'false') + '"' + '><span class="re">' + c.e + '</span>' + c.l + '</button>';
+  }).join('');
 }
 
 $('#deliveryRail').addEventListener('click', e => {
@@ -315,14 +321,13 @@ $('#deliveryRail').addEventListener('click', e => {
     }
     requestAnimationFrame(() => {
       window.renderDeliveryMenu();
-      /* Прокрутка к шапке с поиском: поиск и сабфильтры остаются в кадре.
-         Раньше прокручивало к сетке (−110px), и поиск уходил выше экрана. */
-      const searchInput = document.getElementById('dSearch');
-      const anchor = (searchInput && searchInput.closest('.menu-head')) || document.getElementById('deliveryGrid');
-      if (anchor) {
-        const topOffset = anchor.getBoundingClientRect().top + window.scrollY - 8;
-        window.scrollTo({ top: Math.max(0, topOffset), behavior: 'smooth' });
+      // Смена категории может показать/скрыть вторичные фильтры и сдвинуть grid.
+      // На desktop sidebar должен оставаться выровнен с первой карточкой.
+      if (typeof window.alignRailWithCard === 'function') {
+        window.alignRailWithCard();
       }
+      // Категория — фильтр каталога, а не навигация по странице.
+      // Не меняем scroll position: rail и поиск остаются на месте при переключении.
     });
   }
 });
@@ -1163,7 +1168,9 @@ attachGridDnD(document.getElementById('deliveryGrid'), {
     if (currentCat) {
       rail.querySelectorAll("button").forEach(function (btn) {
         var bCat = btn.getAttribute("data-dcat") || btn.getAttribute("data-cat") || btn.dataset.dcat || btn.dataset.cat;
-        if (bCat) btn.classList.toggle("on", bCat === currentCat);
+        if (!bCat) return;
+        var isCurrent = bCat === currentCat;
+        btn.classList.toggle("on", isCurrent);
       });
     }
   }

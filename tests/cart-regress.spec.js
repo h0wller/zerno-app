@@ -322,17 +322,28 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     const padBottom = await page.locator('#deliveryGrid').evaluate((el) => parseFloat(window.getComputedStyle(el).paddingBottom));
     expect(padBottom).toBeGreaterThanOrEqual(88);
 
-    // ── Задача 3: delivery rail starts aligned to the first product-card row ──
+    // ── Задача 3: mobile category row follows search and precedes secondary filters ──
     const railGeometry = await page.evaluate(() => {
-      const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
-      const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
+      const railEl = document.querySelector('#deliveryRail');
+      const rail = railEl.getBoundingClientRect();
+      const head = document.querySelector('#deliveryView .menu-head').getBoundingClientRect();
+      const filters = document.querySelector('#deliverySubFilterViewport').getBoundingClientRect();
       return {
-        position: getComputedStyle(document.querySelector('#deliveryRail')).position,
-        topDelta: Math.abs(rail.top - grid.top),
+        position: getComputedStyle(railEl).position,
+        direction: getComputedStyle(railEl).flexDirection,
+        parentIsView: railEl.parentElement === document.querySelector('#deliveryView'),
+        searchGap: rail.top - head.bottom,
+        filterGap: filters.top - rail.bottom,
+        width: rail.width,
+        headWidth: head.width
       };
     });
     expect(railGeometry.position).toBe('relative');
-    expect(railGeometry.topDelta).toBeLessThanOrEqual(2);
+    expect(railGeometry.direction).toBe('row');
+    expect(railGeometry.parentIsView).toBe(true);
+    expect(railGeometry.searchGap).toBeGreaterThanOrEqual(8);
+    expect(railGeometry.filterGap).toBeGreaterThanOrEqual(0);
+    expect(railGeometry.width).toBeCloseTo(railGeometry.headWidth, 0);
 
     // ── Задача 4: Контраст полей чекаута, прижатие шторки к bottom=viewport.height и скрытие #cartFab ──
     await firstPizzaCard.locator('.steprow .cta, [data-add]').first().click();
@@ -985,6 +996,8 @@ test('delivery catalog quantity stepper keeps a 44px hit cell at narrow mobile w
 
   for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
+    await stepPlus.scrollIntoViewIfNeeded();
+    await expect(stepPlus).toBeInViewport();
     const geometry = await stepPlus.evaluate((button) => {
       const rect = button.getBoundingClientRect();
       const style = window.getComputedStyle(button);

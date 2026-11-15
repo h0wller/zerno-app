@@ -32,7 +32,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `core/views.js` | CSS-инъекция СЛОЯ 2 (layout + `[data-brand]`); `sv()`/`setMode`/`syncBrandViews` — финальные владельцы; DOM-переезды, включая группировку заголовка меню и timestamp слева и role/edit controls справа в `.menu-controls-row`, а также перемещение статического `#iosHint` в обычный поток сразу после тикера, чтобы PWA-подсказка не перекрывала действия каталога; перемещение статического `#modeSeg` из HTML-shell в шапку меню/ topbar; `#modeSeg` и его четыре role-кнопки объявлены статической разметкой в `index.html`, а `core/catalog.js` (`renderModes`) управляет состоянием/доступностью режимов; пилюля `#venueToggle` и дропдаун `#brandSeg`; скрытие прежней бонусной пилюли `#mbonusBtn`; размещение пуш-бабла; `fitSearch`; страховка размеров марки и кластер шапки | `window.syncBrandViews`, `window.setMode`, `window.stripLogoInlineStyles`, `window.__fitSearch`, `window.__syncHeaderCluster` |
+| `core/views.js` | CSS-инъекция СЛОЯ 2b (динамические layout/media и `[data-brand]` правила); `sv()`/`setMode`/`syncBrandViews` — финальные владельцы; DOM-переезды, включая статическое размещение `#rail`/`#deliveryRail` сразу после `.menu-head` для мобильного портрета и короткого landscape; `scrolltop.js` использует тот же predicate для отступов; перенос rail в левую колонку `.wrap` на обычном desktop и reflow при resize/orientationchange; группировка заголовка меню и timestamp слева, role/edit controls справа в `.menu-controls-row`; перемещение `#iosHint` после тикера и `#modeSeg` между HTML-shell, шапкой меню и topbar; `core/catalog.js` управляет состоянием/доступностью режимов; `#venueToggle`, `#brandSeg`, `#mbonusBtn`, пуш-бабл, `fitSearch`, размеры марки и кластер шапки. Визуальная геометрия rail (grid/flex, размеры, active underline и desktop compact sidebar) принадлежит `ui/theme/160-11-canonical-grid-menu.css`; first-paint резервирование ширины `.wrap` принадлежит critical CSS `index.html` и его theme fallback `160-04-wrap-cls-sheets.css` | `window.syncBrandViews`, `window.setMode`, `window.stripLogoInlineStyles`, `window.__fitSearch`, `window.__syncHeaderCluster` |
 | `admin-extra.js` | `applyBrandChrome()`: содержимое `#tickerTrack` и `.mark` (официальные svg/img; Ф5.39: Пятница — горизонтальный SVG 160×40 без webp-растра); `loadPromos` (модалка админа); guard'ы кофейного меню до загрузки MENU | `window.applyBrandChrome`, `window.loadPromos` |
 | `core/catalog.js` | `loadMenu`, `renderModes`; обработчик переключателя режима делегирует вызов `window.setMode` (реализация находится в `core/views.js`) | `window.loadMenu`, `window.renderModes` |
 | `core/splash.js` | Динамический сплэш `#brandSplash`, выбор бренда `finish()` | — |
@@ -46,10 +46,10 @@
 | --- | --- | --- |
 | `core/menu-content.js` | Общее чистое правило отображения состава: описание пиццы доставки служит текстовым составом, структурированный `comp` остаётся в данных | `getVisibleComposition` |
 | `core/nutrition.js` + `core/nutrition-data.js` | Оценочный расчёт КБЖУ по ТТК, справочнику ингредиентов и вложенным заготовкам | `window.INGREDIENTS_DB`, `window.TECH_CARDS`, `window.calculateDishKbju` |
-| `menu.js` | `#rail` (категории), `#searchInput`, рендер `#grid`; зум фото (`openZoom`); модалка модификаторов; LCP-картинка eager | `window.renderMenu`, `window.renderRail`, `window.openZoom` |
+| `menu.js` | `#rail` (категории и selected-state `aria-pressed`), `#searchInput`, рендер `#grid`; зум фото (`openZoom`); модалка модификаторов; LCP-картинка eager | `window.renderMenu`, `window.renderRail`, `window.openZoom` |
 | `menu-editor.js` | `openEditor`/`exitEdit`, сохранение emModal, editToggle | `window.openEditor`, `window.exitEdit` |
 | `core/editor.js` | Делегирование кликов `#grid`; фотозона редактора (`renderZone`/`loadImg`/`closeEditor`); имя гостя | `window.renderZone`, `window.closeEditor`, `window.loadImg` |
-| `delivery.js` | `window.DMENU`; `#deliveryRail`; единственный рендер содержимого `#deliverySubFilter` внутри статически зарезервированного `#deliverySubFilterViewport.subfilter-viewport` (в HTML-shell — пустой слот без чипсов); рендер `#deliveryGrid` + скелетоны (ингредиентные/дополнительные фильтры, горизонтальный scroll и cue overflow/end); стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow. Изменение корзины делегирует в `cart.js` | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
+| `delivery.js` | `window.DMENU`; `#deliveryRail` (категории и selected-state `aria-pressed`); единственный рендер содержимого `#deliverySubFilter` внутри статически зарезервированного `#deliverySubFilterViewport.subfilter-viewport` (в HTML-shell — пустой слот без чипсов); рендер `#deliveryGrid` + скелетоны (ингредиентные/дополнительные фильтры, горизонтальный scroll и cue overflow/end); стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow. Состояние и мутации корзины делегируются в `cart.js` | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
 | `ui/delivery-search.js` | Поиск в Пятнице (`#dSearch` внутри `.mh-right`) и фильтрация грида | — |
 
 ## 4. Корзина и чекаут
@@ -159,7 +159,6 @@
 | `server.js` | Сборка Express, статика с Cache-Control (sw.js — no-store), роуты меню |
 | `server/routes/*` | auth, staff, promos, orders, chat, tg (webhook-бот), push, stats |
 | `server/domain/*` | customers, loyalty (штампы/подарки), helpers, валидация адреса |
-| `server/utils/session-policy.js` | Единая политика абсолютного TTL пользовательских bearer-сессий; используется выпуском токенов и миграцией SQLite | `USER_SESSION_TTL_MS` |
 | `server/services/*` | Оркестратор пушей (TG+web+FCM), telegram, fcm, sms |
 | `server/middleware/*` | Гарды ролей, security-заголовки, CORS, zod-валидация |
 | `server/db/*` | SQLite-коннект, схема+миграции, сид (меню/dmenu, VAPID) |

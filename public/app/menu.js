@@ -16,13 +16,18 @@ function coffeePool() {
 }
 
 $('#rail').innerHTML = CATS.map(
-  c => `<button data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`
+  c => `<button type="button" data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`
 ).join('');
 
+$('#rail').setAttribute('role', 'group');
+$('#rail').setAttribute('aria-label', 'Категории меню');
+
 function renderRail() {
-  document.querySelectorAll('#rail button').forEach(b =>
-    b.classList.toggle('on', b.dataset.cat === cat)
-  );
+  document.querySelectorAll('#rail button').forEach(b => {
+    const selected = b.dataset.cat === cat;
+    b.classList.toggle('on', selected);
+    b.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
 }
 
 $('#rail').addEventListener('click', e => {
