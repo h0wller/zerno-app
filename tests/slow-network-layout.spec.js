@@ -1007,14 +1007,17 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         adminBar: rect('#adminBar'),
         cls: window.__layoutShifts.reduce((sum, entry) => sum + entry.value, 0),
         staffHeaderCls: window.__layoutShifts.reduce((sum, shift) => {
-          const affectsStaffHeader = (shift.sources || []).some(source =>
-            (source.node || []).some(node =>
-              node.id === 'modeSeg' || node.id === 'editToggle' ||
-              (node.className || '').split(/\s+/).some(name =>
+          const affectsStaffHeader = (shift.sources || []).some(source => {
+            const node = source && source.node;
+            if (!node) return false;
+            const classNames = typeof node.className === 'string'
+              ? node.className.split(/\s+/)
+              : [];
+            return node.id === 'modeSeg' || node.id === 'editToggle' ||
+              classNames.some(name =>
                 name === 'menu-head' || name === 'menu-controls-row' || name === 'mode-seg-slot'
-              )
-            )
-          );
+              );
+          });
           return sum + (affectsStaffHeader ? shift.value : 0);
         }, 0),
         shiftCount: window.__layoutShifts.length,
