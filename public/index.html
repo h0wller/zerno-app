@@ -658,8 +658,8 @@ body[data-brand="delivery"] .topbar .brand .mark {
   object-fit: contain;
 }
 
-/* Reserve the classic scrollbar gutter before content becomes scrollable. */
-html { scrollbar-gutter: stable; }
+/* Keep the scrollbar track allocated at all times without an extra stable gutter. */
+html { overflow-y: scroll; scrollbar-gutter: auto; }
 
 /* ─── 5. LCP & Above-the-fold layout ─── */
 body > div.wrap,
