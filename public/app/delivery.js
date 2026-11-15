@@ -42,6 +42,7 @@ if (typeof window !== 'undefined') {
 
 
 /* public/app/delivery.js — F2.5: доставка — state, рендер меню, субфильтры и корзина */
+import { renderCategoryIcon } from './core/category-icons.js';
 
 window.DMENU = [];
 
@@ -311,7 +312,7 @@ function renderDeliveryRail() {
   if (needsRender) {
     rail.innerHTML = DCATS.map(function (category) {
       return '<button type="button" data-dcat="' + category.id + '"><span class="re">'
-        + category.e + '</span>' + category.l + '</button>';
+        + renderCategoryIcon(category.id) + '</span>' + category.l + '</button>';
     }).join('');
     buttons = rail.querySelectorAll('button[data-dcat]');
   }
