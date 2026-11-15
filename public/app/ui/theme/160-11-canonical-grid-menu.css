@@ -304,11 +304,11 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     min-height: 0;
     max-height: none;
     gap: 8px;
-    padding: 8px 6px;
-    border: var(--category-rail-border, 0);
-    border-radius: var(--category-rail-radius, 16px);
-    background: var(--category-rail-bg, var(--panel, #fff));
-    box-shadow: var(--category-rail-shadow, none);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
     overflow: visible;
   }
 
@@ -323,10 +323,10 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     min-height: 64px;
     max-height: 64px;
     padding: 7px 3px;
-    border: var(--category-tab-border, 1px solid transparent);
-    border-radius: var(--category-tab-radius, 12px);
-    background: var(--category-tab-bg, transparent);
-    box-shadow: var(--category-tab-shadow, none);
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    box-shadow: none;
     transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease,
       box-shadow 180ms ease, transform 180ms ease;
     color: var(--category-tab-color, var(--ink, #20252b));
@@ -335,9 +335,9 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
 
   html body div.wrap > #rail button.on,
   html body div.wrap > #deliveryRail button.on {
-    border: var(--category-tab-active-border, 1px solid var(--line, #D8DFE4));
-    background: var(--category-tab-active-bg, var(--card, #fff));
-    box-shadow: var(--category-tab-active-shadow, none);
+    border: 0;
+    background: transparent;
+    box-shadow: none;
     color: var(--category-tab-active-color, var(--ink, #20252b));
     font-weight: 800;
     transform: var(--category-tab-active-transform, none);
