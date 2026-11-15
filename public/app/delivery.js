@@ -302,10 +302,25 @@ function renderDeliveryRail() {
   if (!rail) return;
   rail.setAttribute('role', 'group');
   rail.setAttribute('aria-label', 'Категории меню');
-  rail.innerHTML = DCATS.map(c => {
-    var isSelected = c.id === dcat;
-    return '<button type="button" data-dcat="' + c.id + '" class="' + (isSelected ? 'on' : '') + '" aria-pressed="' + (isSelected ? 'true' : 'false') + '"' + '><span class="re">' + c.e + '</span>' + c.l + '</button>';
-  }).join('');
+  var buttons = rail.querySelectorAll('button[data-dcat]');
+  var needsRender = buttons.length !== DCATS.length
+    || Array.prototype.some.call(buttons, function (button, index) {
+      return button.dataset.dcat !== DCATS[index].id;
+    });
+
+  if (needsRender) {
+    rail.innerHTML = DCATS.map(function (category) {
+      return '<button type="button" data-dcat="' + category.id + '"><span class="re">'
+        + category.e + '</span>' + category.l + '</button>';
+    }).join('');
+    buttons = rail.querySelectorAll('button[data-dcat]');
+  }
+
+  Array.prototype.forEach.call(buttons, function (button) {
+    var selected = button.dataset.dcat === dcat;
+    button.classList.toggle('on', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
 }
 
 $('#deliveryRail').addEventListener('click', e => {

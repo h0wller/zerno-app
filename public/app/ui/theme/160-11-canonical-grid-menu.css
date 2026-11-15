@@ -362,10 +362,10 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
     max-height: none;
     gap: 8px;
     padding: 8px 6px;
-    border: 0;
-    border-radius: 16px;
-    background: var(--panel, #fff);
-    box-shadow: none;
+    border: var(--category-rail-border, 0);
+    border-radius: var(--category-rail-radius, 16px);
+    background: var(--category-rail-bg, var(--panel, #fff));
+    box-shadow: var(--category-rail-shadow, none);
     overflow: visible;
   }
 
@@ -380,29 +380,42 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
     min-height: 64px;
     max-height: 64px;
     padding: 7px 3px;
-    border: 1px solid transparent;
-    border-radius: 12px;
-    background: transparent;
-    box-shadow: none;
+    border: var(--category-tab-border, 1px solid transparent);
+    border-radius: var(--category-tab-radius, 12px);
+    background: var(--category-tab-bg, transparent);
+    box-shadow: var(--category-tab-shadow, none);
+    transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease,
+      box-shadow 180ms ease, transform 180ms ease;
     color: var(--category-tab-color, var(--ink, #20252b));
     font-size: 10px;
   }
 
   html body div.wrap > #rail button.on,
   html body div.wrap > #deliveryRail button.on {
-    border-color: var(--line, #D8DFE4);
+    border: var(--category-tab-active-border, 1px solid var(--line, #D8DFE4));
     background: var(--category-tab-active-bg, var(--card, #fff));
-    box-shadow: none;
+    box-shadow: var(--category-tab-active-shadow, none);
     color: var(--category-tab-active-color, var(--ink, #20252b));
     font-weight: 800;
-    transform: none;
+    transform: var(--category-tab-active-transform, none);
   }
 
   html body div.wrap > #rail .re,
   html body div.wrap > #deliveryRail .re {
-    border: 0;
-    background: transparent;
+    border: var(--category-icon-border, 0);
+    border-radius: var(--category-icon-radius, 50%);
+    background: var(--category-icon-bg, transparent);
+    color: var(--category-icon-color, currentColor);
     font-size: 21px;
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+  }
+
+  html body div.wrap > #rail button.on .re,
+  html body div.wrap > #deliveryRail button.on .re {
+    border: var(--category-icon-active-border, var(--category-icon-border, 0));
+    border-radius: var(--category-icon-radius, 50%);
+    background: var(--category-icon-active-bg, var(--category-icon-bg, transparent));
+    color: var(--category-icon-active-color, var(--category-icon-color, currentColor));
   }
 }
 
