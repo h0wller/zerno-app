@@ -67,11 +67,14 @@ async function register(name, phone) {
 }
 
 async function seedOtp(key, code = '2468') {
-  const result = await request('/__test/otp', {
+  const response = await fetch(base + '/__test/otp', {
     method: 'POST',
-    body: { key, code, expiresInMs: 300000 },
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ key, code, expiresInMs: 300000 }),
   });
-  assert.equal(result.status, 200, JSON.stringify(result.json));
+  let json = {};
+  try { json = await response.json(); } catch {}
+  assert.equal(response.status, 200, JSON.stringify(json));
 }
 
 async function registerVerified(name, phone) {
@@ -421,7 +424,7 @@ test('staff-created customer remains verified and can order after proving phone 
 });
 
 test('staff role can place staff orders even when its own guest phone profile is unverified', async () => {
-  const token = await register('Pending Staff Order Account', '+7 900 200-01-07');
+  const token = await register('Pending Staff Account', '+7 900 200-01-07');
   const staff = await activateStaff(token, 'integration-order-verification-cashier-2026');
   assert.equal(staff.role, 'cashier');
   assert.equal(staff.verified, 0);
