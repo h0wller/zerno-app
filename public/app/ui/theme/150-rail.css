@@ -89,7 +89,7 @@
   html body .wrap #deliveryView #deliveryRail button.on {
     border: 0;
     border-radius: 0;
-    background: transparent;
+    background: var(--category-tab-active-bg, transparent);
     box-shadow: none;
     color: var(--category-tab-active-color, var(--category-tab-color, currentColor));
     font-weight: var(--category-label-active-weight, 800);
@@ -119,7 +119,7 @@
 
   html body .wrap #menuView #rail button:active,
   html body .wrap #deliveryView #deliveryRail button:active {
-    transform: scale(.98);
+    transform: none;
   }
 
   html body .wrap #menuView #rail button:focus-visible,
