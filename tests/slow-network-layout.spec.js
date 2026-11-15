@@ -274,6 +274,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(imagePriorities.high).toBe(1);
     console.log('[slow-network-layout] after deferred CSS image priorities', JSON.stringify(imagePriorities));
     console.log('[slow-network-layout] after deferred CSS', JSON.stringify(after));
+    expect(after.wrap.width, JSON.stringify({ before: before.wrapStyle, after: after.wrapStyle })).toBe(before.wrap.width);
     expect(after.card.width).toBe(before.card.width);
     expect(after.media.height).toBe(before.media.height);
     expect(after.brandMark).toEqual(before.brandMark);
