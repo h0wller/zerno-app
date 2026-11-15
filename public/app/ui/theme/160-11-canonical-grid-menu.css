@@ -288,7 +288,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   }
 }
 
-/* Desktop category navigation: one restrained brand surface, without nested tab cards. */
+/* Desktop category navigation: preserve the branded sidebar without nested frames. */
 @media (min-width: 821px) and (min-height: 481px) {
   html body div.wrap > #rail,
   html body div.wrap > #deliveryRail {
