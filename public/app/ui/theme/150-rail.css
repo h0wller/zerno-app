@@ -5,6 +5,9 @@
   html body .wrap #menuView #rail,
   html body .wrap #deliveryView #deliveryRail {
     box-sizing: border-box;
+    position: relative;
+    top: auto;
+    transform: none;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -129,6 +132,26 @@
   html body .wrap #deliveryView #deliveryRail::after {
     content: none;
     display: none;
+  }
+}
+
+@media (max-width: 820px) and (max-height: 480px),
+       (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body .wrap #menuView #rail button,
+  html body .wrap #deliveryView #deliveryRail button {
+    min-height: 44px;
+    height: 44px;
+    padding-block: 4px;
+    font-size: 8.5px;
+  }
+
+  html body .wrap #menuView #rail .re,
+  html body .wrap #deliveryView #deliveryRail .re {
+    flex-basis: 20px;
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+    font-size: 18px;
   }
 }
 

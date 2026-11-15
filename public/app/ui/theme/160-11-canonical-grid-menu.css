@@ -219,41 +219,6 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     min-width: 92px;
   }
 }
-html body div.wrap > .rail button,
-html body div.wrap > #rail button,
-html body div.wrap > #deliveryRail button {
-  width: 100%;
-  min-height: 56px;
-  padding: 6px 2px;
-  font-size: 9.5px;
-  line-height: 1.15;
-  white-space: normal;
-  word-break: normal;
-}
-html body div.wrap > .rail::-webkit-scrollbar,
-html body div.wrap > #rail::-webkit-scrollbar,
-html body div.wrap > #deliveryRail::-webkit-scrollbar {
-  display: none;
-}
-
-/* Short landscape keeps category targets compact without changing rail geometry. */
-@media (max-width: 820px) and (max-height: 480px) {
-  html body div.wrap > .rail button,
-  html body div.wrap > #rail button,
-  html body div.wrap > #deliveryRail button {
-    min-height: 44px;
-    font-size: 8.5px;
-  }
-}
-
-/* Normal-flow category rails need no sticky viewport offset in the first frame. */
-@media (max-width:820px) {
-  html body div.wrap > .rail,
-  html body div.wrap > #rail,
-  html body div.wrap > #deliveryRail { top:auto; transform:none; max-height:none; }
-}
-
-
 /* Тап-таргеты карточек доставки ≥ 44px по высоте (проверка pwa-responsive.spec.js: 40px минимум) */
 #deliveryGrid .card .cta[data-add],
 #deliveryGrid .card button.cta {
