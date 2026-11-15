@@ -440,7 +440,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(Math.abs(geometry.railWidth - geometry.gridWidth), brand.brand + ' rail background matches the current card-grid width, not the viewport').toBeLessThanOrEqual(1);
       expect(geometry.railTop, brand.brand + ' categories follow the search block').toBeGreaterThan(geometry.headBottom);
       expect(geometry.railHeight, brand.brand + ' mobile rail uses the shared 64px height').toBe(64);
-      expect(geometry.railRadius, brand.brand + ' rail surface has rounded corners like its tabs').toBe('16px');
+      expect(geometry.railRadius, brand.brand + ' rail surface has no nested rounded frame').toBe('0px');
       expect(geometry.railOverflow, brand.brand + ' rail background is clipped to its rounded surface').toBe('hidden');
       expect(geometry.background, brand.brand + ' uses its own category surface').not.toBe('rgba(0, 0, 0, 0)');
       expect(geometry.border, brand.brand + ' rail has no heavy enclosing frame').toBe('0px');
@@ -457,27 +457,20 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       for (const button of geometry.buttons) {
         expect(button.direction, brand.brand + ' icon sits above its category label').toBe('column');
         expect(button.height, brand.brand + ' category is a usable tap target').toBeGreaterThanOrEqual(44);
-        expect(button.radius, brand.brand + ' category cells share the same rounded geometry').toBe('12px');
+        expect(button.radius, brand.brand + ' category cells are not pills').toBe('0px');
         if (!button.active) {
           expect(button.background, brand.brand + ' inactive category remains visually quiet').toBe('rgba(0, 0, 0, 0)');
         }
         expect(button.borderTop, brand.brand + ' category has no extra top border').toBe('0px');
-        expect(button.iconBackground, brand.brand + ' icon keeps its brand surface').not.toBe('rgba(0, 0, 0, 0)');
-        expect(button.iconBorder, brand.brand + ' icon uses a restrained one-pixel border').toBe('1px');
+        if (button.active) expect(button.iconBackground, brand.brand + ' active icon uses its brand chip').not.toBe('rgba(0, 0, 0, 0)');
+        else expect(button.iconBackground, brand.brand + ' inactive icon has no chip').toBe('rgba(0, 0, 0, 0)');
+        expect(button.iconBorder, brand.brand + ' icon has no frame').toBe('0px');
         expect(button.iconRadius, brand.brand + ' icon keeps its brand-specific shape')
           .toBe(brand.brand === 'coffee' ? '50%' : '8px');
       }
 
-      expect(
-        geometry.activeBackground,
-        brand.brand + ' active state uses a visible brand surface'
-      ).not.toBe('rgba(0, 0, 0, 0)');
-      expect(geometry.activeBorderBottom).toBe('3px');
-      expect(geometry.activeBorderBottomStyle).toBe('solid');
-      expect(
-        geometry.activeBorderBottomColor.replace('rgba(', '').replace('rgb(', '').replace(')', '').split(',').slice(0, 3).map(value => Number(value.trim())).join(','),
-        brand.brand + ' keeps its brand accent hue'
-      ).toBe(brand.brand === 'coffee' ? '18,58,107' : '192,59,42');
+      expect(geometry.activeBackground, brand.brand + ' active tab has no fill').toBe('rgba(0, 0, 0, 0)');
+      expect(geometry.activeBorderBottom, brand.brand + ' active tab uses ::after instead of border-bottom').toBe('0px');
 
       if (geometry.filterTop !== null) {
         expect(geometry.railBottom, 'delivery primary categories remain above their secondary filters').toBeLessThanOrEqual(geometry.filterTop + 1);
@@ -550,11 +543,11 @@ test('desktop category navigation uses one brand frame and a single active tab s
       expect(layout.position).toBe('relative');
       expect(layout.height).toBeLessThan(480);
       expect(layout.railBackground).not.toBe('rgba(0, 0, 0, 0)');
-      expect(layout.railBorder).toBe('1px');
+      expect(layout.railBorder).toBe('0px');
       expect(layout.radius).toBe('16px');
-      expect(layout.activeBackground).not.toBe('rgba(0, 0, 0, 0)');
-      expect(layout.activeBorder).toBe('1px');
-      expect(layout.activeRadius).toBe('12px');
+      expect(layout.activeBackground).toBe('rgba(0, 0, 0, 0)');
+      expect(layout.activeBorder).toBe('0px');
+      expect(layout.activeRadius).toBe('0px');
       expect(layout.contrast, brand.brand + ' selected desktop category text keeps WCAG AA contrast').toBeGreaterThanOrEqual(4.5);
       expect(layout.iconBackground).not.toBe('rgba(0, 0, 0, 0)');
       expect(layout.iconRadius).toBe(brand.brand === 'coffee' ? '50%' : '8px');
@@ -698,10 +691,10 @@ test('desktop category rails use one visual layer and retain brand-specific icon
     });
 
     expect(style.railBackground, brand.brand + ' desktop has one light brand surface').not.toBe('rgba(0, 0, 0, 0)');
-    expect(style.railBorder, brand.brand + ' desktop rail uses a restrained one-pixel edge').toBe('1px');
+    expect(style.railBorder, brand.brand + ' desktop rail has no frame').toBe('0px');
     expect(style.railShadow, brand.brand + ' desktop rail avoids a heavy decorative shadow').toBe('none');
-    expect(style.buttonBackground, brand.brand + ' active category has one contained surface').not.toBe('rgba(0, 0, 0, 0)');
-    expect(style.buttonBorder, brand.brand + ' active category has a restrained outline').toBe('1px');
+    expect(style.buttonBackground, brand.brand + ' active category has no tab fill').toBe('rgba(0, 0, 0, 0)');
+    expect(style.buttonBorder, brand.brand + ' active category has no frame').toBe('0px');
     expect(style.buttonShadow, brand.brand + ' active category avoids a second heavy shadow').toBe('none');
     expect(style.iconBackground, brand.brand + ' active icon carries the selected state').not.toBe('rgba(0, 0, 0, 0)');
     expect(style.iconRadius, brand.brand + ' icon retains its brand-specific silhouette')
@@ -1148,6 +1141,7 @@ test('category rail uses one surface, an active icon chip and a separate underli
             radius: pseudo.borderRadius,
           },
           railBackground: railStyle.backgroundColor,
+          activeTextColor: buttonStyle.color,
           fontFamily: buttonStyle.fontFamily,
           fontSize: parseFloat(buttonStyle.fontSize),
           railHeight: element.getBoundingClientRect().height,
@@ -1173,13 +1167,13 @@ test('category rail uses one surface, an active icon chip and a separate underli
       expect(parseFloat(styles.pseudo.height)).toBe(3);
       expect(styles.pseudo.radius).toBe('2px');
       expect(styles.fontFamily).toMatch(/system-ui|sans-serif/);
-      const rgb = styles.activeTextColor.match(/[\\d.]+/g).map(Number);
+      const rgb = styles.activeTextColor.match(/[0-9.]+/g).map(Number);
       const luminance = rgb.slice(0, 3).map(value => {
         const channel = value / 255;
         return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
       });
       const textLuminance = 0.2126 * luminance[0] + 0.7152 * luminance[1] + 0.0722 * luminance[2];
-      const bgRgb = styles.railBackground.match(/[\\d.]+/g).map(Number);
+      const bgRgb = styles.railBackground.match(/[0-9.]+/g).map(Number);
       const bgLum = bgRgb.slice(0, 3).map(value => {
         const channel = value / 255;
         return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
