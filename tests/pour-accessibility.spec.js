@@ -400,7 +400,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 
       const rail = document.getElementById('deliveryRail');
       const railProbe = document.createElement('button');
-      railProbe.className = 'on';
+      // Measure the inactive label against the rail surface; the active tab has
+      // its own opaque surface and is covered by the active-mode contrast check.
       rail.appendChild(railProbe);
 
       const ticker = document.getElementById('tickerTrack');
