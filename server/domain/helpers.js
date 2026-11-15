@@ -1,8 +1,7 @@
 import crypto from 'crypto';
 import { db } from '../db/connection.js';
 import { nowISO } from '../utils/id-time.js';
-
-export const USER_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+import { USER_SESSION_TTL_MS } from '../utils/session-policy.js';
 
 export const item = r => ({ id: r.id, cat: r.cat, e: r.e, name: r.name, desc: r.descr,
   comp: JSON.parse(r.comp || '[]'), vol: r.vol, price: r.price, tag: r.tag,
