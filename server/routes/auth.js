@@ -14,7 +14,7 @@ import { nowISO } from '../utils/id-time.js';
 import { sendSms } from '../services/sms.js';
 import { tgSend, TG_TOKEN } from '../services/telegram.js';
 import { sendPush } from '../services/push.js';
-import { userGuard, pendingGuard, adminGuard } from '../middleware/auth.js';
+import { userGuard, pendingGuard, adminGuard, getBearerToken } from '../middleware/auth.js';
 import { grantBonus, getBonusConfig, setBonusConfig, QR_SOURCE } from '../domain/bonuses.js';
 import { validate, RegisterSchema, LoginSchema, SetupPinSchema, ActivateCodeSchema } from '../middleware/validate.js';
 import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, SMS_AUTH_ENABLED } from '../config.js';
@@ -308,8 +308,18 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
     consumeOtp(p, entry => entry.code === otp);
     clearLock(req, 'login', p);
     clearLock(req, 'otp-send', p);
+    if (!c.verified) {
+      db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
+      addHist(c.id, 'Подтверждение номера по одноразовому коду', 'Система');
+      grantBonus(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
+    }
     addHist(c.id, `Вход по коду из ${st.via === 'sms' ? 'SMS' : 'Telegram'}`, 'Приложение');
-    return res.json({ token: issueToken(c.id), customer: cust(c), needPin: !c.pin });
+    const verifiedCustomer = db.prepare('SELECT * FROM customers WHERE id=?').get(c.id);
+    return res.json({
+      token: issueToken(c.id),
+      customer: cust(verifiedCustomer),
+      needPin: !verifiedCustomer.pin,
+    });
   }
 
   if (!c.pin) {
@@ -451,7 +461,7 @@ authRouter.post('/api/auth/deactivate', userGuard, (req, res) => {
 });
 
 authRouter.post('/api/exit', userGuard, (req, res) => {
-  const t = (req.header('Authorization') || '').replace('Bearer ', '');
+  const t = getBearerToken(req);
   db.prepare('DELETE FROM tokens WHERE token=?').run(t);
   res.json({ ok: true });
 });
