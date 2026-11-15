@@ -59,6 +59,8 @@ iOS (run this on the Mac, not Windows):
 npx cap run ios --live-reload --host 192.168.1.42 --port 3000
 ```
 
+On iPhone, allow the **Local Network** permission prompt when it appears. If it was denied earlier, enable Zerno App under Settings → Privacy & Security → Local Network. The iOS target includes a purpose string and the narrow ATS local-network exception for this development connection.
+
 Keep both devices on the same Wi-Fi. If the phone cannot load the app, first check the Windows firewall and whether the phone can open `http://192.168.1.42:3000/api/health` in its browser.
 
 ## 4. Send a real phone summary
