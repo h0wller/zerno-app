@@ -31,12 +31,10 @@ function updateRailStickyPosition(rail, head) {
     var stickyTop = topbarIsSticky && topbar
       ? Math.ceil(topbar.getBoundingClientRect().height)
       : 12;
-    // Use native CSS sticky from the first paint. The browser keeps the rail
-    // in normal flow until it reaches the header, then pins it during scrolling.
-    // Do not toggle position from a scroll listener: iOS Safari may deliver
-    // scroll events after momentum scrolling has already settled.
-    rail.style.position = 'sticky';
-    rail.style.top = stickyTop + 'px';
+    // Keep the rail in normal flow until it reaches the pin threshold.
+    // The scroll-idle controller applies the pinned viewport geometry.
+    rail.style.position = 'relative';
+    rail.style.top = 'auto';
     rail.style.maxHeight = 'none';
     rail.style.overflowY = 'hidden';
     rail.style.alignSelf = 'start';
@@ -166,14 +164,83 @@ requestAnimationFrame(alignRailWithCard);
 // Keep the mobile rail pinned natively, but hide it while the user is moving.
 // Reveal it shortly after the final scroll event so it never obstructs active scrolling.
 var railScrollRevealTimer = null;
+var railPinState = null;
+
+function getRailStickyTop() {
+  var topbar = document.querySelector('header.topbar');
+  var style = topbar ? getComputedStyle(topbar) : null;
+  var isSticky = !!(style && (style.position === 'sticky' || style.position === 'fixed'));
+  return isSticky && topbar ? Math.ceil(topbar.getBoundingClientRect().height) : 12;
+}
+
+function clearRailPin(rail) {
+  if (railPinState && railPinState.spacer && railPinState.spacer.parentNode) {
+    railPinState.spacer.parentNode.removeChild(railPinState.spacer);
+  }
+  var target = rail || (railPinState && railPinState.rail);
+  if (target) {
+    target.classList.remove('rail-is-pinned', 'rail-scroll-hidden');
+    target.style.removeProperty('--rail-pinned-top');
+    target.style.removeProperty('--rail-pinned-left');
+    target.style.removeProperty('--rail-pinned-width');
+    target.style.position = 'relative';
+    target.style.top = 'auto';
+    target.style.left = 'auto';
+    target.style.width = '';
+    target.style.maxWidth = '';
+    target.style.margin = '';
+  }
+  railPinState = null;
+}
+
+function pinRailAtViewportTop(rail, stickyTop) {
+  if (railPinState && railPinState.rail === rail) return;
+
+  var rect = rail.getBoundingClientRect();
+  var style = getComputedStyle(rail);
+  var spacer = document.createElement('div');
+  spacer.className = 'rail-pin-spacer';
+  spacer.setAttribute('aria-hidden', 'true');
+  spacer.style.cssText = [
+    'display:block',
+    'box-sizing:border-box',
+    'width:' + rect.width + 'px',
+    'height:' + rect.height + 'px',
+    'margin-top:' + style.marginTop,
+    'margin-right:' + style.marginRight,
+    'margin-bottom:' + style.marginBottom,
+    'margin-left:' + style.marginLeft,
+    'visibility:hidden',
+    'pointer-events:none'
+  ].join(';');
+  rail.parentNode.insertBefore(spacer, rail);
+
+  railPinState = {
+    rail: rail,
+    spacer: spacer,
+    documentTop: rect.top + (window.scrollY || document.documentElement.scrollTop || 0),
+    parent: rail.parentElement
+  };
+  rail.style.setProperty('--rail-pinned-top', stickyTop + 'px');
+  rail.style.setProperty('--rail-pinned-left', rect.left + 'px');
+  rail.style.setProperty('--rail-pinned-width', rect.width + 'px');
+  rail.style.position = 'fixed';
+  rail.style.top = stickyTop + 'px';
+  rail.style.left = rect.left + 'px';
+  rail.style.width = rect.width + 'px';
+  rail.style.maxWidth = rect.width + 'px';
+  rail.style.margin = '0';
+  rail.classList.add('rail-is-pinned');
+}
+
 function updateRailScrollVisibility() {
   var isMobileRail = window.innerWidth <= 820;
   var isDelivery = document.documentElement.dataset.brand === 'delivery';
   var rail = document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
 
   if (!rail) return;
-  if (!isMobileRail || getComputedStyle(rail).position !== 'sticky') {
-    rail.classList.remove('rail-scroll-hidden');
+  if (!isMobileRail) {
+    clearRailPin(rail);
     if (railScrollRevealTimer !== null) {
       clearTimeout(railScrollRevealTimer);
       railScrollRevealTimer = null;
@@ -181,25 +248,38 @@ function updateRailScrollVisibility() {
     return;
   }
 
-  var topbar = document.querySelector('header.topbar');
-  var topbarStyle = topbar ? getComputedStyle(topbar) : null;
-  var topbarSticky = !!(topbarStyle && (topbarStyle.position === 'sticky' || topbarStyle.position === 'fixed'));
-  var stickyTop = topbarSticky && topbar
-    ? Math.ceil(topbar.getBoundingClientRect().height)
-    : 12;
-  var hasReachedStickyPosition = (window.scrollY || document.documentElement.scrollTop || 0) > 0 &&
-    rail.getBoundingClientRect().top <= stickyTop + 1;
+  var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  var stickyTop = getRailStickyTop();
+  var documentTop = railPinState && railPinState.rail === rail
+    ? railPinState.documentTop
+    : rail.getBoundingClientRect().top + scrollY;
+  var pinThreshold = documentTop - stickyTop;
+  var parent = railPinState && railPinState.rail === rail
+    ? railPinState.parent
+    : rail.parentElement;
+  var railHeight = rail.getBoundingClientRect().height;
+  var parentBottom = parent ? parent.getBoundingClientRect().bottom : Infinity;
+  var hasReachedPinPoint = scrollY >= pinThreshold;
+  var hasReachedParentEnd = parentBottom <= stickyTop + railHeight;
 
-  // Once pinned, keep it hidden through the whole scroll gesture, including
-  // upward movement that releases the sticky constraint. Reveal after quiet time.
-  if (hasReachedStickyPosition || rail.classList.contains('rail-scroll-hidden')) {
-    rail.classList.add('rail-scroll-hidden');
+  if (!hasReachedPinPoint || hasReachedParentEnd) {
+    clearRailPin(rail);
+    if (railScrollRevealTimer !== null) {
+      clearTimeout(railScrollRevealTimer);
+      railScrollRevealTimer = null;
+    }
+    return;
   }
+
+  pinRailAtViewportTop(rail, stickyTop);
+  rail.classList.add('rail-scroll-hidden');
 
   if (railScrollRevealTimer !== null) clearTimeout(railScrollRevealTimer);
   railScrollRevealTimer = setTimeout(function () {
     railScrollRevealTimer = null;
-    rail.classList.remove('rail-scroll-hidden');
+    if (railPinState && railPinState.rail === rail) {
+      rail.classList.remove('rail-scroll-hidden');
+    }
   }, 220);
 }
 
@@ -211,7 +291,7 @@ window.addEventListener('resize', function () {
   }
   var isDelivery = document.documentElement.dataset.brand === 'delivery';
   var rail = document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
-  if (rail) rail.classList.remove('rail-scroll-hidden');
+  clearRailPin(rail);
 }, { passive: true });
 
 (function () {
