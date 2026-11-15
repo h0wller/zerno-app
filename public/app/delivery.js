@@ -718,7 +718,7 @@ function syncAddButtons() {
     b.setAttribute('aria-label', label);
     if (n > 0) b.title = label;
     else b.removeAttribute('title');
-    if (!b.classList.contains('added')) b.textContent = n > 0 ? '✓' : 'Добавить';
+    if (!b.classList.contains('added')) b.textContent = n > 0 ? ('В корзине · ' + n) : 'Добавить';
   });
 }
 
@@ -753,7 +753,7 @@ function handleDeliveryStepperClick(e) {
   const addButton = row && row.querySelector('[data-add]');
   if (addButton) {
     const label = count ? ('В корзине · ' + count + '. Добавить ещё') : 'Добавить';
-    addButton.textContent = count ? '✓' : 'Добавить';
+    addButton.textContent = count ? ('В корзине · ' + count) : 'Добавить';
     addButton.setAttribute('aria-label', label);
     if (count) addButton.title = label;
     else addButton.removeAttribute('title');
