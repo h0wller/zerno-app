@@ -856,10 +856,10 @@ html body #adminBar.adminBar[hidden] { display:none; }
     grid-template-columns:repeat(3,minmax(0,1fr));
     align-items:stretch;
     gap:8px;
-    width:calc(100% + 90px);
-    max-width:calc(100vw - 20px);
+    width:100%;
+    max-width:100%;
     min-width:0;
-    margin:0 0 12px -90px;
+    margin:0 0 12px;
     padding:0;
     overflow:visible;
     box-sizing:border-box;
