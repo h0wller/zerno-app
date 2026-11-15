@@ -129,7 +129,7 @@
 | `core/overlay-core.js` | `syncOverlay` (модалки/шторки/корзина), popstate/Escape/клик по оверлею; TgUx (MainButton, BackButton, haptics) | `window.syncOverlay`, `window.TgUx` |
 | `core/panel.js` | Единая шторка профиля `#panel`, фокус возврата и действия «Назад»; старый вызов `openPanel('bonus')` открывает тот же профиль | `window.openPanel`, `window.closePanel`, `window.setTab` |
 | `core/swipe.js` | iOS-свайп закрытия `#panel` | — |
-| `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`): desktop rail привязывается к первой строке каталога и сохраняет document-space anchor при переключении категорий/условных сабфильтров; мобильный rail использует отдельное sticky-поведение; обёртка `.topbar-right` на ≥821px | `window.alignRailWithCard` |
+| `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`): desktop rail выравнивается по первой строке каталога при начальном layout/смене viewport; переключение категорий не вызывает повторное выравнивание, поэтому rail остаётся на месте; мобильный rail использует отдельное sticky-поведение; обёртка `.topbar-right` на ≥821px | `window.alignRailWithCard` |
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |
