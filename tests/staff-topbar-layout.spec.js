@@ -47,6 +47,21 @@ test('mobile menu header has only the two requested rows', async ({ page }) => {
       );
       await page.evaluate(() => window.setMode('admin'));
       await expect(page.locator('#adminBar')).toBeVisible();
+      const adminBarGeometry = await page.locator('#adminBar').evaluate(node => {
+        const rect = node.getBoundingClientRect();
+        const parent = node.parentElement.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        return {
+          marginLeft: style.marginLeft,
+          left: rect.left,
+          right: rect.right,
+          parentLeft: parent.left,
+          parentRight: parent.right
+        };
+      });
+      expect(adminBarGeometry.marginLeft, 'mobile admin actions must not use the legacy -90px rail compensation').toBe('0px');
+      expect(adminBarGeometry.left, 'admin actions must align with the content column').toBeGreaterThanOrEqual(adminBarGeometry.parentLeft - 1);
+      expect(adminBarGeometry.right, 'admin actions must stay inside the content column').toBeLessThanOrEqual(adminBarGeometry.parentRight + 1);
       for (const action of ['#promoToggle', '#dashToggle', '#chatsToggle2']) {
         await expect(page.locator(action)).toBeVisible();
       }
