@@ -302,62 +302,14 @@ function renderSubFilter(categoryItems) {
   }
 }
 
-var deliveryRailCueResizeObserver = null;
-
-function syncDeliveryRailCue() {
+function renderDeliveryRail() {
   var rail = document.getElementById('deliveryRail');
   if (!rail) return;
-
   rail.setAttribute('role', 'group');
   rail.setAttribute('aria-label', 'Категории меню');
-  rail.setAttribute('tabindex', '0');
-  var hasOverflow = rail.scrollWidth > rail.clientWidth + 1;
-  var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
-  var atEnd = hasOverflow && rail.scrollLeft >= maxScroll - 2;
-
-  rail.classList.toggle('has-overflow', hasOverflow);
-  rail.classList.toggle('has-start-overflow', hasOverflow && rail.scrollLeft > 2);
-  rail.classList.toggle('at-end', atEnd);
-}
-
-function bindDeliveryRailCue() {
-  var rail = document.getElementById('deliveryRail');
-  if (!rail) return;
-
-  if (rail.dataset.scrollCueBound !== '1') {
-    rail.dataset.scrollCueBound = '1';
-    rail.addEventListener('scroll', syncDeliveryRailCue, { passive: true });
-    window.addEventListener('resize', syncDeliveryRailCue, { passive: true });
-
-    if (typeof ResizeObserver === 'function' && !deliveryRailCueResizeObserver) {
-      deliveryRailCueResizeObserver = new ResizeObserver(syncDeliveryRailCue);
-      deliveryRailCueResizeObserver.observe(rail);
-    }
-  }
-
-  syncDeliveryRailCue();
-}
-
-function renderDeliveryRail() {
-  $('#deliveryRail').innerHTML = DCATS.map(c =>
-    `<button type="button" data-dcat="${c.id}" class="${c.id === dcat ? 'on' : ''}" aria-pressed="${c.id === dcat ? 'true' : 'false'}"><span class="re">${c.e}</span>${c.l}</button>`
+  rail.innerHTML = DCATS.map(c =>
+    '<button type="button" data-dcat="' + c.id + '" class="' + (c.id === dcat ? 'on' : '') + '" aria-pressed="' + (c.id === dcat ? 'true' : 'false') + '"><span class="re">' + c.e + '</span>' + c.l + '</button>'
   ).join('');
-  bindDeliveryRailCue();
-}
-
-function revealDeliveryRailSelection(button) {
-  var rail = document.getElementById('deliveryRail');
-  if (!rail || !button) return;
-  var railRect = rail.getBoundingClientRect();
-  var buttonRect = button.getBoundingClientRect();
-  var inset = 12;
-  var delta = 0;
-  if (buttonRect.left < railRect.left + inset) delta = buttonRect.left - railRect.left - inset;
-  else if (buttonRect.right > railRect.right - inset) delta = buttonRect.right - railRect.right + inset;
-  if (delta) rail.scrollBy({
-    left: delta,
-    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
-  });
 }
 
 $('#deliveryRail').addEventListener('click', e => {
@@ -367,7 +319,6 @@ $('#deliveryRail').addEventListener('click', e => {
     activeAddonTab = 'all';
     activeIngredient = 'all';
     renderDeliveryRail();
-    revealDeliveryRailSelection(document.querySelector('#deliveryRail .on'));
     if (typeof renderDeliverySkeleton === 'function') {
       renderDeliverySkeleton();
     }
