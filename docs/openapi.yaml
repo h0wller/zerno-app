@@ -1337,6 +1337,48 @@ paths:
                   code: { type: string, nullable: true, description: "Промокод доставки, если выдан" }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /api/fitness/evidence:
+    post:
+      tags: [Fitness]
+      summary: Store a device-reported HealthKit or Health Connect activity summary
+      description: 'Requires an authenticated verified guest. Persists only a normalized summary and provider-record hash. The evidence remains unverified; this endpoint does not issue rewards.'
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [activity]
+              properties:
+                activity:
+                  type: object
+                  required: [id, activityType, startedAt, endedAt, durationSeconds, distanceMeters, sourcePlatform, sourceName, sourcePackageName]
+                  properties:
+                    id: { type: string, maxLength: 255 }
+                    activityType: { type: string, enum: [running] }
+                    startedAt: { type: string, format: date-time }
+                    endedAt: { type: string, format: date-time }
+                    durationSeconds: { type: integer, minimum: 60, maximum: 14400 }
+                    distanceMeters: { type: integer, minimum: 500, maximum: 250000 }
+                    sourcePlatform: { type: string, enum: [apple_healthkit, android_health_connect] }
+                    sourceName: { type: string, maxLength: 120 }
+                    sourcePackageName: { type: string, maxLength: 255 }
+                    deviceName: { type: string, maxLength: 120 }
+                    deviceModel: { type: string, maxLength: 120 }
+                    sourceProductType: { type: string, maxLength: 120 }
+                    recordingMethod: { type: string, enum: [actively_recorded, automatically_recorded, manual_entry, unknown] }
+      responses:
+        '202':
+          description: Stored as unverified device-reported evidence; no reward
+        '200':
+          description: Duplicate provider record; no reward
+        '400': { description: Invalid activity summary }
+        '401': { description: Authentication required }
+        '403': { description: Verified guest required }
+        '429': { description: Daily evidence submission limit reached }
+
   /api/fitness/attestation/challenges:
     post:
       tags: [Fitness]

@@ -32,6 +32,7 @@ import chatRouter from './server/routes/chat.js';
 import { createTgRouter } from './server/routes/tg.js';
 import { createStravaRouter } from './server/routes/fitness-strava.js';
 import { createFitnessAttestationRouter } from './server/routes/fitness-attestation.js';
+import { createFitnessEvidenceRouter } from './server/routes/fitness-evidence.js';
 import pushRouter from './server/routes/push.js';
 import statsRouter from './server/routes/stats.js';
 import { item, getMeta, touch } from './server/domain/helpers.js';
@@ -78,6 +79,7 @@ app.use(chatRouter);
 app.use(createTgRouter({ appKb }));
 app.use(createStravaRouter());
 app.use(createFitnessAttestationRouter());
+app.use(createFitnessEvidenceRouter());
 app.use(pushRouter);
 app.use(statsRouter);
 

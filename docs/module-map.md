@@ -159,8 +159,8 @@
 | Модуль | Зона ответственности |
 | --- | --- |
 | `server.js` | Сборка Express, статика с Cache-Control (sw.js — no-store), роуты меню |
-| `server/routes/*` | auth, staff (в т.ч. погашение спортивных подарков), fitness-strava (OAuth, приватный список тренировок и webhook), promos, orders, chat, tg (webhook-бот + приём GPX как unverified заявки), push, stats |
-| `server/domain/*` | customers, loyalty (покупочные штампы/подарки), fitness-rewards (приём GPX как unverified; выдача не подключена до server-side verifier; погашение ранее выданных наград), helpers, валидация адреса |
+| `server/routes/fitness-evidence.js` | Authenticated HealthKit/Health Connect evidence intake; persists normalized summaries as unverified only | `POST /api/fitness/evidence` |\n| `server/routes/*` | auth, staff (в т.ч. погашение спортивных подарков), fitness-strava (OAuth, приватный список тренировок и webhook), promos, orders, chat, tg (webhook-бот + приём GPX как unverified заявки), push, stats |
+| `server/domain/fitness-evidence.js` | Validates and deduplicates device-reported HealthKit/Health Connect summaries; never upgrades trust or issues rewards | `fitnessEvidenceService` |\n| `server/domain/*` | customers, loyalty (покупочные штампы/подарки), fitness-rewards (приём GPX как unverified; выдача не подключена до server-side verifier; погашение ранее выданных наград), helpers, валидация адреса |
 | `server/services/*` | Оркестратор пушей (TG+web+FCM), telegram, telegram-file (ограниченная загрузка файлов Telegram), strava (OAuth, encrypted tokens, on-demand activities), fcm, sms |
 | `server/middleware/*` | Гарды ролей, security-заголовки, CORS, zod-валидация |
 | `server/utils/gpx-activity.js` | Ограниченный GPX-парсер: вычисляет агрегаты, не возвращает и не хранит GPS-координаты |

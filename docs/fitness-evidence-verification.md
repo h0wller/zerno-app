@@ -93,14 +93,14 @@ Both native adapters normalize into the same required field set:
 
 Identifiers are non-empty and capped at 255 characters; display/provenance labels are capped at 120 characters. Both adapters reject malformed time ranges, non-running activities, invalid numeric values and missing source identifiers. The iOS bundle identifier is mapped to the shared `sourcePackageName` field; no platform-specific alias is exposed to callers. Android additionally supplies the optional `recordingMethod` signal (`actively_recorded`, `automatically_recorded`, `manual_entry`, `unknown`). This signal does not change evidence trust.
 
-Both adapters default to and cap requests at 30 days and return at most 25 running records. To avoid letting non-running workouts consume the result limit, each adapter scans a bounded window of at most 500 source records (Health Connect: up to five 100-record pages; HealthKit: one 500-record query). These are display/query limits, not verification guarantees. The contract is local to the native app today; no mobile summary is submitted to the server yet.
+Both adapters default to and cap requests at 30 days and return at most 25 running records. To avoid letting non-running workouts consume the result limit, each adapter scans a bounded window of at most 500 source records (Health Connect: up to five 100-record pages; HealthKit: one 500-record query). These are display/query limits, not verification guarantees. The normalized summary can now be submitted to `POST /api/fitness/evidence` using the authenticated guest session. The server stores a minimal provider-neutral record with `verification_state='unverified'`; no route, coordinates or raw provider payload are retained. The endpoint derives a customer+platform+provider-record hash server-side for idempotency. This ingestion endpoint does not verify that the native adapter is genuine and does not issue rewards.
 
 ## Recommended rollout
 
-1. Define a stable server-side evidence contract and source trust levels independent of Apple/Android. The current GPX path is fail-closed and cannot issue a reward.
+1. Define a stable server-side evidence contract and source trust levels independent of Apple/Android. The provider-neutral intake endpoint is implemented and stores device summaries as unverified; it cannot issue a reward.
 2. Implement the iOS HealthKit bridge for Apple Watch workouts, with explicit permission UX and minimal data transfer. Initial read-only bridge is present; native build/device verification remains outstanding.
 3. Keep Telegram as the onboarding, status, and reward-code interface.
-4. Android Health Connect read-only bridge and profile permission flow are implemented; native build/device verification and server-side evidence submission/verification remain outstanding.
+4. Android Health Connect read-only bridge, profile permission flow and common server evidence intake are implemented; native build/device verification and cryptographic/source verification remain outstanding.
 5. Add vendor-specific adapters as separate increments; retain file uploads as unverified fallback.
 6. Test permission denial/revocation, no paired watch, workouts written by third-party apps, duplicate workouts, missing route, offline sync, account switching, and reward replay.
 

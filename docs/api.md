@@ -27,7 +27,7 @@
 GPX-приём спортивных заявок в Telegram — отдельный пилот, выключенный по умолчанию через `FITNESS_REWARDS_ENABLED`; GPX сохраняется как `unverified` и не выдаёт награду. Правила и модель хранения: [docs/fitness-rewards.md](./fitness-rewards.md). Команды бота: `/fitness` — показать последний подарок; отправка GPX-документа — сохранить неподтверждённую заявку; `/fitness_redeem RUN-XXXXXXXXXX` — кассовое погашение ранее выданного кода. Strava реализована отдельно как read-only OAuth-интеграция; её данные пока не участвуют в наградах. Настройка и ограничения: [docs/strava-integration.md](./strava-integration.md).
 
 
-## Fitness App Attest foundation
+## Fitness mobile evidence intake\n\n| Method and path | Purpose | Access |\n|---|---|---|\n| `POST /api/fitness/evidence` | Store one normalized HealthKit/Health Connect summary as `unverified`; no reward is issued | verified guest + userGuard |\n\nThe request accepts only one normalized activity summary. Provider IDs are hashed with the authenticated customer and platform for deduplication. Raw payloads, routes and coordinates are not stored. Client-supplied verification or reward fields are ignored. This endpoint does not verify the native source or issue rewards.\n\n## Fitness App Attest foundation
 
 | Method and path | Purpose | Access |
 |---|---|---|

@@ -222,7 +222,32 @@ CREATE TABLE IF NOT EXISTS fcm(
       CHECK(verification_state IN ('unverified','pending_review','verified','rejected','needs_review'))`);
   }
 
-  // One-time App Attest challenges bound to the authenticated Zerno customer and purpose.
+  // Device-reported mobile summaries are kept separate from untrusted file uploads.
+  // No raw routes, coordinates, payloads or client-controlled verification state are stored.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS fitness_device_evidence(
+      id TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      source_platform TEXT NOT NULL CHECK(source_platform IN ('apple_healthkit','android_health_connect')),
+      source_record_hash TEXT NOT NULL UNIQUE,
+      started_at TEXT NOT NULL,
+      ended_at TEXT NOT NULL,
+      duration_seconds INTEGER NOT NULL CHECK(duration_seconds > 0),
+      distance_meters INTEGER NOT NULL CHECK(distance_meters > 0),
+      source_name TEXT NOT NULL,
+      source_package_name TEXT NOT NULL,
+      device_name TEXT,
+      device_model TEXT,
+      source_product_type TEXT,
+      recording_method TEXT NOT NULL DEFAULT 'unknown'
+        CHECK(recording_method IN ('actively_recorded','automatically_recorded','manual_entry','unknown')),
+      verification_state TEXT NOT NULL DEFAULT 'unverified'
+        CHECK(verification_state IN ('unverified','pending_review','verified','rejected','needs_review')),
+      received_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_fitness_device_evidence_customer
+      ON fitness_device_evidence(cid, received_at DESC);
+  
   db.exec(`
     CREATE TABLE IF NOT EXISTS fitness_attest_challenges(
       id TEXT PRIMARY KEY,
