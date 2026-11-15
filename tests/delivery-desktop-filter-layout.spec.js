@@ -57,6 +57,14 @@ for (const width of [1024, 1440]) {
     const chips = bar.locator('.subchip');
     await expect(chips).toHaveCount(9);
 
+    const viewport = page.locator('#deliveryView .subfilter-viewport');
+    const viewportSpacing = await viewport.evaluate((element) => ({
+      marginBottom: getComputedStyle(element).marginBottom,
+      barMarginBottom: getComputedStyle(element.querySelector('#deliverySubFilter')).marginBottom,
+    }));
+    expect(viewportSpacing.marginBottom, 'subfilter viewport sits directly above catalog cards').toBe('0px');
+    expect(viewportSpacing.barMarginBottom, 'subfilter row has no trailing margin').toBe('0px');
+
     const geometry = await bar.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const chipRects = Array.from(element.querySelectorAll('.subchip')).map((chip) => {
