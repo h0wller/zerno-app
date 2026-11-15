@@ -23,7 +23,33 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp` |
-| `core/utils.js` | Чистые утилиты форматирования/DOM | `$`, `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `fmtMulti` |
+| `core/utils.js` | Чистые утилиты форматирования/DOM | `# Карта владения модулями («…и кофе × Пятница»)
+
+Каноническая карта «модуль → часть сайта». Единственный источник правды о том,
+какой модуль владеет какими DOM-узлами и поведением.
+Правило-инцидент: один DOM-узел — ровно один модуль-владелец; остальные читают
+состояние через window.*-контракты.
+Обновляется тем же PR, что и создание/переименование/удаление модуля
+(см. docs/frontend-todo.md, разд. 5, п. 7).
+
+Колонка «Контракты» — window.*-функции, которые модуль публикует для других.
+
+## 0. Точка входа, жизненный цикл, кэш
+
+| Модуль | Владеет | Контракты |
+| --- | --- | --- |
+| `public/app/main.js` | Единственная ESM-точка входа; порядок импортов = порядок инициализации; `boot.js` строго последним | — |
+| `public/app/core/boot.js` | `renderAll()`, `boot()`; ЕДИНСТВЕННАЯ регистрация SW (SKIP_WAITING + reload только при hadController); install-баннер; iOS-хинт; IMG-FB v1 (фолбэк webp→svg при ошибке загрузки) | `window.renderAll`, `window.boot` |
+| `public/sw.js` | `STATIC_CACHE` — App Shell (cache-first + фоновая ревалидация); `MEDIA_CACHE` — svg network-first (no-cache), png/webp SWR; `API_CACHE` — /api/menu SWR 5 мин | — |
+| `public/index.html` (инлайн, СЛОЙ 4) | early-brand-guard; critical-fouc-guard; perf-bridge (Lighthouse); TgUx-стаб; префетч /api/menu и /api/dmenu; lcp-inline-css; FOUC-guard Ф3.51 (первый кадр шапки/марки/тикера); владелец клика сплэша; early-chrome-guard. Легаси-дубль регистрации SW — кандидат на удаление (владелец boot.js) | — |
+
+## 1. Глобальное состояние, сеть, утилиты
+
+| Модуль | Владеет | Контракты |
+| --- | --- | --- |
+| `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp` |
+, `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `fmtMulti` |
+| `core/category-icons.js` | Общий набор inline SVG для категорий rail обоих брендов; декоративная графика без текстового содержимого | `renderCategoryIcon(id)` |
 | `core/api.js` | Определяет базовый URL API для app-origin и локальных frontend-серверов | `window.API_BASE` |
 | `core/ui.js` | `api()` с обработкой 401; тосты; дата обновления меню; PERF-дедуп одинаковых GET | `window.api`, `window.toast`, `window.renderUpd` |
 | `core/config.js` | Bootstrap /api/config (имя TG-бота и состояние opt-in-функций), триггеры relink/verifyNote | `window.TG_USERNAME`, `window.SMS_AUTH_ENABLED`; событие `app:config-loaded` |
