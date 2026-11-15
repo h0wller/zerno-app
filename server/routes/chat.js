@@ -10,6 +10,8 @@ const chatRouter = Router();
 const MAX_KEY_LENGTH = 80;
 const MAX_MESSAGE_LENGTH = 2000;
 const RATE_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_CHAT_RATE_LIMIT_RECORDS = 20_000;
 
 function digest(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex');
@@ -29,36 +31,71 @@ function parseGuestKey(value) {
   return null;
 }
 
-function consumeChatLimit(req, scope, identity, maxRequests, res) {
+function consumeChatLimit(req, bucket, scope, identity, maxRequests, res) {
   const ip = String(req.ip || req.socket?.remoteAddress || 'local');
-  const key = digest('chat-rate:v1:' + scope + ':' + ip + ':' + String(identity || '-'));
+  // Keep the key opaque: the bucket prefix separates bounded IP and thread cardinality
+  // without persisting either the client address or the guest thread key.
+  const key = bucket + ':' + digest('chat-rate:v2:' + scope + ':' + ip + ':' + String(identity || '-'));
   const now = Date.now();
-  const previous = db.prepare('SELECT requests, window_started_at FROM chat_rate_limits WHERE key=?').get(key);
 
-  if (!previous || now - previous.window_started_at >= RATE_WINDOW_MS) {
+  // Serialize cleanup, capacity checks, and counter changes. Concurrent requests must
+  // never observe spare capacity simultaneously and exceed the global row ceiling.
+  const result = db.transaction(() => {
+    db.prepare('DELETE FROM chat_rate_limits WHERE window_started_at < ?')
+      .run(now - RATE_LIMIT_RETENTION_MS);
+
+    const previous = db.prepare(
+      'SELECT requests, window_started_at FROM chat_rate_limits WHERE key=?'
+    ).get(key);
+
+    if (previous && now - previous.window_started_at < RATE_WINDOW_MS) {
+      if (previous.requests >= maxRequests) {
+        const retryAfter = Math.max(1, Math.ceil(
+          (previous.window_started_at + RATE_WINDOW_MS - now) / 1000
+        ));
+        return { kind: 'limited', retryAfter };
+      }
+
+      db.prepare('UPDATE chat_rate_limits SET requests=requests+1 WHERE key=?').run(key);
+      return { kind: 'allowed' };
+    }
+
+    if (!previous) {
+      const { count } = db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits').get();
+      if (count >= MAX_CHAT_RATE_LIMIT_RECORDS) return { kind: 'full' };
+    }
+
     db.prepare(`
       INSERT INTO chat_rate_limits(key, requests, window_started_at) VALUES(?, 1, ?)
       ON CONFLICT(key) DO UPDATE SET requests=1, window_started_at=excluded.window_started_at
     `).run(key, now);
-    return true;
-  }
+    return { kind: 'allowed' };
+  })();
 
-  if (previous.requests >= maxRequests) {
-    const retryAfter = Math.max(1, Math.ceil((previous.window_started_at + RATE_WINDOW_MS - now) / 1000));
-    res.set('Retry-After', String(retryAfter));
+  if (result.kind === 'limited') {
+    res.set('Retry-After', String(result.retryAfter));
     res.status(429).json({ error: 'Слишком много запросов к чату. Попробуйте позже.' });
     return false;
   }
 
-  db.prepare('UPDATE chat_rate_limits SET requests=requests+1 WHERE key=?').run(key);
+  if (result.kind === 'full') {
+    res.set('Retry-After', String(Math.ceil(RATE_WINDOW_MS / 1000)));
+    res.status(503).json({
+      error: 'Временное ограничение: хранилище лимитов чата заполнено. Попробуйте позже.',
+      code: 'CHAT_RATE_LIMIT_STORAGE_FULL'
+    });
+    return false;
+  }
+
   return true;
 }
 
-function applyGuestRateLimits(req, res, scope, key, ipMax, threadMax) {
-  if (!consumeChatLimit(req, scope + ':ip', '-', ipMax, res)) return false;
-  if (!consumeChatLimit(req, scope + ':thread', key, threadMax, res)) return false;
-  db.prepare('DELETE FROM chat_rate_limits WHERE window_started_at < ?').run(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  return true;
+function applyGuestIpRateLimit(req, res, scope, ipMax) {
+  return consumeChatLimit(req, 'ip', scope + ':ip', '-', ipMax, res);
+}
+
+function applyGuestThreadRateLimit(req, res, scope, key, threadMax) {
+  return consumeChatLimit(req, 'thread', scope + ':thread', key, threadMax, res);
 }
 
 /**
@@ -144,10 +181,11 @@ chatRouter.post('/api/chat/send', (req, res) => {
   const key = typeof req.body?.key === 'string' ? req.body.key : '';
   const parsed = parseGuestKey(key);
   if (!parsed) return res.status(400).json({ error: 'Некорректный ключ чата. Откройте чат заново.' });
-  if (!applyGuestRateLimits(req, res, 'send', key, 30, 10)) return;
+  if (!applyGuestIpRateLimit(req, res, 'send', 30)) return;
 
   const authorized = authorizeGuestThread(req, res, key);
   if (!authorized) return;
+  if (!applyGuestThreadRateLimit(req, res, 'send', key, 10)) return;
   const text = parseMessage(req.body);
   if (!text) return res.status(400).json({ error: 'Сообщение должно содержать от 1 до 2000 символов' });
 
@@ -203,10 +241,11 @@ chatRouter.post('/api/chat/send', (req, res) => {
 chatRouter.post('/api/chat/botlog', (req, res) => {
   const key = typeof req.body?.key === 'string' ? req.body.key : '';
   if (!parseGuestKey(key)) return res.status(400).json({ error: 'Некорректный ключ чата' });
-  if (!applyGuestRateLimits(req, res, 'botlog', key, 60, 20)) return;
+  if (!applyGuestIpRateLimit(req, res, 'botlog', 60)) return;
 
   const authorized = authorizeGuestThread(req, res, key);
   if (!authorized) return;
+  if (!applyGuestThreadRateLimit(req, res, 'botlog', key, 20)) return;
   const text = parseMessage(req.body);
   if (!text) return res.status(400).json({ error: 'Сообщение должно содержать от 1 до 2000 символов' });
 
@@ -225,10 +264,11 @@ chatRouter.post('/api/chat/botlog', (req, res) => {
 chatRouter.get('/api/chat/thread', (req, res) => {
   const key = typeof req.query.key === 'string' ? req.query.key : '';
   if (!parseGuestKey(key)) return res.status(400).json({ error: 'Некорректный ключ чата' });
-  if (!applyGuestRateLimits(req, res, 'thread', key, 120, 60)) return;
+  if (!applyGuestIpRateLimit(req, res, 'thread', 120)) return;
 
   const authorized = authorizeGuestThread(req, res, key);
   if (!authorized) return;
+  if (!applyGuestThreadRateLimit(req, res, 'thread', key, 60)) return;
   // A thread exists only after the guest's first message. For an authorized owner an empty
   // history is a normal 200: a 404 here makes the browser log an error on every poll.
 

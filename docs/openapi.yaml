@@ -723,6 +723,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '429': { description: Превышен лимит запросов }
+        '503': { description: Хранилище rate-limit записей заполнено; запрос отклонён без создания нового счётчика }
 
   /api/chat/thread:
     get:
@@ -746,6 +747,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '429': { description: Превышен лимит запросов }
+        '503': { description: Хранилище rate-limit записей заполнено; запрос отклонён без создания нового счётчика }
 
   /api/chat/botlog:
     post:
@@ -772,6 +774,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { description: Сначала требуется создать тред }
         '429': { description: Превышен лимит запросов }
+        '503': { description: Хранилище rate-limit записей заполнено; запрос отклонён без создания нового счётчика }
 
   /api/chat/list:
     get:
