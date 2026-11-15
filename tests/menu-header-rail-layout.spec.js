@@ -1691,3 +1691,35 @@ test('coffee rail labels use the refined coffee typography without changing Frid
     expect(fridayLabels.fontFamily).toContain('Unbounded');
   }
 });
+
+test('active rail tabs keep their geometry on press and coffee uses its blue active state', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+  const coffeeActive = page.locator('#rail button.on');
+  await expect(coffeeActive).toBeVisible();
+  const coffeeState = await coffeeActive.evaluate(button => ({
+    buttonBackground: getComputedStyle(button).backgroundColor,
+    iconBackground: getComputedStyle(button.querySelector('.re')).backgroundColor,
+    iconColor: getComputedStyle(button.querySelector('.re')).color,
+  }));
+  expect(coffeeState.iconBackground).toBe('rgb(18, 58, 107)');
+  expect(coffeeState.iconColor).toBe('rgb(255, 255, 255)');
+
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+  const deliveryRail = page.locator('#deliveryRail');
+  const target = deliveryRail.locator('button').nth(1);
+  const before = await target.evaluate(button => {
+    const rect = button.getBoundingClientRect();
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  });
+  await target.dispatchEvent('pointerdown');
+  const pressed = await target.evaluate(button => ({
+    transform: getComputedStyle(button).transform,
+    iconTransform: getComputedStyle(button.querySelector('.re')).transform,
+    rect: (() => { const r = button.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; })(),
+  }));
+  expect(pressed.transform).toBe('none');
+  expect(pressed.iconTransform).toBe('none');
+  expect(pressed.rect).toEqual(before);
+});
