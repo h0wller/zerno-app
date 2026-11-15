@@ -163,6 +163,57 @@ window.addEventListener('resize', alignRailWithCard, { passive: true });
 window.addEventListener('load', alignRailWithCard, { once: true });
 requestAnimationFrame(alignRailWithCard);
 
+// Keep the mobile rail pinned natively, but hide it while the user is moving.
+// Reveal it shortly after the final scroll event so it never obstructs active scrolling.
+var railScrollRevealTimer = null;
+function updateRailScrollVisibility() {
+  var isMobileRail = window.innerWidth <= 820;
+  var isDelivery = document.documentElement.dataset.brand === 'delivery';
+  var rail = document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
+
+  if (!rail) return;
+  if (!isMobileRail || getComputedStyle(rail).position !== 'sticky') {
+    rail.classList.remove('rail-scroll-hidden');
+    if (railScrollRevealTimer !== null) {
+      clearTimeout(railScrollRevealTimer);
+      railScrollRevealTimer = null;
+    }
+    return;
+  }
+
+  var topbar = document.querySelector('header.topbar');
+  var topbarStyle = topbar ? getComputedStyle(topbar) : null;
+  var topbarSticky = !!(topbarStyle && (topbarStyle.position === 'sticky' || topbarStyle.position === 'fixed'));
+  var stickyTop = topbarSticky && topbar
+    ? Math.ceil(topbar.getBoundingClientRect().height)
+    : 12;
+  var hasReachedStickyPosition = (window.scrollY || document.documentElement.scrollTop || 0) > 0 &&
+    rail.getBoundingClientRect().top <= stickyTop + 1;
+
+  // Once pinned, keep it hidden through the whole scroll gesture, including
+  // upward movement that releases the sticky constraint. Reveal after quiet time.
+  if (hasReachedStickyPosition || rail.classList.contains('rail-scroll-hidden')) {
+    rail.classList.add('rail-scroll-hidden');
+  }
+
+  if (railScrollRevealTimer !== null) clearTimeout(railScrollRevealTimer);
+  railScrollRevealTimer = setTimeout(function () {
+    railScrollRevealTimer = null;
+    rail.classList.remove('rail-scroll-hidden');
+  }, 220);
+}
+
+window.addEventListener('scroll', updateRailScrollVisibility, { passive: true });
+window.addEventListener('resize', function () {
+  if (railScrollRevealTimer !== null) {
+    clearTimeout(railScrollRevealTimer);
+    railScrollRevealTimer = null;
+  }
+  var isDelivery = document.documentElement.dataset.brand === 'delivery';
+  var rail = document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
+  if (rail) rail.classList.remove('rail-scroll-hidden');
+}, { passive: true });
+
 (function () {
   'use strict';
 
