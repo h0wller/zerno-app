@@ -1092,32 +1092,89 @@ test('delivery wrapper keeps full horizontal width when switching categories at 
 
 
 
-test('category rail keeps tab nodes stable and uses brand-specific active icon treatment', async ({ page }) => {
+test('category rail uses one surface, an active icon chip and a separate underline', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-    await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 820, height: 1024 },
+      { width: 844, height: 390 },
+      { width: 1024, height: 390 },
+      { width: 821, height: 900 },
+      { width: 1440, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+      await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
 
-    const rail = page.locator(brand === 'coffee' ? '#rail' : '#deliveryRail');
-    await expect(rail).toBeVisible({ timeout: 10000 });
-    const target = rail.locator('button').nth(1);
-    await target.evaluate((element) => { window.__originalCategoryTab = element; });
-    await target.click();
-    await expect(target).toHaveAttribute('aria-pressed', 'true');
-    await expect.poll(() => target.evaluate((element) => element === window.__originalCategoryTab)).toBe(true);
+      const rail = page.locator(brand === 'coffee' ? '#rail' : '#deliveryRail');
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      const target = rail.locator('button').nth(1);
+      await target.evaluate((element) => { window.__originalCategoryTab = element; });
+      await target.click();
+      await expect(target).toHaveAttribute('aria-pressed', 'true');
+      await expect.poll(() => target.evaluate((element) => element === window.__originalCategoryTab)).toBe(true);
 
-    const activeIcon = rail.locator('button[aria-pressed="true"] .re');
-    const iconStyle = await activeIcon.evaluate((element) => {
-      const style = getComputedStyle(element);
-      return {
-        background: style.backgroundColor,
-        radius: style.borderTopLeftRadius,
-        transition: style.transitionDuration,
-      };
-    });
-    expect(iconStyle.background).not.toBe('rgba(0, 0, 0, 0)');
-    expect(iconStyle.transition).toContain('0.18s');
-    expect(iconStyle.radius).toBe(brand === 'coffee' ? '50%' : '8px');
+      const styles = await rail.evaluate((element) => {
+        const button = element.querySelector('button.on');
+        const inactive = element.querySelector('button:not(.on)');
+        const icon = button.querySelector('.re');
+        const inactiveIcon = inactive.querySelector('.re');
+        const rect = icon.getBoundingClientRect();
+        const pseudo = getComputedStyle(button, '::after');
+        const buttonStyle = getComputedStyle(button);
+        const inactiveStyle = getComputedStyle(inactive);
+        const iconStyle = getComputedStyle(icon);
+        const inactiveIconStyle = getComputedStyle(inactiveIcon);
+        const railStyle = getComputedStyle(element);
+        return {
+          iconRect: { width: rect.width, height: rect.height },
+          iconBackground: iconStyle.backgroundColor,
+          iconRadius: iconStyle.borderRadius,
+          inactiveIconBackground: inactiveIconStyle.backgroundColor,
+          inactiveIconBorder: inactiveIconStyle.borderWidth,
+          buttonBackground: buttonStyle.backgroundColor,
+          buttonBorder: buttonStyle.borderWidth,
+          buttonBorderBottom: buttonStyle.borderBottomWidth,
+          buttonRadius: buttonStyle.borderRadius,
+          inactiveBackground: inactiveStyle.backgroundColor,
+          inactiveBorder: inactiveStyle.borderWidth,
+          pseudo: {
+            content: pseudo.content,
+            display: pseudo.display,
+            width: pseudo.width,
+            height: pseudo.height,
+            background: pseudo.backgroundColor,
+            radius: pseudo.borderRadius,
+          },
+          railBackground: railStyle.backgroundColor,
+          fontFamily: buttonStyle.fontFamily,
+          fontSize: parseFloat(buttonStyle.fontSize),
+          railHeight: element.getBoundingClientRect().height,
+          buttonHeight: button.getBoundingClientRect().height,
+        };
+      });
+
+      expect(styles.iconRect.width, brand + ' icon chip must have a fixed square width').toBeGreaterThanOrEqual(30);
+      expect(styles.iconRect.width, brand + ' icon chip must be square').toBeCloseTo(styles.iconRect.height, 1);
+      expect(styles.inactiveIconBackground, brand + ' inactive icon must not have a chip').toBe('rgba(0, 0, 0, 0)');
+      expect(styles.inactiveIconBorder, brand + ' inactive icon must not have a border').toBe('0px');
+      expect(styles.buttonBackground, brand + ' active tab must not have a filled surface').toBe('rgba(0, 0, 0, 0)');
+      expect(styles.buttonBorder, brand + ' active tab must not have a frame').toBe('0px');
+      expect(styles.buttonBorderBottom, brand + ' active tab must use ::after, not border-bottom').toBe('0px');
+      expect(styles.buttonRadius, brand + ' active tab must not be a pill').toBe('0px');
+      expect(styles.inactiveBackground, brand + ' inactive tab must not have a fill').toBe('rgba(0, 0, 0, 0)');
+      expect(styles.inactiveBorder, brand + ' inactive tab must not have a frame').toBe('0px');
+      expect(styles.pseudo.content).not.toBe('none');
+      expect(styles.pseudo.display).not.toBe('none');
+      expect(parseFloat(styles.pseudo.width)).toBe(28);
+      expect(parseFloat(styles.pseudo.height)).toBe(3);
+      expect(styles.pseudo.radius).toBe('2px');
+      expect(styles.fontFamily).toMatch(/system-ui|sans-serif/);
+      expect(styles.fontSize).toBeGreaterThanOrEqual(brand === 'coffee' ? 10 : 10);
+      if (viewport.width <= 820 || viewport.height <= 480) {
+        expect(Math.abs(styles.railHeight - styles.buttonHeight)).toBeLessThanOrEqual(0.5);
+      }
+    }
   }
 });
 
