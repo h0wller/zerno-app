@@ -49,7 +49,6 @@
 | --- | --- | --- |
 | `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp` |
 , `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `fmtMulti` |
-| `core/category-icons.js` | Общий набор inline SVG для категорий rail обоих брендов; декоративная графика без текстового содержимого | `renderCategoryIcon(id)` |
 | `core/api.js` | Определяет базовый URL API для app-origin и локальных frontend-серверов | `window.API_BASE` |
 | `core/ui.js` | `api()` с обработкой 401; тосты; дата обновления меню; PERF-дедуп одинаковых GET | `window.api`, `window.toast`, `window.renderUpd` |
 | `core/config.js` | Bootstrap /api/config (имя TG-бота и состояние opt-in-функций), триггеры relink/verifyNote | `window.TG_USERNAME`, `window.SMS_AUTH_ENABLED`; событие `app:config-loaded` |
