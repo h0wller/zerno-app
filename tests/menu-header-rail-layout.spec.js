@@ -1510,3 +1510,29 @@ test('ticker always moves, fills wide viewports seamlessly, and toggles pause wi
     await expect(viewport.locator('button, [role="button"]')).toHaveCount(0);
   }
 });
+
+
+test('category rail has a subtle brand-colored outline on desktop and mobile', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+      const selector = brand === 'coffee' ? '#menuView #rail' : '#deliveryView #deliveryRail';
+      const rail = page.locator(selector);
+      await expect(rail).toBeVisible();
+      const outline = await rail.evaluate(node => {
+        const style = getComputedStyle(node);
+        return {
+          width: style.borderTopWidth,
+          style: style.borderTopStyle,
+          color: style.borderTopColor,
+          expectedColor: getComputedStyle(document.documentElement).getPropertyValue('--category-rail-border-color').trim()
+        };
+      });
+      expect(outline.width).toBe('1px');
+      expect(outline.style).toBe('solid');
+      expect(outline.color).not.toBe('rgba(0, 0, 0, 0)');
+      expect(outline.color).toBe(outline.expectedColor);
+    }
+  }
+});
