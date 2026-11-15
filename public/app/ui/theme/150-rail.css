@@ -137,7 +137,15 @@
     display: none;
   }
 
-  /* The rail remains sticky, but stays out of the way during active scrolling. */
+  /* Once its document position reaches the top offset, pin the rail to the viewport.
+     JS preserves its original flow slot with a spacer and hides it while scrolling. */
+  html body .wrap #menuView #rail.rail-is-pinned,
+  html body .wrap #deliveryView #deliveryRail.rail-is-pinned {
+    position: fixed;
+    z-index: 80;
+    margin: 0;
+  }
+
   html body .wrap #menuView #rail.rail-scroll-hidden,
   html body .wrap #deliveryView #deliveryRail.rail-scroll-hidden {
     opacity: 0;
