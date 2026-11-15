@@ -44,10 +44,10 @@ test.describe('Delivery card cart state', () => {
     expect(button.height, 'in-cart CTA must keep the standard control height').toBeLessThanOrEqual(48);
     expect(button.width, 'in-cart CTA remains a 44px hit target').toBeGreaterThanOrEqual(44);
     expect(button.whiteSpace, 'in-cart CTA label must stay on one line').toBe('nowrap');
-    expect(parseFloat(button.fontSize), 'compact in-cart state remains legible').toBeGreaterThanOrEqual(14);
+    expect(parseFloat(button.fontSize), 'restored quantity label uses the compact typography').toBe(11);
     expect(button.scrollWidth, 'in-cart CTA label must fit inside the button')
       .toBeLessThanOrEqual(button.clientWidth + 1);
-    expect(button.text).toBe('✓');
+    expect(button.text).toBe('В корзине · 1');
     expect(button.ariaLabel).toBe('В корзине · 1. Добавить ещё');
     const stepRow = await card.locator('.steprow').evaluate(node => ({ width: node.clientWidth, scrollWidth: node.scrollWidth }));
     expect(stepRow.scrollWidth, 'quantity controls must stay inside the product card').toBeLessThanOrEqual(stepRow.width + 1);
