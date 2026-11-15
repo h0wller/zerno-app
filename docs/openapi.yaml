@@ -34,6 +34,7 @@ components:
       type: http
       scheme: bearer
       description: 'Authorization: Bearer <token из localStorage zt_user>'
+      x-session-policy: 'Absolute 30-day server-side TTL from issuance; expired bearer tokens receive 401. Legacy token expiration is backfilled from tokens.ts.'
     ChatAccessToken:
       type: apiKey
       in: header
