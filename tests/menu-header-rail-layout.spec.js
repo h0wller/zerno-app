@@ -487,7 +487,9 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
 
 test('desktop category navigation uses one rail surface and a selected icon chip', async ({ page }, testInfo) => {
   const viewports = [
-    { width: 1024, height: 768, columns: 2 },
+    { width: 821, height: 900, columns: 3 },
+    { width: 1024, height: 768, columns: 3 },
+    { width: 1180, height: 900, columns: 3 },
     { width: 1440, height: 900, columns: 3 },
     { width: 1600, height: 1000, columns: 4 },
   ];
@@ -1378,4 +1380,30 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
   await testInfo.attach('horizontal-rail-baseline-diagnostics.json',{
     body:Buffer.from(JSON.stringify(reports,null,2)),contentType:'application/json',
   });
+});
+
+
+test('catalog grid uses three columns from 821px through 1180px for both brands', async ({ page }) => {
+  const viewports = [
+    { width: 820, height: 1024, columns: 2 },
+    { width: 821, height: 900, columns: 3 },
+    { width: 1024, height: 768, columns: 3 },
+    { width: 1180, height: 900, columns: 3 },
+    { width: 1181, height: 900, columns: 3 },
+  ];
+
+  for (const brand of CASES) {
+    const selector = brand.brand === 'coffee' ? '#grid' : '#deliveryGrid';
+    for (const viewport of viewports) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+      const grid = page.locator(selector);
+      await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+      const columns = await grid.evaluate(element =>
+        getComputedStyle(element).gridTemplateColumns.trim().split(/\\s+/).length
+      );
+      expect(columns, brand.brand + ' catalog columns at ' + viewport.width + 'px').toBe(viewport.columns);
+    }
+  }
 });
