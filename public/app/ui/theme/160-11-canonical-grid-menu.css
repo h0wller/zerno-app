@@ -306,7 +306,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     gap: 6px;
     padding: 4px;
     border: 0;
-    border-radius: 0;
+    border-radius: 16px;
     background: var(--category-rail-bg, var(--panel, #fff));
     box-shadow: none;
     overflow: visible;
