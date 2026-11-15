@@ -62,6 +62,14 @@ export const ZernoHealthConnect = Object.freeze({
     requireNativeAndroid();
     return readAvailability();
   },
+  async getPermissionState() {
+    requireNativeAndroid();
+    const availability = await readAvailability();
+    if (!availability.available) {
+      throw new Error('Health Connect недоступен на этой версии Android или требует обновления.');
+    }
+    return nativeHealthConnect.getPermissionState();
+  },
   async requestAuthorization() {
     requireNativeAndroid();
     const availability = await readAvailability();

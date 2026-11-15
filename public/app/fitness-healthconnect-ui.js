@@ -130,7 +130,10 @@ import { Capacitor } from '@capacitor/core';
       }]);
     } catch (error) {
       setState(section, error.message || 'Не удалось прочитать тренировки.');
-      setActions(section, [{ label: 'Повторить', onClick: function () { loadWorkouts(section); } }]);
+      setActions(section, [
+        { label: 'Повторить загрузку', secondary: true, onClick: function () { loadWorkouts(section); } },
+        { label: 'Проверить разрешения', onClick: function () { requestAccess(section); } }
+      ]);
     } finally {
       workoutsInFlight = false;
     }
@@ -163,7 +166,14 @@ import { Capacitor } from '@capacitor/core';
     var section = getSection();
     if (!section) return;
     section.hidden = !isEligibleGuest();
-    if (section.hidden || section.dataset.checked === '1') return;
+    var customerId = String(window.me && window.me.id || '');
+    if (section.hidden) return;
+    if (section.dataset.customerId !== customerId) {
+      section.dataset.customerId = customerId;
+      section.dataset.checked = '';
+      section.querySelector('.hc-workouts').replaceChildren();
+    }
+    if (section.dataset.checked === '1') return;
     section.dataset.checked = '1';
     try {
       var availability = await window.ZernoHealthConnect.isAvailable();
@@ -171,10 +181,17 @@ import { Capacitor } from '@capacitor/core';
         setState(section, availability.status === 'provider_update_required'
           ? 'Для подключения обновите приложение Health Connect на устройстве.'
           : 'Health Connect недоступен на этом устройстве.');
+        setActions(section, []);
         return;
       }
-      setState(section, 'Health Connect доступен. Разрешения запрашиваются только по вашему действию.');
-      setActions(section, [{ label: 'Подключить Health Connect', onClick: function () { requestAccess(section); } }]);
+      var permissions = await window.ZernoHealthConnect.getPermissionState();
+      if (permissions.allGranted) {
+        setState(section, 'Доступ к тренировкам и дистанции разрешён.');
+        setActions(section, [{ label: 'Загрузить последние тренировки', onClick: function () { loadWorkouts(section); } }]);
+      } else {
+        setState(section, 'Health Connect доступен. Разрешения запрашиваются только по вашему действию.');
+        setActions(section, [{ label: 'Подключить Health Connect', onClick: function () { requestAccess(section); } }]);
+      }
     } catch (error) {
       setState(section, error.message || 'Не удалось проверить Health Connect.');
     }
@@ -182,6 +199,10 @@ import { Capacitor } from '@capacitor/core';
 
   if (window.ztBus && typeof window.ztBus.on === 'function') {
     window.ztBus.on('profile:rendered', function () { render(); });
-    window.ztBus.on('profile:opened', function () { render(); });
+    window.ztBus.on('profile:opened', function () {
+      var section = document.getElementById(SECTION_ID);
+      if (section) section.dataset.checked = '';
+      render();
+    });
   }
 })();

@@ -51,6 +51,21 @@ class HealthConnectPlugin : Plugin() {
     }
 
     @PluginMethod
+    fun getPermissionState(call: PluginCall) {
+        val client = getClientOrReject(call) ?: return
+        pluginScope.launch {
+            try {
+                resolvePermissionState(call, client.permissionController.getGrantedPermissions())
+            } catch (_: Exception) {
+                call.reject(
+                    "Не удалось проверить разрешения Health Connect.",
+                    "HEALTH_CONNECT_PERMISSION_CHECK_FAILED"
+                )
+            }
+        }
+    }
+
+    @PluginMethod
     fun requestAuthorization(call: PluginCall) {
         val client = getClientOrReject(call) ?: return
         pluginScope.launch {
