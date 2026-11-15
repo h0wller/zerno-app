@@ -1703,6 +1703,7 @@ test('active rail tabs keep their geometry on press and coffee uses its blue act
     iconBackground: getComputedStyle(button.querySelector('.re')).backgroundColor,
     iconColor: getComputedStyle(button.querySelector('.re')).color,
   }));
+  expect(coffeeState.buttonBackground).toBe('rgb(220, 234, 247)');
   expect(coffeeState.iconBackground).toBe('rgb(18, 58, 107)');
   expect(coffeeState.iconColor).toBe('rgb(255, 255, 255)');
 
@@ -1713,7 +1714,9 @@ test('active rail tabs keep their geometry on press and coffee uses its blue act
     const rect = button.getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   });
-  await target.dispatchEvent('pointerdown');
+  const targetBox = await target.boundingBox();
+  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
+  await page.mouse.down();
   const pressed = await target.evaluate(button => ({
     transform: getComputedStyle(button).transform,
     iconTransform: getComputedStyle(button.querySelector('.re')).transform,
@@ -1722,4 +1725,5 @@ test('active rail tabs keep their geometry on press and coffee uses its blue act
   expect(pressed.transform).toBe('none');
   expect(pressed.iconTransform).toBe('none');
   expect(pressed.rect).toEqual(before);
+  await page.mouse.up();
 });
