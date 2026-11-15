@@ -148,9 +148,10 @@
   html body .wrap #menuView #rail button,
   html body .wrap #deliveryView #deliveryRail button {
     min-height: 44px;
-    padding: 3px 2px 4px;
+    padding: 2px 2px;
     gap: 1px;
     font-size: var(--category-label-size, 10px);
+    line-height: 1;
   }
 
   html body .wrap #menuView #rail .re,
