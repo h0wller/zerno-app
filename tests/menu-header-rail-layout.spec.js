@@ -872,4 +872,5 @@ test('delivery desktop single-meta cards reserve the same composition slot when 
   expect(sets.compHeight).toBe(100);
   expect(sets.compHasChips).toBe(true);
   expect(Math.abs(drinks.cardHeight - sets.cardHeight), 'switching between categories must not change the first card row height').toBeLessThanOrEqual(1);
+  expect(Math.abs(drinks.secondRowTop - sets.secondRowTop), 'the next grid row must not jump when a category has no composition chips').toBeLessThanOrEqual(1);
 });
