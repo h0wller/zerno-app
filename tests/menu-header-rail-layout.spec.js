@@ -182,6 +182,17 @@ for (const brand of CASES) {
         await expect(rail).toBeVisible();
         await expect(rail).toHaveCSS('position', 'fixed');
         await expect(rail).toHaveClass(/rail-is-pinned/);
+        await expect.poll(() => rail.evaluate(el => getComputedStyle(el).animationName))
+          .toBe('rail-drop-in');
+        const pinnedSurface = await rail.evaluate(el => {
+          const style = getComputedStyle(el);
+          return {
+            backdropFilter: style.backdropFilter || style.webkitBackdropFilter,
+            backgroundColor: style.backgroundColor,
+          };
+        });
+        expect(pinnedSurface.backdropFilter).toContain('blur');
+        expect(pinnedSurface.backgroundColor).toMatch(/rgba\\(/);
         await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
