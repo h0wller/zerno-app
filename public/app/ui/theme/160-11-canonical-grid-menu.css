@@ -332,3 +332,23 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
     min-width: 0;
   }
 }
+
+/* Mobile reflow moves the category rail inside the menu view.
+   The outer wrapper must therefore stop reserving the desktop sidebar column.
+   Keep the menu section at the same full content width before and after theme hydration. */
+@media (max-width: 820px) {
+  html body div.wrap {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 10px;
+    padding: 10px 12px 28px;
+    align-items: start;
+  }
+
+  html body div.wrap > section {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
+    min-width: 0;
+  }
+}
