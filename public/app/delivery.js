@@ -302,9 +302,10 @@ function renderDeliveryRail() {
   if (!rail) return;
   rail.setAttribute('role', 'group');
   rail.setAttribute('aria-label', 'Категории меню');
-  rail.innerHTML = DCATS.map(c =>
-    '<button type="button" data-dcat="' + c.id + '" class="' + (c.id === dcat ? 'on' : '') + '" aria-pressed="' + (c.id === dcat ? 'true' : 'false') + '"><span class="re">' + c.e + '</span>' + c.l + '</button>'
-  ).join('');
+  rail.innerHTML = DCATS.map(c => {
+    var isSelected = c.id === dcat;
+    return '<button type="button" data-dcat="' + c.id + '" class="' + (isSelected ? 'on' : '') + '" aria-pressed="' + (isSelected ? 'true' : 'false') + '"' + (isSelected ? ' aria-current="location"' : '') + '><span class="re">' + c.e + '</span>' + c.l + '</button>';
+  }).join('');
 }
 
 $('#deliveryRail').addEventListener('click', e => {
@@ -1167,7 +1168,11 @@ attachGridDnD(document.getElementById('deliveryGrid'), {
     if (currentCat) {
       rail.querySelectorAll("button").forEach(function (btn) {
         var bCat = btn.getAttribute("data-dcat") || btn.getAttribute("data-cat") || btn.dataset.dcat || btn.dataset.cat;
-        if (bCat) btn.classList.toggle("on", bCat === currentCat);
+        if (!bCat) return;
+        var isCurrent = bCat === currentCat;
+        btn.classList.toggle("on", isCurrent);
+        if (isCurrent) btn.setAttribute("aria-current", "location");
+        else btn.removeAttribute("aria-current");
       });
     }
   }
