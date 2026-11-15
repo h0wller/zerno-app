@@ -33,9 +33,13 @@ function renderRail() {
 $('#rail').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]');
   if (!b) return;
+  var categoryChanged = cat !== b.dataset.cat;
   cat = b.dataset.cat;
   window.renderRail();
   window.renderMenu();
+  if (categoryChanged && typeof window.scrollMenuContentToStart === 'function') {
+    window.scrollMenuContentToStart('#grid', '#rail');
+  }
 });
 
 $('#searchInput').addEventListener('input', e => {
