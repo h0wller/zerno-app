@@ -1,4 +1,4 @@
-/* Full-width ticker below the topbar; motion only when content overflows. */
+/* Full-width ticker below the topbar; content is duplicated to keep a continuous loop at every viewport width. */
 .ticker {
   display: flex;
   align-items: center;
@@ -65,7 +65,10 @@ body.is-admin .ticker {
   margin-left: .6rem;
   color: var(--ticker-marker-color, var(--azure, #3E8FD0));
 }
-.ticker.is-overflowing #tickerTrack { animation: zt-marquee 30s linear infinite; }
+.ticker.is-overflowing #tickerTrack { animation: zt-marquee var(--ticker-duration, 30s) linear infinite; }
+.ticker.is-paused #tickerTrack { animation-play-state: paused !important; }
+.tickerViewport[role="button"] { cursor: default; }
+.tickerViewport[role="button"]:focus-visible { outline: 2px solid var(--ticker-marker-color, var(--azure, #3E8FD0)); outline-offset: -2px; }
 @keyframes zt-marquee {
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(-50%, 0, 0); }
@@ -78,5 +81,7 @@ body.is-admin .ticker {
     -webkit-overflow-scrolling: touch;
   }
   html body .ticker .tickerViewport::-webkit-scrollbar { display: none; }
-  .ticker.is-overflowing #tickerTrack { animation: none; }
+  .ticker.is-overflowing:not(.is-user-playing) #tickerTrack { animation: none; }
+  .ticker.is-user-playing.is-overflowing #tickerTrack { animation: zt-marquee var(--ticker-duration, 30s) linear infinite; }
+  .ticker.is-paused #tickerTrack { animation-play-state: paused !important; }
 }
