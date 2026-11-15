@@ -44,6 +44,8 @@ jobs:
           java-version: '21'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses
       - name: Install Android 36 platform
         run: sdkmanager "platforms;android-36"
       - name: Run native unit tests and assemble debug APK
