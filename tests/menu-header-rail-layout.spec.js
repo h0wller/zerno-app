@@ -1325,7 +1325,10 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
 
       expect(heldRequests.some(url => url.includes('/app/ui/theme/')), 'theme CSS must be held before first-frame measurement').toBe(true);
       expect(heldRequests.some(url => url.includes('/app/ui/brand-tokens.css')), 'brand tokens must be held before first-frame measurement').toBe(true);
+      await expect(page.locator(cardSelector).first()).toBeVisible({ timeout: 15000 });
       const firstFrame=await measure();
+      expect(firstFrame.firstCardRect?.width, `${brand.brand} ${viewport.name}: first-frame card rect must be measured`).toBeGreaterThan(0);
+      expect(firstFrame.firstCardRect?.height, `${brand.brand} ${viewport.name}: first-frame card rect must be measured`).toBeGreaterThan(0);
       releaseStyles();
       await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link =>
         link.href.includes('/app/ui/theme/150-rail.css') && link.media==='all'
