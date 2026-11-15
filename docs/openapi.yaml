@@ -34,6 +34,7 @@ components:
       type: http
       scheme: bearer
       description: 'Authorization: Bearer <token из localStorage zt_user>'
+      x-session-policy: 'Absolute 30-day server-side TTL from issuance; expired bearer tokens receive 401. Legacy token expiration is backfilled from tokens.ts.'
     ChatAccessToken:
       type: apiKey
       in: header
@@ -156,7 +157,19 @@ paths:
               properties:
                 kind: { type: string }
                 msg:  { type: string, maxLength: 500 }
-      responses: { '200': { description: OK } }
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Номер телефона гостя не подтверждён
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, code]
+                properties:
+                  error: { type: string }
+                  code: { type: string, enum: [CUSTOMER_NOT_VERIFIED] }
 
   /api/auth/register:
     post:
@@ -251,6 +264,7 @@ paths:
     post:
       tags: [Auth]
       summary: Вход по телефону и PIN либо OTP из Telegram (SMS — только при явном включении)
+      description: Успешный OTP подтверждает номер телефона и переводит pending-профиль в verified; вход по PIN сам по себе не меняет статус подтверждения.
       requestBody:
         required: true
         content:
@@ -526,6 +540,7 @@ paths:
     post:
       tags: [Orders]
       summary: Создание заказа пользователя
+      description: 'Гость может создать заказ только после подтверждения номера (verified=1). Pending-профиль получает 403 с code=CUSTOMER_NOT_VERIFIED. Роли cashier, dispatch и admin сохраняют возможность оформлять служебные заказы.'
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
