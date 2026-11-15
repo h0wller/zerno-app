@@ -419,8 +419,24 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
   }
 
   html body div.wrap > #rail button:active,
-  html body div.wrap > #deliveryRail button:active {
+  html body div.wrap > #deliveryRail button:active,
+  html body div.wrap > #rail button.on:active,
+  html body div.wrap > #deliveryRail button.on:active {
     transform: scale(.97);
+  }
+
+  html body div.wrap > #rail button:focus-visible,
+  html body div.wrap > #deliveryRail button:focus-visible {
+    outline: 2px solid var(--focus, currentColor);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) {
+    html body div.wrap > #rail button:not(.on):hover,
+    html body div.wrap > #deliveryRail button:not(.on):hover {
+      transform: translateY(-1px);
+      box-shadow: var(--category-tab-active-shadow, none);
+    }
   }
 }
 

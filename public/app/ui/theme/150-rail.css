@@ -109,6 +109,13 @@
     transform: scale(.97);
   }
 
+  @media (hover: hover) {
+    html body .wrap #menuView #rail button:not(.on):hover,
+    html body .wrap #deliveryView #deliveryRail button:not(.on):hover {
+      box-shadow: var(--category-tab-active-shadow, none);
+    }
+  }
+
   html body .wrap #menuView #rail button:focus-visible,
   html body .wrap #deliveryView #deliveryRail button:focus-visible {
     outline: 2px solid var(--focus, #1A6DDF);
