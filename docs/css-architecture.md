@@ -30,7 +30,7 @@
 ### Общая геометрия desktop wrap и scrollbar
 
 - `body > div.wrap` ограничен 1480px на desktop 1181–1480px; начиная с 1481px максимальная ширина повышается до 2560px и контейнер центрируется. Critical CSS первого кадра находится в `index.html` и задаёт тот же предел.
-- Вертикальный scrollbar не должен менять доступную ширину layout при появлении overflow. `scrollbar-gutter: stable` задан на `html` в critical CSS, чтобы gutter резервировался до первого кадра; не заменять это переключением `overflow-y` после гидратации.
+- Вертикальный scrollbar не должен менять доступную ширину layout при появлении overflow. `html { overflow-y: scroll; scrollbar-gutter: auto; }` в critical CSS постоянно выделяет место под сам scrollbar, но не создаёт дополнительный пустой gutter, который `scrollbar-gutter: stable` резервирует даже без прокрутки.
 
 ### Текущие исключения для category rail
 
