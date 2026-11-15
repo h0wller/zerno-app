@@ -353,7 +353,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         window.DMENU.length === 6 &&
         document.querySelectorAll('#deliveryGrid > .card[data-product-id]').length === 6
       );
-      const expectedGridColumns = width >= 1600 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
+      const expectedGridColumns = width >= 1600 ? 4 : width >= 821 ? 3 : width >= 520 ? 2 : 1;
       await page.waitForFunction((expectedColumns) => {
         const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
         if (cards.length !== 6) return false;
