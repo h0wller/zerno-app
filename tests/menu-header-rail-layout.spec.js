@@ -1476,3 +1476,37 @@ test('vertical scrolling does not create an empty reserved gutter or shift layou
   expect(Math.abs(geometry.after.wrapLeft - geometry.before.wrapLeft)).toBeLessThanOrEqual(1);
   expect(Math.abs(geometry.after.wrapWidth - geometry.before.wrapWidth)).toBeLessThanOrEqual(1);
 });
+
+
+test('ticker always moves, fills wide viewports seamlessly, and toggles pause without a visible control', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+    const ticker = page.locator('.ticker');
+    const viewport = page.locator('.tickerViewport');
+    const track = page.locator('#tickerTrack');
+    await expect(ticker).toBeVisible({ timeout: 10000 });
+    await expect.poll(() => track.evaluate(el => {
+      const groups = [...el.querySelectorAll('.tickerGroup')];
+      return groups.length >= 2 && el.getBoundingClientRect().width >= el.parentElement.clientWidth * 2;
+    }), { timeout: 5000 }).toBe(true);
+    await expect.poll(() => track.evaluate(el => getComputedStyle(el).animationName)).toBe('zt-marquee');
+    await expect.poll(() => track.evaluate(el => getComputedStyle(el).animationPlayState)).toBe('running');
+
+    await viewport.click();
+    await expect(ticker).toHaveClass(/is-paused/);
+    await expect.poll(() => track.evaluate(el => getComputedStyle(el).animationPlayState)).toBe('paused');
+
+    await viewport.click();
+    await expect(ticker).not.toHaveClass(/is-paused/);
+    await expect.poll(() => track.evaluate(el => getComputedStyle(el).animationPlayState)).toBe('running');
+
+    await viewport.focus();
+    await page.keyboard.press('Space');
+    await expect(ticker).toHaveClass(/is-paused/);
+    await expect(viewport).toHaveAttribute('aria-pressed', 'true');
+    await expect(viewport).toHaveAttribute('aria-label', 'Возобновить движение объявлений');
+    await expect(viewport.locator('button, [role="button"]')).toHaveCount(0);
+  }
+});
