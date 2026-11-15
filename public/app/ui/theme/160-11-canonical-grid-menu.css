@@ -333,22 +333,60 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
   }
 }
 
-/* Mobile reflow moves the category rail inside the menu view.
-   The outer wrapper must therefore stop reserving the desktop sidebar column.
-   Keep the menu section at the same full content width before and after theme hydration. */
-@media (max-width: 820px) {
-  html body div.wrap {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
-    gap: 10px;
-    padding: 10px 12px 28px;
-    align-items: start;
-  }
-
-  html body div.wrap > section {
-    grid-column: 1;
-    grid-row: auto;
+/* Desktop category navigation: compact vertical sidebar; never stretch with catalog row. */
+@media (min-width: 821px) and (min-height: 481px) {
+  html body div.wrap > #rail,
+  html body div.wrap > #deliveryRail {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    align-self: start;
+    justify-self: stretch;
     width: 100%;
     min-width: 0;
+    height: max-content;
+    min-height: 0;
+    max-height: none;
+    gap: 8px;
+    padding: 8px 6px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--panel, #fff);
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  html body div.wrap > #rail button,
+  html body div.wrap > #deliveryRail button {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: 64px;
+    min-height: 64px;
+    max-height: 64px;
+    padding: 7px 3px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    box-shadow: none;
+    font-size: 10px;
+  }
+
+  html body div.wrap > #rail button.on,
+  html body div.wrap > #deliveryRail button.on {
+    border-color: var(--line, #D8DFE4);
+    background: var(--card, #fff);
+    box-shadow: none;
+    transform: none;
+  }
+
+  html body div.wrap > #rail .re,
+  html body div.wrap > #deliveryRail .re {
+    border: 0;
+    background: transparent;
+    font-size: 21px;
   }
 }
