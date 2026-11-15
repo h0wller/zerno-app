@@ -1216,6 +1216,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
       )), { timeout:15000 }).toBe(true);
       await page.evaluate(() => document.fonts && document.fonts.ready);
       await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await expect(page.locator(brand.brand === 'coffee' ? '#grid .card h3' : '#deliveryGrid .card h3').first()).toBeVisible({ timeout: 15000 });
       const hydrated=await measure();
       await testInfo.attach(`${brand.brand}-horizontal-rail-${viewport.name}-before`, {
         body:await page.screenshot({animations:'disabled'}),contentType:'image/png',
