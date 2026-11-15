@@ -58,11 +58,16 @@ async function waitForServer() {
 }
 
 async function register(name, phone) {
+  return registerVerified(name, phone);
+}
+
+async function registerPending(name, phone) {
   const result = await request('/auth/register', {
     method: 'POST',
     body: { name, phone, pin: '1234', consent: true },
   });
   assert.equal(result.status, 200, JSON.stringify(result.json));
+  assert.equal(result.json.customer?.verified, 0);
   return result.json.token;
 }
 
@@ -339,7 +344,7 @@ test('malformed client_order_id is rejected before any order side effect', async
 
 
 test('pending guest cannot create an order before phone verification or staff activation', async () => {
-  const token = await register('Pending Order Guest', '+7 900 200-01-01');
+  +const token = await registerPending('Pending Order Guest', '+7 900 200-01-01');
   const customerId = customerIdForToken(token);
   assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(customerId).verified, 0);
 
@@ -358,7 +363,7 @@ test('pending guest cannot create an order before phone verification or staff ac
 
 test('pending guest becomes verified only after a valid OTP login and can then order', async () => {
   const phone = '+7 900 200-01-08';
-  const registrationToken = await register('OTP Login Guest', phone);
+  +const registrationToken = await registerPending('OTP Login Guest', phone);
   const customerId = customerIdForToken(registrationToken);
   assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(customerId).verified, 0);
 
@@ -403,7 +408,7 @@ test('employee activation verifies a pending guest and unlocks order creation', 
   const adminToken = await registerVerified('Order Verification Admin', '+7 900 200-01-03');
   await activateStaff(adminToken, 'integration-order-verification-admin-2026');
 
-  const guestToken = await register('Activated Order Guest', '+7 900 200-01-04');
+  +const guestToken = await registerPending('Activated Order Guest', '+7 900 200-01-04');
   const guestId = customerIdForToken(guestToken);
   assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(guestId).verified, 0);
 
@@ -454,7 +459,7 @@ test('staff-created customer remains verified and can order after proving phone 
 });
 
 test('staff role can place staff orders even when its own guest phone profile is unverified', async () => {
-  const token = await register('Pending Staff Account', '+7 900 200-01-07');
+  +const token = await registerPending('Pending Staff Account', '+7 900 200-01-07');
   const staff = await activateStaff(token, 'integration-order-verification-cashier-2026');
   assert.equal(staff.role, 'cashier');
   assert.equal(staff.verified, 0);
