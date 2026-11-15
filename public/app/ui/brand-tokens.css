@@ -39,15 +39,17 @@ body[data-brand="coffee"] {
   --category-tab-active-border-color: rgba(62, 143, 208, 0.46);
   --category-tab-hover-bg: #F4F8FC;
   --category-tab-hover-border-color: rgba(62, 143, 208, 0.25);
-  --category-icon-bg: #DDEBF8;
-  --category-icon-border: 1px solid rgba(62, 143, 208, 0.24);
+  --category-icon-size: 32px;
+  --category-icon-bg: transparent;
+  --category-icon-border: 0;
   --category-icon-color: #123A6B;
   --category-icon-radius: 50%;
   --category-icon-active-bg: #123A6B;
-  --category-icon-active-border: 1px solid #123A6B;
+  --category-icon-active-border: 0;
   --category-icon-active-color: #FFFFFF;
-  --category-label-font: "Golos Text";
-  --category-label-size: 10.5px;
+  --category-indicator-color: #123A6B;
+  --category-label-font: "Golos Text", system-ui, sans-serif;
+  --category-label-size: 10px;
   --category-label-weight: 700;
 
   /* ── Карточки меню и бейджи ──────────────────────────────── */
@@ -262,15 +264,17 @@ body[data-brand="delivery"] {
   --category-tab-active-border-color: rgba(58, 42, 28, 0.36);
   --category-tab-hover-bg: #F9F2E8;
   --category-tab-hover-border-color: rgba(58, 42, 28, 0.2);
-  --category-icon-bg: #E8D9C6;
-  --category-icon-border: 1px solid rgba(58, 42, 28, 0.2);
+  --category-icon-size: 32px;
+  --category-icon-bg: transparent;
+  --category-icon-border: 0;
   --category-icon-color: var(--fr-choc, #3A2A1C);
   --category-icon-radius: 8px;
-  --category-icon-active-bg: #8B2B20;
-  --category-icon-active-border: 1px solid #8B2B20;
+  --category-icon-active-bg: #C03B2A;
+  --category-icon-active-border: 0;
   --category-icon-active-color: #FFFFFF;
-  --category-label-font: "Unbounded";
-  --category-label-size: 8.5px;
+  --category-indicator-color: #C03B2A;
+  --category-label-font: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --category-label-size: 10px;
   --category-label-weight: 700;
 
   /* ── Карточки доставки: крафтовый фон, шоколадная обводка ── */
