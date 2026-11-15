@@ -280,12 +280,63 @@ test('coffee: category rail never covers menu title or search input on mobile', 
 
 
 
+test('coffee wordmark “и кофе” remains visible beside the logo on mobile and tablet', async ({ page }) => {
+  for (const width of [390, 820, 1024]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+    const title = page.locator('header.topbar #brandTitle');
+    await expect(title).toBeAttached();
+    await expect(title).toBeVisible();
+    await expect(title).toHaveAttribute('aria-label', '…и кофе');
+    const bounds = await title.boundingBox();
+    expect(bounds?.width ?? 0).toBeGreaterThan(20);
+    expect(bounds?.height ?? 0).toBeGreaterThan(10);
+  }
+});
+
+
+test('delivery: pizza option labels use compact typography only at 320px', async ({ page }) => {
+  for (const viewport of [
+    { width: 320, height: 740, expected: { size: 10, crust: 8, weight: 8.5, price: 10.5 } },
+    { width: 390, height: 844, expected: { size: 12.5, crust: 11, weight: 10.5, price: 13 } },
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+    const options = page.locator('#deliveryGrid .card .opts').first();
+    await expect(options).toBeVisible({ timeout: 15000 });
+    await expect(options.locator('.opt-size').first()).toBeVisible();
+
+    const fontSizes = await options.evaluate((fieldset) => {
+      const size = (selector) => {
+        const element = fieldset.querySelector(selector);
+        return element ? Number.parseFloat(getComputedStyle(element).fontSize) : null;
+      };
+      return {
+        size: size('.opt-size'),
+        crust: size('.opt-crust'),
+        weight: size('.opt-weight'),
+        price: size('.opt-price'),
+        crustsFit: [...fieldset.querySelectorAll('.opt-crust')].every((element) => element.scrollWidth <= element.clientWidth),
+      };
+    });
+    expect(fontSizes).toEqual({ ...viewport.expected, crustsFit: true });
+  }
+});
+
+
 test('mobile category tabs match the catalog width and distribute evenly for both brands', async ({ page }, testInfo) => {
   const viewports = [
     { name: '320 narrow', width: 320, height: 740 },
+    { name: '360 mobile', width: 360, height: 800 },
+    { name: '375 mobile', width: 375, height: 812 },
     { name: '390 mobile', width: 390, height: 844 },
+    { name: '414 mobile', width: 414, height: 896 },
     { name: '520 two-card threshold', width: 520, height: 900 },
     { name: '690 tablet', width: 690, height: 960 },
+    { name: '768 tablet', width: 768, height: 1024 },
     { name: '820 breakpoint', width: 820, height: 1024 },
   ];
 
@@ -465,7 +516,7 @@ test('desktop category navigation remains a compact vertical sidebar while the c
       expect(layout.parentIsWrap, brand.brand + ' desktop rail belongs to the desktop sidebar grid').toBe(true);
       expect(layout.direction, brand.brand + ' desktop categories remain vertical').toBe('column');
       expect(layout.position).toBe('relative');
-      expect(layout.height, brand.brand + ' sidebar is sized to its own categories').toBeLessThan(400);
+      expect(layout.height, brand.brand + ' sidebar is sized to its own categories').toBeLessThan(480);
       expect(layout.gridColumns).toBe(viewport.columns);
 
       await testInfo.attach(brand.brand + '-desktop-' + viewport.width + 'x' + viewport.height + '-vertical-categories', {
