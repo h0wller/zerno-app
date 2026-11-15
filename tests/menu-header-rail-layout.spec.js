@@ -704,7 +704,7 @@ test('category navigation keeps secondary delivery filters separate from primary
 });
 
 
-test('delivery scroll spy exposes the visible category without changing the selected category state', async ({ page }) => {
+test('delivery rail exposes the visible category while preserving the selected filter state', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
@@ -718,17 +718,17 @@ test('delivery scroll spy exposes the visible category without changing the sele
 
   await tabs.nth(1).click();
   await expect(tabs.nth(1)).toHaveAttribute('aria-pressed', 'true');
-  await expect(tabs.nth(1)).not.toHaveAttribute('aria-current', 'location');
+  await expect(tabs.nth(1)).toHaveAttribute('aria-current', 'location');
 
   await page.evaluate(() => {
-    const cards = [...document.querySelectorAll('#deliveryGrid .card:not(.skeleton-card)')];
-    const category = cards.find((card) => card.getAttribute('data-cat') && card.getAttribute('data-cat') !== 'pizza');
-    if (category) category.scrollIntoView({ block: 'start' });
+    const firstCard = document.querySelector('#deliveryGrid .card:not(.skeleton-card)');
+    if (firstCard) firstCard.scrollIntoView({ block: 'start' });
     window.__syncDeliveryScrollSpy?.();
   });
 
   await expect.poll(async () => rail.locator('button[aria-current="location"]').count(), { timeout: 5000 }).toBe(1);
   await expect.poll(async () => rail.locator('button[aria-pressed="true"]').count()).toBe(1);
+  await expect.poll(async () => rail.locator('button.on[aria-current="location"]').count()).toBe(1);
   await expect.poll(async () => rail.locator('button[aria-current="location"]').getAttribute('data-dcat'))
-    .not.toBe(await tabs.nth(1).getAttribute('data-dcat'));
+    .toBe(await tabs.nth(1).getAttribute('data-dcat'));
 });
