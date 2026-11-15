@@ -47,6 +47,8 @@
   /* First paint mirrors the one-column mobile wrapper: the category rail is
      moved into the menu view, so no 64px desktop sidebar column is reserved. */
   html body div.wrap {
+    width: 100%;
+    min-width: 0;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
     gap: 10px;
