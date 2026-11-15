@@ -187,36 +187,6 @@ import { Capacitor } from '@capacitor/core';
     }
   }
 
-  async function submitWorkouts(section, workouts) {
-    if (!Array.isArray(workouts) || !workouts.length) {
-      setState(section, 'Нет тренировок для отправки.');
-      return;
-    }
-    setActions(section, []);
-    setState(section, 'Отправляем сводки тренировок. Они сохранятся как неподтверждённые доказательства.');
-    var accepted = 0;
-    var duplicates = 0;
-    var rejected = 0;
-    for (var i = 0; i < workouts.length; i += 1) {
-      try {
-        var result = await window.api('/fitness/evidence', {
-          method: 'POST',
-          body: { activity: workouts[i] }
-        });
-        if (result.duplicate) duplicates += 1;
-        else accepted += 1;
-      } catch (error) {
-        rejected += 1;
-        if (error && error.status === 429) break;
-      }
-    }
-    setState(section, 'Отправлено: ' + accepted + ', уже было: ' + duplicates +
-      ', не принято: ' + rejected + '. Все принятые записи остаются unverified; награды не начислены.');
-    setActions(section, [
-      { label: 'Обновить тренировки', secondary: true, onClick: function () { loadWorkouts(section); } }
-    ]);
-  }
-
   async function requestAccess(section) {
     if (requestInFlight) return;
     requestInFlight = true;
