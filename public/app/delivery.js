@@ -312,7 +312,7 @@ function renderDeliveryRail() {
   if (needsRender) {
     rail.innerHTML = DCATS.map(function (category) {
       return '<button type="button" data-dcat="' + category.id + '"><span class="re">'
-        + renderCategoryIcon(category.id) + '</span>' + category.l + '</button>';
+        + renderCategoryIcon(category.id, 'delivery') + '</span>' + category.l + '</button>';
     }).join('');
     buttons = rail.querySelectorAll('button[data-dcat]');
   }
