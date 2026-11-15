@@ -332,9 +332,9 @@ test('both brand rails align to the catalog row on desktop', async ({page}) => {
       return {gt:grid.top,gb:grid.bottom,rt:rect.top,rb:rect.bottom,pos:getComputedStyle(rail).position,align:getComputedStyle(rail).alignSelf};
     },{railSelector:brand.rail,gridSelector});
     expect(Math.abs(m.rt-m.gt)).toBeLessThanOrEqual(2);
-    expect(Math.abs(m.rb-m.gb)).toBeLessThanOrEqual(4);
+    expect(m.rb - m.rt, 'desktop category rail must fit its own items, not stretch beside the full catalog').toBeLessThan(400);
     expect(m.pos).toBe('relative');
-    expect(m.align).toBe('stretch');
+    expect(m.align).toBe('start');
   }
 });
 
