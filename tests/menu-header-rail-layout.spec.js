@@ -726,7 +726,7 @@ test('switching delivery categories preserves the current rail and page position
   expect(Math.abs(after.railTop - before.railTop)).toBeLessThanOrEqual(1);
 });
 
-test('delivery desktop rail realigns with the filtered catalog after category changes', async ({ page }, testInfo) => {
+test('delivery desktop rail keeps its initial catalog-row anchor across category changes', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
@@ -737,26 +737,32 @@ test('delivery desktop rail realigns with the filtered catalog after category ch
   await expect(rail).toBeVisible({ timeout: 10000 });
   await expect(tabs).toHaveCount(5);
   await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+
+  const initial = await page.evaluate(() => ({
+    railTop: document.querySelector('#deliveryRail').getBoundingClientRect().top,
+    gridTop: document.querySelector('#deliveryGrid').getBoundingClientRect().top,
+  }));
+  expect(Math.abs(initial.railTop - initial.gridTop)).toBeLessThanOrEqual(2);
   await testInfo.attach('delivery-desktop-rail-before-category-switch', {
     body: await page.screenshot({ animations: 'disabled' }),
     contentType: 'image/png',
   });
 
-  // Sets contain four products, so the secondary ingredient filter is absent.
-  // This keeps the catalog populated while exercising the rail's vertical realignment.
   await tabs.nth(2).click();
   await expect(tabs.nth(2)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#deliverySubFilter')).toBeHidden();
   await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+
+  const after = await page.evaluate(() => ({
+    railTop: document.querySelector('#deliveryRail').getBoundingClientRect().top,
+    gridTop: document.querySelector('#deliveryGrid').getBoundingClientRect().top,
+  }));
+  expect(Math.abs(after.railTop - initial.railTop), 'category switching must not move the sidebar').toBeLessThanOrEqual(1);
+  expect(Math.abs(after.gridTop - initial.gridTop), 'a category without filters returns to the original catalog row').toBeLessThanOrEqual(2);
   await testInfo.attach('delivery-desktop-rail-after-category-switch', {
     body: await page.screenshot({ animations: 'disabled' }),
     contentType: 'image/png',
   });
-
-  await expect.poll(async () => {
-    const [railBox, gridBox] = await Promise.all([rail.boundingBox(), grid.boundingBox()]);
-    return railBox && gridBox ? Math.abs(railBox.y - gridBox.y) : Number.POSITIVE_INFINITY;
-  }, { timeout: 3000 }).toBeLessThanOrEqual(1);
 });
 
 test('category navigation keeps secondary delivery filters separate from primary tabs', async ({ page }) => {
@@ -782,7 +788,7 @@ test('category navigation keeps secondary delivery filters separate from primary
 
 
 
-test('delivery: switching sauces and drinks keeps the desktop category rail anchored without reserving an empty filter row', async ({ page }, testInfo) => {
+test('delivery: optional filters expand below a stable desktop rail anchor', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
@@ -791,21 +797,16 @@ test('delivery: switching sauces and drinks keeps the desktop category rail anch
   const grid = page.locator('#deliveryGrid');
   const viewport = page.locator('#deliverySubFilterViewport');
   await expect(rail).toBeVisible({ timeout: 10000 });
-  await expect(grid).toBeVisible({ timeout: 15000 });
+  await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
 
-  const measure = () => page.evaluate(() => {
-    const railRect = document.querySelector('#deliveryRail').getBoundingClientRect();
-    const gridRect = document.querySelector('#deliveryGrid').getBoundingClientRect();
-    const headRect = document.querySelector('#deliveryView .menu-head').getBoundingClientRect();
-    return {
-      railTop: railRect.top,
-      headTop: headRect.top,
-      gridTop: gridRect.top,
-      scrollY: window.scrollY,
-      viewportHidden: document.querySelector('#deliverySubFilterViewport').hidden,
-      viewportDisplay: getComputedStyle(document.querySelector('#deliverySubFilterViewport')).display,
-    };
-  });
+  const measure = () => page.evaluate(() => ({
+    railTop: document.querySelector('#deliveryRail').getBoundingClientRect().top,
+    gridTop: document.querySelector('#deliveryGrid').getBoundingClientRect().top,
+    scrollY: window.scrollY,
+    viewportHidden: document.querySelector('#deliverySubFilterViewport').hidden,
+  }));
+  const initial = await measure();
+  expect(Math.abs(initial.railTop - initial.gridTop)).toBeLessThanOrEqual(2);
 
   await rail.locator('[data-dcat="sauces"]').click();
   await expect(page.locator('#deliverySubFilter')).toBeVisible();
@@ -827,9 +828,48 @@ test('delivery: switching sauces and drinks keeps the desktop category rail anch
 
   expect(sauces.viewportHidden).toBe(false);
   expect(drinks.viewportHidden).toBe(true);
-  expect(Math.abs(drinks.railTop - sauces.railTop), 'the desktop sidebar must not follow the optional secondary-filter row').toBeLessThanOrEqual(1);
-  expect(Math.abs(sauces.railTop - sauces.headTop), 'the desktop sidebar remains anchored to the menu header').toBeLessThanOrEqual(2);
-  expect(Math.abs(drinks.railTop - drinks.headTop), 'the desktop sidebar remains anchored after filters disappear').toBeLessThanOrEqual(2);
-  expect(Math.abs(drinks.scrollY - sauces.scrollY), 'category selection must not scroll the page').toBeLessThanOrEqual(1);
-  expect(drinks.gridTop).toBeGreaterThan(sauces.gridTop);
+  expect(Math.abs(sauces.railTop - initial.railTop), 'the rail stays at the first catalog row while filters appear').toBeLessThanOrEqual(1);
+  expect(Math.abs(drinks.railTop - initial.railTop), 'the rail stays at the same catalog anchor after filters disappear').toBeLessThanOrEqual(1);
+  expect(sauces.gridTop).toBeGreaterThan(initial.gridTop + 40);
+  expect(Math.abs(drinks.gridTop - initial.gridTop)).toBeLessThanOrEqual(2);
+  expect(Math.abs(drinks.scrollY - initial.scrollY)).toBeLessThanOrEqual(1);
+});
+
+test('delivery desktop single-meta cards reserve the same composition slot when chips are absent', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const rail = page.locator('#deliveryRail');
+  const tabs = rail.locator('button');
+  const measureFirstRow = async () => page.evaluate(() => {
+    const grid = document.querySelector('#deliveryGrid');
+    const cards = Array.from(grid.querySelectorAll('.card'));
+    const first = cards[0];
+    const secondRow = cards.find(card => card.getBoundingClientRect().top > first.getBoundingClientRect().top + 1);
+    const comp = first.querySelector('.cbody > .comp');
+    return {
+      cardHeight: first.getBoundingClientRect().height,
+      secondRowTop: secondRow ? secondRow.getBoundingClientRect().top : null,
+      compHeight: comp ? comp.getBoundingClientRect().height : null,
+      compHasChips: !!(comp && comp.children.length),
+    };
+  });
+
+  await expect(rail).toBeVisible({ timeout: 10000 });
+  await rail.locator('[data-dcat="drinks"]').click();
+  await expect(tabs.nth(3)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
+  const drinks = await measureFirstRow();
+
+  await rail.locator('[data-dcat="sets"]').click();
+  await expect(tabs.nth(2)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
+  const sets = await measureFirstRow();
+
+  expect(drinks.compHeight).toBe(100);
+  expect(drinks.compHasChips).toBe(false);
+  expect(sets.compHeight).toBe(100);
+  expect(sets.compHasChips).toBe(true);
+  expect(Math.abs(drinks.cardHeight - sets.cardHeight), 'switching between categories must not change the first card row height').toBeLessThanOrEqual(1);
 });
