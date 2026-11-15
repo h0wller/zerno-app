@@ -288,7 +288,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   }
 }
 
-/* Desktop category navigation: compact vertical sidebar; never stretch with catalog row. */
+/* Desktop category navigation: one restrained brand surface, without nested tab cards. */
 @media (min-width: 821px) and (min-height: 481px) {
   html body div.wrap > #rail,
   html body div.wrap > #deliveryRail {
@@ -304,10 +304,10 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     min-height: 0;
     max-height: none;
     gap: 8px;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
+    padding: 6px;
+    border: 1px solid var(--category-rail-border-color, transparent);
+    border-radius: 16px;
+    background: var(--category-rail-bg, var(--panel, #fff));
     box-shadow: none;
     overflow: visible;
   }
@@ -323,7 +323,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     min-height: 64px;
     max-height: 64px;
     padding: 7px 3px;
-    border: 0;
+    border: 1px solid transparent;
     border-radius: 12px;
     background: transparent;
     box-shadow: none;
@@ -335,12 +335,12 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
 
   html body div.wrap > #rail button.on,
   html body div.wrap > #deliveryRail button.on {
-    border: 0;
-    background: transparent;
+    border-color: var(--category-tab-active-border-color, transparent);
+    background: var(--category-tab-active-bg, var(--card, #fff));
     box-shadow: none;
     color: var(--category-tab-active-color, var(--ink, #20252b));
     font-weight: 800;
-    transform: var(--category-tab-active-transform, none);
+    transform: none;
   }
 
   html body div.wrap > #rail .re,
@@ -362,9 +362,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   }
 
   html body div.wrap > #rail button:active,
-  html body div.wrap > #deliveryRail button:active,
-  html body div.wrap > #rail button.on:active,
-  html body div.wrap > #deliveryRail button.on:active {
+  html body div.wrap > #deliveryRail button:active {
     transform: scale(.97);
   }
 
@@ -377,8 +375,8 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   @media (hover: hover) {
     html body div.wrap > #rail button:not(.on):hover,
     html body div.wrap > #deliveryRail button:not(.on):hover {
-      transform: translateY(-1px);
-      box-shadow: var(--category-tab-active-shadow, none);
+      border-color: var(--category-tab-hover-border-color, transparent);
+      background: var(--category-tab-hover-bg, transparent);
     }
   }
 }
