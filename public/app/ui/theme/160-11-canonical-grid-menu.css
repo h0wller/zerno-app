@@ -268,28 +268,6 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
 }
 
 
-/* Mobile category rail buttons retain the canonical first-paint geometry. */
-@media (max-width:820px) {
-  html body div.wrap > .rail button,
-  html body div.wrap > #rail button,
-  html body div.wrap > #deliveryRail button {
-    box-sizing:border-box;
-    width:100%;
-    min-height:56px;
-    padding:6px 2px;
-    font-size:9.5px;
-    line-height:1.15;
-    white-space:normal;
-    word-break:normal;
-  }
-  html body div.wrap > .rail button.on,
-  html body div.wrap > #rail button.on,
-  html body div.wrap > #deliveryRail button.on {
-    font-size:9.5px;
-    line-height:1.15;
-  }
-}
-
 /* Compact landscape has horizontal category navigation and a full-width catalog. */
 @media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   /* Compact landscape is a touch viewport: reserve a single compact topbar row. */
