@@ -1601,3 +1601,39 @@ test('manual category change returns the new catalog content to the top while ke
       .toBeLessThan(600);
   }
 });
+
+test('late font hydration must not release a mobile rail after manual category change', async ({ page }) => {
+  let releaseFonts;
+  const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
+  await page.route(/\\.(woff2?|ttf|otf)(\\?.*)?$/i, async route => {
+    await fontsHeld;
+    await route.abort();
+  });
+
+  for (const brand of CASES) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 10000 });
+    await page.evaluate(() => window.scrollTo(0, 700));
+    await expect.poll(() => rail.evaluate(el =>
+      getComputedStyle(el).position === 'fixed' && el.classList.contains('rail-is-pinned')
+    ), { timeout: 5000 }).toBe(true);
+
+    const nextCategory = rail.locator('button:not(.on)').first();
+    await nextCategory.click();
+    await expect(nextCategory).toHaveClass(/on/);
+    await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe('loading');
+
+    releaseFonts();
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(300);
+
+    await expect.poll(() => rail.evaluate(el => ({
+      position: getComputedStyle(el).position,
+      pinned: el.classList.contains('rail-is-pinned'),
+    }))).toEqual({ position: 'fixed', pinned: true });
+  }
+});
