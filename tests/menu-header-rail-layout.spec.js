@@ -875,6 +875,7 @@ for (const brand of CASES) {
     await expect(rail).toHaveAttribute('role', 'group');
     await expect(rail).toHaveAttribute('aria-label', 'Категории меню');
     await expect(rail).toHaveAttribute('tabindex', '0');
+    await expect(rail.locator('button').first()).toHaveAttribute('type', 'button');
 
     const initial = await rail.evaluate((el) => ({
       overflowX: getComputedStyle(el).overflowX,
