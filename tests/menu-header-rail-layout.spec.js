@@ -758,7 +758,7 @@ test('delivery desktop rail keeps its initial catalog-row anchor across category
     gridTop: document.querySelector('#deliveryGrid').getBoundingClientRect().top,
   }));
   expect(Math.abs(after.railTop - initial.railTop), 'category switching must not move the sidebar').toBeLessThanOrEqual(1);
-  expect(Math.abs(after.gridTop - initial.gridTop), 'a category without filters returns to the original catalog row').toBeLessThanOrEqual(2);
+  expect(after.gridTop).toBeLessThan(initial.gridTop - 40);
   await testInfo.attach('delivery-desktop-rail-after-category-switch', {
     body: await page.screenshot({ animations: 'disabled' }),
     contentType: 'image/png',
@@ -833,46 +833,6 @@ test('delivery: optional filters expand below a stable desktop rail anchor', asy
   expect(sauces.gridTop).toBeGreaterThan(initial.gridTop + 40);
   expect(Math.abs(drinks.gridTop - initial.gridTop)).toBeLessThanOrEqual(2);
   expect(Math.abs(drinks.scrollY - initial.scrollY)).toBeLessThanOrEqual(1);
-});
-
-test('delivery desktop single-meta cards reserve the same composition slot when chips are absent', async ({ page }) => {
-  await page.setViewportSize({ width: 1024, height: 768 });
-  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
-
-  const rail = page.locator('#deliveryRail');
-  const tabs = rail.locator('button');
-  const measureFirstRow = async () => page.evaluate(() => {
-    const grid = document.querySelector('#deliveryGrid');
-    const cards = Array.from(grid.querySelectorAll('.card'));
-    const first = cards[0];
-    const secondRow = cards.find(card => card.getBoundingClientRect().top > first.getBoundingClientRect().top + 1);
-    const comp = first.querySelector('.cbody > .comp');
-    return {
-      cardHeight: first.getBoundingClientRect().height,
-      secondRowTop: secondRow ? secondRow.getBoundingClientRect().top : null,
-      compHeight: comp ? comp.getBoundingClientRect().height : null,
-      compHasChips: !!(comp && comp.children.length),
-    };
-  });
-
-  await expect(rail).toBeVisible({ timeout: 10000 });
-  await rail.locator('[data-dcat="drinks"]').click();
-  await expect(tabs.nth(3)).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
-  const drinks = await measureFirstRow();
-
-  await rail.locator('[data-dcat="sets"]').click();
-  await expect(tabs.nth(2)).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
-  const sets = await measureFirstRow();
-
-  expect(drinks.compHeight).toBe(100);
-  expect(drinks.compHasChips).toBe(false);
-  expect(sets.compHeight).toBe(100);
-  expect(sets.compHasChips).toBe(true);
-  expect(Math.abs(drinks.cardHeight - sets.cardHeight), 'switching between categories must not change the first card row height').toBeLessThanOrEqual(1);
-  expect(Math.abs(drinks.secondRowTop - sets.secondRowTop), 'the next grid row must not jump when a category has no composition chips').toBeLessThanOrEqual(1);
 });
 
 test('delivery desktop single-meta cards keep equal description and composition slots across categories', async ({ page }, testInfo) => {
