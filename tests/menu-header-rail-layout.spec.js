@@ -508,7 +508,7 @@ test('desktop category navigation remains a compact vertical sidebar while the c
           ? activeStyle.backgroundColor
           : getComputedStyle(rail).backgroundColor;
         const rgb = (value) => {
-          const match = value.match(/[\\d.]+/g);
+          const match = value.match(/[\d.]+/g);
           return match ? match.slice(0, 3).map(Number) : [0, 0, 0];
         };
         const luminance = (value) => {
