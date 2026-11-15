@@ -440,7 +440,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(Math.abs(geometry.railWidth - geometry.gridWidth), brand.brand + ' rail background matches the current card-grid width, not the viewport').toBeLessThanOrEqual(1);
       expect(geometry.railTop, brand.brand + ' categories follow the search block').toBeGreaterThan(geometry.headBottom);
       expect(geometry.railHeight, brand.brand + ' mobile rail uses the shared 64px height').toBe(64);
-      expect(geometry.railRadius, brand.brand + ' rail surface has no nested rounded frame').toBe('0px');
+      expect(geometry.railRadius, brand.brand + ' rail uses one rounded surface').toBe('16px');
       expect(geometry.railOverflow, brand.brand + ' rail background is clipped to its rounded surface').toBe('hidden');
       expect(geometry.background, brand.brand + ' uses its own category surface').not.toBe('rgba(0, 0, 0, 0)');
       expect(geometry.border, brand.brand + ' rail has no heavy enclosing frame').toBe('0px');
@@ -547,7 +547,7 @@ test('desktop category navigation uses one rail surface and a selected icon chip
       expect(layout.height).toBeLessThan(480);
       expect(layout.railBackground).not.toBe('rgba(0, 0, 0, 0)');
       expect(layout.railBorder).toBe('0px');
-      expect(layout.radius).toBe('0px');
+      expect(layout.radius).toBe('16px');
       expect(layout.activeBackground).toBe('rgba(0, 0, 0, 0)');
       expect(layout.activeBorder).toBe('0px');
       expect(layout.activeRadius).toBe('0px');
