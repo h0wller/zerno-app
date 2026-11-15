@@ -128,7 +128,10 @@ function expect(name, r, status, fields = []) {
     expect('PUT /api/me/notify', await call('PUT', '/api/me/notify', { token, body: { tg: 0, web: 1 } }), 200, ['customer.notify_tg']);
     await call('PUT', '/api/me/notify', { token, body: { tg: 1, web: 1 } });
     expect('GET /api/orders/mine', await call('GET', '/api/orders/mine', { token }), 200, ['orders']);
-    expect('POST /api/orders (пустая корзина) → 400', await call('POST', '/api/orders', { token, body: { method: 'pickup', items: [] } }), 400, ['error']);
+    const pendingOrder = await call('POST', '/api/orders', { token, body: { method: 'pickup', items: [] } });
+    expect('POST /api/orders (pending guest) → 403', pendingOrder, 403, ['error', 'code']);
+    log(pendingOrder.json?.code === 'CUSTOMER_NOT_VERIFIED', 'POST /api/orders возвращает CUSTOMER_NOT_VERIFIED');
+
     expect('POST /api/redeem (нет подарков) → 400', await call('POST', '/api/redeem', { token }), 400, ['error']);
     expect('POST /api/push/subscribe (bad sub) → 400', await call('POST', '/api/push/subscribe', { token, body: { sub: {} } }), 400, ['error']);
     expect('POST /api/push/test', await call('POST', '/api/push/test', { token }), 200, ['ok']);
@@ -146,6 +149,7 @@ function expect(name, r, status, fields = []) {
 
   if (token && CASHIER) {
     expect('POST /api/auth/activate (кассир)', await call('POST', '/api/auth/activate', { token, body: { code: CASHIER } }), 200, ['customer.role']);
+    expect('POST /api/orders (пустая корзина у персонала) → 400', await call('POST', '/api/orders', { token, body: { method: 'pickup', items: [] } }), 400, ['error']);
     expect('GET /api/staff/pending (кассир)', await call('GET', '/api/staff/pending', { token }), 200, ['pending']);
     expect('GET /api/staff/log', await call('GET', '/api/staff/log', { token }), 200, ['log']);
     expect('GET /api/staff/customers?search', await call('GET', '/api/staff/customers?search=' + digits, { token }), 200, ['customers']);
