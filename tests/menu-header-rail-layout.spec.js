@@ -536,11 +536,14 @@ test('desktop category navigation uses one rail surface and a selected icon chip
           contrast: (values[0] + .05) / (values[1] + .05),
           iconBackground: iconStyle.backgroundColor,
           iconRadius: iconStyle.borderTopLeftRadius,
+          iconWidth: active.querySelector('.re').getBoundingClientRect().width,
+          iconHeight: active.querySelector('.re').getBoundingClientRect().height,
         };
       });
 
       const columns = await grid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
       expect(layout.position).toBe('relative');
+      expect(layout.width).toBeLessThanOrEqual(80);
       expect(layout.height).toBeLessThan(480);
       expect(layout.railBackground).not.toBe('rgba(0, 0, 0, 0)');
       expect(layout.railBorder).toBe('0px');
@@ -551,6 +554,8 @@ test('desktop category navigation uses one rail surface and a selected icon chip
       expect(layout.contrast, brand.brand + ' selected desktop category text keeps WCAG AA contrast').toBeGreaterThanOrEqual(4.5);
       expect(layout.iconBackground).not.toBe('rgba(0, 0, 0, 0)');
       expect(layout.iconRadius).toBe(brand.brand === 'coffee' ? '50%' : '8px');
+      expect(layout.iconWidth).toBe(32);
+      expect(layout.iconHeight).toBe(32);
       expect(columns).toBe(viewport.columns);
 
       await testInfo.attach(brand.brand + '-desktop-' + viewport.width + 'x' + viewport.height + '-single-frame-rail', {
@@ -1151,6 +1156,9 @@ test('category rail uses one surface, an active icon chip and a separate underli
 
       expect(styles.iconRect.width, brand + ' icon chip must have a fixed square width').toBeGreaterThanOrEqual(20);
       expect(styles.iconRect.width, brand + ' icon chip must be square').toBeCloseTo(styles.iconRect.height, 1);
+      if (viewport.width >= 821 && viewport.height > 480) {
+        expect(styles.iconRect.width, brand + ' desktop icon chip must be 32px').toBe(32);
+      }
       expect(styles.iconBackground, brand + ' active icon must use its brand chip').not.toBe('rgba(0, 0, 0, 0)');
       expect(styles.iconRadius, brand + ' active icon shape must be brand-specific').toBe(brand === 'coffee' ? '50%' : '8px');
       expect(styles.inactiveIconBackground, brand + ' inactive icon must not have a chip').toBe('rgba(0, 0, 0, 0)');
