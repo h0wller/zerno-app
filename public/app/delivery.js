@@ -415,12 +415,16 @@ if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(scheduleDeliveryImagePriorities);
 }
 
+function usesStableSimpleMetaSlots(p, opts) {
+  return opts.length === 0 && ['drinks', 'sets', 'sauces'].includes(p.cat);
+}
+
 function renderDeliveryDescription(p, opts) {
-  if (opts.length > 0) {
+  if (!usesStableSimpleMetaSlots(p, opts)) {
     return p.desc ? '<div class="desc">' + esc(p.desc) + '</div>' : '';
   }
-  // Simple-meta cards share a two-line description slot. Without it, a long
-  // drink description makes the first grid row taller than a set/sauce row.
+  // Drinks, sets and sauces share a two-line description slot. Without it,
+  // long descriptions make the first grid row taller than categories without text.
   return '<div class="desc"' + (p.desc ? '' : ' aria-hidden="true"') + '>' +
     esc(p.desc || '') +
   '</div>';
@@ -428,6 +432,7 @@ function renderDeliveryDescription(p, opts) {
 
 function renderDeliveryCard(p, n0) {
   var opts = p.opts || [];
+  var stableMetaClass = usesStableSimpleMetaSlots(p, opts) ? ' stable-meta-card' : '';
   var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
   var imageSet = p.imgSrcset
     ? ' srcset="' + esc(p.imgSrcset) + '" sizes="(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw"'
@@ -436,7 +441,7 @@ function renderDeliveryCard(p, n0) {
     ? '<img src="' + p.img + '"' + imageSet + ' alt="' + esc(p.name) + '" data-fallback-emoji="' + esc(p.e || '🍕') + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="lazy" fetchpriority="auto" decoding="async">'
     : '<span class="em">' + (p.e || '🍕') + '</span>';
 
-  return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
+  return '<article class="card' + (p.on ? '' : ' stopped') + stableMetaClass + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
       '<div class="media" style="--tint:#F3E2CE;position:relative;overflow:hidden;">' +
       mediaContent +
       (p.tag ? '<span class="tag ' + getMenuBadgeClass(p.tag) + '">' + esc(getMenuBadgeLabel(p.tag)) + '</span>' : '') +
@@ -472,6 +477,7 @@ function updateFirstDeliveryCard(gridEl, firstCard, list) {
   firstCard.setAttribute('data-product-id', p0.id);
   firstCard.draggable = canDragMenu();
   firstCard.classList.toggle('stopped', !p0.on);
+  firstCard.classList.toggle('stable-meta-card', usesStableSimpleMetaSlots(p0, p0.opts || []));
 
   const cbody0 = firstCard.querySelector('.cbody');
   if (cbody0) {
