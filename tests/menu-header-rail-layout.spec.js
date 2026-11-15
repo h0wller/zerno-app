@@ -1199,6 +1199,9 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
         };
         const title=document.querySelector(titleSelector);
         const tr=title?.getBoundingClientRect();
+        const cardSelector = selectors.rail.includes('deliveryRail') ? '#deliveryGrid > .card' : '#grid > article.card';
+        const firstCard=document.querySelector(cardSelector);
+        const cr=firstCard?.getBoundingClientRect();
         const active=document.querySelector(selectors.active);
         const after=active ? getComputedStyle(active,'::after') : null;
         const fontFaces=Array.from(document.fonts || []).map(face => ({
@@ -1216,6 +1219,8 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
             loadedFaces:fontFaces,
           },
           firstCardTitleText:title?.textContent?.trim() || null,
+          firstCardRect:cr ? {top:cr.top,bottom:cr.bottom,height:cr.height,width:cr.width} : null,
+          firstCardTitleRect:tr ? {top:tr.top,bottom:tr.bottom,height:tr.height} : null,
           buttons:buttons.map(button=>{const r=button.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};}),
           iconTops,iconTopSpread:iconTops.length?Math.max(...iconTops)-Math.min(...iconTops):null,
           regions:{
@@ -1240,10 +1245,12 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
       await page.addStyleTag({ content: '*,:before,:after{transition:none!important;animation:none!important}' });
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const hydrated=await measure();
+      await page.waitForTimeout(200);
+      const hydratedAfter200ms=await measure();
       await testInfo.attach(`${brand.brand}-horizontal-rail-${viewport.name}-before`, {
         body:await page.screenshot({animations:'disabled'}),contentType:'image/png',
       });
-      reports.push({brand:brand.brand,viewport,heldStylesheetRequests:heldRequests,firstFrame,hydrated});
+      reports.push({brand:brand.brand,viewport,heldStylesheetRequests:heldRequests,firstFrame,hydrated,hydratedAfter200ms});
 
       expect.soft(Math.abs(hydrated.computed.rail.rect.height-hydrated.computed.button.rect.height),
         `${brand.brand} ${viewport.name}: rail and button heights must match`).toBeLessThanOrEqual(0.5);
