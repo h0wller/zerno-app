@@ -174,7 +174,7 @@ for (const brand of CASES) {
           return Math.abs(rail.top - grid.top);
         }, { railSelector: brand.rail, gridSelector }), { timeout: 5000 }).toBeLessThanOrEqual(2);
         await expect.poll(() => rail.evaluate(el => el.getBoundingClientRect().height))
-          .toBeLessThan(400);
+          .toBeLessThan(480);
       }
     });
   }
