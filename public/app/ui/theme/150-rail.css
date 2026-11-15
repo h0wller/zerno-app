@@ -137,39 +137,13 @@
     display: none;
   }
 
-  /* Once its document position reaches the top offset, pin the rail to the viewport.
-     JS preserves its original flow slot with a spacer and hides it while scrolling. */
+  /* Keep the rail visible at a fixed viewport offset after its flow position reaches the threshold.
+     JS preserves the original flow slot with a spacer; scrolling never hides the rail. */
   html body .wrap #menuView #rail.rail-is-pinned,
   html body .wrap #deliveryView #deliveryRail.rail-is-pinned {
     position: fixed;
     z-index: 80;
     margin: 0;
-  }
-
-  html body .wrap #menuView #rail.rail-is-pinned:not(.rail-scroll-hidden),
-  html body .wrap #deliveryView #deliveryRail.rail-is-pinned:not(.rail-scroll-hidden) {
-    background: color-mix(in srgb, var(--category-rail-bg, var(--panel, #fff)) 82%, transparent);
-    -webkit-backdrop-filter: blur(14px) saturate(145%);
-    backdrop-filter: blur(14px) saturate(145%);
-    animation: rail-drop-in 280ms cubic-bezier(.2, .8, .2, 1) both;
-  }
-
-  /* Reveal downward without transforming the fixed element itself:
-     transform changes its visual viewport position and can break backdrop compositing. */
-  @keyframes rail-drop-in {
-    from {
-      clip-path: inset(0 0 100% 0 round 16px);
-    }
-    to {
-      clip-path: inset(0 0 0 0 round 16px);
-    }
-  }
-
-  html body .wrap #menuView #rail.rail-scroll-hidden,
-  html body .wrap #deliveryView #deliveryRail.rail-scroll-hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
   }
 }
 
@@ -200,11 +174,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html body .wrap #menuView #rail.rail-is-pinned:not(.rail-scroll-hidden),
-  html body .wrap #deliveryView #deliveryRail.rail-is-pinned:not(.rail-scroll-hidden) {
-    animation: none;
-  }
-
   html body .wrap #menuView #rail button,
   html body .wrap #deliveryView #deliveryRail button,
   html body .wrap #menuView #rail .re,
