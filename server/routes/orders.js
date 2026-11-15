@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { createHash } from 'node:crypto';
 import { WEBAPP_URL } from '../config.js';
 import { db } from '../db/connection.js';
-import { verifiedCustomerGuard, adminGuard, dispatchGuard, STAFF_ROLES } from '../middleware/auth.js';
+import { verifiedCustomerGuard, userGuard, adminGuard, dispatchGuard, STAFF_ROLES } from '../middleware/auth.js';
 import { logEv } from '../domain/helpers.js';
 import { nowISO, uid } from '../utils/id-time.js';
 import { sendPush } from '../services/push.js';
