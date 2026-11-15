@@ -44,11 +44,6 @@ if (typeof window !== 'undefined') {
 /* public/app/delivery.js — F2.5: доставка — state, рендер меню, субфильтры и корзина */
 
 window.DMENU = [];
-window.cart = JSON.parse(localStorage.getItem('zt_cart') || '[]');
-
-// Очистка корзины от битых позиций с нулевой или отрицательной ценой
-cart = cart.filter(c => c.price > 0);
-localStorage.setItem('zt_cart', JSON.stringify(cart));
 
 window.deliveryInfo = null;
 window.promoInfo = null;
@@ -676,13 +671,26 @@ function patchDeliveryCards(list) {
 
 function syncAddButtons() {
   document.querySelectorAll('#deliveryGrid [data-add]').forEach(b => {
-    if (b.disabled) return;
     const n = cart.reduce((a, c) => a + (String(c.id) === String(b.dataset.add) ? c.qty : 0), 0);
+    const row = b.closest('.steprow');
+    const compact = n > 0 && window.innerWidth <= 260;
+    if (row) {
+      row.classList.toggle('compact-quantity-row', compact);
+      row.querySelectorAll('.step').forEach(s => {
+        s.hidden = !n || (compact && s.dataset.step === '1');
+      });
+    }
+    if (b.disabled) return;
     b.classList.toggle('incart', n > 0);
-    const row = b.closest('.steprow'); if (row) row.querySelectorAll('.step').forEach(s => { s.hidden = !n; });
-    if (!b.classList.contains('added')) b.textContent = n > 0 ? ('В корзине · ' + n) : 'Добавить';
+    const label = n > 0 ? ('В корзине · ' + n + '. Добавить ещё') : 'Добавить';
+    b.setAttribute('aria-label', label);
+    if (n > 0) b.title = label;
+    else b.removeAttribute('title');
+    if (!b.classList.contains('added')) b.textContent = n > 0 ? '✓' : 'Добавить';
   });
 }
+
+window.addEventListener('resize', syncAddButtons, { passive: true });
 
 function handleDeliveryZoomClick(e) {
   const zoomImg = e.target.closest('[data-zoom], .media img');
@@ -706,24 +714,26 @@ function handleDeliveryStepperClick(e) {
   if (!step) return false;
   const id = step.dataset.sid;
   const delta = +step.dataset.step;
-  const item = cart.find(entry => String(entry.id) === String(id));
-  if (!item && delta < 0) return true;
-  if (item) {
-    if (delta > 0) item.qty++;
-    else if (item.qty > 1) item.qty--;
-    else cart.splice(cart.indexOf(item), 1);
-  }
-  localStorage.setItem('zt_cart', JSON.stringify(cart));
-  if (typeof window.updateCartFab === 'function') window.updateCartFab();
-  if (typeof window.renderCart === 'function') window.renderCart();
-  const count = cart.reduce((total, entry) => (String(entry.id) === String(id) ? total + entry.qty : total), 0);
+  const count = typeof window.adjustDeliveryCartItem === 'function'
+    ? window.adjustDeliveryCartItem(id, delta)
+    : 0;
   const row = step.closest('.steprow');
   const addButton = row && row.querySelector('[data-add]');
   if (addButton) {
-    addButton.textContent = count ? ('В корзине · ' + count) : 'Добавить';
+    const label = count ? ('В корзине · ' + count + '. Добавить ещё') : 'Добавить';
+    addButton.textContent = count ? '✓' : 'Добавить';
+    addButton.setAttribute('aria-label', label);
+    if (count) addButton.title = label;
+    else addButton.removeAttribute('title');
     addButton.classList.toggle('incart', count > 0);
   }
-  if (row) row.querySelectorAll('.step').forEach(button => { button.hidden = !count; });
+  const compact = count > 0 && window.innerWidth <= 260;
+  if (row) {
+    row.classList.toggle('compact-quantity-row', compact);
+    row.querySelectorAll('.step').forEach(button => {
+      button.hidden = !count || (compact && button.dataset.step === '1');
+    });
+  }
   return true;
 }
 
@@ -776,91 +786,6 @@ function resolveDeliveryAddSelection(addButton, product) {
   return { optionIndex, option, price };
 }
 
-function deliveryOptions(product) {
-  if (Array.isArray(product && product.opts)) return product.opts;
-  if (product && typeof product.opts === 'string') {
-    try {
-      const parsed = JSON.parse(product.opts);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (_) {}
-  }
-  return [];
-}
-
-function syncDeliveryCartPrices(products) {
-  const byId = new Map((products || []).map(product => [String(product.id), product]));
-  let changed = false;
-
-  cart.forEach(item => {
-    const product = byId.get(String(item.id));
-    if (!product) return;
-
-    const optionIndex = item.oi === undefined || item.oi === null || item.oi === ''
-      ? -1
-      : parseInt(item.oi, 10);
-    const options = deliveryOptions(product);
-    const option = Number.isInteger(optionIndex) && optionIndex >= 0
-      ? options[optionIndex]
-      : null;
-    if (optionIndex >= 0 && !option) return;
-
-    const price = option ? Number(option.p) : (Number(product.price) || 0);
-    if (!Number.isFinite(price) || price <= 0) return;
-
-    const nextOpt = option ? (option.l || option.name || '') : null;
-    const nextSize = option ? (Number(option.sz) || 0) : 0;
-    const previousPrice = Number(item.price) || 0;
-    if (previousPrice > 0 && previousPrice !== price && !Number(item.priceUpdateFrom)) {
-      item.priceUpdateFrom = previousPrice;
-    }
-
-    if (previousPrice !== price ||
-        item.name !== product.name ||
-        item.opt !== nextOpt ||
-        Number(item.sz) !== nextSize ||
-        Number(item.oi) !== optionIndex) {
-      item.price = price;
-      item.name = product.name;
-      item.opt = nextOpt;
-      item.sz = nextSize;
-      item.oi = optionIndex;
-      changed = true;
-    }
-  });
-
-  if (changed) localStorage.setItem('zt_cart', JSON.stringify(cart));
-  return changed;
-}
-
-function upsertDeliveryCartItem(product, selection) {
-  const id = product.id;
-  const key = id + (selection.optionIndex >= 0 ? '_' + selection.optionIndex : '');
-  const existing = cart.find(item => String(item.key) === String(key));
-  if (existing) {
-    const previousPrice = Number(existing.price) || 0;
-    if (previousPrice > 0 && previousPrice !== selection.price && !Number(existing.priceUpdateFrom)) {
-      existing.priceUpdateFrom = previousPrice;
-    }
-    existing.name = product.name;
-    existing.oi = selection.optionIndex;
-    existing.opt = selection.option ? selection.option.l : null;
-    existing.price = selection.price;
-    existing.sz = selection.option ? (Number(selection.option.sz) || 0) : 0;
-    existing.qty++;
-    return;
-  }
-  cart.push({
-    key: key,
-    id: id,
-    oi: selection.optionIndex,
-    name: product.name,
-    opt: selection.option ? selection.option.l : null,
-    price: selection.price,
-    sz: selection.option ? (Number(selection.option.sz) || 0) : 0,
-    qty: 1
-  });
-}
-
 function handleDeliveryAddClick(e) {
   const addButton = e.target.closest('[data-add]');
   if (!addButton) return false;
@@ -869,8 +794,8 @@ function handleDeliveryAddClick(e) {
   const selection = resolveDeliveryAddSelection(addButton, product);
   if (!selection) return true;
 
-  upsertDeliveryCartItem(product, selection);
-  localStorage.setItem('zt_cart', JSON.stringify(cart));
+  if (typeof window.addDeliveryCartItem !== 'function') return true;
+  window.addDeliveryCartItem(product, selection);
   if (typeof syncAddButtons === 'function') syncAddButtons();
   addButton.classList.add('added');
   if (window.TgUx) window.TgUx.haptic('medium');
@@ -904,64 +829,7 @@ $('#deliveryGrid').addEventListener('change', function (e) {
   optionsBox.querySelectorAll('input[type="radio"]').forEach(input => input.removeAttribute('aria-describedby'));
 });
 
-$('#cartFab').onclick = () => { $('#cartPanel').classList.add('open'); };
-$('#cartClose').onclick = () => { $('#cartPanel').classList.remove('open'); };
-
-function renderCart() {
-  $('#cartItems').innerHTML = cart.map((c, i) => `<div class="cartItem">
-    <div style="flex:1"><b>${esc(c.name)}</b>${c.opt ? `<div style="font-size:12px;color:var(--soft)">${esc(c.opt)}</div>` : ''}</div>
-    <div class="qty"><button data-ci="${i}" data-act="-">−</button><span>${c.qty}</span><button data-ci="${i}" data-act="+">+</button></div>
-    <div style="font-weight:700">${fmt(c.price * c.qty)}</div>
-  </div>`).join('') || '<div style="color:var(--soft);text-align:center;padding:20px">Корзина пуста</div>';
-  const sum = cart.reduce((a, c) => a + c.price * c.qty, 0);
-  const method = $('#checkoutMethod').value;
-  const discount = method === 'pickup' ? Math.round(sum * 0.10) : 0;
-  const fee = method === 'delivery' && deliveryInfo ? (deliveryInfo.zones.find(z => z.places.includes($('#checkoutPlace').value))?.fee || 0) : 0;
-  $('#cartTotal').textContent = fmt(sum - discount + fee);
-  $('#cartDiscount').textContent = discount ? `−10% самовывоз: −${fmt(discount)}` : '';
-  $('#cartFee').textContent = fee ? `Доставка: ${fmt(fee)}` : '';
-  const gifts = [];
-  const pm2 = deliveryInfo && deliveryInfo.pizzaMonth;
-  if (pm2) { const big = cart.reduce((a, c) => a + ((c.sz === 35) ? c.qty : 0), 0); if (big >= 2) gifts.push(`🎁 ${pm2.name} — подарок`); }
-  $('#cartGifts').innerHTML = gifts.join('<br>');
-}
-
-$('#cartItems').addEventListener('click', e => {
-  const b = e.target.closest('[data-ci]');
-  if (!b) return;
-  const _i = +b.dataset.ci;
-  localStorage.setItem('zt_cart', JSON.stringify(cart));
-  if (typeof updateCartFab === 'function') updateCartFab();
-  window.renderCart();
-});
-
-$('#checkoutMethod').onchange = () => {
-  const pickup = $('#checkoutMethod').value === 'pickup';
-  const deliveryGroup = $('#checkoutDeliveryGroup');
-  if (deliveryGroup) deliveryGroup.style.display = pickup ? 'none' : 'contents';
-  window.renderCart();
-};
-
-$('#cartFab').onclick = async () => {
-  window.renderCart();
-  const cartScrollBody = $('#cartScrollBody');
-  $('#cartPanel').classList.add('open');
-  // Reset after the sheet becomes visible; while closed, the browser may clamp
-  // scrollTop against the collapsed scroll viewport and restore the old offset.
-  requestAnimationFrame(() => {
-    if (cartScrollBody) cartScrollBody.scrollTop = 0;
-  });
-  const checkoutButton = $('#checkoutBtn');
-  if (checkoutButton) checkoutButton.disabled = true;
-  try {
-    await window.refreshDeliveryInfo();
-    window.renderCart();
-  } catch (error) {
-    if (typeof toast === 'function') {
-      toast('Не удалось обновить график работы. Проверьте соединение перед оформлением.', '⚠️');
-    }
-  }
-};
+/* Cart DOM, state and controls are owned by cart.js. */
 
 function populatePlaces() {
   if (!deliveryInfo) return;
@@ -1002,7 +870,7 @@ window.loadDelivery = async function() {
         })
       : await api('/dmenu');
     DMENU = r.items || [];
-    syncDeliveryCartPrices(DMENU);
+    if (typeof window.syncDeliveryCartPrices === 'function') window.syncDeliveryCartPrices(DMENU);
     if (r.updatedAt) {
       window.meta.updatedAt = r.updatedAt;
       if (typeof window.renderUpd === 'function') window.renderUpd();
@@ -1251,7 +1119,6 @@ window.syncAddButtons = syncAddButtons;
 window.populatePlaces = populatePlaces;
 window.setupSlotDisplayToggle = setupSlotDisplayToggle;
 window.promoDisc = promoDisc;
-window.renderCart = renderCart;
 /* ── F3.70: DnD порядка доставки ── */
 attachGridDnD(document.getElementById('deliveryGrid'), {
   canDrag: canDragMenu,

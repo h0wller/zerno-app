@@ -605,6 +605,15 @@ html body #chatsToggle2 {
   }
   html body #deliveryGrid .cta.incart,
   html body #grid .cta.incart { width:auto; flex:0 0 auto; padding:0 12px; }
+
+  html body #deliveryGrid .steprow.compact-quantity-row > .cta[data-add].incart,
+  html body #grid .steprow.compact-quantity-row > .cta[data-add].incart {
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    flex:0 0 44px;
+    padding:0;
+  }
 }
 
 

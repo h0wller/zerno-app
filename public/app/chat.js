@@ -201,6 +201,15 @@ function openStaffChat(forceCtx) {
   scKey = null;
   if (typeof window.loadScList === 'function') window.loadScList();
 }
+
+function openStaffChatThread(key) {
+  if (!key) return;
+  openStaffChat(key.endsWith(':d') ? 'delivery' : 'coffee');
+  setTimeout(() => {
+    scKey = key;
+    openScDialog();
+  }, 600);
+}
   function closeStaffChat() {
     $("#staffChatModal").classList.remove("show");
     syncOverlay();
@@ -370,7 +379,7 @@ async function updateStaffBadge() {
   Object.assign(window, {
     addMsg, showTyping, hideTyping, renderChips, botReply, chatKey, sendChat,
     showBadge, initChatPointer, loadHistory,
-    openStaffChat, closeStaffChat, loadScList, openScDialog, scSend, updateStaffBadge,
+    openStaffChat, openStaffChatThread, closeStaffChat, loadScList, openScDialog, scSend, updateStaffBadge,
   });
     /* ── открыть конкретное обращение из кнопки в Telegram: ?chat=<key> ── */
   (function openChatFromTg() {
@@ -381,8 +390,7 @@ const key = new URLSearchParams(window.__initialSearch || location.search).get('
       if (++tries > 40) return clearInterval(t);
       if (!me || !['cashier', 'admin', 'dispatch'].includes(me.role)) return;
       clearInterval(t);
-      openStaffChat(key.endsWith(':d') ? 'delivery' : 'coffee');
-      setTimeout(() => { scKey = key; openScDialog(); }, 600);
+      openStaffChatThread(key);
     }, 250);
   })();
 })();

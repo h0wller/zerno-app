@@ -35,9 +35,8 @@ npm run audit        # check + pretest + lint + smoke + E2E
 
 ## Классические скрипты
 
-Четыре файла подключены отдельными классическими `<script defer>` в `public/index.html` и не входят в граф ESM-импортов `public/app/main.js`:
+Три файла подключены отдельными классическими `<script defer>` в `public/index.html` и не входят в граф ESM-импортов `public/app/main.js`:
 
-- `public/app/core/address-dict.js`
 - `public/app/core/address-autocomplete.js`
 - `public/app/core/address-book.js`
 - `public/app/core/preorder-timer.js`

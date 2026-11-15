@@ -353,6 +353,7 @@ ordersRouter.post('/api/orders', userGuard, (req, res) => {
     items.push({
       id: m.id,
       name: m.name,
+      oi,
       opt: oi >= 0 ? opts[oi].l : null,
       sz: oi >= 0 ? (opts[oi].sz || 0) : 0,
       price,

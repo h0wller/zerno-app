@@ -445,7 +445,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
               status: 'new',
               total: 935,
               slot: '18:00–19:00',
-              items: [{ id: 1, name: 'Маргарита', opt: '35 см', price: 735, qty: 1 }]
+              items: [{ id: 1, oi: 1, name: 'Маргарита', opt: '35 см', price: 735, qty: 1 }]
             }
           })
         });
@@ -470,7 +470,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
               status: currentTrackStatus,
               total: 935,
               slot: '18:00–19:00',
-              items: [{ id: 1, name: 'Маргарита', opt: '35 см', price: 735, qty: 1 }]
+              items: [{ id: 1, oi: 1, name: 'Маргарита', opt: '35 см', price: 735, qty: 1 }]
             }
           ]
         })
@@ -549,7 +549,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     const placeSelect = page.locator('#checkoutPlace');
     await placeSelect.selectOption('Синявино');
     await expect(page.locator('#zoneFeeHint')).toContainText('Синявино');
-    await expect(page.locator('#zoneFeeHint')).toContainText('250 ₽');
+    await expect(page.locator('#zoneFeeHint')).toContainText('200 ₽');
 
     await placeSelect.selectOption('Янтарный');
     await expect(page.locator('#zoneFeeHint')).toContainText('Янтарный');

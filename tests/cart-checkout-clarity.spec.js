@@ -510,8 +510,8 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(addressBookButton).toBeVisible();
   await page.evaluate(() => {
     const savedAddresses = [
-      { id: 'saved-1', place: 'Янтарный', street: 'Советская', house: '70Г' },
-      { id: 'saved-2', place: 'Янтарный', street: 'Балтийская', house: '1' }
+      { id: 'saved-1', place: 'Янтарный', street: 'Центральная', house: '70Г' },
+      { id: 'saved-2', place: 'Янтарный', street: 'Балебина', house: '1' }
     ];
     localStorage.setItem('zt_saved_addresses', JSON.stringify(savedAddresses));
     localStorage.setItem('zt_saved_address', JSON.stringify(savedAddresses[0]));

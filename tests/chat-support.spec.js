@@ -233,3 +233,28 @@ test('mobile chat keeps system safe areas outside the header and composer', asyn
     await page.locator('#chatClose').click();
   }
 });
+
+test('legacy staff_chat deep link opens the requested conversation', async ({ page }) => {
+  const key = 'guest-thread:d';
+  let requestedKey = null;
+
+  await page.route('**/api/chat/list**', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ threads: [] })
+  }));
+  await page.route('**/api/chat/dialog**', route => {
+    requestedKey = new URL(route.request().url()).searchParams.get('key');
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ msgs: [{ id: 1, who: 'guest', text: 'Нужен заказ' }] })
+    });
+  });
+
+  await prepare(page, '/?tab=staff_chat&key=' + encodeURIComponent(key));
+  await expect(page.locator('#staffChatModal')).toHaveClass(/show/);
+  await expect(page.locator('#scDialogWrap')).not.toBeHidden();
+  await expect.poll(() => requestedKey).toBe(key);
+  await expect(page.locator('#scDialog')).toContainText('Нужен заказ');
+});

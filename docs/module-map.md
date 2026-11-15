@@ -49,28 +49,27 @@
 | `menu.js` | `#rail` (категории и selected-state `aria-pressed`), `#searchInput`, рендер `#grid`; зум фото (`openZoom`); модалка модификаторов; LCP-картинка eager | `window.renderMenu`, `window.renderRail`, `window.openZoom` |
 | `menu-editor.js` | `openEditor`/`exitEdit`, сохранение emModal, editToggle | `window.openEditor`, `window.exitEdit` |
 | `core/editor.js` | Делегирование кликов `#grid`; фотозона редактора (`renderZone`/`loadImg`/`closeEditor`); имя гостя | `window.renderZone`, `window.closeEditor`, `window.loadImg` |
-| `delivery.js` | `window.DMENU`, cart (инициализация из LS); `#deliveryRail` (категории и selected-state `aria-pressed`); единственный рендер содержимого `#deliverySubFilter` внутри статически зарезервированного `#deliverySubFilterViewport.subfilter-viewport` (в HTML-shell — пустой слот без чипсов); рендер `#deliveryGrid` + скелетоны (ингредиентные/дополнительные фильтры, горизонтальный scroll и cue overflow/end); стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
+| `delivery.js` | `window.DMENU`; `#deliveryRail` (категории и selected-state `aria-pressed`); единственный рендер содержимого `#deliverySubFilter` внутри статически зарезервированного `#deliverySubFilterViewport.subfilter-viewport` (в HTML-shell — пустой слот без чипсов); рендер `#deliveryGrid` + скелетоны (ингредиентные/дополнительные фильтры, горизонтальный scroll и cue overflow/end); стоп-лист и редактор в доставке; слоты (`populateSlots`); режимы предзаказа; СЛОЙ 3-стили steprow. Состояние и мутации корзины делегируются в `cart.js` | `window.loadDelivery`, `window.renderDeliveryMenu`, `window.preorderMode`, `window.populateSlots` |
 | `ui/delivery-search.js` | Поиск в Пятнице (`#dSearch` внутри `.mh-right`) и фильтрация грида | — |
 
 ## 4. Корзина и чекаут
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `cart.js` | Единственный владелец мутаций корзины и сохранения; `#cartItems`, аддоны, итоги, подарки, cartFab; состояние раскрытых модификаторов синхронизируется с индексами строк при удалении; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo` |
+| `cart.js` | Единственный владелец состояния, инициализации, мутаций, сохранения и открытия корзины; `#cartItems`, аддоны, итоги, подарки, cartFab; синхронизация цен доставки; состояние раскрытых модификаторов синхронизируется с индексами строк при удалении; сборка и отправка заказа | `window.renderCart`, `window.totalsNow`, `window.updateCartFab`, `window.cartFabShow`, `window.clearPromo`, `window.addDeliveryCartItem`, `window.adjustDeliveryCartItem`, `window.syncDeliveryCartPrices`, `window.replaceCartItems` |
 | `checkout-validation.js` | Проверка адреса и времени доставки перед оформлением; подсветка ошибочного поля и переключатель «сейчас / ко времени» | `window.CheckoutValidation` |
-| `core/address-dict.js` | Справочник улиц и тарифов | `window.AddressModule` |
+| `address.js` | Единственный владелец `window.AddressModule` и datalist `#streetSuggestions`; сгенерированный справочник улиц, нормализация и валидация | `window.AddressModule` |
 | `core/address-autocomplete.js` | Дропдаун подсказок `#checkoutStreet` | — |
-| `core/address-book.js` | Шторка «Мои адреса» (`#addrBookSheet`), кнопка в чекауте | `window.AddressBook` |
-| `address.js` | datalist `#streetSuggestions` на витрине корзины (генерируется fetch-streets) | клиентская часть `window.AddressModule` |
+| `core/address-book.js` | Шторка «Мои адреса» (`#addrBookSheet`), кнопка в чекауте; тариф адреса читает из `window.deliveryInfo.zones` | `window.AddressBook` |
 
-Примечание: `delivery.js` исторически экспортировал `renderCart` — перезаписывается `cart.js`
-при инициализации (порядок в main.js). Мутации qty — только cart.js (инцидент Ф5.21c).
+Примечание: `delivery.js` исторически содержал второй рендерер и писатели корзины; они удалены. Все изменения состояния корзины проходят через контракты `cart.js`.
 
 ## 5. Заказы, диспетчер, живые обновления
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `order-tracking.js` | Модалка `#orderTrackModal`, опрос статуса гостевого заказа и повтор заказа | `window.openOrderTrackModal`, `window.closeOrderTrackModal` |
+| `core/order-reorder.js` | Чистое восстановление позиций заказа: выбранные варианты, модификаторы и ключи корзины; общий helper для deep link и tracking | `restoreOrderItems` (ESM export) |
 | `orders.js` | `#ordersList` (диспетчер), обработчики статусов/задержек; «Активация гостей» (`loadPending`); инжект redeems в дашборд | `window.renderOrders`, `window.loadPending` |
 | `live.js` | Поллинги заказов/профиля при изменениях; pageshow/visibilitychange; zpush-сообщения от SW | — |
 
@@ -109,8 +108,8 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `chat.js` | Гостевой чат с ботом (`#chatPanel`), стафф-чат (`#staffChatModal`), бейджи, поллинг треда | `window.addMsg`, `window.sendChat`, `window.openStaffChat` |
-| `chat-core.js` | Контекстные суффиксы chatKey, база знаний (kbAnswer), бар подсказок `#chatHintsBar`, `#supportChooseOverlay`, fetch-контракт чата: Bearer владельца или `X-Chat-Access-Token` анонимного треда; вызов сотрудника предлагается только при активной пользовательской сессии | `window.setBotName`, `window.reloadChatThread`, `window.showSupportOverlay` |
+| `chat.js` | Гостевой чат с ботом (`#chatPanel`), стафф-чат (`#staffChatModal`), бейджи, поллинг треда | `window.addMsg`, `window.sendChat`, `window.openStaffChat`, `window.openStaffChatThread` |
+| `chat-core.js` | Контекстные суффиксы chatKey, база знаний (kbAnswer), бар подсказок `#chatHintsBar`, создание и выбор `#supportChooseOverlay` для `support=choose`, fetch-контракт чата: Bearer владельца или `X-Chat-Access-Token` анонимного треда; вызов сотрудника предлагается только при активной пользовательской сессии | `window.setBotName`, `window.reloadChatThread`, `window.showSupportOverlay` |
 | `core/chat-head.js` | Стабильные классы шапки чата (`.chatHead`/`.chName`) | — |
 | `core/chat-state.js` | Мост контекста чата (`window.chatState`); views.js держит дубль `__fvChatState` для легаси | `window.chatState` |
 
@@ -134,7 +133,7 @@
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |
-| `core/deeplink.js` | Диплинки: brand/tab/no/support/reorder/auth_token | — |
+| `core/deeplink.js` | Диплинки: brand/tab/no/reorder/auth_token; legacy `staff_chat` делегирует в `chat.js` | — |
 | `ui/styles.js` | Глобальные инжекции СЛОЯ 3: z-index, body.panel-open, пульсы чата, футер, cartPanel ≥900px, бар подсказок | — |
 
 ## 12. Промокоды и дашборд владельца
