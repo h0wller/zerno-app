@@ -280,12 +280,50 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
 
 /* Compact landscape has horizontal category navigation and a full-width catalog. */
 @media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  /* Compact landscape is a touch viewport: reserve a single compact topbar row. */
+  html body header.topbar {
+    box-sizing: border-box;
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    padding: 0 12px;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  html body header.topbar .venueToggle {
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    font-size: 13px;
+  }
+  html body header.topbar .brand .mark {
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    width: auto;
+    max-width: min(34vw, 180px);
+  }
+  html body header.topbar #profileTopBtn {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+  html body header.topbar .brand b,
+  html body header.topbar #brandTitle {
+    font-size: 15px;
+    line-height: 1;
+  }
+  html body .ticker {
+    height: 28px;
+    min-height: 28px;
+  }
   html body div.wrap,
   .wrap {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
-    gap: 10px;
-    padding: 10px 12px 28px;
+    gap: 8px;
+    padding: 8px 12px 24px;
   }
   html body div.wrap > section {
     grid-column: 1;
