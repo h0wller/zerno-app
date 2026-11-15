@@ -34,9 +34,10 @@ function updateRailStickyPosition(rail, head) {
       : 12;
     var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
 
-    if (!railStickyLayout || railStickyLayout.rail !== rail) {
+    if (!railStickyLayout || railStickyLayout.rail !== rail || railStickyLayout.parent !== rail.parentElement) {
       railStickyLayout = {
         rail: rail,
+        parent: rail.parentElement,
         documentTop: rail.getBoundingClientRect().top + scrollY
       };
     }
