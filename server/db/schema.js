@@ -62,7 +62,6 @@ CREATE TABLE IF NOT EXISTS fcm(
   id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, token TEXT UNIQUE, created TEXT);
   `);
 
-
   // Session expiry is additive and idempotent. Preserve the original issuance time
   // for legacy rows; malformed timestamps are treated as expired, never immortal.
   const tokenCols = db.prepare('PRAGMA table_info(tokens)').all().map(c => c.name);
