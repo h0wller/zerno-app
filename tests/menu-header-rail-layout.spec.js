@@ -1165,10 +1165,15 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
         rail: brand.rail,
         button: brand.rail + ' button',
         active: brand.rail + ' button.on',
+        inactive: brand.rail + ' button:not(.on)',
         icon: brand.rail + ' .re',
         activeIcon: brand.rail + ' button.on .re',
+        inactiveIcon: brand.rail + ' button:not(.on) .re',
       };
-      const measure = () => page.evaluate(({ selectors, headSelector }) => {
+      const titleSelector = brand.brand === 'coffee'
+        ? '#grid > .card:not(.skeleton-card) .cbody > h3'
+        : '#deliveryGrid > .card:not(.skeleton-card) .cbody > h3';
+      const measure = () => page.evaluate(({ selectors, headSelector, titleSelector }) => {
         const css = selector => {
           const el=document.querySelector(selector);
           if(!el) return null;
@@ -1182,6 +1187,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
             borderRadius:s.borderRadius,backgroundColor:s.backgroundColor,color:s.color,
             fontFamily:s.fontFamily,fontSize:s.fontSize,lineHeight:s.lineHeight,
             padding:s.padding,margin:s.margin,transition:s.transition,
+            minHeight:s.minHeight, outline:s.outline,
           };
         };
         const railEl=document.querySelector(selectors.rail);
@@ -1191,10 +1197,25 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
           const el=document.querySelector(selector); if(!el) return null;
           const r=el.getBoundingClientRect(); return {top:r.top,bottom:r.bottom,height:r.height};
         };
-        const title=document.querySelector('#grid .card h3, #deliveryGrid .card h3');
+        const title=document.querySelector(titleSelector);
         const tr=title?.getBoundingClientRect();
+        const active=document.querySelector(selectors.active);
+        const after=active ? getComputedStyle(active,'::after') : null;
+        const fontFaces=Array.from(document.fonts || []).map(face => ({
+          family:face.family, weight:face.weight, style:face.style, status:face.status,
+        }));
         return {
           computed:Object.fromEntries(Object.entries(selectors).map(([key,selector])=>[key,css(selector)])),
+          activeAfter:after ? {
+            content:after.content, display:after.display, width:after.width, height:after.height,
+            backgroundColor:after.backgroundColor, borderRadius:after.borderRadius,
+          } : null,
+          fonts:{
+            golosText:document.fonts ? document.fonts.check('12px "Golos Text"') : false,
+            unbounded:document.fonts ? document.fonts.check('12px "Unbounded"') : false,
+            loadedFaces:fontFaces,
+          },
+          firstCardTitleText:title?.textContent?.trim() || null,
           buttons:buttons.map(button=>{const r=button.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};}),
           iconTops,iconTopSpread:iconTops.length?Math.max(...iconTops)-Math.min(...iconTops):null,
           regions:{
@@ -1205,7 +1226,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
           },
           viewport:{width:innerWidth,height:innerHeight,scrollY},
         };
-      }, { selectors, headSelector:brand.head });
+      }, { selectors, headSelector:brand.head, titleSelector });
 
       expect(heldRequests.some(url => url.includes('/app/ui/theme/')), 'theme CSS must be held before first-frame measurement').toBe(true);
       expect(heldRequests.some(url => url.includes('/app/ui/brand-tokens.css')), 'brand tokens must be held before first-frame measurement').toBe(true);
@@ -1215,8 +1236,9 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
         link.href.includes('/app/ui/theme/150-rail.css') && link.media==='all'
       )), { timeout:15000 }).toBe(true);
       await page.evaluate(() => document.fonts && document.fonts.ready);
-      await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-      await expect(page.locator(brand.brand === 'coffee' ? '#grid .card h3' : '#deliveryGrid .card h3').first()).toBeVisible({ timeout: 15000 });
+      await expect(page.locator(titleSelector).first()).toBeVisible({ timeout: 15000 });
+      await page.addStyleTag({ content: '*,:before,:after{transition:none!important;animation:none!important}' });
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const hydrated=await measure();
       await testInfo.attach(`${brand.brand}-horizontal-rail-${viewport.name}-before`, {
         body:await page.screenshot({animations:'disabled'}),contentType:'image/png',
