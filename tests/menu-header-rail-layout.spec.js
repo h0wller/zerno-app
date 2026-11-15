@@ -862,3 +862,40 @@ for (const brand of CASES) {
     }, brand.rail)).toBe(true);
   });
 }
+
+
+for (const brand of CASES) {
+  test(`${brand.brand}: category rail exposes an accessible, discoverable horizontal scroll region`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 10000 });
+    await expect(rail).toHaveAttribute('role', 'group');
+    await expect(rail).toHaveAttribute('aria-label', 'Категории меню');
+    await expect(rail).toHaveAttribute('tabindex', '0');
+
+    const initial = await rail.evaluate((el) => ({
+      overflowX: getComputedStyle(el).overflowX,
+      overflowY: getComputedStyle(el).overflowY,
+      overscrollY: getComputedStyle(el).overscrollBehaviorY,
+      firstTarget: el.querySelector('button')?.getBoundingClientRect().height || 0,
+      hasOverflow: el.classList.contains('has-overflow'),
+      hasStartCue: el.classList.contains('has-start-overflow'),
+    }));
+    expect(initial.overflowX).toBe('auto');
+    expect(initial.overflowY).toBe('hidden');
+    expect(initial.overscrollY).not.toBe('contain');
+    expect(initial.firstTarget).toBeGreaterThanOrEqual(44);
+
+    if (initial.hasOverflow) {
+      await rail.evaluate((el) => { el.scrollLeft = el.scrollWidth; });
+      await expect.poll(() => rail.evaluate(el => el.classList.contains('has-start-overflow'))).toBe(true);
+      await expect.poll(() => rail.evaluate(el => el.classList.contains('at-end'))).toBe(true);
+      await rail.evaluate((el) => { el.scrollLeft = 0; });
+      await expect.poll(() => rail.evaluate(el => el.classList.contains('has-start-overflow'))).toBe(false);
+      await expect.poll(() => rail.evaluate(el => el.classList.contains('at-end'))).toBe(false);
+    }
+  });
+}
