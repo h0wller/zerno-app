@@ -155,6 +155,18 @@ for (const brand of CASES) {
         await expect.poll(() => rail.evaluate(el => el.classList.contains('rail-scroll-hidden')))
           .toBe(true);
         await expect(rail).toBeHidden();
+
+        // Hidden must not mean "left behind": native sticky must keep the rail
+        // at the same viewport coordinate across continued page movement.
+        const pinnedTopAt500 = await rail.evaluate(el => el.getBoundingClientRect().top);
+        await page.evaluate(() => window.scrollTo(0, 700));
+        await expect.poll(() => rail.evaluate(el => Math.abs(el.getBoundingClientRect().top - 12)),
+          { timeout: 5000 }).toBeLessThanOrEqual(2);
+        const pinnedTopAt700 = await rail.evaluate(el => el.getBoundingClientRect().top);
+        expect(Math.abs(pinnedTopAt700 - pinnedTopAt500),
+          'rail must stay pinned at one viewport coordinate while the page continues scrolling')
+          .toBeLessThanOrEqual(2);
+
         await expect.poll(() => page.evaluate(selector => {
           const element = document.querySelector(selector);
           const rect = element.getBoundingClientRect();
