@@ -24,7 +24,7 @@ function updateRailStickyPosition(rail, head) {
   }
 
   var mobileViewport = usesHorizontalCategoryRailViewport();
-  if (mobileViewport) {
+  if (mobileViewport && window.innerWidth <= 820) {
     var topbar = document.querySelector('header.topbar');
     var topbarStyle = topbar ? window.getComputedStyle(topbar) : null;
     var topbarIsSticky = !!(topbarStyle && (topbarStyle.position === 'sticky' || topbarStyle.position === 'fixed'));
