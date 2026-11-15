@@ -355,7 +355,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   html body div.wrap > #deliveryRail button.on {
     border: 0;
     border-radius: 0;
-    background: transparent;
+    background: var(--category-tab-active-bg, transparent);
     box-shadow: none;
     color: var(--category-tab-active-color, var(--ink, #20252b));
     font-weight: 800;
@@ -410,7 +410,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
 
   html body div.wrap > #rail button:active,
   html body div.wrap > #deliveryRail button:active {
-    transform: scale(.98);
+    transform: none;
   }
 
   html body div.wrap > #rail button:focus-visible,
