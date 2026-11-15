@@ -1660,3 +1660,34 @@ test('category rails retain the original emoji icons for both brands', async ({ 
     await expect(rail.locator('button').first()).toHaveAttribute('aria-pressed', 'true');
   }
 });
+
+test('coffee rail labels use the refined coffee typography without changing Friday', async ({ page }) => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+
+    await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+    const coffeeLabels = await page.locator('#rail button').first().evaluate(button => {
+      const style = getComputedStyle(button);
+      const active = getComputedStyle(button.parentElement.querySelector('button.on'));
+      return {
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        activeWeight: active.fontWeight,
+      };
+    });
+    expect(coffeeLabels.fontFamily).toContain('Golos Text');
+    expect(coffeeLabels.fontSize).toBe('11px');
+    expect(coffeeLabels.fontWeight).toBe('600');
+    expect(coffeeLabels.activeWeight).toBe('700');
+
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+    const fridayLabels = await page.locator('#deliveryRail button').first().evaluate(button => {
+      const style = getComputedStyle(button);
+      return { fontSize: style.fontSize, fontFamily: style.fontFamily };
+    });
+    expect(fridayLabels.fontSize).toBe('10px');
+    expect(fridayLabels.fontFamily).toContain('Unbounded');
+  }
+});
