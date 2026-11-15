@@ -137,6 +137,80 @@ after(async () => {
   }
 });
 
+test('device evidence intake requires an authenticated verified guest and never issues a reward', async () => {
+  const anonymous = await request('/api/fitness/evidence', {
+    method: 'POST',
+    body: { activity: { id: 'record-1' } },
+  });
+  assert.equal(anonymous.status, 401);
+
+  seedReward();
+  const activity = {
+    id: 'health-record-1',
+    activityType: 'running',
+    startedAt: '2026-11-14T08:00:00.000Z',
+    endedAt: '2026-11-14T08:32:00.000Z',
+    durationSeconds: 1920,
+    distanceMeters: 5200,
+    sourcePlatform: 'android_health_connect',
+    sourceName: 'Garmin Connect',
+    sourcePackageName: 'com.garmin.android.apps.connectmobile',
+    deviceName: 'Watch',
+    deviceModel: 'Watch model',
+    sourceProductType: 'watch',
+    recordingMethod: 'actively_recorded',
+    evidenceState: 'verified',
+    verificationState: 'verified',
+    rewardCode: 'RUN-FAKE1234',
+  };
+  const first = await request('/api/fitness/evidence', {
+    method: 'POST', token: customerToken, body: { activity },
+  });
+  assert.equal(first.status, 202, JSON.stringify(first.json));
+  assert.equal(first.json.verificationState, 'unverified');
+  assert.equal(first.json.evidenceState, 'device_reported');
+  assert.equal(first.json.reward, null);
+  assert.match(first.headers.get('cache-control') || '', /no-store/);
+
+  const retry = await request('/api/fitness/evidence', {
+    method: 'POST', token: customerToken, body: { activity },
+  });
+  assert.equal(retry.status, 200);
+  assert.equal(retry.json.duplicate, true);
+  assert.equal(retry.json.id, first.json.id);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_device_evidence').get().n, 1);
+  assert.equal(db.prepare('SELECT verification_state FROM fitness_device_evidence').get().verification_state, 'unverified');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 1);
+});
+
+test('device evidence intake rejects unverified guests and malformed summaries', async () => {
+  db.prepare('INSERT INTO customers(id,name,role,verified) VALUES(?,?,?,?)')
+    .run('fitness-unverified', 'Unverified', 'guest', 0);
+  db.prepare('INSERT INTO tokens(token,kind,ref,ts) VALUES(?,?,?,?)')
+    .run('fitness-unverified-token', 'user', 'fitness-unverified', '2026-11-14T10:00:00.000Z');
+  seedReward();
+  const activity = {
+    id: 'health-record-invalid',
+    activityType: 'cycling',
+    startedAt: '2026-11-14T08:00:00.000Z',
+    endedAt: '2026-11-14T08:32:00.000Z',
+    durationSeconds: 1920,
+    distanceMeters: 5200,
+    sourcePlatform: 'apple_healthkit',
+    sourceName: 'Health',
+    sourcePackageName: 'com.apple.Health',
+  };
+  const unverified = await request('/api/fitness/evidence', {
+    method: 'POST', token: 'fitness-unverified-token', body: { activity: { ...activity, activityType: 'running' } },
+  });
+  const malformed = await request('/api/fitness/evidence', {
+    method: 'POST', token: customerToken, body: { activity },
+  });
+  assert.equal(unverified.status, 403);
+  assert.equal(malformed.status, 400);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_device_evidence').get().n, 0);
+});
+
 test('staff redemption rejects anonymous and guest sessions', async () => {
   const code = seedReward();
   const anonymous = await request('/api/staff/fitness-rewards/' + code + '/redeem', { method: 'POST' });
