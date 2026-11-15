@@ -92,7 +92,7 @@
     background: transparent;
     box-shadow: none;
     color: var(--category-tab-active-color, var(--category-tab-color, currentColor));
-    font-weight: 800;
+    font-weight: var(--category-label-active-weight, 800);
     transform: none;
   }
 
