@@ -4,6 +4,7 @@ import './core/bus.js';
 import './brands/registry.js';   /* манифест брендов: window.BRANDS до всех потребителей */
 import './core/state.js';
 import './core/utils.js';
+import './core/category-icons.js';
 import './core/api.js';
 import './core/ui.js';
 import './core/auth-session.js';
