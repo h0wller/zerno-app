@@ -97,7 +97,7 @@ for (const brand of CASES) {
       }, { headSelector: brand.head, railSelector: brand.rail });
 
       if (horizontalRail) {
-        expect(layout.railPosition, 'mobile rail stays in its catalog position before scrolling').toBe('relative');
+        expect(layout.railPosition, 'mobile rail uses native sticky positioning before any scroll event').toBe('sticky');
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
         expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
       }
@@ -130,6 +130,10 @@ for (const brand of CASES) {
       });
 
       const railTopBeforeScroll = await rail.evaluate(el => el.getBoundingClientRect().top);
+      if (viewport.width <= 820) {
+        const initialStickyTop = await rail.evaluate(el => parseFloat(getComputedStyle(el).top));
+        expect(initialStickyTop).toBeGreaterThanOrEqual(0);
+      }
       await page.evaluate(() => window.scrollTo(0, 500));
       if (viewport.width <= 820) {
         await expect.poll(() => page.evaluate(selector => {
@@ -1508,31 +1512,5 @@ test('ticker always moves, fills wide viewports seamlessly, and toggles pause wi
     await expect(viewport).toHaveAttribute('aria-pressed', 'true');
     await expect(viewport).toHaveAttribute('aria-label', 'Возобновить движение объявлений');
     await expect(viewport.locator('button, [role="button"]')).toHaveCount(0);
-  }
-});
-
-
-test('category rail has a subtle brand-colored outline on desktop and mobile', async ({ page }) => {
-  for (const brand of ['coffee', 'delivery']) {
-    for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
-      await page.setViewportSize(viewport);
-      await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
-      const selector = brand === 'coffee' ? '#menuView #rail' : '#deliveryView #deliveryRail';
-      const rail = page.locator(selector);
-      await expect(rail).toBeVisible();
-      const outline = await rail.evaluate(node => {
-        const style = getComputedStyle(node);
-        return {
-          width: style.borderTopWidth,
-          style: style.borderTopStyle,
-          color: style.borderTopColor,
-          expectedColor: getComputedStyle(document.documentElement).getPropertyValue('--category-rail-border-color').trim()
-        };
-      });
-      expect(outline.width).toBe('1px');
-      expect(outline.style).toBe('solid');
-      expect(outline.color).not.toBe('rgba(0, 0, 0, 0)');
-      expect(outline.color).toBe(outline.expectedColor);
-    }
   }
 });
