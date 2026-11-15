@@ -51,3 +51,23 @@ test('retains the recording-method signal without upgrading manual entries to ve
   assert.equal(result.evidenceState, 'device_reported');
   assert.notEqual(result.verificationState, 'verified');
 });
+
+
+test('normalizes unknown recording methods to a bounded unknown value', () => {
+  const result = normalizeHealthConnectWorkout({
+    ...validWorkout,
+    recordingMethod: 'untrusted-provider-value'.repeat(10)
+  });
+
+  assert.equal(result.recordingMethod, 'unknown');
+  assert.equal(result.evidenceState, 'device_reported');
+});
+
+test('rejects missing or oversized record and source identifiers', () => {
+  assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, id: ' ' }), null);
+  assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, id: 'x'.repeat(256) }), null);
+  assert.equal(normalizeHealthConnectWorkout({
+    ...validWorkout,
+    sourcePackageName: 'x'.repeat(256)
+  }), null);
+});

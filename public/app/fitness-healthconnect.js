@@ -17,6 +17,10 @@ export function normalizeHealthConnectWorkout(workout) {
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0 || durationSeconds > 14400) return null;
   if (!Number.isFinite(distanceMeters) || distanceMeters < 0 || distanceMeters > 250000) return null;
 
+  const recordingMethod = String(workout.recordingMethod || 'unknown').trim();
+  const normalizedRecordingMethod = ['actively_recorded', 'automatically_recorded', 'manual_entry']
+    .includes(recordingMethod) ? recordingMethod : 'unknown';
+
   return {
     id,
     activityType: 'running',
@@ -30,7 +34,7 @@ export function normalizeHealthConnectWorkout(workout) {
     deviceName: String(workout.deviceName || '').slice(0, 120),
     deviceModel: String(workout.deviceModel || '').slice(0, 120),
     sourceProductType: String(workout.sourceProductType || '').slice(0, 120),
-    recordingMethod: String(workout.recordingMethod || 'unknown').slice(0, 40),
+    recordingMethod: normalizedRecordingMethod,
     evidenceState: 'device_reported'
   };
 }

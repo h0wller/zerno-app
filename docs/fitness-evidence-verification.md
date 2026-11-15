@@ -61,7 +61,7 @@ The Telegram bot is the user-facing entry point, not the device-data reader. Use
 
 ### Android — Health Connect
 
-- A native Capacitor Android adapter now requests only read permissions for exercise sessions and distance, and reads recent running / treadmill sessions on explicit foreground calls.
+- A native Capacitor Android adapter and Android-only profile flow request only read permissions for exercise sessions and distance, and read recent running / treadmill sessions after explicit user actions. The UI keeps returned summaries in memory and does not send them to the server.
 - The query window is capped at 30 days, distance aggregation is filtered to the session's own data origin, and GPS routes, coordinates, background reads and write permissions are not requested.
 - The adapter preserves source package, device and recording-method metadata. Manual entries remain `device_reported`, as do all other Health Connect records; this is not server-verified evidence and cannot issue rewards.
 - Health Connect SDK support begins at Android API 26; the provider app is available on Android 9 / API 28 and later. Zerno keeps its Android API 24 minimum: the native plugin is registered only on API 26+, while older versions report `android_version_unsupported` without loading the Health Connect SDK.
@@ -84,7 +84,7 @@ The repository contains Capacitor 8 iOS and Android shells. The iOS shell is the
 1. Define a stable server-side evidence contract and source trust levels independent of Apple/Android. The current GPX path is fail-closed and cannot issue a reward.
 2. Implement the iOS HealthKit bridge for Apple Watch workouts, with explicit permission UX and minimal data transfer. Initial read-only bridge is present; native build/device verification remains outstanding.
 3. Keep Telegram as the onboarding, status, and reward-code interface.
-4. Implement Android Health Connect against the same backend contract.
+4. Android Health Connect read-only bridge and profile permission flow are implemented; native build/device verification and server-side evidence submission/verification remain outstanding.
 5. Add vendor-specific adapters as separate increments; retain file uploads as unverified fallback.
 6. Test permission denial/revocation, no paired watch, workouts written by third-party apps, duplicate workouts, missing route, offline sync, account switching, and reward replay.
 
