@@ -12,6 +12,8 @@ function fixture() {
       cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
       purpose TEXT NOT NULL CHECK(purpose IN ('attestation','assertion')),
       challenge_hash TEXT NOT NULL UNIQUE,
+      key_id TEXT,
+      request_hash TEXT,
       created_at INTEGER NOT NULL,
       expires_at INTEGER NOT NULL,
       consumed_at INTEGER
@@ -137,5 +139,62 @@ test('rate limit cannot be bypassed by consuming challenges before the next issu
     clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'attestation' }).ok,
     true,
   );
+  db.close();
+});
+
+
+test('binds assertion challenges to an enrolled key id and canonical request hash', () => {
+  const db = fixture();
+  const { service } = setup(db);
+  const requestHash = 'a'.repeat(64);
+
+  assert.deepEqual(service.issueChallenge({
+    customerId: 'guest-1',
+    purpose: 'assertion',
+  }), { ok: false, reason: 'invalid_key_id' });
+
+  assert.deepEqual(service.issueChallenge({
+    customerId: 'guest-1',
+    purpose: 'assertion',
+    keyId: 'key-1',
+  }), { ok: false, reason: 'invalid_request_hash' });
+
+  const issued = service.issueChallenge({
+    customerId: 'guest-1',
+    purpose: 'assertion',
+    keyId: 'app-attest-key-id',
+    requestHash,
+  });
+  assert.equal(issued.ok, true);
+
+  const row = db.prepare('SELECT key_id, request_hash FROM fitness_attest_challenges WHERE id=?')
+    .get(issued.challengeId);
+  assert.equal(row.key_id, 'app-attest-key-id');
+  assert.equal(row.request_hash, requestHash);
+
+  assert.deepEqual(service.consumeChallenge({
+    customerId: 'guest-1',
+    challengeId: issued.challengeId,
+    challenge: issued.challenge,
+    purpose: 'assertion',
+  }), {
+    ok: true,
+    customerId: 'guest-1',
+    purpose: 'assertion',
+    keyId: 'app-attest-key-id',
+    requestHash,
+  });
+  db.close();
+});
+
+test('does not allow key or request bindings on an attestation challenge', () => {
+  const db = fixture();
+  const { service } = setup(db);
+  assert.deepEqual(service.issueChallenge({
+    customerId: 'guest-1',
+    purpose: 'attestation',
+    keyId: 'some-key',
+    requestHash: 'a'.repeat(64),
+  }), { ok: false, reason: 'invalid_binding' });
   db.close();
 });

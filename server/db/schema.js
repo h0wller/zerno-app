@@ -254,6 +254,8 @@ CREATE TABLE IF NOT EXISTS fcm(
       cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
       purpose TEXT NOT NULL CHECK(purpose IN ('attestation','assertion')),
       challenge_hash TEXT NOT NULL UNIQUE,
+      key_id TEXT,
+      request_hash TEXT,
       created_at INTEGER NOT NULL,
       expires_at INTEGER NOT NULL,
       consumed_at INTEGER
@@ -262,7 +264,29 @@ CREATE TABLE IF NOT EXISTS fcm(
       ON fitness_attest_challenges(cid, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_fitness_attest_challenges_expiry
       ON fitness_attest_challenges(expires_at);
+
+    CREATE TABLE IF NOT EXISTS fitness_attest_keys(
+      key_id TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      platform TEXT NOT NULL CHECK(platform='apple_app_attest'),
+      public_key_der BLOB NOT NULL,
+      app_id TEXT NOT NULL,
+      environment TEXT NOT NULL CHECK(environment IN ('development','production')),
+      validation_category INTEGER NOT NULL,
+      bundle_version TEXT NOT NULL,
+      sign_count INTEGER NOT NULL DEFAULT 0 CHECK(sign_count >= 0),
+      created_at INTEGER NOT NULL,
+      last_used_at INTEGER,
+      revoked_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_fitness_attest_keys_owner
+      ON fitness_attest_keys(cid, created_at DESC);
   `);
+
+  // Safe additive migration for databases created before key/request binding.
+  const challengeColumns = db.prepare('PRAGMA table_info(fitness_attest_challenges)').all().map(column => column.name);
+  if (!challengeColumns.includes('key_id')) db.exec('ALTER TABLE fitness_attest_challenges ADD COLUMN key_id TEXT');
+  if (!challengeColumns.includes('request_hash')) db.exec('ALTER TABLE fitness_attest_challenges ADD COLUMN request_hash TEXT');
 
   // Strava OAuth tokens are encrypted at rest; activity responses are never persisted.
   db.exec(`

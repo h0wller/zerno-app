@@ -35,6 +35,10 @@ GPX-приём спортивных заявок в Telegram — отдельн�
 
 The endpoint is a challenge primitive only. It does not register or verify App Attest keys/assertions and cannot change a workout to `verified` or issue rewards. Challenges are bound to the authenticated customer, hashed at rest, one-time, and limited to 10 per rolling minute. Consumed rows remain counted until they age out of that window.
 
+Assertion challenges additionally require a registered `keyId` and a SHA-256 `requestHash`. The server stores both bindings with the challenge; callers must not reuse a signed assertion for another body. The challenge alone still does not authenticate a key until server-side App Attest verification is implemented.
+
+The Apple verifier is fail-closed until `APPLE_APP_ATTEST_APP_ID` (the Apple App ID prefix plus bundle identifier, not bundle ID alone) and `APPLE_APP_ATTEST_ENVIRONMENT` (`development` or `production`) are configured.
+
 ## Strava (read-only)
  
 | Метод и путь | Назначение | Доступ |

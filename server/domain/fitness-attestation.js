@@ -12,9 +12,22 @@ export function createFitnessAttestationService({
   makeId = () => crypto.randomUUID(),
   makeChallenge = () => crypto.randomBytes(32).toString('base64url'),
 } = {}) {
-  function issueChallenge({ customerId, purpose }) {
+  function issueChallenge({ customerId, purpose, keyId, requestHash }) {
     const cid = String(customerId || '').trim();
+    const normalizedKeyId = keyId == null ? null : String(keyId).trim();
+    const normalizedRequestHash = requestHash == null ? null : String(requestHash).trim();
     if (!cid || !PURPOSES.has(purpose)) return { ok: false, reason: 'invalid_input' };
+    if (purpose === 'attestation' && (normalizedKeyId || normalizedRequestHash)) {
+      return { ok: false, reason: 'invalid_binding' };
+    }
+    if (purpose === 'assertion') {
+      if (!normalizedKeyId || !/^[A-Za-z0-9_-]{1,128}$/.test(normalizedKeyId)) {
+        return { ok: false, reason: 'invalid_key_id' };
+      }
+      if (!normalizedRequestHash || !/^[a-f0-9]{64}$/.test(normalizedRequestHash)) {
+        return { ok: false, reason: 'invalid_request_hash' };
+      }
+    }
     const now = Number(clock());
     if (!Number.isSafeInteger(now) || now <= 0) throw new TypeError('Attestation clock must return a positive integer timestamp');
 
@@ -38,9 +51,10 @@ export function createFitnessAttestationService({
       const expiresAt = now + CHALLENGE_TTL_MS;
       const challengeHash = crypto.createHash('sha256').update(challenge).digest('hex');
       database.prepare(`
-        INSERT INTO fitness_attest_challenges(id,cid,purpose,challenge_hash,created_at,expires_at)
-        VALUES(?,?,?,?,?,?)
-      `).run(challengeId, cid, purpose, challengeHash, now, expiresAt);
+        INSERT INTO fitness_attest_challenges(
+          id,cid,purpose,challenge_hash,key_id,request_hash,created_at,expires_at
+        ) VALUES(?,?,?,?,?,?,?,?)
+      `).run(challengeId, cid, purpose, challengeHash, normalizedKeyId, normalizedRequestHash, now, expiresAt);
       return { ok: true, challengeId, challenge, purpose, expiresAt: new Date(expiresAt).toISOString() };
     }).immediate();
   }
@@ -55,7 +69,7 @@ export function createFitnessAttestationService({
     const digest = crypto.createHash('sha256').update(challenge).digest('hex');
     return database.transaction(() => {
       const row = database.prepare(`
-        SELECT id, challenge_hash, expires_at, consumed_at
+        SELECT id, challenge_hash, key_id, request_hash, expires_at, consumed_at
         FROM fitness_attest_challenges WHERE id=? AND cid=? AND purpose=?
       `).get(id, cid, purpose);
       if (!row) return { ok: false, reason: 'challenge_not_found' };
@@ -67,7 +81,13 @@ export function createFitnessAttestationService({
         return { ok: false, reason: 'challenge_mismatch' };
       }
       database.prepare('UPDATE fitness_attest_challenges SET consumed_at=? WHERE id=? AND consumed_at IS NULL').run(now, id);
-      return { ok: true, customerId: cid, purpose };
+      return {
+        ok: true,
+        customerId: cid,
+        purpose,
+        keyId: row.key_id,
+        requestHash: row.request_hash,
+      };
     }).immediate();
   }
 
