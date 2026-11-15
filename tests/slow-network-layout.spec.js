@@ -139,12 +139,43 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       };
       const ticker = document.querySelector('.ticker');
       const header = document.querySelector('header.topbar');
+      const wrap = document.querySelector('.wrap');
+      const section = document.querySelector('.wrap > section');
+      const deliveryView = document.querySelector('#deliveryView');
       const heading = document.querySelector('#deliveryView .menu-head h1');
       const card = document.querySelector('#deliveryGrid > .card');
       const media = card && card.querySelector('.media');
       const brandTitle = document.querySelector('#brandTitle');
       const brandSub = document.querySelector('#brandSub');
+      const styleSummary = (element) => {
+        if (!element) return null;
+        const style = getComputedStyle(element);
+        return {
+          display: style.display,
+          position: style.position,
+          width: style.width,
+          maxWidth: style.maxWidth,
+          minWidth: style.minWidth,
+          boxSizing: style.boxSizing,
+          gridColumn: style.gridColumn,
+          gridTemplateColumns: style.gridTemplateColumns,
+          marginLeft: style.marginLeft,
+          marginRight: style.marginRight,
+          paddingLeft: style.paddingLeft,
+          paddingRight: style.paddingRight,
+          justifySelf: style.justifySelf,
+          alignSelf: style.alignSelf
+        };
+      };
       return {
+        wrap: box(wrap),
+        wrapStyle: styleSummary(wrap),
+        sectionStyle: styleSummary(section),
+        deliveryViewStyle: styleSummary(deliveryView),
+        railParent: (() => {
+          const parent = document.querySelector('#deliveryRail')?.parentElement;
+          return parent ? { tagName: parent.tagName, id: parent.id, className: parent.className } : null;
+        })(),
         ticker: box(ticker),
         header: box(header),
         headerStyle: header && {
