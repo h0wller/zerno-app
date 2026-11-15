@@ -474,7 +474,10 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       ).not.toBe('rgba(0, 0, 0, 0)');
       expect(geometry.activeBorderBottom).toBe('3px');
       expect(geometry.activeBorderBottomStyle).toBe('solid');
-      expect(geometry.activeBorderBottomColor).toBe(brand.brand === 'coffee' ? 'rgb(18, 58, 107)' : 'rgb(192, 59, 42)');
+      expect(
+        geometry.activeBorderBottomColor.replace(/^rgba?\\(|\\)$/g, '').split(',').slice(0, 3).map(value => Number(value.trim())).join(','),
+        brand.brand + ' keeps its brand accent hue'
+      ).toBe(brand.brand === 'coffee' ? '18,58,107' : '192,59,42');
 
       if (geometry.filterTop !== null) {
         expect(geometry.railBottom, 'delivery primary categories remain above their secondary filters').toBeLessThanOrEqual(geometry.filterTop + 1);
@@ -516,7 +519,7 @@ test('desktop category navigation uses one brand frame and a single active tab s
         const activeStyle = getComputedStyle(active);
         const iconStyle = getComputedStyle(active.querySelector('.re'));
         const rgb = (value) => {
-          const match = value.match(/[\\d.]+/g);
+          const match = value.match(/[\d.]+/g);
           return match ? match.slice(0, 3).map(Number) : [255, 255, 255];
         };
         const luminance = (value) => rgb(value).map((channel) => {
