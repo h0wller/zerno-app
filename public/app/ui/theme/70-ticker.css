@@ -66,7 +66,7 @@ body.is-admin .ticker {
   color: var(--ticker-marker-color, var(--azure, #3E8FD0));
 }
 .ticker.is-overflowing #tickerTrack { animation: zt-marquee var(--ticker-duration, 30s) linear infinite; }
-.ticker.is-paused #tickerTrack { animation-play-state: paused !important; }
+.ticker.is-paused #tickerTrack { animation-play-state: paused; }
 .tickerViewport[role="button"] { cursor: default; }
 .tickerViewport[role="button"]:focus-visible { outline: 2px solid var(--ticker-marker-color, var(--azure, #3E8FD0)); outline-offset: -2px; }
 @keyframes zt-marquee {
@@ -83,5 +83,5 @@ body.is-admin .ticker {
   html body .ticker .tickerViewport::-webkit-scrollbar { display: none; }
   .ticker.is-overflowing:not(.is-user-playing) #tickerTrack { animation: none; }
   .ticker.is-user-playing.is-overflowing #tickerTrack { animation: zt-marquee var(--ticker-duration, 30s) linear infinite; }
-  .ticker.is-paused #tickerTrack { animation-play-state: paused !important; }
+  .ticker.is-paused #tickerTrack { animation-play-state: paused; }
 }
