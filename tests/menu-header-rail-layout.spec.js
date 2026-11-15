@@ -1581,26 +1581,23 @@ test('manual category change returns the new catalog content to the top while ke
     await expect.poll(() => page.evaluate(({ contentSelector, railSelector }) => {
       const railElement = document.querySelector(railSelector);
       const content = document.querySelector(contentSelector);
-      if (!railElement || !content) return null;
+      if (!railElement || !content) return false;
       const railRect = railElement.getBoundingClientRect();
       const contentRect = content.getBoundingClientRect();
-      return {
-        contentTop: contentRect.top,
-        railBottom: railRect.bottom,
-        pinned: railElement.classList.contains('rail-is-pinned'),
-        scrollY: window.scrollY,
-      };
-    }, { contentSelector, railSelector: brand.rail }), { timeout: 7000 }).toMatchObject({
-      pinned: true,
-    });
+      return railElement.classList.contains('rail-is-pinned') &&
+        contentRect.top >= railRect.bottom - 1 &&
+        contentRect.top < railRect.bottom + 180;
+    }, { contentSelector, railSelector: brand.rail }), { timeout: 7000 }).toBe(true);
     const geometry = await page.evaluate(({ contentSelector, railSelector }) => {
       const railRect = document.querySelector(railSelector).getBoundingClientRect();
       const contentRect = document.querySelector(contentSelector).getBoundingClientRect();
-      return { contentTop: contentRect.top, railBottom: railRect.bottom };
+      return { contentTop: contentRect.top, railBottom: railRect.bottom, scrollY: window.scrollY };
     }, { contentSelector, railSelector: brand.rail });
     expect(geometry.contentTop, brand.brand + ' new category content should begin immediately below the pinned rail')
       .toBeGreaterThanOrEqual(geometry.railBottom - 1);
     expect(geometry.contentTop, brand.brand + ' new category content should be aligned near the top of the viewport')
       .toBeLessThan(geometry.railBottom + 180);
+    expect(geometry.scrollY, brand.brand + ' category selection should leave the previous deep scroll position')
+      .toBeLessThan(600);
   }
 });
