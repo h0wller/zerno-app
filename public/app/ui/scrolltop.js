@@ -281,6 +281,32 @@ function scheduleRailPinningUpdate() {
   });
 }
 
+// Bring the newly selected catalog section to the first visible position
+// without covering it with the pinned mobile rail.
+window.scrollMenuContentToStart = function (contentSelector, railSelector) {
+  var content = document.querySelector(contentSelector);
+  if (!content) return;
+
+  var viewportTop = 12;
+  var rail = document.querySelector(railSelector);
+  if (rail && rail.classList.contains('rail-is-pinned')) {
+    viewportTop = rail.getBoundingClientRect().bottom + 8;
+  } else {
+    var topbar = document.querySelector('header.topbar');
+    var topbarStyle = topbar ? window.getComputedStyle(topbar) : null;
+    var topbarSticky = !!(topbarStyle &&
+      (topbarStyle.position === 'sticky' || topbarStyle.position === 'fixed'));
+    if (topbarSticky && topbar) {
+      viewportTop = topbar.getBoundingClientRect().bottom + 12;
+    }
+  }
+
+  var targetTop = content.getBoundingClientRect().top +
+    (window.scrollY || document.documentElement.scrollTop || 0);
+  var nextScrollY = Math.max(0, targetTop - viewportTop);
+  window.scrollTo({ top: nextScrollY, behavior: 'smooth' });
+};
+
 window.addEventListener('scroll', updateRailPinning, { passive: true });
 window.addEventListener('load', scheduleRailPinningUpdate, { once: true });
 window.addEventListener('pageshow', scheduleRailPinningUpdate);
