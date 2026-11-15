@@ -1214,6 +1214,19 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
     { width: 1024, height: 390, name: '1024x390' },
   ];
   const reports = [];
+  const colorSnapshot = snapshot => {
+    const keys = ['rail', 'button', 'active', 'inactive', 'icon', 'activeIcon', 'inactiveIcon'];
+    return Object.fromEntries(keys.map(key => {
+      const item = snapshot.computed[key];
+      return [key, item && {
+        backgroundColor: item.backgroundColor,
+        color: item.color,
+        borderTopColor: item.borderTopColor,
+        borderBottomColor: item.borderBottomColor,
+        borderRadius: item.borderRadius,
+      }];
+    }));
+  };
 
   for (const brand of CASES) {
     for (const viewport of viewports) {
