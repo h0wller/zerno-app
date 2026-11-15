@@ -115,7 +115,8 @@ function alignRailWithCard() {
       railDesktopAnchor.rail === rail &&
       railDesktopAnchor.wrap === wrap &&
       railDesktopAnchor.brand === document.documentElement.dataset.brand;
-    if (!anchorMatches && catalog && catalog.getClientRects().length && catalogRect) {
+    if (!anchorMatches) railDesktopAnchor = null;
+    if (!railDesktopAnchor && catalog && catalog.getClientRects().length && catalogRect) {
       railDesktopAnchor = {
         rail: rail,
         wrap: wrap,
@@ -126,7 +127,7 @@ function alignRailWithCard() {
 
     // If the catalog is not laid out yet, use the stable menu header as a
     // temporary fallback; a later layout pass captures the real catalog row.
-    var anchorOffset = anchorMatches || railDesktopAnchor
+    var anchorOffset = railDesktopAnchor
       ? railDesktopAnchor.offset
       : Math.max(0, headRect.bottom + 12 - wrapContentTop);
     var marginTop = anchorOffset + 'px';
