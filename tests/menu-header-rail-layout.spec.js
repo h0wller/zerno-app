@@ -1023,3 +1023,33 @@ test('delivery wrapper keeps full horizontal width when switching categories at 
   }
 });
 
+
+
+test('category rail keeps tab nodes stable and uses brand-specific active icon treatment', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+
+    const rail = page.locator(brand === 'coffee' ? '#rail' : '#deliveryRail');
+    await expect(rail).toBeVisible({ timeout: 10000 });
+    const target = rail.locator('button').nth(1);
+    await target.evaluate((element) => { window.__originalCategoryTab = element; });
+    await target.click();
+    await expect(target).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => target.evaluate((element) => element === window.__originalCategoryTab)).toBe(true);
+
+    const activeIcon = rail.locator('button[aria-pressed="true"] .re');
+    const iconStyle = await activeIcon.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        background: style.backgroundColor,
+        radius: style.borderTopLeftRadius,
+        transition: style.transitionDuration,
+      };
+    });
+    expect(iconStyle.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(iconStyle.transition).toBe('0.18s');
+    expect(iconStyle.radius).toBe(brand === 'coffee' ? '50%' : '8px');
+  }
+});
