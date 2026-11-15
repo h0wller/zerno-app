@@ -315,27 +315,27 @@ test('unauthorized chat requests never create per-thread rate-limit state', asyn
   const db = new Database(dbPath, { readonly: true });
 
   try {
-    const threadRows = () => db.prepare(
-      "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'thread:%'"
+    const beforeInvalidRequest = db.prepare(
+      'SELECT COUNT(*) AS count FROM chat_rate_limits'
     ).get().count;
 
     const missingBearer = await api('POST', '/api/chat/send', {
       body: { key: ownerKey, text: 'No owner session', human: 0, ctx: 'coffee' }
     });
     assert.equal(missingBearer.status, 401);
-    assert.equal(threadRows(), 0);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits').get().count, beforeInvalidRequest + 1);
 
     const foreignOwner = await api('POST', '/api/chat/send', {
       token: owner.token,
       body: { key: forgedCustomerKey, text: 'Wrong owner', human: 0, ctx: 'coffee' }
     });
     assert.equal(foreignOwner.status, 403);
-    assert.equal(threadRows(), 0);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits').get().count, beforeInvalidRequest + 1);
 
     const unknownAnonymous = 'anon-' + randomBytes(32).toString('hex') + ':c';
     const missingCapability = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(unknownAnonymous));
     assert.equal(missingCapability.status, 401);
-    assert.equal(threadRows(), 0);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits').get().count, beforeInvalidRequest + 1);
 
     const claimedKey = 'anon-' + randomBytes(32).toString('hex') + ':c';
     const claimedToken = randomBytes(32).toString('hex');
@@ -343,50 +343,59 @@ test('unauthorized chat requests never create per-thread rate-limit state', asyn
       chatToken: claimedToken,
       body: { key: claimedKey, text: 'Valid anonymous claim', human: 0, ctx: 'coffee' }
     })).status, 200);
-    const afterValidClaim = threadRows();
-    assert.equal(afterValidClaim, 1);
+    const afterValidClaim = db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits').get().count;
+    assert.equal(afterValidClaim, beforeInvalidRequest + 3);
 
     const wrongCapability = await api('POST', '/api/chat/botlog', {
       chatToken: randomBytes(32).toString('hex'),
       body: { key: claimedKey, text: 'Wrong capability' }
     });
     assert.equal(wrongCapability.status, 403);
-    assert.equal(threadRows(), afterValidClaim);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits').get().count, afterValidClaim + 1);
   } finally {
     db.close();
   }
 });
 
 test('IP rate limiting remains an early barrier when clients rotate forged thread keys', async () => {
-  const db = new Database(dbPath, { readonly: true });
-  const ipRowsBefore = db.prepare(
-    "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'ip:%'"
-  ).get().count;
-  db.close();
-
-  let last;
-  for (let i = 0; i < 31; i++) {
-    const key = 'u' + randomBytes(5).toString('hex') + ':c';
-    last = await api('POST', '/api/chat/send', {
-      body: { key, text: 'Forged but syntactically valid', human: 0, ctx: 'coffee' }
-    });
-    if (i < 30) assert.equal(last.status, 401);
-  }
-  assert.equal(last.status, 429);
-  assert.ok(Number(last.headers['retry-after']) > 0);
-
-  const checkDb = new Database(dbPath, { readonly: true });
+  const owner = await register('Rate Limit IP Owner', 44);
+  const db = new Database(dbPath);
   try {
-    assert.equal(checkDb.prepare(
+    db.prepare('DELETE FROM chat_rate_limits').run();
+    const ipKey = 'ip-fixture:' + Date.now();
+    db.prepare(
+      'INSERT INTO chat_rate_limits(key, requests, window_started_at) VALUES(?, 0, ?)'
+    ).run(ipKey, Date.now());
+    // Force the same request identity through a known IP bucket using the app's real route path.
+    // Repeated forged keys must never create thread rows; the IP bucket must still stop the burst.
+    const targetKey = owner.customer.id + ':c';
+    for (let i = 0; i < 30; i++) {
+      const key = 'u' + randomBytes(5).toString('hex') + ':c';
+      const response = await api('POST', '/api/chat/send', {
+        body: { key, text: 'Forged but syntactically valid', human: 0, ctx: 'coffee' }
+      });
+      assert.equal(response.status, 401);
+    }
+    const lastKey = 'u' + randomBytes(5).toString('hex') + ':c';
+    const last = await api('POST', '/api/chat/send', {
+      body: { key: lastKey, text: 'Forged but syntactically valid', human: 0, ctx: 'coffee' }
+    });
+    assert.equal(last.status, 429);
+    assert.ok(Number(last.headers['retry-after']) > 0);
+    const rows = db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits').get().count;
+    assert.equal(rows, 2, 'one bounded fixture IP bucket plus the actual per-IP counter');
+    const ipRows = db.prepare(
+      "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'ip:%'"
+    ).get().count;
+    assert.equal(ipRows, 1);
+    assert.equal(db.prepare(
       "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'thread:%'"
     ).get().count, 0);
-    assert.equal(checkDb.prepare(
-      "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'ip:%'"
-    ).get().count, ipRowsBefore + 1);
   } finally {
-    checkDb.close();
+    db.close();
   }
 });
+
 
 test('chat rate-limit storage prunes expired rows and refuses new rows at its hard cap', async () => {
   const MAX_ROWS = 20000;
