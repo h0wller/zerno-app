@@ -102,6 +102,13 @@
     color: var(--category-icon-active-color, var(--category-icon-color, currentColor));
   }
 
+  html body .wrap #menuView #rail button:active,
+  html body .wrap #deliveryView #deliveryRail button:active,
+  html body .wrap #menuView #rail button.on:active,
+  html body .wrap #deliveryView #deliveryRail button.on:active {
+    transform: scale(.97);
+  }
+
   html body .wrap #menuView #rail button:focus-visible,
   html body .wrap #deliveryView #deliveryRail button:focus-visible {
     outline: 2px solid var(--focus, #1A6DDF);

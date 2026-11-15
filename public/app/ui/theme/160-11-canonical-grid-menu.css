@@ -417,6 +417,20 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
     background: var(--category-icon-active-bg, var(--category-icon-bg, transparent));
     color: var(--category-icon-active-color, var(--category-icon-color, currentColor));
   }
+
+  html body div.wrap > #rail button:active,
+  html body div.wrap > #deliveryRail button:active {
+    transform: scale(.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body div.wrap > #rail button,
+  html body div.wrap > #deliveryRail button,
+  html body div.wrap > #rail .re,
+  html body div.wrap > #deliveryRail .re {
+    transition: none;
+  }
 }
 
 /* Mobile reflow moves the category rail inside the menu view.
