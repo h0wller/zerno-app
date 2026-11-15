@@ -5,6 +5,7 @@ var observedRailHead = null;
 var observedRailTopbar = null;
 
 var railStickyLayout = null;
+var railDesktopAnchor = null;
 
 function usesHorizontalCategoryRailViewport() {
   if (window.matchMedia) {
@@ -74,7 +75,10 @@ function alignRailWithCard() {
   var rail = document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
   var head = document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head');
 
-  if (!rail) return;
+  if (!rail) {
+    railDesktopAnchor = null;
+    return;
+  }
   railStickyLayout = null;
   rail.style.position = 'relative';
   rail.style.top = 'auto';
@@ -82,17 +86,20 @@ function alignRailWithCard() {
   rail.style.overflowY = '';
   rail.style.alignSelf = 'start';
   var wrap = rail.parentElement;
-  if (!wrap) return;
+  if (!wrap) {
+    railDesktopAnchor = null;
+    return;
+  }
 
   var horizontalViewport = usesHorizontalCategoryRailViewport();
   var headRect = head && head.getBoundingClientRect();
   if (horizontalViewport) {
-    // In horizontal mode the rail is a normal-flow sibling immediately after
-    // the menu header. Desktop catalog offsets would push it below the filters.
+    // Horizontal navigation is in the menu's normal flow, not the desktop grid.
+    // Drop the desktop anchor; it will be captured again when the rail returns
+    // to the sidebar column after a breakpoint/orientation transition.
+    railDesktopAnchor = null;
     rail.style.removeProperty('margin-top');
   } else if (headRect && headRect.height) {
-    // Desktop rail aligns once to the first catalog row. Category changes do
-    // not re-run alignment, so optional filters cannot drag the sidebar.
     var wrapRect = wrap.getBoundingClientRect();
     var wrapStyle = window.getComputedStyle(wrap);
     var wrapContentTop = wrapRect.top
@@ -100,11 +107,33 @@ function alignRailWithCard() {
       + (parseFloat(wrapStyle.borderTopWidth) || 0);
     var catalog = document.querySelector(isDelivery ? '#deliveryView #deliveryGrid' : '#menuView #grid');
     var catalogRect = catalog && catalog.getBoundingClientRect();
-    var desiredTop = catalogRect ? catalogRect.top : headRect.top;
-    var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
+
+    // Capture the first visible catalog row once for this desktop placement.
+    // Re-measuring on every ResizeObserver/resize callback follows optional
+    // filters and moves the rail when a category removes its filter row.
+    var anchorMatches = railDesktopAnchor &&
+      railDesktopAnchor.rail === rail &&
+      railDesktopAnchor.wrap === wrap &&
+      railDesktopAnchor.brand === document.documentElement.dataset.brand;
+    if (!anchorMatches && catalog && catalog.getClientRects().length && catalogRect) {
+      railDesktopAnchor = {
+        rail: rail,
+        wrap: wrap,
+        brand: document.documentElement.dataset.brand,
+        offset: Math.max(0, catalogRect.top - wrapContentTop)
+      };
+    }
+
+    // If the catalog is not laid out yet, use the stable menu header as a
+    // temporary fallback; a later layout pass captures the real catalog row.
+    var anchorOffset = anchorMatches || railDesktopAnchor
+      ? railDesktopAnchor.offset
+      : Math.max(0, headRect.bottom + 12 - wrapContentTop);
+    var marginTop = anchorOffset + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
     if (!isDelivery && rail.style.height) rail.style.removeProperty('height');
   } else if (rail.style.marginTop !== '0px') {
+    railDesktopAnchor = null;
     rail.style.marginTop = '0px';
   }
 
