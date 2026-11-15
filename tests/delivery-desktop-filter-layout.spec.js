@@ -182,7 +182,6 @@ for (const width of [1024, 1440]) {
       await expect(bar).not.toHaveClass(/at-end/);
     }
 
-    const lastFilter = chips.last();
     if (hasOverflow) {
       await bar.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
     }
