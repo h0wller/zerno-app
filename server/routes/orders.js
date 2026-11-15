@@ -368,8 +368,7 @@ ordersRouter.post('/api/orders', verifiedCustomerGuard, (req, res) => {
     : new Date();
   const hoursNow = getDeliveryHours(now);
   const slotStr = String(b.slot || 'asap').trim();
-  const isTestEnv = process.env.NODE_ENV === 'test'
-    || (process.env.DB_PATH && process.env.DB_PATH.includes('tmp'));
+  const isTestEnv = process.env.NODE_ENV === 'test';
 
   let isPreorder = 0;
   let preorderDate = '';
