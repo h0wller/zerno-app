@@ -356,6 +356,36 @@ test('pending guest cannot create an order before phone verification or staff ac
   assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, orderNumberBefore);
 });
 
+test('pending guest becomes verified only after a valid OTP login and can then order', async () => {
+  const phone = '+7 900 200-01-08';
+  const registrationToken = await register('OTP Login Guest', phone);
+  const customerId = customerIdForToken(registrationToken);
+  assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(customerId).verified, 0);
+
+  await seedOtp(phone, '2468');
+  const wrongCode = await request('/auth/login', {
+    method: 'POST',
+    body: { phone, otp: '9999' },
+  });
+  assert.equal(wrongCode.status, 403);
+  assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(customerId).verified, 0);
+
+  const verifiedLogin = await request('/auth/login', {
+    method: 'POST',
+    body: { phone, otp: '2468' },
+  });
+  assert.equal(verifiedLogin.status, 200, JSON.stringify(verifiedLogin.json));
+  assert.equal(verifiedLogin.json.customer?.verified, 1);
+  assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(customerId).verified, 1);
+
+  const order = await request('/orders', {
+    method: 'POST',
+    token: verifiedLogin.json.token,
+    body: orderBody('ord_otp_login_guest_008', 1),
+  });
+  assert.equal(order.status, 200, JSON.stringify(order.json));
+});
+
 test('OTP-verified guest can create an order', async () => {
   const token = await registerVerified('Verified Order Guest', '+7 900 200-01-02');
   const result = await request('/orders', {
