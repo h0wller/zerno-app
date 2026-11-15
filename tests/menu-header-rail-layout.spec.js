@@ -782,33 +782,34 @@ test('category navigation keeps secondary delivery filters separate from primary
 
 
 
-test('delivery: switching sauces and drinks keeps the subfilter slot and desktop rail anchored', async ({ page }, testInfo) => {
+test('delivery: switching sauces and drinks keeps the desktop category rail anchored without reserving an empty filter row', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
 
   const rail = page.locator('#deliveryRail');
   const grid = page.locator('#deliveryGrid');
+  const viewport = page.locator('#deliverySubFilterViewport');
   await expect(rail).toBeVisible({ timeout: 10000 });
-  await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+  await expect(grid).toBeVisible({ timeout: 15000 });
 
   const measure = () => page.evaluate(() => {
     const railRect = document.querySelector('#deliveryRail').getBoundingClientRect();
     const gridRect = document.querySelector('#deliveryGrid').getBoundingClientRect();
-    const slot = document.querySelector('#deliverySubFilterViewport');
-    const slotRect = slot.getBoundingClientRect();
+    const headRect = document.querySelector('#deliveryView .menu-head').getBoundingClientRect();
     return {
       railTop: railRect.top,
+      headTop: headRect.top,
       gridTop: gridRect.top,
-      slotTop: slotRect.top,
-      slotHeight: slotRect.height,
-      slotDisplay: getComputedStyle(slot).display,
+      scrollY: window.scrollY,
+      viewportHidden: document.querySelector('#deliverySubFilterViewport').hidden,
+      viewportDisplay: getComputedStyle(document.querySelector('#deliverySubFilterViewport')).display,
     };
   });
 
   await rail.locator('[data-dcat="sauces"]').click();
   await expect(page.locator('#deliverySubFilter')).toBeVisible();
-  await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+  await expect(viewport).toBeVisible();
   const sauces = await measure();
   await testInfo.attach('delivery-sauces-category-geometry', {
     body: await page.screenshot({ animations: 'disabled' }),
@@ -817,17 +818,18 @@ test('delivery: switching sauces and drinks keeps the subfilter slot and desktop
 
   await rail.locator('[data-dcat="drinks"]').click();
   await expect(page.locator('#deliverySubFilter')).toBeHidden();
-  // The test seed may intentionally have no drinks; category emptiness must not affect layout.
-  await expect(grid).toBeVisible();
+  await expect(viewport).toBeHidden();
   const drinks = await measure();
   await testInfo.attach('delivery-drinks-category-geometry', {
     body: await page.screenshot({ animations: 'disabled' }),
     contentType: 'image/png',
   });
 
-  expect(sauces.slotDisplay).not.toBe('none');
-  expect(drinks.slotDisplay).not.toBe('none');
-  expect(drinks.slotHeight).toBeGreaterThanOrEqual(68);
-  expect(Math.abs(drinks.gridTop - sauces.gridTop), 'the catalog must not jump when secondary filters disappear').toBeLessThanOrEqual(1);
-  expect(Math.abs(drinks.railTop - sauces.railTop), 'the desktop category rail must remain anchored').toBeLessThanOrEqual(1);
+  expect(sauces.viewportHidden).toBe(false);
+  expect(drinks.viewportHidden).toBe(true);
+  expect(Math.abs(drinks.railTop - sauces.railTop), 'the desktop sidebar must not follow the optional secondary-filter row').toBeLessThanOrEqual(1);
+  expect(Math.abs(sauces.railTop - sauces.headTop), 'the desktop sidebar remains anchored to the menu header').toBeLessThanOrEqual(2);
+  expect(Math.abs(drinks.railTop - drinks.headTop), 'the desktop sidebar remains anchored after filters disappear').toBeLessThanOrEqual(2);
+  expect(Math.abs(drinks.scrollY - sauces.scrollY), 'category selection must not scroll the page').toBeLessThanOrEqual(1);
+  expect(drinks.gridTop).toBeGreaterThan(sauces.gridTop);
 });
