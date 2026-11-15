@@ -1244,6 +1244,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
         activeIcon: brand.rail + ' button.on .re',
         inactiveIcon: brand.rail + ' button:not(.on) .re',
       };
+      const cardSelector = brand.brand === 'coffee' ? '#grid > article.card' : '#deliveryGrid > .card';
       const titleSelector = brand.brand === 'coffee'
         ? '#grid > .card:not(.skeleton-card) .cbody > h3'
         : '#deliveryGrid > .card:not(.skeleton-card) .cbody > h3';
@@ -1315,6 +1316,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
         link.href.includes('/app/ui/theme/150-rail.css') && link.media==='all'
       )), { timeout:15000 }).toBe(true);
       await page.evaluate(() => document.fonts && document.fonts.ready);
+      await expect(page.locator(cardSelector).first()).toBeVisible({ timeout: 15000 });
       await expect(page.locator(titleSelector).first()).toBeVisible({ timeout: 15000 });
       await page.addStyleTag({ content: '*,:before,:after{transition:none!important;animation:none!important}' });
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -1326,14 +1328,29 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
       });
       reports.push({brand:brand.brand,viewport,heldStylesheetRequests:heldRequests,firstFrame,hydrated,hydratedAfter200ms});
 
-      expect.soft(Math.abs(hydrated.computed.rail.rect.height-hydrated.computed.button.rect.height),
+      expect(Math.abs(hydrated.computed.rail.rect.height-hydrated.computed.button.rect.height),
         `${brand.brand} ${viewport.name}: rail and button heights must match`).toBeLessThanOrEqual(0.5);
-      expect.soft(hydrated.computed.active.borderBottomWidth,
+      expect(hydrated.computed.active.borderBottomWidth,
         `${brand.brand} ${viewport.name}: active tab must not use bottom border`).toBe('0px');
-      expect.soft(hydrated.iconTopSpread,
+      expect(hydrated.iconTopSpread,
         `${brand.brand} ${viewport.name}: all icon tops must align`).toBeLessThanOrEqual(1);
-      expect.soft(parseFloat(hydrated.computed.button.fontSize),
-        `${brand.brand} ${viewport.name}: label font size minimum`).toBeGreaterThanOrEqual(brand.brand==='coffee'?10:9.5);
+      expect(parseFloat(hydrated.computed.button.fontSize),
+        `${brand.brand} ${viewport.name}: label font size minimum`).toBeGreaterThanOrEqual(10);
+      expect(hydrated.firstCardRect?.width, `${brand.brand} ${viewport.name}: first card rect must be measured`).toBeGreaterThan(0);
+      expect(hydrated.firstCardRect?.height, `${brand.brand} ${viewport.name}: first card rect must be measured`).toBeGreaterThan(0);
+      expect(hydrated.computed.inactive.backgroundColor, `${brand.brand} ${viewport.name}: inactive button has no fill`).toBe('rgba(0, 0, 0, 0)');
+      expect(hydrated.computed.inactiveIcon.backgroundColor, `${brand.brand} ${viewport.name}: inactive icon has no chip`).toBe('rgba(0, 0, 0, 0)');
+      expect(hydrated.activeAfter.content, `${brand.brand} ${viewport.name}: active underline exists`).not.toBe('none');
+      expect(hydrated.activeAfter.height, `${brand.brand} ${viewport.name}: active underline height`).toBe('3px');
+      expect(hydrated.activeAfter.width, `${brand.brand} ${viewport.name}: active underline width`).toBe('28px');
+      expect(hydrated.activeAfter.borderRadius, `${brand.brand} ${viewport.name}: active underline radius`).toBe('2px');
+      expect(hydrated.fonts.golosText, 'Golos Text font check').toBe(true);
+      expect(hydrated.fonts.loadedFaces.length, 'loaded FontFace list is present').toBeGreaterThan(0);
+      expect(colorSnapshot(hydrated), `${brand.brand} ${viewport.name}: hydrated colors remain stable after 200ms`).toEqual(colorSnapshot(hydratedAfter200ms));
+      if (viewport.width <= 820 && viewport.height > 480) {
+        expect(Math.abs(firstFrame.regions.rail.top - hydrated.regions.rail.top),
+          `${brand.brand} ${viewport.name}: first-frame rail top matches hydrated within 2px`).toBeLessThanOrEqual(2);
+      }
     }
   }
   await context.close();
