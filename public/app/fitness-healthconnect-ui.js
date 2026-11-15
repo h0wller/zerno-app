@@ -206,6 +206,15 @@ import { Capacitor } from '@capacitor/core';
       if (section) section.dataset.checked = '';
       render();
     });
-    window.ztBus.on('profile:closed', function () { profileIsOpen = false; });
+    window.ztBus.on('profile:closed', function () {
+      profileIsOpen = false;
+      var section = document.getElementById(SECTION_ID);
+      if (!section) return;
+      section.dataset.checked = '';
+      var list = section.querySelector('.hc-workouts');
+      if (list) list.replaceChildren();
+      setActions(section, []);
+      setState(section, 'Сводка тренировок очищена из интерфейса при закрытии профиля.');
+    });
   }
 })();
