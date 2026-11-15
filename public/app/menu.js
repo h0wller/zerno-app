@@ -16,7 +16,7 @@ function coffeePool() {
 }
 
 $('#rail').innerHTML = CATS.map(
-  c => `<button data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`
+  c => `<button type="button" data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`
 ).join('');
 
 var coffeeRailCueResizeObserver = null;
