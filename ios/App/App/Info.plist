@@ -23,7 +23,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Zerno App reads your running workouts from Apple Health to check eligibility for coffee rewards. Your health data is not used for advertising.</string>
+	<string>Zerno App reads recent running workout summaries from Apple Health when you request them so the app can show them to you. This read-only data remains device-reported and is not used to issue rewards.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

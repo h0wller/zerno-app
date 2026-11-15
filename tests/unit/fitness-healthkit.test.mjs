@@ -14,6 +14,8 @@ test('normalizes HealthKit run as device-reported, not server-verified', () => {
   const result = normalizeHealthKitWorkout(validWorkout);
   assert.equal(result.activityType, 'running');
   assert.equal(result.distanceMeters, 5200);
+  assert.equal(result.sourcePlatform, 'apple_healthkit');
+  assert.equal(result.sourcePackageName, 'com.apple.health');
   assert.equal(result.evidenceState, 'device_reported');
 });
 test('rejects non-running activity types', () => {

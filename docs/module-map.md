@@ -178,4 +178,8 @@
 | Module | Owns | Contract |
 | --- | --- | --- |
 | `ios/App/App/HealthKitPlugin.swift` + `ZernoBridgeViewController.swift` | Native HealthKit read permission and read-only query for recent running workouts in the Capacitor iOS app | Capacitor plugin `ZernoHealthKit` |
-| `public/app/fitness-healthkit.js` | Browser/native capability detection and validation of normalized HealthKit workout summaries; no DOM ownership | `window.ZernoHealthKit` |
+| `public/app/fitness-healthkit.js` | iOS native capability detection and validation of normalized HealthKit workout summaries; no DOM ownership | `window.ZernoHealthKit` |
+| `android/app/src/main/java/online/andcoffee/app/HealthConnectPlugin.kt` | Android Health Connect read permissions, foreground-only exercise session and distance queries, source/device provenance; no route or background access | Capacitor plugin `ZernoHealthConnect` |
+| `HealthConnectWorkoutMapper.kt` | Pure validation and provider-neutral mapping of Android running summaries; never upgrades evidence trust | Internal Kotlin mapper and JVM unit tests |
+| `public/app/fitness-healthconnect.js` | Android native capability detection and validation of normalized Health Connect summaries; no DOM ownership | `window.ZernoHealthConnect` |
+| `PermissionsRationaleActivity.kt` | Displays the privacy policy when Android/Health Connect opens the health-permission rationale | Android manifest rationale and permission-usage activity |

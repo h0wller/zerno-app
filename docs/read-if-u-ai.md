@@ -33,7 +33,7 @@
 
 * **Медиа-обработка:** `sharp` (автоматическая нарезка загруженных блюд в Retina WebP).
 
-* **Нативный контейнер:** Capacitor 8 для iOS/Android; iOS native extensions живут в `ios/App/App` и подключаются через собственный `CAPBridgeViewController`. HealthKit доступен только в нативном iOS контейнере, не в PWA или Telegram Mini App.
+* **Нативный контейнер:** Capacitor 8 для iOS/Android; iOS HealthKit bridge живёт в `ios/App/App`, Android Health Connect bridge — в `android/app/src/main/java/online/andcoffee/app`. Эти API доступны только из соответствующих нативных приложений, не из PWA или Telegram Mini App. Android Health Connect SDK поддерживается с API 26; при недоступности адаптер сообщает, что источник не поддерживается.
 
 * **Уведомления:** Web Push (`web-push` через VAPID), Firebase Admin (`firebase-admin` для нативных пушей Capacitor), бот Telegram через вебхуки. Сервер использует встроенный глобальный `fetch` Node.js 22; `node-fetch` не является зависимостью проекта.
 
