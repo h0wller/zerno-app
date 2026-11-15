@@ -161,13 +161,15 @@ import { Capacitor } from '@capacitor/core';
     state(section, 'Откройте системный запрос Apple Health и разрешите чтение тренировок.');
     try {
       var result = await window.ZernoHealthKit.requestAuthorization();
-      if (!result || result.authorized !== true) {
-        state(section, 'Не удалось подтвердить доступ. Проверьте разрешения Apple Health в настройках iPhone.');
+      if (!result || result.authorizationRequested !== true) {
+        state(section, 'Не удалось завершить запрос разрешений Apple Health.');
         actions(section, [{ label: 'Повторить запрос', onClick: function () { requestAccess(section); } }]);
         return;
       }
-      state(section, 'Доступ к тренировкам разрешён.');
-      actions(section, [{ label: 'Загрузить последние тренировки', onClick: function () { loadWorkouts(section); } }]);
+      // HealthKit deliberately does not expose whether read access was granted.
+      // Do not claim permission is granted; let the user explicitly try a read.
+      state(section, 'Запрос Apple Health завершён. Статус разрешения на чтение нельзя проверить отдельно; попробуйте загрузить тренировки.');
+      actions(section, [{ label: 'Попробовать загрузить тренировки', onClick: function () { loadWorkouts(section); } }]);
     } catch (error) {
       state(section, error.message || 'Не удалось запросить доступ к Apple Health.');
       actions(section, [{ label: 'Повторить', onClick: function () { requestAccess(section); } }]);
