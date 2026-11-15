@@ -75,9 +75,6 @@
   white-space: nowrap;
 }
 
-/* Empty composition placeholders reserve only the desktop card slot; mobile cards stay content-sized. */
-#deliveryGrid .card .cbody > .comp:empty { margin-top: 0; }
-
 /* Desktop delivery cards: fixed content slots keep semantic rows aligned across a grid row.
    Pizza uses title (2 lines) + full description (4 lines) before its options.
    Rolls use title (2 lines) + up to 3 ingredient-chip rows before weight/price.
