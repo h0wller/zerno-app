@@ -53,6 +53,11 @@ function alignRailWithCard() {
     railDesktopAnchor = null;
     return;
   }
+
+  // Late font/ResizeObserver callbacks must not overwrite the mobile fixed
+  // geometry while the pinning controller owns this rail.
+  if (railPinState && railPinState.rail === rail) return;
+
   rail.style.position = 'relative';
   rail.style.top = 'auto';
   rail.style.maxHeight = 'none';
