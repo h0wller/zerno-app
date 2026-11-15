@@ -1107,6 +1107,7 @@ test('category rail uses one surface, an active icon chip and a separate underli
 
       const rail = page.locator(brand === 'coffee' ? '#rail' : '#deliveryRail');
       await expect(rail).toBeVisible({ timeout: 10000 });
+      await page.addStyleTag({ content: '*,:before,:after{transition:none!important;animation:none!important}' });
       const target = rail.locator('button').nth(1);
       await target.evaluate((element) => { window.__originalCategoryTab = element; });
       await target.click();
