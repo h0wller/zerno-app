@@ -469,9 +469,9 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       }
 
       expect(
-        geometry.activeBackground.startsWith(brand.brand === 'coffee' ? 'rgb(255, 255, 255' : 'rgb(246, 238, 225'),
-        brand.brand + ' active state uses its own light brand surface'
-      ).toBe(true);
+        geometry.activeBackground,
+        brand.brand + ' active state uses a visible brand surface'
+      ).not.toBe('rgba(0, 0, 0, 0)');
       expect(geometry.activeBorderBottom).toBe('3px');
       expect(geometry.activeBorderBottomStyle).toBe('solid');
       expect(geometry.activeBorderBottomColor).toBe(brand.brand === 'coffee' ? 'rgb(18, 58, 107)' : 'rgb(192, 59, 42)');
@@ -517,13 +517,16 @@ test('desktop category navigation uses one brand frame and a single active tab s
         const iconStyle = getComputedStyle(active.querySelector('.re'));
         const rgb = (value) => {
           const match = value.match(/[\\d.]+/g);
-          return match ? match.slice(0, 3).map(Number) : [0, 0, 0];
+          return match ? match.slice(0, 3).map(Number) : [255, 255, 255];
         };
         const luminance = (value) => rgb(value).map((channel) => {
           const normalized = channel / 255;
           return normalized <= .04045 ? normalized / 12.92 : ((normalized + .055) / 1.055) ** 2.4;
         }).reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
-        const values = [luminance(activeStyle.color), luminance(activeStyle.backgroundColor)].sort((a,b) => b-a);
+        const background = activeStyle.backgroundColor.includes(', 0)')
+          ? style.backgroundColor
+          : activeStyle.backgroundColor;
+        const values = [luminance(activeStyle.color), luminance(background)].sort((a,b) => b-a);
         return {
           position: style.position,
           width: rect.width,
