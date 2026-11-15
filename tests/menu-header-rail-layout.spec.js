@@ -150,7 +150,7 @@ for (const brand of CASES) {
             bottom: rect.bottom,
           };
         }, brand.rail), { timeout: 5000 }).toMatchObject({
-          position: 'sticky',
+          position: 'fixed',
         });
         await expect.poll(() => rail.evaluate(el => el.classList.contains('rail-scroll-hidden')))
           .toBe(true);
@@ -186,6 +186,10 @@ for (const brand of CASES) {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
         });
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await expect.poll(() => rail.evaluate(el => el.classList.contains('rail-is-pinned')))
+          .toBe(false);
+        await expect(rail).toHaveCSS('position', 'relative');
       } else if (horizontalRail) {
         await expect.poll(() => rail.evaluate(el => el.getBoundingClientRect().top))
           .toBeLessThan(railTopBeforeScroll - 20);
