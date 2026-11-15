@@ -826,12 +826,13 @@ test('delivery: optional filters expand below a stable desktop rail anchor', asy
     contentType: 'image/png',
   });
 
+  expect(initial.viewportHidden).toBe(false);
   expect(sauces.viewportHidden).toBe(false);
   expect(drinks.viewportHidden).toBe(true);
-  expect(Math.abs(sauces.railTop - initial.railTop), 'the rail stays at the first catalog row while filters appear').toBeLessThanOrEqual(1);
+  expect(Math.abs(sauces.railTop - initial.railTop), 'the rail stays at the first catalog row while filters are present').toBeLessThanOrEqual(1);
   expect(Math.abs(drinks.railTop - initial.railTop), 'the rail stays at the same catalog anchor after filters disappear').toBeLessThanOrEqual(1);
-  expect(sauces.gridTop).toBeGreaterThan(initial.gridTop + 40);
-  expect(Math.abs(drinks.gridTop - initial.gridTop)).toBeLessThanOrEqual(2);
+  expect(Math.abs(sauces.gridTop - initial.gridTop), 'switching between categories with filters keeps the catalog row stable').toBeLessThanOrEqual(2);
+  expect(drinks.gridTop).toBeLessThan(initial.gridTop - 40);
   expect(Math.abs(drinks.scrollY - initial.scrollY)).toBeLessThanOrEqual(1);
 });
 
