@@ -333,7 +333,10 @@ $('#deliveryRail').addEventListener('click', e => {
 
 function renderCompositionChips(item) {
   const composition = getVisibleComposition(item);
-  if (!composition.length) return '';
+  // Keep a semantic composition slot on simple-meta cards too. Without it,
+  // drinks with no chips are ~100px shorter than sets/sauces and the next
+  // catalog row jumps vertically whenever the category changes.
+  if (!composition.length) return '<div class="comp" aria-hidden="true"></div>';
   return '<div class="comp">' +
     composition.map(function (name) { return '<i>' + esc(name) + '</i>'; }).join('') +
   '</div>';
