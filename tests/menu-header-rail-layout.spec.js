@@ -1656,7 +1656,8 @@ test('category rails render decorative SVG icons instead of emoji for both brand
       return !!svg && svg.getAttribute('aria-hidden') === 'true' &&
         svg.getAttribute('focusable') === 'false' && !node.textContent.trim() &&
         svg.getAttribute('viewBox') === '0 0 48 48' &&
-        svg.querySelectorAll('[fill]').length >= 3;
+        new Set([...svg.querySelectorAll('*')].flatMap(el => [el.getAttribute('fill'), el.getAttribute('stroke')])
+          .filter(value => value && value !== 'none')).size >= 2;
 
     }))).toBe(true);
     await expect(rail.locator('button')).toHaveCount(brand === 'coffee' ? 6 : 5);
