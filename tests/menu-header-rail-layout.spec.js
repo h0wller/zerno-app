@@ -1407,3 +1407,71 @@ test('catalog grid uses three columns from 821px through 1180px for both brands'
     }
   }
 });
+
+
+test('desktop wrap expands to a centered 2560px maximum on wide viewports', async ({ page }) => {
+  for (const brand of CASES) {
+    for (const width of [1480, 1481, 1920, 2560, 3840]) {
+      await page.setViewportSize({ width, height: 1080 });
+      await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+      const layout = await page.locator('body > div.wrap').evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          width: rect.width,
+          left: rect.left,
+          right: rect.right,
+          maxWidth: style.maxWidth,
+          marginLeft: style.marginLeft,
+          marginRight: style.marginRight,
+        };
+      });
+      if (width <= 1480) {
+        expect(layout.maxWidth).toBe('1480px');
+      } else {
+        expect(layout.maxWidth).toBe('2560px');
+      }
+      if (width >= 2560) {
+        expect(Math.abs(layout.width - 2560), brand.brand + ' wrap width at ' + width + 'px').toBeLessThanOrEqual(1);
+        expect(Math.abs(layout.left - (width - 2560) / 2), brand.brand + ' wrap centering at ' + width + 'px').toBeLessThanOrEqual(1);
+        expect(Math.abs(layout.right - (width + 2560) / 2), brand.brand + ' wrap right edge at ' + width + 'px').toBeLessThanOrEqual(1);
+      }
+    }
+  }
+});
+
+test('appearance of the vertical scrollbar does not change layout width', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+  const geometry = await page.evaluate(async () => {
+    const root = document.documentElement;
+    const wrap = document.querySelector('body > div.wrap');
+    root.style.overflowY = 'hidden';
+    document.body.style.minHeight = '0';
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const before = {
+      clientWidth: root.clientWidth,
+      wrapLeft: wrap.getBoundingClientRect().left,
+      wrapWidth: wrap.getBoundingClientRect().width,
+    };
+    root.style.overflowY = 'auto';
+    document.body.style.minHeight = '200vh';
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return {
+      before,
+      after: {
+        clientWidth: root.clientWidth,
+        wrapLeft: wrap.getBoundingClientRect().left,
+        wrapWidth: wrap.getBoundingClientRect().width,
+      },
+      hasVerticalScroll: root.scrollHeight > root.clientHeight,
+      scrollbarGutter: getComputedStyle(root).scrollbarGutter,
+    };
+  });
+  expect(geometry.hasVerticalScroll).toBe(true);
+  expect(geometry.scrollbarGutter).toContain('stable');
+  expect(geometry.after.clientWidth).toBe(geometry.before.clientWidth);
+  expect(Math.abs(geometry.after.wrapLeft - geometry.before.wrapLeft)).toBeLessThanOrEqual(1);
+  expect(Math.abs(geometry.after.wrapWidth - geometry.before.wrapWidth)).toBeLessThanOrEqual(1);
+});
