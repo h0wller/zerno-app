@@ -1667,7 +1667,7 @@ test('coffee rail labels use the refined coffee typography without changing Frid
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
 
     await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
-    const coffeeLabels = await page.locator('#rail button').first().evaluate(button => {
+    const coffeeLabels = await page.locator('#rail button:not(.on)').first().evaluate(button => {
       const style = getComputedStyle(button);
       const active = getComputedStyle(button.parentElement.querySelector('button.on'));
       return {
