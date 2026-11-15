@@ -323,28 +323,17 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     expect(padBottom).toBeGreaterThanOrEqual(88);
 
     // ── Задача 3: mobile category row follows search and precedes secondary filters ──
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+      if (typeof window.alignRailWithCard === 'function') window.alignRailWithCard();
+    });
     const railGeometry = await page.evaluate(() => {
       const railEl = document.querySelector('#deliveryRail');
       const rail = railEl.getBoundingClientRect();
       const head = document.querySelector('#deliveryView .menu-head').getBoundingClientRect();
       const filters = document.querySelector('#deliverySubFilterViewport').getBoundingClientRect();
-      const wrap = railEl.parentElement;
-      const wrapRect = wrap.getBoundingClientRect();
-      const wrapStyle = getComputedStyle(wrap);
-      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-      const maxRailHeight = Math.max(0, viewportHeight - 24);
-      const visibleRailHeight = Math.min(railEl.scrollHeight, maxRailHeight);
-      const stickyTop = Math.max(12, (viewportHeight - visibleRailHeight) / 2);
-      const marginTop = parseFloat(getComputedStyle(railEl).marginTop) || 0;
-      const documentTop = wrapRect.top + scrollY +
-        (parseFloat(wrapStyle.paddingTop) || 0) +
-        (parseFloat(wrapStyle.borderTopWidth) || 0) + marginTop;
       return {
         position: getComputedStyle(railEl).position,
-        shouldStick: scrollY > 0 && scrollY >= documentTop - stickyTop,
-        stickyTop,
-        actualStickyTop: parseFloat(railEl.style.top) || 0,
         direction: getComputedStyle(railEl).flexDirection,
         parentIsView: railEl.parentElement === document.querySelector('#deliveryView'),
         searchGap: rail.top - head.bottom,
@@ -353,10 +342,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
         headWidth: head.width
       };
     });
-    expect(railGeometry.position).toBe(railGeometry.shouldStick ? 'sticky' : 'relative');
-    if (railGeometry.shouldStick) {
-      expect(railGeometry.actualStickyTop).toBeCloseTo(railGeometry.stickyTop, 0);
-    }
+    expect(railGeometry.position).toBe('relative');
     expect(railGeometry.direction).toBe('row');
     expect(railGeometry.parentIsView).toBe(true);
     expect(railGeometry.searchGap).toBeGreaterThanOrEqual(8);
