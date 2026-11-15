@@ -20,7 +20,7 @@
     max-height: var(--rail-h);
     margin: 10px 0 12px;
     padding: 0;
-    border: 0;
+    border: 1px solid var(--category-rail-border-color, var(--line, #D8DFE4));
     border-radius: 16px;
     background: var(--category-rail-bg, var(--panel, transparent));
     box-shadow: none;
