@@ -93,7 +93,7 @@ Both native adapters normalize into the same required field set:
 
 Identifiers are non-empty and capped at 255 characters; display/provenance labels are capped at 120 characters. Both adapters reject malformed time ranges, non-running activities, invalid numeric values and missing source identifiers. The iOS bundle identifier is mapped to the shared `sourcePackageName` field; no platform-specific alias is exposed to callers. Android additionally supplies the optional `recordingMethod` signal (`actively_recorded`, `automatically_recorded`, `manual_entry`, `unknown`). This signal does not change evidence trust.
 
-Both adapters default to and cap requests at 30 days and 25 records. These are display/query limits, not verification guarantees. The contract is local to the native app today; no mobile summary is submitted to the server yet.
+Both adapters default to and cap requests at 30 days and return at most 25 running records. To avoid letting non-running workouts consume the result limit, each adapter scans a bounded window of at most 500 source records (Health Connect: up to five 100-record pages; HealthKit: one 500-record query). These are display/query limits, not verification guarantees. The contract is local to the native app today; no mobile summary is submitted to the server yet.
 
 ## Recommended rollout
 

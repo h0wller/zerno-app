@@ -47,13 +47,14 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
         // Keep the iOS query window and page size aligned with the Android adapter.
         let days = min(max(call.getInt("days") ?? 30, 1), 30)
         let limit = min(max(call.getInt("limit") ?? 25, 1), 25)
+        let scanLimit = 500
         let start = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
         let predicate = HKQuery.predicateForSamples(withStart: start, end: Date(), options: .strictStartDate)
         let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
         let query = HKSampleQuery(
             sampleType: HKObjectType.workoutType(),
             predicate: predicate,
-            limit: limit,
+            limit: scanLimit,
             sortDescriptors: [sort]
         ) { [weak self] _, samples, error in
             guard let self = self else {
@@ -82,7 +83,7 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
                     "deviceModel": device?.model ?? "",
                     "sourceProductType": device?.productType ?? ""
                 ]
-            }
+            }.prefix(limit).map { $0 }
             call.resolve(["workouts": workouts])
         }
         healthStore.execute(query)
