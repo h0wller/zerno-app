@@ -4,7 +4,6 @@ var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
 
-var railStickyLayout = null;
 var railDesktopAnchor = null;
 var railAnchorReady = false;
 
@@ -20,7 +19,6 @@ function updateRailStickyPosition(rail, head) {
   if (!rail || !head) return;
 
   if (!head.getBoundingClientRect().height) {
-    railStickyLayout = null;
     rail.classList.remove('rail-position-ready');
     return;
   }
@@ -33,31 +31,15 @@ function updateRailStickyPosition(rail, head) {
     var stickyTop = topbarIsSticky && topbar
       ? Math.ceil(topbar.getBoundingClientRect().height)
       : 12;
-    var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-
-    if (!railStickyLayout || railStickyLayout.rail !== rail || railStickyLayout.parent !== rail.parentElement) {
-      railStickyLayout = {
-        rail: rail,
-        parent: rail.parentElement,
-        documentTop: rail.getBoundingClientRect().top + scrollY
-      };
-    }
-
-    // Preserve the catalog-aligned start; engage sticky only once the page begins scrolling.
-    var shouldStick = scrollY > 0 && scrollY >= railStickyLayout.documentTop - stickyTop;
-    if (shouldStick) {
-      rail.style.position = 'sticky';
-      rail.style.top = stickyTop + 'px';
-      rail.style.maxHeight = 'none';
-      rail.style.overflowY = 'hidden';
-      rail.style.alignSelf = 'stretch';
-    } else {
-      rail.style.position = 'relative';
-      rail.style.top = 'auto';
-      rail.style.maxHeight = 'none';
-      rail.style.overflowY = '';
-      rail.style.alignSelf = 'start';
-    }
+    // Use native CSS sticky from the first paint. The browser keeps the rail
+    // in normal flow until it reaches the header, then pins it during scrolling.
+    // Do not toggle position from a scroll listener: iOS Safari may deliver
+    // scroll events after momentum scrolling has already settled.
+    rail.style.position = 'sticky';
+    rail.style.top = stickyTop + 'px';
+    rail.style.maxHeight = 'none';
+    rail.style.overflowY = 'hidden';
+    rail.style.alignSelf = 'start';
   } else {
     railStickyLayout = null;
     rail.style.position = 'relative';
@@ -179,19 +161,6 @@ if (document.readyState === 'complete') {
   window.addEventListener('load', settleInitialRailAnchor, { once: true });
 }
 
-var railScrollTick = false;
-window.addEventListener('scroll', function () {
-  if (railScrollTick) return;
-  railScrollTick = true;
-  requestAnimationFrame(function () {
-    railScrollTick = false;
-    var isDelivery = document.documentElement.dataset.brand === 'delivery';
-    updateRailStickyPosition(
-      document.getElementById(isDelivery ? 'deliveryRail' : 'rail'),
-      document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head')
-    );
-  });
-}, { passive: true });
 window.addEventListener('resize', alignRailWithCard, { passive: true });
 window.addEventListener('load', alignRailWithCard, { once: true });
 requestAnimationFrame(alignRailWithCard);
