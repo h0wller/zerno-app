@@ -32,19 +32,13 @@ body[data-brand="coffee"] {
 
   /* ── Навигация категорий: океаническая палитра ───────────── */
   --category-rail-bg: #EAF1F9;
-  --category-rail-border: 1px solid rgba(62, 143, 208, 0.22);
-  --category-rail-shadow: none;
-  --category-rail-radius: 16px;
-  --category-tab-bg: transparent;
+  --category-rail-border-color: rgba(62, 143, 208, 0.28);
   --category-tab-color: #4E6C89;
-  --category-tab-border: 1px solid transparent;
-  --category-tab-radius: 12px;
-  --category-tab-shadow: none;
   --category-tab-active-bg: #FFFFFF;
   --category-tab-active-color: #123A6B;
-  --category-tab-active-border: 1px solid rgba(62, 143, 208, 0.38);
-  --category-tab-active-shadow: 0 2px 6px rgba(18, 58, 107, 0.09);
-  --category-tab-active-transform: none;
+  --category-tab-active-border-color: rgba(62, 143, 208, 0.46);
+  --category-tab-hover-bg: #F4F8FC;
+  --category-tab-hover-border-color: rgba(62, 143, 208, 0.25);
   --category-icon-bg: #DDEBF8;
   --category-icon-border: 1px solid rgba(62, 143, 208, 0.24);
   --category-icon-color: #123A6B;
@@ -261,19 +255,13 @@ body[data-brand="delivery"] {
 
   /* ── Навигация категорий: крафтовая палитра «Пятницы» ──── */
   --category-rail-bg: var(--fr-rice, #EFE6D8);
-  --category-rail-border: 1px solid rgba(58, 42, 28, 0.28);
-  --category-rail-shadow: none;
-  --category-rail-radius: 16px;
-  --category-tab-bg: transparent;
+  --category-rail-border-color: rgba(58, 42, 28, 0.3);
   --category-tab-color: var(--fr-choc, #3A2A1C);
-  --category-tab-border: 1px solid transparent;
-  --category-tab-radius: 12px;
-  --category-tab-shadow: none;
   --category-tab-active-bg: var(--fr-paper, #F6EEE1);
   --category-tab-active-color: var(--fr-choc, #3A2A1C);
-  --category-tab-active-border: 1px solid rgba(58, 42, 28, 0.28);
-  --category-tab-active-shadow: 0 2px 6px rgba(58, 42, 28, 0.1);
-  --category-tab-active-transform: none;
+  --category-tab-active-border-color: rgba(58, 42, 28, 0.36);
+  --category-tab-hover-bg: #F9F2E8;
+  --category-tab-hover-border-color: rgba(58, 42, 28, 0.2);
   --category-icon-bg: #E8D9C6;
   --category-icon-border: 1px solid rgba(58, 42, 28, 0.2);
   --category-icon-color: var(--fr-choc, #3A2A1C);
