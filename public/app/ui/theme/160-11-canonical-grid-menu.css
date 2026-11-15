@@ -379,6 +379,13 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     color: var(--category-icon-active-color, currentColor);
   }
 
+  /* Beat the legacy active-tab typography in 160-01 without !important. */
+  html body div.wrap > #rail button.on[aria-pressed="true"],
+  html body div.wrap > #deliveryRail button.on[aria-pressed="true"] {
+    font-size: var(--category-label-size, 10px);
+    font-family: var(--category-label-font, "Golos Text", system-ui, sans-serif);
+  }
+
   html body div.wrap > #rail button.on::after,
   html body div.wrap > #deliveryRail button.on::after {
     content: "";
