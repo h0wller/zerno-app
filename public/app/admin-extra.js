@@ -141,9 +141,45 @@
 
   var tickerResizeObserver = null;
   var tickerResizeBound = false;
+  var tickerInteractionBound = false;
+  var tickerPaused = false;
   var tickerReducedMotion = window.matchMedia
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : null;
+
+  function updateTickerPauseState(box, viewport) {
+    if (!box || !viewport) return;
+    box.classList.toggle('is-paused', tickerPaused);
+    box.classList.toggle(
+      'is-user-playing',
+      !!(tickerReducedMotion && tickerReducedMotion.matches && !tickerPaused)
+    );
+    viewport.setAttribute('aria-pressed', tickerPaused ? 'true' : 'false');
+    viewport.setAttribute(
+      'aria-label',
+      tickerPaused ? 'Возобновить движение объявлений' : 'Приостановить движение объявлений'
+    );
+  }
+
+  function bindTickerInteraction(box, viewport) {
+    if (!box || !viewport || viewport.dataset.tickerInteractionBound === 'true') return;
+    viewport.dataset.tickerInteractionBound = 'true';
+    viewport.setAttribute('role', 'button');
+    viewport.setAttribute('tabindex', '0');
+    viewport.setAttribute('aria-pressed', 'false');
+    updateTickerPauseState(box, viewport);
+
+    function toggleTicker() {
+      tickerPaused = !tickerPaused;
+      updateTickerPauseState(box, viewport);
+    }
+    viewport.addEventListener('click', toggleTicker);
+    viewport.addEventListener('keydown', function (event) {
+      if (event.key !== ' ' && event.key !== 'Enter') return;
+      event.preventDefault();
+      if (event.key === 'Enter' || !event.repeat) toggleTicker();
+    });
+  }
 
   function syncTickerMotion(track) {
     var box = track && track.closest('.ticker');
@@ -151,20 +187,26 @@
     var group = track && track.querySelector('.tickerGroup:not([aria-hidden="true"])');
     if (!box || !viewport || !group) return;
 
-    var reduced = tickerReducedMotion && tickerReducedMotion.matches;
-    // A seamless loop requires one complete announcement group to exceed the viewport.
-    var overflowing = !reduced && group.scrollWidth > viewport.clientWidth + 1;
-    var clone = track.querySelector('.tickerGroup[aria-hidden="true"]');
+    var groupWidth = group.getBoundingClientRect().width;
+    var viewportWidth = viewport.clientWidth;
+    if (!groupWidth || !viewportWidth) return;
 
-    if (overflowing && !clone) {
-      clone = group.cloneNode(true);
+    // Build two identical cycles. Each cycle is wider than the viewport,
+    // even when the announcement text itself is very short.
+    track.querySelectorAll('.tickerGroup[aria-hidden="true"]').forEach(function (clone) {
+      clone.remove();
+    });
+    var copiesPerCycle = Math.max(1, Math.ceil(viewportWidth / groupWidth) + 1);
+    for (var i = 1; i < copiesPerCycle * 2; i += 1) {
+      var clone = group.cloneNode(true);
       clone.setAttribute('aria-hidden', 'true');
       track.appendChild(clone);
-    } else if (!overflowing && clone) {
-      clone.remove();
     }
 
-    box.classList.toggle('is-overflowing', overflowing);
+    box.style.setProperty('--ticker-duration', (30 * copiesPerCycle) + 's');
+    box.classList.add('is-overflowing');
+    bindTickerInteraction(box, viewport);
+    updateTickerPauseState(box, viewport);
   }
 
   function bindTickerMotion(track) {
@@ -189,7 +231,10 @@
       if (tickerReducedMotion) {
         tickerReducedMotion.addEventListener('change', function () {
           var current = document.getElementById('tickerTrack');
-          if (current) syncTickerMotion(current);
+          if (current) {
+            tickerPaused = tickerReducedMotion.matches;
+            syncTickerMotion(current);
+          }
         });
       }
       tickerResizeBound = true;
