@@ -19,39 +19,8 @@ $('#rail').innerHTML = CATS.map(
   c => `<button type="button" data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`
 ).join('');
 
-var coffeeRailCueResizeObserver = null;
-
-function syncCoffeeRailCue() {
-  var rail = document.getElementById('rail');
-  if (!rail) return;
-
-  rail.setAttribute('role', 'group');
-  rail.setAttribute('aria-label', 'Категории меню');
-  rail.setAttribute('tabindex', '0');
-  var hasOverflow = rail.scrollWidth > rail.clientWidth + 1;
-  var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
-  var atEnd = hasOverflow && rail.scrollLeft >= maxScroll - 2;
-
-  rail.classList.toggle('has-overflow', hasOverflow);
-  rail.classList.toggle('has-start-overflow', hasOverflow && rail.scrollLeft > 2);
-  rail.classList.toggle('at-end', atEnd);
-}
-
-(function bindCoffeeRailCue() {
-  var rail = document.getElementById('rail');
-  if (!rail || rail.dataset.scrollCueBound === '1') return;
-
-  rail.dataset.scrollCueBound = '1';
-  rail.addEventListener('scroll', syncCoffeeRailCue, { passive: true });
-  window.addEventListener('resize', syncCoffeeRailCue, { passive: true });
-
-  if (typeof ResizeObserver === 'function' && !coffeeRailCueResizeObserver) {
-    coffeeRailCueResizeObserver = new ResizeObserver(syncCoffeeRailCue);
-    coffeeRailCueResizeObserver.observe(rail);
-  }
-
-  syncCoffeeRailCue();
-})();
+$('#rail').setAttribute('role', 'group');
+$('#rail').setAttribute('aria-label', 'Категории меню');
 
 function renderRail() {
   document.querySelectorAll('#rail button').forEach(b => {
@@ -61,27 +30,11 @@ function renderRail() {
   });
 }
 
-function revealCoffeeRailSelection(button) {
-  const rail = document.getElementById('rail');
-  if (!rail || !button) return;
-  const railRect = rail.getBoundingClientRect();
-  const buttonRect = button.getBoundingClientRect();
-  const inset = 12;
-  let delta = 0;
-  if (buttonRect.left < railRect.left + inset) delta = buttonRect.left - railRect.left - inset;
-  else if (buttonRect.right > railRect.right - inset) delta = buttonRect.right - railRect.right + inset;
-  if (delta) rail.scrollBy({
-    left: delta,
-    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
-  });
-}
-
 $('#rail').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]');
   if (!b) return;
   cat = b.dataset.cat;
   window.renderRail();
-  revealCoffeeRailSelection(b);
   window.renderMenu();
 });
 
