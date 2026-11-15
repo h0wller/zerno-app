@@ -31,7 +31,7 @@ This is an audit queue, not a declaration that each item is defective.
 ### B. Header, ticker, search and rail
 - [ ] Header width/height and compactness.
 - [ ] Guest brand switches + logo + profile aligned in a single centered row.
-- [ ] Ticker below header, no extra gap/shadow; confirm intended movement on reduced-motion clients.
+- [ ] Ticker below header, no extra gap/shadow; verify continuous movement, invisible click/keyboard pause-play and reduced-motion behavior.
 - [ ] Search and category rail alignment; rail below header/search.
 - [ ] Swipe-dismiss from profile/modal does not cause header/page jump.
 
