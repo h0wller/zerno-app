@@ -5,7 +5,6 @@ var observedRailHead = null;
 var observedRailTopbar = null;
 
 var railStickyLayout = null;
-var railDesktopAnchor = null;
 
 function usesHorizontalCategoryRailViewport() {
   if (window.matchMedia) {
@@ -76,53 +75,33 @@ function alignRailWithCard() {
   var head = document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head');
 
   if (!rail) return;
-  var mobileViewport = usesHorizontalCategoryRailViewport();
+  railStickyLayout = null;
+  rail.style.position = 'relative';
+  rail.style.top = 'auto';
+  rail.style.maxHeight = 'none';
+  rail.style.overflowY = '';
+  rail.style.alignSelf = 'start';
   var wrap = rail.parentElement;
   if (!wrap) return;
 
-  // Horizontal rails follow the menu header in normal flow. Desktop sidebars
-  // start at the first catalog row, but keep that document-space anchor while
-  // optional delivery filters expand/collapse during category switches.
-  if (mobileViewport) {
-    railDesktopAnchor = null;
-    rail.style.removeProperty('margin-top');
-    rail.style.removeProperty('height');
-  } else {
-    var grid = document.querySelector(isDelivery ? '#deliveryGrid' : '#grid');
-    var viewportKey = window.innerWidth + 'x' + window.innerHeight;
-    var anchorChanged = !railDesktopAnchor ||
-      railDesktopAnchor.rail !== rail ||
-      railDesktopAnchor.wrap !== wrap ||
-      railDesktopAnchor.brand !== (isDelivery ? 'delivery' : 'coffee') ||
-      railDesktopAnchor.viewportKey !== viewportKey;
-
-    if (anchorChanged && grid) {
-      var gridRect = grid.getBoundingClientRect();
-      railDesktopAnchor = {
-        rail: rail,
-        wrap: wrap,
-        brand: isDelivery ? 'delivery' : 'coffee',
-        viewportKey: viewportKey,
-        documentTop: gridRect.top + (window.scrollY || document.documentElement.scrollTop || 0)
-      };
-    }
-
-    if (railDesktopAnchor && railDesktopAnchor.rail === rail) {
-      var wrapRect = wrap.getBoundingClientRect();
-      var wrapStyle = window.getComputedStyle(wrap);
-      var wrapContentTop = wrapRect.top
-        + (parseFloat(wrapStyle.paddingTop) || 0)
-        + (parseFloat(wrapStyle.borderTopWidth) || 0);
-      var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-      var marginTop = Math.max(0, railDesktopAnchor.documentTop - (wrapContentTop + scrollY)) + 'px';
-      if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
-    }
-    railStickyLayout = null;
-    rail.style.position = 'relative';
-    rail.style.top = 'auto';
-    rail.style.maxHeight = 'none';
-    rail.style.overflowY = '';
-    rail.style.alignSelf = 'stretch';
+  // Capture the catalog row only during initial layout/viewport changes.
+  // Category changes do not call this function: the sidebar remains anchored
+  // while optional filters and category content change the catalog position.
+  var headRect = head && head.getBoundingClientRect();
+  if (headRect && headRect.height) {
+    var wrapRect = wrap.getBoundingClientRect();
+    var wrapStyle = window.getComputedStyle(wrap);
+    var wrapContentTop = wrapRect.top
+      + (parseFloat(wrapStyle.paddingTop) || 0)
+      + (parseFloat(wrapStyle.borderTopWidth) || 0);
+    var catalog = document.querySelector(isDelivery ? '#deliveryView #deliveryGrid' : '#menuView #grid');
+    var catalogRect = catalog && catalog.getBoundingClientRect();
+    var desiredTop = catalogRect ? catalogRect.top : headRect.top;
+    var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
+    if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
+    if (!isDelivery && rail.style.height) rail.style.removeProperty('height');
+  } else if (rail.style.marginTop !== '0px') {
+    rail.style.marginTop = '0px';
   }
 
   updateRailStickyPosition(rail, head);
