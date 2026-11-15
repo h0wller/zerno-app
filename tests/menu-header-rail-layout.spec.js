@@ -1123,7 +1123,16 @@ test('category rail keeps tab nodes stable and uses brand-specific active icon t
 
 
 // Horizontal rail baseline diagnostics for the two-phase CI capture.
-test('horizontal rail baseline diagnostics and first-paint geometry', async ({ page }, testInfo) => {
+test('horizontal rail baseline diagnostics and first-paint geometry', async ({ browser }, testInfo) => {
+  const context = await browser.newContext({
+    baseURL: testInfo.project.use.baseURL,
+    viewport: testInfo.project.use.viewport,
+    deviceScaleFactor: testInfo.project.use.deviceScaleFactor,
+    isMobile: testInfo.project.use.isMobile,
+    hasTouch: testInfo.project.use.hasTouch,
+    serviceWorkers: 'block',
+  });
+  const page = await context.newPage();
   const viewports = [
     { width: 390, height: 844, name: '390x844' },
     { width: 820, height: 1024, name: '820x1024' },
@@ -1139,7 +1148,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ p
       let releaseStyles;
       const stylesGate = new Promise(resolve => { releaseStyles = resolve; });
       const heldRequests = [];
-      await page.route('**/*.css*', async route => {
+      await page.route('**/*', async route => {
         const url = route.request().url();
         if (url.includes('/app/ui/theme/') || url.includes('/app/ui/brand-tokens.css')) {
           heldRequests.push(url);
@@ -1223,6 +1232,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ p
         `${brand.brand} ${viewport.name}: label font size minimum`).toBeGreaterThanOrEqual(brand.brand==='coffee'?10:9.5);
     }
   }
+  await context.close();
   await testInfo.attach('horizontal-rail-baseline-diagnostics.json',{
     body:Buffer.from(JSON.stringify(reports,null,2)),contentType:'application/json',
   });
