@@ -4,12 +4,12 @@ import { db } from '../db/connection.js';
 
 export function getBearerToken(req) {
   const header = String(req.header('Authorization') || '');
-  const match = /^Bearer\\s+([^\\s]+)$/i.exec(header.trim());
+  const match = /^Bearer\s+([^\s]+)$/i.exec(header.trim());
   return match ? match[1] : '';
 }
 
 export function authUser(req) {
-  const t = (req.header('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const t = getBearerToken(req);
   if (!t || t.length > 128) return null;
   const row = db.prepare(`
     SELECT ref
