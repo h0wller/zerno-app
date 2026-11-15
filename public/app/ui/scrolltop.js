@@ -6,6 +6,7 @@ var observedRailTopbar = null;
 
 var railStickyLayout = null;
 var railDesktopAnchor = null;
+var railAnchorReady = !(document.fonts && document.fonts.ready);
 
 function usesHorizontalCategoryRailViewport() {
   if (window.matchMedia) {
@@ -108,28 +109,33 @@ function alignRailWithCard() {
     var catalog = document.querySelector(isDelivery ? '#deliveryView #deliveryGrid' : '#menuView #grid');
     var catalogRect = catalog && catalog.getBoundingClientRect();
 
-    // Capture the first visible catalog row once for this desktop placement.
-    // Re-measuring on every ResizeObserver/resize callback follows optional
-    // filters and moves the rail when a category removes its filter row.
-    var anchorMatches = railDesktopAnchor &&
-      railDesktopAnchor.rail === rail &&
-      railDesktopAnchor.wrap === wrap &&
-      railDesktopAnchor.brand === document.documentElement.dataset.brand;
-    if (!anchorMatches) railDesktopAnchor = null;
-    if (!railDesktopAnchor && catalog && catalog.getClientRects().length && catalogRect) {
-      railDesktopAnchor = {
-        rail: rail,
-        wrap: wrap,
-        brand: document.documentElement.dataset.brand,
-        offset: Math.max(0, catalogRect.top - wrapContentTop)
-      };
+    var anchorOffset;
+    if (!railAnchorReady) {
+      // Font fallback metrics can move the menu header and catalog after first paint.
+      // Keep a provisional header-relative position, but do not freeze the desktop
+      // anchor until document.fonts.ready has settled.
+      railDesktopAnchor = null;
+      anchorOffset = Math.max(0, headRect.bottom + 12 - wrapContentTop);
+    } else {
+      // Capture the first catalog row once after initial typography has settled.
+      // Category changes may move the grid; they must not move the desktop rail.
+      var anchorMatches = railDesktopAnchor &&
+        railDesktopAnchor.rail === rail &&
+        railDesktopAnchor.wrap === wrap &&
+        railDesktopAnchor.brand === document.documentElement.dataset.brand;
+      if (!anchorMatches) railDesktopAnchor = null;
+      if (!railDesktopAnchor && catalog && catalog.getClientRects().length && catalogRect) {
+        railDesktopAnchor = {
+          rail: rail,
+          wrap: wrap,
+          brand: document.documentElement.dataset.brand,
+          offset: Math.max(0, catalogRect.top - wrapContentTop)
+        };
+      }
+      anchorOffset = railDesktopAnchor
+        ? railDesktopAnchor.offset
+        : Math.max(0, headRect.bottom + 12 - wrapContentTop);
     }
-
-    // If the catalog is not laid out yet, use the stable menu header as a
-    // temporary fallback; a later layout pass captures the real catalog row.
-    var anchorOffset = railDesktopAnchor
-      ? railDesktopAnchor.offset
-      : Math.max(0, headRect.bottom + 12 - wrapContentTop);
     var marginTop = anchorOffset + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
     if (!isDelivery && rail.style.height) rail.style.removeProperty('height');
@@ -151,6 +157,18 @@ function alignRailWithCard() {
   }
 }
 window.alignRailWithCard = alignRailWithCard;
+
+if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function') {
+  document.fonts.ready.then(function () {
+    railAnchorReady = true;
+    railDesktopAnchor = null;
+    alignRailWithCard();
+  }, function () {
+    railAnchorReady = true;
+    alignRailWithCard();
+  });
+}
+
 var railScrollTick = false;
 window.addEventListener('scroll', function () {
   if (railScrollTick) return;

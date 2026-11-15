@@ -64,6 +64,7 @@ for (const brand of CASES) {
         expect(searchGap, 'coffee rail starts below search/support row').toBeGreaterThanOrEqual(10);
       } else {
         await expect(page.locator('#grid .card').first()).toBeVisible({timeout:15000});
+        await page.evaluate(() => document.fonts && document.fonts.ready);
         const delta=await page.evaluate(selector=>{
           const rail=document.querySelector(selector).getBoundingClientRect();
           const grid=document.querySelector('#grid').getBoundingClientRect();
@@ -1011,7 +1012,10 @@ test('delivery wrapper keeps full horizontal width when switching categories at 
   for (const category of ['sauces', 'drinks']) {
     await rail.locator('[data-dcat="' + category + '"]').click();
     await expect(rail.locator('[data-dcat="' + category + '"]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+    await expect.poll(async () =>
+      await grid.locator('.card:not(.skeleton-card)').count() + await grid.locator('.gempty').count(),
+      { timeout: 15000 }
+    ).toBeGreaterThan(0);
 
     const current = await measure();
     expect(Math.abs(current.left), category + ': wrapper must stay flush with the viewport').toBeLessThanOrEqual(1);
