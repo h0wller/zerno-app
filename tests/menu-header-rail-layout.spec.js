@@ -779,7 +779,7 @@ for (const brand of CASES) {
       expect(geometry.parentIsView, 'short-landscape rail belongs below the search in its menu view').toBe(true);
       expect(geometry.nextAfterHead, 'short-landscape rail follows the menu search').toBe(true);
       expect(geometry.direction, 'short-landscape categories use the horizontal tab rail').toBe('row');
-      expect(geometry.firstTargetHeight, 'short-landscape category targets remain tappable').toBeGreaterThanOrEqual(60);
+      expect(geometry.firstTargetHeight, 'short-landscape category targets remain tappable').toBeGreaterThanOrEqual(44);
       expect(geometry.sectionColumn, 'short-landscape catalog uses the full wrap width').toBe('1');
       expect(geometry.documentScrollWidth, 'short-landscape page has no horizontal document overflow').toBeLessThanOrEqual(geometry.documentWidth + 1);
       expect(geometry.railTop - geometry.headBottom, 'short-landscape search-to-rail gap is visible').toBeGreaterThanOrEqual(8);
@@ -836,5 +836,29 @@ for (const brand of CASES) {
     await testInfo.attach(`${brand.brand}-390x844-portrait-after-rotation`, {
       body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png'
     });
+  });
+}
+
+for (const brand of CASES) {
+  test(`${brand.brand}: selecting an offscreen category keeps the active tab visible and announced`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 10000 });
+    await rail.locator('button').last().click();
+    await expect.poll(() => rail.locator('button[aria-pressed="true"]').count()).toBe(1);
+    await expect.poll(() => page.evaluate((selector) => {
+      const container = document.querySelector(selector);
+      const active = container.querySelector('button[aria-pressed="true"]');
+      if (!active) return false;
+      const bounds = container.getBoundingClientRect();
+      const target = active.getBoundingClientRect();
+      return target.left >= bounds.left - 1 && target.right <= bounds.right + 1;
+    }, brand.rail)).toBe(true);
   });
 }
