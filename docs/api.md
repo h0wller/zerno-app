@@ -37,7 +37,7 @@ The endpoint is a challenge primitive only. It does not register or verify App A
 
 Assertion challenge support is fail-closed and not yet operational: it requires a `keyId` already registered to the authenticated guest and not revoked, plus a SHA-256 `requestHash`. No key can currently be registered because the server-side App Attest attestation verifier and Apple native capability/signing setup are not implemented.
 
-No App Attest key can be registered yet: the server-side attestation verifier and Apple capability/signing configuration are not implemented. Consequently, assertion challenges remain unavailable until a server-verified key has been registered for the guest.
+
 
 ## Strava (read-only)
  

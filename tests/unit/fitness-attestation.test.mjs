@@ -294,7 +294,7 @@ test('adds key and request binding columns to a legacy challenge table without d
     );
     INSERT INTO fitness_attest_challenges
       (id,cid,purpose,challenge_hash,created_at,expires_at)
-    VALUES('legacy-1','guest-1','attestation','${'a'.repeat(64)}',100,200);
+    VALUES('legacy-1','guest-1','attestation','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',100,200);
   `);
   let columns = db.prepare('PRAGMA table_info(fitness_attest_challenges)').all().map(column => column.name);
   assert.equal(columns.includes('key_id'), false);
