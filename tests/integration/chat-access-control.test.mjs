@@ -305,3 +305,125 @@ test('chat polling enforces per-thread limits and returns Retry-After', async ()
   assert.ok(limited, 'polling beyond the per-thread limit must be rate limited');
   assert.ok(Number(limited.headers['retry-after']) > 0);
 });
+
+
+test('unauthorized chat requests never create per-thread rate-limit state', async () => {
+  const owner = await register('Rate Limit Owner', 41);
+  const other = await register('Rate Limit Other', 42);
+  const ownerKey = owner.customer.id + ':c';
+  const forgedCustomerKey = other.customer.id + ':c';
+  const db = new Database(dbPath, { readonly: true });
+
+  try {
+    const threadRows = () => db.prepare(
+      "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'thread:%'"
+    ).get().count;
+
+    const missingBearer = await api('POST', '/api/chat/send', {
+      body: { key: ownerKey, text: 'No owner session', human: 0, ctx: 'coffee' }
+    });
+    assert.equal(missingBearer.status, 401);
+    assert.equal(threadRows(), 0);
+
+    const foreignOwner = await api('POST', '/api/chat/send', {
+      token: owner.token,
+      body: { key: forgedCustomerKey, text: 'Wrong owner', human: 0, ctx: 'coffee' }
+    });
+    assert.equal(foreignOwner.status, 403);
+    assert.equal(threadRows(), 0);
+
+    const unknownAnonymous = 'anon-' + randomBytes(32).toString('hex') + ':c';
+    const missingCapability = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(unknownAnonymous));
+    assert.equal(missingCapability.status, 401);
+    assert.equal(threadRows(), 0);
+
+    const claimedKey = 'anon-' + randomBytes(32).toString('hex') + ':c';
+    const claimedToken = randomBytes(32).toString('hex');
+    assert.equal((await api('POST', '/api/chat/send', {
+      chatToken: claimedToken,
+      body: { key: claimedKey, text: 'Valid anonymous claim', human: 0, ctx: 'coffee' }
+    })).status, 200);
+    const afterValidClaim = threadRows();
+    assert.equal(afterValidClaim, 1);
+
+    const wrongCapability = await api('POST', '/api/chat/botlog', {
+      chatToken: randomBytes(32).toString('hex'),
+      body: { key: claimedKey, text: 'Wrong capability' }
+    });
+    assert.equal(wrongCapability.status, 403);
+    assert.equal(threadRows(), afterValidClaim);
+  } finally {
+    db.close();
+  }
+});
+
+test('IP rate limiting remains an early barrier when clients rotate forged thread keys', async () => {
+  const db = new Database(dbPath, { readonly: true });
+  const ipRowsBefore = db.prepare(
+    "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'ip:%'"
+  ).get().count;
+  db.close();
+
+  let last;
+  for (let i = 0; i < 31; i++) {
+    const key = 'u' + randomBytes(5).toString('hex') + ':c';
+    last = await api('POST', '/api/chat/send', {
+      body: { key, text: 'Forged but syntactically valid', human: 0, ctx: 'coffee' }
+    });
+    if (i < 30) assert.equal(last.status, 401);
+  }
+  assert.equal(last.status, 429);
+  assert.ok(Number(last.headers['retry-after']) > 0);
+
+  const checkDb = new Database(dbPath, { readonly: true });
+  try {
+    assert.equal(checkDb.prepare(
+      "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'thread:%'"
+    ).get().count, 0);
+    assert.equal(checkDb.prepare(
+      "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'ip:%'"
+    ).get().count, ipRowsBefore + 1);
+  } finally {
+    checkDb.close();
+  }
+});
+
+test('chat rate-limit storage prunes expired rows and refuses new rows at its hard cap', async () => {
+  const MAX_ROWS = 20000;
+  const db = new Database(dbPath);
+  try {
+    const stale = db.prepare(
+      'INSERT INTO chat_rate_limits(key, requests, window_started_at) VALUES(?, 1, ?)'
+    );
+    stale.run('stale-rate-limit-fixture', Date.now() - 8 * 24 * 60 * 60 * 1000);
+    const owner = await register('Rate Limit Retention', 43);
+    const key = owner.customer.id + ':c';
+    const response = await api('POST', '/api/chat/send', {
+      token: owner.token,
+      body: { key, text: 'Prune stale rate limit records', human: 0, ctx: 'coffee' }
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.json));
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key=?')
+      .get('stale-rate-limit-fixture').count, 0);
+
+    db.prepare('DELETE FROM chat_rate_limits').run();
+    const fill = db.prepare(
+      'INSERT INTO chat_rate_limits(key, requests, window_started_at) VALUES(?, 1, ?)'
+    );
+    const now = Date.now();
+    const seed = db.transaction(() => {
+      for (let i = 0; i < MAX_ROWS; i++) fill.run('capacity-fixture-' + i, now);
+    });
+    seed();
+
+    const fullResponse = await api('POST', '/api/chat/send', {
+      token: owner.token,
+      body: { key, text: 'Must fail closed at capacity', human: 0, ctx: 'coffee' }
+    });
+    assert.equal(fullResponse.status, 503, JSON.stringify(fullResponse.json));
+    assert.equal(fullResponse.json.code, 'CHAT_RATE_LIMIT_STORAGE_FULL');
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits').get().count, MAX_ROWS);
+  } finally {
+    db.close();
+  }
+});
