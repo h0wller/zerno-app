@@ -395,6 +395,8 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
    Reset the outer wrapper after the generic 80px desktop sidebar grid above. */
 @media (max-width: 820px) {
   html body div.wrap {
+    width: 100%;
+    min-width: 0;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
     gap: 10px;
