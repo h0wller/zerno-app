@@ -6,6 +6,7 @@ import { Capacitor } from '@capacitor/core';
   var SECTION_ID = 'healthConnectProfileSection';
   var requestInFlight = false;
   var workoutsInFlight = false;
+  var profileIsOpen = false;
 
   function isNativeAndroid() {
     return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
@@ -162,7 +163,7 @@ import { Capacitor } from '@capacitor/core';
   }
 
   async function render() {
-    if (!isNativeAndroid()) return;
+    if (!profileIsOpen || !isNativeAndroid()) return;
     var section = getSection();
     if (!section) return;
     section.hidden = !isEligibleGuest();
@@ -200,9 +201,11 @@ import { Capacitor } from '@capacitor/core';
   if (window.ztBus && typeof window.ztBus.on === 'function') {
     window.ztBus.on('profile:rendered', function () { render(); });
     window.ztBus.on('profile:opened', function () {
+      profileIsOpen = true;
       var section = document.getElementById(SECTION_ID);
       if (section) section.dataset.checked = '';
       render();
     });
+    window.ztBus.on('profile:closed', function () { profileIsOpen = false; });
   }
 })();
