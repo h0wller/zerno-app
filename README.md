@@ -20,6 +20,8 @@ Dual-brand PWA / Telegram Mini App for «…и кофе» and «Пятница»
 14. `docs/promotions/` and `docs/reviews/` — promotion specifications and engineering review records.
 15. `docs/audits/` — UX scorecard and audit evidence.
 16. `docs/documentation-audit-2026-11-07.md` — current documentation reconciliation; the 2026-11-05 register is historical.
+- `docs/fitness-mobile-local-test.md` — local phone test for HealthKit / Health Connect.
+
 ## Project commands
 
 See root `package.json` for canonical script definitions:

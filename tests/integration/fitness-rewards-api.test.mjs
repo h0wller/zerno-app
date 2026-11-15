@@ -8,6 +8,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
+import { normalizeHealthKitWorkout } from '../../public/app/fitness-healthkit.js';
+import { normalizeHealthConnectWorkout } from '../../public/app/fitness-healthconnect.js';
 
 async function reservePort() {
   const server = net.createServer();
@@ -209,6 +211,76 @@ test('device evidence intake rejects unverified guests and malformed summaries',
   assert.equal(unverified.status, 403);
   assert.equal(malformed.status, 400);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_device_evidence').get().n, 0);
+});
+
+test('native HealthKit and Health Connect summaries reach the authenticated evidence API', async () => {
+  seedReward();
+
+  const ended = new Date(Date.now() - 5 * 60 * 1000);
+  const started = new Date(ended.getTime() - 32 * 60 * 1000);
+  const common = {
+    activityType: 'running',
+    startedAt: started.toISOString(),
+    endedAt: ended.toISOString(),
+    durationSeconds: 1920,
+    distanceMeters: 5200,
+    sourceName: 'Phone health provider',
+    deviceName: 'Test watch',
+    deviceModel: 'Test model',
+    sourceProductType: 'watch',
+  };
+  const activities = [
+    normalizeHealthKitWorkout({
+      ...common,
+      id: 'healthkit-phone-record-1',
+      sourceBundleIdentifier: 'com.apple.health',
+    }),
+    normalizeHealthConnectWorkout({
+      ...common,
+      id: 'health-connect-phone-record-1',
+      sourcePackageName: 'com.google.android.apps.fitness',
+      recordingMethod: 'actively_recorded',
+    }),
+  ];
+
+  assert.equal(activities.every(Boolean), true, 'both native adapters must produce valid summaries');
+  for (const activity of activities) {
+    const response = await request('/api/fitness/evidence', {
+      method: 'POST',
+      token: customerToken,
+      body: { activity },
+    });
+    assert.equal(response.status, 202, JSON.stringify(response.json));
+    assert.equal(response.json.evidenceState, 'device_reported');
+    assert.equal(response.json.verificationState, 'unverified');
+    assert.equal(response.json.reward, null);
+
+    const retry = await request('/api/fitness/evidence', {
+      method: 'POST',
+      token: customerToken,
+      body: { activity },
+    });
+    assert.equal(retry.status, 200);
+    assert.equal(retry.json.duplicate, true);
+    assert.equal(retry.json.id, response.json.id);
+  }
+
+  const stored = db.prepare(
+    'SELECT source_platform, source_package_name, verification_state FROM fitness_device_evidence ORDER BY source_platform'
+  ).all();
+  assert.deepEqual(stored, [
+    {
+      source_platform: 'android_health_connect',
+      source_package_name: 'com.google.android.apps.fitness',
+      verification_state: 'unverified',
+    },
+    {
+      source_platform: 'apple_healthkit',
+      source_package_name: 'com.apple.health',
+      verification_state: 'unverified',
+    },
+  ]);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_rewards').get().n, 1);
 });
 
 test('staff redemption rejects anonymous and guest sessions', async () => {
