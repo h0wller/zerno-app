@@ -29,7 +29,7 @@
 
 ### Текущие исключения для category rail
 
-- DOM-позиционирование `#rail` / `#deliveryRail` остаётся у `core/views.js` (Слой 2b), но визуальная геометрия самих rail и desktop compact sidebar принадлежит `160-11-canonical-grid-menu.css` (Слой 1). Не возвращать эту геометрию в динамический CSS `views.js`.
+- DOM-позиционирование `#rail` / `#deliveryRail` остаётся у `core/views.js` (Слой 2b), визуальная геометрия самих rail и desktop compact sidebar принадлежит `160-11-canonical-grid-menu.css` (Слой 1), а вертикальный document-space anchor desktop rail принадлежит `ui/scrolltop.js`. Anchor фиксируется по первой строке каталога и не пересчитывается при переключении категории/появлении сабфильтра; изменение высоты каталога не должно перемещать sidebar. Не возвращать геометрию в динамический CSS `views.js`.
 - Critical `index.html` и fallback `160-04-wrap-cls-sheets.css` резервируют одинаковую мобильную ширину `.wrap` (`width:100%; min-width:0`) до и после загрузки темы. Это резервирование first paint, а не второй владелец компонента.
 
 ## 3. Критерии добавления и удаления CSS
