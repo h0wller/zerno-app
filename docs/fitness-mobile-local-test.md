@@ -14,6 +14,13 @@ This guide runs the current branch against a phone on the same Wi-Fi network. It
 
 From the repository root, use a local development database rather than a production database.
 
+Before starting the server, install dependencies and rebuild the tracked client bundle (the native app loads this bundle):
+
+```powershell
+npm ci
+npm run build:client
+```
+
 PowerShell:
 
 ```powershell
