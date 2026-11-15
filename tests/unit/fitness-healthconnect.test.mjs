@@ -63,6 +63,11 @@ test('normalizes unknown recording methods to a bounded unknown value', () => {
   assert.equal(result.evidenceState, 'device_reported');
 });
 
+test('normalizes blank source names to the source identifier', () => {
+  const result = normalizeHealthConnectWorkout({ ...validWorkout, sourceName: '  ' });
+  assert.equal(result.sourceName, 'com.google.android.apps.fitness');
+});
+
 test('rejects missing or oversized record and source identifiers', () => {
   assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, id: ' ' }), null);
   assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, id: 'x'.repeat(256) }), null);

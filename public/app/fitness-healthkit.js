@@ -26,7 +26,7 @@ export function normalizeHealthKitWorkout(workout) {
     durationSeconds: Math.round(durationSeconds),
     distanceMeters: Math.round(distanceMeters),
     sourcePlatform: 'apple_healthkit',
-    sourceName: String(workout.sourceName || sourcePackageName).slice(0, 120),
+    sourceName: (String(workout.sourceName || '').trim() || sourcePackageName).slice(0, 120),
     sourcePackageName,
     deviceName: String(workout.deviceName || '').slice(0, 120),
     deviceModel: String(workout.deviceModel || '').slice(0, 120),

@@ -30,7 +30,7 @@ export function normalizeHealthConnectWorkout(workout) {
     durationSeconds: Math.round(durationSeconds),
     distanceMeters: Math.round(distanceMeters),
     sourcePlatform: 'android_health_connect',
-    sourceName: String(workout.sourceName || sourcePackageName).slice(0, 120),
+    sourceName: (String(workout.sourceName || '').trim() || sourcePackageName).slice(0, 120),
     sourcePackageName,
     deviceName: String(workout.deviceName || '').slice(0, 120),
     deviceModel: String(workout.deviceModel || '').slice(0, 120),
