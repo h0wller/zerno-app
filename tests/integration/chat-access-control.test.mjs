@@ -305,34 +305,42 @@ test('chat polling enforces per-thread limits and returns Retry-After', async ()
   assert.ok(limited, 'polling beyond the per-thread limit must be rate limited');
   assert.ok(Number(limited.headers['retry-after']) > 0);
 });
-test('unauthorized chat requests create no additional thread rate-limit state after authorization failures', async () => {
+test('guest authorization must complete before per-thread rate-limit state is created', async () => {
   const owner = await register('Rate Limit Owner', 41);
   const other = await register('Rate Limit Other', 42);
   const ownerKey = owner.customer.id + ':c';
   const foreignKey = other.customer.id + ':c';
-  const db = new Database(dbPath, { readonly: true });
+  const db = new Database(dbPath);
 
   try {
-    const count = () => db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits').get().count;
-    const initial = count();
+    db.prepare('DELETE FROM chat_rate_limits').run();
+    const threadRows = () => db.prepare(
+      "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'thread:%'"
+    ).get().count;
+    const ipRows = () => db.prepare(
+      "SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'ip:%'"
+    ).get().count;
 
-    const unauthorized = await api('POST', '/api/chat/send', {
+    const missingBearer = await api('POST', '/api/chat/send', {
       body: { key: ownerKey, text: 'No owner session', human: 0, ctx: 'coffee' }
     });
-    assert.equal(unauthorized.status, 401);
-    const afterUnauthorized = count();
+    assert.equal(missingBearer.status, 401);
+    assert.equal(threadRows(), 0);
+    assert.equal(ipRows(), 1, 'the IP guard remains active before authorization');
 
-    const foreign = await api('POST', '/api/chat/send', {
+    const foreignOwner = await api('POST', '/api/chat/send', {
       token: owner.token,
       body: { key: foreignKey, text: 'Foreign owner', human: 0, ctx: 'coffee' }
     });
-    assert.equal(foreign.status, 403);
-    assert.equal(count(), afterUnauthorized, 'foreign owner key must not allocate another rate-limit record');
+    assert.equal(foreignOwner.status, 403);
+    assert.equal(threadRows(), 0);
 
-    const anonymousKey = 'anon-' + randomBytes(32).toString('hex') + ':c';
-    const missingCapability = await api('GET', '/api/chat/thread?key=' + encodeURIComponent(anonymousKey));
+    const unknownAnonymous = 'anon-' + randomBytes(32).toString('hex') + ':c';
+    const missingCapability = await api('POST', '/api/chat/send', {
+      body: { key: unknownAnonymous, text: 'Missing capability', human: 0, ctx: 'coffee' }
+    });
     assert.equal(missingCapability.status, 401);
-    assert.equal(count(), afterUnauthorized, 'missing anonymous capability must not allocate a thread record');
+    assert.equal(threadRows(), 0);
 
     const validKey = 'anon-' + randomBytes(32).toString('hex') + ':c';
     const validToken = randomBytes(32).toString('hex');
@@ -341,16 +349,14 @@ test('unauthorized chat requests create no additional thread rate-limit state af
       body: { key: validKey, text: 'Valid anonymous claim', human: 0, ctx: 'coffee' }
     });
     assert.equal(valid.status, 200);
-    const afterValid = count();
-    assert.ok(afterValid > afterUnauthorized, 'authorized thread must receive its per-thread rate-limit record');
+    assert.equal(threadRows(), 1, 'authorized anonymous claim receives its own thread counter');
 
-    const wrongCapability = await api('POST', '/api/chat/botlog', {
+    const wrongCapability = await api('POST', '/api/chat/send', {
       chatToken: randomBytes(32).toString('hex'),
-      body: { key: validKey, text: 'Wrong capability' }
+      body: { key: validKey, text: 'Wrong capability', human: 0, ctx: 'coffee' }
     });
     assert.equal(wrongCapability.status, 403);
-    assert.equal(count(), afterValid, 'wrong capability must not allocate a thread record');
-    assert.ok(afterUnauthorized >= initial, 'the early IP limiter may retain its own bounded record');
+    assert.equal(threadRows(), 1, 'rejected capability cannot allocate another thread counter');
   } finally {
     db.close();
   }
@@ -370,7 +376,8 @@ test('IP rate limiting remains an early barrier while forged thread keys are rot
     }
     assert.equal(response.status, 429);
     assert.ok(Number(response.headers['retry-after']) > 0);
-    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM chat_rate_limits').get().count, 31);
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'ip:%'").get().count, 1);
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM chat_rate_limits WHERE key LIKE 'thread:%'").get().count, 0);
   } finally {
     db.close();
   }
