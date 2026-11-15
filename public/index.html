@@ -723,29 +723,16 @@ body > div.wrap,
   contain-intrinsic-block-size: 502px;
 }
 :root { --menu-rail-width: 80px; --menu-rail-gap: 10px; }
-/* First-paint mirror of 160-11-canonical-grid-menu.css: reserve final rail button geometry
-   before deferred theme stylesheets become active, preventing a mobile CLS jump. */
+/* Layer 4: reserve desktop sidebar hit-target geometry; visual treatment stays in 160-11. */
 html body div.wrap > .rail button,
 html body div.wrap > #rail button,
 html body div.wrap > #deliveryRail button {
   width: 100%;
-  min-height: 56px;
-  padding: 6px 2px;
-  font-size: 9.5px;
-  line-height: 1.15;
-  white-space: normal;
-  word-break: normal;
+  min-height: 64px;
+  padding: 6px 2px 8px;
+  border: 0;
 }
-html body div.wrap > .rail button.on,
-html body div.wrap > #rail button.on,
-html body div.wrap > #deliveryRail button.on {
-  font-size:9.5px;
-  line-height:1.15;
-}
-.menu-head {
-  margin-left: 0;
-  width: 100%;
-}
+
 /* Keep only the update timestamp compact; the brand context stays visible from first paint. */
 @media (max-width:820px) {
   #menuView .menu-head .upd,
@@ -2403,7 +2390,7 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
   white-space: nowrap;
 }
 
-/* Mirror the final single-column mobile/compact-landscape catalog grid before deferred theme CSS. */
+/* Layer 4: reserve only horizontal rail geometry before deferred theme CSS. */
 @media (max-width: 820px), (min-width:821px) and (orientation:landscape) and (max-height:480px) {
   html body div.wrap {
     width: 100%;
@@ -2423,54 +2410,32 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    height: 64px;
-    min-height: 64px;
-    max-height: 64px;
+    --rail-h: 64px;
+    height: var(--rail-h);
+    min-height: var(--rail-h);
+    max-height: var(--rail-h);
     margin: 10px 0 12px;
     padding: 0;
     border: 0;
-    border-radius: var(--category-rail-radius, 16px);
-    background: var(--category-rail-bg, var(--panel, transparent));
-    box-shadow: none;
     overflow: hidden;
-    touch-action: pan-y;
   }
   html body #menuView #rail button,
   html body #deliveryView #deliveryRail button {
-    appearance: none;
     box-sizing: border-box;
     display: flex;
     flex: 1 1 0;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
+    justify-content: flex-start;
+    gap: 3px;
     width: 0;
     min-width: 0;
-    max-width: none;
-    height: 64px;
-    min-height: 64px;
-    max-height: 64px;
+    height: var(--rail-h);
+    min-height: 44px;
+    max-height: var(--rail-h);
     margin: 0;
-    padding: 6px 2px 8px;
+    padding: 7px 2px 5px;
     border: 0;
-    border-bottom: 3px solid transparent;
-    border-radius: var(--category-tab-radius, 12px);
-    background: var(--category-tab-bg, transparent);
-    box-shadow: var(--category-tab-shadow, none);
-    color: var(--category-tab-color, var(--ink, #101418));
-    font-family: var(--category-label-font, "Golos Text", system-ui, sans-serif);
-    font-size: clamp(8.5px, 2.4vw, 10.5px);
-    font-weight: var(--category-label-weight, 700);
-    line-height: 1.15;
-    text-align: center;
-    white-space: normal;
-    word-break: normal;
-    overflow-wrap: normal;
-    overflow: visible;
-    text-overflow: clip;
-    transform: none;
-    transition: none;
   }
   html body #menuView #rail .re,
   html body #deliveryView #deliveryRail .re {
@@ -2481,38 +2446,16 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
     min-width: 24px;
     height: 24px;
     margin: 0;
-    border: var(--category-icon-border, 0);
-    border-radius: var(--category-icon-radius, 50%);
-    background: var(--category-icon-bg, transparent);
-    color: var(--category-icon-color, currentColor);
-    font-size: 21px;
-    line-height: 1;
-  }
-  html body #menuView #rail button.on,
-  html body #deliveryView #deliveryRail button.on {
-    border: 0;
-    border-bottom: 3px solid var(--flame, currentColor);
-    border-radius: var(--category-tab-radius, 12px);
-    background: var(--category-tab-active-bg, transparent);
-    box-shadow: none;
-    color: var(--category-tab-active-color, var(--category-tab-color, currentColor));
-    font-weight: 800;
-    transform: none;
-  }
-  html body #menuView #rail button:focus-visible,
-  html body #deliveryView #deliveryRail button:focus-visible {
-    outline: 2px solid var(--focus, #1A6DDF);
-    outline-offset: -2px;
-    z-index: 2;
-  }
-  html body #menuView #rail::before,
-  html body #menuView #rail::after,
-  html body #deliveryView #deliveryRail::before,
-  html body #deliveryView #deliveryRail::after {
-    content: none;
-    display: none;
   }
 }
+@media (max-width: 820px) and (max-height: 480px),
+       (min-width:821px) and (orientation:landscape) and (max-height:480px) {
+  html body #menuView #rail,
+  html body #deliveryView #deliveryRail {
+    --rail-h: 48px;
+  }
+}
+
 html[data-brand="delivery"] .wrap > section,
 html[data-brand="delivery"] #deliveryView,
 html[data-brand="delivery"] #deliveryView .mh-top,
