@@ -57,13 +57,25 @@ async function waitForServer() {
   throw new Error('Timed out waiting for test server:\n' + serverOutput);
 }
 
+async function seedOtp(key, code = '2468') {
+  const response = await fetch(base + '/__test/otp', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ key, code, expiresInMs: 300000 }),
+  });
+  let json = {};
+  try { json = await response.json(); } catch {}
+  assert.equal(response.status, 200, JSON.stringify(json));
+}
+
 async function register(name, phone) {
+  await seedOtp('reg:' + phone);
   const result = await request('/auth/register', {
     method: 'POST',
-    body: { name, phone, pin: '1234', consent: 1 },
+    body: { name, phone, pin: '1234', code: '2468', consent: 1 },
   });
   assert.equal(result.status, 200, JSON.stringify(result.json));
-  assert.ok(result.json.token);
+  assert.equal(result.json.customer?.verified, 1);
   return { token: result.json.token, customerId: result.json.customer.id };
 }
 
@@ -91,6 +103,7 @@ before(async () => {
       ADMIN_CODE: 'ci-admin-role-code-2026',
       CASHIER_CODE: 'ci-cashier-role-code-2026',
       DISPATCH_CODE: 'ci-dispatch-role-code-2026',
+      SMS_AUTH_ENABLED: 'true',
       TELEGRAM_BOT_TOKEN: '',
       TG_WEBHOOK_SECRET: '',
     },
