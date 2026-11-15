@@ -84,11 +84,15 @@ function alignRailWithCard() {
   var wrap = rail.parentElement;
   if (!wrap) return;
 
-  // Capture the catalog row only during initial layout/viewport changes.
-  // Category changes do not call this function: the sidebar remains anchored
-  // while optional filters and category content change the catalog position.
+  var horizontalViewport = usesHorizontalCategoryRailViewport();
   var headRect = head && head.getBoundingClientRect();
-  if (headRect && headRect.height) {
+  if (horizontalViewport) {
+    // In horizontal mode the rail is a normal-flow sibling immediately after
+    // the menu header. Desktop catalog offsets would push it below the filters.
+    rail.style.removeProperty('margin-top');
+  } else if (headRect && headRect.height) {
+    // Desktop rail aligns once to the first catalog row. Category changes do
+    // not re-run alignment, so optional filters cannot drag the sidebar.
     var wrapRect = wrap.getBoundingClientRect();
     var wrapStyle = window.getComputedStyle(wrap);
     var wrapContentTop = wrapRect.top
