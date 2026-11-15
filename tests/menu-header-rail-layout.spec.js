@@ -500,8 +500,16 @@ test('desktop category navigation remains a compact vertical sidebar while the c
         const rect = rail.getBoundingClientRect();
         const style = getComputedStyle(rail);
         const gridStyle = getComputedStyle(document.querySelector(gridSelector));
+        const activeButton = rail.querySelector('button.on');
+        const colorProbe = document.createElement('span');
+        colorProbe.style.color = 'var(--category-tab-active-color, var(--ink, #20252b))';
+        document.body.appendChild(colorProbe);
+        const expectedActiveColor = getComputedStyle(colorProbe).color;
+        colorProbe.remove();
         return {
           parentIsWrap: rail.parentElement === document.querySelector('.wrap'),
+          activeColor: activeButton ? getComputedStyle(activeButton).color : null,
+          expectedActiveColor,
           direction: style.flexDirection,
           position: style.position,
           width: rect.width,
@@ -517,6 +525,7 @@ test('desktop category navigation remains a compact vertical sidebar while the c
       expect(layout.direction, brand.brand + ' desktop categories remain vertical').toBe('column');
       expect(layout.position).toBe('relative');
       expect(layout.height, brand.brand + ' sidebar is sized to its own categories').toBeLessThan(480);
+      expect(layout.activeColor, brand.brand + ' selected desktop category remains legible on its active surface').toBe(layout.expectedActiveColor);
       expect(layout.gridColumns).toBe(viewport.columns);
 
       await testInfo.attach(brand.brand + '-desktop-' + viewport.width + 'x' + viewport.height + '-vertical-categories', {
