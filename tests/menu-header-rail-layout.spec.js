@@ -453,12 +453,13 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       for (const button of geometry.buttons) {
         expect(button.direction, brand.brand + ' icon sits above its category label').toBe('column');
         expect(button.height, brand.brand + ' category is a usable tap target').toBeGreaterThanOrEqual(44);
-        expect(button.radius, brand.brand + ' category is a flat tab, not a pill').toBe('0px');
-        expect(button.background, brand.brand + ' category tabs are not filled cards').toBe('rgba(0, 0, 0, 0)');
-        expect(button.borderTop, brand.brand + ' category tabs do not have an enclosing outline').toBe('0px');
-        expect(button.iconBackground, brand.brand + ' icon has no nested badge').toBe('rgba(0, 0, 0, 0)');
-        expect(button.iconBorder, brand.brand + ' icon has no nested border').toBe('0px');
-        expect(button.iconRadius, brand.brand + ' icon has no badge radius').toBe('0px');
+        expect(button.radius, brand.brand + ' category cells share the same rounded geometry').toBe('12px');
+        expect(button.background, brand.brand + ' inactive category remains visually quiet').toBe('rgba(0, 0, 0, 0)');
+        expect(button.borderTop, brand.brand + ' category has no extra top border').toBe('0px');
+        expect(button.iconBackground, brand.brand + ' icon keeps its brand surface').not.toBe('rgba(0, 0, 0, 0)');
+        expect(button.iconBorder, brand.brand + ' icon uses a restrained one-pixel border').toBe('1px');
+        expect(button.iconRadius, brand.brand + ' icon keeps its brand-specific shape')
+          .toBe(brand.brand === 'coffee' ? '50%' : '8px');
       }
 
       expect(geometry.activeBackground, brand.brand + ' active state remains unfilled').toBe('rgba(0, 0, 0, 0)');
@@ -697,7 +698,9 @@ test('switching delivery categories preserves the current rail and page position
 
   await page.evaluate(() => {
     document.documentElement.style.scrollBehavior = 'auto';
-    window.scrollTo({ top: 460, behavior: 'instant' });
+    // Keep the viewport away from the document's maximum scroll so a shorter
+    // category cannot clamp scrollY and masquerade as a rail-position regression.
+    window.scrollTo({ top: 120, behavior: 'instant' });
   });
   await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 3000 })
     .toBeGreaterThan(0);
