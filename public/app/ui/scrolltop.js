@@ -289,8 +289,8 @@ function scheduleRailPinningUpdate() {
 
 window.addEventListener('scroll', updateRailPinning, { passive: true });
 window.addEventListener('load', scheduleRailPinningUpdate, { once: true });
-window.addEventListener('pageshow', scheduleRailScrollVisibilityUpdate);
-if (document.readyState === 'complete') scheduleRailScrollVisibilityUpdate();
+window.addEventListener('pageshow', scheduleRailPinningUpdate);
+if (document.readyState === 'complete') scheduleRailPinningUpdate();
 window.addEventListener('resize', function () {
   var isDelivery = document.documentElement.dataset.brand === 'delivery';
   var rail = document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
