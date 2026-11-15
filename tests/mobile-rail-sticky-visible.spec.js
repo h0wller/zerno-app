@@ -31,8 +31,7 @@ test('mobile category rail stays visible while pinned during active scrolling fo
       state.position === 'fixed' &&
       state.visibility !== 'hidden' &&
       state.opacity > 0 &&
-      state.pinned &&
-      true
+      state.pinned
     ), brand + ' rail must remain visibly pinned during active scroll').toBe(true);
   }
 });
