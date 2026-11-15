@@ -146,6 +146,26 @@
     margin: 0;
   }
 
+  html body .wrap #menuView #rail.rail-is-pinned:not(.rail-scroll-hidden),
+  html body .wrap #deliveryView #deliveryRail.rail-is-pinned:not(.rail-scroll-hidden) {
+    background: color-mix(in srgb, var(--category-rail-bg, var(--panel, #fff)) 82%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(145%);
+    backdrop-filter: blur(14px) saturate(145%);
+    animation: rail-drop-in 280ms cubic-bezier(.2, .8, .2, 1) both;
+    transform-origin: top center;
+  }
+
+  @keyframes rail-drop-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -12px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
   html body .wrap #menuView #rail.rail-scroll-hidden,
   html body .wrap #deliveryView #deliveryRail.rail-scroll-hidden {
     opacity: 0;
@@ -181,6 +201,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html body .wrap #menuView #rail.rail-is-pinned:not(.rail-scroll-hidden),
+  html body .wrap #deliveryView #deliveryRail.rail-is-pinned:not(.rail-scroll-hidden) {
+    animation: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
   html body .wrap #menuView #rail button,
   html body .wrap #deliveryView #deliveryRail button,
   html body .wrap #menuView #rail .re,
