@@ -1555,3 +1555,52 @@ test('mobile rail restores its pinned state after a reload at a scrolled positio
     })), { timeout: 5000 }).toEqual({ fixed: true, pinned: true });
   }
 });
+
+
+test('manual category change returns the new catalog content to the top while keeping the rail pinned', async ({ page }) => {
+  for (const brand of CASES) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 10000 });
+    await page.evaluate(() => window.scrollTo(0, 700));
+    await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 })
+      .toBeGreaterThan(300);
+    await expect(rail).toHaveClass(/rail-is-pinned/);
+
+    const nextCategory = rail.locator('button:not(.on)').first();
+    await expect(nextCategory).toBeVisible();
+    await nextCategory.click();
+    await expect(nextCategory).toHaveClass(/on/);
+
+    const contentSelector = brand.brand === 'delivery'
+      ? '#deliverySubFilterViewport:not([hidden]), #deliveryGrid'
+      : '#grid';
+    await expect.poll(() => page.evaluate(({ contentSelector, railSelector }) => {
+      const railElement = document.querySelector(railSelector);
+      const content = document.querySelector(contentSelector);
+      if (!railElement || !content) return null;
+      const railRect = railElement.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      return {
+        contentTop: contentRect.top,
+        railBottom: railRect.bottom,
+        pinned: railElement.classList.contains('rail-is-pinned'),
+        scrollY: window.scrollY,
+      };
+    }, { contentSelector, railSelector: brand.rail }), { timeout: 7000 }).toMatchObject({
+      pinned: true,
+    });
+    const geometry = await page.evaluate(({ contentSelector, railSelector }) => {
+      const railRect = document.querySelector(railSelector).getBoundingClientRect();
+      const contentRect = document.querySelector(contentSelector).getBoundingClientRect();
+      return { contentTop: contentRect.top, railBottom: railRect.bottom };
+    }, { contentSelector, railSelector: brand.rail });
+    expect(geometry.contentTop, brand.brand + ' new category content should begin immediately below the pinned rail')
+      .toBeGreaterThanOrEqual(geometry.railBottom - 1);
+    expect(geometry.contentTop, brand.brand + ' new category content should be aligned near the top of the viewport')
+      .toBeLessThan(geometry.railBottom + 180);
+  }
+});
