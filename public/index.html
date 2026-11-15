@@ -658,6 +658,9 @@ body[data-brand="delivery"] .topbar .brand .mark {
   object-fit: contain;
 }
 
+/* Reserve the classic scrollbar gutter before content becomes scrollable. */
+html { scrollbar-gutter: stable; }
+
 /* ─── 5. LCP & Above-the-fold layout ─── */
 body > div.wrap,
 .wrap {
@@ -688,6 +691,9 @@ body > div.wrap,
 @media (min-width: 1181px) {
   body > div.wrap, .wrap { grid-template-columns:80px minmax(0,1fr) 350px; gap:22px; padding:22px; max-width:1480px; }
   html[data-brand="delivery"] body > div.wrap { grid-template-columns:80px minmax(0,1fr); }
+}
+@media (min-width: 1481px) {
+  body > div.wrap, .wrap { max-width:2560px; margin-inline:auto; }
 }
 @media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   html[data-brand] body > div.wrap {
