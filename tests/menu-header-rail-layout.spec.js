@@ -883,6 +883,7 @@ for (const brand of CASES) {
       firstTarget: el.querySelector('button')?.getBoundingClientRect().height || 0,
       hasOverflow: el.classList.contains('has-overflow'),
       hasStartCue: el.classList.contains('has-start-overflow'),
+      endCueContent: getComputedStyle(el, '::after').content,
     }));
     expect(initial.overflowX).toBe('auto');
     expect(initial.overflowY).toBe('hidden');
@@ -892,7 +893,9 @@ for (const brand of CASES) {
     if (initial.hasOverflow) {
       await rail.evaluate((el) => { el.scrollLeft = el.scrollWidth; });
       await expect.poll(() => rail.evaluate(el => el.classList.contains('has-start-overflow'))).toBe(true);
+      await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::before').content)).not.toBe('none');
       await expect.poll(() => rail.evaluate(el => el.classList.contains('at-end'))).toBe(true);
+      await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::after').opacity)).toBe('0');
       await rail.evaluate((el) => { el.scrollLeft = 0; });
       await expect.poll(() => rail.evaluate(el => el.classList.contains('has-start-overflow'))).toBe(false);
       await expect.poll(() => rail.evaluate(el => el.classList.contains('at-end'))).toBe(false);
