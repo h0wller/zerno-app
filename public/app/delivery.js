@@ -320,11 +320,6 @@ $('#deliveryRail').addEventListener('click', e => {
     }
     requestAnimationFrame(() => {
       window.renderDeliveryMenu();
-      // Смена категории может показать/скрыть вторичные фильтры и сдвинуть grid.
-      // На desktop sidebar должен оставаться выровнен с первой карточкой.
-      if (typeof window.alignRailWithCard === 'function') {
-        window.alignRailWithCard();
-      }
       // Категория — фильтр каталога, а не навигация по странице.
       // Не меняем scroll position: rail и поиск остаются на месте при переключении.
     });
