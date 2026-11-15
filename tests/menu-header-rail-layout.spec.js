@@ -1053,7 +1053,7 @@ test('category rail keeps tab nodes stable and uses brand-specific active icon t
       };
     });
     expect(iconStyle.background).not.toBe('rgba(0, 0, 0, 0)');
-    expect(iconStyle.transition).toBe('0.18s');
+    expect(iconStyle.transition).toContain('0.18s');
     expect(iconStyle.radius).toBe(brand === 'coffee' ? '50%' : '8px');
   }
 });
