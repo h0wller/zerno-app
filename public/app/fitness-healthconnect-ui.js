@@ -63,7 +63,7 @@ import { Capacitor } from '@capacitor/core';
     heading.appendChild(title);
     section.appendChild(heading);
     section.appendChild(node('p', 'hc-copy',
-      'Подключите Health Connect на телефоне, чтобы просмотреть недавние пробежки. Данные пока остаются на устройстве и не используются для начисления кофе.'));
+      'Подключите Health Connect и просмотрите пробежки. Передача сводок на сервер выполняется отдельно, только после вашего нажатия. До проверки источника награда не начисляется.'));
     section.appendChild(node('p', 'hc-state', 'Проверяем доступность Health Connect…'));
     section.appendChild(node('div', 'hc-actions'));
     section.appendChild(node('ul', 'hc-workouts'));
@@ -124,11 +124,17 @@ import { Capacitor } from '@capacitor/core';
       renderWorkouts(section, workouts);
       setState(section, 'Найдено тренировок: ' + workouts.length +
         '. Это данные устройства, а не серверная проверка; награды не начисляются.');
-      setActions(section, [{
-        label: 'Обновить тренировки',
-        secondary: true,
-        onClick: function () { loadWorkouts(section); }
-      }]);
+      setActions(section, [
+        {
+          label: 'Отправить сводки на проверку',
+          onClick: function () { submitWorkouts(section, workouts); }
+        },
+        {
+          label: 'Обновить тренировки',
+          secondary: true,
+          onClick: function () { loadWorkouts(section); }
+        }
+      ]);
     } catch (error) {
       setState(section, error.message || 'Не удалось прочитать тренировки.');
       setActions(section, [
@@ -138,6 +144,36 @@ import { Capacitor } from '@capacitor/core';
     } finally {
       workoutsInFlight = false;
     }
+  }
+
+  async function submitWorkouts(section, workouts) {
+    if (!Array.isArray(workouts) || !workouts.length) {
+      setState(section, 'Нет тренировок для отправки.');
+      return;
+    }
+    setActions(section, []);
+    setState(section, 'Отправляем сводки тренировок. Они сохранятся как неподтверждённые доказательства.');
+    var accepted = 0;
+    var duplicates = 0;
+    var rejected = 0;
+    for (var i = 0; i < workouts.length; i += 1) {
+      try {
+        var result = await window.api('/fitness/evidence', {
+          method: 'POST',
+          body: { activity: workouts[i] }
+        });
+        if (result.duplicate) duplicates += 1;
+        else accepted += 1;
+      } catch (error) {
+        rejected += 1;
+        if (error && error.status === 429) break;
+      }
+    }
+    setState(section, 'Отправлено: ' + accepted + ', уже было: ' + duplicates +
+      ', не принято: ' + rejected + '. Все принятые записи остаются unverified; награды не начислены.');
+    setActions(section, [
+      { label: 'Обновить тренировки', secondary: true, onClick: function () { loadWorkouts(section); } }
+    ]);
   }
 
   async function requestAccess(section) {

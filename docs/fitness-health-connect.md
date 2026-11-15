@@ -21,7 +21,7 @@ The adapter returns the same core fields as the HealthKit adapter: `id`, `activi
 
 Android additionally preserves `recordingMethod`: `actively_recorded`, `automatically_recorded`, `manual_entry`, or `unknown`. Unknown provider values are normalized to `unknown`.
 
-These values are device-reported provenance, not cryptographic proof. Third-party apps can write or import Health Connect records. Manual entries are retained as a signal, never upgraded to verified. The profile UI keeps summaries in memory; it does not send them to the server and cannot issue rewards.
+These values are device-reported provenance, not cryptographic proof. Third-party apps can write or import Health Connect records. Manual entries are retained as a signal, never upgraded to verified. The profile UI keeps summaries in memory until the user explicitly selects **Отправить сводки на проверку**. The normalized summaries are then sent to the common evidence intake and stored as unverified; the client cannot issue rewards.
 
 ## Platform and publication
 

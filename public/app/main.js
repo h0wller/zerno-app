@@ -46,6 +46,7 @@ import './fitness-strava-ui.js';
 import './fitness-healthkit.js';
 import './fitness-healthconnect.js';
 import './fitness-healthconnect-ui.js';
+import './fitness-healthkit-ui.js';
 import './cashier.js';
 import './scanner.js';
 import './delivery.js';
