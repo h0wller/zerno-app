@@ -171,8 +171,10 @@ for (const brand of CASES) {
         await expect.poll(() => page.evaluate(({ railSelector, gridSelector }) => {
           const grid = document.querySelector(gridSelector).getBoundingClientRect();
           const rail = document.querySelector(railSelector).getBoundingClientRect();
-          return Math.max(Math.abs(rail.top - grid.top), Math.abs(rail.bottom - grid.bottom));
-        }, { railSelector: brand.rail, gridSelector }), { timeout: 5000 }).toBeLessThanOrEqual(4);
+          return Math.abs(rail.top - grid.top);
+        }, { railSelector: brand.rail, gridSelector }), { timeout: 5000 }).toBeLessThanOrEqual(2);
+        await expect.poll(() => rail.evaluate(el => el.getBoundingClientRect().height))
+          .toBeLessThan(400);
       }
     });
   }
