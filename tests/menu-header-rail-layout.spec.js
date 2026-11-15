@@ -875,7 +875,7 @@ test('delivery desktop single-meta cards reserve the same composition slot when 
   expect(Math.abs(drinks.secondRowTop - sets.secondRowTop), 'the next grid row must not jump when a category has no composition chips').toBeLessThanOrEqual(1);
 });
 
-test('delivery desktop single-meta cards keep equal description and composition slots across categories', async ({ page }) => {
+test('delivery desktop single-meta cards keep equal description and composition slots across categories', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
@@ -933,7 +933,15 @@ test('delivery desktop single-meta cards keep equal description and composition 
   };
 
   const drinks = await measure('drinks');
+  await testInfo.attach('delivery-drinks-stable-card-slots', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
   const sets = await measure('sets');
+  await testInfo.attach('delivery-sets-stable-card-slots', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
 
   expect(drinks.descHeight).toBe(37);
   expect(sets.descHeight).toBe(37);
