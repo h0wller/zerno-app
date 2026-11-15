@@ -105,6 +105,28 @@ test('deduplicates provider records per customer and provider without returning 
   db.close();
 });
 
+
+test('deduplicates identical record ids separately for distinct source packages', () => {
+  const db = fixture();
+  const service = createService(db);
+  const first = service.submitDeviceEvidence({
+    customerId: 'guest-1',
+    activity: workout({ id: 'shared-record-id', sourcePackageName: 'com.vendor.one' }),
+  });
+  const differentProvider = service.submitDeviceEvidence({
+    customerId: 'guest-1',
+    activity: workout({ id: 'shared-record-id', sourcePackageName: 'com.vendor.two' }),
+  });
+
+  assert.equal(first.ok, true);
+  assert.equal(first.duplicate, false);
+  assert.equal(differentProvider.ok, true);
+  assert.equal(differentProvider.duplicate, false);
+  assert.notEqual(differentProvider.id, first.id);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fitness_device_evidence').get().n, 2);
+  db.close();
+});
+
 test('ignores client attempts to mark evidence verified or inject reward metadata', () => {
   const db = fixture();
   const service = createService(db);

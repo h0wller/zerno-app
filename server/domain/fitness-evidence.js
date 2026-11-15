@@ -78,6 +78,7 @@ export function createFitnessEvidenceService({
     const sourceRecordHash = crypto.createHash('sha256')
       .update(cid).update('\0')
       .update(normalized.sourcePlatform).update('\0')
+      .update(normalized.sourcePackageName).update('\0')
       .update(normalized.id)
       .digest('hex');
     const receivedAt = now.toISOString();
