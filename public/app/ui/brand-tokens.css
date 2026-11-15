@@ -32,8 +32,8 @@ body[data-brand="coffee"] {
 
   /* ── Навигация категорий: океаническая палитра ───────────── */
   --category-rail-bg: #EAF1F9;
-  --category-rail-border: 1px solid rgba(62, 143, 208, 0.28);
-  --category-rail-shadow: 0 4px 14px rgba(18, 58, 107, 0.06);
+  --category-rail-border: 1px solid rgba(62, 143, 208, 0.22);
+  --category-rail-shadow: none;
   --category-rail-radius: 16px;
   --category-tab-bg: transparent;
   --category-tab-color: #4E6C89;
@@ -42,11 +42,11 @@ body[data-brand="coffee"] {
   --category-tab-shadow: none;
   --category-tab-active-bg: #FFFFFF;
   --category-tab-active-color: #123A6B;
-  --category-tab-active-border: 1px solid rgba(62, 143, 208, 0.42);
-  --category-tab-active-shadow: 0 2px 8px rgba(18, 58, 107, 0.11);
+  --category-tab-active-border: 1px solid rgba(62, 143, 208, 0.38);
+  --category-tab-active-shadow: 0 2px 6px rgba(18, 58, 107, 0.09);
   --category-tab-active-transform: none;
   --category-icon-bg: #DDEBF8;
-  --category-icon-border: 1px solid rgba(62, 143, 208, 0.3);
+  --category-icon-border: 1px solid rgba(62, 143, 208, 0.24);
   --category-icon-color: #123A6B;
   --category-icon-radius: 50%;
   --category-icon-active-bg: #123A6B;
@@ -261,26 +261,26 @@ body[data-brand="delivery"] {
 
   /* ── Навигация категорий: крафтовая палитра «Пятницы» ──── */
   --category-rail-bg: var(--fr-rice, #EFE6D8);
-  --category-rail-border: 2px solid var(--fr-choc, #3A2A1C);
-  --category-rail-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
-  --category-rail-radius: 12px;
-  --category-tab-bg: var(--fr-paper, #F6EEE1);
+  --category-rail-border: 1px solid rgba(58, 42, 28, 0.28);
+  --category-rail-shadow: none;
+  --category-rail-radius: 16px;
+  --category-tab-bg: transparent;
   --category-tab-color: var(--fr-choc, #3A2A1C);
-  --category-tab-border: 1.5px solid var(--fr-tan, #C99E6E);
-  --category-tab-radius: 9px;
+  --category-tab-border: 1px solid transparent;
+  --category-tab-radius: 12px;
   --category-tab-shadow: none;
-  --category-tab-active-bg: #7A2D16;
-  --category-tab-active-color: #FFFFFF;
-  --category-tab-active-border: 2px solid var(--fr-choc, #3A2A1C);
-  --category-tab-active-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
-  --category-tab-active-transform: rotate(-0.8deg);
-  --category-icon-bg: var(--fr-rice, #EFE6D8);
-  --category-icon-border: 1.5px solid var(--fr-tan, #C99E6E);
+  --category-tab-active-bg: var(--fr-paper, #F6EEE1);
+  --category-tab-active-color: var(--fr-choc, #3A2A1C);
+  --category-tab-active-border: 1px solid rgba(58, 42, 28, 0.28);
+  --category-tab-active-shadow: 0 2px 6px rgba(58, 42, 28, 0.1);
+  --category-tab-active-transform: none;
+  --category-icon-bg: #E8D9C6;
+  --category-icon-border: 1px solid rgba(58, 42, 28, 0.2);
   --category-icon-color: var(--fr-choc, #3A2A1C);
   --category-icon-radius: 8px;
-  --category-icon-active-bg: var(--fr-paper, #F6EEE1);
-  --category-icon-active-border: 1.5px solid var(--fr-choc, #3A2A1C);
-  --category-icon-active-color: var(--fr-choc, #3A2A1C);
+  --category-icon-active-bg: #8B2B20;
+  --category-icon-active-border: 1px solid #8B2B20;
+  --category-icon-active-color: #FFFFFF;
   --category-label-font: "Unbounded";
   --category-label-size: 8.5px;
   --category-label-weight: 700;
