@@ -2419,73 +2419,99 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: stretch;
+    gap: 0;
     width: 100%;
     min-width: 0;
-    height: 76px;
-    min-height: 76px;
-    max-height: 76px;
-    margin: 12px 0 16px;
-    padding: 4px 10px 6px;
-    gap: 10px;
-    border-bottom: 1px solid var(--line, #D8DFE4);
-    background: transparent;
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: var(--category-tab-active-color, #123A6B) transparent;
-    scroll-snap-type: x proximity;
-    scroll-padding-inline: 10px;
-  }
-  html body #deliveryView #deliveryRail {
-    margin-bottom: 8px;
+    max-width: 100%;
+    height: 67px;
+    min-height: 67px;
+    max-height: 67px;
+    margin: 10px 0 12px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--category-rail-bg, var(--panel, transparent));
+    box-shadow: none;
+    overflow: visible;
+    touch-action: pan-y;
   }
   html body #menuView #rail button,
   html body #deliveryView #deliveryRail button {
+    appearance: none;
     box-sizing: border-box;
     display: flex;
-    flex: 0 0 76px;
+    flex: 1 1 0;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    width: 76px;
-    min-width: 76px;
-    max-width: 76px;
-    height: 62px;
-    min-height: 62px;
-    max-height: 62px;
-    padding: 5px 4px;
+    width: 0;
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    min-height: 64px;
+    max-height: none;
+    margin: 0;
+    padding: 6px 2px 8px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--category-tab-color, var(--ink, #101418));
+    font-family: var(--category-label-font, "Golos Text", system-ui, sans-serif);
+    font-size: clamp(8.5px, 2.4vw, 10.5px);
+    font-weight: var(--category-label-weight, 700);
+    line-height: 1.15;
+    text-align: center;
     white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
     overflow: visible;
     text-overflow: clip;
-    scroll-snap-align: start;
+    transform: none;
+    transition: none;
   }
   html body #menuView #rail .re,
   html body #deliveryView #deliveryRail .re {
     display: grid;
-    flex: 0 0 30px;
+    flex: 0 0 24px;
     place-items: center;
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
     margin: 0;
-  }
-  html body #menuView #rail::-webkit-scrollbar,
-  html body #deliveryView #deliveryRail::-webkit-scrollbar {
-    display: block;
-    height: 4px;
-  }
-  html body #menuView #rail::-webkit-scrollbar-track,
-  html body #deliveryView #deliveryRail::-webkit-scrollbar-track {
+    border: 0;
+    border-radius: 0;
     background: transparent;
+    color: inherit;
+    font-size: 21px;
+    line-height: 1;
   }
-  html body #menuView #rail::-webkit-scrollbar-thumb,
-  html body #deliveryView #deliveryRail::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: var(--category-tab-active-color, #123A6B);
+  html body #menuView #rail button.on,
+  html body #deliveryView #deliveryRail button.on {
+    border: 0;
+    border-bottom: 3px solid var(--category-tab-active-color, #123A6B);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--category-tab-color, var(--ink, #101418));
+    font-weight: 800;
+    transform: none;
   }
-}
+  html body #menuView #rail button:focus-visible,
+  html body #deliveryView #deliveryRail button:focus-visible {
+    outline: 2px solid var(--focus, #1A6DDF);
+    outline-offset: -2px;
+    z-index: 2;
+  }
+  html body #menuView #rail::before,
+  html body #menuView #rail::after,
+  html body #deliveryView #deliveryRail::before,
+  html body #deliveryView #deliveryRail::after {
+    content: none;
+    display: none;
+  }
 html[data-brand="delivery"] .wrap > section,
 html[data-brand="delivery"] #deliveryView,
 html[data-brand="delivery"] #deliveryView .mh-top,
