@@ -174,21 +174,27 @@ function getRailStickyTop() {
 }
 
 function clearRailPin(rail) {
-  if (railPinState && railPinState.spacer && railPinState.spacer.parentNode) {
+  if (!railPinState) {
+    if (rail) rail.classList.remove('rail-is-pinned', 'rail-scroll-hidden');
+    return;
+  }
+
+  var pinnedRail = railPinState.rail;
+  if (railPinState.spacer && railPinState.spacer.parentNode) {
     railPinState.spacer.parentNode.removeChild(railPinState.spacer);
   }
-  var target = rail || (railPinState && railPinState.rail);
-  if (target) {
-    target.classList.remove('rail-is-pinned', 'rail-scroll-hidden');
-    target.style.removeProperty('--rail-pinned-top');
-    target.style.removeProperty('--rail-pinned-left');
-    target.style.removeProperty('--rail-pinned-width');
-    target.style.position = 'relative';
-    target.style.top = 'auto';
-    target.style.left = 'auto';
-    target.style.width = '';
-    target.style.maxWidth = '';
-    target.style.margin = '';
+  if (pinnedRail) {
+    pinnedRail.classList.remove('rail-is-pinned', 'rail-scroll-hidden');
+    pinnedRail.style.removeProperty('--rail-pinned-top');
+    pinnedRail.style.removeProperty('--rail-pinned-left');
+    pinnedRail.style.removeProperty('--rail-pinned-width');
+    var original = railPinState.inline;
+    pinnedRail.style.position = original.position;
+    pinnedRail.style.top = original.top;
+    pinnedRail.style.left = original.left;
+    pinnedRail.style.width = original.width;
+    pinnedRail.style.maxWidth = original.maxWidth;
+    pinnedRail.style.margin = original.margin;
   }
   railPinState = null;
 }
@@ -219,7 +225,15 @@ function pinRailAtViewportTop(rail, stickyTop) {
     rail: rail,
     spacer: spacer,
     documentTop: rect.top + (window.scrollY || document.documentElement.scrollTop || 0),
-    parent: rail.parentElement
+    parent: rail.parentElement,
+    inline: {
+      position: rail.style.position,
+      top: rail.style.top,
+      left: rail.style.left,
+      width: rail.style.width,
+      maxWidth: rail.style.maxWidth,
+      margin: rail.style.margin
+    }
   };
   rail.style.setProperty('--rail-pinned-top', stickyTop + 'px');
   rail.style.setProperty('--rail-pinned-left', rect.left + 'px');
