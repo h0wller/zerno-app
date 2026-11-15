@@ -152,14 +152,11 @@ for (const brand of CASES) {
         }, brand.rail), { timeout: 5000 }).toMatchObject({
           position: 'fixed',
         });
-        await expect.poll(() => rail.evaluate(el => el.classList.contains('rail-scroll-hidden')))
-          .toBe(true);
-        await expect(rail).toBeHidden();
+        await expect(rail).toBeVisible();
         await expect(rail).toHaveClass(/rail-is-pinned/);
         await expect(rail).toHaveCSS('position', 'fixed');
 
-        // The pinned rail must remain at the same viewport coordinate over
-        // further scroll movement, then become visible there after scroll idle.
+        // The pinned rail remains visible at one viewport coordinate throughout scrolling.
         const pinnedTopAt500 = await rail.evaluate(el => el.getBoundingClientRect().top);
         await page.evaluate(() => window.scrollTo(0, 700));
         await expect.poll(() => rail.evaluate(el => Math.abs(el.getBoundingClientRect().top - 12)),
@@ -168,31 +165,15 @@ for (const brand of CASES) {
         expect(Math.abs(pinnedTopAt700 - pinnedTopAt500),
           'rail must stay pinned at one viewport coordinate while the page continues scrolling')
           .toBeLessThanOrEqual(2);
-
-        await expect.poll(() => page.evaluate(selector => {
-          const element = document.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          const topbar = document.querySelector('header.topbar');
-          const style = topbar && getComputedStyle(topbar);
-          const topbarSticky = !!(style && (style.position === 'sticky' || style.position === 'fixed'));
-          return Math.abs(rect.top - (topbarSticky ? topbar.getBoundingClientRect().height : 12));
-        }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
-        await expect.poll(() => rail.evaluate(el => el.classList.contains('rail-scroll-hidden')), { timeout: 5000 })
-          .toBe(false);
         await expect(rail).toBeVisible();
         await expect(rail).toHaveCSS('position', 'fixed');
         await expect(rail).toHaveClass(/rail-is-pinned/);
-        await expect.poll(() => rail.evaluate(el => getComputedStyle(el).animationName))
-          .toBe('rail-drop-in');
-        const pinnedSurface = await rail.evaluate(el => {
+        await expect(rail).toHaveCSS('opacity', '1');
+        await expect.poll(() => rail.evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+        await expect.poll(() => rail.evaluate(el => {
           const style = getComputedStyle(el);
-          return {
-            backdropFilter: style.backdropFilter || style.webkitBackdropFilter,
-            backgroundColor: style.backgroundColor,
-          };
-        });
-        expect(pinnedSurface.backdropFilter).toContain('blur');
-        expect(pinnedSurface.backgroundColor).toMatch(/rgba\(|\/\s*0?\.\d+/);
+          return style.backdropFilter || style.webkitBackdropFilter || 'none';
+        })).toBe('none');
         await expect(rail).toHaveCSS('transform', 'none');
         await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
@@ -1571,7 +1552,6 @@ test('mobile rail restores its pinned state after a reload at a scrolled positio
     await expect.poll(() => rail.evaluate(el => ({
       fixed: getComputedStyle(el).position === 'fixed',
       pinned: el.classList.contains('rail-is-pinned'),
-      hidden: el.classList.contains('rail-scroll-hidden'),
-    })), { timeout: 5000 }).toEqual({ fixed: true, pinned: true, hidden: false });
+    })), { timeout: 5000 }).toEqual({ fixed: true, pinned: true });
   }
 });
