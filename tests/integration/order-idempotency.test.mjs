@@ -344,14 +344,22 @@ test('malformed client_order_id is rejected before any order side effect', async
 
 
 test('pending guest cannot create an order before phone verification or staff activation', async () => {
-  const token = await registerPending('Pending Order Guest', '+7 900 200-01-01');
-  const customerId = customerIdForToken(token);
+  const phone = '+7 900 200-01-01';
+  const registrationToken = await registerPending('Pending Order Guest', phone);
+  const customerId = customerIdForToken(registrationToken);
   assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(customerId).verified, 0);
+
+  const pinLogin = await request('/auth/login', {
+    method: 'POST',
+    body: { phone, pin: '1234' },
+  });
+  assert.equal(pinLogin.status, 200, JSON.stringify(pinLogin.json));
+  assert.equal(pinLogin.json.customer?.verified, 0);
 
   const orderNumberBefore = db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value;
   const result = await request('/orders', {
     method: 'POST',
-    token,
+    token: pinLogin.json.token,
     body: orderBody('ord_pending_guest_001', 1),
   });
 
