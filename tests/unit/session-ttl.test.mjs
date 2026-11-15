@@ -9,7 +9,9 @@ process.env.DB_PATH = dbPath;
 
 const { db } = await import('../../server/db/connection.js');
 const { initSchema } = await import('../../server/db/schema.js');
-const { issueToken, USER_SESSION_TTL_MS } = await import('../../server/domain/helpers.js');
+const { issueToken } = await import('../../server/domain/helpers.js');
+const { USER_SESSION_TTL_MS } = await import('../../server/utils/session-policy.js');
+const { authUser, getBearerToken } = await import('../../server/middleware/auth.js');
 
 after(() => {
   db.close();
