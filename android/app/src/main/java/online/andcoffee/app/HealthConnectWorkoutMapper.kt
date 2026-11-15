@@ -2,6 +2,7 @@ package online.andcoffee.app
 
 import java.time.Duration
 import java.time.Instant
+import kotlin.math.roundToInt
 
 internal data class HealthConnectWorkoutSnapshot(
     val id: String,
@@ -48,7 +49,7 @@ internal object HealthConnectWorkoutMapper {
             "startedAt" to workout.startedAt.toString(),
             "endedAt" to workout.endedAt.toString(),
             "durationSeconds" to durationSeconds.toInt(),
-            "distanceMeters" to distance.toInt(),
+            "distanceMeters" to distance.roundToInt(),
             "sourcePlatform" to "android_health_connect",
             "sourceName" to workout.sourcePackageName.take(120),
             "sourcePackageName" to workout.sourcePackageName,

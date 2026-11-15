@@ -64,7 +64,7 @@ The Telegram bot is the user-facing entry point, not the device-data reader. Use
 - A native Capacitor Android adapter now requests only read permissions for exercise sessions and distance, and reads recent running / treadmill sessions on explicit foreground calls.
 - The query window is capped at 30 days, distance aggregation is filtered to the session's own data origin, and GPS routes, coordinates, background reads and write permissions are not requested.
 - The adapter preserves source package, device and recording-method metadata. Manual entries remain `device_reported`, as do all other Health Connect records; this is not server-verified evidence and cannot issue rewards.
-- Health Connect SDK support begins at Android API 26; the provider app is available on Android 9 / API 28 and later. Devices without an available provider return an unavailable state.
+- Health Connect SDK support begins at Android API 26; the provider app is available on Android 9 / API 28 and later. Zerno keeps its Android API 24 minimum: the native plugin is registered only on API 26+, while older versions report `android_version_unsupported` without loading the Health Connect SDK.
 - Keep the user journey phone-first; no direct watch-to-Telegram connection is required. Device and vendor apps may write records into Health Connect, so preserve provenance and apply source trust rules.
 
 ### Other sources and fallback

@@ -41,17 +41,37 @@ function requireNativeAndroid() {
   }
 }
 
+async function readAvailability() {
+  try {
+    return await nativeHealthConnect.isAvailable();
+  } catch (error) {
+    // The native plugin is intentionally not registered on Android API 24–25.
+    if (/not implemented|not registered/i.test(String(error && error.message || error))) {
+      return { available: false, status: 'android_version_unsupported' };
+    }
+    throw error;
+  }
+}
+
 export const ZernoHealthConnect = Object.freeze({
   async isAvailable() {
     requireNativeAndroid();
-    return nativeHealthConnect.isAvailable();
+    return readAvailability();
   },
   async requestAuthorization() {
     requireNativeAndroid();
+    const availability = await readAvailability();
+    if (!availability.available) {
+      throw new Error('Health Connect недоступен на этой версии Android или требует обновления.');
+    }
     return nativeHealthConnect.requestAuthorization();
   },
   async getRecentRunningWorkouts(options = {}) {
     requireNativeAndroid();
+    const availability = await readAvailability();
+    if (!availability.available) {
+      throw new Error('Health Connect недоступен на этой версии Android или требует обновления.');
+    }
     const result = await nativeHealthConnect.getRecentRunningWorkouts(options);
     return (Array.isArray(result.workouts) ? result.workouts : [])
       .map(normalizeHealthConnectWorkout)
