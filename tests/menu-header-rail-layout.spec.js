@@ -436,8 +436,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(Math.abs(geometry.railRight - geometry.gridRight), brand.brand + ' rail background ends at the catalog edge').toBeLessThanOrEqual(1);
       expect(Math.abs(geometry.railWidth - geometry.gridWidth), brand.brand + ' rail background matches the current card-grid width, not the viewport').toBeLessThanOrEqual(1);
       expect(geometry.railTop, brand.brand + ' categories follow the search block').toBeGreaterThan(geometry.headBottom);
-      expect(geometry.railHeight, brand.brand + ' tabs stay compact').toBeGreaterThanOrEqual(52);
-      expect(geometry.railHeight, brand.brand + ' tabs do not create an oversized panel').toBeLessThanOrEqual(92);
+      expect(geometry.railHeight, brand.brand + ' mobile rail uses the shared 64px height').toBe(64);
       expect(geometry.background, brand.brand + ' uses its own category surface').not.toBe('rgba(0, 0, 0, 0)');
       expect(geometry.border, brand.brand + ' rail has no heavy enclosing frame').toBe('0px');
       expect(geometry.shadow, brand.brand + ' rail has no decorative shadow').toBe('none');
@@ -462,7 +461,8 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
           .toBe(brand.brand === 'coffee' ? '50%' : '8px');
       }
 
-      expect(geometry.activeBackground, brand.brand + ' active state remains unfilled').toBe('rgba(0, 0, 0, 0)');
+      expect(geometry.activeBackground, brand.brand + ' active state uses its own light brand surface')
+        .toBe(brand.brand === 'coffee' ? 'rgb(255, 255, 255)' : 'rgb(246, 238, 225)');
       expect(geometry.activeBorderBottom).toBe('3px');
       expect(geometry.activeBorderBottomStyle).toBe('solid');
       expect(geometry.activeBorderBottomColor).toBe(brand.brand === 'coffee' ? 'rgb(18, 58, 107)' : 'rgb(192, 59, 42)');
