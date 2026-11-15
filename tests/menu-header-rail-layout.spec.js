@@ -983,3 +983,43 @@ test('delivery desktop rail keeps its captured anchor when filters disappear dur
   expect(drinks.gridTop).toBeLessThan(sauces.gridTop - 40);
   expect(resized.viewportWidth).toBe(1100);
 });
+
+test('delivery wrapper keeps full horizontal width when switching categories at 1000px', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1000, height: 834 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const rail = page.locator('#deliveryRail');
+  const grid = page.locator('#deliveryGrid');
+  await expect(rail).toBeVisible({ timeout: 10000 });
+  await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+
+  const measure = () => page.evaluate(() => {
+    const wrap = document.querySelector('body > div.wrap');
+    const rect = wrap.getBoundingClientRect();
+    return {
+      left: rect.left,
+      width: rect.width,
+      clientWidth: document.documentElement.clientWidth,
+    };
+  });
+
+  const initial = await measure();
+  expect(Math.abs(initial.left)).toBeLessThanOrEqual(1);
+  expect(Math.abs(initial.width - initial.clientWidth)).toBeLessThanOrEqual(1);
+
+  for (const category of ['sauces', 'drinks']) {
+    await rail.locator('[data-dcat="' + category + '"]').click();
+    await expect(rail.locator('[data-dcat="' + category + '"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+
+    const current = await measure();
+    expect(Math.abs(current.left), category + ': wrapper must stay flush with the viewport').toBeLessThanOrEqual(1);
+    expect(Math.abs(current.width - current.clientWidth), category + ': wrapper must keep the viewport width').toBeLessThanOrEqual(1);
+    await testInfo.attach('delivery-' + category + '-wrapper-geometry-1000x834', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
+  }
+});
+
