@@ -1,4 +1,5 @@
 import { db } from './connection.js';
+import { USER_SESSION_TTL_MS } from '../utils/session-policy.js';
 
 export function ensureAuthSecuritySchema() {
   db.exec(`
@@ -76,7 +77,7 @@ CREATE TABLE IF NOT EXISTS fcm(
     for (const row of rows) {
       const issuedAt = Date.parse(row.ts);
       const expiresAt = Number.isFinite(issuedAt)
-        ? issuedAt + 30 * 24 * 60 * 60 * 1000
+        ? issuedAt + USER_SESSION_TTL_MS
         : 0;
       updateExpiry.run(expiresAt, row.token);
     }
