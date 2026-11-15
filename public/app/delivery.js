@@ -336,9 +336,24 @@ function bindDeliveryRailCue() {
 
 function renderDeliveryRail() {
   $('#deliveryRail').innerHTML = DCATS.map(c =>
-    `<button data-dcat="${c.id}" class="${c.id === dcat ? 'on' : ''}"><span class="re">${c.e}</span>${c.l}</button>`
+    `<button type="button" data-dcat="${c.id}" class="${c.id === dcat ? 'on' : ''}" aria-pressed="${c.id === dcat ? 'true' : 'false'}"><span class="re">${c.e}</span>${c.l}</button>`
   ).join('');
   bindDeliveryRailCue();
+}
+
+function revealDeliveryRailSelection(button) {
+  var rail = document.getElementById('deliveryRail');
+  if (!rail || !button) return;
+  var railRect = rail.getBoundingClientRect();
+  var buttonRect = button.getBoundingClientRect();
+  var inset = 12;
+  var delta = 0;
+  if (buttonRect.left < railRect.left + inset) delta = buttonRect.left - railRect.left - inset;
+  else if (buttonRect.right > railRect.right - inset) delta = buttonRect.right - railRect.right + inset;
+  if (delta) rail.scrollBy({
+    left: delta,
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+  });
 }
 
 $('#deliveryRail').addEventListener('click', e => {
@@ -348,6 +363,7 @@ $('#deliveryRail').addEventListener('click', e => {
     activeAddonTab = 'all';
     activeIngredient = 'all';
     renderDeliveryRail();
+    revealDeliveryRailSelection(rail.querySelector('[data-dcat="' + CSS.escape(dcat) + '"]'));
     if (typeof renderDeliverySkeleton === 'function') {
       renderDeliverySkeleton();
     }
