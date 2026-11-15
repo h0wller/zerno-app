@@ -25,14 +25,8 @@ function updateRailStickyPosition(rail, head) {
 
   var mobileViewport = usesHorizontalCategoryRailViewport();
   if (mobileViewport && window.innerWidth <= 820) {
-    var topbar = document.querySelector('header.topbar');
-    var topbarStyle = topbar ? window.getComputedStyle(topbar) : null;
-    var topbarIsSticky = !!(topbarStyle && (topbarStyle.position === 'sticky' || topbarStyle.position === 'fixed'));
-    var stickyTop = topbarIsSticky && topbar
-      ? Math.ceil(topbar.getBoundingClientRect().height)
-      : 12;
     // Keep the rail in normal flow until it reaches the pin threshold.
-    // The scroll-idle controller applies the pinned viewport geometry.
+    // The pinning controller applies the fixed viewport geometry.
     rail.style.position = 'relative';
     rail.style.top = 'auto';
     rail.style.maxHeight = 'none';
