@@ -171,6 +171,30 @@ test('cashier-created profile requires phone proof before first PIN is set', asy
   assert.ok(pinLogin.json.token);
 });
 
+test('test-mode SMS registration returns a local OTP without contacting an SMS provider', async () => {
+  const phone = '+7 900 000-01-13';
+  const requested = await api('/api/auth/request-reg-otp', {
+    name: 'Phone Test Guest',
+    phone,
+    via: 'sms',
+  });
+
+  assert.equal(requested.status, 200, JSON.stringify(requested.json));
+  assert.equal(requested.json.via, 'sms');
+  assert.equal(requested.json.testCode, '2468');
+
+  const registered = await api('/api/auth/register', {
+    name: 'Phone Test Guest',
+    phone,
+    pin: '1234',
+    code: requested.json.testCode,
+    consent: true,
+  });
+  assert.equal(registered.status, 200, JSON.stringify(registered.json));
+  assert.equal(registered.json.customer?.verified, 1);
+  assert.ok(registered.json.token);
+});
+
 test('Telegram registration polling is scoped to a random one-attempt secret, not the phone number', async () => {
   const phone = '+7 900 000-01-12';
   const requested = await api('/api/auth/request-reg-otp', {
