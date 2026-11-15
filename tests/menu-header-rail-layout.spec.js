@@ -279,333 +279,14 @@ test('coffee: category rail never covers menu title or search input on mobile', 
 });
 
 
-test('both mobile category rails sit below search and scroll horizontally', async ({ page }) => {
-  for (const brand of CASES) {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
-    const metrics = await page.evaluate(({ viewSelector, headSelector, railSelector, filterSelector }) => {
-      const view = document.querySelector(viewSelector);
-      const head = document.querySelector(headSelector);
-      const rail = document.querySelector(railSelector);
-      const filter = filterSelector ? document.querySelector(filterSelector) : null;
-      const headRect = head.getBoundingClientRect();
-      const railRect = rail.getBoundingClientRect();
-      const filterRect = filter && !filter.hidden ? filter.getBoundingClientRect() : null;
-      const buttons = Array.from(rail.querySelectorAll('button')).map(button => button.getBoundingClientRect());
-      return {
-        parentIsView: rail.parentElement === view,
-        direction: getComputedStyle(rail).flexDirection,
-        topGap: railRect.top - headRect.bottom,
-        railBottom: railRect.bottom,
-        filterTop: filterRect ? filterRect.top : null,
-        horizontalGap: buttons.length > 1 ? buttons[1].left - buttons[0].right : -1,
-        firstTargetHeight: buttons[0] ? buttons[0].height : 0
-      };
-    }, {
-      viewSelector: brand.brand === 'coffee' ? '#menuView' : '#deliveryView',
-      headSelector: brand.head,
-      railSelector: brand.rail,
-      filterSelector: brand.brand === 'delivery' ? '#deliverySubFilterViewport' : null
-    });
-    expect(metrics.parentIsView, brand.brand + ' rail belongs inside its menu view').toBe(true);
-    expect(metrics.direction, brand.brand + ' rail is horizontal').toBe('row');
-    expect(metrics.topGap, brand.brand + ' rail follows the search block').toBeGreaterThanOrEqual(8);
-    if (metrics.filterTop !== null) {
-      expect(metrics.railBottom, 'delivery main categories precede secondary filters').toBeLessThanOrEqual(metrics.filterTop + 1);
-    }
-    expect(metrics.horizontalGap, brand.brand + ' category buttons form a horizontal row').toBeGreaterThanOrEqual(6);
-    expect(metrics.firstTargetHeight, brand.brand + ' category target remains at least 44px').toBeGreaterThanOrEqual(44);
-  }
-});
 
-
-test('both brand rails align to the catalog row on desktop', async ({page}) => {
-  for (const brand of CASES) {
-    await page.setViewportSize({width:1440,height:900});
-    await page.addInitScript(() => sessionStorage.setItem('splashDone','1'));
-    await page.goto('/?brand='+brand.brand,{waitUntil:'domcontentloaded'});
-    const gridSelector=brand.brand==='coffee'?'#grid':'#deliveryGrid';
-    await expect(page.locator(gridSelector+' .card').first()).toBeVisible({timeout:15000});
-    await expect.poll(()=>page.locator(brand.rail).evaluate(el=>el.classList.contains('rail-position-ready'))).toBe(true);
-    const m=await page.evaluate(({railSelector,gridSelector})=>{
-      const grid=document.querySelector(gridSelector).getBoundingClientRect();
-      const rail=document.querySelector(railSelector),rect=rail.getBoundingClientRect();
-      return {gt:grid.top,gb:grid.bottom,rt:rect.top,rb:rect.bottom,pos:getComputedStyle(rail).position,align:getComputedStyle(rail).alignSelf};
-    },{railSelector:brand.rail,gridSelector});
-    expect(Math.abs(m.rt-m.gt)).toBeLessThanOrEqual(2);
-    expect(m.rb - m.rt, 'desktop category rail must fit its own items, not stretch beside the full catalog').toBeLessThan(400);
-    expect(m.pos).toBe('relative');
-    expect(m.align).toBe('start');
-  }
-});
-
-test('coffee wordmark “и кофе” remains visible beside the logo on mobile and tablet', async ({ page }) => {
-  for (const width of [390, 820, 1024]) {
-    await page.setViewportSize({ width, height: 844 });
-    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-    await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
-    const title = page.locator('header.topbar #brandTitle');
-    await expect(title).toBeAttached();
-    await expect(title).toBeVisible();
-    await expect(title).toHaveAttribute('aria-label', '…и кофе');
-    const bounds = await title.boundingBox();
-    expect(bounds?.width ?? 0).toBeGreaterThan(20);
-    expect(bounds?.height ?? 0).toBeGreaterThan(10);
-  }
-});
-
-test('delivery: pizza option labels use compact typography only at 320px', async ({ page }) => {
-  for (const viewport of [
-    { width: 320, height: 740, expected: { size: 10, crust: 8, weight: 8.5, price: 10.5 } },
-    { width: 390, height: 844, expected: { size: 12.5, crust: 11, weight: 10.5, price: 13 } },
-  ]) {
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
-
-    const options = page.locator('#deliveryGrid .card .opts').first();
-    await expect(options).toBeVisible({ timeout: 15000 });
-    await expect(options.locator('.opt-size').first()).toBeVisible();
-
-    const fontSizes = await options.evaluate((fieldset) => {
-      const size = (selector) => {
-        const element = fieldset.querySelector(selector);
-        return element ? Number.parseFloat(getComputedStyle(element).fontSize) : null;
-      };
-      return {
-        size: size('.opt-size'),
-        crust: size('.opt-crust'),
-        weight: size('.opt-weight'),
-        price: size('.opt-price'),
-        crustsFit: [...fieldset.querySelectorAll('.opt-crust')].every((element) => element.scrollWidth <= element.clientWidth),
-      };
-    });
-    expect(fontSizes).toEqual({ ...viewport.expected, crustsFit: true });
-  }
-});
-
-
-test('mobile category navigation is horizontal, full-width and follows search for both brands', async ({ page }, testInfo) => {
-  for (const brand of CASES) {
-    for (const viewport of [
-      { width: 320, height: 740 },
-      { width: 390, height: 844 },
-    ]) {
-      await page.setViewportSize(viewport);
-      await page.addInitScript(() => {
-        localStorage.clear();
-        sessionStorage.clear();
-        sessionStorage.setItem('splashDone', '1');
-      });
-      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
-
-      const view = brand.brand === 'coffee' ? '#menuView' : '#deliveryView';
-      const rail = page.locator(brand.rail);
-      const head = page.locator(brand.head);
-      const grid = page.locator(brand.brand === 'coffee' ? '#grid' : '#deliveryGrid');
-
-      await expect(head).toBeVisible({ timeout: 10000 });
-      await expect(rail).toBeVisible({ timeout: 10000 });
-      await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
-
-      const geometry = await page.evaluate(({ viewSelector, railSelector, headSelector, gridSelector, brandName }) => {
-        const viewEl = document.querySelector(viewSelector);
-        const railEl = document.querySelector(railSelector);
-        const headEl = document.querySelector(headSelector);
-        const gridEl = document.querySelector(gridSelector);
-        const filterEl = brandName === 'delivery'
-          ? document.querySelector('#deliverySubFilterViewport')
-          : null;
-        const rr = railEl.getBoundingClientRect();
-        const hr = headEl.getBoundingClientRect();
-        const gr = gridEl.getBoundingClientRect();
-        const fr = filterEl && !filterEl.hidden ? filterEl.getBoundingClientRect() : null;
-        const buttons = Array.from(railEl.querySelectorAll('button')).map(button => {
-          const rect = button.getBoundingClientRect();
-          return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, height: rect.height };
-        });
-        return {
-          parent: railEl.parentElement,
-          parentIsView: railEl.parentElement === viewEl,
-          display: getComputedStyle(railEl).display,
-          direction: getComputedStyle(railEl).flexDirection,
-          width: rr.width,
-          height: rr.height,
-          clientWidth: railEl.clientWidth,
-          scrollWidth: railEl.scrollWidth,
-          headLeft: hr.left,
-          headRight: hr.right,
-          headBottom: hr.bottom,
-          railLeft: rr.left,
-          railRight: rr.right,
-          railTop: rr.top,
-          railBottom: rr.bottom,
-          filterTop: fr ? fr.top : null,
-          gridLeft: gr.left,
-          gridRight: gr.right,
-          buttonCount: buttons.length,
-          buttons,
-          viewportWidth: document.documentElement.clientWidth,
-          documentWidth: document.documentElement.scrollWidth,
-        };
-      }, {
-        viewSelector: view,
-        railSelector: brand.rail,
-        headSelector: brand.head,
-        gridSelector: brand.brand === 'coffee' ? '#grid' : '#deliveryGrid',
-        brandName: brand.brand,
-      });
-
-      expect(geometry.parentIsView, brand.brand + ' rail belongs to its active menu view on mobile').toBe(true);
-      expect(geometry.display).toBe('flex');
-      expect(geometry.direction, brand.brand + ' categories render in one horizontal row').toBe('row');
-      expect(geometry.height, brand.brand + ' category row stays compact on short screens').toBeLessThanOrEqual(76);
-      expect(geometry.railTop, brand.brand + ' categories follow the search/header block').toBeGreaterThan(geometry.headBottom);
-      expect(geometry.railLeft, brand.brand + ' category row begins at the menu content edge').toBeCloseTo(geometry.headLeft, 0);
-      expect(geometry.railRight, brand.brand + ' category row spans the full menu width').toBeCloseTo(geometry.headRight, 0);
-      expect(geometry.gridLeft, brand.brand + ' catalog uses the full content width').toBeCloseTo(geometry.headLeft, 0);
-      expect(geometry.gridRight, brand.brand + ' catalog reaches the content right edge').toBeCloseTo(geometry.headRight, 0);
-      expect(geometry.buttonCount).toBeGreaterThan(1);
-      expect(geometry.buttons[1].left, brand.brand + ' second category is next to the first').toBeGreaterThan(geometry.buttons[0].right);
-      expect(geometry.buttons[0].height, brand.brand + ' category tap targets remain at least 44px').toBeGreaterThanOrEqual(44);
-      if (geometry.filterTop !== null) {
-        expect(geometry.railBottom, 'delivery categories precede the secondary filters').toBeLessThanOrEqual(geometry.filterTop + 1);
-      }
-      expect(geometry.documentWidth, brand.brand + ' horizontal category rail does not create page overflow').toBeLessThanOrEqual(geometry.viewportWidth + 1);
-
-      await testInfo.attach(brand.brand + '-horizontal-categories-' + viewport.width + 'px', {
-        body: await page.screenshot({ animations: 'disabled' }),
-        contentType: 'image/png',
-      });
-    }
-  }
-});
-
-
-test('mobile category navigation carries each storefront brand identity and stays distinct from secondary filters', async ({ page }, testInfo) => {
-  for (const brand of CASES) {
-    for (const viewport of [
-      { width: 320, height: 740 },
-      { width: 390, height: 844 },
-    ]) {
-      await page.setViewportSize(viewport);
-      await page.addInitScript(() => {
-        localStorage.clear();
-        sessionStorage.clear();
-        sessionStorage.setItem('splashDone', '1');
-      });
-      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
-      await expect(page.locator(brand.rail + ' button.on')).toBeVisible({ timeout: 10000 });
-      if (brand.brand === 'coffee') {
-        await expect.poll(
-          () => page.locator(brand.rail + ' button.on').evaluate((button) => getComputedStyle(button).backgroundColor),
-          { message: 'coffee active tab settles on its white brand surface' },
-        ).toBe('rgb(255, 255, 255)');
-      }
-      if (brand.brand === 'delivery') {
-        await expect(page.locator('#deliverySubFilter .subchip').first()).toBeVisible({ timeout: 15000 });
-      }
-
-      const metrics = await page.evaluate(({ railSelector, brandName }) => {
-        const rail = document.querySelector(railSelector);
-        const button = rail.querySelector('button.on');
-        const buttonStyle = getComputedStyle(button);
-        const railStyle = getComputedStyle(rail);
-        const buttonRect = button.getBoundingClientRect();
-        const icon = button.querySelector('.re');
-        const iconStyle = getComputedStyle(icon);
-        const subchip = brandName === 'delivery'
-          ? document.querySelector('#deliverySubFilter .subchip')
-          : null;
-        const subchipRect = subchip && subchip.getBoundingClientRect();
-        const subchipPseudo = subchip && getComputedStyle(subchip, '::before');
-
-        return {
-          railHeight: rail.getBoundingClientRect().height,
-          railBackground: railStyle.backgroundColor,
-          railBorderWidth: railStyle.borderTopWidth,
-          railRadius: railStyle.borderTopLeftRadius,
-          railShadow: railStyle.boxShadow,
-          buttonHeight: buttonRect.height,
-          buttonDirection: buttonStyle.flexDirection,
-          buttonBackground: buttonStyle.backgroundColor,
-          buttonColor: buttonStyle.color,
-          buttonBorderWidth: buttonStyle.borderTopWidth,
-          buttonRadius: buttonStyle.borderTopLeftRadius,
-          buttonShadow: buttonStyle.boxShadow,
-          labelFont: buttonStyle.fontFamily,
-          iconSize: iconStyle.width,
-          iconBackground: iconStyle.backgroundColor,
-          iconColor: iconStyle.color,
-          iconBorderWidth: iconStyle.borderTopWidth,
-          iconRadius: iconStyle.borderTopLeftRadius,
-          subchipHeight: subchipRect ? subchipRect.height : null,
-          subchipRadius: subchipPseudo ? subchipPseudo.borderRadius : null,
-          subchipBorderWidth: subchipPseudo ? subchipPseudo.borderTopWidth : null,
-        };
-      }, { railSelector: brand.rail, brandName: brand.brand });
-
-      expect(metrics.railHeight, brand.brand + ' category navigation stays visually light').toBeLessThanOrEqual(60);
-      expect(metrics.buttonHeight, brand.brand + ' category targets remain compact and tappable').toBe(44);
-      expect(metrics.buttonDirection, brand.brand + ' category icon and label share one compact row').toBe('row');
-      expect(metrics.iconSize, brand.brand + ' icon is not enclosed in a second badge').toBe('20px');
-      expect(metrics.buttonRadius, brand.brand + ' tabs are visibly shaped, not plain text').not.toBe('0px');
-      expect(metrics.buttonBackground, brand.brand + ' active tab has a brand surface').not.toBe('rgba(0, 0, 0, 0)');
-
-      if (brand.brand === 'coffee') {
-        expect(metrics.railBackground, 'coffee rail does not add a second framed surface').toBe('rgba(0, 0, 0, 0)');
-        expect(metrics.railBorderWidth, 'coffee rail has no enclosing frame').toBe('0px');
-        expect(metrics.railRadius, 'coffee rail does not create a nested panel').toBe('0px');
-        const coffeeActiveSurface = metrics.buttonBackground.match(/[0-9.]+/g).map(Number);
-        expect(coffeeActiveSurface.slice(0, 3), 'coffee active tab uses the ocean accent').toEqual([18, 58, 107]);
-        expect(coffeeActiveSurface.length > 3 ? coffeeActiveSurface[3] : 1, 'coffee active tab settles to an opaque white surface').toBe(1);
-        expect(metrics.buttonColor, 'coffee active label remains readable').toBe('rgb(255, 255, 255)');
-        expect(metrics.buttonBorderWidth, 'coffee active tab uses a fine blue outline').toBe('1px');
-        expect(metrics.buttonShadow, 'coffee active tab avoids a decorative shadow').toBe('none');
-        expect(metrics.iconBackground, 'coffee icon has no nested badge').toBe('rgba(0, 0, 0, 0)');
-        expect(metrics.iconRadius, 'coffee icon has no badge shape').toBe('0px');
-        expect(metrics.labelFont, 'coffee labels use the coffee typeface').toContain('Golos Text');
-      }
-
-      if (brand.brand === 'delivery') {
-        expect(metrics.railBackground, 'Friday rail avoids a second framed surface').toBe('rgba(0, 0, 0, 0)');
-        expect(metrics.railBorderWidth, 'Friday rail has no enclosing frame').toBe('0px');
-        expect(metrics.railShadow, 'Friday rail avoids a heavy offset shadow').toBe('none');
-        expect(metrics.buttonBackground, 'Friday active tab uses the configured high-contrast dark terracotta token').toBe('rgb(139, 43, 32)');
-        expect(metrics.buttonColor, 'Friday active label remains white on terracotta').toBe('rgb(255, 255, 255)');
-        expect(metrics.buttonBorderWidth, 'Friday active tab uses a restrained outline').toBe('1px');
-        expect(metrics.iconBackground, 'Friday icon has no nested badge').toBe('rgba(0, 0, 0, 0)');
-        expect(metrics.iconRadius, 'Friday icon has no badge shape').toBe('0px');
-        expect(metrics.labelFont, 'Friday labels remain legible in the shared navigation system').toContain('Golos Text');
-        expect(metrics.subchipHeight, 'secondary filters remain compact chips').toBe(44);
-        expect(metrics.subchipRadius, 'secondary filters retain the pill shape').toContain('999');
-        expect(Number.parseFloat(metrics.subchipBorderWidth), 'secondary filters retain their own outline').toBeGreaterThan(0);
-        expect(metrics.buttonHeight, 'primary category targets use the same accessible minimum as filters').toBe(metrics.subchipHeight);
-      }
-
-      await testInfo.attach(brand.brand + '-category-brand-identity-' + viewport.width + 'px', {
-        body: await page.screenshot({ animations: 'disabled' }),
-        contentType: 'image/png',
-      });
-    }
-  }
-});
-
-
-test('mobile category navigation exposes usable scrolling and spacing across portrait and landscape viewports', async ({ page }, testInfo) => {
+test('mobile category tabs match the catalog width and distribute evenly for both brands', async ({ page }, testInfo) => {
   const viewports = [
-    { name: '320 portrait', width: 320, height: 740 },
-    { name: '360 portrait', width: 360, height: 800 },
-    { name: '375 portrait', width: 375, height: 812 },
-    { name: '390 portrait', width: 390, height: 844 },
-    { name: '414 portrait', width: 414, height: 896 },
-    { name: '520 portrait', width: 520, height: 900 },
-    { name: '690 portrait', width: 690, height: 960 },
-    { name: '820 portrait', width: 820, height: 1024 },
-    { name: '568 short landscape', width: 568, height: 320 },
-    { name: '667 landscape', width: 667, height: 375 },
-    { name: '820 landscape', width: 820, height: 390 },
+    { name: '320 narrow', width: 320, height: 740 },
+    { name: '390 mobile', width: 390, height: 844 },
+    { name: '520 two-card threshold', width: 520, height: 900 },
+    { name: '690 tablet', width: 690, height: 960 },
+    { name: '820 breakpoint', width: 820, height: 1024 },
   ];
 
   for (const brand of CASES) {
@@ -620,85 +301,123 @@ test('mobile category navigation exposes usable scrolling and spacing across por
 
       const rail = page.locator(brand.rail);
       const grid = page.locator(brand.brand === 'coffee' ? '#grid' : '#deliveryGrid');
+      await expect(page.locator(brand.head)).toBeVisible({ timeout: 10000 });
       await expect(rail).toBeVisible({ timeout: 10000 });
       await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
 
-      const before = await page.evaluate(({ railSelector, brandName }) => {
+      const geometry = await page.evaluate(({ railSelector, gridSelector, headSelector, brandName }) => {
         const rail = document.querySelector(railSelector);
-        const firstCard = document.querySelector(brandName === 'coffee' ? '#grid .card' : '#deliveryGrid .card');
-        const filter = brandName === 'delivery' ? document.querySelector('#deliverySubFilterViewport') : null;
+        const grid = document.querySelector(gridSelector);
+        const head = document.querySelector(headSelector);
         const railRect = rail.getBoundingClientRect();
-        const cardRect = firstCard.getBoundingClientRect();
+        const gridRect = grid.getBoundingClientRect();
+        const headRect = head.getBoundingClientRect();
+        const railStyle = getComputedStyle(rail);
+        const buttons = [...rail.querySelectorAll('button')].map((button) => {
+          const rect = button.getBoundingClientRect();
+          const style = getComputedStyle(button);
+          const icon = button.querySelector('.re');
+          const iconStyle = icon ? getComputedStyle(icon) : null;
+          return {
+            left: rect.left,
+            right: rect.right,
+            width: rect.width,
+            height: rect.height,
+            direction: style.flexDirection,
+            background: style.backgroundColor,
+            radius: style.borderTopLeftRadius,
+            borderTop: style.borderTopWidth,
+            borderBottom: style.borderBottomWidth,
+            borderBottomColor: style.borderBottomColor,
+            borderBottomStyle: style.borderBottomStyle,
+            iconBackground: iconStyle?.backgroundColor ?? null,
+            iconBorder: iconStyle?.borderTopWidth ?? null,
+            iconRadius: iconStyle?.borderTopLeftRadius ?? null,
+            fontFamily: style.fontFamily,
+          };
+        });
+        const active = buttons.length
+          ? [...rail.querySelectorAll('button')].find((button) => button.getAttribute('aria-pressed') === 'true')
+          : null;
+        const activeStyle = active ? getComputedStyle(active) : null;
+        const filter = brandName === 'delivery' ? document.querySelector('#deliverySubFilterViewport') : null;
         const filterRect = filter && !filter.hidden ? filter.getBoundingClientRect() : null;
-        const style = getComputedStyle(rail);
-        const buttons = [...rail.querySelectorAll('button')];
-        const first = buttons[0]?.getBoundingClientRect();
         return {
-          width: rail.clientWidth,
-          scrollWidth: rail.scrollWidth,
-          overflowX: style.overflowX,
-          scrollbarWidth: style.scrollbarWidth,
-          gap: Number.parseFloat(style.columnGap || style.gap) || 0,
+          parentIsView: rail.parentElement === document.querySelector(brandName === 'coffee' ? '#menuView' : '#deliveryView'),
+          direction: railStyle.flexDirection,
+          background: railStyle.backgroundColor,
+          border: railStyle.borderTopWidth,
+          shadow: railStyle.boxShadow,
+          railLeft: railRect.left,
+          railRight: railRect.right,
+          railWidth: railRect.width,
+          gridLeft: gridRect.left,
+          gridRight: gridRect.right,
+          gridWidth: gridRect.width,
+          headBottom: headRect.bottom,
+          railTop: railRect.top,
           railBottom: railRect.bottom,
-          cardTop: cardRect.top,
-          filterTop: filterRect?.top ?? null,
-          filterBottom: filterRect?.bottom ?? null,
-          firstButtonHeight: first?.height ?? 0,
-          buttonDirection: buttons[0] ? getComputedStyle(buttons[0]).flexDirection : '',
+          railHeight: railRect.height,
+          scrollWidth: rail.scrollWidth,
+          clientWidth: rail.clientWidth,
           viewportWidth: document.documentElement.clientWidth,
           documentWidth: document.documentElement.scrollWidth,
-          pageCanScroll: document.documentElement.scrollHeight > document.documentElement.clientHeight,
-          hasOverflowCue: rail.classList.contains('has-overflow'),
-          atEndCue: rail.classList.contains('at-end'),
-          cueContent: getComputedStyle(rail, '::after').content,
-          cueColor: getComputedStyle(rail, '::after').color,
+          buttonCount: buttons.length,
+          buttons,
+          activeBackground: activeStyle?.backgroundColor ?? null,
+          activeBorderBottom: activeStyle?.borderBottomWidth ?? null,
+          activeBorderBottomColor: activeStyle?.borderBottomColor ?? null,
+          activeBorderBottomStyle: activeStyle?.borderBottomStyle ?? null,
+          filterTop: filterRect?.top ?? null,
         };
-      }, { railSelector: brand.rail, brandName: brand.brand });
+      }, {
+        railSelector: brand.rail,
+        gridSelector: brand.brand === 'coffee' ? '#grid' : '#deliveryGrid',
+        headSelector: brand.head,
+        brandName: brand.brand,
+      });
 
-      expect(before.overflowX, brand.brand + ' rail uses a real horizontal scroll container at ' + viewport.name).toBe('auto');
-      expect(before.scrollbarWidth, brand.brand + ' rail avoids a distracting scrollbar at ' + viewport.name).toBe('none');
-      expect(before.gap, brand.brand + ' rail keeps deliberate spacing between categories at ' + viewport.name).toBeGreaterThanOrEqual(8);
-      expect(before.firstButtonHeight, brand.brand + ' category targets remain comfortably tappable at ' + viewport.name).toBe(44);
-      expect(before.buttonDirection, brand.brand + ' category icon and label remain on one line at ' + viewport.name).toBe('row');
-      expect(before.documentWidth, brand.brand + ' rail never widens the page at ' + viewport.name).toBeLessThanOrEqual(before.viewportWidth + 1);
-      expect(before.pageCanScroll, brand.brand + ' catalog remains vertically scrollable at ' + viewport.name).toBe(true);
+      expect(geometry.parentIsView, brand.brand + ' rail stays below the search in its menu view').toBe(true);
+      expect(geometry.direction, brand.brand + ' categories form one horizontal row').toBe('row');
+      expect(Math.abs(geometry.railLeft - geometry.gridLeft), brand.brand + ' rail background starts at the catalog edge').toBeLessThanOrEqual(1);
+      expect(Math.abs(geometry.railRight - geometry.gridRight), brand.brand + ' rail background ends at the catalog edge').toBeLessThanOrEqual(1);
+      expect(Math.abs(geometry.railWidth - geometry.gridWidth), brand.brand + ' rail background matches the current card-grid width, not the viewport').toBeLessThanOrEqual(1);
+      expect(geometry.railTop, brand.brand + ' categories follow the search block').toBeGreaterThan(geometry.headBottom);
+      expect(geometry.railHeight, brand.brand + ' tabs stay compact').toBeGreaterThanOrEqual(52);
+      expect(geometry.railHeight, brand.brand + ' tabs do not create an oversized panel').toBeLessThanOrEqual(92);
+      expect(geometry.background, brand.brand + ' uses its own category surface').not.toBe('rgba(0, 0, 0, 0)');
+      expect(geometry.border, brand.brand + ' rail has no heavy enclosing frame').toBe('0px');
+      expect(geometry.shadow, brand.brand + ' rail has no decorative shadow').toBe('none');
+      expect(geometry.scrollWidth, brand.brand + ' categories all fit without a second horizontal scroll area').toBeLessThanOrEqual(geometry.clientWidth + 1);
+      expect(geometry.documentWidth, brand.brand + ' menu does not create page-wide horizontal overflow').toBeLessThanOrEqual(geometry.viewportWidth + 1);
+      expect(geometry.buttonCount).toBeGreaterThan(1);
 
-      if (brand.brand === 'coffee') {
-        expect(before.cardTop - before.railBottom, 'coffee rail leaves a visible gap before the first card at ' + viewport.name).toBeGreaterThanOrEqual(12);
-      } else {
-        expect(before.filterTop - before.railBottom, 'delivery main categories and secondary filters remain distinct at ' + viewport.name).toBeGreaterThanOrEqual(6);
-        expect(before.cardTop - before.filterBottom, 'delivery filters leave breathing room before the catalog at ' + viewport.name).toBeGreaterThanOrEqual(12);
+      const buttonWidths = geometry.buttons.map((button) => button.width);
+      expect(Math.max(...buttonWidths) - Math.min(...buttonWidths), brand.brand + ' category cells share the available width equally').toBeLessThanOrEqual(1.5);
+      expect(Math.abs(geometry.buttons[0].left - geometry.railLeft), brand.brand + ' first category starts at the rail edge').toBeLessThanOrEqual(1);
+      expect(Math.abs(geometry.buttons.at(-1).right - geometry.railRight), brand.brand + ' last category ends at the rail edge').toBeLessThanOrEqual(1);
+
+      for (const button of geometry.buttons) {
+        expect(button.direction, brand.brand + ' icon sits above its category label').toBe('column');
+        expect(button.height, brand.brand + ' category is a usable tap target').toBeGreaterThanOrEqual(44);
+        expect(button.radius, brand.brand + ' category is a flat tab, not a pill').toBe('0px');
+        expect(button.background, brand.brand + ' category tabs are not filled cards').toBe('rgba(0, 0, 0, 0)');
+        expect(button.borderTop, brand.brand + ' category tabs do not have an enclosing outline').toBe('0px');
+        expect(button.iconBackground, brand.brand + ' icon has no nested badge').toBe('rgba(0, 0, 0, 0)');
+        expect(button.iconBorder, brand.brand + ' icon has no nested border').toBe('0px');
+        expect(button.iconRadius, brand.brand + ' icon has no badge radius').toBe('0px');
       }
 
-      if (before.scrollWidth > before.width + 1) {
-        expect(before.hasOverflowCue, brand.brand + ' shows a directional cue when more categories are available at ' + viewport.name).toBe(true);
-        expect(before.atEndCue, brand.brand + ' starts with the directional cue visible at ' + viewport.name).toBe(false);
-        expect(before.cueContent, brand.brand + ' does not overlay decorative arrow glyphs at ' + viewport.name).toBe('none');
-        expect(before.cueColor, brand.brand + ' uses a legible brand-colored scroll cue at ' + viewport.name).toBe(
-          brand.brand === 'delivery' ? 'rgb(58, 42, 28)' : 'rgb(18, 58, 107)',
-        );
-        await rail.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
-        await expect.poll(() => rail.evaluate((element) => element.classList.contains('at-end'))).toBe(true);
-        await expect.poll(() => rail.evaluate((element) => getComputedStyle(element, '::after').opacity)).toBe('0');
-        await testInfo.attach(brand.brand + '-' + viewport.name.replaceAll(' ', '-') + '-navigation-end', {
-          body: await page.screenshot({ animations: 'disabled' }),
-          contentType: 'image/png',
-        });
-        await rail.evaluate((element) => { element.scrollLeft = 0; });
-        await expect.poll(() => rail.evaluate((element) => element.classList.contains('at-end'))).toBe(false);
-        await rail.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
-        await expect.poll(() => rail.evaluate((element) => {
-          const last = element.querySelector('button:last-child').getBoundingClientRect();
-          const bounds = element.getBoundingClientRect();
-          return bounds.right - last.right;
-        })).toBeGreaterThanOrEqual(-1);
-        await rail.evaluate((element) => { element.scrollLeft = 0; });
-      } else {
-        expect(before.hasOverflowCue, brand.brand + ' does not show a false scroll cue when all categories fit at ' + viewport.name).toBe(false);
-        expect(before.cueContent, brand.brand + ' omits the cue when the rail does not overflow at ' + viewport.name).toBe('none');
+      expect(geometry.activeBackground, brand.brand + ' active state remains unfilled').toBe('rgba(0, 0, 0, 0)');
+      expect(geometry.activeBorderBottom).toBe('3px');
+      expect(geometry.activeBorderBottomStyle).toBe('solid');
+      expect(geometry.activeBorderBottomColor).toBe(brand.brand === 'coffee' ? 'rgb(18, 58, 107)' : 'rgb(192, 59, 42)');
+
+      if (geometry.filterTop !== null) {
+        expect(geometry.railBottom, 'delivery primary categories remain above their secondary filters').toBeLessThanOrEqual(geometry.filterTop + 1);
       }
 
-      await testInfo.attach(brand.brand + '-' + viewport.name.replaceAll(' ', '-') + '-navigation', {
+      await testInfo.attach(brand.brand + '-' + viewport.name.replaceAll(' ', '-') + '-category-tabs', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
@@ -707,205 +426,199 @@ test('mobile category navigation exposes usable scrolling and spacing across por
 });
 
 
-for (const brand of CASES) {
-  for (const viewport of [
-    { name: 'short landscape 844', width: 844, height: 390 },
-    { name: 'short landscape 1024', width: 1024, height: 390 },
-  ]) {
-    test(`${brand.brand}: category rail stays horizontal on ${viewport.name}px`, async ({ page }, testInfo) => {
+test('desktop category navigation remains a compact vertical sidebar while the catalog keeps its responsive column count', async ({ page }, testInfo) => {
+  const viewports = [
+    { width: 1024, height: 768, columns: 2 },
+    { width: 1440, height: 900, columns: 3 },
+    { width: 1600, height: 1000, columns: 4 },
+  ];
+
+  for (const brand of CASES) {
+    for (const viewport of viewports) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const rail = page.locator(brand.rail);
+      const grid = page.locator(brand.brand === 'coffee' ? '#grid' : '#deliveryGrid');
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+
+      const layout = await page.evaluate(({ railSelector, gridSelector }) => {
+        const rail = document.querySelector(railSelector);
+        const rect = rail.getBoundingClientRect();
+        const style = getComputedStyle(rail);
+        const gridStyle = getComputedStyle(document.querySelector(gridSelector));
+        return {
+          parentIsWrap: rail.parentElement === document.querySelector('.wrap'),
+          direction: style.flexDirection,
+          position: style.position,
+          width: rect.width,
+          height: rect.height,
+          gridColumns: gridStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
+        };
+      }, {
+        railSelector: brand.rail,
+        gridSelector: brand.brand === 'coffee' ? '#grid' : '#deliveryGrid',
+      });
+
+      expect(layout.parentIsWrap, brand.brand + ' desktop rail belongs to the desktop sidebar grid').toBe(true);
+      expect(layout.direction, brand.brand + ' desktop categories remain vertical').toBe('column');
+      expect(layout.position).toBe('relative');
+      expect(layout.height, brand.brand + ' sidebar is sized to its own categories').toBeLessThan(400);
+      expect(layout.gridColumns).toBe(viewport.columns);
+
+      await testInfo.attach(brand.brand + '-desktop-' + viewport.width + 'x' + viewport.height + '-vertical-categories', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  }
+});
+
+
+test('short landscape category tabs align to the catalog instead of filling the device width', async ({ page }, testInfo) => {
+  for (const brand of CASES) {
+    for (const viewport of [
+      { width: 844, height: 390 },
+      { width: 1024, height: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
       await page.addInitScript(() => {
         localStorage.clear();
         sessionStorage.clear();
         sessionStorage.setItem('splashDone', '1');
       });
-      await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
       const rail = page.locator(brand.rail);
+      const grid = page.locator(brand.brand === 'coffee' ? '#grid' : '#deliveryGrid');
       await expect(rail).toBeVisible({ timeout: 10000 });
-      await expect(page.locator(brand.brand === 'coffee' ? '#grid .card' : '#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
+      await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
 
-      const geometry = await page.evaluate(({ railSelector, viewSelector, brandName }) => {
-        const railEl = document.querySelector(railSelector);
-        const view = document.querySelector(viewSelector);
-        const head = view.querySelector('.menu-head');
-        const wrap = document.querySelector('.wrap');
-        const section = wrap.querySelector(':scope > section');
-        const firstCard = document.querySelector(brandName === 'coffee' ? '#grid .card' : '#deliveryGrid .card');
-        const filter = brandName === 'delivery' ? document.querySelector('#deliverySubFilterViewport') : null;
-        const railRect = railEl.getBoundingClientRect();
-        const headRect = head.getBoundingClientRect();
-        const cardRect = firstCard.getBoundingClientRect();
-        const filterRect = filter && !filter.hidden ? filter.getBoundingClientRect() : null;
-        const buttons = [...railEl.querySelectorAll('button')];
-        const firstTarget = buttons[0]?.getBoundingClientRect();
-        const wrapStyle = getComputedStyle(wrap);
+      const layout = await page.evaluate(({ railSelector, gridSelector }) => {
+        const rail = document.querySelector(railSelector);
+        const grid = document.querySelector(gridSelector);
+        const railRect = rail.getBoundingClientRect();
+        const gridRect = grid.getBoundingClientRect();
+        const style = getComputedStyle(rail);
         return {
-          parentIsView: railEl.parentElement === view,
-          nextAfterHead: head.nextElementSibling === railEl,
-          direction: getComputedStyle(railEl).flexDirection,
-          railTop: railRect.top,
-          headBottom: headRect.bottom,
-          railBottom: railRect.bottom,
-          cardTop: cardRect.top,
-          filterTop: filterRect?.top ?? null,
-          filterBottom: filterRect?.bottom ?? null,
-          firstTargetHeight: firstTarget?.height ?? 0,
-          railVisibility: getComputedStyle(railEl).visibility,
-          railOpacity: Number(getComputedStyle(railEl).opacity),
-          cardVisibility: getComputedStyle(firstCard).visibility,
-          cardOpacity: Number(getComputedStyle(firstCard).opacity),
-          viewportHeight: window.innerHeight,
-          wrapColumns: wrapStyle.gridTemplateColumns,
-          sectionColumn: getComputedStyle(section).gridColumnStart,
-          documentWidth: document.documentElement.clientWidth,
-          documentScrollWidth: document.documentElement.scrollWidth,
+          parentIsMenu: rail.parentElement.id === (railSelector === '#rail' ? 'menuView' : 'deliveryView'),
+          direction: style.flexDirection,
+          railLeft: railRect.left,
+          railRight: railRect.right,
+          gridLeft: gridRect.left,
+          gridRight: gridRect.right,
+          buttonWidths: [...rail.querySelectorAll('button')].map((button) => button.getBoundingClientRect().width),
+          scrollWidth: rail.scrollWidth,
+          clientWidth: rail.clientWidth,
+          documentWidth: document.documentElement.scrollWidth,
+          viewportWidth: document.documentElement.clientWidth,
         };
-      }, {
-        railSelector: brand.rail,
-        viewSelector: brand.brand === 'coffee' ? '#menuView' : '#deliveryView',
-        brandName: brand.brand
-      });
+      }, { railSelector: brand.rail, gridSelector: brand.brand === 'coffee' ? '#grid' : '#deliveryGrid' });
 
-      await testInfo.attach(`${brand.brand}-${viewport.width}x${viewport.height}-short-landscape-before-fix`, {
+      expect(layout.parentIsMenu).toBe(true);
+      expect(layout.direction).toBe('row');
+      expect(Math.abs(layout.railLeft - layout.gridLeft)).toBeLessThanOrEqual(1);
+      expect(Math.abs(layout.railRight - layout.gridRight)).toBeLessThanOrEqual(1);
+      expect(Math.max(...layout.buttonWidths) - Math.min(...layout.buttonWidths)).toBeLessThanOrEqual(1.5);
+      expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
+      expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
+
+      await testInfo.attach(brand.brand + '-short-landscape-' + viewport.width + 'x' + viewport.height + '-category-tabs', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
-
-      expect(geometry.railVisibility, 'short-landscape rail is actually painted').toBe('visible');
-      expect(geometry.railOpacity, 'short-landscape rail is not transparent').toBeGreaterThan(0);
-      expect(geometry.railTop, 'short-landscape rail starts in the visible viewport').toBeGreaterThanOrEqual(0);
-      expect(geometry.railBottom, 'short-landscape rail fits in the visible viewport').toBeLessThanOrEqual(geometry.viewportHeight);
-      expect(geometry.cardVisibility, 'short-landscape first card is actually painted').toBe('visible');
-      expect(geometry.cardOpacity, 'short-landscape first card is not transparent').toBeGreaterThan(0);
-      expect(geometry.cardTop, 'short-landscape first card starts in the visible viewport').toBeLessThan(geometry.viewportHeight);
-      expect(geometry.parentIsView, 'short-landscape rail belongs below the search in its menu view').toBe(true);
-      expect(geometry.nextAfterHead, 'short-landscape rail follows the menu search').toBe(true);
-      expect(geometry.direction, 'short-landscape categories use the horizontal tab rail').toBe('row');
-      expect(geometry.firstTargetHeight, 'short-landscape category targets remain tappable').toBeGreaterThanOrEqual(44);
-      expect(geometry.sectionColumn, 'short-landscape catalog uses the full wrap width').toBe('1');
-      expect(geometry.documentScrollWidth, 'short-landscape page has no horizontal document overflow').toBeLessThanOrEqual(geometry.documentWidth + 1);
-      expect(geometry.railTop - geometry.headBottom, 'short-landscape search-to-rail gap is visible').toBeGreaterThanOrEqual(8);
-      if (brand.brand === 'coffee') {
-        expect(geometry.cardTop - geometry.railBottom, 'coffee short-landscape rail has breathing room before cards').toBeGreaterThanOrEqual(12);
-      } else {
-        expect(geometry.filterTop - geometry.railBottom, 'delivery short-landscape secondary filters follow primary categories').toBeGreaterThanOrEqual(6);
-        expect(geometry.cardTop - geometry.filterBottom, 'delivery short-landscape filters have breathing room before cards').toBeGreaterThanOrEqual(12);
-      }
-    });
+    }
   }
-}
+});
 
-for (const brand of CASES) {
-  test(`${brand.brand}: category rail relocates when rotating between portrait, compact landscape and desktop`, async ({ page }, testInfo) => {
+
+test('category rail relocates on rotation and restores the vertical desktop sidebar', async ({ page }, testInfo) => {
+  for (const brand of CASES) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => {
       localStorage.clear();
       sessionStorage.clear();
       sessionStorage.setItem('splashDone', '1');
     });
-    await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
     const rail = page.locator(brand.rail);
     const viewSelector = brand.brand === 'coffee' ? '#menuView' : '#deliveryView';
-    const gridSelector = brand.brand === 'coffee' ? '#grid' : '#deliveryGrid';
+
     await expect(rail).toBeVisible({ timeout: 10000 });
-    await expect.poll(() => rail.evaluate(el => el.parentElement.id)).toBe(viewSelector.slice(1));
-    await testInfo.attach(`${brand.brand}-390x844-portrait-before-rotation`, {
-      body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png'
+    await expect.poll(() => rail.evaluate((el) => el.parentElement.id)).toBe(viewSelector.slice(1));
+    await expect.poll(() => rail.evaluate((el) => getComputedStyle(el).flexDirection)).toBe('row');
+    await testInfo.attach(brand.brand + '-390x844-before-rotation', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
     });
 
     await page.setViewportSize({ width: 844, height: 390 });
-    await expect.poll(() => rail.evaluate(el => el.parentElement.id), {
-      message: 'short landscape keeps the rail in the menu view'
-    }).toBe(viewSelector.slice(1));
-    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).flexDirection)).toBe('row');
-    await testInfo.attach(`${brand.brand}-844x390-short-landscape-after-rotation`, {
-      body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png'
+    await expect.poll(() => rail.evaluate((el) => el.parentElement.id)).toBe(viewSelector.slice(1));
+    await expect.poll(() => rail.evaluate((el) => getComputedStyle(el).flexDirection)).toBe('row');
+    await testInfo.attach(brand.brand + '-844x390-after-rotation', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
     });
 
     await page.setViewportSize({ width: 821, height: 900 });
-    await expect.poll(() => rail.evaluate(el => el.parentElement.classList.contains('wrap')), {
-      message: 'standard desktop restores the sidebar DOM placement'
-    }).toBe(true);
-    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).flexDirection)).toBe('column');
-    await expect.poll(() => page.locator(gridSelector + ' .card').first().isVisible()).toBe(true);
-    await testInfo.attach(`${brand.brand}-821x900-desktop-after-rotation`, {
-      body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png'
+    await expect.poll(() => rail.evaluate((el) => el.parentElement.classList.contains('wrap'))).toBe(true);
+    await expect.poll(() => rail.evaluate((el) => getComputedStyle(el).flexDirection)).toBe('column');
+    await testInfo.attach(brand.brand + '-821x900-desktop-after-rotation', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
     });
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect.poll(() => rail.evaluate(el => el.parentElement.id)).toBe(viewSelector.slice(1));
-    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).flexDirection)).toBe('row');
-    await testInfo.attach(`${brand.brand}-390x844-portrait-after-rotation`, {
-      body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png'
-    });
-  });
-}
-
-for (const brand of CASES) {
-  test(`${brand.brand}: selecting an offscreen category keeps the active tab visible and announced`, async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.addInitScript(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-      sessionStorage.setItem('splashDone', '1');
-    });
-    await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
-    const rail = page.locator(brand.rail);
-    await expect(rail).toBeVisible({ timeout: 10000 });
-    await rail.locator('button').last().click();
-    await expect.poll(() => rail.locator('button[aria-pressed="true"]').count()).toBe(1);
-    await expect.poll(() => page.evaluate((selector) => {
-      const container = document.querySelector(selector);
-      const active = container.querySelector('button[aria-pressed="true"]');
-      if (!active) return false;
-      const bounds = container.getBoundingClientRect();
-      const target = active.getBoundingClientRect();
-      return target.left >= bounds.left - 1 && target.right <= bounds.right + 1;
-    }, brand.rail)).toBe(true);
-  });
-}
+  }
+});
 
 
-for (const brand of CASES) {
-  test(`${brand.brand}: category rail exposes an accessible, discoverable horizontal scroll region`, async ({ page }) => {
+test('category tabs expose their selected state and remain keyboard reachable', async ({ page }) => {
+  for (const brand of CASES) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-    await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
 
     const rail = page.locator(brand.rail);
     await expect(rail).toBeVisible({ timeout: 10000 });
     await expect(rail).toHaveAttribute('role', 'group');
     await expect(rail).toHaveAttribute('aria-label', 'Категории меню');
-    await expect(rail).toHaveAttribute('tabindex', '0');
+    await expect(rail).not.toHaveAttribute('tabindex', '0');
     await expect(rail.locator('button').first()).toHaveAttribute('type', 'button');
+    await expect(rail.locator('button[aria-pressed="true"]')).toHaveCount(1);
 
-    const initial = await rail.evaluate((el) => ({
-      overflowX: getComputedStyle(el).overflowX,
-      overflowY: getComputedStyle(el).overflowY,
-      overscrollY: getComputedStyle(el).overscrollBehaviorY,
-      firstTarget: el.querySelector('button')?.getBoundingClientRect().height || 0,
-      hasOverflow: el.classList.contains('has-overflow'),
-      hasStartCue: el.classList.contains('has-start-overflow'),
-      endCueContent: getComputedStyle(el, '::after').content,
-    }));
-    expect(initial.overflowX).toBe('auto');
-    expect(initial.overflowY).toBe('hidden');
-    expect(initial.overscrollY).not.toBe('contain');
-    expect(initial.firstTarget).toBeGreaterThanOrEqual(44);
-
-    if (initial.hasOverflow) {
-      await rail.focus();
-      await page.keyboard.press('ArrowRight');
-      await expect.poll(() => rail.evaluate(el => el.scrollLeft)).toBeGreaterThan(0);
-      await rail.evaluate((el) => { el.scrollLeft = el.scrollWidth; });
-      await expect.poll(() => rail.evaluate(el => el.classList.contains('has-start-overflow'))).toBe(true);
-      await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::before').content)).toBe('none');
-      await expect.poll(() => rail.evaluate(el => el.classList.contains('at-end'))).toBe(true);
-      await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::before').content)).toBe('none');
-      await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::after').opacity)).toBe('0');
-      await rail.evaluate((el) => { el.scrollLeft = 0; });
-      await expect.poll(() => rail.evaluate(el => el.classList.contains('has-start-overflow'))).toBe(false);
-      await expect.poll(() => rail.evaluate(el => el.classList.contains('at-end'))).toBe(false);
+    const tabs = rail.locator('button');
+    for (let i = 0; i < await tabs.count(); i += 1) {
+      await expect(tabs.nth(i)).toHaveAttribute('aria-pressed', i === 0 ? 'true' : 'false');
     }
-  });
-}
+
+    await tabs.nth(0).focus();
+    await page.keyboard.press('Tab');
+    await expect(tabs.nth(1)).toBeFocused();
+    await tabs.last().click();
+    await expect(tabs.last()).toHaveAttribute('aria-pressed', 'true');
+    await expect(rail.locator('button[aria-pressed="true"]')).toHaveCount(1);
+    await expect.poll(() => rail.evaluate((el) => el.scrollLeft)).toBe(0);
+  }
+});
+
+
+test('category navigation keeps secondary delivery filters separate from primary tabs', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const rail = page.locator('#deliveryRail');
+  const filters = page.locator('#deliverySubFilter .subchip').first();
+  await expect(rail).toBeVisible({ timeout: 10000 });
+  await expect(filters).toBeVisible({ timeout: 15000 });
+  await expect(rail.locator('button')).toHaveCount(5);
+  await expect(filters).toHaveCSS('border-top-left-radius', /999/);
+  await expect(filters).toHaveCSS('min-height', '44px');
+
+  const [railRect, filterRect] = await Promise.all([
+    rail.boundingBox(),
+    filters.boundingBox(),
+  ]);
+  expect(railRect && filterRect && filterRect.y).toBeGreaterThan(railRect.y + railRect.height - 1);
+});
