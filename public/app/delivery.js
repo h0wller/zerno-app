@@ -326,6 +326,7 @@ function renderDeliveryRail() {
 $('#deliveryRail').addEventListener('click', e => {
   const b = e.target.closest('[data-dcat]');
   if (b) {
+    var categoryChanged = dcat !== b.dataset.dcat;
     dcat = b.dataset.dcat;
     activeAddonTab = 'all';
     activeIngredient = 'all';
@@ -335,8 +336,12 @@ $('#deliveryRail').addEventListener('click', e => {
     }
     requestAnimationFrame(() => {
       window.renderDeliveryMenu();
-      // Категория — фильтр каталога, а не навигация по странице.
-      // Не меняем scroll position: rail и поиск остаются на месте при переключении.
+      if (categoryChanged && typeof window.scrollMenuContentToStart === 'function') {
+        window.scrollMenuContentToStart(
+          '#deliverySubFilterViewport:not([hidden]), #deliveryGrid',
+          '#deliveryRail'
+        );
+      }
     });
   }
 });
