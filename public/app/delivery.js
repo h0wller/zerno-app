@@ -333,10 +333,13 @@ $('#deliveryRail').addEventListener('click', e => {
 
 function renderCompositionChips(item) {
   const composition = getVisibleComposition(item);
-  // Keep a semantic composition slot on simple-meta cards too. Without it,
-  // drinks with no chips are ~100px shorter than sets/sauces and the next
-  // catalog row jumps vertically whenever the category changes.
-  if (!composition.length) return '<div class="comp" aria-hidden="true"></div>';
+  if (!composition.length) {
+    // Pizza cards already reserve their content with the full description/options slots.
+    // Simple-meta cards (drinks, sauces, sets) need an empty desktop composition slot
+    // so categories without chips don't shorten the first row and move the next one.
+    if (Array.isArray(item.opts) && item.opts.length) return '';
+    return '<div class="comp" aria-hidden="true"></div>';
+  }
   return '<div class="comp">' +
     composition.map(function (name) { return '<i>' + esc(name) + '</i>'; }).join('') +
   '</div>';
