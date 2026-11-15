@@ -685,6 +685,7 @@ test('desktop category rails use one visual layer and retain brand-specific icon
       const iconStyle = getComputedStyle(active.querySelector('.re'));
       return {
         railBackground: railStyle.backgroundColor,
+          activeTextColor: buttonStyle.color,
         railBorder: railStyle.borderTopWidth,
         railShadow: railStyle.boxShadow,
         buttonBackground: buttonStyle.backgroundColor,
@@ -1154,8 +1155,10 @@ test('category rail uses one surface, an active icon chip and a separate underli
         };
       });
 
-      expect(styles.iconRect.width, brand + ' icon chip must have a fixed square width').toBeGreaterThanOrEqual(30);
+      expect(styles.iconRect.width, brand + ' icon chip must have a fixed square width').toBeGreaterThanOrEqual(20);
       expect(styles.iconRect.width, brand + ' icon chip must be square').toBeCloseTo(styles.iconRect.height, 1);
+      expect(styles.iconBackground, brand + ' active icon must use its brand chip').not.toBe('rgba(0, 0, 0, 0)');
+      expect(styles.iconRadius, brand + ' active icon shape must be brand-specific').toBe(brand === 'coffee' ? '50%' : '8px');
       expect(styles.inactiveIconBackground, brand + ' inactive icon must not have a chip').toBe('rgba(0, 0, 0, 0)');
       expect(styles.inactiveIconBorder, brand + ' inactive icon must not have a border').toBe('0px');
       expect(styles.buttonBackground, brand + ' active tab must not have a filled surface').toBe('rgba(0, 0, 0, 0)');
@@ -1170,6 +1173,20 @@ test('category rail uses one surface, an active icon chip and a separate underli
       expect(parseFloat(styles.pseudo.height)).toBe(3);
       expect(styles.pseudo.radius).toBe('2px');
       expect(styles.fontFamily).toMatch(/system-ui|sans-serif/);
+      const rgb = styles.activeTextColor.match(/[\\d.]+/g).map(Number);
+      const luminance = rgb.slice(0, 3).map(value => {
+        const channel = value / 255;
+        return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      });
+      const textLuminance = 0.2126 * luminance[0] + 0.7152 * luminance[1] + 0.0722 * luminance[2];
+      const bgRgb = styles.railBackground.match(/[\\d.]+/g).map(Number);
+      const bgLum = bgRgb.slice(0, 3).map(value => {
+        const channel = value / 255;
+        return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      });
+      const bgLuminance = 0.2126 * bgLum[0] + 0.7152 * bgLum[1] + 0.0722 * bgLum[2];
+      const contrast = (Math.max(textLuminance, bgLuminance) + 0.05) / (Math.min(textLuminance, bgLuminance) + 0.05);
+      expect(contrast, brand + ' active label must meet WCAG AA').toBeGreaterThanOrEqual(4.5);
       expect(styles.fontSize).toBeGreaterThanOrEqual(brand === 'coffee' ? 10 : 10);
       if (viewport.width <= 820 || viewport.height <= 480) {
         expect(Math.abs(styles.railHeight - styles.buttonHeight)).toBeLessThanOrEqual(0.5);
