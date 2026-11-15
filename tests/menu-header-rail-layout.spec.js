@@ -892,10 +892,14 @@ for (const brand of CASES) {
     expect(initial.firstTarget).toBeGreaterThanOrEqual(44);
 
     if (initial.hasOverflow) {
+      await rail.focus();
+      await page.keyboard.press('ArrowRight');
+      await expect.poll(() => rail.evaluate(el => el.scrollLeft)).toBeGreaterThan(0);
       await rail.evaluate((el) => { el.scrollLeft = el.scrollWidth; });
       await expect.poll(() => rail.evaluate(el => el.classList.contains('has-start-overflow'))).toBe(true);
       await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::before').content)).not.toBe('none');
       await expect.poll(() => rail.evaluate(el => el.classList.contains('at-end'))).toBe(true);
+      await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::before').content)).not.toBe('none');
       await expect.poll(() => rail.evaluate(el => getComputedStyle(el, '::after').opacity)).toBe('0');
       await rail.evaluate((el) => { el.scrollLeft = 0; });
       await expect.poll(() => rail.evaluate(el => el.classList.contains('has-start-overflow'))).toBe(false);
