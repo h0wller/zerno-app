@@ -152,6 +152,9 @@ for (const brand of CASES) {
         }, brand.rail), { timeout: 5000 }).toMatchObject({
           position: 'sticky',
         });
+        await expect.poll(() => rail.evaluate(el => el.classList.contains('rail-scroll-hidden')))
+          .toBe(true);
+        await expect(rail).toBeHidden();
         await expect.poll(() => page.evaluate(selector => {
           const element = document.querySelector(selector);
           const rect = element.getBoundingClientRect();
@@ -160,6 +163,9 @@ for (const brand of CASES) {
           const topbarSticky = !!(style && (style.position === 'sticky' || style.position === 'fixed'));
           return Math.abs(rect.top - (topbarSticky ? topbar.getBoundingClientRect().height : 12));
         }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
+        await expect.poll(() => rail.evaluate(el => el.classList.contains('rail-scroll-hidden')), { timeout: 5000 })
+          .toBe(false);
+        await expect(rail).toBeVisible();
         await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
