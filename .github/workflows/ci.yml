@@ -31,6 +31,35 @@ jobs:
       - name: Run Contract Smoke Tests
         run: npm run smoke
 
+  ios-native:
+    name: iOS / HealthKit bridge
+    needs: quality-gates
+    runs-on: macos-26
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build client bundle
+        run: npm run build:client
+      - name: Sync Capacitor iOS project
+        run: npx cap sync ios
+      - name: Build iOS simulator target without code signing
+        run: >-
+          xcodebuild
+          -project ios/App/App.xcodeproj
+          -target App
+          -configuration Debug
+          -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO
+          build
+
   android-native:
     name: Android / Health Connect bridge
     needs: quality-gates
