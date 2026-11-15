@@ -1,4 +1,5 @@
 import { db } from './connection.js';
+import { USER_SESSION_TTL_MS } from '../utils/session-policy.js';
 
 export function ensureAuthSecuritySchema() {
   db.exec(`
@@ -60,6 +61,29 @@ CREATE INDEX IF NOT EXISTS idx_chat_rate_limits_window ON chat_rate_limits(windo
 CREATE TABLE IF NOT EXISTS fcm(
   id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, token TEXT UNIQUE, created TEXT);
   `);
+
+
+  // Session expiry is additive and idempotent. Preserve the original issuance time
+  // for legacy rows; malformed timestamps are treated as expired, never immortal.
+  const tokenCols = db.prepare('PRAGMA table_info(tokens)').all().map(c => c.name);
+  if (!tokenCols.includes('expires_at')) {
+    db.exec('ALTER TABLE tokens ADD COLUMN expires_at INTEGER');
+  }
+  const legacyTokens = db.prepare(
+    'SELECT token, ts FROM tokens WHERE expires_at IS NULL'
+  ).all();
+  const backfillSessionExpiry = db.transaction(rows => {
+    const updateExpiry = db.prepare('UPDATE tokens SET expires_at=? WHERE token=? AND expires_at IS NULL');
+    for (const row of rows) {
+      const issuedAt = Date.parse(row.ts);
+      const expiresAt = Number.isFinite(issuedAt)
+        ? issuedAt + USER_SESSION_TTL_MS
+        : 0;
+      updateExpiry.run(expiresAt, row.token);
+    }
+  });
+  if (legacyTokens.length) backfillSessionExpiry(legacyTokens);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_tokens_expires_at ON tokens(expires_at)');
 
   /* миграции */
   const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
