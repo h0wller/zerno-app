@@ -1120,3 +1120,109 @@ test('category rail keeps tab nodes stable and uses brand-specific active icon t
     expect(iconStyle.radius).toBe(brand === 'coffee' ? '50%' : '8px');
   }
 });
+
+
+// Horizontal rail baseline diagnostics for the two-phase CI capture.
+test('horizontal rail baseline diagnostics and first-paint geometry', async ({ page }, testInfo) => {
+  const viewports = [
+    { width: 390, height: 844, name: '390x844' },
+    { width: 820, height: 1024, name: '820x1024' },
+    { width: 844, height: 390, name: '844x390' },
+    { width: 1024, height: 390, name: '1024x390' },
+  ];
+  const reports = [];
+
+  for (const brand of CASES) {
+    for (const viewport of viewports) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+      let releaseStyles;
+      const stylesGate = new Promise(resolve => { releaseStyles = resolve; });
+      const heldRequests = [];
+      await page.route('**/*.css', async route => {
+        const url = route.request().url();
+        if (/\\/app\\/ui\\/theme\\/.*\\.css(?:\\?.*)?$|\\/app\\/ui\\/brand-tokens\\.css(?:\\?.*)?$/.test(url)) {
+          heldRequests.push(url);
+          await stylesGate;
+        }
+        await route.continue();
+      });
+
+      await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+      const rail = page.locator(brand.rail);
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect.poll(() => rail.locator('button').count()).toBeGreaterThan(0);
+      const selectors = {
+        rail: brand.rail,
+        button: brand.rail + ' button',
+        active: brand.rail + ' button.on',
+        icon: brand.rail + ' .re',
+        activeIcon: brand.rail + ' button.on .re',
+      };
+      const measure = () => page.evaluate(({ selectors, headSelector }) => {
+        const css = selector => {
+          const el=document.querySelector(selector);
+          if(!el) return null;
+          const s=getComputedStyle(el), r=el.getBoundingClientRect();
+          return {
+            rect:{x:r.x,y:r.y,width:r.width,height:r.height,top:r.top,bottom:r.bottom},
+            display:s.display, flexDirection:s.flexDirection, gap:s.gap,
+            borderTopWidth:s.borderTopWidth,borderRightWidth:s.borderRightWidth,
+            borderBottomWidth:s.borderBottomWidth,borderLeftWidth:s.borderLeftWidth,
+            borderTopColor:s.borderTopColor,borderBottomColor:s.borderBottomColor,
+            borderRadius:s.borderRadius,backgroundColor:s.backgroundColor,color:s.color,
+            fontFamily:s.fontFamily,fontSize:s.fontSize,lineHeight:s.lineHeight,
+            padding:s.padding,margin:s.margin,transition:s.transition,
+          };
+        };
+        const railEl=document.querySelector(selectors.rail);
+        const buttons=Array.from(railEl ? railEl.querySelectorAll('button') : []);
+        const iconTops=buttons.map(button=>button.querySelector('.re')?.getBoundingClientRect().top).filter(Number.isFinite);
+        const rect=selector=>{
+          const el=document.querySelector(selector); if(!el) return null;
+          const r=el.getBoundingClientRect(); return {top:r.top,bottom:r.bottom,height:r.height};
+        };
+        const card=document.querySelector('#menuView .card, #deliveryView .card');
+        const title=card?.querySelector('h3,.ctitle,.name,.card-title');
+        const tr=title?.getBoundingClientRect();
+        return {
+          computed:Object.fromEntries(Object.entries(selectors).map(([key,selector])=>[key,css(selector)])),
+          buttons:buttons.map(button=>{const r=button.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};}),
+          iconTops,iconTopSpread:iconTops.length?Math.max(...iconTops)-Math.min(...iconTops):null,
+          regions:{
+            topbar:rect('header.topbar'),ticker:rect('.ticker'),
+            menuHead:rect(headSelector),rail:rect(selectors.rail),
+            subfilter:rect('#deliverySubFilterViewport, #subFilterViewport, .subfilter-viewport'),
+            firstCardTitle:tr?{top:tr.top,bottom:tr.bottom,height:tr.height}:null,
+          },
+          viewport:{width:innerWidth,height:innerHeight,scrollY},
+        };
+      }, { selectors, headSelector:brand.head });
+
+      const firstFrame=await measure();
+      releaseStyles();
+      await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link =>
+        /\\/app\\/ui\\/theme\\/150-rail\\.css/.test(link.href) && link.media==='all'
+      )), { timeout:15000 }).toBe(true);
+      await page.evaluate(() => document.fonts && document.fonts.ready);
+      await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      const hydrated=await measure();
+      await testInfo.attach(`${brand.brand}-horizontal-rail-${viewport.name}-before`, {
+        body:await page.screenshot({animations:'disabled'}),contentType:'image/png',
+      });
+      reports.push({brand:brand.brand,viewport,heldStylesheetRequests:heldRequests,firstFrame,hydrated});
+
+      expect.soft(Math.abs(hydrated.computed.rail.rect.height-hydrated.computed.button.rect.height),
+        `${brand.brand} ${viewport.name}: rail and button heights must match`).toBeLessThanOrEqual(0.5);
+      expect.soft(hydrated.computed.active.borderBottomWidth,
+        `${brand.brand} ${viewport.name}: active tab must not use bottom border`).toBe('0px');
+      expect.soft(hydrated.iconTopSpread,
+        `${brand.brand} ${viewport.name}: all icon tops must align`).toBeLessThanOrEqual(1);
+      expect.soft(parseFloat(hydrated.computed.button.fontSize),
+        `${brand.brand} ${viewport.name}: label font size minimum`).toBeGreaterThanOrEqual(brand.brand==='coffee'?10:9.5);
+    }
+  }
+  await testInfo.attach('horizontal-rail-baseline-diagnostics.json',{
+    body:Buffer.from(JSON.stringify(reports,null,2)),contentType:'application/json',
+  });
+});
