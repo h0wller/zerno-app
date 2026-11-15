@@ -1,0 +1,60 @@
+/* ── Утилиты ────────────────────────────────────────────────────────────── */
+.gempty{
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--soft);
+}
+.gempty .ee{
+  font-size: 52px;
+  display: block;
+  margin-bottom: 12px;
+}
+/* ══ АУДИТ 21.09: недостающие keyframes / переменные / классы ══ */
+:root{
+  --shadow-sheet: 0 -10px 40px -12px rgba(16, 20, 24, .25);
+}
+@keyframes ping{
+  0% {
+    transform: scale(1);
+    opacity: .6;
+  }
+
+  70% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+@keyframes stampin{
+  from {
+    transform: scale(.4);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes shimmer{
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+.vh{
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

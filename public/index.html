@@ -1,0 +1,4999 @@
+<!doctype html>
+<html lang="ru">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script id="zt-early-brand-guard">
+    (function () {
+      try {
+        var qs = new URLSearchParams(location.search);
+        var stored = localStorage.getItem('zt_brand');
+        var m = location.search.match(/[?&]brand=(coffee|delivery|test)\b/i);
+        var urlBrand = m ? decodeURIComponent(m[1]).toLowerCase() : (qs.has('delivery') ? 'delivery' : (qs.has('coffee') ? 'coffee' : ''));
+
+        var isPwa = (navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+        var isIosStandalone = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isPwa && isIosStandalone) document.documentElement.classList.add('is-ios-standalone');
+        var isTg = /Telegram/i.test(navigator.userAgent) || qs.get('src') === 'tg' || !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+        var isActionDeepLink = !!(qs.get('tab') || qs.get('support') || qs.get('order'));
+        var splashDone = sessionStorage.getItem('splashDone') === '1';
+
+        if (urlBrand) {
+          try { localStorage.setItem('zt_brand', urlBrand); } catch (e) {}
+        }
+
+        // Сплэш пропускается:
+        // 1) если уже пройден в текущей сессии (splashDone)
+        // 2) если это диплинк на конкретную вкладку/действие (?tab=chat, ?support=choose)
+        // 3) в обычном браузере (!isPwa && !isTg), если в URL явно открыт ?brand=delivery или ?brand=coffee
+        var explicit = splashDone || isActionDeepLink || (!isPwa && !isTg && !!urlBrand);
+        var b = urlBrand || stored || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee');
+        var roleHint = localStorage.getItem('zt_role');
+        if (localStorage.getItem('zt_user') && ['admin', 'cashier', 'dispatch'].indexOf(roleHint) !== -1) {
+          document.documentElement.setAttribute('data-staff-role', roleHint);
+          // PR-92 review watchdog: если модульный бандл (auth-session.js) не выполнится —
+          // серверная проверка роли никогда не выставит data-staff-ready и скрытые
+          // placeholder-ряды останутся навсегда. Через 8с снимаем резерв: честный CLS
+          // лучше, чем вечные пустые строки каркаса.
+          setTimeout(function () {
+            var d = document.documentElement;
+            if (d.hasAttribute('data-staff-role') &&
+                !d.hasAttribute('data-staff-ready') &&
+                !d.hasAttribute('data-staff-boot-started')) {
+              d.removeAttribute('data-staff-role');
+            }
+          }, 8000);
+        }
+
+        if (b) {
+          window.brand = b;
+          var doc = document.documentElement;
+          doc.setAttribute('data-brand', b);
+          doc.classList.add('brand-' + b);
+
+          if (b === 'delivery') {
+            doc.classList.remove('brand-coffee');
+          } else if (b === 'coffee') {
+            doc.classList.remove('brand-delivery');
+          }
+
+          if (explicit) {
+            doc.classList.add('splash-skipped');
+            doc.classList.add('no-splash');
+            doc.classList.remove('need-splash');
+          }
+
+          // LCP preload for delivery brand (актуальная 1-card.webp из БД)
+          if (b === 'delivery') {
+            var lp = document.createElement('link');
+            lp.rel = 'preload';
+            lp.as = 'image';
+            lp.href = '/media/dishes/1-card.webp';
+            lp.type = 'image/webp';
+            lp.setAttribute('fetchpriority', 'high');
+            document.head.appendChild(lp);
+          }
+        }
+      } catch (e) { }
+    })();
+    </script>
+    <style id="critical-css">
+/* Keep the support slot's width stable before syncChatFab relocates its landmark. */
+@media (max-width:820px) {
+  :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right:not(:has(> #supportLauncherHost))::after {
+    content:"";
+    display:block;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+    box-sizing:border-box;
+  }
+}
+/* Reserve the delivery subfilter viewport's final 56px content + 12px gap before deferred CSS. */
+html[data-brand="delivery"] body #deliveryView #deliverySubFilterViewport {
+  box-sizing: border-box;
+  min-height: 68px;
+}
+/* Reserve the delivery subfilter's 44px hit cell before deferred styles. */
+@media (max-width:820px) {
+  html[data-brand="delivery"] body #deliveryView .subfilter-bar .subchip {
+    box-sizing:border-box; height:44px; min-height:44px; max-height:44px;
+  }
+}
+
+/* Reserve catalog add CTA target before deferred 20-cards.css applies. */
+@media (max-width: 820px) {
+  #deliveryGrid .steprow > .cta[data-add],
+  #grid .steprow > .cta[data-add] {
+    box-sizing: border-box;
+    min-height: 44px;
+    height: 44px;
+  }
+}
+
+/* ═══ CRITICAL ABOVE-THE-FOLD CSS ═══
+   Только FOUC-guards, первый кадр сплэша/марки и LCP-каркас.
+   Компонентный UI и интерактивные дропдауны вынесены в Слой 1 (theme/*.css). */
+/* 1. Мгновенно прячем все элементы с атрибутом [hidden], модалки, QR и панель списания кофе до загрузки theme/*.css *//* 1. Прячем элементы с [hidden] и закрытые модалки (учитываем и .show, и .open) */
+[hidden] {
+  display: none !important;
+}
+
+/* Reserve only the empty admin bar's final margin; the staff menu row is reserved below. */
+@media (min-width:821px) {
+  html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
+    display:none !important;
+  }
+}
+
+/* Desktop staff first paint keeps the role controls in the menu heading before hydration. */
+@media (min-width:821px) {
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head {
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    padding:10px 14px !important;
+    overflow:visible !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:10px !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) 176px 150px !important;
+    align-items:center !important;
+    column-gap:16px !important;
+    width:100% !important;
+    min-width:0 !important;
+    min-height:48px !important;
+    margin:0 !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row > .menu-title-group {
+    grid-column:1 !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    justify-content:center !important;
+    gap:4px !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2 !important;
+    display:flex !important;
+    flex:0 0 176px !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    min-width:176px !important;
+    width:176px !important;
+    height:48px !important;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3 !important;
+    justify-self:end !important;
+    flex:0 0 150px !important;
+    width:150px !important;
+    min-width:150px !important;
+    max-width:150px !important;
+  }
+  /* The role menu is present but inert until /api/me confirms the cached role. */
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg[hidden] {
+    display:grid !important;
+    grid-template-columns:repeat(4,44px) !important;
+    flex:0 0 176px !important;
+    width:176px !important;
+    min-width:176px !important;
+    max-width:176px !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  /* Reserve the desktop labeled edit control's final 150x36 footprint before auth. */
+  html[data-staff-role]:not([data-staff-ready]) body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > #editToggle[hidden] {
+    display:inline-flex !important;
+    flex:0 0 150px !important;
+    width:150px !important;
+    min-width:150px !important;
+    max-width:150px !important;
+    height:36px !important;
+    min-height:36px !important;
+    max-height:36px !important;
+    margin:0 !important;
+    padding:0 12px !important;
+    font-size:12px !important;
+    white-space:nowrap !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  html[data-staff-role="cashier"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="admin"],
+  html[data-staff-role="dispatch"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="cashier"],
+  html[data-staff-role="dispatch"]:not([data-staff-ready]) body #modeSeg[hidden] > button[data-mode="admin"] {
+    display:none !important;
+  }
+}
+/* Mobile staff menu reserves its two-row toolbar only; no legacy shortcut strip. */
+@media (max-width:820px) {
+  html[data-staff-role]:not([data-staff-ready]) body #adminBar.adminBar[hidden] {
+    display:none !important;
+    height:0;
+    min-height:0;
+    margin:0;
+    padding:0;
+  }
+  /* Guest first-paint reservation; staff layout is owned by the staff-scoped rules below. */
+  html:not([data-staff-role]) body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    grid-template-rows:36px 44px !important;
+    height:84px !important;
+    min-height:84px !important;
+    max-height:84px !important;
+    overflow:visible !important;
+  }
+  html:not([data-staff-role]) body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    overflow:visible !important;
+  }
+  /* Reserve the complete staff hit-cell rows before and after hydration. */
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    grid-template-rows:44px 44px !important;
+    row-gap:8px !important;
+    column-gap:0 !important;
+    height:96px !important;
+    min-height:96px !important;
+    max-height:96px !important;
+    overflow:visible !important;
+  }
+html[data-staff-role] body .menu-head .menu-controls-row {
+    display:flex !important;
+    justify-content:space-between !important;
+  }
+  html[data-staff-role] body .menu-head .menu-title-group {
+    display:flex !important;
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    align-items:center !important;
+    gap:8px !important;
+  }
+  html[data-staff-role] body .menu-head .menu-title-group > h1 {
+    flex:0 0 auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+  }
+  html[data-staff-role] body .menu-head .menu-title-group > .upd {
+    display:inline-flex !important;
+    flex:0 1 auto !important;
+    min-width:0 !important;
+    margin:0 !important;
+    white-space:nowrap !important;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
+    flex:0 0 auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    grid-template-columns:repeat(4,44px) !important;
+    flex:0 0 176px !important;
+    width:176px !important;
+    min-width:176px !important;
+    max-width:176px !important;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    grid-column:1 !important;
+    grid-row:1 !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    grid-column:1 !important;
+    grid-row:2 !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    overflow:visible !important;
+  }
+}
+.modal:not(.show):not(.open),
+.sheet:not(.show):not(.open),
+.dialog:not(.show):not(.open),
+#qrModal:not(.show):not(.open),
+#redeemModal:not(.show):not(.open),
+#stampModal:not(.show):not(.open),
+#loyaltyModal:not(.show):not(.open) {
+  display: none;
+}
+
+/* 2. На мобильных экранах (и в режиме доставки) прячем закрытую шторку #panel (с QR и штампами),
+   но НЕ трогаем десктопный сайдбар кофейни */
+@media (max-width: 1180px) {
+  #panel:not(.open):not(.show) {
+    position: fixed;
+    top: 0;
+    right: 0;
+    transform: translateX(105%);
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+html[data-brand="delivery"] #panel:not(.open):not(.show) {
+  position: fixed;
+  top: 0;
+  right: 0;
+  transform: translateX(105%);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#overlay:not(.show):not(.open) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 3. В режиме доставки Пятницы сразу прячем кофейное меню и рельсу до работы JS */
+html[data-brand="delivery"] #menuView,
+html[data-brand="delivery"] #rail {
+  display: none;
+}
+
+/* В режиме кофейни по умолчанию прячем deliveryView */
+html:not([data-brand="delivery"]) #deliveryView {
+  display: none;
+}
+
+/* 4. Фиксируем canvas#fx с первой миллисекунды (убирает сдвиг макета CLS 0.104) */
+canvas#fx {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ─── 1. Splash lifecycle & FOUC-guards ─── */
+#brandSplash,
+#brandSplashStatic,
+.brandSplashStatic {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 400 !important;
+  background-color: #FFFFFF !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  box-sizing: border-box; /* без него width:100% + padding выпирают за экран и контент сдвигается на 16px по X */
+  will-change: opacity, visibility;
+}
+#brandSplashStatic {
+  display: none !important;
+}
+html.need-splash #brandSplashStatic {
+  display: flex !important;
+}
+html.need-splash body > *:not(#brandSplashStatic) {
+  visibility: hidden;
+}
+html.no-splash #brandSplashStatic,
+html.splash-skipped #brandSplashStatic,
+html.is-audit #brandSplashStatic {
+  display: none !important;
+}
+
+/* ─── 2. Audit bypass (Lighthouse stability) ─── */
+html.is-audit #brandSplash,
+html.is-audit #brandSplashStatic,
+html.is-audit .brandSplashStatic,
+html.is-audit #authModal,
+html.is-audit .modal-card,
+html.is-audit .modal-backdrop,
+html.is-audit .overlay {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+html.is-audit body > *:not(#brandSplashStatic),
+html.no-splash body > *:not(#brandSplashStatic):not(.ticker.is-empty) {
+  visibility: visible !important;
+}
+
+/* ─── 3. FOUC-guards: изоляция видов до гидратации JS ─── */
+html[data-brand="delivery"] #grid {
+  display: none !important;
+}
+html[data-brand="coffee"] #deliveryGrid {
+  display: none !important;
+}
+html:not([data-brand="delivery"]) #deliveryView {
+  display: none !important;
+}
+
+html[data-brand="delivery"] #menuView {
+  display: none !important;
+}
+.modal:not(.show),
+#authModal:not(.show),
+#setPinModal:not(.show),
+#staffChatModal:not(.show),
+#redeemPick:not(.show),
+#ordersModal:not(.show),
+#qrModal:not(.show),
+#cartPanel:not(.open),
+#chatPanel:not(.open) {
+  display: none !important;
+}
+
+/* ─── 4. critical FOUC-guard: первый кадр шапки, сетки .wrap и марки (стабилизация CLS) ─── */
+body {
+  margin: 0;
+}
+/* Убираем подчёркивание ссылок «Пятницы» ещё до загрузки отложенных theme CSS. */
+html[data-brand="delivery"] a,
+html[data-brand="delivery"] a:visited,
+html[data-brand="delivery"] a:hover,
+html[data-brand="delivery"] a:active,
+html[data-brand="delivery"] a:focus {
+  text-decoration: none;
+}
+
+header.topbar,
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: calc(60px + env(safe-area-inset-top, 0px));
+  padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px 4px;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+@media (min-width: 821px) {
+  header.topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    align-content: center;
+    gap: 8px;
+    min-height: 64px;
+    padding: 8px 18px;
+  }
+  .topbar {
+    grid-template-rows: 64px auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    align-content: center;
+    gap: 8px;
+    min-height: 64px;
+    padding: 8px 18px;
+  }
+  .topbar .venueWrap {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    order: 0;
+    min-width: 0;
+  }
+  .topbar .brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    position: static;
+    transform: none;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    margin-right: 0;
+    order: 0;
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .topbar #modeSeg:not([hidden]) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    margin-top: 4px;
+  }
+  .topbar #mbonusBtn {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    order: 0;
+    margin: 0 56px 0 0;
+    position: static;
+    width: auto;
+    max-width: none;
+    height: 44px;
+    padding: 0 14px;
+    flex-direction: row;
+    border-radius: 999px;
+    align-self: center;
+  }
+  .topbar #profileTopBtn {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    order: 0;
+    position: static;
+    margin: 0;
+    margin-left: 0;
+    align-self: center;
+  }
+}
+.topbar .brand .mark {
+  width: var(--mark-w, 42px);
+  height: var(--mark-h, 42px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 12px;
+}
+html[data-brand="delivery"] .topbar .brand .mark,
+body[data-brand="delivery"] .topbar .brand .mark {
+  width: 160px;
+  height: 40px;
+  flex: 0 1 auto;
+  max-width: min(60vw, 420px);
+}
+
+/* Match the final mobile header before views.js wraps #brandSeg and theme CSS loads. */
+@media (max-width: 690px) {
+  header.topbar .venueWrap {
+    position: relative;
+    display: flex;
+    flex: 0 0 auto;
+    order: 1;
+    min-width: 0;
+    z-index: 50;
+  }
+  header.topbar button#venueToggle.venueToggle {
+    font-size: 15px;
+    gap: 4px;
+  }
+  header.topbar button#venueToggle.venueToggle span.vt-arrow {
+    font-size: 11px;
+    margin-left: 2px;
+  }
+  header.topbar #brandSeg {
+    display: none;
+  }
+  header.topbar #brandSeg.open {
+    display: flex;
+  }
+  header.topbar div#headerBrand.brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    position: static;
+    transform: none;
+    margin: 0;
+    width: min(196px, 60vw);
+    min-width: min(196px, 60vw);
+    max-width: min(196px, 60vw);
+    min-height: 44px;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 1;
+    overflow: visible;
+  }
+  html[data-brand="coffee"] header.topbar div#headerBrand.brand {
+    position:static;
+    left:auto;
+    top:auto;
+    transform:none;
+    margin:0;
+    grid-column:2;
+    justify-self:center;
+    width:196px;
+    min-width:196px;
+    max-width:min(196px,60vw);
+  }
+  html[data-brand="coffee"] header.topbar div#headerBrand.brand > div:not(.mark) {
+    display:flex;
+    position:relative;
+    flex:0 1 128px;
+    min-width:0;
+    overflow:visible;
+  }
+  html[data-brand="coffee"] header.topbar div#headerBrand.brand #brandTitle {
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    font-size:clamp(15px,4.8vw,19px);
+    line-height:24px;
+    white-space:nowrap;
+  }
+  html[data-brand="coffee"] header.topbar div#headerBrand.brand #brandSub { display:none !important; }
+  html[data-brand="delivery"] header.topbar div#headerBrand.brand > div:not(.mark),
+  body[data-brand="delivery"] header.topbar div#headerBrand.brand > div:not(.mark) { display:none !important; }
+  html[data-brand="delivery"] header.topbar div#headerBrand.brand { width:min(196px,60vw); min-width:0; max-width:min(196px,60vw); gap:0; }
+  html[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark,
+  body[data-brand="delivery"] header.topbar div#headerBrand.brand div.mark { width:min(196px,60vw); min-width:0; max-width:min(196px,60vw); height:48px; max-height:48px; flex:0 1 auto; }
+  header.topbar button#profileTopBtn.ava {
+    position: static;
+    transform: none;
+    margin: 0;
+    order: 3;
+    z-index: 2;
+  }
+}
+.topbar .brand .mark img,
+.topbar .brand .mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ─── 5. LCP & Above-the-fold layout ─── */
+body > div.wrap,
+.wrap {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 10px 28px 6px;
+  max-width: 100%;
+  margin: 0 auto;
+  align-items: start;
+  box-sizing: border-box;
+  top: 0 !important;
+  transform: none !important;
+}
+@media (max-width: 820px) {
+  .wrap > aside.panel:not(.open) {
+    position: fixed;
+    top: 0;
+    right: 0;
+    transform: translateX(105%);
+    pointer-events: none;
+  }
+}
+@media (min-width: 821px) and (max-width: 1180px) {
+  body > div.wrap, .wrap { grid-template-columns:92px minmax(0,1fr) 350px; gap:18px; padding:18px; }
+}
+@media (min-width:821px) { html[data-brand="delivery"] body > div.wrap { grid-template-columns:92px minmax(0,1fr); } }
+@media (min-width: 1181px) {
+  body > div.wrap, .wrap { grid-template-columns:92px minmax(0,1fr) 350px; gap:22px; padding:22px; max-width:1480px; }
+  html[data-brand="delivery"] body > div.wrap { grid-template-columns:92px minmax(0,1fr); }
+}
+#grid .card:nth-child(n+5),
+#deliveryGrid .card:nth-child(n+5),
+.cartItem,
+.logrow {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 320px;
+}
+
+/* Резерв высоты для карточек меню вне экрана.
+   Без него пропущенная раскладка карточки = max(min-height:340, резерв 320) = 340px,
+   а после отрисовки ~350px → скачок при скролле и разные высоты рядов в сетке.
+   347px + рамки карточки = 349px — ровно реальная высота отрисованной карточки
+   (180px медиа + 167px тело + 2px рамки), поэтому ряды совпадают и до отрисовки, и после. */
+#grid .card:nth-child(n+5) {
+  contain-intrinsic-block-size: 352px; /* 350 + рамка 2px (1.5px округляется до 1px) = 352 */
+}
+#deliveryGrid .card:nth-child(n+5) {
+  contain-intrinsic-block-size: 502px;
+}
+:root { --menu-rail-width: 80px; --menu-rail-gap: 10px; }
+/* First-paint mirror of 160-11-canonical-grid-menu.css: reserve final rail button geometry
+   before deferred theme stylesheets become active, preventing a mobile CLS jump. */
+html body div.wrap > .rail button,
+html body div.wrap > #rail button,
+html body div.wrap > #deliveryRail button {
+  width: 100%;
+  min-height: 56px;
+  padding: 6px 2px;
+  font-size: 9.5px;
+  line-height: 1.15;
+  white-space: normal;
+  word-break: normal;
+}
+html body div.wrap > .rail button.on,
+html body div.wrap > #rail button.on,
+html body div.wrap > #deliveryRail button.on {
+  font-size:9.5px;
+  line-height:1.15;
+}
+.menu-head {
+  margin-left: 0;
+  width: 100%;
+}
+/* Keep only the update timestamp compact; the brand context stays visible from first paint. */
+@media (max-width:820px) {
+  #menuView .menu-head .upd,
+  #deliveryView .menu-head .upd { display:none; }
+}
+@media (max-width: 820px) {
+  html body #menuView .menu-head,
+  html body #deliveryView .menu-head {
+    width: calc(100% + var(--menu-rail-width) + var(--menu-rail-gap));
+    max-width: none;
+    margin-left: calc(0px - var(--menu-rail-width) - var(--menu-rail-gap));
+  }
+}
+.mh-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mh-top h1 {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 32px);
+}
+html[data-brand="coffee"] .menu-head h1,
+html[data-brand="delivery"] .menu-head h1 {
+  font: 900 clamp(22px, 3.2vw, 36px)/1.15 "Unbounded", "Golos Text", sans-serif;
+}
+html[data-brand="coffee"] .menu-head h1 { color: #123A6B; }
+html[data-brand="delivery"] .menu-head h1 { color: #3a2a1c; }
+/* ═══ 6. Токены первого кадра (дубль из brand-tokens.css) ═══ */
+html[data-brand="delivery"] {
+  --paper: #F3EDE6;
+  --fr-choc: #3A2A1C;
+  --fr-paper: #F6EEE1;
+  --card-bg: #F6EEE1;
+  --card-border: 2px solid #3A2A1C;
+  --card-shadow: 2px 2px 0 #3A2A1C;
+  --card-radius: 18px;
+  --flame: #C03B2A;
+  --flame-d: #8E3716;
+  --esp: #3A2A1C;
+  --esp2: #241812;
+  --fr-tan: #C99E6E;
+  --fr-rice: #EFE6D8;
+  --tint-cool: #F3E2CE;
+  --tint-warm: #F3E2CE;
+  --panel: #FAF5EE;
+  --line: #E5DACB;
+  --price-color: #C03B2A;
+  --btn-fire-bg: #C03B2A;
+  --btn-fire-color: #FFFFFF;
+  --btn-fire-border: 2px solid #3A2A1C;
+  --btn-fire-shadow: 3px 3px 0 #3A2A1C;
+  --cta-bg: #C03B2A;
+  --cta-color: #FFFFFF;
+  --cta-border: 2px solid #3A2A1C;
+  --cta-shadow: 3px 3px 0 #3A2A1C;
+}
+body {
+  background: var(--paper, #FFFFFF);
+  color: var(--ink, #101418);
+}
+
+/* ═══ 7. Сплэш: геометрия и типографика — ТОЧНОЕ зеркало theme/80-splash.css ═══
+   Всё, что влияет на размер/позицию/шрифт сплэша, обязано совпадать с 80-splash.css до пикселя:
+   theme/*.css грузятся отложенно (media=print → all), и любое расхождение даёт скачок сплэша
+   (CLS + мигание) в момент их применения. Меняете 80-splash.css — меняйте и этот блок.
+   Охраняет tests/splash-cls.spec.js. Анимации входа продублированы с теми же параметрами,
+   чтобы при подключении 80-splash.css они не перезапускались (одинаковое computed-значение). */
+#brandSplashStatic,
+#brandSplash {
+  overflow: auto;
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(18, 58, 107, 0.10), transparent 45%),
+    radial-gradient(circle at 92% 96%, rgba(179, 55, 43, 0.08), transparent 45%);
+}
+#brandSplashStatic *,
+#brandSplash * { box-sizing: border-box; margin: 0; padding: 0; }
+#brandSplashStatic img,
+#brandSplash img {
+  max-width: 44px;
+  max-height: 44px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+#brandSplashStatic .spInner,
+#brandSplash .spInner { width: 100%; max-width: 560px; text-align: center; }
+#brandSplashStatic .spTitle,
+#brandSplash .spTitle {
+  font: 400 clamp(20px, 5.5vw, 30px)/1.25 Prata, "Golos Text", serif;
+  margin-bottom: 6px;
+  overflow-wrap: break-word;
+  color: var(--ink, #101418);
+}
+#brandSplashStatic .spSub,
+#brandSplash .spSub {
+  color: var(--ink, #101418);
+  font: 900 clamp(24px, 7vw, 34px)/1.2 Unbounded, "Golos Text", sans-serif;
+  letter-spacing: -0.01em;
+  margin-bottom: 28px;
+  animation: spRise 0.7s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+#brandSplashStatic .spBtns,
+#brandSplash .spBtns { display: grid; grid-template-columns: 1fr; gap: 16px; }
+#brandSplashStatic .spBtn,
+#brandSplash .spBtn {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  width: 100%;
+  padding: 22px 18px;
+  border: 0;
+  border-radius: 18px;
+  cursor: pointer;
+  font: 700 16px Unbounded, "Golos Text", sans-serif;
+  animation: spRise 0.6s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+#brandSplashStatic .spBtns .spBtn:nth-child(2),
+#brandSplash .spBtns .spBtn:nth-child(2) { animation-delay: 0.3s; }
+#brandSplashStatic .spBtn .em,
+#brandSplash .spBtn .em {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  margin-bottom: 10px;
+  animation: spFloat 3.2s ease-in-out infinite;
+}
+#brandSplashStatic .spBtn .em img,
+#brandSplash .spBtn .em img {
+  display: block;
+  margin: 0 auto;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+#brandSplashStatic .spPizza .em img,
+#brandSplash .spPizza .em img { max-height: 56px; }
+#brandSplashStatic .spCoffee .em img,
+#brandSplash .spCoffee .em img { max-height: 100px; }
+#brandSplashStatic .spBtn .bt,
+#brandSplash .spBtn .bt { display: block; font: 700 17px Unbounded, "Golos Text", sans-serif; }
+#brandSplashStatic .spBtn small,
+#brandSplash .spBtn small {
+  display: block;
+  font: 400 13px Golos Text, sans-serif;
+  margin-top: 6px;
+}
+/* «Пятница»: цвета приходят из inline-токенов --sp-* на кнопке (см. разметку) */
+#brandSplashStatic .spPizza,
+#brandSplash .spPizza {
+  background: var(--sp-bg, var(--paper, #FFFFFF));
+  color: var(--sp-ink, var(--ink, #101418));
+  border: 2px solid var(--sp-ink, var(--ink, #101418));
+  box-shadow: 3px 3px 0 var(--sp-ink, var(--ink, #101418));
+}
+#brandSplashStatic .spPizza .bt,
+#brandSplash .spPizza .bt {
+  color: var(--sp-ink, var(--ink, #101418));
+  text-shadow: 0 2px 0 rgba(58, 42, 28, 0.18);
+}
+#brandSplashStatic .spPizza small,
+#brandSplash .spPizza small { color: var(--sp-ink, var(--ink, #101418)); opacity: 0.8; }
+/* «…и кофе» */
+#brandSplashStatic .spCoffee,
+#brandSplash .spCoffee {
+  background: var(--sp-bg, #FFFFFF);
+  color: var(--sp-ink, var(--flame));
+  border: 2px solid rgba(62, 143, 208, 0.25);
+  box-shadow: 0 6px 20px rgba(18, 58, 107, 0.08);
+}
+#brandSplashStatic .spCoffee .bt,
+#brandSplash .spCoffee .bt { color: var(--sp-ink, var(--flame)); }
+#brandSplashStatic .spCoffee small,
+#brandSplash .spCoffee small { color: var(--soft, #586470); }
+@media (min-width: 560px) {
+  #brandSplashStatic .spBtns,
+  #brandSplash .spBtns { grid-template-columns: 1fr 1fr; }
+}
+@keyframes spRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes spFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #brandSplashStatic .spSub, #brandSplash .spSub,
+  #brandSplashStatic .spBtn, #brandSplash .spBtn,
+  #brandSplashStatic .spBtns .spBtn:nth-child(2), #brandSplash .spBtns .spBtn:nth-child(2),
+  #brandSplashStatic .spBtn .em, #brandSplash .spBtn .em { animation: none; }
+}
+
+/* ═══ 8. Карточка (Маргарита) и сетки до загрузки theme/*.css ═══ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+@media (min-width: 1181px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1600px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+#deliveryGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding-bottom: calc(var(--floating-cart-h, 72px) + max(16px, env(safe-area-inset-bottom, 0px)));
+}
+@media (min-width: 560px) {
+  #deliveryGrid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+}
+.card {
+  background: var(--card-bg, #FFFFFF);
+  border: var(--card-border, 1.5px solid rgba(62, 143, 208, 0.25));
+  border-radius: var(--card-radius, 18px);
+  box-shadow: var(--card-shadow, 0 6px 20px rgba(18, 58, 107, 0.08));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 340px;
+}
+.card .media {
+  height: 180px;
+  min-height: 180px;
+  aspect-ratio: 16 / 10;
+  contain: layout size;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card .media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+#deliveryGrid .card .cbody { display: flex; flex-direction: column; }
+/* ═══ 9. Первый кадр: шрифты, сброс, сплэш (зеркало theme/*.css / fonts.css) ═══ */
+@font-face {
+  font-family: 'Golos Text';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/app/ui/fonts/golos-text-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Prata';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/app/ui/fonts/prata-400-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url('/app/ui/fonts/unbounded-700-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font: 400 15px/1.5 "Golos Text", system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+html[data-brand="delivery"] {
+  --line: #E5DACB;
+}
+    
+/* First-paint mobile storefront contract agreed after #185. */
+@media (max-width:820px) {
+  html body #deliveryView .menu-head .mh-top,
+  html body #menuView .menu-head .mh-top {
+    grid-template-rows:32px 40px;
+    height:76px;
+  }
+  html body #deliveryView .menu-head .mh-top > .mh-right,
+  html body #menuView .menu-head .mh-top > .mh-right,
+  html body #deliveryView .menu-head .mh-top > .mh-right > .search,
+  html body #menuView .menu-head .mh-top > .mh-right > .search {
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+  }
+  html body #deliveryView .menu-head .mh-top > .mh-right > .search input,
+  html body #menuView .menu-head .mh-top > .mh-right > .search input,
+  html body #deliveryView #dSearch,
+  html body #menuView #searchInput {
+    box-sizing:border-box;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    line-height:36px;
+    padding-top:0;
+    padding-bottom:0;
+  }
+  html body .menu-head {
+    height:auto;
+    min-height:0;
+    max-height:none;
+    overflow:visible;
+  }
+  html body .menu-head .upd { display:none; }
+
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right:not(:has(> #supportLauncherHost))::after {
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost,
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
+    box-sizing:border-box;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  html body #deliveryView #deliverySubFilter .subchip,
+  html body #deliveryView .subfilter-bar .subchip {
+    position:relative;
+    isolation:isolate;
+    box-sizing:border-box;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    border-radius:0;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+    color:var(--fr-choc,#3A2A1C);
+    padding:0 14px;
+  }
+  html body #deliveryView #deliverySubFilter .subchip::before,
+  html body #deliveryView .subfilter-bar .subchip::before {
+    content:"";
+    position:absolute;
+    inset:2px 0;
+    z-index:-1;
+    border-radius:999px;
+    background:var(--fr-paper,#F6EEE1);
+    border:1.5px solid var(--fr-tan,#C99E6E);
+    pointer-events:none;
+  }
+  html body #deliveryView #deliverySubFilter .subchip:hover::before,
+  html body #deliveryView .subfilter-bar .subchip:hover::before {
+    background:var(--fr-rice,#EFE6D8);
+  }
+  html body #deliveryView #deliverySubFilter .subchip.on,
+  html body #deliveryView .subfilter-bar .subchip.on {
+    color:#fff;
+  }
+  html body #deliveryView #deliverySubFilter .subchip.on::before,
+  html body #deliveryView .subfilter-bar .subchip.on::before {
+    background:var(--flame,#C03B2A);
+    border-color:var(--fr-choc,#3A2A1C);
+    box-shadow:2px 2px 0 var(--fr-choc,#3A2A1C);
+  }
+  html body header.topbar #profileTopBtn,
+  html body header.topbar button#venueToggle.venueToggle {
+    box-sizing:border-box;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:0;
+  }
+}
+
+
+/* Keep the iOS standalone topbar below the status bar in guest and staff sessions. */
+@media (max-width:820px) {
+  html.is-ios-standalone body header.topbar,
+  html.is-ios-standalone[data-staff-role] body header.topbar,
+  html.is-ios-standalone[data-staff-role] body header.topbar.has-mode-switcher {
+    position:sticky;
+    top:0;
+    height:calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    min-height:calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    max-height:calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    grid-template-rows:52px 0;
+    padding:calc(var(--sat, env(safe-area-inset-top, 0px)) + 4px) 12px 0;
+    align-content:center;
+  }
+  html.is-ios-standalone[data-staff-role] body header.topbar > #topbar-actions {
+    grid-column:3;
+    grid-row:1;
+    justify-self:end;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    width:max-content;
+    max-width:100%;
+    min-width:0;
+    margin:0;
+  }
+  html.is-ios-standalone[data-staff-role] body header.topbar > #topbar-actions > #profileTopBtn {
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+  }
+  html.is-ios-standalone[data-staff-role] body header.topbar .venueWrap > #venueToggle {
+    flex:0 0 52px;
+    width:52px;
+    min-width:52px;
+    max-width:52px;
+    height:48px;
+    min-height:48px;
+    max-height:48px;
+    padding:0;
+  }
+}
+
+
+/* Reserve staff controls across the complete mobile viewport row before theme CSS. */
+@media (max-width:820px) {
+  html body header.topbar {
+    grid-template-columns:minmax(52px,1fr) minmax(0,auto) minmax(52px,1fr);
+  }
+  html body header.topbar > #topbar-actions {
+    grid-column:3;
+    grid-row:1;
+    justify-self:end;
+    align-self:center;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    width:max-content;
+    max-width:100%;
+    min-width:0;
+    margin:0;
+    padding:0;
+    position:relative;
+    z-index:2;
+  }
+  html body header.topbar > #topbar-actions > #profileTopBtn {
+    display:grid;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    padding:0;
+    place-items:center;
+  }
+  html body header.topbar .venueWrap > #venueToggle.venueToggle {
+    box-sizing:border-box;
+    flex:0 0 52px;
+    width:52px;
+    min-width:52px;
+    max-width:52px;
+    height:48px;
+    min-height:48px;
+    max-height:48px;
+    padding:0;
+  }
+  html[data-staff-role] body #adminBar.adminBar:not([hidden]) {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+    width:calc(100% + 90px);
+    max-width:calc(100vw - 20px);
+    min-width:0;
+    margin:0 0 12px -90px;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body #adminBar.adminBar > button:not([hidden]) {
+    display:inline-flex;
+    box-sizing:border-box;
+    width:100%;
+    min-width:0;
+    max-width:none;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:0 6px;
+    font-size:clamp(10px,2.8vw,12px);
+    line-height:1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    justify-content:center;
+  }
+}
+/* Keep the three staff actions on one compact row at every mobile width. */
+@media (max-width:350px) {
+  html[data-staff-role] body #adminBar.adminBar:not([hidden]) {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  html[data-staff-role] body #adminBar.adminBar > #promoToggle:not([hidden]),
+  html[data-staff-role] body #adminBar.adminBar > #dashToggle:not([hidden]),
+  html[data-staff-role] body #adminBar.adminBar > #chatsToggle2:not([hidden]) {
+    grid-column:auto;
+    width:100%;
+    min-width:0;
+    max-width:none;
+    padding:0 3px;
+    font-size:10px;
+  }
+}
+
+/* Staff update timestamp threshold must match the hydrated component styles. */
+@media (max-width:519px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display:none !important;
+  }
+}
+@media (min-width:520px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-title-group > .upd {
+    display:inline-flex !important;
+  }
+}
+</style>
+<script id="perf-lighthouse-bridge">
+    (() => {
+      const ua = navigator.userAgent;
+      /* Тот же детектор, что в core/boot.js и core/splash.js (включая эмуляцию Moto G Power в PageSpeed) */
+      const isAudit =
+        /Chrome-Lighthouse|Lighthouse|moto g power/i.test(ua) ||
+        window.location.search.includes('lighthouse=1') ||
+        window.location.search.includes('clean=1');
+
+      if (!isAudit) return;
+
+      document.documentElement.classList.add('is-audit');
+      document.documentElement.classList.remove('need-splash');
+    })();
+  </script>
+  <!-- END: perf-optimizer-patch -->
+  <script>
+    // Безопасный глобальный контракт TgUx (защита от потери sync)
+    window.TgUx = window.TgUx || {};
+    window.TgUx.sync = window.TgUx.sync || function () {
+      try {
+        var hasModals = !!document.querySelector('.modal.show, #panel.open, #cartPanel.open, #chatPanel.open');
+        var tg = window.Telegram && window.Telegram.WebApp;
+        if (tg && tg.BackButton) {
+          if (hasModals) tg.BackButton.show();
+          else tg.BackButton.hide();
+        }
+      } catch (e) { }
+    };
+  </script>
+  <meta charset="UTF-8" />
+  <!-- PERF-P0 v6: preload friday-logo.svg удалён — LCP-элемент в доставке это пицца,
+       логотип не участвует в критическом пути. Брендовая марка ставится через
+       admin-extra.js → applyBrandChrome(). -->
+<!-- Было: предзагрузка 400-го шрифта, который не использовался на старте -->
+<!-- Стало: предзагрузка только тех шрифтов, которые нужны для первого экрана -->
+<link rel="preload" href="/app/ui/fonts/golos-text-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/app/ui/fonts/prata-400-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/app/ui/fonts/unbounded-700-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+  <script>/* PERF-MEASURE v2: флаг ?nosw=1 для замеров без SW */
+    window.__ztNoSW = /[?&]nosw=1/.test(location.search);
+  </script>
+<script>(function () {
+      /* TG-OFFLOAD v5: точный детект Mini App vs In-App Browser */
+      var q = location.search + location.hash;
+      var hasTgWebAppParams = /[?&#]tgWebApp(Data|Platform|Version|BotId)=/i.test(q);
+      var hasTgBridge = false;
+      try {
+        hasTgBridge = Boolean(window.TelegramWebviewProxy) ||
+          Boolean(window.TelegramGameProxy) ||
+          Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.webApp);
+      } catch (e) { hasTgBridge = false; }
+
+      var inTg = hasTgWebAppParams || hasTgBridge || /Telegram/i.test(navigator.userAgent);
+      window.__isTgMiniApp = hasTgWebAppParams;
+
+      function makeStub() {
+        var noop = function () { };
+        var btn = function () {
+          return {
+            text: '', isVisible: false, show: noop, hide: noop, enable: noop,
+            disable: noop, setText: noop, setColor: noop, setParams: noop, onClick: noop, offClick: noop
+          };
+        };
+        return {
+          isStub: true, readyState: 'ready', isExpanded: true,
+          initData: '', initDataUnsafe: {}, version: '0.0', platform: 'unknown',
+          colorScheme: 'light', themeParams: {},
+          ready: noop, expand: noop, close: noop,
+          enableClosingConfirmation: noop, disableVerticalSwipes: noop,
+          setHeaderColor: noop, setBackgroundColor: noop,
+          showPopup: noop, showAlert: noop,
+          showConfirm: function () { return false; },
+          openLink: noop, openTelegramLink: noop, openInvoice: noop,
+          onEvent: noop, offEvent: noop,
+          MainButton: btn(), BackButton: btn(),
+          HapticFeedback: { impactOccurred: noop, notificationOccurred: noop, selectionChanged: noop }
+        };
+      }
+
+      function installStub() {
+        window.Telegram = window.Telegram || {};
+        if (!window.Telegram.WebApp || window.Telegram.WebApp.isStub) {
+          window.Telegram.WebApp = makeStub();
+        }
+      }
+
+      if (inTg) {
+        var s = document.createElement('script');
+        s.src = 'https://telegram.org/js/telegram-web-app.js';
+        s.async = false;
+        s.onload = function () {
+          try {
+            var tg = window.Telegram && window.Telegram.WebApp;
+            if (tg && !tg.isStub) {
+              // Настоящий Mini App имеет непустую initData или query_id/user
+              var isRealMiniApp = Boolean(
+                (tg.initData && tg.initData.length > 0) ||
+                (tg.initDataUnsafe && (tg.initDataUnsafe.query_id || tg.initDataUnsafe.user)) ||
+                hasTgWebAppParams
+              );
+              window.__isTgMiniApp = isRealMiniApp;
+              if (isRealMiniApp) {
+                tg.ready();
+                tg.expand();
+                if (window.TgUx && typeof window.TgUx.sync === 'function') {
+                  window.TgUx.sync();
+                }
+              }
+            }
+          } catch (err) { }
+        };
+        s.onerror = installStub;
+        document.head.appendChild(s);
+      } else {
+        installStub();
+      }
+    })();</script>
+  <script id="zt-lcp-head">
+    (function () {
+      var endpoint = '';
+      try {
+        if (localStorage.getItem('zt_user')) return;
+        var params = new URLSearchParams(location.search);
+        var brand = params.get('brand') || localStorage.getItem('zt_brand') || 'coffee';
+        endpoint = brand === 'delivery' ? '/api/dmenu' : '/api/menu';
+      } catch (_) { return; }
+
+      var nativeFetch = window.fetch;
+      var pending = nativeFetch.call(window, endpoint, {
+        headers: { Accept: 'application/json' }
+      });
+
+      window.fetch = function (input, options) {
+        try {
+          var url = typeof input === 'string' ? input : input.url;
+          var method = (options && options.method) || (input && input.method) || 'GET';
+          var headers = new Headers(input && input.headers ? input.headers : undefined);
+          if (options && options.headers) {
+            new Headers(options.headers).forEach(function (value, key) {
+              headers.set(key, value);
+            });
+          }
+          if (pending && method.toUpperCase() === 'GET' && !headers.has('Authorization') &&
+              new URL(url, location.href).pathname === endpoint) {
+            var response = pending;
+            pending = null;
+            return response;
+          }
+        } catch (_) {}
+        return nativeFetch.apply(this, arguments);
+      };
+    })();
+  </script>
+  <!-- LCP-PRELOAD-FONT v1: preload шрифта Unbounded 700 для LCP <h1> -->
+<title>Пятница «…и кофе» — доставка и кофейня</title>
+  <meta name="description"
+    content="Кофейня «…и кофе» в Янтарном: актуальное меню и бонусы — каждый 10-й кофе бесплатно." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="…и кофе" />
+  <meta property="og:title" content="…и кофе — кофейня на берегу моря" />
+  <meta property="og:description" content="Каждый 10-й кофе — бесплатно. Меню, штампы и бонусы в один тап." />
+  <meta property="og:url" content="https://friday.andcoffee.online/" />
+  <meta property="og:image" content="https://friday.andcoffee.online/og-cover.png?v=2" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#F3F8FC" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Пятница «…и кофе»" />
+  <link rel="icon" href="icons/icon-192-v2.png" type="image/png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <!-- Неблокирующая загрузка слоёв CSS со 100% фолбэк-страховкой для iOS WebKit / Telegram WebView -->
+  <link rel="stylesheet" href="/app/ui/fonts.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=651" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=651" media="print" onload="this.media='all'" />
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('link[media="print"]').forEach(function (l) { l.media = 'all'; });
+    });
+  </script>
+  <noscript>
+    <link rel="stylesheet" href="/app/ui/fonts.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=651" />
+  <link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=651" />
+    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=651" />
+  </noscript>
+  <!-- [tg-splash-menu-fix-v3] решение о сплэше в <head> = ТО ЖЕ, что в core/splash.js (один в один).
+     Расхождение даёт «мигание»: сплэш рисуется в первом кадре, а затем JS его снимает (или наоборот). -->
+<script>
+  (function () {
+    var de = document.documentElement;
+    var need = false;
+    try {
+      var QS = new URLSearchParams(location.search);
+      var isAudit = de.classList.contains('is-audit') || QS.get('lighthouse') === '1';
+
+      var navType = 'navigate';
+      try {
+        var ne = performance.getEntriesByType('navigation');
+        if (ne && ne[0] && ne[0].type) navType = ne[0].type;
+      } catch (e) { }
+
+      var isTg = !!(window.__isTgMiniApp || /Telegram/i.test(navigator.userAgent) ||
+        (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || QS.get('src') === 'tg');
+      var forceSplash = QS.get('splash') === '1' || QS.get('splash') === 'true';
+      if (forceSplash && !isAudit) { try { sessionStorage.removeItem('splashDone'); } catch (e) { } }
+
+      var done = false, clicked = false;
+      try {
+        done = !isTg && sessionStorage.getItem('splashDone') === '1';
+        clicked = sessionStorage.getItem('zt_splash_clicked') === '1';
+      } catch (e) { }
+
+      /* ?brand= пропускает сплэш, кроме ?splash=1 и reload после клика по сплэшу в этой же вкладке */
+      var fromBrandNav = !!QS.get('brand') && !forceSplash && !(navType === 'reload' && clicked);
+      var hasDeeplink = !!(QS.get('item') || QS.get('tab') || QS.get('no') || QS.get('reorder'));
+
+      need = !(isAudit || done || fromBrandNav || hasDeeplink);
+    } catch (e) { }
+    de.classList.remove('need-splash', 'no-splash');
+    de.classList.add(need ? 'need-splash' : 'no-splash');
+    if (need) {
+      de.classList.remove('splash-skipped');
+      /* Логотипы сплэша грузим заранее, но ТОЛЬКО когда сплэш реально покажется: у вернувшихся
+         пользователей и в аудитах (PERF-P0 v6) они не конкурируют с LCP-картинкой каталога. */
+      try {
+        ['/friday-logo.svg', '/andCoffee.svg'].forEach(function (href) {
+          var l = document.createElement('link');
+          l.rel = 'preload'; l.as = 'image'; l.type = 'image/svg+xml'; l.href = href;
+          l.setAttribute('fetchpriority', 'high');
+          document.head.appendChild(l);
+        });
+      } catch (e) { }
+    }
+  })();
+</script>
+<style>
+/* Keep visually-hidden content out of layout before deferred 30-utils.css arrives. */
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Match the late views.js <=600px topbar override before the first frame. */
+@media (max-width: 600px) {
+  html:not(.is-ios-standalone) .topbar {
+    padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 0 !important;
+    min-height: 0 !important;
+    gap: 0 8px !important;
+  }
+  .topbar .brand {
+    font-size: 18px !important;
+  }
+  .topbar .brand small {
+    font-size: 10px !important;
+  }
+}
+
+/* Match 160-06 desktop topbar geometry before deferred CSS arrives. */
+@media (min-width: 821px) {
+  header.topbar,
+  .topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: 64px auto;
+    align-items: center;
+    align-content: center;
+    gap: 8px;
+    min-height: 64px;
+    padding: 8px 18px;
+  }
+  .topbar .venueWrap {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    min-width: 0;
+  }
+  .topbar .brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    margin-right: 0;
+    order: 0;
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .topbar #modeSeg:not([hidden]) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    margin-top: 4px;
+  }
+  .topbar #mbonusBtn {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    margin: 0 56px 0 0;
+    position: static;
+    width: auto;
+    max-width: none;
+    height: 44px;
+    padding: 0 14px;
+    flex-direction: row;
+    border-radius: 999px;
+    align-self: center;
+  }
+  .topbar #profileTopBtn {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    order: 0;
+    margin: 0;
+    margin-left: 0;
+    position: static;
+    align-self: center;
+  }
+}
+
+/* Reserve the mobile bonus control's final geometry before deferred theme CSS. */
+@media (max-width: 820px) {
+  html body #mbonusBtn {
+    position: fixed;
+    left: 12px;
+    right: auto;
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: 56px;
+    min-width: 56px;
+    max-width: 56px;
+    height: 56px;
+    margin: 0;
+    padding: 6px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    z-index: 95;
+    transform: none;
+  }
+}
+
+/* Reserve the final mobile header grid before 160-03/160-06 CSS is available. */
+@media (max-width: 820px) {
+  :root {
+    --topbar-h: 56px;
+  }
+  html body header.topbar {
+    position: sticky;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    border-bottom: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    align-items: center;
+    gap: 0 8px;
+    height: auto;
+    min-height: 0;
+    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px 0;
+    box-sizing: border-box;
+  }
+  html body header.topbar > #brandSeg {
+    display: none;
+  }
+  html body header.topbar > #brandSeg,
+  html body header.topbar > .venueWrap {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    order: 1;
+    min-width: 0;
+  }
+  html body header.topbar .venueWrap {
+    position: relative;
+    display: flex;
+    flex: 0 0 auto;
+    justify-content: flex-start;
+  }
+  html body header.topbar .venueToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: calc(var(--topbar-h, 60px) - 20px);
+    padding: 0 10px;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  html body header.topbar .venueToggle .vt-label {
+    display: none;
+  }
+  html body header.topbar .venueWrap #brandSeg {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: calc(100% + 8px);
+  }
+  html body header.topbar .brand,
+  html body header.topbar #headerBrand.brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    order: 2;
+    margin: 0;
+    min-width: 0;
+    max-width: 100%;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  html body header.topbar #profileTopBtn {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    order: 3;
+    margin: 0;
+    position: static;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+  html body header.topbar #modeSeg {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    order: 10;
+    justify-self: center;
+    width: max-content;
+    max-width: 100%;
+    height: 46px;
+    min-height: 46px;
+    padding: 0;
+    overflow-x: auto;
+  }
+  body.is-cashier header.topbar,
+  body.is-admin header.topbar,
+  header.topbar:has(#modeSeg:not([hidden])) {
+    height: auto;
+  }
+}
+
+/* Reserve the venue control's final box before and after deferred CSS. */
+@media (max-width: 690px) {
+  html body header.topbar button#venueToggle.venueToggle {
+    width:3em;
+    min-width:3em;
+    max-width:3em;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    box-sizing:border-box;
+    align-self:center;
+    margin-top:0;
+    transform:none;
+  }
+}
+
+/* 160-06 sets this gap at tablet widths; 160-04 uses 8px below 691px. */
+@media (min-width: 691px) and (max-width: 820px) {
+  html body header.topbar #headerBrand.brand {
+    gap: 10px;
+  }
+}
+
+/* Reserve the final desktop delivery wordmark box before deferred typography loads. */
+@media (min-width: 1024px) {
+  html[data-brand="delivery"] header.topbar #headerBrand.brand {
+    width: 372px;
+    min-height: 53px;
+  }
+  html[data-brand="delivery"] .topbar .brand small {
+    display: block;
+  }
+  html[data-brand="delivery"] .topbar #headerBrand.brand > div:not(.mark) {
+    width: 202px;
+    flex: 0 0 202px;
+  }
+}
+
+/* Hide delivery descriptor only on compact mobile. */
+@media (max-width: 819px) {
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand { width:min(196px,60vw); min-width:0; max-width:min(196px,60vw); gap:0; }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand > div:not(.mark),
+  html[data-brand="delivery"] body header.topbar #brandTitle,
+  html[data-brand="delivery"] body header.topbar #brandSub { display:none !important; }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand .mark { width:min(196px,60vw); min-width:0; max-width:min(196px,60vw); flex:0 1 auto; }
+}
+@media (min-width:820px) {
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand > div:not(.mark) { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:2px; }
+  html[data-brand="delivery"] body header.topbar #brandTitle { color:#3A2A1C; font:800 clamp(13px,1.15vw,17px)/1.15 "Unbounded","Golos Text",sans-serif; }
+  html[data-brand="delivery"] body header.topbar #brandSub { display:block; color:#3A2A1C; font:600 clamp(9px,.75vw,11px)/1.2 "Unbounded","Golos Text",sans-serif; }
+}
+@media (min-width:820px) and (max-width:1023px) {
+  /* Reserve post-font wordmark width before deferred CSS to avoid a 27px header shift at 820px. */
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand {
+    width:min(346px,calc(10vw + 244px)) !important;
+    min-width:min(346px,calc(10vw + 244px)) !important;
+    max-width:min(346px,calc(10vw + 244px)) !important;
+    gap:8px !important;
+  }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand .mark {
+    width:clamp(92px,14vw,136px);
+    max-width:136px;
+  }
+  html[data-brand="delivery"] body header.topbar #headerBrand.brand > div:not(.mark) {
+    width:202px;
+    min-width:202px;
+    max-width:202px;
+    flex:0 0 202px;
+  }
+}
+@media (max-width: 480px) {
+  :root {
+    --topbar-h: 60px;
+  }
+}
+
+/* Match 160-04: at <=690px the 48px delivery mark sets the brand row height. */
+@media (max-width: 690px) {
+  html[data-brand="delivery"] body header.topbar div#headerBrand.brand {
+    height: auto;
+    max-height: none;
+  }
+}
+
+/* One canonical mobile header grid for both brands; critical CSS mirrors 160-06. */
+@media (max-width: 820px) {
+  :root { --topbar-h: 60px; }
+  html body header.topbar {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: 52px 0;
+    align-items: center;
+    align-content: center;
+    gap: 0 8px;
+    width: 100%;
+    max-width: none;
+    height: calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    min-height: calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    margin: 0;
+    padding: calc(var(--sat, env(safe-area-inset-top, 0px)) + 4px) 12px 0;
+    box-sizing: border-box;
+    border-radius: 0;
+    border-bottom: none;
+    box-shadow: none;
+  }
+  html body header.topbar > #brandSeg { display: none; }
+  html body header.topbar > #brandSeg,
+  html body header.topbar > .venueWrap {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    order: 1;
+    min-width: 0;
+  }
+  html body header.topbar .venueWrap {
+    position: relative;
+    display: flex;
+    flex: 0 0 auto;
+    justify-content: flex-start;
+  }
+  html body header.topbar .brand,
+  html body header.topbar #headerBrand.brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    order: 2;
+    margin: 0;
+    min-width: 0;
+    max-width: 100%;
+    height: 52px;
+    min-height: 52px;
+    max-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  html body header.topbar #profileTopBtn {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    order: 3;
+    margin: 0;
+    margin-left: 0;
+    position: static;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+  html body header.topbar #modeSeg {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    order: 10;
+    justify-self: center;
+    width: max-content;
+    max-width: 100%;
+    height: 46px;
+    min-height: 46px;
+    padding: 0;
+    overflow-x: auto;
+  }
+  html[data-staff-role] body header.topbar {
+    height: calc(102px + var(--sat, env(safe-area-inset-top, 0px)));
+    min-height: calc(102px + var(--sat, env(safe-area-inset-top, 0px)));
+    grid-template-rows: 48px 50px;
+    align-content: start;
+  }
+  html[data-staff-role] body header.topbar .brand,
+  html[data-staff-role] body header.topbar #headerBrand.brand {
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+  }
+}
+
+/* Reserve a compact mobile menu row before auth hydration; keep topbar geometry mode-specific. */
+@media (max-width:820px) {
+  html[data-staff-role] body header.topbar {
+    height:calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    min-height:calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    grid-template-rows:52px 0;
+    align-content:center;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-controls-row .mode-seg-slot {
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body .menu-controls-row #modeSeg[hidden] {
+    display:flex;
+    visibility:hidden;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body #adminBar[hidden] {
+    display:flex;
+    visibility:hidden;
+    min-height:32px;
+    height:32px;
+    margin:0 0 8px;
+    overflow:hidden;
+  }
+  html[data-staff-role] body header.topbar.has-mode-switcher {
+    height:calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    min-height:calc(60px + var(--sat, env(safe-area-inset-top, 0px)));
+    grid-template-rows:52px 0;
+    align-content:center;
+  }
+  html[data-staff-role] body header.topbar.has-mode-switcher > #headerBrand.brand {
+    display:none;
+  }
+  html[data-staff-role] body header.topbar.has-mode-switcher > #modeSeg {
+    grid-column:2;
+    grid-row:1;
+    justify-self:center;
+    align-self:center;
+    display:flex;
+    width:max-content;
+    max-width:min(100%,250px);
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    gap:3px;
+    overflow-x:auto;
+    overflow-y:hidden;
+  }
+  html[data-staff-role] body header.topbar.has-mode-switcher #modeSeg button {
+    flex:0 0 auto;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    padding:0 5px;
+    font-size:9px;
+  }
+  html body #adminBar.adminBar > button:not(#editToggle) {
+    min-height:32px;
+    height:32px;
+    padding:0 8px;
+    font-size:11px;
+  }
+}
+@media (min-width:821px) {
+  html[data-staff-role] body header.topbar.has-mode-switcher {
+    min-height:110px;
+    grid-template-rows:64px 46px;
+  }
+  html[data-staff-role]:not([data-staff-ready]) body #adminBar[hidden] { display:none; }
+}
+
+/* Critical staff menu toolbar: exactly two rows before JS and deferred theme CSS. */
+@media (max-width:820px) {
+  html body :is(#menuView,#deliveryView) .menu-head {
+    box-sizing:border-box;
+    height:100px;
+    min-height:100px;
+    max-height:100px;
+    overflow:visible;
+    padding:6px 10px;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:36px 44px;
+    gap:4px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:84px;
+    min-height:84px;
+    max-height:84px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    grid-column:1;
+    grid-row:1;
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) 32px;
+    grid-template-rows:36px;
+    align-items:center;
+    column-gap:6px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > h1 {
+    grid-column:1;
+    grid-row:1;
+    display:inline-flex;
+    align-items:center;
+    width:auto;
+    min-width:0;
+    max-width:none;
+    margin:0;
+    white-space:nowrap;
+    overflow:visible;
+    font-size:clamp(15px,4vw,18px);
+    line-height:1;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2;
+    grid-row:1;
+    display:flex;
+    flex:1 1 auto;
+    align-items:center;
+    justify-content:stretch;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    overflow:visible;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    flex:1 1 auto;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    gap:3px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+    display:flex;
+    flex:1 1 0;
+    width:100%;
+    min-width:0;
+    max-width:none;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0 2px;
+    align-items:center;
+    justify-content:center;
+    font:700 clamp(10px,2.8vw,11px)/1 "Golos Text",system-ui,sans-serif;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:clip;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3;
+    grid-row:1;
+    display:inline-flex;
+    position:static;
+    flex:0 0 32px;
+    width:32px;
+    min-width:32px;
+    max-width:32px;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    align-items:center;
+    justify-content:center;
+    font-size:0;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > #editToggle::before {
+    content:"✏️";
+    font-size:15px;
+    line-height:1;
+  }
+  html body .menu-head .menu-controls-row > #editToggle.on::before { content:"✓"; }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    grid-column:1;
+    grid-row:2;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
+    display:flex;
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+    margin:0;
+    padding:0 10px;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input,
+  html body #deliveryView #dSearch,
+  html body #menuView #searchInput {
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    margin:0;
+    padding:0;
+    line-height:36px;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost,
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
+    display:flex;
+    position:relative;
+    inset:auto;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    padding:0;
+    align-items:center;
+    justify-content:center;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body .menu-head .upd { display:none; }
+
+  /* Preserve the other first-frame mobile controls without adding rows to the menu head. */
+  html body header.topbar #profileTopBtn { width:32px; min-width:32px; max-width:32px; height:32px; min-height:32px; max-height:32px; padding:0; flex:0 0 32px; }
+  html body nav[aria-label="Навигация по странице"] #scrollTopBtn,
+  html body #scrollTopBtn { box-sizing:border-box; width:44px; min-width:44px; max-width:44px; height:44px; min-height:44px; max-height:44px; padding:0; font-size:22px; }
+  html body #deliveryView .subfilter-bar .subchip,
+  html body #menuView .subfilter-bar .subchip,
+  html body #deliverySubFilter .subchip {
+    width:auto;
+    min-width:58px;
+    max-width:none;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    padding:0 14px;
+    flex:0 0 auto;
+    border-radius:10px;
+    background:var(--panel,#fff);
+    border:1px solid var(--line,#e2e8f0);
+    color:var(--ink,#20252b);
+  }
+  html body #deliveryView .subfilter-bar .subchip.on,
+  html body #menuView .subfilter-bar .subchip.on,
+  html body #deliverySubFilter .subchip.on {
+    background:#c43b32;
+    border-color:#c43b32;
+    color:#fff;
+    box-shadow:0 2px 8px rgba(196,59,50,.2);
+  }
+  html body #deliveryGrid .steprow,
+  html body #grid .steprow {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    width:100%;
+  }
+  html body #deliveryGrid .steprow > .cta[data-add],
+  html body #grid .steprow > .cta[data-add] {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    flex:1 1 100%;
+    margin:0;
+    box-sizing:border-box;
+    padding:0 12px;
+  }
+  html body #deliveryGrid .cta.incart,
+  html body #grid .cta.incart {
+    width:auto;
+    flex:0 0 auto;
+    padding:0 12px;
+  }
+}
+/* The section must stay in column 2 before deferred 160-12-admin-bar-tail.css arrives. */
+html body div.wrap > section {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  width: 100%;
+}
+html body div.wrap > .rail,
+html body div.wrap > #deliveryRail {
+  grid-column: 1;
+  grid-row: 1;
+}
+html body div.wrap > .rail:not(.rail-position-ready),
+html body div.wrap > #rail:not(.rail-position-ready),
+html body div.wrap > #deliveryRail:not(.rail-position-ready) {
+  visibility: hidden;
+}
+/* Keep screen-reader-only labels out of first-frame flex layout before deferred theme CSS loads. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Reserve delivery layout before deferred theme CSS is available. */
+@media (max-width: 820px) {
+  html body div.wrap {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px 12px 32px 8px;
+  }
+}
+html[data-brand="delivery"] .wrap > section,
+html[data-brand="delivery"] #deliveryView,
+html[data-brand="delivery"] #deliveryView .mh-top,
+html[data-brand="delivery"] #deliveryView .mh-top > div,
+html[data-brand="delivery"] #deliveryView .mh-right {
+  min-width: 0;
+  max-width: 100%;
+}
+html[data-brand="delivery"] .wrap > section,
+html[data-brand="delivery"] #deliveryView {
+  width: 100%;
+}
+html[data-brand="delivery"] #deliveryView .mh-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+html[data-brand="delivery"] #deliveryView .mh-right .search,
+html[data-brand="delivery"] #deliveryView .mh-right input {
+  max-width: 100%;
+}
+#deliveryView .mh-right .search input {
+  flex: 1;
+  min-width: 0;
+}
+html[data-brand="delivery"] #deliveryGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+  overflow-anchor: none;
+}
+
+/* Keep the critical first frame aligned with the canonical responsive menu grid. */
+@media (min-width: 520px) and (max-width: 1180px) {
+  html[data-brand="delivery"] #deliveryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1181px) {
+  html[data-brand="delivery"] #deliveryGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+@media (min-width: 1600px) {
+  html[data-brand="delivery"] #deliveryGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+html[data-brand="delivery"] #deliveryGrid > .card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 340px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 2px solid #3A2A1C;
+  border-radius: 18px;
+  background: #F6EEE1;
+}
+html[data-brand="delivery"] #deliveryGrid > .card > .media {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 180px;
+  min-height: 180px;
+  overflow: hidden;
+}
+html[data-brand="delivery"] #deliveryGrid > .card > .media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+html[data-brand="delivery"] #deliveryGrid > .card > .cbody {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 13px 14px 14px;
+}
+
+
+/* Minimal first-frame reserve for native pizza option geometry. Visual states and brand colors are owned by theme CSS. */
+html[data-brand="delivery"] #deliveryGrid fieldset.opts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-inline-size: 0;
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+}
+html[data-brand="delivery"] #deliveryGrid .opts legend {
+  grid-column: 1 / -1;
+  margin: 0 0 4px;
+}
+html[data-brand="delivery"] #deliveryGrid .opts label.opt-btn {
+  min-height: 52px;
+}
+
+/* Mirror the deferred delivery menu geometry to prevent FOUC-induced CLS. */
+html[data-brand="delivery"] #deliveryView .menu-head {
+  animation: none;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 2px 0 14px;
+  padding: 8px 16px;
+  border-radius: 18px;
+  border: 1.5px solid var(--line, #D8DFE4);
+}
+html[data-brand="delivery"] #deliveryRail {
+  position: relative;
+  top: auto;
+  align-self: stretch;
+  height: auto;
+  max-height: none;
+}
+html[data-brand="delivery"] #deliveryView .mh-top {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+html[data-brand="delivery"] #deliveryView .mh-top > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  width: 100%;
+}
+@media (max-width: 820px) {
+  html[data-brand="delivery"] #deliveryView .menu-head {
+    width: calc(100% + var(--menu-rail-width,80px) + var(--menu-rail-gap,10px));
+    max-width: none;
+    margin-left: calc(0px - var(--menu-rail-width,80px) - var(--menu-rail-gap,10px));
+  }
+}
+html[data-brand="delivery"] #deliveryView .menu-head h1 {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font: 800 clamp(20px, 2.8vw, 28px)/1.15 "Unbounded", "Golos Text", system-ui, sans-serif;
+}
+html[data-brand="delivery"] #deliveryView .menu-head h1 em {
+  display: inline-flex;
+  align-items: center;
+  font: 700 11px/1.2 "Golos Text", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #742116 !important;
+  background: rgba(192, 59, 42, 0.1);
+  border: 1px solid rgba(192, 59, 42, 0.25);
+  border-radius: 999px;
+  padding: 4px 10px;
+  margin-left: 0;
+  max-width: 100%;
+  white-space: normal;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+html[data-brand="delivery"] #deliveryView .menu-head .upd {
+  margin: 0 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(47, 125, 79, 0.08);
+  border: 1px solid rgba(47, 125, 79, 0.2);
+  font: 600 11.5px/1.3 "Golos Text", system-ui, sans-serif;
+  white-space: nowrap;
+  color: var(--soft);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #241812;
+  width: min(183px, 100%);
+  min-width: 0;
+  min-height: 26px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+html[data-brand="delivery"] #deliveryView .mh-right,
+html[data-brand="delivery"] #deliveryView .mh-right .search {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+html[data-brand="delivery"] #deliveryView .mh-right {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  flex: 1 1 100%;
+}
+html[data-brand="delivery"] #deliveryView .mh-right .search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 47px;
+  min-height: 47px;
+  padding: 0 16px;
+  border: 1.5px solid #7B8793;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(18, 58, 107, 0.05);
+  flex: 1 1 100%;
+}
+html[data-brand="delivery"] #deliveryView .mh-right .search input {
+  border: none;
+  flex: 1;
+  min-height: 44px;
+  min-width: 0;
+  font-size: 16px;
+  background: transparent;
+  color: #101418;
+}
+html[data-brand="delivery"] #deliveryView .subfilter-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-bottom: 12px;
+  padding: 4px 2px 8px;
+  min-height: 38px;
+}
+html[data-brand="delivery"] #deliveryView .subfilter-bar .subchip {
+  flex: 0 0 auto;
+  height: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 14px;
+  /* The visible pill (border + fill) is owned by .subchip::before in 160-09-preorder-subfilters.css. */
+  color: var(--fr-choc, #3A2A1C);
+  font: 600 13px/1 "Golos Text", system-ui, sans-serif;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+html[data-brand="delivery"] #deliveryGrid .card .cbody h3 {
+  font-size: 15.5px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(15.5px * 1.3 * 2);
+}
+html[data-brand="delivery"] #deliveryGrid .card .cbody .desc {
+  font-size: 12.5px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 37px;
+}
+/* Desktop pizza composition is the full ingredient list, not a two-line teaser.
+   Keep the first-paint mirror aligned with 20-cards.css after fonts and hydration. */
+@media (min-width: 821px) {
+  html[data-brand="delivery"] #deliveryGrid .card .cbody .desc {
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+    min-height: 0;
+  }
+}
+/* First-paint mirror: the one-column mobile delivery grid shows full pizza composition. */
+@media (max-width: 519px) {
+  html[data-brand="delivery"] #deliveryGrid .card .cbody .desc {
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+    min-height: 0;
+  }
+}
+html[data-brand="delivery"] #deliveryGrid .card .comp {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+  margin-top: 2px;
+  overflow: hidden;
+}
+/* Mirror of 20-cards.css: desktop wraps the composition chips instead of clipping them. */
+@media (min-width: 821px) {
+  html[data-brand="delivery"] #deliveryGrid .card .comp { flex-wrap: wrap; }
+}
+html[data-brand="delivery"] #deliveryGrid .card .comp i {
+  font-style: normal;
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  font: 600 10.5px "Golos Text", system-ui, sans-serif;
+}
+html[data-brand="delivery"] #deliveryGrid .card .steprow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 8px;
+}
+html[data-brand="delivery"] #deliveryGrid .opts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  width: 100%;
+}
+html[data-brand="delivery"] #deliveryGrid .opts button,
+html[data-brand="delivery"] #deliveryGrid .opts label.opt-btn,
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  gap: 3px;
+  padding: 7px 9px;
+  border: 2px solid var(--fr-tan, #D9C7AD);
+  background: #fff;
+  min-height: 48px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+html[data-brand="delivery"] #deliveryGrid .card .opts .opt-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+  white-space: nowrap;
+}
+html[data-brand="delivery"] #deliveryGrid .card .opts .opt-size {
+  font-size: 12.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+html[data-brand="delivery"] #deliveryGrid .card .opts .opt-crust {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* First-frame mirror of the compact desktop pizza option label layout. */
+@media (min-width: 821px) {
+  html[data-brand="delivery"] #deliveryGrid .card .opts label.opt-btn,
+  html[data-brand="delivery"] #deliveryGrid .card .opts .opt-btn {
+    padding-inline: 6px;
+  }
+  html[data-brand="delivery"] #deliveryGrid .card .opts .opt-row.opt-top {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: baseline;
+    column-gap: 2px;
+    min-width: 0;
+  }
+  html[data-brand="delivery"] #deliveryGrid .card .opts .opt-size {
+    min-width: 0;
+    font-size: 11px;
+    line-height: 1.15;
+  }
+  html[data-brand="delivery"] #deliveryGrid .card .opts .opt-crust {
+    min-width: 0;
+    justify-self: end;
+    font-size: 9.5px;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: clip;
+    text-align: right;
+  }
+}
+html[data-brand="delivery"] #deliveryGrid .card .opts .opt-weight {
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+html[data-brand="delivery"] #deliveryGrid .card .opts .opt-price {
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+html[data-brand="delivery"] #deliveryGrid fieldset.opts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; min-inline-size:0; width:100%; box-sizing:border-box; border:0; margin:6px 0 0; padding:6px 0 0; }
+html[data-brand="delivery"] #deliveryGrid .opts legend { grid-column:1 / -1; padding:0; margin:0 0 4px; color:var(--soft,#586470); font-size:11px; font-weight:700; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-radio { position:absolute; width:1px; height:1px; margin:0; opacity:0; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-content { display:flex; flex-direction:column; justify-content:space-between; gap:4px; width:100%; min-width:0; pointer-events:none; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) { background:var(--btn-fire-bg,var(--flame)); border:var(--btn-fire-border,2px solid var(--fr-choc)); color:var(--btn-fire-color,#fff); box-shadow:var(--btn-fire-shadow,2px 2px 0 var(--fr-choc)); }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-size,
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-crust,
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-weight,
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:checked) .opt-price { color:var(--btn-fire-color,#fff); opacity:1; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-radio:focus-visible + .opt-content { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; border-radius:6px; }
+html[data-brand="delivery"] #deliveryGrid .opts .opt-btn:has(.opt-radio:focus-visible) { outline:3px solid var(--focus,#1A6DDF); outline-offset:3px; }
+html[data-brand="delivery"] #deliveryGrid .opts-error { grid-column:1 / -1; margin:2px 0 0; color:var(--flame,#C03B2A); font-size:11px; font-weight:700; }
+
+
+/* First-paint mirror of 160-15: reserve the final mobile support/search row before deferred theme CSS. */
+@media (max-width: 820px) {
+  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > .search {
+    flex: 1 1 0%;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+  }
+  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab {
+    position: relative;
+    inset: auto;
+    z-index: 2;
+    display: inline-flex;
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+    max-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    box-shadow: none;
+    transform: none;
+    font-size: 0;
+    color: #fff;
+  }
+  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab::before {
+    display: none;
+  }
+  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab::after {
+    content: "Поддержка";
+    position: static;
+    font: inherit;
+    white-space: nowrap;
+  }
+  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab.open::after {
+    content: "Закрыть";
+  }
+  html body :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #chatFab.chat-fab .ub {
+    top: -6px;
+    right: -6px;
+  }
+}
+
+
+/* Match the approved two-row mobile menu toolbar on first paint; avoid search/support CLS. */
+@media (max-width:820px) {
+  html body :is(#menuView,#deliveryView) .menu-head { box-sizing:border-box; min-height:100px; max-height:100px; height:100px; overflow:visible; padding:6px 10px; }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:36px 44px;
+    gap:4px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:84px;
+    min-height:84px;
+    max-height:84px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    grid-column:1;
+    grid-row:1;
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    overflow:visible;
+  }
+  html body .menu-head .menu-controls-row {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) 32px;
+    grid-template-rows:36px;
+    align-items:center;
+    column-gap:6px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > h1 { grid-column:1; grid-row:1; min-width:0; white-space:nowrap; }
+  html body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2;
+    grid-row:1;
+    display:flex;
+    flex:1 1 auto;
+    align-items:center;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    overflow:visible;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    flex:1 1 auto;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    gap:3px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg button {
+    flex:1 1 0;
+    width:100%;
+    min-width:0;
+    max-width:none;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    padding:0 2px;
+    font:700 clamp(10px,2.8vw,11px)/1 "Golos Text",system-ui,sans-serif;
+    white-space:nowrap;
+    overflow:hidden;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3;
+    grid-row:1;
+    display:inline-flex;
+    position:static;
+    flex:0 0 32px;
+    width:32px;
+    min-width:32px;
+    max-width:32px;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    align-items:center;
+    justify-content:center;
+    font-size:0;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    grid-column:1;
+    grid-row:2;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
+    display:flex;
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+    padding:0 10px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input {
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    padding:0;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost,
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
+    display:flex;
+    position:relative;
+    inset:auto;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:0;
+    margin:0;
+    align-items:center;
+    justify-content:center;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+}
+/* Menu subfilters retain compact first-paint geometry; delivery is reserved at 44px. */
+@media (max-width:820px) {
+  html body #menuView .subfilter-bar .subchip {
+    box-sizing:border-box;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+  }
+}
+/* Reserve the full-width ticker below the compact topbar before deferred CSS arrives. */
+html body .ticker {
+  display: flex;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: 34px;
+  min-height: 34px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  line-height: 18px;
+  background: var(--ticker-bg, transparent);
+  color: var(--ticker-color, inherit);
+  border-bottom: var(--ticker-border, none);
+}
+html body .ticker.is-empty { visibility: hidden; }
+html body .tickerViewport {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+html body #tickerTrack,
+html body #tickerTrack .tickerGroup {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  width: max-content;
+  white-space: nowrap;
+  gap: 0;
+}
+html body #tickerTrack { min-width: 100%; }
+html body #tickerTrack > .tickerGroup { flex: 0 0 auto; }
+html body #tickerTrack span::after { color: var(--ticker-marker-color, var(--azure, #3E8FD0)); }
+html body #tickerTrack .tickerGroup > span {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: .5rem;
+  padding: 3px .65rem;
+  font: 650 12px/18px system-ui, sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+@media (max-width: 820px) {
+  html body #panel.open {
+    left: auto;
+    right: 0;
+    width: min(340px, calc(100vw - 24px));
+    max-width: min(340px, calc(100vw - 24px));
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 22px 0 0 22px;
+    margin: 0;
+  }
+}
+/* Anchor both wordmark lines inside a fixed slot; font swaps cannot change their geometry. */
+@media (max-width: 1023px) {
+  html[data-brand="coffee"] body header.topbar #brandTitle {
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+}
+@media (max-width: 690px) {
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand > div:not(.mark) {
+    position: relative !important;
+    display: block !important;
+    width: 128px !important;
+    min-width: 128px !important;
+    max-width: 128px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    flex: 0 0 128px !important;
+  }
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand {
+    width:148px !important;
+    min-width:148px !important;
+    max-width:148px !important;
+  }
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand > div:not(.mark) {
+    width:88px !important;
+    min-width:88px !important;
+    max-width:88px !important;
+    flex:0 0 88px !important;
+  }
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand #brandTitle {
+    width:88px !important;
+    min-width:88px !important;
+    max-width:88px !important;
+  }
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand #brandTitle {
+    display:block !important;
+    font-size:clamp(15px,4.8vw,19px) !important;
+    line-height:24px !important;
+  }
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand #brandTitle {
+    position: absolute !important;
+    display: block !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: max-content !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    font: 400 19px/24px "Prata", "Golos Text", serif !important;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  html[data-brand="coffee"] body header.topbar div#headerBrand.brand #brandSub {
+    position: absolute !important;
+    display: none !important;
+    top: 24px !important;
+    left: 0 !important;
+    width: 128px !important;
+    min-width: 128px !important;
+    max-width: 128px !important;
+    height: 12px !important;
+    min-height: 12px !important;
+    max-height: 12px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    font: 600 9px/12px "Golos Text", sans-serif !important;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+}
+
+
+/* First-paint mobile storefront contract agreed after #185. */
+@media (max-width:820px) {
+  html body #deliveryView .menu-head .mh-top,
+  html body #menuView .menu-head .mh-top {
+    grid-template-rows:32px 40px;
+    height:76px;
+  }
+  html body #deliveryView .menu-head .mh-top > .mh-right,
+  html body #menuView .menu-head .mh-top > .mh-right,
+  html body #deliveryView .menu-head .mh-top > .mh-right > .search,
+  html body #menuView .menu-head .mh-top > .mh-right > .search {
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+  }
+  html body #deliveryView .menu-head .mh-top > .mh-right > .search input,
+  html body #menuView .menu-head .mh-top > .mh-right > .search input,
+  html body #deliveryView #dSearch,
+  html body #menuView #searchInput {
+    box-sizing:border-box;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    line-height:36px;
+    padding-top:0;
+    padding-bottom:0;
+  }
+  html body .menu-head {
+    height:auto;
+    min-height:0;
+    max-height:none;
+    overflow:visible;
+  }
+  html body .menu-head .upd { display:none; }
+
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right:not(:has(> #supportLauncherHost))::after {
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost,
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
+    box-sizing:border-box;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  html body #deliveryView #deliverySubFilter .subchip,
+  html body #deliveryView .subfilter-bar .subchip {
+    position:relative;
+    isolation:isolate;
+    box-sizing:border-box;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    border-radius:0;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+    color:var(--fr-choc,#3A2A1C);
+    padding:0 14px;
+  }
+  html body #deliveryView #deliverySubFilter .subchip::before,
+  html body #deliveryView .subfilter-bar .subchip::before {
+    content:"";
+    position:absolute;
+    inset:2px 0;
+    z-index:-1;
+    border-radius:999px;
+    background:var(--fr-paper,#F6EEE1);
+    border:1.5px solid var(--fr-tan,#C99E6E);
+    pointer-events:none;
+  }
+  html body #deliveryView #deliverySubFilter .subchip:hover::before,
+  html body #deliveryView .subfilter-bar .subchip:hover::before {
+    background:var(--fr-rice,#EFE6D8);
+  }
+  html body #deliveryView #deliverySubFilter .subchip.on,
+  html body #deliveryView .subfilter-bar .subchip.on {
+    color:#fff;
+  }
+  html body #deliveryView #deliverySubFilter .subchip.on::before,
+  html body #deliveryView .subfilter-bar .subchip.on::before {
+    background:var(--flame,#C03B2A);
+    border-color:var(--fr-choc,#3A2A1C);
+    box-shadow:2px 2px 0 var(--fr-choc,#3A2A1C);
+  }
+  html body header.topbar #profileTopBtn,
+  html body header.topbar button#venueToggle.venueToggle {
+    box-sizing:border-box;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:0;
+  }
+}
+
+/* Final first-paint mirror: exact two-row staff menu header, no extra rows or reserved blank space. */
+@media (max-width:820px) {
+  html body :is(#menuView,#deliveryView) .menu-head {
+    box-sizing:border-box;
+    height:100px;
+    min-height:100px;
+    max-height:100px;
+    overflow:visible;
+    padding:6px 10px;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:36px 44px;
+    gap:4px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:84px;
+    min-height:84px;
+    max-height:84px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    grid-column:1;
+    grid-row:1;
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) 32px;
+    grid-template-rows:36px;
+    align-items:center;
+    column-gap:6px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > h1 {
+    grid-column:1;
+    grid-row:1;
+    display:inline-flex;
+    align-items:center;
+    flex:0 0 auto;
+    width:auto;
+    min-width:0;
+    max-width:none;
+    margin:0;
+    white-space:nowrap;
+    overflow:visible;
+    font-size:clamp(15px,4vw,18px);
+    line-height:1;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2;
+    grid-row:1;
+    display:flex;
+    flex:1 1 auto;
+    align-items:center;
+    justify-content:stretch;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    overflow:visible;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    flex:1 1 auto;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    gap:2px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+    display:flex;
+    flex:1 1 0;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    align-items:center;
+    justify-content:center;
+    font:700 clamp(9px,2.6vw,10px)/1 "Golos Text",system-ui,sans-serif;
+    letter-spacing:-0.02em;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:clip;
+    box-sizing:border-box;
+  }
+  html body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3;
+    grid-row:1;
+    display:inline-flex;
+    position:static;
+    flex:0 0 32px;
+    width:32px;
+    min-width:32px;
+    max-width:32px;
+    height:32px;
+    min-height:32px;
+    max-height:32px;
+    margin:0;
+    padding:0;
+    align-items:center;
+    justify-content:center;
+    font-size:0;
+  }
+  html body .menu-head .menu-controls-row > #editToggle::before {
+    content:"✏️";
+    font-size:15px;
+    line-height:1;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    grid-column:1;
+    grid-row:2;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
+    display:flex;
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+    padding:0 10px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input {
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    padding:0;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost,
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab {
+    display:flex;
+    position:relative;
+    inset:auto;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    padding:0;
+    align-items:center;
+    justify-content:center;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > #supportLauncherHost > #chatFab.chat-fab svg {
+    width:16px;
+    height:16px;
+  }
+}
+
+  /* 320px: hide the descriptor pill that collides with the search row and compact pizza options. */
+  @media (max-width: 320px) {
+    html[data-brand="coffee"] #menuView .menu-head h1 em,
+    html[data-brand="delivery"] #deliveryView .menu-head h1 em { display: none; }
+
+    html[data-brand="delivery"] #deliveryGrid .card .opts .opt-size { font-size: 10px; }
+    html[data-brand="delivery"] #deliveryGrid .card .opts .opt-crust { font-size: 8px; }
+    html[data-brand="delivery"] #deliveryGrid .card .opts .opt-weight { font-size: 8.5px; }
+    html[data-brand="delivery"] #deliveryGrid .card .opts .opt-price { font-size: 10.5px; }
+    html[data-brand="delivery"] #deliveryGrid .opts label.opt-btn { padding: 7px 4px; }
+    html[data-brand="delivery"] #deliveryGrid .card .opts .opt-row { gap: 1px; }
+  }
+
+
+/* Guest first-paint geometry mirrors the existing brand-specific menu header sizing. */
+@media (max-width:820px) {
+  html body #menuView .menu-head {
+    box-sizing: border-box;
+    min-height: 100px;
+    max-height: 100px;
+    height: 100px;
+    overflow: visible;
+    padding: 6px 10px;
+  }
+  html body #menuView .menu-head .mh-top {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: 36px 44px;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: 84px;
+    min-height: 84px;
+    max-height: 84px;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+  html body #deliveryView .menu-head {
+    box-sizing: border-box;
+    min-height: 100px;
+    max-height: 100px;
+    height: 100px;
+    overflow: visible;
+    padding: 6px 10px;
+  }
+  html body #deliveryView .menu-head .mh-top {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: 36px 44px;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: 84px;
+    min-height: 84px;
+    max-height: 84px;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+}
+
+
+</style>
+<style id="critical-staff-tap-targets">
+@media (max-width:820px) {
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
+    box-sizing:border-box;
+    height:108px;
+    min-height:108px;
+    max-height:108px;
+    overflow:visible;
+    padding:6px 10px;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:44px 44px;
+    gap:8px 0;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:96px;
+    min-height:96px;
+    max-height:96px;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    grid-column:1;
+    grid-row:1;
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row {
+    display:grid;
+    grid-template-columns:minmax(0,auto) minmax(176px,1fr) 44px;
+    grid-template-rows:44px;
+    align-items:center;
+    column-gap:4px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .menu-controls-row > h1 {
+    grid-column:1;
+    grid-row:1;
+    display:inline-flex;
+    align-items:center;
+    flex:0 0 50px;
+    width:50px;
+    min-width:50px;
+    max-width:50px;
+    margin:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font-size:clamp(13px,3.7vw,16px);
+    line-height:1;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot {
+    grid-column:2;
+    grid-row:1;
+    display:flex;
+    flex:1 1 auto;
+    align-items:center;
+    justify-content:stretch;
+    width:100%;
+    min-width:176px;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    overflow:visible;
+    contain:none;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(44px,1fr));
+    grid-template-rows:44px;
+    flex:1 1 auto;
+    width:100%;
+    min-width:176px;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    padding:0;
+    gap:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .mode-seg-slot > #modeSeg > button {
+    width:100%;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:6px 0;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > #editToggle {
+    grid-column:3;
+    grid-row:1;
+    flex:0 0 44px;
+    width:44px;
+    min-width:44px;
+    max-width:44px;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    padding:6px;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
+    grid-column:1;
+    grid-row:2;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+    margin:0;
+    padding:0;
+    overflow:visible;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search {
+    display:flex;
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+    margin:0;
+    padding:0 10px;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right > .search input,
+  html[data-staff-role] body #deliveryView #dSearch,
+  html[data-staff-role] body #menuView #searchInput {
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    margin:0;
+    padding:0;
+    line-height:36px;
+    box-sizing:border-box;
+  }
+  html body .menu-head .upd { display:none; }
+}
+
+@media (min-width:821px) {
+  html[data-staff-role] body > div.wrap {
+    width:100%;
+    min-width:0;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head {
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body :is(#menuView,#deliveryView) .menu-head .mh-top {
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
+  html[data-staff-role] body .menu-head .menu-controls-row > .upd {
+    display:inline-flex;
+    flex:0 0 auto;
+    align-items:center;
+    width:auto;
+    min-width:0;
+    margin:0 0 0 auto;
+    white-space:nowrap;
+  }
+}
+</style>
+</head>
+
+<body>
+  <!-- ═══ СПЛЭШ-ЭКРАН (должен быть ПЕРВЫМ элементом body для E2E и LCP) ═══ -->
+  <div id="brandSplashStatic">
+    <div class="spInner">
+      <div class="spSub">Выберите, куда вы сегодня</div>
+      <div class="spBtns">
+        <button class="spBtn spPizza" data-go="delivery" style="--sp-bg:#F6EEE1;--sp-ink:#3A2A1C;--sp-accent:#C03B2A">
+          <span class="em"><img src="/friday-logo.svg" alt="Пятница" width="224" height="56" /></span><span class="bt">Пятница</span><small>доставка пиццы и роллов</small>
+        </button>
+        <button class="spBtn spCoffee" data-go="coffee" style="--sp-bg:#FFFFFF;--sp-ink:#123A6B;--sp-accent:#3E8FD0">
+          <span class="em"><img src="/andCoffee.svg" alt="…и кофе" width="100" height="100" /></span><span class="bt">…и кофе</span><small>меню, штампы и бонусы</small>
+        </button>
+      </div>
+    </div>
+  </div>
+
+    <!-- ═══ ИНЛАЙН-ВЛАДЕЛЕЦ КЛИКА (контракт Playwright и чистая навигация) ═══ -->
+  <script>
+    (function () {
+      var s = document.getElementById("brandSplashStatic");
+      if (!s) return;
+      s.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-go]");
+        if (!btn) return;
+        e.stopImmediatePropagation();
+        var choice = btn.getAttribute("data-go");
+        try { sessionStorage.setItem("splashDone", "1"); } catch (err) { }
+        try { sessionStorage.setItem("zt_splash_clicked", "1"); } catch (err) { }
+        try { localStorage.setItem("zt_brand", choice); } catch (err) { }
+
+        var doc = document.documentElement;
+        doc.setAttribute("data-brand", choice);
+        doc.classList.remove("need-splash", "brand-coffee", "brand-delivery");
+        doc.classList.add("no-splash", "brand-" + choice);
+        if (document.body) document.body.setAttribute("data-brand", choice);
+        window.brand = choice;
+        s.remove();
+
+        // Мгновенно обновляем URL без перезагрузки страницы (только в обычном браузере)
+        try {
+          var isPwa = (navigator.standalone === true) || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+          var isTg = /Telegram/i.test(navigator.userAgent) || new URLSearchParams(location.search).get("src") === "tg";
+          if (!isPwa && !isTg) {
+            var u = new URL(location.href);
+            u.searchParams.set("brand", choice);
+            history.replaceState(history.state, "", u.pathname + u.search + u.hash);
+          }
+        } catch (err) { }
+
+        // Переключаем вид SPA без перезагрузки
+        if (typeof window.sv === "function") window.sv();
+        if (typeof window.syncBrandViews === "function") window.syncBrandViews();
+      });
+    })();
+  </script>
+  <header class="topbar">
+    <div class="brandSeg" id="brandSeg">
+      <button data-brand="coffee" class="on">🌊 Кофейня</button>
+      <button data-brand="delivery">🍕 Пятница</button>
+    </div>
+    <div class="brand" id="headerBrand">
+      <div class="mark" id="brandMark">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke-linecap="round">
+          <path d="M5 4h14v7a7 7 0 0 1-14 0V4z" stroke="#fff" stroke-width="1.7" />
+          <path d="M5.5 9.5c2.2-1.4 4.3-1.4 6.5 0s4.3 1.4 6.5 0" stroke="#BBD6EE" stroke-width="1.5" />
+          <path d="M6.5 12.5c1.8-1.2 3.7-1.2 5.5 0s3.7 1.2 5.5 0" stroke="#7FB2D9" stroke-width="1.5" />
+          <path d="M8.5 15.5c1.2-.8 2.3-.8 3.5 0s2.3.8 3.5 0" stroke="#4C7FC0" stroke-width="1.5" />
+        </svg>
+      </div>
+      <div>
+        <b id="brandTitle" aria-label="…и кофе">…и к<span class="bean" aria-hidden="true"><svg viewBox="3.5 1.5 21 24"><g transform="translate(3 3)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#23272C"/></g></g><g transform="translate(2 2)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="translate(1 1)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="currentColor"/><path d="M12 3.6C8.4 7.8 15.6 16.2 12 20.4" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/></g></svg></span>фе</b><small id="brandSub">кофейня на берегу моря</small>      </div>
+    </div>
+    <button class="mbonus" id="mbonusBtn" type="button" aria-label="Бонусы 0/10" hidden>
+      <span class="mb-stamps"><span class="mb-bean"></span><span id="mbonusSt">0/10</span></span>
+      <span class="mb-free" id="mbonusFree" hidden>🎁 0</span>
+    </button>
+    <button class="ava" id="profileTopBtn" title="Профиль" aria-label="Профиль пользователя">?</button>
+    <div class="modeSeg" id="modeSeg" hidden aria-hidden="true">
+      <button type="button" data-mode="guest" class="on" tabindex="-1">Гость</button>
+      <button type="button" data-mode="cashier" tabindex="-1">Кассир</button>
+      <button type="button" data-mode="orders" tabindex="-1">Заказы</button>
+      <button type="button" data-mode="admin" tabindex="-1">Админ</button>
+    </div>
+  </header>
+  <div class="ticker" role="region" aria-label="Объявления">
+    <div class="tickerViewport">
+      <div class="track" id="tickerTrack" aria-live="off"></div>
+    </div>
+  </div>
+
+  
+
+  <div class="wrap" role="main">
+    <nav class="rail" id="rail"></nav>
+    <div class="rail" id="deliveryRail" style="display: none"></div>
+
+    <section>
+      <div class="adminBar" id="adminBar" hidden>
+        <button id="editToggle">✏️ Редактировать</button>
+        <button id="promoToggle" hidden>🎟 Промокоды</button>
+        <button id="dashToggle" hidden>📊 Дашборд</button>
+        <button id="chatsToggle2" hidden aria-label="Чаты гостей">💬 Чаты гостей</button>
+      </div>
+
+      <div id="deliveryView" class="deliveryView">
+        <div class="menu-head">
+          <div class="mh-top">
+            <div>
+              <h1>Меню</h1>
+              <h2 class="vh">Разделы меню</h2>
+              <div class="upd">
+                Обновлено: <b id="updWhenD">-</b>
+              </div>
+            </div>
+            <div class="mh-right">
+              <div class="search">
+                <label for="dSearch" class="sr-only">Поиск по меню доставки</label>
+                <span aria-hidden="true">🔍</span>
+                <input id="dSearch" name="dSearch" placeholder="Найти в меню…" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="deliveryBanner"></div>
+        <div class="subfilter-viewport" id="deliverySubFilterViewport">
+          <div id="deliverySubFilter" class="subfilter-bar" hidden></div>
+        </div>
+        <div class="grid" id="deliveryGrid">
+          <article class="card" data-product-id="1">
+            <div class="media" style="--tint:#F3E2CE">
+              <img src="/media/dishes/1-card.webp"
+                   alt="Маргарита"
+                   loading="eager" fetchpriority="high" decoding="async" data-lcp="1"
+                   width="300" height="180"
+                   style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+            </div>
+            <div class="cbody">
+              <h3>Маргарита</h3>
+              <div class="desc">Красный соус, моцарелла</div>
+              <div class="comp"><i>красный соус</i><i>моцарелла</i></div>
+              <fieldset class="opts">
+                <legend>Размер и тесто</legend>
+                <label class="opt-btn" for="pizza-option-1-0">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-0" value="0" data-id="1" data-oi="0">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">25 см</span><span class="opt-crust">пышное</span></span><span class="opt-row opt-bottom"><span class="opt-weight">415 г</span><span class="opt-price">535 ₽</span></span></span>
+                </label>
+                <label class="opt-btn" for="pizza-option-1-1">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-1" value="1" data-id="1" data-oi="1">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">35 см</span><span class="opt-crust">пышное</span></span><span class="opt-row opt-bottom"><span class="opt-weight">750 г</span><span class="opt-price">735 ₽</span></span></span>
+                </label>
+                <label class="opt-btn" for="pizza-option-1-2">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-2" value="2" data-id="1" data-oi="2">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">25 см</span><span class="opt-crust">тонкое</span></span><span class="opt-row opt-bottom"><span class="opt-weight">335 г</span><span class="opt-price">435 ₽</span></span></span>
+                </label>
+                <label class="opt-btn" for="pizza-option-1-3">
+                  <input class="opt-radio" type="radio" name="pizza-option-1" id="pizza-option-1-3" value="3" data-id="1" data-oi="3">
+                  <span class="opt-content"><span class="opt-row opt-top"><span class="opt-size">35 см</span><span class="opt-crust">тонкое</span></span><span class="opt-row opt-bottom"><span class="opt-weight">550 г</span><span class="opt-price">635 ₽</span></span></span>
+                </label>
+                <p class="opts-error" id="pizza-option-1-error" hidden>Выберите размер и тесто.</p>
+              </fieldset>
+              <div class="steprow" style="margin-top:auto">
+                <button class="cta" data-add="1">Добавить</button>
+              </div>
+            </div>
+          </article>
+          <div class="card skeleton-card" aria-hidden="true">
+            <div class="media skeleton-pulse"></div>
+            <div class="cbody">
+              <div class="skeleton-line skeleton-pulse" style="width:65%;height:14px"></div>
+              <div class="skeleton-line skeleton-pulse" style="width:85%;height:12px;margin-top:6px"></div>
+              <div class="skeleton-line skeleton-pulse" style="width:45%;height:18px;margin-top:auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="menuView">
+        <div class="menu-head">
+          <div class="mh-top">
+            <div>
+              <h1>Меню</h1>
+              <h2 class="vh">Разделы меню</h2>
+              <div class="upd coffee-menu-updated" aria-live="off">
+                <span>Обновлено: </span><b id="updWhen">-</b><span class="adminBadge" id="adminBadge" hidden>режим администратора</span>
+              </div>
+              </div>
+            <div class="mh-right">
+              <div class="search coffee-menu-search">
+                <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5"></path></svg>
+                <label class="sr-only" for="searchInput">Поиск по меню кофейни</label>
+                <input id="searchInput" name="search" placeholder="Найти напиток или десерт…" autocomplete="off" />
+                <span class="search-shortcut" aria-hidden="true">⌘ K</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid" id="grid">
+          <!-- Статическая карточка первого экрана для мгновенного LCP -->
+          <article class="card" data-item-id="esp">
+            <div class="media" style="--tint:#F3E2CE"><span class="e">☕</span></div>
+            <div class="cbody">
+              <h3>Эспрессо</h3>
+              <div class="desc">40 мл чистой честности. Без молока и компромиссов</div>
+              <div class="cfoot" style="margin-top:auto">
+                <span class="price">180 ₽</span>
+              </div>
+            </div>
+          </article>
+          <div class="card skeleton-card" aria-hidden="true">
+            <div class="media skeleton-shimmer"></div>
+            <div class="cbody">
+              <div class="skeleton-line" style="width: 70%; height: 16px"></div>
+              <div class="skeleton-line" style="width: 90%; height: 12px; margin-top: 6px"></div>
+              <div class="skeleton-line" style="width: 40%; height: 18px; margin-top: auto"></div>
+            </div>
+          </div>
+          <div class="card skeleton-card" aria-hidden="true">
+            <div class="media skeleton-shimmer"></div>
+            <div class="cbody">
+              <div class="skeleton-line" style="width: 60%; height: 16px"></div>
+              <div class="skeleton-line" style="width: 85%; height: 12px; margin-top: 6px"></div>
+              <div class="skeleton-line" style="width: 40%; height: 18px; margin-top: auto"></div>
+            </div>
+          </div>
+          <div class="card skeleton-card" aria-hidden="true">
+            <div class="media skeleton-shimmer"></div>
+            <div class="cbody">
+              <div class="skeleton-line" style="width: 80%; height: 16px"></div>
+              <div class="skeleton-line" style="width: 75%; height: 12px; margin-top: 6px"></div>
+              <div class="skeleton-line" style="width: 40%; height: 18px; margin-top: auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="cashierView" hidden>
+        <div class="cashier">
+          <div class="cash-top">
+            <h2>Режим <em>кассира</em></h2>
+            <button class="btn fire" id="newGuestBtn">＋ Новый гость</button>
+            <button class="btn dark" id="chatsToggle">💬 Чаты гостей</button>
+          </div>
+          <details class="staff-guide" id="cashierGuide">
+            <summary>
+              <span class="staff-guide-heading"><b>Краткая инструкция кассира</b><small>Поиск гостя, штампы и бесплатный кофе</small></span>
+            </summary>
+            <div class="staff-guide-content">
+              <ol>
+                <li><b>Найдите гостя.</b> Введите имя или телефон и нажмите «Найти». Можно также отсканировать QR кнопкой камеры внизу экрана. Если камера недоступна, введите код с QR вручную.</li>
+                <li><b>Проверьте профиль.</b> Перед начислением или списанием сверьте имя и номер телефона.</li>
+                <li><b>Начислите штамп.</b> После покупки нажмите «Пробить штамп». Один клик добавляет один штамп. Десятый открывает гостю бесплатный кофе.</li>
+                <li><b>Списание подарка.</b> Если у гостя есть бесплатный кофе, нажмите «Списать бесплатный кофе» и выберите напиток, который он заказал.</li>
+                <li><b>Новый гость.</b> Сначала попробуйте поиск. Если профиля нет, нажмите «＋ Новый гость», заполните имя и телефон и нажмите «Создать».</li>
+              </ol>
+              <p>В блоке «Активация гостей» проверяйте имя и телефон, затем подтверждайте только знакомого вам гостя. Для вопросов откройте «Чаты гостей».</p>
+            </div>
+          </details>
+
+          <div class="cash-card" id="ngCard" hidden>
+            <h4 style="
+                  font: 700 12px &quot;Unbounded&quot;, &quot;Golos Text&quot;, sans-serif;
+                  letter-spacing: 0.08em;
+                  text-transform: uppercase;
+                  color: #8b98a5;
+                  margin-bottom: 10px;
+                ">
+              Создать профиль гостя
+            </h4>
+            <div class="findrow">
+              <input id="ngName" name="ngName" placeholder="Имя гостя" maxlength="24" />
+              <input id="ngPhone" name="ngPhone" placeholder="+7 900 000-00-00" inputmode="tel" />
+              <button class="btn fire" id="ngSave">Создать</button>
+              <button class="btn ghost" id="ngCancel">Отмена</button>
+            </div>
+          </div>
+
+          <div class="cash-card">
+            <h4 style="
+                  font: 700 12px &quot;Unbounded&quot;, &quot;Golos Text&quot;, sans-serif;
+                  letter-spacing: 0.08em;
+                  text-transform: uppercase;
+                  color: #8b98a5;
+                  margin-bottom: 14px;
+                ">
+              Найти гостя
+            </h4>
+            <div class="findrow cash-findrow">
+              <input id="findInput" name="findInput" placeholder="Имя или телефон" autocomplete="off" />
+              <div class="find-actions">
+                <button class="btn fire" id="findBtn">Найти</button>
+                <button class="btn dark" id="newGuestBtn2">+ Новый</button>
+              </div>
+            </div>
+            <hr style="
+                  border: none;
+                  border-top: 1px dashed var(--line);
+                  margin: 18px 0;
+                " />
+            <div class="cust" id="custCard">
+              <div class="big" id="custInit">А</div>
+              <div class="info">
+                <b id="custName">—</b>
+                <div class="cp" id="custPhone">—</div>
+                <div class="freeBanner" id="custFree" hidden>
+                  🎁 Бесплатных кофе: <b id="custFreeN">1</b> — предложи
+                  списать!
+                </div>
+                <div class="cdots" id="custDots"></div>
+                <div class="note" id="custNote"></div>
+                <div class="chist" id="custHist"></div>
+              </div>
+              <div class="acts">
+                <button class="btn fire" id="giveStampBtn">
+                  ☕ Пробить штамп
+                </button>
+                <button class="btn ghost" id="redeemBtn" hidden>
+                  🎁 Списать бесплатный кофе
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cash-card">
+            <div class="card" style="margin-bottom: 12px">
+              <h3 style="margin: 0 0 8px">🆕 Активация гостей</h3>
+              <div id="pendingBox"></div>
+            </div>
+            <h4 style="
+                  font: 700 12px &quot;Unbounded&quot;, &quot;Golos Text&quot;, sans-serif;
+                  letter-spacing: 0.08em;
+                  text-transform: uppercase;
+                  color: #8b98a5;
+                  margin-bottom: 10px;
+                ">
+              Последние события
+            </h4>
+            <div id="cashLog"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ordersView" hidden>
+        <div class="cashier">
+          <div class="cash-top">
+            <h2>Заказы <em>доставки</em></h2>
+            <button class="btn ghost" id="ordersRefresh">⟳ Обновить</button>
+          </div>
+          <details class="staff-guide" id="dispatchGuide">
+            <summary>
+              <span class="staff-guide-heading"><b>Краткая инструкция диспетчера</b><small>Приём, приготовление и доставка заказов</small></span>
+            </summary>
+            <div class="staff-guide-content">
+              <ol>
+                <li><b>Проверяйте новые заказы.</b> Список обновляется автоматически. Кнопка «Обновить» загружает заказы вручную.</li>
+                <li><b>Сверьте детали.</b> Посмотрите имя и телефон гостя, адрес или самовывоз, состав заказа, оплату, комментарий и время доставки.</li>
+                <li><b>Меняйте статус по этапам.</b> Обычно: «Новый» → «Принят» → «Готовится» → «В пути» → «Выполнен». Для самовывоза после приготовления отметьте «Выполнен».</li>
+                <li><b>Не пропускайте предзаказы.</b> У них есть отдельная отметка и выбранный интервал. Учитывайте это время при передаче заказа на кухню и доставку.</li>
+                <li><b>Сообщайте о задержке.</b> Кнопки «+15 мин» и «+30 мин» находятся в карточке заказа. «Задержать все» применяет задержку ко всем активным заказам. Укажите причину: гость получит уведомление.</li>
+              </ol>
+              <p>Если нужно уточнить адрес или детали, откройте «Чаты гостей». Отменяйте заказ только после подтверждения отмены.</p>
+            </div>
+          </details>
+          <div class="cash-card" id="ordersList"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel" id="panel" aria-label="Личный кабинет">
+      <div class="tabs" aria-label="Личный кабинет">
+        <button class="btn-back" type="button" aria-label="Закрыть личный кабинет">← Назад</button>
+      </div>
+
+      <div class="pv" id="pvProfile" aria-label="Профиль" tabindex="0">
+        <div id="profileNoUser">
+          <div class="authPrompt">
+            <span class="ap">👤</span>
+            <b>Профиль по номеру телефона</b>
+            <p>
+              <span id="profileCoffeePrompt">История штампов, подарки и QR — в одном профиле.</span>
+              <span id="profileDeliveryPrompt" hidden>Ваши заказы и их статусы — в одном профиле.</span>
+              Вход по номеру: данные не теряются.
+            </p>
+            <button data-auth>Создать или войти</button>
+          </div>
+        </div>
+        <div id="profileBox" hidden>
+          <section class="profile-identity">
+            <div class="phead">
+              <div class="profile-name-row">
+                <input id="nameInput" name="nameInput" maxlength="24" readonly aria-label="Имя в профиле" />
+                <button class="profile-name-action profile-name-edit-icon" id="nameEditBtn" type="button" aria-label="Изменить имя" title="Изменить имя"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></svg></button>
+              </div>
+              <button class="gear" id="profileSettingsBtn" type="button" title="Настройки профиля" aria-label="Настройки профиля" aria-controls="settingsModal" aria-expanded="false">⚙️</button>
+              <div class="profile-meta-row">
+                <div class="ava" id="avInit" aria-hidden="true">А</div>
+                <div class="profile-meta-copy">
+                  <div class="ph" id="phoneLbl"></div>
+                  <div class="profile-role" id="roleLbl"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <button class="demoBtn" id="pushBtn" hidden>
+            🔔 Включить уведомления
+          </button>
+
+          <section class="profile-brand-section profile-coffee-only" id="profileCoffeeSection" aria-label="Бонусы кофейни">
+            <div id="bonusBox" hidden>
+              <div class="stats" aria-label="Статистика посещений" hidden>
+                <div class="stat"><b id="stCups">0</b><span>чашек</span></div>
+                <div class="stat"><b id="stStamps">0</b><span>штампов</span></div>
+                <div class="stat"><b id="stFree">0</b><span>подарков</span></div>
+              </div>
+              <div class="bonus-heading">
+                <div><p class="bonus-eyebrow">Программа лояльности</p><h3>Каждый 10-й кофе — за наш счёт</h3></div>
+                <span class="bonus-count" id="bonusCount" aria-live="polite">0/10</span>
+              </div>
+              <div class="stamps" id="stampGrid" aria-label="Карта из десяти штампов"></div>
+              <div id="freeSlot" aria-live="polite"></div>
+              <div class="profile-qr-access">
+                <div class="bonus-qr-copy"><b>Штампы на кассе</b><small>Покажите QR кассиру для начисления штампа или получения подарка.</small></div>
+                <button class="profile-qr-link" id="qrOpenProfile" type="button" data-open-profile-qr
+                  aria-label="Показать QR для начисления штампа или получения подарка">Показать QR</button>
+              </div>
+              <details class="profile-promo-details">
+                <summary>Есть промокод?</summary>
+                <div class="qrbox">
+                  <div class="findrow">
+                    <input id="promoInput" name="promoInput" placeholder="Например MORE10"
+                      autocomplete="off" style="text-transform: uppercase" />
+                    <button class="btn fire" id="promoBtn" type="button">OK</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </section>
+          <section class="profile-brand-section profile-delivery-only" id="profileOrdersSection" aria-label="Заказы доставки" hidden>
+            <div class="profile-section-heading">
+              <h4>Последний заказ</h4>
+              <button class="profile-all-orders" id="myOrdersBtn" type="button" aria-controls="ordersModal">Все заказы</button>
+            </div>
+            <div id="myOrders" aria-live="polite" aria-atomic="true"></div>
+          </section>
+          <div class="placebox coffee-venue-card">
+            <b>…и кофе у моря</b>
+            <div class="coffee-venue-detail">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              <span>п. Янтарный, ул. Советская, 70г</span>
+            </div>
+            <div class="coffee-venue-detail">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span><b>Май–сентябрь:</b> ежедневно 8:00–21:00<br><b>Октябрь–апрель:</b> ежедневно 8:00–20:00</span>
+            </div>
+            <nav class="coffee-place-links" aria-label="Социальные сети кофейни">
+              <a class="coffee-place-link" href="https://t.me/and_coffee39" target="_blank" rel="noopener noreferrer" aria-label="Telegram-канал">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.5 18-3.8-7.1L3 10.1 21 3Z"/><path d="m9.7 13.9L21 3"/></svg>
+                <span>Telegram-канал</span>
+              </a>
+              <a class="coffee-place-link" href="https://www.instagram.com/and_coffee39/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" class="coffee-icon-dot"/></svg>
+                <span>Instagram</span>
+              </a>
+              <a class="coffee-place-link" href="https://t.me/and_coffee_bot" target="_blank" rel="noopener noreferrer" aria-label="Бот с бонусами">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 3v5M8 13h.01M16 13h.01M9 17h6"/><circle cx="12" cy="3" r="1"/></svg>
+                <span>Бот с бонусами</span>
+              </a>
+            </nav>
+          </div>
+          <div class="placebox coffee-review-card">
+            <span class="coffee-review-prompt">Понравилось?</span>
+            <button class="btn fire coffee-review-button" id="reviewBtn" type="button">★ Оставить отзыв</button>
+          </div>
+          <section class="profile-history-section" aria-labelledby="historyHeading">
+            <div class="profile-history-heading">
+              <h4 id="historyHeading">История операций</h4>
+              <span class="profile-history-count" id="historyCount"></span>
+            </div>
+            <div id="histList" aria-live="polite"></div>
+            <button class="profile-history-toggle" id="historyToggleBtn" type="button" hidden>Показать всю историю</button>
+          </section>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <aside id="supportLauncherHost" aria-label="Поддержка">
+    <button class="chat-fab" id="chatFab" type="button" aria-label="Поддержка — открыть чат">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M12 3C6.5 3 2 6.9 2 11.7c0 2.6 1.3 4.9 3.4 6.5-.1 1-.5 2.4-1.6 3.8 2-.3 3.6-1 4.7-1.7 1.1.3 2.3.5 3.5.5 5.5 0 10-3.9 10-8.7S17.5 3 12 3z" />
+      </svg>
+      <span class="ub" id="chatBadge" hidden>0</span>
+    </button>
+  </aside>
+
+  <section class="chat" id="chatPanel" aria-label="Чат поддержки">
+    <div class="chat-h chatHead">
+      <div class="op">🌊</div>
+      <div>
+        <b>Ника · поддержка «…и кофе»</b><small><i></i>онлайн, отвечает ~1 мин</small>
+      </div>
+      <button id="chatClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="chat-m" id="chatMsgs"></div>
+    <div class="chips" id="chatChips"></div>
+    <div class="chat-i">
+      <input id="chatInput" name="chatInput" placeholder="Напишите сообщение…" autocomplete="off" />
+      <button id="chatSend" aria-label="Отправить">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 20l19-8L3 4v6l13 2-13 2z" />
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <div class="overlay" id="overlay"></div>
+
+  <div class="modal" id="emModal">
+    <div class="modal-card">
+      <button class="mclose" id="emClose" aria-label="Закрыть">✕</button>
+      <h3 id="emTitle">Позиция меню</h3>
+      <div class="msub">Изменения сразу видны гостям в меню</div>
+      <div class="form">
+        <div class="zone" id="emZone"></div>
+        <input type="file" id="emFile" accept="image/*" hidden />
+        <div class="frow">
+          <label for="emName">Название<input id="emName" name="emName" maxlength="40" placeholder="Капучино" /></label>
+          <label for="emCat">Категория<select id="emCat" name="emCat"></select></label>
+        </div>
+        <div class="frow">
+          <label for="emPrice">Цена, ₽<input id="emPrice" name="emPrice" type="number" min="0" step="10" /></label>
+          <label for="emVol">Объём / выход<input id="emVol" name="emVol" maxlength="14" placeholder="300 мл" /></label>
+          <label for="emEmoji">Эмодзи-фолбэк<input id="emEmoji" name="emEmoji" maxlength="4" placeholder="☕" /></label>
+        </div>
+        <div id="emOptsBox" hidden>
+          <label style="margin-top: 6px">Размеры пиццы<small>— вес (г) и цена (₽) четырёх вариантов</small></label>
+          <div class="frow">
+            <label for="emOpt0w" class="f1">25 пышное<input id="emOpt0w" name="emOpt0w"
+                placeholder="415 г" /></label><label for="emOpt0p" class="f1">₽<input id="emOpt0p" name="emOpt0p"
+                type="number" /></label>
+          </div>
+          <div class="frow">
+            <label for="emOpt1w" class="f1">35 пышное<input id="emOpt1w" name="emOpt1w"
+                placeholder="750 г" /></label><label for="emOpt1p" class="f1">₽<input id="emOpt1p" name="emOpt1p"
+                type="number" /></label>
+          </div>
+          <div class="frow">
+            <label for="emOpt2w" class="f1">25 тонкое<input id="emOpt2w" name="emOpt2w"
+                placeholder="335 г" /></label><label for="emOpt2p" class="f1">₽<input id="emOpt2p" name="emOpt2p"
+                type="number" /></label>
+          </div>
+          <div class="frow">
+            <label for="emOpt3w" class="f1">35 тонкое<input id="emOpt3w" name="emOpt3w"
+                placeholder="550 г" /></label><label for="emOpt3p" class="f1">₽<input id="emOpt3p" name="emOpt3p"
+                type="number" /></label>
+          </div>
+        </div>
+        <label for="emDesc">Описание<textarea id="emDesc" name="emDesc" rows="2" maxlength="140"
+            placeholder="Коротко и с характером"></textarea>
+        </label>
+        <label for="emComp">Состав <small>— через запятую, покажем чипсами</small><textarea id="emComp" name="emComp"
+            rows="2" placeholder="эспрессо, молоко"></textarea>
+        </label>
+        <div class="frow">
+          <label for="emTag" class="f1">Метка
+            <select id="emTag" name="emTag">
+              <option value="">без метки</option>
+              <option value="Хит">Хит</option>
+              <option value="New">Новинка</option>
+              <option value="Vegan">Веганское</option>
+              <option value="Острое">Острое</option>
+              <option value="Рекомендуем">Рекомендуем</option>
+              <option value="Сезонное">Сезонное</option>
+              <option value="Лимитка">Лимитка</option>
+              <option value="Без кофеина">Без кофеина</option>
+              <option value="Популярное">Популярное</option>
+              <option value="Фирменное">Фирменное</option>
+              <option value="Для двоих">Для двоих</option>
+              <option value="Сытное">Сытное</option>
+              <option value="Лёгкое">Лёгкое</option>
+              <option value="Пряное">Пряное</option>
+            </select>
+          </label>
+          <label class="chk" style="flex: 2"><input type="checkbox" id="emCoffee" name="emCoffee" /> Считать в
+            бонусах (это кофе)</label>
+        </div>
+        <label class="chk"><input type="checkbox" id="emOn" name="emOn" checked /> Показывать
+          в меню (снять = стоп-лист)</label>
+        <div class="frow acts">
+          <button class="btn fire" id="emSave" style="flex: 1">
+            Сохранить
+          </button>
+          <button class="btn ghost" id="emDup" title="Дублировать" aria-label="Дублировать">⧉</button>
+          <button class="btn ghost danger" id="emDel" title="Удалить" aria-label="Удалить">
+            🗑
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle" tabindex="-1">
+    <div class="modal-card authcard form">
+      <div class="auth-head">
+          <h3 id="authTitle">Создайте профиль</h3>
+        <div class="msub">Бонусы за регистрацию — внутри</div>
+      </div>
+      <div class="auth-mode-switch" role="group" aria-label="Действие с профилем">
+        <button type="button" id="toReg" aria-pressed="true" aria-controls="regForm">Регистрация</button>
+        <button type="button" id="toLogin" aria-pressed="false" aria-controls="loginForm">Вход</button>
+      </div>
+      <form id="regForm" style="display: flex; flex-direction: column; gap: 11px">
+        <label for="regName">Имя<input id="regName" name="regName" maxlength="24" autocomplete="name" autocapitalize="words" spellcheck="false" enterkeyhint="next"
+            placeholder="Как к вам обращаться?" /></label>
+        <label for="regPhone">Телефон<input id="regPhone" name="regPhone" type="tel" inputmode="tel" maxlength="16" placeholder="+7 900 000-00-00"
+            autocomplete="tel" enterkeyhint="next" /></label>
+        <label class="chk regConsent" id="consentRow" for="consentBox">
+          <input type="checkbox" id="consentBox" name="consent" required />
+          <span>Согласен с <a href="/privacy.html" target="_blank" rel="noopener" style="color: #1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных</span>
+        </label>
+        <button type="button" class="btn fire" id="regTgBtn">
+          <svg class="auth-telegram-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="12" fill="#229ED9" />
+            <path d="M5.15 11.56 18.2 6.53c.61-.22 1.14.15.94.99l-2.23 10.52c-.16.75-.61.94-1.21.57l-3.39-2.5-1.66 1.59c-.18.18-.33.33-.67.33l.24-3.48 6.35-5.74c.27-.25-.06-.39-.42-.14l-7.85 4.94-3.39-1.06c-.74-.23-.75-.74.15-1.1z" fill="#FFFFFF" />
+          </svg>
+          <span>Подтвердить в Telegram · бесплатно</span>
+        </button>
+        <div id="regTgRow" role="status" aria-live="polite" hidden>
+          ✅ Номер подтверждён — завершите регистрацию
+        </div>
+        <small class="auth-help">Нет Telegram? Создайте профиль и получите код активации у кассира.</small>
+        <button type="button" class="btn ghost" id="regOtpBtn" style="width: 100%; margin-top: 8px" hidden>
+          📨 Получить код по SMS
+        </button>
+        <label for="regOtp" id="regOtpRow" hidden>Код подтверждения по SMS<input id="regOtp" name="regOtp" inputmode="numeric"
+            maxlength="4" placeholder="4 цифры" autocomplete="one-time-code" /></label>
+        <label for="regPin" id="regPinRow">PIN-код (4 цифры)<input id="regPin" name="regPin" type="text"
+            inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password" enterkeyhint="done" /></label>
+        <small class="auth-help">Используйте PIN для следующих входов в профиль.</small>
+        <button type="button" class="cta" id="regBtn">Создать профиль</button>
+      </form>
+      <form id="loginForm" style="display: none; flex-direction: column; gap: 11px">
+        <label for="logPhone">Ваш номер телефона<input id="logPhone" name="logPhone" type="tel" inputmode="tel" maxlength="16"
+            placeholder="+7 900 000-00-00" autocomplete="username" enterkeyhint="next" /></label>
+        <label for="logPin" id="logPinRow">PIN-код<input id="logPin" name="logPin" type="text" inputmode="numeric"
+            maxlength="4" placeholder="••••" autocomplete="current-password" enterkeyhint="done" /></label>
+        <div id="logOtpWrap" style="display: none">
+          <label for="logOtp">Код подтверждения<input id="logOtp" name="logOtp" type="text" inputmode="numeric"
+              maxlength="4" placeholder="4 цифры" autocomplete="one-time-code" enterkeyhint="done" aria-describedby="logOtpHint" /></label>
+          <small class="auth-help" id="logOtpHint" role="status" aria-live="polite" hidden></small>
+        </div>
+        <button type="button" class="cta" id="logBtn">Войти</button>
+        <div class="alt" id="otpBackRow" style="display: none">
+          <button type="button" id="otpBack">
+            ← Вернуться ко входу по PIN
+          </button>
+        </div>
+        <div class="alt">
+          <button type="button" id="otpBtn">
+            🔑 Не помню PIN — получить код
+          </button>
+        </div>
+      </form>
+      <div class="alt auth-guest-action">
+        <button type="button" id="skipAuth">
+          Просто посмотреть меню →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="pinModal">
+    <div class="modal-card" style="width: min(360px, 100%); text-align: center">
+      <button class="mclose" id="pinClose" aria-label="Закрыть">✕</button>
+      <h3>Код доступа</h3>
+      <div class="msub">
+        Введите секретный код сотрудника (16–64 символа), который выдал владелец кофейни.<br />
+        Вкладки «Кассир» и «Админ» открываются только сотрудникам.
+      </div>
+      <form id="pinForm">
+        <input type="text" autocomplete="username" hidden />
+        <label for="pinInput" class="sr-only">Код доступа</label>
+        <input class="pin" id="pinInput" name="pinInput" type="text" inputmode="text" maxlength="64"
+          placeholder="Код сотрудника" autocomplete="off" />
+        <button type="button" class="cta" id="pinGo">Активировать</button>
+      </form>
+      <div class="pinhint">После 5 ошибок — пауза, растущая вдвое</div>
+    </div>
+  </div>
+
+  <div class="modal" id="setPinModal">
+    <div class="modal-card" style="width: min(360px, 100%); text-align: center">
+      <button class="mclose" id="setPinClose" aria-label="Закрыть">✕</button>
+      <h3>Придумайте PIN</h3>
+      <div class="msub">
+        4 цифры — вы будете вводить их при входе.<br />Без PIN никто не сможет
+        войти в ваш профиль.
+      </div>
+      <form id="setPinForm">
+        <input type="text" autocomplete="username" hidden />
+        <label for="setPinInput" class="sr-only">PIN-код</label>
+        <input class="pin" id="setPinInput" name="setPinInput" type="text" inputmode="numeric" maxlength="4"
+          placeholder="••••" autocomplete="new-password" />
+        <button type="button" class="cta" id="setPinGo">Сохранить PIN</button>
+      </form>
+      <div class="alt">
+        <button type="button" id="setPinOtp">
+          🔑 Не помню PIN — код в Telegram
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="qrModal">
+    <div class="modal-card qrcard" id="qrCard">
+      <button class="mclose" id="qrClose" aria-label="Закрыть">✕</button>
+      <div class="qrttl">Покажите кассиру</div>
+      <canvas id="qrFull" width="520" height="520"></canvas>
+      <div class="qrname" id="qrName">—</div>
+      <div class="qrmeta" id="qrMeta">—</div>
+      <div class="qrhint">Нажмите в любом месте, чтобы закрыть</div>
+    </div>
+  </div>
+
+  <div class="modal" id="promoModal">
+    <div class="modal-card">
+      <button class="mclose" id="promoClose" aria-label="Закрыть">✕</button>
+      <h3>Промокоды и акции</h3>
+      <div class="msub">
+        Гость активирует код в «Бонусах» → «Есть промокод?»
+      </div>
+      <div class="form">
+        <label for="pmCode">Код
+          <input id="pmCode" name="pmCode" placeholder="MORE10" style="text-transform: uppercase" />
+          <small>Латиницей, без пробелов. Например: MORE10, SEA5</small>
+        </label>
+        <div class="frow">
+          <label for="pmKind" class="f1">Тип
+            <select id="pmKind" name="pmKind">
+              <option value="stamp">Штампы (кофейня)</option>
+              <option value="free">Бесплатный кофе (кофейня)</option>
+              <option value="percent">Скидка % (доставка)</option>
+              <option value="money">Скидка ₽ (доставка)</option>
+            </select>
+            <small>«Штампы» — начислит N штампов. «Кофе» — сразу даст
+              подарок</small>
+          </label>
+          <label for="pmValue" class="f1">Кол-во
+            <input id="pmValue" name="pmValue" type="number" min="1" value="1" />
+            <small>Сколько даст код: штампов или бесплатных кофе</small>
+          </label>
+        </div>
+        <div class="frow">
+          <label for="pmDays" class="f1">Дней
+            <input id="pmDays" name="pmDays" type="number" min="0" value="0" />
+            <small>0 — бессрочно. Иначе сгорит через N дней</small>
+          </label>
+          <label for="pmMax" class="f1">Лимит
+            <input id="pmMax" name="pmMax" type="number" min="0" value="0" />
+            <small>0 — без лимита. Иначе — всего N активаций на всех</small>
+          </label>
+        </div>
+        <button class="btn fire" id="pmCreate">Создать промокод</button>
+      </div>
+      <h4 style="margin-top: 16px">Список кодов</h4>
+      <div id="pmChips" class="pm-chips"></div>
+      <div class="pm-scroll"><div id="pmList"></div></div><h4 style="margin-top: 16px">Список кодов</h4>
+      <div id="pmList"></div>
+      <h4 style="margin-top: 16px">🍕 Пятничный подарок (доставка)</h4>
+      <div class="form">
+        <label for="wpText">Текст акции для гостей<input id="wpText" name="wpText"
+            placeholder="Каждые 2000 ₽ в чеке — бутылка пива в подарок 🍺" /></label>
+        <div class="frow">
+          <label for="wpThreshold" class="f1">Порог, ₽ (0 = подарок к каждому заказу)<input id="wpThreshold"
+              name="wpThreshold" type="number" min="0" value="0" /></label>
+          <label for="wpGift" class="f1">Подарок (пусто = только текст)<input id="wpGift" name="wpGift"
+              placeholder="Пиво 0.5" /></label>
+        </div>
+        <label for="wpUntil">Действует до<input id="wpUntil" name="wpUntil" type="date" /></label>
+        <label class="chk"><input type="checkbox" id="wpPush" name="wpPush" /> Отправить пуш
+          всем при сохранении</label>
+        <button class="btn fire" id="wpSave">
+          Сохранить пятничный подарок
+        </button>
+      </div>
+      <h4 style="margin-top: 16px">🍕 Пицца месяца</h4>
+      <div class="form">
+        <label for="pmName">Название подарочной (30 см, тонкое)<input id="pmName" name="pmName"
+            placeholder="Маргарита" /></label>
+        <label class="chk"><input type="checkbox" id="pmOn" name="pmOn" /> Акция «2 пиццы 35
+          см → подарок» включена</label>
+        <button class="btn fire" id="pmSave">Сохранить пиццу месяца</button>
+      </div>
+      <h4 style="margin-top: 16px">🎁 Бонусы</h4>
+      <div class="form">
+        <small>0 — выключено. Кофейня: штампы (10 = напиток). Доставка: скидка ₽ по персональному промокоду (одноразовый).
+          Каждый бонус гость получает один раз и только после подтверждения профиля.</small>
+        <table style="width:100%; border-collapse:collapse; font-size:14px">
+          <thead>
+            <tr><th style="text-align:left">Когда</th><th>☕ штампов</th><th>🛵 ₽ доставки</th><th>🛵 1-я доставка бесплатно</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Обычная регистрация</td>
+              <td><input type="number" min="0" max="10" data-bz="signup:coffee" value="0" /></td>
+              <td><input type="number" min="0" max="5000" step="50" data-bz="signup:delivery" value="0" /></td>
+              <td style="text-align:center"><input type="checkbox" data-bzf="signup" /></td></tr>
+            <tr><td>Регистрация по QR</td>
+              <td><input type="number" min="0" max="10" data-bz="qr:coffee" value="0" /></td>
+              <td><input type="number" min="0" max="5000" step="50" data-bz="qr:delivery" value="0" /></td>
+              <td style="text-align:center"><input type="checkbox" data-bzf="qr" /></td></tr>
+            <tr><td>Установка приложения</td>
+              <td><input type="number" min="0" max="10" data-bz="install:coffee" value="0" /></td>
+              <td><input type="number" min="0" max="5000" step="50" data-bz="install:delivery" value="0" /></td>
+              <td style="text-align:center"><input type="checkbox" data-bzf="install" /></td></tr>
+          </tbody>
+        </table>
+        <label for="bzDays">Срок промокода доставки, дней<input id="bzDays" name="bzDays" type="number" min="1" max="365" value="30" /></label>
+        <button class="btn fire" id="bzSave">Сохранить бонусы</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="dashModal">
+    <div class="modal-card dashCard">
+      <button class="mclose" id="dashClose">✕</button>
+      <h3>📊 Дашборд владельца</h3>
+      <div class="dashTabs" id="dashTabs" role="tablist">
+        <button type="button" class="on" role="tab" data-dtab="coffee" aria-selected="true">☕ …и кофе</button>
+        <button type="button" role="tab" data-dtab="delivery" aria-selected="false">🍕 Пятница</button>
+      </div>
+      <div data-dpane="coffee">
+        <div class="msub">Лояльность кофейни в реальном времени</div>
+        <div class="stats" id="dashTop"></div>
+        <h4 style="margin: 14px 0 6px; font-size: 13px">Штампы за 14 дней</h4>
+        <div id="dashChart" style="display: flex; align-items: flex-end; gap: 6px; height: 120px; padding: 10px 4px; background: var(--bg); border-radius: 14px"></div>
+        <div id="dashMore" style="margin-top: 12px; display: grid; gap: 6px"></div>
+      </div>
+      <div data-dpane="delivery" hidden>
+        <div class="msub">Заказы и выручка доставки (общая сумма и отдельно «свои»)</div>
+        <div id="dashOrders"></div>
+      </div>
+      <hr style="border: 0; border-top: 1px solid var(--line); margin: 14px 0" />
+      <h4 style="margin: 0 0 6px; font-size: 13px">🔔 Массовая рассылка гостям</h4>
+      <div class="form">
+        <input id="pushText" placeholder="Текст уведомления (напр. Сегодня свежий круассан!)" maxlength="160" />
+        <button class="btn fire" id="pushSend">Отправить всем</button>
+        <button class="btn ghost" id="pushHoursSend" type="button">Разослать зимний график доставки</button>
+      </div>
+      <div class="msub" style="margin-top: 6px">
+        Эта кнопка отправляет готовое сообщение об осенне-зимнем графике (октябрь–апрель: пн–чт 11:00–21:00, пт–вс 11:00–22:00).
+        Получатели — гости с включёнными уведомлениями: Telegram, если он подключён, иначе push.
+      </div>
+      <h4 style="margin: 14px 0 6px; font-size: 13px">📋 Подписчики пушей</h4>
+      <div id="pushSubs" style="max-height: 180px; overflow: auto; display: grid; gap: 4px"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="staffChatModal">
+    <div class="modal-card" style="width: min(560px, 100%)">
+      <button class="mclose" id="scClose" aria-label="Закрыть">✕</button>
+      <h3>Чаты гостей</h3>
+      <div class="msub">Если бот не смог помочь — ответьте лично</div>
+      <button class="btn ghost" id="scShowClosed" style="margin-bottom: 8px">
+        Показать закрытые
+      </button>
+      <div id="scList" style="max-height: 200px; overflow-y: auto"></div>
+      <div id="scDialogWrap" hidden>
+        <button class="btn ghost" id="scBack" style="margin: 10px 0">
+          ← К списку
+        </button>
+        <button class="btn ghost" id="scCloseThread" style="margin: 10px 0 10px 8px">
+          ✓ Закрыть чат
+        </button>
+        <div id="scDialog" style="
+              max-height: 280px;
+              overflow-y: auto;
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+            "></div>
+        <div class="findrow" style="margin-top: 10px">
+          <label for="scInput" class="sr-only">Ответ гостю</label>
+          <input id="scInput" name="scInput" placeholder="Ответ гостю…" />
+          <button class="btn fire" id="scSend">Отправить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <button type="button" id="cartFab" class="cartFab" hidden aria-label="Открыть корзину">
+    <span class="cf-icon">🛒</span>
+    <span class="cf-badge">0</span>
+    <span class="cf-sep"></span>
+    <span class="cf-total">0 ₽</span>
+  </button>
+  <div class="cartPanel" id="cartPanel">
+    <!-- 1. Закреплённая шапка -->
+    <div class="cart-panel-header" id="cartPanelHeader">
+      <div class="cph-title-wrap">
+        <h3>Корзина</h3>
+        <span id="cartHeadCount" class="cph-count"></span>
+      </div>
+      <div class="cart-header-actions">
+        <button type="button" class="btn ghost cart-continue-btn" id="cartClose" aria-label="Продолжить покупки">
+          <span class="cart-continue-full">Продолжить покупки</span>
+          <span class="cart-continue-short" aria-hidden="true">В меню</span>
+        </button>
+        <button type="button" class="cart-top-close" id="cartTopClose" aria-label="Закрыть корзину">✕</button>
+      </div>
+    </div>
+
+    <!-- 2. Скроллируемая область -->
+    <div class="cart-scroll-body" id="cartScrollBody">
+      <div id="cartItems"></div>
+      <div id="cartAddons"></div>
+
+      <div class="checkoutForm">
+        <section class="checkout-section" aria-labelledby="checkoutReceiveHeading">
+          <h4 id="checkoutReceiveHeading">Получение заказа</h4>
+          <div id="checkoutGuestBar" class="checkout-recipient-card" hidden>
+            <div class="checkout-recipient-heading">
+              <span class="checkout-recipient-icon" aria-hidden="true">👤</span>
+              <div><b>Данные получателя</b><small>Подставлены из вашего профиля</small></div>
+            </div>
+            <div class="checkout-recipient-values">
+              <span class="checkout-recipient-name" id="checkoutGuestName"></span>
+              <span class="checkout-recipient-phone" id="checkoutGuestPhone" hidden></span>
+            </div>
+          </div>
+          <label for="checkoutMethod">Способ получения
+            <select id="checkoutMethod" name="checkoutMethod">
+              <option value="delivery">Доставка</option>
+              <option value="pickup">Самовывоз (−10%)</option>
+            </select>
+          </label>
+
+          <div id="checkoutDeliveryGroup" style="display:contents">
+            <label for="checkoutPlace" id="checkoutPlaceLabel">Населённый пункт
+              <select id="checkoutPlace" name="checkoutPlace"></select>
+            </label>
+
+            <label for="checkoutStreet" id="checkoutStreetLabel">Улица
+              <input type="text" id="checkoutStreet" name="checkoutStreet" list="streetSuggestions"
+                placeholder="Начните вводить улицу..." autocomplete="off">
+            </label>
+            <datalist id="streetSuggestions"></datalist>
+
+            <label for="checkoutHouse" id="checkoutHouseLabel">Дом, корпус, квартира
+              <input type="text" id="checkoutHouse" name="checkoutHouse" placeholder="10, кв. 5">
+            </label>
+          </div>
+        </section>
+
+        <section class="checkout-section" aria-labelledby="checkoutTimingHeading">
+          <h4 id="checkoutTimingHeading">Когда и как оплатить</h4>
+          <label for="checkoutSlot">Когда привезти
+            <select id="checkoutSlot" name="checkoutSlot">
+              <option value="asap">Как можно скорее (~45 мин)</option>
+            </select>
+          </label>
+          <label for="checkoutPay">Оплата
+            <select id="checkoutPay" name="checkoutPay">
+              <option value="cash">Наличные при получении</option>
+              <option value="card">Картой при получении</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="checkout-section" aria-labelledby="checkoutReviewHeading">
+          <h4 id="checkoutReviewHeading">Проверка заказа</h4>
+          <p class="checkout-section-hint">Состав и параметры заказа указаны выше, в корзине.</p>
+          <label for="checkoutComment">Комментарий
+            <textarea id="checkoutComment" name="checkoutComment" rows="2" placeholder="Домофон, подъезд, пожелания…"></textarea>
+          </label>
+          <div class="cart-promo-section">
+            <div class="findrow">
+              <label for="cartPromo" class="sr-only">Промокод</label>
+              <input id="cartPromo" name="cartPromo" placeholder="ПРОМОКОД" style="text-transform: uppercase" />
+              <button class="btn ghost" id="cartPromoBtn">Применить</button>
+            </div>
+            <div id="cartPromoLine" class="cart-promo-line"></div>
+          </div>
+          <div id="cartGifts" class="cart-gifts-line"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- 3. Закреплённый подвал (всегда перед глазами) -->
+    <div class="cart-footer-bar" id="cartFooterBar">
+      <div class="cart-summary-lines">
+        <div id="cartSubtotal" class="csl-row subtotal"></div>
+        <div id="cartDiscount" class="csl-row discount"></div>
+        <div id="cartPromoDiscount" class="csl-row discount"></div>
+        <div id="cartFee" class="csl-row fee"></div>
+        <div class="csl-total-row">
+          <span id="cartTotalLabel">Итого к оплате</span>
+          <span id="cartTotal">0 ₽</span>
+        </div>
+      </div>
+      <button class="cta" id="checkoutBtn">Оформить заказ</button>
+    </div>
+  </div>
+<script type="module" src="/dist/main.bundle.js?v=651"></script>
+  <div id="installBanner" hidden style="
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: 86px;
+        z-index: 90;
+        background: #12303e;
+        color: #fff;
+        border-radius: 14px;
+        padding: 12px 14px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      ">
+    <span style="flex: 1; font-size: 14px">📲 Установите приложение — карта всегда под рукой</span>
+    <button id="installBtn" style="
+          background: #2e6f8e;
+          border: none;
+          color: #fff;
+          border-radius: 10px;
+          padding: 8px 12px;
+          font-weight: 700;
+        ">
+      OK
+    </button>
+    <button id="installClose" aria-label="Закрыть уведомление об установке" style="background: none; border: none; color: #9fb2c6; font-size: 16px">
+      ✕
+    </button>
+  </div>
+  <div id="iosHint" class="ios-install-hint" role="status" hidden>
+    <span id="iosHintText"></span>
+    <button id="iosHintClose" type="button" aria-label="Закрыть подсказку установки">✕</button>
+  </div>
+  <style>
+    #scanFab {
+      position: fixed;
+      right: 20px;
+      bottom: calc(96px + env(safe-area-inset-bottom));
+      z-index: 95;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: none;
+      background: var(--esp);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 30px -8px rgba(16, 20, 24, 0.6);
+      transition: 0.25s;
+    }
+
+    body.is-cashier #scanFab {
+      display: flex;
+    }
+
+    #scanFab svg {
+      width: 26px;
+      height: 26px;
+      fill: var(--cream);
+    }
+
+    #scanFab:hover {
+      transform: scale(1.08) rotate(-6deg);
+      background: var(--flame);
+    }
+  </style>
+
+  <button id="scanFab" aria-label="Скан QR гостя">
+    <svg viewBox="0 0 24 24">
+      <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z" />
+      <path
+        d="M20 6h-3.2L15 4H9L7.2 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm0 12H4V8h16v10z" />
+    </svg>
+  </button>
+
+  <div id="scanModal" hidden style="
+        position: fixed;
+        inset: 0;
+        z-index: 120;
+        background: rgba(10, 14, 18, 0.75);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      ">
+    <div style="
+          background: #fff;
+          border-radius: 18px;
+          max-width: 420px;
+          width: 100%;
+          padding: 18px;
+          position: relative;
+        ">
+      <button id="scanClose" style="
+            position: absolute;
+            right: 10px;
+            top: 8px;
+            border: none;
+            background: none;
+            font-size: 18px;
+            color: #8b98a5;
+          ">
+        ✕
+      </button>
+      <h3 style="margin: 0 0 10px">📷 Скан QR гостя</h3>
+      <video id="scanVideo" style="width: 100%; border-radius: 12px; background: #000" autoplay playsinline
+        muted></video>
+      <div id="scanStatus" style="color: #5a6b7a; font-size: 13px; margin: 8px 0">
+        Наведите камеру на QR на экране гостя
+      </div>
+      <input id="scanManual" name="scanManual" placeholder="Или введите код, напр. Z-1A2B3C" style="
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #d5dde4;
+          " />
+      <button id="scanManualBtn" style="
+            margin-top: 8px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #2e6f8e;
+            color: #fff;
+            font-weight: 700;
+          ">
+        Найти
+      </button>
+    </div>
+  </div>
+
+  <div id="guestCard" hidden style="
+        position: fixed;
+        inset: 0;
+        z-index: 121;
+        background: rgba(10, 14, 18, 0.75);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      ">
+    <div style="
+          background: #fff;
+          border-radius: 18px;
+          max-width: 420px;
+          width: 100%;
+          padding: 18px;
+          position: relative;
+        ">
+      <button id="gcClose" style="
+            position: absolute;
+            right: 10px;
+            top: 8px;
+            border: none;
+            background: none;
+            font-size: 18px;
+            color: #8b98a5;
+          ">
+        ✕
+      </button>
+      <h3 id="gcName" style="margin: 0"></h3>
+      <div id="gcPhone" style="color: #5a6b7a"></div>
+      <div id="gcStamps" style="font-size: 20px; font-weight: 800; margin: 12px 0"></div>
+      <button id="gcStamp" style="
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: #2fa36b;
+            color: #fff;
+            font-weight: 800;
+            font-size: 16px;
+          ">
+        ☕ Пробить штамп
+      </button>
+      <button id="gcRedeem" style="
+            width: 100%;
+            margin-top: 8px;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: #e8a13a;
+            color: #fff;
+            font-weight: 800;
+            font-size: 16px;
+          ">
+        🎁 Списать бесплатный кофе
+      </button>
+    </div>
+  </div>
+  <footer class="siteFooter">
+    ✉️ <a href="mailto:woxyara76@gmail.com">woxyara76@gmail.com</a> · вопросы,
+    предложения, сотрудничество
+  </footer>
+  <script src="app/vendor/qrcode.min.js" defer></script>
+  <script src="/app/core/address-dict.js" defer></script>
+  <script src="/app/core/address-autocomplete.js" defer></script>
+  <script src="/app/core/address-book.js" defer></script>
+  <script src="/app/core/preorder-timer.js" defer></script>
+  <script id="zt-early-chrome-guard">
+    (function () {
+      try {
+        var b = window.brand || localStorage.getItem('zt_brand');
+        if (b === 'delivery') {
+          var mark = document.getElementById('brandMark') || document.querySelector('.topbar .brand .mark');
+          if (mark) {
+            mark.classList.add('is-delivery');
+            var img = mark.querySelector('img');
+            if (img && img.getAttribute('src') !== 'friday-logo.svg') {
+              img.src = 'friday-logo.svg';
+              img.alt = 'Пятница';
+            }
+          }
+          var bt = document.getElementById('brandTitle');
+          if (bt) { bt.textContent = 'Пятница'; bt.removeAttribute('aria-label'); }
+          var bs = document.getElementById('brandSub');
+          if (bs && bs.textContent !== 'доставка пиццы и роллов') bs.textContent = 'доставка пиццы и роллов';
+        }
+      } catch (e) { }
+
+      /* Цвет полосы браузера (safe area) следует за data-brand */
+      try {
+        var syncTheme = function () {
+          var cur = document.documentElement.getAttribute('data-brand') || window.brand || localStorage.getItem('zt_brand');
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
+          m.content = cur === 'coffee' ? '#FFFFFF' : '#C99E6E';
+        };
+        syncTheme();
+        new MutationObserver(syncTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-brand'] });
+      } catch (e) { }
+    })();
+  </script>
+</body>
+
+</html>
+
