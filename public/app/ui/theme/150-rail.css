@@ -22,10 +22,10 @@
     margin: 10px 0 12px;
     padding: 0;
     border: 0;
-    border-radius: 0;
+    border-radius: var(--category-rail-radius, 16px);
     background: var(--category-rail-bg, var(--panel, transparent));
     box-shadow: none;
-    overflow: visible;
+    overflow: hidden;
     mask-image: none;
     touch-action: pan-y;
   }
