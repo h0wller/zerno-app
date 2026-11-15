@@ -186,11 +186,10 @@ function syncDeliverySubFilterCue(bar) {
     ? bar.parentElement
     : null;
 
-  // The viewport is a permanent layout reservation. Hiding it when a category
-  // has no secondary filters moves the grid and desktop rail on every category switch.
-  // Hide only the inner bar; keep the reserved row in the document flow.
+  // Secondary filters are optional per category. Hide the viewport together
+  // with the bar; rail alignment is handled independently by views.js/scrolltop.js.
   if (viewport && bar.dataset.rendered === '1') {
-    viewport.hidden = false;
+    viewport.hidden = bar.hidden;
   }
 
   var hasOverflow = !bar.hidden && bar.scrollWidth > bar.clientWidth + 1;
