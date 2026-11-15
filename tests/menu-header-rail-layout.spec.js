@@ -1552,3 +1552,23 @@ test('ticker always moves, fills wide viewports seamlessly, and toggles pause wi
     await expect(viewport.locator('button, [role="button"]')).toHaveCount(0);
   }
 });
+
+
+test('mobile rail restores its pinned state when the page is already scrolled on pageshow', async ({ page }) => {
+  for (const brand of CASES) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 10000 });
+    await page.evaluate(() => {
+      window.scrollTo(0, 700);
+      window.dispatchEvent(new Event('pageshow'));
+    });
+    await expect.poll(() => rail.evaluate(el => ({
+      fixed: getComputedStyle(el).position === 'fixed',
+      pinned: el.classList.contains('rail-is-pinned'),
+      hidden: el.classList.contains('rail-scroll-hidden'),
+    })), { timeout: 5000 }).toEqual({ fixed: true, pinned: true, hidden: false });
+  }
+});
