@@ -204,8 +204,6 @@
   html body .wrap #menuView #rail.rail-is-pinned:not(.rail-scroll-hidden),
   html body .wrap #deliveryView #deliveryRail.rail-is-pinned:not(.rail-scroll-hidden) {
     animation: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 
   html body .wrap #menuView #rail button,
