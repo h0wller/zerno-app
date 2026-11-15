@@ -1442,13 +1442,12 @@ test('desktop wrap expands to a centered 2560px maximum on wide viewports', asyn
   }
 });
 
-test('appearance of the vertical scrollbar does not change layout width', async ({ page }) => {
+test('vertical scrolling does not create an empty reserved gutter or shift layout', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
   const geometry = await page.evaluate(async () => {
     const root = document.documentElement;
     const wrap = document.querySelector('body > div.wrap');
-    root.style.overflowY = 'hidden';
     document.body.style.minHeight = '0';
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const before = {
@@ -1456,7 +1455,6 @@ test('appearance of the vertical scrollbar does not change layout width', async 
       wrapLeft: wrap.getBoundingClientRect().left,
       wrapWidth: wrap.getBoundingClientRect().width,
     };
-    root.style.overflowY = 'auto';
     document.body.style.minHeight = '200vh';
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     return {
@@ -1467,11 +1465,13 @@ test('appearance of the vertical scrollbar does not change layout width', async 
         wrapWidth: wrap.getBoundingClientRect().width,
       },
       hasVerticalScroll: root.scrollHeight > root.clientHeight,
+      overflowY: getComputedStyle(root).overflowY,
       scrollbarGutter: getComputedStyle(root).scrollbarGutter,
     };
   });
   expect(geometry.hasVerticalScroll).toBe(true);
-  expect(geometry.scrollbarGutter).toContain('stable');
+  expect(geometry.overflowY).toBe('scroll');
+  expect(geometry.scrollbarGutter).toBe('auto');
   expect(geometry.after.clientWidth).toBe(geometry.before.clientWidth);
   expect(Math.abs(geometry.after.wrapLeft - geometry.before.wrapLeft)).toBeLessThanOrEqual(1);
   expect(Math.abs(geometry.after.wrapWidth - geometry.before.wrapWidth)).toBeLessThanOrEqual(1);
