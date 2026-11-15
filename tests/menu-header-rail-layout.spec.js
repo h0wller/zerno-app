@@ -192,7 +192,7 @@ for (const brand of CASES) {
           };
         });
         expect(pinnedSurface.backdropFilter).toContain('blur');
-        expect(pinnedSurface.backgroundColor).toMatch(/rgba\\(/);
+        expect(pinnedSurface.backgroundColor).toMatch(/rgba\(/);
         await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
