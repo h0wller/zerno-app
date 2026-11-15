@@ -329,10 +329,9 @@ $('#deliveryRail').addEventListener('click', e => {
 function renderCompositionChips(item) {
   const composition = getVisibleComposition(item);
   if (!composition.length) {
-    // Pizza cards already reserve their content with the full description/options slots.
-    // Simple-meta cards (drinks, sauces, sets) need an empty desktop composition slot
-    // so categories without chips don't shorten the first row and move the next one.
-    if (Array.isArray(item.opts) && item.opts.length) return '';
+    if (!usesStableSimpleMetaSlots(item, item.opts || [])) return '';
+    // Drinks, sets and sauces reserve a composition slot even when no chips exist,
+    // so the first row does not shrink when switching to a category without chips.
     return '<div class="comp" aria-hidden="true"></div>';
   }
   return '<div class="comp">' +
