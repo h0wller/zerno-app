@@ -1602,15 +1602,16 @@ test('manual category change returns the new catalog content to the top while ke
   }
 });
 
-test('late font hydration must not release a mobile rail after manual category change', async ({ page }) => {
-  let releaseFonts;
-  const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
-  await page.route(/\\.(woff2?|ttf|otf)(\\?.*)?$/i, async route => {
-    await fontsHeld;
-    await route.abort();
-  });
 
+test('late font hydration must not release a mobile rail after manual category change', async ({ page }) => {
   for (const brand of CASES) {
+    let releaseFonts;
+    const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
+    await page.route(/\\.(woff2?|ttf|otf)(\\?.*)?$/i, async route => {
+      await fontsHeld;
+      await route.abort();
+    });
+
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
@@ -1635,5 +1636,6 @@ test('late font hydration must not release a mobile rail after manual category c
       position: getComputedStyle(el).position,
       pinned: el.classList.contains('rail-is-pinned'),
     }))).toEqual({ position: 'fixed', pinned: true });
+    await page.unroute(/\\.(woff2?|ttf|otf)(\\?.*)?$/i);
   }
 });
