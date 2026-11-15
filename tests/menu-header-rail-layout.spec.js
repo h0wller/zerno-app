@@ -702,3 +702,33 @@ test('category navigation keeps secondary delivery filters separate from primary
   ]);
   expect(railRect && filterRect && filterRect.y).toBeGreaterThan(railRect.y + railRect.height - 1);
 });
+
+
+test('delivery scroll spy exposes the visible category without changing the selected category state', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const rail = page.locator('#deliveryRail');
+  const tabs = rail.locator('button');
+  await expect(rail).toBeVisible({ timeout: 10000 });
+  await expect(tabs).toHaveCount(5);
+  await expect(tabs.nth(0)).toHaveAttribute('aria-pressed', 'true');
+  await expect(tabs.nth(0)).toHaveAttribute('aria-current', 'location');
+
+  await tabs.nth(1).click();
+  await expect(tabs.nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await expect(tabs.nth(1)).not.toHaveAttribute('aria-current', 'location');
+
+  await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('#deliveryGrid .card:not(.skeleton-card)')];
+    const category = cards.find((card) => card.getAttribute('data-cat') && card.getAttribute('data-cat') !== 'pizza');
+    if (category) category.scrollIntoView({ block: 'start' });
+    window.__syncDeliveryScrollSpy?.();
+  });
+
+  await expect.poll(async () => rail.locator('button[aria-current="location"]').count(), { timeout: 5000 }).toBe(1);
+  await expect.poll(async () => rail.locator('button[aria-pressed="true"]').count()).toBe(1);
+  await expect.poll(async () => rail.locator('button[aria-current="location"]').getAttribute('data-dcat'))
+    .not.toBe(await tabs.nth(1).getAttribute('data-dcat'));
+});
