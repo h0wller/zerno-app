@@ -363,7 +363,7 @@ $('#deliveryRail').addEventListener('click', e => {
     activeAddonTab = 'all';
     activeIngredient = 'all';
     renderDeliveryRail();
-    revealDeliveryRailSelection(rail.querySelector('[data-dcat="' + CSS.escape(dcat) + '"]'));
+    revealDeliveryRailSelection(document.querySelector('#deliveryRail .on'));
     if (typeof renderDeliverySkeleton === 'function') {
       renderDeliverySkeleton();
     }
