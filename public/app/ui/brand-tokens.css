@@ -49,8 +49,9 @@ body[data-brand="coffee"] {
   --category-icon-active-color: #FFFFFF;
   --category-indicator-color: #123A6B;
   --category-label-font: "Golos Text", system-ui, sans-serif;
-  --category-label-size: 10px;
-  --category-label-weight: 700;
+  --category-label-size: 11px;
+  --category-label-weight: 600;
+  --category-label-active-weight: 700;
 
   /* ── Карточки меню и бейджи ──────────────────────────────── */
   --card-bg: #FFFFFF;
