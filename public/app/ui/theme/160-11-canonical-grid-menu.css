@@ -96,7 +96,7 @@
     overflow: visible;
   }
 
-  #deliveryGrid .card .cbody:has(> .single-meta) > .desc {
+  #deliveryGrid .card.stable-meta-card .cbody:has(> .single-meta) > .desc {
     display: -webkit-box;
     block-size: 37px;
     min-block-size: 37px;
