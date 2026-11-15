@@ -16,9 +16,9 @@
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    height: auto;
+    height: 64px;
     min-height: 64px;
-    max-height: none;
+    max-height: 64px;
     margin: 10px 0 12px;
     padding: 0;
     border: 0;
@@ -43,9 +43,9 @@
     width: 0;
     min-width: 0;
     max-width: none;
-    height: auto;
+    height: 64px;
     min-height: 64px;
-    max-height: none;
+    max-height: 64px;
     margin: 0;
     padding: 6px 2px 8px;
     border: 0;
@@ -78,7 +78,7 @@
     min-width: 24px;
     height: 24px;
     margin: 0;
-    border: 0;
+    border: var(--category-icon-border, 0);
     border-radius: var(--category-icon-radius, 50%);
     background: var(--category-icon-bg, transparent);
     color: var(--category-icon-color, currentColor);
@@ -101,7 +101,7 @@
 
   html body .wrap #menuView #rail button.on .re,
   html body .wrap #deliveryView #deliveryRail button.on .re {
-    border: 0;
+    border: var(--category-icon-active-border, var(--category-icon-border, 0));
     border-radius: var(--category-icon-radius, 50%);
     background: var(--category-icon-active-bg, var(--category-icon-bg, transparent));
     color: var(--category-icon-active-color, var(--category-icon-color, currentColor));
