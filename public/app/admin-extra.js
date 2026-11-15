@@ -146,6 +146,7 @@
   var tickerReducedMotion = window.matchMedia
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : null;
+  if (tickerReducedMotion && tickerReducedMotion.matches) tickerPaused = true;
 
   function updateTickerPauseState(box, viewport) {
     if (!box || !viewport) return;
