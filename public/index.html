@@ -2419,6 +2419,10 @@ html body div.wrap > #deliveryRail:not(.rail-position-ready) {
     border: 0;
     overflow: hidden;
   }
+  /* Coffee menu-head is 2px shorter and its first-paint rail gap is 4px tighter. */
+  html[data-brand="coffee"] body #menuView #rail {
+    margin-top: 16px;
+  }
   html body #menuView #rail button,
   html body #deliveryView #deliveryRail button {
     box-sizing: border-box;
