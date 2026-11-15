@@ -297,7 +297,19 @@ function updateRailScrollVisibility() {
   }, 220);
 }
 
+// Scroll restoration can happen before this module subscribes to scroll events.
+// Re-check after load/pageshow and two paint frames so the restored position and
+// final layout are both available before deciding whether the rail is pinned.
+function scheduleRailScrollVisibilityUpdate() {
+  window.requestAnimationFrame(function () {
+    window.requestAnimationFrame(updateRailScrollVisibility);
+  });
+}
+
 window.addEventListener('scroll', updateRailScrollVisibility, { passive: true });
+window.addEventListener('load', scheduleRailScrollVisibilityUpdate, { once: true });
+window.addEventListener('pageshow', scheduleRailScrollVisibilityUpdate);
+if (document.readyState === 'complete') scheduleRailScrollVisibilityUpdate();
 window.addEventListener('resize', function () {
   if (railScrollRevealTimer !== null) {
     clearTimeout(railScrollRevealTimer);
