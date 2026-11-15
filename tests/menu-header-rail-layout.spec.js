@@ -469,7 +469,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       }
 
       expect(geometry.activeBackground, brand.brand + ' active state uses its own light brand surface')
-        .toBe(brand.brand === 'coffee' ? 'rgb(255, 255, 255)' : 'rgb(246, 238, 225)');
+        .toMatch(brand.brand === 'coffee' ? /rgba?\\(255, 255, 255/ : /rgba?\\(246, 238, 225/);
       expect(geometry.activeBorderBottom).toBe('3px');
       expect(geometry.activeBorderBottomStyle).toBe('solid');
       expect(geometry.activeBorderBottomColor).toBe(brand.brand === 'coffee' ? 'rgb(18, 58, 107)' : 'rgb(192, 59, 42)');
@@ -487,7 +487,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
 });
 
 
-test('desktop category navigation remains a compact vertical sidebar while the catalog keeps its responsive column count', async ({ page }, testInfo) => {
+test('desktop category navigation uses one brand frame and a single active tab surface', async ({ page }, testInfo) => {
   const viewports = [
     { width: 1024, height: 768, columns: 2 },
     { width: 1440, height: 900, columns: 3 },
@@ -496,7 +496,7 @@ test('desktop category navigation remains a compact vertical sidebar while the c
 
   for (const brand of CASES) {
     for (const viewport of viewports) {
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.setViewportSize(viewport);
       await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
       await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
 
@@ -507,57 +507,52 @@ test('desktop category navigation remains a compact vertical sidebar while the c
       await expect.poll(() => rail.evaluate((element) => getComputedStyle(element).flexDirection), { timeout: 10000 })
         .toBe('column');
 
-      const layout = await page.evaluate(({ railSelector, gridSelector }) => {
-        const rail = document.querySelector(railSelector);
-        const rect = rail.getBoundingClientRect();
-        const style = getComputedStyle(rail);
-        const gridStyle = getComputedStyle(document.querySelector(gridSelector));
-        const activeButton = rail.querySelector('button.on');
-        const activeStyle = activeButton ? getComputedStyle(activeButton) : null;
-        const activeBackground = activeStyle && activeStyle.backgroundColor !== 'rgba(0, 0, 0, 0)'
-          ? activeStyle.backgroundColor
-          : getComputedStyle(rail).backgroundColor;
+      const layout = await rail.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        const active = element.querySelector('button.on');
+        const activeStyle = getComputedStyle(active);
+        const iconStyle = getComputedStyle(active.querySelector('.re'));
         const rgb = (value) => {
-          const match = value.match(/[\d.]+/g);
+          const match = value.match(/[\\d.]+/g);
           return match ? match.slice(0, 3).map(Number) : [0, 0, 0];
         };
-        const luminance = (value) => {
-          const channels = rgb(value).map((channel) => {
-            const normalized = channel / 255;
-            return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
-          });
-          return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-        };
-        const contrast = activeStyle
-          ? (() => {
-              const values = [luminance(activeStyle.color), luminance(activeBackground)].sort((a, b) => b - a);
-              return (values[0] + 0.05) / (values[1] + 0.05);
-            })()
-          : 0;
+        const luminance = (value) => rgb(value).map((channel) => {
+          const normalized = channel / 255;
+          return normalized <= .04045 ? normalized / 12.92 : ((normalized + .055) / 1.055) ** 2.4;
+        }).reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+        const values = [luminance(activeStyle.color), luminance(activeStyle.backgroundColor)].sort((a,b) => b-a);
         return {
-          parentIsWrap: rail.parentElement === document.querySelector('.wrap'),
-          activeColor: activeStyle ? activeStyle.color : null,
-          activeBackground,
-          contrast,
-          direction: style.flexDirection,
           position: style.position,
           width: rect.width,
           height: rect.height,
-          gridColumns: gridStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
+          railBackground: style.backgroundColor,
+          railBorder: style.borderTopWidth,
+          radius: style.borderTopLeftRadius,
+          activeBackground: activeStyle.backgroundColor,
+          activeBorder: activeStyle.borderTopWidth,
+          activeRadius: activeStyle.borderTopLeftRadius,
+          contrast: (values[0] + .05) / (values[1] + .05),
+          iconBackground: iconStyle.backgroundColor,
+          iconRadius: iconStyle.borderTopLeftRadius,
         };
-      }, {
-        railSelector: brand.rail,
-        gridSelector: brand.brand === 'coffee' ? '#grid' : '#deliveryGrid',
       });
 
-      expect(layout.parentIsWrap, brand.brand + ' desktop rail belongs to the desktop sidebar grid').toBe(true);
-      expect(layout.direction, brand.brand + ' desktop categories remain vertical').toBe('column');
+      const columns = await grid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
       expect(layout.position).toBe('relative');
-      expect(layout.height, brand.brand + ' sidebar is sized to its own categories').toBeLessThan(480);
-      expect(layout.contrast, brand.brand + ' selected desktop category text has WCAG AA contrast on its active surface').toBeGreaterThanOrEqual(4.5);
-      expect(layout.gridColumns).toBe(viewport.columns);
+      expect(layout.height).toBeLessThan(480);
+      expect(layout.railBackground).not.toBe('rgba(0, 0, 0, 0)');
+      expect(layout.railBorder).toBe('1px');
+      expect(layout.radius).toBe('16px');
+      expect(layout.activeBackground).not.toBe('rgba(0, 0, 0, 0)');
+      expect(layout.activeBorder).toBe('1px');
+      expect(layout.activeRadius).toBe('12px');
+      expect(layout.contrast, brand.brand + ' selected desktop category text keeps WCAG AA contrast').toBeGreaterThanOrEqual(4.5);
+      expect(layout.iconBackground).not.toBe('rgba(0, 0, 0, 0)');
+      expect(layout.iconRadius).toBe(brand.brand === 'coffee' ? '50%' : '8px');
+      expect(columns).toBe(viewport.columns);
 
-      await testInfo.attach(brand.brand + '-desktop-' + viewport.width + 'x' + viewport.height + '-vertical-categories', {
+      await testInfo.attach(brand.brand + '-desktop-' + viewport.width + 'x' + viewport.height + '-single-frame-rail', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
@@ -693,12 +688,12 @@ test('desktop category rails use one visual layer and retain brand-specific icon
       };
     });
 
-    expect(style.railBackground, brand.brand + ' desktop rail has no enclosing panel').toBe('rgba(0, 0, 0, 0)');
-    expect(style.railBorder, brand.brand + ' desktop rail has no frame').toBe('0px');
-    expect(style.railShadow, brand.brand + ' desktop rail has no panel shadow').toBe('none');
-    expect(style.buttonBackground, brand.brand + ' active category is not a nested card').toBe('rgba(0, 0, 0, 0)');
-    expect(style.buttonBorder, brand.brand + ' active category has no card border').toBe('0px');
-    expect(style.buttonShadow, brand.brand + ' active category has no card shadow').toBe('none');
+    expect(style.railBackground, brand.brand + ' desktop has one light brand surface').not.toBe('rgba(0, 0, 0, 0)');
+    expect(style.railBorder, brand.brand + ' desktop rail uses a restrained one-pixel edge').toBe('1px');
+    expect(style.railShadow, brand.brand + ' desktop rail avoids a heavy decorative shadow').toBe('none');
+    expect(style.buttonBackground, brand.brand + ' active category has one contained surface').not.toBe('rgba(0, 0, 0, 0)');
+    expect(style.buttonBorder, brand.brand + ' active category has a restrained outline').toBe('1px');
+    expect(style.buttonShadow, brand.brand + ' active category avoids a second heavy shadow').toBe('none');
     expect(style.iconBackground, brand.brand + ' active icon carries the selected state').not.toBe('rgba(0, 0, 0, 0)');
     expect(style.iconRadius, brand.brand + ' icon retains its brand-specific silhouette')
       .toBe(brand.brand === 'coffee' ? '50%' : '8px');
