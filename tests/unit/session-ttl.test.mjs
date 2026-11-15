@@ -23,7 +23,11 @@ after(() => {
 test('migration adds expires_at and backfills legacy tokens from original ts', () => {
   db.exec(`
     CREATE TABLE tokens(token TEXT PRIMARY KEY, kind TEXT, ref TEXT, ts TEXT);
-    CREATE TABLE customers(id TEXT PRIMARY KEY, name TEXT, phone TEXT);
+    CREATE TABLE customers(
+      id TEXT PRIMARY KEY, name TEXT, phone TEXT UNIQUE,
+      stamps INTEGER DEFAULT 0, free INTEGER DEFAULT 0, cups INTEGER DEFAULT 0,
+      qr TEXT UNIQUE, created_at TEXT, role TEXT DEFAULT 'guest'
+    );
     INSERT INTO customers(id,name,phone) VALUES('legacy-customer','Legacy','+79990000001');
     INSERT INTO customers(id,name,phone) VALUES('bad-date-customer','Bad Date','+79990000002');
   `);
