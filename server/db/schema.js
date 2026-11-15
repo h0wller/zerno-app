@@ -61,6 +61,29 @@ CREATE TABLE IF NOT EXISTS fcm(
   id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, token TEXT UNIQUE, created TEXT);
   `);
 
+
+  // Session expiry is additive and idempotent. Preserve the original issuance time
+  // for legacy rows; malformed timestamps are treated as expired, never immortal.
+  const tokenCols = db.prepare('PRAGMA table_info(tokens)').all().map(c => c.name);
+  if (!tokenCols.includes('expires_at')) {
+    db.exec('ALTER TABLE tokens ADD COLUMN expires_at INTEGER');
+  }
+  const legacyTokens = db.prepare(
+    'SELECT token, ts FROM tokens WHERE expires_at IS NULL'
+  ).all();
+  const backfillSessionExpiry = db.transaction(rows => {
+    const updateExpiry = db.prepare('UPDATE tokens SET expires_at=? WHERE token=? AND expires_at IS NULL');
+    for (const row of rows) {
+      const issuedAt = Date.parse(row.ts);
+      const expiresAt = Number.isFinite(issuedAt)
+        ? issuedAt + 30 * 24 * 60 * 60 * 1000
+        : 0;
+      updateExpiry.run(expiresAt, row.token);
+    }
+  });
+  if (legacyTokens.length) backfillSessionExpiry(legacyTokens);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_tokens_expires_at ON tokens(expires_at)');
+
   /* миграции */
   const ccols = db.prepare('PRAGMA table_info(customers)').all().map(c => c.name);
   if (ccols.length && !ccols.includes('role')) db.exec(`ALTER TABLE customers ADD COLUMN role TEXT DEFAULT 'guest'`);
