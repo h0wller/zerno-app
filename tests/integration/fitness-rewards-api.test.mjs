@@ -120,7 +120,7 @@ before(async () => {
 });
 
 beforeEach(() => {
-  db.exec('DELETE FROM strava_oauth_states; DELETE FROM strava_connections; DELETE FROM fitness_rewards; DELETE FROM fitness_activities; DELETE FROM tokens; DELETE FROM history; DELETE FROM events; DELETE FROM customers;');
+  db.exec('DELETE FROM strava_oauth_states; DELETE FROM strava_connections; DELETE FROM fitness_rewards; DELETE FROM fitness_device_evidence; DELETE FROM fitness_activities; DELETE FROM tokens; DELETE FROM history; DELETE FROM events; DELETE FROM customers;');
 });
 
 after(async () => {
