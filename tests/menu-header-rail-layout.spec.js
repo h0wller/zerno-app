@@ -468,8 +468,10 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
           .toBe(brand.brand === 'coffee' ? '50%' : '8px');
       }
 
-      expect(geometry.activeBackground, brand.brand + ' active state uses its own light brand surface')
-        .toMatch(brand.brand === 'coffee' ? /rgba?\\(255, 255, 255/ : /rgba?\\(246, 238, 225/);
+      expect(
+        geometry.activeBackground.startsWith(brand.brand === 'coffee' ? 'rgb(255, 255, 255' : 'rgb(246, 238, 225'),
+        brand.brand + ' active state uses its own light brand surface'
+      ).toBe(true);
       expect(geometry.activeBorderBottom).toBe('3px');
       expect(geometry.activeBorderBottomStyle).toBe('solid');
       expect(geometry.activeBorderBottomColor).toBe(brand.brand === 'coffee' ? 'rgb(18, 58, 107)' : 'rgb(192, 59, 42)');
