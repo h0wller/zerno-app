@@ -15,6 +15,7 @@ export function normalizeHealthConnectWorkout(workout) {
   if (!id || id.length > 255 || !sourcePackageName || sourcePackageName.length > 255) return null;
   if (!Number.isFinite(startedAt) || !Number.isFinite(endedAt) || endedAt <= startedAt) return null;
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0 || durationSeconds > 14400) return null;
+  if (Math.round(durationSeconds) < 1) return null;
   if (!Number.isFinite(distanceMeters) || distanceMeters < 0 || distanceMeters > 250000) return null;
 
   const recordingMethod = String(workout.recordingMethod || 'unknown').trim();

@@ -28,13 +28,14 @@ test('normalizes Health Connect running sessions as device-reported evidence', (
   assert.equal(result.sourcePackageName, 'com.google.android.apps.fitness');
   assert.equal(result.recordingMethod, 'actively_recorded');
   assert.equal(result.evidenceState, 'device_reported');
-  assert.notEqual(result.verificationState, 'verified');
+  assert.equal(result.verificationState, undefined);
 });
 
 test('rejects non-running and malformed Health Connect sessions', () => {
   assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, activityType: 'walking' }), null);
   assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, endedAt: 'invalid' }), null);
   assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, durationSeconds: 0 }), null);
+  assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, durationSeconds: 0.1 }), null);
   assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, durationSeconds: 14401 }), null);
   assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, distanceMeters: -1 }), null);
   assert.equal(normalizeHealthConnectWorkout({ ...validWorkout, distanceMeters: 250001 }), null);
@@ -49,9 +50,8 @@ test('retains the recording-method signal without upgrading manual entries to ve
 
   assert.equal(result.recordingMethod, 'manual_entry');
   assert.equal(result.evidenceState, 'device_reported');
-  assert.notEqual(result.verificationState, 'verified');
+  assert.equal(result.verificationState, undefined);
 });
-
 
 test('normalizes unknown recording methods to a bounded unknown value', () => {
   const result = normalizeHealthConnectWorkout({

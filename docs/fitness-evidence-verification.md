@@ -1,7 +1,7 @@
 # Fitness evidence verification — technical decision
 
 Status: implementation contract; GPX fail-closed behavior implemented in PR #252
-Date: 2026-11-14
+Date: 2026-11-15
 
 ## Product requirement
 
@@ -79,6 +79,22 @@ HealthKit/Health Connect access is stronger provenance than an arbitrary file up
 
 The repository contains Capacitor 8 iOS and Android shells. The iOS shell is the native host for the HealthKit bridge; Telegram Mini App and PWA remain browser-only entry points and cannot access HealthKit directly. The first native increment reads running workouts and returns a normalized, device-reported summary to JavaScript. This is provenance evidence, not server-verifiable attestation: it must not be marked `verified` or issue rewards until a server-verifiable device/app attestation flow is implemented. The server-side GPX intake now persists `verification_state='unverified'` and cannot issue rewards.
 
+## Provider-neutral mobile summary contract
+
+Both native adapters normalize into the same required field set:
+
+- `id`, `activityType='running'`
+- `startedAt`, `endedAt` as UTC ISO-8601 timestamps
+- `durationSeconds` as a positive integer, at most 14,400
+- `distanceMeters` as a non-negative integer, at most 250,000
+- `sourcePlatform`, `sourceName`, `sourcePackageName`
+- `deviceName`, `deviceModel`, `sourceProductType`
+- `evidenceState='device_reported'`
+
+Identifiers are non-empty and capped at 255 characters; display/provenance labels are capped at 120 characters. Both adapters reject malformed time ranges, non-running activities, invalid numeric values and missing source identifiers. The iOS bundle identifier is mapped to the shared `sourcePackageName` field; no platform-specific alias is exposed to callers. Android additionally supplies the optional `recordingMethod` signal (`actively_recorded`, `automatically_recorded`, `manual_entry`, `unknown`). This signal does not change evidence trust.
+
+Both adapters default to and cap requests at 30 days and 25 records. These are display/query limits, not verification guarantees. The contract is local to the native app today; no mobile summary is submitted to the server yet.
+
 ## Recommended rollout
 
 1. Define a stable server-side evidence contract and source trust levels independent of Apple/Android. The current GPX path is fail-closed and cannot issue a reward.
@@ -126,11 +142,9 @@ The reward domain must own the invariant "unverified evidence cannot issue a rew
 - No long-term storage of raw tracks or location histories.
 - No automatic reward issuance based only on anomaly scoring.
 
-
 ## App Attest implementation constraint
 
 Apple App Attest must be verified on the server, not trusted from a client flag. Apple's validation requires certificate-chain validation, nonce binding, RP ID/bundle identity checks, credential key extraction, assertion signature verification, and strictly increasing counters. The newest `node-app-attest` release requires Node.js 24, while Zerno is pinned to Node.js 22. The older 1.0.1 implementation was inspected but is not accepted without a security review because it predates current validation guidance. Do not add an unreviewed verifier or enable rewards as a workaround. Resolve the runtime/library choice and configure the Apple Team ID, App Attest environment, and entitlement before implementing the verifier.
-
 
 ## App Attest challenge foundation
 
