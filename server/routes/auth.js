@@ -308,8 +308,18 @@ authRouter.post('/api/auth/login', validate(LoginSchema), (req, res) => {
     consumeOtp(p, entry => entry.code === otp);
     clearLock(req, 'login', p);
     clearLock(req, 'otp-send', p);
+    if (!c.verified) {
+      db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(c.id);
+      addHist(c.id, 'Подтверждение номера по одноразовому коду', 'Система');
+      grantBonus(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
+    }
     addHist(c.id, `Вход по коду из ${st.via === 'sms' ? 'SMS' : 'Telegram'}`, 'Приложение');
-    return res.json({ token: issueToken(c.id), customer: cust(c), needPin: !c.pin });
+    const verifiedCustomer = db.prepare('SELECT * FROM customers WHERE id=?').get(c.id);
+    return res.json({
+      token: issueToken(c.id),
+      customer: cust(verifiedCustomer),
+      needPin: !verifiedCustomer.pin,
+    });
   }
 
   if (!c.pin) {

@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { createHash } from 'node:crypto';
 import { WEBAPP_URL } from '../config.js';
 import { db } from '../db/connection.js';
-import { userGuard, adminGuard, dispatchGuard } from '../middleware/auth.js';
+import { verifiedCustomerGuard, userGuard, adminGuard, dispatchGuard, STAFF_ROLES } from '../middleware/auth.js';
 import { logEv } from '../domain/helpers.js';
 import { nowISO, uid } from '../utils/id-time.js';
 import { sendPush } from '../services/push.js';
@@ -55,8 +55,6 @@ const pizzaMonth = () => {
   return (m && m.on && m.name) ? m : null;
 };
 
-
-const STAFF_ROLES = ['cashier', 'dispatch', 'admin'];
 
 function sortJsonValue(value) {
   if (Array.isArray(value)) return value.map(sortJsonValue);
@@ -256,7 +254,7 @@ ordersRouter.get('/api/delivery/addr', (req, res) => {
 });
 
 /* ── Создание заказа с валидацией модификаторов ── */
-ordersRouter.post('/api/orders', userGuard, (req, res) => {
+ordersRouter.post('/api/orders', verifiedCustomerGuard, (req, res) => {
   const b = req.body || {};
   const hasClientOrderId = Object.prototype.hasOwnProperty.call(b, 'client_order_id');
   const clientOrderId = hasClientOrderId ? b.client_order_id : null;

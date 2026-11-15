@@ -35,6 +35,20 @@ export const userGuard = (req, res, next) => {
   return req.user ? next() : res.status(401).json({ error: 'Нужен вход по номеру' });
 };
 
+export const STAFF_ROLES = Object.freeze(['cashier', 'dispatch', 'admin']);
+
+export const verifiedCustomerGuard = (req, res, next) => {
+  req.user = authUser(req);
+  if (!req.user) return res.status(401).json({ error: 'Нужен вход по номеру' });
+  if (Number(req.user.verified) !== 1 && !STAFF_ROLES.includes(req.user.role)) {
+    return res.status(403).json({
+      error: 'Подтвердите номер телефона или дождитесь активации сотрудником, чтобы оформить заказ.',
+      code: 'CUSTOMER_NOT_VERIFIED',
+    });
+  }
+  return next();
+};
+
 export const staffGuard = (req, res, next) => checkRole(req, res, next, ['cashier', 'admin'], 'Недостаточно прав: нужна роль кассира');
 export const adminGuard = (req, res, next) => checkRole(req, res, next, ['admin'], 'Недостаточно прав: нужна роль администратора');
 export const menuGuard = (req, res, next) => checkRole(req, res, next, ['cashier', 'dispatch', 'admin'], 'Недостаточно прав: нужна роль сотрудника');

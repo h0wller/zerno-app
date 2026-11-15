@@ -64,7 +64,10 @@ async function register(name, phone) {
   });
   assert.equal(result.status, 200, JSON.stringify(result.json));
   assert.ok(result.json.token);
-  return { token: result.json.token, customerId: result.json.customer.id };
+  const customerId = result.json.customer.id;
+  // This suite isolates order pricing; verification transitions and bonus grants are covered elsewhere.
+  db.prepare('UPDATE customers SET verified=1, actcode=NULL WHERE id=?').run(customerId);
+  return { token: result.json.token, customerId };
 }
 
 function orderBody(slot, method = 'delivery', promo) {
