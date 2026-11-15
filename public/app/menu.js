@@ -50,9 +50,26 @@ function syncCoffeeRailCue() {
 })();
 
 function renderRail() {
-  document.querySelectorAll('#rail button').forEach(b =>
-    b.classList.toggle('on', b.dataset.cat === cat)
-  );
+  document.querySelectorAll('#rail button').forEach(b => {
+    const selected = b.dataset.cat === cat;
+    b.classList.toggle('on', selected);
+    b.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+}
+
+function revealCoffeeRailSelection(button) {
+  const rail = document.getElementById('rail');
+  if (!rail || !button) return;
+  const railRect = rail.getBoundingClientRect();
+  const buttonRect = button.getBoundingClientRect();
+  const inset = 12;
+  let delta = 0;
+  if (buttonRect.left < railRect.left + inset) delta = buttonRect.left - railRect.left - inset;
+  else if (buttonRect.right > railRect.right - inset) delta = buttonRect.right - railRect.right + inset;
+  if (delta) rail.scrollBy({
+    left: delta,
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+  });
 }
 
 $('#rail').addEventListener('click', e => {
@@ -60,6 +77,7 @@ $('#rail').addEventListener('click', e => {
   if (!b) return;
   cat = b.dataset.cat;
   window.renderRail();
+  revealCoffeeRailSelection(b);
   window.renderMenu();
 });
 
