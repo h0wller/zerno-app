@@ -1639,3 +1639,24 @@ test('late font hydration must not release a mobile rail after manual category c
     await page.unroute(/\\.(woff2?|ttf|otf)(\\?.*)?$/i);
   }
 });
+
+
+test('category rails render decorative SVG icons instead of emoji for both brands', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+    const railSelector = brand === 'coffee' ? '#rail' : '#deliveryRail';
+    const rail = page.locator(railSelector);
+    await expect(rail).toBeVisible({ timeout: 10000 });
+    const icons = rail.locator('button .re');
+    await expect(icons).not.toHaveCount(0);
+    await expect.poll(() => icons.evaluateAll(nodes => nodes.every(node => {
+      const svg = node.querySelector('svg');
+      return !!svg && svg.getAttribute('aria-hidden') === 'true' &&
+        svg.getAttribute('focusable') === 'false' && !node.textContent.trim();
+    }))).toBe(true);
+    await expect(rail.locator('button')).toHaveCount(brand === 'coffee' ? 6 : 5);
+    await expect(rail.locator('button').first()).toHaveAttribute('aria-pressed', 'true');
+  }
+});
