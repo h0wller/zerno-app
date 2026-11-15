@@ -1139,7 +1139,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ p
       let releaseStyles;
       const stylesGate = new Promise(resolve => { releaseStyles = resolve; });
       const heldRequests = [];
-      await page.route('**/*.css', async route => {
+      await page.route('**/*.css*', async route => {
         const url = route.request().url();
         if (url.includes('/app/ui/theme/') || url.includes('/app/ui/brand-tokens.css')) {
           heldRequests.push(url);
@@ -1182,8 +1182,7 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ p
           const el=document.querySelector(selector); if(!el) return null;
           const r=el.getBoundingClientRect(); return {top:r.top,bottom:r.bottom,height:r.height};
         };
-        const card=document.querySelector('#menuView .card, #deliveryView .card');
-        const title=card?.querySelector('h3,.ctitle,.name,.card-title');
+        const title=document.querySelector('#grid .card h3, #deliveryGrid .card h3');
         const tr=title?.getBoundingClientRect();
         return {
           computed:Object.fromEntries(Object.entries(selectors).map(([key,selector])=>[key,css(selector)])),
@@ -1199,6 +1198,8 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ p
         };
       }, { selectors, headSelector:brand.head });
 
+      expect(heldRequests.some(url => url.includes('/app/ui/theme/')), 'theme CSS must be held before first-frame measurement').toBe(true);
+      expect(heldRequests.some(url => url.includes('/app/ui/brand-tokens.css')), 'brand tokens must be held before first-frame measurement').toBe(true);
       const firstFrame=await measure();
       releaseStyles();
       await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link =>
