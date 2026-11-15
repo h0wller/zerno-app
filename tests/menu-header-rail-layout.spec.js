@@ -494,6 +494,8 @@ test('desktop category navigation remains a compact vertical sidebar while the c
       const grid = page.locator(brand.brand === 'coffee' ? '#grid' : '#deliveryGrid');
       await expect(rail).toBeVisible({ timeout: 10000 });
       await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+      await expect.poll(() => rail.evaluate((element) => getComputedStyle(element).flexDirection), { timeout: 10000 })
+        .toBe('column');
 
       const layout = await page.evaluate(({ railSelector, gridSelector }) => {
         const rail = document.querySelector(railSelector);
@@ -501,15 +503,32 @@ test('desktop category navigation remains a compact vertical sidebar while the c
         const style = getComputedStyle(rail);
         const gridStyle = getComputedStyle(document.querySelector(gridSelector));
         const activeButton = rail.querySelector('button.on');
-        const colorProbe = document.createElement('span');
-        colorProbe.style.color = 'var(--category-tab-active-color, var(--ink, #20252b))';
-        document.body.appendChild(colorProbe);
-        const expectedActiveColor = getComputedStyle(colorProbe).color;
-        colorProbe.remove();
+        const activeStyle = activeButton ? getComputedStyle(activeButton) : null;
+        const activeBackground = activeStyle && activeStyle.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          ? activeStyle.backgroundColor
+          : getComputedStyle(rail).backgroundColor;
+        const rgb = (value) => {
+          const match = value.match(/[\\d.]+/g);
+          return match ? match.slice(0, 3).map(Number) : [0, 0, 0];
+        };
+        const luminance = (value) => {
+          const channels = rgb(value).map((channel) => {
+            const normalized = channel / 255;
+            return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+          });
+          return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+        };
+        const contrast = activeStyle
+          ? (() => {
+              const values = [luminance(activeStyle.color), luminance(activeBackground)].sort((a, b) => b - a);
+              return (values[0] + 0.05) / (values[1] + 0.05);
+            })()
+          : 0;
         return {
           parentIsWrap: rail.parentElement === document.querySelector('.wrap'),
-          activeColor: activeButton ? getComputedStyle(activeButton).color : null,
-          expectedActiveColor,
+          activeColor: activeStyle ? activeStyle.color : null,
+          activeBackground,
+          contrast,
           direction: style.flexDirection,
           position: style.position,
           width: rect.width,
@@ -525,7 +544,7 @@ test('desktop category navigation remains a compact vertical sidebar while the c
       expect(layout.direction, brand.brand + ' desktop categories remain vertical').toBe('column');
       expect(layout.position).toBe('relative');
       expect(layout.height, brand.brand + ' sidebar is sized to its own categories').toBeLessThan(480);
-      expect(layout.activeColor, brand.brand + ' selected desktop category remains legible on its active surface').toBe(layout.expectedActiveColor);
+      expect(layout.contrast, brand.brand + ' selected desktop category text has WCAG AA contrast on its active surface').toBeGreaterThanOrEqual(4.5);
       expect(layout.gridColumns).toBe(viewport.columns);
 
       await testInfo.attach(brand.brand + '-desktop-' + viewport.width + 'x' + viewport.height + '-vertical-categories', {
