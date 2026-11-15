@@ -75,9 +75,9 @@
 .subfilter-viewport {
   position: relative;
   min-width: 0;
-  margin-bottom: 12px;
-  /* The reserved 68px slot contains a 56px chip rail and a 12px trailing gap. */
-  --subfilter-reserved-gap: 12px;
+  margin-bottom: 0;
+  /* The viewport now hugs the 56px chip rail; the cue stays centered on it. */
+  --subfilter-reserved-gap: 0px;
 }
 
 .subfilter-viewport.has-overflow::after {
