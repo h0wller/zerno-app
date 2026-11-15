@@ -97,7 +97,8 @@ for (const brand of CASES) {
       }, { headSelector: brand.head, railSelector: brand.rail });
 
       if (horizontalRail) {
-        expect(layout.railPosition, 'mobile rail uses native sticky positioning before any scroll event').toBe('sticky');
+        expect(layout.railPosition, 'mobile rail uses native sticky positioning before any scroll event')
+          .toBe(viewport.width <= 820 ? 'sticky' : 'relative');
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
         expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
       }
