@@ -373,7 +373,7 @@ test('employee activation verifies a pending guest and unlocks order creation', 
   const adminToken = await registerVerified('Order Verification Admin', '+7 900 200-01-03');
   await activateStaff(adminToken, 'integration-order-verification-admin-2026');
 
-  const guestToken = await register('Staff Activated Order Guest', '+7 900 200-01-04');
+  const guestToken = await register('Activated Order Guest', '+7 900 200-01-04');
   const guestId = customerIdForToken(guestToken);
   assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(guestId).verified, 0);
 
