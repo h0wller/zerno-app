@@ -6,6 +6,14 @@ var observedRailTopbar = null;
 
 var railStickyLayout = null;
 
+function usesHorizontalCategoryRailViewport() {
+  if (window.matchMedia) {
+    return window.matchMedia('(max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px)').matches;
+  }
+  return window.innerWidth <= 820 ||
+    (window.innerWidth > 820 && window.innerWidth > window.innerHeight && window.innerHeight <= 480);
+}
+
 function updateRailStickyPosition(rail, head) {
   if (!rail || !head) return;
 
@@ -15,7 +23,7 @@ function updateRailStickyPosition(rail, head) {
     return;
   }
 
-  var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  var mobileViewport = usesHorizontalCategoryRailViewport();
   if (mobileViewport) {
     var topbar = document.querySelector('header.topbar');
     var topbarStyle = topbar ? window.getComputedStyle(topbar) : null;
@@ -77,7 +85,7 @@ function alignRailWithCard() {
 
   // On mobile the rail is placed directly below the menu header.
   // Desktop keeps the original catalog-row alignment in the outer grid.
-  var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  var mobileViewport = usesHorizontalCategoryRailViewport();
   var headRect = head && head.getBoundingClientRect();
   if (headRect && headRect.height) {
     if (mobileViewport) {

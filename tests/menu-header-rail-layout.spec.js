@@ -748,6 +748,11 @@ for (const brand of CASES) {
           filterTop: filterRect?.top ?? null,
           filterBottom: filterRect?.bottom ?? null,
           firstTargetHeight: firstTarget?.height ?? 0,
+          railVisibility: getComputedStyle(railEl).visibility,
+          railOpacity: Number(getComputedStyle(railEl).opacity),
+          cardVisibility: getComputedStyle(firstCard).visibility,
+          cardOpacity: Number(getComputedStyle(firstCard).opacity),
+          viewportHeight: window.innerHeight,
           wrapColumns: wrapStyle.gridTemplateColumns,
           sectionColumn: getComputedStyle(section).gridColumnStart,
           documentWidth: document.documentElement.clientWidth,
@@ -764,6 +769,13 @@ for (const brand of CASES) {
         contentType: 'image/png',
       });
 
+      expect(geometry.railVisibility, 'short-landscape rail is actually painted').toBe('visible');
+      expect(geometry.railOpacity, 'short-landscape rail is not transparent').toBeGreaterThan(0);
+      expect(geometry.railTop, 'short-landscape rail starts in the visible viewport').toBeGreaterThanOrEqual(0);
+      expect(geometry.railBottom, 'short-landscape rail fits in the visible viewport').toBeLessThanOrEqual(geometry.viewportHeight);
+      expect(geometry.cardVisibility, 'short-landscape first card is actually painted').toBe('visible');
+      expect(geometry.cardOpacity, 'short-landscape first card is not transparent').toBeGreaterThan(0);
+      expect(geometry.cardTop, 'short-landscape first card starts in the visible viewport').toBeLessThan(geometry.viewportHeight);
       expect(geometry.parentIsView, 'short-landscape rail belongs below the search in its menu view').toBe(true);
       expect(geometry.nextAfterHead, 'short-landscape rail follows the menu search').toBe(true);
       expect(geometry.direction, 'short-landscape categories use the horizontal tab rail').toBe('row');
