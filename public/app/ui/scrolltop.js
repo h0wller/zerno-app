@@ -125,9 +125,7 @@ function alignRailWithCard() {
     if (topbar) railHeadObserver.observe(topbar);
   }
 }
-function alignMbonusWithRail() {}
 window.alignRailWithCard = alignRailWithCard;
-window.alignMbonusWithRail = alignMbonusWithRail;
 var railScrollTick = false;
 window.addEventListener('scroll', function () {
   if (railScrollTick) return;
