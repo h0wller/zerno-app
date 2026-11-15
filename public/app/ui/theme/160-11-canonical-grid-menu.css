@@ -344,6 +344,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     color: var(--category-tab-color, var(--ink, #20252b));
     font-family: var(--category-label-font, "Golos Text", system-ui, sans-serif);
     font-size: var(--category-label-size, 10px);
+    font-weight: var(--category-label-weight, 700);
     line-height: 1.15;
     text-align: center;
     white-space: normal;
@@ -391,6 +392,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   html body div.wrap > #deliveryRail button.on[aria-pressed="true"] {
     font-size: var(--category-label-size, 10px);
     font-family: var(--category-label-font, "Golos Text", system-ui, sans-serif);
+    font-weight: var(--category-label-active-weight, 800);
   }
 
   html body div.wrap > #rail button.on::after,
