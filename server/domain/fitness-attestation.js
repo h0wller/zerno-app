@@ -19,7 +19,10 @@ export function createFitnessAttestationService({
     if (!Number.isSafeInteger(now) || now <= 0) throw new TypeError('Attestation clock must return a positive integer timestamp');
 
     return database.transaction(() => {
-      database.prepare('DELETE FROM fitness_attest_challenges WHERE expires_at <= ? OR consumed_at IS NOT NULL').run(now);
+      // Keep consumed/expired rows for the full rate-limit window. Deleting them before
+      // counting would let a client evade the limit by consuming challenges immediately.
+      database.prepare('DELETE FROM fitness_attest_challenges WHERE created_at <= ?')
+        .run(now - WINDOW_MS);
       const customer = database.prepare("SELECT id, role, verified FROM customers WHERE id=?").get(cid);
       if (!customer || customer.role !== 'guest' || customer.verified !== 1) {
         return { ok: false, reason: 'customer_not_eligible' };

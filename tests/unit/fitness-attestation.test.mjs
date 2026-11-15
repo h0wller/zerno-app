@@ -106,3 +106,36 @@ test('expires challenges and limits issuance to ten per guest per minute', () =>
   assert.equal(db.prepare('SELECT COUNT(*) AS count FROM fitness_attest_challenges').get().count, 1);
   db.close();
 });
+
+
+test('rate limit cannot be bypassed by consuming challenges or letting them expire', () => {
+  const db = fixture();
+  const clock = setup(db);
+  const issued = [];
+  for (let i = 0; i < 10; i++) {
+    issued.push(clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'assertion' }));
+  }
+  for (const challenge of issued) {
+    assert.equal(clock.service.consumeChallenge({
+      customerId: 'guest-1',
+      challengeId: challenge.challengeId,
+      challenge: challenge.challenge,
+      purpose: 'assertion',
+    }).ok, true);
+  }
+  assert.deepEqual(
+    clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'attestation' }),
+    { ok: false, reason: 'rate_limited' },
+  );
+  clock.setTime(1_800_000_301_000);
+  assert.deepEqual(
+    clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'attestation' }),
+    { ok: false, reason: 'rate_limited' },
+  );
+  clock.setTime(1_800_000_361_001);
+  assert.equal(
+    clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'attestation' }).ok,
+    true,
+  );
+  db.close();
+});
