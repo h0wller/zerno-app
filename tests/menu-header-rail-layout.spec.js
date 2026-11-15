@@ -1401,7 +1401,7 @@ test('catalog grid uses three columns from 821px through 1180px for both brands'
       const grid = page.locator(selector);
       await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
       const columns = await grid.evaluate(element =>
-        getComputedStyle(element).gridTemplateColumns.trim().split(/\\s+/).length
+        getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length
       );
       expect(columns, brand.brand + ' catalog columns at ' + viewport.width + 'px').toBe(viewport.columns);
     }
