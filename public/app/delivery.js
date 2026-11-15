@@ -420,6 +420,17 @@ if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(scheduleDeliveryImagePriorities);
 }
 
+function renderDeliveryDescription(p, opts) {
+  if (opts.length > 0) {
+    return p.desc ? '<div class="desc">' + esc(p.desc) + '</div>' : '';
+  }
+  // Simple-meta cards share a two-line description slot. Without it, a long
+  // drink description makes the first grid row taller than a set/sauce row.
+  return '<div class="desc"' + (p.desc ? '' : ' aria-hidden="true"') + '>' +
+    esc(p.desc || '') +
+  '</div>';
+}
+
 function renderDeliveryCard(p, n0) {
   var opts = p.opts || [];
   var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
@@ -438,7 +449,7 @@ function renderDeliveryCard(p, n0) {
     '</div>' +
     '<div class="cbody">' +
       '<h3>' + esc(p.name) + '</h3>' +
-      (p.desc ? '<div class="desc">' + esc(p.desc) + '</div>' : '') +
+      renderDeliveryDescription(p, opts) +
       renderCompositionChips(p) +
       bodyMiddleHTML +
       '<div class="steprow">' +
@@ -473,7 +484,7 @@ function updateFirstDeliveryCard(gridEl, firstCard, list) {
     const bodyMid0 = opts0.length > 0 ? renderPizzaOptsHtml(p0, opts0) : renderSingleMetaHtml(p0);
     cbody0.innerHTML =
       '<h3>' + esc(p0.name) + '</h3>' +
-      (p0.desc ? '<div class="desc">' + esc(p0.desc) + '</div>' : '') +
+      renderDeliveryDescription(p0, opts0) +
       renderCompositionChips(p0) +
       bodyMid0 +
       '<div class="steprow">' +
