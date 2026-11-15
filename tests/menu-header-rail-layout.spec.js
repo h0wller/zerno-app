@@ -411,7 +411,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
           railHeight: railRect.height,
           scrollWidth: rail.scrollWidth,
           clientWidth: rail.clientWidth,
-          viewportWidth: document.documentElement.clientWidth,
+          viewportWidth: window.innerWidth,
           documentWidth: document.documentElement.scrollWidth,
           buttonCount: buttons.length,
           buttons,
