@@ -5,6 +5,7 @@ var observedRailHead = null;
 var observedRailTopbar = null;
 
 var railStickyLayout = null;
+var railDesktopAnchor = null;
 
 function usesHorizontalCategoryRailViewport() {
   if (window.matchMedia) {
@@ -74,50 +75,53 @@ function alignRailWithCard() {
   var head = document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head');
 
   if (!rail) return;
-  // Mobile sticky state is scroll-position dependent. Keep its original document
-  // anchor across ResizeObserver callbacks; resetting it here makes the rail
-  // briefly detach and reattach at a different top offset.
   var mobileViewport = usesHorizontalCategoryRailViewport();
-  if (!mobileViewport) {
-    railStickyLayout = null;
-    rail.style.position = 'relative';
-    rail.style.top = 'auto';
-    rail.style.maxHeight = 'none';
-    rail.style.overflowY = '';
-    rail.style.alignSelf = 'start';
-  }
   var wrap = rail.parentElement;
   if (!wrap) return;
 
-  // On mobile the rail is placed directly below the menu header.
-  // Desktop keeps the original catalog-row alignment in the outer grid.
-  var headRect = head && head.getBoundingClientRect();
-  if (headRect && headRect.height) {
-    if (mobileViewport) {
-      rail.style.removeProperty('margin-top');
-      rail.style.removeProperty('height');
-    } else {
+  // Horizontal rails follow the menu header in normal flow. Desktop sidebars
+  // start at the first catalog row, but keep that document-space anchor while
+  // optional delivery filters expand/collapse during category switches.
+  if (mobileViewport) {
+    railDesktopAnchor = null;
+    rail.style.removeProperty('margin-top');
+    rail.style.removeProperty('height');
+  } else {
+    var grid = document.querySelector(isDelivery ? '#deliveryGrid' : '#grid');
+    var viewportKey = window.innerWidth + 'x' + window.innerHeight;
+    var anchorChanged = !railDesktopAnchor ||
+      railDesktopAnchor.rail !== rail ||
+      railDesktopAnchor.wrap !== wrap ||
+      railDesktopAnchor.brand !== (isDelivery ? 'delivery' : 'coffee') ||
+      railDesktopAnchor.viewportKey !== viewportKey;
+
+    if (anchorChanged && grid) {
+      var gridRect = grid.getBoundingClientRect();
+      railDesktopAnchor = {
+        rail: rail,
+        wrap: wrap,
+        brand: isDelivery ? 'delivery' : 'coffee',
+        viewportKey: viewportKey,
+        documentTop: gridRect.top + (window.scrollY || document.documentElement.scrollTop || 0)
+      };
+    }
+
+    if (railDesktopAnchor && railDesktopAnchor.rail === rail) {
       var wrapRect = wrap.getBoundingClientRect();
       var wrapStyle = window.getComputedStyle(wrap);
       var wrapContentTop = wrapRect.top
         + (parseFloat(wrapStyle.paddingTop) || 0)
         + (parseFloat(wrapStyle.borderTopWidth) || 0);
-      var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
-      var menuRow = head.querySelector('.menu-controls-row');
-      var modeSeg = document.getElementById('modeSeg');
-      var staffGuestMenu = !!(menuRow && modeSeg &&
-        modeSeg.closest('.menu-controls-row') === menuRow);
-      // The delivery secondary-filter row is conditional. Align the sidebar to
-      // the stable menu header, never to the first card below that optional row.
-      var desiredTop = isDeliveryBrand
-        ? headRect.top
-        : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
-      var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
+      var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      var marginTop = Math.max(0, railDesktopAnchor.documentTop - (wrapContentTop + scrollY)) + 'px';
       if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
-      if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
     }
-  } else if (rail.style.marginTop !== '0px') {
-    rail.style.marginTop = '0px';
+    railStickyLayout = null;
+    rail.style.position = 'relative';
+    rail.style.top = 'auto';
+    rail.style.maxHeight = 'none';
+    rail.style.overflowY = '';
+    rail.style.alignSelf = 'stretch';
   }
 
   updateRailStickyPosition(rail, head);
