@@ -41,7 +41,6 @@ function updateRailStickyPosition(rail, head) {
     rail.style.overflowY = 'hidden';
     rail.style.alignSelf = 'start';
   } else {
-    railStickyLayout = null;
     rail.style.position = 'relative';
     rail.style.top = 'auto';
     rail.style.maxHeight = 'none';
@@ -62,7 +61,6 @@ function alignRailWithCard() {
     railDesktopAnchor = null;
     return;
   }
-  railStickyLayout = null;
   rail.style.position = 'relative';
   rail.style.top = 'auto';
   rail.style.maxHeight = 'none';
