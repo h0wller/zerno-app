@@ -952,3 +952,73 @@ test('delivery desktop single-meta cards keep equal description and composition 
   expect(Math.abs(drinks.cardHeight - sets.cardHeight), 'description length must not change the category row height').toBeLessThanOrEqual(1);
   expect(Math.abs(drinks.secondRowTop - sets.secondRowTop), 'the second row must not jump between drinks and sets').toBeLessThanOrEqual(1);
 });
+
+test('delivery desktop rail keeps its captured anchor when filters disappear during viewport resize', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+  const rail = page.locator('#deliveryRail');
+  await expect(rail).toBeVisible({ timeout: 10000 });
+
+  const fixtures = [
+    ...Array.from({ length: 4 }, (_, index) => ({
+      id: 'anchor-sauce-' + index,
+      cat: 'sauces',
+      name: 'Соус тестовый ' + index,
+      desc: '',
+      comp: ['томат', 'специи'],
+      vol: '40 г',
+      price: '80',
+      opts: [],
+      on: true,
+    })),
+    ...Array.from({ length: 4 }, (_, index) => ({
+      id: 'anchor-drink-' + index,
+      cat: 'drinks',
+      name: 'Холодный чай тестовый ' + index,
+      desc: 'Чёрный чай, лимонный сок, тростниковый сахар и свежая мята.',
+      comp: [],
+      vol: '500 мл',
+      price: '250',
+      opts: [],
+      on: true,
+    })),
+  ];
+  await page.evaluate((items) => { window.DMENU = items; }, fixtures);
+
+  const measure = () => page.evaluate(() => ({
+    railTop: document.querySelector('#deliveryRail').getBoundingClientRect().top,
+    gridTop: document.querySelector('#deliveryGrid').getBoundingClientRect().top,
+    railMarginTop: getComputedStyle(document.querySelector('#deliveryRail')).marginTop,
+    viewportWidth: document.documentElement.clientWidth,
+  }));
+
+  await rail.locator('[data-dcat="sauces"]').click();
+  await expect(page.locator('#deliveryGrid .card').first()).toContainText('Соус тестовый', { timeout: 10000 });
+  await expect(page.locator('#deliverySubFilterViewport')).toBeVisible();
+  const sauces = await measure();
+  await testInfo.attach('delivery-rail-anchor-before-filter-removal', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
+
+  await rail.locator('[data-dcat="drinks"]').click();
+  await expect(page.locator('#deliveryGrid .card').first()).toContainText('Холодный чай тестовый', { timeout: 10000 });
+  await expect(page.locator('#deliverySubFilterViewport')).toBeHidden();
+  const drinks = await measure();
+
+  await page.setViewportSize({ width: 1100, height: 768 });
+  await page.evaluate(() => new Promise(resolve =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve))
+  ));
+  const resized = await measure();
+  await testInfo.attach('delivery-rail-anchor-after-filter-removal-and-resize', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
+
+  expect(Math.abs(drinks.railTop - sauces.railTop), 'category switching must not move the desktop rail').toBeLessThanOrEqual(1);
+  expect(Math.abs(resized.railTop - sauces.railTop), 'resizing within desktop mode must preserve the captured rail anchor').toBeLessThanOrEqual(1);
+  expect(drinks.gridTop).toBeLessThan(sauces.gridTop - 40);
+  expect(resized.viewportWidth).toBe(1100);
+});
