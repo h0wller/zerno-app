@@ -161,9 +161,7 @@ window.addEventListener('resize', alignRailWithCard, { passive: true });
 window.addEventListener('load', alignRailWithCard, { once: true });
 requestAnimationFrame(alignRailWithCard);
 
-// Keep the mobile rail pinned natively, but hide it while the user is moving.
-// Reveal it shortly after the final scroll event so it never obstructs active scrolling.
-var railScrollRevealTimer = null;
+// Keep the mobile category rail pinned at its viewport offset while scrolling.
 var railPinState = null;
 
 function getRailStickyTop() {
@@ -175,7 +173,7 @@ function getRailStickyTop() {
 
 function clearRailPin(rail) {
   if (!railPinState) {
-    if (rail) rail.classList.remove('rail-is-pinned', 'rail-scroll-hidden');
+    if (rail) rail.classList.remove('rail-is-pinned');
     return;
   }
 
@@ -184,7 +182,7 @@ function clearRailPin(rail) {
     railPinState.spacer.parentNode.removeChild(railPinState.spacer);
   }
   if (pinnedRail) {
-    pinnedRail.classList.remove('rail-is-pinned', 'rail-scroll-hidden');
+    pinnedRail.classList.remove('rail-is-pinned');
     pinnedRail.style.removeProperty('--rail-pinned-top');
     pinnedRail.style.removeProperty('--rail-pinned-left');
     pinnedRail.style.removeProperty('--rail-pinned-width');
@@ -247,7 +245,7 @@ function pinRailAtViewportTop(rail, stickyTop) {
   rail.classList.add('rail-is-pinned');
 }
 
-function updateRailScrollVisibility() {
+function updateRailPinning() {
   var isMobileRail = window.innerWidth <= 820;
   var isDelivery = document.documentElement.dataset.brand === 'delivery';
   var rail = document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
@@ -255,10 +253,6 @@ function updateRailScrollVisibility() {
   if (!rail) return;
   if (!isMobileRail) {
     clearRailPin(rail);
-    if (railScrollRevealTimer !== null) {
-      clearTimeout(railScrollRevealTimer);
-      railScrollRevealTimer = null;
-    }
     return;
   }
 
@@ -278,43 +272,26 @@ function updateRailScrollVisibility() {
 
   if (!hasReachedPinPoint || hasReachedParentEnd) {
     clearRailPin(rail);
-    if (railScrollRevealTimer !== null) {
-      clearTimeout(railScrollRevealTimer);
-      railScrollRevealTimer = null;
-    }
     return;
   }
 
   pinRailAtViewportTop(rail, stickyTop);
-  rail.classList.add('rail-scroll-hidden');
-
-  if (railScrollRevealTimer !== null) clearTimeout(railScrollRevealTimer);
-  railScrollRevealTimer = setTimeout(function () {
-    railScrollRevealTimer = null;
-    if (railPinState && railPinState.rail === rail) {
-      rail.classList.remove('rail-scroll-hidden');
-    }
-  }, 220);
 }
 
 // Scroll restoration can happen before this module subscribes to scroll events.
 // Re-check after load/pageshow and two paint frames so the restored position and
 // final layout are both available before deciding whether the rail is pinned.
-function scheduleRailScrollVisibilityUpdate() {
+function scheduleRailPinningUpdate() {
   window.requestAnimationFrame(function () {
-    window.requestAnimationFrame(updateRailScrollVisibility);
+    window.requestAnimationFrame(updateRailPinning);
   });
 }
 
-window.addEventListener('scroll', updateRailScrollVisibility, { passive: true });
-window.addEventListener('load', scheduleRailScrollVisibilityUpdate, { once: true });
+window.addEventListener('scroll', updateRailPinning, { passive: true });
+window.addEventListener('load', scheduleRailPinningUpdate, { once: true });
 window.addEventListener('pageshow', scheduleRailScrollVisibilityUpdate);
 if (document.readyState === 'complete') scheduleRailScrollVisibilityUpdate();
 window.addEventListener('resize', function () {
-  if (railScrollRevealTimer !== null) {
-    clearTimeout(railScrollRevealTimer);
-    railScrollRevealTimer = null;
-  }
   var isDelivery = document.documentElement.dataset.brand === 'delivery';
   var rail = document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
   clearRailPin(rail);
