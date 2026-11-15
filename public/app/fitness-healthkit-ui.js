@@ -7,6 +7,7 @@ import { Capacitor } from '@capacitor/core';
   var requestInFlight = false;
   var workoutsInFlight = false;
   var submitInFlight = false;
+  var selectedWorkout = null;
 
   function isNativeIOS() {
     return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
@@ -39,7 +40,7 @@ import { Capacitor } from '@capacitor/core';
     heading.appendChild(title);
     section.appendChild(heading);
     section.appendChild(el('p', 'hk-copy',
-      'Apple Watch синхронизирует пробежки с Apple Health на iPhone. Просмотр и передача сводок выполняются только по вашему действию; переданные записи не подтверждают подлинность автоматически.'));
+      'Выберите одну из последних пробежек Apple Health. Zerno получит только сводку тренировки, без маршрута и GPS-точек.'));
     section.appendChild(el('p', 'hk-state', 'Проверяем Apple Health…'));
     section.appendChild(el('div', 'hk-actions'));
     section.appendChild(el('ul', 'hk-workouts'));
@@ -61,7 +62,10 @@ import { Capacitor } from '@capacitor/core';
       '#healthKitProfileSection .hk-actions button{min-height:44px;padding:9px 13px;border:1px solid var(--line);border-radius:12px;background:var(--flame);color:#fff;font-size:12px;font-weight:800}',
       '#healthKitProfileSection .hk-actions button.secondary{background:transparent;color:var(--ink)}',
       '#healthKitProfileSection .hk-workouts{display:grid;gap:8px;margin:0;padding:0;list-style:none}',
-      '#healthKitProfileSection .hk-workouts li{display:grid;gap:3px;padding:9px 0;border-top:1px solid var(--line)}',
+      '#healthKitProfileSection .hk-workouts li{padding:9px 0;border-top:1px solid var(--line)}',
+      '#healthKitProfileSection .hk-workout-option{display:flex;align-items:flex-start;gap:10px;cursor:pointer}',
+      '#healthKitProfileSection .hk-workout-option span{display:grid;gap:3px}',
+      '#healthKitProfileSection .hk-workout-option input{margin-top:3px;accent-color:var(--flame)}',
       '#healthKitProfileSection .hk-workouts small{color:var(--soft);font-size:11px}',
       '#healthKitProfileSection [hidden]{display:none!important}',
       '@media(max-width:380px){#healthKitProfileSection .hk-actions{display:grid;grid-template-columns:1fr}#healthKitProfileSection .hk-actions button{width:100%}}'
@@ -89,50 +93,60 @@ import { Capacitor } from '@capacitor/core';
   function renderWorkouts(section, workouts) {
     var list = section.querySelector('.hk-workouts');
     list.replaceChildren();
+    selectedWorkout = null;
     if (!workouts.length) {
       list.appendChild(el('li', '', 'Недавних пробежек не найдено.'));
       return;
     }
-    workouts.forEach(function (workout) {
+    workouts.forEach(function (workout, index) {
       var item = el('li');
+      var label = el('label', 'hk-workout-option');
+      var input = el('input');
+      input.type = 'radio';
+      input.name = 'healthkit-workout';
+      input.value = String(index);
+      input.addEventListener('change', function () {
+        selectedWorkout = workout;
+        var submit = section.querySelector('.hk-submit-workout');
+        if (submit) submit.disabled = false;
+        state(section, 'Выбрана пробежка. Нажмите «Отправить на проверку».');
+      });
+      label.appendChild(input);
+      var details = el('span');
       var date = new Date(workout.startedAt);
-      item.appendChild(el('b', '', Number.isNaN(date.getTime()) ? 'Пробежка' :
+      details.appendChild(el('b', '', Number.isNaN(date.getTime()) ? 'Пробежка' :
         new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' }).format(date)));
-      item.appendChild(el('small', '', (workout.distanceMeters / 1000).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) +
+      details.appendChild(el('small', '', (workout.distanceMeters / 1000).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) +
         ' км · ' + Math.round(workout.durationSeconds / 60) + ' мин'));
-      item.appendChild(el('small', '', 'Источник: ' + workout.sourceName + ' · ' + workout.sourcePackageName));
+      details.appendChild(el('small', '', 'Источник: ' + workout.sourceName));
+      label.appendChild(details);
+      item.appendChild(label);
       list.appendChild(item);
     });
   }
 
-  async function submitWorkouts(section, workouts) {
-    if (submitInFlight || !workouts.length) return;
+    async function submitWorkouts(section, workout) {
+    if (submitInFlight || !workout) return;
     submitInFlight = true;
     actions(section, []);
-    state(section, 'Передаём сводки на сервер. Они сохранятся как неподтверждённые доказательства.');
-    var accepted = 0, duplicates = 0, rejected = 0;
+    state(section, 'Передаём выбранную пробежку на проверку…');
     try {
-      for (var i = 0; i < workouts.length; i += 1) {
-        try {
-          var result = await window.api('/fitness/evidence', {
-            method: 'POST', body: { activity: workouts[i] }
-          });
-          if (result.duplicate) duplicates += 1;
-          else accepted += 1;
-        } catch (error) {
-          rejected += 1;
-          if (error && error.status === 429) break;
-        }
-      }
-      state(section, 'Отправлено: ' + accepted + ', уже было: ' + duplicates +
-        ', не принято: ' + rejected + '. Все записи остаются unverified; награды не начислены.');
-      actions(section, [{ label: 'Обновить тренировки', secondary: true, onClick: function () { loadWorkouts(section); } }]);
+      var result = await window.api('/fitness/evidence', {
+        method: 'POST', body: { activity: workout }
+      });
+      state(section, result.duplicate
+        ? 'Эта пробежка уже отправлялась. Повторная запись не создана.'
+        : 'Пробежка отправлена на проверку. Она сохранена как неподтверждённая; награда не начислена.');
+      actions(section, [{ label: 'Выбрать другую тренировку', onClick: function () { loadWorkouts(section); } }]);
+    } catch (error) {
+      state(section, error.message || 'Не удалось отправить тренировку. Попробуйте ещё раз.');
+      actions(section, [{ label: 'Повторить отправку', onClick: function () { submitWorkouts(section, workout); } }]);
     } finally {
       submitInFlight = false;
     }
   }
 
-  async function loadWorkouts(section) {
+    async function loadWorkouts(section) {
     if (workoutsInFlight) return;
     workoutsInFlight = true;
     actions(section, []);
@@ -143,9 +157,11 @@ import { Capacitor } from '@capacitor/core';
       renderWorkouts(section, workouts);
       state(section, 'Найдено тренировок: ' + workouts.length + '. Это device_reported, а не подтверждение источника.');
       actions(section, [
-        { label: 'Отправить сводки на проверку', onClick: function () { submitWorkouts(section, workouts); } },
-        { label: 'Обновить тренировки', secondary: true, onClick: function () { loadWorkouts(section); } }
+        { label: 'Отправить на проверку', disabled: true, onClick: function () { submitWorkouts(section, selectedWorkout); } },
+        { label: 'Обновить список', secondary: true, onClick: function () { loadWorkouts(section); } }
       ]);
+      var submitButton = section.querySelector('.hk-actions button');
+      if (submitButton) submitButton.classList.add('hk-submit-workout');
     } catch (error) {
       state(section, error.message || 'Не удалось прочитать Apple Health.');
       actions(section, [{ label: 'Повторить', onClick: function () { loadWorkouts(section); } }]);
@@ -168,8 +184,8 @@ import { Capacitor } from '@capacitor/core';
       }
       // HealthKit deliberately does not expose whether read access was granted.
       // Do not claim permission is granted; let the user explicitly try a read.
-      state(section, 'Запрос Apple Health завершён. Статус разрешения на чтение нельзя проверить отдельно; попробуйте загрузить тренировки.');
-      actions(section, [{ label: 'Попробовать загрузить тренировки', onClick: function () { loadWorkouts(section); } }]);
+      state(section, 'Доступ запрошен. Выберите пробежку из списка.');
+      await loadWorkouts(section);
     } catch (error) {
       state(section, error.message || 'Не удалось запросить доступ к Apple Health.');
       actions(section, [{ label: 'Повторить', onClick: function () { requestAccess(section); } }]);
@@ -192,8 +208,8 @@ import { Capacitor } from '@capacitor/core';
         actions(section, []);
         return;
       }
-      state(section, 'Apple Health доступен. Разрешения запрашиваются только по вашему действию.');
-      actions(section, [{ label: 'Подключить Apple Health', onClick: function () { requestAccess(section); } }]);
+      state(section, 'Выберите тренировку из Apple Health. При первом подключении потребуется разрешить доступ.');
+      actions(section, [{ label: 'Выбрать тренировку', onClick: function () { requestAccess(section); } }]);
     } catch (error) {
       state(section, error.message || 'Не удалось проверить Apple Health.');
     }

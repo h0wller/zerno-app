@@ -6,6 +6,8 @@ import { Capacitor } from '@capacitor/core';
   var SECTION_ID = 'healthConnectProfileSection';
   var requestInFlight = false;
   var workoutsInFlight = false;
+  var submitInFlight = false;
+  var selectedWorkout = null;
   var profileIsOpen = false;
 
   function isNativeAndroid() {
@@ -37,7 +39,10 @@ import { Capacitor } from '@capacitor/core';
       '#healthConnectProfileSection .hc-actions button { min-height:44px; padding:9px 13px; border:var(--profile-btn-border,1px solid var(--line)); border-radius:var(--profile-btn-radius,12px); background:var(--profile-btn-bg,var(--flame)); color:var(--profile-btn-color,#fff); font-size:12px; font-weight:800; cursor:pointer; }',
       '#healthConnectProfileSection .hc-actions button.secondary { border:var(--profile-btn-secondary-border,1px solid var(--line)); background:var(--profile-btn-secondary-bg,#fff); color:var(--profile-btn-secondary-color,var(--ink)); box-shadow:none; }',
       '#healthConnectProfileSection .hc-workouts { display:grid; gap:8px; margin:0; padding:0; list-style:none; }',
-      '#healthConnectProfileSection .hc-workouts li { display:grid; gap:3px; padding:9px 0; border-top:1px solid var(--line); }',
+      '#healthConnectProfileSection .hc-workouts li { padding:9px 0; border-top:1px solid var(--line); }',
+      '#healthConnectProfileSection .hc-workout-option { display:flex; align-items:flex-start; gap:10px; cursor:pointer; }',
+      '#healthConnectProfileSection .hc-workout-option span { display:grid; gap:3px; }',
+      '#healthConnectProfileSection .hc-workout-option input { margin-top:3px; accent-color:var(--flame); }',
       '#healthConnectProfileSection .hc-workouts small { color:var(--soft); font-size:11px; }',
       '#healthConnectProfileSection button:focus-visible { outline:2px solid var(--profile-focus-ring,var(--flame)); outline-offset:3px; }',
       '#healthConnectProfileSection [hidden] { display:none !important; }',
@@ -63,7 +68,7 @@ import { Capacitor } from '@capacitor/core';
     heading.appendChild(title);
     section.appendChild(heading);
     section.appendChild(node('p', 'hc-copy',
-      'Подключите Health Connect и просмотрите пробежки. Передача сводок на сервер выполняется отдельно, только после вашего нажатия. До проверки источника награда не начисляется.'));
+      'Выберите одну из последних пробежек из Health Connect. Zerno получит только сводку тренировки, без маршрута и GPS-точек.'));
     section.appendChild(node('p', 'hc-state', 'Проверяем доступность Health Connect…'));
     section.appendChild(node('div', 'hc-actions'));
     section.appendChild(node('ul', 'hc-workouts'));
@@ -95,25 +100,66 @@ import { Capacitor } from '@capacitor/core';
     var list = section.querySelector('.hc-workouts');
     if (!list) return;
     list.replaceChildren();
+    selectedWorkout = null;
     if (!workouts.length) {
       list.appendChild(node('li', '', 'Недавних пробежек не найдено.'));
       return;
     }
-    workouts.forEach(function (workout) {
+    workouts.forEach(function (workout, index) {
       var item = node('li');
+      var label = node('label', 'hc-workout-option');
+      var input = node('input');
+      input.type = 'radio';
+      input.name = 'healthconnect-workout';
+      input.value = String(index);
+      input.addEventListener('change', function () {
+        selectedWorkout = workout;
+        var submit = section.querySelector('.hc-submit-workout');
+        if (submit) submit.disabled = false;
+        setState(section, 'Выбрана пробежка. Нажмите «Отправить на проверку».');
+      });
+      label.appendChild(input);
+      var details = node('span');
       var date = new Date(workout.startedAt);
-      var label = Number.isNaN(date.getTime()) ? 'Пробежка'
+      var dateLabel = Number.isNaN(date.getTime()) ? 'Пробежка'
         : new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
-      item.appendChild(node('b', '', label));
-      item.appendChild(node('small', '', (workout.distanceMeters / 1000).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) +
+      details.appendChild(node('b', '', dateLabel));
+      details.appendChild(node('small', '', (workout.distanceMeters / 1000).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) +
         ' км · ' + Math.round(workout.durationSeconds / 60) + ' мин'));
-      item.appendChild(node('small', '', 'Источник: ' + workout.sourcePackageName +
-        ' · запись: ' + workout.recordingMethod));
+      details.appendChild(node('small', '', 'Источник: ' + workout.sourcePackageName));
+      label.appendChild(details);
+      item.appendChild(label);
       list.appendChild(item);
     });
   }
 
-  async function loadWorkouts(section) {
+  async function submitWorkouts(section, workout) {
+    if (submitInFlight || !workout) return;
+    submitInFlight = true;
+    setActions(section, []);
+    setState(section, 'Передаём выбранную пробежку на проверку…');
+    try {
+      var result = await window.api('/fitness/evidence', {
+        method: 'POST',
+        body: { activity: workout }
+      });
+      setState(section, result.duplicate
+        ? 'Эта пробежка уже отправлялась. Повторная запись не создана.'
+        : 'Пробежка отправлена на проверку. Она сохранена как неподтверждённая; награда не начислена.');
+      setActions(section, [
+        { label: 'Выбрать другую тренировку', onClick: function () { loadWorkouts(section); } }
+      ]);
+    } catch (error) {
+      setState(section, error.message || 'Не удалось отправить тренировку. Попробуйте ещё раз.');
+      setActions(section, [
+        { label: 'Повторить отправку', onClick: function () { submitWorkouts(section, workout); } }
+      ]);
+    } finally {
+      submitInFlight = false;
+    }
+  }
+
+    async function loadWorkouts(section) {
     if (workoutsInFlight) return;
     workoutsInFlight = true;
     setState(section, 'Читаем недавние тренировки…');
@@ -125,16 +171,11 @@ import { Capacitor } from '@capacitor/core';
       setState(section, 'Найдено тренировок: ' + workouts.length +
         '. Это данные устройства, а не серверная проверка; награды не начисляются.');
       setActions(section, [
-        {
-          label: 'Отправить сводки на проверку',
-          onClick: function () { submitWorkouts(section, workouts); }
-        },
-        {
-          label: 'Обновить тренировки',
-          secondary: true,
-          onClick: function () { loadWorkouts(section); }
-        }
+        { label: 'Отправить на проверку', disabled: true, onClick: function () { submitWorkouts(section, selectedWorkout); } },
+        { label: 'Обновить список', secondary: true, onClick: function () { loadWorkouts(section); } }
       ]);
+      var submitButton = section.querySelector('.hc-actions button');
+      if (submitButton) submitButton.classList.add('hc-submit-workout');
     } catch (error) {
       setState(section, error.message || 'Не удалось прочитать тренировки.');
       setActions(section, [
@@ -189,7 +230,7 @@ import { Capacitor } from '@capacitor/core';
         return;
       }
       setState(section, 'Доступ к тренировкам и дистанции разрешён.');
-      setActions(section, [{ label: 'Загрузить последние тренировки', onClick: function () { loadWorkouts(section); } }]);
+      await loadWorkouts(section);
     } catch (error) {
       setState(section, error.message || 'Не удалось запросить разрешения Health Connect.');
       setActions(section, [{ label: 'Повторить', onClick: function () { requestAccess(section); } }]);
@@ -223,11 +264,11 @@ import { Capacitor } from '@capacitor/core';
       }
       var permissions = await window.ZernoHealthConnect.getPermissionState();
       if (permissions.allGranted) {
-        setState(section, 'Доступ к тренировкам и дистанции разрешён.');
-        setActions(section, [{ label: 'Загрузить последние тренировки', onClick: function () { loadWorkouts(section); } }]);
+        setState(section, 'Выберите тренировку из Health Connect.');
+        setActions(section, [{ label: 'Выбрать тренировку', onClick: function () { loadWorkouts(section); } }]);
       } else {
-        setState(section, 'Health Connect доступен. Разрешения запрашиваются только по вашему действию.');
-        setActions(section, [{ label: 'Подключить Health Connect', onClick: function () { requestAccess(section); } }]);
+        setState(section, 'Выберите тренировку из Health Connect. При первом подключении потребуется разрешить доступ.');
+        setActions(section, [{ label: 'Выбрать тренировку', onClick: function () { requestAccess(section); } }]);
       }
     } catch (error) {
       setState(section, error.message || 'Не удалось проверить Health Connect.');
