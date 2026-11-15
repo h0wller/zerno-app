@@ -485,7 +485,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
 });
 
 
-test('desktop category navigation uses one brand frame and a single active tab surface', async ({ page }, testInfo) => {
+test('desktop category navigation uses one rail surface and a selected icon chip', async ({ page }, testInfo) => {
   const viewports = [
     { width: 1024, height: 768, columns: 2 },
     { width: 1440, height: 900, columns: 3 },
@@ -544,7 +544,7 @@ test('desktop category navigation uses one brand frame and a single active tab s
       expect(layout.height).toBeLessThan(480);
       expect(layout.railBackground).not.toBe('rgba(0, 0, 0, 0)');
       expect(layout.railBorder).toBe('0px');
-      expect(layout.radius).toBe('16px');
+      expect(layout.radius).toBe('0px');
       expect(layout.activeBackground).toBe('rgba(0, 0, 0, 0)');
       expect(layout.activeBorder).toBe('0px');
       expect(layout.activeRadius).toBe('0px');
@@ -1351,6 +1351,8 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
       expect(hydrated.activeAfter.height, `${brand.brand} ${viewport.name}: active underline height`).toBe('3px');
       expect(hydrated.activeAfter.width, `${brand.brand} ${viewport.name}: active underline width`).toBe('28px');
       expect(hydrated.activeAfter.borderRadius, `${brand.brand} ${viewport.name}: active underline radius`).toBe('2px');
+      expect(firstFrame.computed.button.fontFamily, `${brand.brand} ${viewport.name}: first-frame font fallback is generic`).toMatch(/system-ui|sans-serif/);
+      expect(hydrated.computed.button.fontFamily, `${brand.brand} ${viewport.name}: hydrated font fallback is generic`).toMatch(/system-ui|sans-serif/);
       expect(hydrated.fonts.golosText, 'Golos Text font check').toBe(true);
       expect(hydrated.fonts.loadedFaces.length, 'loaded FontFace list is present').toBeGreaterThan(0);
       expect(colorSnapshot(hydrated), `${brand.brand} ${viewport.name}: hydrated colors remain stable after 200ms`).toEqual(colorSnapshot(hydratedAfter200ms));
