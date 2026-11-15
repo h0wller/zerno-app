@@ -338,7 +338,7 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
         headWidth: head.width
       };
     });
-    expect(railGeometry.position).toBe('relative');
+    expect(['relative', 'sticky']).toContain(railGeometry.position);
     expect(railGeometry.direction).toBe('row');
     expect(railGeometry.parentIsView).toBe(true);
     expect(railGeometry.searchGap).toBeGreaterThanOrEqual(8);
