@@ -18,9 +18,16 @@ export function createFitnessAttestationRouter({ service = fitnessAttestationSer
     if (purpose !== 'attestation' && purpose !== 'assertion') {
       return res.status(400).json({ error: 'invalid_challenge_purpose' });
     }
-    const result = service.issueChallenge({ customerId: req.user.id, purpose });
+    const result = service.issueChallenge({
+      customerId: req.user.id,
+      purpose,
+      keyId: req.body?.keyId,
+      requestHash: req.body?.requestHash,
+    });
     if (!result.ok) {
-      const status = result.reason === 'rate_limited' ? 429 : result.reason === 'customer_not_eligible' ? 403 : 400;
+      const status = result.reason === 'rate_limited' ? 429
+        : result.reason === 'customer_not_eligible' || result.reason === 'key_not_registered' ? 403
+          : 400;
       return res.status(status).json({ error: result.reason });
     }
     return res.status(201).json({

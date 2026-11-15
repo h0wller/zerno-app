@@ -18,11 +18,30 @@ function fixture() {
       expires_at INTEGER NOT NULL,
       consumed_at INTEGER
     );
+    CREATE TABLE fitness_attest_keys(
+      key_id TEXT PRIMARY KEY,
+      cid TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      platform TEXT NOT NULL CHECK(platform='apple_app_attest'),
+      public_key_der BLOB NOT NULL,
+      app_id TEXT NOT NULL,
+      environment TEXT NOT NULL CHECK(environment IN ('development','production')),
+      validation_category INTEGER NOT NULL,
+      bundle_version TEXT NOT NULL,
+      sign_count INTEGER NOT NULL DEFAULT 0 CHECK(sign_count >= 0),
+      created_at INTEGER NOT NULL,
+      last_used_at INTEGER,
+      revoked_at INTEGER
+    );
   `);
   db.prepare('INSERT INTO customers VALUES(?,?,?)').run('guest-1', 'guest', 1);
   db.prepare('INSERT INTO customers VALUES(?,?,?)').run('guest-2', 'guest', 1);
   db.prepare('INSERT INTO customers VALUES(?,?,?)').run('unverified', 'guest', 0);
   db.prepare('INSERT INTO customers VALUES(?,?,?)').run('staff', 'cashier', 1);
+  db.prepare(`
+    INSERT INTO fitness_attest_keys(
+      key_id,cid,platform,public_key_der,app_id,environment,validation_category,bundle_version,created_at
+    ) VALUES(?,?,?,?,?,?,?,?,?)
+  `).run('app-attest-key-id', 'guest-1', 'apple_app_attest', Buffer.from([1]), 'TEAMID.online.andcoffee.app', 'development', 4, '1', 1_800_000_000_000);
   return db;
 }
 
@@ -58,10 +77,10 @@ test('rejects challenges for unverified guests, staff and invalid purposes', () 
   const db = fixture();
   const { service } = setup(db);
 
-  assert.deepEqual(service.issueChallenge({ customerId: 'unverified', purpose: 'assertion' }), {
+  assert.deepEqual(service.issueChallenge({ customerId: 'unverified', purpose: 'attestation' }), {
     ok: false, reason: 'customer_not_eligible',
   });
-  assert.deepEqual(service.issueChallenge({ customerId: 'staff', purpose: 'assertion' }), {
+  assert.deepEqual(service.issueChallenge({ customerId: 'staff', purpose: 'attestation' }), {
     ok: false, reason: 'customer_not_eligible',
   });
   assert.deepEqual(service.issueChallenge({ customerId: 'guest-1', purpose: 'workout' }), {
@@ -73,13 +92,13 @@ test('rejects challenges for unverified guests, staff and invalid purposes', () 
 test('consumes a matching challenge exactly once and binds it to owner and purpose', () => {
   const db = fixture();
   const { service } = setup(db);
-  const issued = service.issueChallenge({ customerId: 'guest-1', purpose: 'assertion' });
+  const issued = service.issueChallenge({ customerId: 'guest-1', purpose: 'attestation' });
 
   assert.deepEqual(service.consumeChallenge({
     customerId: 'guest-2', challengeId: issued.challengeId, challenge: issued.challenge, purpose: 'assertion',
   }), { ok: false, reason: 'challenge_not_found' });
   assert.deepEqual(service.consumeChallenge({
-    customerId: 'guest-1', challengeId: issued.challengeId, challenge: issued.challenge, purpose: 'attestation',
+    customerId: 'guest-1', challengeId: issued.challengeId, challenge: issued.challenge, purpose: 'assertion',
   }), { ok: false, reason: 'challenge_not_found' });
   assert.deepEqual(service.consumeChallenge({
     customerId: 'guest-1', challengeId: issued.challengeId, challenge: 'A'.repeat(43), purpose: 'assertion',
@@ -97,13 +116,13 @@ test('expires challenges and limits issuance to ten per guest per minute', () =>
   const db = fixture();
   const clock = setup(db);
   for (let i = 0; i < 10; i++) {
-    assert.equal(clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'assertion' }).ok, true);
+    assert.equal(clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'attestation' }).ok, true);
   }
-  assert.deepEqual(clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'assertion' }), {
+  assert.deepEqual(clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'attestation' }), {
     ok: false, reason: 'rate_limited',
   });
   clock.setTime(1_800_000_301_000);
-  const expired = clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'assertion' });
+  const expired = clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'attestation' });
   assert.equal(expired.ok, true);
   assert.equal(db.prepare('SELECT COUNT(*) AS count FROM fitness_attest_challenges').get().count, 1);
   db.close();
@@ -115,14 +134,14 @@ test('rate limit cannot be bypassed by consuming challenges before the next issu
   const clock = setup(db);
   const issued = [];
   for (let i = 0; i < 10; i++) {
-    issued.push(clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'assertion' }));
+    issued.push(clock.service.issueChallenge({ customerId: 'guest-1', purpose: 'attestation' }));
   }
   for (const challenge of issued) {
     assert.equal(clock.service.consumeChallenge({
       customerId: 'guest-1',
       challengeId: challenge.challengeId,
       challenge: challenge.challenge,
-      purpose: 'assertion',
+      purpose: 'attestation',
     }).ok, true);
   }
   assert.deepEqual(
@@ -158,6 +177,14 @@ test('binds assertion challenges to an enrolled key id and canonical request has
     purpose: 'assertion',
     keyId: 'key-1',
   }), { ok: false, reason: 'invalid_request_hash' });
+
+
+  assert.deepEqual(service.issueChallenge({
+    customerId: 'guest-1',
+    purpose: 'assertion',
+    keyId: 'unregistered-key',
+    requestHash,
+  }), { ok: false, reason: 'key_not_registered' });
 
   const issued = service.issueChallenge({
     customerId: 'guest-1',
@@ -196,5 +223,58 @@ test('does not allow key or request bindings on an attestation challenge', () =>
     keyId: 'some-key',
     requestHash: 'a'.repeat(64),
   }), { ok: false, reason: 'invalid_binding' });
+  db.close();
+});
+
+
+test('HTTP route passes assertion bindings to the service and rejects unregistered keys', async () => {
+  const { createFitnessAttestationRouter } = await import('../../server/routes/fitness-attestation.js');
+  const db = fixture();
+  const { service } = setup(db);
+  const router = createFitnessAttestationRouter({ service });
+  const layer = router.stack.find(entry => entry.route?.path === '/api/fitness/attestation/challenges');
+  assert.ok(layer, 'challenge route should be registered');
+  const handler = layer.route.stack.at(-1).handle;
+
+  function response() {
+    return {
+      statusCode: 200,
+      body: null,
+      headers: {},
+      setHeader(name, value) { this.headers[name] = value; },
+      status(code) { this.statusCode = code; return this; },
+      json(body) { this.body = body; return this; },
+    };
+  }
+
+  const invalid = response();
+  handler({
+    user: { id: 'guest-1', role: 'guest', verified: 1 },
+    body: { purpose: 'assertion' },
+  }, invalid, error => { throw error; });
+  assert.equal(invalid.statusCode, 400);
+  assert.deepEqual(invalid.body, { error: 'invalid_key_id' });
+
+  const unknownKey = response();
+  handler({
+    user: { id: 'guest-1', role: 'guest', verified: 1 },
+    body: { purpose: 'assertion', keyId: 'unknown', requestHash: 'b'.repeat(64) },
+  }, unknownKey, error => { throw error; });
+  assert.equal(unknownKey.statusCode, 403);
+  assert.deepEqual(unknownKey.body, { error: 'key_not_registered' });
+
+  const registeredKey = response();
+  handler({
+    user: { id: 'guest-1', role: 'guest', verified: 1 },
+    body: { purpose: 'assertion', keyId: 'app-attest-key-id', requestHash: 'c'.repeat(64) },
+  }, registeredKey, error => { throw error; });
+  assert.equal(registeredKey.statusCode, 201);
+  assert.equal(registeredKey.body.purpose, 'assertion');
+  assert.equal(registeredKey.body.keyId, undefined);
+  assert.equal(registeredKey.body.requestHash, undefined);
+  const stored = db.prepare('SELECT key_id, request_hash FROM fitness_attest_challenges WHERE id=?')
+    .get(registeredKey.body.challengeId);
+  assert.equal(stored.key_id, 'app-attest-key-id');
+  assert.equal(stored.request_hash, 'c'.repeat(64));
   db.close();
 });

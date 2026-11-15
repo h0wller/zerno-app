@@ -14,5 +14,3 @@ export const DISPATCH_CODE = String(process.env.DISPATCH_CODE || '').trim();
 export const PUBLIC_DIR = process.env.PUBLIC_DIR || path.join(rootDir, 'public');
 export const WEBAPP_URL = (process.env.WEBAPP_URL || process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : '')).replace(/\/+$/, '');
 export const TG_BOT_USERNAME = process.env.TG_BOT_USERNAME || 'friday_and_coffeeBot'; // ⚠️ подставь реальный username своего бота без @
-export const APPLE_APP_ATTEST_APP_ID = String(process.env.APPLE_APP_ATTEST_APP_ID || '').trim();
-export const APPLE_APP_ATTEST_ENVIRONMENT = String(process.env.APPLE_APP_ATTEST_ENVIRONMENT || '').trim();

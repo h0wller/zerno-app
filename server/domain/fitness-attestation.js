@@ -17,17 +17,6 @@ export function createFitnessAttestationService({
     const normalizedKeyId = keyId == null ? null : String(keyId).trim();
     const normalizedRequestHash = requestHash == null ? null : String(requestHash).trim();
     if (!cid || !PURPOSES.has(purpose)) return { ok: false, reason: 'invalid_input' };
-    if (purpose === 'attestation' && (normalizedKeyId || normalizedRequestHash)) {
-      return { ok: false, reason: 'invalid_binding' };
-    }
-    if (purpose === 'assertion') {
-      if (!normalizedKeyId || !/^[A-Za-z0-9_-]{1,128}$/.test(normalizedKeyId)) {
-        return { ok: false, reason: 'invalid_key_id' };
-      }
-      if (!normalizedRequestHash || !/^[a-f0-9]{64}$/.test(normalizedRequestHash)) {
-        return { ok: false, reason: 'invalid_request_hash' };
-      }
-    }
     const now = Number(clock());
     if (!Number.isSafeInteger(now) || now <= 0) throw new TypeError('Attestation clock must return a positive integer timestamp');
 
@@ -39,6 +28,22 @@ export function createFitnessAttestationService({
       const customer = database.prepare("SELECT id, role, verified FROM customers WHERE id=?").get(cid);
       if (!customer || customer.role !== 'guest' || customer.verified !== 1) {
         return { ok: false, reason: 'customer_not_eligible' };
+      }
+      if (purpose === 'attestation' && (normalizedKeyId || normalizedRequestHash)) {
+        return { ok: false, reason: 'invalid_binding' };
+      }
+      if (purpose === 'assertion') {
+        if (!normalizedKeyId || !/^[A-Za-z0-9_-]{1,128}$/.test(normalizedKeyId)) {
+          return { ok: false, reason: 'invalid_key_id' };
+        }
+        if (!normalizedRequestHash || !/^[a-f0-9]{64}$/.test(normalizedRequestHash)) {
+          return { ok: false, reason: 'invalid_request_hash' };
+        }
+        const registeredKey = database.prepare(`
+          SELECT key_id FROM fitness_attest_keys
+          WHERE key_id=? AND cid=? AND platform='apple_app_attest' AND revoked_at IS NULL
+        `).get(normalizedKeyId, cid);
+        if (!registeredKey) return { ok: false, reason: 'key_not_registered' };
       }
       const recent = database.prepare(
         'SELECT COUNT(*) AS count FROM fitness_attest_challenges WHERE cid=? AND created_at>?'

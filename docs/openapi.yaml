@@ -1383,20 +1383,27 @@ paths:
     post:
       tags: [Fitness]
       summary: Выдать одноразовый challenge для App Attest
-      description: 'Только verified guest. Challenge связан с текущим профилем, живёт 5 минут, хранится в БД только в виде SHA-256 и ограничен 10 запросами в rolling minute. Для assertion обязательны keyId и SHA-256 requestHash. Endpoint не проверяет attestation/assertion и не подтверждает тренировку.'
+      description: 'Только verified guest. Challenge связан с текущим профилем, живёт 5 минут и ограничен 10 запросами в rolling minute. Для assertion требуется ранее зарегистрированный и неотозванный keyId владельца, а также SHA-256 requestHash. Endpoint не проверяет attestation/assertion и не подтверждает тренировку.'
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [purpose]
-              required: [purpose]
-              properties:
-                purpose: { type: string, enum: [attestation, assertion] }
-                keyId: { type: string, maxLength: 128, description: Required for assertion challenges }
-                requestHash: { type: string, pattern: '^[a-f0-9]{64}
+              oneOf:
+                - type: object
+                  required: [purpose]
+                  properties:
+                    purpose: { type: string, enum: [attestation] }
+                - type: object
+                  required: [purpose, keyId, requestHash]
+                  properties:
+                    purpose: { type: string, enum: [assertion] }
+                    keyId: { type: string, maxLength: 128 }
+                    requestHash:
+                      type: string
+                      pattern: '^[a-f0-9]{64}$'
+                      description: SHA-256 digest of the canonical request body
       responses:
         '201':
           description: Одноразовый challenge
@@ -1410,9 +1417,9 @@ paths:
                   challenge: { type: string }
                   purpose: { type: string, enum: [attestation, assertion] }
                   expiresAt: { type: string, format: date-time }
-        '400': { description: Некорректная цель challenge }
+        '400': { description: Некорректная цель или параметры challenge }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '403': { description: Verified guest required or App Attest key is not registered for this guest }
         '429': { description: Слишком много challenge }
 
   /api/fitness/strava/consent:
