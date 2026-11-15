@@ -1,4 +1,5 @@
 ext {
+    // Health Connect connect-client 1.1.0 requires Android API 26+.
     minSdkVersion = 26
     compileSdkVersion = 36
     targetSdkVersion = 36
