@@ -215,8 +215,8 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   html body div.wrap > .rail,
   html body div.wrap > #rail,
   html body div.wrap > #deliveryRail {
-    width: 92px;
-    min-width: 92px;
+    width: 80px;
+    min-width: 80px;
   }
 }
 /* Тап-таргеты карточек доставки ≥ 44px по высоте (проверка pwa-responsive.spec.js: 40px минимум) */
@@ -288,7 +288,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   }
 }
 
-/* Desktop category navigation: preserve the branded sidebar without nested frames. */
+/* Desktop category navigation: one rail surface, fixed icon chips, no tab pills. */
 @media (min-width: 821px) and (min-height: 481px) {
   html body div.wrap > #rail,
   html body div.wrap > #deliveryRail {
@@ -303,10 +303,10 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     height: max-content;
     min-height: 0;
     max-height: none;
-    gap: 8px;
-    padding: 6px;
-    border: 1px solid var(--category-rail-border-color, transparent);
-    border-radius: 16px;
+    gap: 6px;
+    padding: 4px;
+    border: 0;
+    border-radius: 0;
     background: var(--category-rail-bg, var(--panel, #fff));
     box-shadow: none;
     overflow: visible;
@@ -315,28 +315,39 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   html body div.wrap > #rail button,
   html body div.wrap > #deliveryRail button {
     box-sizing: border-box;
+    position: relative;
+    display: flex;
     flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
     width: 100%;
     min-width: 0;
     max-width: none;
-    height: 64px;
+    height: auto;
     min-height: 64px;
-    max-height: 64px;
-    padding: 7px 3px;
-    border: 1px solid transparent;
-    border-radius: 12px;
+    max-height: none;
+    padding: 6px 2px 8px;
+    border: 0;
+    border-radius: 0;
     background: transparent;
     box-shadow: none;
-    transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease,
-      box-shadow 180ms ease, transform 180ms ease;
+    transition: color 180ms ease, transform 180ms ease;
     color: var(--category-tab-color, var(--ink, #20252b));
-    font-size: 10px;
+    font-family: var(--category-label-font, "Golos Text", system-ui, sans-serif);
+    font-size: var(--category-label-size, 10px);
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   html body div.wrap > #rail button.on,
   html body div.wrap > #deliveryRail button.on {
-    border-color: var(--category-tab-active-border-color, transparent);
-    background: var(--category-tab-active-bg, var(--card, #fff));
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
     color: var(--category-tab-active-color, var(--ink, #20252b));
     font-weight: 800;
@@ -345,38 +356,58 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
 
   html body div.wrap > #rail .re,
   html body div.wrap > #deliveryRail .re {
-    border: var(--category-icon-border, 0);
+    display: grid;
+    flex: 0 0 var(--category-icon-size, 32px);
+    place-items: center;
+    width: var(--category-icon-size, 32px);
+    min-width: var(--category-icon-size, 32px);
+    height: var(--category-icon-size, 32px);
+    border: 0;
     border-radius: var(--category-icon-radius, 50%);
-    background: var(--category-icon-bg, transparent);
+    background: transparent;
     color: var(--category-icon-color, currentColor);
-    font-size: 21px;
-    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+    font-size: 23px;
+    line-height: 1;
+    transition: background-color 180ms ease, color 180ms ease;
   }
 
   html body div.wrap > #rail button.on .re,
   html body div.wrap > #deliveryRail button.on .re {
-    border: var(--category-icon-active-border, var(--category-icon-border, 0));
+    border: 0;
     border-radius: var(--category-icon-radius, 50%);
-    background: var(--category-icon-active-bg, var(--category-icon-bg, transparent));
-    color: var(--category-icon-active-color, var(--category-icon-color, currentColor));
+    background: var(--category-icon-active-bg, transparent);
+    color: var(--category-icon-active-color, currentColor);
+  }
+
+  html body div.wrap > #rail button.on::after,
+  html body div.wrap > #deliveryRail button.on::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 28px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--category-indicator-color, currentColor);
+    transform: translateX(-50%);
   }
 
   html body div.wrap > #rail button:active,
   html body div.wrap > #deliveryRail button:active {
-    transform: scale(.97);
+    transform: scale(.98);
   }
 
   html body div.wrap > #rail button:focus-visible,
   html body div.wrap > #deliveryRail button:focus-visible {
     outline: 2px solid var(--focus, currentColor);
     outline-offset: 2px;
+    z-index: 1;
   }
 
   @media (hover: hover) {
     html body div.wrap > #rail button:not(.on):hover,
     html body div.wrap > #deliveryRail button:not(.on):hover {
-      border-color: var(--category-tab-hover-border-color, transparent);
-      background: var(--category-tab-hover-bg, transparent);
+      color: var(--category-tab-active-color, currentColor);
     }
   }
 }
