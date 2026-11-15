@@ -25,11 +25,15 @@ function syncCoffeeRailCue() {
   var rail = document.getElementById('rail');
   if (!rail) return;
 
+  rail.setAttribute('role', 'group');
+  rail.setAttribute('aria-label', 'Категории меню');
+  rail.setAttribute('tabindex', '0');
   var hasOverflow = rail.scrollWidth > rail.clientWidth + 1;
   var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
   var atEnd = hasOverflow && rail.scrollLeft >= maxScroll - 2;
 
   rail.classList.toggle('has-overflow', hasOverflow);
+  rail.classList.toggle('has-start-overflow', hasOverflow && rail.scrollLeft > 2);
   rail.classList.toggle('at-end', atEnd);
 }
 
