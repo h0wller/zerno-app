@@ -66,6 +66,39 @@ async function register(name, phone) {
   return result.json.token;
 }
 
+async function seedOtp(key, code = '2468') {
+  const result = await request('/__test/otp', {
+    method: 'POST',
+    body: { key, code, expiresInMs: 300000 },
+  });
+  assert.equal(result.status, 200, JSON.stringify(result.json));
+}
+
+async function registerVerified(name, phone) {
+  await seedOtp('reg:' + phone);
+  const result = await request('/auth/register', {
+    method: 'POST',
+    body: { name, phone, pin: '1234', code: '2468', consent: true },
+  });
+  assert.equal(result.status, 200, JSON.stringify(result.json));
+  assert.equal(result.json.customer?.verified, 1);
+  return result.json.token;
+}
+
+async function activateStaff(token, code) {
+  const result = await request('/auth/activate', {
+    method: 'POST',
+    token,
+    body: { code },
+  });
+  assert.equal(result.status, 200, JSON.stringify(result.json));
+  return result.json.customer;
+}
+
+function customerIdForToken(token) {
+  return db.prepare("SELECT ref FROM tokens WHERE token=? AND kind='user'").get(token)?.ref;
+}
+
 function orderBody(clientOrderId, qty = 1, promo) {
   return {
     client_order_id: clientOrderId,
@@ -91,6 +124,10 @@ before(async () => {
       PORT: String(port),
       TELEGRAM_BOT_TOKEN: '',
       TG_WEBHOOK_SECRET: '',
+      SMS_AUTH_ENABLED: 'true',
+      ADMIN_CODE: 'integration-order-verification-admin-2026',
+      CASHIER_CODE: 'integration-order-verification-cashier-2026',
+      DISPATCH_CODE: 'integration-order-verification-dispatch-2026',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -295,4 +332,106 @@ test('malformed client_order_id is rejected before any order side effect', async
   assert.equal(result.json.code, 'INVALID_CLIENT_ORDER_ID');
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 0);
   assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, '40');
+});
+
+
+test('pending guest cannot create an order before phone verification or staff activation', async () => {
+  const token = await register('Pending Order Guest', '+7 900 200-01-01');
+  const customerId = customerIdForToken(token);
+  assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(customerId).verified, 0);
+
+  const orderNumberBefore = db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value;
+  const result = await request('/orders', {
+    method: 'POST',
+    token,
+    body: orderBody('ord_pending_guest_001', 1),
+  });
+
+  assert.equal(result.status, 403, JSON.stringify(result.json));
+  assert.equal(result.json.code, 'CUSTOMER_NOT_VERIFIED');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 0);
+  assert.equal(db.prepare("SELECT value FROM meta WHERE key='order_no'").get().value, orderNumberBefore);
+});
+
+test('OTP-verified guest can create an order', async () => {
+  const token = await registerVerified('Verified Order Guest', '+7 900 200-01-02');
+  const result = await request('/orders', {
+    method: 'POST',
+    token,
+    body: orderBody('ord_verified_guest_002', 1),
+  });
+
+  assert.equal(result.status, 200, JSON.stringify(result.json));
+  assert.equal(result.json.order.cid, customerIdForToken(token));
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 1);
+});
+
+test('employee activation verifies a pending guest and unlocks order creation', async () => {
+  const adminToken = await registerVerified('Order Verification Admin', '+7 900 200-01-03');
+  await activateStaff(adminToken, 'integration-order-verification-admin-2026');
+
+  const guestToken = await register('Staff Activated Order Guest', '+7 900 200-01-04');
+  const guestId = customerIdForToken(guestToken);
+  assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(guestId).verified, 0);
+
+  const activation = await request('/staff/activate-guest', {
+    method: 'POST',
+    token: adminToken,
+    body: { id: guestId },
+  });
+  assert.equal(activation.status, 200, JSON.stringify(activation.json));
+  assert.equal(db.prepare('SELECT verified FROM customers WHERE id=?').get(guestId).verified, 1);
+
+  const order = await request('/orders', {
+    method: 'POST',
+    token: guestToken,
+    body: orderBody('ord_staff_activated_guest_004', 1),
+  });
+  assert.equal(order.status, 200, JSON.stringify(order.json));
+  assert.equal(order.json.order.cid, guestId);
+});
+
+test('staff-created customer remains verified and can order after proving phone ownership', async () => {
+  const adminToken = await registerVerified('Staff Customer Admin', '+7 900 200-01-05');
+  await activateStaff(adminToken, 'integration-order-verification-admin-2026');
+
+  const phone = '+7 900 200-01-06';
+  const created = await request('/staff/customers', {
+    method: 'POST',
+    token: adminToken,
+    body: { name: 'Staff Created Order Guest', phone },
+  });
+  assert.equal(created.status, 200, JSON.stringify(created.json));
+  assert.equal(created.json.customer.verified, 1);
+
+  await seedOtp(phone);
+  const login = await request('/auth/login', {
+    method: 'POST',
+    body: { phone, otp: '2468' },
+  });
+  assert.equal(login.status, 200, JSON.stringify(login.json));
+  assert.equal(login.json.customer.verified, 1);
+
+  const order = await request('/orders', {
+    method: 'POST',
+    token: login.json.token,
+    body: orderBody('ord_staff_created_guest_006', 1),
+  });
+  assert.equal(order.status, 200, JSON.stringify(order.json));
+});
+
+test('staff role can place staff orders even when its own guest phone profile is unverified', async () => {
+  const token = await register('Pending Staff Order Account', '+7 900 200-01-07');
+  const staff = await activateStaff(token, 'integration-order-verification-cashier-2026');
+  assert.equal(staff.role, 'cashier');
+  assert.equal(staff.verified, 0);
+
+  const result = await request('/orders', {
+    method: 'POST',
+    token,
+    body: orderBody('ord_staff_unverified_007', 1),
+  });
+
+  assert.equal(result.status, 200, JSON.stringify(result.json));
+  assert.equal(result.json.order.by_staff, 1);
 });
