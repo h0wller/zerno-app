@@ -19,7 +19,7 @@ for (const brand of BRANDS) {
     await expect(page.locator('#scrollTopBtn')).toHaveCount(0);
   });
 
-  test(`${brand.brand}: category rail fades while scrolling and returns after scroll settles`, async ({ page }) => {
+  test(`${brand.brand}: category rail fades while scrolling and returns after scroll settles`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
@@ -30,10 +30,18 @@ for (const brand of BRANDS) {
     await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading'))).toBe(true);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeLessThan(0.1);
     await expect.poll(() => rail.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('none');
+    await testInfo.attach(`${brand.brand}-rail-faded-390x844`, {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
 
     await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading')), { timeout: 5000 }).toBe(false);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
     await expect.poll(() => rail.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('auto');
+    await testInfo.attach(`${brand.brand}-rail-restored-390x844`, {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
     if (brand.brand === 'delivery') {
       const subfilters = page.locator('#deliverySubFilter');
       await expect(subfilters).not.toHaveClass(/is-scroll-fading/);
