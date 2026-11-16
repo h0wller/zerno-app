@@ -395,12 +395,20 @@ test('bottom rail leaves the last card CTA scrollable and keeps empty-cart reser
     if (brand === 'delivery') {
       expect(clearance.ctaBottom, 'last delivery card CTA is fully above the fixed rail').toBeLessThanOrEqual(clearance.railTop);
     }
-    const buttonHitTargets = await rail.evaluate(element => Array.from(element.querySelectorAll('button')).every(button => {
-      const rect = button.getBoundingClientRect();
-      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      return hit === button || button.contains(hit);
-    }));
-    expect(buttonHitTargets, 'all active category buttons remain unobstructed').toBe(true);
+    const buttonHitTargets = await rail.evaluate(element => {
+      const railRect = element.getBoundingClientRect();
+      const visibleButtons = Array.from(element.querySelectorAll('button')).filter(button => {
+        const rect = button.getBoundingClientRect();
+        return rect.left >= railRect.left && rect.right <= railRect.right &&
+          rect.top >= railRect.top && rect.bottom <= railRect.bottom;
+      });
+      return visibleButtons.length > 0 && visibleButtons.every(button => {
+        const rect = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        return hit === button || button.contains(hit);
+      });
+    });
+    expect(buttonHitTargets, 'every visible category button remains unobstructed; clipped tabs stay scrollable').toBe(true);
   }
 });
 
