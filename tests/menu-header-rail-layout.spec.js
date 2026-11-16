@@ -1241,6 +1241,12 @@ test('coffee active rail background diagnostic reports token and matching CSS ru
     await page.setViewportSize(viewport);
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#rail button.on')).toBeVisible();
+    await page.waitForFunction(() => {
+      const sheet = [...document.styleSheets].find(item => item.href && item.href.includes('/150-rail.css'));
+      if (!sheet) return false;
+      try { return sheet.cssRules.length > 0; } catch { return false; }
+    });
     const report = await page.locator('#rail button.on').evaluate(element => {
       const token = getComputedStyle(document.documentElement).getPropertyValue('--category-tab-active-bg').trim();
       const backgroundColor = getComputedStyle(element).backgroundColor;
@@ -1799,6 +1805,12 @@ test('rail active background diagnostic and four brand viewport captures', async
       await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
       const rail = page.locator(brand === 'coffee' ? '#rail' : '#deliveryRail');
       await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect(rail.locator('button.on')).toBeVisible();
+      await page.waitForFunction(() => {
+        const sheet = [...document.styleSheets].find(item => item.href && item.href.includes('/150-rail.css'));
+        if (!sheet) return false;
+        try { return sheet.cssRules.length > 0; } catch { return false; }
+      });
       const diagnostic = await page.evaluate(() => {
         const railSelector = document.documentElement.dataset.brand === 'delivery' ? '#deliveryRail' : '#rail';
         const active = document.querySelector(railSelector + ' button.on');
@@ -1833,6 +1845,10 @@ test('rail active background diagnostic and four brand viewport captures', async
         }
         return { token: rootToken, computedBackground, matchedRules };
       });
+      expect(
+        diagnostic.matchedRules.some(rule => rule.selector.includes('button.on')),
+        brand + ' ' + viewport.name + ' should report the active-tab background rule'
+      ).toBe(true);
       await testInfo.attach(brand + '-' + viewport.name + '-rail-background-diagnostic.json', {
         body: Buffer.from(JSON.stringify(diagnostic, null, 2)),
         contentType: 'application/json',
