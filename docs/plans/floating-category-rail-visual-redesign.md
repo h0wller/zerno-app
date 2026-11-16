@@ -97,3 +97,6 @@ No body-level host or DOM relocation is proposed at this stage. Do not change ca
 - Opened and visually inspected staff screenshots from artifact `playwright-Responsive UI-43944948904`: coffee/delivery admin rail at 390×844. The capsule remains detached, selected state is visible, and the rail does not interfere with the two-row staff header. The transient admin-mode toast is present in the captured state but does not overlap the rail.
 - Guest and staff visual review is complete for the captured states. This is not device-level iOS/Android acceptance; the artifact is Chromium CI evidence.
 - Native rendering adapter is not implemented in this PR. Repository inspection found Capacitor shells but no existing category-rail rendering bridge; keep native work as a separately scoped follow-up after CSS acceptance.
+
+
+Additional visual check: the delivery cart sheet screenshot `delivery-cart-sheet-open-390x844` was opened and inspected; the category rail is not visible over the sheet.
