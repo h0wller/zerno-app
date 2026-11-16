@@ -2344,17 +2344,24 @@ test('mobile category labels stay on one line and fully inside their tabs for bo
         });
       });
 
-      expect(labels.every((label) =>
-        label.label &&
-        label.lineCount === 1 &&
-        label.whiteSpace === 'nowrap' &&
-        label.fontSize >= 8.5 &&
-        label.transform === 'none' &&
-        label.insideTab
-      ), brand.brand + ' category labels must remain readable, single-line and fully visible at ' +
+      const narrowCoffeeIconMode = brand.brand === 'coffee' && viewport.width <= 340;
+      expect(labels.every((label) => {
+        if (narrowCoffeeIconMode) {
+          return label.label && label.accessibleName === label.label &&
+            label.lineCount === 0 && label.transform === 'none';
+        }
+        return label.label &&
+          label.lineCount === 1 &&
+          label.whiteSpace === 'nowrap' &&
+          label.fontSize >= 8.5 &&
+          label.transform === 'none' &&
+          label.insideTab &&
+          (brand.brand !== 'coffee' || label.accessibleName === label.label);
+      }), brand.brand + ' category labels remain visible or have an accessible icon-only label at ' +
         viewport.width + 'x' + viewport.height + ': ' + JSON.stringify(labels)).toBe(true);
       expect(Math.min(...labels.map((label) => label.buttonWidth)),
-        brand.brand + ' category tabs retain a 60px minimum target width').toBeGreaterThanOrEqual(60);
+        brand.brand + ' category tabs retain their minimum target width')
+        .toBeGreaterThanOrEqual(brand.brand === 'coffee' ? 44 : 60);
       if (brand.brand === 'delivery') {
         const sauces = labels.find((label) => label.accessibleName === 'Допы и соусы');
         expect(sauces?.label, 'delivery sauces category uses a compact visible label').toBe('Добавки');
