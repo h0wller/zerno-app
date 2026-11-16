@@ -229,7 +229,9 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(Math.abs(before.rail.x - before.section.x)).toBeLessThanOrEqual(1);
     expect(Math.abs(before.rail.right - before.section.right)).toBeLessThanOrEqual(1);
     expect(before.rail.y).toBeGreaterThan(before.menuHead.bottom);
-    expect(before.rail.height, 'mobile first paint reserves the compact 56px rail').toBe(56);
+    expect(before.railContentHeight, 'mobile rail buttons retain the compact 56px content height').toBe(56);
+    expect(before.rail.height, 'first paint reserves rail content plus the safe-area inset')
+      .toBe(before.railContentHeight + before.railSafeArea);
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.menuHeadStyle.maxHeight).toBe('90px');
