@@ -2229,3 +2229,58 @@ test('mobile category labels stay on one line and fully inside their tabs for bo
     }
   }
 });
+
+
+test('mobile menu header and category rail use compact vertical geometry', async ({ page }, testInfo) => {
+  for (const brand of CASES) {
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        sessionStorage.setItem('splashDone', '1');
+      });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const geometry = await page.evaluate(({ headSelector, railSelector }) => {
+        const head = document.querySelector(headSelector);
+        const rail = document.querySelector(railSelector);
+        const heading = head.querySelector('.menu-controls-row h1');
+        const search = head.querySelector('.mh-right > .search');
+        const active = rail.querySelector('button.on');
+        const label = active?.querySelector('.category-label');
+        const indicator = active && getComputedStyle(active, '::after');
+        const rect = (element) => {
+          const box = element.getBoundingClientRect();
+          return { top: box.top, bottom: box.bottom, height: box.height };
+        };
+        const labelRect = rect(label);
+        const railRect = rect(rail);
+        const indicatorHeight = Number.parseFloat(indicator?.height || '0');
+        const indicatorBottom = Number.parseFloat(indicator?.bottom || '0');
+        return {
+          head: rect(head),
+          heading: rect(heading),
+          search: rect(search),
+          titleSearchGap: rect(search).top - rect(heading).bottom,
+          rail: railRect,
+          labelToIndicatorGap: railRect.bottom - indicatorBottom - indicatorHeight - labelRect.bottom,
+          buttonHeight: active?.getBoundingClientRect().height ?? 0,
+        };
+      }, { headSelector: brand.head, railSelector: brand.rail });
+
+      expect(geometry.head.height, 'mobile menu block should be shorter than the former 100px').toBeLessThanOrEqual(90);
+      expect(geometry.titleSearchGap, 'search should sit close below the menu title').toBeLessThanOrEqual(14);
+      expect(geometry.rail.height, 'category rail should use compact 56px height').toBe(56);
+      expect(geometry.buttonHeight, 'compact rail must preserve a comfortable touch target').toBeGreaterThanOrEqual(44);
+      expect(geometry.labelToIndicatorGap, 'active indicator should sit closer to the category label').toBeLessThanOrEqual(9);
+      await testInfo.attach(`compact-menu-${brand.brand}-${viewport.width}px`, {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  }
+});
