@@ -1892,6 +1892,37 @@ test('rail active background diagnostic and four brand viewport captures', async
 });
 
 
+
+test('mobile venue switcher panel fits viewport and uses compact full-width rows', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+  await page.locator('#venueToggle').click();
+  const panel = page.locator('#brandSeg');
+  await expect(panel).toBeVisible();
+  const geometry = await panel.evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    const buttons = Array.from(el.querySelectorAll('button')).map(button => {
+      const r = button.getBoundingClientRect();
+      return { width: r.width, height: r.height, text: button.textContent.trim() };
+    });
+    return {
+      left: rect.left, right: rect.right, width: rect.width,
+      viewportWidth: document.documentElement.clientWidth,
+      position: style.position, top: rect.top, buttons,
+      overflowWidth: document.documentElement.scrollWidth,
+    };
+  });
+  expect(geometry.left).toBeGreaterThanOrEqual(8);
+  expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth - 8);
+  expect(geometry.width).toBeGreaterThanOrEqual(180);
+  expect(geometry.buttons).toHaveLength(2);
+  expect(geometry.buttons.every(button => button.width >= geometry.width - 16)).toBe(true);
+  expect(geometry.buttons.every(button => button.height >= 40)).toBe(true);
+  expect(geometry.overflowWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+});
+
 test('coffee brand switcher exposes a selected state and intrinsic mobile button width', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
