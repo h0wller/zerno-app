@@ -118,7 +118,24 @@ for (const brand of CASES) {
       expect(geometry.right, 'capsule has a 12px minimum horizontal inset').toBeLessThanOrEqual(geometry.viewportWidth - 12);
       expect(geometry.width, 'capsule stays within the viewport width minus 24px').toBeLessThanOrEqual(geometry.viewportWidth - 24);
       expect(geometry.borderRadius, 'rail uses a capsule corner radius').toBeGreaterThanOrEqual(24);
-      expect(geometry.overflowX, 'long category sets scroll inside the rail').toBe('auto');
+      if (brand.brand === 'coffee') {
+        expect(geometry.scrollWidth, 'coffee categories fit without internal horizontal scrolling')
+          .toBeLessThanOrEqual(geometry.clientWidth);
+        expect(geometry.overflowX, 'coffee rail does not expose an internal horizontal scroller')
+          .not.toBe('auto');
+        const categoryButtons = await rail.locator('button').evaluateAll(buttons => buttons.map(button => {
+          const rect = button.getBoundingClientRect();
+          return { left: rect.left, right: rect.right, width: rect.width, height: rect.height };
+        }));
+        expect(categoryButtons).toHaveLength(6);
+        expect(categoryButtons.every(button => button.width >= 44 && button.height >= 44))
+          .toBe(true);
+        expect(categoryButtons.every(button => button.left >= geometry.left - 1 &&
+          button.right <= geometry.right + 1),
+        'all six coffee categories remain visible without scrolling').toBe(true);
+      } else {
+        expect(geometry.overflowX, 'delivery rail keeps its independently scrollable category set').toBe('auto');
+      }
       expect(geometry.activeBackground, 'selected category uses a filled state').not.toBe('rgba(0, 0, 0, 0)');
       expect(geometry.backdropFilter, 'supported browsers enhance the surface with blur').toContain('blur');
       expect(geometry.height, 'rail uses the compact or regular mobile height')
