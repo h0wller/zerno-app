@@ -23,32 +23,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp` |
-| `core/utils.js` | Чистые утилиты форматирования/DOM | `# Карта владения модулями («…и кофе × Пятница»)
-
-Каноническая карта «модуль → часть сайта». Единственный источник правды о том,
-какой модуль владеет какими DOM-узлами и поведением.
-Правило-инцидент: один DOM-узел — ровно один модуль-владелец; остальные читают
-состояние через window.*-контракты.
-Обновляется тем же PR, что и создание/переименование/удаление модуля
-(см. docs/frontend-todo.md, разд. 5, п. 7).
-
-Колонка «Контракты» — window.*-функции, которые модуль публикует для других.
-
-## 0. Точка входа, жизненный цикл, кэш
-
-| Модуль | Владеет | Контракты |
-| --- | --- | --- |
-| `public/app/main.js` | Единственная ESM-точка входа; порядок импортов = порядок инициализации; `boot.js` строго последним | — |
-| `public/app/core/boot.js` | `renderAll()`, `boot()`; ЕДИНСТВЕННАЯ регистрация SW (SKIP_WAITING + reload только при hadController); install-баннер; iOS-хинт; IMG-FB v1 (фолбэк webp→svg при ошибке загрузки) | `window.renderAll`, `window.boot` |
-| `public/sw.js` | `STATIC_CACHE` — App Shell (cache-first + фоновая ревалидация); `MEDIA_CACHE` — svg network-first (no-cache), png/webp SWR; `API_CACHE` — /api/menu SWR 5 мин | — |
-| `public/index.html` (инлайн, СЛОЙ 4) | early-brand-guard; critical-fouc-guard; perf-bridge (Lighthouse); TgUx-стаб; префетч /api/menu и /api/dmenu; lcp-inline-css; FOUC-guard Ф3.51 (первый кадр шапки/марки/тикера); владелец клика сплэша; early-chrome-guard. Легаси-дубль регистрации SW — кандидат на удаление (владелец boot.js) | — |
-
-## 1. Глобальное состояние, сеть, утилиты
-
-| Модуль | Владеет | Контракты |
-| --- | --- | --- |
-| `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp` |
-, `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `fmtMulti` |
+| `core/utils.js` | Чистые утилиты форматирования/DOM | `$`, `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `fmtMulti` |
 | `core/api.js` | Определяет базовый URL API для app-origin и локальных frontend-серверов | `window.API_BASE` |
 | `core/ui.js` | `api()` с обработкой 401; тосты; дата обновления меню; PERF-дедуп одинаковых GET | `window.api`, `window.toast`, `window.renderUpd` |
 | `core/config.js` | Bootstrap /api/config (имя TG-бота и состояние opt-in-функций), триггеры relink/verifyNote | `window.TG_USERNAME`, `window.SMS_AUTH_ENABLED`; событие `app:config-loaded` |
@@ -154,7 +129,8 @@
 | `core/overlay-core.js` | `syncOverlay` (модалки/шторки/корзина), popstate/Escape/клик по оверлею; TgUx (MainButton, BackButton, haptics) | `window.syncOverlay`, `window.TgUx` |
 | `core/panel.js` | Единая шторка профиля `#panel`, фокус возврата и действия «Назад»; старый вызов `openPanel('bonus')` открывает тот же профиль | `window.openPanel`, `window.closePanel`, `window.setTab` |
 | `core/swipe.js` | iOS-свайп закрытия `#panel` | — |
-| `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`): desktop rail захватывает offset первой строки каталога один раз на desktop-размещение; повторные resize/ResizeObserver callbacks сохраняют offset; переход в горизонтальный режим сбрасывает anchor, возврат в sidebar захватывает его заново; мобильный rail после достижения исходного document offset закрепляется через `position: fixed` с placeholder для сохранения потока и остаётся видимым во время прокрутки; при возврате выше порога или resize pin снимается; повторная проверка запускается после `load`/`pageshow` и двух animation frames для восстановления прокрутки после reload; предоставляет общий helper прокрутки к началу выбранного контента с учётом нижней границы закреплённого rail | `window.alignRailWithCard`, `window.scrollMenuContentToStart` |\n| `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
+| `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`): desktop rail захватывает offset первой строки каталога один раз на desktop-размещение; повторные resize/ResizeObserver callbacks сохраняют offset; переход в горизонтальный режим сбрасывает anchor, возврат в sidebar захватывает его заново; мобильный rail после достижения исходного document offset закрепляется через `position: fixed` с placeholder для сохранения потока и остаётся видимым во время прокрутки; при возврате выше порога или resize pin снимается; повторная проверка запускается после `load`/`pageshow` и двух animation frames для восстановления прокрутки после reload; предоставляет общий helper прокрутки к началу выбранного контента с учётом нижней границы закреплённого rail | `window.alignRailWithCard`, `window.scrollMenuContentToStart` |
+| `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |
 | `core/deeplink.js` | Диплинки: brand/tab/no/reorder/auth_token; legacy `staff_chat` делегирует в `chat.js` | — |
