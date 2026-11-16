@@ -218,7 +218,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           return value;
         })(),
         railBottomGap: window.innerHeight - document.querySelector('#deliveryRail').getBoundingClientRect().bottom,
-        railTotalHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')),
+        railTotalHeight: (() => {
+            const probe = document.createElement('div');
+            probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+            document.body.appendChild(probe);
+            const value = probe.getBoundingClientRect().height;
+            probe.remove();
+            return value;
+          })(),
         viewportWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth
       };

@@ -71,7 +71,14 @@ for (const brand of CASES) {
             return value;
           })(),
           pageScrollWidth: document.documentElement.scrollWidth,
-          railTotalHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')),
+          railTotalHeight: (() => {
+            const probe = document.createElement('div');
+            probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+            document.body.appendChild(probe);
+            const value = probe.getBoundingClientRect().height;
+            probe.remove();
+            return value;
+          })(),
           borderRadius: parseFloat(getComputedStyle(element).borderTopLeftRadius),
           overflowX: getComputedStyle(element).overflowX,
           scrollWidth: element.scrollWidth,

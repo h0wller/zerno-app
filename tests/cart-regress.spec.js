@@ -320,7 +320,14 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
 
     // ── Задача 2: empty-cart scroll reserve is rail total + 16px; no FAB lane ──
     const padBottom = await page.locator('#deliveryGrid').evaluate((el) => parseFloat(window.getComputedStyle(el).paddingBottom));
-    const railTotal = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')));
+    const railTotal = await page.evaluate(() => {
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+      document.body.appendChild(probe);
+      const value = probe.getBoundingClientRect().height;
+      probe.remove();
+      return value;
+    });
     expect(padBottom).toBeGreaterThanOrEqual(railTotal + 15);
     expect(padBottom).toBeLessThanOrEqual(railTotal + 17);
 
@@ -355,7 +362,14 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
           probe.remove();
           return value;
         })(),
-        railTotalHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')),
+        railTotalHeight: (() => {
+            const probe = document.createElement('div');
+            probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+            document.body.appendChild(probe);
+            const value = probe.getBoundingClientRect().height;
+            probe.remove();
+            return value;
+          })(),
         height: rail.height
       };
     });

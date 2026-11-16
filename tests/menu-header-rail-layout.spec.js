@@ -101,7 +101,14 @@ for (const brand of CASES) {
             probe.remove();
             return value;
           })(),
-          railTotalHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')),
+          railTotalHeight: (() => {
+            const probe = document.createElement('div');
+            probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+            document.body.appendChild(probe);
+            const value = probe.getBoundingClientRect().height;
+            probe.remove();
+            return value;
+          })(),
           viewportHeight: window.innerHeight,
           railPosition: getComputedStyle(railEl).position,
           headBottom: headRect.bottom,
@@ -653,7 +660,14 @@ test('short landscape category tabs use a detached floating capsule', async ({ p
           railHeight: railRect.height,
           railWidth: railRect.width,
           bottomGap: window.innerHeight - railRect.bottom,
-          railTotalHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')),
+          railTotalHeight: (() => {
+            const probe = document.createElement('div');
+            probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+            document.body.appendChild(probe);
+            const value = probe.getBoundingClientRect().height;
+            probe.remove();
+            return value;
+          })(),
           gridLeft: gridRect.left,
           gridRight: gridRect.right,
           buttonWidths: [...rail.querySelectorAll('button')].map((button) => button.getBoundingClientRect().width),
