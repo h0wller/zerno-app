@@ -89,7 +89,7 @@ for (const brand of CASES) {
         };
       }, brand.rail);
 
-      await testInfo.attach(`${brand.brand}-${viewport.name}-rail-before-redesign`, {
+      await testInfo.attach(`${brand.brand}-${viewport.name}-rail-after-floating-redesign`, {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
@@ -343,7 +343,8 @@ test('bottom rail leaves the last card CTA scrollable and keeps empty-cart reser
         .map(rule => ({ selector: rule.selectorText, paddingBottom: rule.style.paddingBottom }));
       return {
         padding: parseFloat(style.paddingBottom),
-        railTotal: rail.getBoundingClientRect().height,
+        railSurfaceHeight: rail.getBoundingClientRect().height,
+        railTotal: parseFloat(root.getPropertyValue('--rail-total-h')),
         railTotalVariable: root.getPropertyValue('--rail-total-h').trim(),
         inlinePaddingBottom: element.style.paddingBottom,
         matchedRules,
