@@ -200,23 +200,23 @@ test('bottom rail leaves the last card CTA scrollable and keeps empty-cart reser
     const grid = page.locator(gridSelector);
     const rail = page.locator(railSelector);
     await expect(rail).toBeVisible();
-    const emptyReserve = await grid.evaluate(element => {
-      const railTotal = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')) ||
-        parseFloat(getComputedStyle(document.querySelector(brand === 'coffee' ? '#rail' : '#deliveryRail')).height);
-      return { padding: parseFloat(getComputedStyle(element).paddingBottom), railTotal };
-    }, brand);
+    const emptyReserve = await grid.evaluate((element, railSelector) => ({
+      padding: parseFloat(getComputedStyle(element).paddingBottom),
+      railTotal: document.querySelector(railSelector).getBoundingClientRect().height,
+    }), railSelector);
     expect(emptyReserve.padding).toBeLessThanOrEqual(emptyReserve.railTotal + 17);
 
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     const lastCta = page.locator(gridSelector + ' .card:not(.skeleton-card) .steprow .cta, ' +
       gridSelector + ' .card:not(.skeleton-card) [data-add]').last();
     await expect(lastCta).toBeVisible({ timeout: 15000 });
-    const clearance = await page.evaluate(({ railSelector, ctaSelector }) => {
+    const clearance = await page.evaluate(({ railSelector, gridSelector }) => {
       const rail = document.querySelector(railSelector).getBoundingClientRect();
-      const cta = document.querySelector(ctaSelector).getBoundingClientRect();
-      return { railTop: rail.top, ctaBottom: cta.bottom };
-    }, { railSelector, ctaSelector: gridSelector + ' .card:not(.skeleton-card) .steprow .cta, ' +
-      gridSelector + ' .card:not(.skeleton-card) [data-add]' });
+      const cards = Array.from(document.querySelectorAll(gridSelector + ' .card:not(.skeleton-card)'));
+      const lastCard = cards[cards.length - 1];
+      const cta = lastCard && lastCard.querySelector('.steprow .cta, [data-add]');
+      return { railTop: rail.top, ctaBottom: cta ? cta.getBoundingClientRect().bottom : Infinity };
+    }, { railSelector, gridSelector });
     expect(clearance.ctaBottom, 'last card CTA is fully above the fixed rail').toBeLessThanOrEqual(clearance.railTop);
     const buttonHitTargets = await rail.evaluate(element => Array.from(element.querySelectorAll('button')).every(button => {
       const rect = button.getBoundingClientRect();
