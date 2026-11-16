@@ -16,7 +16,7 @@ const VIEWPORTS = [
 
 for (const brand of CASES) {
   for (const viewport of VIEWPORTS) {
-    test(`${brand.brand}: category rail is docked to the bottom at ${viewport.name}`, async ({ page }, testInfo) => {
+    test(`${brand.brand}: category rail floats as a detached capsule at ${viewport.name}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => {
         sessionStorage.setItem('splashDone', '1');
@@ -61,6 +61,13 @@ for (const brand of CASES) {
           right: rect.right,
           width: rect.width,
           height: rect.height,
+          bottomGap: window.innerHeight - rect.bottom,
+          borderRadius: parseFloat(getComputedStyle(element).borderTopLeftRadius),
+          overflowX: getComputedStyle(element).overflowX,
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth,
+          activeBackground: getComputedStyle(element.querySelector('button.on')).backgroundColor,
+          backdropFilter: getComputedStyle(element).backdropFilter,
           viewportWidth: window.innerWidth,
           viewportHeight: window.innerHeight,
           scrollY: window.scrollY,
@@ -72,14 +79,27 @@ for (const brand of CASES) {
         };
       }, brand.rail);
 
-      await testInfo.attach(`${brand.brand}-${viewport.name}-rail-geometry`, {
+      await testInfo.attach(`${brand.brand}-${viewport.name}-rail-before-redesign`, {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+      await testInfo.attach(`${brand.brand}-${viewport.name}-rail-geometry`,
         body: Buffer.from(JSON.stringify(geometry, null, 2)),
         contentType: 'application/json',
       });
 
       expect(geometry.position, 'mobile rail is fixed independently of catalog scroll position').toBe('fixed');
-      expect(Math.abs(geometry.bottom - geometry.viewportHeight),
-        'rail surface is aligned with the viewport bottom edge').toBeLessThanOrEqual(1);
+      expect(geometry.bottomGap, 'floating rail keeps a 10–12px visual gap below the capsule')
+        .toBeGreaterThanOrEqual(10);
+      expect(geometry.bottomGap, 'floating rail does not drift too far from the viewport edge')
+        .toBeLessThanOrEqual(12);
+      expect(geometry.left, 'capsule has a 12px minimum horizontal inset').toBeGreaterThanOrEqual(12);
+      expect(geometry.right, 'capsule has a 12px minimum horizontal inset').toBeLessThanOrEqual(geometry.viewportWidth - 12);
+      expect(geometry.width, 'capsule stays within the viewport width minus 24px').toBeLessThanOrEqual(geometry.viewportWidth - 24);
+      expect(geometry.borderRadius, 'rail uses a capsule corner radius').toBeGreaterThanOrEqual(24);
+      expect(geometry.overflowX, 'long category sets scroll inside the rail').toBe('auto');
+      expect(geometry.activeBackground, 'selected category uses a filled state').not.toBe('rgba(0, 0, 0, 0)');
+      expect(geometry.backdropFilter, 'supported browsers enhance the surface with blur').toContain('blur');
       expect(geometry.height, 'rail uses the compact or regular mobile height')
         .toBe(viewport.expectedHeight);
       expect(geometry.buttonHeights.length).toBeGreaterThan(0);
