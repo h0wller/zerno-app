@@ -84,14 +84,6 @@ var rules = [
 
 
 
- 'html[data-brand="delivery"] body header.topbar .venueWrap #brandSeg{background:var(--venue-menu-bg);border:var(--venue-menu-border);box-shadow:var(--venue-menu-shadow);border-radius:14px}',
- 'html[data-brand="delivery"] body header.topbar .venueWrap #brandSeg > button{font-family:var(--venue-option-font);color:var(--venue-option-color)}',
- 'html[data-brand="delivery"] body header.topbar .venueWrap #brandSeg > button:hover{background:var(--venue-option-hover-bg);transform:none}',
- 'html[data-brand="delivery"] body header.topbar .venueWrap #brandSeg > button.on{background:var(--venue-option-active-bg);border:var(--venue-option-active-border);box-shadow:var(--venue-option-active-shadow);border-radius:9px;color:var(--venue-option-active-color);font-weight:800}',
- 'html[data-brand="coffee"] body header.topbar .venueWrap #brandSeg{background:var(--venue-menu-bg);border:var(--venue-menu-border);box-shadow:var(--venue-menu-shadow);border-radius:14px}',
- 'html[data-brand="coffee"] body header.topbar .venueWrap #brandSeg > button{font-family:var(--venue-option-font);color:var(--venue-option-color)}',
- 'html[data-brand="coffee"] body header.topbar .venueWrap #brandSeg > button:hover{background:var(--venue-option-hover-bg)}',
- 'html[data-brand="coffee"] body header.topbar .venueWrap #brandSeg > button.on{background:var(--venue-option-active-bg);border:var(--venue-option-active-border);box-shadow:var(--venue-option-active-shadow);border-radius:9px;color:var(--venue-option-active-color);font-weight:750}',
  '[data-brand="delivery"] .authPrompt{background:linear-gradient(135deg,#F6EEE1,#EFE6D8);border:2px dashed var(--fr-choc);color:var(--fr-choc)}',
  '[data-brand="delivery"] .authPrompt button{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff}',
  '@media(max-width:820px){#panel.open{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;max-height:100%;border-radius:0;margin:0;transform:none;z-index:320}#panel .tabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}}', '#chatPanel [class="chip"],#chatPanel #chips,#chatPanel .chips{display:none}',
