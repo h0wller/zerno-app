@@ -49,3 +49,19 @@ for (const brand of BRANDS) {
     }
   });
 }
+
+
+for (const brand of BRANDS) {
+  test(`${brand.brand}: landscape layout keeps the category rail visible`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 15000 });
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await testInfo.attach(`${brand.brand}-rail-landscape-844x390`, {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
+  });
+}
