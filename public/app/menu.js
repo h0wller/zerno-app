@@ -125,7 +125,10 @@ function renderMenu() {
   const gridEl = $('#grid');
   if (!gridEl) return;
 
-  gridEl.innerHTML = '';
+  // Keep the previous cards in normal flow until the replacement markup is
+  // ready. Clearing the grid here collapses the document synchronously; on a
+  // pinned mobile rail the browser clamps scrollY before smooth category
+  // navigation can begin, producing the visible jump reported in coffee.
   requestAnimationFrame(() => {
     gridEl.innerHTML =
       list
