@@ -168,6 +168,7 @@ window.addEventListener('load', alignRailWithCard, { once: true });
 requestAnimationFrame(alignRailWithCard);
 
 // Keep the mobile category rail pinned at its viewport offset while scrolling.
+var railPinnedClassName = railPinnedClassName;
 var railPinState = null;
 var railPinPreserveDuringScroll = false;
 var railPinSettleFrame = 0;
@@ -184,7 +185,7 @@ function clearRailPin(rail) {
   if (railPinSettleFrame) window.cancelAnimationFrame(railPinSettleFrame);
   railPinSettleFrame = 0;
   if (!railPinState) {
-    if (rail) rail.classList.remove('rail-is-pinned');
+    if (rail) rail.classList.remove(railPinnedClassName);
     return;
   }
 
@@ -193,7 +194,7 @@ function clearRailPin(rail) {
     railPinState.spacer.parentNode.removeChild(railPinState.spacer);
   }
   if (pinnedRail) {
-    pinnedRail.classList.remove('rail-is-pinned');
+    pinnedRail.classList.remove(railPinnedClassName);
     pinnedRail.style.removeProperty('--rail-pinned-top');
     pinnedRail.style.removeProperty('--rail-pinned-left');
     pinnedRail.style.removeProperty('--rail-pinned-width');
@@ -253,7 +254,7 @@ function pinRailAtViewportTop(rail, stickyTop) {
   rail.style.width = rect.width + 'px';
   rail.style.maxWidth = rect.width + 'px';
   rail.style.margin = '0';
-  rail.classList.add('rail-is-pinned');
+  rail.classList.add(railPinnedClassName);
 }
 
 function updateRailPinning() {
@@ -307,10 +308,10 @@ window.scrollMenuContentToStart = function (contentSelector, railSelector, prese
 
   var viewportTop = 12;
   var rail = document.querySelector(railSelector);
-  if (preservePinned && rail && !rail.classList.contains('rail-is-pinned')) {
+  if (preservePinned && rail && !rail.classList.contains(railPinnedClassName)) {
     pinRailAtViewportTop(rail, getRailStickyTop());
   }
-  if (rail && rail.classList.contains('rail-is-pinned')) {
+  if (rail && rail.classList.contains(railPinnedClassName)) {
     viewportTop = rail.getBoundingClientRect().bottom + 8;
   } else {
     var topbar = document.querySelector('header.topbar');
@@ -325,7 +326,7 @@ window.scrollMenuContentToStart = function (contentSelector, railSelector, prese
   var targetTop = content.getBoundingClientRect().top +
     (window.scrollY || document.documentElement.scrollTop || 0);
   var nextScrollY = Math.max(0, targetTop - viewportTop);
-  var pinAfterScroll = !!(rail && rail.classList.contains('rail-is-pinned') &&
+  var pinAfterScroll = !!(rail && rail.classList.contains(railPinnedClassName) &&
     railPinState && railPinState.rail === rail);
   if (pinAfterScroll) {
     // The category replacement changes the catalog's document geometry. Keep
