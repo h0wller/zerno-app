@@ -6,6 +6,7 @@ var observedRailHead = null;
 var observedRailTopbar = null;
 var railStickyLayout = null;
 var railFadeTimer = null;
+var fadedRail = null;
 var railScrollTick = false;
 
 function updateRailStickyPosition(rail, head) {
@@ -116,11 +117,13 @@ function activeRail() {
 
 function markRailScrolling() {
   var rail = activeRail();
-  if (rail) rail.classList.add('is-scroll-fading');
+  if (fadedRail && fadedRail !== rail) fadedRail.classList.remove('is-scroll-fading');
+  fadedRail = rail;
+  if (fadedRail) fadedRail.classList.add('is-scroll-fading');
   if (railFadeTimer) window.clearTimeout(railFadeTimer);
   railFadeTimer = window.setTimeout(function () {
-    var currentRail = activeRail();
-    if (currentRail) currentRail.classList.remove('is-scroll-fading');
+    if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
+    fadedRail = null;
     railFadeTimer = null;
   }, 260);
 }
