@@ -27,3 +27,20 @@ sticky слева на весь скролл
     pointer-events: none;
   }
 }
+
+/* Fade only the primary category rail during active page scrolling. */
+.wrap .rail,
+.wrap #deliveryRail {
+  transition: opacity 180ms ease;
+}
+.wrap .rail.is-scroll-fading,
+.wrap #deliveryRail.is-scroll-fading {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wrap .rail,
+  .wrap #deliveryRail {
+    transition: none;
+  }
+}
