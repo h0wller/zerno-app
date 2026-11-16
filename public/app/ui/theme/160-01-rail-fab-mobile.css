@@ -809,8 +809,8 @@ html body #authModal.tg-mode .mhint{
   }
 
   body.cart-open #cartFab {
-    visibility: hidden !important;
-    pointer-events: none !important;
+    visibility: hidden;
+    pointer-events: none;
   }
 
   html body #mbonusBtn {
