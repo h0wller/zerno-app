@@ -1989,21 +1989,6 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
 
   const category = page.locator('#rail button[data-cat]').nth(1);
   const grid = page.locator('#grid');
-  const animationFrames = await grid.evaluate(el => {
-    const start = performance.now();
-    const frames = [];
-    return new Promise(resolve => {
-      const sample = now => {
-        const rect = el.getBoundingClientRect();
-        frames.push({ time: now - start, top: rect.top, height: rect.height, scrollY: window.scrollY });
-        if (now - start >= 600) resolve(frames);
-        else requestAnimationFrame(sample);
-      };
-      requestAnimationFrame(sample);
-    });
-  });
-  expect(animationFrames.length).toBeGreaterThan(10);
-  expect(Math.max(...animationFrames.map(frame => frame.height))).toBeGreaterThan(0);
   const beforeCardCount = await grid.locator(':scope > .card').count();
   expect(beforeCardCount).toBeGreaterThan(0);
 
@@ -2015,6 +2000,34 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
     return document.querySelectorAll('#grid > .card').length;
   });
   expect(immediateCardCount, 'category switch must not synchronously empty the catalog column').toBeGreaterThan(0);
+  const scrollFrames = await page.evaluate(() => {
+    const startedAt = performance.now();
+    const samples = [];
+    return new Promise(resolve => {
+      const sample = now => {
+        const gridRect = document.querySelector('#grid').getBoundingClientRect();
+        const railRect = document.querySelector('#rail').getBoundingClientRect();
+        samples.push({
+          time: now - startedAt,
+          gridTop: gridRect.top,
+          gridHeight: gridRect.height,
+          railBottom: railRect.bottom,
+          scrollY: window.scrollY,
+        });
+        if (now - startedAt >= 900) resolve(samples);
+        else requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+  });
+  await testInfo.attach('coffee-category-scroll-frames-390x844.json', {
+    body: Buffer.from(JSON.stringify(scrollFrames, null, 2)),
+    contentType: 'application/json',
+  });
+  const scrollPositions = scrollFrames.map(frame => frame.scrollY);
+  expect(Math.max(...scrollPositions) - Math.min(...scrollPositions),
+    'category navigation should perform measurable smooth scrolling when the new catalog is below the current viewport')
+    .toBeGreaterThan(2);
 
   await expect(category).toHaveClass(/on/);
   await expect.poll(() => page.evaluate(() => window.__coffeeScrollEvidence?.cardCount ?? -1))
