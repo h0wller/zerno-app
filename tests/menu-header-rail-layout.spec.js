@@ -1458,9 +1458,11 @@ test('desktop wrap expands to a centered 2560px maximum on wide viewports', asyn
         expect(layout.maxWidth).toBe('2560px');
       }
       if (width >= 2800) {
-        expect(Math.abs(layout.width - 2560), brand.brand + ' wrap width at ' + width + 'px').toBeLessThanOrEqual(1);
-        expect(Math.abs(layout.left - (layout.viewportClientWidth - 2560) / 2), brand.brand + ' wrap centering at ' + width + 'px').toBeLessThanOrEqual(1);
-        expect(Math.abs(layout.right - (layout.viewportClientWidth + 2560) / 2), brand.brand + ' wrap right edge at ' + width + 'px').toBeLessThanOrEqual(1);
+        const expectedWidth = Math.min(2560, layout.viewportClientWidth);
+        const expectedLeft = (layout.viewportClientWidth - expectedWidth) / 2;
+        expect(Math.abs(layout.width - expectedWidth), brand.brand + ' wrap width at ' + width + 'px').toBeLessThanOrEqual(1);
+        expect(Math.abs(layout.left - expectedLeft), brand.brand + ' wrap centering at ' + width + 'px').toBeLessThanOrEqual(1);
+        expect(Math.abs(layout.right - (expectedLeft + expectedWidth)), brand.brand + ' wrap right edge at ' + width + 'px').toBeLessThanOrEqual(1);
       }
     }
   }
