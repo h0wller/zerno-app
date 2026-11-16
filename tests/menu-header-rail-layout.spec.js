@@ -1702,10 +1702,14 @@ test('active rail tabs keep their geometry on press and coffee uses its blue act
     buttonBackground: getComputedStyle(button).backgroundColor,
     iconBackground: getComputedStyle(button.querySelector('.re')).backgroundColor,
     iconColor: getComputedStyle(button.querySelector('.re')).color,
+    labelColor: getComputedStyle(button).color,
+    fontWeight: getComputedStyle(button).fontWeight,
   }));
-  expect(coffeeState.buttonBackground).toBe('rgb(220, 234, 247)');
+  expect(coffeeState.buttonBackground).toBe('rgba(0, 0, 0, 0)');
   expect(coffeeState.iconBackground).toBe('rgb(18, 58, 107)');
   expect(coffeeState.iconColor).toBe('rgb(255, 255, 255)');
+  expect(coffeeState.labelColor).toBe('rgb(18, 58, 107)');
+  expect(coffeeState.fontWeight).toBe('700');
 
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
   const deliveryRail = page.locator('#deliveryRail');
@@ -1726,4 +1730,60 @@ test('active rail tabs keep their geometry on press and coffee uses its blue act
   expect(pressed.iconTransform).toBe('none');
   expect(pressed.rect).toEqual(before);
   await page.mouse.up();
+});
+
+test('rail active background diagnostic and four brand viewport captures', async ({ page }, testInfo) => {
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of [
+      { name: 'portrait-390x844', width: 390, height: 844 },
+      { name: 'landscape-844x390', width: 844, height: 390 },
+    ]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+      await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+      const rail = page.locator(brand === 'coffee' ? '#rail' : '#deliveryRail');
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      const diagnostic = await page.evaluate(() => {
+        const active = document.querySelector('#rail button.on');
+        const rootToken = getComputedStyle(document.documentElement).getPropertyValue('--category-tab-active-bg').trim();
+        const computedBackground = active ? getComputedStyle(active).backgroundColor : null;
+        const matchedRules = [];
+        const visit = (rules, source) => {
+          for (const rule of rules) {
+            if (rule.cssRules) {
+              try { visit(rule.cssRules, source); } catch (_) {}
+              continue;
+            }
+            if (!rule.selectorText || !rule.style || !active) continue;
+            let matches = false;
+            try { matches = active.matches(rule.selectorText); } catch (_) {}
+            if (!matches) continue;
+            const background = rule.style.getPropertyValue('background');
+            const backgroundColor = rule.style.getPropertyValue('background-color');
+            if (!background && !backgroundColor) continue;
+            matchedRules.push({
+              file: source,
+              selector: rule.selectorText,
+              background: background || null,
+              backgroundColor: backgroundColor || null,
+              important: rule.style.getPropertyPriority(background ? 'background' : 'background-color') === 'important',
+            });
+          }
+        };
+        for (const sheet of document.styleSheets) {
+          const source = sheet.href || 'inline <style>';
+          try { visit(sheet.cssRules, source); } catch (_) {}
+        }
+        return { token: rootToken, computedBackground, matchedRules };
+      });
+      await testInfo.attach(brand + '-' + viewport.name + '-rail-background-diagnostic.json', {
+        body: Buffer.from(JSON.stringify(diagnostic, null, 2)),
+        contentType: 'application/json',
+      });
+      await testInfo.attach(brand + '-' + viewport.name + '-rail.png', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  }
 });
