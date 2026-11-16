@@ -383,7 +383,7 @@ test('bottom rail category buttons remain keyboard operable', async ({ page }) =
   await page.keyboard.press('Enter');
   await expect(nextCategory).toHaveAttribute('aria-pressed', 'true');
   await expect(rail).toHaveCSS('position', 'fixed');
-  await expect.poll(() => rail.evaluate(element => element.getBoundingClientRect().bottom)).toBe(844);
+  await expect.poll(() => rail.evaluate(element => Math.round(window.innerHeight - element.getBoundingClientRect().bottom))).toBe(10);
 });
 
 test('checkout address suggestions remain usable with the bottom rail hidden under the cart sheet', async ({ page }, testInfo) => {

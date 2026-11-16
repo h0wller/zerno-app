@@ -1,6 +1,6 @@
 # Floating category rail — visual redesign proposal
 
-**Status:** design contract; implementation and visual acceptance are intentionally pending.
+**Status:** CSS fallback implementation in progress; visual acceptance and native adapter remain pending.
 **Parent:** PR #265, head `ff6be95d72e1bd7d308011aa7f9cc207ba50fcf4`.
 **Scope:** mobile/compact-landscape category rail only. No cart, category-data, checkout, or business-logic changes.
 
@@ -64,7 +64,7 @@ No body-level host or DOM relocation is proposed at this stage. Do not change ca
 
 ## Implementation sequence
 
-1. Add/adjust Playwright regressions for detached geometry, actual viewport edge gap, horizontal overflow/scroll, hit targets, hit testing, catalog clearance, cart FAB visible/hidden, cart sheet, brand switch, keyboard and compact landscape.
+1. Added Playwright regressions for detached geometry, actual viewport edge gap, horizontal overflow, hit targets, catalog clearance, cart FAB visible/hidden, cart sheet, brand switch, keyboard and compact landscape. RED confirmed on the previous edge-docked implementation: 12 viewport/brand cases failed on a 0px bottom gap; 179 unrelated responsive tests passed.
 2. Confirm RED on the exact parent head before implementation. Keep existing assertions; do not update screenshot baselines.
 3. Implement the CSS fallback and critical first-frame geometry in their existing owners. Keep DOM and state owners unchanged.
 4. Capture equivalent before/after screenshots for coffee/delivery, portrait/short landscape, guest/staff where relevant, empty/non-empty cart and cart sheet.

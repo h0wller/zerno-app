@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('mobile category rail stays visible while pinned during active scrolling for both brands', async ({ page }) => {
+test('mobile category rail stays visible as a detached capsule during active scrolling for both brands', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
@@ -21,7 +21,9 @@ test('mobile category rail stays visible while pinned during active scrolling fo
           position: style.position,
           visibility: style.visibility,
           opacity: Number(style.opacity),
-          pinned: element.classList.contains('rail-is-pinned'),
+          bottomGap: window.innerHeight - element.getBoundingClientRect().bottom,
+          left: element.getBoundingClientRect().left,
+          right: element.getBoundingClientRect().right,
         });
       }
       return states;
@@ -31,7 +33,8 @@ test('mobile category rail stays visible while pinned during active scrolling fo
       state.position === 'fixed' &&
       state.visibility !== 'hidden' &&
       state.opacity > 0 &&
-      state.pinned
+      state.bottomGap >= 10 && state.bottomGap <= 12 &&
+      state.left >= 12 && state.right <= 378
     ), brand + ' rail must remain visibly pinned during active scroll').toBe(true);
   }
 });

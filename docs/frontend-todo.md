@@ -32,7 +32,7 @@ This is an audit queue, not a declaration that each item is defective.
 - [ ] Header width/height and compactness.
 - [ ] Guest brand switches + logo + profile aligned in a single centered row.
 - [ ] Ticker below header, no extra gap/shadow; verify continuous movement, invisible click/keyboard pause-play and reduced-motion behavior.
-- [ ] Search/header alignment; verify the mobile/short-landscape category rail is fixed to the viewport bottom with safe-area and catalog scroll reserve, while desktop keeps its left sidebar rail.
+- [ ] Search/header alignment; verify the mobile/short-landscape category rail is a detached floating capsule with safe-area and catalog scroll reserve, while desktop keeps its left sidebar rail.
 - [ ] Swipe-dismiss from profile/modal does not cause header/page jump.
 
 ### C. Catalog and product selection

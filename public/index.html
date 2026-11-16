@@ -92,26 +92,35 @@
     box-sizing:border-box;
   }
 }
-/* Reserve the fixed category rail geometry before theme CSS arrives. */
+/* First-frame mirror of the detached floating category capsule. */
 @media (max-width:820px), (min-width:821px) and (orientation:landscape) and (max-height:480px) {
   :root {
     --rail-h:56px;
-    --rail-total-h:calc(var(--rail-h) + env(safe-area-inset-bottom,0px));
+    --rail-edge-gap:10px;
+    --rail-total-h:calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom,0px));
   }
   html body .wrap #menuView #rail,
   html body .wrap #deliveryView #deliveryRail {
     box-sizing:border-box;
     position:fixed;
     top:auto;
-    right:0;
-    bottom:0;
-    left:0;
-    width:auto;
-    height:var(--rail-total-h);
-    min-height:var(--rail-total-h);
-    max-height:var(--rail-total-h);
+    right:auto;
+    bottom:calc(var(--rail-edge-gap) + env(safe-area-inset-bottom,0px));
+    left:50%;
+    transform:translateX(-50%);
+    width:max-content;
+    max-width:calc(100vw - 24px);
+    height:var(--rail-h);
+    min-height:var(--rail-h);
+    max-height:var(--rail-h);
     margin:0;
-    padding:0 0 env(safe-area-inset-bottom,0px);
+    padding:6px;
+    border:0;
+    border-radius:26px;
+    background:var(--category-rail-bg,var(--panel,#F3F8FC));
+    box-shadow:0 10px 28px rgba(16,20,24,.18);
+    overflow-x:auto;
+    overflow-y:hidden;
     z-index:80;
   }
   #grid,
@@ -127,7 +136,8 @@
        (min-width:821px) and (orientation:landscape) and (max-height:480px) {
   :root {
     --rail-h:48px;
-    --rail-total-h:calc(var(--rail-h) + env(safe-area-inset-bottom,0px));
+    --rail-edge-gap:10px;
+    --rail-total-h:calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom,0px));
   }
 }
 

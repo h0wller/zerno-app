@@ -1,39 +1,51 @@
-/* Horizontal category rail: equal-width tabs, a single rail surface and one active marker. */
+/* Floating category capsule: detached from the viewport edge, content-sized and horizontally scrollable. */
 @media (max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   :root {
     --rail-h: 56px;
-    --rail-total-h: calc(var(--rail-h) + env(safe-area-inset-bottom, 0px));
+    --rail-edge-gap: 10px;
+    --rail-total-h: calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom, 0px));
   }
+
   html body .wrap #menuView #rail,
   html body .wrap #deliveryView #deliveryRail {
     box-sizing: border-box;
     position: fixed;
     top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    transform: none;
+    right: auto;
+    bottom: calc(var(--rail-edge-gap) + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    align-items: stretch;
-    gap: 0;
-    width: auto;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    width: max-content;
     min-width: 0;
-    max-width: none;
-    height: var(--rail-total-h);
-    min-height: var(--rail-total-h);
-    max-height: var(--rail-total-h);
+    max-width: calc(100vw - 24px);
+    height: var(--rail-h);
+    min-height: var(--rail-h);
+    max-height: var(--rail-h);
     margin: 0;
-    padding: 0 0 env(safe-area-inset-bottom, 0px);
+    padding: 6px;
     border: 0;
-    border-radius: 16px 16px 0 0;
+    border-radius: 26px;
     z-index: 80;
-    background: var(--category-rail-bg, var(--panel, transparent));
-    box-shadow: none;
-    overflow: hidden;
+    background: var(--category-rail-bg, var(--panel, #F3F8FC));
+    box-shadow: 0 10px 28px rgba(16, 20, 24, 0.18);
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
     mask-image: none;
-    touch-action: pan-y;
+  }
+
+  html body .wrap #menuView #rail::-webkit-scrollbar,
+  html body .wrap #deliveryView #deliveryRail::-webkit-scrollbar {
+    display: none;
   }
 
   html body .wrap #menuView #rail button,
@@ -42,21 +54,21 @@
     box-sizing: border-box;
     position: relative;
     display: flex;
-    flex: 1 1 0;
+    flex: 0 0 auto;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 1px;
-    width: 0;
-    min-width: 0;
+    width: auto;
+    min-width: 60px;
     max-width: none;
-    height: var(--rail-h);
+    height: 44px;
     min-height: 44px;
-    max-height: var(--rail-h);
+    max-height: 44px;
     margin: 0;
-    padding: 4px 2px 8px;
+    padding: 2px 8px;
     border: 0;
-    border-radius: 0;
+    border-radius: 20px;
     background: transparent;
     box-shadow: none;
     color: var(--category-tab-color, var(--ink, #101418));
@@ -71,7 +83,7 @@
     overflow: visible;
     text-overflow: clip;
     transform: none;
-    transition: color 180ms ease, transform 180ms ease;
+    transition: color 180ms ease, background-color 180ms ease;
   }
 
   html body .wrap #menuView #rail .category-label,
@@ -79,6 +91,8 @@
     display: block;
     max-width: 100%;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     overflow-wrap: normal;
     word-break: keep-all;
     font-size: clamp(8.5px, 2.5vw, 10px);
@@ -101,16 +115,16 @@
     color: var(--category-icon-color, currentColor);
     font-size: 21px;
     line-height: 1;
-    transition: color 180ms ease, background-color 180ms ease;
+    transition: color 180ms ease;
   }
 
   html body .wrap #menuView #rail button.on,
   html body .wrap #deliveryView #deliveryRail button.on {
     border: 0;
-    border-radius: 0;
-    background: transparent;
+    border-radius: 20px;
+    background: var(--category-icon-active-bg, var(--category-tab-active-bg, transparent));
     box-shadow: none;
-    color: var(--category-tab-active-color, var(--category-tab-color, currentColor));
+    color: var(--category-icon-active-color, var(--category-tab-active-color, currentColor));
     font-weight: var(--category-label-active-weight, 800);
     transform: none;
   }
@@ -119,21 +133,14 @@
   html body .wrap #deliveryView #deliveryRail button.on .re {
     border: 0;
     border-radius: var(--category-icon-radius, 50%);
-    background: var(--category-icon-active-bg, transparent);
-    color: var(--category-icon-active-color, currentColor);
+    background: transparent;
+    color: inherit;
   }
 
   html body .wrap #menuView #rail button.on::after,
   html body .wrap #deliveryView #deliveryRail button.on::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: 8px;
-    width: 28px;
-    height: 3px;
-    border-radius: 2px;
-    background: var(--category-indicator-color, currentColor);
-    transform: translateX(-50%);
+    content: none;
+    display: none;
   }
 
   html body .wrap #menuView #rail button:active,
@@ -148,6 +155,24 @@
     z-index: 2;
   }
 
+  @supports (((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) and (background: color-mix(in srgb, white 80%, transparent))) {
+    html body .wrap #menuView #rail,
+    html body .wrap #deliveryView #deliveryRail {
+      background: color-mix(in srgb, var(--category-rail-bg, var(--panel, #F3F8FC)) 86%, transparent);
+      -webkit-backdrop-filter: blur(20px) saturate(165%);
+      backdrop-filter: blur(20px) saturate(165%);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    html body .wrap #menuView #rail,
+    html body .wrap #deliveryView #deliveryRail {
+      background: var(--category-rail-bg, var(--panel, #F3F8FC));
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
   html body .wrap #menuView #rail::before,
   html body .wrap #menuView #rail::after,
   html body .wrap #deliveryView #deliveryRail::before,
@@ -155,7 +180,6 @@
     content: none;
     display: none;
   }
-
 }
 
 @media (max-width: 820px) and (max-height: 480px),
