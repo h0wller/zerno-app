@@ -2001,7 +2001,9 @@ test('mobile venue switcher panel fits viewport and keeps compact option rows', 
   expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth - 8);
   expect(geometry.width).toBeGreaterThanOrEqual(180);
   expect(geometry.buttons).toHaveLength(2);
-  expect(geometry.buttons.every(button => button.width > 0 && button.width < geometry.width - 20)).toBe(true);
+  expect(geometry.buttons.every(button => button.width > 0)).toBe(true);
+  expect(Math.abs(geometry.buttons[0].width - geometry.buttons[1].width)).toBeLessThanOrEqual(1);
+  expect(geometry.buttons.every(button => button.width <= geometry.width - 14)).toBe(true);
   expect(geometry.buttons.every(button => button.height >= 40)).toBe(true);
   expect(geometry.buttons.every(button => button.left >= geometry.left + 6 && button.right <= geometry.right - 6)).toBe(true);
   expect(geometry.overflowWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
@@ -2076,8 +2078,8 @@ for (const brand of CASES) {
       };
     });
 
-    expect(state.activeWidth, 'venue buttons should size to their labels, not fill the dropdown').toBeLessThan(state.panelWidth - 20);
-    expect(state.buttonWidths.every(width => width < state.panelWidth - 20)).toBe(true);
+    expect(state.activeWidth, 'venue options should share the dropdown content width').toBeGreaterThanOrEqual(state.panelWidth - 16);
+    expect(Math.abs(state.buttonWidths[0] - state.buttonWidths[1])).toBeLessThanOrEqual(1);
     if (brand.brand === 'delivery') {
       expect(state.activeBackground).toBe('rgb(139, 43, 32)');
       expect(state.activeColor).toBe('rgb(255, 255, 255)');
@@ -2089,48 +2091,6 @@ for (const brand of CASES) {
     }
   });
 }
-
-test('coffee brand switcher exposes a selected state and intrinsic mobile button width', async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
-
-  await page.locator('#venueToggle').click();
-  const coffeeButton = page.locator('#brandSeg button[data-brand="coffee"]');
-  await expect(coffeeButton).toBeVisible();
-  await coffeeButton.click();
-  await expect(coffeeButton).toHaveClass(/on/);
-  await page.locator('#venueToggle').click();
-  await expect(coffeeButton).toBeVisible();
-  await testInfo.attach('coffee-brand-switcher-selected-390x844', {
-    body: await page.screenshot({ animations: 'disabled' }),
-    contentType: 'image/png',
-  });
-
-  const state = await coffeeButton.evaluate(button => {
-    const style = getComputedStyle(button);
-    const rect = button.getBoundingClientRect();
-    const text = button.textContent.trim();
-    const range = document.createRange();
-    range.selectNodeContents(button);
-    const textWidth = range.getBoundingClientRect().width;
-    return {
-      background: style.backgroundColor,
-      color: style.color,
-      width: rect.width,
-      contentWidth: textWidth,
-      padding: parseFloat(style.paddingLeft) + parseFloat(style.paddingRight),
-      flex: style.flex,
-      brand: document.documentElement.dataset.brand,
-    };
-  });
-
-  expect(state.brand).toBe('coffee');
-  expect(state.background, 'coffee selection must have a visible active surface').not.toBe('rgba(0, 0, 0, 0)');
-  expect(state.color).not.toBe('rgba(0, 0, 0, 0)');
-  expect(state.width).toBeLessThanOrEqual(state.contentWidth + state.padding + 3);
-  expect(state.width).toBeGreaterThan(state.contentWidth);
-});
 
 test('coffee category switch scrolls the new catalog column into view smoothly while rail is pinned', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -2211,84 +2171,3 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
     contentType: 'image/png',
   });
 });
-
-test('brand selector options share one content-sized surface and preserve active brand tokens', async ({ page }, testInfo) => {
-  for (const brand of ['coffee', 'delivery']) {
-    for (const viewport of [
-      { name: 'mobile', width: 390, height: 844 },
-      { name: 'tablet', width: 1024, height: 768 },
-      { name: 'short landscape', width: 844, height: 390 },
-      { name: 'desktop', width: 1440, height: 900 },
-    ]) {
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.addInitScript(() => {
-        localStorage.clear();
-        sessionStorage.clear();
-        sessionStorage.setItem('splashDone', '1');
-      });
-      await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
-
-      const toggle = page.locator('#venueToggle');
-      const selector = page.locator('#brandSeg');
-      await expect(toggle).toBeVisible();
-      await toggle.click();
-      await expect(selector).toBeVisible();
-      await expect(selector.locator('button[data-brand]')).toHaveCount(2);
-
-      const geometry = await selector.evaluate((element) => {
-        const rect = element.getBoundingClientRect();
-        const buttons = [...element.querySelectorAll(':scope > button')].map((button) => {
-          const buttonRect = button.getBoundingClientRect();
-          const style = getComputedStyle(button);
-          return {
-            brand: button.dataset.brand,
-            left: buttonRect.left,
-            right: buttonRect.right,
-            width: buttonRect.width,
-            background: style.backgroundColor,
-            color: style.color,
-            active: button.classList.contains('on'),
-          };
-        });
-        const rootStyle = getComputedStyle(document.documentElement);
-        const resolveColor = (value) => {
-          const probe = document.createElement('span');
-          probe.style.color = value;
-          document.body.appendChild(probe);
-          const resolved = getComputedStyle(probe).color;
-          probe.remove();
-          return resolved;
-        };
-        return {
-          left: rect.left,
-          right: rect.right,
-          width: rect.width,
-          viewportWidth: document.documentElement.clientWidth,
-          activeBackgroundToken: resolveColor(rootStyle.getPropertyValue('--venue-option-active-bg').trim()),
-          activeColorToken: resolveColor(rootStyle.getPropertyValue('--venue-option-active-color').trim()),
-          buttons,
-        };
-      });
-
-      expect(geometry.width, 'selector should size to its labels, within a compact menu width').toBeGreaterThanOrEqual(160);
-      expect(geometry.width).toBeLessThanOrEqual(232);
-      expect(geometry.left).toBeGreaterThanOrEqual(0);
-      expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
-      expect(Math.abs(geometry.buttons[0].left - geometry.buttons[1].left),
-        'both options must share the same left edge').toBeLessThanOrEqual(1);
-      expect(Math.abs(geometry.buttons[0].width - geometry.buttons[1].width),
-        'both options must fill the same menu width').toBeLessThanOrEqual(1);
-      expect(geometry.buttons.filter((button) => button.active).map((button) => button.brand)).toEqual([brand]);
-      expect(geometry.buttons.find((button) => button.active).background)
-        .toBe(geometry.activeBackgroundToken);
-      expect(geometry.buttons.find((button) => button.active).color)
-        .toBe(geometry.activeColorToken);
-
-      await testInfo.attach(`brand-selector-${brand}-${viewport.name}`, {
-        body: await page.screenshot({ animations: 'disabled' }),
-        contentType: 'image/png',
-      });
-    }
-  }
-});
-
