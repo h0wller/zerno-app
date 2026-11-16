@@ -111,12 +111,19 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
   const firstCard = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
   await expect(rail).toBeVisible({ timeout: 10000 });
   await expect(firstCard).toBeVisible({ timeout: 15000 });
-  await expect(fab).toBeHidden();
+  const fabUnavailable = await fab.evaluate(element =>
+    element.hidden || getComputedStyle(element).display === 'none' ||
+    !element.classList.contains('visible')
+  );
+  expect(fabUnavailable, 'empty-cart FAB follows cart.js hidden/display/.visible state').toBe(true);
 
   const option = firstCard.locator('.opts label.opt-btn').first();
   if (await option.count()) await option.click();
   await firstCard.locator('.steprow .cta, [data-add]').first().click();
-  await expect(fab).toBeVisible({ timeout: 7000 });
+  await expect.poll(() => fab.evaluate(element =>
+    !element.hidden && getComputedStyle(element).display !== 'none' &&
+    element.classList.contains('visible')
+  ), { timeout: 7000 }).toBe(true);
 
   const geometry = await page.evaluate(() => {
     const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
