@@ -320,8 +320,9 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
 
     // ── Задача 2: empty-cart scroll reserve is rail total + 16px; no FAB lane ──
     const padBottom = await page.locator('#deliveryGrid').evaluate((el) => parseFloat(window.getComputedStyle(el).paddingBottom));
-    const railTotal = await page.locator('#deliveryRail').evaluate((el) => el.getBoundingClientRect().height);
+    const railTotal = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')));
     expect(padBottom).toBeGreaterThanOrEqual(railTotal + 15);
+    expect(padBottom).toBeLessThanOrEqual(railTotal + 17);
 
     // ── Задача 3: floating category capsule stays detached below the delivery filters ──
     await page.evaluate(() => {
