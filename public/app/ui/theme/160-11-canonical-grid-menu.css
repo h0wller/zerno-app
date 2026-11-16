@@ -181,7 +181,7 @@ body.in-tg .topbar {
 }
 
 /* 3. Единый каркас .wrap и центрированный без обрезания шапкой рейл (#rail / #deliveryRail) */
-@media (max-width: 1180px) {
+@media (min-width: 821px) and (max-width: 1180px) {
   html body div.wrap,
   .wrap {
     display: grid;
@@ -437,23 +437,4 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   }
 }
 
-/* Mobile reflow moves the category rail inside the menu view.
-   Reset the outer wrapper after the generic 80px desktop sidebar grid above. */
-@media (max-width: 820px) {
-  html body div.wrap {
-    width: 100%;
-    min-width: 0;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
-    gap: 10px;
-    padding: 10px 12px 28px;
-    align-items: start;
-  }
-
-  html body div.wrap > section {
-    grid-column: 1;
-    grid-row: auto;
-    width: 100%;
-    min-width: 0;
-  }
-}
+/* Mobile wrapper geometry is owned by the early fallback in 160-04. */
