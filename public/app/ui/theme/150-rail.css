@@ -191,8 +191,8 @@
   body:has(#cartPanel.open) .wrap #deliveryView #deliveryRail,
   body.cart-open #cartFab,
   body:has(#cartPanel.open) #cartFab {
-    visibility: hidden !important;
-    pointer-events: none !important;
+    visibility: hidden;
+    pointer-events: none;
   }
 }
 
