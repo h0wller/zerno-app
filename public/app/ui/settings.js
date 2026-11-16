@@ -3,6 +3,7 @@
     'use strict';
 
     const DELETE_ACCOUNT_LABEL = 'Удалить аккаунт';
+    const SETTINGS_SECTION_CLASS = 'settings-section';
 
     if (document.getElementById('settingsModal')) return;
 
@@ -15,19 +16,19 @@
             '<h3 id="settingsTitle">Настройки</h3>' +
             '<div class="msub">Безопасность, уведомления и аккаунт</div>' +
 
-            '<section class="settings-section" aria-label="Безопасность">' +
+            '<section class="' + SETTINGS_SECTION_CLASS + " aria-label="Безопасность">' +
                 '<div class="set-row">' +
                     '<span>🔐 PIN-код</span>' +
                     '<button class="btn ghost" id="setPinGo2" type="button">Задать или изменить</button>' +
                 '</div>' +
             '</section>' +
 
-            '<section class="settings-section settings-staff-section" id="staffAccessSection" hidden aria-label="Доступ сотрудника">' +
+            '<section class="' + SETTINGS_SECTION_CLASS +  settings-staff-section" id="staffAccessSection" hidden aria-label="Доступ сотрудника">' +
                 '<div class="settings-section-title">Для сотрудников</div>' +
                 '<button class="settings-staff-access-action" id="activateBtn" type="button" hidden>Доступ сотрудника</button>' +
             '</section>' +
 
-            '<section class="settings-section" aria-label="Каналы уведомлений">' +
+            '<section class="' + SETTINGS_SECTION_CLASS + " aria-label="Каналы уведомлений">' +
                 '<div class="settings-section-title">Каналы уведомлений</div>' +
                 '<div class="settings-channel-row">' +
                     '<label class="chk"><input type="checkbox" id="ntTg2"> 🤖 Telegram</label>' +
@@ -35,12 +36,12 @@
                 '</div>' +
             '</section>' +
 
-            '<section class="settings-section settings-account-section" aria-label="Управление аккаунтом">' +
+            '<section class="' + SETTINGS_SECTION_CLASS +  settings-account-section" aria-label="Управление аккаунтом">' +
                 '<div class="settings-section-title">Аккаунт</div>' +
                 '<button class="settings-account-action" id="logoutBtn" type="button">⇄ Выйти и сменить аккаунт</button>' +
             '</section>' +
 
-            '<section class="settings-section settings-danger-zone" aria-label="Опасная зона">' +
+            '<section class="' + SETTINGS_SECTION_CLASS +  settings-danger-zone" aria-label="Опасная зона">' +
                 '<div class="settings-section-title">Опасная зона</div>' +
                 '<p>Удаление профиля необратимо. Имя и телефон будут удалены, история заказов сохранится без персональных данных.</p>' +
                 '<button class="settings-account-action is-danger" id="deleteAccBtn" type="button" aria-expanded="false" aria-controls="deleteConfirmPanel">Удалить аккаунт и данные</button>' +
