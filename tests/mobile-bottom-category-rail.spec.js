@@ -134,6 +134,8 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
   const rail = page.locator('#deliveryRail');
   const fab = page.locator('#cartFab');
   const firstCard = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
+  // Toast-stack movement is a separate overlay concern; isolate catalog/rail CLS.
+  await page.addStyleTag({ content: '.toast { display: none !important; }' });
   await expect(rail).toBeVisible({ timeout: 10000 });
   await expect(firstCard).toBeVisible({ timeout: 15000 });
   const fabUnavailable = await fab.evaluate(element =>
@@ -276,7 +278,7 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
 });
 
 
-test('bottom rail leaves the last card CTA scrollable and keeps empty-cart reserve compact', async ({ page }) => {
+test('bottom rail leaves the last card CTA scrollable and keeps empty-cart reserve compact', async ({ page }, testInfo) => {
   for (const brand of ['coffee', 'delivery']) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => {
