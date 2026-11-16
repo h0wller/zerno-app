@@ -82,7 +82,7 @@ test('mobile menu header has only the two requested rows', async ({ page }) => {
 });
 
 
-test('staff mobile rail has no blank gap before catalog controls', async ({ page }, testInfo) => {
+test('staff mobile rail is fixed to the viewport bottom without an empty cart lane', async ({ page }, testInfo) => {
   for (const brand of ['coffee', 'delivery']) {
     await page.setViewportSize({ width: 390, height: 844 });
     await mockStaffSession(page, 'admin');
@@ -94,44 +94,36 @@ test('staff mobile rail has no blank gap before catalog controls', async ({ page
     await page.evaluate(() => window.setMode('admin'));
 
     const railSelector = brand === 'coffee' ? '#rail' : '#deliveryRail';
-    const targetSelector = brand === 'coffee' ? '#grid' : '#deliverySubFilterViewport';
-    const geometry = await page.evaluate(({ railSelector, targetSelector }) => {
+    const gridSelector = brand === 'coffee' ? '#grid' : '#deliveryGrid';
+    const geometry = await page.evaluate(({ railSelector, gridSelector }) => {
       const rail = document.querySelector(railSelector);
-      const target = document.querySelector(targetSelector);
-      const view = rail.parentElement;
-      const railRect = rail.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const siblings = Array.from(view.children);
-      const railIndex = siblings.indexOf(rail);
-      const targetIndex = siblings.indexOf(target);
+      const rect = rail.getBoundingClientRect();
+      const fab = document.querySelector('#cartFab');
+      const grid = document.querySelector(gridSelector);
       return {
-        gap: targetRect.top - railRect.bottom,
-        rail: { top: railRect.top, bottom: railRect.bottom, height: railRect.height, marginBottom: getComputedStyle(rail).marginBottom },
-        target: {
-          id: target.id, top: targetRect.top, height: targetRect.height,
-          display: getComputedStyle(target).display,
-          marginTop: getComputedStyle(target).marginTop,
-          paddingTop: getComputedStyle(target).paddingTop
-        },
-        intervening: siblings.slice(railIndex + 1, targetIndex).map(element => {
-          const rect = element.getBoundingClientRect();
-          const style = getComputedStyle(element);
-          return {
-            tag: element.tagName, id: element.id, className: element.className,
-            top: rect.top, bottom: rect.bottom, height: rect.height,
-            display: style.display, position: style.position,
-            marginTop: style.marginTop, marginBottom: style.marginBottom,
-            paddingTop: style.paddingTop, minHeight: style.minHeight
-          };
-        })
+        position: getComputedStyle(rail).position,
+        bottom: rect.bottom,
+        height: rect.height,
+        viewportHeight: window.innerHeight,
+        pinClass: rail.classList.contains('rail-is-pinned'),
+        spacerCount: rail.parentElement.querySelectorAll(':scope > .rail-pin-spacer').length,
+        gridPaddingBottom: parseFloat(getComputedStyle(grid).paddingBottom),
+        fabUnavailable: fab.hidden || getComputedStyle(fab).display === 'none' ||
+          !fab.classList.contains('visible'),
       };
-    }, { railSelector, targetSelector });
+    }, { railSelector, gridSelector });
 
-    await testInfo.attach(`${brand}-staff-rail-content-gap.json`, {
-      body: Buffer.from(JSON.stringify(geometry, null, 2)),
-      contentType: 'application/json'
+    expect(geometry.position).toBe('fixed');
+    expect(geometry.bottom).toBe(geometry.viewportHeight);
+    expect(geometry.height).toBe(56);
+    expect(geometry.pinClass).toBe(false);
+    expect(geometry.spacerCount).toBe(0);
+    expect(geometry.gridPaddingBottom).toBeGreaterThanOrEqual(geometry.height + 15);
+    expect(geometry.fabUnavailable, 'staff empty cart does not create a FAB reserve').toBe(true);
+    await testInfo.attach(brand + '-staff-bottom-rail-390x844', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
     });
-    expect(geometry.gap, `${brand} staff rail/content geometry: ${JSON.stringify(geometry)}`).toBeLessThanOrEqual(28);
   }
 });
 
