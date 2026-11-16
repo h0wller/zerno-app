@@ -1934,7 +1934,7 @@ test('coffee brand switcher exposes a selected state and intrinsic mobile button
   expect(state.width).toBeGreaterThan(state.contentWidth);
 });
 
-test('coffee category switch scrolls the new catalog column into view smoothly while rail is pinned', async ({ page }) => {
+test('coffee category switch scrolls the new catalog column into view smoothly while rail is pinned', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
@@ -1969,4 +1969,8 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
     if (!rail || !grid) return Infinity;
     return Math.abs(grid.getBoundingClientRect().top - rail.getBoundingClientRect().bottom - 8);
   }), { timeout: 8000 }).toBeLessThanOrEqual(3);
+  await testInfo.attach('coffee-category-switch-scrolled-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
 });
