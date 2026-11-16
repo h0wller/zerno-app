@@ -1892,8 +1892,6 @@ test('rail active background diagnostic and four brand viewport captures', async
 });
 
 
-import { test, expect } from '@playwright/test';
-
 test('coffee brand switcher exposes a selected state and intrinsic mobile button width', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
