@@ -34,16 +34,16 @@ $('#rail').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]');
   if (!b) return;
   var categoryChanged = cat !== b.dataset.cat;
-  var railWasPinned = document.getElementById('rail')?.classList.contains('rail-is-pinned');
   cat = b.dataset.cat;
   window.renderRail();
   window.renderMenu();
-  if (categoryChanged && railWasPinned &&
+  if (categoryChanged && window.usesHorizontalCategoryRailViewport &&
+      window.usesHorizontalCategoryRailViewport() &&
       typeof window.scrollMenuContentToStart === 'function') {
     // renderMenu fills #grid on its own animation frame; scroll only after the
     // replacement cards exist so the scroll target belongs to the new category.
     requestAnimationFrame(() => {
-      window.scrollMenuContentToStart('#grid', '#rail', true);
+      window.scrollMenuContentToStart('#grid', '#rail', false);
     });
   }
 });
