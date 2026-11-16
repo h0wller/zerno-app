@@ -1824,9 +1824,6 @@ test('rail active background diagnostic and four brand viewport captures', async
               continue;
             }
             if (!rule.selectorText || !rule.style || !active) continue;
-            let matches = false;
-            try { matches = active.matches(rule.selectorText); } catch (_) {}
-            if (!matches) continue;
             const matchingSelectors = rule.selectorText.split(',').map(selector => selector.trim())
               .filter(selector => {
                 try { return active.matches(selector); } catch (_) { return false; }
