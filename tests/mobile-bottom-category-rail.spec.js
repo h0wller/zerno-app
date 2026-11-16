@@ -83,7 +83,7 @@ for (const brand of CASES) {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
-      await testInfo.attach(`${brand.brand}-${viewport.name}-rail-geometry`,
+      await testInfo.attach(`${brand.brand}-${viewport.name}-rail-geometry`, {
         body: Buffer.from(JSON.stringify(geometry, null, 2)),
         contentType: 'application/json',
       });
