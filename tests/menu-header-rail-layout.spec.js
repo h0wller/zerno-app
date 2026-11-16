@@ -1923,6 +1923,89 @@ test('mobile venue switcher panel fits viewport and uses compact full-width rows
   expect(geometry.overflowWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
 });
 
+
+for (const brand of CASES) {
+  test(`${brand.brand}: mobile rail stays close to the first catalog control`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+
+    const gridSelector = brand.brand === 'delivery' ? '#deliveryGrid' : '#grid';
+    const railSelector = brand.rail;
+    await expect(page.locator(railSelector)).toBeVisible();
+    await expect(page.locator(`${gridSelector} > .card`).first()).toBeVisible({ timeout: 15000 });
+
+    const geometry = await page.evaluate(({ railSelector, gridSelector, isDelivery }) => {
+      const rail = document.querySelector(railSelector);
+      const grid = document.querySelector(gridSelector);
+      const viewport = isDelivery ? document.querySelector('#deliverySubFilterViewport') : null;
+      const target = viewport && getComputedStyle(viewport).display !== 'none' &&
+        viewport.getBoundingClientRect().height > 0 ? viewport : grid;
+      const railRect = rail.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const style = getComputedStyle(target);
+      return {
+        gap: targetRect.top - railRect.bottom,
+        railBottom: railRect.bottom,
+        targetTop: targetRect.top,
+        targetId: target.id,
+        targetDisplay: style.display,
+        targetMarginTop: style.marginTop,
+        targetPaddingTop: style.paddingTop,
+        targetHeight: targetRect.height,
+        gridChildCount: grid.children.length,
+      };
+    }, { railSelector, gridSelector, isDelivery: brand.brand === 'delivery' });
+
+    await testInfo.attach(`${brand.brand}-mobile-rail-content-gap.json`, {
+      body: Buffer.from(JSON.stringify(geometry, null, 2)),
+      contentType: 'application/json',
+    });
+    expect(geometry.gap, 'the first catalog control must follow the rail without a blank spacer').toBeLessThanOrEqual(28);
+  });
+}
+
+for (const brand of CASES) {
+  test(`${brand.brand}: venue options use compact width and brand active styling`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto(`/?brand=${brand.brand}`, { waitUntil: 'domcontentloaded' });
+    await page.locator('#venueToggle').click();
+    const panel = page.locator('#brandSeg');
+    await expect(panel).toBeVisible();
+
+    const state = await panel.evaluate(el => {
+      const buttons = Array.from(el.querySelectorAll('button'));
+      const active = buttons.find(button => button.classList.contains('on'));
+      const panelRect = el.getBoundingClientRect();
+      const activeRect = active.getBoundingClientRect();
+      const style = getComputedStyle(active);
+      return {
+        panelWidth: panelRect.width,
+        activeWidth: activeRect.width,
+        activeBackground: style.backgroundColor,
+        activeColor: style.color,
+        activeBorder: style.border,
+        activeShadow: style.boxShadow,
+        activeFont: style.fontFamily,
+        buttonWidths: buttons.map(button => button.getBoundingClientRect().width),
+      };
+    });
+
+    expect(state.activeWidth, 'venue buttons should size to their labels, not fill the dropdown').toBeLessThan(state.panelWidth - 20);
+    expect(state.buttonWidths.every(width => width < state.panelWidth - 20)).toBe(true);
+    if (brand.brand === 'delivery') {
+      expect(state.activeBackground).toBe('rgb(139, 43, 32)');
+      expect(state.activeColor).toBe('rgb(255, 255, 255)');
+      expect(state.activeFont).toContain('Unbounded');
+      expect(state.activeShadow).not.toBe('none');
+    } else {
+      expect(state.activeBackground).toBe('rgb(187, 215, 242)');
+      expect(state.activeColor).toBe('rgb(18, 58, 107)');
+    }
+  });
+}
+
 test('coffee brand switcher exposes a selected state and intrinsic mobile button width', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
