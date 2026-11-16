@@ -1848,14 +1848,14 @@ test('rail active background diagnostic and four brand viewport captures', async
         }
         return { token: rootToken, computedBackground, matchedRules };
       });
-      expect(
-        diagnostic.matchedRules.some(rule => rule.selector.includes('button.on')),
-        brand + ' ' + viewport.name + ' should report the active-tab background rule'
-      ).toBe(true);
       await testInfo.attach(brand + '-' + viewport.name + '-rail-background-diagnostic.json', {
         body: Buffer.from(JSON.stringify(diagnostic, null, 2)),
         contentType: 'application/json',
       });
+      expect(
+        diagnostic.matchedRules.some(rule => rule.selector.includes('button.on')),
+        brand + ' ' + viewport.name + ' should report the active-tab background rule'
+      ).toBe(true);
       await testInfo.attach(brand + '-' + viewport.name + '-rail.png', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',

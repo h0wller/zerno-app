@@ -162,6 +162,8 @@ requestAnimationFrame(alignRailWithCard);
 
 // Keep the mobile category rail pinned at its viewport offset while scrolling.
 var railPinState = null;
+var railPinPreserveUntilStableFrame = false;
+var railPinSettleFrame = 0;
 
 function getRailStickyTop() {
   var topbar = document.querySelector('header.topbar');
@@ -263,9 +265,13 @@ function updateRailPinning() {
   var pinThreshold = documentTop - stickyTop;
   var hasReachedPinPoint = scrollY >= pinThreshold;
 
-  // Keep the rail pinned while the user scrolls through the catalog. The catalog
-  // height can change after a category switch; using its parent's bottom as an
-  // unpin condition releases the rail when a shorter category is rendered.
+  // Keep the existing fixed rail while category navigation scrolls the new
+  // catalog section into place. The threshold has already been recalibrated.
+  if (railPinPreserveUntilStableFrame && railPinState && railPinState.rail === rail) {
+    pinRailAtViewportTop(rail, stickyTop);
+    return;
+  }
+
   if (!hasReachedPinPoint) {
     clearRailPin(rail);
     return;
@@ -319,6 +325,15 @@ window.scrollMenuContentToStart = function (contentSelector, railSelector, prese
     var pinnedTop = getRailStickyTop();
     var nextDocumentTop = nextScrollY + pinnedTop;
     pinState.documentTop = Math.min(pinState.documentTop, nextDocumentTop);
+    railPinPreserveUntilStableFrame = true;
+    if (railPinSettleFrame) window.cancelAnimationFrame(railPinSettleFrame);
+    railPinSettleFrame = window.requestAnimationFrame(function () {
+      railPinSettleFrame = window.requestAnimationFrame(function () {
+        railPinPreserveUntilStableFrame = false;
+        railPinSettleFrame = 0;
+        updateRailPinning();
+      });
+    });
   }
   window.scrollTo({ top: nextScrollY, behavior: 'smooth' });
 };
