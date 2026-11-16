@@ -154,7 +154,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
         nameEditing = editing;
         var input = document.getElementById('nameInput');
         var edit = document.getElementById('nameEditBtn');
-        var gear = document.getElementById('profileSettingsBtn');
         if (input) {
             input.readOnly = !editing;
             input.setAttribute('aria-readonly', String(!editing));
