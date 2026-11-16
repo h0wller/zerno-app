@@ -95,3 +95,56 @@ for (const brand of CASES) {
     });
   }
 }
+
+test('delivery cart FAB sits above the bottom rail and remains fully tappable', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    sessionStorage.setItem('splashDone', '1');
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_ios_hide', '1');
+  });
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const rail = page.locator('#deliveryRail');
+  const fab = page.locator('#cartFab');
+  const firstCard = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
+  await expect(rail).toBeVisible({ timeout: 10000 });
+  await expect(firstCard).toBeVisible({ timeout: 15000 });
+  await expect(fab).toBeHidden();
+
+  const option = firstCard.locator('.opts label.opt-btn').first();
+  if (await option.count()) await option.click();
+  await firstCard.locator('.steprow .cta, [data-add]').first().click();
+  await expect(fab).toBeVisible({ timeout: 7000 });
+
+  const geometry = await page.evaluate(() => {
+    const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
+    const fab = document.querySelector('#cartFab');
+    const rect = fab.getBoundingClientRect();
+    const sample = [
+      [rect.left + rect.width / 2, rect.top + 2],
+      [rect.left + rect.width / 2, rect.bottom - 2],
+      [rect.left + 2, rect.top + rect.height / 2],
+      [rect.right - 2, rect.top + rect.height / 2],
+    ];
+    return {
+      railTop: rail.top,
+      fabTop: rect.top,
+      fabBottom: rect.bottom,
+      fabHeight: rect.height,
+      text: fab.innerText,
+      hit: sample.map(([x, y]) => {
+        const element = document.elementFromPoint(x, y);
+        return !!element && (element === fab || fab.contains(element));
+      }),
+    };
+  });
+
+  expect(geometry.fabHeight).toBeGreaterThanOrEqual(48);
+  expect(geometry.fabBottom + 8,
+    'cart FAB must have a clear 8px gap above the rail').toBeLessThanOrEqual(geometry.railTop);
+  expect(geometry.hit.every(Boolean),
+    'the complete cart FAB hit area must resolve to the FAB').toBe(true);
+  expect(geometry.text).toMatch(/\\d/);
+});
