@@ -1669,7 +1669,7 @@ test('late font hydration must not release a mobile rail after manual category c
     let releaseFonts;
     let fontRequestSeen = false;
     const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
-    const fontRoute = /golos-text-400\\.woff2\\?late=1$/;
+    const fontRoute = /golos-text-400\.woff2\?late=1$/;
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
