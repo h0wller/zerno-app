@@ -2171,3 +2171,50 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
     contentType: 'image/png',
   });
 });
+
+test('mobile category labels stay on one line and fully inside their tabs for both brands', async ({ page }) => {
+  for (const brand of CASES) {
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 390, height: 844 },
+      { width: 844, height: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const rail = page.locator(brand.rail);
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect.poll(() => rail.locator('button').count()).toBeGreaterThan(1);
+
+      const labels = await rail.evaluate((element) => {
+        return Array.from(element.querySelectorAll('button')).map((button) => {
+          const labelNode = Array.from(button.childNodes).find((node) =>
+            node.nodeType === Node.TEXT_NODE && node.textContent.trim()
+          );
+          const range = document.createRange();
+          if (labelNode) range.selectNodeContents(labelNode);
+          const rects = labelNode ? Array.from(range.getClientRects()) : [];
+          const buttonRect = button.getBoundingClientRect();
+          const labelRect = rects[0] || null;
+          return {
+            label: labelNode?.textContent.trim() || '',
+            lineCount: rects.length,
+            whiteSpace: getComputedStyle(button).whiteSpace,
+            insideTab: Boolean(labelRect) &&
+              labelRect.left >= buttonRect.left - 1 &&
+              labelRect.right <= buttonRect.right + 1,
+          };
+        });
+      });
+
+      expect(labels.every((label) =>
+        label.label &&
+        label.lineCount === 1 &&
+        label.whiteSpace === 'nowrap' &&
+        label.insideTab
+      ), brand.brand + ' category labels must remain single-line and fully visible at ' +
+        viewport.width + 'x' + viewport.height + ': ' + JSON.stringify(labels)).toBe(true);
+    }
+  }
+});
