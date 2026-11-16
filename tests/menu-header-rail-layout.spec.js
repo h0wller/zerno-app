@@ -1942,6 +1942,40 @@ test('rail active background diagnostic and four brand viewport captures', async
 
 
 
+test('short landscape venue switcher is compact and keeps a 44px target for both brands', async ({ page }, testInfo) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+    const toggle = page.locator('#venueToggle');
+    await expect(toggle).toBeVisible();
+    const metrics = await toggle.evaluate(el => {
+      const rect = el.getBoundingClientRect();
+      const label = el.querySelector('.vt-label');
+      const icon = el.querySelector('.vt-icon');
+      const arrow = el.querySelector('.vt-arrow');
+      return {
+        width: rect.width, height: rect.height,
+        labelDisplay: label && getComputedStyle(label).display,
+        iconVisible: !!icon && getComputedStyle(icon).display !== 'none',
+        arrowVisible: !!arrow && getComputedStyle(arrow).display !== 'none',
+        right: rect.right, viewportWidth: document.documentElement.clientWidth,
+      };
+    });
+    expect(metrics.width, brand + ' compact venue control width').toBeLessThanOrEqual(52);
+    expect(metrics.height, brand + ' venue hit target height').toBeGreaterThanOrEqual(44);
+    expect(metrics.labelDisplay, brand + ' long label is hidden in short landscape').toBe('none');
+    expect(metrics.iconVisible).toBe(true);
+    expect(metrics.arrowVisible).toBe(true);
+    expect(metrics.right).toBeLessThanOrEqual(metrics.viewportWidth);
+    await testInfo.attach(brand + '-venue-switcher-844x390', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
+  }
+});
+
+
 test('mobile venue switcher panel fits viewport and keeps compact option rows', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
