@@ -141,7 +141,7 @@
     align-items: stretch;
     gap: 4px;
     width: max-content;
-    min-width: min(176px, calc(100vw - 24px));
+    min-width: min(180px, calc(100vw - 24px));
     max-width: min(232px, calc(100vw - 24px));
     max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 72px);
     padding: 7px;
