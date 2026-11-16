@@ -211,6 +211,10 @@
   }
 
 
+  function resetAuthenticatedUser() {
+    resetAuthenticatedUser();
+  }
+
   async function performAccountDeletion() {
     try {
       var registration = await navigator.serviceWorker.ready;
@@ -223,11 +227,7 @@
       alert('Не удалось удалить профиль. Попробуйте позже или напишите на почту из политики конфиденциальности.');
       return false;
     }
-    window.setUser(null, null);
-    window.mode = 'guest';
-    if (typeof window.closeProfileSettings === 'function') window.closeProfileSettings();
-    if (typeof closePanel === 'function') closePanel();
-    if (typeof renderAll === 'function') renderAll();
+    resetAuthenticatedUser();
     alert('Профиль удалён.');
     openAuth();
     return true;
