@@ -71,6 +71,7 @@ for (const brand of CASES) {
             return value;
           })(),
           pageScrollWidth: document.documentElement.scrollWidth,
+          railTotalHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')),
           borderRadius: parseFloat(getComputedStyle(element).borderTopLeftRadius),
           overflowX: getComputedStyle(element).overflowX,
           scrollWidth: element.scrollWidth,
@@ -104,6 +105,8 @@ for (const brand of CASES) {
         .toBeLessThanOrEqual(12 + geometry.safeAreaInset);
       expect(geometry.pageScrollWidth, 'floating capsule does not create horizontal page overflow')
         .toBeLessThanOrEqual(geometry.viewportWidth);
+      expect(geometry.railTotalHeight, 'scroll reserve includes capsule, visual gap and safe-area once')
+        .toBeCloseTo(geometry.height + geometry.bottomGap, 0);
       expect(geometry.left, 'capsule has a 12px minimum horizontal inset').toBeGreaterThanOrEqual(12);
       expect(geometry.right, 'capsule has a 12px minimum horizontal inset').toBeLessThanOrEqual(geometry.viewportWidth - 12);
       expect(geometry.width, 'capsule stays within the viewport width minus 24px').toBeLessThanOrEqual(geometry.viewportWidth - 24);

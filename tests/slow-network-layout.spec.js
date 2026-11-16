@@ -209,7 +209,16 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         section: box(document.querySelector('.wrap > section')),
         rail: box(document.querySelector('#deliveryRail')),
         railContentHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-h')),
-        railSafeArea: parseFloat(getComputedStyle(document.querySelector('#deliveryRail')).paddingBottom) || 0,
+        railSafeArea: (() => {
+          const probe = document.createElement('div');
+          probe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
+          document.body.appendChild(probe);
+          const value = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+          probe.remove();
+          return value;
+        })(),
+        railBottomGap: window.innerHeight - document.querySelector('#deliveryRail').getBoundingClientRect().bottom,
+        railTotalHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')),
         viewportWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth
       };
@@ -228,12 +237,18 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.rail).not.toBeNull();
     expect(before.menuHead.x).toBeGreaterThanOrEqual(before.section.x - 1);
     expect(before.menuHead.right).toBeLessThanOrEqual(before.section.right + 1);
-    expect(Math.abs(before.rail.x)).toBeLessThanOrEqual(1);
-    expect(Math.abs(before.rail.right - before.viewportWidth)).toBeLessThanOrEqual(1);
+    expect(before.rail.x, 'first paint keeps a 12px horizontal capsule inset').toBeGreaterThanOrEqual(12);
+    expect(before.rail.right, 'first paint keeps a 12px horizontal capsule inset')
+      .toBeLessThanOrEqual(before.viewportWidth - 12);
+    expect(before.rail.width).toBeLessThanOrEqual(before.viewportWidth - 24);
     expect(before.rail.y).toBeGreaterThan(before.menuHead.bottom);
-    expect(before.railContentHeight, 'mobile rail buttons retain the compact 56px content height').toBe(56);
-    expect(before.rail.height, 'first paint reserves rail content plus the safe-area inset')
-      .toBe(before.railContentHeight + before.railSafeArea);
+    expect(before.railContentHeight, 'mobile rail retains its 56px portrait surface height').toBe(56);
+    expect(before.rail.height, 'safe-area is an offset, not part of the capsule surface')
+      .toBe(before.railContentHeight);
+    expect(before.railBottomGap).toBeGreaterThanOrEqual(10 + before.railSafeArea);
+    expect(before.railBottomGap).toBeLessThanOrEqual(12 + before.railSafeArea);
+    expect(before.railTotalHeight, 'first paint reserves capsule, bottom gap and safe-area once')
+      .toBeCloseTo(before.railContentHeight + before.railBottomGap, 0);
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.menuHeadStyle.maxHeight).toBe('90px');
@@ -315,10 +330,14 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.activeSubchipColor).toBe('rgb(192, 59, 42)');
     expect(after.menuHead.x).toBeGreaterThanOrEqual(after.section.x - 1);
     expect(after.menuHead.right).toBeLessThanOrEqual(after.section.right + 1);
-    expect(Math.abs(after.rail.x)).toBeLessThanOrEqual(1);
-    expect(Math.abs(after.rail.right - after.viewportWidth)).toBeLessThanOrEqual(1);
+    expect(after.rail.x).toBeGreaterThanOrEqual(12);
+    expect(after.rail.right).toBeLessThanOrEqual(after.viewportWidth - 12);
+    expect(after.rail.width).toBeLessThanOrEqual(after.viewportWidth - 24);
     expect(after.rail.y).toBeGreaterThan(after.menuHead.bottom);
-    expect(after.rail.height).toBeLessThanOrEqual(76);
+    expect(after.rail.height).toBe(after.railContentHeight);
+    expect(after.railBottomGap).toBeGreaterThanOrEqual(10 + after.railSafeArea);
+    expect(after.railBottomGap).toBeLessThanOrEqual(12 + after.railSafeArea);
+    expect(after.railTotalHeight).toBeCloseTo(after.railContentHeight + after.railBottomGap, 0);
     expect(after.heading.x).toBeGreaterThanOrEqual(after.menuHead.x + 8);
     expect(after.heading.right).toBeLessThanOrEqual(after.menuHead.right - 8);
     expect(after.section.width).toBe(before.section.width);

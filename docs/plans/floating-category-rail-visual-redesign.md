@@ -64,7 +64,7 @@ No body-level host or DOM relocation is proposed at this stage. Do not change ca
 
 ## Implementation sequence
 
-1. Added Playwright regressions for detached geometry, actual viewport edge gap, horizontal overflow, hit targets, catalog clearance, cart FAB visible/hidden, cart sheet, brand switch, keyboard and compact landscape. RED confirmed on the previous edge-docked implementation: 12 viewport/brand cases failed on a 0px bottom gap; 179 unrelated responsive tests passed.
+1. Added Playwright regressions for detached geometry, actual viewport edge gap, safe-area accounting, horizontal overflow, hit targets, catalog clearance, cart FAB visible/hidden, cart sheet, brand switch, keyboard and compact landscape. RED confirmed on the previous edge-docked implementation: 12 viewport/brand cases failed on a 0px bottom gap; 179 unrelated responsive tests passed. Updated existing slow-network and cart geometry assertions to the new detached contract without weakening the checks.
 2. Confirm RED on the exact parent head before implementation. Keep existing assertions; do not update screenshot baselines.
 3. Implement the CSS fallback and critical first-frame geometry in their existing owners. Keep DOM and state owners unchanged.
 4. Capture equivalent before/after screenshots for coffee/delivery, portrait/short landscape, guest/staff where relevant, empty/non-empty cart and cart sheet.

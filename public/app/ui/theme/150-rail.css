@@ -186,7 +186,8 @@
        (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   :root {
     --rail-h: 48px;
-    --rail-total-h: calc(var(--rail-h) + env(safe-area-inset-bottom, 0px));
+    --rail-edge-gap: 10px;
+    --rail-total-h: calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom, 0px));
   }
 
   html body .wrap #menuView #rail,
