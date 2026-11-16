@@ -108,3 +108,15 @@ Additional visual check: the delivery cart sheet screenshot `delivery-cart-sheet
 - At widths up to 340px, visible text labels are suppressed to preserve icon targets and capsule fit; the category buttons keep their accessible names from the DOM contract.
 - Delivery subfilters remain independently horizontally scrollable when their content requires it; this change does not alter subfilter behavior or category filtering.
 - Verification is pending for the current follow-up commit; do not treat earlier CI evidence above as verification of this change.
+
+
+## Responsive no-scroll acceptance record
+
+- Verified commit: `599fdfe6d845d02585c2518989ca034f40884e82`.
+- CI: [run 43959279417](https://github.com/h0wller/zerno-app/actions/runs/43959279417), all 13/13 jobs passed, including Code Quality & Guardrails, Mobile Chrome responsive, Responsive UI, Visual UX capture, Menu and search, Cart and checkout, Visual stability and PWA.
+- Visual artifact: `visual-ux-baseline-test-43959279417`. Opened and inspected hydrated guest captures for both brands at XS 320×740, M 390×844 and short landscape 844×390.
+- Coffee: six categories visible in one capsule; labels remain visible at 390px and short landscape, and icon-only mode at 320px; no internal rail scroll.
+- Delivery: five categories visible in one capsule; labels remain visible at 390px and short landscape, and icon-only mode at 320px; delivery subfilter row remains a separate horizontally scrollable control.
+- The screenshots show the rail clear of page edges, with the floating inset and safe-area gap preserved. No category data, filtering, cart behavior or desktop sidebar changes were made.
+- Visual result: **accepted for Chromium CI states reviewed**. This does not replace device-level iOS/Android acceptance.
+- Screenshot baseline was not updated.
