@@ -232,7 +232,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.rail.height).toBeLessThanOrEqual(76);
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
-    expect(before.menuHeadStyle.maxHeight).toBe('100px');
+    expect(before.menuHeadStyle.maxHeight).toBe('90px');
     expect(before.subfilterSlot).not.toBeNull();
     expect(before.subfilterSlot.height).toBeGreaterThanOrEqual(56);
     expect(before.staffModeReservedHeight).toBeUndefined();
