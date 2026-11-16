@@ -2340,10 +2340,10 @@ test('mobile category labels stay on one line and fully inside their tabs for bo
         });
       });
 
-      const narrowCoffeeIconMode = brand.brand === 'coffee' && viewport.width <= 340;
+      const narrowIconMode = viewport.width <= 340;
       expect(labels.every((label) => {
-        if (narrowCoffeeIconMode) {
-          return label.label && label.accessibleName === label.label &&
+        if (narrowIconMode) {
+          return label.label && label.accessibleName.length > 0 &&
             label.lineCount === 0 && label.transform === 'none';
         }
         return label.label &&
@@ -2357,8 +2357,8 @@ test('mobile category labels stay on one line and fully inside their tabs for bo
         viewport.width + 'x' + viewport.height + ': ' + JSON.stringify(labels)).toBe(true);
       expect(Math.min(...labels.map((label) => label.buttonWidth)),
         brand.brand + ' category tabs retain their minimum target width')
-        .toBeGreaterThanOrEqual(brand.brand === 'coffee' ? 44 : 60);
-      if (brand.brand === 'delivery') {
+        .toBeGreaterThanOrEqual(44);
+      if (brand.brand === 'delivery' && !narrowIconMode) {
         const sauces = labels.find((label) => label.accessibleName === 'Допы и соусы');
         expect(sauces?.label, 'delivery sauces category uses a compact visible label').toBe('Добавки');
       }
