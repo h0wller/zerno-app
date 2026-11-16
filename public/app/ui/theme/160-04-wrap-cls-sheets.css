@@ -184,15 +184,11 @@
     border: 1px solid transparent;
     border-radius: 10px;
     background: transparent;
-    color: #30465C;
-    font: 650 13px/1.2 "Golos Text", system-ui, sans-serif;
+    color: var(--venue-option-color, #30465C);
+    font: 650 13px/1.2 var(--venue-option-font, "Golos Text"), system-ui, sans-serif;
     text-align: left;
     white-space: nowrap;
     transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
-  }
-  header.topbar .venueWrap #brandSeg > button {
-    font-family: var(--venue-option-font, "Golos Text", system-ui, sans-serif);
-    color: var(--venue-option-color, #30465C);
   }
   header.topbar .venueWrap #brandSeg > button:hover {
     background: var(--venue-option-hover-bg, #F3F7FC);
