@@ -306,6 +306,10 @@ function renderDeliveryRail() {
 $('#deliveryRail').addEventListener('click', e => {
   const b = e.target.closest('[data-dcat]');
   if (b) {
+    if (b.dataset.dcat === dcat) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     dcat = b.dataset.dcat;
     activeAddonTab = 'all';
     activeIngredient = 'all';
