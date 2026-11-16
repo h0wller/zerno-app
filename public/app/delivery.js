@@ -311,7 +311,7 @@ function renderDeliveryRail() {
   if (needsRender) {
     rail.innerHTML = DCATS.map(function (category) {
       return '<button type="button" data-dcat="' + category.id + '"><span class="re">'
-        + category.e + '</span>' + category.l + '</button>';
+        + category.e + '</span><span class="category-label">' + category.l + '</span></button>';
     }).join('');
     buttons = rail.querySelectorAll('button[data-dcat]');
   }
