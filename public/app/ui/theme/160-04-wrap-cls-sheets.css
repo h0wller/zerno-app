@@ -148,8 +148,9 @@
     overflow: hidden;
     border: 1px solid rgba(18, 58, 107, 0.12);
     border-radius: 16px;
-    background: #FFFFFF;
-    box-shadow: 0 12px 28px rgba(16, 20, 24, 0.16);
+    background: var(--venue-menu-bg, #FFFFFF);
+    border: var(--venue-menu-border, 1px solid rgba(18, 58, 107, 0.12));
+    box-shadow: var(--venue-menu-shadow, 0 12px 28px rgba(16, 20, 24, 0.16));
     z-index: 1000;
     transform-origin: top left;
     opacity: 0;
@@ -190,8 +191,20 @@
     white-space: nowrap;
     transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
   }
+  header.topbar .venueWrap #brandSeg > button {
+    font-family: var(--venue-option-font, "Golos Text", system-ui, sans-serif);
+    color: var(--venue-option-color, #30465C);
+  }
   header.topbar .venueWrap #brandSeg > button:hover {
-    background: #F3F7FC;
+    background: var(--venue-option-hover-bg, #F3F7FC);
+  }
+  header.topbar .venueWrap #brandSeg > button.on {
+    border: var(--venue-option-active-border, 1px solid rgba(18, 58, 107, 0.16));
+    background: var(--venue-option-active-bg, #EAF2FB);
+    color: var(--venue-option-active-color, #123A6B);
+    box-shadow: var(--venue-option-active-shadow, none);
+    border-radius: 9px;
+    font-weight: 750;
   }
   @media (prefers-reduced-motion: reduce) {
     header.topbar .venueWrap #brandSeg,
