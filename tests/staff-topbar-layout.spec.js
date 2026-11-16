@@ -101,7 +101,11 @@ test('staff mobile rail is fixed to the viewport bottom without an empty cart la
       const rect = rail.getBoundingClientRect();
       const fab = document.querySelector('#cartFab');
       const grid = document.querySelector(gridSelector);
-      const target = document.querySelector(targetSelector);
+      const subfilters = brand === 'delivery' ? document.querySelector('#deliverySubFilterViewport') : null;
+      const subfiltersRect = subfilters ? subfilters.getBoundingClientRect() : null;
+      const subfiltersVisible = !!subfilters && !subfilters.hidden &&
+        getComputedStyle(subfilters).display !== 'none' && subfiltersRect.height > 0;
+      const target = brand === 'delivery' && !subfiltersVisible ? grid : document.querySelector(targetSelector);
       const targetRect = target.getBoundingClientRect();
       return {
         position: getComputedStyle(rail).position,
@@ -115,6 +119,10 @@ test('staff mobile rail is fixed to the viewport bottom without an empty cart la
         targetTop: targetRect.top,
         targetDisplay: getComputedStyle(target).display,
         targetHeight: targetRect.height,
+        subfiltersVisible,
+        subfiltersTop: subfiltersRect?.top ?? null,
+        subfiltersBottom: subfiltersRect?.bottom ?? null,
+        subfiltersHeight: subfiltersRect?.height ?? null,
         fabUnavailable: fab.hidden || getComputedStyle(fab).display === 'none' ||
           !fab.classList.contains('visible'),
       };
@@ -125,7 +133,10 @@ test('staff mobile rail is fixed to the viewport bottom without an empty cart la
     expect(geometry.height).toBe(56);
     expect(geometry.targetDisplay).not.toBe('none');
     expect(geometry.targetTop).toBeLessThan(geometry.top);
-    if (brand === 'delivery') expect(geometry.targetHeight).toBeGreaterThanOrEqual(44);
+    if (geometry.subfiltersVisible) {
+      expect(geometry.subfiltersHeight).toBeGreaterThanOrEqual(44);
+      expect(geometry.subfiltersBottom).toBeLessThanOrEqual(geometry.top);
+    }
     expect(geometry.pinClass).toBe(false);
     expect(geometry.spacerCount).toBe(0);
     expect(geometry.gridPaddingBottom).toBeGreaterThanOrEqual(geometry.height + 15);
