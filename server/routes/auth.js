@@ -21,6 +21,18 @@ import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, SMS_AUTH_ENAB
 
 export const authRouter = express.Router();
 
+function createCustomerWithSource(res, name, phone, pin, source) {
+  const result = createCustomer(name, phone, pin);
+  if (result.err) {
+    res.status(result.code).json({ error: result.err });
+    return null;
+  }
+  if (source === QR_SOURCE) {
+    db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, result.customer.id);
+  }
+  return result;
+}
+
 function respondWithCustomer(res, customerId) {
   res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(customerId)) });
 }
@@ -130,13 +142,8 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   // 4. Создаем нового клиента сразу верифицированным через Telegram
   const finalName = String(req.body.name || '').trim() || tgName;
   const pin = String(req.body.pin || '').trim();
-  const r = createCustomer(finalName, p, pin);
-  if (r.err) return res.status(r.code).json({ error: r.err });
-
-  // F3.61: tg-link создаёт профиль только после подтверждения контакта в боте — номер доказан,
-  // consent проставляется сервером. Но если клиент принёс src=QR_SOURCE (сканирование с постера),
-  // источник регистрации сохраняем так же, как в /api/auth/register (иначе бонус за QR не начислится).
-  if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
+  const r = createCustomerWithSource(res, finalName, p, pin, req.body.src);
+  if (!r) return;
   const linked = linkTelegram(db, r.customer.id, tgId);
   if (!linked.ok) {
     db.prepare('DELETE FROM customers WHERE id=?').run(r.customer.id);
@@ -247,10 +254,10 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     consumeOtp('reg:' + p, entry => !!entry.code && entry.code === code);
   }
 
-  const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
-  if (r.err) return res.status(r.code).json({ error: r.err });
-  // Откуда пришёл гость (сейчас только QR с постера). Бонус начисляется позже, при подтверждении.
-  if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
+  const r = createCustomerWithSource(
+    res, req.body.name || '', req.body.phone || '', req.body.pin || '', req.body.src
+  );
+  if (!r) return;
 
   if (okSms) {
     db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
