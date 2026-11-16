@@ -189,6 +189,11 @@
     --rail-total-h: calc(var(--rail-h) + env(safe-area-inset-bottom, 0px));
   }
 
+  html body .wrap #menuView #rail,
+  html body .wrap #deliveryView #deliveryRail {
+    padding: 2px 6px;
+  }
+
   html body .wrap #menuView #rail button,
   html body .wrap #deliveryView #deliveryRail button {
     min-height: 44px;

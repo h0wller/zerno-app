@@ -22,6 +22,7 @@ test('mobile category rail stays visible as a detached capsule during active scr
           visibility: style.visibility,
           opacity: Number(style.opacity),
           bottomGap: window.innerHeight - element.getBoundingClientRect().bottom,
+          safeAreaInset,
           left: element.getBoundingClientRect().left,
           right: element.getBoundingClientRect().right,
         });
@@ -33,7 +34,7 @@ test('mobile category rail stays visible as a detached capsule during active scr
       state.position === 'fixed' &&
       state.visibility !== 'hidden' &&
       state.opacity > 0 &&
-      state.bottomGap >= 10 && state.bottomGap <= 12 &&
+      state.bottomGap >= 10 + state.safeAreaInset && state.bottomGap <= 12 + state.safeAreaInset &&
       state.left >= 12 && state.right <= 378
     ), brand + ' rail must remain visibly pinned during active scroll').toBe(true);
   }

@@ -62,6 +62,15 @@ for (const brand of CASES) {
           width: rect.width,
           height: rect.height,
           bottomGap: window.innerHeight - rect.bottom,
+          safeAreaInset: (() => {
+            const probe = document.createElement('div');
+            probe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
+            document.body.appendChild(probe);
+            const value = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+            probe.remove();
+            return value;
+          })(),
+          pageScrollWidth: document.documentElement.scrollWidth,
           borderRadius: parseFloat(getComputedStyle(element).borderTopLeftRadius),
           overflowX: getComputedStyle(element).overflowX,
           scrollWidth: element.scrollWidth,
@@ -89,10 +98,12 @@ for (const brand of CASES) {
       });
 
       expect(geometry.position, 'mobile rail is fixed independently of catalog scroll position').toBe('fixed');
-      expect(geometry.bottomGap, 'floating rail keeps a 10–12px visual gap below the capsule')
-        .toBeGreaterThanOrEqual(10);
-      expect(geometry.bottomGap, 'floating rail does not drift too far from the viewport edge')
-        .toBeLessThanOrEqual(12);
+      expect(geometry.bottomGap, 'floating rail keeps a 10–12px visual gap plus safe-area below the capsule')
+        .toBeGreaterThanOrEqual(10 + geometry.safeAreaInset);
+      expect(geometry.bottomGap, 'safe-area is included exactly once in the floating edge gap')
+        .toBeLessThanOrEqual(12 + geometry.safeAreaInset);
+      expect(geometry.pageScrollWidth, 'floating capsule does not create horizontal page overflow')
+        .toBeLessThanOrEqual(geometry.viewportWidth);
       expect(geometry.left, 'capsule has a 12px minimum horizontal inset').toBeGreaterThanOrEqual(12);
       expect(geometry.right, 'capsule has a 12px minimum horizontal inset').toBeLessThanOrEqual(geometry.viewportWidth - 12);
       expect(geometry.width, 'capsule stays within the viewport width minus 24px').toBeLessThanOrEqual(geometry.viewportWidth - 24);
@@ -112,6 +123,11 @@ for (const brand of CASES) {
       await page.evaluate(() => window.scrollTo(0, 600));
       await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 })
         .toBeGreaterThan(100);
+      if (geometry.scrollWidth > geometry.clientWidth) {
+        await rail.evaluate(element => { element.scrollLeft = element.scrollWidth; });
+        await expect.poll(() => rail.evaluate(element => element.scrollLeft))
+          .toBeGreaterThan(0);
+      }
       const afterScroll = await rail.boundingBox();
       expect(Math.abs(afterScroll.y - beforeScroll.y),
         'rail stays at the same viewport coordinate during catalog scrolling').toBeLessThanOrEqual(1);
