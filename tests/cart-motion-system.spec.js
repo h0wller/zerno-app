@@ -80,15 +80,15 @@ test('reduced motion opens and closes the cart sheet without spatial travel', as
 
   // The floating cart and cart sheet are delivery-only components.
   for (const viewport of viewports) {
-      const { panel, fab } = await prepareCart(page, viewport);
+    const { panel, fab } = await prepareCart(page, viewport);
 
-      await fab.click();
-      await expect(panel).toHaveClass(/open/);
-      await expectCartAtRest(panel, viewport, true);
+    await fab.click();
+    await expect(panel).toHaveClass(/open/);
+    await expectCartAtRest(panel, viewport, true);
 
-      await page.locator('#cartClose').click();
-      await expect(panel).not.toHaveClass(/open/);
-      await expectCartAtRest(panel, viewport, false);
+    await page.locator('#cartClose').click();
+    await expect(panel).not.toHaveClass(/open/);
+    await expectCartAtRest(panel, viewport, false);
   }
 
   await page.close();
@@ -103,7 +103,7 @@ test('reduced motion opens and closes the cart sheet without spatial travel', as
 test('cart sheet can be interrupted by rapid close and reopen without stale geometry', async ({ page }, testInfo) => {
   const video = page.video();
   const viewport = { width: 390, height: 844 };
-  const { panel, fab } = await prepareCart(page, 'delivery', viewport);
+  const { panel, fab } = await prepareCart(page, viewport);
 
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await fab.click();
