@@ -15,17 +15,19 @@ const CART_ITEM = {
   qty: 1,
 };
 
-async function prepareCart(page, brand, viewport) {
+async function prepareCart(page, viewport) {
   await page.setViewportSize(viewport);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.addInitScript((item) => {
+  await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
-    localStorage.setItem('zt_cart', JSON.stringify([item]));
     sessionStorage.setItem('splashDone', '1');
-  }, CART_ITEM);
+  });
 
-  await page.goto('/?brand=' + brand);
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.replaceCartItems === 'function');
+  await page.evaluate((item) => window.replaceCartItems([item]), CART_ITEM);
+
   const panel = page.locator('#cartPanel');
   const fab = page.locator('#cartFab');
   await expect(panel).toBeAttached();
@@ -77,9 +79,8 @@ test('reduced motion opens and closes the cart sheet without spatial travel', as
   ];
 
   // The floating cart and cart sheet are delivery-only components.
-  for (const brand of ['delivery']) {
-    for (const viewport of viewports) {
-      const { panel, fab } = await prepareCart(page, brand, viewport);
+  for (const viewport of viewports) {
+      const { panel, fab } = await prepareCart(page, viewport);
 
       await fab.click();
       await expect(panel).toHaveClass(/open/);
@@ -88,7 +89,6 @@ test('reduced motion opens and closes the cart sheet without spatial travel', as
       await page.locator('#cartClose').click();
       await expect(panel).not.toHaveClass(/open/);
       await expectCartAtRest(panel, viewport, false);
-    }
   }
 
   await page.close();
