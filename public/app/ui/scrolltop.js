@@ -309,10 +309,16 @@ window.scrollMenuContentToStart = function (contentSelector, railSelector, prese
   var targetTop = content.getBoundingClientRect().top +
     (window.scrollY || document.documentElement.scrollTop || 0);
   var nextScrollY = Math.max(0, targetTop - viewportTop);
-  if (rail && rail.classList.contains('rail-is-pinned') &&
-      railPinState && railPinState.rail === rail) {
-    var pinThreshold = railPinState.documentTop - getRailStickyTop();
-    nextScrollY = Math.max(nextScrollY, Math.ceil(pinThreshold) + 1);
+  var pinAfterScroll = !!(rail && rail.classList.contains('rail-is-pinned') &&
+    railPinState && railPinState.rail === rail);
+  if (pinAfterScroll) {
+    // The category replacement changes the catalog's document geometry. Keep
+    // the rail pinned across that repositioning instead of reusing its old
+    // threshold, which may become later than the new scroll position.
+    var pinState = railPinState;
+    var pinnedTop = getRailStickyTop();
+    var nextDocumentTop = nextScrollY + pinnedTop;
+    pinState.documentTop = Math.min(pinState.documentTop, nextDocumentTop);
   }
   window.scrollTo({ top: nextScrollY, behavior: 'smooth' });
 };

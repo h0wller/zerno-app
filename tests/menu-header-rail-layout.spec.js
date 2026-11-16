@@ -1827,12 +1827,18 @@ test('rail active background diagnostic and four brand viewport captures', async
             let matches = false;
             try { matches = active.matches(rule.selectorText); } catch (_) {}
             if (!matches) continue;
+            const matchingSelectors = rule.selectorText.split(',').map(selector => selector.trim())
+              .filter(selector => {
+                try { return active.matches(selector); } catch (_) { return false; }
+              });
+            if (!matchingSelectors.length) continue;
             const background = rule.style.getPropertyValue('background');
             const backgroundColor = rule.style.getPropertyValue('background-color');
             if (!background && !backgroundColor) continue;
             matchedRules.push({
               file: source,
               selector: rule.selectorText,
+              matchedSelector: matchingSelectors[0],
               background: background || null,
               backgroundColor: backgroundColor || null,
               important: rule.style.getPropertyPriority(background ? 'background' : 'background-color') === 'important',
