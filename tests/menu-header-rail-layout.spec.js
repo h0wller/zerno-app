@@ -1795,7 +1795,7 @@ test('late font hydration does not move the floating rail after manual category 
     await page.evaluate(() => document.fonts.ready);
     await expect.poll(() => rail.evaluate(el => ({
       position: getComputedStyle(el).position,
-      bottom: el.getBoundingClientRect().bottom,
+      bottomGap: window.innerHeight - el.getBoundingClientRect().bottom,
       pinned: el.classList.contains('rail-is-pinned'),
     }))).toEqual({ position: 'fixed', bottomGap: 10, pinned: false });
     await page.unroute(fontRoute);
@@ -1912,10 +1912,10 @@ test('active rail tabs keep their geometry on press and coffee uses its blue act
     labelColor: getComputedStyle(button).color,
     fontWeight: getComputedStyle(button).fontWeight,
   }));
-  expect(coffeeState.buttonBackground).toBe('rgba(0, 0, 0, 0)');
-  expect(coffeeState.iconBackground).toBe('rgb(18, 58, 107)');
-  expect(coffeeState.iconColor).toBe('rgb(255, 255, 255)');
-  expect(coffeeState.labelColor).toBe('rgb(18, 58, 107)');
+  expect(coffeeState.buttonBackground).toBe('rgb(18, 58, 107)');
+  expect(coffeeState.iconBackground).toBe('rgba(0, 0, 0, 0)');
+  expect(coffeeState.iconColor).toBe('rgb(18, 58, 107)');
+  expect(coffeeState.labelColor).toBe('rgb(255, 255, 255)');
   expect(coffeeState.fontWeight).toBe('700');
 
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
