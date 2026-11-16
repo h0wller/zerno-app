@@ -288,12 +288,15 @@ function scheduleRailPinningUpdate() {
 
 // Bring the newly selected catalog section to the first visible position
 // without covering it with the pinned mobile rail.
-window.scrollMenuContentToStart = function (contentSelector, railSelector) {
+window.scrollMenuContentToStart = function (contentSelector, railSelector, preservePinned) {
   var content = document.querySelector(contentSelector);
   if (!content) return;
 
   var viewportTop = 12;
   var rail = document.querySelector(railSelector);
+  if (preservePinned && rail && !rail.classList.contains('rail-is-pinned')) {
+    pinRailAtViewportTop(rail, getRailStickyTop());
+  }
   if (rail && rail.classList.contains('rail-is-pinned')) {
     viewportTop = rail.getBoundingClientRect().bottom + 8;
   } else {
