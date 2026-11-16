@@ -1029,7 +1029,8 @@ window.populateSlots = function () {
       }
     }
 
-    if (previousMode === 'slot' && !restoredSelection) {
+    if ((previousMode === 'slot' && !restoredSelection) ||
+        (pm && (!restoredSelection || !sel.value || sel.value === 'asap'))) {
       sel.value = '';
       sel.__checkoutTimeMode = 'slot';
       sel.dataset.checkoutTimeMode = 'slot';
@@ -1037,10 +1038,6 @@ window.populateSlots = function () {
       sel.value = pm ? '' : 'asap';
       sel.__checkoutTimeMode = pm ? 'slot' : 'asap';
       sel.dataset.checkoutTimeMode = sel.__checkoutTimeMode;
-    } else if (pm && (!restoredSelection || !sel.value || sel.value === 'asap')) {
-      sel.value = '';
-      sel.__checkoutTimeMode = 'slot';
-      sel.dataset.checkoutTimeMode = 'slot';
     }
 
     sel.classList.toggle('need-slot', !!pm && !sel.value);
