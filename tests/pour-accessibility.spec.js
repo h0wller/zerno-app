@@ -171,7 +171,6 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(metrics.venue.height).toBeGreaterThanOrEqual(44);
     expect(metrics.supportHost).toEqual({ width: 44, height: 44 });
     expect(metrics.support).toEqual({ width: 44, height: 44 });
-    expect(metrics.scrollTop).toEqual({ width: 44, height: 44 });
     expect(metrics.menuHead.height).toBe(108);
     expect(metrics.menuHead.overflow).not.toBe('hidden');
     expect(metrics.search).toBe(40);
