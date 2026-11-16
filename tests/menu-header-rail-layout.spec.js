@@ -1914,7 +1914,7 @@ test('active rail tabs keep their geometry on press and coffee uses its blue act
   }));
   expect(coffeeState.buttonBackground).toBe('rgb(18, 58, 107)');
   expect(coffeeState.iconBackground).toBe('rgba(0, 0, 0, 0)');
-  expect(coffeeState.iconColor).toBe('rgb(18, 58, 107)');
+  expect(coffeeState.iconColor).toBe('rgb(255, 255, 255)');
   expect(coffeeState.labelColor).toBe('rgb(255, 255, 255)');
   expect(coffeeState.fontWeight).toBe('700');
 
