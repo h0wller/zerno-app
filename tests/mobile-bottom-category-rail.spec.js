@@ -118,7 +118,29 @@ for (const brand of CASES) {
       expect(geometry.right, 'capsule has a 12px minimum horizontal inset').toBeLessThanOrEqual(geometry.viewportWidth - 12);
       expect(geometry.width, 'capsule stays within the viewport width minus 24px').toBeLessThanOrEqual(geometry.viewportWidth - 24);
       expect(geometry.borderRadius, 'rail uses a capsule corner radius').toBeGreaterThanOrEqual(24);
-      expect(geometry.overflowX, 'long category sets scroll inside the rail').toBe('auto');
+      expect(geometry.scrollWidth, brand.brand + ' categories fit without internal horizontal scrolling')
+        .toBeLessThanOrEqual(geometry.clientWidth);
+      expect(geometry.overflowX, brand.brand + ' rail does not expose an internal horizontal scroller')
+        .toBe('hidden');
+      const categoryButtons = await rail.locator('button').evaluateAll(buttons => buttons.map(button => {
+        const rect = button.getBoundingClientRect();
+        return {
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+          accessibleName: button.getAttribute('aria-label') || button.title || button.textContent.trim(),
+        };
+      }));
+      expect(categoryButtons.length, brand.brand + ' category set is fully rendered')
+        .toBe(brand.brand === 'coffee' ? 6 : 5);
+      expect(categoryButtons.every(button => button.width >= 44 && button.height >= 44))
+        .toBe(true);
+      expect(categoryButtons.every(button => button.left >= geometry.left - 1 &&
+        button.right <= geometry.right + 1),
+      brand.brand + ' categories remain visible without scrolling').toBe(true);
+      expect(categoryButtons.every(button => button.accessibleName.length > 0),
+        brand.brand + ' icon-only controls retain accessible names').toBe(true);
       expect(geometry.activeBackground, 'selected category uses a filled state').not.toBe('rgba(0, 0, 0, 0)');
       expect(geometry.backdropFilter, 'supported browsers enhance the surface with blur').toContain('blur');
       expect(geometry.height, 'rail uses the compact or regular mobile height')

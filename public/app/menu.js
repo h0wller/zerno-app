@@ -16,7 +16,7 @@ function coffeePool() {
 }
 
 $('#rail').innerHTML = CATS.map(
-  c => `<button type="button" data-cat="${c.id}"><span class="re">${c.e}</span><span class="category-label">${c.l}</span></button>`
+  c => `<button type="button" data-cat="${c.id}" aria-label="${esc(c.l)}" title="${esc(c.l)}"><span class="re">${c.e}</span><span class="category-label">${c.l}</span></button>`
 ).join('');
 
 $('#rail').setAttribute('role', 'group');

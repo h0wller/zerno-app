@@ -9,7 +9,7 @@
 Use a **detached floating capsule** rather than a full-width bottom bar.
 
 - Keep the rail visually separated from the viewport edge: 12px horizontal inset and 10–12px bottom breathing room, plus the device safe-area inset.
-- Use a content-width surface sized to its category controls, capped at `calc(100vw - 24px)`. If all categories do not fit, the rail itself scrolls horizontally; do not shrink hit targets or wrap labels.
+- Use a capsule sized to the available viewport width (maximum `calc(100vw - 24px)`) and distribute the complete category set across the available width. Coffee (6 categories) and delivery (5 categories) must not create an internal horizontal scroller; compact labels may be hidden on the narrowest widths, but every category remains present and named accessibly.
 - Use a single continuous capsule with a generous radius (24–28px), subtle elevation and no visible outer stroke. The selected category is indicated by a compact filled icon/label treatment; avoid the old full-width underline.
 - Keep each interactive target at least 44×44 CSS px. Short landscape may reduce visual padding, not the hit target.
 - The component remains fixed to the visual viewport while scrolling, but is no longer flush with or visually attached to the bottom edge. “Detached” does not mean returning it to document flow: that would make navigation disappear during catalog scrolling.
@@ -58,7 +58,7 @@ No body-level host or DOM relocation is proposed at this stage. Do not change ca
 - Recalculate catalog bottom scroll reserve from the measured floating rail footprint and actual visible FAB lane. Empty cart must not reserve a phantom FAB lane.
 - With the cart sheet open, the rail is hidden/inert as in the current contract.
 - Keep category selection and scroll-to-content behavior unchanged.
-- Horizontal scrolling must not steal vertical page scrolling; use a deliberate horizontal gesture threshold and retain keyboard navigation.
+- The category capsule itself does not scroll horizontally for either brand. Keep every category visible and keyboard/touch reachable; product catalog and delivery subfilters retain their independent scrolling behavior.
 - The rail must remain within the visual viewport during iOS keyboard presentation and short landscape; if the available height is insufficient, it must not obscure primary content.
 - Reduced-motion settings disable nonessential transitions. Focus-visible remains clearly visible.
 
@@ -100,3 +100,23 @@ No body-level host or DOM relocation is proposed at this stage. Do not change ca
 
 
 Additional visual check: the delivery cart sheet screenshot `delivery-cart-sheet-open-390x844` was opened and inspected; the category rail is not visible over the sheet.
+
+
+## Responsive category density follow-up
+
+- Coffee and delivery now share the same compact no-scroll capsule contract: six coffee categories and five delivery categories are distributed evenly, with 44px minimum hit targets.
+- At widths up to 340px, visible text labels are suppressed to preserve icon targets and capsule fit; the category buttons keep their accessible names from the DOM contract.
+- Delivery subfilters remain independently horizontally scrollable when their content requires it; this change does not alter subfilter behavior or category filtering.
+- Verification is pending for the current follow-up commit; do not treat earlier CI evidence above as verification of this change.
+
+
+## Responsive no-scroll acceptance record
+
+- Verified commit: `599fdfe6d845d02585c2518989ca034f40884e82`.
+- CI: [run 43959279417](https://github.com/h0wller/zerno-app/actions/runs/43959279417), all 13/13 jobs passed, including Code Quality & Guardrails, Mobile Chrome responsive, Responsive UI, Visual UX capture, Menu and search, Cart and checkout, Visual stability and PWA.
+- Visual artifact: `visual-ux-baseline-test-43959279417`. Opened and inspected hydrated guest captures for both brands at XS 320×740, M 390×844 and short landscape 844×390.
+- Coffee: six categories visible in one capsule; labels remain visible at 390px and short landscape, and icon-only mode at 320px; no internal rail scroll.
+- Delivery: five categories visible in one capsule; labels remain visible at 390px and short landscape, and icon-only mode at 320px; delivery subfilter row remains a separate horizontally scrollable control.
+- The screenshots show the rail clear of page edges, with the floating inset and safe-area gap preserved. No category data, filtering, cart behavior or desktop sidebar changes were made.
+- Visual result: **accepted for Chromium CI states reviewed**. This does not replace device-level iOS/Android acceptance.
+- Screenshot baseline was not updated.

@@ -48,6 +48,7 @@
     display: none;
   }
 
+
   html body .wrap #menuView #rail button,
   html body .wrap #deliveryView #deliveryRail button {
     appearance: none;
@@ -98,6 +99,40 @@
     font-size: clamp(8.5px, 2.5vw, 10px);
     letter-spacing: -0.3px;
     transform: none;
+  }
+
+  /* Both brands fit their complete category set; keep horizontal scrolling out of the capsule. */
+  html body .wrap #menuView #rail,
+  html body .wrap #deliveryView #deliveryRail {
+    width: min(460px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    justify-content: space-between;
+    gap: 2px;
+    overflow-x: hidden;
+  }
+
+  html body .wrap #menuView #rail button,
+  html body .wrap #deliveryView #deliveryRail button {
+    flex: 1 1 0;
+    min-width: 44px;
+    width: 0;
+    padding-inline: 1px;
+    gap: 1px;
+  }
+
+  html body .wrap #menuView #rail .category-label,
+  html body .wrap #deliveryView #deliveryRail .category-label {
+    min-width: 0;
+    max-width: 100%;
+    font-size: clamp(8px, 2.3vw, 10px);
+    letter-spacing: -0.35px;
+  }
+
+  @media (max-width: 340px) {
+    html body .wrap #menuView #rail .category-label,
+    html body .wrap #deliveryView #deliveryRail .category-label {
+      display: none;
+    }
   }
 
   html body .wrap #menuView #rail .re,

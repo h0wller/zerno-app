@@ -497,7 +497,9 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(geometry.bottomGap).toBeLessThanOrEqual(12 + geometry.safeAreaInset);
       expect(geometry.railHeight).toBe(geometry.viewportHeight <= 480 ? 48 : 56);
       expect(geometry.railRadius, brand.brand + ' rail uses a capsule surface').toBe('26px');
-      expect(geometry.railOverflowX).toBe('auto');
+      expect(geometry.railOverflowX, brand.brand + ' rail has no internal horizontal scroller').toBe('hidden');
+      expect(geometry.scrollWidth, brand.brand + ' complete category set fits inside the capsule')
+        .toBeLessThanOrEqual(geometry.clientWidth);
       expect(geometry.railOverflowY).toBe('hidden');
       expect(geometry.background, brand.brand + ' uses its own category surface').not.toBe('rgba(0, 0, 0, 0)');
       expect(geometry.border, brand.brand + ' rail has no enclosing frame').toBe('0px');
@@ -507,7 +509,8 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(geometry.buttonCount).toBeGreaterThan(1);
 
       const buttonWidths = geometry.buttons.map((button) => button.width);
-      expect(Math.min(...buttonWidths), brand.brand + ' category targets keep a 60px minimum width').toBeGreaterThanOrEqual(60);
+      expect(Math.min(...buttonWidths), brand.brand + ' category targets retain the 44px minimum width')
+        .toBeGreaterThanOrEqual(44);
       expect(geometry.buttons[0].left, brand.brand + ' first category sits inside the capsule padding').toBeGreaterThanOrEqual(geometry.railLeft + 5);
 
       for (const button of geometry.buttons) {
@@ -2337,18 +2340,25 @@ test('mobile category labels stay on one line and fully inside their tabs for bo
         });
       });
 
-      expect(labels.every((label) =>
-        label.label &&
-        label.lineCount === 1 &&
-        label.whiteSpace === 'nowrap' &&
-        label.fontSize >= 8.5 &&
-        label.transform === 'none' &&
-        label.insideTab
-      ), brand.brand + ' category labels must remain readable, single-line and fully visible at ' +
+      const narrowIconMode = viewport.width <= 340;
+      expect(labels.every((label) => {
+        if (narrowIconMode) {
+          return label.label && label.accessibleName.length > 0 &&
+            label.lineCount === 0 && label.transform === 'none';
+        }
+        return label.label &&
+          label.lineCount === 1 &&
+          label.whiteSpace === 'nowrap' &&
+          label.fontSize >= 8.5 &&
+          label.transform === 'none' &&
+          label.insideTab &&
+          (brand.brand !== 'coffee' || label.accessibleName === label.label);
+      }), brand.brand + ' category labels remain visible or have an accessible icon-only label at ' +
         viewport.width + 'x' + viewport.height + ': ' + JSON.stringify(labels)).toBe(true);
       expect(Math.min(...labels.map((label) => label.buttonWidth)),
-        brand.brand + ' category tabs retain a 60px minimum target width').toBeGreaterThanOrEqual(60);
-      if (brand.brand === 'delivery') {
+        brand.brand + ' category tabs retain their minimum target width')
+        .toBeGreaterThanOrEqual(44);
+      if (brand.brand === 'delivery' && !narrowIconMode) {
         const sauces = labels.find((label) => label.accessibleName === 'Допы и соусы');
         expect(sauces?.label, 'delivery sauces category uses a compact visible label').toBe('Добавки');
       }
