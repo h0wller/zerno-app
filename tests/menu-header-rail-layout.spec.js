@@ -415,6 +415,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
           scrollWidth: rail.scrollWidth,
           clientWidth: rail.clientWidth,
           viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
           documentWidth: document.documentElement.scrollWidth,
           buttonCount: buttons.length,
           buttons,
@@ -436,7 +437,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(Math.abs(geometry.railLeft), brand.brand + ' fixed rail starts at the viewport edge').toBeLessThanOrEqual(1);
       expect(Math.abs(geometry.railRight - geometry.viewportWidth), brand.brand + ' fixed rail ends at the viewport edge').toBeLessThanOrEqual(1);
       expect(geometry.railWidth, brand.brand + ' fixed rail spans the viewport').toBeCloseTo(geometry.viewportWidth, 0);
-      expect(Math.abs(geometry.railBottom - window.innerHeight), brand.brand + ' fixed rail stays at the viewport bottom').toBeLessThanOrEqual(1);
+      expect(Math.abs(geometry.railBottom - geometry.viewportHeight), brand.brand + ' fixed rail stays at the viewport bottom').toBeLessThanOrEqual(1);
       expect(geometry.railHeight, brand.brand + ' mobile rail reserves content plus safe-area').toBeGreaterThanOrEqual(56);
       expect(geometry.railRadius, brand.brand + ' rail uses one rounded surface').toBe('16px');
       expect(geometry.railOverflow, brand.brand + ' rail background is clipped to its rounded surface').toBe('hidden');
@@ -606,13 +607,16 @@ test('short landscape category tabs align to the catalog instead of filling the 
           clientWidth: rail.clientWidth,
           documentWidth: document.documentElement.scrollWidth,
           viewportWidth: document.documentElement.clientWidth,
+          viewportHeight: window.innerHeight,
         };
       }, { railSelector: brand.rail, gridSelector: brand.brand === 'coffee' ? '#grid' : '#deliveryGrid' });
 
       expect(layout.parentIsMenu).toBe(true);
       expect(layout.direction).toBe('row');
-      expect(Math.abs(layout.railLeft - layout.gridLeft)).toBeLessThanOrEqual(1);
-      expect(Math.abs(layout.railRight - layout.gridRight)).toBeLessThanOrEqual(1);
+      expect(Math.abs(layout.railLeft)).toBeLessThanOrEqual(1);
+      expect(Math.abs(layout.railRight - layout.viewportWidth)).toBeLessThanOrEqual(1);
+      expect(Math.abs(layout.railBottom - layout.viewportHeight)).toBeLessThanOrEqual(1);
+      expect(layout.railHeight).toBeGreaterThanOrEqual(48);
       expect(Math.max(...layout.buttonWidths) - Math.min(...layout.buttonWidths)).toBeLessThanOrEqual(1.5);
       expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
       expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
@@ -745,7 +749,7 @@ test('category tabs expose their selected state and remain keyboard reachable', 
 });
 
 
-test('switching delivery categories preserves the current rail and page position', async ({ page }, testInfo) => {
+test('switching delivery categories scrolls content below the sticky topbar without moving the bottom rail', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
@@ -778,17 +782,31 @@ test('switching delivery categories preserves the current rail and page position
   await expect(tabs.nth(1)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
 
-  const after = await page.evaluate(() => ({
-    scrollY: window.scrollY,
-    railTop: document.querySelector('#deliveryRail').getBoundingClientRect().top,
-  }));
+  const after = await page.evaluate(() => {
+    const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
+    const topbar = document.querySelector('header.topbar').getBoundingClientRect();
+    const subfilters = document.querySelector('#deliverySubFilterViewport');
+    const subfiltersVisible = !!subfilters && !subfilters.hidden &&
+      getComputedStyle(subfilters).display !== 'none' &&
+      subfilters.getBoundingClientRect().height > 0;
+    const content = subfiltersVisible ? subfilters : document.querySelector('#deliveryGrid');
+    return {
+      scrollY: window.scrollY,
+      railTop: rail.top,
+      railBottom: rail.bottom,
+      contentTop: content.getBoundingClientRect().top,
+      viewportTop: topbar.bottom + 12,
+    };
+  });
   await testInfo.attach('delivery-category-switch-after', {
     body: await page.screenshot({ animations: 'disabled' }),
     contentType: 'image/png',
   });
 
-  expect(Math.abs(after.scrollY - before.scrollY)).toBeLessThanOrEqual(1);
   expect(Math.abs(after.railTop - before.railTop)).toBeLessThanOrEqual(1);
+  expect(after.railBottom).toBe(844);
+  expect(Math.abs(after.contentTop - after.viewportTop),
+    'selected delivery content starts below the sticky topbar + 12px').toBeLessThanOrEqual(3);
 });
 
 test('delivery desktop rail keeps its initial catalog-row anchor across category changes', async ({ page }, testInfo) => {
@@ -1624,10 +1642,10 @@ test('manual category change returns new content below the sticky topbar while b
       return Math.abs(content.getBoundingClientRect().top -
         topbar.getBoundingClientRect().bottom - 12) <= 3;
     }, { contentSelector }), { timeout: 7000 }).toBe(true);
-    const geometry = await page.evaluate(({ contentSelector }) => {
+    const geometry = await page.evaluate(({ contentSelector, railSelector }) => {
       const contentRect = document.querySelector(contentSelector).getBoundingClientRect();
       const topbarRect = document.querySelector('header.topbar').getBoundingClientRect();
-      const railRect = document.querySelector('#rail, #deliveryRail').getBoundingClientRect();
+      const railRect = document.querySelector(railSelector).getBoundingClientRect();
       return {
         contentTop: contentRect.top,
         viewportTop: topbarRect.bottom + 12,
@@ -1635,7 +1653,7 @@ test('manual category change returns new content below the sticky topbar while b
         railBottom: railRect.bottom,
         scrollY: window.scrollY,
       };
-    }, { contentSelector });
+    }, { contentSelector, railSelector: brand.rail });
     expect(Math.abs(geometry.contentTop - geometry.viewportTop),
       brand.brand + ' new content starts below the sticky topbar + 12px').toBeLessThanOrEqual(3);
     expect(geometry.railBottom).toBe(844);
