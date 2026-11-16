@@ -817,18 +817,18 @@ html body #authModal.tg-mode .mhint{
     bottom: calc(var(--rail-total-h) + 12px);
   }
 
-  html body #scrollTopBtn {
-    bottom: calc(var(--rail-total-h) + 12px) !important;
+  html body nav#pageNavigation #scrollTopBtn {
+    bottom: calc(var(--rail-total-h) + 12px);
   }
 
   html body #scanFab,
   html body .fab-scan {
-    bottom: calc(var(--rail-total-h) + 12px) !important;
+    bottom: calc(var(--rail-total-h) + 12px);
   }
 
   html body:has(#cartFab.visible:not([hidden])) #mbonusBtn,
   html body:has(#cartFab.visible:not([hidden])) #scanFab,
   html body:has(#cartFab.visible:not([hidden])) .fab-scan {
-    bottom: calc(var(--rail-total-h) + 12px + 64px + 12px) !important;
+    bottom: calc(var(--rail-total-h) + 12px + 64px + 12px);
   }
 }
