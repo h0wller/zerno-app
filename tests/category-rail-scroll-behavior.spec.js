@@ -35,8 +35,9 @@ for (const brand of BRANDS) {
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
     await expect.poll(() => rail.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('auto');
     if (brand.brand === 'delivery') {
-      await expect(page.locator('#deliverySubFilter')).toBeVisible();
-      await expect(page.locator('#deliverySubFilter')).not.toHaveClass(/is-scroll-fading/);
+      const subfilters = page.locator('#deliverySubFilter');
+      await expect(subfilters).not.toHaveClass(/is-scroll-fading/);
+      await expect.poll(() => subfilters.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
     }
   });
 }
