@@ -89,6 +89,19 @@ for (const brand of CASES) {
           railTop: railRect.top,
           railBottom: railRect.bottom,
           railHeight: railRect.height,
+          railLeft: railRect.left,
+          railRight: railRect.right,
+          railWidth: railRect.width,
+          railBottomGap: window.innerHeight - railRect.bottom,
+          safeAreaInset: (() => {
+            const probe = document.createElement('div');
+            probe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
+            document.body.appendChild(probe);
+            const value = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+            probe.remove();
+            return value;
+          })(),
+          railTotalHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')),
           viewportHeight: window.innerHeight,
           railPosition: getComputedStyle(railEl).position,
           headBottom: headRect.bottom,
@@ -102,8 +115,13 @@ for (const brand of CASES) {
       if (horizontalRail) {
         expect(layout.railPosition, 'mobile and short-landscape rail is fixed to the viewport')
           .toBe('fixed');
-        expect(Math.abs(layout.railBottom - layout.viewportHeight),
-          'rail bottom is aligned with the viewport bottom').toBeLessThanOrEqual(1);
+        expect(layout.railBottomGap, 'floating rail keeps a 10–12px gap plus safe-area')
+          .toBeGreaterThanOrEqual(10 + layout.safeAreaInset);
+        expect(layout.railBottomGap).toBeLessThanOrEqual(12 + layout.safeAreaInset);
+        expect(layout.railLeft).toBeGreaterThanOrEqual(12);
+        expect(layout.railRight).toBeLessThanOrEqual(layout.documentWidth - 12);
+        expect(layout.railWidth).toBeLessThanOrEqual(layout.documentWidth - 24);
+        expect(layout.railTotalHeight).toBeCloseTo(layout.railHeight + layout.railBottomGap, 0);
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
         expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
       }
@@ -140,16 +158,25 @@ for (const brand of CASES) {
         await expect.poll(() => page.evaluate(selector => {
           const element = document.querySelector(selector);
           const rect = element.getBoundingClientRect();
+          const probe = document.createElement('div');
+          probe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
+          document.body.appendChild(probe);
+          const safeAreaInset = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+          probe.remove();
           return {
             position: getComputedStyle(element).position,
-            bottom: rect.bottom,
+            bottomGap: window.innerHeight - rect.bottom,
+            safeAreaInset,
+            left: rect.left,
+            right: rect.right,
             height: rect.height,
             pinClass: element.classList.contains('rail-is-pinned'),
             spacerCount: element.parentElement.querySelectorAll(':scope > .rail-pin-spacer').length,
           };
         }, brand.rail), { timeout: 5000 }).toMatchObject({
           position: 'fixed',
-          bottom: viewport.height,
+          bottomGap: 10,
+          left: 12,
           height: viewport.height <= 480 ? 48 : 56,
           pinClass: false,
           spacerCount: 0,
@@ -161,7 +188,7 @@ for (const brand of CASES) {
         await expect(rail).toBeVisible();
         await expect(rail).not.toHaveClass(/rail-is-pinned/);
         await expect(rail).toHaveCSS('position', 'fixed');
-        await expect(rail).toHaveCSS('transform', 'none');
+        await expect(rail).not.toHaveCSS('transform', 'none');
         await testInfo.attach(brand.brand + '-bottom-rail-' + viewport.width + 'x' + viewport.height, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
@@ -411,9 +438,19 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
           railBottom: railRect.bottom,
           railHeight: railRect.height,
           railRadius: railStyle.borderTopLeftRadius,
-          railOverflow: railStyle.overflow,
+          railOverflowX: railStyle.overflowX,
+          railOverflowY: railStyle.overflowY,
           scrollWidth: rail.scrollWidth,
           clientWidth: rail.clientWidth,
+          bottomGap: window.innerHeight - railRect.bottom,
+          safeAreaInset: (() => {
+            const probe = document.createElement('div');
+            probe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
+            document.body.appendChild(probe);
+            const value = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+            probe.remove();
+            return value;
+          })(),
           viewportWidth: window.innerWidth,
           viewportHeight: window.innerHeight,
           documentWidth: document.documentElement.scrollWidth,
@@ -435,45 +472,47 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
 
       expect(geometry.parentIsView, brand.brand + ' rail stays below the search in its menu view').toBe(true);
       expect(geometry.direction, brand.brand + ' categories form one horizontal row').toBe('row');
-      expect(Math.abs(geometry.railLeft), brand.brand + ' fixed rail starts at the viewport edge').toBeLessThanOrEqual(1);
-      expect(Math.abs(geometry.railRight - geometry.viewportWidth), brand.brand + ' fixed rail ends at the viewport edge').toBeLessThanOrEqual(1);
-      expect(geometry.railWidth, brand.brand + ' fixed rail spans the viewport').toBeCloseTo(geometry.viewportWidth, 0);
-      expect(Math.abs(geometry.railBottom - geometry.viewportHeight), brand.brand + ' fixed rail stays at the viewport bottom').toBeLessThanOrEqual(1);
-      expect(geometry.railHeight, brand.brand + ' mobile rail reserves content plus safe-area').toBeGreaterThanOrEqual(56);
-      expect(geometry.railRadius, brand.brand + ' rail uses one rounded surface').toBe('16px');
-      expect(geometry.railOverflow, brand.brand + ' rail background is clipped to its rounded surface').toBe('hidden');
+      expect(geometry.railLeft, brand.brand + ' capsule keeps a 12px viewport inset').toBeGreaterThanOrEqual(12);
+      expect(geometry.railRight, brand.brand + ' capsule keeps a 12px viewport inset').toBeLessThanOrEqual(geometry.viewportWidth - 12);
+      expect(geometry.railWidth, brand.brand + ' capsule is capped to viewport width minus 24px').toBeLessThanOrEqual(geometry.viewportWidth - 24);
+      expect(geometry.bottomGap, brand.brand + ' capsule floats 10–12px above safe-area').toBeGreaterThanOrEqual(10 + geometry.safeAreaInset);
+      expect(geometry.bottomGap).toBeLessThanOrEqual(12 + geometry.safeAreaInset);
+      expect(geometry.railHeight).toBe(geometry.viewportHeight <= 480 ? 48 : 56);
+      expect(geometry.railRadius, brand.brand + ' rail uses a capsule surface').toBe('26px');
+      expect(geometry.railOverflowX).toBe('auto');
+      expect(geometry.railOverflowY).toBe('hidden');
       expect(geometry.background, brand.brand + ' uses its own category surface').not.toBe('rgba(0, 0, 0, 0)');
-      expect(geometry.border, brand.brand + ' rail has no heavy enclosing frame').toBe('0px');
-      expect(geometry.shadow, brand.brand + ' rail has no decorative shadow').toBe('none');
-      expect(geometry.scrollWidth, brand.brand + ' categories all fit without a second horizontal scroll area').toBeLessThanOrEqual(geometry.clientWidth + 1);
+      expect(geometry.border, brand.brand + ' rail has no enclosing frame').toBe('0px');
+      expect(geometry.shadow, brand.brand + ' floating capsule has subtle elevation').not.toBe('none');
+      expect(geometry.scrollWidth, brand.brand + ' rail content is at least as wide as its visible viewport').toBeGreaterThanOrEqual(geometry.clientWidth);
       expect(geometry.documentWidth, brand.brand + ' menu does not create page-wide horizontal overflow').toBeLessThanOrEqual(geometry.viewportWidth + 1);
       expect(geometry.buttonCount).toBeGreaterThan(1);
 
       const buttonWidths = geometry.buttons.map((button) => button.width);
-      expect(Math.max(...buttonWidths) - Math.min(...buttonWidths), brand.brand + ' category cells share the available width equally').toBeLessThanOrEqual(1.5);
-      expect(Math.abs(geometry.buttons[0].left - geometry.railLeft), brand.brand + ' first category starts at the rail edge').toBeLessThanOrEqual(1);
-      expect(Math.abs(geometry.buttons.at(-1).right - geometry.railRight), brand.brand + ' last category ends at the rail edge').toBeLessThanOrEqual(1);
+      expect(Math.min(...buttonWidths), brand.brand + ' category targets keep a 60px minimum width').toBeGreaterThanOrEqual(60);
+      expect(geometry.buttons[0].left, brand.brand + ' first category sits inside the capsule padding').toBeGreaterThanOrEqual(geometry.railLeft + 5);
 
       for (const button of geometry.buttons) {
         expect(button.direction, brand.brand + ' icon sits above its category label').toBe('column');
         expect(button.height, brand.brand + ' category is a usable tap target').toBeGreaterThanOrEqual(44);
-        expect(button.radius, brand.brand + ' category cells are not pills').toBe('0px');
+        expect(button.radius, brand.brand + ' category uses a compact selected-state pill shape').toBe('20px');
         if (!button.active) {
           expect(button.background, brand.brand + ' inactive category remains visually quiet').toBe('rgba(0, 0, 0, 0)');
+        } else {
+          expect(button.background, brand.brand + ' selected category uses a filled state').not.toBe('rgba(0, 0, 0, 0)');
         }
         expect(button.borderTop, brand.brand + ' category has no extra top border').toBe('0px');
-        if (button.active) expect(button.iconBackground, brand.brand + ' active icon uses its brand chip').not.toBe('rgba(0, 0, 0, 0)');
-        else expect(button.iconBackground, brand.brand + ' inactive icon has no chip').toBe('rgba(0, 0, 0, 0)');
+        expect(button.iconBackground, brand.brand + ' icon does not carry a duplicate selected chip').toBe('rgba(0, 0, 0, 0)');
         expect(button.iconBorder, brand.brand + ' icon has no frame').toBe('0px');
         expect(button.iconRadius, brand.brand + ' icon keeps its brand-specific shape')
           .toBe(brand.brand === 'coffee' ? '50%' : '8px');
       }
 
-      expect(geometry.activeBackground, brand.brand + ' active tab has no fill').toBe('rgba(0, 0, 0, 0)');
-      expect(geometry.activeBorderBottom, brand.brand + ' active tab uses ::after instead of border-bottom').toBe('0px');
+      expect(geometry.activeBackground, brand.brand + ' selected tab is filled').not.toBe('rgba(0, 0, 0, 0)');
+      expect(geometry.activeBorderBottom, brand.brand + ' selected tab has no legacy underline').toBe('0px');
 
       if (geometry.filterTop !== null) {
-        expect(geometry.filterBottom, 'delivery secondary filters remain above the fixed bottom rail').toBeLessThanOrEqual(geometry.railTop + 1);
+        expect(geometry.filterBottom, 'delivery secondary filters remain above the floating rail').toBeLessThanOrEqual(geometry.railTop + 1);
       }
 
       await testInfo.attach(brand.brand + '-' + viewport.name.replaceAll(' ', '-') + '-category-tabs', {
@@ -601,6 +640,10 @@ test('short landscape category tabs align to the catalog instead of filling the 
           railRight: railRect.right,
           railBottom: railRect.bottom,
           railHeight: railRect.height,
+          railLeft: railRect.left,
+          railRight: railRect.right,
+          railWidth: railRect.width,
+          bottomGap: window.innerHeight - railRect.bottom,
           gridLeft: gridRect.left,
           gridRight: gridRect.right,
           buttonWidths: [...rail.querySelectorAll('button')].map((button) => button.getBoundingClientRect().width),
@@ -614,12 +657,14 @@ test('short landscape category tabs align to the catalog instead of filling the 
 
       expect(layout.parentIsMenu).toBe(true);
       expect(layout.direction).toBe('row');
-      expect(Math.abs(layout.railLeft)).toBeLessThanOrEqual(1);
-      expect(Math.abs(layout.railRight - layout.viewportWidth)).toBeLessThanOrEqual(1);
-      expect(Math.abs(layout.railBottom - layout.viewportHeight)).toBeLessThanOrEqual(1);
-      expect(layout.railHeight).toBeGreaterThanOrEqual(48);
-      expect(Math.max(...layout.buttonWidths) - Math.min(...layout.buttonWidths)).toBeLessThanOrEqual(1.5);
-      expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
+      expect(layout.railLeft).toBeGreaterThanOrEqual(12);
+      expect(layout.railRight).toBeLessThanOrEqual(layout.viewportWidth - 12);
+      expect(layout.railWidth).toBeLessThanOrEqual(layout.viewportWidth - 24);
+      expect(layout.bottomGap).toBeGreaterThanOrEqual(10);
+      expect(layout.bottomGap).toBeLessThanOrEqual(12);
+      expect(layout.railHeight).toBe(48);
+      expect(Math.min(...layout.buttonWidths)).toBeGreaterThanOrEqual(60);
+      expect(layout.scrollWidth).toBeGreaterThanOrEqual(layout.clientWidth);
       expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
 
       await testInfo.attach(brand.brand + '-short-landscape-' + viewport.width + 'x' + viewport.height + '-category-tabs', {
@@ -745,12 +790,16 @@ test('category tabs expose their selected state and remain keyboard reachable', 
     await tabs.last().click();
     await expect(tabs.last()).toHaveAttribute('aria-pressed', 'true');
     await expect(rail.locator('button[aria-pressed="true"]')).toHaveCount(1);
-    await expect.poll(() => rail.evaluate((el) => el.scrollLeft)).toBe(0);
+    await expect.poll(() => rail.evaluate((el) => {
+        const railRect = el.getBoundingClientRect();
+        const lastRect = el.querySelector('button:last-child').getBoundingClientRect();
+        return lastRect.right <= railRect.right + 1 && lastRect.left >= railRect.left - 1;
+      })).toBe(true);
   }
 });
 
 
-test('switching delivery categories scrolls content below the sticky topbar without moving the bottom rail', async ({ page }, testInfo) => {
+test('switching delivery categories scrolls content below the sticky topbar without moving the floating rail', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
@@ -795,6 +844,7 @@ test('switching delivery categories scrolls content below the sticky topbar with
       scrollY: window.scrollY,
       railTop: rail.top,
       railBottom: rail.bottom,
+      railBottomGap: window.innerHeight - rail.bottom,
       contentTop: content.getBoundingClientRect().top,
       viewportTop: topbar.bottom + 12,
     };
@@ -805,7 +855,7 @@ test('switching delivery categories scrolls content below the sticky topbar with
   });
 
   expect(Math.abs(after.railTop - before.railTop)).toBeLessThanOrEqual(1);
-  expect(after.railBottom).toBe(844);
+  expect(after.railBottomGap).toBe(10);
   expect(Math.abs(after.contentTop - after.viewportTop),
     'selected delivery content starts below the sticky topbar + 12px').toBeLessThanOrEqual(3);
 });
@@ -1586,7 +1636,7 @@ test('ticker always moves, fills wide viewports seamlessly, and toggles pause wi
 });
 
 
-test('mobile rail keeps its fixed bottom position after reload at a scrolled position', async ({ page }) => {
+test('mobile rail keeps its detached floating position after reload at a scrolled position', async ({ page }) => {
   for (const brand of CASES) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
@@ -1598,9 +1648,9 @@ test('mobile rail keeps its fixed bottom position after reload at a scrolled pos
       .toBeGreaterThan(100);
     await expect.poll(() => rail.evaluate(el => ({
       position: getComputedStyle(el).position,
-      bottom: el.getBoundingClientRect().bottom,
+      bottomGap: window.innerHeight - el.getBoundingClientRect().bottom,
       pinned: el.classList.contains('rail-is-pinned'),
-    })), { timeout: 5000 }).toEqual({ position: 'fixed', bottom: 844, pinned: false });
+    })), { timeout: 5000 }).toEqual({ position: 'fixed', bottomGap: 10, pinned: false });
     await page.reload({ waitUntil: 'load' });
     await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 })
       .toBeGreaterThan(100);
@@ -1612,7 +1662,7 @@ test('mobile rail keeps its fixed bottom position after reload at a scrolled pos
   }
 });
 
-test('manual category change returns new content below the sticky topbar while bottom rail stays fixed', async ({ page }) => {
+test('manual category change returns new content below the sticky topbar while floating rail stays fixed', async ({ page }) => {
   for (const brand of CASES) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
@@ -1652,18 +1702,19 @@ test('manual category change returns new content below the sticky topbar while b
         viewportTop: topbarRect.bottom + 12,
         railTop: railRect.top,
         railBottom: railRect.bottom,
+        railBottomGap: window.innerHeight - railRect.bottom,
         scrollY: window.scrollY,
       };
     }, { contentSelector, railSelector: brand.rail });
     expect(Math.abs(geometry.contentTop - geometry.viewportTop),
       brand.brand + ' new content starts below the sticky topbar + 12px').toBeLessThanOrEqual(3);
-    expect(geometry.railBottom).toBe(844);
+    expect(geometry.railBottomGap).toBe(10);
     expect(geometry.scrollY, brand.brand + ' category selection leaves the previous deep scroll position')
       .toBeLessThan(600);
   }
 });
 
-test('late font hydration does not change the fixed bottom rail after manual category change', async ({ page }) => {
+test('late font hydration does not move the floating rail after manual category change', async ({ page }) => {
   for (const brand of CASES) {
     let releaseFonts;
     let fontRequestSeen = false;
@@ -1698,12 +1749,12 @@ test('late font hydration does not change the fixed bottom rail after manual cat
       position: getComputedStyle(el).position,
       bottom: el.getBoundingClientRect().bottom,
       pinned: el.classList.contains('rail-is-pinned'),
-    }))).toEqual({ position: 'fixed', bottom: 844, pinned: false });
+    }))).toEqual({ position: 'fixed', bottomGap: 10, pinned: false });
     await page.unroute(fontRoute);
   }
 });
 
-test('switching brands exposes only the active fixed bottom rail in both directions', async ({ page }, testInfo) => {
+test('switching brands exposes only the active floating rail in both directions', async ({ page }, testInfo) => {
   for (const [fromBrand, toBrand] of [['delivery', 'coffee'], ['coffee', 'delivery']]) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
@@ -2220,9 +2271,8 @@ test('mobile category labels stay on one line and fully inside their tabs for bo
         label.insideTab
       ), brand.brand + ' category labels must remain readable, single-line and fully visible at ' +
         viewport.width + 'x' + viewport.height + ': ' + JSON.stringify(labels)).toBe(true);
-      expect(Math.max(...labels.map((label) => label.buttonWidth)) -
-        Math.min(...labels.map((label) => label.buttonWidth)),
-      brand.brand + ' category tabs must have equal widths').toBeLessThanOrEqual(1);
+      expect(Math.min(...labels.map((label) => label.buttonWidth)),
+        brand.brand + ' category tabs retain a 60px minimum target width').toBeGreaterThanOrEqual(60);
       if (brand.brand === 'delivery') {
         const sauces = labels.find((label) => label.accessibleName === 'Допы и соусы');
         expect(sauces?.label, 'delivery sauces category uses a compact visible label').toBe('Добавки');
@@ -2254,22 +2304,21 @@ test('mobile menu header and category rail use compact vertical geometry', async
         const search = head.querySelector('.mh-right > .search');
         const active = rail.querySelector('button.on');
         const label = active?.querySelector('.category-label');
-        const indicator = active && getComputedStyle(active, '::after');
+        const activeStyle = active && getComputedStyle(active);
         const rect = (element) => {
           const box = element.getBoundingClientRect();
           return { top: box.top, bottom: box.bottom, height: box.height };
         };
         const labelRect = rect(label);
         const railRect = rect(rail);
-        const indicatorHeight = Number.parseFloat(indicator?.height || '0');
-        const indicatorBottom = Number.parseFloat(indicator?.bottom || '0');
         return {
           head: rect(head),
           heading: rect(heading),
           search: rect(search),
           titleSearchGap: rect(search).top - rect(heading).bottom,
           rail: railRect,
-          labelToIndicatorGap: railRect.bottom - indicatorBottom - indicatorHeight - labelRect.bottom,
+          activeBackground: activeStyle?.backgroundColor ?? 'rgba(0, 0, 0, 0)',
+          buttonRadius: activeStyle?.borderTopLeftRadius ?? '0px',
           buttonHeight: active?.getBoundingClientRect().height ?? 0,
         };
       }, { headSelector: brand.head, railSelector: brand.rail });
@@ -2278,7 +2327,8 @@ test('mobile menu header and category rail use compact vertical geometry', async
       expect(geometry.titleSearchGap, 'search should sit close below the menu title').toBeLessThanOrEqual(14);
       expect(geometry.rail.height, 'category rail should use compact 56px height').toBe(56);
       expect(geometry.buttonHeight, 'compact rail must preserve a comfortable touch target').toBeGreaterThanOrEqual(44);
-      expect(geometry.labelToIndicatorGap, 'active indicator should sit closer to the category label').toBeLessThanOrEqual(9);
+      expect(geometry.activeBackground, 'selected category is indicated by a filled tab').not.toBe('rgba(0, 0, 0, 0)');
+      expect(geometry.buttonRadius, 'selected category uses a compact pill treatment').toBe('20px');
       await testInfo.attach(`compact-menu-${brand.brand}-${viewport.width}px`, {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
