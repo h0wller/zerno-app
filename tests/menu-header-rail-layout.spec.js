@@ -433,11 +433,11 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
 
       expect(geometry.parentIsView, brand.brand + ' rail stays below the search in its menu view').toBe(true);
       expect(geometry.direction, brand.brand + ' categories form one horizontal row').toBe('row');
-      expect(Math.abs(geometry.railLeft - geometry.gridLeft), brand.brand + ' rail background starts at the catalog edge').toBeLessThanOrEqual(1);
-      expect(Math.abs(geometry.railRight - geometry.gridRight), brand.brand + ' rail background ends at the catalog edge').toBeLessThanOrEqual(1);
-      expect(Math.abs(geometry.railWidth - geometry.gridWidth), brand.brand + ' rail background matches the current card-grid width, not the viewport').toBeLessThanOrEqual(1);
-      expect(geometry.railTop, brand.brand + ' categories follow the search block').toBeGreaterThan(geometry.headBottom);
-      expect(geometry.railHeight, brand.brand + ' mobile rail uses the compact 56px height').toBe(56);
+      expect(Math.abs(geometry.railLeft), brand.brand + ' fixed rail starts at the viewport edge').toBeLessThanOrEqual(1);
+      expect(Math.abs(geometry.railRight - geometry.viewportWidth), brand.brand + ' fixed rail ends at the viewport edge').toBeLessThanOrEqual(1);
+      expect(geometry.railWidth, brand.brand + ' fixed rail spans the viewport').toBeCloseTo(geometry.viewportWidth, 0);
+      expect(Math.abs(geometry.railBottom - window.innerHeight), brand.brand + ' fixed rail stays at the viewport bottom').toBeLessThanOrEqual(1);
+      expect(geometry.railHeight, brand.brand + ' mobile rail reserves content plus safe-area').toBeGreaterThanOrEqual(56);
       expect(geometry.railRadius, brand.brand + ' rail uses one rounded surface').toBe('16px');
       expect(geometry.railOverflow, brand.brand + ' rail background is clipped to its rounded surface').toBe('hidden');
       expect(geometry.background, brand.brand + ' uses its own category surface').not.toBe('rgba(0, 0, 0, 0)');
@@ -835,6 +835,7 @@ test('category navigation keeps secondary delivery filters separate from primary
 
   const rail = page.locator('#deliveryRail');
   const filters = page.locator('#deliverySubFilter .subchip').first();
+  const menuHead = page.locator('#deliveryView .menu-head');
   await expect(rail).toBeVisible({ timeout: 10000 });
   await expect(filters).toBeVisible({ timeout: 15000 });
   await expect(rail.locator('button')).toHaveCount(5);
@@ -842,11 +843,14 @@ test('category navigation keeps secondary delivery filters separate from primary
   expect(filterPillRadius).toContain('999');
   await expect(filters).toHaveCSS('min-height', '44px');
 
-  const [railRect, filterRect] = await Promise.all([
+  const [railRect, filterRect, headRect] = await Promise.all([
     rail.boundingBox(),
     filters.boundingBox(),
+    menuHead.boundingBox(),
   ]);
-  expect(railRect && filterRect && filterRect.y).toBeGreaterThan(railRect.y + railRect.height - 1);
+  expect(railRect && filterRect && headRect).not.toBeNull();
+  expect(filterRect.y).toBeGreaterThan(headRect.y + headRect.height - 1);
+  expect(filterRect.y + filterRect.height).toBeLessThanOrEqual(railRect.y);
 });
 
 
@@ -1601,7 +1605,7 @@ test('manual category change returns new content below the sticky topbar while b
     await expect(rail).toHaveCSS('position', 'fixed');
     await expect(rail).not.toHaveClass(/rail-is-pinned/);
 
-    const nextCategory = rail.locator('button:not(.on)').first();
+    const nextCategory = rail.locator('button').nth(1);
     await expect(nextCategory).toBeVisible();
     const categoryAttribute = brand.brand === 'delivery' ? 'data-dcat' : 'data-cat';
     const selectedCategory = await nextCategory.getAttribute(categoryAttribute);
@@ -1643,7 +1647,7 @@ test('late font hydration does not change the fixed bottom rail after manual cat
     let releaseFonts;
     let fontRequestSeen = false;
     const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
-    const fontRoute = /golos-text-400\\.woff2(?:\\?.*)?$/;
+    const fontRoute = /golos-text-400\.woff2(?:\?.*)?$/;
 
     await page.route(fontRoute, async route => {
       fontRequestSeen = true;
@@ -1699,10 +1703,10 @@ test('switching brands exposes only the active fixed bottom rail in both directi
     await expect(oldRail).toBeHidden();
     await expect(nextRail).toHaveCSS('position', 'fixed');
     await expect(nextRail).not.toHaveClass(/rail-is-pinned/);
-    const activeCategory = nextRail.locator('button:not(.on)').first();
+    const activeCategory = nextRail.locator('button').nth(1);
     await expect(activeCategory).toBeVisible();
     await activeCategory.click();
-    await expect(activeCategory).toHaveClass(/on/);
+    await expect(activeCategory).toHaveAttribute('aria-pressed', 'true');
     await expect(oldRail).toBeHidden();
 
     const previousRailState = await oldRail.evaluate(el => ({
@@ -2135,7 +2139,7 @@ test('coffee category switch scrolls the new catalog column into view smoothly b
   await expect.poll(() => page.evaluate(() => window.__coffeeScrollEvidence?.cardCount ?? -1))
     .toBeGreaterThan(0);
   expect(await page.evaluate(() => window.__coffeeScrollEvidence.argumentCount)).toBe(3);
-  expect(await page.evaluate(() => window.__coffeeScrollEvidence.preservePinned)).toBe(true);
+  expect(await page.evaluate(() => window.__coffeeScrollEvidence.preservePinned)).toBe(false);
   await expect.poll(() => page.evaluate(() => {
     const topbar = document.querySelector('header.topbar');
     const grid = document.querySelector('#grid');
