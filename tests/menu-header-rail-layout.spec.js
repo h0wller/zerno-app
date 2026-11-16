@@ -1669,7 +1669,7 @@ test('late font hydration must not release a mobile rail after manual category c
     let releaseFonts;
     let fontRequestSeen = false;
     const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
-    const fontRoute = /golos-text-400\\.woff2(?:\\?.*)?$/;
+    const fontRoute = /golos-text-400\.woff2(?:\?.*)?$/;
 
     // Hold the app's real preloaded font before first paint; release it only
     // after the user changes category while the rail is pinned.
