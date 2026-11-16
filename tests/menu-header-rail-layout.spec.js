@@ -1572,8 +1572,9 @@ test('manual category change returns the new catalog content to the top while ke
 
     const nextCategory = rail.locator('button:not(.on)').first();
     await expect(nextCategory).toBeVisible();
+    const selectedCategory = await nextCategory.getAttribute('data-cat');
     await nextCategory.click();
-    await expect(nextCategory).toHaveClass(/on/);
+    await expect(rail.locator('button.on')).toHaveAttribute('data-cat', selectedCategory);
 
     const contentSelector = brand.brand === 'delivery'
       ? '#deliverySubFilterViewport:not([hidden]), #deliveryGrid'
@@ -1624,8 +1625,9 @@ test('late font hydration must not release a mobile rail after manual category c
     ), { timeout: 5000 }).toBe(true);
 
     const nextCategory = rail.locator('button:not(.on)').first();
+    const selectedCategory = await nextCategory.getAttribute('data-cat');
     await nextCategory.click();
-    await expect(nextCategory).toHaveClass(/on/);
+    await expect(rail.locator('button.on')).toHaveAttribute('data-cat', selectedCategory);
     await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe('loading');
 
     releaseFonts();
