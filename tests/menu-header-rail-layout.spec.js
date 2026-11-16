@@ -1894,7 +1894,7 @@ test('rail active background diagnostic and four brand viewport captures', async
 
 import { test, expect } from '@playwright/test';
 
-test('coffee brand switcher exposes a selected state and intrinsic mobile button width', async ({ page }) => {
+test('coffee brand switcher exposes a selected state and intrinsic mobile button width', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
@@ -1904,6 +1904,12 @@ test('coffee brand switcher exposes a selected state and intrinsic mobile button
   await expect(coffeeButton).toBeVisible();
   await coffeeButton.click();
   await expect(coffeeButton).toHaveClass(/on/);
+  await page.locator('#venueToggle').click();
+  await expect(coffeeButton).toBeVisible();
+  await testInfo.attach('coffee-brand-switcher-selected-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
 
   const state = await coffeeButton.evaluate(button => {
     const style = getComputedStyle(button);
