@@ -143,6 +143,7 @@
     width: min(228px, calc(100vw - 24px));
     min-width: 0;
     max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 72px);
     padding: 7px;
     overflow: hidden;
     border: 1px solid rgba(18, 58, 107, 0.12);
