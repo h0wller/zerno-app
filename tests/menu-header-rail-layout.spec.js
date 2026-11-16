@@ -874,12 +874,39 @@ test('switching delivery categories scrolls content below the sticky topbar with
       viewportTop: topbar.bottom + 12,
     };
   });
+  await expect.poll(() => page.evaluate(() => {
+    const topbar = document.querySelector('header.topbar');
+    const subfilters = document.querySelector('#deliverySubFilterViewport');
+    const visible = !!subfilters && !subfilters.hidden &&
+      getComputedStyle(subfilters).display !== 'none' &&
+      subfilters.getBoundingClientRect().height > 0;
+    const content = visible ? subfilters : document.querySelector('#deliveryGrid');
+    return content && topbar
+      ? Math.abs(content.getBoundingClientRect().top - topbar.getBoundingClientRect().bottom - 12)
+      : Infinity;
+  }), { timeout: 8000 }).toBeLessThanOrEqual(3);
+
+  const settledAfter = await page.evaluate(() => {
+    const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
+    const topbar = document.querySelector('header.topbar').getBoundingClientRect();
+    const subfilters = document.querySelector('#deliverySubFilterViewport');
+    const visible = !!subfilters && !subfilters.hidden &&
+      getComputedStyle(subfilters).display !== 'none' &&
+      subfilters.getBoundingClientRect().height > 0;
+    const content = visible ? subfilters : document.querySelector('#deliveryGrid');
+    return {
+      railTop: rail.top,
+      railBottomGap: window.innerHeight - rail.bottom,
+      contentTop: content.getBoundingClientRect().top,
+      viewportTop: topbar.bottom + 12,
+    };
+  });
   await testInfo.attach('delivery-category-switch-after', {
     body: await page.screenshot({ animations: 'disabled' }),
     contentType: 'image/png',
   });
 
-  expect(Math.abs(after.railTop - before.railTop)).toBeLessThanOrEqual(1);
+  expect(Math.abs(settledAfter.railTop - before.railTop)).toBeLessThanOrEqual(1);
   expect(after.railBottomGap).toBe(10);
   expect(Math.abs(after.contentTop - after.viewportTop),
     'selected delivery content starts below the sticky topbar + 12px').toBeLessThanOrEqual(3);
