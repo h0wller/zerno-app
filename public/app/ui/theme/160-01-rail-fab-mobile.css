@@ -801,3 +801,28 @@ html body #authModal.tg-mode .mhint{
 #checkoutStreet.field-error{ animation: none; transition: none; }
 }
 
+
+/* Floating controls share the bottom-rail lane on mobile and short landscape. */
+@media (max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  .cartFab {
+    bottom: calc(var(--rail-total-h) + 12px);
+  }
+
+  body.cart-open #cartFab {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  html body #mbonusBtn {
+    bottom: calc(var(--rail-total-h) + 12px);
+  }
+
+  html body #scrollTopBtn {
+    bottom: calc(var(--rail-total-h) + 12px) !important;
+  }
+
+  html body #scanFab,
+  html body .fab-scan {
+    bottom: calc(var(--rail-total-h) + 12px) !important;
+  }
+}
