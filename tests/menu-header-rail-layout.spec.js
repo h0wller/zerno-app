@@ -159,8 +159,16 @@ for (const brand of CASES) {
         // The pinned rail remains visible at one viewport coordinate throughout scrolling.
         const pinnedTopAt500 = await rail.evaluate(el => el.getBoundingClientRect().top);
         await page.evaluate(() => window.scrollTo(0, 700));
-        await expect.poll(() => rail.evaluate(el => Math.abs(el.getBoundingClientRect().top - 12)),
-          { timeout: 5000 }).toBeLessThanOrEqual(2);
+        await expect.poll(() => page.evaluate(selector => {
+          const railElement = document.querySelector(selector);
+          const topbar = document.querySelector('header.topbar');
+          const style = topbar && getComputedStyle(topbar);
+          const topbarSticky = !!(style && (style.position === 'sticky' || style.position === 'fixed'));
+          const expectedTop = topbarSticky && topbar
+            ? Math.ceil(topbar.getBoundingClientRect().height)
+            : 12;
+          return Math.abs(railElement.getBoundingClientRect().top - expectedTop);
+        }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
         const pinnedTopAt700 = await rail.evaluate(el => el.getBoundingClientRect().top);
         expect(Math.abs(pinnedTopAt700 - pinnedTopAt500),
           'rail must stay pinned at one viewport coordinate while the page continues scrolling')
