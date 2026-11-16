@@ -113,7 +113,6 @@ var rules = [
  '[data-brand="delivery"] #cartFab,[data-brand="delivery"] .chat-fab{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc)}',
  '[data-brand="delivery"] #cartPanel,[data-brand="delivery"] .cartPanel{background:var(--fr-rice);border:3px solid var(--fr-choc);border-bottom:none}',
  '[data-brand="delivery"] .cartPanel .cartItem{color:#3A2A1C;font-weight:600}',
-  '[data-brand="delivery"] #scrollTopBtn{background:var(--fr-paper,#F6EEE1);border:1.5px solid #3a2a1c}',
  /* База .desc (clamp 2 строки + резерв высоты) и прижатие футера/кнопки к низу живут в theme/20-cards.css — дубли здесь запрещены (css-architecture: «один селектор — одно место»). */
  '[data-brand="delivery"] .chatHead .op{background:#F6EEE1;border:0;display:flex;align-items:center;justify-content:center;font-size:20px}',
  '[data-brand="delivery"] .chat-fab::before{border-color:#C03B2A}',
@@ -439,12 +438,6 @@ function sv() {
     window.applyBrandChrome();
   }
 
-  // Обновление кнопки скролла через bus с безопасным фолбэком
-  if (window.ztBus) {
-    window.ztBus.emit('ui:update-scrolltop');
-  } else if (typeof window.updateScrollTop === 'function') {
-    window.updateScrollTop();
-  }
 }
 
 window.sv = sv;

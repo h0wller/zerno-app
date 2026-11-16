@@ -34,7 +34,7 @@ import './core/push.js';
 import './ui/styles.js';
 import './ui/settings.js';
 import './ui/cashier-card.js';
-import './ui/scrolltop.js';
+import './ui/category-rail.js';
 import './chat.js';
 import './chat-core.js';
 import './core/nutrition.js';
