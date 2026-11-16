@@ -125,6 +125,12 @@
     letter-spacing: -0.35px;
   }
 
+  @media (max-width: 340px) {
+    html body .wrap #menuView #rail .category-label {
+      display: none;
+    }
+  }
+
   html body .wrap #menuView #rail .re,
   html body .wrap #deliveryView #deliveryRail .re {
     display: grid;
