@@ -2287,6 +2287,7 @@ test('mobile menu header and category rail use compact vertical geometry', async
 });
 
 
+// Mirrors the guest 90px menu-card and 74px two-row toolbar reservation in index.html.
 test('mobile guest menu panel keeps its lower inset while compacting the title-to-search gap', async ({ page }, testInfo) => {
   for (const brand of CASES) {
     for (const viewport of [
