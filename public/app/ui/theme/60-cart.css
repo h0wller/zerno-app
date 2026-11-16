@@ -7,7 +7,7 @@
   flex-direction: column;
   overflow: hidden;
   box-shadow: var(--shadow-sheet);
-  transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+  transition: transform var(--motion-duration-spatial) var(--motion-ease-spatial);
   box-sizing: border-box;
 }
 
@@ -877,5 +877,12 @@ html.tg-native-main body #cartPanel .csl-row.discount .csl-explain {
 
   .cph-title-wrap h3 {
     font-size: 19px;
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .cartPanel {
+    transition: none;
   }
 }
