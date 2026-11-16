@@ -206,6 +206,30 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
   expect(geometry.hit.every(Boolean),
     'the complete cart FAB hit area must resolve to the FAB').toBe(true);
   expect(geometry.text).toMatch(/\d/);
+  await testInfo.attach('delivery-cart-long-total-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
+
+  await fab.click();
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+  await expect(rail).toHaveCSS('visibility', 'hidden');
+  await expect(rail).toHaveCSS('pointer-events', 'none');
+  await expect(fab).toHaveCSS('visibility', 'hidden');
+  await expect(fab).toHaveCSS('pointer-events', 'none');
+  await testInfo.attach('delivery-address-suggestions-sheet-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
+  await page.keyboard.press('Tab');
+  const focusIsOutsideBottomControls = await page.evaluate(() => {
+    const active = document.activeElement;
+    return !active || !active.closest('#deliveryRail, #cartFab');
+  });
+  expect(focusIsOutsideBottomControls).toBe(true);
+  await page.locator('#cartClose').click();
+  await expect(page.locator('#cartPanel')).not.toHaveClass(/open/);
+  await expect.poll(() => rail.evaluate(element => getComputedStyle(element).visibility)).toBe('visible');
 });
 
 
