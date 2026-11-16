@@ -146,7 +146,6 @@
     max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 72px);
     padding: 7px;
     overflow: hidden;
-    border: 1px solid rgba(18, 58, 107, 0.12);
     border-radius: 16px;
     background: var(--venue-menu-bg, #FFFFFF);
     border: var(--venue-menu-border, 1px solid rgba(18, 58, 107, 0.12));
