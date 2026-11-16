@@ -351,7 +351,14 @@ test('bottom rail leaves the last card CTA scrollable and keeps empty-cart reser
       return {
         padding: parseFloat(style.paddingBottom),
         railSurfaceHeight: rail.getBoundingClientRect().height,
-        railTotal: parseFloat(root.getPropertyValue('--rail-total-h')),
+        railTotal: (() => {
+          const probe = document.createElement('div');
+          probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+          document.body.appendChild(probe);
+          const value = probe.getBoundingClientRect().height;
+          probe.remove();
+          return value;
+        })(),
         railTotalVariable: root.getPropertyValue('--rail-total-h').trim(),
         inlinePaddingBottom: element.style.paddingBottom,
         matchedRules,
