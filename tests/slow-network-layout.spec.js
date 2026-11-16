@@ -289,7 +289,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.option.height).toBe(before.option.height);
     expect(after.heading.width).toBeGreaterThan(60);
     expect(after.menuHead).toEqual(before.menuHead);
-    expect(after.menuHead.height).toBe(100);
+    // Guest mobile menu panel is intentionally compact at 90px; inner search clearance is covered in menu-header-rail-layout.spec.js.
+    expect(after.menuHead.height).toBe(90);
     expect(after.menuHeadStyle.overflow).not.toBe('hidden');
     expect(after.search.height).toBe(40);
     expect(after.subchipHeight).toBe(44);
