@@ -252,6 +252,7 @@ test('bottom rail leaves the last card CTA scrollable and keeps empty-cart reser
       padding: parseFloat(getComputedStyle(element).paddingBottom),
       railTotal: document.querySelector(railSelector).getBoundingClientRect().height,
     }), railSelector);
+    expect(emptyReserve.padding).toBeGreaterThanOrEqual(emptyReserve.railTotal + 15);
     expect(emptyReserve.padding).toBeLessThanOrEqual(emptyReserve.railTotal + 17);
 
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
