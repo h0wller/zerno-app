@@ -1667,11 +1667,9 @@ test('manual category change returns the new catalog content to the top while ke
 test('late font hydration must not release a mobile rail after manual category change', async ({ page }) => {
   for (const brand of CASES) {
     let releaseFonts;
+    let fontRequestSeen = false;
     const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
-    await page.route(/\.(woff2?|ttf|otf)(\?.*)?$/i, async route => {
-      await fontsHeld;
-      await route.abort();
-    });
+    const fontRoute = '**/app/ui/fonts/golos-text-400.woff2';
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
@@ -1684,22 +1682,73 @@ test('late font hydration must not release a mobile rail after manual category c
       getComputedStyle(el).position === 'fixed' && el.classList.contains('rail-is-pinned')
     ), { timeout: 5000 }).toBe(true);
 
+    // Start a real, deliberately delayed FontFace request after the rail is pinned.
+    await page.route(fontRoute, async route => {
+      fontRequestSeen = true;
+      await fontsHeld;
+      await route.continue();
+    });
+    await page.evaluate(() => {
+      const face = new FontFace('LateRailFont', 'url("/app/ui/fonts/golos-text-400.woff2")');
+      document.fonts.add(face);
+      window.__lateRailFontReady = face.load();
+    });
+    await expect.poll(() => fontRequestSeen).toBe(true);
+    await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe('loading');
+
     const nextCategory = rail.locator('button:not(.on)').first();
     const categoryAttribute = brand.brand === 'delivery' ? 'data-dcat' : 'data-cat';
     const selectedCategory = await nextCategory.getAttribute(categoryAttribute);
     await nextCategory.click();
     await expect(rail.locator('button.on')).toHaveAttribute(categoryAttribute, selectedCategory);
-    await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe('loading');
 
     releaseFonts();
+    await page.evaluate(() => window.__lateRailFontReady);
     await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(300);
-
     await expect.poll(() => rail.evaluate(el => ({
       position: getComputedStyle(el).position,
       pinned: el.classList.contains('rail-is-pinned'),
     }))).toEqual({ position: 'fixed', pinned: true });
-    await page.unroute(/\.(woff2?|ttf|otf)(\?.*)?$/i);
+    await page.unroute(fontRoute);
+  }
+});
+
+
+test('switching brands clears the previous mobile rail pin and spacer in both directions', async ({ page }, testInfo) => {
+  for (const [fromBrand, toBrand] of [['delivery', 'coffee'], ['coffee', 'delivery']]) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + fromBrand, { waitUntil: 'domcontentloaded' });
+
+    const oldRailSelector = fromBrand === 'delivery' ? '#deliveryRail' : '#rail';
+    const nextRailSelector = toBrand === 'delivery' ? '#deliveryRail' : '#rail';
+    const oldRail = page.locator(oldRailSelector);
+    await expect(oldRail).toBeVisible({ timeout: 10000 });
+    await page.evaluate(() => window.scrollTo(0, 700));
+    await expect.poll(() => oldRail.evaluate(el =>
+      getComputedStyle(el).position === 'fixed' && el.classList.contains('rail-is-pinned')
+    ), { timeout: 5000 }).toBe(true);
+
+    await page.locator('#venueToggle').click();
+    await page.locator('#brandSeg button[data-brand="' + toBrand + '"]').click();
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.brand)).toBe(toBrand);
+    await expect(page.locator(nextRailSelector)).toBeVisible({ timeout: 10000 });
+
+    const previousRailState = await oldRail.evaluate(el => ({
+      pinned: el.classList.contains('rail-is-pinned'),
+      position: getComputedStyle(el).position,
+      spacerCount: document.querySelectorAll('.rail-pin-spacer').length,
+      inlinePosition: el.style.position,
+    }));
+    expect(previousRailState.pinned, fromBrand + ' old rail must be unpinned after switching to ' + toBrand).toBe(false);
+    expect(previousRailState.position, fromBrand + ' old rail must return to normal flow').not.toBe('fixed');
+    expect(previousRailState.inlinePosition).not.toBe('fixed');
+    expect(previousRailState.spacerCount, 'brand switch must remove the previous rail placeholder').toBe(0);
+
+    await testInfo.attach('brand-switch-' + fromBrand + '-to-' + toBrand + '-390x844', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
   }
 });
 
@@ -1893,7 +1942,7 @@ test('rail active background diagnostic and four brand viewport captures', async
 
 
 
-test('mobile venue switcher panel fits viewport and uses compact full-width rows', async ({ page }) => {
+test('mobile venue switcher panel fits viewport and keeps compact option rows', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
@@ -1902,15 +1951,18 @@ test('mobile venue switcher panel fits viewport and uses compact full-width rows
   await expect(panel).toBeVisible();
   const geometry = await panel.evaluate(el => {
     const rect = el.getBoundingClientRect();
-    const style = getComputedStyle(el);
     const buttons = Array.from(el.querySelectorAll('button')).map(button => {
       const r = button.getBoundingClientRect();
-      return { width: r.width, height: r.height, text: button.textContent.trim() };
+      const style = getComputedStyle(button);
+      return {
+        width: r.width, height: r.height, left: r.left, right: r.right,
+        alignSelf: style.alignSelf, text: button.textContent.trim()
+      };
     });
     return {
       left: rect.left, right: rect.right, width: rect.width,
       viewportWidth: document.documentElement.clientWidth,
-      position: style.position, top: rect.top, buttons,
+      position: getComputedStyle(el).position, top: rect.top, buttons,
       overflowWidth: document.documentElement.scrollWidth,
     };
   });
@@ -1918,8 +1970,10 @@ test('mobile venue switcher panel fits viewport and uses compact full-width rows
   expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth - 8);
   expect(geometry.width).toBeGreaterThanOrEqual(180);
   expect(geometry.buttons).toHaveLength(2);
-  expect(geometry.buttons.every(button => button.width >= geometry.width - 16)).toBe(true);
+  expect(geometry.buttons.every(button => button.width > 0 && button.width < geometry.width - 20)).toBe(true);
   expect(geometry.buttons.every(button => button.height >= 40)).toBe(true);
+  expect(geometry.buttons.every(button => button.alignSelf === 'flex-start')).toBe(true);
+  expect(geometry.buttons.every(button => button.left >= geometry.left + 6 && button.right <= geometry.right - 6)).toBe(true);
   expect(geometry.overflowWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
 });
 
