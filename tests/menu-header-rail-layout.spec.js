@@ -2189,16 +2189,14 @@ test('mobile category labels stay on one line and fully inside their tabs for bo
 
       const labels = await rail.evaluate((element) => {
         return Array.from(element.querySelectorAll('button')).map((button) => {
-          const labelNode = Array.from(button.childNodes).find((node) =>
-            node.nodeType === Node.TEXT_NODE && node.textContent.trim()
-          );
+          const label = button.querySelector('.category-label');
           const range = document.createRange();
-          if (labelNode) range.selectNodeContents(labelNode);
-          const rects = labelNode ? Array.from(range.getClientRects()) : [];
+          if (label) range.selectNodeContents(label);
+          const rects = label ? Array.from(range.getClientRects()) : [];
           const buttonRect = button.getBoundingClientRect();
           const labelRect = rects[0] || null;
           return {
-            label: labelNode?.textContent.trim() || '',
+            label: label?.textContent.trim() || '',
             lineCount: rects.length,
             whiteSpace: getComputedStyle(button).whiteSpace,
             insideTab: Boolean(labelRect) &&
