@@ -1285,7 +1285,7 @@ test('category rail uses one surface and viewport-appropriate selected treatment
         expect(parseFloat(styles.pseudo.width)).toBe(28);
         expect(parseFloat(styles.pseudo.height)).toBe(3);
         expect(styles.pseudo.radius).toBe('2px');
-        expect(Math.abs(styles.railHeight - styles.buttonHeight)).toBeLessThanOrEqual(0.5);
+        expect(styles.railHeight, 'desktop category sidebar contains its tab targets').toBeGreaterThan(styles.buttonHeight);
       }
       expect(styles.fontFamily).toMatch(/system-ui|sans-serif/);
       const rgb = styles.activeTextColor.match(/[0-9.]+/g).map(Number);
@@ -2344,6 +2344,10 @@ test('mobile menu header and category rail use compact vertical geometry', async
         sessionStorage.setItem('splashDone', '1');
       });
       await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => [...document.styleSheets].some(sheet => {
+        if (!sheet.href || !sheet.href.includes('/150-rail.css')) return false;
+        try { return sheet.cssRules.length > 0; } catch { return false; }
+      }));
 
       const geometry = await page.evaluate(({ headSelector, railSelector }) => {
         const head = document.querySelector(headSelector);
