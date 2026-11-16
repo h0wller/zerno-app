@@ -1618,7 +1618,7 @@ test('late font hydration must not release a mobile rail after manual category c
   for (const brand of CASES) {
     let releaseFonts;
     const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
-    await page.route(/\\.(woff2?|ttf|otf)(\\?.*)?$/i, async route => {
+    await page.route(/\.(woff2?|ttf|otf)(\?.*)?$/i, async route => {
       await fontsHeld;
       await route.abort();
     });
@@ -1648,7 +1648,7 @@ test('late font hydration must not release a mobile rail after manual category c
       position: getComputedStyle(el).position,
       pinned: el.classList.contains('rail-is-pinned'),
     }))).toEqual({ position: 'fixed', pinned: true });
-    await page.unroute(/\\.(woff2?|ttf|otf)(\\?.*)?$/i);
+    await page.unroute(/\.(woff2?|ttf|otf)(\?.*)?$/i);
   }
 });
 
@@ -1710,6 +1710,7 @@ test('active rail tabs keep their geometry on press and coffee uses its blue act
   await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
   const coffeeActive = page.locator('#rail button.on');
   await expect(coffeeActive).toBeVisible();
+  await page.addStyleTag({ content: '*, *::before, *::after { transition: none !important; animation: none !important; }' });
   const coffeeState = await coffeeActive.evaluate(button => ({
     buttonBackground: getComputedStyle(button).backgroundColor,
     iconBackground: getComputedStyle(button.querySelector('.re')).backgroundColor,
