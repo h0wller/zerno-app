@@ -261,15 +261,12 @@ function updateRailPinning() {
     ? railPinState.documentTop
     : rail.getBoundingClientRect().top + scrollY;
   var pinThreshold = documentTop - stickyTop;
-  var parent = railPinState && railPinState.rail === rail
-    ? railPinState.parent
-    : rail.parentElement;
-  var railHeight = rail.getBoundingClientRect().height;
-  var parentBottom = parent ? parent.getBoundingClientRect().bottom : Infinity;
   var hasReachedPinPoint = scrollY >= pinThreshold;
-  var hasReachedParentEnd = parentBottom <= stickyTop + railHeight;
 
-  if (!hasReachedPinPoint || hasReachedParentEnd) {
+  // Keep the rail pinned while the user scrolls through the catalog. The catalog
+  // height can change after a category switch; using its parent's bottom as an
+  // unpin condition releases the rail when a shorter category is rendered.
+  if (!hasReachedPinPoint) {
     clearRailPin(rail);
     return;
   }
