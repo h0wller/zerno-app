@@ -37,7 +37,8 @@ $('#rail').addEventListener('click', e => {
   cat = b.dataset.cat;
   window.renderRail();
   window.renderMenu();
-  if (categoryChanged && typeof window.scrollMenuContentToStart === 'function') {
+  if (categoryChanged && document.getElementById('rail')?.classList.contains('rail-is-pinned') &&
+      typeof window.scrollMenuContentToStart === 'function') {
     window.scrollMenuContentToStart('#grid', '#rail');
   }
 });
