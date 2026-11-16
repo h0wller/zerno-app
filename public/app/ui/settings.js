@@ -4,7 +4,7 @@
 
     const DELETE_ACCOUNT_LABEL = 'Удалить аккаунт';
     const SETTINGS_SECTION_START = '<section class="settings-section';
-    const SETTINGS_SECTION_END = SETTINGS_SECTION_END;
+    const SETTINGS_SECTION_END = '</section>';
 
     if (document.getElementById('settingsModal')) return;
 
