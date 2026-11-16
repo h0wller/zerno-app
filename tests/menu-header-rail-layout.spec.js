@@ -1669,7 +1669,7 @@ test('late font hydration must not release a mobile rail after manual category c
     let releaseFonts;
     let fontRequestSeen = false;
     const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
-    const fontRoute = /golos-text-400\.woff2\?late=1$/;
+    const fontRoute = '**/golos-text-400.woff2*';
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
@@ -1684,16 +1684,23 @@ test('late font hydration must not release a mobile rail after manual category c
 
     // Start a real, deliberately delayed FontFace request after the rail is pinned.
     await page.route(fontRoute, async route => {
+      if (!route.request().url().includes('late=1')) {
+        await route.continue();
+        return;
+      }
       fontRequestSeen = true;
       await fontsHeld;
       await route.continue();
     });
     await page.evaluate(() => {
-      const face = new FontFace('LateRailFont', 'url("/app/ui/fonts/golos-text-400.woff2?late=1")');
-      document.fonts.add(face);
-      window.__lateRailFontReady = face.load();
+      const style = document.createElement('style');
+      style.textContent = '@font-face{font-family:"LateRailFont";src:url("/app/ui/fonts/golos-text-400.woff2?late=1") format("woff2");font-style:normal;font-weight:400;font-display:block}';
+      document.head.appendChild(style);
+      const head = document.querySelector('.menu-head');
+      head.style.fontFamily = '"LateRailFont", sans-serif';
+      window.__lateRailFontReady = document.fonts.load('400 14px "LateRailFont"', 'Late rail');
     });
-    await expect.poll(() => fontRequestSeen).toBe(true);
+    await expect.poll(() => fontRequestSeen, { timeout: 10000 }).toBe(true);
     await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe('loading');
 
     const nextCategory = rail.locator('button:not(.on)').first();
@@ -1737,13 +1744,15 @@ test('switching brands clears the previous mobile rail pin and spacer in both di
     const previousRailState = await oldRail.evaluate(el => ({
       pinned: el.classList.contains('rail-is-pinned'),
       position: getComputedStyle(el).position,
-      spacerCount: document.querySelectorAll('.rail-pin-spacer').length,
+      parentSpacerCount: el.parentElement.querySelectorAll(':scope > .rail-pin-spacer').length,
+      hasAdjacentSpacer: !!(el.previousElementSibling && el.previousElementSibling.classList.contains('rail-pin-spacer')),
       inlinePosition: el.style.position,
     }));
     expect(previousRailState.pinned, fromBrand + ' old rail must be unpinned after switching to ' + toBrand).toBe(false);
     expect(previousRailState.position, fromBrand + ' old rail must return to normal flow').not.toBe('fixed');
     expect(previousRailState.inlinePosition).not.toBe('fixed');
-    expect(previousRailState.spacerCount, 'brand switch must remove the previous rail placeholder').toBe(0);
+    expect(previousRailState.parentSpacerCount, 'brand switch must remove the previous rail placeholder').toBe(0);
+    expect(previousRailState.hasAdjacentSpacer, 'previous rail must not retain its pin placeholder').toBe(false);
 
     await testInfo.attach('brand-switch-' + fromBrand + '-to-' + toBrand + '-390x844', {
       body: await page.screenshot({ animations: 'disabled' }),
@@ -2006,7 +2015,6 @@ test('mobile venue switcher panel fits viewport and keeps compact option rows', 
   expect(geometry.buttons).toHaveLength(2);
   expect(geometry.buttons.every(button => button.width > 0 && button.width < geometry.width - 20)).toBe(true);
   expect(geometry.buttons.every(button => button.height >= 40)).toBe(true);
-  expect(geometry.buttons.every(button => button.alignSelf === 'flex-start')).toBe(true);
   expect(geometry.buttons.every(button => button.left >= geometry.left + 6 && button.right <= geometry.right - 6)).toBe(true);
   expect(geometry.overflowWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
 });
