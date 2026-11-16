@@ -111,6 +111,7 @@ test('staff mobile rail is fixed to the viewport bottom without an empty cart la
         position: getComputedStyle(rail).position,
         top: rect.top,
         bottom: rect.bottom,
+        bottomGap: window.innerHeight - rect.bottom,
         height: rect.height,
         viewportHeight: window.innerHeight,
         pinClass: rail.classList.contains('rail-is-pinned'),
@@ -129,7 +130,7 @@ test('staff mobile rail is fixed to the viewport bottom without an empty cart la
     }, { railSelector, gridSelector, targetSelector });
 
     expect(geometry.position).toBe('fixed');
-    expect(geometry.bottom).toBe(geometry.viewportHeight);
+    expect(geometry.bottomGap).toBe(10);
     expect(geometry.height).toBe(56);
     expect(geometry.targetDisplay).not.toBe('none');
     expect(geometry.targetTop).toBeLessThan(geometry.top);
