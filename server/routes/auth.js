@@ -21,6 +21,10 @@ import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, SMS_AUTH_ENAB
 
 export const authRouter = express.Router();
 
+function respondWithCustomer(res, customerId) {
+  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(customerId)) });
+}
+
 function respondOtpSendBlock(res, reason) {
   if (!reason) return false;
   const error = reason === 'cooldown'
@@ -470,7 +474,7 @@ authRouter.get('/api/me', userGuard, (req, res) => res.json({ customer: cust(req
 authRouter.put('/api/me', userGuard, (req, res) => {
   const name = String(req.body.name || '').trim() || 'Гость';
   db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
-  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
+  respondWithCustomer(res, req.user.id);
 });
 
 // Удаление профиля клиента. Персональные данные стираются, заказы остаются без привязки
@@ -500,7 +504,7 @@ authRouter.delete('/api/me', userGuard, (req, res) => {
 authRouter.put('/api/me/notify', userGuard, (req, res) => {
   db.prepare('UPDATE customers SET notify_tg=?, notify_web=? WHERE id=?')
     .run(req.body.tg ? 1 : 0, req.body.web ? 1 : 0, req.user.id);
-  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
+  respondWithCustomer(res, req.user.id);
 });
 
 authRouter.post('/api/redeem', userGuard, (req, res) => {
