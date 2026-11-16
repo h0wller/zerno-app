@@ -8,7 +8,7 @@ import { linkTelegram } from '../domain/telegram-link.js';
 import { grantWelcome, redeem } from '../domain/loyalty.js';
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { hashPin, safeEqual } from '../utils/security.js';
-import { lockedSeconds, registerFail, clearLock, getOtpSendState, recordOtpSend } from '../utils/auth-rate-limits.js';
+import { lockedSeconds, registerFail, clearLock, getOtpSendState, getOtpSendBlockReason, recordOtpSend } from '../utils/auth-rate-limits.js';
 import { otpStore, isOtpLive, consumeOtp } from '../utils/otp.js';
 import { nowISO } from '../utils/id-time.js';
 import { sendSms } from '../services/sms.js';
@@ -153,11 +153,11 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
 
   const now = Date.now();
-  const sendState = getOtpSendState('register', p);
-  if (sendState && now - sendState.lastSent < 60000) {
+  const sendBlockReason = getOtpSendBlockReason(getOtpSendState('register', p), now);
+  if (sendBlockReason === 'cooldown') {
     return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
   }
-  if (sendState && now < sendState.windowEnds && sendState.sent >= 5) {
+  if (sendBlockReason === 'daily-limit') {
     return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
   }
 
@@ -367,11 +367,11 @@ authRouter.post('/api/auth/request-otp', async (req, res) => {
   if (ipWait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${ipWait} сек.` });
 
   const now = Date.now();
-  const sendState = getOtpSendState('login', p);
-  if (sendState && now - sendState.lastSent < 60000) {
+  const sendBlockReason = getOtpSendBlockReason(getOtpSendState('login', p), now);
+  if (sendBlockReason === 'cooldown') {
     return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
   }
-  if (sendState && now < sendState.windowEnds && sendState.sent >= 5) {
+  if (sendBlockReason === 'daily-limit') {
     return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
   }
 
