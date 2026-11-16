@@ -306,7 +306,7 @@ function renderDeliveryRail() {
 $('#deliveryRail').addEventListener('click', e => {
   const b = e.target.closest('[data-dcat]');
   if (b) {
-    if (b.dataset.dcat === dcat) {
+    if (b.classList.contains('on')) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
