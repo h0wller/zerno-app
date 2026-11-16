@@ -2285,3 +2285,66 @@ test('mobile menu header and category rail use compact vertical geometry', async
     }
   }
 });
+
+
+test('mobile guest menu panel keeps its lower inset while compacting the title-to-search gap', async ({ page }, testInfo) => {
+  for (const brand of CASES) {
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        sessionStorage.setItem('splashDone', '1');
+      });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const head = page.locator(brand.head);
+      const title = head.locator('h1');
+      const search = head.locator('.mh-right .search');
+      await expect(head).toBeVisible();
+      await expect(title).toHaveText('Меню');
+      await expect(search).toBeVisible();
+
+      const geometry = await head.evaluate((element) => {
+        const rect = (node) => {
+          const box = node.getBoundingClientRect();
+          return { top: box.top, bottom: box.bottom, height: box.height };
+        };
+        const title = element.querySelector('h1');
+        const search = element.querySelector('.mh-right .search');
+        const toolbar = element.querySelector('.mh-top');
+        const titleRow = toolbar?.firstElementChild;
+        const controls = element.querySelector('.menu-controls-row');
+        const style = getComputedStyle(element);
+        return {
+          panelHeight: rect(element).height,
+          panelPaddingBottom: Number.parseFloat(style.paddingBottom),
+          bottomClearance: rect(element).bottom - rect(search).bottom,
+          titleToSearchGap: rect(search).top - rect(title).bottom,
+          toolbarHeight: rect(toolbar).height,
+          titleRowHeight: rect(titleRow).height,
+          controlsHeight: rect(controls).height,
+          searchHeight: rect(search).height,
+        };
+      });
+
+      expect(geometry.panelHeight, 'outer menu panel height remains unchanged').toBeCloseTo(90, 0);
+      expect(geometry.panelPaddingBottom, 'existing panel bottom padding is preserved').toBeGreaterThanOrEqual(6);
+      expect(geometry.bottomClearance, 'search keeps a visible inset from the panel border').toBeGreaterThanOrEqual(6);
+      expect(geometry.titleToSearchGap, 'search sits closer to the Menu title').toBeLessThanOrEqual(9);
+      expect(geometry.toolbarHeight).toBe(74);
+      expect(geometry.titleRowHeight).toBe(28);
+      expect(geometry.controlsHeight).toBe(28);
+      expect(geometry.searchHeight).toBeGreaterThanOrEqual(40);
+
+      await testInfo.attach('menu-panel-spacing-' + brand.brand + '-' + viewport.width + 'px', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  }
+});
+

@@ -236,11 +236,22 @@ html[data-brand="delivery"] body #deliveryView #deliverySubFilterViewport {
   }
   /* Guest first-paint reservation; staff layout is owned by the staff-scoped rules below. */
   html:not([data-staff-role]) body :is(#menuView,#deliveryView) .menu-head .mh-top {
-    grid-template-rows:36px 44px !important;
-    height:84px !important;
-    min-height:84px !important;
-    max-height:84px !important;
+    grid-template-rows:28px 44px !important;
+    gap:2px !important;
+    height:74px !important;
+    min-height:74px !important;
+    max-height:74px !important;
     overflow:visible !important;
+  }
+  html:not([data-staff-role]) body :is(#menuView,#deliveryView) .menu-head .mh-top > div:first-child {
+    height:28px !important;
+    min-height:28px !important;
+    max-height:28px !important;
+  }
+  html:not([data-staff-role]) body .menu-head .menu-controls-row {
+    height:28px !important;
+    min-height:28px !important;
+    max-height:28px !important;
   }
   html:not([data-staff-role]) body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
     height:44px !important;
@@ -3726,14 +3737,14 @@ html body #tickerTrack .tickerGroup > span {
   html body #menuView .menu-head .mh-top {
     display: grid;
     grid-template-columns: minmax(0,1fr);
-    grid-template-rows: 32px 44px;
+    grid-template-rows: 28px 44px;
     gap: 2px;
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    height: 78px;
-    min-height: 78px;
-    max-height: 78px;
+    height: 74px;
+    min-height: 74px;
+    max-height: 74px;
     overflow: visible;
     box-sizing: border-box;
   }
@@ -3748,14 +3759,14 @@ html body #tickerTrack .tickerGroup > span {
   html body #deliveryView .menu-head .mh-top {
     display: grid;
     grid-template-columns: minmax(0,1fr);
-    grid-template-rows: 32px 44px;
+    grid-template-rows: 28px 44px;
     gap: 2px;
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    height: 78px;
-    min-height: 78px;
-    max-height: 78px;
+    height: 74px;
+    min-height: 74px;
+    max-height: 74px;
     overflow: visible;
     box-sizing: border-box;
   }
