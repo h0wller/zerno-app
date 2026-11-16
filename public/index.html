@@ -693,7 +693,7 @@ body > div.wrap,
   html[data-brand="delivery"] body > div.wrap { grid-template-columns:80px minmax(0,1fr); }
 }
 @media (min-width: 1481px) {
-  body > div.wrap, .wrap { max-width:2560px; margin-inline:auto; }
+  body > div.wrap, .wrap { width:100%; max-width:2560px; margin-inline:auto; box-sizing:border-box; }
 }
 @media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   html[data-brand] body > div.wrap {
