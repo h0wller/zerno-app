@@ -228,7 +228,6 @@ var stampIcon = i => i === 9 ? '☕' : BEAN;
     (function bindProfileControls() {
         var input = document.getElementById('nameInput');
         var edit = document.getElementById('nameEditBtn');
-        var gear = document.getElementById('profileSettingsBtn');
         var historyToggle = document.getElementById('historyToggleBtn');
         if (edit) edit.addEventListener('click', function () {
             if (!me || !input) return;
