@@ -1177,7 +1177,7 @@ test('delivery wrapper keeps full horizontal width when switching categories at 
 
 
 
-test('category rail uses one surface, an active icon chip and a separate underline', async ({ page }) => {
+test('category rail uses one surface and viewport-appropriate selected treatment', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
     for (const viewport of [
       { width: 390, height: 844 },
@@ -1191,6 +1191,7 @@ test('category rail uses one surface, an active icon chip and a separate underli
       await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
       await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
 
+      const horizontalRail = usesHorizontalRail(viewport);
       const rail = page.locator(brand === 'coffee' ? '#rail' : '#deliveryRail');
       await expect(rail).toBeVisible({ timeout: 10000 });
       await page.addStyleTag({ content: '*,:before,:after{transition:none!important;animation:none!important}' });
@@ -1246,21 +1247,32 @@ test('category rail uses one surface, an active icon chip and a separate underli
       if (viewport.width >= 821 && viewport.height > 480) {
         expect(styles.iconRect.width, brand + ' desktop icon chip must be 32px').toBe(32);
       }
-      expect(styles.iconBackground, brand + ' active icon must use its brand chip').not.toBe('rgba(0, 0, 0, 0)');
       expect(styles.iconRadius, brand + ' active icon shape must be brand-specific').toBe(brand === 'coffee' ? '50%' : '8px');
       expect(styles.inactiveIconBackground, brand + ' inactive icon must not have a chip').toBe('rgba(0, 0, 0, 0)');
       expect(styles.inactiveIconBorder, brand + ' inactive icon must not have a border').toBe('0px');
-      expect(styles.buttonBackground, brand + ' active tab must not have a filled surface').toBe('rgba(0, 0, 0, 0)');
       expect(styles.buttonBorder, brand + ' active tab must not have a frame').toBe('0px');
-      expect(styles.buttonBorderBottom, brand + ' active tab must use ::after, not border-bottom').toBe('0px');
-      expect(styles.buttonRadius, brand + ' active tab must not be a pill').toBe('0px');
+      expect(styles.buttonBorderBottom, brand + ' active tab must not use border-bottom').toBe('0px');
       expect(styles.inactiveBackground, brand + ' inactive tab must not have a fill').toBe('rgba(0, 0, 0, 0)');
       expect(styles.inactiveBorder, brand + ' inactive tab must not have a frame').toBe('0px');
-      expect(styles.pseudo.content).not.toBe('none');
-      expect(styles.pseudo.display).not.toBe('none');
-      expect(parseFloat(styles.pseudo.width)).toBe(28);
-      expect(parseFloat(styles.pseudo.height)).toBe(3);
-      expect(styles.pseudo.radius).toBe('2px');
+      if (horizontalRail) {
+        expect(styles.iconBackground, brand + ' selected icon does not duplicate the tab fill').toBe('rgba(0, 0, 0, 0)');
+        expect(styles.buttonBackground, brand + ' selected tab uses a filled state').not.toBe('rgba(0, 0, 0, 0)');
+        expect(styles.buttonRadius).toBe('20px');
+        expect(styles.pseudo.content).toBe('none');
+        expect(styles.pseudo.display).toBe('none');
+        expect(styles.railHeight).toBe(viewport.height <= 480 ? 48 : 56);
+        expect(styles.buttonHeight).toBe(44);
+      } else {
+        expect(styles.iconBackground, brand + ' desktop active icon keeps its brand chip').not.toBe('rgba(0, 0, 0, 0)');
+        expect(styles.buttonBackground, brand + ' desktop active tab stays unfilled').toBe('rgba(0, 0, 0, 0)');
+        expect(styles.buttonRadius).toBe('0px');
+        expect(styles.pseudo.content).not.toBe('none');
+        expect(styles.pseudo.display).not.toBe('none');
+        expect(parseFloat(styles.pseudo.width)).toBe(28);
+        expect(parseFloat(styles.pseudo.height)).toBe(3);
+        expect(styles.pseudo.radius).toBe('2px');
+        expect(Math.abs(styles.railHeight - styles.buttonHeight)).toBeLessThanOrEqual(0.5);
+      }
       expect(styles.fontFamily).toMatch(/system-ui|sans-serif/);
       const rgb = styles.activeTextColor.match(/[0-9.]+/g).map(Number);
       const luminance = rgb.slice(0, 3).map(value => {
@@ -1268,7 +1280,8 @@ test('category rail uses one surface, an active icon chip and a separate underli
         return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
       });
       const textLuminance = 0.2126 * luminance[0] + 0.7152 * luminance[1] + 0.0722 * luminance[2];
-      const bgRgb = styles.railBackground.match(/[0-9.]+/g).map(Number);
+      const contrastBackground = horizontalRail ? styles.buttonBackground : styles.railBackground;
+      const bgRgb = contrastBackground.match(/[0-9.]+/g).map(Number);
       const bgLum = bgRgb.slice(0, 3).map(value => {
         const channel = value / 255;
         return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
@@ -1276,10 +1289,7 @@ test('category rail uses one surface, an active icon chip and a separate underli
       const bgLuminance = 0.2126 * bgLum[0] + 0.7152 * bgLum[1] + 0.0722 * bgLum[2];
       const contrast = (Math.max(textLuminance, bgLuminance) + 0.05) / (Math.min(textLuminance, bgLuminance) + 0.05);
       expect(contrast, brand + ' active label must meet WCAG AA').toBeGreaterThanOrEqual(4.5);
-      expect(styles.fontSize).toBeGreaterThanOrEqual(brand === 'coffee' ? 10 : 10);
-      if (viewport.width <= 820 || viewport.height <= 480) {
-        expect(Math.abs(styles.railHeight - styles.buttonHeight)).toBeLessThanOrEqual(0.5);
-      }
+      expect(styles.fontSize).toBeGreaterThanOrEqual(10);
     }
   }
 });
@@ -1482,8 +1492,15 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
       });
       reports.push({brand:brand.brand,viewport,heldStylesheetRequests:heldRequests,firstFrame,hydrated,hydratedAfter200ms});
 
-      expect(Math.abs(hydrated.computed.rail.rect.height-hydrated.computed.button.rect.height),
-        `${brand.brand} ${viewport.name}: rail and button heights must match`).toBeLessThanOrEqual(0.5);
+      if (usesHorizontalRail(viewport)) {
+        expect(hydrated.computed.rail.rect.height,
+          `${brand.brand} ${viewport.name}: capsule surface height`).toBe(viewport.height <= 480 ? 48 : 56);
+        expect(hydrated.computed.button.rect.height,
+          `${brand.brand} ${viewport.name}: category hit target height`).toBe(44);
+      } else {
+        expect(Math.abs(hydrated.computed.rail.rect.height-hydrated.computed.button.rect.height),
+          `${brand.brand} ${viewport.name}: desktop rail and button heights match`).toBeLessThanOrEqual(0.5);
+      }
       expect(hydrated.computed.active.borderBottomWidth,
         `${brand.brand} ${viewport.name}: active tab must not use bottom border`).toBe('0px');
       expect(hydrated.iconTopSpread,
@@ -1494,10 +1511,16 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
       expect(hydrated.firstCardRect?.height, `${brand.brand} ${viewport.name}: first card rect must be measured`).toBeGreaterThan(0);
       expect(hydrated.computed.inactive.backgroundColor, `${brand.brand} ${viewport.name}: inactive button has no fill`).toBe('rgba(0, 0, 0, 0)');
       expect(hydrated.computed.inactiveIcon.backgroundColor, `${brand.brand} ${viewport.name}: inactive icon has no chip`).toBe('rgba(0, 0, 0, 0)');
-      expect(hydrated.activeAfter.content, `${brand.brand} ${viewport.name}: active underline exists`).not.toBe('none');
-      expect(hydrated.activeAfter.height, `${brand.brand} ${viewport.name}: active underline height`).toBe('3px');
-      expect(hydrated.activeAfter.width, `${brand.brand} ${viewport.name}: active underline width`).toBe('28px');
-      expect(hydrated.activeAfter.borderRadius, `${brand.brand} ${viewport.name}: active underline radius`).toBe('2px');
+      if (usesHorizontalRail(viewport)) {
+        expect(hydrated.activeAfter.content, `${brand.brand} ${viewport.name}: mobile selected state has no underline`).toBe('none');
+        expect(hydrated.computed.button.backgroundColor,
+          `${brand.brand} ${viewport.name}: selected category uses a filled tab`).not.toBe('rgba(0, 0, 0, 0)');
+      } else {
+        expect(hydrated.activeAfter.content, `${brand.brand} ${viewport.name}: desktop active underline exists`).not.toBe('none');
+        expect(hydrated.activeAfter.height, `${brand.brand} ${viewport.name}: desktop underline height`).toBe('3px');
+        expect(hydrated.activeAfter.width, `${brand.brand} ${viewport.name}: desktop underline width`).toBe('28px');
+        expect(hydrated.activeAfter.borderRadius, `${brand.brand} ${viewport.name}: desktop underline radius`).toBe('2px');
+      }
       expect(firstFrame.computed.button.fontFamily, `${brand.brand} ${viewport.name}: first-frame font fallback is generic`).toMatch(/system-ui|sans-serif/);
       expect(hydrated.computed.button.fontFamily, `${brand.brand} ${viewport.name}: hydrated font fallback is generic`).toMatch(/system-ui|sans-serif/);
       expect(hydrated.fonts.golosText, 'Golos Text font check').toBe(true);
