@@ -58,13 +58,26 @@
     font-weight: var(--category-label-weight, 700);
     line-height: 1.15;
     text-align: center;
-    white-space: normal;
-    word-break: normal;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
     overflow: visible;
     text-overflow: clip;
     transform: none;
     transition: color 180ms ease, transform 180ms ease;
+  }
+
+  html body .wrap #menuView #rail .category-label,
+  html body .wrap #deliveryView #deliveryRail .category-label {
+    display: block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    font-size: clamp(8px, 2.3vw, 9px);
+    letter-spacing: -0.25px;
+    transform: scaleX(0.88);
+    transform-origin: center;
   }
 
   html body .wrap #menuView #rail .re,
