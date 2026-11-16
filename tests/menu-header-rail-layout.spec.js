@@ -2231,6 +2231,7 @@ test('mobile category labels stay on one line and fully inside their tabs for bo
 });
 
 
+// Geometry contract for the guest mobile menu: compact header, shorter rail, and preserved touch targets.
 test('mobile menu header and category rail use compact vertical geometry', async ({ page }, testInfo) => {
   for (const brand of CASES) {
     for (const viewport of [
