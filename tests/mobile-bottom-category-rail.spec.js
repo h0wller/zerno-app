@@ -242,3 +242,73 @@ test('bottom rail leaves the last card CTA scrollable and keeps empty-cart reser
     expect(buttonHitTargets, 'all active category buttons remain unobstructed').toBe(true);
   }
 });
+
+
+test('bottom rail category buttons remain keyboard operable', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+  const rail = page.locator('#rail');
+  await expect(rail).toBeVisible();
+  const nextCategory = rail.locator('button:not(.on)').first();
+  await nextCategory.focus();
+  await expect(nextCategory).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(nextCategory).toHaveClass(/on/);
+  await expect(rail).toHaveCSS('position', 'fixed');
+  await expect.poll(() => rail.evaluate(element => element.getBoundingClientRect().bottom)).toBe(844);
+});
+
+test('checkout address suggestions remain usable with the bottom rail hidden under the cart sheet', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    sessionStorage.setItem('splashDone', '1');
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_ios_hide', '1');
+  });
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+  const firstCard = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
+  const option = firstCard.locator('.opts label.opt-btn').first();
+  if (await option.count()) await option.click();
+  await firstCard.locator('.steprow .cta, [data-add]').first().click();
+  const fab = page.locator('#cartFab');
+  await expect.poll(() => fab.evaluate(element =>
+    !element.hidden && getComputedStyle(element).display !== 'none' &&
+    element.classList.contains('visible')
+  ), { timeout: 7000 }).toBe(true);
+  await fab.click();
+
+  const rail = page.locator('#deliveryRail');
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+  await expect(rail).toHaveCSS('visibility', 'hidden');
+  await expect(rail).toHaveCSS('pointer-events', 'none');
+  await expect(fab).toHaveCSS('visibility', 'hidden');
+
+  await page.evaluate(() => {
+    window.AddressModule = window.AddressModule || {};
+    window.AddressModule.getStreets = () => ['Советская', 'Балтийская'];
+  });
+  const place = page.locator('#checkoutPlace');
+  await place.selectOption({ label: 'Янтарный' });
+  const street = page.locator('#checkoutStreet');
+  await street.focus();
+  await expect(street).toBeFocused();
+  await page.keyboard.type('Совет');
+  const suggestions = page.locator('.addr-dropdown');
+  await expect(suggestions).toBeVisible();
+  await expect(suggestions.locator('.addr-item')).toHaveCount(1);
+  await expect(suggestions.locator('.addr-item')).toContainText('Советская');
+  await testInfo.attach('delivery-checkout-address-suggestions-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
+
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).not.toBe('checkoutStreet');
+  await expect(rail).toHaveCSS('visibility', 'hidden');
+  await page.setViewportSize({ width: 390, height: 520 });
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+  await expect(rail).toHaveCSS('visibility', 'hidden');
+  await expect(fab).toHaveCSS('visibility', 'hidden');
+});
