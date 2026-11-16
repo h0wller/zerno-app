@@ -424,6 +424,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
           activeBorderBottomColor: activeStyle?.borderBottomColor ?? null,
           activeBorderBottomStyle: activeStyle?.borderBottomStyle ?? null,
           filterTop: filterRect?.top ?? null,
+          filterBottom: filterRect?.bottom ?? null,
         };
       }, {
         railSelector: brand.rail,
@@ -472,7 +473,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(geometry.activeBorderBottom, brand.brand + ' active tab uses ::after instead of border-bottom').toBe('0px');
 
       if (geometry.filterTop !== null) {
-        expect(geometry.railBottom, 'delivery primary categories remain above their secondary filters').toBeLessThanOrEqual(geometry.filterTop + 1);
+        expect(geometry.filterBottom, 'delivery secondary filters remain above the fixed bottom rail').toBeLessThanOrEqual(geometry.railTop + 1);
       }
 
       await testInfo.attach(brand.brand + '-' + viewport.name.replaceAll(' ', '-') + '-category-tabs', {
