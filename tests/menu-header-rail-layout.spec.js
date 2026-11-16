@@ -2197,8 +2197,12 @@ test('mobile category labels stay on one line and fully inside their tabs for bo
           const labelRect = rects[0] || null;
           return {
             label: label?.textContent.trim() || '',
+            accessibleName: button.getAttribute('aria-label') || '',
             lineCount: rects.length,
             whiteSpace: getComputedStyle(button).whiteSpace,
+            fontSize: label ? Number.parseFloat(getComputedStyle(label).fontSize) : 0,
+            transform: label ? getComputedStyle(label).transform : 'none',
+            buttonWidth: buttonRect.width,
             insideTab: Boolean(labelRect) &&
               labelRect.left >= buttonRect.left - 1 &&
               labelRect.right <= buttonRect.right + 1,
@@ -2210,9 +2214,18 @@ test('mobile category labels stay on one line and fully inside their tabs for bo
         label.label &&
         label.lineCount === 1 &&
         label.whiteSpace === 'nowrap' &&
+        label.fontSize >= 8.5 &&
+        label.transform === 'none' &&
         label.insideTab
-      ), brand.brand + ' category labels must remain single-line and fully visible at ' +
+      ), brand.brand + ' category labels must remain readable, single-line and fully visible at ' +
         viewport.width + 'x' + viewport.height + ': ' + JSON.stringify(labels)).toBe(true);
+      expect(Math.max(...labels.map((label) => label.buttonWidth)) -
+        Math.min(...labels.map((label) => label.buttonWidth)),
+      brand.brand + ' category tabs must have equal widths').toBeLessThanOrEqual(1);
+      if (brand.brand === 'delivery') {
+        const sauces = labels.find((label) => label.accessibleName === 'Допы и соусы');
+        expect(sauces?.label, 'delivery sauces category uses a compact visible label').toBe('Добавки');
+      }
     }
   }
 });
