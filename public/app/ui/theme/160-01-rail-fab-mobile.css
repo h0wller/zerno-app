@@ -826,9 +826,9 @@ html body #authModal.tg-mode .mhint{
     bottom: calc(var(--rail-total-h) + 12px) !important;
   }
 
-  body:has(#cartFab.visible:not([hidden])) html body #mbonusBtn,
-  body:has(#cartFab.visible:not([hidden])) html body #scanFab,
-  body:has(#cartFab.visible:not([hidden])) html body .fab-scan {
+  html body:has(#cartFab.visible:not([hidden])) #mbonusBtn,
+  html body:has(#cartFab.visible:not([hidden])) #scanFab,
+  html body:has(#cartFab.visible:not([hidden])) .fab-scan {
     bottom: calc(var(--rail-total-h) + 12px + 64px + 12px) !important;
   }
 }
