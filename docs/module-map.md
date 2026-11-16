@@ -132,7 +132,7 @@
 | `ui/scrolltop.js` | `#scrollTopBtn`; ЕДИНСТВЕННЫЙ владелец позиции рейла (`alignRailWithCard`): desktop rail захватывает offset первой строки каталога один раз на desktop-размещение; повторные resize/ResizeObserver callbacks сохраняют offset; переход в горизонтальный режим сбрасывает anchor, возврат в sidebar захватывает его заново; мобильный rail после достижения исходного document offset закрепляется через `position: fixed` с placeholder для сохранения потока и остаётся видимым во время прокрутки; при возврате выше порога или resize pin снимается; повторная проверка запускается после `load`/`pageshow` и двух animation frames для восстановления прокрутки после reload; предоставляет общий helper прокрутки к началу выбранного контента с учётом нижней границы закреплённого rail | `window.alignRailWithCard`, `window.scrollMenuContentToStart` |
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
-| `core/a11y.js` | loading=lazy для небрендовых изображений | — |
+| `core/a11y.js` | loading=lazy для небрендовых изображений; общий алгоритм удержания Tab-фокуса в границах модалки без владения самими модалками | `window.trapModalFocus` |
 | `core/deeplink.js` | Диплинки: brand/tab/no/reorder/auth_token; legacy `staff_chat` делегирует в `chat.js` | — |
 | `ui/styles.js` | Глобальные инжекции СЛОЯ 3: z-index, body.panel-open, пульсы чата, футер, cartPanel ≥900px, бар подсказок | — |
 
