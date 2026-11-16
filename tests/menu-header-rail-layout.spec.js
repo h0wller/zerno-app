@@ -175,12 +175,23 @@ for (const brand of CASES) {
           };
         }, brand.rail), { timeout: 5000 }).toMatchObject({
           position: 'fixed',
-          bottomGap: 10,
-          left: 12,
           height: viewport.height <= 480 ? 48 : 56,
           pinClass: false,
           spacerCount: 0,
         });
+        const floatingState = await rail.evaluate(element => {
+          const rect = element.getBoundingClientRect();
+          const probe = document.createElement('div');
+          probe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
+          document.body.appendChild(probe);
+          const safeAreaInset = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+          probe.remove();
+          return { bottomGap: window.innerHeight - rect.bottom, safeAreaInset, left: rect.left, right: rect.right };
+        });
+        expect(floatingState.bottomGap).toBeGreaterThanOrEqual(10 + floatingState.safeAreaInset);
+        expect(floatingState.bottomGap).toBeLessThanOrEqual(12 + floatingState.safeAreaInset);
+        expect(floatingState.left).toBeGreaterThanOrEqual(12);
+        expect(floatingState.right).toBeLessThanOrEqual(viewport.width - 12);
         const fixedTopAt500 = await rail.evaluate(el => el.getBoundingClientRect().top);
         await page.evaluate(() => window.scrollTo(0, 700));
         await expect.poll(() => rail.evaluate(el => el.getBoundingClientRect().top), { timeout: 5000 })
@@ -608,7 +619,7 @@ test('desktop category navigation uses one rail surface and a selected icon chip
 });
 
 
-test('short landscape category tabs align to the catalog instead of filling the device width', async ({ page }, testInfo) => {
+test('short landscape category tabs use a detached floating capsule', async ({ page }, testInfo) => {
   for (const brand of CASES) {
     for (const viewport of [
       { width: 844, height: 390 },
@@ -640,10 +651,9 @@ test('short landscape category tabs align to the catalog instead of filling the 
           railRight: railRect.right,
           railBottom: railRect.bottom,
           railHeight: railRect.height,
-          railLeft: railRect.left,
-          railRight: railRect.right,
           railWidth: railRect.width,
           bottomGap: window.innerHeight - railRect.bottom,
+          railTotalHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-total-h')),
           gridLeft: gridRect.left,
           gridRight: gridRect.right,
           buttonWidths: [...rail.querySelectorAll('button')].map((button) => button.getBoundingClientRect().width),
@@ -663,6 +673,7 @@ test('short landscape category tabs align to the catalog instead of filling the 
       expect(layout.bottomGap).toBeGreaterThanOrEqual(10);
       expect(layout.bottomGap).toBeLessThanOrEqual(12);
       expect(layout.railHeight).toBe(48);
+      expect(layout.railTotalHeight).toBeCloseTo(layout.railHeight + layout.bottomGap, 0);
       expect(Math.min(...layout.buttonWidths)).toBeGreaterThanOrEqual(60);
       expect(layout.scrollWidth).toBeGreaterThanOrEqual(layout.clientWidth);
       expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
@@ -1656,9 +1667,9 @@ test('mobile rail keeps its detached floating position after reload at a scrolle
       .toBeGreaterThan(100);
     await expect.poll(() => rail.evaluate(el => ({
       position: getComputedStyle(el).position,
-      bottom: el.getBoundingClientRect().bottom,
+      bottomGap: window.innerHeight - el.getBoundingClientRect().bottom,
       pinned: el.classList.contains('rail-is-pinned'),
-    })), { timeout: 5000 }).toEqual({ position: 'fixed', bottom: 844, pinned: false });
+    })), { timeout: 5000 }).toEqual({ position: 'fixed', bottomGap: 10, pinned: false });
   }
 });
 
