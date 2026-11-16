@@ -40,7 +40,11 @@ $('#rail').addEventListener('click', e => {
   window.renderMenu();
   if (categoryChanged && railWasPinned &&
       typeof window.scrollMenuContentToStart === 'function') {
-    window.scrollMenuContentToStart('#grid', '#rail', true);
+    // renderMenu fills #grid on its own animation frame; scroll only after the
+    // replacement cards exist so the scroll target belongs to the new category.
+    requestAnimationFrame(() => {
+      window.scrollMenuContentToStart('#grid', '#rail', true);
+    });
   }
 });
 
