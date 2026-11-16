@@ -4,6 +4,27 @@
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
 }
+
+/* Mobile catalog scroll reserve for the fixed category rail and the real cart FAB state. */
+@media (max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  #grid,
+  #deliveryGrid {
+    padding-bottom: calc(var(--rail-total-h) + 16px);
+    scroll-padding-bottom: calc(var(--rail-total-h) + 16px);
+  }
+
+  body:has(#cartFab.visible:not([hidden])):not(.is-cashier):not(.is-admin) #grid,
+  body:has(#cartFab.visible:not([hidden])):not(.is-cashier):not(.is-admin) #deliveryGrid {
+    padding-bottom: calc(var(--rail-total-h) + 12px + 64px + 16px);
+    scroll-padding-bottom: calc(var(--rail-total-h) + 12px + 64px + 16px);
+  }
+
+  body.cart-open #grid,
+  body.cart-open #deliveryGrid {
+    padding-bottom: 16px;
+    scroll-padding-bottom: 16px;
+  }
+}
 @media (min-width: 1181px){
   .grid{
     grid-template-columns: repeat(3, 1fr);
