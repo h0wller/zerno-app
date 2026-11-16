@@ -336,7 +336,8 @@ $('#deliveryRail').addEventListener('click', e => {
     }
     requestAnimationFrame(() => {
       window.renderDeliveryMenu();
-      if (categoryChanged && typeof window.scrollMenuContentToStart === 'function') {
+      if (categoryChanged && document.getElementById('deliveryRail')?.classList.contains('rail-is-pinned') &&
+          typeof window.scrollMenuContentToStart === 'function') {
         window.scrollMenuContentToStart(
           '#deliverySubFilterViewport:not([hidden]), #deliveryGrid',
           '#deliveryRail'
