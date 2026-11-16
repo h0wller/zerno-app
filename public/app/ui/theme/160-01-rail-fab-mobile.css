@@ -49,7 +49,7 @@
   font-weight: 600;
   line-height: 1.15;
 }
-/* Mobile category rail geometry is owned by core/views.js (Layer 2). */
+/* Mobile category rail geometry and interaction states are owned by 150-rail.css (Layer 1). */
 /* ── F5.17: бонус-пилюля компакт справа над FAB; у футера растворяется ── */
 .mbonus.near-footer{
   opacity: 0;
