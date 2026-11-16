@@ -88,12 +88,6 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(18, 58, 107, 0.1);
 }
-.rail button.on{
-  background: linear-gradient(145deg, #123a6b, #1d5c9b);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 6px 16px rgba(18, 58, 107, 0.28);
-}
 .mh-top{
   display: flex;
   align-items: flex-end;
