@@ -327,7 +327,6 @@ $('#deliveryRail').addEventListener('click', e => {
   const b = e.target.closest('[data-dcat]');
   if (b) {
     var categoryChanged = dcat !== b.dataset.dcat;
-    var railWasPinned = document.getElementById('deliveryRail')?.classList.contains('rail-is-pinned');
     dcat = b.dataset.dcat;
     activeAddonTab = 'all';
     activeIngredient = 'all';
@@ -337,12 +336,13 @@ $('#deliveryRail').addEventListener('click', e => {
     }
     requestAnimationFrame(() => {
       window.renderDeliveryMenu();
-      if (categoryChanged && railWasPinned &&
+      if (categoryChanged && window.usesHorizontalCategoryRailViewport &&
+          window.usesHorizontalCategoryRailViewport() &&
           typeof window.scrollMenuContentToStart === 'function') {
         window.scrollMenuContentToStart(
           '#deliverySubFilterViewport:not([hidden]), #deliveryGrid',
           '#deliveryRail',
-          true
+          false
         );
       }
     });
