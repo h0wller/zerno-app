@@ -108,12 +108,25 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
     localStorage.setItem('zt_inst_hide', '1');
     localStorage.setItem('zt_ios_hide', '1');
     window.__bottomRailShifts = [];
+    window.__bottomRailObserver = null;
     if (typeof PerformanceObserver === 'function') {
-      new PerformanceObserver(list => {
+      window.__bottomRailObserver = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
-          window.__bottomRailShifts.push({ value: entry.value, hadRecentInput: entry.hadRecentInput });
+          window.__bottomRailShifts.push({
+            value: entry.value,
+            hadRecentInput: entry.hadRecentInput,
+            startTime: entry.startTime,
+            sources: (entry.sources || []).map(source => ({
+              tagName: source.node?.tagName || null,
+              id: source.node?.id || null,
+              className: typeof source.node?.className === 'string' ? source.node.className : null,
+              previousRect: source.previousRect,
+              currentRect: source.currentRect,
+            })),
+          });
         }
-      }).observe({ type: 'layout-shift', buffered: true });
+      });
+      window.__bottomRailObserver.observe({ type: 'layout-shift', buffered: true });
     }
   });
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
@@ -145,7 +158,29 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
     contentType: 'image/png',
   });
 
-  await page.evaluate(() => { window.__bottomRailShifts = []; });
+  await page.evaluate(() => {
+    window.__bottomRailObserver?.disconnect();
+    window.__bottomRailShifts = [];
+    if (typeof PerformanceObserver === 'function') {
+      window.__bottomRailObserver = new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) {
+          window.__bottomRailShifts.push({
+            value: entry.value,
+            hadRecentInput: entry.hadRecentInput,
+            startTime: entry.startTime,
+            sources: (entry.sources || []).map(source => ({
+              tagName: source.node?.tagName || null,
+              id: source.node?.id || null,
+              className: typeof source.node?.className === 'string' ? source.node.className : null,
+              previousRect: source.previousRect,
+              currentRect: source.currentRect,
+            })),
+          });
+        }
+      });
+      window.__bottomRailObserver.observe({ type: 'layout-shift' });
+    }
+  });
   const railBeforeLiveUpdates = await rail.boundingBox();
   for (let i = 0; i < 13; i += 1) {
     await firstCard.locator('.steprow .cta, [data-add]').first().click();
@@ -190,10 +225,17 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
   expect(Math.abs(railAfterLiveUpdates.y - railBeforeLiveUpdates.y),
     'live cart updates do not move the fixed rail').toBeLessThanOrEqual(1);
   expect(Math.abs(railAfterLiveUpdates.height - railBeforeLiveUpdates.height)).toBeLessThanOrEqual(1);
-  const layoutShiftTotal = await page.evaluate(() =>
-    window.__bottomRailShifts.filter(entry => !entry.hadRecentInput)
-      .reduce((sum, entry) => sum + entry.value, 0)
-  );
+  await page.waitForTimeout(100);
+  const layoutShiftDiagnostics = await page.evaluate(() => ({
+    entries: window.__bottomRailShifts,
+    total: window.__bottomRailShifts.filter(entry => !entry.hadRecentInput)
+      .reduce((sum, entry) => sum + entry.value, 0),
+  }));
+  await testInfo.attach('delivery-cart-live-update-layout-shifts.json', {
+    body: Buffer.from(JSON.stringify(layoutShiftDiagnostics, null, 2)),
+    contentType: 'application/json',
+  });
+  const layoutShiftTotal = layoutShiftDiagnostics.total;
   expect(layoutShiftTotal, 'cart amount updates do not introduce unexpected layout shift').toBeLessThan(0.01);
   expect(geometry.fabHeight).toBeGreaterThanOrEqual(48);
   expect(geometry.fabHeight).toBeLessThanOrEqual(64);
@@ -249,10 +291,28 @@ test('bottom rail leaves the last card CTA scrollable and keeps empty-cart reser
     const grid = page.locator(gridSelector);
     const rail = page.locator(railSelector);
     await expect(rail).toBeVisible();
-    const emptyReserve = await grid.evaluate((element, railSelector) => ({
-      padding: parseFloat(getComputedStyle(element).paddingBottom),
-      railTotal: document.querySelector(railSelector).getBoundingClientRect().height,
-    }), railSelector);
+    const emptyReserve = await grid.evaluate((element, railSelector) => {
+      const rail = document.querySelector(railSelector);
+      const style = getComputedStyle(element);
+      const root = getComputedStyle(document.documentElement);
+      const matchedRules = Array.from(document.styleSheets).flatMap(sheet => {
+        try { return Array.from(sheet.cssRules); } catch { return []; }
+      }).filter(rule => rule.selectorText && rule.selectorText.includes(element.id) &&
+        rule.style && rule.style.paddingBottom)
+        .map(rule => ({ selector: rule.selectorText, paddingBottom: rule.style.paddingBottom }));
+      return {
+        padding: parseFloat(style.paddingBottom),
+        railTotal: rail.getBoundingClientRect().height,
+        railTotalVariable: root.getPropertyValue('--rail-total-h').trim(),
+        inlinePaddingBottom: element.style.paddingBottom,
+        matchedRules,
+      };
+    }, railSelector);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await testInfo.attach(brand + '-empty-cart-scroll-reserve.json', {
+      body: Buffer.from(JSON.stringify(emptyReserve, null, 2)),
+      contentType: 'application/json',
+    });
     expect(emptyReserve.padding).toBeGreaterThanOrEqual(emptyReserve.railTotal + 15);
     expect(emptyReserve.padding).toBeLessThanOrEqual(emptyReserve.railTotal + 17);
 
