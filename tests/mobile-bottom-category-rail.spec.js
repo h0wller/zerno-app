@@ -257,17 +257,28 @@ test('bottom rail leaves the last card CTA scrollable and keeps empty-cart reser
     expect(emptyReserve.padding).toBeLessThanOrEqual(emptyReserve.railTotal + 17);
 
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-    const lastCta = page.locator(gridSelector + ' .card:not(.skeleton-card) .steprow .cta, ' +
-      gridSelector + ' .card:not(.skeleton-card) [data-add]').last();
-    await expect(lastCta).toBeVisible({ timeout: 15000 });
-    const clearance = await page.evaluate(({ railSelector, gridSelector }) => {
+    const lastCard = page.locator(gridSelector + ' > .card:not(.skeleton-card)').last();
+    await expect(lastCard).toBeVisible({ timeout: 15000 });
+    if (brand === 'delivery') {
+      const lastCta = lastCard.locator('.steprow .cta, [data-add]').last();
+      await expect(lastCta).toBeVisible({ timeout: 15000 });
+    }
+    const clearance = await page.evaluate(({ railSelector, gridSelector, brand }) => {
       const rail = document.querySelector(railSelector).getBoundingClientRect();
-      const cards = Array.from(document.querySelectorAll(gridSelector + ' .card:not(.skeleton-card)'));
-      const lastCard = cards[cards.length - 1];
-      const cta = lastCard && lastCard.querySelector('.steprow .cta, [data-add]');
-      return { railTop: rail.top, ctaBottom: cta ? cta.getBoundingClientRect().bottom : Infinity };
-    }, { railSelector, gridSelector });
-    expect(clearance.ctaBottom, 'last card CTA is fully above the fixed rail').toBeLessThanOrEqual(clearance.railTop);
+      const cards = Array.from(document.querySelectorAll(gridSelector + ' > .card:not(.skeleton-card)'));
+      const last = cards[cards.length - 1];
+      const cta = last && last.querySelector('.steprow .cta, [data-add]');
+      return {
+        railTop: rail.top,
+        lastCardBottom: last ? last.getBoundingClientRect().bottom : Infinity,
+        ctaBottom: cta ? cta.getBoundingClientRect().bottom : null,
+        brand,
+      };
+    }, { railSelector, gridSelector, brand });
+    expect(clearance.lastCardBottom, 'last card is fully above the fixed rail').toBeLessThanOrEqual(clearance.railTop);
+    if (brand === 'delivery') {
+      expect(clearance.ctaBottom, 'last delivery card CTA is fully above the fixed rail').toBeLessThanOrEqual(clearance.railTop);
+    }
     const buttonHitTargets = await rail.evaluate(element => Array.from(element.querySelectorAll('button')).every(button => {
       const rect = button.getBoundingClientRect();
       const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
@@ -284,11 +295,11 @@ test('bottom rail category buttons remain keyboard operable', async ({ page }) =
   await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
   const rail = page.locator('#rail');
   await expect(rail).toBeVisible();
-  const nextCategory = rail.locator('button:not(.on)').first();
+  const nextCategory = rail.locator('button').nth(1);
   await nextCategory.focus();
   await expect(nextCategory).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(nextCategory).toHaveClass(/on/);
+  await expect(nextCategory).toHaveAttribute('aria-pressed', 'true');
   await expect(rail).toHaveCSS('position', 'fixed');
   await expect.poll(() => rail.evaluate(element => element.getBoundingClientRect().bottom)).toBe(844);
 });
