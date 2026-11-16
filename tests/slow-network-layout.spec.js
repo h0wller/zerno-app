@@ -229,7 +229,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(Math.abs(before.rail.x - before.section.x)).toBeLessThanOrEqual(1);
     expect(Math.abs(before.rail.right - before.section.right)).toBeLessThanOrEqual(1);
     expect(before.rail.y).toBeGreaterThan(before.menuHead.bottom);
-    expect(before.rail.height).toBeLessThanOrEqual(76);
+    expect(before.rail.height, 'mobile first paint reserves the compact 56px rail').toBe(56);
     expect(before.heading.x).toBeGreaterThanOrEqual(before.menuHead.x + 8);
     expect(before.heading.right).toBeLessThanOrEqual(before.menuHead.right - 8);
     expect(before.menuHeadStyle.maxHeight).toBe('90px');
@@ -295,6 +295,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.search.height).toBe(40);
     expect(after.subchipHeight).toBe(44);
     expect(after.subchipHeight).toBe(before.subchipHeight);
+    expect(after.rail.height, 'deferred theme keeps the first-paint rail height').toBe(before.rail.height);
     expect(after.subfilterSlot).toEqual(before.subfilterSlot);
     // The first paint uses fallback font metrics; after deferred fonts/CSS resolve,
     // the CTA may move by at most 2px. Width and target size must remain identical,
