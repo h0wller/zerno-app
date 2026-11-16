@@ -1561,7 +1561,7 @@ test('ticker always moves, fills wide viewports seamlessly, and toggles pause wi
 });
 
 
-test('mobile rail restores its pinned state after a reload at a scrolled position', async ({ page }) => {
+test('mobile rail keeps its fixed bottom position after reload at a scrolled position', async ({ page }) => {
   for (const brand of CASES) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
@@ -1571,18 +1571,23 @@ test('mobile rail restores its pinned state after a reload at a scrolled positio
     await page.evaluate(() => window.scrollTo(0, 700));
     await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 })
       .toBeGreaterThan(100);
+    await expect.poll(() => rail.evaluate(el => ({
+      position: getComputedStyle(el).position,
+      bottom: el.getBoundingClientRect().bottom,
+      pinned: el.classList.contains('rail-is-pinned'),
+    })), { timeout: 5000 }).toEqual({ position: 'fixed', bottom: 844, pinned: false });
     await page.reload({ waitUntil: 'load' });
     await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 })
       .toBeGreaterThan(100);
     await expect.poll(() => rail.evaluate(el => ({
-      fixed: getComputedStyle(el).position === 'fixed',
+      position: getComputedStyle(el).position,
+      bottom: el.getBoundingClientRect().bottom,
       pinned: el.classList.contains('rail-is-pinned'),
-    })), { timeout: 5000 }).toEqual({ fixed: true, pinned: true });
+    })), { timeout: 5000 }).toEqual({ position: 'fixed', bottom: 844, pinned: false });
   }
 });
 
-
-test('manual category change returns the new catalog content to the top while keeping the rail pinned', async ({ page }) => {
+test('manual category change returns new content below the sticky topbar while bottom rail stays fixed', async ({ page }) => {
   for (const brand of CASES) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
@@ -1593,7 +1598,8 @@ test('manual category change returns the new catalog content to the top while ke
     await page.evaluate(() => window.scrollTo(0, 700));
     await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 })
       .toBeGreaterThan(300);
-    await expect(rail).toHaveClass(/rail-is-pinned/);
+    await expect(rail).toHaveCSS('position', 'fixed');
+    await expect(rail).not.toHaveClass(/rail-is-pinned/);
 
     const nextCategory = rail.locator('button:not(.on)').first();
     await expect(nextCategory).toBeVisible();
@@ -1605,40 +1611,40 @@ test('manual category change returns the new catalog content to the top while ke
     const contentSelector = brand.brand === 'delivery'
       ? '#deliverySubFilterViewport:not([hidden]), #deliveryGrid'
       : '#grid';
-    await expect.poll(() => page.evaluate(({ contentSelector, railSelector }) => {
-      const railElement = document.querySelector(railSelector);
+    await expect.poll(() => page.evaluate(({ contentSelector }) => {
       const content = document.querySelector(contentSelector);
-      if (!railElement || !content) return false;
-      const railRect = railElement.getBoundingClientRect();
-      const contentRect = content.getBoundingClientRect();
-      return railElement.classList.contains('rail-is-pinned') &&
-        contentRect.top >= railRect.bottom - 1 &&
-        contentRect.top < railRect.bottom + 180;
-    }, { contentSelector, railSelector: brand.rail }), { timeout: 7000 }).toBe(true);
-    const geometry = await page.evaluate(({ contentSelector, railSelector }) => {
-      const railRect = document.querySelector(railSelector).getBoundingClientRect();
+      const topbar = document.querySelector('header.topbar');
+      if (!content || !topbar) return false;
+      return Math.abs(content.getBoundingClientRect().top -
+        topbar.getBoundingClientRect().bottom - 12) <= 3;
+    }, { contentSelector }), { timeout: 7000 }).toBe(true);
+    const geometry = await page.evaluate(({ contentSelector }) => {
       const contentRect = document.querySelector(contentSelector).getBoundingClientRect();
-      return { contentTop: contentRect.top, railBottom: railRect.bottom, scrollY: window.scrollY };
-    }, { contentSelector, railSelector: brand.rail });
-    expect(geometry.contentTop, brand.brand + ' new category content should begin immediately below the pinned rail')
-      .toBeGreaterThanOrEqual(geometry.railBottom - 1);
-    expect(geometry.contentTop, brand.brand + ' new category content should be aligned near the top of the viewport')
-      .toBeLessThan(geometry.railBottom + 180);
-    expect(geometry.scrollY, brand.brand + ' category selection should leave the previous deep scroll position')
+      const topbarRect = document.querySelector('header.topbar').getBoundingClientRect();
+      const railRect = document.querySelector('#rail, #deliveryRail').getBoundingClientRect();
+      return {
+        contentTop: contentRect.top,
+        viewportTop: topbarRect.bottom + 12,
+        railTop: railRect.top,
+        railBottom: railRect.bottom,
+        scrollY: window.scrollY,
+      };
+    }, { contentSelector });
+    expect(Math.abs(geometry.contentTop - geometry.viewportTop),
+      brand.brand + ' new content starts below the sticky topbar + 12px').toBeLessThanOrEqual(3);
+    expect(geometry.railBottom).toBe(844);
+    expect(geometry.scrollY, brand.brand + ' category selection leaves the previous deep scroll position')
       .toBeLessThan(600);
   }
 });
 
-
-test('late font hydration must not release a mobile rail after manual category change', async ({ page }) => {
+test('late font hydration does not change the fixed bottom rail after manual category change', async ({ page }) => {
   for (const brand of CASES) {
     let releaseFonts;
     let fontRequestSeen = false;
     const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
-    const fontRoute = /golos-text-400\.woff2(?:\?.*)?$/;
+    const fontRoute = /golos-text-400\\.woff2(?:\\?.*)?$/;
 
-    // Hold the app's real preloaded font before first paint; release it only
-    // after the user changes category while the rail is pinned.
     await page.route(fontRoute, async route => {
       fontRequestSeen = true;
       await fontsHeld;
@@ -1653,11 +1659,8 @@ test('late font hydration must not release a mobile rail after manual category c
 
     const rail = page.locator(brand.rail);
     await expect(rail).toBeVisible({ timeout: 10000 });
+    await expect(rail).toHaveCSS('position', 'fixed');
     await page.evaluate(() => window.scrollTo(0, 700));
-    await expect.poll(() => rail.evaluate(el =>
-      getComputedStyle(el).position === 'fixed' && el.classList.contains('rail-is-pinned')
-    ), { timeout: 5000 }).toBe(true);
-
     const nextCategory = rail.locator('button:not(.on)').first();
     const categoryAttribute = brand.brand === 'delivery' ? 'data-dcat' : 'data-cat';
     const selectedCategory = await nextCategory.getAttribute(categoryAttribute);
@@ -1668,14 +1671,14 @@ test('late font hydration must not release a mobile rail after manual category c
     await page.evaluate(() => document.fonts.ready);
     await expect.poll(() => rail.evaluate(el => ({
       position: getComputedStyle(el).position,
+      bottom: el.getBoundingClientRect().bottom,
       pinned: el.classList.contains('rail-is-pinned'),
-    }))).toEqual({ position: 'fixed', pinned: true });
+    }))).toEqual({ position: 'fixed', bottom: 844, pinned: false });
     await page.unroute(fontRoute);
   }
 });
 
-
-test('switching brands clears the previous mobile rail pin and spacer in both directions', async ({ page }, testInfo) => {
+test('switching brands exposes only the active fixed bottom rail in both directions', async ({ page }, testInfo) => {
   for (const [fromBrand, toBrand] of [['delivery', 'coffee'], ['coffee', 'delivery']]) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
@@ -1684,29 +1687,29 @@ test('switching brands clears the previous mobile rail pin and spacer in both di
     const oldRailSelector = fromBrand === 'delivery' ? '#deliveryRail' : '#rail';
     const nextRailSelector = toBrand === 'delivery' ? '#deliveryRail' : '#rail';
     const oldRail = page.locator(oldRailSelector);
+    const nextRail = page.locator(nextRailSelector);
     await expect(oldRail).toBeVisible({ timeout: 10000 });
     await page.evaluate(() => window.scrollTo(0, 700));
-    await expect.poll(() => oldRail.evaluate(el =>
-      getComputedStyle(el).position === 'fixed' && el.classList.contains('rail-is-pinned')
-    ), { timeout: 5000 }).toBe(true);
+    await expect(oldRail).toHaveCSS('position', 'fixed');
 
     await page.locator('#venueToggle').click();
     await page.locator('#brandSeg button[data-brand="' + toBrand + '"]').click();
     await expect.poll(() => page.evaluate(() => document.documentElement.dataset.brand)).toBe(toBrand);
-    await expect(page.locator(nextRailSelector)).toBeVisible({ timeout: 10000 });
+    await expect(nextRail).toBeVisible({ timeout: 10000 });
+    await expect(oldRail).toBeHidden();
+    await expect(nextRail).toHaveCSS('position', 'fixed');
+    await expect(nextRail).not.toHaveClass(/rail-is-pinned/);
 
     const previousRailState = await oldRail.evaluate(el => ({
       pinned: el.classList.contains('rail-is-pinned'),
-      position: getComputedStyle(el).position,
       parentSpacerCount: el.parentElement.querySelectorAll(':scope > .rail-pin-spacer').length,
       hasAdjacentSpacer: !!(el.previousElementSibling && el.previousElementSibling.classList.contains('rail-pin-spacer')),
       inlinePosition: el.style.position,
     }));
-    expect(previousRailState.pinned, fromBrand + ' old rail must be unpinned after switching to ' + toBrand).toBe(false);
-    expect(previousRailState.position, fromBrand + ' old rail must return to normal flow').not.toBe('fixed');
+    expect(previousRailState.pinned).toBe(false);
     expect(previousRailState.inlinePosition).not.toBe('fixed');
-    expect(previousRailState.parentSpacerCount, 'brand switch must remove the previous rail placeholder').toBe(0);
-    expect(previousRailState.hasAdjacentSpacer, 'previous rail must not retain its pin placeholder').toBe(false);
+    expect(previousRailState.parentSpacerCount).toBe(0);
+    expect(previousRailState.hasAdjacentSpacer).toBe(false);
 
     await testInfo.attach('brand-switch-' + fromBrand + '-to-' + toBrand + '-390x844', {
       body: await page.screenshot({ animations: 'disabled' }),
@@ -1714,7 +1717,6 @@ test('switching brands clears the previous mobile rail pin and spacer in both di
     });
   }
 });
-
 
 test('category rails retain the original emoji icons for both brands', async ({ page }) => {
   for (const brand of ['coffee', 'delivery']) {
@@ -2058,7 +2060,7 @@ for (const brand of CASES) {
   });
 }
 
-test('coffee category switch scrolls the new catalog column into view smoothly while rail is pinned', async ({ page }, testInfo) => {
+test('coffee category switch scrolls the new catalog column into view smoothly below the sticky topbar', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
@@ -2066,7 +2068,8 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
   const rail = page.locator('#rail');
   await expect(rail).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 700));
-  await expect(rail).toHaveClass(/rail-is-pinned/);
+  await expect(rail).toHaveCSS('position', 'fixed');
+  await expect(rail).not.toHaveClass(/rail-is-pinned/);
 
   await page.evaluate(() => {
     const original = window.scrollMenuContentToStart;
@@ -2075,6 +2078,7 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
       window.__coffeeScrollEvidence = {
         cardCount: document.querySelectorAll('#grid .card').length,
         preservePinned,
+        argumentCount: arguments.length,
       };
       return original.call(this, contentSelector, railSelector, preservePinned);
     };
@@ -2125,12 +2129,13 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
   await expect(category).toHaveClass(/on/);
   await expect.poll(() => page.evaluate(() => window.__coffeeScrollEvidence?.cardCount ?? -1))
     .toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__coffeeScrollEvidence.argumentCount)).toBe(3);
   expect(await page.evaluate(() => window.__coffeeScrollEvidence.preservePinned)).toBe(true);
   await expect.poll(() => page.evaluate(() => {
-    const rail = document.querySelector('#rail');
+    const topbar = document.querySelector('header.topbar');
     const grid = document.querySelector('#grid');
-    if (!rail || !grid) return Infinity;
-    return Math.abs(grid.getBoundingClientRect().top - rail.getBoundingClientRect().bottom - 8);
+    if (!topbar || !grid) return Infinity;
+    return Math.abs(grid.getBoundingClientRect().top - topbar.getBoundingClientRect().bottom - 12);
   }), { timeout: 8000 }).toBeLessThanOrEqual(3);
   await testInfo.attach('coffee-category-switch-scrolled-390x844', {
     body: await page.screenshot({ animations: 'disabled' }),
