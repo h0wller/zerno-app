@@ -228,7 +228,7 @@ function ensureSubFilterBar() {
 
   if (bar && !(bar.parentElement &&
       bar.parentElement.classList.contains('subfilter-viewport'))) {
-    var viewport = document.createElement('div');
+    viewport = document.createElement('div');
     viewport.className = 'subfilter-viewport';
     viewport.hidden = !!bar.hidden;
     bar.parentNode.insertBefore(viewport, bar);
@@ -1033,7 +1033,7 @@ window.populateSlots = function () {
       sel.value = '';
       sel.__checkoutTimeMode = 'slot';
       sel.dataset.checkoutTimeMode = 'slot';
-    } else if (previousMode === 'asap' || (previousValue === 'asap' && !restoredSelection)) {
+    } else if (previousMode === 'asap' || (!restoredSelection && (previousValue === 'asap' || !previousMode))) {
       sel.value = pm ? '' : 'asap';
       sel.__checkoutTimeMode = pm ? 'slot' : 'asap';
       sel.dataset.checkoutTimeMode = sel.__checkoutTimeMode;
@@ -1041,10 +1041,6 @@ window.populateSlots = function () {
       sel.value = '';
       sel.__checkoutTimeMode = 'slot';
       sel.dataset.checkoutTimeMode = 'slot';
-    } else if (!restoredSelection && !previousMode) {
-      sel.value = pm ? '' : 'asap';
-      sel.__checkoutTimeMode = pm ? 'slot' : 'asap';
-      sel.dataset.checkoutTimeMode = sel.__checkoutTimeMode;
     }
 
     sel.classList.toggle('need-slot', !!pm && !sel.value);
