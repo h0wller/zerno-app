@@ -208,6 +208,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         option: box(document.querySelector('#deliveryGrid .opts .opt-btn')),
         section: box(document.querySelector('.wrap > section')),
         rail: box(document.querySelector('#deliveryRail')),
+        railContentHeight: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-h')),
+        railSafeArea: parseFloat(getComputedStyle(document.querySelector('#deliveryRail')).paddingBottom) || 0,
         viewportWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth
       };
