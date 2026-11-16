@@ -2211,3 +2211,76 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
     contentType: 'image/png',
   });
 });
+
+test('brand selector options share one content-sized surface and preserve active brand tokens', async ({ page }, testInfo) => {
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of [
+      { name: 'mobile', width: 390, height: 844 },
+      { name: 'tablet', width: 1024, height: 768 },
+      { name: 'short landscape', width: 844, height: 390 },
+      { name: 'desktop', width: 1440, height: 900 },
+    ]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        sessionStorage.setItem('splashDone', '1');
+      });
+      await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+
+      const toggle = page.locator('#venueToggle');
+      const selector = page.locator('#brandSeg');
+      await expect(toggle).toBeVisible();
+      await toggle.click();
+      await expect(selector).toBeVisible();
+      await expect(selector.locator('button[data-brand]')).toHaveCount(2);
+
+      const geometry = await selector.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const buttons = [...element.querySelectorAll(':scope > button')].map((button) => {
+          const buttonRect = button.getBoundingClientRect();
+          const style = getComputedStyle(button);
+          return {
+            brand: button.dataset.brand,
+            left: buttonRect.left,
+            right: buttonRect.right,
+            width: buttonRect.width,
+            background: style.backgroundColor,
+            color: style.color,
+            active: button.classList.contains('on'),
+          };
+        });
+        const rootStyle = getComputedStyle(document.documentElement);
+        return {
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          viewportWidth: document.documentElement.clientWidth,
+          activeBackgroundToken: rootStyle.getPropertyValue('--venue-option-active-bg').trim(),
+          activeColorToken: rootStyle.getPropertyValue('--venue-option-active-color').trim(),
+          buttons,
+        };
+      });
+
+      expect(geometry.width, 'selector should size to its labels, within a compact menu width').toBeGreaterThanOrEqual(160);
+      expect(geometry.width).toBeLessThanOrEqual(232);
+      expect(geometry.left).toBeGreaterThanOrEqual(0);
+      expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+      expect(Math.abs(geometry.buttons[0].left - geometry.buttons[1].left),
+        'both options must share the same left edge').toBeLessThanOrEqual(1);
+      expect(Math.abs(geometry.buttons[0].width - geometry.buttons[1].width),
+        'both options must fill the same menu width').toBeLessThanOrEqual(1);
+      expect(geometry.buttons.filter((button) => button.active).map((button) => button.brand)).toEqual([brand]);
+      expect(geometry.buttons.find((button) => button.active).background)
+        .toBe(geometry.activeBackgroundToken);
+      expect(geometry.buttons.find((button) => button.active).color)
+        .toBe(geometry.activeColorToken);
+
+      await testInfo.attach(`brand-selector-${brand}-${viewport.name}`, {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  }
+});
+
