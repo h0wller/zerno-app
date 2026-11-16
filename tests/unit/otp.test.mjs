@@ -4,6 +4,18 @@ import { otpStore, isOtpLive, consumeOtp } from '../../server/utils/otp.js';
 
 beforeEach(() => otpStore.clear());
 
+test('OTP store evicts the oldest entry when its capacity is reached', () => {
+  for (let i = 0; i < 5000; i += 1) {
+    otpStore.set('entry:' + i, { expires: 5000 });
+  }
+
+  otpStore.set('entry:newest', { expires: 5000 });
+
+  assert.equal(otpStore.size, 5000);
+  assert.equal(Map.prototype.has.call(otpStore, 'entry:0'), false);
+  assert.equal(Map.prototype.has.call(otpStore, 'entry:newest'), true);
+});
+
 test('OTP is live only before its expiry timestamp', () => {
   const entry = { code: '1234', expires: 5000 };
   assert.equal(isOtpLive(entry, 4999), true);
