@@ -100,7 +100,7 @@ for (const brand of CASES) {
   }
 }
 
-test('delivery cart FAB sits above the bottom rail and remains fully tappable', async ({ page }) => {
+test('delivery cart FAB sits above the bottom rail and remains fully tappable', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     sessionStorage.setItem('splashDone', '1');
@@ -128,6 +128,10 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
     !element.classList.contains('visible')
   );
   expect(fabUnavailable, 'empty-cart FAB follows cart.js hidden/display/.visible state').toBe(true);
+  await testInfo.attach('delivery-cart-empty-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
 
   const option = firstCard.locator('.opts label.opt-btn').first();
   if (await option.count()) await option.click();
@@ -136,6 +140,10 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
     !element.hidden && getComputedStyle(element).display !== 'none' &&
     element.classList.contains('visible')
   ), { timeout: 7000 }).toBe(true);
+  await testInfo.attach('delivery-cart-one-item-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
 
   await page.evaluate(() => { window.__bottomRailShifts = []; });
   const railBeforeLiveUpdates = await rail.boundingBox();
@@ -281,6 +289,10 @@ test('checkout address suggestions remain usable with the bottom rail hidden und
 
   const rail = page.locator('#deliveryRail');
   await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+  await testInfo.attach('delivery-cart-sheet-open-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
   await expect(rail).toHaveCSS('visibility', 'hidden');
   await expect(rail).toHaveCSS('pointer-events', 'none');
   await expect(fab).toHaveCSS('visibility', 'hidden');
