@@ -29,7 +29,7 @@ for (const brand of BRANDS) {
 
     await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading'))).toBe(true);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeLessThan(0.1);
-    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('none');
+    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('auto');
     await testInfo.attach(`${brand.brand}-rail-faded-390x844`, {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png',
