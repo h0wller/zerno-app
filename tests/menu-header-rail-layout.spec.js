@@ -87,6 +87,9 @@ for (const brand of CASES) {
           headLeft: headRect.left,
           headRight: headRect.right,
           railTop: railRect.top,
+          railBottom: railRect.bottom,
+          railHeight: railRect.height,
+          viewportHeight: window.innerHeight,
           railPosition: getComputedStyle(railEl).position,
           headBottom: headRect.bottom,
           contentLeft: wrapRect.left + parseFloat(wrapStyle.borderLeftWidth) + parseFloat(wrapStyle.paddingLeft),
@@ -97,8 +100,10 @@ for (const brand of CASES) {
       }, { headSelector: brand.head, railSelector: brand.rail });
 
       if (horizontalRail) {
-        expect(layout.railPosition, 'mobile rail starts in normal document flow before reaching its pin threshold')
-          .toBe('relative');
+        expect(layout.railPosition, 'mobile and short-landscape rail is fixed to the viewport')
+          .toBe('fixed');
+        expect(Math.abs(layout.railBottom - layout.viewportHeight),
+          'rail bottom is aligned with the viewport bottom').toBeLessThanOrEqual(1);
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
         expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
       }
@@ -131,72 +136,34 @@ for (const brand of CASES) {
       });
 
       const railTopBeforeScroll = await rail.evaluate(el => el.getBoundingClientRect().top);
-      if (viewport.width <= 820) {
-        const initialPosition = await rail.evaluate(el => getComputedStyle(el).position);
-        expect(initialPosition).toBe('relative');
-      }
       await page.evaluate(() => window.scrollTo(0, 500));
-      if (viewport.width <= 820) {
+      if (horizontalRail) {
         await expect.poll(() => page.evaluate(selector => {
           const element = document.querySelector(selector);
           const rect = element.getBoundingClientRect();
-          const topbar = document.querySelector('header.topbar');
-          const style = topbar && getComputedStyle(topbar);
-          const topbarSticky = !!(style && (style.position === 'sticky' || style.position === 'fixed'));
-          const expectedTop = topbarSticky ? topbar.getBoundingClientRect().height : 12;
           return {
-            topDelta: Math.abs(rect.top - expectedTop),
             position: getComputedStyle(element).position,
             bottom: rect.bottom,
+            height: rect.height,
+            pinClass: element.classList.contains('rail-is-pinned'),
+            spacerCount: element.parentElement.querySelectorAll(':scope > .rail-pin-spacer').length,
           };
         }, brand.rail), { timeout: 5000 }).toMatchObject({
           position: 'fixed',
+          bottom: viewport.height,
+          height: viewport.height <= 480 ? 48 : 56,
+          pinClass: false,
+          spacerCount: 0,
         });
-        await expect(rail).toBeVisible();
-        await expect(rail).toHaveClass(/rail-is-pinned/);
-        await expect(rail).toHaveCSS('position', 'fixed');
-
-        // The pinned rail remains visible at one viewport coordinate throughout scrolling.
-        const pinnedTopAt500 = await rail.evaluate(el => el.getBoundingClientRect().top);
+        const fixedTopAt500 = await rail.evaluate(el => el.getBoundingClientRect().top);
         await page.evaluate(() => window.scrollTo(0, 700));
-        await expect.poll(() => page.evaluate(selector => {
-          const railElement = document.querySelector(selector);
-          const topbar = document.querySelector('header.topbar');
-          const style = topbar && getComputedStyle(topbar);
-          const topbarSticky = !!(style && (style.position === 'sticky' || style.position === 'fixed'));
-          const expectedTop = topbarSticky && topbar
-            ? Math.ceil(topbar.getBoundingClientRect().height)
-            : 12;
-          return Math.abs(railElement.getBoundingClientRect().top - expectedTop);
-        }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
-        const pinnedTopAt700 = await rail.evaluate(el => el.getBoundingClientRect().top);
-        expect(Math.abs(pinnedTopAt700 - pinnedTopAt500),
-          'rail must stay pinned at one viewport coordinate while the page continues scrolling')
-          .toBeLessThanOrEqual(2);
+        await expect.poll(() => rail.evaluate(el => el.getBoundingClientRect().top), { timeout: 5000 })
+          .toBeCloseTo(fixedTopAt500, 0);
         await expect(rail).toBeVisible();
+        await expect(rail).not.toHaveClass(/rail-is-pinned/);
         await expect(rail).toHaveCSS('position', 'fixed');
-        await expect(rail).toHaveClass(/rail-is-pinned/);
-        await expect(rail).toHaveCSS('opacity', '1');
-        await expect.poll(() => rail.evaluate(el => getComputedStyle(el).animationName)).toBe('none');
-        await expect.poll(() => rail.evaluate(el => {
-          const style = getComputedStyle(el);
-          return style.backdropFilter || style.webkitBackdropFilter || 'none';
-        })).toBe('none');
         await expect(rail).toHaveCSS('transform', 'none');
-        await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
-          body: await page.screenshot({ animations: 'disabled' }),
-          contentType: 'image/png',
-        });
-        await page.evaluate(() => window.scrollTo(0, 0));
-        await expect.poll(() => rail.evaluate(el => el.classList.contains('rail-is-pinned')))
-          .toBe(false);
-        await expect(rail).toHaveCSS('position', 'relative');
-      } else if (horizontalRail) {
-        await expect.poll(() => rail.evaluate(el => el.getBoundingClientRect().top))
-          .toBeLessThan(railTopBeforeScroll - 20);
-        await expect.poll(() => rail.evaluate(el => getComputedStyle(el).position))
-          .not.toBe('sticky');
-        await testInfo.attach(`${brand.brand}-short-landscape-scrolled-${viewport.width}px`, {
+        await testInfo.attach(brand.brand + '-bottom-rail-' + viewport.width + 'x' + viewport.height, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
         });
