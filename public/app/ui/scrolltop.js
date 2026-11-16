@@ -309,6 +309,11 @@ window.scrollMenuContentToStart = function (contentSelector, railSelector) {
   var targetTop = content.getBoundingClientRect().top +
     (window.scrollY || document.documentElement.scrollTop || 0);
   var nextScrollY = Math.max(0, targetTop - viewportTop);
+  if (rail && rail.classList.contains('rail-is-pinned') &&
+      railPinState && railPinState.rail === rail) {
+    var pinThreshold = railPinState.documentTop - getRailStickyTop();
+    nextScrollY = Math.max(nextScrollY, Math.ceil(pinThreshold) + 1);
+  }
   window.scrollTo({ top: nextScrollY, behavior: 'smooth' });
 };
 
