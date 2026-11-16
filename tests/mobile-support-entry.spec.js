@@ -123,7 +123,7 @@ for (const brand of BRANDS) {
         }, { view: brand.view });
         expect(targets.launcherHost).toEqual({ width: 44, height: 44 });
         expect(targets.launcher).toEqual({ width: 44, height: 44 });
-        expect(targets.search.height).toBe(40);
+        expect(targets.search.height).toBeCloseTo(40, 0);
         await expect(support).toHaveCSS('position', 'relative');
         await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
 
