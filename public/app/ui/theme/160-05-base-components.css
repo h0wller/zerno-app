@@ -284,12 +284,6 @@
   padding: 6px 10px;
   border-radius: 12px;
 }
-/* ── Сетка доставки и безопасный отступ под плавающую корзину ── */
-#deliveryGrid {
-  padding-bottom: calc(var(--floating-cart-h, 72px) + max(16px, env(safe-area-inset-bottom, 0px)));
-}
-
-
 
 /* ── Настройки профиля: компактная ширина и общая ритмика ── */
 #settingsModal .settings-card {
