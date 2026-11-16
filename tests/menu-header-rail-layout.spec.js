@@ -1245,7 +1245,7 @@ test('coffee active rail background diagnostic reports token and matching CSS ru
       const token = getComputedStyle(document.documentElement).getPropertyValue('--category-tab-active-bg').trim();
       const backgroundColor = getComputedStyle(element).backgroundColor;
       const matches = [];
-      if (token && token !== backgroundColor) {
+      if (token !== backgroundColor) {
         const visit = (rules, href) => {
           for (const rule of Array.from(rules || [])) {
             if (rule.cssRules) { visit(rule.cssRules, href); continue; }
