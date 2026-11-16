@@ -318,9 +318,10 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await expect(firstOpt).toHaveCSS('color', 'rgb(255, 255, 255)');
     await expect(firstOpt).toHaveCSS('background-color', 'rgb(192, 59, 42)');
 
-    // ── Задача 2: Безопасный нижний отступ #deliveryGrid (>= 88px под плавающую корзину) ──
+    // ── Задача 2: empty-cart scroll reserve is rail total + 16px; no FAB lane ──
     const padBottom = await page.locator('#deliveryGrid').evaluate((el) => parseFloat(window.getComputedStyle(el).paddingBottom));
-    expect(padBottom).toBeGreaterThanOrEqual(88);
+    const railTotal = await page.locator('#deliveryRail').evaluate((el) => el.getBoundingClientRect().height);
+    expect(padBottom).toBeGreaterThanOrEqual(railTotal + 15);
 
     // ── Задача 3: mobile category row follows search and precedes secondary filters ──
     await page.evaluate(() => {
@@ -337,17 +338,23 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
         direction: getComputedStyle(railEl).flexDirection,
         parentIsView: railEl.parentElement === document.querySelector('#deliveryView'),
         searchGap: rail.top - head.bottom,
-        filterGap: filters.top - rail.bottom,
+        filterClearance: rail.top - filters.bottom,
         width: rail.width,
-        headWidth: head.width
+        viewportWidth: window.innerWidth,
+        bottom: rail.bottom,
+        viewportHeight: window.innerHeight,
+        height: rail.height
       };
     });
-    expect(railGeometry.position).toBe('relative');
+    expect(railGeometry.position).toBe('fixed');
     expect(railGeometry.direction).toBe('row');
     expect(railGeometry.parentIsView).toBe(true);
     expect(railGeometry.searchGap).toBeGreaterThanOrEqual(8);
-    expect(railGeometry.filterGap).toBeGreaterThanOrEqual(0);
-    expect(railGeometry.width).toBeCloseTo(railGeometry.headWidth, 0);
+    expect(railGeometry.filterClearance).toBeGreaterThanOrEqual(0);
+    expect(railGeometry.bottom).toBe(railGeometry.viewportHeight);
+    expect(railGeometry.height).toBeGreaterThanOrEqual(56);
+    expect(railGeometry.height).toBeLessThanOrEqual(76);
+    expect(railGeometry.width).toBeCloseTo(railGeometry.viewportWidth, 0);
 
     // ── Задача 4: Контраст полей чекаута, прижатие шторки к bottom=viewport.height и скрытие #cartFab ──
     await firstPizzaCard.locator('.steprow .cta, [data-add]').first().click();
