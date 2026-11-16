@@ -99,28 +99,6 @@
     --rail-edge-gap:10px;
     --rail-total-h:calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom,0px));
   }
-  html body .wrap #menuView #rail {
-    width:min(460px,calc(100vw - 24px));
-    max-width:calc(100vw - 24px);
-    justify-content:space-between;
-    gap:2px;
-    overflow-x:hidden;
-  }
-  html body .wrap #menuView #rail button {
-    flex:1 1 0;
-    min-width:44px;
-    width:0;
-    padding-inline:1px;
-    gap:1px;
-  }
-  html body .wrap #menuView #rail .category-label {
-    max-width:100%;
-    font-size:clamp(8px,2.3vw,10px);
-    letter-spacing:-.35px;
-  }
-  @media (max-width:340px) {
-    html body .wrap #menuView #rail .category-label { display:none; }
-  }
   html body .wrap #menuView #rail,
   html body .wrap #deliveryView #deliveryRail {
     box-sizing:border-box;
@@ -144,6 +122,34 @@
     overflow-x:auto;
     overflow-y:hidden;
     z-index:80;
+  }
+  /* Both brands fit their full category sets in the first frame without horizontal scrolling. */
+  html body .wrap #menuView #rail,
+  html body .wrap #deliveryView #deliveryRail {
+    width:min(460px,calc(100vw - 24px));
+    max-width:calc(100vw - 24px);
+    justify-content:space-between;
+    gap:2px;
+    overflow-x:hidden;
+  }
+  html body .wrap #menuView #rail button,
+  html body .wrap #deliveryView #deliveryRail button {
+    flex:1 1 0;
+    min-width:44px;
+    width:0;
+    padding-inline:1px;
+    gap:1px;
+  }
+  html body .wrap #menuView #rail .category-label,
+  html body .wrap #deliveryView #deliveryRail .category-label {
+    min-width:0;
+    max-width:100%;
+    font-size:clamp(8px,2.3vw,10px);
+    letter-spacing:-.35px;
+  }
+  @media (max-width:340px) {
+    html body .wrap #menuView #rail .category-label,
+    html body .wrap #deliveryView #deliveryRail .category-label { display:none; }
   }
   #grid,
   #deliveryGrid {
