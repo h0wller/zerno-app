@@ -417,7 +417,14 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         activeModeText: getComputedStyle(active).color,
         tickerBackground: getComputedStyle(ticker).backgroundColor,
         tickerText: getComputedStyle(ticker).color,
-        railBackground: getComputedStyle(rail).backgroundColor,
+        railBackground: (() => {
+          const surface = document.createElement('div');
+          surface.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--category-rail-bg').trim();
+          document.body.appendChild(surface);
+          const value = getComputedStyle(surface).backgroundColor;
+          surface.remove();
+          return value;
+        })(),
         railText: getComputedStyle(railProbe).color,
         venueBackground: getComputedStyle(venue).backgroundColor,
         venueText: getComputedStyle(arrow).color,
