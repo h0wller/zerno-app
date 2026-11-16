@@ -608,11 +608,11 @@ html body #chatsToggle2 {
 
   html body #deliveryGrid .steprow.compact-quantity-row > .cta[data-add].incart,
   html body #grid .steprow.compact-quantity-row > .cta[data-add].incart {
-    width:44px;
+    width:auto;
     min-width:44px;
-    max-width:44px;
-    flex:0 0 44px;
-    padding:0;
+    max-width:none;
+    flex:1 1 auto;
+    padding:0 4px;
   }
 }
 
