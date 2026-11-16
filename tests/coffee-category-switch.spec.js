@@ -46,10 +46,25 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
   await page.evaluate(() => window.scrollTo(0, 700));
   await expect(rail).toHaveClass(/rail-is-pinned/);
 
+  await page.evaluate(() => {
+    const original = window.scrollMenuContentToStart;
+    window.__coffeeScrollEvidence = null;
+    window.scrollMenuContentToStart = function (contentSelector, railSelector, preservePinned) {
+      window.__coffeeScrollEvidence = {
+        cardCount: document.querySelectorAll('#grid .card').length,
+        preservePinned,
+      };
+      return original.call(this, contentSelector, railSelector, preservePinned);
+    };
+  });
+
   const category = page.locator('#rail button[data-cat]').nth(1);
   await category.click();
 
   await expect(category).toHaveClass(/on/);
+  await expect.poll(() => page.evaluate(() => window.__coffeeScrollEvidence?.cardCount ?? -1))
+    .toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__coffeeScrollEvidence.preservePinned)).toBe(true);
   await expect.poll(() => page.evaluate(() => {
     const rail = document.querySelector('#rail');
     const grid = document.querySelector('#grid');
