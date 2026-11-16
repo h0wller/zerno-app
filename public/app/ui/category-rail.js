@@ -125,7 +125,7 @@ function markRailScrolling() {
     if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
     fadedRail = null;
     railFadeTimer = null;
-  }, 260);
+  }, 520);
 }
 
 window.alignRailWithCard = alignRailWithCard;
