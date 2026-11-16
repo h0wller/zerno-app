@@ -133,7 +133,7 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
     contentType: 'image/png',
   });
 
-  const option = firstCard.locator('.opts label.opt-btn').first();
+  const option = firstCard.locator('.opts label.opt-btn').last();
   if (await option.count()) await option.click();
   await firstCard.locator('.steprow .cta, [data-add]').first().click();
   await expect.poll(() => fab.evaluate(element =>
@@ -171,6 +171,7 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
       fabBottom: rect.bottom,
       fabHeight: rect.height,
       text: fab.innerText,
+      totalValue: Number((fab.querySelector('.cf-total')?.textContent || '').replace(/\\D/g, '')),
       whiteSpace: getComputedStyle(fab).whiteSpace,
       display: getComputedStyle(fab).display,
       visibility: getComputedStyle(fab).visibility,
@@ -198,8 +199,8 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
   expect(geometry.fabHeight).toBeLessThanOrEqual(64);
   expect(geometry.width).toBeLessThanOrEqual(geometry.viewportWidth - 24);
   expect(geometry.whiteSpace).toBe('nowrap');
-  expect(geometry.text.replace(/\D/g, '').length,
-    'long cart amount remains visible as a single-line numeric total').toBeGreaterThanOrEqual(5);
+  expect(geometry.totalValue,
+    'cart total reaches five digits and remains visible as one line').toBeGreaterThanOrEqual(10000);
   expect(geometry.scrollHeight).toBeLessThanOrEqual(geometry.clientHeight + 1);
   expect(geometry.fabBottom + 8,
     'cart FAB must have a clear 8px gap above the rail').toBeLessThanOrEqual(geometry.railTop);
