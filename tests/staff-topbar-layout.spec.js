@@ -81,6 +81,60 @@ test('mobile menu header has only the two requested rows', async ({ page }) => {
   }
 });
 
+
+test('staff mobile rail has no blank gap before catalog controls', async ({ page }, testInfo) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockStaffSession(page, 'admin');
+    await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'admin' &&
+      document.documentElement.hasAttribute('data-staff-ready')
+    );
+    await page.evaluate(() => window.setMode('admin'));
+
+    const railSelector = brand === 'coffee' ? '#rail' : '#deliveryRail';
+    const targetSelector = brand === 'coffee' ? '#grid' : '#deliverySubFilterViewport';
+    const geometry = await page.evaluate(({ railSelector, targetSelector }) => {
+      const rail = document.querySelector(railSelector);
+      const target = document.querySelector(targetSelector);
+      const view = rail.parentElement;
+      const railRect = rail.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const siblings = Array.from(view.children);
+      const railIndex = siblings.indexOf(rail);
+      const targetIndex = siblings.indexOf(target);
+      return {
+        gap: targetRect.top - railRect.bottom,
+        rail: { top: railRect.top, bottom: railRect.bottom, height: railRect.height, marginBottom: getComputedStyle(rail).marginBottom },
+        target: {
+          id: target.id, top: targetRect.top, height: targetRect.height,
+          display: getComputedStyle(target).display,
+          marginTop: getComputedStyle(target).marginTop,
+          paddingTop: getComputedStyle(target).paddingTop
+        },
+        intervening: siblings.slice(railIndex + 1, targetIndex).map(element => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            tag: element.tagName, id: element.id, className: element.className,
+            top: rect.top, bottom: rect.bottom, height: rect.height,
+            display: style.display, position: style.position,
+            marginTop: style.marginTop, marginBottom: style.marginBottom,
+            paddingTop: style.paddingTop, minHeight: style.minHeight
+          };
+        })
+      };
+    }, { railSelector, targetSelector });
+
+    await testInfo.attach(`${brand}-staff-rail-content-gap.json`, {
+      body: Buffer.from(JSON.stringify(geometry, null, 2)),
+      contentType: 'application/json'
+    });
+    expect(geometry.gap, `${brand} staff rail/content geometry: ${JSON.stringify(geometry)}`).toBeLessThanOrEqual(28);
+  }
+});
+
 test('staff menu header is exactly two rows for both brands and mobile widths', async ({ page }, testInfo) => {
   for (const brand of ['coffee', 'delivery']) {
     for (const width of [320, 390]) {
