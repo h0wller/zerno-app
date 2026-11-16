@@ -101,8 +101,9 @@
     transform: none;
   }
 
-  /* Keep all six coffee targets inside the capsule; delivery retains its own scroll contract. */
-  html body .wrap #menuView #rail {
+  /* Both brands fit their complete category set; keep horizontal scrolling out of the capsule. */
+  html body .wrap #menuView #rail,
+  html body .wrap #deliveryView #deliveryRail {
     width: min(460px, calc(100vw - 24px));
     max-width: calc(100vw - 24px);
     justify-content: space-between;
@@ -110,7 +111,8 @@
     overflow-x: hidden;
   }
 
-  html body .wrap #menuView #rail button {
+  html body .wrap #menuView #rail button,
+  html body .wrap #deliveryView #deliveryRail button {
     flex: 1 1 0;
     min-width: 44px;
     width: 0;
@@ -118,7 +120,8 @@
     gap: 1px;
   }
 
-  html body .wrap #menuView #rail .category-label {
+  html body .wrap #menuView #rail .category-label,
+  html body .wrap #deliveryView #deliveryRail .category-label {
     min-width: 0;
     max-width: 100%;
     font-size: clamp(8px, 2.3vw, 10px);
@@ -126,7 +129,8 @@
   }
 
   @media (max-width: 340px) {
-    html body .wrap #menuView #rail .category-label {
+    html body .wrap #menuView #rail .category-label,
+    html body .wrap #deliveryView #deliveryRail .category-label {
       display: none;
     }
   }
