@@ -135,7 +135,6 @@ for (const brand of CASES) {
         contentType: 'image/png',
       });
 
-      const railTopBeforeScroll = await rail.evaluate(el => el.getBoundingClientRect().top);
       await page.evaluate(() => window.scrollTo(0, 500));
       if (horizontalRail) {
         await expect.poll(() => page.evaluate(selector => {
