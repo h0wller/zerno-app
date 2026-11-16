@@ -218,7 +218,7 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
   await expect(rail).toHaveCSS('pointer-events', 'none');
   await expect(fab).toHaveCSS('visibility', 'hidden');
   await expect(fab).toHaveCSS('pointer-events', 'none');
-  await testInfo.attach('delivery-address-suggestions-sheet-390x844', {
+  await testInfo.attach('delivery-cart-sheet-open-390x844', {
     body: await page.screenshot({ animations: 'disabled' }),
     contentType: 'image/png',
   });
