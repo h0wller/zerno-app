@@ -117,6 +117,13 @@ function activeRail() {
 
 function markRailScrolling() {
   var rail = activeRail();
+  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
+    if (railFadeTimer) window.clearTimeout(railFadeTimer);
+    if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
+    fadedRail = null;
+    railFadeTimer = null;
+    return;
+  }
   if (fadedRail && fadedRail !== rail) fadedRail.classList.remove('is-scroll-fading');
   fadedRail = rail;
   if (fadedRail) fadedRail.classList.add('is-scroll-fading');
