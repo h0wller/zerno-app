@@ -2251,13 +2251,21 @@ test('brand selector options share one content-sized surface and preserve active
           };
         });
         const rootStyle = getComputedStyle(document.documentElement);
+        const resolveColor = (value) => {
+          const probe = document.createElement('span');
+          probe.style.color = value;
+          document.body.appendChild(probe);
+          const resolved = getComputedStyle(probe).color;
+          probe.remove();
+          return resolved;
+        };
         return {
           left: rect.left,
           right: rect.right,
           width: rect.width,
           viewportWidth: document.documentElement.clientWidth,
-          activeBackgroundToken: rootStyle.getPropertyValue('--venue-option-active-bg').trim(),
-          activeColorToken: rootStyle.getPropertyValue('--venue-option-active-color').trim(),
+          activeBackgroundToken: resolveColor(rootStyle.getPropertyValue('--venue-option-active-bg').trim()),
+          activeColorToken: resolveColor(rootStyle.getPropertyValue('--venue-option-active-color').trim()),
           buttons,
         };
       });
