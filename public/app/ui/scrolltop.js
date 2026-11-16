@@ -162,7 +162,7 @@ requestAnimationFrame(alignRailWithCard);
 
 // Keep the mobile category rail pinned at its viewport offset while scrolling.
 var railPinState = null;
-var railPinPreserveUntilStableFrame = false;
+var railPinPreserveDuringScroll = false;
 var railPinSettleFrame = 0;
 
 function getRailStickyTop() {
@@ -173,6 +173,9 @@ function getRailStickyTop() {
 }
 
 function clearRailPin(rail) {
+  railPinPreserveDuringScroll = false;
+  if (railPinSettleFrame) window.cancelAnimationFrame(railPinSettleFrame);
+  railPinSettleFrame = 0;
   if (!railPinState) {
     if (rail) rail.classList.remove('rail-is-pinned');
     return;
@@ -267,7 +270,7 @@ function updateRailPinning() {
 
   // Keep the existing fixed rail while category navigation scrolls the new
   // catalog section into place. The threshold has already been recalibrated.
-  if (railPinPreserveUntilStableFrame && railPinState && railPinState.rail === rail) {
+  if (railPinPreserveDuringScroll && railPinState && railPinState.rail === rail) {
     pinRailAtViewportTop(rail, stickyTop);
     return;
   }
@@ -324,16 +327,36 @@ window.scrollMenuContentToStart = function (contentSelector, railSelector, prese
     var pinState = railPinState;
     var pinnedTop = getRailStickyTop();
     var nextDocumentTop = nextScrollY + pinnedTop;
-    pinState.documentTop = Math.min(pinState.documentTop, nextDocumentTop);
-    railPinPreserveUntilStableFrame = true;
+    pinState.documentTop = Math.min(pinState.documentTop, nextDocumentTop - 2);
+    railPinPreserveDuringScroll = true;
     if (railPinSettleFrame) window.cancelAnimationFrame(railPinSettleFrame);
-    railPinSettleFrame = window.requestAnimationFrame(function () {
-      railPinSettleFrame = window.requestAnimationFrame(function () {
-        railPinPreserveUntilStableFrame = false;
-        railPinSettleFrame = 0;
-        updateRailPinning();
-      });
-    });
+    var lastScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    var stableFrames = 0;
+    var observedScrollMovement = false;
+    var settleFrames = 0;
+    var finishPinPreservation = function () {
+      railPinPreserveDuringScroll = false;
+      railPinSettleFrame = 0;
+      updateRailPinning();
+    };
+    var waitForScrollToSettle = function () {
+      var currentScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      var moved = Math.abs(currentScrollY - lastScrollY) >= 0.5;
+      if (moved) {
+        observedScrollMovement = true;
+        stableFrames = 0;
+      } else if (observedScrollMovement || Math.abs(currentScrollY - nextScrollY) <= 1) {
+        stableFrames += 1;
+      }
+      lastScrollY = currentScrollY;
+      settleFrames += 1;
+      if (stableFrames >= 3 || settleFrames >= 120) {
+        finishPinPreservation();
+        return;
+      }
+      railPinSettleFrame = window.requestAnimationFrame(waitForScrollToSettle);
+    };
+    railPinSettleFrame = window.requestAnimationFrame(waitForScrollToSettle);
   }
   window.scrollTo({ top: nextScrollY, behavior: 'smooth' });
 };

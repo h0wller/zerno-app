@@ -1631,9 +1631,10 @@ test('manual category change returns the new catalog content to the top while ke
 
     const nextCategory = rail.locator('button:not(.on)').first();
     await expect(nextCategory).toBeVisible();
-    const selectedCategory = await nextCategory.getAttribute('data-cat');
+    const categoryAttribute = brand.brand === 'delivery' ? 'data-dcat' : 'data-cat';
+    const selectedCategory = await nextCategory.getAttribute(categoryAttribute);
     await nextCategory.click();
-    await expect(rail.locator('button.on')).toHaveAttribute('data-cat', selectedCategory);
+    await expect(rail.locator('button.on')).toHaveAttribute(categoryAttribute, selectedCategory);
 
     const contentSelector = brand.brand === 'delivery'
       ? '#deliverySubFilterViewport:not([hidden]), #deliveryGrid'
@@ -1684,9 +1685,10 @@ test('late font hydration must not release a mobile rail after manual category c
     ), { timeout: 5000 }).toBe(true);
 
     const nextCategory = rail.locator('button:not(.on)').first();
-    const selectedCategory = await nextCategory.getAttribute('data-cat');
+    const categoryAttribute = brand.brand === 'delivery' ? 'data-dcat' : 'data-cat';
+    const selectedCategory = await nextCategory.getAttribute(categoryAttribute);
     await nextCategory.click();
-    await expect(rail.locator('button.on')).toHaveAttribute('data-cat', selectedCategory);
+    await expect(rail.locator('button.on')).toHaveAttribute(categoryAttribute, selectedCategory);
     await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe('loading');
 
     releaseFonts();
@@ -1814,39 +1816,64 @@ test('rail active background diagnostic and four brand viewport captures', async
       const diagnostic = await page.evaluate(() => {
         const railSelector = document.documentElement.dataset.brand === 'delivery' ? '#deliveryRail' : '#rail';
         const active = document.querySelector(railSelector + ' button.on');
-        const rootToken = getComputedStyle(document.documentElement).getPropertyValue('--category-tab-active-bg').trim();
-        const computedBackground = active ? getComputedStyle(active).backgroundColor : null;
+        const rootStyles = getComputedStyle(document.documentElement);
+        const rootToken = rootStyles.getPropertyValue('--category-tab-active-bg').trim();
+        const activeColorToken = rootStyles.getPropertyValue('--category-tab-active-color').trim();
+        const iconActiveBackgroundToken = rootStyles.getPropertyValue('--category-icon-active-bg').trim();
+        const activeStyle = active ? getComputedStyle(active) : null;
+        const activeIcon = active ? active.querySelector('.re') : null;
+        const computedBackground = activeStyle ? activeStyle.backgroundColor : null;
+        const computedActiveColor = activeStyle ? activeStyle.color : null;
+        const computedIconBackground = activeIcon ? getComputedStyle(activeIcon).backgroundColor : null;
         const matchedRules = [];
+        const stylesheetHrefs = [];
+        let styleRuleCount = 0;
         const visit = (rules, source) => {
           for (const rule of rules) {
-            if (rule.cssRules) {
-              try { visit(rule.cssRules, source); } catch (_) {}
+            // CSSStyleRule also exposes cssRules in browsers with CSS nesting.
+            // Check STYLE_RULE first or its own declarations can be skipped.
+            if (rule.type === 1) {
+              styleRuleCount += 1;
+              if (!rule.selectorText || !rule.style || !active) continue;
+              const matchingSelectors = rule.selectorText.split(',').map(selector => selector.trim())
+                .filter(selector => {
+                  try { return active.matches(selector); } catch (_) { return false; }
+                });
+              if (!matchingSelectors.length) continue;
+              const background = rule.style.getPropertyValue('background');
+              const backgroundColor = rule.style.getPropertyValue('background-color');
+              if (!background && !backgroundColor) continue;
+              matchedRules.push({
+                file: source,
+                selector: rule.selectorText,
+                matchedSelector: matchingSelectors[0],
+                background: background || null,
+                backgroundColor: backgroundColor || null,
+                important: rule.style.getPropertyPriority(background ? 'background' : 'background-color') === 'important',
+              });
               continue;
             }
-            if (!rule.selectorText || !rule.style || !active) continue;
-            const matchingSelectors = rule.selectorText.split(',').map(selector => selector.trim())
-              .filter(selector => {
-                try { return active.matches(selector); } catch (_) { return false; }
-              });
-            if (!matchingSelectors.length) continue;
-            const background = rule.style.getPropertyValue('background');
-            const backgroundColor = rule.style.getPropertyValue('background-color');
-            if (!background && !backgroundColor) continue;
-            matchedRules.push({
-              file: source,
-              selector: rule.selectorText,
-              matchedSelector: matchingSelectors[0],
-              background: background || null,
-              backgroundColor: backgroundColor || null,
-              important: rule.style.getPropertyPriority(background ? 'background' : 'background-color') === 'important',
-            });
+            if (rule.cssRules) {
+              try { visit(rule.cssRules, source); } catch (_) {}
+            }
           }
         };
         for (const sheet of document.styleSheets) {
           const source = sheet.href || 'inline <style>';
+          if (source.includes('/150-rail.css')) stylesheetHrefs.push(source);
           try { visit(sheet.cssRules, source); } catch (_) {}
         }
-        return { token: rootToken, computedBackground, matchedRules };
+        return {
+          token: rootToken,
+          activeColorToken: activeColorToken || null,
+          iconActiveBackgroundToken: iconActiveBackgroundToken || null,
+          computedBackground,
+          computedActiveColor,
+          computedIconBackground,
+          styleRuleCount,
+          stylesheetHrefs,
+          matchedRules,
+        };
       });
       await testInfo.attach(brand + '-' + viewport.name + '-rail-background-diagnostic.json', {
         body: Buffer.from(JSON.stringify(diagnostic, null, 2)),
