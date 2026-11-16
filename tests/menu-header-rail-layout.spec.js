@@ -2318,7 +2318,6 @@ test('mobile guest menu panel keeps its lower inset while compacting the title-t
         const search = element.querySelector('.mh-right .search');
         const toolbar = element.querySelector('.mh-top');
         const titleRow = toolbar?.firstElementChild;
-        const titleRow = toolbar?.firstElementChild;
         const style = getComputedStyle(element);
         return {
           panelHeight: rect(element).height,
