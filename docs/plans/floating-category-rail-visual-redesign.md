@@ -1,6 +1,6 @@
 # Floating category rail — visual redesign proposal
 
-**Status:** CSS fallback implemented; CI green on `dfcf332ab0f736465bca760e3884d63f9999083f`; guest visual review completed. Staff-state visual evidence remains pending. Native adapter is deferred to a separate follow-up.
+**Status:** CSS fallback implemented; CI green on `dfcf332ab0f736465bca760e3884d63f9999083f`; guest and staff visual review completed. Staff-state visual review completed. Native adapter is deferred to a separate follow-up.
 **Parent:** PR #265, head `ff6be95d72e1bd7d308011aa7f9cc207ba50fcf4`.
 **Scope:** mobile/compact-landscape category rail only. No cart, category-data, checkout, or business-logic changes.
 
@@ -94,5 +94,6 @@ No body-level host or DOM relocation is proposed at this stage. Do not change ca
 - CSS fallback is implemented in the existing owner files: `150-rail.css`, `20-cards.css` and the critical first-frame reservation in `index.html`. Category data/state, DOM placement, cart logic and desktop sidebar ownership were not moved.
 - CI run [43944948904](https://github.com/h0wller/zerno-app/actions/runs/43944948904) on `dfcf332ab0f736465bca760e3884d63f9999083f`: all 13/13 jobs passed, including Code Quality & Guardrails, Mobile Chrome responsive, Responsive UI, Cart and checkout, and Visual UX capture.
 - Opened and visually inspected the current guest captures from artifact `visual-ux-baseline-test-43944948904`: coffee/delivery at 390×844, 320×740 and short landscape 844×390. Detached capsule, active-state treatment, horizontal clipping behavior, safe-area gap and delivery subfilter/card hierarchy were reviewed. No screenshot baseline was updated.
-- Staff mobile rail screenshots were not emitted by the visual capture artifact; staff geometry is covered by E2E assertions but has not yet passed the screenshot review gate. Therefore visual acceptance is **partial / not yet complete**, and this PR remains Draft.
+- Opened and visually inspected staff screenshots from artifact `playwright-Responsive UI-43944948904`: coffee/delivery admin rail at 390×844. The capsule remains detached, selected state is visible, and the rail does not interfere with the two-row staff header. The transient admin-mode toast is present in the captured state but does not overlap the rail.
+- Guest and staff visual review is complete for the captured states. This is not device-level iOS/Android acceptance; the artifact is Chromium CI evidence.
 - Native rendering adapter is not implemented in this PR. Repository inspection found Capacitor shells but no existing category-rail rendering bridge; keep native work as a separately scoped follow-up after CSS acceptance.
