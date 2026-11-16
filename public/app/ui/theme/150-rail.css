@@ -89,7 +89,7 @@
   html body .wrap #deliveryView #deliveryRail button.on {
     border: 0;
     border-radius: 0;
-    background: var(--category-tab-active-bg, transparent);
+    background: transparent;
     box-shadow: none;
     color: var(--category-tab-active-color, var(--category-tab-color, currentColor));
     font-weight: var(--category-label-active-weight, 800);
