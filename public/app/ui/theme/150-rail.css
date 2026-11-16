@@ -184,10 +184,13 @@
   }
 }
 
-@media (max-width: 820px) {
+@media (max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   body.cart-open .wrap #menuView #rail,
   body.cart-open .wrap #deliveryView #deliveryRail,
-  body.cart-open #cartFab {
+  body:has(#cartPanel.open) .wrap #menuView #rail,
+  body:has(#cartPanel.open) .wrap #deliveryView #deliveryRail,
+  body.cart-open #cartFab,
+  body:has(#cartPanel.open) #cartFab {
     visibility: hidden !important;
     pointer-events: none !important;
   }
