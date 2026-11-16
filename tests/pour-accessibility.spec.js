@@ -87,7 +87,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
       document.documentElement.hasAttribute('data-staff-ready')
     );
     await page.waitForFunction(() =>
-      ['modeSeg', 'editToggle', 'profileTopBtn', 'scrollTopBtn', 'venueToggle', 'supportLauncherHost', 'chatFab']
+      ['modeSeg', 'editToggle', 'profileTopBtn', 'venueToggle', 'supportLauncherHost', 'chatFab']
         .every(id => document.getElementById(id))
     );
     await page.evaluate(() => window.setMode('admin'));
@@ -130,7 +130,6 @@ test.describe('Pour accessibility audit — delivery brand', () => {
             return { height: box.height, width: box.width, faceHeight: box.height - inset - (Number.parseFloat(face.bottom) || 0) };
           }),
         profile: rect(document.getElementById('profileTopBtn')),
-        scrollTop: rect(document.getElementById('scrollTopBtn')),
         venue: rect(document.getElementById('venueToggle')),
         supportHost: rect(document.getElementById('supportLauncherHost')),
         support: rect(document.getElementById('chatFab')),
@@ -260,7 +259,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
   test('floating controls and confetti canvas have accessible landmark treatment', async ({ page }) => {
     await expect(page.locator('#fx')).toHaveAttribute('aria-hidden', 'true');
     await expect(page.locator('#chatFab').locator('xpath=ancestor::aside[@aria-label="Поддержка"]')).toHaveCount(1);
-    await expect(page.locator('nav[aria-label="Навигация по странице"] #scrollTopBtn')).toBeAttached();
+    await expect(page.locator('#scrollTopBtn')).toHaveCount(0);
   });
 
   test('ticker is full-bleed, loops only a complete overflowing line, and has no pause control', async ({ page }) => {
