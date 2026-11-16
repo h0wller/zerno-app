@@ -597,6 +597,8 @@ test('short landscape category tabs align to the catalog instead of filling the 
           direction: style.flexDirection,
           railLeft: railRect.left,
           railRight: railRect.right,
+          railBottom: railRect.bottom,
+          railHeight: railRect.height,
           gridLeft: gridRect.left,
           gridRight: gridRect.right,
           buttonWidths: [...rail.querySelectorAll('button')].map((button) => button.getBoundingClientRect().width),
