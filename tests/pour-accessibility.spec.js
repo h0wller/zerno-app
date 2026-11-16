@@ -307,7 +307,8 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(ticker.left).toBe(0);
     expect(ticker.width).toBe(ticker.viewportWidth);
     expect(ticker.groupWidth).toBeGreaterThan(ticker.viewportWidth);
-    expect(ticker.groups).toBe(2);
+    const copiesPerCycle = Math.ceil(ticker.viewportWidth / ticker.groupWidth) + 1;
+    expect(ticker.groups).toBe(2 * copiesPerCycle);
     expect(ticker.cloneHidden).toBe('true');
     expect(ticker.animationPlayState).toBe('running');
 
