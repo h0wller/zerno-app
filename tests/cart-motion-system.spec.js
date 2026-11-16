@@ -76,7 +76,8 @@ test('reduced motion opens and closes the cart sheet without spatial travel', as
     { width: 1024, height: 768 },
   ];
 
-  for (const brand of ['coffee', 'delivery']) {
+  // The floating cart and cart sheet are delivery-only components.
+  for (const brand of ['delivery']) {
     for (const viewport of viewports) {
       const { panel, fab } = await prepareCart(page, brand, viewport);
 
