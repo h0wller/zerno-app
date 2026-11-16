@@ -245,6 +245,7 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
     const trigger = document.createElement('button');
     trigger.id = 'authBackdropTrigger';
     trigger.textContent = 'Open profile';
+    trigger.style.cssText = 'position:fixed;top:8px;left:8px;z-index:2000;';
     trigger.addEventListener('click', () => window.openAuth(false));
     document.body.appendChild(trigger);
   });
