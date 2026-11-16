@@ -839,13 +839,15 @@ body > div.wrap,
 }
 :root { --menu-rail-width: 80px; --menu-rail-gap: 10px; }
 /* Layer 4: reserve desktop sidebar hit-target geometry; visual treatment stays in 160-11. */
-html body div.wrap > .rail button,
-html body div.wrap > #rail button,
-html body div.wrap > #deliveryRail button {
-  width: 100%;
-  min-height: 64px;
-  padding: 6px 2px 8px;
-  border: 0;
+@media (min-width: 821px) {
+  html body div.wrap > .rail button,
+  html body div.wrap > #rail button,
+  html body div.wrap > #deliveryRail button {
+    width: 100%;
+    min-height: 64px;
+    padding: 6px 2px 8px;
+    border: 0;
+  }
 }
 
 /* Keep only the update timestamp compact; the brand context stays visible from first paint. */
