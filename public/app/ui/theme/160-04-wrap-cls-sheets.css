@@ -204,6 +204,7 @@
   @media (prefers-reduced-motion: reduce) {
     header.topbar .venueWrap #brandSeg,
     header.topbar .venueWrap #brandSeg > button {
+      animation: none;
       transition: none;
       transform: none;
     }
