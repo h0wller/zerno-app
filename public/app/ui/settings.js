@@ -187,22 +187,8 @@
             }
             return;
         }
-        if (event.key !== 'Tab') return;
-        var focusable = Array.prototype.slice.call(card.querySelectorAll(
-            'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
-        )).filter(function (element) {
-            return !element.closest('[hidden]');
-        });
-        if (!focusable.length) return;
-        var first = focusable[0];
-        var last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first.focus();
-        }
+        window.trapModalFocus(event, card,
+            'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])');
     }, true);
 
     window.openProfileSettings = openSettings;
