@@ -127,7 +127,6 @@ export function getOtpSendState(flow, phone) {
   };
 }
 
-/** Records a successfully accepted OTP send, preserving the 24-hour cap. */
 /** Returns the reason an OTP send is blocked, or null when sending is allowed. */
 export function getOtpSendBlockReason(state, now = Date.now()) {
   if (!state) return null;
@@ -136,6 +135,7 @@ export function getOtpSendBlockReason(state, now = Date.now()) {
   return null;
 }
 
+/** Records a successfully accepted OTP send, preserving the 24-hour cap. */
 export function recordOtpSend(flow, phone, now = Date.now()) {
   const current = getOtpSendState(flow, phone);
   const sent = current && now < current.windowEnds ? current.sent + 1 : 1;
