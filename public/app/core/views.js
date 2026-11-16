@@ -79,11 +79,19 @@ var rules = [
  '@media(max-width:820px){html body>div.wrap{grid-template-columns:minmax(0,1fr);gap:10px;padding:10px 12px 28px}.wrap>section{grid-column:1;grid-row:auto;min-width:0;width:100%}.panel{position:fixed;top:0;right:0;bottom:0;z-index:120;width:min(400px,100%);max-height:none;border-radius:22px 0 0 22px;transform:translateX(105%);transition:.35s cubic-bezier(.2,1,.3,1);padding-top:calc(env(safe-area-inset-top) + 6px)}.panel.open{transform:none}.tabs{order:99;margin-top:auto;background:var(--panel);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom))}.tabs button{padding:13px 6px;font-size:14px}.mbonus.near-footer{opacity:0;pointer-events:none;transform:translateY(8px)} .scan{grid-template-columns:1fr;justify-items:center;text-align:center}body.is-cashier .wrap{grid-template-columns:1fr!important;max-width:900px;padding:14px 16px 40px}}',
  '[data-brand="delivery"] .venueToggle{border:2px solid var(--fr-choc);background:var(--fr-paper);color:var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc)}',
  '[data-brand="delivery"] .venueToggle:hover{background:#EFE6D8;box-shadow:3px 3px 0 var(--fr-choc);transform:translate(-1px,-1px)}',
- '[data-brand="delivery"] .venueWrap #brandSeg{background:#FFFDF9;border:1px solid #C99E6E;box-shadow:0 10px 25px rgba(58,42,28,0.18);border-radius:14px}',
- '[data-brand="delivery"] .venueWrap #brandSeg button:hover{background:#F6EEE1;transform:none}',
- '[data-brand="delivery"] .venueWrap #brandSeg button.on{background:#8B2B20;border:none;box-shadow:none;border-radius:9px;color:#fff}',
- '@media(max-width:820px){html[data-brand="coffee"] .venueWrap #brandSeg button{box-sizing:border-box;flex:0 0 auto;width:max-content;max-width:100%;white-space:nowrap}}',
- 'html[data-brand="coffee"] .venueWrap #brandSeg button.on{background:#BBD7F2;border:1px solid rgba(18,58,107,.16);box-shadow:0 2px 7px rgba(18,58,107,.16);border-radius:9px;color:#123A6B}',
+
+
+
+
+
+ 'html[data-brand="delivery"] body header.topbar .venueWrap #brandSeg{background:var(--venue-menu-bg);border:var(--venue-menu-border);box-shadow:var(--venue-menu-shadow);border-radius:14px}',
+ 'html[data-brand="delivery"] body header.topbar .venueWrap #brandSeg > button{font-family:var(--venue-option-font);color:var(--venue-option-color)}',
+ 'html[data-brand="delivery"] body header.topbar .venueWrap #brandSeg > button:hover{background:var(--venue-option-hover-bg);transform:none}',
+ 'html[data-brand="delivery"] body header.topbar .venueWrap #brandSeg > button.on{background:var(--venue-option-active-bg);border:var(--venue-option-active-border);box-shadow:var(--venue-option-active-shadow);border-radius:9px;color:var(--venue-option-active-color);font-weight:800}',
+ 'html[data-brand="coffee"] body header.topbar .venueWrap #brandSeg{background:var(--venue-menu-bg);border:var(--venue-menu-border);box-shadow:var(--venue-menu-shadow);border-radius:14px}',
+ 'html[data-brand="coffee"] body header.topbar .venueWrap #brandSeg > button{font-family:var(--venue-option-font);color:var(--venue-option-color)}',
+ 'html[data-brand="coffee"] body header.topbar .venueWrap #brandSeg > button:hover{background:var(--venue-option-hover-bg)}',
+ 'html[data-brand="coffee"] body header.topbar .venueWrap #brandSeg > button.on{background:var(--venue-option-active-bg);border:var(--venue-option-active-border);box-shadow:var(--venue-option-active-shadow);border-radius:9px;color:var(--venue-option-active-color);font-weight:750}',
  '[data-brand="delivery"] .authPrompt{background:linear-gradient(135deg,#F6EEE1,#EFE6D8);border:2px dashed var(--fr-choc);color:var(--fr-choc)}',
  '[data-brand="delivery"] .authPrompt button{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff}',
  '@media(max-width:820px){#panel.open{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;max-height:100%;border-radius:0;margin:0;transform:none;z-index:320}#panel .tabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}}', '#chatPanel [class="chip"],#chatPanel #chips,#chatPanel .chips{display:none}',
