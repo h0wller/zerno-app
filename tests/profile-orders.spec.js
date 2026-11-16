@@ -178,6 +178,22 @@ test.describe('Модуль заказов профиля', () => {
     await expect(settings.locator('#deleteAccBtn')).toBeVisible();
     await expect(settings.locator('#deleteConfirmPanel')).toBeHidden();
     await expect(settings.locator('#deleteConfirmBtn')).toBeDisabled();
+
+    const focusBoundary = await settings.locator('.settings-card').evaluate(card => {
+      const selector = 'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+      const focusable = Array.from(card.querySelectorAll(selector))
+        .filter(element => !element.closest('[hidden]'));
+      return { first: focusable[0]?.id, last: focusable[focusable.length - 1]?.id };
+    });
+    expect(focusBoundary.first).toBeTruthy();
+    expect(focusBoundary.last).toBeTruthy();
+    await page.locator('#' + focusBoundary.last).focus();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#' + focusBoundary.first)).toBeFocused();
+    await page.locator('#' + focusBoundary.first).focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.locator('#' + focusBoundary.last)).toBeFocused();
+
     await testInfo.attach('settings-modal-390', {
       body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
       contentType: 'image/png'
