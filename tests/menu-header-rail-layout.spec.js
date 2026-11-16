@@ -1957,7 +1957,18 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
   });
 
   const category = page.locator('#rail button[data-cat]').nth(1);
-  await category.click();
+  const grid = page.locator('#grid');
+  const beforeCardCount = await grid.locator(':scope > .card').count();
+  expect(beforeCardCount).toBeGreaterThan(0);
+
+  // The coffee renderer must keep the previous column in flow until the
+  // replacement cards are ready; clearing #grid synchronously collapses the
+  // document and lets the browser clamp scrollY before smooth scrolling starts.
+  const immediateCardCount = await page.evaluate(() => {
+    document.querySelector('#rail button[data-cat]:nth-child(2)').click();
+    return document.querySelectorAll('#grid > .card').length;
+  });
+  expect(immediateCardCount, 'category switch must not synchronously empty the catalog column').toBeGreaterThan(0);
 
   await expect(category).toHaveClass(/on/);
   await expect.poll(() => page.evaluate(() => window.__coffeeScrollEvidence?.cardCount ?? -1))
