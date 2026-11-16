@@ -15,6 +15,8 @@ function usesHorizontalCategoryRailViewport() {
     (window.innerWidth > 820 && window.innerWidth > window.innerHeight && window.innerHeight <= 480);
 }
 
+window.usesHorizontalCategoryRailViewport = usesHorizontalCategoryRailViewport;
+
 function updateRailStickyPosition(rail, head) {
   if (!rail || !head) return;
 
