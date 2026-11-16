@@ -190,7 +190,7 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
   expect(geometry.fabHeight).toBeLessThanOrEqual(64);
   expect(geometry.width).toBeLessThanOrEqual(geometry.viewportWidth - 24);
   expect(geometry.whiteSpace).toBe('nowrap');
-  expect(geometry.text.replace(/\\D/g, '').length,
+  expect(geometry.text.replace(/\D/g, '').length,
     'long cart amount remains visible as a single-line numeric total').toBeGreaterThanOrEqual(5);
   expect(geometry.scrollHeight).toBeLessThanOrEqual(geometry.clientHeight + 1);
   expect(geometry.fabBottom + 8,
