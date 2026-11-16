@@ -1,78 +1,130 @@
 # Mobile bottom category rail — implementation brief
 
-**Status:** draft specification; no UI behavior changed yet.
+**Status:** implementation contract; tests are being introduced before UI changes.
 **Base:** PR #264 HEAD `4c390468d8d677dc3891d7201851a815041b6478`.
+**Current audit HEAD:** `f4c82a5532f4029997a8c93e17846c7398221598`.
 **Stacked on:** `handoff/253-on-pizza-20261115`.
 
 ## Goal
 
-Move the mobile category rail to the bottom of the viewport and make it a deliberate part of the mobile app composition. This is not a simple `position: fixed; bottom: 0` relocation.
+Move the active mobile category rail to the bottom of the viewport as a deliberate part of the app composition. This is not a simple `position: fixed; bottom: 0` relocation.
 
 The first design constraint is the cart. The rail must never hide, displace, or make the cart launcher hard to use.
+
+## Audit baseline
+
+The current mobile rail is a 56px horizontal row (48px in short landscape), in normal flow below `.menu-head`; on portrait <=820px the existing `ui/scrolltop.js` later pins it to the viewport TOP using `.rail-is-pinned` and a `.rail-pin-spacer`. Desktop uses a separate sidebar anchor and must not change.
+
+The current cart FAB is owned by `cart.js`, rendered as `#cartFab.cartFab`, and has a 48–64px visual height, centered, with its current bottom offset including safe-area. It currently sits in the same bottom viewport lane that the new rail needs. The cart sheet is a separate fixed overlay with its own scroll body and footer; Telegram can replace the inner checkout CTA with its native MainButton.
+
+The current critical CSS applies a floating-cart bottom reserve to `#deliveryGrid`, but the first-frame contract is not symmetric for coffee `#grid`. The new reserve must be common across both catalogs.
 
 ## Cart-first behavior matrix
 
 Validate at least these states before accepting the layout:
 
-1. **Empty cart:** the cart FAB is hidden; the rail remains visually balanced and does not reserve a phantom cart lane.
-2. **Cart has items:** the FAB remains fully visible, including count and total; rail and FAB have distinct hit areas and do not overlap.
-3. **Cart updates:** adding/removing items and changing quantities updates the FAB without moving the rail or causing layout jumps.
-4. **Cart open:** `#cartPanel` owns the foreground interaction; the rail/FAB do not remain clickable through the sheet.
-5. **Checkout:** the last form control, checkout action and footer remain reachable above the keyboard and safe area.
-6. **Address suggestions / keyboard:** the bottom navigation does not cover suggestions, focused fields or the active input.
-7. **Telegram Mini App:** check `tg-cart-open`, `tg-native-main` and Telegram's native MainButton; do not create a second competing checkout action.
+1. **Empty cart:** `#cartFab` remains hidden; the rail is visible and no cart-only lane is reserved.
+2. **One item:** FAB is fully visible, count and total are readable, and the full hit target is tappable.
+3. **Multiple items / long total:** FAB retains its horizontal layout and readable total without touching the rail.
+4. **Cart updates:** add/remove/change quantity and total update the existing FAB without changing rail coordinates or introducing CLS.
+5. **Cart open:** `#cartPanel` owns foreground interaction; rail and FAB are non-visible or inert and cannot receive pointer/focus interaction through the sheet.
+6. **Checkout:** the last form control, checkout action and footer remain reachable within the sheet's own scroll body and safe area.
+7. **Address suggestions / keyboard:** bottom navigation does not cover suggestions, focused controls or active input. Test keyboard viewport shrink where native keyboard cannot be hosted by Playwright.
+8. **Telegram Mini App:** check `tg-cart-open`, `tg-native-main` and native MainButton; do not create a competing checkout action.
 
-## Layout contract to design
+## Bottom composition contract
 
-- The rail is anchored to the viewport bottom and respects `env(safe-area-inset-bottom)`.
-- Content has a matching bottom scroll reserve so the final product card, its quantity/add CTA, and delivery subfilters can scroll fully above the rail.
-- The cart FAB has a deliberate lane/priority relative to the rail. Its visible state must be designed for both brands and variable cart totals, not handled by arbitrary offsets.
-- The empty-cart state must collapse any cart-only reserve cleanly.
-- Fixed UI must not cover toast messages, support launcher, bonus affordance, focus rings or browser/OS gesture areas.
-- Short landscape viewports must remain usable; avoid consuming a disproportionate share of the available height.
-- Category selection and scroll-to-category behavior must remain stable; no scroll jumps or CLS during first paint, hydration, category changes or cart updates.
-- Desktop vertical sidebar behavior remains unchanged.
+### Rail layer
 
-## Ownership constraints from the current source
+- Keep the existing active brand rail and its content/selected state in their existing brand view. `views.js` remains responsible for active-view DOM placement; do not move the state or content owner.
+- On supported mobile/compact viewports, the active rail is fixed to the viewport bottom; it does not depend on scroll threshold.
+- Portrait content height is 56px; short-landscape content height is 48px. Every category target remains at least 44px tall.
+- The rail surface includes one safe-area extension using `env(safe-area-inset-bottom)`; the background extends behind the system gesture region while interactive controls stop above it.
+- Remove the mobile top-pinning/placeholder behavior in `ui/scrolltop.js`; retain desktop anchor/alignment behavior unchanged.
 
-- `core/views.js`: DOM placement/reflow of `#rail` and `#deliveryRail`.
-- `menu.js`: coffee category rail content and selected state.
-- `delivery.js`: delivery category rail content and selected state.
-- `cart.js`: sole owner of cart state, rendering and `#cartFab`; the rail must not duplicate cart state or update the FAB itself.
-- `ui/theme/150-rail.css`: current rail geometry and active indicator.
-- `ui/theme/60-cart.css` plus the cart-specific mobile styles: cart sheet and footer geometry.
-- `index.html`: Layer 4 first-frame reservation only; do not turn it into a second full component stylesheet.
-- If DOM ownership changes, update `docs/module-map.md` in the same PR.
+### Cart FAB layer
+
+- The FAB keeps `cart.js` as sole owner of state, render, amount, count, visibility and click behavior.
+- Layout reads the actual rendered/visible state of `#cartFab`; it must not duplicate cart quantity or total calculations in `views.js`, `menu.js`, `delivery.js` or `scrolltop.js`.
+- When visible, FAB occupies a dedicated lane immediately above the rail, with a measurable non-overlapping gap and preserved full hit target.
+- When hidden, the FAB lane collapses. Empty cart must not leave a phantom blank slot.
+- Long totals must not increase the FAB beyond its existing maximum 64px visual height or cause vertical wrapping.
+
+### Catalog reserve
+
+Let **B** be the measured fixed bottom surface (rail height + one safe-area extension + top breathing gap). Let **F** be the measured FAB visual height plus its separating gap when the actual FAB is visible.
+
+- Both `#grid` and `#deliveryGrid` reserve at least B.
+- They reserve B + F only while the existing FAB is actually visible.
+- The last visible product card, all options/quantity controls and its CTA must scroll fully above the top edge of the occupied fixed bottom composition, with an additional measured clearance.
+- Delivery subfilters stay in their existing normal-flow region and retain horizontal scrolling; they must not be duplicated inside the rail.
+- The initial critical CSS and hydrated CSS must agree on the rail base geometry so no first-frame or hydration jump occurs.
+
+### Overlay, keyboard and auxiliary controls
+
+- While `#cartPanel.open` or `body.cart-open` is active, bottom navigation and the cart FAB are hidden/inert; sheet controls and its footer own interaction.
+- Sheet header, `#cartScrollBody`, address suggestions, focused field, summary and footer remain reachable. The footer retains its existing safe-area handling.
+- Telegram's native MainButton remains the only checkout CTA in `tg-native-main`.
+- Support remains in its current toolbar placement. Toast remains top positioned. Bonus badge continues to use its existing near-footer lifecycle; it must not overlay the FAB or bottom rail. Scroll-to-top and staff-only scan FAB must not intersect the bottom composition.
+- No bottom layer may use arbitrary offsets that duplicate the safe-area inset.
+- Short landscape must preserve usable catalog height and all primary tap targets.
+
+### Navigation / category change
+
+- Selecting a category must not scroll the viewport to the bottom rail.
+- `scrollMenuContentToStart` must align the new catalog/subfilter region with the top content viewport; it must not use the bottom rail's bounding box as a top offset.
+- The active rail remains in one fixed bottom coordinate across scrolling, category switches, brand switches and cart updates.
+- On brand switch, the old rail is hidden/restored cleanly and only the active brand rail can receive interaction.
+
+### Desktop
+
+- Do not change desktop sidebar rail placement, width, captured anchor, or alignment to the first catalog row.
+- Desktop and non-target layouts must not gain bottom fixed navigation or additional bottom reserve.
+
+## Ownership constraints
+
+- `core/views.js`: DOM placement/reflow and active brand view for `#rail` / `#deliveryRail`.
+- `menu.js`: coffee rail content and selected state.
+- `delivery.js`: delivery rail content and selected state.
+- `cart.js`: sole owner of cart state, rendering, `#cartFab` and cart interactions.
+- `ui/scrolltop.js`: rail positioning, desktop anchor and category scroll alignment.
+- `ui/theme/150-rail.css`: rail geometry and selected indicator.
+- `ui/theme/160-01-rail-fab-mobile.css`: mobile FAB/bonus/floating controls styling.
+- `ui/theme/60-cart.css`: cart sheet and footer geometry.
+- `core/overlay-core.js`: sheet/overlay and Telegram native checkout state.
+- `index.html`: minimal Layer 4 first-frame geometry reservation only.
+- If DOM ownership/parent placement changes, update `docs/module-map.md` in the same PR.
 
 ## Test-first implementation sequence
 
-1. Capture current screenshots for both brands and all relevant cart states at the same viewports used for acceptance.
-2. Add Playwright regressions first. They must assert actual visible rectangles and interaction outcomes, not only CSS declarations.
-3. Specify the rail/FAB stacking, bottom insets and scroll reserve from the measured geometry.
-4. Implement the smallest DOM/CSS change. Preserve cart state and desktop sidebar behavior.
-5. Run focused tests, then the repository's required CI groups.
-6. Open and inspect every required screenshot. Keep this PR draft until visual acceptance is recorded.
+1. Keep the current baseline artifacts and their exact conditions. Do not update screenshot baselines.
+2. Add Playwright regressions first, asserting real bounding boxes, hit testing and interaction outcomes.
+3. Run the focused tests and confirm they fail against the current top-rail implementation for the intended reasons.
+4. Implement the smallest DOM/CSS/scroll changes without moving cart business logic.
+5. Run focused tests, then the required CI groups and full audits.
+6. Capture equivalent after screenshots; open and inspect every required frame before declaring visual acceptance. Keep this PR draft until acceptance is recorded.
 
 ## Required coverage
 
 - Brands: `coffee` and `delivery`.
-- Widths: 320, 360, 390 and 430 CSS px; include the current project baseline viewport.
-- Portrait and short landscape.
-- Guest and relevant staff modes.
-- Empty cart, one item, multiple items / long total, cart sheet open, checkout with keyboard, address suggestions.
-- Browser PWA / iOS standalone and Telegram Mini App where the existing test environment supports them.
-- First paint and hydrated state, plus category changes and live cart updates.
+- Portrait widths: 320, 360, 390 and 430 CSS px; include the project 390×844 baseline.
+- Short landscape: 844×390, plus 1024×390 compact viewport.
+- Guest and relevant staff modes where catalog is visible.
+- Empty cart, one item, several items / long total, live quantity/price update, cart sheet open, checkout, address suggestions / keyboard.
+- Browser PWA and iOS standalone where existing test environment supports it.
+- Telegram Mini App where existing mock environment supports it.
+- First paint and hydrated state, category changes, brand switches and cart mutations.
 
 ## Acceptance criteria
 
 - No overlap among rail, cart FAB, product-card CTA, last card, support/bonus controls and checkout actions.
-- With a non-empty cart, FAB count/total are legible and the entire FAB is tappable.
-- The last catalog card and its CTA can be scrolled completely above the rail.
-- Safe-area, keyboard, address suggestions and Telegram native checkout behavior remain correct.
+- With non-empty cart, FAB count/total are legible and its entire hit target resolves to the FAB.
+- With empty cart, no cart-only vertical lane is reserved.
+- Last card and CTA can be scrolled completely above the occupied bottom composition.
+- Safe-area, keyboard viewport shrink, address suggestions and Telegram native checkout remain correct.
 - No new CLS or scroll jump during first paint, hydration, category selection or cart mutation.
-- Existing assertions remain intact; new behavior is covered by regressions.
-- Desktop sidebar and non-target layouts do not regress.
-- Visual review follows `PROJECT_RULES.md §10`: same baseline conditions, both brands, portrait/landscape, all relevant states, and screenshots actually opened and inspected.
+- Existing desktop sidebar assertions and non-target layouts stay unchanged.
+- No screenshots baselines updated; visual acceptance follows `PROJECT_RULES.md §10` with same-condition before/after shots actually opened and inspected.
 
 ## Explicit non-goals
 
