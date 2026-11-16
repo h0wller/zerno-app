@@ -1699,6 +1699,11 @@ test('switching brands exposes only the active fixed bottom rail in both directi
     await expect(oldRail).toBeHidden();
     await expect(nextRail).toHaveCSS('position', 'fixed');
     await expect(nextRail).not.toHaveClass(/rail-is-pinned/);
+    const activeCategory = nextRail.locator('button:not(.on)').first();
+    await expect(activeCategory).toBeVisible();
+    await activeCategory.click();
+    await expect(activeCategory).toHaveClass(/on/);
+    await expect(oldRail).toBeHidden();
 
     const previousRailState = await oldRail.evaluate(el => ({
       pinned: el.classList.contains('rail-is-pinned'),
