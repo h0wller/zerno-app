@@ -59,8 +59,8 @@ var rules = [
   '#deliveryGrid .opts button:active{transform:translateY(1px)}',
  '@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}',
  '#deliveryGrid .opts.shake{animation:shake .4s}',
- '@media(max-width:820px){#brandSeg{overflow-x:auto;scrollbar-width:none}#modeSeg{overflow-x:auto;scrollbar-width:none}#brandSeg::-webkit-scrollbar,#modeSeg::-webkit-scrollbar{display:none}#brandSeg button,#modeSeg button{flex:0 0 auto}}',
- '@media(max-width:400px){#brandSeg button,#modeSeg button{font-size:12px;padding:6px 12px}}',
+
+
  '@media(max-width:690px){.venueToggle .vt-label{display:none}.venueToggle{padding:0 10px;gap:4px}}',
   '@media(max-width:820px){[data-brand="delivery"] body header.topbar #headerBrand.brand{width:min(196px,60vw);min-width:0;max-width:min(196px,60vw);gap:0;justify-self:center}[data-brand="delivery"] body header.topbar #headerBrand.brand>div:not(.mark),[data-brand="delivery"] body header.topbar #brandTitle,[data-brand="delivery"] body header.topbar #brandSub{display:none!important}[data-brand="delivery"] body header.topbar #headerBrand.brand .mark{width:min(196px,60vw);min-width:0;max-width:min(196px,60vw);flex:0 1 auto}}',
 
@@ -104,8 +104,8 @@ var rules = [
  '[data-brand="delivery"] .panel .btn.fire,[data-brand="delivery"] #profileBox .btn.fire,[data-brand="delivery"] .authBtn{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc);color:#fff}',
  'html[data-brand="delivery"] body{background-color:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.1) 1px,transparent 1.5px);background-size:12px 12px}',
  'html[data-brand="delivery"] #deliveryView h1,html[data-brand="delivery"] #deliveryView h2,html[data-brand="delivery"] #deliveryView h3,html[data-brand="delivery"] #deliveryView .cbody h3{font-family:Unbounded, "Golos Text", sans-serif;color:var(--fr-choc)}',
- '[data-brand="delivery"] #brandSeg{background:var(--esp)}',
- '[data-brand="delivery"] #brandSeg button.on{background:#8B2B20;color:#fff}',
+
+
  '[data-brand="delivery"] #cartFab,[data-brand="delivery"] .chat-fab{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc)}',
  '[data-brand="delivery"] #cartPanel,[data-brand="delivery"] .cartPanel{background:var(--fr-rice);border:3px solid var(--fr-choc);border-bottom:none}',
  '[data-brand="delivery"] .cartPanel .cartItem{color:#3A2A1C;font-weight:600}',
