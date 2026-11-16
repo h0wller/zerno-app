@@ -36,4 +36,10 @@
   --tint-success: #E5F5E9;
   --tint-alert: #FFF3D6;
   --tint-danger: #FDE8E8;
+  /* Shared motion vocabulary: duration and easing only; component selectors stay local. */
+  --motion-duration-micro: 120ms;
+  --motion-duration-state: 180ms;
+  --motion-duration-spatial: 300ms;
+  --motion-ease-standard: cubic-bezier(.2,.8,.2,1);
+  --motion-ease-spatial: cubic-bezier(.2,1,.3,1);
 }
