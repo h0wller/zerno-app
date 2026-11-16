@@ -35,8 +35,7 @@ sticky слева на весь скролл
 }
 .wrap .rail.is-scroll-fading,
 .wrap #deliveryRail.is-scroll-fading {
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0.06;
 }
 @media (prefers-reduced-motion: reduce) {
   .wrap .rail,
