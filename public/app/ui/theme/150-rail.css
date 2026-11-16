@@ -1,27 +1,34 @@
 /* Horizontal category rail: equal-width tabs, a single rail surface and one active marker. */
 @media (max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  :root {
+    --rail-h: 56px;
+    --rail-total-h: calc(var(--rail-h) + env(safe-area-inset-bottom, 0px));
+  }
   html body .wrap #menuView #rail,
   html body .wrap #deliveryView #deliveryRail {
     box-sizing: border-box;
-    position: relative;
+    position: fixed;
     top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
     transform: none;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: stretch;
     gap: 0;
-    width: 100%;
+    width: auto;
     min-width: 0;
-    max-width: 100%;
-    --rail-h: 56px;
-    height: var(--rail-h);
-    min-height: var(--rail-h);
-    max-height: var(--rail-h);
-    margin: 10px 0 12px;
-    padding: 0;
+    max-width: none;
+    height: var(--rail-total-h);
+    min-height: var(--rail-total-h);
+    max-height: var(--rail-total-h);
+    margin: 0;
+    padding: 0 0 env(safe-area-inset-bottom, 0px);
     border: 0;
-    border-radius: 16px;
+    border-radius: 16px 16px 0 0;
+    z-index: 80;
     background: var(--category-rail-bg, var(--panel, transparent));
     box-shadow: none;
     overflow: hidden;
@@ -149,21 +156,13 @@
     display: none;
   }
 
-  /* Keep the rail visible at a fixed viewport offset after its flow position reaches the threshold.
-     JS preserves the original flow slot with a spacer; scrolling never hides the rail. */
-  html body .wrap #menuView #rail.rail-is-pinned,
-  html body .wrap #deliveryView #deliveryRail.rail-is-pinned {
-    position: fixed;
-    z-index: 80;
-    margin: 0;
-  }
 }
 
 @media (max-width: 820px) and (max-height: 480px),
        (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
-  html body .wrap #menuView #rail,
-  html body .wrap #deliveryView #deliveryRail {
+  :root {
     --rail-h: 48px;
+    --rail-total-h: calc(var(--rail-h) + env(safe-area-inset-bottom, 0px));
   }
 
   html body .wrap #menuView #rail button,
@@ -182,6 +181,15 @@
     min-width: 20px;
     height: 20px;
     font-size: 18px;
+  }
+}
+
+@media (max-width: 820px) {
+  body.cart-open .wrap #menuView #rail,
+  body.cart-open .wrap #deliveryView #deliveryRail,
+  body.cart-open #cartFab {
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 }
 
