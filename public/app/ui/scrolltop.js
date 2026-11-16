@@ -168,7 +168,7 @@ window.addEventListener('load', alignRailWithCard, { once: true });
 requestAnimationFrame(alignRailWithCard);
 
 // Keep the mobile category rail pinned at its viewport offset while scrolling.
-var railPinnedClassName = railPinnedClassName;
+var railPinnedClassName = 'rail-is-pinned';
 var railPinState = null;
 var railPinPreserveDuringScroll = false;
 var railPinSettleFrame = 0;
