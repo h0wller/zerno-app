@@ -95,31 +95,45 @@ test('staff mobile rail is fixed to the viewport bottom without an empty cart la
 
     const railSelector = brand === 'coffee' ? '#rail' : '#deliveryRail';
     const gridSelector = brand === 'coffee' ? '#grid' : '#deliveryGrid';
-    const geometry = await page.evaluate(({ railSelector, gridSelector }) => {
+    const targetSelector = brand === 'coffee' ? '#grid' : '#deliverySubFilterViewport';
+    const geometry = await page.evaluate(({ railSelector, gridSelector, targetSelector }) => {
       const rail = document.querySelector(railSelector);
       const rect = rail.getBoundingClientRect();
       const fab = document.querySelector('#cartFab');
       const grid = document.querySelector(gridSelector);
+      const target = document.querySelector(targetSelector);
+      const targetRect = target.getBoundingClientRect();
       return {
         position: getComputedStyle(rail).position,
+        top: rect.top,
         bottom: rect.bottom,
         height: rect.height,
         viewportHeight: window.innerHeight,
         pinClass: rail.classList.contains('rail-is-pinned'),
         spacerCount: rail.parentElement.querySelectorAll(':scope > .rail-pin-spacer').length,
         gridPaddingBottom: parseFloat(getComputedStyle(grid).paddingBottom),
+        targetTop: targetRect.top,
+        targetDisplay: getComputedStyle(target).display,
+        targetHeight: targetRect.height,
         fabUnavailable: fab.hidden || getComputedStyle(fab).display === 'none' ||
           !fab.classList.contains('visible'),
       };
-    }, { railSelector, gridSelector });
+    }, { railSelector, gridSelector, targetSelector });
 
     expect(geometry.position).toBe('fixed');
     expect(geometry.bottom).toBe(geometry.viewportHeight);
     expect(geometry.height).toBe(56);
+    expect(geometry.targetDisplay).not.toBe('none');
+    expect(geometry.targetTop).toBeLessThan(geometry.top);
+    if (brand === 'delivery') expect(geometry.targetHeight).toBeGreaterThanOrEqual(44);
     expect(geometry.pinClass).toBe(false);
     expect(geometry.spacerCount).toBe(0);
     expect(geometry.gridPaddingBottom).toBeGreaterThanOrEqual(geometry.height + 15);
     expect(geometry.fabUnavailable, 'staff empty cart does not create a FAB reserve').toBe(true);
+    await testInfo.attach(brand + '-staff-bottom-rail-390x844.json', {
+      body: Buffer.from(JSON.stringify(geometry, null, 2)),
+      contentType: 'application/json',
+    });
     await testInfo.attach(brand + '-staff-bottom-rail-390x844', {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png',
