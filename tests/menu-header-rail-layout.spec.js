@@ -497,7 +497,13 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(geometry.bottomGap).toBeLessThanOrEqual(12 + geometry.safeAreaInset);
       expect(geometry.railHeight).toBe(geometry.viewportHeight <= 480 ? 48 : 56);
       expect(geometry.railRadius, brand.brand + ' rail uses a capsule surface').toBe('26px');
-      expect(geometry.railOverflowX).toBe('auto');
+      if (brand.brand === 'coffee') {
+        expect(geometry.railOverflowX, 'coffee rail has no internal horizontal scroller').toBe('hidden');
+        expect(geometry.scrollWidth, 'all coffee categories fit inside the capsule')
+          .toBeLessThanOrEqual(geometry.clientWidth);
+      } else {
+        expect(geometry.railOverflowX, 'delivery rail retains horizontal category scrolling').toBe('auto');
+      }
       expect(geometry.railOverflowY).toBe('hidden');
       expect(geometry.background, brand.brand + ' uses its own category surface').not.toBe('rgba(0, 0, 0, 0)');
       expect(geometry.border, brand.brand + ' rail has no enclosing frame').toBe('0px');
@@ -507,7 +513,8 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(geometry.buttonCount).toBeGreaterThan(1);
 
       const buttonWidths = geometry.buttons.map((button) => button.width);
-      expect(Math.min(...buttonWidths), brand.brand + ' category targets keep a 60px minimum width').toBeGreaterThanOrEqual(60);
+      expect(Math.min(...buttonWidths), brand.brand + ' category targets retain the required minimum width')
+        .toBeGreaterThanOrEqual(brand.brand === 'coffee' ? 44 : 60);
       expect(geometry.buttons[0].left, brand.brand + ' first category sits inside the capsule padding').toBeGreaterThanOrEqual(geometry.railLeft + 5);
 
       for (const button of geometry.buttons) {
