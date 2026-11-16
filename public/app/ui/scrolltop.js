@@ -54,6 +54,13 @@ function alignRailWithCard() {
     return;
   }
 
+  // Only one brand rail can own the fixed viewport slot. When the brand changes,
+  // restore the previous rail and remove its spacer before the newly visible rail
+  // is measured; otherwise the old placeholder returns with the hidden view.
+  if (railPinState && railPinState.rail !== rail) {
+    clearRailPin(railPinState.rail);
+  }
+
   // Late font/ResizeObserver callbacks must not overwrite the mobile fixed
   // geometry while the pinning controller owns this rail.
   if (railPinState && railPinState.rail === rail) return;
