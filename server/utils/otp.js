@@ -11,6 +11,13 @@ class ExpiringOtpStore extends Map {
     this.nextSweepAt = 0;
   }
 
+  evictOldest() {
+    const oldest = this.keys().next();
+    if (oldest.done) return false;
+    super.delete(oldest.value);
+    return true;
+  }
+
   prune(now = Date.now()) {
     if (now < this.nextSweepAt && this.size < MAX_OTP_ENTRIES) return;
 
@@ -22,9 +29,7 @@ class ExpiringOtpStore extends Map {
     this.nextSweepAt = now + SWEEP_INTERVAL_MS;
 
     while (this.size >= MAX_OTP_ENTRIES) {
-      const oldest = this.keys().next();
-      if (oldest.done) break;
-      super.delete(oldest.value);
+      if (!this.evictOldest()) break;
     }
   }
 
@@ -53,9 +58,7 @@ class ExpiringOtpStore extends Map {
     this.prune(now);
     if (super.has(key)) super.delete(key);
     while (this.size >= MAX_OTP_ENTRIES) {
-      const oldest = this.keys().next();
-      if (oldest.done) break;
-      super.delete(oldest.value);
+      if (!this.evictOldest()) break;
     }
     super.set(key, value);
     return this;
