@@ -825,4 +825,10 @@ html body #authModal.tg-mode .mhint{
   html body .fab-scan {
     bottom: calc(var(--rail-total-h) + 12px) !important;
   }
+
+  body:has(#cartFab.visible:not([hidden])) html body #mbonusBtn,
+  body:has(#cartFab.visible:not([hidden])) html body #scanFab,
+  body:has(#cartFab.visible:not([hidden])) html body .fab-scan {
+    bottom: calc(var(--rail-total-h) + 12px + 64px + 12px) !important;
+  }
 }
