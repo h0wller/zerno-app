@@ -141,7 +141,6 @@
 
   var tickerResizeObserver = null;
   var tickerResizeBound = false;
-  var tickerInteractionBound = false;
   var tickerPaused = false;
   var tickerReducedMotion = window.matchMedia
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
