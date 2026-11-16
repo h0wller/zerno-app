@@ -133,22 +133,66 @@
 
   header.topbar .venueWrap #brandSeg {
     position: absolute;
-    top: calc(100% + 4px);
+    top: calc(100% + 8px);
     left: 0;
-    width: 228px;
-    min-width: 220px;
-    background: #FFFFFF;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 14px;
-    padding: 6px;
-    box-shadow: 0 10px 26px rgba(16, 20, 24, 0.16);
+    box-sizing: border-box;
     display: none;
     flex-direction: column;
-    gap: 4px;
+    align-items: stretch;
+    gap: 6px;
+    width: min(228px, calc(100vw - 24px));
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+    padding: 7px;
+    overflow: hidden;
+    border: 1px solid rgba(18, 58, 107, 0.12);
+    border-radius: 16px;
+    background: #FFFFFF;
+    box-shadow: 0 12px 28px rgba(16, 20, 24, 0.16);
     z-index: 1000;
+    transform-origin: top left;
   }
   header.topbar .venueWrap #brandSeg.open {
     display: flex;
+    animation: venue-menu-enter 180ms cubic-bezier(.2, .8, .2, 1) both;
+  }
+  header.topbar .venueWrap #brandSeg > button {
+    box-sizing: border-box;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 9px;
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    padding: 9px 11px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: #30465C;
+    font: 650 13px/1.2 "Golos Text", system-ui, sans-serif;
+    text-align: left;
+    white-space: nowrap;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+  header.topbar .venueWrap #brandSeg > button:hover {
+    background: #F3F7FC;
+  }
+  header.topbar .venueWrap #brandSeg > button.on {
+    border-color: rgba(18, 58, 107, 0.12);
+    background: #EAF2FB;
+    color: #123A6B;
+    box-shadow: inset 3px 0 0 #2F95D5;
+    font-weight: 750;
+  }
+  @keyframes venue-menu-enter {
+    from { opacity: 0; transform: translateY(-5px) scale(.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    header.topbar .venueWrap #brandSeg.open { animation: none; }
+    header.topbar .venueWrap #brandSeg > button { transition: none; }
   }
 
   header.topbar button#profileTopBtn.ava {
