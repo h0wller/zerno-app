@@ -34,12 +34,13 @@ $('#rail').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]');
   if (!b) return;
   var categoryChanged = cat !== b.dataset.cat;
+  var railWasPinned = document.getElementById('rail')?.classList.contains('rail-is-pinned');
   cat = b.dataset.cat;
   window.renderRail();
   window.renderMenu();
-  if (categoryChanged && document.getElementById('rail')?.classList.contains('rail-is-pinned') &&
+  if (categoryChanged && railWasPinned &&
       typeof window.scrollMenuContentToStart === 'function') {
-    window.scrollMenuContentToStart('#grid', '#rail');
+    window.scrollMenuContentToStart('#grid', '#rail', true);
   }
 });
 
