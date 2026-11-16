@@ -212,7 +212,11 @@
 
 
   function resetAuthenticatedUser() {
-    resetAuthenticatedUser();
+    window.setUser(null, null);
+    window.mode = 'guest';
+    if (typeof window.closeProfileSettings === 'function') window.closeProfileSettings();
+    if (typeof closePanel === 'function') closePanel();
+    if (typeof renderAll === 'function') renderAll();
   }
 
   async function performAccountDeletion() {
@@ -442,11 +446,7 @@
         try {
           await api('/exit', { method: 'POST' });
         } catch (_) {}
-        window.setUser(null, null);
-        window.mode = 'guest';
-        if (typeof window.closeProfileSettings === 'function') window.closeProfileSettings();
-        if (typeof closePanel === 'function') closePanel();
-        if (typeof renderAll === 'function') renderAll();
+        resetAuthenticatedUser();
         openAuth();
       };
     }
