@@ -83,7 +83,7 @@ const DCATS = window.DCATS = [
   { id: 'rolls', e: '🍣', l: 'Роллы' },
   { id: 'sets', e: '🍱', l: 'Сеты' },
   { id: 'drinks', e: '🥤', l: 'Напитки' },
-  { id: 'sauces', e: '🥫', l: 'Допы и соусы' }
+  { id: 'sauces', e: '🥫', l: 'Допы и соусы', shortLabel: 'Добавки' }
 ];
 window.dcat = 'pizza';
 
@@ -310,8 +310,8 @@ function renderDeliveryRail() {
 
   if (needsRender) {
     rail.innerHTML = DCATS.map(function (category) {
-      return '<button type="button" data-dcat="' + category.id + '"><span class="re">'
-        + category.e + '</span><span class="category-label">' + category.l + '</span></button>';
+      return '<button type="button" data-dcat="' + category.id + '" aria-label="' + category.l + '"><span class="re">'
+        + category.e + '</span><span class="category-label">' + (category.shortLabel || category.l) + '</span></button>';
     }).join('');
     buttons = rail.querySelectorAll('button[data-dcat]');
   }
