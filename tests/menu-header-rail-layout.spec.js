@@ -1744,7 +1744,8 @@ test('rail active background diagnostic and four brand viewport captures', async
       const rail = page.locator(brand === 'coffee' ? '#rail' : '#deliveryRail');
       await expect(rail).toBeVisible({ timeout: 10000 });
       const diagnostic = await page.evaluate(() => {
-        const active = document.querySelector('#rail button.on');
+        const railSelector = document.documentElement.dataset.brand === 'delivery' ? '#deliveryRail' : '#rail';
+        const active = document.querySelector(railSelector + ' button.on');
         const rootToken = getComputedStyle(document.documentElement).getPropertyValue('--category-tab-active-bg').trim();
         const computedBackground = active ? getComputedStyle(active).backgroundColor : null;
         const matchedRules = [];
