@@ -211,6 +211,16 @@
   }
 
 
+  async function unsubscribePushSubscription(notifyServer) {
+    try {
+      var registration = await navigator.serviceWorker.ready;
+      var subscription = await registration.pushManager.getSubscription();
+      if (!subscription) return;
+      if (notifyServer) await api('/push/unsubscribe', { method: 'POST' });
+      await subscription.unsubscribe();
+    } catch (_) {}
+  }
+
   function resetAuthenticatedUser() {
     window.setUser(null, null);
     window.mode = 'guest';
@@ -220,11 +230,7 @@
   }
 
   async function performAccountDeletion() {
-    try {
-      var registration = await navigator.serviceWorker.ready;
-      var subscription = await registration.pushManager.getSubscription();
-      if (subscription) await subscription.unsubscribe();
-    } catch (_) {}
+    await unsubscribePushSubscription(false);
     try {
       await api('/me', { method: 'DELETE' });
     } catch (error) {
@@ -435,14 +441,7 @@
     var logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.onclick = async function () {
-        try {
-          var reg = await navigator.serviceWorker.ready;
-          var sub = await reg.pushManager.getSubscription();
-          if (sub) {
-            await api('/push/unsubscribe', { method: 'POST' });
-            await sub.unsubscribe();
-          }
-        } catch (_) {}
+        await unsubscribePushSubscription(true);
         try {
           await api('/exit', { method: 'POST' });
         } catch (_) {}
