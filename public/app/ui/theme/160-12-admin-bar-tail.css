@@ -546,18 +546,18 @@ html body #chatsToggle2 {
     height: 16px;
   }
   html[data-staff-role] body .menu-head .menu-title-group > .upd { display:inline-flex; }
-  /* Guest coffee header keeps the approved 100px first-paint clearance below search. */
+  /* Guest menu headers use the compact 90px first-paint geometry below the brand bar. */
   html body #menuView .menu-head {
-    height:100px;
-    min-height:100px;
-    max-height:100px;
+    height:90px;
+    min-height:90px;
+    max-height:90px;
     overflow:visible;
     padding:6px 10px;
   }
   html body #deliveryView .menu-head {
-    height:100px;
-    min-height:100px;
-    max-height:100px;
+    height:90px;
+    min-height:90px;
+    max-height:90px;
     overflow:visible;
     padding:6px 10px;
   }
