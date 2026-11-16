@@ -71,6 +71,8 @@ The list above does not imply that current production screenshots have been visu
 
 ## Known separate concerns
 
+- [ ] **Native iOS/Android bridge** — separately scope a native bridge for platform capabilities; keep web/PWA behavior functional without the bridge. No native implementation is part of the current category-rail work.
+
 - Server-side order idempotency must not be conflated with the client submit lock.
 - Account deletion/settings UX and push/Telegram routing have separate acceptance requirements.
 - Business rules (discount windows, pickup discounts, welcome grants/free delivery) require separate tests and must not be changed during a visual-only PR.
