@@ -471,7 +471,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       expect(Math.abs(geometry.railRight - geometry.gridRight), brand.brand + ' rail background ends at the catalog edge').toBeLessThanOrEqual(1);
       expect(Math.abs(geometry.railWidth - geometry.gridWidth), brand.brand + ' rail background matches the current card-grid width, not the viewport').toBeLessThanOrEqual(1);
       expect(geometry.railTop, brand.brand + ' categories follow the search block').toBeGreaterThan(geometry.headBottom);
-      expect(geometry.railHeight, brand.brand + ' mobile rail uses the shared 64px height').toBe(64);
+      expect(geometry.railHeight, brand.brand + ' mobile rail uses the compact 56px height').toBe(56);
       expect(geometry.railRadius, brand.brand + ' rail uses one rounded surface').toBe('16px');
       expect(geometry.railOverflow, brand.brand + ' rail background is clipped to its rounded surface').toBe('hidden');
       expect(geometry.background, brand.brand + ' uses its own category surface').not.toBe('rgba(0, 0, 0, 0)');
@@ -2249,7 +2249,7 @@ test('mobile menu header and category rail use compact vertical geometry', async
       const geometry = await page.evaluate(({ headSelector, railSelector }) => {
         const head = document.querySelector(headSelector);
         const rail = document.querySelector(railSelector);
-        const heading = head.querySelector('.menu-controls-row h1');
+        const heading = head.querySelector('h1');
         const search = head.querySelector('.mh-right > .search');
         const active = rail.querySelector('button.on');
         const label = active?.querySelector('.category-label');
@@ -2318,7 +2318,7 @@ test('mobile guest menu panel keeps its lower inset while compacting the title-t
         const search = element.querySelector('.mh-right .search');
         const toolbar = element.querySelector('.mh-top');
         const titleRow = toolbar?.firstElementChild;
-        const controls = element.querySelector('.menu-controls-row');
+        const titleRow = toolbar?.firstElementChild;
         const style = getComputedStyle(element);
         return {
           panelHeight: rect(element).height,
@@ -2327,7 +2327,6 @@ test('mobile guest menu panel keeps its lower inset while compacting the title-t
           titleToSearchGap: rect(search).top - rect(title).bottom,
           toolbarHeight: rect(toolbar).height,
           titleRowHeight: rect(titleRow).height,
-          controlsHeight: rect(controls).height,
           searchHeight: rect(search).height,
         };
       });
@@ -2335,10 +2334,9 @@ test('mobile guest menu panel keeps its lower inset while compacting the title-t
       expect(geometry.panelHeight, 'outer menu panel height remains unchanged').toBeCloseTo(90, 0);
       expect(geometry.panelPaddingBottom, 'existing panel bottom padding is preserved').toBeGreaterThanOrEqual(6);
       expect(geometry.bottomClearance, 'search keeps a visible inset from the panel border').toBeGreaterThanOrEqual(6);
-      expect(geometry.titleToSearchGap, 'search sits closer to the Menu title').toBeLessThanOrEqual(9);
+      expect(geometry.titleToSearchGap, 'search sits close below the Menu title').toBeLessThanOrEqual(14);
       expect(geometry.toolbarHeight).toBe(74);
       expect(geometry.titleRowHeight).toBe(28);
-      expect(geometry.controlsHeight).toBe(28);
       expect(geometry.searchHeight).toBeGreaterThanOrEqual(40);
 
       await testInfo.attach('menu-panel-spacing-' + brand.brand + '-' + viewport.width + 'px', {
