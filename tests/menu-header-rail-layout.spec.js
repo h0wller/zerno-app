@@ -1667,7 +1667,7 @@ test('late font hydration does not change the fixed bottom rail after manual cat
     await expect(rail).toBeVisible({ timeout: 10000 });
     await expect(rail).toHaveCSS('position', 'fixed');
     await page.evaluate(() => window.scrollTo(0, 700));
-    const nextCategory = rail.locator('button:not(.on)').first();
+    const nextCategory = rail.locator('button').nth(1);
     const categoryAttribute = brand.brand === 'delivery' ? 'data-dcat' : 'data-cat';
     const selectedCategory = await nextCategory.getAttribute(categoryAttribute);
     await nextCategory.click();
