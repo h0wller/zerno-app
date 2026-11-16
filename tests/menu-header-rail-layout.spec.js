@@ -1989,6 +1989,21 @@ test('coffee category switch scrolls the new catalog column into view smoothly w
 
   const category = page.locator('#rail button[data-cat]').nth(1);
   const grid = page.locator('#grid');
+  const animationFrames = await grid.evaluate(el => {
+    const start = performance.now();
+    const frames = [];
+    return new Promise(resolve => {
+      const sample = now => {
+        const rect = el.getBoundingClientRect();
+        frames.push({ time: now - start, top: rect.top, height: rect.height, scrollY: window.scrollY });
+        if (now - start >= 600) resolve(frames);
+        else requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+  });
+  expect(animationFrames.length).toBeGreaterThan(10);
+  expect(Math.max(...animationFrames.map(frame => frame.height))).toBeGreaterThan(0);
   const beforeCardCount = await grid.locator(':scope > .card').count();
   expect(beforeCardCount).toBeGreaterThan(0);
 
