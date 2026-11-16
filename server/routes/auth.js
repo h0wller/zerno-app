@@ -21,6 +21,15 @@ import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, SMS_AUTH_ENAB
 
 export const authRouter = express.Router();
 
+function respondOtpSendBlock(res, reason) {
+  if (!reason) return false;
+  const error = reason === 'cooldown'
+    ? 'Код уже отправлен — повтор через минуту'
+    : 'Слишком много отправок — попробуйте позже';
+  res.status(429).json({ error });
+  return true;
+}
+
 // Isolated test seam: never registered in production.
 if (process.env.NODE_ENV === 'test') {
   authRouter.post('/__test/otp', (req, res) => {
@@ -154,12 +163,7 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
 
   const now = Date.now();
   const sendBlockReason = getOtpSendBlockReason(getOtpSendState('register', p), now);
-  if (sendBlockReason === 'cooldown') {
-    return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
-  }
-  if (sendBlockReason === 'daily-limit') {
-    return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
-  }
+  if (respondOtpSendBlock(res, sendBlockReason)) return;
 
   if (via === 'tg') {
     const token = crypto.randomBytes(16).toString('hex');
@@ -368,12 +372,7 @@ authRouter.post('/api/auth/request-otp', async (req, res) => {
 
   const now = Date.now();
   const sendBlockReason = getOtpSendBlockReason(getOtpSendState('login', p), now);
-  if (sendBlockReason === 'cooldown') {
-    return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
-  }
-  if (sendBlockReason === 'daily-limit') {
-    return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
-  }
+  if (respondOtpSendBlock(res, sendBlockReason)) return;
 
   const code = String(crypto.randomInt(1000, 10000));
   let via = 'telegram';
