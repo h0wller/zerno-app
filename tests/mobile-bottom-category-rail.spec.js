@@ -107,6 +107,14 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
     localStorage.setItem('zt_ios_hide', '1');
+    window.__bottomRailShifts = [];
+    if (typeof PerformanceObserver === 'function') {
+      new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) {
+          window.__bottomRailShifts.push({ value: entry.value, hadRecentInput: entry.hadRecentInput });
+        }
+      }).observe({ type: 'layout-shift', buffered: true });
+    }
   });
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
 
@@ -129,6 +137,7 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
     element.classList.contains('visible')
   ), { timeout: 7000 }).toBe(true);
 
+  await page.evaluate(() => { window.__bottomRailShifts = []; });
   const railBeforeLiveUpdates = await rail.boundingBox();
   for (let i = 0; i < 13; i += 1) {
     await firstCard.locator('.steprow .cta, [data-add]').first().click();
@@ -172,10 +181,17 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
   expect(Math.abs(railAfterLiveUpdates.y - railBeforeLiveUpdates.y),
     'live cart updates do not move the fixed rail').toBeLessThanOrEqual(1);
   expect(Math.abs(railAfterLiveUpdates.height - railBeforeLiveUpdates.height)).toBeLessThanOrEqual(1);
+  const layoutShiftTotal = await page.evaluate(() =>
+    window.__bottomRailShifts.filter(entry => !entry.hadRecentInput)
+      .reduce((sum, entry) => sum + entry.value, 0)
+  );
+  expect(layoutShiftTotal, 'cart amount updates do not introduce unexpected layout shift').toBeLessThan(0.01);
   expect(geometry.fabHeight).toBeGreaterThanOrEqual(48);
   expect(geometry.fabHeight).toBeLessThanOrEqual(64);
   expect(geometry.width).toBeLessThanOrEqual(geometry.viewportWidth - 24);
   expect(geometry.whiteSpace).toBe('nowrap');
+  expect(geometry.text.replace(/\\D/g, '').length,
+    'long cart amount remains visible as a single-line numeric total').toBeGreaterThanOrEqual(5);
   expect(geometry.scrollHeight).toBeLessThanOrEqual(geometry.clientHeight + 1);
   expect(geometry.fabBottom + 8,
     'cart FAB must have a clear 8px gap above the rail').toBeLessThanOrEqual(geometry.railTop);
