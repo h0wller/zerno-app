@@ -1669,11 +1669,21 @@ test('late font hydration must not release a mobile rail after manual category c
     let releaseFonts;
     let fontRequestSeen = false;
     const fontsHeld = new Promise(resolve => { releaseFonts = resolve; });
-    const fontRoute = '**/golos-text-400.woff2*';
+    const fontRoute = /golos-text-400\\.woff2(?:\\?.*)?$/;
 
+    // Hold the app's real preloaded font before first paint; release it only
+    // after the user changes category while the rail is pinned.
+    await page.route(fontRoute, async route => {
+      fontRequestSeen = true;
+      await fontsHeld;
+      await route.continue();
+    });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+    await expect.poll(() => fontRequestSeen, { timeout: 10000 }).toBe(true);
+    await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe('loading');
 
     const rail = page.locator(brand.rail);
     await expect(rail).toBeVisible({ timeout: 10000 });
@@ -1682,27 +1692,6 @@ test('late font hydration must not release a mobile rail after manual category c
       getComputedStyle(el).position === 'fixed' && el.classList.contains('rail-is-pinned')
     ), { timeout: 5000 }).toBe(true);
 
-    // Start a real, deliberately delayed FontFace request after the rail is pinned.
-    await page.route(fontRoute, async route => {
-      if (!route.request().url().includes('late=1')) {
-        await route.continue();
-        return;
-      }
-      fontRequestSeen = true;
-      await fontsHeld;
-      await route.continue();
-    });
-    await page.evaluate(() => {
-      const style = document.createElement('style');
-      style.textContent = '@font-face{font-family:"LateRailFont";src:url("/app/ui/fonts/golos-text-400.woff2?late=1") format("woff2");font-style:normal;font-weight:400;font-display:block}';
-      document.head.appendChild(style);
-      const head = document.querySelector('.menu-head');
-      head.style.fontFamily = '"LateRailFont", sans-serif';
-      window.__lateRailFontReady = document.fonts.load('400 14px "LateRailFont"', 'Late rail');
-    });
-    await expect.poll(() => fontRequestSeen, { timeout: 10000 }).toBe(true);
-    await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe('loading');
-
     const nextCategory = rail.locator('button:not(.on)').first();
     const categoryAttribute = brand.brand === 'delivery' ? 'data-dcat' : 'data-cat';
     const selectedCategory = await nextCategory.getAttribute(categoryAttribute);
@@ -1710,7 +1699,6 @@ test('late font hydration must not release a mobile rail after manual category c
     await expect(rail.locator('button.on')).toHaveAttribute(categoryAttribute, selectedCategory);
 
     releaseFonts();
-    await page.evaluate(() => window.__lateRailFontReady);
     await page.evaluate(() => document.fonts.ready);
     await expect.poll(() => rail.evaluate(el => ({
       position: getComputedStyle(el).position,
