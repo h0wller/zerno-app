@@ -153,5 +153,5 @@ test('delivery cart FAB sits above the bottom rail and remains fully tappable', 
     'cart FAB must have a clear 8px gap above the rail').toBeLessThanOrEqual(geometry.railTop);
   expect(geometry.hit.every(Boolean),
     'the complete cart FAB hit area must resolve to the FAB').toBe(true);
-  expect(geometry.text).toMatch(/\\d/);
+  expect(geometry.text).toMatch(/\d/);
 });
