@@ -1850,7 +1850,7 @@ html[data-brand="delivery"] {
     left: 12px;
     right: auto;
     top: auto;
-    bottom: calc(var(--rail-total-h, 56px) + 12px);
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     width: 56px;
     min-width: 56px;
     max-width: 56px;
