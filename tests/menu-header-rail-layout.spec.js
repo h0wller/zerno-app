@@ -1234,6 +1234,49 @@ test('category rail uses one surface, an active icon chip and a separate underli
 
 
 // Horizontal rail baseline diagnostics for the two-phase CI capture.
+
+test('coffee active rail background diagnostic reports token and matching CSS rules', async ({ page }, testInfo) => {
+  const reports = [];
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+    const report = await page.locator('#rail button.on').evaluate(element => {
+      const token = getComputedStyle(document.documentElement).getPropertyValue('--category-tab-active-bg').trim();
+      const backgroundColor = getComputedStyle(element).backgroundColor;
+      const matches = [];
+      if (token && token !== backgroundColor) {
+        const visit = (rules, href) => {
+          for (const rule of Array.from(rules || [])) {
+            if (rule.cssRules) { visit(rule.cssRules, href); continue; }
+            if (!rule.selectorText || !rule.style) continue;
+            let matched = false;
+            try { matched = element.matches(rule.selectorText); } catch {}
+            if (!matched) continue;
+            const value = rule.style.getPropertyValue('background');
+            if (!value) continue;
+            matches.push({
+              file: href || 'inline <style>',
+              selector: rule.selectorText,
+              value,
+              important: rule.style.getPropertyPriority('background') === 'important',
+            });
+          }
+        };
+        for (const sheet of Array.from(document.styleSheets)) {
+          try { visit(sheet.cssRules, sheet.href); } catch {}
+        }
+      }
+      return { viewport: { width: innerWidth, height: innerHeight }, token, backgroundColor, matchingBackgroundRules: matches };
+    });
+    reports.push(report);
+  }
+  await testInfo.attach('coffee-active-rail-background-diagnostic.json', {
+    body: Buffer.from(JSON.stringify(reports, null, 2)),
+    contentType: 'application/json',
+  });
+});
+
 test('horizontal rail baseline diagnostics and first-paint geometry', async ({ browser }, testInfo) => {
   const context = await browser.newContext({
     baseURL: testInfo.project.use.baseURL,
