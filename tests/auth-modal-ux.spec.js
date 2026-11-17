@@ -43,6 +43,13 @@ for (const viewport of viewports) {
       return cardEl && getComputedStyle(cardEl).opacity === '1';
     });
 
+    const motionTiming = await page.evaluate(() => ({
+      overlay: getComputedStyle(document.getElementById('overlay')).transitionDuration,
+      card: getComputedStyle(document.querySelector('#authModal .modal-card')).transitionDuration,
+    }));
+    expect(motionTiming.overlay).toBe('0.3s');
+    expect(motionTiming.card).toBe('0.3s, 0.3s');
+
     const layout = await page.evaluate(() => {
       const cardEl = document.querySelector('#authModal .authcard');
       const input = document.querySelector('#authModal #regName');
@@ -831,45 +838,83 @@ test('registration exposes the SMS control only after the server opts in', async
   });
 });
 
-test('reduced motion disables the shared auth overlay fade and preserves focus restoration', async ({ page }) => {
+test('reduced motion removes auth overlay travel without changing focus or layout', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   });
-  await page.goto('/?brand=delivery');
-  await page.waitForFunction(() => typeof window.openAuth === 'function');
 
-  await page.evaluate(() => {
-    const trigger = document.createElement('button');
-    trigger.id = 'reducedMotionAuthTrigger';
-    trigger.type = 'button';
-    trigger.textContent = 'Open account';
-    trigger.addEventListener('click', () => window.openAuth(false));
-    document.body.appendChild(trigger);
-  });
+  const viewports = [
+    { name: 'portrait', width: 390, height: 844 },
+    { name: 'compact-landscape', width: 844, height: 390 },
+    { name: 'desktop', width: 1280, height: 900 },
+  ];
 
-  const trigger = page.locator('#reducedMotionAuthTrigger');
-  const modal = page.locator('#authModal');
-  const card = modal.locator('.modal-card');
-  const overlay = page.locator('#overlay');
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of viewports) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(() => typeof window.openAuth === 'function');
+      await page.waitForFunction(() => {
+        const names = ['90-modals.css', '160-14-auth-modal.css'];
+        return names.every((name) => {
+          const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+            .find((item) => item.href.includes(name));
+          return link && link.media === 'all' && Array.from(document.styleSheets)
+            .some((sheet) => sheet.href === link.href);
+        });
+      });
 
-  await trigger.click();
-  await expect(modal).toBeVisible();
-  await expect(modal.locator('#regName')).toBeFocused();
-  await expect(overlay).toHaveAttribute('aria-hidden', 'false');
+      await page.evaluate(() => {
+        const trigger = document.createElement('button');
+        trigger.id = 'reducedMotionAuthTrigger';
+        trigger.type = 'button';
+        trigger.textContent = 'Open account';
+        trigger.style.cssText = 'position:fixed;top:8px;left:8px;z-index:99999;';
+        trigger.addEventListener('click', () => window.openAuth(false));
+        document.body.appendChild(trigger);
+      });
 
-  await expect.poll(() => overlay.evaluate((element) => getComputedStyle(element).transitionDuration))
-    .toBe('0s');
-  await expect.poll(() => card.evaluate((element) => {
-    const duration = getComputedStyle(element).transitionDuration.split(',')[0].trim();
-    const value = Number.parseFloat(duration);
-    return duration.endsWith('ms') ? value / 1000 : value;
-  })).toBeLessThanOrEqual(0.00001);
+      const trigger = page.locator('#reducedMotionAuthTrigger');
+      const modal = page.locator('#authModal');
+      const card = modal.locator('.modal-card');
+      const overlay = page.locator('#overlay');
 
-  await page.keyboard.press('Escape');
-  await expect(modal).not.toHaveClass(/show/);
-  await expect(trigger).toBeFocused();
-  await expect(overlay).toHaveAttribute('aria-hidden', 'true');
-  await expect(overlay).toHaveCSS('pointer-events', 'none');
+      await trigger.click();
+      await expect(modal).toBeVisible();
+      await expect(modal).toHaveAttribute('role', 'dialog');
+      await expect(modal).toHaveAttribute('aria-modal', 'true');
+      await expect(modal.locator('#regName')).toBeFocused();
+      await expect(overlay).toHaveAttribute('aria-hidden', 'false');
+      await expect(overlay).toHaveCSS('opacity', '1');
+
+      await expect.poll(() => overlay.evaluate((element) => getComputedStyle(element).transitionDuration))
+        .toBe('0s');
+      await expect.poll(() => card.evaluate((element) => {
+        const duration = getComputedStyle(element).transitionDuration.split(',')[0].trim();
+        const value = Number.parseFloat(duration);
+        return duration.endsWith('ms') ? value / 1000 : value;
+      })).toBeLessThanOrEqual(0.00001);
+
+      const openImage = await page.screenshot({ fullPage: false });
+      await testInfo.attach('auth-reduced-' + brand + '-' + viewport.name + '-open.png', {
+        body: openImage,
+        contentType: 'image/png',
+      });
+
+      await page.keyboard.press('Escape');
+      await expect(modal).not.toHaveClass(/show/);
+      await expect(trigger).toBeFocused();
+      await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+      await expect(overlay).toHaveCSS('pointer-events', 'none');
+      await expect(overlay).toHaveCSS('opacity', '0');
+
+      const closedImage = await page.screenshot({ fullPage: false });
+      await testInfo.attach('auth-reduced-' + brand + '-' + viewport.name + '-closed.png', {
+        body: closedImage,
+        contentType: 'image/png',
+      });
+    }
+  }
 });
