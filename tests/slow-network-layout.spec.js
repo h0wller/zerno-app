@@ -1032,12 +1032,51 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       localStorage.setItem('zt_inst_hide','1');
       sessionStorage.setItem('splashDone','1');
       window.__layoutShifts = [];
+      window.__profileMutationSnapshots = [];
+      const geometrySnapshot = () => {
+        const rect = (selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return null;
+          const box = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            x: Math.round(box.x * 10) / 10,
+            y: Math.round(box.y * 10) / 10,
+            width: Math.round(box.width * 10) / 10,
+            height: Math.round(box.height * 10) / 10,
+            display: style.display,
+            visibility: style.visibility,
+            hidden: !!element.hidden,
+          };
+        };
+        return {
+          time: Math.round(performance.now() * 10) / 10,
+          brand: document.documentElement.getAttribute('data-brand'),
+          windowBrand: window.brand,
+          staffReady: document.documentElement.hasAttribute('data-staff-ready'),
+          scrollY: window.scrollY,
+          documentHeight: document.documentElement.scrollHeight,
+          bodyHeight: document.body ? document.body.scrollHeight : 0,
+          footer: rect('footer.siteFooter'),
+          wrap: rect('body > .wrap'),
+          panel: rect('#panel'),
+          profileBox: rect('#profileBox'),
+          profileNoUser: rect('#profileNoUser'),
+          coffeeSection: rect('#profileCoffeeSection'),
+          ordersSection: rect('#profileOrdersSection'),
+          fridayInfo: rect('#fridayInfo'),
+          history: rect('#profileBox .profile-history-section'),
+          myOrders: rect('#myOrders'),
+          myOrdersText: (document.getElementById('myOrders')?.textContent || '').trim().slice(0, 120),
+        };
+      };
       try {
         window.__layoutShiftObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
             if (!entry.hadRecentInput) window.__layoutShifts.push({
               value: entry.value,
               startTime: entry.startTime,
+              snapshot: geometrySnapshot(),
               sources: Array.from(entry.sources || []).map(source => {
                 const describe = element => {
                   if (!element) return null;
@@ -1074,6 +1113,37 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           }
         });
         window.__layoutShiftObserver.observe({ type: 'layout-shift', buffered: true });
+        new MutationObserver((records) => {
+          const relevant = records.filter((record) => {
+            const target = record.target && record.target.nodeType === 1
+              ? record.target
+              : record.target && record.target.parentElement;
+            return !!(target && target.closest &&
+              target.closest('#profileBox, #profileNoUser, #profileCoffeeSection, #profileOrdersSection, #fridayInfo, #myOrders'));
+          });
+          if (relevant.length) window.__profileMutationSnapshots.push({
+            records: relevant.map((record) => ({
+              type: record.type,
+              target: record.target.nodeType === 1
+                ? (record.target.id || record.target.className || record.target.tagName)
+                : (record.target.parentElement && (record.target.parentElement.id || record.target.parentElement.className)),
+              attribute: record.attributeName || null,
+              added: Array.from(record.addedNodes || []).map((node) => node.nodeType === 1
+                ? (node.id || node.className || node.tagName)
+                : '#text').slice(0, 8),
+              removed: Array.from(record.removedNodes || []).map((node) => node.nodeType === 1
+                ? (node.id || node.className || node.tagName)
+                : '#text').slice(0, 8),
+            })),
+            snapshot: geometrySnapshot(),
+          });
+        }).observe(document.documentElement, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          characterData: true,
+          attributeFilter: ['hidden', 'style', 'class']
+        });
       } catch (_) {}
     });
     await page.route('**/api/**',async route => {
@@ -1234,11 +1304,23 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         expect(Math.abs(after[part][edge]-before[part][edge]),part+' '+edge+' remains stable during hydration').toBeLessThanOrEqual(1);
       }
     }
+    const profileTimeline = await page.evaluate(() => ({
+      mutations: window.__profileMutationSnapshots,
+      final: {
+        brand: document.documentElement.getAttribute('data-brand'),
+        windowBrand: window.brand,
+        staffReady: document.documentElement.hasAttribute('data-staff-ready'),
+        scrollY: window.scrollY,
+        documentHeight: document.documentElement.scrollHeight,
+        bodyHeight: document.body.scrollHeight,
+      }
+    }));
     console.log('[desktop staff hydration] layout shift sources', JSON.stringify({
       document:after.cls,
       staffHeader:after.staffHeaderCls,
       shifts:after.shifts
     }));
+    console.log('[desktop staff hydration] profile mutation timeline', JSON.stringify(profileTimeline));
     // Staff-header CLS is isolated from independent profile/sidebar and footer hydration.
     expect(after.staffHeaderCls).toBeLessThan(0.01);
   });
