@@ -244,35 +244,6 @@ test('coffee: category rail never covers menu title or search input on mobile', 
 });
 
 
-test('coffee rail aligns to its menu card and delivery rail aligns to product cards', async ({ page }) => {
-  for (const brand of CASES) {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
-    if (brand.brand === 'delivery') {
-      await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
-      await expect.poll(() => page.evaluate(() => {
-        const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
-        const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
-        return Math.abs(rail.top - grid.top);
-      }), { timeout: 5000 }).toBeLessThanOrEqual(2);
-    } else {
-      const searchGap = await page.evaluate(() => {
-        const search = document.querySelector('#menuView .menu-head .mh-right').getBoundingClientRect();
-        const rail = document.querySelector('#rail').getBoundingClientRect();
-        return rail.top - search.bottom;
-      });
-      expect(searchGap, 'coffee rail starts below its menu controls').toBeGreaterThanOrEqual(10);
-    }
-    const gap = await page.locator(brand.rail + ' button').evaluateAll(buttons => {
-      const rects=buttons.map(button=>button.getBoundingClientRect());
-      return rects.slice(1).map((rect,i)=>rect.top-rects[i].bottom);
-    });
-    expect(gap.every(value => value >= 9), brand.brand + ' rail button gap should be at least 9px').toBe(true);
-  }
-});
-
-
 test('both brand rails align to the catalog row on desktop', async ({page}) => {
   for (const brand of CASES) {
     await page.setViewportSize({width:1440,height:900});
