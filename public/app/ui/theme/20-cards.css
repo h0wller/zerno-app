@@ -286,8 +286,8 @@ body.editing .card:hover{
   justify-content: center;
   white-space: nowrap;
   line-height: 1;
-  font-size: 16px;
-  letter-spacing: 0;
+  font-size: 11px;
+  letter-spacing: -0.02em;
 }
 .card .steprow .step:not([hidden]),
 .card .steprow [data-step]:not([hidden]) {
@@ -321,3 +321,8 @@ body.editing .card:hover{
   transform: scale(0.92);
 }
 
+
+/* Keep the delivery in-cart label compact against the brand CTA shorthand in 160-06. */
+#deliveryGrid .card .steprow > .cta.incart {
+  font-size: 11px;
+}
