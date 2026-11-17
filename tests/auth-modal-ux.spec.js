@@ -982,3 +982,27 @@ test('generic modal and shared overlay are immediate under reduced motion', asyn
   await expect(overlay).toHaveAttribute('aria-hidden', 'true');
   await expect(overlay).toHaveCSS('pointer-events', 'none');
 });
+
+
+test('confetti does not start or keep running under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.confetti === 'function');
+
+  await page.evaluate(() => {
+    const canvas = document.getElementById('fx');
+    const getContext = canvas.getContext.bind(canvas);
+    window.__confettiContextCalls = 0;
+    canvas.getContext = function (...args) {
+      window.__confettiContextCalls += 1;
+      return getContext(...args);
+    };
+    window.confetti();
+  });
+
+  await expect.poll(() => page.evaluate(() => window.__confettiContextCalls)).toBe(0);
+});
