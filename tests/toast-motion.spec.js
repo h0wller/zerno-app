@@ -47,6 +47,31 @@ async function captureMidAnimation(page, toast, animationName, progress, testInf
   return sample;
 }
 
+async function createToastWithHeldRemoval(page, message) {
+  await page.evaluate((text) => {
+    const element = window.toast(text, 'ℹ️');
+    if (!element) throw new Error('window.toast did not create a toast');
+
+    // Keep the real transient exit state attached long enough to capture it.
+    // The production timer still calls remove(); this instance-level override
+    // records that request, then the test releases the native removal below.
+    element.__motionTestNativeRemove = element.remove.bind(element);
+    element.remove = function () {
+      element.dataset.motionTestRemoveRequested = 'true';
+    };
+  }, message);
+}
+
+async function releaseToastRemoval(toast) {
+  await expect.poll(() => toast.getAttribute('data-motion-test-remove-requested'))
+    .toBe('true');
+  await toast.evaluate((element) => {
+    element.__motionTestNativeRemove();
+    delete element.__motionTestNativeRemove;
+  });
+  await expect(toast).toHaveCount(0);
+}
+
 async function prepareToastPage(page, brand, reducedMotion) {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion });
@@ -64,7 +89,7 @@ test('toast uses short non-overshooting entry and exit motion in both brands', a
 
   for (const brand of ['coffee', 'delivery']) {
     await prepareToastPage(page, brand, 'no-preference');
-    await page.evaluate(() => window.toast('Motion feedback test', 'ℹ️'));
+    await createToastWithHeldRemoval(page, 'Motion feedback test');
     await expect(toast).toHaveCount(1);
 
     const entry = await toast.evaluate((element) => {
@@ -114,7 +139,7 @@ test('toast uses short non-overshooting entry and exit motion in both brands', a
     );
     expect(exitFrame.duration).toBe(120);
 
-    await expect(toast).toHaveCount(0, { timeout: 1000 });
+    await releaseToastRemoval(toast);
   }
 });
 
@@ -123,7 +148,7 @@ test('toast appears and disappears without animation under reduced motion', asyn
 
   for (const brand of ['coffee', 'delivery']) {
     await prepareToastPage(page, brand, 'reduce');
-    await page.evaluate(() => window.toast('Reduced motion feedback test', 'ℹ️'));
+    await createToastWithHeldRemoval(page, 'Reduced motion feedback test');
     await expect(toast).toHaveCount(1);
     await expect(toast).toHaveCSS('animation-name', 'none');
     await expect(toast).toHaveCSS('animation-duration', '0s');
@@ -144,6 +169,6 @@ test('toast appears and disappears without animation under reduced motion', asyn
       body: await page.screenshot({ fullPage: false }),
       contentType: 'image/png',
     });
-    await expect(toast).toHaveCount(0, { timeout: 1000 });
+    await releaseToastRemoval(toast);
   }
 });
