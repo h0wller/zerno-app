@@ -2,7 +2,7 @@
 
 **Статус:** Stage 0–1 завершены; Stage 2–4 частично реализованы. Runtime/visual acceptance текущих изменений и полное покрытие ещё не завершены.
 **PR:** #268, Draft. Ветка: `design/ui-animation-system-20261116`.
-**Текущий HEAD на момент обновления:** `8d7068373e109ead0b33249164a4dccc0fcb0f5b`.
+**Текущий application HEAD на момент обновления:** `8349f7a691387e5680fa1b0a9b7e1a5f004e0adf`.
 **Base:** pizza. Базовая точка PR: 61ca1a47f5782af057e1dfc09b56341a31ddaa88.
 
 ## 1. Цель и motion-язык
@@ -76,12 +76,12 @@ DOM ownership остаётся прежним: cart.js владеет состо
 | 60-cart.css | cartPanel transform 300ms cubic-bezier(.2,1,.3,1); close button transform 150ms; hover scale 1.08. | Reduce отсутствует. Sheet не меняет поток, но на время движения сдвигает hit-targets. | Цель Stage 1. Сохраняем пространственное направление, токенизируем duration/easing, отключаем travel под reduce. |
 | 70-ticker.css | zt-marquee translate3d, 30s linear infinite. | Reduce реализован: marquee отключается, viewport становится вручную прокручиваемым. | Сохранить доступный fallback; проверить динамическую смену системной настройки. |
 | 80-splash.css | spRise 600–700ms с задержками; spFloat 3.2s infinite; кнопки около 120ms. | Основные анимации отключаются в reduce. | Сократить ощущаемую задержку; сохранить parity с critical CSS. |
-| 90-modals.css | overlay opacity 300ms; modal-card opacity/transform 350ms cubic-bezier(.2,1,.3,1); close hover rotate/scale; PIN shake 400ms; QR stampin 450ms с overshoot. | Reduce есть только для authModal card. Generic overlay/modal, PIN и QR не покрыты. Blur на весь экран остаётся paint cost. | Унифицировать пространственное движение локально; добавить reduced поведение без глобального override. |
+| 90-modals.css | Overlay opacity 300ms; modal-card opacity/transform 300ms; close hover rotate/scale; PIN shake 400ms; QR canvas stampin 450ms с overshoot. | Reduce отключает overlay/card/control/form/zone transitions, PIN shake и QR canvas entrance; общие modal, PIN и QR checks добавлены. Blur backdrop остаётся paint cost. | Сохранять компонентный ownership и проверять normal/reduced transitions, focus и overlay cleanup. |
 | 100-chat.css | FAB transition 200ms; ::before ping 2.4s infinite; chat panel all-properties 300ms; messages 300ms cubic-bezier(.2,1.2,.4,1), scale/translate; controls 150–200ms. | Reduce выключает .chat/.chat-fab/.msg, но не .chat-fab::before — ping продолжается. | Явно перечислить transition properties; убрать idle ping и overshoot; проверить reduce. |
-| 110-panel.css | Tabs 200ms, stamp 300ms; nextp 1.6s infinite; free-card icon sway 2.6s infinite; authPrompt rise 400ms, hmini rise 300ms. | Reduce отключает только некоторые stamp/free-card циклы. Возможен конфликт specificity: unconditional profile stamp animation:none и более поздняя .stamp.n animation:nextp. | Проверить computed style; убрать бессмысленные бесконечные движения; расширить локальный reduce. |
-| 120-cashier.css | cashier rise 400ms; customer panel 350ms; log rows 300ms; stampin 500ms cubic-bezier(.2,1.6,.4,1); controls 180–220ms. | Reduce отсутствует. Stamp явно overshoot. | Убрать overshoot и entrance delay под reduce; проверить staff role. |
-| 130-service.css | Toast in 350ms cubic-bezier(.2,1.4,.4,1), out 300ms; bonus opacity/transform 250ms; qty 100ms; freePulse 2.2s infinite; glowPulse 1.5s infinite; form state 200ms. | Reduce отсутствует. Shadow pulse вызывает paint. | Сдержанный one-shot toast; убрать idle pulse/glow; сохранить текст/цветовой feedback под reduce. |
-| 140-topbar.css | role switch/avatar/rail 250ms; search 200ms; shared rise keyframe. | Reduce отсутствует. | Состояния нормализовать; pure data replacement не анимировать. |
+| 110-panel.css | Tabs/stamp 200–300ms; .stamp.n nextp 1.6s infinite; .freeCard .fe sway 2.6s infinite; .hmini rise 300ms; stats hover transform. | Local reduce выключает stamp/free-card/history animation, stamp/stat transitions и stat hover travel; regression matrix добавлена. | Не анимировать историю/ambient profile decoration под reduce; сохранить state feedback. |
+| 120-cashier.css | Cashier rise 400ms; customer panel 350ms; log rows 300ms; stampin 500ms с overshoot; staff-guide chevron 180ms. | Local reduce disables all four entrance/stamp animations and guide chevron transition; staff regression added. | Сохранять мгновенную видимость и неизменную геометрию staff UI. |
+| 130-service.css | Toast entry 180ms and exit 120ms with shared timing tokens; freePulse 2.2s, glowPulse 1.5s, avatar pulse-hint 2s, pushHint/freeBanner entrance. | Reduce disables toast animation, service pulses, avatar hint and one-shot hint entrances; regression covers both brands. | Keep message/colour feedback but remove optional movement and perpetual paint. |
+| 140-topbar.css | Mode control/avatar/rail/search/role actions 200–250ms; avatar and edit hover translate/scale. | Local reduce removes header-control transitions and avatar/edit hover travel. Rail hover remains outside this change because #266/#269 own the rail dependency. | Keep local to topbar controls; do not touch rail selectors here. |
 | 150-rail.css | На HEAD #268 motion rules отсутствуют. На current pizza после #269 есть fade и reduce для rail. | HEAD/base различаются; subfilters исключены из fade. | Не трогать в Stage 1. Требует разрешения зависимости #268/#266/#269. |
 | 160-01-rail-fab-mobile.css | cartFab opacity/transform 300ms; badge 350ms; skeleton pulse 1.4s; empty state 400ms; address sheet 220ms; preorder timer 300ms + pulse 2s; validation shake 400ms. | Reduce покрывает skeleton, empty, address sheet/button, preorder waiting pulse и validation shake; cartFab/badge остаются без reduce. | CartFab — отдельный этап. Сохранить геометрию и кликабельность. |
 | 160-02-addr-panel-fix.css | #mbonusBtn opacity/transform 250ms. | Reduce отсутствует. | Проверить, что selector остаётся живым, затем локально нормализовать. |
@@ -98,19 +98,19 @@ DOM ownership остаётся прежним: cart.js владеет состо
 | 160-13-dashboard-bento.css | Dashboard tabs bg/color/shadow 180ms. | Reduce отсутствует. | Позже нормализовать простое состояние без transform. |
 | 160-14-auth-modal.css | Form/mode switch 180ms; busy spinner 700ms infinite linear. | Scoped reduce устанавливает transition/animation 0.01ms и iteration 1; spinner отдельно отключён. | Оставить мгновенное состояние; позже проверить избыточно широкий descendant selector. |
 | 160-15-mobile-support-toolbar.css | Support/mode controls 150ms. | Reduce отключает. | Сохранить scoped reduce. |
-| 170-profile-button.css | Profile button 250ms; tabs 200ms; stamp track width 180ms; chevrons 160–180ms; controls 120ms. | Reduce покрывает только часть путей. Width может вызывать layout. | Локально расширить reduce; не анимировать весь профиль при открытии. |
+| 170-profile-button.css | Profile avatar 250ms; tabs 200ms; stamp track 180ms; chevrons 160–180ms; profile actions 120ms. | Reduce also disables avatar hover scale, tabs, progress width, Friday chevron and existing profile action transitions. | Keep profile panel geometry stable; do not animate the whole profile on open. |
 
 ### 4.2 JS и динамический CSS
 
 | Владелец | Триггер и текущий эффект | Риски / reduce | Решение |
 |---|---|---|---|
-| core/views.js | Вставляет Layer 2 CSS: delivery option shake 400ms, active translateY(1px), brand/mode/panel правила; RAF добавляет pulse. | Shake не имеет reduce; динамический panel transform пересекается с CSS и swipe inline transform. | Оставить owner; reduce добавлять в тот же динамический style owner. |
+| core/views.js | Вставляет Layer 2 CSS: delivery option shake 400ms, active translateY(1px), brand/mode/panel rules; RAF adds pulse. | Dynamic .opts.shake now has a scoped reduce override. Explicit smooth scroll for option validation remains in delivery.js and is deferred with the #266/#269 delivery/rail dependency. | Preserve Layer 2b ownership; do not add a global scroll override. |
 | core/swipe.js | Mobile profile swipe пишет inline transform, отключает transition во время drag; завершение 320ms + overlay opacity 320ms. Nudge 1.1s cubic(.3,1.4,.4,1), hintFade 1.6s. | Нет reduce; overshoot; resize/reopen потенциально конкурируют с cleanup. | Gesture сохраняется отзывчивым, но decorative nudge/hint отключаются под reduce. Проверить прерывание/resize. |
 | ui/styles.js | Вставляет общий .pulse: scale + expanding shadow, 1.3s infinite; chatHint pulse 1.2s × 3. | Нет reduce; broad selector может затронуть несвязанные .pulse consumers; shadow repaint. | Сузить владельца и убрать idle loop. |
-| core/fx.js | window.confetti создаёт 90 частиц; canvas RAF draw/clear до ухода за экран. | Нет reduce и hidden-document cancellation; layout shift отсутствует, но есть постоянный paint на время эффекта. | Под reduce пропустить эффект или показать static feedback; прекращать при hidden. |
-| core/deeplink.js | Order card flash 2.4s (background + outline); scrollIntoView smooth; review action also smooth-scrolls then glow. | Нет reduce; background repaint; scroll может конфликтовать со sticky state. | Сохранить смысловую подсветку, под reduce убрать движение и делать instant scroll. |
+| core/fx.js | window.confetti creates 90 particles; canvas RAF draw/clear for the effect lifetime. | Skip canvas initialization when reduce is active; stop and clear the next RAF frame if the preference changes live. Hidden-document cancellation remains open. | Keep the event-bound effect, with no motion for reduce clients. |
+| core/deeplink.js | Order-card flash 2.4s and smooth scroll; review action smooth-scrolls then glows. | Under reduce, flash animation is disabled while outline remains as state feedback; order/review scroll uses auto. | Keep state indication, remove optional motion. |
 | admin-extra.js | ResizeObserver/RAF измеряют ticker overflow; CSS владеет marquee; matchMedia reduce читается в JS. | Не отдельный animation loop. | Сохранить owner/fallback, проверить live preference changes. |
-| cart.js | Синхронные open/close class changes; addon scrollBy выбирает auto под reduce; один grid scrollIntoView smooth reduce не учитывает. | Не ждёт transitionend — это верное поведение. | Бизнес-логику не менять; добавить reduce-safe scroll в будущем изолированном изменении владельца. |
+| cart.js | Synchronous cart open/close; addon scrollBy uses auto under reduce; continue-shopping action scrolls delivery grid. | Continue-shopping scroll now selects auto for reduce and smooth otherwise; cart business logic and API remain unchanged. | Keep cart lifecycle owner and cover navigation scroll in the existing cart E2E spec. |
 | core/overlay-core.js | Overlay classes, Escape, backdrop, popstate и cart/modal orchestration. | Не ждёт окончания animation. | Сохранить lifecycle owner. |
 | core/panel.js | Drawer open/close + focus restore. | Координируется с inline transform из swipe.js. | Сохранить владельца; проверять repeated open/close, Escape, focus. |
 | chat.js / chat-core.js | Chat open/close, message/hint state. | FAB pseudo ping и dynamic hint pulse неполностью reduce-safe. | Сохранить JS owner; изменить только component CSS/Layer3 owner. |
@@ -229,7 +229,8 @@ Baseline evidence:
 - [x] Добавлен reduced-motion auth modal/overlay test: open, Escape, focus restore, aria-hidden и pointer-events cleanup.
 - [x] RED подтверждён на overlay fade; после CSS-фикса computed duration карточки проверяется численно с учётом Chromium serialization (`0.01ms` → `1e-05s`).
 - [x] Reduced-motion auth visual matrix: coffee/delivery × portrait/compact landscape/desktop × open/closed; 12 кадров открыты и осмотрены.
-- [x] Component-owned CSS модалки использует spatial tokens и локальный reduced-motion; `core/overlay-core.js`, `core/panel.js` и JS focus lifecycle не менялись.
+- [x] Component-owned modal CSS uses spatial tokens and local reduced motion; core/overlay-core.js, core/panel.js and JS focus lifecycle remain unchanged.
+- [x] Generic modal/shared overlay, staff PIN error and fullscreen QR reduced-motion assertions added to auth-modal-ux.spec.js; current-HEAD runtime/visual acceptance still pending.
 - [x] Address book sheet: normal entry/exit, reduced-motion immediate close, rapid reopen cancellation; `transitionrun` + delayed hidden lifecycle доказаны тестами.
 - [x] RED подтверждён: прежний JS переключал `hidden` синхронно, из-за чего entry/exit transition не запускались; GREEN после component-owned lifecycle fix в `core/address-book.js`.
 - [x] Cart/checkout screenshot `cart-address-book-390px` открыт и осмотрен: delivery/mobile 390×844, нижняя sheet, фон/контекст читаемы, 44×44px close/edit/delete targets, bottom/overflow assertions сохранены.
@@ -245,7 +246,9 @@ Baseline evidence:
 - [ ] Разрешить #268 rail/base dependency до category/rail motion; не переносить #266/#269 в текущую ветку без согласования.
 - [x] Cart FAB: opacity-only show/hide, фиксированная ширина/позиция, без scale на hover/press; `prefers-reduced-motion` отключает transition.
 - [x] Cart FAB regression test: стабильные bounds/transform, hover/pressed hit-target в normal и reduced motion; Cart/checkout 32/32.
-- [ ] Test category selected, stepper, add-product и card image.
+- [ ] Category selected, stepper, add-product and card image micro-interactions remain deferred until the #266/#269 dependency is resolved.
+- [x] Topbar role/brand controls and avatar/edit hover travel are static under reduced motion; regression is in staff-topbar-layout.spec.js.
+- [x] Profile avatar, stamp progress, chevron and profile action transitions are reduced-motion safe; profile ambient feedback is covered by profile-orders.spec.js.
 - [ ] Сохранить grid geometry и неизменность hit-target.
 
 ### Stage 4 — feedback/ambient
@@ -254,7 +257,12 @@ Baseline evidence:
 - [x] Необоснованный постоянный chat FAB ping удалён.
 - [x] Checkout validation scroll honors `prefers-reduced-motion`: `auto` under reduce, `smooth` otherwise; regression is in `tests/cart-checkout-clarity.spec.js`.
 - [x] Order deep link uses instant scroll and disables its one-shot flash animation under reduce; regression is in `tests/profile-orders.spec.js`.
-- [x] Confetti skips canvas initialization under reduce and clears/stops an active RAF loop when the preference changes; covered in `tests/auth-modal-ux.spec.js`.
+- [x] Confetti skips canvas initialization under reduce and clears/stops an active RAF loop when the preference changes; covered in tests/auth-modal-ux.spec.js.
+- [x] Service toast and ambient hints/pulses are static under reduce; tested for both brands in chat-support.spec.js and auth-modal-ux.spec.js.
+- [x] Cashier/customer/stamp/log entrance motion and staff-guide chevron are static under reduce; staff-topbar-layout.spec.js covers the owner styles.
+- [x] Continue-shopping navigation scroll switches to auto under reduce; cart-checkout-clarity.spec.js covers both reduce and normal motion.
+- [x] Delivery option .opts.shake is visually suppressed under reduce in the dynamic CSS owner; delivery-card-cart-state.spec.js checks the change.
+- [ ] Delivery option validation and category selection in delivery.js still pass explicit smooth scroll options. Do not change that shared file until the #266/#269 dependency is resolved; no global scroll override.
 - [x] Toast CSS переведён на общие tokens: entry 180ms и exit 120ms, без overshoot; при reduced motion entry мгновенный, exit скрывает toast без анимации.
 - [x] Normal/reduced toast assertions для coffee/delivery добавлены также в `tests/chat-support.spec.js`, который присутствует в эффективном базовом CI workflow; тест ожидает готовность `window.toast`.
 - [ ] Выполнить RED/GREEN и визуальную проверку toast на текущем SHA. В `tests/toast-motion.spec.js` остаётся отдельный дублирующий spec; ветка PR `.github/workflows/ci.yml` всё ещё содержит двойное упоминание этого файла, а base `pizza` workflow запускает chat-support spec, но не отдельный toast spec.
@@ -277,7 +285,10 @@ Baseline evidence:
 - tests/swipe-panel-close.spec.js — CDP touch gesture, focus restore, scroll preservation, CLS < 0.001.
 - tests/chat-support.spec.js — chat geometry/open и toast motion для coffee/delivery portrait, landscape, short landscape.
 - tests/toast-motion.spec.js — отдельные normal/reduced motion проверки toast; выполнение в base `pizza` workflow отдельно не подтверждено.
-- tests/auth-modal-ux.spec.js — auth, generic modal/overlay, staff PIN error, fullscreen QR и confetti reduced-motion checks.
+- tests/auth-modal-ux.spec.js — auth, generic modal/overlay, staff PIN error, fullscreen QR, confetti and service ambient reduced-motion checks.
+- tests/staff-topbar-layout.spec.js — topbar and cashier motion/reduced-motion states.
+- tests/delivery-card-cart-state.spec.js — delivery option validation shake is static under reduced motion.
+- tests/profile-orders.spec.js — order deeplink scroll/flash and profile ambient reduced-motion checks.
 - tests/cart-checkout-clarity.spec.js — checkout validation scroll uses instant behavior under reduced motion and smooth behavior otherwise.
 - tests/profile-orders.spec.js — order deep-link scroll and flash respect reduced motion.
 - tests/pour-accessibility.spec.js — ticker reduced motion и manual scroll.
@@ -309,18 +320,18 @@ Baseline evidence:
 
 ## 10. Текущий статус
 
-Срез на 2026-11-17, PR #268, branch `design/ui-animation-system-20261116`, base `pizza`. HEAD на момент обновления: `17b8de8e21d13e455608c127b1424710b0d08eee`.
+Срез на 2026-11-17, PR #268, branch `design/ui-animation-system-20261116`, base `pizza`. Текущий application HEAD перед этим документальным обновлением: `8349f7a691387e5680fa1b0a9b7e1a5f004e0adf`.
 
-Stage 0 завершён. Stage 1 (cart sheet) завершён. Stage 2 частично завершён: auth modal/overlay и address book sheet ранее визуально проверены; generic modal/shared overlay, staff PIN error и fullscreen QR получили reduced-motion CSS и regression assertions, но на текущем SHA runtime GREEN и visual acceptance не получены. Остальные staff overlays остаются. Stage 3 частично завершён: chat panel/FAB/hints и cart FAB; category/card/rail interactions отложены до разрешения зависимости #266/#269. Stage 4 частично завершён: toast timing/reduced CSS и tests, checkout validation reduced scroll, confetti reduced handling внесены; order flash и визуальная проверка текущего состояния ещё открыты.
+Stage 0 завершён. Stage 1 (cart sheet) завершён и ранее прошёл отдельную визуальную проверку. Stage 2 частично завершён: auth modal/overlay и address book sheet ранее визуально проверены; generic modal/shared overlay, PIN/QR получили reduced-motion CSS и regression assertions, но runtime GREEN и visual acceptance текущего HEAD не получены. Остальные staff overlays остаются. Stage 3 частично завершён: chat panel/FAB/hints, cart FAB, topbar controls, profile ambient and cashier feedback теперь имеют локальные reduced-motion rules/tests; category/card/rail interactions остаются отложенными до разрешения dependency #266/#269. Stage 4 частично завершён: toast, service/profile/cashier ambient, checkout validation scroll, order deeplink, confetti и cart continue-shopping scroll получили reduce-safe changes/assertions. Delivery option shake визуально suppressed by dynamic CSS under reduce; explicit smooth scroll in delivery.js remains unresolved, along with category scrolls, because the file is part of the deferred delivery/rail ownership dependency.
 
-Последний подтверждённый CI run `44050067076` завершился успешно: 13/13 jobs, но он относится к предыдущему synthetic PR merge SHA `4cce03607dee310e37f304f40f130255ee6009a0`, а не к текущему head. Для новых commits Actions API не возвращает PR workflow runs и commit status пуст. Повторный запуск через GitHub Actions API возможен только для существующего run/job; текущего run для нового HEAD нет. Отдельная попытка правки workflow для удаления дублирования toast spec отклонена GitHub write guard.
+Последний подтверждённый CI run `44050067076` завершился успешно: 13/13 jobs, но он относится к предыдущему synthetic PR merge SHA `4cce03607dee310e37f304f40f130255ee6009a0` / application HEAD `9e522f4fed1a250a8d34f2513ab30a83570228c4`, а не к текущему HEAD. Для последних commits Actions API не возвращает новых PR workflow runs, а commit status пустой/pending. Локальный запуск Playwright/build в этой сессии недоступен: GitHub clone из контейнера недоступен, а создание Vercel sandbox для имеющегося проекта отклонено. Все новые regression assertions поэтому остаются unverified; ни один новый test run не отмечается зелёным.
 
-В base `pizza` workflow уже исполняются `tests/chat-support.spec.js`, `tests/auth-modal-ux.spec.js` и `tests/cart-checkout-clarity.spec.js`; новые assertions размещены там, чтобы попасть в существующие job groups. Base workflow не запускает standalone `tests/toast-motion.spec.js`. Ветка PR workflow включает его дважды; не считать standalone spec проверенным.
+Base `pizza` workflow включает новые assertions через существующие группы: Auth — `auth-modal-ux.spec.js`; Cart and checkout — `cart-checkout-clarity.spec.js` и `delivery-card-cart-state.spec.js`; Profile — `profile-orders.spec.js`; Responsive UI — `staff-topbar-layout.spec.js` и `chat-support.spec.js`. Отдельный `tests/toast-motion.spec.js` не включён в base workflow; его проверки дублируются в активном `chat-support.spec.js`. В ветке PR собственный `.github/workflows/ci.yml` всё ещё упоминает standalone toast spec дважды; попытка исправить workflow была отклонена GitHub write guard, файл оставлен без изменений. Не считать предыдущий зелёный run доказательством новых тестов.
 
-В ходе текущей сессии нет доступа к локальному git clone, Playwright runtime или sandbox; поэтому запуск тестов/build и чтение реальных новых Action logs не выполнены. Не отмечать RED/GREEN и CI как успешные без фактического run на текущем SHA. Public assets пока не прошли штатный `npm run build:client`/cache-busting; приёмка не завершена.
+На проверенном HEAD `c764590f9aacfb80650b3ce6330259b9e1ecf003` CI run `44049124205` имел 13/13 successful jobs. Cart/checkout — 32/32; Profile/address book — 24/24. Штатный client build запускал `npm run bump:sw`; commit `a984ded` содержал generated cache-busting `v652`: `STATIC_CACHE=zerno-static-v652`, `public/index.html` содержал 69 ссылок `?v=652` (историческая ссылка `?v=2` не относится к asset cache version). После новых public changes `npm run build:client` и новый штатный bump ещё не выполнялись; `sw.js` и asset query versions вручную не менялись.
 
-Предыдущие подтверждённые проверки остаются привязаны к своим SHA: run `44050067076` (13/13), `44049124205` (13/13), Cart/checkout 32/32 и Profile/address book 24/24 на соответствующих более ранних revisions. Не переносить эти результаты на новые commits.
+Visual review cart FAB: сохранена запись Playwright `test-results/cart-motion-system-cart-FA-a8d5f--or-resizing-its-hit-target-chromium/video.webm` из run `44045981670`; открыты и осмотрены кадры 0.25/0.8/1.5/2.0s. Delivery guest, 390×844: pill остаётся центрированной у нижнего края, не меняет hit-target на hover/press. Address book: screenshot `cart-address-book-390px` из run `44049124205` осмотрен; sheet принята в delivery/cart контексте при 390×844, safe bottom, 44px controls и читаемом backdrop. Для новых modal/PIN/QR, toast, cashier/profile, topbar, checkout/deeplink и ambient changes актуальные screenshots/recordings не открыты; baselines не обновлялись.
 
-Rail/category/card motion отложен: PR #266 остаётся stacked dependency, #269 уже в pizza; #268 base не менялся. Не переносить эти ветки без согласования.
+Rail/category/card motion отложен: PR #266 остаётся отдельной stacked dependency, #269 уже находится в pizza; #268 base не менялся. Не переносить ветки, не менять base и не затрагивать shared delivery.js rail/card behavior без разрешения зависимости.
 
-Следующие участки: order flash и оставшиеся staff overlays, затем bonus/ambient cycles и финальная normal/reduced + responsive visual matrix. Category/card micro-interactions — только после повторной проверки branch dependency #266. PR остаётся Draft до штатного build/cache-bust, полного CI и visual acceptance.
+Следующие этапы: получить RED/GREEN и полноценный build+cache-bust на текущем HEAD; открыть актуальные screenshots/recordings; разрешить #266/#269 dependency и завершить delivery.js/category/card/stepper motion; закрыть оставшиеся staff overlays, validation scroll и ambient paths; затем full visual/CI acceptance. PR остаётся Draft.
