@@ -50,6 +50,8 @@ async function expectCartAtRest(panel, viewport, open) {
       transitionDuration: style.transitionDuration,
       transitionProperty: style.transitionProperty,
       visibility: style.visibility,
+      pointerEvents: style.pointerEvents,
+      visibility: style.visibility,
       display: style.display,
     };
   });
@@ -61,18 +63,23 @@ async function expectCartAtRest(panel, viewport, open) {
     if (open) {
       expect(Math.abs(geometry.bottom - viewport.height)).toBeLessThanOrEqual(1);
       expect(geometry.top).toBeGreaterThanOrEqual(-1);
-    } else {
-      expect(geometry.top).toBeGreaterThanOrEqual(viewport.height - 1);
     }
   } else if (open) {
     expect(Math.abs(geometry.right - viewport.width)).toBeLessThanOrEqual(1);
     expect(geometry.width).toBeCloseTo(430, 0);
-  } else {
-    expect(geometry.left).toBeGreaterThanOrEqual(viewport.width - 1);
   }
 
-  expect(geometry.width).toBeGreaterThan(0);
-  expect(geometry.height).toBeGreaterThan(0);
+  if (open) {
+    expect(geometry.visibility).toBe('visible');
+    expect(geometry.pointerEvents).toBe('auto');
+    expect(geometry.width).toBeGreaterThan(0);
+    expect(geometry.height).toBeGreaterThan(0);
+  } else {
+    // Reduced motion closes synchronously: the sheet is hidden and non-interactive,
+    // rather than being required to travel outside the viewport.
+    expect(geometry.visibility).toBe('hidden');
+    expect(geometry.pointerEvents).toBe('none');
+  }
 }
 
 test('reduced motion opens and closes the cart sheet without spatial travel', async ({ page }) => {
