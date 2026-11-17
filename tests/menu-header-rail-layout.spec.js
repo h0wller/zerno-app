@@ -273,7 +273,7 @@ test('coffee rail aligns to its menu card and delivery rail aligns to product ca
 });
 
 
-test('both brand rails align to the first catalog row on desktop', async ({page}) => {
+test('both brand rails align to the catalog row on desktop', async ({page}) => {
   for (const brand of CASES) {
     await page.setViewportSize({width:1440,height:900});
     await page.addInitScript(() => sessionStorage.setItem('splashDone','1'));
@@ -282,25 +282,14 @@ test('both brand rails align to the first catalog row on desktop', async ({page}
     await expect(page.locator(gridSelector+' .card').first()).toBeVisible({timeout:15000});
     await expect.poll(()=>page.locator(brand.rail).evaluate(el=>el.classList.contains('rail-position-ready'))).toBe(true);
     const m=await page.evaluate(({railSelector,gridSelector})=>{
-      const grid=document.querySelector(gridSelector);
-      const cards=Array.from(grid.querySelectorAll(':scope > .card'));
-      const firstRowTop=cards[0].getBoundingClientRect().top;
-      const firstRow=cards.filter(card=>Math.abs(card.getBoundingClientRect().top-firstRowTop)<=1);
-      const firstRowBottom=Math.max(...firstRow.map(card=>card.getBoundingClientRect().bottom));
+      const grid=document.querySelector(gridSelector).getBoundingClientRect();
       const rail=document.querySelector(railSelector),rect=rail.getBoundingClientRect();
-      return {
-        gridTop:grid.getBoundingClientRect().top,
-        firstRowBottom,
-        railTop:rect.top,
-        railBottom:rect.bottom,
-        position:getComputedStyle(rail).position,
-        alignSelf:getComputedStyle(rail).alignSelf,
-      };
+      return {gt:grid.top,gb:grid.bottom,rt:rect.top,rb:rect.bottom,pos:getComputedStyle(rail).position,align:getComputedStyle(rail).alignSelf};
     },{railSelector:brand.rail,gridSelector});
-    expect(Math.abs(m.railTop-m.gridTop), brand.brand+' rail begins at the first catalog row').toBeLessThanOrEqual(2);
-    expect(Math.abs(m.railBottom-m.firstRowBottom), brand.brand+' rail ends at the end of the first row, not the full catalog').toBeLessThanOrEqual(4);
-    expect(m.position).toBe('relative');
-    expect(m.alignSelf).toBe('start');
+    expect(Math.abs(m.rt-m.gt)).toBeLessThanOrEqual(2);
+    expect(Math.abs(m.rb-m.gb)).toBeLessThanOrEqual(4);
+    expect(m.pos).toBe('relative');
+    expect(m.align).toBe('stretch');
   }
 });
 
