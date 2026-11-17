@@ -459,3 +459,53 @@ for (const brand of FLOATING_RAIL_CASES) {
     });
   }
 }
+
+
+test('delivery: visible cart FAB stays above the floating category capsule', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    sessionStorage.setItem('splashDone', '1');
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_ios_hide', '1');
+  });
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const firstCard = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
+  await expect(firstCard).toBeVisible({ timeout: 15000 });
+  const option = firstCard.locator('.opts label.opt-btn').last();
+  if (await option.count()) await option.click();
+  await firstCard.locator('.steprow .cta, [data-add]').first().click();
+
+  const rail = page.locator('#deliveryRail');
+  const fab = page.locator('#cartFab');
+  await expect.poll(() => fab.evaluate(element =>
+    !element.hidden && getComputedStyle(element).display !== 'none' &&
+    element.classList.contains('visible')
+  ), { timeout: 7000 }).toBe(true);
+
+  const geometry = await page.evaluate(() => {
+    const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
+    const fab = document.querySelector('#cartFab').getBoundingClientRect();
+    return {
+      railTop: rail.top,
+      fabBottom: fab.bottom,
+      fabTop: fab.top,
+      fabHeight: fab.height,
+      railVisibility: getComputedStyle(document.querySelector('#deliveryRail')).visibility,
+    };
+  });
+  await testInfo.attach('delivery-cart-fab-floating-rail-clearance-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
+  expect(geometry.fabHeight).toBeGreaterThanOrEqual(44);
+  expect(geometry.fabBottom + 8,
+    'the visible cart FAB must have at least an 8px gap above the floating rail')
+    .toBeLessThanOrEqual(geometry.railTop);
+
+  await fab.click();
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+  await expect(rail).toHaveCSS('visibility', 'hidden');
+  await expect(rail).toHaveCSS('pointer-events', 'none');
+});
