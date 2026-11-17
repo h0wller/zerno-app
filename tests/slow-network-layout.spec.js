@@ -1059,6 +1059,27 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
           bodyHeight: document.body ? document.body.scrollHeight : 0,
           footer: rect('footer.siteFooter'),
           wrap: rect('body > .wrap'),
+          wrapChildren: Array.from(document.querySelector('body > .wrap')?.children || []).map((element) => {
+            const box = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+              tag: element.tagName,
+              id: element.id || '',
+              className: typeof element.className === 'string' ? element.className : '',
+              x: Math.round(box.x * 10) / 10,
+              y: Math.round(box.y * 10) / 10,
+              width: Math.round(box.width * 10) / 10,
+              height: Math.round(box.height * 10) / 10,
+              scrollHeight: element.scrollHeight,
+              display: style.display,
+              position: style.position,
+              minHeight: style.minHeight,
+              gridRow: style.gridRow,
+            };
+          }),
+          rail: rect('body > .wrap > .rail'),
+          deliveryRail: rect('body > .wrap > #deliveryRail'),
+          mainSection: rect('body > .wrap > section'),
           panel: rect('#panel'),
           profileBox: rect('#profileBox'),
           profileNoUser: rect('#profileNoUser'),
