@@ -339,3 +339,64 @@ test('chat motion uses short spatial transitions and no permanent ambient pulse'
     }
   }
 });
+
+
+test('toast motion uses the shared short feedback timing in both brands', async ({ page }) => {
+  const toast = page.locator('#toasts .toast');
+
+  for (const brand of ['coffee', 'delivery']) {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await prepare(page, '/?brand=' + brand);
+    await page.evaluate(() => window.toast('Motion feedback test', 'ℹ️'));
+    await expect(toast).toHaveCount(1);
+
+    const entry = await toast.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        animationName: style.animationName,
+        duration: style.animationDuration,
+        easing: style.animationTimingFunction,
+      };
+    });
+    expect(entry.animationName).toBe('tin');
+    expect(entry.duration).toBe('0.18s');
+    expect(entry.easing).toBe('cubic-bezier(0.2, 0.8, 0.2, 1)');
+
+    await expect.poll(() => toast.evaluate((element) => element.classList.contains('out')), {
+      timeout: 3000,
+    }).toBe(true);
+    const exit = await toast.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        animationName: style.animationName,
+        duration: style.animationDuration,
+        easing: style.animationTimingFunction,
+      };
+    });
+    expect(exit.animationName).toBe('tout');
+    expect(exit.duration).toBe('0.12s');
+    expect(exit.easing).toBe('cubic-bezier(0.2, 0.8, 0.2, 1)');
+    await expect(toast).toHaveCount(0, { timeout: 1000 });
+  }
+});
+
+test('toast feedback becomes immediate under reduced motion in both brands', async ({ page }) => {
+  const toast = page.locator('#toasts .toast');
+
+  for (const brand of ['coffee', 'delivery']) {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await prepare(page, '/?brand=' + brand);
+    await page.evaluate(() => window.toast('Reduced motion feedback test', 'ℹ️'));
+    await expect(toast).toHaveCount(1);
+    await expect(toast).toHaveCSS('animation-name', 'none');
+    await expect(toast).toHaveCSS('animation-duration', '0s');
+    await expect(toast).toHaveCSS('opacity', '1');
+
+    await expect.poll(() => toast.evaluate((element) => element.classList.contains('out')), {
+      timeout: 3000,
+    }).toBe(true);
+    await expect(toast).toHaveCSS('animation-name', 'none');
+    await expect(toast).toHaveCSS('opacity', '0');
+    await expect(toast).toHaveCount(0, { timeout: 1000 });
+  }
+});
