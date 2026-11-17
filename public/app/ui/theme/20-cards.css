@@ -10,8 +10,8 @@
        (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   #grid,
   #deliveryGrid {
-    padding-bottom: calc(var(--rail-total-h) + 17px);
-    scroll-padding-bottom: calc(var(--rail-total-h) + 17px);
+    padding-bottom: calc(var(--rail-total-h) + 16px);
+    scroll-padding-bottom: calc(var(--rail-total-h) + 16px);
   }
 
   body:has(#cartFab.visible:not([hidden])):not(.is-cashier):not(.is-admin) #grid,

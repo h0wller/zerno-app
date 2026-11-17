@@ -293,6 +293,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         width: box.width,
         viewportWidth: viewport.clientWidth,
         groupWidth: group.getBoundingClientRect().width,
+        expectedGroups: Math.max(1, Math.ceil(viewport.clientWidth / group.getBoundingClientRect().width) + 1) * 2,
         groups: track.children.length,
         clonesHidden: Array.from(track.children).slice(1).every(group => group.getAttribute('aria-hidden') === 'true')
       };
@@ -305,7 +306,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(ticker.left).toBe(0);
     expect(ticker.width).toBe(ticker.viewportWidth);
     expect(ticker.groupWidth).toBeGreaterThan(ticker.viewportWidth);
-    expect(ticker.groups).toBeGreaterThanOrEqual(2);
+    expect(ticker.groups, 'ticker group count must equal admin-extra.js copiesPerCycle × 2').toBe(ticker.expectedGroups);
     expect(ticker.clonesHidden).toBe(true);
     
     expect(ticker.animationPlayState).toBe('running');
