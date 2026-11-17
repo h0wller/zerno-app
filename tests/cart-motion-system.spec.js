@@ -50,9 +50,8 @@ async function expectCartAtRest(panel, viewport, open) {
       transitionDuration: style.transitionDuration,
       transitionProperty: style.transitionProperty,
       visibility: style.visibility,
-      pointerEvents: style.pointerEvents,
-      visibility: style.visibility,
       display: style.display,
+      pointerEvents: style.pointerEvents,
     };
   });
 
@@ -73,17 +72,10 @@ async function expectCartAtRest(panel, viewport, open) {
     expect(geometry.left).toBeGreaterThanOrEqual(viewport.width - 1);
   }
 
-  if (open) {
-    expect(geometry.visibility).toBe('visible');
-    expect(geometry.pointerEvents).toBe('auto');
-    expect(geometry.width).toBeGreaterThan(0);
-    expect(geometry.height).toBeGreaterThan(0);
-  } else {
-    // Reduced motion closes synchronously: the sheet is hidden and non-interactive,
-    // rather than being required to travel outside the viewport.
-    expect(geometry.visibility).toBe('hidden');
-    expect(geometry.pointerEvents).toBe('none');
-  }
+  expect(geometry.width).toBeGreaterThan(0);
+  expect(geometry.height).toBeGreaterThan(0);
+  expect(geometry.visibility).toBe(open ? 'visible' : 'hidden');
+  expect(geometry.pointerEvents).toBe(open ? 'auto' : 'none');
 }
 
 test('reduced motion opens and closes the cart sheet without spatial travel', async ({ page }) => {
@@ -108,7 +100,6 @@ test('reduced motion opens and closes the cart sheet without spatial travel', as
     await expect(page.locator('body')).not.toHaveClass(/cart-open/);
     await expectCartAtRest(panel, viewport, false);
   }
-
 });
 
 test('cart sheet can be interrupted by rapid close and reopen without stale geometry', async ({ page }) => {
