@@ -369,7 +369,7 @@ Baseline evidence:
 
 На desktop delivery при viewport 1440×900 исходный regression воспроизводил document CLS 0.0510983, при staff-header CLS 0. Главный триггер — повторная staff-загрузка delivery.js повторно вставляла шесть skeleton cards поверх уже завершённого пустого каталога; #deliveryGrid кратковременно раздувался, меняя высоту grid row и позицию footer. В delivery.js добавлен data-catalog-ready guard: skeleton показываются только до первого успешного каталога, после renderDeliveryMenu() фиксируется готовность. Повторная staff-hydration больше не добавляет skeleton nodes.
 
-ui/category-rail.js сохраняет desktop rail визуально выровненным с первой строкой каталога через offset без дополнительного margin-top. Для обычного desktop/non-sticky состояния восстановлен align-self:stretch, необходимый существующему bottom-alignment контракту; align-self:start остаётся только для sticky mobile state. Это сохраняет #269 rail behavior и не меняет его layout.
+ui/category-rail.js восстановлен до исходной реализации на актуальной ветке до экспериментального CLS-offset изменения. Убраны delivery-only transform и special margin offset; возвращены штатный marginTop и мобильные alignSelf/sticky переходы. Причину document CLS устраняет повторная вставка skeleton cards в delivery.js; отдельное изменение rail geometry не требуется и не должно нарушать #269 bottom-alignment/sticky contract.
 
 Regression в tests/slow-network-layout.spec.js теперь ожидает data-catalog-ready, наблюдает #deliveryGrid только в границах сценария и запрещает повторную вставку skeleton cards. Главное assertion — document CLS <0.01, дополнительное — staff-header CLS <0.01. В локальном Chromium до восстановления desktop stretch было получено document CLS = 0 и staffHeader CLS = 0; exact geometry + CLS перепроверяются latest-head CI после восстановления desktop stretch.
 
@@ -392,14 +392,14 @@ Profile sidebar: #myOrders получает min-height:64px, чтобы пере
 
 **Изменения после предыдущего snapshot:**
 - delivery.js: повторная staff hydration больше не показывает шесть skeleton cards поверх уже завершённого каталога (data-catalog-ready guard). Это устраняет временное увеличение #deliveryGrid.
-- ui/category-rail.js: desktop offset остаётся визуальным, а rail должен сохранять размер grid row; после CI failure восстановлен align-self:stretch для обычного desktop/non-sticky состояния, align-self:start оставлен только sticky mobile state. Сохраняется #269 rail contract.
+- ui/category-rail.js: после CI выявлены desktop bottom-alignment и mobile sticky regressions от экспериментального offset/alignSelf изменения. Восстановлен исходный файл целиком из pre-change commit; #269 rail geometry/sticky owner не меняется.
 - 110-panel.css: latest-order placeholder резервирует 64 px; regression проверяет, что #fridayInfo не смещается при loading → empty.
 - profile-orders.spec.js: preorder-pulse fixture переведена на конкретную будущую дату и больше не зависит от времени запуска.
 - slow-network-layout.spec.js: полный document CLS и отсутствие повторной skeleton-вставки проверяются явно; baseline не обновлялся.
 
 **Локально подтверждено в изолированной Chromium Sandbox до её завершения:** staff hydration CLS test — document CLS 0, staffHeader CLS 0; category rail E2E 6/6; Profile E2E 19/19 с будущей датой; desktop profile hydration 1/1; unit/integration 186/186; npm run check, CSS audit, brand check, observer audit и git diff --check прошли. Эти результаты относятся к локальным прогонам; current-head CI остаётся источником истины для итоговой приемки.
 
-**Текущий CI finding:** run 44152517813 на промежуточном HEAD 35c6916 выявил две регрессии: Profile — nondeterministic preorder date fixture; Responsive UI и Mobile Chrome — desktop rail bottom alignment из-за align-self:start. Обе причины исправлены последующими commits; verification переносится на latest head. Новый run 44154076140 запущен после исправления; его результат должен быть проверен перед закрытием Stage 5.
+**Текущий CI finding:** run 44152517813 выявил time-dependent preorder date fixture; она исправлена явной будущей датой. Run 44154868940 подтвердил Profile success, но нашёл регрессии rail на mobile sticky и desktop bottom alignment после экспериментального offset. Эти rail изменения отменены полным восстановлением исходного category-rail.js; текущая проверка запущена в run 44156396036 и должна завершиться перед закрытием Stage 5.
 
 **Vercel preview:** project zerno-stage5-preview provisioned, но живой *.vercel.app deployment и read-only API adapter не созданы. Не подключать production SQLite или Telegram webhook к preview. Preview должен использовать отдельные fixtures и read-only mock API.
 
