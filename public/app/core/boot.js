@@ -173,7 +173,7 @@ async function boot() {
 
 /* ── 3. Service Worker: ЕДИНАЯ регистрация ── */
 function registerSW() {
-  if (!('serviceWorker' in navigator) || isAudit) return;
+  if (!('serviceWorker' in navigator) || isAudit || window.__ZERNO_READONLY_PREVIEW__) return;
   addEventListener('load', () => {
     let refreshing = false;
     const hadController = !!navigator.serviceWorker.controller;
@@ -205,7 +205,7 @@ let _defPrompt = null;
 function initInstallBanner() {
   const b = document.getElementById('installBanner');
   // В режиме аудита жестко скрываем баннер, чтобы он не перехватывал LCP
-  if (isAudit) {
+  if (isAudit || window.__ZERNO_READONLY_PREVIEW__) {
     if (b) b.hidden = true;
     return;
   }
@@ -258,7 +258,7 @@ function initInstallBanner() {
 
 /* ── 5. iOS-хинт установки ── */
 function initIosHint() {
-  if (isAudit) return;
+  if (isAudit || window.__ZERNO_READONLY_PREVIEW__) return;
 
   const ua = navigator.userAgent;
   const isIOS =
