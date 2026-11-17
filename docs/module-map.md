@@ -129,7 +129,7 @@
 | `core/overlay-core.js` | `syncOverlay` (модалки/шторки/корзина), popstate/Escape/клик по оверлею; TgUx (MainButton, BackButton, haptics) | `window.syncOverlay`, `window.TgUx` |
 | `core/panel.js` | Единая шторка профиля `#panel`, фокус возврата и действия «Назад»; старый вызов `openPanel('bonus')` открывает тот же профиль | `window.openPanel`, `window.closePanel`, `window.setTab` |
 | `core/swipe.js` | iOS-свайп закрытия `#panel` | — |
-| `ui/category-rail.js` | Общая геометрия/позиционирование `#rail` и `#deliveryRail`, desktop rail aligns to the first catalog row without stretching to grid height, временный fade только основной панели при скролле; DOM и состояние категорий остаются у `menu.js` / `delivery.js` | `window.alignRailWithCard` |
+| `ui/category-rail.js` | Общая геометрия/позиционирование `#rail` и `#deliveryRail`, временный fade только основной панели при скролле; DOM и состояние категорий остаются у `menu.js` / `delivery.js` | `window.alignRailWithCard` |
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |
