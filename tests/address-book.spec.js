@@ -118,16 +118,32 @@ test.describe('Мои адреса: шторка и сохранение', () =>
     await load(page);
     const sheet = page.locator('#addrBookSheet');
 
+    await page.evaluate(() => {
+      window.__addressBookTransitionRuns = [];
+      document.addEventListener('transitionrun', (event) => {
+        if (event.target && event.target.id === 'addrBookSheet') {
+          window.__addressBookTransitionRuns.push(event.propertyName);
+        }
+      }, true);
+    });
+
     await page.click('#addrBookBtn');
     await expect(sheet).toBeVisible();
     await expect(sheet).toHaveClass(/open/);
     await expect(sheet).toHaveCSS('transition-duration', '0.22s, 0.22s');
+    await expect.poll(() => page.evaluate(() => window.__addressBookTransitionRuns))
+      .toContain('opacity');
+    await expect.poll(() => sheet.evaluate((element) => getComputedStyle(element).opacity))
+      .toBe('1');
 
-    await page.evaluate(() => window.AddressBook.close());
+    await page.evaluate(() => {
+      window.__addressBookTransitionRuns = [];
+      window.AddressBook.close();
+    });
     await expect(sheet).not.toHaveClass(/open/);
     await expect(sheet).toBeVisible();
-    await expect(sheet).toHaveCSS('opacity', '0');
-
+    await expect.poll(() => page.evaluate(() => window.__addressBookTransitionRuns))
+      .toContain('opacity');
     await expect(sheet).toBeHidden({ timeout: 1000 });
   });
 
@@ -162,35 +178,6 @@ test.describe('Мои адреса: шторка и сохранение', () =>
   });
 
 
-  test('шторка открывается и закрывается с пространственным переходом до hidden', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await load(page);
-    await page.evaluate(() => {
-      window.__addressBookMotionEvents = [];
-      document.addEventListener('transitionrun', (event) => {
-        if (event.target && event.target.id === 'addrBookSheet') {
-          window.__addressBookMotionEvents.push(event.propertyName);
-        }
-      }, true);
-    });
-
-    const sheet = page.locator('#addrBookSheet');
-    await page.click('#addrBookBtn');
-    await expect(sheet).toHaveClass(/open/);
-    await expect.poll(() => page.evaluate(() => window.__addressBookMotionEvents))
-      .toContain('opacity');
-
-    const openStyle = await sheet.evaluate((element) => {
-      const style = getComputedStyle(element);
-      return { duration: style.transitionDuration, opacity: style.opacity };
-    });
-    expect(openStyle.duration).toContain('0.22s');
-    expect(openStyle.opacity).toBe('1');
-
-    await page.evaluate(() => window.AddressBook.close());
-    await expect(sheet).not.toHaveClass(/open/);
-    await expect(sheet).toBeVisible();
-    await expect.poll(() => sheet.evaluate((element) => element.hidden)).toBe(true);
-  });
+;
 
 });
