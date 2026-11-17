@@ -1096,6 +1096,21 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await page.goto('/?brand=delivery',{waitUntil:'commit'});
     await page.locator('#modeSeg').waitFor({state:'attached'});
     await waitForDeferredTheme(page);
+    await page.waitForFunction(() => document.querySelector('#deliveryGrid')?.dataset.catalogReady === '1');
+    await page.evaluate(() => {
+      window.__staffHydrationSkeletonAdds = [];
+      const grid = document.querySelector('#deliveryGrid');
+      new MutationObserver(records => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node.nodeType !== Node.ELEMENT_NODE) continue;
+            const count = (node.matches?.('.skeleton-card') ? 1 : 0)
+              + (node.querySelectorAll?.('.skeleton-card').length || 0);
+            if (count) window.__staffHydrationSkeletonAdds.push(count);
+          }
+        }
+      }).observe(grid, { childList:true, subtree:true });
+    });
     const before=await page.evaluate(()=>{
       const rect=selector=>{
         const el=document.querySelector(selector);
@@ -1239,7 +1254,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       staffHeader:after.staffHeaderCls,
       shifts:after.shifts
     }));
-    // Staff-header CLS is isolated from independent profile/sidebar and footer hydration.
+    expect(await page.evaluate(() => window.__staffHydrationSkeletonAdds)).toEqual([]);
+    expect(after.cls).toBeLessThan(0.01);
     expect(after.staffHeaderCls).toBeLessThan(0.01);
   });
 

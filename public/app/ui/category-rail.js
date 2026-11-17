@@ -53,7 +53,7 @@ function updateRailStickyPosition(rail, head) {
     rail.style.top = 'auto';
     rail.style.maxHeight = 'none';
     rail.style.overflowY = '';
-    rail.style.alignSelf = 'stretch';
+    rail.style.alignSelf = 'start';
   }
 
   rail.style.transform = 'none';
@@ -76,13 +76,16 @@ function alignRailWithCard() {
   if (!wrap) return;
 
   var headRect = head && head.getBoundingClientRect();
+  var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
+  var visualDeliveryOffset = isDeliveryBrand
+    && !(window.matchMedia && window.matchMedia('(max-width: 820px)').matches);
+  var railVisualOffset = 0;
   if (headRect && headRect.height) {
     var wrapRect = wrap.getBoundingClientRect();
     var wrapStyle = window.getComputedStyle(wrap);
     var wrapContentTop = wrapRect.top
       + (parseFloat(wrapStyle.paddingTop) || 0)
       + (parseFloat(wrapStyle.borderTopWidth) || 0);
-    var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
     var menuRow = head.querySelector('.menu-controls-row');
     var modeSeg = document.getElementById('modeSeg');
     var staffGuestMenu = !!(menuRow && modeSeg &&
@@ -90,7 +93,8 @@ function alignRailWithCard() {
     var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
     var catalogRect = catalog && catalog.getBoundingClientRect();
     var desiredTop = catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
-    var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
+    railVisualOffset = Math.max(0, desiredTop - wrapContentTop);
+    var marginTop = visualDeliveryOffset ? '0px' : railVisualOffset + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
     if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
   } else if (rail.style.marginTop !== '0px') {
@@ -98,6 +102,11 @@ function alignRailWithCard() {
   }
 
   updateRailStickyPosition(rail, head);
+  if (visualDeliveryOffset) {
+    rail.style.transform = railVisualOffset
+      ? 'translateY(' + railVisualOffset + 'px)'
+      : 'none';
+  }
 
   var topbar = document.querySelector('header.topbar');
   if (typeof ResizeObserver === 'function' && (observedRailHead !== head || observedRailTopbar !== topbar)) {
