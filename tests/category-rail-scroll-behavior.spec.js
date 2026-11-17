@@ -133,7 +133,7 @@ test('delivery subfilters remain visible while the primary category rail fades d
   await expect(firstSubfilter).toBeVisible();
 
   await page.evaluate(() => window.scrollTo(0, 500));
-  await expect(page.locator('#deliveryRail')).toHaveCSS('opacity', '0');
+  await expect(page.locator('#deliveryRail')).toHaveCSS('opacity', '0.06');
   await expect(subfilters).toHaveCSS('opacity', '1');
   await expect(firstSubfilter).toHaveCSS('opacity', '1');
 });
