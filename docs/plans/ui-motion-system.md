@@ -31,9 +31,9 @@ Zerno должен ощущаться быстрым, спокойным и пр
 
 ### PR #265 / #266
 
-PR #265 открыт и не объединён; ветка feat/mobile-bottom-category-rail-20261116. PR #266 открыт, не Draft, основан на #265; head 15e0fb273f73f4b6238ebdd0694de662b522031f.
+PR #265 закрыт без merge (2026-11-17); ветка feat/mobile-bottom-category-rail-20261116. PR #266 также закрыт без merge (2026-11-17), head 15e0fb273f73f4b6238ebdd0694de662b522031f. Обе ветки признаны устаревшими и не являются активными зависимостями.
 
-В #266 пересекаются menu.js, 150-rail.css, 20-cards.css, critical CSS в index.html, sw.js и связанные тесты. Поэтому rail, menu и card motion нельзя безопасно реализовывать из старой базы #268 без согласования зависимости.
+Исторически #266 пересекался с menu.js, 150-rail.css, 20-cards.css, critical CSS в index.html, sw.js и связанными тестами. После закрытия #265/#266 эти ветки не блокируют работу в актуальной базе pizza; запрещено переносить их устаревший floating-capsule/rail redesign.
 
 ### Более новое состояние pizza: PR #269
 
@@ -41,9 +41,9 @@ PR #265 открыт и не объединён; ветка feat/mobile-bottom-c
 
 #269 добавил повторное нажатие выбранной категории для прокрутки вверх, убрал старый scroll-top control/module и реализовал fade основных категорий во время скролла. Delivery subfilters не затухают. Новым владельцем rail behavior стал ui/category-rail.js.
 
-PR #268 синхронизирован с pizza через merge commit `c86e3257b970c3e259aa31029cf03bdaa0615abb`; его второй parent — pizza SHA `dacb424bdff9d073b3b9a4e13d723db1da92d078`, содержащий #269. PR #266 остаётся отдельной открытой stacked dependency поверх #265.
+PR #268 синхронизирован с pizza через merge commit `c86e3257b970c3e259aa31029cf03bdaa0615abb`; его второй parent — pizza SHA `dacb424bdff9d073b3b9a4e13d723db1da92d078`, содержащий #269. PR #265 и #266 закрыты без merge; активной stacked dependency больше нет.
 
-**Решение по scope:** #269 уже входит в текущую ветку через merge pizza; повторно переносить его не нужно. Не менять base и не переписывать историю. Изменения category/menu/card/stepper остаются отложенными, пока не разрешена зависимость #266 и её пересечения с `menu.js`, `delivery.js`, `150-rail.css`, `20-cards.css` и critical CSS.
+**Решение по scope:** #269 — единственный актуальный rail baseline: повторное нажатие выбранной категории прокручивает вверх, основные категории fade/restore, legacy scroll-top удалён. Не менять base и не переписывать историю. Category/card/stepper/add-product motion остаются незавершёнными задачами, но больше не заблокированы #266; работать только с текущими owners в pizza и не менять геометрию/поведение rail.
 
 ## 3. Архитектурные ограничения и ownership
 
@@ -69,7 +69,7 @@ DOM ownership остаётся прежним: cart.js владеет состо
 |---|---|---|---|
 | 00-head.css | Motion правил нет; корневые нейтральные токены. | Нет собственного пути. | Единственный владелец общих timing tokens. Не размещать здесь компонентные селекторы. |
 | 10-base.css | Motion правил нет. | Нет собственного пути. | Без изменений. |
-| 20-cards.css | .card transform/opacity 200ms ease + pop 500ms с --d; image transform 500ms, emoji 300ms; stepper 100ms. | Reduce отсутствует. Card entrance и hover используют transform одновременно; stepper scale меняет визуальную область hit-target. | Карточки требуют отдельной проверки; пока не менять из-за пересечения с #266. |
+| 20-cards.css | .card transform/opacity 200ms ease + pop 500ms с --d; image transform 500ms, emoji 300ms; stepper 100ms. | Reduce отсутствует. Card entrance и hover используют transform одновременно; stepper scale меняет визуальную область hit-target. | Card/stepper motion остаются на отдельную проверку; не менять grid/hit-target и использовать текущие responsive owners. |
 | 30-utils.css | Определяет ping, stampin, shimmer; потребители задают длительность. | Глобального reduced режима нет. | Keyframes остаются нейтральными; reduce определяется каждым потребителем. |
 | 40-catalog.css | Skeleton shimmer 1.2s infinite. | Reduce отсутствует; постоянная перерисовка фона, без layout shift. | Оставлять только во время загрузки; статическое состояние под reduce. |
 | 50-edit-mode.css | Switch background и knob left переходят за 250ms. | Reduce отсутствует; left вызывает layout/paint. | Позже проверить замену left на transform при сохранении geometry. |
@@ -81,14 +81,14 @@ DOM ownership остаётся прежним: cart.js владеет состо
 | 110-panel.css | Tabs/stamp 200–300ms; .stamp.n nextp 1.6s infinite; .freeCard .fe sway 2.6s infinite; .hmini rise 300ms; stats hover transform. | Local reduce выключает stamp/free-card/history animation, stamp/stat transitions и stat hover travel; regression matrix добавлена. | Не анимировать историю/ambient profile decoration под reduce; сохранить state feedback. |
 | 120-cashier.css | Cashier rise 400ms; customer panel 350ms; log rows 300ms; stampin 500ms с overshoot; staff-guide chevron 180ms. | Local reduce disables all four entrance/stamp animations and guide chevron transition; staff regression added. | Сохранять мгновенную видимость и неизменную геометрию staff UI. |
 | 130-service.css | Toast entry 180ms and exit 120ms with shared timing tokens; freePulse 2.2s, glowPulse 1.5s, avatar pulse-hint 2s, pushHint/freeBanner entrance. | Reduce disables toast animation, service pulses, avatar hint and one-shot hint entrances; regression covers both brands. | Keep message/colour feedback but remove optional movement and perpetual paint. |
-| 140-topbar.css | Mode control/avatar/rail/search/role actions 200–250ms; avatar and edit hover translate/scale. | Local reduce removes header-control transitions and avatar/edit hover travel. Rail hover remains outside this change because #266/#269 own the rail dependency. | Keep local to topbar controls; do not touch rail selectors here. |
-| 150-rail.css | На HEAD #268 motion rules отсутствуют. На current pizza после #269 есть fade и reduce для rail. | HEAD/base различаются; subfilters исключены из fade. | Не трогать в Stage 1. Требует разрешения зависимости #268/#266/#269. |
+| 140-topbar.css | Mode control/avatar/rail/search/role actions 200–250ms; avatar and edit hover translate/scale. | Local reduce removes header-control transitions and avatar/edit hover travel. Rail hover remains owned by the current ui/category-rail.js implementation from #269. | Keep local to topbar controls; do not duplicate rail selectors here. |
+| 150-rail.css | На current pizza после #269 есть fade и reduce для rail. | Delivery subfilters исключены из fade; mobile sticky поведение принадлежит ui/category-rail.js. | Сохранять #269 baseline; любые изменения — только scoped regression и без rail redesign. |
 | 160-01-rail-fab-mobile.css | cartFab opacity/transform 300ms; badge 350ms; skeleton pulse 1.4s; empty state 400ms; address sheet 220ms; preorder timer 300ms + pulse 2s; validation shake 400ms. | Reduce покрывает skeleton, empty, address sheet/button, preorder waiting pulse и validation shake; cartFab/badge остаются без reduce. | CartFab — отдельный этап. Сохранить геометрию и кликабельность. |
 | 160-02-addr-panel-fix.css | #mbonusBtn opacity/transform 250ms. | Reduce отсутствует. | Проверить, что selector остаётся живым, затем локально нормализовать. |
 | 160-03-topbar-search-panel.css | .wrap > .panel transform 350ms. | Reduce отсутствует. | Не менять без проверки panel.js/views.js и swipe transform. |
 | 160-04-wrap-cls-sheets.css | image transform 300ms; panel transform 350ms (несколько селекторов); cartPanel 300ms. | Reduce отсутствует. cartPanel transition дублируется в 60-cart.css; panel пересекается с views/swipe. | Проверить cascade/computed style; убрать только подтверждённый дубль, не делать global panel override. |
 | 160-05-base-components.css | Motion правил нет. | Нет собственного пути. | Без изменений. |
-| 160-06-delivery-header.css | venue toggle bg/transform/border 200ms; arrow 200ms; brand segment fadeIn 200ms; CTA 150ms. | Reduce отсутствует. | Локальная нормализация после разрешения rail dependency. |
+| 160-06-delivery-header.css | venue toggle bg/transform/border 200ms; arrow 200ms; brand segment fadeIn 200ms; CTA 150ms. | Reduce отсутствует. | Локальная нормализация остаётся отдельной задачей; зависимости от закрытого #266 нет. |
 | 160-07-orders-cards.css | В HEAD #268 legacy scrollTop transition 250ms; order tracking button 120ms. | Reduce отсутствует. В current pizza scrollTop удалён PR #269. | Не возвращать scrollTop. Переоценить после синхронизации base. |
 | 160-08-cart-addons.css | add-on chips 150ms; add button transform/shadow/bg 120ms; scroll controls 150ms. | Reduce отключает основную группу add-on transition. | Сохранить scoped правила; проверить focus/hit targets. |
 | 160-09-preorder-subfilters.css | progress fill width 300ms; overflow cue opacity 180ms; subchip color 150ms; option state 150ms. | Reduce отключает только overflow cue. width может инициировать layout. | Оставить width только для зарезервированной геометрии; расширить reduce. |
@@ -104,7 +104,7 @@ DOM ownership остаётся прежним: cart.js владеет состо
 
 | Владелец | Триггер и текущий эффект | Риски / reduce | Решение |
 |---|---|---|---|
-| core/views.js | Вставляет Layer 2 CSS: delivery option shake 400ms, active translateY(1px), brand/mode/panel rules; RAF adds pulse. | Dynamic .opts.shake now has a scoped reduce override. Explicit smooth scroll for option validation remains in delivery.js and is deferred with the #266/#269 delivery/rail dependency. | Preserve Layer 2b ownership; do not add a global scroll override. |
+| core/views.js | Вставляет Layer 2 CSS: delivery option shake 400ms, active translateY(1px), brand/mode/panel rules; RAF adds pulse. | Dynamic .opts.shake now has a scoped reduce override. Explicit smooth scroll for option validation remains in delivery.js; it still needs direct interaction/reduced-motion verification. | Preserve Layer 2b ownership; do not add a global scroll override. |
 | core/swipe.js | Mobile profile swipe пишет inline transform, отключает transition во время drag; завершение 320ms + overlay opacity 320ms. Nudge 1.1s cubic(.3,1.4,.4,1), hintFade 1.6s. | Нет reduce; overshoot; resize/reopen потенциально конкурируют с cleanup. | Gesture сохраняется отзывчивым, но decorative nudge/hint отключаются под reduce. Проверить прерывание/resize. |
 | ui/styles.js | Вставляет общий .pulse: scale + expanding shadow, 1.3s infinite; chatHint pulse 1.2s × 3. | Нет reduce; broad selector может затронуть несвязанные .pulse consumers; shadow repaint. | Сузить владельца и убрать idle loop. |
 | core/fx.js | window.confetti creates 90 particles; canvas RAF draw/clear for the effect lifetime. | Skip canvas initialization when reduce is active; stop and clear the next RAF frame if the preference changes live. Hidden-document cancellation remains open. | Keep the event-bound effect, with no motion for reduce clients. |
@@ -116,7 +116,7 @@ DOM ownership остаётся прежним: cart.js владеет состо
 | chat.js / chat-core.js | Chat open/close, message/hint state. | FAB pseudo ping и dynamic hint pulse неполностью reduce-safe. | Сохранить JS owner; изменить только component CSS/Layer3 owner. |
 | core/splash.js + index.html | JS lifecycle; CSS/critical CSS first-frame entrance/float. | Reduce есть, но две копии могут рассинхронизироваться. | Сохранять parity Layer4/Layer1. |
 | ui/scrolltop.js | В HEAD #268 legacy scroll button/rail position owner. | Current pizza после #269 модуль retired, rail переехал в ui/category-rail.js. | Не возвращать/не модифицировать в Stage 1. |
-| menu.js / delivery.js | Menu render, categories, filters, zoom/image priorities. | Изменены #266/#269; ownership на current pizza отличается от HEAD #268. | Не менять до разрешения branch dependency. |
+| menu.js / delivery.js | Menu render, categories, filters, zoom/image priorities. | Current pizza is authoritative; rail presentation is in ui/category-rail.js, catalog state remains in storefront owners. | Сохранять single-owner boundaries; changes can proceed on current base with targeted tests and no #269 redesign. |
 | ztBus | EventTarget bus для межмодульных событий. | Нового motion event bus не требуется. | Использовать только при уже существующей потребности владельца. |
 
 ### 4.3 Critical CSS
@@ -245,10 +245,10 @@ Baseline evidence:
 - [x] Добавлен chat motion spec для coffee/delivery × portrait/short landscape: FAB без idle ping, panel timing, message timing, hint pulse normal/reduced, geometry и overflow.
 - [x] RED получен на `::before` animationName=`ping`; GREEN — Responsive UI 129/129, Mobile Chrome 130/130.
 - [x] PR #268 синхронизирован с pizza/#269 merge commit `c86e3257`; текущий rail owner `ui/category-rail.js` находится в ветке.
-- [ ] Category/rail/card motion по-прежнему отложен, пока #266 остаётся отдельной stacked dependency; не менять пересекающиеся menu/card/delivery owners без согласования.
+- [ ] Category/card/stepper/add-product motion ещё не закрыты визуально; реализовывать отдельно на текущих owners, сохраняя #269 rail geometry и scroll behavior.
 - [x] Cart FAB: opacity-only show/hide, фиксированная ширина/позиция, без scale на hover/press; `prefers-reduced-motion` отключает transition.
 - [x] Cart FAB regression test: стабильные bounds/transform, hover/pressed hit-target в normal и reduced motion; Cart/checkout 32/32.
-- [ ] Category selected, stepper, add-product and card image micro-interactions remain deferred until the #266/#269 dependency is resolved.
+- [ ] Category selected, stepper, add-product and card image micro-interactions still need a dedicated motion pass and cross-brand visual review; #266 is no longer a dependency.
 - [x] Topbar role/brand controls and avatar/edit hover travel are static under reduced motion; regression is in staff-topbar-layout.spec.js.
 - [x] Profile avatar, stamp progress, chevron and profile action transitions are reduced-motion safe; profile ambient feedback is covered by profile-orders.spec.js.
 - [ ] Сохранить grid geometry и неизменность hit-target.
@@ -264,7 +264,7 @@ Baseline evidence:
 - [x] Cashier/customer/stamp/log entrance motion and staff-guide chevron are static under reduce; staff-topbar-layout.spec.js covers the owner styles.
 - [x] Continue-shopping navigation scroll switches to auto under reduce; cart-checkout-clarity.spec.js covers both reduce and normal motion.
 - [x] Delivery option .opts.shake is visually suppressed under reduce in the dynamic CSS owner; delivery-card-cart-state.spec.js checks the change.
-- [ ] Delivery option validation and category selection in delivery.js still pass explicit smooth scroll options. Do not change that shared file until the #266/#269 dependency is resolved; no global scroll override.
+- [ ] Delivery option validation and category selection in delivery.js still pass explicit smooth scroll options; verify normal/reduced motion and interrupted selection. No global scroll override.
 - [x] Toast CSS переведён на общие tokens: entry 180ms и exit 120ms, без overshoot; при reduced motion entry мгновенный, exit скрывает toast без анимации.
 - [x] Normal/reduced toast assertions для coffee/delivery добавлены также в `tests/chat-support.spec.js`, который присутствует в эффективном базовом CI workflow; тест ожидает готовность `window.toast`.
 - [x] Toast RED/GREEN подтверждён: CI #4084 на `aeeb5ae40d91a3a483f0d5363d6c6d0f383eb696` поймал пропуск краткого `.out` (300ms); CI #4085 прошёл после ускорения polling до `[50, 100]`. Normal/reduced состояния для coffee/delivery проходят в `chat-support.spec.js` и `toast-motion.spec.js`; standalone spec перечислен в `Responsive UI` workflow один раз.
@@ -319,7 +319,7 @@ Baseline evidence:
 - Не менять cart/catalog/checkout business logic и API contracts.
 - Не менять DOM ownership и не добавлять universal animation manager.
 - Не добавлять dependency, observer или global transition override.
-- Не менять rail/menu/card files до разрешения branch dependency.
+- Не reintroduce closed #265/#266/#270 rail concepts or alter the #269 rail contract; any rail/card change must preserve current owner boundaries and pass geometry/scroll tests.
 - Не менять base, не мержить PR, не делать force-push, не создавать parallel PR.
 - Не обновлять screenshot baseline.
 - Изменения public/* должны пройти штатный cache-busting через npm run build:client, который запускает npm run bump:sw. Никаких ручных инкрементов SW cache version.
@@ -341,17 +341,17 @@ Baseline evidence:
 - Toast: normal entry/exit midpoint и reduced entry/exit для coffee/delivery на `390×844` открыты и осмотрены; reduced сохраняет немедленную видимость/скрытие без движения, normal даёт короткий spatial feedback без overshoot.
 - Staff toast: placement осмотрен для coffee/delivery при ширине `821px` и `1024px`; нижняя центральная позиция не перекрывает role/edit controls и support FAB. Полная визуальная приёмка cashier/dispatcher/admin overlays ещё не завершена.
 
-**Состояние этапов:** Stage 0 и Stage 1 завершены. Stage 2: auth/address-book, PIN-error и QR motion paths визуально проверены; остальные staff overlays ещё не приняты. Stage 3: реализованные chat/FAB/topbar/profile/cashier paths reduce-safe; category/card/stepper/add-product interactions отложены из-за #266. Stage 4: toast, splash, ticker, confetti, service/profile/cashier ambient и реализованные scroll paths покрыты; часть delivery validation/category scroll остаётся отложенной из-за #266/#269. Stage 5 открыт до завершения полной matrix и residual findings.
+**Состояние этапов:** Stage 0 и Stage 1 завершены. Stage 2: auth/address-book, PIN-error и QR motion paths визуально проверены; остальные staff overlays ещё не приняты. Stage 3: реализованные chat/FAB/topbar/profile/cashier paths reduce-safe; category/card/stepper/add-product interactions остаются незакрытым motion scope (не dependency blocker). Stage 4: toast, splash, ticker, confetti, service/profile/cashier ambient и реализованные scroll paths покрыты; delivery validation/category scroll требуют дополнительной normal/reduced проверки. Stage 5 открыт до завершения полной matrix и residual findings.
 
 **Оставшиеся findings / риски:**
-- Category/card/rail/stepper/add-product interactions и delivery validation/category smooth-scroll в `delivery.js` не менять до согласования dependency #266 и пересечений с #269.
+- Category/card/stepper/add-product interactions и delivery validation/category smooth-scroll остаются незавершёнными проверками. #266 закрыт; использовать текущие owners, не менять #269 rail layout/scroll contract.
 - Нужна визуальная приёмка оставшихся staff overlays и состояний cashier/dispatcher/admin; текущие PIN/QR и cashier feedback captures не заменяют полный role/overlay matrix.
 - Не все быстрые повторные действия, interruption и viewport resize проверены одновременно с keyboard/focus/scroll на generic modal и оставшихся overlays.
-- В Mobile Chrome log desktop staff hydration: staff-header CLS = `0`, но document-level CLS = `0.0511`; источники — footer/profile/sidebar geometry shifts. Тест изолирует header contract. Это отдельный UX follow-up; не скрывать и не ослаблять assertions.
+- Исторический Mobile Chrome log фиксировал staff-header CLS = `0` и document CLS = `0.0511`. Этот finding закрывается последующим исправлением повторной skeleton-вставки в delivery.js; regression теперь проверяет весь document CLS, а не только шапку (см. §11/§12).
 - F2.x support chooser race исторически проявлялась как retry в CI #4087; в текущем run Responsive UI — 0 flaky и 0 retries. Считать не воспроизведённой на текущем SHA, но оставить как follow-up до отдельного целевого retest.
 - Отдельный аудит hidden/offscreen CSS loops не завершён. Не вводить общий lifecycle manager или глобальный reduced-motion override.
 
-**Следующий шаг:** закрыть оставшиеся staff overlays/role matrix, проверить interruption + resize и расследовать document-level CLS `0.0511`. PR остаётся Draft; не мерджить до полного visual gate.
+**Следующий шаг:** закрыть оставшиеся staff overlays/role matrix, проверить interruption + resize и завершить card/stepper/add-product visual review. CLS follow-up исправлен; PR остаётся Draft до полного visual gate.
 
 
 ## 11. Продолжение Stage 5 — 2026-11-17
@@ -365,22 +365,48 @@ Baseline evidence:
 - [x] Preorder waiting pulse: на мобильной/планшетной закрытой profile drawer бесконечный `preorder-pulse` отключён локальным правилом owner CSS; конечный entrance сохраняется, при открытии pulse возвращается, reduced motion оставляет анимацию выключенной. RED/GREEN подтверждены Profile E2E в run `44125051592`.
 - [x] Повторная проверка всех 13 CI-групп на application/test HEAD `2365b3b` прошла успешно.
 
-### CLS follow-up — установленная причина, исправление отложено
+### CLS follow-up — причина установлена и исправление внесено
 
-Диагностика desktop staff hydration на delivery при viewport 1440×900 воспроизвела document CLS `0.0510983`, при этом staff-header CLS остаётся `0`.
+На desktop delivery при viewport 1440×900 исходный regression воспроизводил document CLS 0.0510983, при staff-header CLS 0. Главный триггер — повторная staff-загрузка delivery.js повторно вставляла шесть skeleton cards поверх уже завершённого пустого каталога; #deliveryGrid кратковременно раздувался, меняя высоту grid row и позицию footer. В delivery.js добавлен data-catalog-ready guard: skeleton показываются только до первого успешного каталога, после renderDeliveryMenu() фиксируется готовность. Повторная staff-hydration больше не добавляет skeleton nodes.
 
-Первый LayoutShift (`0.0205804`) зафиксирован, когда `#deliveryRail` имеет высоту/scrollHeight `784px`, основной `section` — `941.2px`, `.wrap` — `985.2px`, а footer оказывается на y=`1110.2px` за пределами viewport. Во втором LayoutShift (`0.0305179`) rail становится `360.9px`, section — `387.7px`, wrap — `562.1px`, footer возвращается на y=`810.5px`. Это точно объясняет оба скачка footer через grid-row и `.siteFooter { margin-top:auto }`.
+ui/category-rail.js сохраняет desktop rail визуально выровненным с первой строкой каталога через offset без дополнительного margin-top. Для обычного desktop/non-sticky состояния восстановлен align-self:stretch, необходимый существующему bottom-alignment контракту; align-self:start остаётся только для sticky mobile state. Это сохраняет #269 rail behavior и не меняет его layout.
 
-Затрагиваемые owners — `delivery.js` (рендер `#deliveryRail`) и `ui/category-rail.js` (позиционирование rail через `alignRailWithCard`), с CSS в rail/grid layers. Но эти файлы и критические rail-правила пересекаются с открытой stacked dependency PR #266 и изменениями #269. **В PR #268 rail runtime/CSS не исправлялись намеренно**: изменение без синхронизации dependency может вернуть regressions category navigation/layout.
+Regression в tests/slow-network-layout.spec.js теперь ожидает data-catalog-ready, наблюдает #deliveryGrid только в границах сценария и запрещает повторную вставку skeleton cards. Главное assertion — document CLS <0.01, дополнительное — staff-header CLS <0.01. В локальном Chromium до восстановления desktop stretch было получено document CLS = 0 и staffHeader CLS = 0; exact geometry + CLS перепроверяются latest-head CI после восстановления desktop stretch.
 
-Отдельный меньший shift на `21px` подтверждён внутри profile sidebar: `#myOrders` меняется с loading placeholder высотой `43px` на empty state `64px`; вслед за ним `#fridayInfo` и `.profile-history-section` смещаются вниз на `21px`. Owner контента — `profile-orders.js`. Это отдельный профильный follow-up; он не является причиной большого скачка footer.
+Profile sidebar: #myOrders получает min-height:64px, чтобы переход loading → empty не сдвигал #fridayInfo. В tests/profile-orders.spec.js добавлен RED/GREEN regression, удерживающий API response и проверяющий высоту slot и y следующего блока с допуском 1 px; локальный Profile E2E прошёл 19/19. Preorder pulse fixture переведена на явную будущую дату, чтобы тест не зависел от времени запуска.
 
-Временный диагностический instrumentation в `slow-network-layout.spec.js` был удалён после получения данных. Существующие CLS assertions не ослаблялись, screenshot baselines не обновлялись.
+Временная диагностическая телеметрия удалена; существующие geometry/CLS assertions не ослаблялись, screenshot baselines не обновлялись.
 
 ### Оставшиеся цели Stage 5
 
-- [ ] Разрешить зависимость #266 и после этого исправить/покрыть стабильность desktop delivery rail во время staff hydration; сохранить assertions на document CLS и геометрию.
-- [ ] Устранить независимый 21px profile-order placeholder shift, если он воспроизводится на актуальном owner после отдельного RED-теста.
-- [ ] Довести interruption + rapid reopen + resize одновременно с keyboard/focus/scroll для generic modal и оставшихся staff overlays.
-- [ ] Завершить role/viewport matrix для cashier, dispatcher и admin overlays. Нынешний staff-chat matrix закрывает только admin staff-chat.
-- [ ] Не переводить PR в Ready и не мержить до закрытия зависимых rail findings, полного CI и обязательного visual gate.
+- [ ] Завершить current-head CI после восстановления desktop rail stretch contract и исправления time-dependent preorder fixture.
+- [ ] Довести interruption + rapid reopen + resize одновременно с keyboard/focus/scroll для generic modal и оставшихся staff overlays; отдельные cart/toast/address/gesture прогоны ещё не подтверждены на current head.
+- [ ] Завершить role/viewport matrix для cashier, dispatcher и admin overlays. Уже проверены 12 кадров admin staff-chat для двух брендов и трёх viewport; это не заменяет полную staff matrix.
+- [ ] Выполнить отдельную visual review card entrance, quantity stepper, add-to-cart и delivery option states в обоих брендах; не менять высоту cards/hit targets и не менять #269 rail layout.
+- [ ] Поднять безопасный интерактивный read-only preview для телефона. Vercel project provisioned, но deploy не завершён: текущий Express + SQLite runtime нельзя просто подключить к production DB; preview требует mock API/test fixtures без реальных заказов/мутаций.
+- [ ] Не переводить PR в Ready и не мержить до зелёного current-head CI и обязательного visual gate.
+
+## 12. Продолжение Stage 5 — 2026-11-17, current-head follow-up
+
+**Срез PR:** PR #268 остаётся Draft, base pizza (dacb424bdff9d073b3b9a4e13d723db1da92d078), ветка design/ui-animation-system-20261116. PR #265 и #266 закрыты без merge; #267 и #269 слиты; #270 закрыт без merge. Активных stacked dependencies для работы над текущими owners нет. Не возвращать закрытый floating-capsule/rail design.
+
+**Изменения после предыдущего snapshot:**
+- delivery.js: повторная staff hydration больше не показывает шесть skeleton cards поверх уже завершённого каталога (data-catalog-ready guard). Это устраняет временное увеличение #deliveryGrid.
+- ui/category-rail.js: desktop offset остаётся визуальным, а rail должен сохранять размер grid row; после CI failure восстановлен align-self:stretch для обычного desktop/non-sticky состояния, align-self:start оставлен только sticky mobile state. Сохраняется #269 rail contract.
+- 110-panel.css: latest-order placeholder резервирует 64 px; regression проверяет, что #fridayInfo не смещается при loading → empty.
+- profile-orders.spec.js: preorder-pulse fixture переведена на конкретную будущую дату и больше не зависит от времени запуска.
+- slow-network-layout.spec.js: полный document CLS и отсутствие повторной skeleton-вставки проверяются явно; baseline не обновлялся.
+
+**Локально подтверждено в изолированной Chromium Sandbox до её завершения:** staff hydration CLS test — document CLS 0, staffHeader CLS 0; category rail E2E 6/6; Profile E2E 19/19 с будущей датой; desktop profile hydration 1/1; unit/integration 186/186; npm run check, CSS audit, brand check, observer audit и git diff --check прошли. Эти результаты относятся к локальным прогонам; current-head CI остаётся источником истины для итоговой приемки.
+
+**Текущий CI finding:** run 44152517813 на промежуточном HEAD 35c6916 выявил две регрессии: Profile — nondeterministic preorder date fixture; Responsive UI и Mobile Chrome — desktop rail bottom alignment из-за align-self:start. Обе причины исправлены последующими commits; verification переносится на latest head. Новый run 44154076140 запущен после исправления; его результат должен быть проверен перед закрытием Stage 5.
+
+**Vercel preview:** project zerno-stage5-preview provisioned, но живой *.vercel.app deployment и read-only API adapter не созданы. Не подключать production SQLite или Telegram webhook к preview. Preview должен использовать отдельные fixtures и read-only mock API.
+
+**Что ещё не принято визуально:**
+- Полная matrix overlays для cashier/dispatcher/admin (normal/reduced, open/closed, portrait/landscape/desktop) — не завершена.
+- Interruption/rapid reopen + resize в сочетании с keyboard/focus/touch/scroll на generic modal и staff overlays — не завершены полностью.
+- Card entrance, quantity stepper, add-to-cart и delivery option motion требуют отдельного cross-brand visual review; #269 rail не редизайнить.
+- Интерактивный mobile preview на телефоне отсутствует.
+
+PR остаётся Draft. Нельзя считать Stage 5 завершённым только по зелёному CI: требуются current-head checks и визуальная приемка оставшихся состояний.
