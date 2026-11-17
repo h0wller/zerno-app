@@ -696,6 +696,14 @@ test.describe('Модуль заказов профиля', () => {
 
 test('order deep link uses instant scroll and a static highlight under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_user', 'profile-order-deeplink-test-token');
+  });
+  await page.route('**/api/orders/mine', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [orderFixture] })
+  }));
   await page.route('**/api/me', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
