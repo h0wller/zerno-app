@@ -918,3 +918,34 @@ test('reduced motion removes auth overlay travel without changing focus or layou
     }
   }
 });
+
+
+test('PIN error feedback and fullscreen QR are static under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    typeof window.openPin === 'function' && typeof window.openQRFull === 'function'
+  );
+  await page.evaluate(() => window.openPin());
+  const pinInput = page.locator('#pinInput');
+  await expect(page.locator('#pinModal')).toHaveClass(/show/);
+  await pinInput.evaluate((element) => element.classList.add('err'));
+  await expect(pinInput).toHaveCSS('animation-name', 'none');
+  await expect(pinInput).toHaveCSS('animation-duration', '0s');
+
+  await page.evaluate(() => {
+    window.closePin();
+    window.me = { name: 'Motion Test', phone: '+70000000000', qr: 'motion-test', stamps: 0, free: 0 };
+    window.openQRFull();
+  });
+  const qrModal = page.locator('#qrModal');
+  const qrCanvas = page.locator('#qrFull');
+  await expect(qrModal).toHaveClass(/show/);
+  await expect(qrCanvas).toHaveCSS('animation-name', 'none');
+  await expect(qrCanvas).toHaveCSS('animation-duration', '0s');
+  await page.evaluate(() => window.closeQRFull());
+});
