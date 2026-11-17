@@ -230,7 +230,10 @@ Baseline evidence:
 - [x] RED подтверждён на overlay fade; после CSS-фикса computed duration карточки проверяется численно с учётом Chromium serialization (`0.01ms` → `1e-05s`).
 - [x] Reduced-motion auth visual matrix: coffee/delivery × portrait/compact landscape/desktop × open/closed; 12 кадров открыты и осмотрены.
 - [x] Component-owned CSS модалки использует spatial tokens и локальный reduced-motion; `core/overlay-core.js`, `core/panel.js` и JS focus lifecycle не менялись.
-- [ ] Отдельно проверить address book и staff overlays; это остаётся в Stage 2.
+- [x] Address book sheet: normal entry/exit, reduced-motion immediate close, rapid reopen cancellation; `transitionrun` + delayed hidden lifecycle доказаны тестами.
+- [x] RED подтверждён: прежний JS переключал `hidden` синхронно, из-за чего entry/exit transition не запускались; GREEN после component-owned lifecycle fix в `core/address-book.js`.
+- [x] Cart/checkout screenshot `cart-address-book-390px` открыт и осмотрен: delivery/mobile 390×844, нижняя sheet, фон/контекст читаемы, 44×44px close/edit/delete targets, bottom/overflow assertions сохранены.
+- [ ] Отдельно проверить generic modal/overlay, PIN/QR и staff overlays; они остаются в Stage 2.
 
 ### Stage 3 — micro/component
 
@@ -296,14 +299,14 @@ Baseline evidence:
 
 ## 10. Текущий статус
 
-Срез на 2026-11-17, PR #268, branch `design/ui-animation-system-20261116`, base `pizza`, проверенный application HEAD: `7b2b78683194ef8ae24860eb9cf3d56bac3cec45`.
+Срез на 2026-11-17, PR #268, branch `design/ui-animation-system-20261116`, base `pizza`, проверенный application HEAD: `c764590f9aacfb80650b3ce6330259b9e1ecf003`.
 
-Stage 0 завершён. Stage 1 (cart sheet) завершён. Stage 2 частично завершён: auth modal/overlay реализованы и визуально проверены; address book/staff overlays остаются. Stage 3 частично завершён: chat panel/FAB/hints и cart FAB реализованы; category rail, product cards, category selection, stepper и add-product ещё не закрыты. Stage 4 частично закрывает chat hint и постоянный FAB ping; validation/toast/order flash/confetti и остальные ambient циклы остаются.
+Stage 0 завершён. Stage 1 (cart sheet) завершён. Stage 2 частично завершён: auth modal/overlay и address book sheet реализованы/проверены; generic modal/PIN/QR и staff overlays остаются. Stage 3 частично завершён: chat panel/FAB/hints и cart FAB реализованы; category rail, product cards, category selection, stepper и add-product ещё не закрыты. Stage 4 частично закрывает chat hint и постоянный FAB ping; validation/toast/order flash/confetti и остальные ambient циклы остаются.
 
-Полный CI run `44045981670` на `7b2b786`: 13/13 jobs successful. Cart/checkout — 32/32; Responsive UI, Mobile Chrome, Visual Stability, Visual UX capture и остальные jobs — success. Штатный client build запустил `npm run bump:sw`; commit `7b2b786` содержит сгенерированный cache-busting `v651`: `STATIC_CACHE=zerno-static-v651`, в `public/index.html` 69 ссылок `?v=651` (ещё одна историческая ссылка `?v=2` не является asset cache version).
+Полный CI run `44049124205` на `c764590`: 13/13 jobs successful. Cart/checkout — 32/32; Profile/address book — 24/24; Responsive UI, Mobile Chrome, Visual Stability, Visual UX capture и остальные jobs — success. Штатный client build запустил `npm run bump:sw`; commit `a984ded` содержит generated cache-busting `v652`: `STATIC_CACHE=zerno-static-v652`, `public/index.html` содержит 69 ссылок `?v=652` (ещё одна историческая ссылка `?v=2` не является asset cache version).
 
-Visual review cart FAB: сохранена запись Playwright `test-results/cart-motion-system-cart-FA-a8d5f--or-resizing-its-hit-target-chromium/video.webm` из run `44045981670`; открыты и осмотрены кадры 0.25/0.8/1.5/2.0s. Delivery guest, 390×844: пилюля остаётся центрированной у нижнего края, не растёт/не сжимается и не сдвигает hit-target на hover/press. Нормальный и reduced варианты проверены Playwright assertions. Baselines не обновлялись.
+Visual review cart FAB: сохранена запись Playwright `test-results/cart-motion-system-cart-FA-a8d5f--or-resizing-its-hit-target-chromium/video.webm` из run `44045981670`; открыты и осмотрены кадры 0.25/0.8/1.5/2.0s. Delivery guest, 390×844: пилюля остаётся центрированной у нижнего края, не растёт/не сжимается и не сдвигает hit-target на hover/press. Нормальный и reduced варианты проверены Playwright assertions. Address book: открыт screenshot `cart-address-book-390px` из run `44049124205`; sheet визуально принята в delivery/cart контексте при 390×844, safe bottom, 44px controls и читаемом backdrop. Baselines не обновлялись.
 
 Rail/category/card motion отложен: PR #266 остаётся отдельной stacked-зависимостью, #269 уже находится в pizza; #268 base не менялся. Не объединять и не переносить ветки без согласования.
 
-Следующий этап: исправить и проверить lifecycle address book sheet (`core/address-book.js`) и связанные staff overlays; затем — category/card micro-interactions после проверки branch dependency, validation/toast/order/confetti/ambient. PR остаётся Draft до полного покрытия и visual acceptance.
+Следующий этап: generic modal/overlay, PIN/QR и staff overlays по их текущим владельцам; затем category/card micro-interactions только после повторной проверки branch dependency #266, validation/toast/order/confetti/ambient. PR остаётся Draft до полного покрытия и visual acceptance.
