@@ -968,7 +968,10 @@ html[data-brand="delivery"] {
   --cta-border: 2px solid #3A2A1C;
   --cta-shadow: 3px 3px 0 #3A2A1C;
 }
-html { overflow-y: scroll; scrollbar-gutter: stable; }
+html { overflow-y: scroll; scrollbar-gutter: auto; }
+@media (min-width: 821px) and (max-width: 1180px) and (min-height: 481px) {
+  html { scrollbar-gutter: stable; }
+}
 
 @media (min-width: 1481px) {
   body > div.wrap, .wrap { width: 100%; max-width: 2560px; margin-inline: auto; box-sizing: border-box; }
