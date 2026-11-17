@@ -675,3 +675,24 @@
 
 
 
+
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp {
+    transition: none;
+  }
+
+  .stamp.n,
+  .freeCard .fe,
+  .hmini {
+    animation: none;
+  }
+
+  .stats .stat {
+    transition: none;
+  }
+
+  .stats .stat:hover {
+    transform: none;
+  }
+}
