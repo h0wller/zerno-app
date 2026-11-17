@@ -18,8 +18,20 @@ for (const brand of ['coffee', 'delivery']) {
     await expect(viewport).toHaveAttribute('aria-pressed', 'false');
     await expect(ticker).toHaveClass(/is-overflowing/);
 
-    const groups = await track.locator('.tickerGroup').count();
-    expect(groups, 'ticker duplicates enough groups to maintain a continuous loop').toBeGreaterThan(1);
+    for (const width of [320, 390, 1440, 1920, 2560]) {
+      await page.setViewportSize({ width, height: 844 });
+      await expect.poll(() => track.evaluate((element) => {
+        const groups = Array.from(element.querySelectorAll('.tickerGroup'));
+        const viewportWidth = element.parentElement.clientWidth;
+        const groupWidth = groups[0]?.getBoundingClientRect().width || 0;
+        const expectedGroups = groupWidth > 0
+          ? Math.max(1, Math.ceil(viewportWidth / groupWidth) + 1) * 2
+          : -1;
+        return groupWidth > 0 &&
+          groups.length === expectedGroups &&
+          element.scrollWidth >= viewportWidth * 2;
+      }), { timeout: 10000 }).toBe(true);
+    }
 
     await viewport.click();
     await expect(viewport).toHaveAttribute('aria-pressed', 'true');
