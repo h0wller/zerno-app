@@ -334,9 +334,26 @@ $('#deliveryRail').addEventListener('click', e => {
   }
 });
 
+function usesStableSimpleMetaSlots(p, opts) {
+  return opts.length === 0 && ['drinks', 'sets', 'sauces'].includes(p.cat);
+}
+
+function renderDeliveryDescription(p, opts) {
+  if (!usesStableSimpleMetaSlots(p, opts)) {
+    return p.desc ? '<div class="desc">' + esc(p.desc) + '</div>' : '';
+  }
+  // Simple products reserve two description lines even when the source is empty.
+  return '<div class="desc"' + (p.desc ? '' : ' aria-hidden="true"') + '>' +
+    esc(p.desc || '') +
+  '</div>';
+}
+
 function renderCompositionChips(item) {
   const composition = getVisibleComposition(item);
-  if (!composition.length) return '';
+  if (!composition.length) {
+    if (!usesStableSimpleMetaSlots(item, item.opts || [])) return '';
+    return '<div class="comp" aria-hidden="true"></div>';
+  }
   return '<div class="comp">' +
     composition.map(function (name) { return '<i>' + esc(name) + '</i>'; }).join('') +
   '</div>';
@@ -419,6 +436,7 @@ if (document.fonts && document.fonts.ready) {
 
 function renderDeliveryCard(p, n0) {
   var opts = p.opts || [];
+  var stableMetaClass = usesStableSimpleMetaSlots(p, opts) ? ' stable-meta-card' : '';
   var bodyMiddleHTML = opts.length > 0 ? renderPizzaOptsHtml(p, opts) : renderSingleMetaHtml(p);
   var imageSet = p.imgSrcset
     ? ' srcset="' + esc(p.imgSrcset) + '" sizes="(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw"'
@@ -427,7 +445,7 @@ function renderDeliveryCard(p, n0) {
     ? '<img src="' + p.img + '"' + imageSet + ' alt="' + esc(p.name) + '" data-fallback-emoji="' + esc(p.e || '🍕') + '" width="300" height="180" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" loading="lazy" fetchpriority="auto" decoding="async">'
     : '<span class="em">' + (p.e || '🍕') + '</span>';
 
-  return '<article class="card' + (p.on ? '' : ' stopped') + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
+  return '<article class="card' + (p.on ? '' : ' stopped') + stableMetaClass + '" data-product-id="' + p.id + '"' + dragAttr() + '>' +
       '<div class="media" style="--tint:#F3E2CE;position:relative;overflow:hidden;">' +
       mediaContent +
       (p.tag ? '<span class="tag ' + getMenuBadgeClass(p.tag) + '">' + esc(getMenuBadgeLabel(p.tag)) + '</span>' : '') +
@@ -435,7 +453,7 @@ function renderDeliveryCard(p, n0) {
     '</div>' +
     '<div class="cbody">' +
       '<h3>' + esc(p.name) + '</h3>' +
-      (p.desc ? '<div class="desc">' + esc(p.desc) + '</div>' : '') +
+      renderDeliveryDescription(p, opts) +
       renderCompositionChips(p) +
       bodyMiddleHTML +
       '<div class="steprow">' +
@@ -463,6 +481,7 @@ function updateFirstDeliveryCard(gridEl, firstCard, list) {
   firstCard.setAttribute('data-product-id', p0.id);
   firstCard.draggable = canDragMenu();
   firstCard.classList.toggle('stopped', !p0.on);
+  firstCard.classList.toggle('stable-meta-card', usesStableSimpleMetaSlots(p0, p0.opts || []));
 
   const cbody0 = firstCard.querySelector('.cbody');
   if (cbody0) {
@@ -470,7 +489,7 @@ function updateFirstDeliveryCard(gridEl, firstCard, list) {
     const bodyMid0 = opts0.length > 0 ? renderPizzaOptsHtml(p0, opts0) : renderSingleMetaHtml(p0);
     cbody0.innerHTML =
       '<h3>' + esc(p0.name) + '</h3>' +
-      (p0.desc ? '<div class="desc">' + esc(p0.desc) + '</div>' : '') +
+      renderDeliveryDescription(p0, opts0) +
       renderCompositionChips(p0) +
       bodyMid0 +
       '<div class="steprow">' +
