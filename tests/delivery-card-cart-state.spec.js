@@ -41,7 +41,7 @@ test.describe('Delivery card cart state', () => {
 
     expect(Math.abs(after.height - before.height), 'cart state must not grow the product card')
       .toBeLessThanOrEqual(1);
-    expect(button.height, 'in-cart CTA must keep the standard control height').toBeLessThanOrEqual(48);
+    expect(button.height, 'in-cart CTA must keep the standard 44px control height').toBe(44);
     expect(button.width, 'in-cart CTA remains a 44px hit target').toBeGreaterThanOrEqual(44);
     expect(button.whiteSpace, 'in-cart CTA label must stay on one line').toBe('nowrap');
     expect(parseFloat(button.fontSize), 'restored quantity label uses the compact typography').toBe(11);
