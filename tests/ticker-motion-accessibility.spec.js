@@ -51,12 +51,14 @@ test('reduced-motion starts paused but allows an explicit user start', async ({ 
   await expect(viewport).toHaveAttribute('role', 'button', { timeout: 15000 });
   await expect(viewport).toHaveAttribute('aria-pressed', 'true');
   await expect(ticker).toHaveClass(/is-paused/);
-  await expect.poll(() => track.evaluate((element) => getComputedStyle(element).animationPlayState))
-    .toBe('paused');
+  await expect.poll(() => track.evaluate((element) => getComputedStyle(element).animationName))
+    .toBe('none');
 
   await viewport.click();
   await expect(viewport).toHaveAttribute('aria-pressed', 'false');
   await expect(ticker).toHaveClass(/is-user-playing/);
+  await expect.poll(() => track.evaluate((element) => getComputedStyle(element).animationName))
+    .not.toBe('none');
   await expect.poll(() => track.evaluate((element) => getComputedStyle(element).animationPlayState))
     .toBe('running');
 });
