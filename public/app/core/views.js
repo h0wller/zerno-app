@@ -417,6 +417,7 @@ function sv() {
 
   syncViewsVisibility(showCoffee, showDeliv);
   syncStaffAndGuestControls(bName);
+  if (typeof window.alignRailWithCard === 'function') window.alignRailWithCard();
 
   var staff = (typeof mode !== 'undefined' && (mode === 'cashier' || mode === 'orders'));
   syncChatFab(staff, bName);
