@@ -337,3 +337,17 @@ test('delivery: pizza option labels use compact typography only at 320px', async
     expect(fontSizes).toEqual({ ...viewport.expected, crustsFit: true });
   }
 });
+
+
+test('category selection preserves the original rail button node and focus', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => document.querySelectorAll('#rail button').length > 0);
+  const target = page.locator('#rail button[data-cat]:not(.on)').first();
+  await target.focus();
+  const before = await target.evaluate((element) => element);
+  await target.click();
+  await expect(target).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => target.evaluate((element) => element === before)).toBe(true);
+  await expect(target).toBeFocused();
+});

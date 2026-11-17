@@ -1,6 +1,5 @@
 /* public/app/ui/category-rail.js
-   Shared rail geometry and transient scroll fade. The storefront modules own
-   category state and DOM; this module owns only viewport positioning/presentation. */
+   Shared rail geometry and transient scroll fade. Storefront modules own category state and DOM. */
 var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
@@ -11,15 +10,13 @@ var railScrollTick = false;
 
 function updateRailStickyPosition(rail, head) {
   if (!rail || !head) return;
-
   if (!head.getBoundingClientRect().height) {
     railStickyLayout = null;
     rail.classList.remove('rail-position-ready');
     return;
   }
 
-  var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
-  if (mobileViewport) {
+  if (window.matchMedia && window.matchMedia('(max-width: 820px)').matches) {
     var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
     var maxRailHeight = Math.max(0, viewportHeight - 24);
     var visibleRailHeight = Math.min(rail.scrollHeight, maxRailHeight);
@@ -27,33 +24,22 @@ function updateRailStickyPosition(rail, head) {
     var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
 
     if (!railStickyLayout || railStickyLayout.rail !== rail) {
-      railStickyLayout = {
-        rail: rail,
-        documentTop: rail.getBoundingClientRect().top + scrollY
-      };
+      railStickyLayout = { rail: rail, documentTop: rail.getBoundingClientRect().top + scrollY };
     }
-
     var shouldStick = scrollY > 0 && scrollY >= railStickyLayout.documentTop - stickyTop;
-    if (shouldStick) {
-      rail.style.position = 'sticky';
-      rail.style.top = stickyTop + 'px';
-      rail.style.maxHeight = maxRailHeight + 'px';
-      rail.style.overflowY = rail.scrollHeight > maxRailHeight ? 'auto' : 'visible';
-      rail.style.alignSelf = 'start';
-    } else {
-      rail.style.position = 'relative';
-      rail.style.top = 'auto';
-      rail.style.maxHeight = 'none';
-      rail.style.overflowY = '';
-      rail.style.alignSelf = 'start';
-    }
+    rail.style.position = shouldStick ? 'sticky' : 'relative';
+    rail.style.top = shouldStick ? stickyTop + 'px' : 'auto';
+    rail.style.maxHeight = shouldStick ? maxRailHeight + 'px' : 'none';
+    rail.style.overflowY = shouldStick && rail.scrollHeight > maxRailHeight ? 'auto' : '';
+    rail.style.alignSelf = 'start';
   } else {
     railStickyLayout = null;
     rail.style.position = 'relative';
     rail.style.top = 'auto';
     rail.style.maxHeight = 'none';
     rail.style.overflowY = '';
-    rail.style.alignSelf = 'stretch';
+    /* Desktop rail aligns to the first catalog row; never stretch it to grid height. */
+    rail.style.alignSelf = 'start';
   }
 
   rail.style.transform = 'none';
@@ -64,17 +50,17 @@ function alignRailWithCard() {
   var isDelivery = document.documentElement.dataset.brand === 'delivery';
   var rail = document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
   var head = document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head');
-
   if (!rail) return;
+
   railStickyLayout = null;
   rail.style.position = 'relative';
   rail.style.top = 'auto';
   rail.style.maxHeight = 'none';
   rail.style.overflowY = '';
   rail.style.alignSelf = 'start';
+
   var wrap = rail.parentElement;
   if (!wrap) return;
-
   var headRect = head && head.getBoundingClientRect();
   if (headRect && headRect.height) {
     var wrapRect = wrap.getBoundingClientRect();
@@ -82,23 +68,20 @@ function alignRailWithCard() {
     var wrapContentTop = wrapRect.top
       + (parseFloat(wrapStyle.paddingTop) || 0)
       + (parseFloat(wrapStyle.borderTopWidth) || 0);
-    var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
     var menuRow = head.querySelector('.menu-controls-row');
     var modeSeg = document.getElementById('modeSeg');
-    var staffGuestMenu = !!(menuRow && modeSeg &&
-      modeSeg.closest('.menu-controls-row') === menuRow);
-    var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
+    var staffGuestMenu = !!(menuRow && modeSeg && modeSeg.closest('.menu-controls-row') === menuRow);
+    var catalog = document.querySelector(isDelivery ? '#deliveryView #deliveryGrid' : '#menuView #grid');
     var catalogRect = catalog && catalog.getBoundingClientRect();
     var desiredTop = catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
     var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
     if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
-    if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
+    if (!isDelivery && rail.style.height) rail.style.removeProperty('height');
   } else if (rail.style.marginTop !== '0px') {
     rail.style.marginTop = '0px';
   }
 
   updateRailStickyPosition(rail, head);
-
   var topbar = document.querySelector('header.topbar');
   if (typeof ResizeObserver === 'function' && (observedRailHead !== head || observedRailTopbar !== topbar)) {
     if (railHeadObserver) railHeadObserver.disconnect();
@@ -111,8 +94,7 @@ function alignRailWithCard() {
 }
 
 function activeRail() {
-  var isDelivery = document.documentElement.dataset.brand === 'delivery';
-  return document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
+  return document.getElementById(document.documentElement.dataset.brand === 'delivery' ? 'deliveryRail' : 'rail');
 }
 
 function markRailScrolling() {
@@ -136,21 +118,19 @@ function markRailScrolling() {
 }
 
 window.alignRailWithCard = alignRailWithCard;
-
 window.addEventListener('scroll', function () {
   markRailScrolling();
   if (railScrollTick) return;
   railScrollTick = true;
   requestAnimationFrame(function () {
     railScrollTick = false;
-    var isDelivery = document.documentElement.dataset.brand === 'delivery';
+    var delivery = document.documentElement.dataset.brand === 'delivery';
     updateRailStickyPosition(
-      document.getElementById(isDelivery ? 'deliveryRail' : 'rail'),
-      document.querySelector(isDelivery ? '#deliveryView .menu-head' : '#menuView .menu-head')
+      document.getElementById(delivery ? 'deliveryRail' : 'rail'),
+      document.querySelector(delivery ? '#deliveryView .menu-head' : '#menuView .menu-head')
     );
   });
 }, { passive: true });
-
 window.addEventListener('resize', alignRailWithCard, { passive: true });
 window.addEventListener('load', alignRailWithCard, { once: true });
 requestAnimationFrame(alignRailWithCard);

@@ -298,9 +298,10 @@ function renderSubFilter(categoryItems) {
 }
 
 function renderDeliveryRail() {
-  $('#deliveryRail').innerHTML = DCATS.map(c =>
-    `<button data-dcat="${c.id}" class="${c.id === dcat ? 'on' : ''}"><span class="re">${c.e}</span>${c.l}</button>`
-  ).join('');
+  $('#deliveryRail').innerHTML = DCATS.map(c => {
+    const selected = c.id === dcat;
+    return `<button type="button" data-dcat="${c.id}" class="${selected ? 'on' : ''}" aria-label="${esc(c.l)}" aria-pressed="${selected ? 'true' : 'false'}"><span class="re">${c.e}</span>${c.l}</button>`;
+  }).join('');
 }
 
 $('#deliveryRail').addEventListener('click', e => {
