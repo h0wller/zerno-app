@@ -987,7 +987,8 @@ test('cashier entrance, stamp and log feedback are static under reduced motion',
 
 
 test('topbar controls stop hover travel and state transitions under reduced motion', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  // Hover travel is a desktop pointer interaction; mobile layout deliberately suppresses transforms.
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await mockStaffSession(page, 'admin');
   await page.goto('/?brand=delivery');

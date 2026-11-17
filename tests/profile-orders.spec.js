@@ -695,6 +695,8 @@ test.describe('Модуль заказов профиля', () => {
 
 
 test('order deep link uses instant scroll and a static highlight under reduced motion', async ({ page }) => {
+  // This scenario validates the mobile profile drawer, not the desktop side-by-side panel.
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => {
     localStorage.setItem('zt_user', 'profile-order-deeplink-test-token');

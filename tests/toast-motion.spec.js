@@ -34,8 +34,10 @@ test('toast uses short non-overshooting entry and exit motion in both brands', a
     expect(entry.duration).toBe('0.18s');
     expect(entry.easing).toBe('cubic-bezier(0.2, 0.8, 0.2, 1)');
 
+    // .out is intentionally transient (300ms); sample faster than its lifetime.
     await expect.poll(() => toast.evaluate((element) => element.classList.contains('out')), {
       timeout: 3000,
+      intervals: [50, 100],
     }).toBe(true);
     const exit = await toast.evaluate((element) => {
       const style = getComputedStyle(element);
@@ -64,8 +66,10 @@ test('toast appears and disappears without animation under reduced motion', asyn
     await expect(toast).toHaveCSS('animation-duration', '0s');
     await expect(toast).toHaveCSS('opacity', '1');
 
+    // .out is intentionally transient (300ms); sample faster than its lifetime.
     await expect.poll(() => toast.evaluate((element) => element.classList.contains('out')), {
       timeout: 3000,
+      intervals: [50, 100],
     }).toBe(true);
     await expect(toast).toHaveCSS('animation-name', 'none');
     await expect(toast).toHaveCSS('opacity', '0');
