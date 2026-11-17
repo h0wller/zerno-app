@@ -1006,3 +1006,29 @@ test('confetti does not start or keep running under reduced motion', async ({ pa
 
   await expect.poll(() => page.evaluate(() => window.__confettiContextCalls)).toBe(0);
 });
+
+
+test('active confetti loop stops on a live switch to reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.confetti === 'function');
+  await page.evaluate(() => {
+    window.__motionRafCalls = 0;
+    window.__motionRafCallback = null;
+    window.requestAnimationFrame = (callback) => {
+      window.__motionRafCalls += 1;
+      window.__motionRafCallback = callback;
+      return window.__motionRafCalls;
+    };
+    window.confetti();
+  });
+  expect(await page.evaluate(() => window.__motionRafCalls)).toBe(1);
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.evaluate(() => window.__motionRafCallback());
+  expect(await page.evaluate(() => window.__motionRafCalls)).toBe(1);
+});
