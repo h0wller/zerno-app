@@ -157,7 +157,7 @@ sticky слева на весь скролл
     /* Delivery's primary terracotta needs its darker accessible tone with white text. */
     background: var(--category-icon-active-bg, var(--category-tab-active-color, var(--flame, #123A6B)));
     color: var(--category-icon-active-color, #FFFFFF);
-    font-weight: 800;
+    font-weight: 700;
   }
 
   html body div.wrap > nav.rail#rail button:active,
