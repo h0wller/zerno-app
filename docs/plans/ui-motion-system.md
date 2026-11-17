@@ -252,6 +252,7 @@ Baseline evidence:
 - [x] Chat hint pulse отключается при reduced motion; конечный pulse в normal motion сохранён как event-bound feedback.
 - [x] Необоснованный постоянный chat FAB ping удалён.
 - [ ] Сделать validation, toast, order flash и confetti reduced-motion safe.
+- [ ] Toast: добавлен `tests/toast-motion.spec.js` в Responsive UI CI для обоих брендов и normal/reduced motion; ожидаются RED и последующий локальный CSS-фикс.
 - [ ] Останавливать декоративные циклы у hidden/offscreen surface, где безопасно.
 - [ ] Сохранить ticker manual fallback и splash first-frame parity.
 
