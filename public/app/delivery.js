@@ -83,7 +83,7 @@ const DCATS = window.DCATS = [
   { id: 'rolls', e: '🍣', l: 'Роллы' },
   { id: 'sets', e: '🍱', l: 'Сеты' },
   { id: 'drinks', e: '🥤', l: 'Напитки' },
-  { id: 'sauces', e: '🥫', l: 'Допы и соусы' }
+  { id: 'sauces', e: '🥫', l: 'Допы и соусы', shortLabel: 'Добавки' }
 ];
 window.dcat = 'pizza';
 
@@ -300,7 +300,7 @@ function renderSubFilter(categoryItems) {
 function renderDeliveryRail() {
   $('#deliveryRail').innerHTML = DCATS.map(c => {
     var selected = c.id === dcat;
-    return `<button type="button" data-dcat="${c.id}" class="${selected ? 'on' : ''}" aria-label="${esc(c.l)}" title="${esc(c.l)}" aria-pressed="${selected ? 'true' : 'false'}"><span class="re">${c.e}</span><span class="category-label">${c.l}</span></button>`;
+    return `<button type="button" data-dcat="${c.id}" class="${selected ? 'on' : ''}" aria-label="${esc(c.l)}" title="${esc(c.l)}" aria-pressed="${selected ? 'true' : 'false'}"><span class="re">${c.e}</span><span class="category-label">${esc(c.shortLabel || c.l)}</span></button>`;
   }).join('');
 }
 $('#deliveryRail').setAttribute('role', 'group');
