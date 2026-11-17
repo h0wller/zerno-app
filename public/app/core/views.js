@@ -370,7 +370,7 @@ function syncChatFab(staff, bName2) {
   var supportHost = document.getElementById('supportLauncherHost');
   if (!cfab || !supportHost) return;
   var activeView = document.getElementById(bName2 === 'delivery' ? 'deliveryView' : 'menuView');
-  var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px)').matches;
   var supportTarget = mobileViewport && activeView
     ? activeView.querySelector('.mh-right')
     : document.body;
@@ -441,7 +441,7 @@ function sv() {
 }
 
 window.sv = sv;
-var supportViewport = window.matchMedia && window.matchMedia('(max-width: 820px)');
+var supportViewport = window.matchMedia && window.matchMedia('(max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px)');
 if (supportViewport) {
   var refreshSupportPlacement = function () {
     if (typeof window.sv === 'function') window.sv();
