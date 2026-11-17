@@ -36,19 +36,16 @@ for (const brand of CASES) {
       }
       if (brand.brand === 'delivery') {
         await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
-        await expect.poll(() => page.evaluate(() => {
-          const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
-          const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
-          return Math.abs(rail.top - grid.top);
-        }), { timeout: 5000 }).toBeLessThanOrEqual(2);
       } else if (viewport.width <= 820) {
-        const searchGap = await page.evaluate(({ headSelector, railSelector }) => {
+        const noSearchOverlap = await page.evaluate(({ headSelector, railSelector }) => {
           const head = document.querySelector(headSelector);
           const rail = document.querySelector(railSelector);
           const searchRow = head.querySelector('.mh-right');
-          return rail.getBoundingClientRect().top - searchRow.getBoundingClientRect().bottom;
+          const a = rail.getBoundingClientRect();
+          const b = searchRow.getBoundingClientRect();
+          return !(a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
         }, { headSelector: brand.head, railSelector: brand.rail });
-        expect(searchGap, 'coffee rail starts below search/support row').toBeGreaterThanOrEqual(10);
+        expect(noSearchOverlap, 'floating coffee capsule must not overlap search/support controls').toBe(true);
       } else {
         await expect(page.locator('#grid .card').first()).toBeVisible({timeout:15000});
         const delta=await page.evaluate(selector=>{
@@ -82,7 +79,8 @@ for (const brand of CASES) {
       }, { headSelector: brand.head, railSelector: brand.rail });
 
       if (viewport.width <= 820) {
-        expect(layout.railPosition, 'mobile rail stays in its catalog position before scrolling').toBe('relative');
+        expect(layout.railPosition, 'mobile rail is a viewport-fixed capsule from first paint').toBe('fixed');
+        expect(layout.railTop, 'the capsule sits in the lower visual viewport lane').toBeGreaterThan(viewport.height / 2);
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
         expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
       }
@@ -109,27 +107,17 @@ for (const brand of CASES) {
       expect(tickerLayout.trackWidth).toBeGreaterThanOrEqual(tickerLayout.viewportWidth);
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
+      const railTopBeforeScroll = layout.railTop;
+      await page.evaluate((top) => { window.__initialFloatingRailTop = top; }, railTopBeforeScroll);
       await page.evaluate(() => window.scrollTo(0, 500));
       if (viewport.width <= 820) {
+        await expect.poll(() => page.evaluate(selector => getComputedStyle(document.querySelector(selector)).position), {
+          timeout: 5000,
+        }).toBe('fixed');
         await expect.poll(() => page.evaluate(selector => {
-          const element = document.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          const height = element.clientHeight;
-          const expectedTop = Math.max(12, (window.innerHeight - height) / 2);
-          return {
-            topDelta: Math.abs(rect.top - expectedTop),
-            position: getComputedStyle(element).position,
-            bottom: rect.bottom,
-          };
-        }, brand.rail), { timeout: 5000 }).toMatchObject({
-          position: 'sticky',
-        });
-        await expect.poll(() => page.evaluate(selector => {
-          const element = document.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          return Math.abs(rect.top - Math.max(12, (window.innerHeight - element.clientHeight) / 2));
+          return Math.abs(document.querySelector(selector).getBoundingClientRect().top - window.__initialFloatingRailTop);
         }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
-        await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
+        await testInfo.attach(`${brand.brand}-floating-rail-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
         });
@@ -244,35 +232,6 @@ test('coffee: category rail never covers menu title or search input on mobile', 
 });
 
 
-test('coffee rail aligns to its menu card and delivery rail aligns to product cards', async ({ page }) => {
-  for (const brand of CASES) {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
-    if (brand.brand === 'delivery') {
-      await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
-      await expect.poll(() => page.evaluate(() => {
-        const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
-        const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
-        return Math.abs(rail.top - grid.top);
-      }), { timeout: 5000 }).toBeLessThanOrEqual(2);
-    } else {
-      const searchGap = await page.evaluate(() => {
-        const search = document.querySelector('#menuView .menu-head .mh-right').getBoundingClientRect();
-        const rail = document.querySelector('#rail').getBoundingClientRect();
-        return rail.top - search.bottom;
-      });
-      expect(searchGap, 'coffee rail starts below its menu controls').toBeGreaterThanOrEqual(10);
-    }
-    const gap = await page.locator(brand.rail + ' button').evaluateAll(buttons => {
-      const rects=buttons.map(button=>button.getBoundingClientRect());
-      return rects.slice(1).map((rect,i)=>rect.top-rects[i].bottom);
-    });
-    expect(gap.every(value => value >= 9), brand.brand + ' rail button gap should be at least 9px').toBe(true);
-  }
-});
-
-
 test('both brand rails align to the catalog row on desktop', async ({page}) => {
   for (const brand of CASES) {
     await page.setViewportSize({width:1440,height:900});
@@ -336,4 +295,176 @@ test('delivery: pizza option labels use compact typography only at 320px', async
     });
     expect(fontSizes).toEqual({ ...viewport.expected, crustsFit: true });
   }
+});
+
+
+const FLOATING_RAIL_CASES = [
+  { brand: 'coffee', selector: '#rail', categoryCount: 6 },
+  { brand: 'delivery', selector: '#deliveryRail', categoryCount: 5 },
+];
+const FLOATING_RAIL_VIEWPORTS = [
+  { name: 'portrait-320', width: 320, height: 740, railHeight: 56 },
+  { name: 'portrait-390', width: 390, height: 844, railHeight: 56 },
+  { name: 'portrait-430', width: 430, height: 932, railHeight: 56 },
+  { name: 'compact-landscape-844', width: 844, height: 390, railHeight: 48 },
+  { name: 'compact-landscape-1024', width: 1024, height: 390, railHeight: 48 },
+];
+
+for (const brand of FLOATING_RAIL_CASES) {
+  for (const viewport of FLOATING_RAIL_VIEWPORTS) {
+    test(`${brand.brand}: category rail is a fixed, accessible floating capsule at ${viewport.name}`, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        sessionStorage.setItem('splashDone', '1');
+        localStorage.setItem('zt_onb', '1');
+        localStorage.setItem('zt_inst_hide', '1');
+        localStorage.setItem('zt_ios_hide', '1');
+      });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const rail = page.locator(brand.selector);
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect(rail).toHaveClass(/rail-position-ready/);
+
+      const geometry = await rail.evaluate(element => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        const safeAreaProbe = document.createElement('div');
+        safeAreaProbe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom,0px)';
+        document.body.appendChild(safeAreaProbe);
+        const safeArea = parseFloat(getComputedStyle(safeAreaProbe).paddingBottom) || 0;
+        safeAreaProbe.remove();
+
+        const reserveProbe = document.createElement('div');
+        reserveProbe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+        document.body.appendChild(reserveProbe);
+        const reservedHeight = reserveProbe.getBoundingClientRect().height;
+        reserveProbe.remove();
+
+        const fixedContainingBlocks = [];
+        for (let node = element.parentElement; node && node instanceof HTMLElement; node = node.parentElement) {
+          if (node === document.body || node === document.documentElement) continue;
+          const ancestorStyle = getComputedStyle(node);
+          if (ancestorStyle.transform !== 'none' || ancestorStyle.filter !== 'none' ||
+              ancestorStyle.perspective !== 'none' ||
+              /(?:^|\\s)(?:layout|paint|strict|content)(?:\\s|$)/.test(ancestorStyle.contain) ||
+              ancestorStyle.willChange.split(',').some(value => ['transform', 'filter', 'perspective'].includes(value.trim()))) {
+            fixedContainingBlocks.push(node.id || node.className || node.tagName.toLowerCase());
+          }
+        }
+
+        return {
+          position: style.position,
+          height: rect.height,
+          width: rect.width,
+          left: rect.left,
+          right: rect.right,
+          bottomGap: window.innerHeight - rect.bottom,
+          safeArea,
+          reservedHeight,
+          overflowX: style.overflowX,
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth,
+          pageScrollWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth,
+          fixedContainingBlocks,
+          buttons: Array.from(element.querySelectorAll('button')).map(button => {
+            const buttonRect = button.getBoundingClientRect();
+            return {
+              width: buttonRect.width,
+              height: buttonRect.height,
+              label: button.getAttribute('aria-label') || button.title || button.textContent.trim(),
+            };
+          }),
+          categoryLabelsHidden: Array.from(element.querySelectorAll('.category-label'))
+            .every(label => getComputedStyle(label).display === 'none'),
+        };
+      });
+
+      await testInfo.attach(`${brand.brand}-${viewport.name}-floating-rail`, {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+      await testInfo.attach(`${brand.brand}-${viewport.name}-floating-rail-geometry`, {
+        body: Buffer.from(JSON.stringify(geometry, null, 2)),
+        contentType: 'application/json',
+      });
+
+      expect(geometry.position, 'the rail is detached from document flow and fixed to the viewport').toBe('fixed');
+      expect(geometry.fixedContainingBlocks, 'no ancestor may capture fixed positioning').toEqual([]);
+      expect(geometry.height).toBe(viewport.railHeight);
+      expect(geometry.bottomGap).toBeGreaterThanOrEqual(10 + geometry.safeArea);
+      expect(geometry.bottomGap).toBeLessThanOrEqual(12 + geometry.safeArea);
+      expect(geometry.reservedHeight).toBeCloseTo(geometry.height + geometry.bottomGap, 0);
+      expect(geometry.left).toBeGreaterThanOrEqual(12);
+      expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth - 12);
+      expect(geometry.width).toBeLessThanOrEqual(geometry.viewportWidth - 24);
+      expect(geometry.pageScrollWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+      expect(geometry.overflowX).toBe('hidden');
+      expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
+      expect(geometry.buttons).toHaveLength(brand.categoryCount);
+      expect(geometry.buttons.every(button => button.width >= 44 && button.height >= 44)).toBe(true);
+      expect(geometry.buttons.every(button => button.label.length > 0)).toBe(true);
+      if (viewport.width <= 340) {
+        expect(geometry.categoryLabelsHidden, 'narrow icon-only rail keeps category names accessible').toBe(true);
+      }
+
+      const beforeScroll = await rail.boundingBox();
+      await page.evaluate(() => window.scrollTo(0, 600));
+      await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBeGreaterThan(100);
+      const afterScroll = await rail.boundingBox();
+      expect(Math.abs(afterScroll.y - beforeScroll.y), 'the floating capsule stays on the viewport edge during page scrolling').toBeLessThanOrEqual(1);
+      expect(Math.abs(afterScroll.height - beforeScroll.height)).toBeLessThanOrEqual(1);
+    });
+  }
+}
+
+
+test('delivery: visible cart FAB stays above the floating category capsule', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    sessionStorage.setItem('splashDone', '1');
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_ios_hide', '1');
+  });
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const firstCard = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
+  await expect(firstCard).toBeVisible({ timeout: 15000 });
+  const option = firstCard.locator('.opts label.opt-btn').last();
+  if (await option.count()) await option.click();
+  await firstCard.locator('.steprow .cta, [data-add]').first().click();
+
+  const rail = page.locator('#deliveryRail');
+  const fab = page.locator('#cartFab');
+  await expect.poll(() => fab.evaluate(element =>
+    !element.hidden && getComputedStyle(element).display !== 'none' &&
+    element.classList.contains('visible')
+  ), { timeout: 7000 }).toBe(true);
+
+  const geometry = await page.evaluate(() => {
+    const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
+    const fab = document.querySelector('#cartFab').getBoundingClientRect();
+    return {
+      railTop: rail.top,
+      fabBottom: fab.bottom,
+      fabTop: fab.top,
+      fabHeight: fab.height,
+      railVisibility: getComputedStyle(document.querySelector('#deliveryRail')).visibility,
+    };
+  });
+  await testInfo.attach('delivery-cart-fab-floating-rail-clearance-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
+  expect(geometry.fabHeight).toBeGreaterThanOrEqual(44);
+  expect(geometry.fabBottom + 8,
+    'the visible cart FAB must have at least an 8px gap above the floating rail')
+    .toBeLessThanOrEqual(geometry.railTop);
+
+  await fab.click();
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+  await expect(rail).toHaveCSS('visibility', 'hidden');
+  await expect(rail).toHaveCSS('pointer-events', 'none');
 });
