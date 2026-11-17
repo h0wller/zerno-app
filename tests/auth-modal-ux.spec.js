@@ -1179,16 +1179,16 @@ test('Telegram confirmation badge is immediate under reduced motion for both bra
         .some((sheet) => sheet.href === link.href);
     });
 
-    // Isolate the component from the registration form's intentionally hidden state.
-    await page.evaluate(() => {
-      const badge = document.createElement('div');
-      badge.id = 'telegramVerificationSuccessFixture';
-      badge.className = 'auth-badge-confirmed';
-      badge.textContent = 'Номер подтверждён в Telegram';
-      document.body.appendChild(badge);
-    });
+    // Open the actual registration modal and expose its owned Telegram status row.
+    await page.evaluate(() => window.openAuth(false));
+    const modal = page.locator('#authModal');
+    await expect(modal).toHaveClass(/show/);
 
-    const badge = page.locator('#telegramVerificationSuccessFixture');
+    const badge = page.locator('#regTgRow');
+    await badge.evaluate((element) => {
+      element.hidden = false;
+      element.textContent = '✅ Номер подтверждён — завершите регистрацию';
+    });
     await expect(badge).toBeVisible();
     await expect(badge).toHaveCSS('animation-name', 'badgeSlideIn');
     await expect(badge).toHaveCSS('animation-duration', '0.35s');
